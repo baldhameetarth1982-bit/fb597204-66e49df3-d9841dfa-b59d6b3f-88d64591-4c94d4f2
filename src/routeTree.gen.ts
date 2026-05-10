@@ -22,7 +22,6 @@ import { Route as SocietySocietyResidentsRouteImport } from './routes/_society/s
 import { Route as SocietySocietyFlatsRouteImport } from './routes/_society/society.flats'
 import { Route as SocietySocietyDashboardRouteImport } from './routes/_society/society.dashboard'
 import { Route as SocietySocietyBlocksRouteImport } from './routes/_society/society.blocks'
-import { Route as SocietySocietyBillingRouteImport } from './routes/_society/society.billing'
 import { Route as ResidentAppProfileRouteImport } from './routes/_resident/app.profile'
 import { Route as ResidentAppNoticesRouteImport } from './routes/_resident/app.notices'
 import { Route as ResidentAppHelpdeskRouteImport } from './routes/_resident/app.helpdesk'
@@ -91,11 +90,6 @@ const SocietySocietyBlocksRoute = SocietySocietyBlocksRouteImport.update({
   path: '/society/blocks',
   getParentRoute: () => SocietyRoute,
 } as any)
-const SocietySocietyBillingRoute = SocietySocietyBillingRouteImport.update({
-  id: '/society/billing',
-  path: '/society/billing',
-  getParentRoute: () => SocietyRoute,
-} as any)
 const ResidentAppProfileRoute = ResidentAppProfileRouteImport.update({
   id: '/app/profile',
   path: '/app/profile',
@@ -139,7 +133,6 @@ export interface FileRoutesByFullPath {
   '/app/helpdesk': typeof ResidentAppHelpdeskRoute
   '/app/notices': typeof ResidentAppNoticesRoute
   '/app/profile': typeof ResidentAppProfileRoute
-  '/society/billing': typeof SocietySocietyBillingRoute
   '/society/blocks': typeof SocietySocietyBlocksRoute
   '/society/dashboard': typeof SocietySocietyDashboardRoute
   '/society/flats': typeof SocietySocietyFlatsRoute
@@ -157,7 +150,6 @@ export interface FileRoutesByTo {
   '/app/helpdesk': typeof ResidentAppHelpdeskRoute
   '/app/notices': typeof ResidentAppNoticesRoute
   '/app/profile': typeof ResidentAppProfileRoute
-  '/society/billing': typeof SocietySocietyBillingRoute
   '/society/blocks': typeof SocietySocietyBlocksRoute
   '/society/dashboard': typeof SocietySocietyDashboardRoute
   '/society/flats': typeof SocietySocietyFlatsRoute
@@ -180,7 +172,6 @@ export interface FileRoutesById {
   '/_resident/app/helpdesk': typeof ResidentAppHelpdeskRoute
   '/_resident/app/notices': typeof ResidentAppNoticesRoute
   '/_resident/app/profile': typeof ResidentAppProfileRoute
-  '/_society/society/billing': typeof SocietySocietyBillingRoute
   '/_society/society/blocks': typeof SocietySocietyBlocksRoute
   '/_society/society/dashboard': typeof SocietySocietyDashboardRoute
   '/_society/society/flats': typeof SocietySocietyFlatsRoute
@@ -200,7 +191,6 @@ export interface FileRouteTypes {
     | '/app/helpdesk'
     | '/app/notices'
     | '/app/profile'
-    | '/society/billing'
     | '/society/blocks'
     | '/society/dashboard'
     | '/society/flats'
@@ -218,7 +208,6 @@ export interface FileRouteTypes {
     | '/app/helpdesk'
     | '/app/notices'
     | '/app/profile'
-    | '/society/billing'
     | '/society/blocks'
     | '/society/dashboard'
     | '/society/flats'
@@ -240,7 +229,6 @@ export interface FileRouteTypes {
     | '/_resident/app/helpdesk'
     | '/_resident/app/notices'
     | '/_resident/app/profile'
-    | '/_society/society/billing'
     | '/_society/society/blocks'
     | '/_society/society/dashboard'
     | '/_society/society/flats'
@@ -349,13 +337,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SocietySocietyBlocksRouteImport
       parentRoute: typeof SocietyRoute
     }
-    '/_society/society/billing': {
-      id: '/_society/society/billing'
-      path: '/society/billing'
-      fullPath: '/society/billing'
-      preLoaderRoute: typeof SocietySocietyBillingRouteImport
-      parentRoute: typeof SocietyRoute
-    }
     '/_resident/app/profile': {
       id: '/_resident/app/profile'
       path: '/app/profile'
@@ -446,7 +427,6 @@ const ResidentRouteWithChildren = ResidentRoute._addFileChildren(
 )
 
 interface SocietyRouteChildren {
-  SocietySocietyBillingRoute: typeof SocietySocietyBillingRoute
   SocietySocietyBlocksRoute: typeof SocietySocietyBlocksRoute
   SocietySocietyDashboardRoute: typeof SocietySocietyDashboardRoute
   SocietySocietyFlatsRoute: typeof SocietySocietyFlatsRoute
@@ -454,7 +434,6 @@ interface SocietyRouteChildren {
 }
 
 const SocietyRouteChildren: SocietyRouteChildren = {
-  SocietySocietyBillingRoute: SocietySocietyBillingRoute,
   SocietySocietyBlocksRoute: SocietySocietyBlocksRoute,
   SocietySocietyDashboardRoute: SocietySocietyDashboardRoute,
   SocietySocietyFlatsRoute: SocietySocietyFlatsRoute,
@@ -475,13 +454,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

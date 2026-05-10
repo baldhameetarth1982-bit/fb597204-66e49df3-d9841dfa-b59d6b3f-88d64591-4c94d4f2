@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as SocietyRouteImport } from './routes/_society'
 import { Route as ResidentRouteImport } from './routes/_resident'
 import { Route as AuthRouteImport } from './routes/_auth'
@@ -17,7 +18,10 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthResetPasswordRouteImport } from './routes/_auth/reset-password'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/_auth/forgot-password'
+import { Route as SocietySocietyResidentsRouteImport } from './routes/_society/society.residents'
+import { Route as SocietySocietyFlatsRouteImport } from './routes/_society/society.flats'
 import { Route as SocietySocietyDashboardRouteImport } from './routes/_society/society.dashboard'
+import { Route as SocietySocietyBlocksRouteImport } from './routes/_society/society.blocks'
 import { Route as ResidentAppProfileRouteImport } from './routes/_resident/app.profile'
 import { Route as ResidentAppNoticesRouteImport } from './routes/_resident/app.notices'
 import { Route as ResidentAppHelpdeskRouteImport } from './routes/_resident/app.helpdesk'
@@ -25,6 +29,11 @@ import { Route as ResidentAppDuesRouteImport } from './routes/_resident/app.dues
 import { Route as ResidentAppDashboardRouteImport } from './routes/_resident/app.dashboard'
 import { Route as AdminAdminDashboardRouteImport } from './routes/_admin/admin.dashboard'
 
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SocietyRoute = SocietyRouteImport.update({
   id: '/_society',
   getParentRoute: () => rootRouteImport,
@@ -61,9 +70,24 @@ const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
   path: '/forgot-password',
   getParentRoute: () => AuthRoute,
 } as any)
+const SocietySocietyResidentsRoute = SocietySocietyResidentsRouteImport.update({
+  id: '/society/residents',
+  path: '/society/residents',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyFlatsRoute = SocietySocietyFlatsRouteImport.update({
+  id: '/society/flats',
+  path: '/society/flats',
+  getParentRoute: () => SocietyRoute,
+} as any)
 const SocietySocietyDashboardRoute = SocietySocietyDashboardRouteImport.update({
   id: '/society/dashboard',
   path: '/society/dashboard',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyBlocksRoute = SocietySocietyBlocksRouteImport.update({
+  id: '/society/blocks',
+  path: '/society/blocks',
   getParentRoute: () => SocietyRoute,
 } as any)
 const ResidentAppProfileRoute = ResidentAppProfileRouteImport.update({
@@ -99,6 +123,7 @@ const AdminAdminDashboardRoute = AdminAdminDashboardRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/onboarding': typeof OnboardingRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
   '/reset-password': typeof AuthResetPasswordRoute
@@ -108,10 +133,14 @@ export interface FileRoutesByFullPath {
   '/app/helpdesk': typeof ResidentAppHelpdeskRoute
   '/app/notices': typeof ResidentAppNoticesRoute
   '/app/profile': typeof ResidentAppProfileRoute
+  '/society/blocks': typeof SocietySocietyBlocksRoute
   '/society/dashboard': typeof SocietySocietyDashboardRoute
+  '/society/flats': typeof SocietySocietyFlatsRoute
+  '/society/residents': typeof SocietySocietyResidentsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/onboarding': typeof OnboardingRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
   '/reset-password': typeof AuthResetPasswordRoute
@@ -121,7 +150,10 @@ export interface FileRoutesByTo {
   '/app/helpdesk': typeof ResidentAppHelpdeskRoute
   '/app/notices': typeof ResidentAppNoticesRoute
   '/app/profile': typeof ResidentAppProfileRoute
+  '/society/blocks': typeof SocietySocietyBlocksRoute
   '/society/dashboard': typeof SocietySocietyDashboardRoute
+  '/society/flats': typeof SocietySocietyFlatsRoute
+  '/society/residents': typeof SocietySocietyResidentsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -130,6 +162,7 @@ export interface FileRoutesById {
   '/_auth': typeof AuthRouteWithChildren
   '/_resident': typeof ResidentRouteWithChildren
   '/_society': typeof SocietyRouteWithChildren
+  '/onboarding': typeof OnboardingRoute
   '/_auth/forgot-password': typeof AuthForgotPasswordRoute
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/reset-password': typeof AuthResetPasswordRoute
@@ -139,12 +172,16 @@ export interface FileRoutesById {
   '/_resident/app/helpdesk': typeof ResidentAppHelpdeskRoute
   '/_resident/app/notices': typeof ResidentAppNoticesRoute
   '/_resident/app/profile': typeof ResidentAppProfileRoute
+  '/_society/society/blocks': typeof SocietySocietyBlocksRoute
   '/_society/society/dashboard': typeof SocietySocietyDashboardRoute
+  '/_society/society/flats': typeof SocietySocietyFlatsRoute
+  '/_society/society/residents': typeof SocietySocietyResidentsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/onboarding'
     | '/forgot-password'
     | '/login'
     | '/reset-password'
@@ -154,10 +191,14 @@ export interface FileRouteTypes {
     | '/app/helpdesk'
     | '/app/notices'
     | '/app/profile'
+    | '/society/blocks'
     | '/society/dashboard'
+    | '/society/flats'
+    | '/society/residents'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/onboarding'
     | '/forgot-password'
     | '/login'
     | '/reset-password'
@@ -167,7 +208,10 @@ export interface FileRouteTypes {
     | '/app/helpdesk'
     | '/app/notices'
     | '/app/profile'
+    | '/society/blocks'
     | '/society/dashboard'
+    | '/society/flats'
+    | '/society/residents'
   id:
     | '__root__'
     | '/'
@@ -175,6 +219,7 @@ export interface FileRouteTypes {
     | '/_auth'
     | '/_resident'
     | '/_society'
+    | '/onboarding'
     | '/_auth/forgot-password'
     | '/_auth/login'
     | '/_auth/reset-password'
@@ -184,7 +229,10 @@ export interface FileRouteTypes {
     | '/_resident/app/helpdesk'
     | '/_resident/app/notices'
     | '/_resident/app/profile'
+    | '/_society/society/blocks'
     | '/_society/society/dashboard'
+    | '/_society/society/flats'
+    | '/_society/society/residents'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -193,10 +241,18 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   ResidentRoute: typeof ResidentRouteWithChildren
   SocietyRoute: typeof SocietyRouteWithChildren
+  OnboardingRoute: typeof OnboardingRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_society': {
       id: '/_society'
       path: ''
@@ -253,11 +309,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthForgotPasswordRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_society/society/residents': {
+      id: '/_society/society/residents'
+      path: '/society/residents'
+      fullPath: '/society/residents'
+      preLoaderRoute: typeof SocietySocietyResidentsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/flats': {
+      id: '/_society/society/flats'
+      path: '/society/flats'
+      fullPath: '/society/flats'
+      preLoaderRoute: typeof SocietySocietyFlatsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
     '/_society/society/dashboard': {
       id: '/_society/society/dashboard'
       path: '/society/dashboard'
       fullPath: '/society/dashboard'
       preLoaderRoute: typeof SocietySocietyDashboardRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/blocks': {
+      id: '/_society/society/blocks'
+      path: '/society/blocks'
+      fullPath: '/society/blocks'
+      preLoaderRoute: typeof SocietySocietyBlocksRouteImport
       parentRoute: typeof SocietyRoute
     }
     '/_resident/app/profile': {
@@ -350,11 +427,17 @@ const ResidentRouteWithChildren = ResidentRoute._addFileChildren(
 )
 
 interface SocietyRouteChildren {
+  SocietySocietyBlocksRoute: typeof SocietySocietyBlocksRoute
   SocietySocietyDashboardRoute: typeof SocietySocietyDashboardRoute
+  SocietySocietyFlatsRoute: typeof SocietySocietyFlatsRoute
+  SocietySocietyResidentsRoute: typeof SocietySocietyResidentsRoute
 }
 
 const SocietyRouteChildren: SocietyRouteChildren = {
+  SocietySocietyBlocksRoute: SocietySocietyBlocksRoute,
   SocietySocietyDashboardRoute: SocietySocietyDashboardRoute,
+  SocietySocietyFlatsRoute: SocietySocietyFlatsRoute,
+  SocietySocietyResidentsRoute: SocietySocietyResidentsRoute,
 }
 
 const SocietyRouteWithChildren =
@@ -366,6 +449,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   ResidentRoute: ResidentRouteWithChildren,
   SocietyRoute: SocietyRouteWithChildren,
+  OnboardingRoute: OnboardingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      bills: {
+        Row: {
+          amount: number
+          created_at: string
+          due_date: string
+          flat_id: string
+          id: string
+          notes: string | null
+          period_end: string
+          period_label: string
+          period_start: string
+          society_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          due_date: string
+          flat_id: string
+          id?: string
+          notes?: string | null
+          period_end: string
+          period_label: string
+          period_start: string
+          society_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          due_date?: string
+          flat_id?: string
+          id?: string
+          notes?: string | null
+          period_end?: string
+          period_label?: string
+          period_start?: string
+          society_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       blocks: {
         Row: {
           created_at: string
@@ -137,6 +182,62 @@ export type Database = {
             columns: ["society_id"]
             isOneToOne: false
             referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          bill_id: string
+          created_at: string
+          flat_id: string
+          id: string
+          method: string
+          notes: string | null
+          paid_at: string
+          reference_no: string | null
+          society_id: string
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          bill_id: string
+          created_at?: string
+          flat_id: string
+          id?: string
+          method?: string
+          notes?: string | null
+          paid_at?: string
+          reference_no?: string | null
+          society_id: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          bill_id?: string
+          created_at?: string
+          flat_id?: string
+          id?: string
+          method?: string
+          notes?: string | null
+          paid_at?: string
+          reference_no?: string | null
+          society_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_bill_id_fkey"
+            columns: ["bill_id"]
+            isOneToOne: false
+            referencedRelation: "bills"
             referencedColumns: ["id"]
           },
         ]

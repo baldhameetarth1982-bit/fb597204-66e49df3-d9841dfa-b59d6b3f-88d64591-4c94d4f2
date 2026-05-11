@@ -60,12 +60,50 @@ function StatusPill({ status }: { status: string }) {
 }
 
 function SocietyDashboard() {
+  const { societyId } = useSocietyId();
+  const [society, setSociety] = useState<{ name: string; invite_code: string | null } | null>(null);
+
+  useEffect(() => {
+    if (!societyId) return;
+    supabase
+      .from("societies")
+      .select("name, invite_code")
+      .eq("id", societyId)
+      .maybeSingle()
+      .then(({ data }) => setSociety(data as any));
+  }, [societyId]);
+
+  function copyCode() {
+    if (!society?.invite_code) return;
+    navigator.clipboard.writeText(society.invite_code);
+    toast.success("Invite code copied");
+  }
+
   return (
     <div className="px-4 md:px-8 py-6 md:py-10 max-w-7xl mx-auto">
       <header className="mb-8">
         <h1 className="text-3xl font-semibold tracking-tight">Dashboard</h1>
         <p className="mt-1 text-muted-foreground">A snapshot of your society today.</p>
       </header>
+
+      {society?.invite_code && (
+        <Card className="rounded-2xl mb-6 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+          <CardContent className="p-5 flex flex-wrap items-center gap-4">
+            <div className="h-11 w-11 rounded-xl bg-primary/10 grid place-items-center">
+              <KeyRound className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">Invite code for residents</p>
+              <p className="text-2xl font-bold tracking-[0.3em] font-mono mt-0.5">
+                {society.invite_code}
+              </p>
+            </div>
+            <Button onClick={copyCode} variant="outline" className="rounded-xl">
+              <Copy className="h-4 w-4 mr-2" /> Copy
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       <section className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
         <Card className="rounded-2xl">

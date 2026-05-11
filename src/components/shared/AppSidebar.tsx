@@ -27,6 +27,7 @@ const items = [
   { title: "Flats", url: "/society/flats", icon: DoorOpen },
   { title: "Residents", url: "/society/residents", icon: Users },
   { title: "Billing", url: "/society/billing", icon: Receipt },
+  { title: "Team & Roles", url: "/society/team", icon: ShieldCheck },
   { title: "Announcements", url: "/society/announcements", icon: Megaphone },
 ];
 

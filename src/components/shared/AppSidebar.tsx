@@ -6,6 +6,7 @@ import {
   Users,
   Receipt,
   Megaphone,
+  ShieldCheck,
 } from "lucide-react";
 import {
   Sidebar,

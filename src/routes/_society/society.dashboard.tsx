@@ -1,10 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import {
   Building2,
   Wallet,
   AlertTriangle,
   Megaphone,
   ArrowUpRight,
+  KeyRound,
+  Copy,
 } from "lucide-react";
 import {
   Card,
@@ -12,6 +15,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { useSocietyId } from "@/hooks/useSocietyId";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_society/society/dashboard")({
   head: () => ({

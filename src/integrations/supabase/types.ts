@@ -186,6 +186,45 @@ export type Database = {
           },
         ]
       }
+      ledger_entries: {
+        Row: {
+          amount: number
+          category: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          entry_date: string
+          id: string
+          kind: string
+          society_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          entry_date?: string
+          id?: string
+          kind: string
+          society_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          entry_date?: string
+          id?: string
+          kind?: string
+          society_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number
@@ -241,6 +280,110 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      poll_options: {
+        Row: {
+          id: string
+          label: string
+          poll_id: string
+          position: number
+        }
+        Insert: {
+          id?: string
+          label: string
+          poll_id: string
+          position?: number
+        }
+        Update: {
+          id?: string
+          label?: string
+          poll_id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_options_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      poll_votes: {
+        Row: {
+          created_at: string
+          id: string
+          option_id: string
+          poll_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          option_id: string
+          poll_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          option_id?: string
+          poll_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_votes_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "poll_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "poll_votes_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      polls: {
+        Row: {
+          closes_at: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          society_id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          closes_at?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          society_id: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          closes_at?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          society_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -372,6 +515,90 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      vehicles: {
+        Row: {
+          color: string | null
+          created_at: string
+          flat_id: string | null
+          id: string
+          make_model: string | null
+          plate_number: string
+          society_id: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          flat_id?: string | null
+          id?: string
+          make_model?: string | null
+          plate_number: string
+          society_id: string
+          type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          flat_id?: string | null
+          id?: string
+          make_model?: string | null
+          plate_number?: string
+          society_id?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      visitors: {
+        Row: {
+          created_at: string
+          entry_at: string
+          exit_at: string | null
+          flat_id: string | null
+          flat_number: string | null
+          id: string
+          logged_by: string
+          phone: string | null
+          purpose: string | null
+          society_id: string
+          vehicle_number: string | null
+          visitor_name: string
+        }
+        Insert: {
+          created_at?: string
+          entry_at?: string
+          exit_at?: string | null
+          flat_id?: string | null
+          flat_number?: string | null
+          id?: string
+          logged_by: string
+          phone?: string | null
+          purpose?: string | null
+          society_id: string
+          vehicle_number?: string | null
+          visitor_name: string
+        }
+        Update: {
+          created_at?: string
+          entry_at?: string
+          exit_at?: string | null
+          flat_id?: string | null
+          flat_number?: string | null
+          id?: string
+          logged_by?: string
+          phone?: string | null
+          purpose?: string | null
+          society_id?: string
+          vehicle_number?: string | null
+          visitor_name?: string
+        }
+        Relationships: []
       }
     }
     Views: {

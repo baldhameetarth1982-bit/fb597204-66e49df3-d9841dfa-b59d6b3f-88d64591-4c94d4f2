@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Calculator,
   Vote,
@@ -17,19 +17,21 @@ export const Route = createFileRoute("/_resident/app/activity")({
 
 const tools = [
   {
+    to: "/app/ledger",
     title: "Accounting",
     desc: "Society ledgers, expenses, audits",
     icon: Calculator,
     accent: "bg-primary/10 text-primary",
   },
   {
+    to: "/app/polls",
     title: "Elections / Polls",
     desc: "Vote on community decisions",
     icon: Vote,
     accent: "bg-success/10 text-success",
     badge: "Live",
   },
-];
+] as const;
 
 const recent = [
   { title: "AGM minutes published", time: "2h ago", icon: FileText },

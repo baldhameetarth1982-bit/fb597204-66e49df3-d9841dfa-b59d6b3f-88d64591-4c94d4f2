@@ -7,6 +7,8 @@ import {
   Receipt,
   Megaphone,
   ShieldCheck,
+  Vote,
+  Calculator,
 } from "lucide-react";
 import {
   Sidebar,
@@ -27,6 +29,8 @@ const items = [
   { title: "Flats", url: "/society/flats", icon: DoorOpen },
   { title: "Residents", url: "/society/residents", icon: Users },
   { title: "Billing", url: "/society/billing", icon: Receipt },
+  { title: "Ledger", url: "/society/ledger", icon: Calculator },
+  { title: "Polls", url: "/society/polls", icon: Vote },
   { title: "Team & Roles", url: "/society/team", icon: ShieldCheck },
   { title: "Announcements", url: "/society/announcements", icon: Megaphone },
 ];

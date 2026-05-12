@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Shield,
   Car,
@@ -7,44 +7,38 @@ import {
   Wrench,
   PackageSearch,
   ChevronRight,
+  Users,
+  ScanLine,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { useAuth } from "@/context/AuthContext";
 
 export const Route = createFileRoute("/_resident/app/services")({
   head: () => ({ meta: [{ title: "Services — SocioHub" }] }),
   component: ServicesScreen,
 });
 
-const primary = [
-  {
-    title: "Visitors / Guard",
-    desc: "Approve guests, view gate logs",
-    icon: Shield,
-    accent: "bg-primary/10 text-primary",
-  },
-  {
-    title: "Vehicles",
-    desc: "Register cars & two-wheelers",
-    icon: Car,
-    accent: "bg-primary/10 text-primary",
-  },
-  {
-    title: "Complaints",
-    desc: "Raise & track society issues",
-    icon: AlertCircle,
-    accent: "bg-destructive/10 text-destructive",
-  },
-];
-
-const more = [
-  { title: "Daily Help", icon: Sparkles },
-  { title: "Maintenance", icon: Wrench },
-  { title: "Lost & Found", icon: PackageSearch },
-];
-
 function ServicesScreen() {
+  const { roles } = useAuth();
+  const isGuard =
+    roles.includes("security" as never) ||
+    roles.includes("society_admin" as never) ||
+    roles.includes("block_admin" as never);
+
+  const primary = [
+    { to: "/app/visitors", title: "My Visitors", desc: "See who came to your flat", icon: Users, accent: "bg-primary/10 text-primary" },
+    { to: "/app/vehicles", title: "Vehicles", desc: "Register cars & two-wheelers", icon: Car, accent: "bg-primary/10 text-primary" },
+    { to: "/app/helpdesk", title: "Complaints", desc: "Raise & track society issues", icon: AlertCircle, accent: "bg-destructive/10 text-destructive" },
+  ] as const;
+
+  const more = [
+    { title: "Daily Help", icon: Sparkles },
+    { title: "Maintenance", icon: Wrench },
+    { title: "Lost & Found", icon: PackageSearch },
+  ];
+
   return (
-    <div className="px-5 py-6 space-y-6">
+    <div className="px-5 py-6 space-y-6 pb-24">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Services</h1>
         <p className="text-sm text-muted-foreground">
@@ -52,13 +46,39 @@ function ServicesScreen() {
         </p>
       </header>
 
+      {isGuard && (
+        <Link to="/app/guard" className="block active:scale-[0.99] transition-transform">
+          <Card className="rounded-2xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground border-0">
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="h-12 w-12 rounded-2xl bg-white/20 grid place-items-center">
+                <ScanLine className="h-6 w-6" />
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold">Guard Dashboard</p>
+                <p className="text-xs opacity-90">Log visitors at the gate</p>
+              </div>
+              <ChevronRight className="h-5 w-5" />
+            </CardContent>
+          </Card>
+        </Link>
+      )}
+
       <section className="space-y-3">
-        {primary.map(({ title, desc, icon: Icon, accent }) => (
-          <button
-            key={title}
-            type="button"
-            className="w-full text-left active:scale-[0.99] transition-transform"
-          >
+        <Link to="/app/visitors" className="block active:scale-[0.99] transition-transform">
+          <Card className="rounded-2xl">
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="h-12 w-12 rounded-2xl grid place-items-center bg-primary/10 text-primary"><Shield className="h-6 w-6" /></div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold">Visitors / Guard System</p>
+                <p className="text-xs text-muted-foreground">Approve guests, view gate logs</p>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </CardContent>
+          </Card>
+        </Link>
+
+        {primary.map(({ to, title, desc, icon: Icon, accent }) => (
+          <Link key={to} to={to} className="block active:scale-[0.99] transition-transform">
             <Card className="rounded-2xl">
               <CardContent className="p-4 flex items-center gap-4">
                 <div className={`h-12 w-12 rounded-2xl grid place-items-center ${accent}`}>
@@ -71,7 +91,7 @@ function ServicesScreen() {
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </CardContent>
             </Card>
-          </button>
+          </Link>
         ))}
       </section>
 

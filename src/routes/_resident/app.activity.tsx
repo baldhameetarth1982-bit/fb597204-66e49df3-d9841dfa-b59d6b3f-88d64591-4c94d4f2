@@ -48,33 +48,33 @@ function ActivityScreen() {
       </header>
 
       <section className="space-y-3">
-        {tools.map(({ title, desc, icon: Icon, accent, badge }) => (
-          <button
-            key={title}
-            type="button"
-            className="w-full text-left active:scale-[0.99] transition-transform"
-          >
-            <Card className="rounded-2xl">
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className={`h-12 w-12 rounded-2xl grid place-items-center ${accent}`}>
-                  <Icon className="h-6 w-6" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="font-semibold">{title}</p>
-                    {badge && (
-                      <Badge className="rounded-full text-[10px] bg-success text-success-foreground">
-                        {badge}
-                      </Badge>
-                    )}
+        {tools.map((t) => {
+          const Icon = t.icon;
+          const badge = "badge" in t ? t.badge : undefined;
+          return (
+            <Link key={t.to} to={t.to} className="block active:scale-[0.99] transition-transform">
+              <Card className="rounded-2xl">
+                <CardContent className="p-4 flex items-center gap-4">
+                  <div className={`h-12 w-12 rounded-2xl grid place-items-center ${t.accent}`}>
+                    <Icon className="h-6 w-6" />
                   </div>
-                  <p className="text-xs text-muted-foreground">{desc}</p>
-                </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </CardContent>
-            </Card>
-          </button>
-        ))}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold">{t.title}</p>
+                      {badge && (
+                        <Badge className="rounded-full text-[10px] bg-success text-success-foreground">
+                          {badge}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">{t.desc}</p>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                </CardContent>
+              </Card>
+            </Link>
+          );
+        })}
       </section>
 
       <section>

@@ -30,6 +30,7 @@ import { Route as ResidentAppServicesRouteImport } from './routes/_resident/app.
 import { Route as ResidentAppProfileRouteImport } from './routes/_resident/app.profile'
 import { Route as ResidentAppNoticesRouteImport } from './routes/_resident/app.notices'
 import { Route as ResidentAppHelpdeskRouteImport } from './routes/_resident/app.helpdesk'
+import { Route as ResidentAppGuardRouteImport } from './routes/_resident/app.guard'
 import { Route as ResidentAppDuesRouteImport } from './routes/_resident/app.dues'
 import { Route as ResidentAppDashboardRouteImport } from './routes/_resident/app.dashboard'
 import { Route as ResidentAppBillsRouteImport } from './routes/_resident/app.bills'
@@ -137,6 +138,11 @@ const ResidentAppHelpdeskRoute = ResidentAppHelpdeskRouteImport.update({
   path: '/app/helpdesk',
   getParentRoute: () => ResidentRoute,
 } as any)
+const ResidentAppGuardRoute = ResidentAppGuardRouteImport.update({
+  id: '/app/guard',
+  path: '/app/guard',
+  getParentRoute: () => ResidentRoute,
+} as any)
 const ResidentAppDuesRoute = ResidentAppDuesRouteImport.update({
   id: '/app/dues',
   path: '/app/dues',
@@ -177,6 +183,7 @@ export interface FileRoutesByFullPath {
   '/app/bills': typeof ResidentAppBillsRoute
   '/app/dashboard': typeof ResidentAppDashboardRoute
   '/app/dues': typeof ResidentAppDuesRoute
+  '/app/guard': typeof ResidentAppGuardRoute
   '/app/helpdesk': typeof ResidentAppHelpdeskRoute
   '/app/notices': typeof ResidentAppNoticesRoute
   '/app/profile': typeof ResidentAppProfileRoute
@@ -200,6 +207,7 @@ export interface FileRoutesByTo {
   '/app/bills': typeof ResidentAppBillsRoute
   '/app/dashboard': typeof ResidentAppDashboardRoute
   '/app/dues': typeof ResidentAppDuesRoute
+  '/app/guard': typeof ResidentAppGuardRoute
   '/app/helpdesk': typeof ResidentAppHelpdeskRoute
   '/app/notices': typeof ResidentAppNoticesRoute
   '/app/profile': typeof ResidentAppProfileRoute
@@ -229,6 +237,7 @@ export interface FileRoutesById {
   '/_resident/app/bills': typeof ResidentAppBillsRoute
   '/_resident/app/dashboard': typeof ResidentAppDashboardRoute
   '/_resident/app/dues': typeof ResidentAppDuesRoute
+  '/_resident/app/guard': typeof ResidentAppGuardRoute
   '/_resident/app/helpdesk': typeof ResidentAppHelpdeskRoute
   '/_resident/app/notices': typeof ResidentAppNoticesRoute
   '/_resident/app/profile': typeof ResidentAppProfileRoute
@@ -255,6 +264,7 @@ export interface FileRouteTypes {
     | '/app/bills'
     | '/app/dashboard'
     | '/app/dues'
+    | '/app/guard'
     | '/app/helpdesk'
     | '/app/notices'
     | '/app/profile'
@@ -278,6 +288,7 @@ export interface FileRouteTypes {
     | '/app/bills'
     | '/app/dashboard'
     | '/app/dues'
+    | '/app/guard'
     | '/app/helpdesk'
     | '/app/notices'
     | '/app/profile'
@@ -306,6 +317,7 @@ export interface FileRouteTypes {
     | '/_resident/app/bills'
     | '/_resident/app/dashboard'
     | '/_resident/app/dues'
+    | '/_resident/app/guard'
     | '/_resident/app/helpdesk'
     | '/_resident/app/notices'
     | '/_resident/app/profile'
@@ -475,6 +487,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResidentAppHelpdeskRouteImport
       parentRoute: typeof ResidentRoute
     }
+    '/_resident/app/guard': {
+      id: '/_resident/app/guard'
+      path: '/app/guard'
+      fullPath: '/app/guard'
+      preLoaderRoute: typeof ResidentAppGuardRouteImport
+      parentRoute: typeof ResidentRoute
+    }
     '/_resident/app/dues': {
       id: '/_resident/app/dues'
       path: '/app/dues'
@@ -542,6 +561,7 @@ interface ResidentRouteChildren {
   ResidentAppBillsRoute: typeof ResidentAppBillsRoute
   ResidentAppDashboardRoute: typeof ResidentAppDashboardRoute
   ResidentAppDuesRoute: typeof ResidentAppDuesRoute
+  ResidentAppGuardRoute: typeof ResidentAppGuardRoute
   ResidentAppHelpdeskRoute: typeof ResidentAppHelpdeskRoute
   ResidentAppNoticesRoute: typeof ResidentAppNoticesRoute
   ResidentAppProfileRoute: typeof ResidentAppProfileRoute
@@ -553,6 +573,7 @@ const ResidentRouteChildren: ResidentRouteChildren = {
   ResidentAppBillsRoute: ResidentAppBillsRoute,
   ResidentAppDashboardRoute: ResidentAppDashboardRoute,
   ResidentAppDuesRoute: ResidentAppDuesRoute,
+  ResidentAppGuardRoute: ResidentAppGuardRoute,
   ResidentAppHelpdeskRoute: ResidentAppHelpdeskRoute,
   ResidentAppNoticesRoute: ResidentAppNoticesRoute,
   ResidentAppProfileRoute: ResidentAppProfileRoute,
@@ -609,3 +630,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

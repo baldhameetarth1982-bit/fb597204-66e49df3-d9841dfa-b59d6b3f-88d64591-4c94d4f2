@@ -34,6 +34,7 @@ function LoginPage() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ email: "", password: "", full_name: "" });
+  const [agreed, setAgreed] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +54,10 @@ function LoginPage() {
         toast.success("Welcome back");
         navigate({ to: "/" });
       } else {
+        if (!agreed) {
+          toast.error("Please accept the Terms of Service and Privacy Policy");
+          return;
+        }
         const parsed = signupSchema.safeParse(form);
         if (!parsed.success) {
           toast.error(parsed.error.issues[0].message);
@@ -156,9 +161,27 @@ function LoginPage() {
               />
             </div>
 
+            {mode === "signup" && (
+              <label className="flex items-start gap-2 text-xs text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={(e) => setAgreed(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                />
+                <span>
+                  I agree to the{" "}
+                  <Link to="/terms" target="_blank" className="text-primary underline">
+                    Terms of Service &amp; Privacy Policy
+                  </Link>
+                  .
+                </span>
+              </label>
+            )}
+
             <Button
               type="submit"
-              disabled={loading}
+              disabled={loading || (mode === "signup" && !agreed)}
               className="w-full h-11 rounded-xl text-base font-semibold"
             >
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}

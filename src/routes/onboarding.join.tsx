@@ -28,6 +28,7 @@ function JoinSociety() {
   const [match, setMatch] = useState<Match | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [joining, setJoining] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   async function handleVerify(e: React.FormEvent) {
     e.preventDefault();
@@ -55,6 +56,7 @@ function JoinSociety() {
 
   async function handleConfirm() {
     if (!match) return;
+    if (!agreed) { toast.error("Please accept the Terms of Service"); return; }
     setJoining(true);
     const { error } = await supabase.rpc("join_society_with_code", {
       _code: code.toUpperCase(),
@@ -124,9 +126,19 @@ function JoinSociety() {
                   </p>
                 </div>
               </div>
+              <label className="flex items-start gap-2 text-xs text-muted-foreground px-1">
+                <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary" />
+                <span>
+                  I agree to the{" "}
+                  <Link to="/terms" target="_blank" className="text-primary underline">
+                    Terms of Service &amp; Privacy Policy
+                  </Link>
+                </span>
+              </label>
               <Button
                 onClick={handleConfirm}
-                disabled={joining}
+                disabled={joining || !agreed}
                 className="w-full h-12 rounded-xl"
               >
                 {joining && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}

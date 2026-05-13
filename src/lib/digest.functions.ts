@@ -1,0 +1,95 @@
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+/**
+ * Generate an AI-written weekly community digest summarizing top posts/comments.
+ * Admin-only (we still rely on RLS for the insert).
+ */
+export const generateCommunityDigest = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ societyId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+
+    // Pull the past 7 days of posts + comments
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: posts } = await supabase
+      .from("posts")
+      .select("id, body, created_at")
+      .eq("society_id", data.societyId)
+      .gte("created_at", since)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (!posts || posts.length === 0) {
+      throw new Error("No discussions in the past week to summarize.");
+    }
+
+    const ids = posts.map((p: any) => p.id);
+    const { data: comments } = await supabase
+      .from("post_comments")
+      .select("post_id, body")
+      .in("post_id", ids)
+      .limit(200);
+
+    const cmtMap = new Map<string, string[]>();
+    (comments ?? []).forEach((c: any) => {
+      const arr = cmtMap.get(c.post_id) ?? [];
+      arr.push(c.body);
+      cmtMap.set(c.post_id, arr);
+    });
+
+    const corpus = posts
+      .map((p: any, i: number) => {
+        const cs = (cmtMap.get(p.id) ?? []).slice(0, 5).map((c) => `  - ${c}`).join("\n");
+        return `Post ${i + 1}: ${p.body}${cs ? "\nComments:\n" + cs : ""}`;
+      })
+      .join("\n\n");
+
+    const apiKey = process.env.LOVABLE_API_KEY;
+    if (!apiKey) throw new Error("AI gateway not configured.");
+
+    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are the SocioHub community editor. Summarize a society's weekly discussions into a friendly, neutral 4-6 sentence digest. Highlight the top themes, any decisions reached, and any questions still open. Use plain language. Never invent names or events not in the source.",
+          },
+          { role: "user", content: corpus.slice(0, 8000) },
+        ],
+      }),
+    });
+
+    if (aiRes.status === 429) throw new Error("AI rate limit. Try again shortly.");
+    if (aiRes.status === 402) throw new Error("AI credits exhausted. Add credits in workspace settings.");
+    if (!aiRes.ok) throw new Error(`AI gateway error: ${aiRes.status}`);
+
+    const aiJson = (await aiRes.json()) as any;
+    const summary: string = aiJson.choices?.[0]?.message?.content ?? "";
+    if (!summary) throw new Error("AI returned an empty summary.");
+
+    // Week start = Monday of this week
+    const today = new Date();
+    const day = today.getDay() || 7;
+    today.setDate(today.getDate() - day + 1);
+    const weekStart = today.toISOString().slice(0, 10);
+
+    const { error } = await supabase
+      .from("community_digests")
+      .upsert(
+        { society_id: data.societyId, week_start: weekStart, summary },
+        { onConflict: "society_id,week_start" },
+      );
+    if (error) throw new Error(error.message);
+
+    return { ok: true, summary, weekStart };
+  });

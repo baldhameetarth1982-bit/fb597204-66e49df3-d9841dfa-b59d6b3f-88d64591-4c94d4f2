@@ -1,26 +1,12 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
-  LayoutDashboard,
-  Building2,
-  DoorOpen,
-  Users,
-  Receipt,
-  Megaphone,
-  ShieldCheck,
-  Vote,
-  Calculator,
+  LayoutDashboard, Building2, DoorOpen, Users, Receipt, Megaphone,
+  ShieldCheck, Vote, Calculator, Sparkles,
 } from "lucide-react";
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  useSidebar,
+  Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
+  SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton,
+  SidebarMenuItem, useSidebar,
 } from "@/components/ui/sidebar";
 
 const items = [
@@ -31,6 +17,7 @@ const items = [
   { title: "Billing", url: "/society/billing", icon: Receipt },
   { title: "Ledger", url: "/society/ledger", icon: Calculator },
   { title: "Polls", url: "/society/polls", icon: Vote },
+  { title: "AI Digest", url: "/society/digest", icon: Sparkles },
   { title: "Team & Roles", url: "/society/team", icon: ShieldCheck },
   { title: "Announcements", url: "/society/announcements", icon: Megaphone },
 ];

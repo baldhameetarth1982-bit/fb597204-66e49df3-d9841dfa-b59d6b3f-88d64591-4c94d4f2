@@ -3,6 +3,7 @@ import { Receipt, Download, Clock, CheckCircle2, ArrowRight } from "lucide-react
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { FeeBreakdown } from "@/components/shared/FeeBreakdown";
 
 export const Route = createFileRoute("/_resident/app/bills")({
   head: () => ({ meta: [{ title: "Bills — SocioHub" }] }),
@@ -27,7 +28,10 @@ function BillsScreen() {
       {/* Outstanding hero */}
       <Card className="rounded-3xl border-0 shadow-md bg-gradient-to-br from-primary to-primary/85 text-primary-foreground">
         <CardContent className="p-6">
-          <p className="text-sm opacity-80">Outstanding</p>
+          <div className="flex items-center gap-2 opacity-80">
+            <p className="text-sm">Outstanding</p>
+            <FeeBreakdown amount={4500} />
+          </div>
           <p className="mt-1 text-4xl font-semibold tabular-nums">₹4,500</p>
           <p className="mt-1 text-xs opacity-80">Due 10 May 2026</p>
           <Button
@@ -67,9 +71,12 @@ function BillsScreen() {
                     <p className="text-xs text-muted-foreground">{b.due}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold tabular-nums">
-                      ₹{b.amount.toLocaleString("en-IN")}
-                    </p>
+                    <div className="flex items-center gap-1 justify-end">
+                      <p className="font-semibold tabular-nums">
+                        ₹{b.amount.toLocaleString("en-IN")}
+                      </p>
+                      <FeeBreakdown amount={b.amount} />
+                    </div>
                     {paid ? (
                       <Badge variant="secondary" className="mt-1 rounded-full text-[10px]">
                         Paid

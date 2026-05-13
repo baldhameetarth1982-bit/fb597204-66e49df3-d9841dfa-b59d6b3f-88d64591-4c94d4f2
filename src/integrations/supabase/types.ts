@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      achievements: {
+        Row: {
+          awarded_at: string
+          code: string
+          description: string | null
+          id: string
+          society_id: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          awarded_at?: string
+          code: string
+          description?: string | null
+          id?: string
+          society_id: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          awarded_at?: string
+          code?: string
+          description?: string | null
+          id?: string
+          society_id?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       bills: {
         Row: {
           amount: number
@@ -93,6 +123,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      community_digests: {
+        Row: {
+          created_at: string
+          highlights: Json | null
+          id: string
+          society_id: string
+          summary: string
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          highlights?: Json | null
+          id?: string
+          society_id: string
+          summary: string
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          highlights?: Json | null
+          id?: string
+          society_id?: string
+          summary?: string
+          week_start?: string
+        }
+        Relationships: []
       }
       flat_residents: {
         Row: {
@@ -385,8 +442,103 @@ export type Database = {
         }
         Relationships: []
       }
+      post_comments: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_reactions: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_reactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posts: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          image_url: string | null
+          society_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          society_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          society_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
+          accepted_terms_at: string | null
           avatar_url: string | null
           created_at: string
           email: string | null
@@ -397,6 +549,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          accepted_terms_at?: string | null
           avatar_url?: string | null
           created_at?: string
           email?: string | null
@@ -407,6 +560,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          accepted_terms_at?: string | null
           avatar_url?: string | null
           created_at?: string
           email?: string | null
@@ -471,6 +625,33 @@ export type Database = {
           state?: string | null
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      user_points: {
+        Row: {
+          created_at: string
+          id: string
+          points: number
+          reason: string
+          society_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          points: number
+          reason: string
+          society_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          points?: number
+          reason?: string
+          society_id?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -602,7 +783,17 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      society_leaderboard: {
+        Row: {
+          achievement_count: number | null
+          avatar_url: string | null
+          full_name: string | null
+          society_id: string | null
+          total_points: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       find_society_by_code: {

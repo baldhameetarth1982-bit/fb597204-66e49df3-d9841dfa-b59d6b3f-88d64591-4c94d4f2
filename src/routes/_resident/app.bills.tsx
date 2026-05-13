@@ -76,6 +76,7 @@ function BillsScreen() {
                         ₹{b.amount.toLocaleString("en-IN")}
                       </p>
                       <FeeBreakdown amount={b.amount} />
+                    </div>
                     {paid ? (
                       <Badge variant="secondary" className="mt-1 rounded-full text-[10px]">
                         Paid

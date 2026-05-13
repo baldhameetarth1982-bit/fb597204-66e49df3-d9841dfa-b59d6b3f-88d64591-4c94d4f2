@@ -1,11 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
-  Calculator,
-  Vote,
-  Bell,
-  FileText,
-  ChevronRight,
-  Megaphone,
+  Calculator, Vote, Bell, FileText, ChevronRight, Megaphone,
+  MessageCircle, ShieldCheck, Trophy,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,21 +12,11 @@ export const Route = createFileRoute("/_resident/app/activity")({
 });
 
 const tools = [
-  {
-    to: "/app/ledger",
-    title: "Accounting",
-    desc: "Society ledgers, expenses, audits",
-    icon: Calculator,
-    accent: "bg-primary/10 text-primary",
-  },
-  {
-    to: "/app/polls",
-    title: "Elections / Polls",
-    desc: "Vote on community decisions",
-    icon: Vote,
-    accent: "bg-success/10 text-success",
-    badge: "Live",
-  },
+  { to: "/app/feed", title: "Community Feed", desc: "Posts, comments & weekly AI digest", icon: MessageCircle, accent: "bg-primary/10 text-primary", badge: "New" },
+  { to: "/app/trust", title: "Financial Trust", desc: "Live society income & expenses", icon: ShieldCheck, accent: "bg-success/10 text-success" },
+  { to: "/app/achievements", title: "Achievements & Leaderboard", desc: "Earn points for being a great neighbor", icon: Trophy, accent: "bg-amber-500/10 text-amber-600" },
+  { to: "/app/ledger", title: "Accounting", desc: "Society ledgers, expenses, audits", icon: Calculator, accent: "bg-primary/10 text-primary" },
+  { to: "/app/polls", title: "Elections / Polls", desc: "Vote on community decisions", icon: Vote, accent: "bg-success/10 text-success" },
 ] as const;
 
 const recent = [
@@ -44,13 +30,13 @@ function ActivityScreen() {
     <div className="px-5 py-6 space-y-6">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Activity</h1>
-        <p className="text-sm text-muted-foreground">Governance, finance & updates</p>
+        <p className="text-sm text-muted-foreground">Community, trust & governance</p>
       </header>
 
       <section className="space-y-3">
         {tools.map((t) => {
           const Icon = t.icon;
-          const badge = "badge" in t ? t.badge : undefined;
+          const badge = "badge" in t ? (t as { badge?: string }).badge : undefined;
           return (
             <Link key={t.to} to={t.to} className="block active:scale-[0.99] transition-transform">
               <Card className="rounded-2xl">
@@ -62,7 +48,7 @@ function ActivityScreen() {
                     <div className="flex items-center gap-2">
                       <p className="font-semibold">{t.title}</p>
                       {badge && (
-                        <Badge className="rounded-full text-[10px] bg-success text-success-foreground">
+                        <Badge className="rounded-full text-[10px] bg-primary text-primary-foreground">
                           {badge}
                         </Badge>
                       )}

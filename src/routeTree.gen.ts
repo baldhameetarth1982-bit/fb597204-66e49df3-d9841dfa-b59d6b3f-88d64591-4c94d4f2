@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as SocietyRouteImport } from './routes/_society'
 import { Route as ResidentRouteImport } from './routes/_resident'
@@ -26,10 +27,12 @@ import { Route as SocietySocietyResidentsRouteImport } from './routes/_society/s
 import { Route as SocietySocietyPollsRouteImport } from './routes/_society/society.polls'
 import { Route as SocietySocietyLedgerRouteImport } from './routes/_society/society.ledger'
 import { Route as SocietySocietyFlatsRouteImport } from './routes/_society/society.flats'
+import { Route as SocietySocietyDigestRouteImport } from './routes/_society/society.digest'
 import { Route as SocietySocietyDashboardRouteImport } from './routes/_society/society.dashboard'
 import { Route as SocietySocietyBlocksRouteImport } from './routes/_society/society.blocks'
 import { Route as ResidentAppVisitorsRouteImport } from './routes/_resident/app.visitors'
 import { Route as ResidentAppVehiclesRouteImport } from './routes/_resident/app.vehicles'
+import { Route as ResidentAppTrustRouteImport } from './routes/_resident/app.trust'
 import { Route as ResidentAppServicesRouteImport } from './routes/_resident/app.services'
 import { Route as ResidentAppProfileRouteImport } from './routes/_resident/app.profile'
 import { Route as ResidentAppPollsRouteImport } from './routes/_resident/app.polls'
@@ -37,12 +40,20 @@ import { Route as ResidentAppNoticesRouteImport } from './routes/_resident/app.n
 import { Route as ResidentAppLedgerRouteImport } from './routes/_resident/app.ledger'
 import { Route as ResidentAppHelpdeskRouteImport } from './routes/_resident/app.helpdesk'
 import { Route as ResidentAppGuardRouteImport } from './routes/_resident/app.guard'
+import { Route as ResidentAppFeedRouteImport } from './routes/_resident/app.feed'
 import { Route as ResidentAppDuesRouteImport } from './routes/_resident/app.dues'
 import { Route as ResidentAppDashboardRouteImport } from './routes/_resident/app.dashboard'
 import { Route as ResidentAppBillsRouteImport } from './routes/_resident/app.bills'
 import { Route as ResidentAppActivityRouteImport } from './routes/_resident/app.activity'
+import { Route as ResidentAppAchievementsRouteImport } from './routes/_resident/app.achievements'
 import { Route as AdminAdminDashboardRouteImport } from './routes/_admin/admin.dashboard'
+import { Route as ResidentAppFeedPostIdRouteImport } from './routes/_resident/app.feed.$postId'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
@@ -124,6 +135,11 @@ const SocietySocietyFlatsRoute = SocietySocietyFlatsRouteImport.update({
   path: '/society/flats',
   getParentRoute: () => SocietyRoute,
 } as any)
+const SocietySocietyDigestRoute = SocietySocietyDigestRouteImport.update({
+  id: '/society/digest',
+  path: '/society/digest',
+  getParentRoute: () => SocietyRoute,
+} as any)
 const SocietySocietyDashboardRoute = SocietySocietyDashboardRouteImport.update({
   id: '/society/dashboard',
   path: '/society/dashboard',
@@ -142,6 +158,11 @@ const ResidentAppVisitorsRoute = ResidentAppVisitorsRouteImport.update({
 const ResidentAppVehiclesRoute = ResidentAppVehiclesRouteImport.update({
   id: '/app/vehicles',
   path: '/app/vehicles',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppTrustRoute = ResidentAppTrustRouteImport.update({
+  id: '/app/trust',
+  path: '/app/trust',
   getParentRoute: () => ResidentRoute,
 } as any)
 const ResidentAppServicesRoute = ResidentAppServicesRouteImport.update({
@@ -179,6 +200,11 @@ const ResidentAppGuardRoute = ResidentAppGuardRouteImport.update({
   path: '/app/guard',
   getParentRoute: () => ResidentRoute,
 } as any)
+const ResidentAppFeedRoute = ResidentAppFeedRouteImport.update({
+  id: '/app/feed',
+  path: '/app/feed',
+  getParentRoute: () => ResidentRoute,
+} as any)
 const ResidentAppDuesRoute = ResidentAppDuesRouteImport.update({
   id: '/app/dues',
   path: '/app/dues',
@@ -199,15 +225,26 @@ const ResidentAppActivityRoute = ResidentAppActivityRouteImport.update({
   path: '/app/activity',
   getParentRoute: () => ResidentRoute,
 } as any)
+const ResidentAppAchievementsRoute = ResidentAppAchievementsRouteImport.update({
+  id: '/app/achievements',
+  path: '/app/achievements',
+  getParentRoute: () => ResidentRoute,
+} as any)
 const AdminAdminDashboardRoute = AdminAdminDashboardRouteImport.update({
   id: '/admin/dashboard',
   path: '/admin/dashboard',
   getParentRoute: () => AdminRoute,
 } as any)
+const ResidentAppFeedPostIdRoute = ResidentAppFeedPostIdRouteImport.update({
+  id: '/$postId',
+  path: '/$postId',
+  getParentRoute: () => ResidentAppFeedRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/onboarding': typeof OnboardingRouteWithChildren
+  '/terms': typeof TermsRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
   '/reset-password': typeof AuthResetPasswordRoute
@@ -215,10 +252,12 @@ export interface FileRoutesByFullPath {
   '/onboarding/join': typeof OnboardingJoinRoute
   '/onboarding/': typeof OnboardingIndexRoute
   '/admin/dashboard': typeof AdminAdminDashboardRoute
+  '/app/achievements': typeof ResidentAppAchievementsRoute
   '/app/activity': typeof ResidentAppActivityRoute
   '/app/bills': typeof ResidentAppBillsRoute
   '/app/dashboard': typeof ResidentAppDashboardRoute
   '/app/dues': typeof ResidentAppDuesRoute
+  '/app/feed': typeof ResidentAppFeedRouteWithChildren
   '/app/guard': typeof ResidentAppGuardRoute
   '/app/helpdesk': typeof ResidentAppHelpdeskRoute
   '/app/ledger': typeof ResidentAppLedgerRoute
@@ -226,18 +265,22 @@ export interface FileRoutesByFullPath {
   '/app/polls': typeof ResidentAppPollsRoute
   '/app/profile': typeof ResidentAppProfileRoute
   '/app/services': typeof ResidentAppServicesRoute
+  '/app/trust': typeof ResidentAppTrustRoute
   '/app/vehicles': typeof ResidentAppVehiclesRoute
   '/app/visitors': typeof ResidentAppVisitorsRoute
   '/society/blocks': typeof SocietySocietyBlocksRoute
   '/society/dashboard': typeof SocietySocietyDashboardRoute
+  '/society/digest': typeof SocietySocietyDigestRoute
   '/society/flats': typeof SocietySocietyFlatsRoute
   '/society/ledger': typeof SocietySocietyLedgerRoute
   '/society/polls': typeof SocietySocietyPollsRoute
   '/society/residents': typeof SocietySocietyResidentsRoute
   '/society/team': typeof SocietySocietyTeamRoute
+  '/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/terms': typeof TermsRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
   '/reset-password': typeof AuthResetPasswordRoute
@@ -245,10 +288,12 @@ export interface FileRoutesByTo {
   '/onboarding/join': typeof OnboardingJoinRoute
   '/onboarding': typeof OnboardingIndexRoute
   '/admin/dashboard': typeof AdminAdminDashboardRoute
+  '/app/achievements': typeof ResidentAppAchievementsRoute
   '/app/activity': typeof ResidentAppActivityRoute
   '/app/bills': typeof ResidentAppBillsRoute
   '/app/dashboard': typeof ResidentAppDashboardRoute
   '/app/dues': typeof ResidentAppDuesRoute
+  '/app/feed': typeof ResidentAppFeedRouteWithChildren
   '/app/guard': typeof ResidentAppGuardRoute
   '/app/helpdesk': typeof ResidentAppHelpdeskRoute
   '/app/ledger': typeof ResidentAppLedgerRoute
@@ -256,15 +301,18 @@ export interface FileRoutesByTo {
   '/app/polls': typeof ResidentAppPollsRoute
   '/app/profile': typeof ResidentAppProfileRoute
   '/app/services': typeof ResidentAppServicesRoute
+  '/app/trust': typeof ResidentAppTrustRoute
   '/app/vehicles': typeof ResidentAppVehiclesRoute
   '/app/visitors': typeof ResidentAppVisitorsRoute
   '/society/blocks': typeof SocietySocietyBlocksRoute
   '/society/dashboard': typeof SocietySocietyDashboardRoute
+  '/society/digest': typeof SocietySocietyDigestRoute
   '/society/flats': typeof SocietySocietyFlatsRoute
   '/society/ledger': typeof SocietySocietyLedgerRoute
   '/society/polls': typeof SocietySocietyPollsRoute
   '/society/residents': typeof SocietySocietyResidentsRoute
   '/society/team': typeof SocietySocietyTeamRoute
+  '/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -274,6 +322,7 @@ export interface FileRoutesById {
   '/_resident': typeof ResidentRouteWithChildren
   '/_society': typeof SocietyRouteWithChildren
   '/onboarding': typeof OnboardingRouteWithChildren
+  '/terms': typeof TermsRoute
   '/_auth/forgot-password': typeof AuthForgotPasswordRoute
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/reset-password': typeof AuthResetPasswordRoute
@@ -281,10 +330,12 @@ export interface FileRoutesById {
   '/onboarding/join': typeof OnboardingJoinRoute
   '/onboarding/': typeof OnboardingIndexRoute
   '/_admin/admin/dashboard': typeof AdminAdminDashboardRoute
+  '/_resident/app/achievements': typeof ResidentAppAchievementsRoute
   '/_resident/app/activity': typeof ResidentAppActivityRoute
   '/_resident/app/bills': typeof ResidentAppBillsRoute
   '/_resident/app/dashboard': typeof ResidentAppDashboardRoute
   '/_resident/app/dues': typeof ResidentAppDuesRoute
+  '/_resident/app/feed': typeof ResidentAppFeedRouteWithChildren
   '/_resident/app/guard': typeof ResidentAppGuardRoute
   '/_resident/app/helpdesk': typeof ResidentAppHelpdeskRoute
   '/_resident/app/ledger': typeof ResidentAppLedgerRoute
@@ -292,21 +343,25 @@ export interface FileRoutesById {
   '/_resident/app/polls': typeof ResidentAppPollsRoute
   '/_resident/app/profile': typeof ResidentAppProfileRoute
   '/_resident/app/services': typeof ResidentAppServicesRoute
+  '/_resident/app/trust': typeof ResidentAppTrustRoute
   '/_resident/app/vehicles': typeof ResidentAppVehiclesRoute
   '/_resident/app/visitors': typeof ResidentAppVisitorsRoute
   '/_society/society/blocks': typeof SocietySocietyBlocksRoute
   '/_society/society/dashboard': typeof SocietySocietyDashboardRoute
+  '/_society/society/digest': typeof SocietySocietyDigestRoute
   '/_society/society/flats': typeof SocietySocietyFlatsRoute
   '/_society/society/ledger': typeof SocietySocietyLedgerRoute
   '/_society/society/polls': typeof SocietySocietyPollsRoute
   '/_society/society/residents': typeof SocietySocietyResidentsRoute
   '/_society/society/team': typeof SocietySocietyTeamRoute
+  '/_resident/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/onboarding'
+    | '/terms'
     | '/forgot-password'
     | '/login'
     | '/reset-password'
@@ -314,10 +369,12 @@ export interface FileRouteTypes {
     | '/onboarding/join'
     | '/onboarding/'
     | '/admin/dashboard'
+    | '/app/achievements'
     | '/app/activity'
     | '/app/bills'
     | '/app/dashboard'
     | '/app/dues'
+    | '/app/feed'
     | '/app/guard'
     | '/app/helpdesk'
     | '/app/ledger'
@@ -325,18 +382,22 @@ export interface FileRouteTypes {
     | '/app/polls'
     | '/app/profile'
     | '/app/services'
+    | '/app/trust'
     | '/app/vehicles'
     | '/app/visitors'
     | '/society/blocks'
     | '/society/dashboard'
+    | '/society/digest'
     | '/society/flats'
     | '/society/ledger'
     | '/society/polls'
     | '/society/residents'
     | '/society/team'
+    | '/app/feed/$postId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/terms'
     | '/forgot-password'
     | '/login'
     | '/reset-password'
@@ -344,10 +405,12 @@ export interface FileRouteTypes {
     | '/onboarding/join'
     | '/onboarding'
     | '/admin/dashboard'
+    | '/app/achievements'
     | '/app/activity'
     | '/app/bills'
     | '/app/dashboard'
     | '/app/dues'
+    | '/app/feed'
     | '/app/guard'
     | '/app/helpdesk'
     | '/app/ledger'
@@ -355,15 +418,18 @@ export interface FileRouteTypes {
     | '/app/polls'
     | '/app/profile'
     | '/app/services'
+    | '/app/trust'
     | '/app/vehicles'
     | '/app/visitors'
     | '/society/blocks'
     | '/society/dashboard'
+    | '/society/digest'
     | '/society/flats'
     | '/society/ledger'
     | '/society/polls'
     | '/society/residents'
     | '/society/team'
+    | '/app/feed/$postId'
   id:
     | '__root__'
     | '/'
@@ -372,6 +438,7 @@ export interface FileRouteTypes {
     | '/_resident'
     | '/_society'
     | '/onboarding'
+    | '/terms'
     | '/_auth/forgot-password'
     | '/_auth/login'
     | '/_auth/reset-password'
@@ -379,10 +446,12 @@ export interface FileRouteTypes {
     | '/onboarding/join'
     | '/onboarding/'
     | '/_admin/admin/dashboard'
+    | '/_resident/app/achievements'
     | '/_resident/app/activity'
     | '/_resident/app/bills'
     | '/_resident/app/dashboard'
     | '/_resident/app/dues'
+    | '/_resident/app/feed'
     | '/_resident/app/guard'
     | '/_resident/app/helpdesk'
     | '/_resident/app/ledger'
@@ -390,15 +459,18 @@ export interface FileRouteTypes {
     | '/_resident/app/polls'
     | '/_resident/app/profile'
     | '/_resident/app/services'
+    | '/_resident/app/trust'
     | '/_resident/app/vehicles'
     | '/_resident/app/visitors'
     | '/_society/society/blocks'
     | '/_society/society/dashboard'
+    | '/_society/society/digest'
     | '/_society/society/flats'
     | '/_society/society/ledger'
     | '/_society/society/polls'
     | '/_society/society/residents'
     | '/_society/society/team'
+    | '/_resident/app/feed/$postId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -408,10 +480,18 @@ export interface RootRouteChildren {
   ResidentRoute: typeof ResidentRouteWithChildren
   SocietyRoute: typeof SocietyRouteWithChildren
   OnboardingRoute: typeof OnboardingRouteWithChildren
+  TermsRoute: typeof TermsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/onboarding': {
       id: '/onboarding'
       path: '/onboarding'
@@ -531,6 +611,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SocietySocietyFlatsRouteImport
       parentRoute: typeof SocietyRoute
     }
+    '/_society/society/digest': {
+      id: '/_society/society/digest'
+      path: '/society/digest'
+      fullPath: '/society/digest'
+      preLoaderRoute: typeof SocietySocietyDigestRouteImport
+      parentRoute: typeof SocietyRoute
+    }
     '/_society/society/dashboard': {
       id: '/_society/society/dashboard'
       path: '/society/dashboard'
@@ -557,6 +644,13 @@ declare module '@tanstack/react-router' {
       path: '/app/vehicles'
       fullPath: '/app/vehicles'
       preLoaderRoute: typeof ResidentAppVehiclesRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/trust': {
+      id: '/_resident/app/trust'
+      path: '/app/trust'
+      fullPath: '/app/trust'
+      preLoaderRoute: typeof ResidentAppTrustRouteImport
       parentRoute: typeof ResidentRoute
     }
     '/_resident/app/services': {
@@ -608,6 +702,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResidentAppGuardRouteImport
       parentRoute: typeof ResidentRoute
     }
+    '/_resident/app/feed': {
+      id: '/_resident/app/feed'
+      path: '/app/feed'
+      fullPath: '/app/feed'
+      preLoaderRoute: typeof ResidentAppFeedRouteImport
+      parentRoute: typeof ResidentRoute
+    }
     '/_resident/app/dues': {
       id: '/_resident/app/dues'
       path: '/app/dues'
@@ -636,12 +737,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResidentAppActivityRouteImport
       parentRoute: typeof ResidentRoute
     }
+    '/_resident/app/achievements': {
+      id: '/_resident/app/achievements'
+      path: '/app/achievements'
+      fullPath: '/app/achievements'
+      preLoaderRoute: typeof ResidentAppAchievementsRouteImport
+      parentRoute: typeof ResidentRoute
+    }
     '/_admin/admin/dashboard': {
       id: '/_admin/admin/dashboard'
       path: '/admin/dashboard'
       fullPath: '/admin/dashboard'
       preLoaderRoute: typeof AdminAdminDashboardRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/_resident/app/feed/$postId': {
+      id: '/_resident/app/feed/$postId'
+      path: '/$postId'
+      fullPath: '/app/feed/$postId'
+      preLoaderRoute: typeof ResidentAppFeedPostIdRouteImport
+      parentRoute: typeof ResidentAppFeedRoute
     }
   }
 }
@@ -670,11 +785,25 @@ const AuthRouteChildren: AuthRouteChildren = {
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
+interface ResidentAppFeedRouteChildren {
+  ResidentAppFeedPostIdRoute: typeof ResidentAppFeedPostIdRoute
+}
+
+const ResidentAppFeedRouteChildren: ResidentAppFeedRouteChildren = {
+  ResidentAppFeedPostIdRoute: ResidentAppFeedPostIdRoute,
+}
+
+const ResidentAppFeedRouteWithChildren = ResidentAppFeedRoute._addFileChildren(
+  ResidentAppFeedRouteChildren,
+)
+
 interface ResidentRouteChildren {
+  ResidentAppAchievementsRoute: typeof ResidentAppAchievementsRoute
   ResidentAppActivityRoute: typeof ResidentAppActivityRoute
   ResidentAppBillsRoute: typeof ResidentAppBillsRoute
   ResidentAppDashboardRoute: typeof ResidentAppDashboardRoute
   ResidentAppDuesRoute: typeof ResidentAppDuesRoute
+  ResidentAppFeedRoute: typeof ResidentAppFeedRouteWithChildren
   ResidentAppGuardRoute: typeof ResidentAppGuardRoute
   ResidentAppHelpdeskRoute: typeof ResidentAppHelpdeskRoute
   ResidentAppLedgerRoute: typeof ResidentAppLedgerRoute
@@ -682,15 +811,18 @@ interface ResidentRouteChildren {
   ResidentAppPollsRoute: typeof ResidentAppPollsRoute
   ResidentAppProfileRoute: typeof ResidentAppProfileRoute
   ResidentAppServicesRoute: typeof ResidentAppServicesRoute
+  ResidentAppTrustRoute: typeof ResidentAppTrustRoute
   ResidentAppVehiclesRoute: typeof ResidentAppVehiclesRoute
   ResidentAppVisitorsRoute: typeof ResidentAppVisitorsRoute
 }
 
 const ResidentRouteChildren: ResidentRouteChildren = {
+  ResidentAppAchievementsRoute: ResidentAppAchievementsRoute,
   ResidentAppActivityRoute: ResidentAppActivityRoute,
   ResidentAppBillsRoute: ResidentAppBillsRoute,
   ResidentAppDashboardRoute: ResidentAppDashboardRoute,
   ResidentAppDuesRoute: ResidentAppDuesRoute,
+  ResidentAppFeedRoute: ResidentAppFeedRouteWithChildren,
   ResidentAppGuardRoute: ResidentAppGuardRoute,
   ResidentAppHelpdeskRoute: ResidentAppHelpdeskRoute,
   ResidentAppLedgerRoute: ResidentAppLedgerRoute,
@@ -698,6 +830,7 @@ const ResidentRouteChildren: ResidentRouteChildren = {
   ResidentAppPollsRoute: ResidentAppPollsRoute,
   ResidentAppProfileRoute: ResidentAppProfileRoute,
   ResidentAppServicesRoute: ResidentAppServicesRoute,
+  ResidentAppTrustRoute: ResidentAppTrustRoute,
   ResidentAppVehiclesRoute: ResidentAppVehiclesRoute,
   ResidentAppVisitorsRoute: ResidentAppVisitorsRoute,
 }
@@ -709,6 +842,7 @@ const ResidentRouteWithChildren = ResidentRoute._addFileChildren(
 interface SocietyRouteChildren {
   SocietySocietyBlocksRoute: typeof SocietySocietyBlocksRoute
   SocietySocietyDashboardRoute: typeof SocietySocietyDashboardRoute
+  SocietySocietyDigestRoute: typeof SocietySocietyDigestRoute
   SocietySocietyFlatsRoute: typeof SocietySocietyFlatsRoute
   SocietySocietyLedgerRoute: typeof SocietySocietyLedgerRoute
   SocietySocietyPollsRoute: typeof SocietySocietyPollsRoute
@@ -719,6 +853,7 @@ interface SocietyRouteChildren {
 const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyBlocksRoute: SocietySocietyBlocksRoute,
   SocietySocietyDashboardRoute: SocietySocietyDashboardRoute,
+  SocietySocietyDigestRoute: SocietySocietyDigestRoute,
   SocietySocietyFlatsRoute: SocietySocietyFlatsRoute,
   SocietySocietyLedgerRoute: SocietySocietyLedgerRoute,
   SocietySocietyPollsRoute: SocietySocietyPollsRoute,
@@ -752,6 +887,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResidentRoute: ResidentRouteWithChildren,
   SocietyRoute: SocietyRouteWithChildren,
   OnboardingRoute: OnboardingRouteWithChildren,
+  TermsRoute: TermsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -3,6 +3,7 @@ import { Wallet, Bell, ArrowRight, Receipt, ShieldCheck } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
+import { AdBanner } from "@/components/shared/AdBanner";
 
 export const Route = createFileRoute("/_resident/app/dashboard")({
   head: () => ({

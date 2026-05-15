@@ -94,6 +94,15 @@ function CreateSociety() {
       return;
     }
     await supabase.from("profiles").update({ society_id: soc.id, accepted_terms_at: new Date().toISOString() }).eq("id", user.id);
+    // Apply pending referral code (if any) before signup commission trigger fires elsewhere
+    const ref = typeof window !== "undefined" ? localStorage.getItem("sociohub:ref") : null;
+    if (ref) {
+      try {
+        const { applyReferralCode } = await import("@/lib/referral.functions");
+        await applyReferralCode({ data: { code: ref } });
+      } catch { /* non-fatal */ }
+      localStorage.removeItem("sociohub:ref");
+    }
     await refresh();
     setSaving(false);
     setCreated({ id: soc.id, code: soc.invite_code as string, name: soc.name });

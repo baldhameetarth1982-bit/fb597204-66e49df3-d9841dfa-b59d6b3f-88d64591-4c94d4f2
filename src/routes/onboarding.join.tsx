@@ -61,11 +61,16 @@ function JoinSociety() {
     const { error } = await supabase.rpc("join_society_with_code", {
       _code: code.toUpperCase(),
     });
-    setJoining(false);
     if (error) {
+      setJoining(false);
       toast.error(error.message);
       return;
     }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from("profiles").update({ accepted_terms_at: new Date().toISOString() }).eq("id", user.id);
+    }
+    setJoining(false);
     await refresh();
     toast.success(`Joined ${match.name}`);
     navigate({ to: "/app/dashboard" });

@@ -63,15 +63,18 @@ function LoginPage() {
           toast.error(parsed.error.issues[0].message);
           return;
         }
-        const { error } = await supabase.auth.signUp({
+        const { data: signUpData, error } = await supabase.auth.signUp({
           email: parsed.data.email,
           password: parsed.data.password,
           options: {
             emailRedirectTo: `${window.location.origin}/`,
-            data: { full_name: parsed.data.full_name },
+            data: { full_name: parsed.data.full_name, accepted_terms_at: new Date().toISOString() },
           },
         });
         if (error) throw error;
+        if (signUpData.user) {
+          await supabase.from("profiles").update({ accepted_terms_at: new Date().toISOString() }).eq("id", signUpData.user.id);
+        }
         toast.success("Account created — check your inbox to verify.");
       }
     } catch (err) {

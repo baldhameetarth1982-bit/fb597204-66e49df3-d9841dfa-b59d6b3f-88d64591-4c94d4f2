@@ -1,11 +1,11 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Receipt, LayoutGrid, Activity, User } from "lucide-react";
+import { Home, Receipt, Users, LayoutGrid, User } from "lucide-react";
 
 const tabs = [
-  { to: "/app/dashboard", label: "Dashboard", icon: Home },
+  { to: "/app/dashboard", label: "Home", icon: Home },
   { to: "/app/bills", label: "Bills", icon: Receipt },
+  { to: "/app/feed", label: "Community", icon: Users },
   { to: "/app/services", label: "Services", icon: LayoutGrid },
-  { to: "/app/activity", label: "Activity", icon: Activity },
   { to: "/app/profile", label: "Profile", icon: User },
 ] as const;
 

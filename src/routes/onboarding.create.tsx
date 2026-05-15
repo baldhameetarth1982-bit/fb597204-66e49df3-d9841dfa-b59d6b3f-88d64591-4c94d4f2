@@ -27,6 +27,7 @@ function CreateSociety() {
     return { a, b, answer: a + b };
   }, []);
   const [captchaInput, setCaptchaInput] = useState("");
+  const [agreed, setAgreed] = useState(false);
 
   const [created, setCreated] = useState<{ id: string; code: string; name: string } | null>(null);
 
@@ -62,6 +63,10 @@ function CreateSociety() {
       toast.error("Verification failed", { description: "Please solve the math check." });
       return;
     }
+    if (!agreed) {
+      toast.error("Please accept the Terms of Service and Privacy Policy");
+      return;
+    }
     setSaving(true);
     const { data: soc, error: socErr } = await supabase
       .from("societies")
@@ -88,7 +93,7 @@ function CreateSociety() {
       toast.error(roleErr.message);
       return;
     }
-    await supabase.from("profiles").update({ society_id: soc.id }).eq("id", user.id);
+    await supabase.from("profiles").update({ society_id: soc.id, accepted_terms_at: new Date().toISOString() }).eq("id", user.id);
     await refresh();
     setSaving(false);
     setCreated({ id: soc.id, code: soc.invite_code as string, name: soc.name });
@@ -219,7 +224,18 @@ function CreateSociety() {
               </div>
             </div>
 
-            <Button type="submit" disabled={saving} className="w-full h-12 rounded-xl">
+            <label className="flex items-start gap-2 text-xs text-muted-foreground">
+              <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary" />
+              <span>
+                I agree to the{" "}
+                <Link to="/terms" target="_blank" className="text-primary underline">
+                  Terms of Service &amp; Privacy Policy
+                </Link>.
+              </span>
+            </label>
+
+            <Button type="submit" disabled={saving || !agreed} className="w-full h-12 rounded-xl">
               {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Create society
             </Button>

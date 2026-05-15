@@ -20,10 +20,6 @@ const bills = [
   { id: "4", title: "Annual Sinking Fund", amount: 6000, due: "01 Apr 2026", status: "paid" },
 ];
 
-function BillsInner() {
-  return null;
-}
-
 function BillsScreen() {
   return (
     <div className="px-5 py-6 space-y-6">
@@ -42,12 +38,14 @@ function BillsScreen() {
           <p className="mt-1 text-4xl font-semibold tabular-nums">₹4,500</p>
           <p className="mt-1 text-xs opacity-80">Due 10 May 2026</p>
           <Button
-            asChild
+            onClick={async () => {
+              const ok = await requireBiometric("authorize this payment");
+              if (ok) navigate({ to: "/app/dues" });
+            }}
             className="mt-5 w-full h-12 rounded-xl bg-background text-primary hover:bg-background/90 font-semibold"
           >
-            <Link to="/app/dues">
-              Pay now <ArrowRight className="h-4 w-4 ml-1" />
-            </Link>
+            <Fingerprint className="h-4 w-4 mr-2" />
+            Pay now <ArrowRight className="h-4 w-4 ml-1" />
           </Button>
         </CardContent>
       </Card>

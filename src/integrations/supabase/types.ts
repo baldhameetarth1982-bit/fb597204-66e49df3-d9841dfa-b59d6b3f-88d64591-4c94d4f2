@@ -545,6 +545,8 @@ export type Database = {
           full_name: string | null
           id: string
           phone: string | null
+          referral_code: string | null
+          referred_by: string | null
           society_id: string | null
           updated_at: string
         }
@@ -556,6 +558,8 @@ export type Database = {
           full_name?: string | null
           id: string
           phone?: string | null
+          referral_code?: string | null
+          referred_by?: string | null
           society_id?: string | null
           updated_at?: string
         }
@@ -567,10 +571,19 @@ export type Database = {
           full_name?: string | null
           id?: string
           phone?: string | null
+          referral_code?: string | null
+          referred_by?: string | null
           society_id?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_referred_by_fkey"
+            columns: ["referred_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_society_id_fkey"
             columns: ["society_id"]
@@ -579,6 +592,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      referral_earnings: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          note: string | null
+          rate: number
+          referred_user_id: string
+          referrer_id: string
+          society_id: string | null
+          status: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          rate?: number
+          referred_user_id: string
+          referrer_id: string
+          society_id?: string | null
+          status?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          rate?: number
+          referred_user_id?: string
+          referrer_id?: string
+          society_id?: string | null
+          status?: string
+        }
+        Relationships: []
       }
       societies: {
         Row: {
@@ -625,6 +674,45 @@ export type Database = {
           state?: string | null
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      support_tickets: {
+        Row: {
+          ai_transcript: Json | null
+          created_at: string
+          description: string
+          id: string
+          priority: string
+          society_id: string | null
+          status: string
+          subject: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_transcript?: Json | null
+          created_at?: string
+          description: string
+          id?: string
+          priority?: string
+          society_id?: string | null
+          status?: string
+          subject: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_transcript?: Json | null
+          created_at?: string
+          description?: string
+          id?: string
+          priority?: string
+          society_id?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -781,6 +869,45 @@ export type Database = {
         }
         Relationships: []
       }
+      withdrawals: {
+        Row: {
+          amount: number
+          bank_account: string | null
+          bank_ifsc: string | null
+          created_at: string
+          id: string
+          method: string
+          status: string
+          updated_at: string
+          upi_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          bank_account?: string | null
+          bank_ifsc?: string | null
+          created_at?: string
+          id?: string
+          method?: string
+          status?: string
+          updated_at?: string
+          upi_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          bank_account?: string | null
+          bank_ifsc?: string | null
+          created_at?: string
+          id?: string
+          method?: string
+          status?: string
+          updated_at?: string
+          upi_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       society_leaderboard: {
@@ -796,6 +923,7 @@ export type Database = {
       }
     }
     Functions: {
+      find_referrer_by_code: { Args: { _code: string }; Returns: string }
       find_society_by_code: {
         Args: { _code: string }
         Returns: {
@@ -805,6 +933,7 @@ export type Database = {
           state: string
         }[]
       }
+      generate_referral_code: { Args: never; Returns: string }
       generate_society_code: { Args: never; Returns: string }
       has_role: {
         Args: {

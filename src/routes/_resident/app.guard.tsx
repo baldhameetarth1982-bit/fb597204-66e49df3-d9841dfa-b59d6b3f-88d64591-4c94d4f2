@@ -108,6 +108,8 @@ function GuardDashboard() {
   }
 
   async function markExit(id: string) {
+    const ok = await requireBiometric("approve visitor exit");
+    if (!ok) return;
     const { error } = await supabase
       .from("visitors")
       .update({ exit_at: new Date().toISOString() })

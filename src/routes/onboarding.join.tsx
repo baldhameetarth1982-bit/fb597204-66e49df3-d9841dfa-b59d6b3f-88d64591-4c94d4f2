@@ -1,6 +1,6 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { ArrowLeft, KeyRound, Loader2, CheckCircle2 } from "lucide-react";
+import { useRef, useState } from "react";
+import { ArrowLeft, KeyRound, Loader2, CheckCircle2, Upload, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,6 +29,10 @@ function JoinSociety() {
   const [verifying, setVerifying] = useState(false);
   const [joining, setJoining] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [aadhaarLast4, setAadhaarLast4] = useState("");
+  const [aadhaarFile, setAadhaarFile] = useState<File | null>(null);
+  const [uploadingKyc, setUploadingKyc] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   async function handleVerify(e: React.FormEvent) {
     e.preventDefault();
@@ -57,7 +61,23 @@ function JoinSociety() {
   async function handleConfirm() {
     if (!match) return;
     if (!agreed) { toast.error("Please accept the Terms of Service"); return; }
+    if (!aadhaarFile) { toast.error("Please upload your Aadhaar card"); return; }
+    if (aadhaarLast4.length !== 4) { toast.error("Enter the last 4 digits of your Aadhaar"); return; }
+
     setJoining(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setJoining(false); toast.error("Please sign in again"); return; }
+
+    setUploadingKyc(true);
+    const ext = (aadhaarFile.name.split(".").pop() || "jpg").toLowerCase();
+    const path = `${user.id}/aadhaar-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from("kyc").upload(path, aadhaarFile, {
+      upsert: true,
+      contentType: aadhaarFile.type || "image/jpeg",
+    });
+    setUploadingKyc(false);
+    if (upErr) { setJoining(false); toast.error(upErr.message); return; }
+
     const { error } = await supabase.rpc("join_society_with_code", {
       _code: code.toUpperCase(),
     });
@@ -66,13 +86,17 @@ function JoinSociety() {
       toast.error(error.message);
       return;
     }
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      await supabase.from("profiles").update({ accepted_terms_at: new Date().toISOString() }).eq("id", user.id);
-    }
+    await supabase.from("profiles").update({
+      accepted_terms_at: new Date().toISOString(),
+      aadhaar_url: path,
+      aadhaar_last4: aadhaarLast4,
+      aadhaar_uploaded_at: new Date().toISOString(),
+      aadhaar_verified: false,
+    }).eq("id", user.id);
+
     setJoining(false);
     await refresh();
-    toast.success(`Joined ${match.name}`);
+    toast.success(`Joined ${match.name} — pending admin verification`);
     navigate({ to: "/app/dashboard" });
   }
 

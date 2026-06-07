@@ -40,12 +40,22 @@ function AnnouncementsPage() {
     setLoading(true);
     const { data, error } = await supabase
       .from("posts")
-      .select("id, body, created_at, author_id, author:profiles!posts_author_id_fkey(full_name)")
+      .select("id, body, created_at, author_id")
       .eq("society_id", societyId)
       .order("created_at", { ascending: false })
       .limit(100);
     if (error) { toast.error(error.message); setLoading(false); return; }
-    setRows((data as any) ?? []);
+    const postRows = (data as any[]) ?? [];
+    const authorIds = Array.from(new Set(postRows.map((p) => p.author_id).filter(Boolean)));
+    let authorMap: Record<string, { full_name: string | null }> = {};
+    if (authorIds.length) {
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", authorIds);
+      authorMap = Object.fromEntries((profs ?? []).map((p: any) => [p.id, { full_name: p.full_name }]));
+    }
+    setRows(postRows.map((p) => ({ ...p, author: authorMap[p.author_id] ?? null })));
     setLoading(false);
   }
   useEffect(() => { void load(); }, [societyId]);

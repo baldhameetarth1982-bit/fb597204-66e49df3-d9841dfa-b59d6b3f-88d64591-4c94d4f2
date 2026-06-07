@@ -151,6 +151,50 @@ export type Database = {
         }
         Relationships: []
       }
+      expenses: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          created_by: string | null
+          id: string
+          note: string | null
+          society_id: string
+          spent_on: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          society_id: string
+          spent_on?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          society_id?: string
+          spent_on?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       family_members: {
         Row: {
           age: number | null
@@ -407,6 +451,42 @@ export type Database = {
           sort_order?: number
           trial_days?: number
           txn_fee_pct?: number
+        }
+        Relationships: []
+      }
+      platform_settings: {
+        Row: {
+          ads_banner_enabled: boolean
+          ads_banner_placements: string[]
+          ads_interstitial_enabled: boolean
+          ads_interstitial_seconds: number
+          id: number
+          razorpay_configured: boolean
+          razorpay_key_id: string | null
+          razorpay_key_secret: string | null
+          updated_at: string
+        }
+        Insert: {
+          ads_banner_enabled?: boolean
+          ads_banner_placements?: string[]
+          ads_interstitial_enabled?: boolean
+          ads_interstitial_seconds?: number
+          id?: number
+          razorpay_configured?: boolean
+          razorpay_key_id?: string | null
+          razorpay_key_secret?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ads_banner_enabled?: boolean
+          ads_banner_placements?: string[]
+          ads_interstitial_enabled?: boolean
+          ads_interstitial_seconds?: number
+          id?: number
+          razorpay_configured?: boolean
+          razorpay_key_id?: string | null
+          razorpay_key_secret?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1086,6 +1166,7 @@ export type Database = {
         Args: { _block_id: string; _user_id: string }
         Returns: boolean
       }
+      is_razorpay_live: { Args: never; Returns: boolean }
       is_society_admin_for: {
         Args: { _society_id: string; _user_id: string }
         Returns: boolean

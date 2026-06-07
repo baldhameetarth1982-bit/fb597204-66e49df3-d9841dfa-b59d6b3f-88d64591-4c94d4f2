@@ -44,14 +44,14 @@ function SocietyVehicles() {
         userIds.length ? supabase.from("profiles").select("id, full_name").in("id", userIds) : Promise.resolve({ data: [] as any[] }),
         flatIds.length ? supabase.from("flats").select("id, flat_number, block:blocks(name)").in("id", flatIds) : Promise.resolve({ data: [] as any[] }),
       ]);
-      const profMap = new Map(((profsRes as any).data ?? []).map((p: any) => [p.id, p.full_name]));
-      const flatMap = new Map(((flatsRes as any).data ?? []).map((f: any) => [f.id, { flat_number: f.flat_number, block_name: f.block?.name ?? null }]));
+      const profMap = new Map<string, string | null>(((profsRes as any).data ?? []).map((p: any) => [p.id, p.full_name]));
+      const flatMap = new Map<string, { flat_number: string; block_name: string | null }>(((flatsRes as any).data ?? []).map((f: any) => [f.id, { flat_number: f.flat_number, block_name: f.block?.name ?? null }]));
       setRows(list.map((r) => ({
         id: r.id, plate_number: r.plate_number, make_model: r.make_model,
         color: r.color, type: r.type,
         flat_number: flatMap.get(r.flat_id)?.flat_number ?? null,
         block_name: flatMap.get(r.flat_id)?.block_name ?? null,
-        owner_name: (profMap.get(r.user_id) as string | undefined) ?? null,
+        owner_name: profMap.get(r.user_id) ?? null,
       })));
       setLoading(false);
     })();
@@ -95,8 +95,8 @@ function SocietyVehicles() {
                   <TableRow key={r.id}>
                     <TableCell className="font-semibold">{r.plate_number}</TableCell>
                     <TableCell className="text-sm">{r.make_model ?? "—"}{r.color ? ` · ${r.color}` : ""}</TableCell>
-                    <TableCell className="text-sm">{r.owner?.full_name ?? "—"}</TableCell>
-                    <TableCell className="text-sm">{r.flat?.block?.name ? `${r.flat.block.name}-` : ""}{r.flat?.flat_number ?? "—"}</TableCell>
+                    <TableCell className="text-sm">{r.owner_name ?? "—"}</TableCell>
+                    <TableCell className="text-sm">{r.block_name ? `${r.block_name}-` : ""}{r.flat_number ?? "—"}</TableCell>
                     <TableCell><Badge variant="secondary" className="rounded-md capitalize">{r.type}</Badge></TableCell>
                   </TableRow>
                 ))}

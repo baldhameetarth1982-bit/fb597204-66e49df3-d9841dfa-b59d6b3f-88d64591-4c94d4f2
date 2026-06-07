@@ -86,7 +86,7 @@ function JoinSociety() {
       toast.error(error.message);
       return;
     }
-    await supabase.from("profiles").update({
+    await (supabase.from("profiles") as any).update({
       accepted_terms_at: new Date().toISOString(),
       aadhaar_url: path,
       aadhaar_last4: aadhaarLast4,

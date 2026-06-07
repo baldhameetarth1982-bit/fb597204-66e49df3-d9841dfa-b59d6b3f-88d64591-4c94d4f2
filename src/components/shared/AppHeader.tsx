@@ -41,7 +41,7 @@ export function AppHeader({ withSidebarTrigger = true }: { withSidebarTrigger?: 
   return (
     <header className="sticky top-0 z-30 h-16 border-b border-border bg-background">
       <div className="h-full flex items-center gap-2 px-3 md:px-6">
-        {withSidebarTrigger && <SidebarTrigger className="rounded-xl h-10 w-10" />}
+        {withSidebarTrigger && <SidebarTrigger className="hidden md:inline-flex rounded-xl h-10 w-10" />}
 
         <Link to="/" className="md:hidden flex items-center gap-2 ml-1">
           <div className="h-8 w-8 rounded-lg bg-primary text-primary-foreground grid place-items-center text-sm font-bold">

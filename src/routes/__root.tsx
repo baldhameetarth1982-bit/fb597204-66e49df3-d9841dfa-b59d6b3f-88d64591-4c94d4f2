@@ -16,6 +16,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/shared/AppSidebar";
 import { AppHeader } from "@/components/shared/AppHeader";
 import { ResidentBottomNav } from "@/components/shared/ResidentBottomNav";
+import { SocietyBottomNav } from "@/components/shared/SocietyBottomNav";
 import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
@@ -188,6 +189,25 @@ function ShellSwitcher() {
           {pathname.startsWith("/app") && <ResidentBottomNav />}
         </div>
       </div>
+    );
+  }
+
+  if (pathname.startsWith("/society")) {
+    return (
+      <SidebarProvider>
+        <div className="min-h-screen w-full bg-secondary/40 md:bg-background">
+          <div className="relative mx-auto flex min-h-screen w-full max-w-[420px] bg-background shadow-xl md:max-w-none md:shadow-none">
+            <AppSidebar />
+            <div className="flex min-w-0 flex-1 flex-col">
+              <AppHeader />
+              <main className="flex-1 pb-24 md:pb-0">
+                <Outlet />
+              </main>
+              <SocietyBottomNav />
+            </div>
+          </div>
+        </div>
+      </SidebarProvider>
     );
   }
 

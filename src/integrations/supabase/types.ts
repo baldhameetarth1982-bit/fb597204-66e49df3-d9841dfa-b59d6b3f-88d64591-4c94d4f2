@@ -935,6 +935,9 @@ export type Database = {
       }
       generate_referral_code: { Args: never; Returns: string }
       generate_society_code: { Args: never; Returns: string }
+      get_admin_block_ids: { Args: { _user_id: string }; Returns: string[] }
+      get_admin_society_ids: { Args: { _user_id: string }; Returns: string[] }
+      get_user_society_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

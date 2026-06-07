@@ -11,7 +11,7 @@ export async function requireBiometric(reason: string): Promise<boolean> {
       const available = await pac.isUserVerifyingPlatformAuthenticatorAvailable();
       if (available) {
         const challenge = crypto.getRandomValues(new Uint8Array(32));
-        await navigator.credentials.get({
+        const credential = await navigator.credentials.get({
           publicKey: {
             challenge,
             timeout: 30_000,
@@ -20,9 +20,7 @@ export async function requireBiometric(reason: string): Promise<boolean> {
             allowCredentials: [],
           },
         }).catch(() => null);
-        // Whether credentials.get returns a credential depends on prior registration;
-        // for first-run UX we accept the user-verification prompt as confirmation.
-        return true;
+        return Boolean(credential) || window.confirm(`Confirm to ${reason}`);
       }
     } catch {
       /* fall through */

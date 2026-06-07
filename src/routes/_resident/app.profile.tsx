@@ -6,11 +6,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogOut, Copy, Wallet, Sparkles, LifeBuoy, Share2, Loader2 } from "lucide-react";
+import { LogOut, Copy, Wallet, HandCoins, LifeBuoy, Share2, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
-import { requestWithdrawal } from "@/lib/referral.functions";
+import { getPartnerSummary, requestWithdrawal } from "@/lib/referral.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_resident/app/profile")({
@@ -23,6 +22,7 @@ const fmt = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR",
 function ProfilePage() {
   const { user, profile, roles, signOut } = useAuth();
   const navigate = useNavigate();
+  const loadPartnerSummary = useServerFn(getPartnerSummary);
 
   const [code, setCode] = useState<string | null>(null);
   const [earnings, setEarnings] = useState(0);
@@ -34,19 +34,13 @@ function ProfilePage() {
     if (!user) return;
     (async () => {
       setLoading(true);
-      const [{ data: prof }, { data: earns }, { data: wds }] = await Promise.all([
-        supabase.from("profiles").select("referral_code").eq("id", user.id).maybeSingle(),
-        supabase.from("referral_earnings").select("amount,status").eq("referrer_id", user.id),
-        supabase.from("withdrawals").select("amount,status").eq("user_id", user.id),
-      ]);
-      setCode((prof?.referral_code as string) ?? null);
-      setEarnings((earns ?? []).reduce((s, r: any) => s + Number(r.amount), 0));
-      setWithdrawn((wds ?? [])
-        .filter((w: any) => ["pending", "approved", "paid"].includes(w.status))
-        .reduce((s, r: any) => s + Number(r.amount), 0));
+      const summary = await loadPartnerSummary();
+      setCode(summary.referral_code ?? null);
+      setEarnings(Number(summary.total_earnings ?? 0));
+      setWithdrawn(Number(summary.pending_withdrawals ?? 0));
       setLoading(false);
     })();
-  }, [user]);
+  }, [user, loadPartnerSummary]);
 
   const available = Math.max(0, earnings - withdrawn);
   const link = typeof window !== "undefined" && code ? `${window.location.origin}/onboarding?ref=${code}` : "";
@@ -90,7 +84,7 @@ function ProfilePage() {
         <TabsList className="grid w-full grid-cols-2 rounded-2xl">
           <TabsTrigger value="account" className="rounded-xl">Account</TabsTrigger>
           <TabsTrigger value="partner" className="rounded-xl">
-            <Sparkles className="h-3.5 w-3.5 mr-1" /> Partner
+            <HandCoins className="h-3.5 w-3.5 mr-1" /> Partner
           </TabsTrigger>
         </TabsList>
 
@@ -159,10 +153,10 @@ function ProfilePage() {
           onClose={(refresh) => {
             setOpenWithdraw(false);
             if (refresh && user) {
-              supabase.from("withdrawals").select("amount,status").eq("user_id", user.id)
-                .then(({ data }) => setWithdrawn((data ?? [])
-                  .filter((w: any) => ["pending", "approved", "paid"].includes(w.status))
-                  .reduce((s, r: any) => s + Number(r.amount), 0)));
+              loadPartnerSummary().then((summary) => {
+                setEarnings(Number(summary.total_earnings ?? 0));
+                setWithdrawn(Number(summary.pending_withdrawals ?? 0));
+              });
             }
           }}
         />

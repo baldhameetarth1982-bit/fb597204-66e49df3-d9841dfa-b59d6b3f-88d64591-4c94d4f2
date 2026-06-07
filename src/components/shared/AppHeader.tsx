@@ -34,7 +34,7 @@ export function AppHeader({ withSidebarTrigger = true }: { withSidebarTrigger?: 
   };
 
   return (
-    <header className="sticky top-0 z-30 h-16 border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+    <header className="sticky top-0 z-30 h-16 border-b border-border bg-background">
       <div className="h-full flex items-center gap-2 px-3 md:px-6">
         {withSidebarTrigger && <SidebarTrigger className="rounded-xl h-10 w-10" />}
 

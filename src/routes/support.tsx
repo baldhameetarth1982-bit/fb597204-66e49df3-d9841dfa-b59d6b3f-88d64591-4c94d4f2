@@ -1,12 +1,16 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, useRef, useEffect } from "react";
-import { useServerFn } from "@tanstack/react-start";
-import { Send, Bot, User as UserIcon, Loader2, ArrowLeft, Ticket } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useRef } from "react";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport, type UIMessage } from "ai";
+import { ArrowLeft, Bot, TicketCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
-import { supportChat, createSupportTicket } from "@/lib/support.functions";
+import { supabase } from "@/integrations/supabase/client";
+import { Conversation, ConversationContent, ConversationScrollButton } from "@/components/ai-elements/conversation";
+import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
+import { PromptInput, PromptInputFooter, PromptInputSubmit, PromptInputTextarea } from "@/components/ai-elements/prompt-input";
+import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from "@/components/ai-elements/tool";
+import { Shimmer } from "@/components/ai-elements/shimmer";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/support")({
@@ -14,50 +18,41 @@ export const Route = createFileRoute("/support")({
   component: SupportPage,
 });
 
-interface Msg { role: "user" | "assistant"; content: string }
+const initialMessages: UIMessage[] = [
+  {
+    id: "support-welcome",
+    role: "assistant",
+    parts: [{ type: "text", text: "Hi — I’m SocioHub Support. Tell me what’s stuck and I’ll either solve it here or open a support ticket automatically." }],
+  },
+];
 
 function SupportPage() {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const chat = useServerFn(supportChat);
-  const ticket = useServerFn(createSupportTicket);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        api: "/api/support-chat",
+        fetch: async (input, init) => {
+          const { data } = await supabase.auth.getSession();
+          const headers = new Headers(init?.headers);
+          if (data.session?.access_token) headers.set("Authorization", `Bearer ${data.session.access_token}`);
+          return fetch(input, { ...init, headers });
+        },
+      }),
+    [],
+  );
+  const { messages, sendMessage, status, stop, error } = useChat({
+    id: "support-session",
+    messages: initialMessages,
+    transport,
+  });
 
-  const [messages, setMessages] = useState<Msg[]>([
-    { role: "assistant", content: "Hi! I'm SocioHub's AI assistant. What do you need help with today?" },
-  ]);
-  const [input, setInput] = useState("");
-  const [busy, setBusy] = useState(false);
-  const endRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { textareaRef.current?.focus(); }, [status]);
+  useEffect(() => { if (error) toast.error(error.message || "Support chat failed"); }, [error]);
 
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
-
-  async function send() {
-    const text = input.trim();
-    if (!text || busy) return;
-    if (!isAuthenticated) { navigate({ to: "/login" }); return; }
-    const next = [...messages, { role: "user" as const, content: text }];
-    setMessages(next); setInput(""); setBusy(true);
-    try {
-      const res = await chat({ data: { messages: next } });
-      setMessages([...next, { role: "assistant", content: res.reply || "(no reply)" }]);
-      if (res.escalate && res.subject && res.summary) {
-        const t = await ticket({
-          data: {
-            subject: res.subject,
-            description: res.summary,
-            transcript: next as any,
-          },
-        });
-        setMessages((m) => [...m, {
-          role: "assistant",
-          content: `I've created support ticket #${t.id.slice(0, 8)} so a human can take a look. You'll get an update shortly.`,
-        }]);
-        toast.success("Support ticket created");
-      }
-    } catch (e: any) {
-      toast.error(e.message ?? "Failed");
-    } finally { setBusy(false); }
-  }
+  const busy = status === "submitted" || status === "streaming";
 
   return (
     <div className="flex flex-col h-[100dvh] max-w-[420px] mx-auto bg-background">
@@ -70,51 +65,59 @@ function SupportPage() {
         </div>
         <div>
           <p className="font-semibold leading-tight">Support</p>
-          <p className="text-[11px] text-muted-foreground">AI-assisted · Escalates to a human if needed</p>
+          <p className="text-[11px] text-muted-foreground">AI chat · Auto-ticketing when needed</p>
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-        {messages.map((m, i) => (
-          <div key={i} className={`flex gap-2 ${m.role === "user" ? "justify-end" : ""}`}>
-            {m.role === "assistant" && (
-              <div className="h-8 w-8 rounded-full bg-primary/10 text-primary grid place-items-center shrink-0">
-                <Bot className="h-4 w-4" />
-              </div>
-            )}
-            <Card className={`max-w-[78%] rounded-2xl ${m.role === "user" ? "bg-primary text-primary-foreground" : ""}`}>
-              <CardContent className="p-3 text-sm whitespace-pre-line">{m.content}</CardContent>
-            </Card>
-            {m.role === "user" && (
-              <div className="h-8 w-8 rounded-full bg-secondary grid place-items-center shrink-0">
-                <UserIcon className="h-4 w-4" />
-              </div>
-            )}
-          </div>
-        ))}
-        {busy && (
-          <div className="flex gap-2 items-center text-xs text-muted-foreground">
-            <Loader2 className="h-3 w-3 animate-spin" /> thinking…
-          </div>
-        )}
-        <div ref={endRef} />
-      </div>
+      <Conversation className="min-h-0">
+        <ConversationContent className="gap-5 px-4 py-5">
+          {messages.map((message) => (
+            <Message key={message.id} from={message.role}>
+              <MessageContent className="group-[.is-user]:bg-primary group-[.is-user]:text-primary-foreground">
+                {message.parts.map((part, index) => {
+                  if (part.type === "text") {
+                    return <MessageResponse key={index}>{part.text}</MessageResponse>;
+                  }
+                  if (part.type.startsWith("tool-")) {
+                    const toolPart = part as any;
+                    return (
+                      <Tool key={index} defaultOpen={false}>
+                        <ToolHeader type={toolPart.type} state={toolPart.state} title="Support ticket" />
+                        <ToolContent>
+                          <ToolInput input={toolPart.input} />
+                          <ToolOutput output={toolPart.output} errorText={toolPart.errorText} />
+                        </ToolContent>
+                      </Tool>
+                    );
+                  }
+                  return null;
+                })}
+              </MessageContent>
+            </Message>
+          ))}
+          {status === "submitted" && <Shimmer>Thinking…</Shimmer>}
+        </ConversationContent>
+        <ConversationScrollButton />
+      </Conversation>
 
-      <div className="border-t border-border p-3 flex gap-2">
-        <Input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") send(); }}
-          placeholder="Describe your issue…"
-          className="rounded-xl"
-          disabled={busy}
-        />
-        <Button onClick={send} disabled={busy || !input.trim()} className="rounded-xl">
-          <Send className="h-4 w-4" />
-        </Button>
+      <div className="border-t border-border p-3">
+        <PromptInput
+          onSubmit={(message) => {
+            const text = message.text.trim();
+            if (!text || busy) return;
+            if (!isAuthenticated) { navigate({ to: "/login" }); return; }
+            void sendMessage({ text });
+          }}
+          className="rounded-xl bg-card"
+        >
+          <PromptInputTextarea ref={textareaRef} placeholder="Describe your issue…" disabled={busy} />
+          <PromptInputFooter className="justify-end">
+            <PromptInputSubmit status={status} onStop={stop} />
+          </PromptInputFooter>
+        </PromptInput>
       </div>
       <p className="px-4 pb-3 text-[10px] text-center text-muted-foreground flex items-center justify-center gap-1">
-        <Ticket className="h-3 w-3" /> Tickets are saved securely to your account.
+        <TicketCheck className="h-3 w-3" /> Unresolved issues are saved as support tickets.
       </p>
     </div>
   );

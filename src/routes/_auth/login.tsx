@@ -68,12 +68,17 @@ function LoginPage() {
           password: parsed.data.password,
           options: {
             emailRedirectTo: `${window.location.origin}/`,
-            data: { full_name: parsed.data.full_name, accepted_terms_at: new Date().toISOString() },
+            data: {
+              full_name: parsed.data.full_name,
+              accepted_terms_at: new Date().toISOString(),
+              referral_code: localStorage.getItem("sociohub:ref") || undefined,
+            },
           },
         });
         if (error) throw error;
         if (signUpData.user) {
           await supabase.from("profiles").update({ accepted_terms_at: new Date().toISOString() }).eq("id", signUpData.user.id);
+          localStorage.removeItem("sociohub:ref");
         }
         toast.success("Account created — check your inbox to verify.");
       }

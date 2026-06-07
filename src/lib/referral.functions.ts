@@ -9,29 +9,23 @@ export const applyReferralCode = createServerFn({ method: "POST" })
     z.object({ code: z.string().trim().min(4).max(16) }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
-    // Don't overwrite if already referred
-    const { data: me } = await supabase
-      .from("profiles")
-      .select("referred_by, referral_code")
-      .eq("id", userId)
-      .maybeSingle();
-    if (me?.referred_by) return { ok: true, alreadySet: true };
-    if (me?.referral_code?.toUpperCase() === data.code.toUpperCase()) {
-      throw new Error("You can't refer yourself.");
-    }
-    const { data: referrerId, error: rpcErr } = await supabase.rpc(
-      "find_referrer_by_code",
-      { _code: data.code },
-    );
-    if (rpcErr) throw new Error(rpcErr.message);
-    if (!referrerId) throw new Error("Invalid referral code.");
-    const { error } = await supabase
-      .from("profiles")
-      .update({ referred_by: referrerId })
-      .eq("id", userId);
+    const { error } = await context.supabase.rpc("apply_referral_for_current_user", { _code: data.code });
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+export const getPartnerSummary = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase.rpc("get_partner_summary_for_current_user");
+    if (error) throw new Error(error.message);
+    return data?.[0] ?? {
+      referral_code: null,
+      total_earnings: 0,
+      pending_withdrawals: 0,
+      available_balance: 0,
+      referred_societies: 0,
+    };
   });
 
 /** Submit a withdrawal request. */

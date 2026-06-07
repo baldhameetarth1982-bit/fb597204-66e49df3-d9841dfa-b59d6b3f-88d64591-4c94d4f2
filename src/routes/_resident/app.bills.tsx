@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { FeeBreakdown } from "@/components/shared/FeeBreakdown";
 import { requireBiometric } from "@/lib/biometric";
 import { cacheSet, cacheGet } from "@/lib/offline-cache";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export const Route = createFileRoute("/_resident/app/bills")({
   head: () => ({ meta: [{ title: "Bills — SocioHub" }] }),
@@ -22,12 +22,33 @@ const bills = [
 
 function BillsScreen() {
   const navigate = useNavigate();
-  useEffect(() => { cacheSet("bills", bills); }, []);
+  const [visibleBills, setVisibleBills] = useState(bills);
+  const [online, setOnline] = useState(true);
+
+  useEffect(() => {
+    const sync = () => {
+      const isNowOnline = navigator.onLine;
+      setOnline(isNowOnline);
+      if (isNowOnline) {
+        cacheSet("bills", bills);
+        setVisibleBills(bills);
+      } else {
+        setVisibleBills(cacheGet<typeof bills>("bills") ?? bills);
+      }
+    };
+    sync();
+    window.addEventListener("online", sync);
+    window.addEventListener("offline", sync);
+    return () => {
+      window.removeEventListener("online", sync);
+      window.removeEventListener("offline", sync);
+    };
+  }, []);
   return (
     <div className="px-5 py-6 space-y-6">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Bills</h1>
-        <p className="text-sm text-muted-foreground">Your maintenance & society dues</p>
+        <p className="text-sm text-muted-foreground">Your maintenance & society dues{online ? "" : " · offline cache"}</p>
       </header>
 
       {/* Outstanding hero */}
@@ -57,7 +78,7 @@ function BillsScreen() {
           History
         </h2>
         <div className="space-y-3">
-          {bills.map((b) => {
+          {visibleBills.map((b) => {
             const paid = b.status === "paid";
             return (
               <Card key={b.id} className="rounded-2xl">

@@ -15,7 +15,7 @@ export function ResidentBottomNav() {
   return (
     <nav
       aria-label="Primary"
-      className="fixed bottom-0 inset-x-0 z-40 mx-auto w-full max-w-[420px] h-[68px] border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85"
+      className="fixed bottom-0 inset-x-0 z-40 mx-auto w-full max-w-[420px] h-[68px] border-t border-border bg-background"
     >
       <ul className="grid grid-cols-5 h-full px-1">
         {tabs.map(({ to, label, icon: Icon }) => {

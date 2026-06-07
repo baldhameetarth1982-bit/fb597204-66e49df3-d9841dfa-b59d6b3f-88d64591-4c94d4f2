@@ -75,6 +75,8 @@ function GuardDashboard() {
       toast.error("Visitor name required");
       return;
     }
+    const approved = await requireBiometric("approve this visitor");
+    if (!approved) return;
     setSubmitting(true);
     // Try to resolve flat_id from flat_number
     let flat_id: string | null = null;
@@ -172,8 +174,8 @@ function GuardDashboard() {
                 placeholder="Delivery / Guest / Service"
               />
             </div>
-            <Button type="submit" className="w-full h-11 rounded-xl" disabled={submitting}>
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Plus className="h-4 w-4 mr-2" />Log entry</>}
+            <Button type="submit" className="w-full h-14 rounded-xl" disabled={submitting}>
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Plus className="h-4 w-4 mr-2" />Approve visitor</>}
             </Button>
           </form>
         </CardContent>

@@ -923,6 +923,10 @@ export type Database = {
       }
     }
     Functions: {
+      apply_referral_for_current_user: {
+        Args: { _code: string }
+        Returns: boolean
+      }
       create_society_for_current_user: {
         Args: {
           _city?: string
@@ -950,6 +954,16 @@ export type Database = {
       generate_society_code: { Args: never; Returns: string }
       get_admin_block_ids: { Args: { _user_id: string }; Returns: string[] }
       get_admin_society_ids: { Args: { _user_id: string }; Returns: string[] }
+      get_partner_summary_for_current_user: {
+        Args: never
+        Returns: {
+          available_balance: number
+          pending_withdrawals: number
+          referral_code: string
+          referred_societies: number
+          total_earnings: number
+        }[]
+      }
       get_user_society_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {

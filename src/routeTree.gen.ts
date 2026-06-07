@@ -33,6 +33,8 @@ import { Route as SocietySocietyFlatsRouteImport } from './routes/_society/socie
 import { Route as SocietySocietyDigestRouteImport } from './routes/_society/society.digest'
 import { Route as SocietySocietyDashboardRouteImport } from './routes/_society/society.dashboard'
 import { Route as SocietySocietyBlocksRouteImport } from './routes/_society/society.blocks'
+import { Route as SocietySocietyBillingRouteImport } from './routes/_society/society.billing'
+import { Route as SocietySocietyAnnouncementsRouteImport } from './routes/_society/society.announcements'
 import { Route as ResidentAppVisitorsRouteImport } from './routes/_resident/app.visitors'
 import { Route as ResidentAppVehiclesRouteImport } from './routes/_resident/app.vehicles'
 import { Route as ResidentAppTrustRouteImport } from './routes/_resident/app.trust'
@@ -170,6 +172,17 @@ const SocietySocietyBlocksRoute = SocietySocietyBlocksRouteImport.update({
   path: '/society/blocks',
   getParentRoute: () => SocietyRoute,
 } as any)
+const SocietySocietyBillingRoute = SocietySocietyBillingRouteImport.update({
+  id: '/society/billing',
+  path: '/society/billing',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyAnnouncementsRoute =
+  SocietySocietyAnnouncementsRouteImport.update({
+    id: '/society/announcements',
+    path: '/society/announcements',
+    getParentRoute: () => SocietyRoute,
+  } as any)
 const ResidentAppVisitorsRoute = ResidentAppVisitorsRouteImport.update({
   id: '/app/visitors',
   path: '/app/visitors',
@@ -303,6 +316,8 @@ export interface FileRoutesByFullPath {
   '/app/trust': typeof ResidentAppTrustRoute
   '/app/vehicles': typeof ResidentAppVehiclesRoute
   '/app/visitors': typeof ResidentAppVisitorsRoute
+  '/society/announcements': typeof SocietySocietyAnnouncementsRoute
+  '/society/billing': typeof SocietySocietyBillingRoute
   '/society/blocks': typeof SocietySocietyBlocksRoute
   '/society/dashboard': typeof SocietySocietyDashboardRoute
   '/society/digest': typeof SocietySocietyDigestRoute
@@ -344,6 +359,8 @@ export interface FileRoutesByTo {
   '/app/trust': typeof ResidentAppTrustRoute
   '/app/vehicles': typeof ResidentAppVehiclesRoute
   '/app/visitors': typeof ResidentAppVisitorsRoute
+  '/society/announcements': typeof SocietySocietyAnnouncementsRoute
+  '/society/billing': typeof SocietySocietyBillingRoute
   '/society/blocks': typeof SocietySocietyBlocksRoute
   '/society/dashboard': typeof SocietySocietyDashboardRoute
   '/society/digest': typeof SocietySocietyDigestRoute
@@ -391,6 +408,8 @@ export interface FileRoutesById {
   '/_resident/app/trust': typeof ResidentAppTrustRoute
   '/_resident/app/vehicles': typeof ResidentAppVehiclesRoute
   '/_resident/app/visitors': typeof ResidentAppVisitorsRoute
+  '/_society/society/announcements': typeof SocietySocietyAnnouncementsRoute
+  '/_society/society/billing': typeof SocietySocietyBillingRoute
   '/_society/society/blocks': typeof SocietySocietyBlocksRoute
   '/_society/society/dashboard': typeof SocietySocietyDashboardRoute
   '/_society/society/digest': typeof SocietySocietyDigestRoute
@@ -435,6 +454,8 @@ export interface FileRouteTypes {
     | '/app/trust'
     | '/app/vehicles'
     | '/app/visitors'
+    | '/society/announcements'
+    | '/society/billing'
     | '/society/blocks'
     | '/society/dashboard'
     | '/society/digest'
@@ -476,6 +497,8 @@ export interface FileRouteTypes {
     | '/app/trust'
     | '/app/vehicles'
     | '/app/visitors'
+    | '/society/announcements'
+    | '/society/billing'
     | '/society/blocks'
     | '/society/dashboard'
     | '/society/digest'
@@ -522,6 +545,8 @@ export interface FileRouteTypes {
     | '/_resident/app/trust'
     | '/_resident/app/vehicles'
     | '/_resident/app/visitors'
+    | '/_society/society/announcements'
+    | '/_society/society/billing'
     | '/_society/society/blocks'
     | '/_society/society/dashboard'
     | '/_society/society/digest'
@@ -714,6 +739,20 @@ declare module '@tanstack/react-router' {
       path: '/society/blocks'
       fullPath: '/society/blocks'
       preLoaderRoute: typeof SocietySocietyBlocksRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/billing': {
+      id: '/_society/society/billing'
+      path: '/society/billing'
+      fullPath: '/society/billing'
+      preLoaderRoute: typeof SocietySocietyBillingRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/announcements': {
+      id: '/_society/society/announcements'
+      path: '/society/announcements'
+      fullPath: '/society/announcements'
+      preLoaderRoute: typeof SocietySocietyAnnouncementsRouteImport
       parentRoute: typeof SocietyRoute
     }
     '/_resident/app/visitors': {
@@ -942,6 +981,8 @@ const ResidentRouteWithChildren = ResidentRoute._addFileChildren(
 )
 
 interface SocietyRouteChildren {
+  SocietySocietyAnnouncementsRoute: typeof SocietySocietyAnnouncementsRoute
+  SocietySocietyBillingRoute: typeof SocietySocietyBillingRoute
   SocietySocietyBlocksRoute: typeof SocietySocietyBlocksRoute
   SocietySocietyDashboardRoute: typeof SocietySocietyDashboardRoute
   SocietySocietyDigestRoute: typeof SocietySocietyDigestRoute
@@ -953,6 +994,8 @@ interface SocietyRouteChildren {
 }
 
 const SocietyRouteChildren: SocietyRouteChildren = {
+  SocietySocietyAnnouncementsRoute: SocietySocietyAnnouncementsRoute,
+  SocietySocietyBillingRoute: SocietySocietyBillingRoute,
   SocietySocietyBlocksRoute: SocietySocietyBlocksRoute,
   SocietySocietyDashboardRoute: SocietySocietyDashboardRoute,
   SocietySocietyDigestRoute: SocietySocietyDigestRoute,
@@ -997,3 +1040,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

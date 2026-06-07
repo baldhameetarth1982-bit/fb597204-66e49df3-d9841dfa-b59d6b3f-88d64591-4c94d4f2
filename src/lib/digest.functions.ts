@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
+import { generateText } from "ai";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 
 /**
  * Generate an AI-written weekly community digest summarizing top posts/comments.
@@ -50,31 +52,13 @@ export const generateCommunityDigest = createServerFn({ method: "POST" })
     const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) throw new Error("AI gateway not configured.");
 
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are the SocioHub community editor. Summarize a society's weekly discussions into a friendly, neutral 4-6 sentence digest. Highlight the top themes, any decisions reached, and any questions still open. Use plain language. Never invent names or events not in the source.",
-          },
-          { role: "user", content: corpus.slice(0, 8000) },
-        ],
-      }),
+    const gateway = createLovableAiGatewayProvider(apiKey);
+    const { text: summary } = await generateText({
+      model: gateway("google/gemini-3-flash-preview"),
+      system:
+        "You are the SocioHub community editor. Summarize a society's weekly discussions into a friendly, neutral 4-6 sentence digest. Highlight the top themes, any decisions reached, and any questions still open. Use plain language. Never invent names or events not in the source.",
+      prompt: corpus.slice(0, 8000),
     });
-
-    if (aiRes.status === 429) throw new Error("AI rate limit. Try again shortly.");
-    if (aiRes.status === 402) throw new Error("AI credits exhausted. Add credits in workspace settings.");
-    if (!aiRes.ok) throw new Error(`AI gateway error: ${aiRes.status}`);
-
-    const aiJson = (await aiRes.json()) as any;
-    const summary: string = aiJson.choices?.[0]?.message?.content ?? "";
     if (!summary) throw new Error("AI returned an empty summary.");
 
     // Week start = Monday of this week

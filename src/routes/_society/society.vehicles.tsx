@@ -17,8 +17,8 @@ export const Route = createFileRoute("/_society/society/vehicles")({
 interface Row {
   id: string; plate_number: string; make_model: string | null;
   color: string | null; type: string;
-  flat: { flat_number: string; block: { name: string } | null } | null;
-  owner: { full_name: string | null } | null;
+  flat_number: string | null; block_name: string | null;
+  owner_name: string | null;
 }
 
 function SocietyVehicles() {
@@ -32,12 +32,27 @@ function SocietyVehicles() {
     (async () => {
       const { data, error } = await supabase
         .from("vehicles")
-        .select("id, plate_number, make_model, color, type, flat:flats(flat_number, block:blocks(name)), owner:profiles!vehicles_user_id_fkey(full_name)")
+        .select("id, plate_number, make_model, color, type, user_id, flat_id")
         .eq("society_id", societyId)
         .order("created_at", { ascending: false })
         .limit(500);
-      if (error) toast.error(error.message);
-      setRows((data as any) ?? []);
+      if (error) { toast.error(error.message); setLoading(false); return; }
+      const list = (data as any[]) ?? [];
+      const userIds = [...new Set(list.map((r) => r.user_id).filter(Boolean))];
+      const flatIds = [...new Set(list.map((r) => r.flat_id).filter(Boolean))];
+      const [profsRes, flatsRes] = await Promise.all([
+        userIds.length ? supabase.from("profiles").select("id, full_name").in("id", userIds) : Promise.resolve({ data: [] as any[] }),
+        flatIds.length ? supabase.from("flats").select("id, flat_number, block:blocks(name)").in("id", flatIds) : Promise.resolve({ data: [] as any[] }),
+      ]);
+      const profMap = new Map(((profsRes as any).data ?? []).map((p: any) => [p.id, p.full_name]));
+      const flatMap = new Map(((flatsRes as any).data ?? []).map((f: any) => [f.id, { flat_number: f.flat_number, block_name: f.block?.name ?? null }]));
+      setRows(list.map((r) => ({
+        id: r.id, plate_number: r.plate_number, make_model: r.make_model,
+        color: r.color, type: r.type,
+        flat_number: flatMap.get(r.flat_id)?.flat_number ?? null,
+        block_name: flatMap.get(r.flat_id)?.block_name ?? null,
+        owner_name: (profMap.get(r.user_id) as string | undefined) ?? null,
+      })));
       setLoading(false);
     })();
   }, [societyId, sl]);
@@ -47,8 +62,8 @@ function SocietyVehicles() {
     if (!t) return true;
     return r.plate_number.toLowerCase().includes(t)
       || r.make_model?.toLowerCase().includes(t)
-      || r.owner?.full_name?.toLowerCase().includes(t)
-      || r.flat?.flat_number.toLowerCase().includes(t);
+      || r.owner_name?.toLowerCase().includes(t)
+      || r.flat_number?.toLowerCase().includes(t);
   }), [rows, q]);
 
   if (sl || loading) return <div className="min-h-[60vh] grid place-items-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;

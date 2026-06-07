@@ -1,9 +1,10 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Wallet, Bell, ArrowRight, Receipt, ShieldCheck, ShieldAlert } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Wallet, Bell, ArrowRight, Receipt, ShieldCheck, ShieldAlert, Fingerprint } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { AdBanner } from "@/components/shared/AdBanner";
+import { requireBiometric } from "@/lib/biometric";
 
 export const Route = createFileRoute("/_resident/app/dashboard")({
   head: () => ({
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/_resident/app/dashboard")({
 
 function ResidentDashboard() {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const firstName = profile?.full_name?.split(" ")[0] ?? "there";
 
   return (
@@ -36,12 +38,13 @@ function ResidentDashboard() {
           <p className="mt-1 text-sm opacity-80">Due by 10 May 2026 · May maintenance</p>
           <Button
             size="lg"
-            asChild
             className="mt-6 w-full md:w-auto h-12 rounded-xl bg-background text-primary hover:bg-background/90 font-semibold"
+            onClick={async () => {
+              const ok = await requireBiometric("authorize this payment");
+              if (ok) navigate({ to: "/app/dues" });
+            }}
           >
-            <Link to="/app/dues">
-              Pay now <ArrowRight className="h-4 w-4 ml-1" />
-            </Link>
+            <Fingerprint className="h-4 w-4 mr-2" /> Pay now <ArrowRight className="h-4 w-4 ml-1" />
           </Button>
         </CardContent>
       </Card>

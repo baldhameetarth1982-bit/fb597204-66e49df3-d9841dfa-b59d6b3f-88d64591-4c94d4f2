@@ -26,8 +26,10 @@ function initials(name?: string | null, email?: string | null) {
 }
 
 export function AppHeader({ withSidebarTrigger = true }: { withSidebarTrigger?: boolean } = {}) {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, hasRole } = useAuth() as any;
   const navigate = useNavigate();
+  const isSocietyAdmin = typeof hasRole === "function" && (hasRole("society_admin") || hasRole("super_admin"));
+  const notificationsHref = isSocietyAdmin ? "/society/announcements" : "/app/notices";
 
   const handleSignOut = async () => {
     await signOut();

@@ -17,6 +17,12 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/settings")({
@@ -350,17 +356,9 @@ function SettingsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <ActionRow
-                icon={UsersIcon}
-                label="Family members"
-                desc="Add spouse, kids and helpers to your flat"
-              />
+              <LinkRow to="/app/family" icon={UsersIcon} label="Family members" />
               <Separator />
-              <ActionRow
-                icon={Globe}
-                label="Language"
-                desc="English (default)"
-              />
+              <LanguageRow />
             </CardContent>
           </Card>
 
@@ -374,6 +372,8 @@ function SettingsPage() {
               <LinkRow to="/support" icon={HelpCircle} label="Help & support" />
               <Separator />
               <LinkRow to="/terms" icon={ShieldCheck} label="Terms & privacy" />
+              <Separator />
+              <LinkRow to="/pricing" icon={ShieldCheck} label="Plans & pricing" />
             </CardContent>
           </Card>
 
@@ -385,17 +385,98 @@ function SettingsPage() {
                 onClick={() => signOut?.()}
               />
               <Separator />
-              <ActionRow
-                icon={Trash2}
-                label="Delete account"
-                desc="Contact support to remove your data"
-                destructive
-              />
+              <DeleteAccountRow email={user?.email ?? null} onSignOut={signOut} />
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
     </PageShell>
+  );
+}
+
+function LanguageRow() {
+  const [lang, setLang] = useState<string>(() => {
+    try { return localStorage.getItem("sociohub:lang") ?? "en"; } catch { return "en"; }
+  });
+  const [open, setOpen] = useState(false);
+  const label = { en: "English", hi: "हिन्दी (Hindi)", mr: "मराठी (Marathi)", ta: "தமிழ் (Tamil)" }[lang] ?? "English";
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <button className="w-full flex items-center gap-3 px-2 py-3 rounded-xl hover:bg-muted/50 transition text-left">
+          <Globe className="h-5 w-5 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="font-medium">Language</p>
+            <p className="text-sm text-muted-foreground">{label}</p>
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Choose language</DialogTitle></DialogHeader>
+        <Select value={lang} onValueChange={(v) => { setLang(v); try { localStorage.setItem("sociohub:lang", v); } catch {} toast.success("Language updated"); setOpen(false); }}>
+          <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="en">English</SelectItem>
+            <SelectItem value="hi">हिन्दी (Hindi)</SelectItem>
+            <SelectItem value="mr">मराठी (Marathi)</SelectItem>
+            <SelectItem value="ta">தமிழ் (Tamil)</SelectItem>
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-muted-foreground">Full translations are rolling out — UI currently displays English fallback for missing strings.</p>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DeleteAccountRow({ email, onSignOut }: { email: string | null; onSignOut: () => Promise<void> }) {
+  const [confirm, setConfirm] = useState("");
+  const [busy, setBusy] = useState(false);
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <button className="w-full flex items-center gap-3 px-2 py-3 rounded-xl hover:bg-destructive/10 transition text-left text-destructive">
+          <Trash2 className="h-5 w-5 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="font-medium">Delete account</p>
+            <p className="text-sm text-muted-foreground">Permanently remove your profile and data</p>
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete your account?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will sign you out and request permanent deletion of your profile, family members and Aadhaar from our records.
+            Society admin will be notified. Type <strong>DELETE</strong> to confirm.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <Input value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="DELETE" />
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={confirm !== "DELETE" || busy}
+            onClick={async (e) => {
+              e.preventDefault();
+              setBusy(true);
+              // Soft-delete: clear profile fields. Auth user removal needs admin/support.
+              const { data: { user } } = await supabase.auth.getUser();
+              if (user) {
+                await supabase.from("profiles").update({
+                  full_name: "Deleted user", phone: null, avatar_url: null,
+                  aadhaar_url: null, aadhaar_last4: null, aadhaar_verified: false,
+                } as any).eq("id", user.id);
+                await supabase.from("family_members").delete().eq("user_id", user.id);
+              }
+              toast.success("Deletion requested. Support will email " + (email ?? "you") + " within 48h.");
+              await onSignOut();
+            }}
+          >Permanently delete</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 

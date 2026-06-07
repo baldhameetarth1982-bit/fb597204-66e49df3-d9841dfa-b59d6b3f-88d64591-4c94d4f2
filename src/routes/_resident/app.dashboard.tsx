@@ -24,13 +24,17 @@ interface DueBill {
   id: string;
   amount: number;
   due_date: string | null;
-  title: string | null;
+  period_label: string | null;
 }
 interface Notice {
   id: string;
-  title: string;
-  category: string;
+  excerpt: string;
   created_at: string;
+}
+
+function excerpt(body: string, n = 80) {
+  const s = body.replace(/\s+/g, " ").trim();
+  return s.length > n ? `${s.slice(0, n)}…` : s;
 }
 
 function ResidentDashboard() {
@@ -44,8 +48,11 @@ function ResidentDashboard() {
   const [notices, setNotices] = useState<Notice[]>([]);
 
   useEffect(() => {
-    if (!profile?.society_id || !profile?.id) return;
+    const societyId = profile?.society_id;
+    const userId = profile?.id;
+    if (!societyId || !userId) return;
     let cancelled = false;
+
     (async () => {
       const yearStart = new Date();
       yearStart.setMonth(0, 1);
@@ -53,31 +60,42 @@ function ResidentDashboard() {
       const dayStart = new Date();
       dayStart.setHours(0, 0, 0, 0);
 
+      // Resolve resident's flats
+      const { data: flatRows } = await supabase
+        .from("flat_residents")
+        .select("flat_id")
+        .eq("user_id", userId);
+      const flatIds = (flatRows ?? []).map((r: any) => r.flat_id).filter(Boolean);
+
+      const billsQ = flatIds.length
+        ? supabase
+            .from("bills")
+            .select("id, amount, due_date, period_label, status")
+            .eq("society_id", societyId)
+            .in("flat_id", flatIds)
+            .in("status", ["unpaid", "overdue"])
+            .order("due_date", { ascending: true })
+            .limit(1)
+        : Promise.resolve({ data: [] as any[] });
+
       const [bills, payments, visitors, posts] = await Promise.all([
-        supabase
-          .from("bills")
-          .select("id, amount, due_date, title, status")
-          .eq("society_id", profile.society_id)
-          .eq("resident_id", profile.id)
-          .in("status", ["unpaid", "overdue"])
-          .order("due_date", { ascending: true })
-          .limit(1),
+        billsQ as any,
         supabase
           .from("payments")
-          .select("amount, paid_at, status")
-          .eq("society_id", profile.society_id)
-          .eq("payer_id", profile.id)
+          .select("amount, paid_at, status, user_id")
+          .eq("society_id", societyId)
+          .eq("user_id", userId)
           .eq("status", "success")
           .gte("paid_at", yearStart.toISOString()),
         supabase
           .from("visitors")
           .select("id", { count: "exact", head: true })
-          .eq("society_id", profile.society_id)
-          .gte("created_at", dayStart.toISOString()),
+          .eq("society_id", societyId)
+          .gte("entry_at", dayStart.toISOString()),
         supabase
           .from("posts")
-          .select("id, title, category, created_at")
-          .eq("society_id", profile.society_id)
+          .select("id, body, created_at")
+          .eq("society_id", societyId)
           .order("created_at", { ascending: false })
           .limit(3),
       ]);
@@ -86,7 +104,12 @@ function ResidentDashboard() {
       const bill = bills.data?.[0];
       setDueBill(
         bill
-          ? { id: bill.id, amount: Number(bill.amount), due_date: bill.due_date, title: bill.title }
+          ? {
+              id: bill.id,
+              amount: Number(bill.amount),
+              due_date: bill.due_date,
+              period_label: bill.period_label ?? null,
+            }
           : null,
       );
       setPaidYearTotal((payments.data ?? []).reduce((s: number, p: any) => s + Number(p.amount ?? 0), 0));
@@ -94,8 +117,7 @@ function ResidentDashboard() {
       setNotices(
         (posts.data ?? []).map((p: any) => ({
           id: p.id,
-          title: p.title ?? "Untitled",
-          category: p.category ?? "General",
+          excerpt: excerpt(p.body ?? ""),
           created_at: p.created_at,
         })),
       );
@@ -120,7 +142,7 @@ function ResidentDashboard() {
           </p>
           <p className="mt-1 text-sm opacity-80">
             {dueBill
-              ? `${dueBill.title ?? "Maintenance"} · due ${dueBill.due_date ? new Date(dueBill.due_date).toLocaleDateString() : "soon"}`
+              ? `${dueBill.period_label ?? "Maintenance"} · due ${dueBill.due_date ? new Date(dueBill.due_date).toLocaleDateString() : "soon"}`
               : "You're all caught up. No outstanding dues."}
           </p>
           <Button
@@ -184,9 +206,9 @@ function ResidentDashboard() {
             <ul className="divide-y divide-border">
               {notices.map((n) => (
                 <li key={n.id} className="py-3 first:pt-0 last:pb-0">
-                  <p className="font-medium">{n.title}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5 capitalize">
-                    {new Date(n.created_at).toLocaleDateString()} · {n.category}
+                  <p className="font-medium line-clamp-2">{n.excerpt}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {new Date(n.created_at).toLocaleDateString()}
                   </p>
                 </li>
               ))}

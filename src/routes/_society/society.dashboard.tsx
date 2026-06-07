@@ -40,8 +40,7 @@ interface DashboardStats {
 
 interface AnnouncementItem {
   id: string;
-  title: string;
-  category: string;
+  excerpt: string;
   created_at: string;
 }
 
@@ -94,13 +93,13 @@ function SocietyDashboard() {
         supabase.from("blocks").select("id", { count: "exact", head: true }).eq("society_id", societyId),
         supabase
           .from("posts")
-          .select("id, title, category, created_at")
+          .select("id, body, created_at")
           .eq("society_id", societyId)
           .order("created_at", { ascending: false })
           .limit(5),
         supabase
           .from("payments")
-          .select("id, amount, status, paid_at, bill_id, payer_id")
+          .select("id, amount, status, paid_at")
           .eq("society_id", societyId)
           .order("created_at", { ascending: false })
           .limit(10),
@@ -132,12 +131,14 @@ function SocietyDashboard() {
       });
 
       setAnnouncements(
-        (posts.data ?? []).map((p: any) => ({
-          id: p.id,
-          title: p.title ?? "Untitled",
-          category: p.category ?? "General",
-          created_at: p.created_at,
-        })),
+        (posts.data ?? []).map((p: any) => {
+          const s = String(p.body ?? "").replace(/\s+/g, " ").trim();
+          return {
+            id: p.id,
+            excerpt: s.length > 80 ? `${s.slice(0, 80)}…` : s || "Untitled",
+            created_at: p.created_at,
+          };
+        }),
       );
 
       setTxns(
@@ -258,17 +259,10 @@ function SocietyDashboard() {
               <ul className="divide-y divide-border">
                 {announcements.map((a) => (
                   <li key={a.id} className="py-4 first:pt-0 last:pb-0">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="font-medium truncate">{a.title}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {new Date(a.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <span className="shrink-0 rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-foreground capitalize">
-                        {a.category}
-                      </span>
-                    </div>
+                    <p className="font-medium line-clamp-2">{a.excerpt}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {new Date(a.created_at).toLocaleDateString()}
+                    </p>
                   </li>
                 ))}
               </ul>

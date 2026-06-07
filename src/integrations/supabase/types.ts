@@ -946,6 +946,11 @@ export type Database = {
         Args: { _block_id: string; _user_id: string }
         Returns: boolean
       }
+      is_society_admin_for: {
+        Args: { _society_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       join_society_with_code: { Args: { _code: string }; Returns: string }
     }
     Enums: {

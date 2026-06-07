@@ -24,15 +24,15 @@ function IncomePage() {
     },
   });
 
-  const planMap = Object.fromEntries((data?.plans ?? []).map((p: any) => [p.id, p]));
+  const planMap: Record<string, any> = Object.fromEntries((data?.plans ?? []).map((p: any) => [p.id, p]));
   const subRev = (data?.societies ?? []).reduce((s: number, soc: any) => {
-    const p = planMap[soc.plan_id];
+    const p = soc.plan_id ? planMap[soc.plan_id] : null;
     return s + (p ? Number(p.price_monthly_inr) : 0);
   }, 0);
   const txnRev = (data?.payments ?? []).reduce((s: number, pmt: any) => {
     if (pmt.status !== "success") return s;
     const soc = (data?.societies ?? []).find((x: any) => x.id === pmt.society_id);
-    const plan = soc ? planMap[soc.plan_id] : null;
+    const plan = soc?.plan_id ? planMap[soc.plan_id] : null;
     const pct = plan ? Number(plan.txn_fee_pct) : 1.5;
     return s + (Number(pmt.amount) * pct) / 100;
   }, 0);

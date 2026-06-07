@@ -46,7 +46,11 @@ function RazorpayPage() {
       return;
     }
     setSaving(true);
-    const payload: Record<string, unknown> = {
+    const payload: {
+      razorpay_key_id: string;
+      razorpay_configured: boolean;
+      razorpay_key_secret?: string;
+    } = {
       razorpay_key_id: keyId.trim(),
       razorpay_configured: true,
     };

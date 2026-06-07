@@ -23,6 +23,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding.index'
 import { Route as OnboardingJoinRouteImport } from './routes/onboarding.join'
 import { Route as OnboardingCreateRouteImport } from './routes/onboarding.create'
+import { Route as CheckoutPlanIdRouteImport } from './routes/checkout.$planId'
 import { Route as ApiSupportChatRouteImport } from './routes/api/support-chat'
 import { Route as AuthResetPasswordRouteImport } from './routes/_auth/reset-password'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
@@ -36,6 +37,7 @@ import { Route as SocietySocietyPollsRouteImport } from './routes/_society/socie
 import { Route as SocietySocietyLedgerRouteImport } from './routes/_society/society.ledger'
 import { Route as SocietySocietyLeaderboardRouteImport } from './routes/_society/society.leaderboard'
 import { Route as SocietySocietyFlatsRouteImport } from './routes/_society/society.flats'
+import { Route as SocietySocietyExpensesRouteImport } from './routes/_society/society.expenses'
 import { Route as SocietySocietyDigestRouteImport } from './routes/_society/society.digest'
 import { Route as SocietySocietyDashboardRouteImport } from './routes/_society/society.dashboard'
 import { Route as SocietySocietyBlocksRouteImport } from './routes/_society/society.blocks'
@@ -60,8 +62,11 @@ import { Route as ResidentAppBillsRouteImport } from './routes/_resident/app.bil
 import { Route as ResidentAppActivityRouteImport } from './routes/_resident/app.activity'
 import { Route as ResidentAppAchievementsRouteImport } from './routes/_resident/app.achievements'
 import { Route as AdminAdminWithdrawalsRouteImport } from './routes/_admin/admin.withdrawals'
+import { Route as AdminAdminRazorpayRouteImport } from './routes/_admin/admin.razorpay'
 import { Route as AdminAdminPlansRouteImport } from './routes/_admin/admin.plans'
+import { Route as AdminAdminIncomeRouteImport } from './routes/_admin/admin.income'
 import { Route as AdminAdminDashboardRouteImport } from './routes/_admin/admin.dashboard'
+import { Route as AdminAdminAdsRouteImport } from './routes/_admin/admin.ads'
 import { Route as ResidentAppFeedPostIdRouteImport } from './routes/_resident/app.feed.$postId'
 
 const WelcomeRoute = WelcomeRouteImport.update({
@@ -130,6 +135,11 @@ const OnboardingCreateRoute = OnboardingCreateRouteImport.update({
   path: '/create',
   getParentRoute: () => OnboardingRoute,
 } as any)
+const CheckoutPlanIdRoute = CheckoutPlanIdRouteImport.update({
+  id: '/checkout/$planId',
+  path: '/checkout/$planId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSupportChatRoute = ApiSupportChatRouteImport.update({
   id: '/api/support-chat',
   path: '/api/support-chat',
@@ -195,6 +205,11 @@ const SocietySocietyLeaderboardRoute =
 const SocietySocietyFlatsRoute = SocietySocietyFlatsRouteImport.update({
   id: '/society/flats',
   path: '/society/flats',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyExpensesRoute = SocietySocietyExpensesRouteImport.update({
+  id: '/society/expenses',
+  path: '/society/expenses',
   getParentRoute: () => SocietyRoute,
 } as any)
 const SocietySocietyDigestRoute = SocietySocietyDigestRouteImport.update({
@@ -318,14 +333,29 @@ const AdminAdminWithdrawalsRoute = AdminAdminWithdrawalsRouteImport.update({
   path: '/admin/withdrawals',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAdminRazorpayRoute = AdminAdminRazorpayRouteImport.update({
+  id: '/admin/razorpay',
+  path: '/admin/razorpay',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAdminPlansRoute = AdminAdminPlansRouteImport.update({
   id: '/admin/plans',
   path: '/admin/plans',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAdminIncomeRoute = AdminAdminIncomeRouteImport.update({
+  id: '/admin/income',
+  path: '/admin/income',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAdminDashboardRoute = AdminAdminDashboardRouteImport.update({
   id: '/admin/dashboard',
   path: '/admin/dashboard',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminAdsRoute = AdminAdminAdsRouteImport.update({
+  id: '/admin/ads',
+  path: '/admin/ads',
   getParentRoute: () => AdminRoute,
 } as any)
 const ResidentAppFeedPostIdRoute = ResidentAppFeedPostIdRouteImport.update({
@@ -346,11 +376,15 @@ export interface FileRoutesByFullPath {
   '/login': typeof AuthLoginRoute
   '/reset-password': typeof AuthResetPasswordRoute
   '/api/support-chat': typeof ApiSupportChatRoute
+  '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/onboarding/create': typeof OnboardingCreateRoute
   '/onboarding/join': typeof OnboardingJoinRoute
   '/onboarding/': typeof OnboardingIndexRoute
+  '/admin/ads': typeof AdminAdminAdsRoute
   '/admin/dashboard': typeof AdminAdminDashboardRoute
+  '/admin/income': typeof AdminAdminIncomeRoute
   '/admin/plans': typeof AdminAdminPlansRoute
+  '/admin/razorpay': typeof AdminAdminRazorpayRoute
   '/admin/withdrawals': typeof AdminAdminWithdrawalsRoute
   '/app/achievements': typeof ResidentAppAchievementsRoute
   '/app/activity': typeof ResidentAppActivityRoute
@@ -375,6 +409,7 @@ export interface FileRoutesByFullPath {
   '/society/blocks': typeof SocietySocietyBlocksRoute
   '/society/dashboard': typeof SocietySocietyDashboardRoute
   '/society/digest': typeof SocietySocietyDigestRoute
+  '/society/expenses': typeof SocietySocietyExpensesRoute
   '/society/flats': typeof SocietySocietyFlatsRoute
   '/society/leaderboard': typeof SocietySocietyLeaderboardRoute
   '/society/ledger': typeof SocietySocietyLedgerRoute
@@ -397,11 +432,15 @@ export interface FileRoutesByTo {
   '/login': typeof AuthLoginRoute
   '/reset-password': typeof AuthResetPasswordRoute
   '/api/support-chat': typeof ApiSupportChatRoute
+  '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/onboarding/create': typeof OnboardingCreateRoute
   '/onboarding/join': typeof OnboardingJoinRoute
   '/onboarding': typeof OnboardingIndexRoute
+  '/admin/ads': typeof AdminAdminAdsRoute
   '/admin/dashboard': typeof AdminAdminDashboardRoute
+  '/admin/income': typeof AdminAdminIncomeRoute
   '/admin/plans': typeof AdminAdminPlansRoute
+  '/admin/razorpay': typeof AdminAdminRazorpayRoute
   '/admin/withdrawals': typeof AdminAdminWithdrawalsRoute
   '/app/achievements': typeof ResidentAppAchievementsRoute
   '/app/activity': typeof ResidentAppActivityRoute
@@ -426,6 +465,7 @@ export interface FileRoutesByTo {
   '/society/blocks': typeof SocietySocietyBlocksRoute
   '/society/dashboard': typeof SocietySocietyDashboardRoute
   '/society/digest': typeof SocietySocietyDigestRoute
+  '/society/expenses': typeof SocietySocietyExpensesRoute
   '/society/flats': typeof SocietySocietyFlatsRoute
   '/society/leaderboard': typeof SocietySocietyLeaderboardRoute
   '/society/ledger': typeof SocietySocietyLedgerRoute
@@ -454,11 +494,15 @@ export interface FileRoutesById {
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/reset-password': typeof AuthResetPasswordRoute
   '/api/support-chat': typeof ApiSupportChatRoute
+  '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/onboarding/create': typeof OnboardingCreateRoute
   '/onboarding/join': typeof OnboardingJoinRoute
   '/onboarding/': typeof OnboardingIndexRoute
+  '/_admin/admin/ads': typeof AdminAdminAdsRoute
   '/_admin/admin/dashboard': typeof AdminAdminDashboardRoute
+  '/_admin/admin/income': typeof AdminAdminIncomeRoute
   '/_admin/admin/plans': typeof AdminAdminPlansRoute
+  '/_admin/admin/razorpay': typeof AdminAdminRazorpayRoute
   '/_admin/admin/withdrawals': typeof AdminAdminWithdrawalsRoute
   '/_resident/app/achievements': typeof ResidentAppAchievementsRoute
   '/_resident/app/activity': typeof ResidentAppActivityRoute
@@ -483,6 +527,7 @@ export interface FileRoutesById {
   '/_society/society/blocks': typeof SocietySocietyBlocksRoute
   '/_society/society/dashboard': typeof SocietySocietyDashboardRoute
   '/_society/society/digest': typeof SocietySocietyDigestRoute
+  '/_society/society/expenses': typeof SocietySocietyExpensesRoute
   '/_society/society/flats': typeof SocietySocietyFlatsRoute
   '/_society/society/leaderboard': typeof SocietySocietyLeaderboardRoute
   '/_society/society/ledger': typeof SocietySocietyLedgerRoute
@@ -508,11 +553,15 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/api/support-chat'
+    | '/checkout/$planId'
     | '/onboarding/create'
     | '/onboarding/join'
     | '/onboarding/'
+    | '/admin/ads'
     | '/admin/dashboard'
+    | '/admin/income'
     | '/admin/plans'
+    | '/admin/razorpay'
     | '/admin/withdrawals'
     | '/app/achievements'
     | '/app/activity'
@@ -537,6 +586,7 @@ export interface FileRouteTypes {
     | '/society/blocks'
     | '/society/dashboard'
     | '/society/digest'
+    | '/society/expenses'
     | '/society/flats'
     | '/society/leaderboard'
     | '/society/ledger'
@@ -559,11 +609,15 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/api/support-chat'
+    | '/checkout/$planId'
     | '/onboarding/create'
     | '/onboarding/join'
     | '/onboarding'
+    | '/admin/ads'
     | '/admin/dashboard'
+    | '/admin/income'
     | '/admin/plans'
+    | '/admin/razorpay'
     | '/admin/withdrawals'
     | '/app/achievements'
     | '/app/activity'
@@ -588,6 +642,7 @@ export interface FileRouteTypes {
     | '/society/blocks'
     | '/society/dashboard'
     | '/society/digest'
+    | '/society/expenses'
     | '/society/flats'
     | '/society/leaderboard'
     | '/society/ledger'
@@ -615,11 +670,15 @@ export interface FileRouteTypes {
     | '/_auth/login'
     | '/_auth/reset-password'
     | '/api/support-chat'
+    | '/checkout/$planId'
     | '/onboarding/create'
     | '/onboarding/join'
     | '/onboarding/'
+    | '/_admin/admin/ads'
     | '/_admin/admin/dashboard'
+    | '/_admin/admin/income'
     | '/_admin/admin/plans'
+    | '/_admin/admin/razorpay'
     | '/_admin/admin/withdrawals'
     | '/_resident/app/achievements'
     | '/_resident/app/activity'
@@ -644,6 +703,7 @@ export interface FileRouteTypes {
     | '/_society/society/blocks'
     | '/_society/society/dashboard'
     | '/_society/society/digest'
+    | '/_society/society/expenses'
     | '/_society/society/flats'
     | '/_society/society/leaderboard'
     | '/_society/society/ledger'
@@ -669,6 +729,7 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   WelcomeRoute: typeof WelcomeRoute
   ApiSupportChatRoute: typeof ApiSupportChatRoute
+  CheckoutPlanIdRoute: typeof CheckoutPlanIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -771,6 +832,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingCreateRouteImport
       parentRoute: typeof OnboardingRoute
     }
+    '/checkout/$planId': {
+      id: '/checkout/$planId'
+      path: '/checkout/$planId'
+      fullPath: '/checkout/$planId'
+      preLoaderRoute: typeof CheckoutPlanIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/support-chat': {
       id: '/api/support-chat'
       path: '/api/support-chat'
@@ -860,6 +928,13 @@ declare module '@tanstack/react-router' {
       path: '/society/flats'
       fullPath: '/society/flats'
       preLoaderRoute: typeof SocietySocietyFlatsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/expenses': {
+      id: '/_society/society/expenses'
+      path: '/society/expenses'
+      fullPath: '/society/expenses'
+      preLoaderRoute: typeof SocietySocietyExpensesRouteImport
       parentRoute: typeof SocietyRoute
     }
     '/_society/society/digest': {
@@ -1030,6 +1105,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminWithdrawalsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/admin/razorpay': {
+      id: '/_admin/admin/razorpay'
+      path: '/admin/razorpay'
+      fullPath: '/admin/razorpay'
+      preLoaderRoute: typeof AdminAdminRazorpayRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_admin/admin/plans': {
       id: '/_admin/admin/plans'
       path: '/admin/plans'
@@ -1037,11 +1119,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminPlansRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/admin/income': {
+      id: '/_admin/admin/income'
+      path: '/admin/income'
+      fullPath: '/admin/income'
+      preLoaderRoute: typeof AdminAdminIncomeRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_admin/admin/dashboard': {
       id: '/_admin/admin/dashboard'
       path: '/admin/dashboard'
       fullPath: '/admin/dashboard'
       preLoaderRoute: typeof AdminAdminDashboardRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/ads': {
+      id: '/_admin/admin/ads'
+      path: '/admin/ads'
+      fullPath: '/admin/ads'
+      preLoaderRoute: typeof AdminAdminAdsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_resident/app/feed/$postId': {
@@ -1055,14 +1151,20 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminAdminAdsRoute: typeof AdminAdminAdsRoute
   AdminAdminDashboardRoute: typeof AdminAdminDashboardRoute
+  AdminAdminIncomeRoute: typeof AdminAdminIncomeRoute
   AdminAdminPlansRoute: typeof AdminAdminPlansRoute
+  AdminAdminRazorpayRoute: typeof AdminAdminRazorpayRoute
   AdminAdminWithdrawalsRoute: typeof AdminAdminWithdrawalsRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminAdminAdsRoute: AdminAdminAdsRoute,
   AdminAdminDashboardRoute: AdminAdminDashboardRoute,
+  AdminAdminIncomeRoute: AdminAdminIncomeRoute,
   AdminAdminPlansRoute: AdminAdminPlansRoute,
+  AdminAdminRazorpayRoute: AdminAdminRazorpayRoute,
   AdminAdminWithdrawalsRoute: AdminAdminWithdrawalsRoute,
 }
 
@@ -1146,6 +1248,7 @@ interface SocietyRouteChildren {
   SocietySocietyBlocksRoute: typeof SocietySocietyBlocksRoute
   SocietySocietyDashboardRoute: typeof SocietySocietyDashboardRoute
   SocietySocietyDigestRoute: typeof SocietySocietyDigestRoute
+  SocietySocietyExpensesRoute: typeof SocietySocietyExpensesRoute
   SocietySocietyFlatsRoute: typeof SocietySocietyFlatsRoute
   SocietySocietyLeaderboardRoute: typeof SocietySocietyLeaderboardRoute
   SocietySocietyLedgerRoute: typeof SocietySocietyLedgerRoute
@@ -1163,6 +1266,7 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyBlocksRoute: SocietySocietyBlocksRoute,
   SocietySocietyDashboardRoute: SocietySocietyDashboardRoute,
   SocietySocietyDigestRoute: SocietySocietyDigestRoute,
+  SocietySocietyExpensesRoute: SocietySocietyExpensesRoute,
   SocietySocietyFlatsRoute: SocietySocietyFlatsRoute,
   SocietySocietyLeaderboardRoute: SocietySocietyLeaderboardRoute,
   SocietySocietyLedgerRoute: SocietySocietyLedgerRoute,
@@ -1206,6 +1310,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   WelcomeRoute: WelcomeRoute,
   ApiSupportChatRoute: ApiSupportChatRoute,
+  CheckoutPlanIdRoute: CheckoutPlanIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

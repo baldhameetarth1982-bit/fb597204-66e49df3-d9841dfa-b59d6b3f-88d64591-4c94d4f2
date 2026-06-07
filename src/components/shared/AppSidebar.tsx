@@ -23,6 +23,7 @@ const items = [
   { title: "Leaderboard", url: "/society/leaderboard", icon: Trophy },
   { title: "AI Digest", url: "/society/digest", icon: Sparkles },
   { title: "Team & Roles", url: "/society/team", icon: ShieldCheck },
+  { title: "Verifications", url: "/society/verifications", icon: ShieldCheck },
 ] as const;
 
 export function AppSidebar() {

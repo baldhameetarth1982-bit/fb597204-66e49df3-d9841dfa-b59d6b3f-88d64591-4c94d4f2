@@ -548,7 +548,6 @@ function AppearanceCard({
 }: { currentTheme: string; societyId: string | null; userId: string | null; onChanged: () => void }) {
   const [plan, setPlan] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const { NeonThemePreview } = require("@/components/shared/NeonThemePreview");
 
   useEffect(() => {
     if (!societyId) { setPlan(null); return; }

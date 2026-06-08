@@ -614,6 +614,12 @@ function AppearanceCard({
             Upgrade to <Link to="/pricing" className="underline">Premium</Link> to unlock the Neon theme.
           </p>
         )}
+        {isSuperAdmin && (
+          <p className="text-xs text-emerald-600 dark:text-emerald-400">
+            Super Admin — all premium features unlocked, no payment needed.
+          </p>
+        )}
+
         <details className="rounded-xl border p-3">
           <summary className="cursor-pointer text-sm font-medium">Live Neon preview</summary>
           <div className="mt-3"><NeonThemePreview /></div>

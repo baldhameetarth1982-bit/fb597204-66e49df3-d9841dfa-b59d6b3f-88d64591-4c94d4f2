@@ -121,6 +121,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <ThemeApplier />
         <ReferralCapture />
         <MarketingAnalytics />
         <ShellSwitcher />
@@ -128,6 +129,30 @@ function RootComponent() {
       </AuthProvider>
     </QueryClientProvider>
   );
+}
+
+function ThemeApplier() {
+  // Read profile theme + plan; apply .theme-neon to <html> when allowed.
+  const { profile } = useAuthSafe();
+  useEffect(() => {
+    const root = document.documentElement;
+    const theme = (profile as any)?.theme;
+    // Apply only if neon explicitly set. Plan gating enforced in settings UI.
+    if (theme === "neon") root.classList.add("theme-neon");
+    else root.classList.remove("theme-neon");
+  }, [profile]);
+  return null;
+}
+
+function useAuthSafe() {
+  try {
+    // dynamic import avoid circular at SSR
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { useAuth } = require("@/context/AuthContext");
+    return useAuth();
+  } catch {
+    return { profile: null } as any;
+  }
 }
 
 function ReferralCapture() {

@@ -547,8 +547,8 @@ function LinkRow({
 }
 
 function AppearanceCard({
-  currentTheme, societyId, userId, onChanged,
-}: { currentTheme: string; societyId: string | null; userId: string | null; onChanged: () => void }) {
+  currentTheme, societyId, userId, isSuperAdmin, onChanged,
+}: { currentTheme: string; societyId: string | null; userId: string | null; isSuperAdmin: boolean; onChanged: () => void }) {
   const [plan, setPlan] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -558,7 +558,7 @@ function AppearanceCard({
       .then(({ data }) => setPlan((data as any)?.plan ?? null));
   }, [societyId]);
 
-  const isPremium = plan === "premium";
+  const isPremium = isSuperAdmin || plan === "premium";
 
   async function setTheme(next: "default" | "neon") {
     if (next === "neon" && !isPremium) {

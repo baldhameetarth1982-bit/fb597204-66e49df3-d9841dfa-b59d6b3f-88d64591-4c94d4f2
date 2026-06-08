@@ -107,6 +107,15 @@ function PricingPage() {
                       <Row label={`Transaction fee: ${p.txn_fee_pct}%`} ok={p.txn_fee_pct === 0} />
                       <Row label={p.ads_enabled ? "Ad-supported" : "Ad-free"} ok={!p.ads_enabled} />
                       {(p.features ?? []).map((f, i) => <Row key={i} label={f} ok />)}
+                      {p.id === "premium" ? (
+                        <div className="flex items-start gap-2">
+                          <Check className="h-4 w-4 text-emerald-400 mt-0.5 shrink-0" />
+                          <span className="flex-1">Premium <b>Neon</b> theme (advanced look)</span>
+                          <ThemePreviewButton />
+                        </div>
+                      ) : (
+                        <Row label="Standard theme only" ok={false} />
+                      )}
                     </div>
                     <Button
                       asChild

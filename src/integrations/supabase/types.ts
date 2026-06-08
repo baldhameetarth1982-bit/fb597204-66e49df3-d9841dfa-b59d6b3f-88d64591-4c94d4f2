@@ -700,6 +700,7 @@ export type Database = {
           referral_code: string | null
           referred_by: string | null
           society_id: string | null
+          theme: string
           updated_at: string
         }
         Insert: {
@@ -713,6 +714,7 @@ export type Database = {
           referral_code?: string | null
           referred_by?: string | null
           society_id?: string | null
+          theme?: string
           updated_at?: string
         }
         Update: {
@@ -726,6 +728,7 @@ export type Database = {
           referral_code?: string | null
           referred_by?: string | null
           society_id?: string | null
+          theme?: string
           updated_at?: string
         }
         Relationships: [

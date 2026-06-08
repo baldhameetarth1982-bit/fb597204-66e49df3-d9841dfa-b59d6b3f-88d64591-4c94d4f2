@@ -42,6 +42,7 @@ import { Route as SocietySocietyDigestRouteImport } from './routes/_society/soci
 import { Route as SocietySocietyDashboardRouteImport } from './routes/_society/society.dashboard'
 import { Route as SocietySocietyBlocksRouteImport } from './routes/_society/society.blocks'
 import { Route as SocietySocietyBillingRouteImport } from './routes/_society/society.billing'
+import { Route as SocietySocietyBillStudioRouteImport } from './routes/_society/society.bill-studio'
 import { Route as SocietySocietyAnnouncementsRouteImport } from './routes/_society/society.announcements'
 import { Route as ResidentAppVisitorsRouteImport } from './routes/_resident/app.visitors'
 import { Route as ResidentAppVehiclesRouteImport } from './routes/_resident/app.vehicles'
@@ -67,6 +68,7 @@ import { Route as AdminAdminPlansRouteImport } from './routes/_admin/admin.plans
 import { Route as AdminAdminIncomeRouteImport } from './routes/_admin/admin.income'
 import { Route as AdminAdminDashboardRouteImport } from './routes/_admin/admin.dashboard'
 import { Route as AdminAdminAdsRouteImport } from './routes/_admin/admin.ads'
+import { Route as ApiPublicHooksRunBillingRouteImport } from './routes/api/public/hooks/run-billing'
 import { Route as ResidentAppFeedPostIdRouteImport } from './routes/_resident/app.feed.$postId'
 
 const WelcomeRoute = WelcomeRouteImport.update({
@@ -232,6 +234,12 @@ const SocietySocietyBillingRoute = SocietySocietyBillingRouteImport.update({
   path: '/society/billing',
   getParentRoute: () => SocietyRoute,
 } as any)
+const SocietySocietyBillStudioRoute =
+  SocietySocietyBillStudioRouteImport.update({
+    id: '/society/bill-studio',
+    path: '/society/bill-studio',
+    getParentRoute: () => SocietyRoute,
+  } as any)
 const SocietySocietyAnnouncementsRoute =
   SocietySocietyAnnouncementsRouteImport.update({
     id: '/society/announcements',
@@ -358,6 +366,12 @@ const AdminAdminAdsRoute = AdminAdminAdsRouteImport.update({
   path: '/admin/ads',
   getParentRoute: () => AdminRoute,
 } as any)
+const ApiPublicHooksRunBillingRoute =
+  ApiPublicHooksRunBillingRouteImport.update({
+    id: '/api/public/hooks/run-billing',
+    path: '/api/public/hooks/run-billing',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ResidentAppFeedPostIdRoute = ResidentAppFeedPostIdRouteImport.update({
   id: '/$postId',
   path: '/$postId',
@@ -405,6 +419,7 @@ export interface FileRoutesByFullPath {
   '/app/vehicles': typeof ResidentAppVehiclesRoute
   '/app/visitors': typeof ResidentAppVisitorsRoute
   '/society/announcements': typeof SocietySocietyAnnouncementsRoute
+  '/society/bill-studio': typeof SocietySocietyBillStudioRoute
   '/society/billing': typeof SocietySocietyBillingRoute
   '/society/blocks': typeof SocietySocietyBlocksRoute
   '/society/dashboard': typeof SocietySocietyDashboardRoute
@@ -420,6 +435,7 @@ export interface FileRoutesByFullPath {
   '/society/verifications': typeof SocietySocietyVerificationsRoute
   '/society/visitors': typeof SocietySocietyVisitorsRoute
   '/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
+  '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -461,6 +477,7 @@ export interface FileRoutesByTo {
   '/app/vehicles': typeof ResidentAppVehiclesRoute
   '/app/visitors': typeof ResidentAppVisitorsRoute
   '/society/announcements': typeof SocietySocietyAnnouncementsRoute
+  '/society/bill-studio': typeof SocietySocietyBillStudioRoute
   '/society/billing': typeof SocietySocietyBillingRoute
   '/society/blocks': typeof SocietySocietyBlocksRoute
   '/society/dashboard': typeof SocietySocietyDashboardRoute
@@ -476,6 +493,7 @@ export interface FileRoutesByTo {
   '/society/verifications': typeof SocietySocietyVerificationsRoute
   '/society/visitors': typeof SocietySocietyVisitorsRoute
   '/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
+  '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -523,6 +541,7 @@ export interface FileRoutesById {
   '/_resident/app/vehicles': typeof ResidentAppVehiclesRoute
   '/_resident/app/visitors': typeof ResidentAppVisitorsRoute
   '/_society/society/announcements': typeof SocietySocietyAnnouncementsRoute
+  '/_society/society/bill-studio': typeof SocietySocietyBillStudioRoute
   '/_society/society/billing': typeof SocietySocietyBillingRoute
   '/_society/society/blocks': typeof SocietySocietyBlocksRoute
   '/_society/society/dashboard': typeof SocietySocietyDashboardRoute
@@ -538,6 +557,7 @@ export interface FileRoutesById {
   '/_society/society/verifications': typeof SocietySocietyVerificationsRoute
   '/_society/society/visitors': typeof SocietySocietyVisitorsRoute
   '/_resident/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
+  '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -582,6 +602,7 @@ export interface FileRouteTypes {
     | '/app/vehicles'
     | '/app/visitors'
     | '/society/announcements'
+    | '/society/bill-studio'
     | '/society/billing'
     | '/society/blocks'
     | '/society/dashboard'
@@ -597,6 +618,7 @@ export interface FileRouteTypes {
     | '/society/verifications'
     | '/society/visitors'
     | '/app/feed/$postId'
+    | '/api/public/hooks/run-billing'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -638,6 +660,7 @@ export interface FileRouteTypes {
     | '/app/vehicles'
     | '/app/visitors'
     | '/society/announcements'
+    | '/society/bill-studio'
     | '/society/billing'
     | '/society/blocks'
     | '/society/dashboard'
@@ -653,6 +676,7 @@ export interface FileRouteTypes {
     | '/society/verifications'
     | '/society/visitors'
     | '/app/feed/$postId'
+    | '/api/public/hooks/run-billing'
   id:
     | '__root__'
     | '/'
@@ -699,6 +723,7 @@ export interface FileRouteTypes {
     | '/_resident/app/vehicles'
     | '/_resident/app/visitors'
     | '/_society/society/announcements'
+    | '/_society/society/bill-studio'
     | '/_society/society/billing'
     | '/_society/society/blocks'
     | '/_society/society/dashboard'
@@ -714,6 +739,7 @@ export interface FileRouteTypes {
     | '/_society/society/verifications'
     | '/_society/society/visitors'
     | '/_resident/app/feed/$postId'
+    | '/api/public/hooks/run-billing'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -730,6 +756,7 @@ export interface RootRouteChildren {
   WelcomeRoute: typeof WelcomeRoute
   ApiSupportChatRoute: typeof ApiSupportChatRoute
   CheckoutPlanIdRoute: typeof CheckoutPlanIdRoute
+  ApiPublicHooksRunBillingRoute: typeof ApiPublicHooksRunBillingRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -965,6 +992,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SocietySocietyBillingRouteImport
       parentRoute: typeof SocietyRoute
     }
+    '/_society/society/bill-studio': {
+      id: '/_society/society/bill-studio'
+      path: '/society/bill-studio'
+      fullPath: '/society/bill-studio'
+      preLoaderRoute: typeof SocietySocietyBillStudioRouteImport
+      parentRoute: typeof SocietyRoute
+    }
     '/_society/society/announcements': {
       id: '/_society/society/announcements'
       path: '/society/announcements'
@@ -1140,6 +1174,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminAdsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/api/public/hooks/run-billing': {
+      id: '/api/public/hooks/run-billing'
+      path: '/api/public/hooks/run-billing'
+      fullPath: '/api/public/hooks/run-billing'
+      preLoaderRoute: typeof ApiPublicHooksRunBillingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_resident/app/feed/$postId': {
       id: '/_resident/app/feed/$postId'
       path: '/$postId'
@@ -1244,6 +1285,7 @@ const ResidentRouteWithChildren = ResidentRoute._addFileChildren(
 
 interface SocietyRouteChildren {
   SocietySocietyAnnouncementsRoute: typeof SocietySocietyAnnouncementsRoute
+  SocietySocietyBillStudioRoute: typeof SocietySocietyBillStudioRoute
   SocietySocietyBillingRoute: typeof SocietySocietyBillingRoute
   SocietySocietyBlocksRoute: typeof SocietySocietyBlocksRoute
   SocietySocietyDashboardRoute: typeof SocietySocietyDashboardRoute
@@ -1262,6 +1304,7 @@ interface SocietyRouteChildren {
 
 const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyAnnouncementsRoute: SocietySocietyAnnouncementsRoute,
+  SocietySocietyBillStudioRoute: SocietySocietyBillStudioRoute,
   SocietySocietyBillingRoute: SocietySocietyBillingRoute,
   SocietySocietyBlocksRoute: SocietySocietyBlocksRoute,
   SocietySocietyDashboardRoute: SocietySocietyDashboardRoute,
@@ -1311,6 +1354,7 @@ const rootRouteChildren: RootRouteChildren = {
   WelcomeRoute: WelcomeRoute,
   ApiSupportChatRoute: ApiSupportChatRoute,
   CheckoutPlanIdRoute: CheckoutPlanIdRoute,
+  ApiPublicHooksRunBillingRoute: ApiPublicHooksRunBillingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

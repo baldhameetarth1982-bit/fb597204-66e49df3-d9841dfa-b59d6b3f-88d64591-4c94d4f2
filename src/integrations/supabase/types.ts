@@ -44,6 +44,74 @@ export type Database = {
         }
         Relationships: []
       }
+      billing_schedules: {
+        Row: {
+          amount: number
+          anchor_day: number
+          created_at: string
+          cycle: string
+          due_offset_days: number
+          enabled: boolean
+          id: string
+          last_run_at: string | null
+          last_run_count: number | null
+          last_run_total: number | null
+          late_fee_type: string
+          late_fee_value: number
+          mode: string
+          next_run_at: string
+          prorate: boolean
+          society_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          anchor_day?: number
+          created_at?: string
+          cycle?: string
+          due_offset_days?: number
+          enabled?: boolean
+          id?: string
+          last_run_at?: string | null
+          last_run_count?: number | null
+          last_run_total?: number | null
+          late_fee_type?: string
+          late_fee_value?: number
+          mode?: string
+          next_run_at?: string
+          prorate?: boolean
+          society_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          anchor_day?: number
+          created_at?: string
+          cycle?: string
+          due_offset_days?: number
+          enabled?: boolean
+          id?: string
+          last_run_at?: string | null
+          last_run_count?: number | null
+          last_run_total?: number | null
+          late_fee_type?: string
+          late_fee_value?: number
+          mode?: string
+          next_run_at?: string
+          prorate?: boolean
+          society_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_schedules_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: true
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bills: {
         Row: {
           amount: number
@@ -277,6 +345,7 @@ export type Database = {
           society_id: string
           status: string
           type: string | null
+          unit_type: string
           updated_at: string
         }
         Insert: {
@@ -289,6 +358,7 @@ export type Database = {
           society_id: string
           status?: string
           type?: string | null
+          unit_type?: string
           updated_at?: string
         }
         Update: {
@@ -301,6 +371,7 @@ export type Database = {
           society_id?: string
           status?: string
           type?: string | null
+          unit_type?: string
           updated_at?: string
         }
         Relationships: [
@@ -815,6 +886,7 @@ export type Database = {
           pincode: string | null
           plan: string
           plan_id: string | null
+          property_type: string
           registration_no: string | null
           state: string | null
           status: string
@@ -833,6 +905,7 @@ export type Database = {
           pincode?: string | null
           plan?: string
           plan_id?: string | null
+          property_type?: string
           registration_no?: string | null
           state?: string | null
           status?: string
@@ -851,6 +924,7 @@ export type Database = {
           pincode?: string | null
           plan?: string
           plan_id?: string | null
+          property_type?: string
           registration_no?: string | null
           state?: string | null
           status?: string
@@ -905,6 +979,51 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      unit_billing_overrides: {
+        Row: {
+          amount: number
+          created_at: string
+          flat_id: string
+          id: string
+          reason: string | null
+          society_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          flat_id: string
+          id?: string
+          reason?: string | null
+          society_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          flat_id?: string
+          id?: string
+          reason?: string | null
+          society_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unit_billing_overrides_flat_id_fkey"
+            columns: ["flat_id"]
+            isOneToOne: true
+            referencedRelation: "flats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unit_billing_overrides_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_points: {
         Row: {

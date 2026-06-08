@@ -296,6 +296,36 @@ export type Database = {
         }
         Relationships: []
       }
+      fcm_tokens: {
+        Row: {
+          created_at: string
+          device_info: string | null
+          id: string
+          platform: string
+          token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_info?: string | null
+          id?: string
+          platform?: string
+          token: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_info?: string | null
+          id?: string
+          platform?: string
+          token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       flat_residents: {
         Row: {
           created_at: string
@@ -485,6 +515,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      phone_verifications: {
+        Row: {
+          created_at: string
+          firebase_uid: string | null
+          phone: string
+          updated_at: string
+          user_id: string
+          verified_at: string
+        }
+        Insert: {
+          created_at?: string
+          firebase_uid?: string | null
+          phone: string
+          updated_at?: string
+          user_id: string
+          verified_at?: string
+        }
+        Update: {
+          created_at?: string
+          firebase_uid?: string | null
+          phone?: string
+          updated_at?: string
+          user_id?: string
+          verified_at?: string
+        }
+        Relationships: []
       }
       plans: {
         Row: {

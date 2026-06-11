@@ -32,9 +32,9 @@ function ServicesScreen() {
   ] as const;
 
   const more = [
-    { title: "Daily Help", icon: Sparkles },
-    { title: "Maintenance", icon: Wrench },
-    { title: "Lost & Found", icon: PackageSearch },
+    { title: "Daily Help",   icon: Sparkles,      cat: "daily_help" as const },
+    { title: "Maintenance",  icon: Wrench,        cat: "maintenance" as const },
+    { title: "Lost & Found", icon: PackageSearch, cat: "lost_found" as const },
   ];
 
   return (
@@ -100,17 +100,18 @@ function ServicesScreen() {
           More
         </h2>
         <div className="grid grid-cols-3 gap-3">
-          {more.map(({ title, icon: Icon }) => (
-            <button
+          {more.map(({ title, icon: Icon, cat }) => (
+            <Link
               key={title}
-              type="button"
+              to="/app/helpdesk"
+              search={{ cat, new: true }}
               className="rounded-2xl bg-secondary/60 hover:bg-secondary p-4 flex flex-col items-center gap-2 active:scale-[0.97] transition-transform"
             >
               <span className="h-10 w-10 rounded-xl bg-background grid place-items-center text-primary">
                 <Icon className="h-5 w-5" />
               </span>
               <span className="text-xs font-medium text-center">{title}</span>
-            </button>
+            </Link>
           ))}
         </div>
       </section>

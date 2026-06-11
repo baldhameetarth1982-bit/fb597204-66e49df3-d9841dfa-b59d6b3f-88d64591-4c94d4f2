@@ -1001,6 +1001,7 @@ export type Database = {
       support_tickets: {
         Row: {
           ai_transcript: Json | null
+          category: string
           created_at: string
           description: string
           id: string
@@ -1013,6 +1014,7 @@ export type Database = {
         }
         Insert: {
           ai_transcript?: Json | null
+          category?: string
           created_at?: string
           description: string
           id?: string
@@ -1025,6 +1027,7 @@ export type Database = {
         }
         Update: {
           ai_transcript?: Json | null
+          category?: string
           created_at?: string
           description?: string
           id?: string

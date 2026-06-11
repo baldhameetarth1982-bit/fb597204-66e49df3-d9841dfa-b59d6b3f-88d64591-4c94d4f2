@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
+import { getFirebaseAuth, isFirebaseConfigured } from "@/lib/firebase";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_auth/login")({
@@ -211,10 +212,25 @@ function LoginPage() {
         variant="outline"
         disabled={loading}
         onClick={async () => {
+          if (!isFirebaseConfigured()) {
+            toast.error("Google sign-in unavailable — Firebase not configured");
+            return;
+          }
           setLoading(true);
           try {
-            const r = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
-            if (r.error) toast.error(r.error.message ?? "Google sign-in failed");
+            const provider = new GoogleAuthProvider();
+            provider.setCustomParameters({ prompt: "select_account" });
+            const result = await signInWithPopup(getFirebaseAuth(), provider);
+            const cred = GoogleAuthProvider.credentialFromResult(result);
+            const idToken = cred?.idToken;
+            if (!idToken) throw new Error("Could not get Google ID token");
+            const { error } = await supabase.auth.signInWithIdToken({
+              provider: "google",
+              token: idToken,
+            });
+            if (error) throw error;
+            toast.success("Welcome");
+            navigate({ to: "/" });
           } catch (e) {
             toast.error(e instanceof Error ? e.message : "Google sign-in failed");
           } finally {

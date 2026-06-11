@@ -31,6 +31,7 @@ interface BillRow {
   amount: number;
   due_date: string;
   status: string;
+  flat_id: string;
   flat: { flat_number: string; block: { name: string } | null } | null;
 }
 

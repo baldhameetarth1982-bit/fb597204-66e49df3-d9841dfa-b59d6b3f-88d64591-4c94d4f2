@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Receipt, Loader2, Plus, IndianRupee, Search } from "lucide-react";
+import { Receipt, Loader2, Plus, IndianRupee, Search, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { PageHeader, PageShell, EmptyState } from "@/components/shared/PageHeader";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,9 @@ import {
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
@@ -27,10 +31,12 @@ interface BillRow {
   amount: number;
   due_date: string;
   status: string;
+  flat_id: string;
   flat: { flat_number: string; block: { name: string } | null } | null;
 }
 
 function BillingPage() {
+  const { user } = useAuth();
   const { societyId, loading: sidLoading } = useSocietyId();
   const [rows, setRows] = useState<BillRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,6 +48,12 @@ function BillingPage() {
   const [amount, setAmount] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [generating, setGenerating] = useState(false);
+
+  // Mark-paid dialog state
+  const [payBill, setPayBill] = useState<BillRow | null>(null);
+  const [payMethod, setPayMethod] = useState<"cash" | "upi" | "bank" | "cheque" | "other">("cash");
+  const [payRef, setPayRef] = useState("");
+  const [payingNow, setPayingNow] = useState(false);
 
   async function load() {
     if (!societyId) {
@@ -132,6 +144,38 @@ function BillingPage() {
     void load();
   }
 
+  async function confirmPaid() {
+    if (!payBill || !societyId || !user) return;
+    setPayingNow(true);
+    const { error: pErr } = await supabase.from("payments").insert({
+      bill_id: payBill.id,
+      society_id: societyId,
+      flat_id: payBill.flat_id,
+      amount: payBill.amount,
+      method: payMethod,
+      status: "success",
+      reference_no: payRef.trim() || null,
+      notes: `Recorded by admin (${payMethod})`,
+    });
+    if (pErr) { setPayingNow(false); return toast.error(pErr.message); }
+    const { error: bErr } = await supabase
+      .from("bills")
+      .update({ status: "paid" })
+      .eq("id", payBill.id);
+    setPayingNow(false);
+    if (bErr) return toast.error(bErr.message);
+    toast.success("Marked as paid");
+    setPayBill(null);
+    void load();
+  }
+
+  async function markUnpaid(r: BillRow) {
+    const { error } = await supabase.from("bills").update({ status: "unpaid" }).eq("id", r.id);
+    if (error) return toast.error(error.message);
+    toast.success("Marked unpaid");
+    void load();
+  }
+
 
   const filtered = rows.filter((r) => {
     if (!q.trim()) return true;
@@ -218,6 +262,7 @@ function BillingPage() {
                   <TableHead>Due</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -236,6 +281,27 @@ function BillingPage() {
                         {r.status}
                       </Badge>
                     </TableCell>
+                    <TableCell className="text-right">
+                      {r.status !== "paid" ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="rounded-lg h-8"
+                          onClick={() => { setPayBill(r); setPayMethod("cash"); setPayRef(""); }}
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Mark paid
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="rounded-lg h-8 text-muted-foreground"
+                          onClick={() => markUnpaid(r)}
+                        >
+                          Mark unpaid
+                        </Button>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -243,6 +309,54 @@ function BillingPage() {
           </div>
         </>
       )}
+
+      <Dialog open={!!payBill} onOpenChange={(o) => !o && setPayBill(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Record payment</DialogTitle>
+          </DialogHeader>
+          {payBill && (
+            <div className="space-y-4">
+              <div className="rounded-xl bg-secondary/40 p-3 text-sm">
+                <p className="font-medium">
+                  {payBill.flat?.block?.name ? `${payBill.flat.block.name}-` : ""}
+                  {payBill.flat?.flat_number} · {payBill.period_label}
+                </p>
+                <p className="text-muted-foreground inline-flex items-center">
+                  <IndianRupee className="h-3.5 w-3.5" />
+                  {Number(payBill.amount).toLocaleString("en-IN")}
+                </p>
+              </div>
+              <div className="grid gap-2">
+                <Label>Payment method</Label>
+                <Select value={payMethod} onValueChange={(v) => setPayMethod(v as typeof payMethod)}>
+                  <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">Cash</SelectItem>
+                    <SelectItem value="upi">UPI</SelectItem>
+                    <SelectItem value="bank">Bank transfer</SelectItem>
+                    <SelectItem value="cheque">Cheque</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {payMethod !== "cash" && (
+                <div className="grid gap-2">
+                  <Label>Reference no. (optional)</Label>
+                  <Input value={payRef} onChange={(e) => setPayRef(e.target.value)} placeholder="UPI/Txn/Cheque #" className="rounded-xl" />
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPayBill(null)} className="rounded-xl">Cancel</Button>
+            <Button onClick={confirmPaid} disabled={payingNow} className="rounded-xl">
+              {payingNow && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Confirm payment
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageShell>
   );
 }

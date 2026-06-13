@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { getFirebaseAuth, isFirebaseConfigured } from "@/lib/firebase";
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { GoogleAuthProvider, OAuthProvider, signInWithPopup } from "firebase/auth";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_auth/login")({

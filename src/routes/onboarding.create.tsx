@@ -67,17 +67,6 @@ function CreateSociety() {
   }
   if (!isAuthenticated) return <Navigate to="/login" />;
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!user) return;
-    if (Number(captchaInput) !== captcha.answer) {
-      toast.error("Verification failed", { description: "Please solve the math check." });
-      return;
-    }
-    if (!agreed) {
-      toast.error("Please accept the Terms of Service and Privacy Policy");
-      return;
-    }
   async function sendOtp() {
     if (!/^\+\d{8,15}$/.test(phone)) {
       toast.error("Enter phone in international format, e.g. +919876543210");

@@ -43,6 +43,5 @@ export async function getFirebaseMessaging(): Promise<Messaging | null> {
   return messaging;
 }
 
-// VAPID key is needed for FCM web push. Get from Firebase Console →
-// Project Settings → Cloud Messaging → Web Push certificates.
-export const VAPID_KEY = import.meta.env.VITE_FB_VAPID_KEY as string | undefined;
+// VAPID public key for FCM web push (safe to expose — it's a public key sent to the browser).
+export const VAPID_KEY = "9qwBjwVKyiXcR83u1N9udukk3knOKTgwRtTupVPuRMQ";

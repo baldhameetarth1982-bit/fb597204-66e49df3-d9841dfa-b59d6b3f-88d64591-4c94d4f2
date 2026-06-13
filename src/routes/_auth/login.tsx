@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { getFirebaseAuth, isFirebaseConfigured } from "@/lib/firebase";
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { GoogleAuthProvider, OAuthProvider, signInWithPopup } from "firebase/auth";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_auth/login")({
@@ -241,6 +241,43 @@ function LoginPage() {
       >
         <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="#EA4335" d="M12 11v3.2h4.5c-.2 1.2-1.6 3.5-4.5 3.5-2.7 0-4.9-2.2-4.9-5s2.2-5 4.9-5c1.5 0 2.6.6 3.2 1.2l2.2-2.1C15.9 5.5 14.1 4.7 12 4.7 7.9 4.7 4.6 8 4.6 12s3.3 7.3 7.4 7.3c4.3 0 7.1-3 7.1-7.2 0-.5 0-.9-.1-1.3H12z"/></svg>
         Continue with Google
+      </Button>
+
+      <Button
+        type="button"
+        variant="outline"
+        disabled={loading}
+        onClick={async () => {
+          if (!isFirebaseConfigured()) {
+            toast.error("Apple sign-in unavailable");
+            return;
+          }
+          setLoading(true);
+          try {
+            const provider = new OAuthProvider("apple.com");
+            provider.addScope("email");
+            provider.addScope("name");
+            const result = await signInWithPopup(getFirebaseAuth(), provider);
+            const cred = OAuthProvider.credentialFromResult(result);
+            const idToken = cred?.idToken;
+            if (!idToken) throw new Error("Could not get Apple ID token");
+            const { error } = await supabase.auth.signInWithIdToken({
+              provider: "apple",
+              token: idToken,
+            });
+            if (error) throw error;
+            toast.success("Welcome");
+            navigate({ to: "/" });
+          } catch (e) {
+            toast.error(e instanceof Error ? e.message : "Apple sign-in failed");
+          } finally {
+            setLoading(false);
+          }
+        }}
+        className="mt-2 w-full h-11 rounded-xl font-semibold gap-2"
+      >
+        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor"><path d="M17.05 12.04c-.03-2.93 2.39-4.34 2.5-4.41-1.36-1.99-3.48-2.27-4.24-2.3-1.81-.18-3.53 1.07-4.45 1.07-.92 0-2.34-1.04-3.85-1.01-1.98.03-3.81 1.15-4.83 2.92-2.06 3.58-.53 8.87 1.48 11.78.98 1.42 2.15 3.02 3.68 2.96 1.48-.06 2.04-.96 3.83-.96 1.79 0 2.29.96 3.85.93 1.59-.03 2.6-1.45 3.57-2.88 1.13-1.65 1.59-3.25 1.61-3.33-.03-.01-3.09-1.19-3.15-4.77zM14.5 3.96c.82-.99 1.37-2.37 1.22-3.74-1.18.05-2.61.78-3.45 1.77-.76.88-1.42 2.28-1.24 3.63 1.31.1 2.65-.67 3.47-1.66z"/></svg>
+        Continue with Apple
       </Button>
 
       <div className="mt-6 rounded-2xl bg-secondary/60 p-4 space-y-2">

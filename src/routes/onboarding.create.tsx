@@ -1,6 +1,6 @@
 import { createFileRoute, Navigate, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { Loader2, Building2, ArrowLeft, Copy, CheckCircle2, ShieldCheck } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Loader2, Building2, ArrowLeft, Copy, CheckCircle2, ShieldCheck, Phone } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
+import { getFirebaseAuth } from "@/lib/firebase";
+import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth";
 
 export const Route = createFileRoute("/onboarding/create")({
   head: () => ({ meta: [{ title: "Create society — SocioHub" }] }),
@@ -28,6 +30,15 @@ function CreateSociety() {
   }, []);
   const [captchaInput, setCaptchaInput] = useState("");
   const [agreed, setAgreed] = useState(false);
+
+  // Phone verification (required to create a society)
+  const [phone, setPhone] = useState("+91");
+  const [otp, setOtp] = useState("");
+  const [otpStage, setOtpStage] = useState<"idle" | "sent" | "verified">("idle");
+  const [otpBusy, setOtpBusy] = useState(false);
+  const confirmRef = useRef<ConfirmationResult | null>(null);
+  const recaptchaRef = useRef<RecaptchaVerifier | null>(null);
+  useEffect(() => () => { try { recaptchaRef.current?.clear(); } catch {} }, []);
 
   const [created, setCreated] = useState<{ id: string; code: string; name: string } | null>(null);
 
@@ -56,9 +67,51 @@ function CreateSociety() {
   }
   if (!isAuthenticated) return <Navigate to="/login" />;
 
+  async function sendOtp() {
+    if (!/^\+\d{8,15}$/.test(phone)) {
+      toast.error("Enter phone in international format, e.g. +919876543210");
+      return;
+    }
+    setOtpBusy(true);
+    try {
+      const auth = getFirebaseAuth();
+      if (!recaptchaRef.current) {
+        recaptchaRef.current = new RecaptchaVerifier(auth, "recaptcha-container", { size: "invisible" });
+      }
+      confirmRef.current = await signInWithPhoneNumber(auth, phone, recaptchaRef.current);
+      setOtpStage("sent");
+      toast.success("OTP sent");
+    } catch (e: any) {
+      toast.error(e.message ?? "Could not send OTP");
+    }
+    setOtpBusy(false);
+  }
+
+  async function verifyOtp() {
+    if (!confirmRef.current || !user) return;
+    setOtpBusy(true);
+    try {
+      const res = await confirmRef.current.confirm(otp.trim());
+      const fbUid = res.user.uid;
+      const { error } = await (supabase as any)
+        .from("phone_verifications")
+        .upsert({ user_id: user.id, phone, firebase_uid: fbUid }, { onConflict: "user_id" });
+      if (error) throw new Error(error.message);
+      setOtpStage("verified");
+      toast.success("Phone verified ✓");
+    } catch (e: any) {
+      toast.error(e.message ?? "Wrong code");
+    }
+    setOtpBusy(false);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!user) return;
+    if (otpStage !== "verified") {
+      toast.error("Please verify your phone number first");
+      return;
+    }
     if (Number(captchaInput) !== captcha.answer) {
       toast.error("Verification failed", { description: "Please solve the math check." });
       return;
@@ -197,6 +250,50 @@ function CreateSociety() {
               </div>
             </div>
 
+            <div className="rounded-2xl border border-border bg-muted/40 p-4 space-y-3">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Phone className="h-4 w-4 text-primary" />
+                Verify your phone {otpStage === "verified" && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+              </div>
+              {otpStage !== "verified" && (
+                <>
+                  <div className="flex gap-2">
+                    <Input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="+919876543210"
+                      disabled={otpStage === "sent" || otpBusy}
+                      className="h-10 rounded-xl flex-1"
+                    />
+                    {otpStage === "idle" && (
+                      <Button type="button" onClick={sendOtp} disabled={otpBusy} className="h-10 rounded-xl">
+                        {otpBusy && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}Send OTP
+                      </Button>
+                    )}
+                  </div>
+                  {otpStage === "sent" && (
+                    <div className="flex gap-2">
+                      <Input
+                        inputMode="numeric"
+                        value={otp}
+                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                        placeholder="6-digit OTP"
+                        className="h-10 rounded-xl flex-1 tracking-[0.3em] text-center"
+                      />
+                      <Button type="button" onClick={verifyOtp} disabled={otpBusy || otp.length !== 6} className="h-10 rounded-xl">
+                        {otpBusy && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}Verify
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
+              {otpStage === "verified" && (
+                <p className="text-xs text-muted-foreground">{phone} verified</p>
+              )}
+              <div id="recaptcha-container" />
+            </div>
+
             <div className="rounded-2xl border border-border bg-muted/40 p-4 space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium">
                 <ShieldCheck className="h-4 w-4 text-primary" />
@@ -227,7 +324,7 @@ function CreateSociety() {
               </span>
             </label>
 
-            <Button type="submit" disabled={saving || !agreed} className="w-full h-12 rounded-xl">
+            <Button type="submit" disabled={saving || !agreed || otpStage !== "verified"} className="w-full h-12 rounded-xl">
               {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Create society
             </Button>

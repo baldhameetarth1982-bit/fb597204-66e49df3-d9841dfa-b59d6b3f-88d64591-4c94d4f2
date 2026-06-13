@@ -3,14 +3,13 @@
 importScripts("https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js");
 
-// Config must match your Firebase project (web app config).
 firebase.initializeApp({
-  apiKey: "REPLACE_ME_API_KEY",
-  authDomain: "REPLACE_ME.firebaseapp.com",
-  projectId: "REPLACE_ME",
-  storageBucket: "REPLACE_ME.appspot.com",
-  messagingSenderId: "REPLACE_ME_SENDER_ID",
-  appId: "REPLACE_ME_APP_ID",
+  apiKey: "AIzaSyD2RXziLudcxHBf6qX3JghlgipanVptVnc",
+  authDomain: "sociohub-49e4f.firebaseapp.com",
+  projectId: "sociohub-49e4f",
+  storageBucket: "sociohub-49e4f.firebasestorage.app",
+  messagingSenderId: "37386847118",
+  appId: "1:37386847118:web:f6d8e64bf2ff668c975adf",
 });
 
 const messaging = firebase.messaging();

@@ -9,6 +9,7 @@ import {
   SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton,
   SidebarMenuItem, useSidebar,
 } from "@/components/ui/sidebar";
+import { Logo } from "@/components/shared/Logo";
 
 const items = [
   { title: "Dashboard", url: "/society/dashboard", icon: LayoutDashboard },
@@ -38,9 +39,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-border">
       <SidebarHeader className="px-4 py-5">
         <Link to="/" className="flex items-center gap-2">
-          <div className="h-9 w-9 rounded-xl bg-primary text-primary-foreground grid place-items-center font-bold">
-            S
-          </div>
+          <Logo size={36} />
           {!collapsed && (
             <span className="text-lg font-semibold tracking-tight text-foreground">
               SocioHub

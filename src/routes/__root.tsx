@@ -18,6 +18,7 @@ import { AppHeader } from "@/components/shared/AppHeader";
 import { ResidentBottomNav } from "@/components/shared/ResidentBottomNav";
 import { SocietyBottomNav } from "@/components/shared/SocietyBottomNav";
 import { Toaster } from "@/components/ui/sonner";
+import { SplashScreen } from "@/components/shared/SplashScreen";
 
 function NotFoundComponent() {
   return (
@@ -80,17 +81,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "WEAGKJB" },
-      { name: "description", content: "awehfgiuwEFWW WIFL" },
-      { property: "og:title", content: "WEAGKJB" },
-      { property: "og:description", content: "awehfgiuwEFWW WIFL" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { name: "theme-color", content: "#1e3a8a" },
+      { title: "SocioHub — Society management, simplified" },
+      { name: "description", content: "Collect maintenance, share notices and manage your housing society — all in one beautiful app." },
+      { property: "og:title", content: "SocioHub — Society management, simplified" },
+      { property: "og:description", content: "Collect maintenance, share notices and manage your housing society — all in one beautiful app." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:title", content: "WEAGKJB" },
-      { name: "twitter:description", content: "awehfgiuwEFWW WIFL" },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/7d951e26-95be-4cd2-9979-5af5dd706f01/id-preview-5008506b--68752e3a-4def-45ab-8ff0-b74d48f33a17.lovable.app-1780879336641.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/7d951e26-95be-4cd2-9979-5af5dd706f01/id-preview-5008506b--68752e3a-4def-45ab-8ff0-b74d48f33a17.lovable.app-1780879336641.png" },
+      { name: "twitter:title", content: "SocioHub" },
+      { name: "twitter:description", content: "Society management, simplified." },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
   }),
@@ -121,6 +121,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <SplashScreen />
         <ThemeApplier />
         <ReferralCapture />
         <MarketingAnalytics />

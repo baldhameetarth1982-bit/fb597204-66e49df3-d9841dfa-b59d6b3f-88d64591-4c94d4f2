@@ -631,3 +631,34 @@ function AppearanceCard({
     </Card>
   );
 }
+
+function A11yToggle() {
+  const [on, setOn] = useState<boolean>(() => {
+    if (typeof document === "undefined") return false;
+    return document.documentElement.classList.contains("a11y");
+  });
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("sociohub:a11y") === "1";
+      if (saved) document.documentElement.classList.add("a11y");
+      setOn(saved);
+    } catch {}
+  }, []);
+  function toggle(v: boolean) {
+    setOn(v);
+    document.documentElement.classList.toggle("a11y", v);
+    try { localStorage.setItem("sociohub:a11y", v ? "1" : "0"); } catch {}
+    toast.success(v ? "Accessibility mode on — larger text & spacing" : "Accessibility mode off");
+  }
+  return (
+    <div className="rounded-xl border p-3">
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="font-medium">Accessibility mode</p>
+          <p className="text-sm text-muted-foreground">Larger text, looser spacing — easier for elderly residents.</p>
+        </div>
+        <Switch checked={on} onCheckedChange={toggle} aria-label="Toggle accessibility mode" />
+      </div>
+    </div>
+  );
+}

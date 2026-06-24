@@ -10,6 +10,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
+import {
+  assertLoginAllowed,
+  recordLoginFailure,
+  clearLoginFailures,
+} from "@/lib/login-guard.functions";
 
 export const Route = createFileRoute("/_auth/login")({
   head: () => ({

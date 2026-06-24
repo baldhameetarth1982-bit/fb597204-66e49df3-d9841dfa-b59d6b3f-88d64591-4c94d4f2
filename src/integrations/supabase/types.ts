@@ -44,6 +44,45 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          id: string
+          ip: string | null
+          metadata: Json
+          society_id: string | null
+          target_id: string | null
+          target_table: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          ip?: string | null
+          metadata?: Json
+          society_id?: string | null
+          target_id?: string | null
+          target_table?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          ip?: string | null
+          metadata?: Json
+          society_id?: string | null
+          target_id?: string | null
+          target_table?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       billing_schedules: {
         Row: {
           amount: number
@@ -1294,6 +1333,10 @@ export type Database = {
     Functions: {
       apply_referral_for_current_user: {
         Args: { _code: string }
+        Returns: boolean
+      }
+      authorize_membership: {
+        Args: { _society_id: string; _user_id: string }
         Returns: boolean
       }
       create_society_for_current_user: {

@@ -25,6 +25,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { NeonThemePreview } from "@/components/shared/NeonThemePreview";
+import { TwoFactorCard } from "@/components/security/TwoFactorCard";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({ meta: [{ title: "Settings — SocioHub" }] }),
@@ -347,7 +348,10 @@ function SettingsPage() {
               />
             </CardContent>
           </Card>
+
+          <TwoFactorCard />
         </TabsContent>
+
 
         {/* MORE */}
         <TabsContent value="more" className="mt-6 space-y-6">

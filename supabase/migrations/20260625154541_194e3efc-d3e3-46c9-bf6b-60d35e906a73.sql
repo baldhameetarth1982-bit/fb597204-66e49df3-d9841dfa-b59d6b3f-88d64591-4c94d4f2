@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.authorize_membership(uuid, uuid) FROM anon, PUBLIC;

@@ -53,7 +53,7 @@ function CreateSociety() {
         .not("society_id", "is", null)
         .limit(1)
         .maybeSingle();
-      if (data?.society_id) navigate({ to: "/society/dashboard" });
+      if (data?.society_id) navigate({ to: "/onboarding/plan" });
     }
     void check();
   }, [user, navigate]);
@@ -182,10 +182,10 @@ function CreateSociety() {
         </Card>
 
         <Button
-          onClick={() => navigate({ to: "/society/dashboard" })}
+          onClick={() => navigate({ to: "/onboarding/plan" })}
           className="w-full h-12 rounded-xl"
         >
-          Continue to dashboard
+          Continue — choose your plan
         </Button>
       </div>
     );

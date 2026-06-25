@@ -969,6 +969,36 @@ export type Database = {
         }
         Relationships: []
       }
+      resident_subscriptions: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          plan_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          plan_id?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          plan_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       societies: {
         Row: {
           address: string | null
@@ -981,7 +1011,10 @@ export type Database = {
           name: string
           pincode: string | null
           plan: string
+          plan_expires_at: string | null
           plan_id: string | null
+          plan_selected_at: string | null
+          plan_status: string
           property_type: string
           registration_no: string | null
           state: string | null
@@ -1000,7 +1033,10 @@ export type Database = {
           name: string
           pincode?: string | null
           plan?: string
+          plan_expires_at?: string | null
           plan_id?: string | null
+          plan_selected_at?: string | null
+          plan_status?: string
           property_type?: string
           registration_no?: string | null
           state?: string | null
@@ -1019,7 +1055,10 @@ export type Database = {
           name?: string
           pincode?: string | null
           plan?: string
+          plan_expires_at?: string | null
           plan_id?: string | null
+          plan_selected_at?: string | null
+          plan_status?: string
           property_type?: string
           registration_no?: string | null
           state?: string | null
@@ -1331,6 +1370,10 @@ export type Database = {
       }
     }
     Functions: {
+      activate_society_plan: {
+        Args: { _months?: number; _plan_id: string; _society_id: string }
+        Returns: undefined
+      }
       apply_referral_for_current_user: {
         Args: { _code: string }
         Returns: boolean
@@ -1399,6 +1442,11 @@ export type Database = {
       }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       join_society_with_code: { Args: { _code: string }; Returns: string }
+      society_has_access: { Args: { _society_id: string }; Returns: boolean }
+      start_trial_for_society: {
+        Args: { _society_id: string }
+        Returns: string
+      }
     }
     Enums: {
       app_role:

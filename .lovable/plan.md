@@ -1,119 +1,83 @@
-# Plan — Bill Studio, Property Templates, AI defaults
+## Goal
+Lock the entire society behind a paid plan after the 14-day trial, force plan selection right after society creation, isolate societies cryptographically via RLS, and harden the app with rate limiting everywhere.
 
-Scope: do everything in this plan before touching Firebase/OTP.
+## 1. Plan-gate flow (society admin)
 
----
+**New route: `/onboarding/plan`** (mandatory step, cannot be skipped)
+- Shown immediately after `create_society_for_current_user` succeeds.
+- Beautiful Material 3 dark "Executive" card layout, 4 cards (Free Trial / Basic / Pro / Premium), hero gradient, plan comparison, social proof, "What you lose if you don't subscribe" section.
+- Trial CTA: starts 14-day trial (sets `societies.trial_ends_at = now()+14d`, `plan_id='trial'`, `plan_status='trialing'`).
+- Paid CTA: routes to `/checkout/$planId` (already exists, Razorpay-gated).
+- Back button + sign-out are the only escapes. No `/app` or `/society` route is reachable until a plan choice exists.
 
-## 1. Bill Studio (Society Admin)
+**Schema additions (`societies`):**
+- `plan_status text` — `none | trialing | active | expired | cancelled`
+- `trial_ends_at timestamptz`
+- `plan_expires_at timestamptz`
+- `plan_selected_at timestamptz`
 
-New page: `/society/bill-studio` — replaces the old "click Generate every month" flow.
+**Server fn `start_trial_for_society`** (RPC): only callable by that society's admin, only if `plan_status='none'`, sets trial fields. Idempotent. Rate-limited (1/min/user).
 
-Admin sets ONCE per society:
-- **Maintenance amount** (₹ per flat / per sqft / per BHK — pick mode)
-- **Billing cycle**: Weekly · Monthly · Quarterly
-- **Cycle anchor**: start day (e.g. 1st of month), due-after (e.g. 10 days)
-- **Auto-generate**: ON/OFF toggle
-- **Late fee**: flat ₹ or % per day after due
-- **Pro-rate** new residents joining mid-cycle: ON/OFF
+## 2. Hard gate everywhere
 
-System then auto-creates bills for every flat/unit on schedule. Admin sees:
-- Next run date
-- Last run summary (X bills generated, ₹Y total)
-- "Run now" button for manual trigger
-- Per-unit override (one flat pays different amount → edit)
+**New helper: `society_has_access(_society_id uuid) returns boolean`** (SECURITY DEFINER)
+- Returns true if `plan_status='active'` OR (`plan_status='trialing'` AND `trial_ends_at > now()`).
+- Super admin always true.
 
-Tech:
-- New table `billing_schedules` (society_id, mode, amount, cycle, anchor_day, due_offset_days, late_fee_type, late_fee_value, prorate, enabled, last_run_at, next_run_at)
-- New table `unit_billing_overrides` (flat_id, amount, reason)
-- pg_cron job hits `/api/public/hooks/run-billing` daily; route reads schedules where `next_run_at <= now()`, generates bills, advances `next_run_at`
-- Existing `bills` page becomes read-only ledger; "Generate" button moves into Bill Studio
+**Layout guards:**
+- `_society.tsx` and `_resident.tsx` query `society_has_access(societyId)`. If false → redirect to:
+  - Society admin → `/society/plan-required` (full-screen "Your plan expired" page with renew CTA, beautiful design, lists features they're losing).
+  - Resident → `/app/plan-required` ("Your society's subscription has ended. Please ask your society admin to renew.").
+- Super admin bypasses.
 
----
+**Checkout hardening:** `/checkout/$planId` already checks `is_razorpay_live()`. Add server-side verification of Razorpay payment signature (HMAC) on the success webhook before flipping `plan_status='active'`. No client-side trust.
 
-## 2. Property Templates — Blocks, Bungalows, Mixed
+## 3. Cross-society isolation (RLS audit)
 
-Add `property_type` to `societies`: `apartment` | `bungalow` | `mixed`.
-Add `unit_type` to `flats`: `flat` | `bungalow` | `villa` | `shop` (rename table eventually — keep `flats` for now).
+Run a systematic RLS audit. For every table with `society_id`:
+- Drop any policy using bare `auth.uid()` membership without `society_id` scoping.
+- Replace with `using (authorize_membership(auth.uid(), society_id))` (already exists).
+- Admin write policies must use `is_society_admin_for(auth.uid(), society_id)` strictly equal to the row's society_id.
 
-New page: `/society/blocks` gets:
-- **Block Template Builder** — admin defines Block A once: floors, flats-per-floor, naming pattern (e.g. `A-101, A-102`), default BHK/sqft
-- **Duplicate block** — one click → creates Block B with same structure, just renames prefix. Repeat for C, D, …
-- **Edit per block** — after duplication, admin can add/remove individual units in any block independently
-- For **bungalows**: skip floors, just "how many bungalows + naming pattern (B-1…B-50)"
-- For **mixed**: admin adds blocks AND a bungalow group in the same society
+**Cross-society profile leak fix:** `profiles.society_id` updates restricted — residents can only update their own profile, but cannot change `society_id` arbitrarily (only via `join_society_with_code`).
 
-AI assist button: "Describe your society" → free text ("3 towers 10 floors 4 flats each + 20 bungalows") → AI proposes the full structure → admin reviews → one-click create. Uses Lovable AI gateway (Gemini flash, no key needed).
+**Add test migration** asserting no policy uses `true` or unbounded membership on multi-tenant tables.
 
----
+## 4. Resident ad-removal plan (₹50/mo)
 
-## 3. Other gaps from master prompt (Executive Dark / Material 3 / mobile-first)
+- New plan row `id='ad_free'`, individual scope (`scope='resident'` column added to `plans`).
+- Only shown to residents whose society's plan has `ads_enabled=true`.
+- New table `resident_subscriptions(user_id, plan_id, status, expires_at)`.
+- `AdBanner` component checks: society plan has ads + resident has no active `ad_free` sub → show.
 
-Quick audit & fixes:
-- Confirm all new screens use `rounded-2xl`, dark theme tokens, mobile-first
-- Bill Studio + Block Builder must work cleanly at 320px width
-- Add empty-state illustrations consistently
+## 5. Rate limiting everywhere
 
----
+Wrap every sensitive server fn / public route with `checkRateLimit`:
+- Auth: login (5/15min — already), signup (3/hr/IP), OTP (3/10min/phone), password reset (3/hr/email).
+- Writes: bills create (30/min/society), payments (10/min/user), posts (10/min/user), comments (30/min/user), reactions (60/min/user), polls vote (per poll 1/user).
+- Reads heavy: AI block generator (5/hr/user), referrals (10/min/user).
+- Public APIs (`/api/public/*`): per-IP 60/min default.
 
-## 4. Technical sections
+Centralize in `rate-limit.server.ts`; add `withRateLimit(bucket, limit, windowSec)` middleware helper for `createServerFn`.
 
-### DB migration (single migration)
-```sql
-ALTER TABLE societies ADD COLUMN property_type text DEFAULT 'apartment'
-  CHECK (property_type IN ('apartment','bungalow','mixed'));
-ALTER TABLE flats ADD COLUMN unit_type text DEFAULT 'flat';
+## 6. Plan-required pages (design)
 
-CREATE TABLE billing_schedules (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  society_id uuid NOT NULL REFERENCES societies(id) ON DELETE CASCADE,
-  mode text NOT NULL DEFAULT 'flat',  -- flat | per_sqft | per_bhk
-  amount numeric NOT NULL,
-  cycle text NOT NULL DEFAULT 'monthly', -- weekly | monthly | quarterly
-  anchor_day int NOT NULL DEFAULT 1,
-  due_offset_days int NOT NULL DEFAULT 10,
-  late_fee_type text DEFAULT 'none', -- none | flat | percent
-  late_fee_value numeric DEFAULT 0,
-  prorate boolean DEFAULT true,
-  enabled boolean DEFAULT true,
-  last_run_at timestamptz,
-  next_run_at timestamptz NOT NULL,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now(),
-  UNIQUE(society_id)
-);
--- + GRANT + RLS (society_admin only) + service_role for cron
+Full-screen, executive dark, gradient hero (deep red → black), hero illustration (generated), countdown if trialing, big "Renew now" CTA, plan grid below, testimonials carousel, FAQ accordion. Mobile-first.
 
-CREATE TABLE unit_billing_overrides (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  flat_id uuid NOT NULL REFERENCES flats(id) ON DELETE CASCADE,
-  amount numeric NOT NULL,
-  reason text,
-  created_at timestamptz DEFAULT now()
-);
--- + GRANT + RLS
-```
+## 7. Acceptance checks
+- New society → cannot reach `/society/dashboard` without picking trial/plan.
+- Trial expired → admin sees plan-required, residents see read-only "subscription ended" screen.
+- Tampering `society_id` in client request → RLS blocks; verified by SQL test queries.
+- Razorpay success without valid signature → server rejects, plan stays unchanged.
+- 100 rapid requests to any rate-limited fn → 429-equivalent after limit.
 
-### Server route for cron
-`src/routes/api/public/hooks/run-billing.ts` — iterates due schedules, generates bills via service role.
+## Technical notes
+- Migrations: 1 big migration for schema + RLS audit + `society_has_access` + `start_trial_for_society` + ad_free plan + resident_subscriptions.
+- Files: `src/routes/onboarding.plan.tsx`, `src/routes/_society/society.plan-required.tsx`, `src/routes/_resident/app.plan-required.tsx`, `src/lib/plan-gate.functions.ts`, `src/lib/rate-limit-middleware.server.ts`, edits to `_society.tsx`, `_resident.tsx`, `onboarding.create.tsx`, `checkout.$planId.tsx`, `AdBanner.tsx`, `pricing.tsx`.
+- Razorpay signature verification needs `RAZORPAY_KEY_SECRET` (already documented as server-side secret).
 
-### pg_cron
-Daily at 02:00 UTC → POST to `/api/public/hooks/run-billing`.
+## Scope NOT included
+- Updating vulnerable npm deps (separate concern, can do after if you want).
+- Building admin UI to manually extend a society's plan (super-admin can do via DB for now).
 
-### Files to create
-- `src/routes/_society/society.bill-studio.tsx`
-- `src/routes/api/public/hooks/run-billing.ts`
-- `src/lib/billing.functions.ts` (run-now serverFn for admin)
-- `src/lib/blocks-ai.functions.ts` (AI parse "describe your society")
-
-### Files to edit
-- `src/routes/_society/society.blocks.tsx` — duplicate-block UI, AI assist
-- `src/routes/_society/society.billing.tsx` — link to Bill Studio, remove manual Generate dialog (or keep as "one-off")
-- `src/components/shared/AppSidebar.tsx` — add Bill Studio menu item
-
----
-
-## What I will NOT do in this round
-- Firebase FCM / Phone OTP (next round per your message)
-- Camera / microphone / location permissions (next round)
-
-Reply ✅ to ship this, or tell me what to drop/add.
+Ready to ship this in one go after approval.

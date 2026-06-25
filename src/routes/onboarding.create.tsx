@@ -53,7 +53,7 @@ function CreateSociety() {
         .not("society_id", "is", null)
         .limit(1)
         .maybeSingle();
-      if (data?.society_id) navigate({ to: "/society/dashboard" });
+      if (data?.society_id) navigate({ to: "/onboarding/plan" });
     }
     void check();
   }, [user, navigate]);

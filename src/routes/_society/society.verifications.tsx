@@ -149,7 +149,8 @@ function VerificationsPage() {
                   p={p}
                   signedUrl={signedUrls[p.id]}
                   busy={busyId === p.id}
-                  onApprove={() => setVerified(p.id, true)}
+                  onApprove={() => approve(p.id)}
+                  onReject={() => { setRejectId(p.id); setRejectReason(""); }}
                 />
               ))
             )}

@@ -76,15 +76,33 @@ function VerificationsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [societyId, sidLoading]);
 
-  async function setVerified(id: string, value: boolean) {
+  const [rejectId, setRejectId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+
+  async function approve(id: string) {
     setBusyId(id);
-    const { error } = await (supabase as any)
-      .from("profiles")
-      .update({ aadhaar_verified: value })
-      .eq("id", id);
+    const { error } = await (supabase as any).rpc("verify_resident_kyc", {
+      _user_id: id, _approved: true, _reason: null,
+    });
     setBusyId(null);
     if (error) return toast.error(error.message);
-    toast.success(value ? "Resident verified" : "Marked unverified");
+    toast.success("Resident verified");
+    void load();
+  }
+
+  async function submitReject() {
+    if (!rejectId) return;
+    const reason = rejectReason.trim();
+    if (!reason) return toast.error("Please add a reason");
+    setBusyId(rejectId);
+    const { error } = await (supabase as any).rpc("verify_resident_kyc", {
+      _user_id: rejectId, _approved: false, _reason: reason,
+    });
+    setBusyId(null);
+    if (error) return toast.error(error.message);
+    toast.success("KYC rejected — resident notified");
+    setRejectId(null);
+    setRejectReason("");
     void load();
   }
 

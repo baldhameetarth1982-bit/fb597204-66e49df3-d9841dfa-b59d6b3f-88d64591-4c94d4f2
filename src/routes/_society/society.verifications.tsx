@@ -166,7 +166,7 @@ function VerificationsPage() {
                   p={p}
                   signedUrl={signedUrls[p.id]}
                   busy={busyId === p.id}
-                  onRevoke={() => setVerified(p.id, false)}
+                  onRevoke={() => { setRejectId(p.id); setRejectReason("Verification revoked"); }}
                   verified
                 />
               ))}

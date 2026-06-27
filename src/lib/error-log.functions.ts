@@ -1,11 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { withRateLimit } from "./rate-limit-middleware.server";
 
 /**
  * Self-hosted client error logger.
  * Writes a sanitized row into public.audit_log — no third-party DSN needed.
- * Bucketed via authorize_membership-friendly fields so super admins can
- * inspect via existing RLS policies.
+ * Hard per-IP rate-limited to prevent log poisoning / storage exhaustion
+ * from unauthenticated callers.
  */
 const schema = z.object({
   message: z.string().trim().min(1).max(1000),
@@ -15,6 +16,7 @@ const schema = z.object({
 });
 
 export const logClientError = createServerFn({ method: "POST" })
+  .middleware([withRateLimit({ bucket: "client-error-log", limit: 20, windowSec: 60, perUser: false })])
   .inputValidator((d) => schema.parse(d))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

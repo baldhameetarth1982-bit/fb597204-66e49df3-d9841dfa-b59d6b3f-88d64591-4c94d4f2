@@ -28,6 +28,8 @@ interface Pending {
   aadhaar_url: string | null;
   aadhaar_uploaded_at: string | null;
   aadhaar_verified: boolean | null;
+  aadhaar_rejected_reason?: string | null;
+  aadhaar_rejected_at?: string | null;
 }
 
 function VerificationsPage() {

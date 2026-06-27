@@ -13,6 +13,18 @@ export const generateCommunityDigest = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase } = context;
 
+    // Admin-only: prevent any authenticated resident from triggering billable AI calls.
+    const { data: roleCheck } = await supabase
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", context.userId)
+      .eq("society_id", data.societyId)
+      .in("role", ["society_admin", "super_admin"])
+      .maybeSingle();
+    if (!roleCheck) {
+      throw new Error("Forbidden: society admin only.");
+    }
+
     // Pull the past 7 days of posts + comments
     const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const { data: posts } = await supabase

@@ -186,9 +186,10 @@ function NewAdDialog({ onCreated, disabled }: { onCreated: () => void; disabled:
     const path = `${crypto.randomUUID()}.${ext}`;
     const up = await supabase.storage.from("ads").upload(path, file, { contentType: file.type, upsert: false });
     if (up.error) { setSaving(false); return toast.error(up.error.message); }
-    const { data: pub } = supabase.storage.from("ads").getPublicUrl(path);
+    const { data: signed, error: signErr } = await supabase.storage.from("ads").createSignedUrl(path, 60 * 60 * 24 * 365);
+    if (signErr || !signed) { setSaving(false); return toast.error(signErr?.message ?? "Could not sign URL"); }
     const { error } = await (supabase as any).from("ads").insert({
-      title: title.trim(), image_url: pub.publicUrl, link_url: link.trim(), placement, active: true,
+      title: title.trim(), image_url: signed.signedUrl, image_path: path, link_url: link.trim(), placement, active: true,
     });
     setSaving(false);
     if (error) return toast.error(error.message);

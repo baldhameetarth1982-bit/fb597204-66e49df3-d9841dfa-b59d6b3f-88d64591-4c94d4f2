@@ -44,6 +44,45 @@ export type Database = {
         }
         Relationships: []
       }
+      ads: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          image_path: string | null
+          image_url: string
+          link_url: string
+          placement: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          image_path?: string | null
+          image_url: string
+          link_url: string
+          placement?: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          image_path?: string | null
+          image_url?: string
+          link_url?: string
+          placement?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       audit_log: {
         Row: {
           action: string

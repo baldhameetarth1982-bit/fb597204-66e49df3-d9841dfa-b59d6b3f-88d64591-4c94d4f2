@@ -152,9 +152,22 @@ function FeedScreen() {
     try {
       let imageUrl: string | null = null;
       if (imageFile) {
-        const ext = imageFile.name.split(".").pop() || "jpg";
+        const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+        if (!allowed.includes(imageFile.type)) {
+          throw new Error("Only JPG, PNG, WEBP, or GIF images are allowed");
+        }
+        if (imageFile.size > 8 * 1024 * 1024) {
+          throw new Error("Image must be under 8MB");
+        }
+        const extMap: Record<string, string> = {
+          "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif",
+        };
+        const ext = extMap[imageFile.type];
         const path = `${user.id}/${Date.now()}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("posts").upload(path, imageFile);
+        const { error: upErr } = await supabase.storage.from("posts").upload(path, imageFile, {
+          contentType: imageFile.type,
+          upsert: false,
+        });
         if (upErr) throw upErr;
         imageUrl = supabase.storage.from("posts").getPublicUrl(path).data.publicUrl;
       }

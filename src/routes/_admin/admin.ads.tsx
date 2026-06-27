@@ -41,7 +41,16 @@ function AdsPage() {
       (supabase as any).from("ads").select("*").order("created_at", { ascending: false }),
       supabase.from("platform_settings").select("ads_interstitial_enabled, ads_interstitial_seconds").eq("id", 1).maybeSingle(),
     ]);
-    setAds((adsData ?? []) as Ad[]);
+    const list = (adsData ?? []) as (Ad & { image_path?: string | null })[];
+    // Refresh signed URLs for private bucket entries
+    const refreshed = await Promise.all(list.map(async (ad) => {
+      if (ad.image_path) {
+        const { data } = await supabase.storage.from("ads").createSignedUrl(ad.image_path, 60 * 60 * 24 * 7);
+        if (data?.signedUrl) return { ...ad, image_url: data.signedUrl };
+      }
+      return ad;
+    }));
+    setAds(refreshed as Ad[]);
     if (settings) {
       setInterstitial(settings.ads_interstitial_enabled ?? false);
       setSeconds(settings.ads_interstitial_seconds ?? 15);
@@ -177,9 +186,10 @@ function NewAdDialog({ onCreated, disabled }: { onCreated: () => void; disabled:
     const path = `${crypto.randomUUID()}.${ext}`;
     const up = await supabase.storage.from("ads").upload(path, file, { contentType: file.type, upsert: false });
     if (up.error) { setSaving(false); return toast.error(up.error.message); }
-    const { data: pub } = supabase.storage.from("ads").getPublicUrl(path);
+    const { data: signed, error: signErr } = await supabase.storage.from("ads").createSignedUrl(path, 60 * 60 * 24 * 365);
+    if (signErr || !signed) { setSaving(false); return toast.error(signErr?.message ?? "Could not sign URL"); }
     const { error } = await (supabase as any).from("ads").insert({
-      title: title.trim(), image_url: pub.publicUrl, link_url: link.trim(), placement, active: true,
+      title: title.trim(), image_url: signed.signedUrl, image_path: path, link_url: link.trim(), placement, active: true,
     });
     setSaving(false);
     if (error) return toast.error(error.message);

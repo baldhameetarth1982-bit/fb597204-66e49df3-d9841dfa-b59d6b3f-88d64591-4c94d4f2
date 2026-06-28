@@ -21,6 +21,7 @@ const GROUPS: Group[] = [
     label: "Overview",
     items: [
       { label: "Dashboard", to: "/society/dashboard", icon: LayoutDashboard },
+      { label: "Approvals", to: "/society/approvals", icon: BadgeCheck },
     ],
   },
   {

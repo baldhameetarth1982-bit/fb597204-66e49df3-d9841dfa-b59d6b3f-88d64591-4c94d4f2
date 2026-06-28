@@ -1709,44 +1709,62 @@ export type Database = {
       }
       visitors: {
         Row: {
+          approved_by: string | null
           created_at: string
           entry_at: string
           exit_at: string | null
+          expected_at: string | null
           flat_id: string | null
           flat_number: string | null
+          gate_pass_code: string | null
           id: string
           logged_by: string
+          notes: string | null
           phone: string | null
+          pre_approved: boolean
           purpose: string | null
           society_id: string
+          status: string
           vehicle_number: string | null
           visitor_name: string
         }
         Insert: {
+          approved_by?: string | null
           created_at?: string
           entry_at?: string
           exit_at?: string | null
+          expected_at?: string | null
           flat_id?: string | null
           flat_number?: string | null
+          gate_pass_code?: string | null
           id?: string
           logged_by: string
+          notes?: string | null
           phone?: string | null
+          pre_approved?: boolean
           purpose?: string | null
           society_id: string
+          status?: string
           vehicle_number?: string | null
           visitor_name: string
         }
         Update: {
+          approved_by?: string | null
           created_at?: string
           entry_at?: string
           exit_at?: string | null
+          expected_at?: string | null
           flat_id?: string | null
           flat_number?: string | null
+          gate_pass_code?: string | null
           id?: string
           logged_by?: string
+          notes?: string | null
           phone?: string | null
+          pre_approved?: boolean
           purpose?: string | null
           society_id?: string
+          status?: string
           vehicle_number?: string | null
           visitor_name?: string
         }
@@ -1887,6 +1905,21 @@ export type Database = {
           name: string
         }[]
       }
+      create_visitor_preapproval: {
+        Args: {
+          _expected_at: string
+          _flat_id: string
+          _phone: string
+          _purpose: string
+          _society_id: string
+          _vehicle_number: string
+          _visitor_name: string
+        }
+        Returns: {
+          gate_pass_code: string
+          id: string
+        }[]
+      }
       ensure_maintenance_period: {
         Args: {
           _amount: number
@@ -1951,6 +1984,10 @@ export type Database = {
         Returns: string
       }
       get_user_society_id: { Args: { _user_id: string }; Returns: string }
+      guard_checkin_by_code: {
+        Args: { _code: string; _society_id: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

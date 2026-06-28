@@ -30,6 +30,8 @@ function BillsScreen() {
   const [visibleBills, setVisibleBills] = useState<BillRow[]>([]);
   const [online, setOnline] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [noFlat, setNoFlat] = useState(false);
+  const [claimOpen, setClaimOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;

@@ -16,7 +16,8 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/shared/AppSidebar";
 import { AppHeader } from "@/components/shared/AppHeader";
 import { ResidentBottomNav } from "@/components/shared/ResidentBottomNav";
-import { SocietyBottomNav } from "@/components/shared/SocietyBottomNav";
+import { SocietyDrawer } from "@/components/shared/SocietyDrawer";
+import { SocietyFab } from "@/components/shared/SocietyFab";
 import { Toaster } from "@/components/ui/sonner";
 import { SplashScreen } from "@/components/shared/SplashScreen";
 import { RootErrorBoundary, installGlobalErrorLogger } from "@/components/shared/RootErrorBoundary";
@@ -223,10 +224,13 @@ function ProtectedShell({ pathname }: { pathname: string }) {
   // Resident shell: native mobile app frame, fixed bottom nav
   if (pathname.startsWith("/app") || pathname.startsWith("/onboarding")) {
     return (
-      <div className="min-h-screen w-full bg-secondary/40">
-        <div className="relative mx-auto w-full max-w-[420px] min-h-screen bg-background shadow-xl flex flex-col">
+      <div className="min-h-[100dvh] w-full bg-secondary/40">
+        <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-[480px] flex-col bg-background shadow-xl">
           <AppHeader withSidebarTrigger={false} />
-          <main className="flex-1 pb-24">
+          <main
+            className="flex-1"
+            style={{ paddingBottom: "calc(96px + env(safe-area-inset-bottom))" }}
+          >
             <Outlet />
           </main>
           {pathname.startsWith("/app") && <ResidentBottomNav />}
@@ -238,15 +242,21 @@ function ProtectedShell({ pathname }: { pathname: string }) {
   if (pathname.startsWith("/society")) {
     return (
       <SidebarProvider>
-        <div className="min-h-screen w-full bg-secondary/40 md:bg-background">
-          <div className="relative mx-auto flex min-h-screen w-full max-w-[420px] bg-background shadow-xl md:max-w-none md:shadow-none">
-            <AppSidebar />
+        <div className="min-h-[100dvh] w-full bg-secondary/40 md:bg-background">
+          <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-[480px] bg-background shadow-xl md:max-w-none md:shadow-none">
+            {/* Desktop sidebar only — hidden on mobile to make room for drawer */}
+            <div className="hidden md:block">
+              <AppSidebar />
+            </div>
             <div className="flex min-w-0 flex-1 flex-col">
-              <AppHeader />
-              <main className="flex-1 pb-24 md:pb-0">
+              <AppHeader leading={<div className="md:hidden"><SocietyDrawer /></div>} />
+              <main
+                className="flex-1"
+                style={{ paddingBottom: "calc(40px + env(safe-area-inset-bottom))" }}
+              >
                 <Outlet />
               </main>
-              <SocietyBottomNav />
+              <SocietyFab />
             </div>
           </div>
         </div>

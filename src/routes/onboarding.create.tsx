@@ -205,49 +205,7 @@ function CreateSociety() {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-border bg-muted/40 p-4 space-y-3">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <Phone className="h-4 w-4 text-primary" />
-                Verify your phone {otpStage === "verified" && <CheckCircle2 className="h-4 w-4 text-green-500" />}
-              </div>
-              {otpStage !== "verified" && (
-                <>
-                  <div className="flex gap-2">
-                    <Input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+919876543210"
-                      disabled={otpStage === "sent" || otpBusy}
-                      className="h-10 rounded-xl flex-1"
-                    />
-                    {otpStage === "idle" && (
-                      <Button type="button" onClick={sendOtp} disabled={otpBusy} className="h-10 rounded-xl">
-                        {otpBusy && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}Send OTP
-                      </Button>
-                    )}
-                  </div>
-                  {otpStage === "sent" && (
-                    <div className="flex gap-2">
-                      <Input
-                        inputMode="numeric"
-                        value={otp}
-                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                        placeholder="6-digit OTP"
-                        className="h-10 rounded-xl flex-1 tracking-[0.3em] text-center"
-                      />
-                      <Button type="button" onClick={verifyOtp} disabled={otpBusy || otp.length !== 6} className="h-10 rounded-xl">
-                        {otpBusy && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}Verify
-                      </Button>
-                    </div>
-                  )}
-                </>
-              )}
-              {otpStage === "verified" && (
-                <p className="text-xs text-muted-foreground">{phone} verified</p>
-              )}
-              <div id="recaptcha-container" />
-            </div>
+            <AadhaarVerifyCard userId={user!.id} onVerified={() => setAadhaarVerified(true)} />
 
             <div className="rounded-2xl border border-border bg-muted/40 p-4 space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium">

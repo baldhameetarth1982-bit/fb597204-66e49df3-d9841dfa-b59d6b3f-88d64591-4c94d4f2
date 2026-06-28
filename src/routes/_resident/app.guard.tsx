@@ -195,6 +195,28 @@ function GuardDashboard() {
         </CardContent>
       </Card>
 
+      <Card className="rounded-2xl border-primary/30 bg-primary/5">
+        <CardContent className="p-5 space-y-3">
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <KeyRound className="h-4 w-4 text-primary" /> Pre-approved visitor code
+          </div>
+          <div className="flex gap-2">
+            <Input
+              inputMode="numeric"
+              maxLength={6}
+              placeholder="6-digit code"
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              className="text-lg font-mono tracking-widest text-center"
+            />
+            <Button onClick={checkinByCode} disabled={codeBusy || code.length !== 6} className="rounded-xl">
+              {codeBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Check in"}
+            </Button>
+          </div>
+          <p className="text-[11px] text-muted-foreground">Resident generates this from the app and shares it with the visitor.</p>
+        </CardContent>
+      </Card>
+
       <section>
         <h2 className="px-1 mb-3 text-sm font-semibold text-muted-foreground uppercase tracking-wide">
           Recent gate log

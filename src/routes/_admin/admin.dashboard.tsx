@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { LayoutDashboard, Banknote, CreditCard, Tags, ArrowRight, BarChart3, Megaphone } from "lucide-react";
+import { LayoutDashboard, Banknote, CreditCard, Tags, ArrowRight, BarChart3, Megaphone, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -9,6 +9,7 @@ export const Route = createFileRoute("/_admin/admin/dashboard")({
 });
 
 const TILES = [
+  { to: "/admin/users", icon: Users, title: "Users & Societies", desc: "View every user. Grant or upgrade any society's plan for free." },
   { to: "/admin/income", icon: BarChart3, title: "Income & Analytics", desc: "Platform revenue, subscriptions and transaction fees." },
   { to: "/admin/plans", icon: Tags, title: "Plans & Pricing", desc: "Manage the trial, Basic, Pro and Premium tiers." },
   { to: "/admin/razorpay", icon: CreditCard, title: "Razorpay", desc: "Connect keys to enable plan checkout and payouts." },

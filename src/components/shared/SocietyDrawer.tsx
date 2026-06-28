@@ -94,7 +94,7 @@ export function SocietyDrawer() {
           </div>
         </SheetHeader>
 
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+        <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-4 pb-24 space-y-5">
           {GROUPS.map((group) => (
             <div key={group.label}>
               <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">

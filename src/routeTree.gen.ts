@@ -24,6 +24,7 @@ import { Route as AdminRouteImport } from './routes/_admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding.index'
 import { Route as OnboardingPlanRouteImport } from './routes/onboarding.plan'
+import { Route as OnboardingPendingRouteImport } from './routes/onboarding.pending'
 import { Route as OnboardingJoinRouteImport } from './routes/onboarding.join'
 import { Route as OnboardingCreateRouteImport } from './routes/onboarding.create'
 import { Route as CheckoutPlanIdRouteImport } from './routes/checkout.$planId'
@@ -48,6 +49,7 @@ import { Route as SocietySocietyDashboardRouteImport } from './routes/_society/s
 import { Route as SocietySocietyBlocksRouteImport } from './routes/_society/society.blocks'
 import { Route as SocietySocietyBillingRouteImport } from './routes/_society/society.billing'
 import { Route as SocietySocietyBillStudioRouteImport } from './routes/_society/society.bill-studio'
+import { Route as SocietySocietyApprovalsRouteImport } from './routes/_society/society.approvals'
 import { Route as SocietySocietyAnnouncementsRouteImport } from './routes/_society/society.announcements'
 import { Route as ResidentAppVisitorsRouteImport } from './routes/_resident/app.visitors'
 import { Route as ResidentAppVehiclesRouteImport } from './routes/_resident/app.vehicles'
@@ -147,6 +149,11 @@ const OnboardingIndexRoute = OnboardingIndexRouteImport.update({
 const OnboardingPlanRoute = OnboardingPlanRouteImport.update({
   id: '/plan',
   path: '/plan',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingPendingRoute = OnboardingPendingRouteImport.update({
+  id: '/pending',
+  path: '/pending',
   getParentRoute: () => OnboardingRoute,
 } as any)
 const OnboardingJoinRoute = OnboardingJoinRouteImport.update({
@@ -273,6 +280,11 @@ const SocietySocietyBillStudioRoute =
     path: '/society/bill-studio',
     getParentRoute: () => SocietyRoute,
   } as any)
+const SocietySocietyApprovalsRoute = SocietySocietyApprovalsRouteImport.update({
+  id: '/society/approvals',
+  path: '/society/approvals',
+  getParentRoute: () => SocietyRoute,
+} as any)
 const SocietySocietyAnnouncementsRoute =
   SocietySocietyAnnouncementsRouteImport.update({
     id: '/society/announcements',
@@ -439,6 +451,7 @@ export interface FileRoutesByFullPath {
   '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/onboarding/create': typeof OnboardingCreateRoute
   '/onboarding/join': typeof OnboardingJoinRoute
+  '/onboarding/pending': typeof OnboardingPendingRoute
   '/onboarding/plan': typeof OnboardingPlanRoute
   '/onboarding/': typeof OnboardingIndexRoute
   '/admin/ads': typeof AdminAdminAdsRoute
@@ -468,6 +481,7 @@ export interface FileRoutesByFullPath {
   '/app/vehicles': typeof ResidentAppVehiclesRoute
   '/app/visitors': typeof ResidentAppVisitorsRoute
   '/society/announcements': typeof SocietySocietyAnnouncementsRoute
+  '/society/approvals': typeof SocietySocietyApprovalsRoute
   '/society/bill-studio': typeof SocietySocietyBillStudioRoute
   '/society/billing': typeof SocietySocietyBillingRoute
   '/society/blocks': typeof SocietySocietyBlocksRoute
@@ -504,6 +518,7 @@ export interface FileRoutesByTo {
   '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/onboarding/create': typeof OnboardingCreateRoute
   '/onboarding/join': typeof OnboardingJoinRoute
+  '/onboarding/pending': typeof OnboardingPendingRoute
   '/onboarding/plan': typeof OnboardingPlanRoute
   '/onboarding': typeof OnboardingIndexRoute
   '/admin/ads': typeof AdminAdminAdsRoute
@@ -533,6 +548,7 @@ export interface FileRoutesByTo {
   '/app/vehicles': typeof ResidentAppVehiclesRoute
   '/app/visitors': typeof ResidentAppVisitorsRoute
   '/society/announcements': typeof SocietySocietyAnnouncementsRoute
+  '/society/approvals': typeof SocietySocietyApprovalsRoute
   '/society/bill-studio': typeof SocietySocietyBillStudioRoute
   '/society/billing': typeof SocietySocietyBillingRoute
   '/society/blocks': typeof SocietySocietyBlocksRoute
@@ -575,6 +591,7 @@ export interface FileRoutesById {
   '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/onboarding/create': typeof OnboardingCreateRoute
   '/onboarding/join': typeof OnboardingJoinRoute
+  '/onboarding/pending': typeof OnboardingPendingRoute
   '/onboarding/plan': typeof OnboardingPlanRoute
   '/onboarding/': typeof OnboardingIndexRoute
   '/_admin/admin/ads': typeof AdminAdminAdsRoute
@@ -604,6 +621,7 @@ export interface FileRoutesById {
   '/_resident/app/vehicles': typeof ResidentAppVehiclesRoute
   '/_resident/app/visitors': typeof ResidentAppVisitorsRoute
   '/_society/society/announcements': typeof SocietySocietyAnnouncementsRoute
+  '/_society/society/approvals': typeof SocietySocietyApprovalsRoute
   '/_society/society/bill-studio': typeof SocietySocietyBillStudioRoute
   '/_society/society/billing': typeof SocietySocietyBillingRoute
   '/_society/society/blocks': typeof SocietySocietyBlocksRoute
@@ -643,6 +661,7 @@ export interface FileRouteTypes {
     | '/checkout/$planId'
     | '/onboarding/create'
     | '/onboarding/join'
+    | '/onboarding/pending'
     | '/onboarding/plan'
     | '/onboarding/'
     | '/admin/ads'
@@ -672,6 +691,7 @@ export interface FileRouteTypes {
     | '/app/vehicles'
     | '/app/visitors'
     | '/society/announcements'
+    | '/society/approvals'
     | '/society/bill-studio'
     | '/society/billing'
     | '/society/blocks'
@@ -708,6 +728,7 @@ export interface FileRouteTypes {
     | '/checkout/$planId'
     | '/onboarding/create'
     | '/onboarding/join'
+    | '/onboarding/pending'
     | '/onboarding/plan'
     | '/onboarding'
     | '/admin/ads'
@@ -737,6 +758,7 @@ export interface FileRouteTypes {
     | '/app/vehicles'
     | '/app/visitors'
     | '/society/announcements'
+    | '/society/approvals'
     | '/society/bill-studio'
     | '/society/billing'
     | '/society/blocks'
@@ -778,6 +800,7 @@ export interface FileRouteTypes {
     | '/checkout/$planId'
     | '/onboarding/create'
     | '/onboarding/join'
+    | '/onboarding/pending'
     | '/onboarding/plan'
     | '/onboarding/'
     | '/_admin/admin/ads'
@@ -807,6 +830,7 @@ export interface FileRouteTypes {
     | '/_resident/app/vehicles'
     | '/_resident/app/visitors'
     | '/_society/society/announcements'
+    | '/_society/society/approvals'
     | '/_society/society/bill-studio'
     | '/_society/society/billing'
     | '/_society/society/blocks'
@@ -951,6 +975,13 @@ declare module '@tanstack/react-router' {
       path: '/plan'
       fullPath: '/onboarding/plan'
       preLoaderRoute: typeof OnboardingPlanRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/pending': {
+      id: '/onboarding/pending'
+      path: '/pending'
+      fullPath: '/onboarding/pending'
+      preLoaderRoute: typeof OnboardingPendingRouteImport
       parentRoute: typeof OnboardingRoute
     }
     '/onboarding/join': {
@@ -1119,6 +1150,13 @@ declare module '@tanstack/react-router' {
       path: '/society/bill-studio'
       fullPath: '/society/bill-studio'
       preLoaderRoute: typeof SocietySocietyBillStudioRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/approvals': {
+      id: '/_society/society/approvals'
+      path: '/society/approvals'
+      fullPath: '/society/approvals'
+      preLoaderRoute: typeof SocietySocietyApprovalsRouteImport
       parentRoute: typeof SocietyRoute
     }
     '/_society/society/announcements': {
@@ -1427,6 +1465,7 @@ const ResidentRouteWithChildren = ResidentRoute._addFileChildren(
 
 interface SocietyRouteChildren {
   SocietySocietyAnnouncementsRoute: typeof SocietySocietyAnnouncementsRoute
+  SocietySocietyApprovalsRoute: typeof SocietySocietyApprovalsRoute
   SocietySocietyBillStudioRoute: typeof SocietySocietyBillStudioRoute
   SocietySocietyBillingRoute: typeof SocietySocietyBillingRoute
   SocietySocietyBlocksRoute: typeof SocietySocietyBlocksRoute
@@ -1447,6 +1486,7 @@ interface SocietyRouteChildren {
 
 const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyAnnouncementsRoute: SocietySocietyAnnouncementsRoute,
+  SocietySocietyApprovalsRoute: SocietySocietyApprovalsRoute,
   SocietySocietyBillStudioRoute: SocietySocietyBillStudioRoute,
   SocietySocietyBillingRoute: SocietySocietyBillingRoute,
   SocietySocietyBlocksRoute: SocietySocietyBlocksRoute,
@@ -1471,6 +1511,7 @@ const SocietyRouteWithChildren =
 interface OnboardingRouteChildren {
   OnboardingCreateRoute: typeof OnboardingCreateRoute
   OnboardingJoinRoute: typeof OnboardingJoinRoute
+  OnboardingPendingRoute: typeof OnboardingPendingRoute
   OnboardingPlanRoute: typeof OnboardingPlanRoute
   OnboardingIndexRoute: typeof OnboardingIndexRoute
 }
@@ -1478,6 +1519,7 @@ interface OnboardingRouteChildren {
 const OnboardingRouteChildren: OnboardingRouteChildren = {
   OnboardingCreateRoute: OnboardingCreateRoute,
   OnboardingJoinRoute: OnboardingJoinRoute,
+  OnboardingPendingRoute: OnboardingPendingRoute,
   OnboardingPlanRoute: OnboardingPlanRoute,
   OnboardingIndexRoute: OnboardingIndexRoute,
 }

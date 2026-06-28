@@ -1,250 +1,286 @@
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useRef, useState } from "react";
-import { ArrowLeft, KeyRound, Loader2, CheckCircle2, Upload, ShieldCheck } from "lucide-react";
+import { createFileRoute, Link, useNavigate, Navigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import {
+  ArrowLeft, Search, Loader2, CheckCircle2, Building2, DoorOpen,
+  User, Key, Users as UsersIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/onboarding/join")({
   head: () => ({ meta: [{ title: "Join society — SocioHub" }] }),
-  component: JoinSociety,
+  component: JoinFlow,
 });
 
-interface Match {
-  id: string;
-  name: string;
-  city: string | null;
-  state: string | null;
-}
+type Society = { id: string; name: string; city: string | null; state: string | null };
+type Flat = { flat_id: string; flat_number: string; floor: number | null; block_id: string | null; block_name: string | null; is_occupied: boolean };
+type Step = "search" | "flat" | "relation" | "confirm";
 
-function JoinSociety() {
-  const { refresh } = useAuth();
+function JoinFlow() {
+  const { isLoading, isAuthenticated, profile } = useAuth();
   const navigate = useNavigate();
-  const [code, setCode] = useState("");
-  const [match, setMatch] = useState<Match | null>(null);
-  const [verifying, setVerifying] = useState(false);
-  const [joining, setJoining] = useState(false);
-  const [agreed, setAgreed] = useState(false);
-  const [aadhaarLast4, setAadhaarLast4] = useState("");
-  const [aadhaarFile, setAadhaarFile] = useState<File | null>(null);
-  const [uploadingKyc, setUploadingKyc] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
 
-  async function handleVerify(e: React.FormEvent) {
-    e.preventDefault();
-    if (code.length !== 6) {
-      toast.error("Please enter all 6 characters");
-      return;
-    }
-    setVerifying(true);
-    setMatch(null);
-    const { data, error } = await supabase.rpc("find_society_by_code", {
-      _code: code.toUpperCase(),
-    });
-    setVerifying(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    const row = (data ?? [])[0];
-    if (!row) {
-      toast.error("No society found for this code");
-      return;
-    }
-    setMatch(row as Match);
+  const [step, setStep] = useState<Step>("search");
+  const [q, setQ] = useState("");
+  const [results, setResults] = useState<Society[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [society, setSociety] = useState<Society | null>(null);
+
+  const [flats, setFlats] = useState<Flat[]>([]);
+  const [loadingFlats, setLoadingFlats] = useState(false);
+  const [flatQuery, setFlatQuery] = useState("");
+  const [flat, setFlat] = useState<Flat | null>(null);
+
+  const [relationship, setRelationship] = useState<"owner" | "tenant" | "family" | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  if (isLoading) {
+    return <div className="min-h-[60vh] grid place-items-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+  }
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (profile?.society_id) return <Navigate to="/app/dashboard" replace />;
+
+  async function doSearch(value: string) {
+    setSearching(true);
+    const { data, error } = await supabase.rpc("search_societies_by_name", { _q: value });
+    setSearching(false);
+    if (error) { toast.error(error.message); return; }
+    setResults((data ?? []) as Society[]);
   }
 
-  async function handleConfirm() {
-    if (!match) return;
-    if (!agreed) { toast.error("Please accept the Terms of Service"); return; }
-    if (!aadhaarFile) { toast.error("Please upload your Aadhaar card"); return; }
-    if (aadhaarLast4.length !== 4 || !/^\d{4}$/.test(aadhaarLast4)) {
-      toast.error("Last 4 digits must be numeric"); return;
-    }
-
-    const ALLOWED = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
-    const MAX_BYTES = 5 * 1024 * 1024;
-    if (!ALLOWED.includes(aadhaarFile.type)) {
-      toast.error("Only JPG, PNG, WEBP or PDF files are allowed"); return;
-    }
-    if (aadhaarFile.size > MAX_BYTES) {
-      toast.error("File must be under 5 MB"); return;
-    }
-
-    setJoining(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setJoining(false); toast.error("Please sign in again"); return; }
-
-    setUploadingKyc(true);
-    const extRaw = (aadhaarFile.name.split(".").pop() || "jpg").toLowerCase();
-    const ext = /^[a-z0-9]{1,5}$/.test(extRaw) ? extRaw : "jpg";
-    const path = `${user.id}/aadhaar-${Date.now()}.${ext}`;
-    const { error: upErr } = await supabase.storage.from("kyc").upload(path, aadhaarFile, {
-      upsert: true,
-      contentType: aadhaarFile.type,
-    });
-    setUploadingKyc(false);
-    if (upErr) { setJoining(false); toast.error(upErr.message); return; }
-
-    const { error } = await supabase.rpc("join_society_with_code", {
-      _code: code.toUpperCase(),
-    });
-    if (error) {
-      setJoining(false);
-      toast.error(error.message);
-      return;
-    }
-    await (supabase.from("profiles") as any).update({
-      accepted_terms_at: new Date().toISOString(),
-      aadhaar_url: path,
-      aadhaar_last4: aadhaarLast4,
-      aadhaar_uploaded_at: new Date().toISOString(),
-      aadhaar_verified: false,
-    }).eq("id", user.id);
-
-    setJoining(false);
-    await refresh();
-    toast.success(`Joined ${match.name} — pending admin verification`);
-    navigate({ to: "/app/dashboard" });
+  async function pickSociety(s: Society) {
+    setSociety(s);
+    setStep("flat");
+    setLoadingFlats(true);
+    const { data, error } = await supabase.rpc("list_society_flats_public", { _society_id: s.id });
+    setLoadingFlats(false);
+    if (error) { toast.error(error.message); return; }
+    setFlats((data ?? []) as Flat[]);
   }
+
+  async function submit() {
+    if (!flat || !relationship) return;
+    setSubmitting(true);
+    const { error } = await supabase.rpc("request_join_flat", {
+      _flat_id: flat.flat_id,
+      _relationship: relationship,
+    });
+    setSubmitting(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Request submitted");
+    navigate({ to: "/onboarding/pending" });
+  }
+
+  const filteredFlats = flats.filter((f) => {
+    if (!flatQuery) return true;
+    const t = flatQuery.toLowerCase();
+    return (
+      f.flat_number.toLowerCase().includes(t) ||
+      (f.block_name ?? "").toLowerCase().includes(t)
+    );
+  });
 
   return (
-    <div className="px-5 py-6 space-y-6">
-      <Link
-        to="/onboarding"
-        className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+    <div className="px-5 py-5 space-y-5">
+      <button
+        onClick={() => {
+          if (step === "search") navigate({ to: "/onboarding" });
+          else if (step === "flat") setStep("search");
+          else if (step === "relation") setStep("flat");
+          else setStep("relation");
+        }}
+        className="inline-flex items-center text-sm text-muted-foreground"
       >
         <ArrowLeft className="h-4 w-4 mr-1" /> Back
-      </Link>
+      </button>
 
-      <header className="space-y-2">
-        <div className="h-12 w-12 rounded-2xl bg-primary/10 grid place-items-center">
-          <KeyRound className="h-6 w-6 text-primary" />
-        </div>
-        <h1 className="text-2xl font-semibold tracking-tight">Join your society</h1>
-        <p className="text-sm text-muted-foreground">
-          Enter the 6-digit invite code shared by your society admin.
-        </p>
-      </header>
+      <Stepper step={step} />
 
-      <Card className="rounded-3xl">
-        <CardContent className="p-5">
-          <form onSubmit={handleVerify} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="code">Invite code</Label>
-              <Input
-                id="code"
-                value={code}
-                onChange={(e) => {
-                  setMatch(null);
-                  setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6));
-                }}
-                placeholder="e.g. 4F9K2X"
-                maxLength={6}
-                className="h-12 rounded-xl text-center tracking-[0.5em] text-lg font-semibold uppercase"
-              />
-            </div>
-            {!match ? (
-              <Button type="submit" disabled={verifying} className="w-full h-12 rounded-xl">
-                {verifying && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Verify code
-              </Button>
-            ) : null}
-          </form>
-
-          {match && (
-            <div className="mt-4 space-y-3">
-              <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 flex items-start gap-3">
-                <CheckCircle2 className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-                <div className="min-w-0">
-                  <p className="font-semibold">{match.name}</p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {[match.city, match.state].filter(Boolean).join(", ") || "Location not set"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-border bg-secondary/30 p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4 text-primary" />
-                  <p className="text-sm font-semibold">Verify your identity</p>
-                </div>
-                <p className="text-xs text-muted-foreground -mt-2">
-                  Upload your Aadhaar card so the society admin can confirm you live here. Stored privately, encrypted.
-                </p>
-
-                <div className="space-y-2">
-                  <Label htmlFor="aadhaar4" className="text-xs">Last 4 digits of Aadhaar</Label>
-                  <Input
-                    id="aadhaar4"
-                    inputMode="numeric"
-                    placeholder="••••"
-                    value={aadhaarLast4}
-                    onChange={(e) => setAadhaarLast4(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                    className="h-11 rounded-xl tracking-[0.4em] text-center font-semibold"
-                  />
-                </div>
-
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/*,application/pdf"
-                  className="hidden"
-                  onChange={(e) => setAadhaarFile(e.target.files?.[0] ?? null)}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => fileRef.current?.click()}
-                  className="w-full h-11 rounded-xl gap-2"
+      {step === "search" && (
+        <section className="space-y-4">
+          <header>
+            <h1 className="text-2xl font-semibold tracking-tight">Find your society</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Search by society name or city.</p>
+          </header>
+          <div className="relative">
+            <Search className="absolute left-3 top-3.5 h-5 w-5 text-muted-foreground" />
+            <Input
+              autoFocus
+              value={q}
+              onChange={(e) => {
+                setQ(e.target.value);
+                if (e.target.value.trim().length >= 2) doSearch(e.target.value);
+                else setResults([]);
+              }}
+              placeholder="e.g. Sunrise Heights"
+              className="h-12 rounded-2xl pl-10 text-base"
+            />
+          </div>
+          {searching && <div className="text-center text-muted-foreground text-sm"><Loader2 className="h-4 w-4 inline animate-spin mr-1" /> Searching…</div>}
+          <ul className="space-y-2">
+            {results.map((s) => (
+              <li key={s.id}>
+                <button
+                  onClick={() => pickSociety(s)}
+                  className="w-full text-left rounded-2xl border border-border bg-card p-4 flex items-start gap-3 active:scale-[0.99] transition-transform"
                 >
-                  <Upload className="h-4 w-4" />
-                  {aadhaarFile ? aadhaarFile.name : "Upload Aadhaar (image or PDF)"}
-                </Button>
-              </div>
+                  <span className="grid h-11 w-11 place-items-center rounded-xl bg-primary/10 text-primary">
+                    <Building2 className="h-5 w-5" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-semibold truncate">{s.name}</span>
+                    <span className="block text-xs text-muted-foreground truncate">
+                      {[s.city, s.state].filter(Boolean).join(", ") || "Location not set"}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            ))}
+            {!searching && q.length >= 2 && results.length === 0 && (
+              <li className="text-center text-sm text-muted-foreground py-6">No societies match "{q}"</li>
+            )}
+          </ul>
+          <p className="text-xs text-center text-muted-foreground pt-2">
+            Can't find yours? <Link to="/onboarding/create" className="text-primary font-medium">Create a society</Link>
+          </p>
+        </section>
+      )}
 
-              <label className="flex items-start gap-2 text-xs text-muted-foreground px-1">
-                <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary" />
-                <span>
-                  I agree to the{" "}
-                  <Link to="/terms" target="_blank" className="text-primary underline">
-                    Terms of Service &amp; Privacy Policy
-                  </Link>
-                </span>
-              </label>
-              <Button
-                onClick={handleConfirm}
-                disabled={joining || uploadingKyc || !agreed || !aadhaarFile || aadhaarLast4.length !== 4}
-                className="w-full h-12 rounded-xl"
-              >
-                {(joining || uploadingKyc) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                {uploadingKyc ? "Uploading…" : "Submit & Join"}
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setMatch(null)}
-                className="w-full h-10 rounded-xl"
-              >
-                Wrong society? Try another code
-              </Button>
-            </div>
+      {step === "flat" && society && (
+        <section className="space-y-4">
+          <header>
+            <p className="text-xs text-muted-foreground">{society.name}</p>
+            <h1 className="text-2xl font-semibold tracking-tight">Pick your flat</h1>
+          </header>
+          <div className="relative">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={flatQuery}
+              onChange={(e) => setFlatQuery(e.target.value)}
+              placeholder="Search flat or block"
+              className="h-11 rounded-2xl pl-9"
+            />
+          </div>
+          {loadingFlats ? (
+            <div className="text-center py-8 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin inline mr-2" /> Loading flats…</div>
+          ) : flats.length === 0 ? (
+            <Card className="rounded-2xl"><CardContent className="p-5 text-center text-sm text-muted-foreground">
+              This society hasn't added any flats yet. Ask the admin to set them up first.
+            </CardContent></Card>
+          ) : (
+            <ul className="grid grid-cols-2 gap-3">
+              {filteredFlats.map((f) => (
+                <li key={f.flat_id}>
+                  <button
+                    onClick={() => { setFlat(f); setStep("relation"); }}
+                    className="w-full rounded-2xl border border-border bg-card p-3 text-left active:scale-[0.97] transition-transform"
+                  >
+                    <span className="grid h-9 w-9 place-items-center rounded-xl bg-secondary text-foreground">
+                      <DoorOpen className="h-4 w-4" />
+                    </span>
+                    <span className="block mt-2 font-semibold text-sm leading-tight">{f.flat_number}</span>
+                    <span className="block text-[11px] text-muted-foreground truncate">
+                      {f.block_name ?? "—"}{f.floor != null ? ` · Floor ${f.floor}` : ""}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
           )}
-        </CardContent>
-      </Card>
+        </section>
+      )}
 
-      <p className="text-xs text-center text-muted-foreground">
-        Don't have a code? Ask your admin or{" "}
-        <Link to="/onboarding/create" className="text-primary font-medium">
-          create a society
-        </Link>
-        .
-      </p>
+      {step === "relation" && flat && (
+        <section className="space-y-4">
+          <header>
+            <p className="text-xs text-muted-foreground">{society?.name} · {flat.block_name ?? ""} {flat.flat_number}</p>
+            <h1 className="text-2xl font-semibold tracking-tight">You live here as…</h1>
+          </header>
+          <div className="grid gap-3">
+            {[
+              { v: "owner", label: "Owner", desc: "You own this flat", Icon: Key },
+              { v: "tenant", label: "Tenant", desc: "You rent this flat", Icon: User },
+              { v: "family", label: "Family member", desc: "You live with the owner/tenant", Icon: UsersIcon },
+            ].map(({ v, label, desc, Icon }) => (
+              <button
+                key={v}
+                onClick={() => setRelationship(v as any)}
+                className={cn(
+                  "w-full rounded-2xl border p-4 text-left flex items-center gap-3 transition-colors",
+                  relationship === v ? "border-primary bg-primary/5" : "border-border bg-card",
+                )}
+              >
+                <span className={cn("grid h-11 w-11 place-items-center rounded-xl",
+                  relationship === v ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground")}>
+                  <Icon className="h-5 w-5" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold">{label}</span>
+                  <span className="block text-xs text-muted-foreground">{desc}</span>
+                </span>
+                {relationship === v && <CheckCircle2 className="h-5 w-5 text-primary" />}
+              </button>
+            ))}
+          </div>
+          <Button
+            disabled={!relationship}
+            onClick={() => setStep("confirm")}
+            className="w-full h-12 rounded-2xl"
+          >
+            Continue
+          </Button>
+        </section>
+      )}
+
+      {step === "confirm" && flat && society && relationship && (
+        <section className="space-y-4">
+          <header>
+            <h1 className="text-2xl font-semibold tracking-tight">Confirm & submit</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Your society admin will review and approve.</p>
+          </header>
+          <Card className="rounded-2xl">
+            <CardContent className="p-5 space-y-3">
+              <Row label="Society" value={society.name} />
+              <Row label="Block" value={flat.block_name ?? "—"} />
+              <Row label="Flat" value={flat.flat_number} />
+              <Row label="Floor" value={flat.floor != null ? `${flat.floor}` : "—"} />
+              <Row label="Relationship" value={relationship[0].toUpperCase() + relationship.slice(1)} />
+            </CardContent>
+          </Card>
+          <Button disabled={submitting} onClick={submit} className="w-full h-12 rounded-2xl">
+            {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            Submit request
+          </Button>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-xs uppercase tracking-wider text-muted-foreground">{label}</span>
+      <span className="text-sm font-semibold truncate">{value}</span>
+    </div>
+  );
+}
+
+function Stepper({ step }: { step: Step }) {
+  const idx = { search: 0, flat: 1, relation: 2, confirm: 3 }[step];
+  return (
+    <div className="flex items-center gap-1.5">
+      {[0,1,2,3].map((i) => (
+        <span key={i} className={cn(
+          "h-1.5 flex-1 rounded-full transition-colors",
+          i <= idx ? "bg-primary" : "bg-secondary",
+        )}/>
+      ))}
     </div>
   );
 }

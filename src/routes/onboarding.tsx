@@ -21,7 +21,9 @@ function OnboardingLayout() {
   }
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (primaryRole === ROLES.SUPER_ADMIN) return <Navigate to={ROLE_HOME[ROLES.SUPER_ADMIN]} replace />;
-  if (societyId && primaryRole && pathname !== "/onboarding/plan") {
+  // Existing members go to their dashboard — but allow plan picker and pending screen.
+  const allowList = ["/onboarding/plan", "/onboarding/pending"];
+  if (societyId && primaryRole && !allowList.includes(pathname)) {
     return <Navigate to={ROLE_HOME[primaryRole]} replace />;
   }
   return <Outlet />;

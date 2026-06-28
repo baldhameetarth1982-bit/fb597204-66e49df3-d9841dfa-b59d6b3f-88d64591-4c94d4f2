@@ -499,6 +499,63 @@ export type Database = {
           },
         ]
       }
+      join_requests: {
+        Row: {
+          created_at: string
+          flat_id: string
+          id: string
+          reason: string | null
+          relationship: string
+          reviewed_at: string | null
+          reviewer_id: string | null
+          society_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          flat_id: string
+          id?: string
+          reason?: string | null
+          relationship: string
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          society_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          flat_id?: string
+          id?: string
+          reason?: string | null
+          relationship?: string
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          society_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "join_requests_flat_id_fkey"
+            columns: ["flat_id"]
+            isOneToOne: false
+            referencedRelation: "flats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "join_requests_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ledger_entries: {
         Row: {
           amount: number
@@ -1573,10 +1630,38 @@ export type Database = {
       }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       join_society_with_code: { Args: { _code: string }; Returns: string }
+      list_society_flats_public: {
+        Args: { _society_id: string }
+        Returns: {
+          block_id: string
+          block_name: string
+          flat_id: string
+          flat_number: string
+          floor: number
+          is_occupied: boolean
+        }[]
+      }
+      request_join_flat: {
+        Args: { _flat_id: string; _relationship: string }
+        Returns: string
+      }
       reset_own_kyc: { Args: never; Returns: undefined }
+      respond_join_request: {
+        Args: { _approve: boolean; _reason?: string; _request_id: string }
+        Returns: undefined
+      }
       reupload_own_kyc: {
         Args: { _aadhaar_last4: string; _aadhaar_url: string }
         Returns: undefined
+      }
+      search_societies_by_name: {
+        Args: { _q: string }
+        Returns: {
+          city: string
+          id: string
+          name: string
+          state: string
+        }[]
       }
       society_has_access: { Args: { _society_id: string }; Returns: boolean }
       start_trial_for_society: {

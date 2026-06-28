@@ -1,9 +1,10 @@
 import { Link, Navigate, createFileRoute, useSearch } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Building2, ArrowRight, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
 import { ROLE_HOME } from "@/config/roles";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/onboarding/")({
   head: () => ({ meta: [{ title: "Get started — SocioHub" }] }),
@@ -14,8 +15,26 @@ export const Route = createFileRoute("/onboarding/")({
 function OnboardingChoice() {
   const { isLoading, profile, primaryRole } = useAuth();
   const { ref } = useSearch({ from: "/onboarding/" });
+  const [pendingChecked, setPendingChecked] = useState(false);
+  const [hasPending, setHasPending] = useState(false);
+
   useEffect(() => { if (ref) localStorage.setItem("sociohub:ref", ref); }, [ref]);
-  if (isLoading) {
+
+  useEffect(() => {
+    if (!profile?.id || profile.society_id) { setPendingChecked(true); return; }
+    (async () => {
+      const { data } = await supabase
+        .from("join_requests" as any)
+        .select("id")
+        .eq("user_id", profile.id)
+        .eq("status", "pending")
+        .maybeSingle();
+      setHasPending(!!data);
+      setPendingChecked(true);
+    })();
+  }, [profile?.id, profile?.society_id]);
+
+  if (isLoading || !pendingChecked) {
     return (
       <div className="min-h-[60vh] grid place-items-center text-muted-foreground">
         <Loader2 className="h-6 w-6 animate-spin" />
@@ -25,6 +44,7 @@ function OnboardingChoice() {
   if (profile?.society_id && primaryRole) {
     return <Navigate to={ROLE_HOME[primaryRole]} replace />;
   }
+  if (hasPending) return <Navigate to="/onboarding/pending" replace />;
   const firstName = profile?.full_name?.split(" ")[0] ?? "there";
 
   return (

@@ -1,36 +1,53 @@
-## Why you keep landing on Plan Required
+## Why residents see ₹0 even after Bill Studio runs
 
-The Super Admin grant is working — `admin_grant_society_plan` does flip `plan_status='active'` and sets `plan_expires_at`. The problem is downstream:
+Bills in Postgres are tied to a **flat** (`bills.flat_id`). The resident Bills/Dues screens query:
 
-- `society_has_access(uuid)` and its helpers (`get_user_society_id`, `is_active_society_plan`, `is_super_admin`, `authorize_membership`) currently have **EXECUTE granted only to `service_role**`, not to `authenticated`.
-- When the signed-in user (society admin or resident) hits `/society/plan-required` or `/app/plan-required`, the guard calls `supabase.rpc('society_has_access', …)`. Postgres returns `permission denied for function …`, supabase-js resolves `{ data: null }`, the guard reads `Boolean(null) === false`, and redirects right back to `plan-required`.
-- The same error is what you see as the red toast on the Settings page — `get_user_society_id` is called by RLS / a query there and fails identically.
-
-So no amount of granting plans will help until the helper functions are callable.
-
-## Fix (single migration)
-
-Grant EXECUTE on the auth/plan helpers to `authenticated`. They are all `SECURITY DEFINER` and already do their own `auth.uid()` / role checks internally, so this is safe and matches how every other RPC in the project is exposed.
-
-```sql
-GRANT EXECUTE ON FUNCTION public.society_has_access(uuid)        TO authenticated;
-GRANT EXECUTE ON FUNCTION public.get_user_society_id(uuid)       TO authenticated;
-GRANT EXECUTE ON FUNCTION public.is_active_society_plan(uuid)    TO authenticated;
-GRANT EXECUTE ON FUNCTION public.is_super_admin(uuid)            TO authenticated;
-GRANT EXECUTE ON FUNCTION public.authorize_membership(uuid,uuid) TO authenticated;
+```
+bills WHERE society_id = me.society_id AND flat_id IN (my flat_residents.flat_id)
 ```
 
-(If `authorize_membership` has a different signature in the DB I'll match the actual one — I'll verify before writing the migration.)
+I checked your live data: bills exist for 3 flats in society `1907a9…cc34`, but the two residents in that society (`baldhameetarth1982@gmail.com`, `baldhasharmila85@gmail.com`) have **no row in `flat_residents**` — they joined via invite code, which links them to the society but not to any specific flat. So the `IN (...)` list is empty → 0 bills shown. This is data, not a query bug.
 
-## Verification after migration runs
+There are also **no pending `join_requests**`, meaning nobody ever picked a flat for them.
 
-1. From the granted society admin's session, `supabase.rpc('society_has_access', { _society_id })` must return `true` (not `null`, not an error).
-2. `/society/plan-required` auto-redirects to `/society/dashboard` within the 2-second poll already wired in `society.plan-required.tsx`.
-3. The red `permission denied for function get_user_society_id` toast disappears from `/settings`.
-4. No code changes needed in `_society.tsx`, `_resident.tsx`, or the plan-required screens — they already poll and redirect correctly the moment access returns `true`.
+## Fix (3 parts, one update)
 
-## What I will NOT touch
+### 1. Admin → "Residents" linker (primary fix)
 
-- No edits to `admin_grant_society_plan` (it's correct).
-- No edits to the React guards or polling logic.
-- No new RLS policies — only EXECUTE grants on existing helpers.                       first check my action last 30 minute review what happen than fix 
+On `society.residents.tsx` (or Bill Studio's flat drawer), add an **"Assign resident"** action per flat:
+
+- Searchable dropdown of unassigned residents in the society
+- Pick relationship (owner / tenant / family) + primary toggle
+- Inserts into `public.flat_residents` via a new SECURITY DEFINER RPC `admin_assign_resident_to_flat(_flat_id, _user_id, _relationship, _is_primary)` that verifies caller is `is_society_admin_for(society)` and the resident's `profiles.society_id` matches.
+- Also surface an "Unassigned residents" banner on the Residents page count so the admin notices.
+
+### 2. Resident → "Claim my flat" prompt
+
+On `app.bills.tsx` and `app.dashboard.tsx`, when `flat_residents` is empty for the user, replace the empty state with a card:
+
+- "You're not linked to a flat yet — pick yours to start receiving bills."
+- Button opens a sheet using existing `list_society_flats_public` + `request_join_flat` RPC (already in DB).
+- Admin approves from existing `society.approvals.tsx` (already wired to `respond_join_request`, which inserts `flat_residents`).
+
+### 3. One-shot backfill for existing societies
+
+Migration helper RPC `admin_backfill_link_resident(_user_id, _flat_id)` — same as #1 but callable from a tiny "Link to flat" button next to each orphan resident in the admin Residents list, so your current two residents can be linked in 2 clicks without going through the request/approve loop.
+
+## Files touched
+
+- New migration: `admin_assign_resident_to_flat` RPC + grants
+- `src/routes/_society/society.residents.tsx` — assign action + orphan badge
+- `src/routes/_society/society.bill-studio.tsx` — show orphan count warning before generating
+- `src/routes/_resident/app.bills.tsx` and `app.dues.tsx` — empty-state → claim flat sheet
+- `src/routes/_resident/app.dashboard.tsx` — banner when unlinked
+- New component: `src/components/resident/ClaimFlatSheet.tsx`
+
+## What I'm NOT changing
+
+- Bill generation logic (already correct — per flat)
+- RLS on `bills` (residents already have read access for their flat)
+- Existing `request_join_flat` / `respond_join_request` flow
+
+Approve and I'll ship all of this in one build.
+
+i am uploading my own resident website maded with lovable it has exel file upload option to put every single resident if someone not using app society admin can still keep accounts and review that website and put stuff which we do not have because in my thinking that society is more good and easy to use our has more feature but main feature is not that good

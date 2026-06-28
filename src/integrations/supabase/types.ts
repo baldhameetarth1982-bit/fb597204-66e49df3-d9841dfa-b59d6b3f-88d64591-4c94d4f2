@@ -1828,6 +1828,15 @@ export type Database = {
         Args: { _months?: number; _plan_id: string; _society_id: string }
         Returns: undefined
       }
+      admin_assign_resident_to_flat: {
+        Args: {
+          _flat_id: string
+          _is_primary?: boolean
+          _relationship?: string
+          _user_id: string
+        }
+        Returns: string
+      }
       admin_grant_society_plan: {
         Args: {
           _extend?: boolean
@@ -1847,6 +1856,17 @@ export type Database = {
           plan_id: string
           plan_status: string
           status: string
+        }[]
+      }
+      admin_list_society_residents: {
+        Args: { _society_id: string }
+        Returns: {
+          email: string
+          flat_count: number
+          flats: Json
+          full_name: string
+          phone: string
+          user_id: string
         }[]
       }
       admin_list_users: {

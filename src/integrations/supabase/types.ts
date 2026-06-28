@@ -837,6 +837,57 @@ export type Database = {
           },
         ]
       }
+      offline_residents: {
+        Row: {
+          created_at: string
+          email: string | null
+          flat_id: string
+          full_name: string
+          id: string
+          notes: string | null
+          phone: string | null
+          society_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          flat_id: string
+          full_name: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          society_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          flat_id?: string
+          full_name?: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          society_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offline_residents_flat_id_fkey"
+            columns: ["flat_id"]
+            isOneToOne: false
+            referencedRelation: "flats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offline_residents_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number
@@ -1206,6 +1257,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          is_offline: boolean
           phone: string | null
           referral_code: string | null
           referred_by: string | null
@@ -1228,6 +1280,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          is_offline?: boolean
           phone?: string | null
           referral_code?: string | null
           referred_by?: string | null
@@ -1250,6 +1303,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          is_offline?: boolean
           phone?: string | null
           referral_code?: string | null
           referred_by?: string | null
@@ -1438,11 +1492,61 @@ export type Database = {
           },
         ]
       }
+      society_contacts: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          role_label: string
+          society_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          role_label: string
+          society_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          role_label?: string
+          society_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "society_contacts_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       society_settings: {
         Row: {
           address: string | null
+          bylaws_html: string | null
+          bylaws_pdf_path: string | null
           city: string | null
           created_at: string
+          financial_year_start_month: number
           grace_days: number
           late_fee_amount: number
           late_fee_type: string
@@ -1462,8 +1566,11 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          bylaws_html?: string | null
+          bylaws_pdf_path?: string | null
           city?: string | null
           created_at?: string
+          financial_year_start_month?: number
           grace_days?: number
           late_fee_amount?: number
           late_fee_type?: string
@@ -1483,8 +1590,11 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          bylaws_html?: string | null
+          bylaws_pdf_path?: string | null
           city?: string | null
           created_at?: string
+          financial_year_start_month?: number
           grace_days?: number
           late_fee_amount?: number
           late_fee_type?: string

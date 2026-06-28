@@ -4,7 +4,7 @@ import {
   Building2, Car, DoorOpen, LayoutDashboard, Megaphone, Menu, Receipt,
   ShieldCheck, Trophy, UserCheck, Users, Vote, Wallet, Wand2, Sparkles,
   Calculator, BadgeCheck, LogOut, Settings, ListChecks, Wrench, CalendarRange,
-  BarChart3,
+  BarChart3, Compass, Grid3x3, Upload, BookOpen, PhoneCall,
 } from "lucide-react";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose,
@@ -22,6 +22,8 @@ const GROUPS: Group[] = [
     label: "Overview",
     items: [
       { label: "Dashboard", to: "/society/dashboard", icon: LayoutDashboard },
+      { label: "Society Explorer", to: "/society/explorer", icon: Compass },
+      { label: "Maintenance Matrix", to: "/society/matrix", icon: Grid3x3 },
       { label: "Approvals", to: "/society/approvals", icon: BadgeCheck },
     ],
   },
@@ -29,6 +31,7 @@ const GROUPS: Group[] = [
     label: "Setup",
     items: [
       { label: "Setup Wizard", to: "/society/setup", icon: Wrench },
+      { label: "Bulk Import", to: "/society/import", icon: Upload },
       { label: "Blocks", to: "/society/blocks", icon: Building2 },
       { label: "Flats", to: "/society/flats", icon: DoorOpen },
       { label: "Residents", to: "/society/residents", icon: Users },
@@ -44,6 +47,7 @@ const GROUPS: Group[] = [
       { label: "Bill Studio", to: "/society/bill-studio", icon: Wand2 },
       { label: "Billing", to: "/society/billing", icon: Receipt },
       { label: "Expenses", to: "/society/expenses", icon: Wallet },
+      { label: "Income & Expense", to: "/society/accounts", icon: Calculator },
       { label: "Ledger", to: "/society/ledger", icon: Calculator },
       { label: "Reports", to: "/society/reports", icon: BarChart3 },
     ],
@@ -59,6 +63,8 @@ const GROUPS: Group[] = [
     label: "Community",
     items: [
       { label: "Announcements", to: "/society/announcements", icon: Megaphone },
+      { label: "Notices & By-Laws", to: "/society/bylaws", icon: BookOpen },
+      { label: "Contacts", to: "/society/contacts", icon: PhoneCall },
       { label: "Polls", to: "/society/polls", icon: Vote },
       { label: "Leaderboard", to: "/society/leaderboard", icon: Trophy },
       { label: "AI Digest", to: "/society/digest", icon: Sparkles },

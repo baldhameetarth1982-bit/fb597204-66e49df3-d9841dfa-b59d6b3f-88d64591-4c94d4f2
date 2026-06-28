@@ -1,53 +1,68 @@
-## Why residents see ₹0 even after Bill Studio runs
+## What the reference app does well (from your video)
 
-Bills in Postgres are tied to a **flat** (`bills.flat_id`). The resident Bills/Dues screens query:
+Looking at the radhika-residency site, four ideas stand out that we don't fully have:
 
-```
-bills WHERE society_id = me.society_id AND flat_id IN (my flat_residents.flat_id)
-```
+1. **Block grid → Flat grid → Flat detail.** Admin clicks a block, sees every flat as a tile with a colored dot ("Account clear" / "Maintenance pending"). Tapping a flat shows resident name, phone, total paid, and a 12-month grid (Paid / Pending / Not Due Yet) plus bill history.
+2. **Excel bulk import of flats + residents.** So an admin can onboard the whole society in one shot, even for people who'll never install the app.
+3. **Income & Expense Accounts page.** Financial Year / Monthly / Custom Range filter, opening cash + bank, income lines, expense lines, Net Surplus/Deficit, current cash + bank, with Excel / PDF / Print export.
+4. **Society By-Laws page.** A static rules document the admin can upload/edit.
 
-I checked your live data: bills exist for 3 flats in society `1907a9…cc34`, but the two residents in that society (`baldhameetarth1982@gmail.com`, `baldhasharmila85@gmail.com`) have **no row in `flat_residents**` — they joined via invite code, which links them to the society but not to any specific flat. So the `IN (...)` list is empty → 0 bills shown. This is data, not a query bug.
+We already have residents, billing, expenses, reports (CSV/PDF), notices, complaints — so this is mostly new screens on top of existing tables, not new infrastructure. Video is review-only; not embedded anywhere.
 
-There are also **no pending `join_requests**`, meaning nobody ever picked a flat for them.
+---
 
-## Fix (3 parts, one update)
+## Plan
 
-### 1. Admin → "Residents" linker (primary fix)
+### 1. Excel / CSV bulk import — `society.import.tsx`
 
-On `society.residents.tsx` (or Bill Studio's flat drawer), add an **"Assign resident"** action per flat:
+- New page under Society admin: **Residents → Import from Excel**.
+- Download a template (`flat_no, block, name, phone, email, status`).
+- Drag-and-drop `.xlsx` or `.csv`, parsed in-browser with `xlsx` (SheetJS).
+- Preview table with row-level validation (duplicate flat, bad phone, missing block).
+- Server fn `bulkImportFlatsAndResidents`: upserts blocks, flats, and optional placeholder profiles (no auth user yet — just "offline residents" the admin can manage manually until they sign up and claim).
+- Adds a new column `profiles.is_offline boolean default false` so we can tell app-users from admin-entered shadow records.
 
-- Searchable dropdown of unassigned residents in the society
-- Pick relationship (owner / tenant / family) + primary toggle
-- Inserts into `public.flat_residents` via a new SECURITY DEFINER RPC `admin_assign_resident_to_flat(_flat_id, _user_id, _relationship, _is_primary)` that verifies caller is `is_society_admin_for(society)` and the resident's `profiles.society_id` matches.
-- Also surface an "Unassigned residents" banner on the Residents page count so the admin notices.
+### 2. Society Explorer — block grid + flat grid + flat detail
 
-### 2. Resident → "Claim my flat" prompt
+- `**society.explorer.tsx**`: 5-tile block grid (A/B/C/D/E…) mirroring the reference home.
+- `**society.explorer.$blockId.tsx**`: grid of flat tiles. Each tile shows flat no. + a dot: green = no dues, amber = pending, red = overdue. Legend at the bottom matches the reference ("Account clear" / "Maintenance pending").
+- `**society.explorer.flat.$flatId.tsx**`: header with resident name + phone, big stat ("10 paid / ₹2,000"), a 12-month grid (Paid / Pending / Not Due Yet / Overdue) built from `bills` joined on `period_label`, and below it the bill + payment history. "Mark as paid (cash)" inline for offline collections.
 
-On `app.bills.tsx` and `app.dashboard.tsx`, when `flat_residents` is empty for the user, replace the empty state with a card:
+### 3. Income & Expense Accounts — `society.accounts.tsx`
 
-- "You're not linked to a flat yet — pick yours to start receiving bills."
-- Button opens a sheet using existing `list_society_flats_public` + `request_join_flat` RPC (already in DB).
-- Admin approves from existing `society.approvals.tsx` (already wired to `respond_join_request`, which inserts `flat_residents`).
+- Top filter chips: **Financial Year** (FY 2025-26, 2026-27…), **Monthly**, **Custom range**.
+- Cards: Opening Cash, Opening Bank, Net Surplus/Deficit, Current Cash, Current Bank (derived from a new `society_settings.opening_cash` / `opening_bank` plus all `payments` and `expenses` in range).
+- Two tables side-by-side: **Income** (from `payments` grouped by category) and **Expense** (from `expenses` grouped by category).
+- Three export buttons: **Excel** (SheetJS), **PDF** (jspdf — already in deps), **Print** (`window.print()` with a print-only stylesheet).
+- Add `society_settings.financial_year_start_month int default 4` so April-start FYs work for Indian societies.
 
-### 3. One-shot backfill for existing societies
+### 4. Society By-Laws — `society.bylaws.tsx`
 
-Migration helper RPC `admin_backfill_link_resident(_user_id, _flat_id)` — same as #1 but callable from a tiny "Link to flat" button next to each orphan resident in the admin Residents list, so your current two residents can be linked in 2 clicks without going through the request/approve loop.
+- Admin: rich-text editor (tiptap, already in stack) + optional PDF upload to a new `bylaws` private bucket.
+- Resident: read-only view at `app.bylaws.tsx` linked from the home tiles.
+- Stored in `society_settings.bylaws_html` + `bylaws_pdf_path`.
 
-## Files touched
+### 5. Wiring & polish
 
-- New migration: `admin_assign_resident_to_flat` RPC + grants
-- `src/routes/_society/society.residents.tsx` — assign action + orphan badge
-- `src/routes/_society/society.bill-studio.tsx` — show orphan count warning before generating
-- `src/routes/_resident/app.bills.tsx` and `app.dues.tsx` — empty-state → claim flat sheet
-- `src/routes/_resident/app.dashboard.tsx` — banner when unlinked
-- New component: `src/components/resident/ClaimFlatSheet.tsx`
+- Add **Import from Excel**, **Society Explorer**, **Accounts**, **By-Laws** entries to the society admin drawer.
+- Add **By-Laws** tile to the resident home so it matches the reference's information density.
+- Keep existing Reports page; Accounts is the FY-style cashbook, Reports stays the operational export.
 
-## What I'm NOT changing
+---
 
-- Bill generation logic (already correct — per flat)
-- RLS on `bills` (residents already have read access for their flat)
-- Existing `request_join_flat` / `respond_join_request` flow
+## Technical notes
 
-Approve and I'll ship all of this in one build.
+- Schema migration: `profiles.is_offline`, `society_settings.opening_cash numeric`, `opening_bank numeric`, `financial_year_start_month int`, `bylaws_html text`, `bylaws_pdf_path text`. New private storage bucket `bylaws`.
+- Excel parsing: `xlsx` (SheetJS) — pure JS, works in browser and inside the import server fn for validation.
+- Server fns: `bulkImportFlatsAndResidents`, `getFlatExplorerSnapshot(blockId)`, `getFlatDetail(flatId)`, `getAccountsRollup(rangeStart, rangeEnd)`. All `requireSupabaseAuth` + `is_society_admin_for` check.
+- Status dot logic: a flat is `overdue` if any bill `due_date < now() AND status != paid`, `pending` if any unpaid bill, else `clear`.
+- The 12-month grid is rendered from `period_label` matching `'YYYY-MM'`; missing months render as "Not Due Yet" so the layout matches the reference exactly.
+- No video assets are imported into the app — review-only as you asked.
 
-i am uploading my own resident website maded with lovable it has exel file upload option to put every single resident if someone not using app society admin can still keep accounts and review that website and put stuff which we do not have because in my thinking that society is more good and easy to use our has more feature but main feature is not that good
+---
+
+## Out of scope (call out if you want them added)
+
+- Auto-mapping residents to auth users on signup via phone match (would need a separate claim flow).
+- Multi-currency accounts (INR only).
+- Editable chart-of-accounts (we'll reuse the existing expense categories + payment types). this is not only feature we need from that video we need some more good feature from that video but that website is perticular for one society so only take feature that good for out app

@@ -293,25 +293,45 @@ function BillingPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      {r.status !== "paid" ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="rounded-lg h-8"
-                          onClick={() => { setPayBill(r); setPayMethod("cash"); setPayRef(""); }}
-                        >
-                          <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Mark paid
-                        </Button>
-                      ) : (
+                      <div className="flex justify-end gap-1.5 flex-wrap">
+                        {r.status !== "paid" && r.status !== "cancelled" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="rounded-lg h-8"
+                            onClick={() => { setPayBill(r); setPayMethod("cash"); setPayRef(""); }}
+                          >
+                            <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Mark paid
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="rounded-lg h-8 text-muted-foreground"
-                          onClick={() => markUnpaid(r)}
+                          className="rounded-lg h-8"
+                          onClick={() => {
+                            const txt = `Bill ${r.period_label}\nFlat ${r.flat?.flat_number ?? ""}\nAmount: ₹${Number(r.amount).toLocaleString("en-IN")}\nDue: ${new Date(r.due_date).toLocaleDateString()}`;
+                            window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, "_blank");
+                          }}
                         >
-                          Mark unpaid
+                          Share
                         </Button>
-                      )}
+                        {r.status !== "paid" && r.status !== "cancelled" && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="rounded-lg h-8 text-destructive"
+                            onClick={async () => {
+                              const reason = window.prompt("Reason for cancellation?");
+                              if (!reason) return;
+                              const { error } = await supabase.rpc("cancel_bill", { _bill_id: r.id, _reason: reason });
+                              if (error) toast.error(error.message);
+                              else { toast.success("Bill cancelled"); load(); }
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

@@ -83,7 +83,7 @@ export function SocietyDrawer() {
           <Menu className="h-5 w-5" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-[320px] max-w-[85vw] p-0">
+      <SheetContent side="left" className="w-[320px] max-w-[85vw] p-0 flex flex-col h-[100dvh]">
         <SheetHeader className="px-5 pt-6 pb-4 border-b">
           <div className="flex items-center gap-3">
             <Logo size={40} />

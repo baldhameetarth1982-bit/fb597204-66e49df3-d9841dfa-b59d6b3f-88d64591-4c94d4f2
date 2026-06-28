@@ -122,6 +122,54 @@ export type Database = {
         }
         Relationships: []
       }
+      bill_line_items: {
+        Row: {
+          amount: number
+          bill_id: string
+          created_at: string
+          description: string
+          id: string
+          kind: string
+          maintenance_period_id: string | null
+          society_id: string
+        }
+        Insert: {
+          amount: number
+          bill_id: string
+          created_at?: string
+          description: string
+          id?: string
+          kind: string
+          maintenance_period_id?: string | null
+          society_id: string
+        }
+        Update: {
+          amount?: number
+          bill_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          kind?: string
+          maintenance_period_id?: string | null
+          society_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bill_line_items_bill_id_fkey"
+            columns: ["bill_id"]
+            isOneToOne: false
+            referencedRelation: "bills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bill_line_items_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       billing_schedules: {
         Row: {
           amount: number
@@ -193,6 +241,11 @@ export type Database = {
       bills: {
         Row: {
           amount: number
+          bill_date: string
+          bill_number: string | null
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string
           due_date: string
           flat_id: string
@@ -201,12 +254,18 @@ export type Database = {
           period_end: string
           period_label: string
           period_start: string
+          replaced_by_bill_id: string | null
           society_id: string
           status: string
           updated_at: string
         }
         Insert: {
           amount: number
+          bill_date?: string
+          bill_number?: string | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           due_date: string
           flat_id: string
@@ -215,12 +274,18 @@ export type Database = {
           period_end: string
           period_label: string
           period_start: string
+          replaced_by_bill_id?: string | null
           society_id: string
           status?: string
           updated_at?: string
         }
         Update: {
           amount?: number
+          bill_date?: string
+          bill_number?: string | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           due_date?: string
           flat_id?: string
@@ -229,11 +294,20 @@ export type Database = {
           period_end?: string
           period_label?: string
           period_start?: string
+          replaced_by_bill_id?: string | null
           society_id?: string
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "bills_replaced_by_bill_id_fkey"
+            columns: ["replaced_by_bill_id"]
+            isOneToOne: false
+            referencedRelation: "bills"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       blocks: {
         Row: {
@@ -692,6 +766,76 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      maintenance_periods: {
+        Row: {
+          amount_due: number
+          bill_id: string | null
+          created_at: string
+          due_date: string | null
+          flat_id: string
+          id: string
+          paid_at: string | null
+          period_end: string
+          period_label: string
+          period_start: string
+          society_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount_due: number
+          bill_id?: string | null
+          created_at?: string
+          due_date?: string | null
+          flat_id: string
+          id?: string
+          paid_at?: string | null
+          period_end: string
+          period_label: string
+          period_start: string
+          society_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_due?: number
+          bill_id?: string | null
+          created_at?: string
+          due_date?: string | null
+          flat_id?: string
+          id?: string
+          paid_at?: string | null
+          period_end?: string
+          period_label?: string
+          period_start?: string
+          society_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_periods_bill_id_fkey"
+            columns: ["bill_id"]
+            isOneToOne: false
+            referencedRelation: "bills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_periods_flat_id_fkey"
+            columns: ["flat_id"]
+            isOneToOne: false
+            referencedRelation: "flats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_periods_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payments: {
         Row: {
@@ -1722,6 +1866,10 @@ export type Database = {
         Args: { _society_id: string; _user_id: string }
         Returns: boolean
       }
+      cancel_bill: {
+        Args: { _bill_id: string; _reason: string }
+        Returns: undefined
+      }
       complete_setup_wizard: {
         Args: { _society_id: string }
         Returns: undefined
@@ -1739,6 +1887,15 @@ export type Database = {
           name: string
         }[]
       }
+      ensure_maintenance_period: {
+        Args: {
+          _amount: number
+          _due_date?: string
+          _flat_id: string
+          _period_start: string
+        }
+        Returns: string
+      }
       find_referrer_by_code: { Args: { _code: string }; Returns: string }
       find_society_by_code: {
         Args: { _code: string }
@@ -1748,6 +1905,16 @@ export type Database = {
           name: string
           state: string
         }[]
+      }
+      generate_flat_bill: {
+        Args: {
+          _additional?: Json
+          _due_date?: string
+          _flat_id: string
+          _notes?: string
+          _period_ids: string[]
+        }
+        Returns: string
       }
       generate_referral_code: { Args: never; Returns: string }
       generate_society_code: { Args: never; Returns: string }

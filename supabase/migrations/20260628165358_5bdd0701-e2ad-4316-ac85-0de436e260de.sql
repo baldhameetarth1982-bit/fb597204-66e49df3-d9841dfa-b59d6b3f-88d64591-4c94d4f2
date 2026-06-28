@@ -1,0 +1,1 @@
+INSERT INTO public.platform_settings (id, razorpay_configured) VALUES (1, true) ON CONFLICT (id) DO UPDATE SET razorpay_configured = true;

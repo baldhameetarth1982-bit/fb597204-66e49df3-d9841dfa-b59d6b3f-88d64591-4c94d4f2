@@ -169,7 +169,8 @@ function FeedScreen() {
           upsert: false,
         });
         if (upErr) throw upErr;
-        imageUrl = supabase.storage.from("posts").getPublicUrl(path).data.publicUrl;
+        // Store the storage path; we sign URLs on read so the bucket can stay private.
+        imageUrl = path;
       }
       const { error } = await supabase.from("posts").insert({
         society_id: societyId, author_id: user.id, body: body.trim(), image_url: imageUrl,

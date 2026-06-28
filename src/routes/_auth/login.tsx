@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { Loader2, ShieldCheck, Lock, FileCheck2 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { ROLE_HOME, ROLES } from "@/config/roles";
 import { AuthShell } from "@/components/shared/AuthShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +39,7 @@ const signupSchema = loginSchema.extend({
 
 function LoginPage() {
   const navigate = useNavigate();
+  const { isLoading: authLoading, isAuthenticated, primaryRole, profile } = useAuth();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ email: "", password: "", full_name: "" });
@@ -150,6 +153,22 @@ function LoginPage() {
       setLoading(false);
     }
   };
+
+  if (authLoading) {
+    return (
+      <AuthShell>
+        <div className="min-h-[240px] grid place-items-center text-muted-foreground">
+          <Loader2 className="h-6 w-6 animate-spin" />
+        </div>
+      </AuthShell>
+    );
+  }
+
+  if (isAuthenticated) {
+    if (primaryRole === ROLES.SUPER_ADMIN) return <Navigate to={ROLE_HOME[ROLES.SUPER_ADMIN]} />;
+    if (primaryRole && profile?.society_id) return <Navigate to={ROLE_HOME[primaryRole]} />;
+    return <Navigate to="/onboarding" />;
+  }
 
   if (mfa) {
     return (

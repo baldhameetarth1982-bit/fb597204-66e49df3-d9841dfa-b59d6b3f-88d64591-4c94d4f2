@@ -17,6 +17,7 @@ export function useSocietyId() {
   useEffect(() => {
     let cancelled = false;
     async function load() {
+      setLoading(true);
       if (!user) {
         setSocietyId(null);
         setLoading(false);

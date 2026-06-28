@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { supabase } from "@/integrations/supabase/client";
-import { ROLES } from "@/config/roles";
+import { ROLES, ROLE_HOME } from "@/config/roles";
 
 /** Resident layout. All `/app/*` routes require an authenticated user and an active society plan. */
 export const Route = createFileRoute("/_resident")({
@@ -12,7 +12,7 @@ export const Route = createFileRoute("/_resident")({
 });
 
 function ResidentGuard() {
-  const { isLoading, isAuthenticated, hasRole } = useAuth();
+  const { isLoading, isAuthenticated, primaryRole, hasRole } = useAuth();
   const { societyId, loading: sLoading } = useSocietyId();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isSuper = hasRole(ROLES.SUPER_ADMIN);
@@ -35,6 +35,10 @@ function ResidentGuard() {
     );
   }
   if (!isAuthenticated) return <Navigate to="/login" />;
+  if (primaryRole !== ROLES.RESIDENT) {
+    return <Navigate to={primaryRole ? ROLE_HOME[primaryRole] : "/onboarding"} />;
+  }
+  if (!societyId) return <Navigate to="/onboarding" />;
   if (!isSuper && societyId && access === false && !pathname.endsWith("/plan-required")) {
     return <Navigate to="/app/plan-required" />;
   }

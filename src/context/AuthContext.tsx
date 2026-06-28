@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -17,6 +18,9 @@ export interface AuthProfile {
   email: string | null;
   avatar_url: string | null;
   society_id: string | null;
+  phone?: string | null;
+  aadhaar_verified?: boolean | null;
+  aadhaar_uploaded_at?: string | null;
   theme?: string | null;
 }
 
@@ -48,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<AuthProfile | null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const loadSeq = useRef(0);
 
   const loadUserContext = useCallback(async (uid: string | null) => {
     if (!uid) {
@@ -58,36 +63,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [{ data: profileData }, { data: roleData }] = await Promise.all([
       (supabase as any)
         .from("profiles")
-        .select("id, full_name, email, avatar_url, society_id, theme")
+        .select("id, full_name, email, avatar_url, society_id, phone, aadhaar_verified, aadhaar_uploaded_at, theme")
         .eq("id", uid)
         .maybeSingle(),
       supabase.from("user_roles").select("role").eq("user_id", uid),
     ]);
     setProfile((profileData as AuthProfile) ?? null);
-    setRoles((roleData?.map((r) => r.role as Role) ?? []) as Role[]);
+    setRoles(Array.from(new Set(roleData?.map((r) => r.role as Role) ?? [])) as Role[]);
   }, []);
 
   useEffect(() => {
-    // 1. Subscribe FIRST (per Supabase guidance)
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    let mounted = true;
+
+    async function applySession(nextSession: Session | null) {
+      const seq = ++loadSeq.current;
+      setIsLoading(true);
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
+      try {
+        await loadUserContext(nextSession?.user?.id ?? null);
+      } finally {
+        if (mounted && seq === loadSeq.current) setIsLoading(false);
+      }
+    }
+
+    // 1. Subscribe FIRST (per Supabase guidance)
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       // Defer DB calls to avoid deadlock with auth listener
       setTimeout(() => {
-        void loadUserContext(nextSession?.user?.id ?? null);
+        void applySession(nextSession);
       }, 0);
     });
 
     // 2. Then read existing session
     supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
-      void loadUserContext(data.session?.user?.id ?? null).finally(() =>
-        setIsLoading(false),
-      );
+      void applySession(data.session);
     });
 
-    return () => sub.subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
   }, [loadUserContext]);
 
   const value = useMemo<AuthState>(() => {

@@ -1,33 +1,83 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Wallet, ArrowRight, Check, Clock, IndianRupee } from "lucide-react";
+import { Wallet, ArrowRight, Check, Clock, IndianRupee, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_resident/app/dues")({
   head: () => ({ meta: [{ title: "Dues — SocioHub" }] }),
   component: DuesPage,
 });
 
-const CURRENT = {
-  month: "December 2026",
-  amount: 4250,
-  dueDate: "15 Dec",
-  breakdown: [
-    { label: "Maintenance", amount: 3000 },
-    { label: "Water", amount: 450 },
-    { label: "Sinking fund", amount: 500 },
-    { label: "Festival fund", amount: 300 },
-  ],
-};
-
-const HISTORY = [
-  { id: "1", month: "November 2026", amount: 4250, paid: true, date: "10 Nov" },
-  { id: "2", month: "October 2026", amount: 4250, paid: true, date: "12 Oct" },
-  { id: "3", month: "September 2026", amount: 4100, paid: true, date: "08 Sep" },
-];
+interface BillItem {
+  id: string;
+  month: string;
+  amount: number;
+  dueDate: string;
+  paid: boolean;
+}
 
 function DuesPage() {
+  const { profile } = useAuth();
+  const [bills, setBills] = useState<BillItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      if (!profile?.id || !profile?.society_id) {
+        setBills([]);
+        setLoading(false);
+        return;
+      }
+      const { data: flatRows } = await supabase
+        .from("flat_residents")
+        .select("flat_id")
+        .eq("user_id", profile.id);
+      const flatIds = (flatRows ?? []).map((r: any) => r.flat_id).filter(Boolean);
+      if (!flatIds.length) {
+        if (!cancelled) {
+          setBills([]);
+          setLoading(false);
+        }
+        return;
+      }
+      const { data } = await supabase
+        .from("bills")
+        .select("id, period_label, amount, due_date, status")
+        .eq("society_id", profile.society_id)
+        .in("flat_id", flatIds)
+        .order("due_date", { ascending: false })
+        .limit(24);
+      if (!cancelled) {
+        setBills((data ?? []).map((b: any) => ({
+          id: b.id,
+          month: b.period_label ?? "Society bill",
+          amount: Number(b.amount ?? 0),
+          dueDate: b.due_date ? new Date(b.due_date).toLocaleDateString() : "—",
+          paid: b.status === "paid" || b.status === "success",
+        })));
+        setLoading(false);
+      }
+    }
+    void load();
+    return () => { cancelled = true; };
+  }, [profile?.id, profile?.society_id]);
+
+  const current = bills.find((b) => !b.paid);
+  const history = bills.filter((b) => b.paid);
+
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] grid place-items-center text-muted-foreground">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="px-4 py-5 space-y-5">
       <div className="flex items-center gap-3">
@@ -44,30 +94,29 @@ function DuesPage() {
       <Card className="rounded-2xl border-0 bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg">
         <CardContent className="p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs opacity-90">{CURRENT.month}</span>
+            <span className="text-xs opacity-90">{current?.month ?? "No current bill"}</span>
             <Badge className="bg-white/20 text-white border-0 rounded-full text-[10px]">
               <Clock className="h-3 w-3 mr-1" />
-              Due {CURRENT.dueDate}
+              {current ? `Due ${current.dueDate}` : "Clear"}
             </Badge>
           </div>
           <div className="flex items-baseline gap-1">
             <IndianRupee className="h-6 w-6" />
             <span className="text-4xl font-bold tracking-tight">
-              {CURRENT.amount.toLocaleString("en-IN")}
+              {(current?.amount ?? 0).toLocaleString("en-IN")}
             </span>
           </div>
           <div className="space-y-1.5 pt-1">
-            {CURRENT.breakdown.map((b) => (
-              <div key={b.label} className="flex justify-between text-xs opacity-90">
-                <span>{b.label}</span>
-                <span>₹{b.amount.toLocaleString("en-IN")}</span>
-              </div>
-            ))}
+            <div className="flex justify-between text-xs opacity-90">
+              <span>{current ? "Outstanding amount" : "Status"}</span>
+              <span>{current ? `₹${current.amount.toLocaleString("en-IN")}` : "No dues"}</span>
+            </div>
           </div>
           <Button
             asChild
             size="lg"
-            className="w-full bg-white text-primary hover:bg-white/90 rounded-xl font-semibold"
+            disabled={!current}
+            className="w-full bg-white text-primary hover:bg-white/90 rounded-xl font-semibold disabled:opacity-60"
           >
             <Link to="/app/bills">
               Pay now <ArrowRight className="h-4 w-4 ml-1" />
@@ -80,7 +129,13 @@ function DuesPage() {
       <div>
         <h2 className="text-sm font-semibold mb-2 px-1">Payment history</h2>
         <div className="space-y-2">
-          {HISTORY.map((h) => (
+          {history.length === 0 ? (
+            <Card className="rounded-xl">
+              <CardContent className="p-4 text-center text-sm text-muted-foreground">
+                No payment history yet.
+              </CardContent>
+            </Card>
+          ) : history.map((h) => (
             <Card key={h.id} className="rounded-xl">
               <CardContent className="p-3 flex items-center gap-3">
                 <div className="h-9 w-9 rounded-full bg-emerald-100 grid place-items-center">
@@ -88,7 +143,7 @@ function DuesPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{h.month}</p>
-                  <p className="text-[11px] text-muted-foreground">Paid on {h.date}</p>
+                  <p className="text-[11px] text-muted-foreground">Due {h.dueDate}</p>
                 </div>
                 <span className="text-sm font-semibold">
                   ₹{h.amount.toLocaleString("en-IN")}

@@ -35,9 +35,10 @@ function SocietyGuard() {
     );
   }
   if (!isAuthenticated) return <Navigate to="/login" />;
-  if (!hasRole(ROLES.SOCIETY_ADMIN) && !isSuper) {
+  if (primaryRole !== ROLES.SOCIETY_ADMIN) {
     return <Navigate to={primaryRole ? ROLE_HOME[primaryRole] : "/login"} />;
   }
+  if (!societyId) return <Navigate to="/onboarding" />;
   if (!isSuper && societyId && access === false && !pathname.endsWith("/plan-required")) {
     return <Navigate to="/society/plan-required" />;
   }

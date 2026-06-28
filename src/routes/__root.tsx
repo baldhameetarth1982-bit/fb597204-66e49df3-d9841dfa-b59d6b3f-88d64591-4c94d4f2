@@ -203,8 +203,8 @@ function ShellSwitcher() {
     (p) => pathname === p || pathname.startsWith(`${p}/`),
   ) || pathname === "/dashboard" || pathname.startsWith("/dashboard/");
 
-  // Bare shell: auth pages
-  if (AUTH_PATHS.some((p) => pathname.startsWith(p))) {
+  // Bare shell: auth/redirect pages must not mount app layouts before routing settles.
+  if (pathname === "/" || AUTH_PATHS.some((p) => pathname.startsWith(p))) {
     return <Outlet />;
   }
 

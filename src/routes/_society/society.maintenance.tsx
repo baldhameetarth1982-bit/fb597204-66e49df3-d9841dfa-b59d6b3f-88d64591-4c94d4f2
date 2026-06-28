@@ -164,7 +164,7 @@ function MaintenancePage() {
           description="Add blocks and flats to start tracking maintenance." />
       ) : (
         <div className="grid gap-3">
-          {flats.map((f) => {
+          {flats.slice(0, visible).map((f) => {
             const fp = byFlat.get(f.id) ?? [];
             const openCount = fp.filter((p) => p.status !== "paid" && !p.bill_id).length;
             const openAmt = fp
@@ -197,6 +197,11 @@ function MaintenancePage() {
               </Card>
             );
           })}
+          {visible < flats.length && (
+            <Button variant="outline" className="rounded-2xl" onClick={() => setVisible((v) => v + 20)}>
+              Show more ({flats.length - visible} remaining)
+            </Button>
+          )}
         </div>
       )}
 

@@ -90,6 +90,16 @@ export const runBillingNow = createServerFn({ method: "POST" })
     if (fErr) throw new Error(fErr.message);
     if (!flats?.length) throw new Error("Add blocks and assigned units before generating bills.");
 
+    const flatIds = (flats as any[]).map((f) => f.id);
+    const { data: assignedResidents, error: arErr } = await supabase
+      .from("flat_residents")
+      .select("flat_id")
+      .in("flat_id", flatIds);
+    if (arErr) throw new Error(arErr.message);
+    const assignedFlatIds = new Set((assignedResidents ?? []).map((r: any) => r.flat_id));
+    const billableFlats = (flats as any[]).filter((f) => assignedFlatIds.has(f.id));
+    if (!billableFlats.length) throw new Error("Assign residents to units before generating bills.");
+
     const { data: overrides } = await supabase
       .from("unit_billing_overrides")
       .select("flat_id, amount")
@@ -109,7 +119,7 @@ export const runBillingNow = createServerFn({ method: "POST" })
       return m ? Number(m[1]) : 2;
     }
 
-    const rows = (flats as any[]).map((f) => {
+    const rows = billableFlats.map((f) => {
       let amt: number;
       if (ovMap.has(f.id)) amt = ovMap.get(f.id)!;
       else if (sch.mode === "per_sqft") amt = Number(sch.amount) * Number(f.area_sqft || 0);

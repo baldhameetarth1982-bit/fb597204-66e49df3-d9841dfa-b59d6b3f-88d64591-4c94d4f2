@@ -244,7 +244,125 @@ function BillStudio() {
             </Button>
           </div>
         </CardContent>
-      </Card>
+      <OneOffBills societyId={societyId} />
     </PageShell>
+  );
+}
+
+function OneOffBills({ societyId }: { societyId: string }) {
+  const [target, setTarget] = useState<"all" | "block" | "flat">("all");
+  const [blockId, setBlockId] = useState<string>("");
+  const [flatId, setFlatId] = useState<string>("");
+  const [amount, setAmount] = useState("500");
+  const [label, setLabel] = useState("Extra charge");
+  const [dueDays, setDueDays] = useState("7");
+  const [notes, setNotes] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [blocks, setBlocks] = useState<{ id: string; name: string }[]>([]);
+  const [flats, setFlats] = useState<{ id: string; number: string; block_id: string | null }[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const [{ data: b }, { data: f }] = await Promise.all([
+        supabase.from("blocks").select("id,name").eq("society_id", societyId).order("name"),
+        supabase.from("flats").select("id,number,block_id").eq("society_id", societyId).order("number"),
+      ]);
+      setBlocks((b as any) ?? []);
+      setFlats((f as any) ?? []);
+    })();
+  }, [societyId]);
+
+  async function submit() {
+    if (!amount || Number(amount) <= 0) { toast.error("Enter amount"); return; }
+    if (target === "block" && !blockId) { toast.error("Pick a block"); return; }
+    if (target === "flat" && !flatId) { toast.error("Pick a flat"); return; }
+    setBusy(true);
+    try {
+      const due = new Date(); due.setDate(due.getDate() + Number(dueDays || 7));
+      const { data, error } = await supabase.rpc("create_oneoff_bills", {
+        _society_id: societyId,
+        _target: target,
+        _block_id: target === "block" ? blockId : null,
+        _flat_id: target === "flat" ? flatId : null,
+        _amount: Number(amount),
+        _label: label,
+        _due_date: due.toISOString().slice(0, 10),
+        _notes: notes || null,
+      });
+      if (error) throw error;
+      toast.success(`Created ${data ?? 0} bill(s)`);
+      setNotes("");
+    } catch (e: any) {
+      toast.error(e.message ?? "Could not create bills");
+    }
+    setBusy(false);
+  }
+
+  const filteredFlats = blockId ? flats.filter((f) => f.block_id === blockId) : flats;
+
+  return (
+    <Card className="rounded-2xl mt-6">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><Plus className="h-5 w-5 text-primary" /> One-off bill</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">Send an ad-hoc charge to everyone, a specific block, or a single flat.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="space-y-1.5">
+            <Label>Send to</Label>
+            <Select value={target} onValueChange={(v: any) => setTarget(v)}>
+              <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All residents</SelectItem>
+                <SelectItem value="block">A block</SelectItem>
+                <SelectItem value="flat">One flat</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {target !== "all" && (
+            <div className="space-y-1.5">
+              <Label>Block</Label>
+              <Select value={blockId} onValueChange={(v) => { setBlockId(v); setFlatId(""); }}>
+                <SelectTrigger className="rounded-xl"><SelectValue placeholder="Choose…" /></SelectTrigger>
+                <SelectContent>{blocks.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+          )}
+          {target === "flat" && (
+            <div className="space-y-1.5">
+              <Label>Flat</Label>
+              <Select value={flatId} onValueChange={setFlatId}>
+                <SelectTrigger className="rounded-xl"><SelectValue placeholder="Choose…" /></SelectTrigger>
+                <SelectContent>{filteredFlats.map((f) => <SelectItem key={f.id} value={f.id}>{f.number}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="space-y-1.5">
+            <Label>Label</Label>
+            <Input value={label} onChange={(e) => setLabel(e.target.value)} className="rounded-xl" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Amount (₹)</Label>
+            <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="rounded-xl" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Due in (days)</Label>
+            <Input type="number" min={0} max={90} value={dueDays} onChange={(e) => setDueDays(e.target.value)} className="rounded-xl" />
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          <Label>Notes (optional)</Label>
+          <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="rounded-xl" rows={2} />
+        </div>
+        <div className="flex justify-end">
+          <Button onClick={submit} disabled={busy} className="rounded-xl h-11">
+            {busy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
+            Create bill{target !== "flat" ? "s" : ""}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

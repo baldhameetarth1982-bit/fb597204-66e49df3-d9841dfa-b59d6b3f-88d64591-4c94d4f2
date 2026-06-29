@@ -62,3 +62,40 @@ export async function openRazorpayCheckout(opts: RzpOpenOpts) {
   rzp.open();
   return true;
 }
+
+export interface RzpOrderOpts {
+  orderId: string;
+  keyId: string;
+  amount: number; // paise
+  name?: string;
+  description?: string;
+  prefill?: { email?: string; contact?: string; name?: string };
+  onSuccess: (resp: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => void | Promise<void>;
+  onDismiss?: () => void;
+}
+
+/** Open Razorpay with a pre-created server Order (for maintenance bills). */
+export async function openRazorpayForOrder(opts: RzpOrderOpts) {
+  if (!opts.keyId) { toast.error("Razorpay key missing"); return false; }
+  const ok = await loadRazorpayScript();
+  if (!ok) { toast.error("Could not load Razorpay. Check your internet."); return false; }
+  const options = {
+    key: opts.keyId,
+    amount: opts.amount,
+    currency: "INR",
+    order_id: opts.orderId,
+    name: opts.name ?? "SocioHub",
+    description: opts.description ?? "Maintenance bill",
+    prefill: opts.prefill ?? {},
+    theme: { color: "#0F766E" },
+    handler: (resp: any) => { void opts.onSuccess(resp); },
+    modal: { ondismiss: () => opts.onDismiss?.() },
+  };
+  const rzp = new window.Razorpay!(options);
+  rzp.on("payment.failed", (resp: any) => {
+    toast.error(resp?.error?.description ?? "Payment failed");
+    opts.onDismiss?.();
+  });
+  rzp.open();
+  return true;
+}

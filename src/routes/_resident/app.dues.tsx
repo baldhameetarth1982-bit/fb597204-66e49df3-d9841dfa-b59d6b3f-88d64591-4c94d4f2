@@ -173,15 +173,19 @@ function DuesPage() {
             </div>
           </div>
           <Button
-            asChild
             size="lg"
-            disabled={!current}
+            disabled={!current || paying || !payoutActive}
+            onClick={handlePay}
             className="w-full bg-white text-primary hover:bg-white/90 rounded-xl font-semibold disabled:opacity-60"
           >
-            <Link to="/app/bills">
-              Pay now <ArrowRight className="h-4 w-4 ml-1" />
-            </Link>
+            {paying ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+            Pay now <ArrowRight className="h-4 w-4 ml-1" />
           </Button>
+          {!payoutActive && current && (
+            <p className="mt-3 text-[11px] opacity-90 text-center">
+              Online payments not set up — please pay cash to your admin.
+            </p>
+          )}
         </CardContent>
       </Card>
 

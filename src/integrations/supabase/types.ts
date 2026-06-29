@@ -899,6 +899,7 @@ export type Database = {
           notes: string | null
           paid_at: string
           platform_fee_paise: number | null
+          platform_share_paise: number | null
           razorpay_order_id: string | null
           razorpay_payment_id: string | null
           razorpay_signature: string | null
@@ -919,6 +920,7 @@ export type Database = {
           notes?: string | null
           paid_at?: string
           platform_fee_paise?: number | null
+          platform_share_paise?: number | null
           razorpay_order_id?: string | null
           razorpay_payment_id?: string | null
           razorpay_signature?: string | null
@@ -939,6 +941,7 @@ export type Database = {
           notes?: string | null
           paid_at?: string
           platform_fee_paise?: number | null
+          platform_share_paise?: number | null
           razorpay_order_id?: string | null
           razorpay_payment_id?: string | null
           razorpay_signature?: string | null
@@ -2052,18 +2055,32 @@ export type Database = {
         Args: { _society_id: string }
         Returns: undefined
       }
-      create_oneoff_bills: {
-        Args: {
-          _amount: number
-          _block_id: string
-          _due_date: string
-          _flat_id: string
-          _scope: string
-          _society_id: string
-          _title: string
-        }
-        Returns: number
-      }
+      create_oneoff_bills:
+        | {
+            Args: {
+              _amount: number
+              _block_id: string
+              _due_date: string
+              _flat_id: string
+              _scope: string
+              _society_id: string
+              _title: string
+            }
+            Returns: number
+          }
+        | {
+            Args: {
+              _amount: number
+              _block_id: string
+              _due_date: string
+              _flat_id: string
+              _label: string
+              _notes: string
+              _society_id: string
+              _target: string
+            }
+            Returns: number
+          }
       create_society_for_current_user: {
         Args: {
           _city?: string

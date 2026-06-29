@@ -898,8 +898,13 @@ export type Database = {
           method: string
           notes: string | null
           paid_at: string
+          platform_fee_paise: number | null
+          razorpay_order_id: string | null
+          razorpay_payment_id: string | null
+          razorpay_signature: string | null
           reference_no: string | null
           society_id: string
+          society_share_paise: number | null
           status: string
           updated_at: string
           user_id: string | null
@@ -913,8 +918,13 @@ export type Database = {
           method?: string
           notes?: string | null
           paid_at?: string
+          platform_fee_paise?: number | null
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          razorpay_signature?: string | null
           reference_no?: string | null
           society_id: string
+          society_share_paise?: number | null
           status?: string
           updated_at?: string
           user_id?: string | null
@@ -928,8 +938,13 @@ export type Database = {
           method?: string
           notes?: string | null
           paid_at?: string
+          platform_fee_paise?: number | null
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          razorpay_signature?: string | null
           reference_no?: string | null
           society_id?: string
+          society_share_paise?: number | null
           status?: string
           updated_at?: string
           user_id?: string | null
@@ -1017,6 +1032,7 @@ export type Database = {
           ads_interstitial_enabled: boolean
           ads_interstitial_seconds: number
           id: number
+          maintenance_fee_percent: number
           razorpay_configured: boolean
           razorpay_key_id: string | null
           updated_at: string
@@ -1027,6 +1043,7 @@ export type Database = {
           ads_interstitial_enabled?: boolean
           ads_interstitial_seconds?: number
           id?: number
+          maintenance_fee_percent?: number
           razorpay_configured?: boolean
           razorpay_key_id?: string | null
           updated_at?: string
@@ -1037,6 +1054,7 @@ export type Database = {
           ads_interstitial_enabled?: boolean
           ads_interstitial_seconds?: number
           id?: number
+          maintenance_fee_percent?: number
           razorpay_configured?: boolean
           razorpay_key_id?: string | null
           updated_at?: string
@@ -1425,6 +1443,9 @@ export type Database = {
           invite_code: string | null
           logo_url: string | null
           name: string
+          payout_bank_last4: string | null
+          payout_holder_name: string | null
+          payout_status: string
           pincode: string | null
           plan: string
           plan_expires_at: string | null
@@ -1432,6 +1453,7 @@ export type Database = {
           plan_selected_at: string | null
           plan_status: string
           property_type: string
+          razorpay_account_id: string | null
           registration_no: string | null
           state: string | null
           status: string
@@ -1447,6 +1469,9 @@ export type Database = {
           invite_code?: string | null
           logo_url?: string | null
           name: string
+          payout_bank_last4?: string | null
+          payout_holder_name?: string | null
+          payout_status?: string
           pincode?: string | null
           plan?: string
           plan_expires_at?: string | null
@@ -1454,6 +1479,7 @@ export type Database = {
           plan_selected_at?: string | null
           plan_status?: string
           property_type?: string
+          razorpay_account_id?: string | null
           registration_no?: string | null
           state?: string | null
           status?: string
@@ -1469,6 +1495,9 @@ export type Database = {
           invite_code?: string | null
           logo_url?: string | null
           name?: string
+          payout_bank_last4?: string | null
+          payout_holder_name?: string | null
+          payout_status?: string
           pincode?: string | null
           plan?: string
           plan_expires_at?: string | null
@@ -1476,6 +1505,7 @@ export type Database = {
           plan_selected_at?: string | null
           plan_status?: string
           property_type?: string
+          razorpay_account_id?: string | null
           registration_no?: string | null
           state?: string | null
           status?: string
@@ -2021,6 +2051,18 @@ export type Database = {
       complete_setup_wizard: {
         Args: { _society_id: string }
         Returns: undefined
+      }
+      create_oneoff_bills: {
+        Args: {
+          _amount: number
+          _block_id: string
+          _due_date: string
+          _flat_id: string
+          _scope: string
+          _society_id: string
+          _title: string
+        }
+        Returns: number
       }
       create_society_for_current_user: {
         Args: {

@@ -142,17 +142,42 @@ function BillsScreen() {
           <p className="mt-1 text-4xl font-semibold tabular-nums">₹{(outstanding?.amount ?? 0).toLocaleString("en-IN")}</p>
           <p className="mt-1 text-xs opacity-80">{outstanding ? `Due ${outstanding.due}` : "No outstanding dues"}</p>
           <Button
-            disabled={!outstanding}
+            disabled={!outstanding || paying || !payoutActive}
             onClick={async () => {
               if (!outstanding) return;
-              const ok = await requireBiometric("authorize this payment");
-              if (ok) navigate({ to: "/app/dues" });
+              setPaying(true);
+              try {
+                const order = await createOrder({ data: { billId: outstanding.id } });
+                if (!order.orderId || !order.keyId) throw new Error("Order failed");
+                await openRazorpayForOrder({
+                  orderId: order.orderId,
+                  keyId: order.keyId,
+                  amount: order.amount,
+                  name: order.societyName ?? "SocioHub",
+                  description: order.label ?? "Maintenance bill",
+                  prefill: { email: profile?.email ?? undefined, contact: profile?.phone ?? undefined, name: profile?.full_name ?? undefined },
+                  onSuccess: async () => {
+                    toast.success("Payment received — updating your bill…");
+                    setTimeout(() => navigate({ to: "/app/bills" }), 1500);
+                  },
+                  onDismiss: () => setPaying(false),
+                });
+              } catch (e: any) {
+                toast.error(e?.message ?? "Could not start payment");
+              } finally {
+                setPaying(false);
+              }
             }}
             className="mt-5 w-full h-12 rounded-xl bg-background text-primary hover:bg-background/90 font-semibold disabled:opacity-60"
           >
-            <Fingerprint className="h-4 w-4 mr-2" />
+            {paying ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <IndianRupee className="h-4 w-4 mr-2" />}
             Pay now <ArrowRight className="h-4 w-4 ml-1" />
           </Button>
+          {!payoutActive && outstanding && (
+            <p className="mt-3 text-xs opacity-90">
+              Online payments not set up by your admin yet — please pay cash. Admin will mark it paid.
+            </p>
+          )}
         </CardContent>
       </Card>
 

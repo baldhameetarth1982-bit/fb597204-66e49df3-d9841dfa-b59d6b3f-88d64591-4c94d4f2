@@ -152,30 +152,8 @@ function BillingPage() {
     void load();
   }
 
-  async function confirmPaid() {
-    if (!payBill || !societyId || !user) return;
-    setPayingNow(true);
-    const { error: pErr } = await supabase.from("payments").insert({
-      bill_id: payBill.id,
-      society_id: societyId,
-      flat_id: payBill.flat_id,
-      amount: payBill.amount,
-      method: payMethod,
-      status: "success",
-      reference_no: payRef.trim() || null,
-      notes: `Recorded by admin (${payMethod})`,
-    });
-    if (pErr) { setPayingNow(false); return toast.error(pErr.message); }
-    const { error: bErr } = await supabase
-      .from("bills")
-      .update({ status: "paid" })
-      .eq("id", payBill.id);
-    setPayingNow(false);
-    if (bErr) return toast.error(bErr.message);
-    toast.success("Marked as paid");
-    setPayBill(null);
-    void load();
-  }
+  // Manual "mark paid" removed — all settlements arrive automatically via Razorpay.
+
 
   async function markUnpaid(r: BillRow) {
     const { error } = await supabase.from("bills").update({ status: "unpaid" }).eq("id", r.id);

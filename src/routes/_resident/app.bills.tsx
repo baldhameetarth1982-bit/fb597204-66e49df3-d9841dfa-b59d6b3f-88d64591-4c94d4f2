@@ -98,8 +98,8 @@ function BillsScreen() {
 
   useEffect(() => {
     if (!profile?.society_id) return;
-    void supabase.from("societies").select("payout_status").eq("id", profile.society_id).maybeSingle().then(({ data }) => {
-      setPayoutActive(data?.payout_status === "active");
+    void (supabase as any).rpc("society_payout_active", { _society_id: profile.society_id }).then(({ data }: any) => {
+      setPayoutActive(data === true);
     });
   }, [profile?.society_id]);
 
@@ -182,7 +182,12 @@ function BillsScreen() {
           </Button>
           {!payoutActive && outstanding && (
             <p className="mt-3 text-xs opacity-90">
-              Online payments not set up by your admin yet — please pay cash. Admin will mark it paid.
+              Your society admin hasn't enabled online payments yet. Please ask them to complete bank setup so you can pay.
+            </p>
+          )}
+          {outstanding && payoutActive && (
+            <p className="mt-3 text-[11px] opacity-80">
+              Payment processing? Contact SocioHub Support for instant reconciliation.
             </p>
           )}
         </CardContent>

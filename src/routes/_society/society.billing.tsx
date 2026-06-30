@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { shareBillAsImage } from "@/components/billing/BillCardImage";
 
 export const Route = createFileRoute("/_society/society/billing")({
   head: () => ({ meta: [{ title: "Billing — SocioHub" }] }),
@@ -49,11 +50,8 @@ function BillingPage() {
   const [dueDate, setDueDate] = useState("");
   const [generating, setGenerating] = useState(false);
 
-  // Mark-paid dialog state
-  const [payBill, setPayBill] = useState<BillRow | null>(null);
-  const [payMethod, setPayMethod] = useState<"cash" | "upi" | "bank" | "cheque" | "other">("cash");
-  const [payRef, setPayRef] = useState("");
-  const [payingNow, setPayingNow] = useState(false);
+  // Cash / manual mark-paid removed — all payments are online (Razorpay)
+
 
   async function load() {
     if (!societyId) {
@@ -155,30 +153,8 @@ function BillingPage() {
     void load();
   }
 
-  async function confirmPaid() {
-    if (!payBill || !societyId || !user) return;
-    setPayingNow(true);
-    const { error: pErr } = await supabase.from("payments").insert({
-      bill_id: payBill.id,
-      society_id: societyId,
-      flat_id: payBill.flat_id,
-      amount: payBill.amount,
-      method: payMethod,
-      status: "success",
-      reference_no: payRef.trim() || null,
-      notes: `Recorded by admin (${payMethod})`,
-    });
-    if (pErr) { setPayingNow(false); return toast.error(pErr.message); }
-    const { error: bErr } = await supabase
-      .from("bills")
-      .update({ status: "paid" })
-      .eq("id", payBill.id);
-    setPayingNow(false);
-    if (bErr) return toast.error(bErr.message);
-    toast.success("Marked as paid");
-    setPayBill(null);
-    void load();
-  }
+  // Manual "mark paid" removed — all settlements arrive automatically via Razorpay.
+
 
   async function markUnpaid(r: BillRow) {
     const { error } = await supabase.from("bills").update({ status: "unpaid" }).eq("id", r.id);
@@ -294,23 +270,26 @@ function BillingPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1.5 flex-wrap">
-                        {r.status !== "paid" && r.status !== "cancelled" && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="rounded-lg h-8"
-                            onClick={() => { setPayBill(r); setPayMethod("cash"); setPayRef(""); }}
-                          >
-                            <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Mark paid
-                          </Button>
-                        )}
+                        {/* Mark-paid removed: settlements are automatic via Razorpay */}
+
                         <Button
                           size="sm"
                           variant="ghost"
                           className="rounded-lg h-8"
-                          onClick={() => {
-                            const txt = `Bill ${r.period_label}\nFlat ${r.flat?.flat_number ?? ""}\nAmount: ₹${Number(r.amount).toLocaleString("en-IN")}\nDue: ${new Date(r.due_date).toLocaleDateString()}`;
-                            window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, "_blank");
+                          onClick={async () => {
+                            try {
+                              await shareBillAsImage({
+                                societyName: "Society Bill",
+                                flatLabel: `${r.flat?.block?.name ? r.flat.block.name + "-" : ""}${r.flat?.flat_number ?? ""}`,
+                                period: r.period_label,
+                                amount: Number(r.amount),
+                                dueDate: new Date(r.due_date).toLocaleDateString(),
+                                status: (r.status as any) || "due",
+                                adminSignature: user?.email?.split("@")[0],
+                              });
+                            } catch (e: any) {
+                              toast.error(e?.message ?? "Could not share");
+                            }
                           }}
                         >
                           Share
@@ -341,53 +320,8 @@ function BillingPage() {
         </>
       )}
 
-      <Dialog open={!!payBill} onOpenChange={(o) => !o && setPayBill(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Record payment</DialogTitle>
-          </DialogHeader>
-          {payBill && (
-            <div className="space-y-4">
-              <div className="rounded-xl bg-secondary/40 p-3 text-sm">
-                <p className="font-medium">
-                  {payBill.flat?.block?.name ? `${payBill.flat.block.name}-` : ""}
-                  {payBill.flat?.flat_number} · {payBill.period_label}
-                </p>
-                <p className="text-muted-foreground inline-flex items-center">
-                  <IndianRupee className="h-3.5 w-3.5" />
-                  {Number(payBill.amount).toLocaleString("en-IN")}
-                </p>
-              </div>
-              <div className="grid gap-2">
-                <Label>Payment method</Label>
-                <Select value={payMethod} onValueChange={(v) => setPayMethod(v as typeof payMethod)}>
-                  <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="upi">UPI</SelectItem>
-                    <SelectItem value="bank">Bank transfer</SelectItem>
-                    <SelectItem value="cheque">Cheque</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {payMethod !== "cash" && (
-                <div className="grid gap-2">
-                  <Label>Reference no. (optional)</Label>
-                  <Input value={payRef} onChange={(e) => setPayRef(e.target.value)} placeholder="UPI/Txn/Cheque #" className="rounded-xl" />
-                </div>
-              )}
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setPayBill(null)} className="rounded-xl">Cancel</Button>
-            <Button onClick={confirmPaid} disabled={payingNow} className="rounded-xl">
-              {payingNow && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Confirm payment
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Manual payment dialog removed — Razorpay settles automatically */}
+
     </PageShell>
   );
 }

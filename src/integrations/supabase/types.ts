@@ -250,7 +250,9 @@ export type Database = {
           due_date: string
           flat_id: string
           id: string
+          last_decay_date: string | null
           notes: string | null
+          paid_at: string | null
           period_end: string
           period_label: string
           period_start: string
@@ -270,7 +272,9 @@ export type Database = {
           due_date: string
           flat_id: string
           id?: string
+          last_decay_date?: string | null
           notes?: string | null
+          paid_at?: string | null
           period_end: string
           period_label: string
           period_start: string
@@ -290,7 +294,9 @@ export type Database = {
           due_date?: string
           flat_id?: string
           id?: string
+          last_decay_date?: string | null
           notes?: string | null
+          paid_at?: string | null
           period_end?: string
           period_label?: string
           period_start?: string
@@ -462,6 +468,56 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "custom_fields_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_plans: {
+        Row: {
+          applied_at: string | null
+          created_at: string
+          created_by: string | null
+          duration_days: number
+          id: string
+          name: string
+          notes: string | null
+          platform_fee_percent: number
+          price_inr: number
+          society_id: string
+          updated_at: string
+        }
+        Insert: {
+          applied_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          duration_days: number
+          id?: string
+          name: string
+          notes?: string | null
+          platform_fee_percent?: number
+          price_inr: number
+          society_id: string
+          updated_at?: string
+        }
+        Update: {
+          applied_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          duration_days?: number
+          id?: string
+          name?: string
+          notes?: string | null
+          platform_fee_percent?: number
+          price_inr?: number
+          society_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_plans_society_id_fkey"
             columns: ["society_id"]
             isOneToOne: false
             referencedRelation: "societies"
@@ -1439,6 +1495,7 @@ export type Database = {
       societies: {
         Row: {
           address: string | null
+          bill_theme: string
           billing_active: boolean
           city: string | null
           created_at: string
@@ -1458,6 +1515,7 @@ export type Database = {
           property_type: string
           razorpay_account_id: string | null
           registration_no: string | null
+          signature_url: string | null
           state: string | null
           status: string
           trial_ends_at: string | null
@@ -1465,6 +1523,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          bill_theme?: string
           billing_active?: boolean
           city?: string | null
           created_at?: string
@@ -1484,6 +1543,7 @@ export type Database = {
           property_type?: string
           razorpay_account_id?: string | null
           registration_no?: string | null
+          signature_url?: string | null
           state?: string | null
           status?: string
           trial_ends_at?: string | null
@@ -1491,6 +1551,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          bill_theme?: string
           billing_active?: boolean
           city?: string | null
           created_at?: string
@@ -1510,6 +1571,7 @@ export type Database = {
           property_type?: string
           razorpay_account_id?: string | null
           registration_no?: string | null
+          signature_url?: string | null
           state?: string | null
           status?: string
           trial_ends_at?: string | null
@@ -1971,6 +2033,10 @@ export type Database = {
         Args: { _months?: number; _plan_id: string; _society_id: string }
         Returns: undefined
       }
+      admin_apply_custom_plan: {
+        Args: { _custom_plan_id: string }
+        Returns: boolean
+      }
       admin_assign_resident_to_flat: {
         Args: {
           _flat_id: string
@@ -1979,6 +2045,18 @@ export type Database = {
           _user_id: string
         }
         Returns: string
+      }
+      admin_global_metrics: {
+        Args: never
+        Returns: {
+          active_societies: number
+          paid_amount_30d: number
+          paid_bills_30d: number
+          total_societies: number
+          total_users: number
+          trialing_societies: number
+          visitors_today: number
+        }[]
       }
       admin_grant_society_plan: {
         Args: {
@@ -2039,6 +2117,7 @@ export type Database = {
           unpaid_bill_total: number
         }[]
       }
+      apply_overdue_point_decay: { Args: never; Returns: number }
       apply_referral_for_current_user: {
         Args: { _code: string }
         Returns: boolean
@@ -2172,6 +2251,15 @@ export type Database = {
         Args: { _society_id: string }
         Returns: string
       }
+      get_society_payout_admin: {
+        Args: { _society_id: string }
+        Returns: {
+          has_linked_account: boolean
+          payout_bank_last4: string
+          payout_holder_name: string
+          payout_status: string
+        }[]
+      }
       get_user_society_id: { Args: { _user_id: string }; Returns: string }
       guard_checkin_by_code: {
         Args: { _code: string; _society_id: string }
@@ -2234,6 +2322,7 @@ export type Database = {
         }[]
       }
       society_has_access: { Args: { _society_id: string }; Returns: boolean }
+      society_payout_active: { Args: { _society_id: string }; Returns: boolean }
       start_trial_for_society: {
         Args: { _society_id: string }
         Returns: string

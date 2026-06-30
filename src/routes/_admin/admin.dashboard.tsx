@@ -14,6 +14,7 @@ const TILES = [
   { to: "/admin/users", icon: Users, title: "Users & Societies", desc: "View every user. Grant or upgrade any society's plan for free." },
   { to: "/admin/income", icon: BarChart3, title: "Income & Analytics", desc: "Platform revenue, subscriptions and transaction fees." },
   { to: "/admin/plans", icon: Tags, title: "Plans & Pricing", desc: "Manage the trial, Basic, Pro and Premium tiers." },
+  { to: "/admin/custom-plans", icon: Tags, title: "Custom Plans", desc: "Build ad-hoc subscription tiers for individual societies." },
   { to: "/admin/razorpay", icon: CreditCard, title: "Razorpay", desc: "Connect keys to enable plan checkout and payouts." },
   { to: "/admin/ads", icon: Megaphone, title: "Ads", desc: "Banner placements and full-screen ad timing (10–30s)." },
   { to: "/admin/withdrawals", icon: Banknote, title: "Withdrawals", desc: "Approve partner referral payouts." },

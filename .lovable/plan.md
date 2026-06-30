@@ -1,81 +1,98 @@
-# Maintenance Payments, Society Payouts & Targeted Billing
+## Master overhaul plan
 
-## What you'll see after this ships
+### 1. Dynamic billing + 100% cashless
 
-1. Resident taps **Pay now** → Razorpay opens for the exact bill amount → on success the bill flips to **Paid** and a payment row is logged. No more biometric-then-loop.
-2. Each **society admin must attach a bank/UPI** in *Society → Settings → Payouts* before residents can pay online. Until they do, the resident's bill shows **"Online payments not enabled — pay in cash to admin"** and the admin can still mark it paid manually (existing flow).
-3. Every successful online maintenance payment is split: **1.5% to SocioHub, 98.5% to that society's bank** — never any other society's.
-4. Resident **Dues** screen: the "View full ledger →" link is removed (residents shouldn't see society-wide ledger).
-5. Society admin **Bill Studio** gets a new **"One-off bill"** tab with 3 targets: **Whole society**, **One block**, **One flat (extra fee)** — with reason, amount, and due date.
+- Read `society_settings.billing_day` and `due_day` (and `grace_days`) instead of hardcoded 1st-of-month inside `src/lib/billing.functions.ts` and the `/api/public/hooks/run-billing` cron route. The cron will run daily and only generate for societies whose `billing_day = today`.
+- Bill row starts `status = 'due'`.
+- Strip every "Mark Paid (Cash)" / cash UI from `society.billing.tsx`, `society.bill-studio.tsx`, `app.bills.tsx`, `app.dues.tsx`. Remove cash-fallback copy when payouts not active — instead show "Society admin must finish bank setup to accept payments".
+- Migration: drop/ignore `method='cash'` writes via a CHECK constraint on `payments.method IN ('razorpay')`.
 
----
+### 2. Gamification engine
 
-## How the money flow works (technical)
+- New trigger `award_points_on_bill_paid` on `bills` (AFTER UPDATE when status → paid):
+  - If `paid_at <= due_date` → +10 points to resident in `user_points`.
+  - Else → −1 point × `(paid_at::date − due_date::date)` days.
+- Daily pg_cron `apply_overdue_point_decay`: for every still-`due` bill past `due_date`, subtract 1 point per resident per day (idempotent via `last_decay_date` column on `bills`).
+- `society.leaderboard.tsx` already reads `user_points` — no UI change needed beyond a "How points work" tooltip.
 
-We use **Razorpay Route** (Linked Accounts + Transfers) on the SocioHub platform Razorpay account that's already connected:
+### 3. Razorpay settlement + receipts
 
-- Each society stores a `razorpay_account_id` (the linked sub-account Razorpay returns when the admin submits their bank/UPI + PAN).
-- When a resident pays, we create a Razorpay **Order** server-side with a `transfers[]` array:
-  - 98.5% → society's linked account
-  - 1.5% stays in the SocioHub platform account
-- Razorpay handles the payout to the society's bank on T+2/T+3.
-- Webhook (`/api/public/hooks/razorpay`) verifies signature → marks bill `paid`, inserts `payments` row with `platform_fee` + `society_share`.
+- `payment.captured` webhook (`/api/public/hooks/razorpay`) already flips bill to paid; add: send invoice email via Lovable Emails (`bill-paid-receipt` template) with PDF link, and stamp `bills.paid_at = now()`.
+- Resident bills page: if a `payments` row exists for the bill with `status='success'` but the bill is still `due` after 60 s, render a red micro-banner: "Payment processing? Contact SocioHub Support for instant reconciliation." Link → `/support`.
+- New email template `src/lib/email-templates/bill-paid-receipt.tsx` + trigger from webhook via `sendTransactionalEmail`.
 
-If a society has no `razorpay_account_id` yet, the Pay-now button is disabled with a clear message; cash collection still works.
+### 4. Bill Studio — image share to WhatsApp
 
-### New / changed DB (one migration)
+- New `src/components/billing/BillCanvas.tsx`: renders the bill onto an HTML canvas (society logo, resident, period, line items, total, due date, admin signature image from `societies.signature_url`, optional background from a small theme picker: 4 presets).
+- Use `html-to-image` (`bun add html-to-image`) to export a PNG blob.
+- "Share to WhatsApp" button:
+  - Mobile: `navigator.share({ files: [pngBlob] })` so the image goes directly into the chat.
+  - Desktop fallback: download PNG + open `https://wa.me/?text=...` with a short caption + a hosted image URL (uploaded to public `bill-cards` storage bucket).
+- Remove plain-text WhatsApp share.
+- Migration: add `societies.signature_url`, `societies.bill_theme` (text); new public storage bucket `bill-cards` (read-only public, write via signed upload from server fn).
 
-- `societies`: add `razorpay_account_id text`, `payout_status text default 'not_setup'` (`not_setup` | `pending` | `active` | `rejected`), `payout_bank_last4 text`, `payout_holder_name text`.
-- `payments`: add `platform_fee_paise int`, `society_share_paise int`, `razorpay_order_id text`, `razorpay_payment_id text`, `razorpay_signature text`.
-- `platform_settings`: add `maintenance_fee_percent numeric default 1.5` (so you can tune it later from Super Admin).
-- New RPC `create_oneoff_bills(_society_id, _scope, _block_id, _flat_id, _amount, _title, _due_date)` — scope = `society` | `block` | `flat`. Inserts bill rows with proper RLS guard; runs as society admin only.
-- Existing `bills.flat_id` already supports per-flat bills; we just need the admin UI.
+### 5. Super Admin custom plans + metrics
 
-### New / changed server functions
+- New `admin.custom-plans.tsx`: form to create a one-off plan row tied to a specific `society_id` — fields: name, price, duration_days, platform_fee_percent, notes. Stored in new `custom_plans` table; `admin_grant_society_plan` extended to accept a `custom_plan_id`.
+- Fix global metrics in `admin.dashboard.tsx`: replace per-society aggregates with `SELECT count(*) FROM ...` queries via a single `admin_global_metrics` RPC (users, societies, active visitors today, MRR, paid bills 30d).
+- Visitor dashboard fix: `app.visitors.tsx` / `society.visitors.tsx` — repair status filters (`pending/approved/checked_in/checked_out`), live refresh every 30 s, fix the broken QR-approve action.
 
-- `src/lib/payouts.functions.ts`
-  - `createSocietyLinkedAccount({ societyId, holderName, email, phone, accountNumber, ifsc, beneficiaryName, pan })` — calls Razorpay Accounts API, stores `razorpay_account_id`, sets `payout_status='pending'`.
-  - `getPayoutStatus({ societyId })` — refreshes status from Razorpay.
-- `src/lib/maintenance-pay.functions.ts`
-  - `createMaintenanceOrder({ billId })` — fetches bill, ensures society has active `razorpay_account_id`, creates Razorpay Order with `transfers` split, returns `{ orderId, amount, keyId }`.
-- `src/routes/api/public/hooks/razorpay.ts` — webhook for `payment.captured` (signature-verified with `RAZORPAY_WEBHOOK_SECRET`). Marks the bill `paid` and writes the `payments` row idempotently keyed on `razorpay_payment_id`.
+### 6. Mobile UI refactor
 
-### Client changes
+- Make `ResidentBottomNav` and `SocietyBottomNav` truly fixed: `fixed bottom-0 inset-x-0 h-16 bg-[#1E1E1E] text-white` with 5 slots (Home, Bills, Feed, Visitors, More). Hide on `md+`.
+- Reduce card padding project-wide to `p-4` max on mobile (Tailwind: change `p-6`→`p-4 md:p-6` across `PageShell` and main cards).
+- Add safe-area bottom padding `pb-[calc(4rem+env(safe-area-inset-bottom))]` to `ResidentLayout` and society shell so content isn't hidden behind the nav.
+- Drop hamburger as the only entry on mobile — keep it secondary inside "More".
 
-- `src/lib/razorpay.ts` — add `openRazorpayForOrder({ orderId, keyId, amount, prefill, onSuccess })` (uses real order id instead of client-side amount).
-- `src/routes/_resident/app.bills.tsx` and `app.dues.tsx`:
-  - **Pay now** → calls `createMaintenanceOrder` → opens Razorpay → on success shows toast and refetches bills. No biometric loop.
-  - If `payout_status !== 'active'` for the society → button disabled with helper text "Pay in cash to admin — online payments not set up yet."
-- `src/routes/_resident/app.dues.tsx` — delete the `<Link to="/app/ledger">View full ledger →</Link>` block.
-- `src/routes/_resident/app.ledger.tsx` — gate to society admins only (redirect residents to `/app/bills`).
-- New `src/routes/_society/society.payouts.tsx` — form for bank/UPI + PAN; shows current `payout_status` chip; "Re-submit" if rejected. Added to `SocietyDrawer.tsx` under **Money**.
-- `src/routes/_society/society.bill-studio.tsx` — add a second tab **"One-off bill"** with target selector (Whole society / Block / Flat), amount, title, due date, calling `create_oneoff_bills`.
+### Technical notes
 
-### Super Admin
+- Migrations: `bills.paid_at`, `bills.last_decay_date`, `societies.signature_url`, `societies.bill_theme`, `payments.method` check constraint, `custom_plans` table + GRANTs + RLS (super admin only), point triggers, pg_cron job for decay.
+- New deps: `html-to-image`.
+- Files touched (major): `src/lib/billing.functions.ts`, `src/routes/api/public/hooks/run-billing.ts`, `src/routes/api/public/hooks/razorpay.ts`, `src/routes/_society/society.bill-studio.tsx`, `src/routes/_society/society.billing.tsx`, `src/routes/_resident/app.bills.tsx`, `src/routes/_resident/app.dues.tsx`, `src/components/shared/ResidentBottomNav.tsx`, `src/components/shared/SocietyBottomNav.tsx`, `src/layouts/ResidentLayout.tsx`, `src/routes/_admin/admin.dashboard.tsx`, new `src/routes/_admin/admin.custom-plans.tsx`, new `src/components/billing/BillCanvas.tsx`, new `src/lib/email-templates/bill-paid-receipt.tsx`.
+- No removal of existing security/RLS; new tables follow standard GRANT + RLS pattern.
 
-- `src/routes/_admin/admin.razorpay.tsx` — show platform fee % field bound to `platform_settings.maintenance_fee_percent` (default 1.5), and a list of societies with their payout status.
+Confirm to proceed and I'll execute in build mode.                                            CRITICAL MASTER ARCHITECTURE OVERHAUL: GAMIFIED CASHLESS MAINTENANCE, BILL STUDIO, SUPER ADMIN CUSTOM PLANNING, AND MOBILE UI REFACTOR
 
-### Secrets
+Please update the complete maintenance, billing, notification, super admin, and mobile layout engine based on these exact specifications. Completely delete any previous requirements regarding manual privacy locks, manual approvals, or cash overrides. Fix all components in one execution:
 
-Already have `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`. Need to add **`RAZORPAY_WEBHOOK_SECRET`** (you set it in Razorpay dashboard → Webhooks for `https://sociohub.live/api/public/hooks/razorpay`, event `payment.captured`). I'll prompt for it via `add_secret`.
+### 1. DYNAMIC AUTOMATED BILL GENERATION & 100% CASHLESS SYSTEM
 
----
+- Generation Timing: Do NOT hardcode the billing cycle to the 1st of the month. Use the existing society maintenance config parameters where the Admin defines the exact 'Billing Date' and 'Due Date' for their society.
 
-## Out of scope on purpose
+- State Gate: When a bill is generated on that specific date, it starts as 'Due' (Unpaid).
 
-- Refund / partial-pay UI (can come later).
-- Auto-retry of failed payouts (Razorpay handles retries).
-- Changing the platform fee per society (single global %; tweakable from Super Admin).
+- No Cash Allowed: Completely REMOVE the "Pay via Cash" or manual payment clearance option from both the Resident and Society Admin interfaces. The system only accepts online payment tracking.
 
----
+### 2. GAMIFICATION ENGINE (LEADERBOARD POINTS MECHANISM)
 
-## Order of work in one build pass
+- Reward Upgrades: Modify the points multiplier. If a resident pays their maintenance full amount on or before the designated Due Date, automatically credit +10 points (increased from +2) to their profile standing.
 
-1. Migration (schema + `create_oneoff_bills` RPC + grants/RLS).
-2. Server functions: payouts + maintenance-pay + webhook route.
-3. Resident Pay-now wiring + remove ledger link + ledger gate.
-4. Society Payouts page + drawer entry.
-5. Bill Studio one-off tab.
-6. Super Admin fee % field.
+- Penalty Framework: If a resident pays AFTER the Due Date, calculate the delta days (Current Date - Due Date). For every single day the payment is overdue, automatically subtract points sequentially from their profile, dropping their position on the Society Leaderboard.
 
-Approve and I'll ship all six in one go.
+### 3. RAZORPAY SETTLEMENT & INSTANT RECEIPTS
+
+- Direct Settlement Callback: Once a resident completes the transaction via Razorpay and the full amount settles towards the society account, the system must instantly and automatically switch the database row status from 'Due' to 'Paid'.
+
+- Fail-Safe Support Copy: If a system mismatch happens and a payment remains 'Due' after a successful Razorpay debit, display a clear, high-contrast micro-banner: "Payment processing? Contact SocioHub Support for instant reconciliation."
+
+- Automated Delivery: The exact millisecond the status hits 'Paid', fire a background hook to dispatch a clean invoice copy directly to the resident's registered email.
+
+### 4. THE BILL STUDIO (DYNAMIC IMAGE GENERATION & WHATSAPP INTEGRATION)
+
+- Visual Canvas Framework: Build a 'Bill Studio' rendering component. This component dynamically injects billing data onto a structured template.
+
+- Custom Attributes: The Admin can choose a background image theme/canvas wrapper, and it must digitally print the Society Admin's verified signature placeholder at the bottom layout grid.
+
+- Image Sharing Over Raw Text: When an admin or resident uses the "Share to WhatsApp" action link, the system must NOT generate raw text strings. It must render the compiled Bill Studio card wrapper as a downloadable image blob/media payload file format so a high-resolution visual invoice card is sent directly into WhatsApp chats.
+
+### 5. SUPER ADMIN CUSTOM PLANNING & SPECIAL FUNCTIONS (FROM PREVIOUS SPEC)
+
+- Custom Plan Creator: In the Super Admin panel, build an interface allowing the super admin to create customized ad-hoc subscription tiers for specific societies (setting custom duration, price, transaction fee structures manually).
+
+- Core Metric Fix: Ensure the user logs, visitor logs, and society overview database metrics refresh globally. Fix the core structural flaws inside the Visitor tracking dashboard.
+
+### 6. MOBILE UI STRUCTURE AND RESPONSIVENESS REFACTOR (FROM PREVIOUS SPEC)
+
+- Layout Fix: Enforce a strict mobile-first design system. Maximize screen real estate on phone screens.
+
+- Bottom Navigation Bar: Implement a fixed bottom navigation bar `fixed bottom-0 left-0 right-0 h-16 bg-[#1E1E1E]`) for core modules instead of relying purely on a hidden side hamburger menu. Ensure padding on mobile cards is compressed `p-4` max) to prevent layout overflows.

@@ -109,6 +109,26 @@ export const Route = createFileRoute("/api/public/hooks/run-billing")({
 
         for (const sch of schedules ?? []) {
           const now = new Date();
+
+          // Society-specific billing day: only generate for societies whose
+          // configured maintenance_due_day matches today (or falls in the
+          // grace window). Falls back to schedule.anchor_day when society
+          // settings aren't configured yet.
+          const { data: sset } = await supabaseAdmin
+            .from("society_settings")
+            .select("maintenance_due_day, grace_days")
+            .eq("society_id", sch.society_id)
+            .maybeSingle();
+          const billingDay = Number(sset?.maintenance_due_day ?? sch.anchor_day ?? 1);
+          const graceDays = Number(sset?.grace_days ?? 0);
+          const today = now.getDate();
+          const lastDayThisMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+          const effectiveBillingDay = Math.min(billingDay, lastDayThisMonth);
+          if (today < effectiveBillingDay || today > effectiveBillingDay + graceDays) {
+            societiesSkipped++;
+            continue;
+          }
+
           const pStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
           const pEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
 

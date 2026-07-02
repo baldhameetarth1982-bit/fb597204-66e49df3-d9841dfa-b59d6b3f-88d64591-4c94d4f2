@@ -22,6 +22,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { SplashScreen } from "@/components/shared/SplashScreen";
 import { RootErrorBoundary, installGlobalErrorLogger } from "@/components/shared/RootErrorBoundary";
 import { ProtectedRoute } from "@/components/shared/AuthGuard";
+import { LegalFooter } from "@/components/shared/LegalFooter";
 
 function NotFoundComponent() {
   return (
@@ -278,6 +279,7 @@ function DefaultShell() {
           <main className="flex-1">
             <Outlet />
           </main>
+          <LegalFooter />
         </div>
       </div>
     </SidebarProvider>

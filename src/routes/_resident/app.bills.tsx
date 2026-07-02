@@ -13,6 +13,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { createMaintenanceOrder } from "@/lib/maintenance-pay.functions";
 import { openRazorpayForOrder } from "@/lib/razorpay";
 import { toast } from "sonner";
+import { TransactionSummaryModal } from "@/components/payments/TransactionSummaryModal";
+import { PaymentSecurityBadge } from "@/components/payments/PaymentSecurityBadge";
 
 export const Route = createFileRoute("/_resident/app/bills")({
   head: () => ({ meta: [{ title: "Bills — SocioHub" }] }),
@@ -38,6 +40,7 @@ function BillsScreen() {
   const [claimOpen, setClaimOpen] = useState(false);
   const [paying, setPaying] = useState(false);
   const [payoutActive, setPayoutActive] = useState(false);
+  const [summaryOpen, setSummaryOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -150,31 +153,7 @@ function BillsScreen() {
           <p className="mt-1 text-xs opacity-80">{outstanding ? `Due ${outstanding.due}` : "No outstanding dues"}</p>
           <Button
             disabled={!outstanding || paying || !payoutActive}
-            onClick={async () => {
-              if (!outstanding) return;
-              setPaying(true);
-              try {
-                const order = await createOrder({ data: { billId: outstanding.id } });
-                if (!order.orderId || !order.keyId) throw new Error("Order failed");
-                await openRazorpayForOrder({
-                  orderId: order.orderId,
-                  keyId: order.keyId,
-                  amount: order.amount,
-                  name: order.societyName ?? "SocioHub",
-                  description: order.label ?? "Maintenance bill",
-                  prefill: { email: profile?.email ?? undefined, contact: profile?.phone ?? undefined, name: profile?.full_name ?? undefined },
-                  onSuccess: async () => {
-                    toast.success("Payment received — updating your bill…");
-                    setTimeout(() => navigate({ to: "/app/bills" }), 1500);
-                  },
-                  onDismiss: () => setPaying(false),
-                });
-              } catch (e: any) {
-                toast.error(e?.message ?? "Could not start payment");
-              } finally {
-                setPaying(false);
-              }
-            }}
+            onClick={() => setSummaryOpen(true)}
             className="mt-5 w-full h-12 rounded-xl bg-background text-primary hover:bg-background/90 font-semibold disabled:opacity-60"
           >
             {paying ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <IndianRupee className="h-4 w-4 mr-2" />}
@@ -192,6 +171,52 @@ function BillsScreen() {
           )}
         </CardContent>
       </Card>
+
+      {outstanding && (
+        <PaymentSecurityBadge />
+      )}
+
+      {outstanding && (
+        <TransactionSummaryModal
+          open={summaryOpen}
+          onOpenChange={(v) => (paying ? null : setSummaryOpen(v))}
+          title="Transaction Summary"
+          description={outstanding.title}
+          lines={[
+            { label: "Maintenance amount", amount: outstanding.amount },
+            { label: "Platform fee (1.5%)", amount: Math.max(1, Math.round(outstanding.amount * 1.5) / 100), muted: true },
+            { label: "Payable to society (98.5%)", amount: outstanding.amount - Math.max(0.01, Math.round(outstanding.amount * 1.5) / 100), muted: true },
+          ]}
+          total={outstanding.amount}
+          busy={paying}
+          confirmLabel="Pay Now"
+          onConfirm={async () => {
+            setPaying(true);
+            try {
+              const order = await createOrder({ data: { billId: outstanding.id } });
+              if (!order.orderId || !order.keyId) throw new Error("Order failed");
+              await openRazorpayForOrder({
+                orderId: order.orderId,
+                keyId: order.keyId,
+                amount: order.amount,
+                name: order.societyName ?? "SocioHub",
+                description: order.label ?? "Maintenance bill",
+                prefill: { email: profile?.email ?? undefined, contact: profile?.phone ?? undefined, name: profile?.full_name ?? undefined },
+                onSuccess: async () => {
+                  toast.success("Payment received — updating your bill…");
+                  setSummaryOpen(false);
+                  setTimeout(() => navigate({ to: "/app/bills" }), 1500);
+                },
+                onDismiss: () => setPaying(false),
+              });
+            } catch (e: any) {
+              toast.error(e?.message ?? "Could not start payment");
+            } finally {
+              setPaying(false);
+            }
+          }}
+        />
+      )}
 
       <section>
         <h2 className="px-1 mb-3 text-sm font-semibold text-muted-foreground uppercase tracking-wide">

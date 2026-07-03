@@ -126,7 +126,7 @@ function CreateSociety() {
           <div className="mx-auto h-14 w-14 rounded-2xl bg-primary/10 grid place-items-center">
             <CheckCircle2 className="h-7 w-7 text-primary" />
           </div>
-          <h1 className="type-title-lg">Society created</h1>
+          <h1 className="type-title">Society created</h1>
           <p className="text-sm text-muted-foreground">
             Share this code with residents so they can join <strong>{created.name}</strong>.
           </p>
@@ -163,7 +163,7 @@ function CreateSociety() {
         <div className="h-12 w-12 rounded-2xl bg-primary/10 grid place-items-center">
           <Building2 className="h-6 w-6 text-primary" />
         </div>
-        <h1 className="type-title-lg">Create your society</h1>
+        <h1 className="type-title">Create your society</h1>
         <p className="text-sm text-muted-foreground">
           You'll become the Chairman with full admin rights. A unique invite code is generated automatically.
         </p>

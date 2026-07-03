@@ -144,7 +144,7 @@ function JoinFlow() {
       {step === "search" && (
         <section className="space-y-4">
           <header>
-            <h1 className="type-title-lg">Find your society</h1>
+            <h1 className="type-title">Find your society</h1>
             <p className="mt-1 text-sm text-muted-foreground">Search by society name or city.</p>
           </header>
           <div className="relative">
@@ -205,7 +205,7 @@ function JoinFlow() {
         <section className="space-y-4">
           <header>
             <p className="text-xs text-muted-foreground">{society.name}</p>
-            <h1 className="type-title-lg">Enter society code</h1>
+            <h1 className="type-title">Enter society code</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               Ask your Society Admin for the invite code — you'll need it to request access.
             </p>
@@ -236,7 +236,7 @@ function JoinFlow() {
         <section className="space-y-4">
           <header>
             <p className="text-xs text-muted-foreground">{society.name}</p>
-            <h1 className="type-title-lg">Your details</h1>
+            <h1 className="type-title">Your details</h1>
           </header>
           <Card className="rounded-2xl">
             <CardContent className="p-5 space-y-4">
@@ -305,7 +305,7 @@ function JoinFlow() {
       {step === "submit" && society && role && (
         <section className="space-y-4">
           <header>
-            <h1 className="type-title-lg">Confirm & submit</h1>
+            <h1 className="type-title">Confirm & submit</h1>
             <p className="mt-1 text-sm text-muted-foreground">Your admin will review this request.</p>
           </header>
           <Card className="rounded-2xl">

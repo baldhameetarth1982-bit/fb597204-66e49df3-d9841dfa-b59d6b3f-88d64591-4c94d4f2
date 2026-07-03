@@ -115,7 +115,7 @@ function PlanGate() {
               </div>
               <div className="flex-1 space-y-2">
                 <Badge className="rounded-full">Enterprise</Badge>
-                <h2 className="type-title-lg">Custom pricing for your society</h2>
+                <h2 className="type-title">Custom pricing for your society</h2>
                 <p className="text-sm text-muted-foreground">
                   With <strong>{(society as any)?.total_units ?? "500+"}</strong> units, you qualify for enterprise
                   pricing with dedicated onboarding, SLA and account management.
@@ -156,7 +156,7 @@ function PlanGate() {
                     <div className="flex items-center gap-2 text-xs opacity-90">
                       <Clock className="h-4 w-4" /> {trialDays} days · No card needed
                     </div>
-                    <h2 className="type-title-lg mt-1">Try every Premium feature free</h2>
+                    <h2 className="type-title mt-1">Try every Premium feature free</h2>
                     <p className="opacity-90 mt-1 text-sm">
                       Trial can be started once per society. After it ends, you can switch to any paid plan.
                     </p>
@@ -189,7 +189,7 @@ function PlanGate() {
                     )}
                     <div className="flex items-center gap-2">
                       <Icon className="h-5 w-5 text-primary" />
-                      <h3 className="type-title-lg">{p.plan_name}</h3>
+                      <h3 className="type-title">{p.plan_name}</h3>
                     </div>
                     <div className="mt-3 flex items-baseline gap-1">
                       <span className="text-4xl font-bold">₹{p.price_monthly_inr ?? 0}</span>

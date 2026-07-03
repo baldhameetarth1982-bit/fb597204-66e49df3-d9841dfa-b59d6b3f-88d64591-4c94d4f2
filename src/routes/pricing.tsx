@@ -101,7 +101,7 @@ function PricingPage() {
               </div>
               <div className="flex-1 space-y-2">
                 <Badge>Enterprise</Badge>
-                <h2 className="type-title-lg">Tailored for large societies</h2>
+                <h2 className="type-title">Tailored for large societies</h2>
                 <p className="text-sm text-muted-foreground">
                   Dedicated onboarding, an SLA, priority support and volume-based pricing. Perfect for townships,
                   villa communities and multi-tower complexes.
@@ -123,7 +123,7 @@ function PricingPage() {
                   <Zap className="h-7 w-7" />
                 </div>
                 <div className="flex-1">
-                  <h2 className="type-title-lg">Free for {trialDays} days</h2>
+                  <h2 className="type-title">Free for {trialDays} days</h2>
                   <p className="opacity-90 text-sm mt-1">
                     All Premium features unlocked. Auto-converts to any paid plan you pick — cancel anytime.
                   </p>
@@ -157,7 +157,7 @@ function PricingPage() {
                     )}
                     <div className="flex items-center gap-2">
                       <Icon className="h-5 w-5 text-primary" />
-                      <h3 className="type-title-lg">{p.plan_name}</h3>
+                      <h3 className="type-title">{p.plan_name}</h3>
                     </div>
                     <div className="mt-3 flex items-baseline gap-1">
                       <span className="text-4xl font-bold">₹{p.price_monthly_inr ?? 0}</span>

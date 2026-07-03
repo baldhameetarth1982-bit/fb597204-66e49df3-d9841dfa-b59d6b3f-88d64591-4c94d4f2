@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { FinanceTabs } from "@/components/shared/FinanceTabs";
 
 export const Route = createFileRoute("/_society/society/expenses")({
   head: () => ({ meta: [{ title: "Expenses — SocioHub" }] }),
@@ -71,6 +72,7 @@ function ExpensesPage() {
 
   return (
     <div className="px-4 md:px-8 py-6 md:py-10 max-w-5xl mx-auto space-y-6">
+      <FinanceTabs />
       <header>
         <h1 className="text-3xl font-semibold tracking-tight flex items-center gap-2">
           <Wallet className="h-7 w-7 text-primary" /> Expenses

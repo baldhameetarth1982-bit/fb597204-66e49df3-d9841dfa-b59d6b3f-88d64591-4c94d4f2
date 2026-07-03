@@ -109,11 +109,12 @@ export const deactivateResident = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.rpc("deactivate_flat_resident", {
       _flat_resident_id: data.flatResidentId,
-      _reason: data.reason ?? null,
+      _reason: data.reason ?? undefined,
     });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 const outstandingInput = z.object({ flatId: z.string().uuid() });
 export const flatOutstanding = createServerFn({ method: "POST" })

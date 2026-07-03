@@ -96,6 +96,7 @@ import { Route as AdminAdminAdsRouteImport } from './routes/_admin/admin.ads'
 import { Route as ApiPublicHooksRunBillingRouteImport } from './routes/api/public/hooks/run-billing'
 import { Route as ApiPublicHooksRazorpayRouteImport } from './routes/api/public/hooks/razorpay'
 import { Route as ApiPublicAuthFirebaseSessionRouteImport } from './routes/api/public/auth/firebase-session'
+import { Route as SocietySocietyResidentsIdRouteImport } from './routes/_society/society.residents.$id'
 import { Route as ResidentAppFeedPostIdRouteImport } from './routes/_resident/app.feed.$postId'
 
 const WelcomeRoute = WelcomeRouteImport.update({
@@ -539,6 +540,12 @@ const ApiPublicAuthFirebaseSessionRoute =
     path: '/api/public/auth/firebase-session',
     getParentRoute: () => rootRouteImport,
   } as any)
+const SocietySocietyResidentsIdRoute =
+  SocietySocietyResidentsIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => SocietySocietyResidentsRoute,
+  } as any)
 const ResidentAppFeedPostIdRoute = ResidentAppFeedPostIdRouteImport.update({
   id: '/$postId',
   path: '/$postId',
@@ -620,13 +627,14 @@ export interface FileRoutesByFullPath {
   '/society/plan-required': typeof SocietySocietyPlanRequiredRoute
   '/society/polls': typeof SocietySocietyPollsRoute
   '/society/reports': typeof SocietySocietyReportsRoute
-  '/society/residents': typeof SocietySocietyResidentsRoute
+  '/society/residents': typeof SocietySocietyResidentsRouteWithChildren
   '/society/setup': typeof SocietySocietySetupRoute
   '/society/team': typeof SocietySocietyTeamRoute
   '/society/vehicles': typeof SocietySocietyVehiclesRoute
   '/society/verifications': typeof SocietySocietyVerificationsRoute
   '/society/visitors': typeof SocietySocietyVisitorsRoute
   '/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
+  '/society/residents/$id': typeof SocietySocietyResidentsIdRoute
   '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
@@ -705,13 +713,14 @@ export interface FileRoutesByTo {
   '/society/plan-required': typeof SocietySocietyPlanRequiredRoute
   '/society/polls': typeof SocietySocietyPollsRoute
   '/society/reports': typeof SocietySocietyReportsRoute
-  '/society/residents': typeof SocietySocietyResidentsRoute
+  '/society/residents': typeof SocietySocietyResidentsRouteWithChildren
   '/society/setup': typeof SocietySocietySetupRoute
   '/society/team': typeof SocietySocietyTeamRoute
   '/society/vehicles': typeof SocietySocietyVehiclesRoute
   '/society/verifications': typeof SocietySocietyVerificationsRoute
   '/society/visitors': typeof SocietySocietyVisitorsRoute
   '/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
+  '/society/residents/$id': typeof SocietySocietyResidentsIdRoute
   '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
@@ -796,13 +805,14 @@ export interface FileRoutesById {
   '/_society/society/plan-required': typeof SocietySocietyPlanRequiredRoute
   '/_society/society/polls': typeof SocietySocietyPollsRoute
   '/_society/society/reports': typeof SocietySocietyReportsRoute
-  '/_society/society/residents': typeof SocietySocietyResidentsRoute
+  '/_society/society/residents': typeof SocietySocietyResidentsRouteWithChildren
   '/_society/society/setup': typeof SocietySocietySetupRoute
   '/_society/society/team': typeof SocietySocietyTeamRoute
   '/_society/society/vehicles': typeof SocietySocietyVehiclesRoute
   '/_society/society/verifications': typeof SocietySocietyVerificationsRoute
   '/_society/society/visitors': typeof SocietySocietyVisitorsRoute
   '/_resident/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
+  '/_society/society/residents/$id': typeof SocietySocietyResidentsIdRoute
   '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
@@ -891,6 +901,7 @@ export interface FileRouteTypes {
     | '/society/verifications'
     | '/society/visitors'
     | '/app/feed/$postId'
+    | '/society/residents/$id'
     | '/api/public/auth/firebase-session'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
@@ -976,6 +987,7 @@ export interface FileRouteTypes {
     | '/society/verifications'
     | '/society/visitors'
     | '/app/feed/$postId'
+    | '/society/residents/$id'
     | '/api/public/auth/firebase-session'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
@@ -1066,6 +1078,7 @@ export interface FileRouteTypes {
     | '/_society/society/verifications'
     | '/_society/society/visitors'
     | '/_resident/app/feed/$postId'
+    | '/_society/society/residents/$id'
     | '/api/public/auth/firebase-session'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
@@ -1707,6 +1720,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicAuthFirebaseSessionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_society/society/residents/$id': {
+      id: '/_society/society/residents/$id'
+      path: '/$id'
+      fullPath: '/society/residents/$id'
+      preLoaderRoute: typeof SocietySocietyResidentsIdRouteImport
+      parentRoute: typeof SocietySocietyResidentsRoute
+    }
     '/_resident/app/feed/$postId': {
       id: '/_resident/app/feed/$postId'
       path: '/$postId'
@@ -1815,6 +1835,20 @@ const ResidentRouteWithChildren = ResidentRoute._addFileChildren(
   ResidentRouteChildren,
 )
 
+interface SocietySocietyResidentsRouteChildren {
+  SocietySocietyResidentsIdRoute: typeof SocietySocietyResidentsIdRoute
+}
+
+const SocietySocietyResidentsRouteChildren: SocietySocietyResidentsRouteChildren =
+  {
+    SocietySocietyResidentsIdRoute: SocietySocietyResidentsIdRoute,
+  }
+
+const SocietySocietyResidentsRouteWithChildren =
+  SocietySocietyResidentsRoute._addFileChildren(
+    SocietySocietyResidentsRouteChildren,
+  )
+
 interface SocietyRouteChildren {
   SocietySocietyAccountsRoute: typeof SocietySocietyAccountsRoute
   SocietySocietyAnnouncementsRoute: typeof SocietySocietyAnnouncementsRoute
@@ -1840,7 +1874,7 @@ interface SocietyRouteChildren {
   SocietySocietyPlanRequiredRoute: typeof SocietySocietyPlanRequiredRoute
   SocietySocietyPollsRoute: typeof SocietySocietyPollsRoute
   SocietySocietyReportsRoute: typeof SocietySocietyReportsRoute
-  SocietySocietyResidentsRoute: typeof SocietySocietyResidentsRoute
+  SocietySocietyResidentsRoute: typeof SocietySocietyResidentsRouteWithChildren
   SocietySocietySetupRoute: typeof SocietySocietySetupRoute
   SocietySocietyTeamRoute: typeof SocietySocietyTeamRoute
   SocietySocietyVehiclesRoute: typeof SocietySocietyVehiclesRoute
@@ -1873,7 +1907,7 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyPlanRequiredRoute: SocietySocietyPlanRequiredRoute,
   SocietySocietyPollsRoute: SocietySocietyPollsRoute,
   SocietySocietyReportsRoute: SocietySocietyReportsRoute,
-  SocietySocietyResidentsRoute: SocietySocietyResidentsRoute,
+  SocietySocietyResidentsRoute: SocietySocietyResidentsRouteWithChildren,
   SocietySocietySetupRoute: SocietySocietySetupRoute,
   SocietySocietyTeamRoute: SocietySocietyTeamRoute,
   SocietySocietyVehiclesRoute: SocietySocietyVehiclesRoute,

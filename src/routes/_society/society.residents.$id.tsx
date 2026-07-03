@@ -83,7 +83,8 @@ function ResidentDetailPage() {
       const { data } = await supabase
         .from("bills")
         .select("id, bill_number, period_label, amount, status, due_date, paid_at")
-        .eq("flat_id", flatId)
+        .eq("flat_id", flatId ?? "")
+
         .order("bill_date", { ascending: false })
         .limit(24);
       return data ?? [];

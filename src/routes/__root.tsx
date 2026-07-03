@@ -23,6 +23,8 @@ import { SplashScreen } from "@/components/shared/SplashScreen";
 import { RootErrorBoundary, installGlobalErrorLogger } from "@/components/shared/RootErrorBoundary";
 import { ProtectedRoute } from "@/components/shared/AuthGuard";
 import { LegalFooter } from "@/components/shared/LegalFooter";
+import { PageTransition } from "@/components/system/PageTransition";
+import { useRef } from "react";
 
 function NotFoundComponent() {
   return (
@@ -199,6 +201,18 @@ function MarketingAnalytics() {
   return null;
 }
 
+function TransitionedOutlet() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  // Re-key on top-level path segment so transitions fire on section change
+  // without thrashing on every param tweak.
+  const seg = pathname.split("/").slice(0, 3).join("/") || "/";
+  return (
+    <PageTransition key={seg} className="contents">
+      <Outlet />
+    </PageTransition>
+  );
+}
+
 function ShellSwitcher() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isProtectedPath = ["/app", "/society", "/admin", "/settings", "/onboarding"].some(
@@ -207,7 +221,7 @@ function ShellSwitcher() {
 
   // Bare shell: auth/redirect pages must not mount app layouts before routing settles.
   if (pathname === "/" || AUTH_PATHS.some((p) => pathname.startsWith(p))) {
-    return <Outlet />;
+    return <TransitionedOutlet />;
   }
 
   if (isProtectedPath) {

@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Building2, Tags, CreditCard, Banknote, Megaphone,
   Users, BarChart3, Settings, ShieldCheck, ScrollText, Search, Sparkles,
+  TrendingUp, Heart, FileText, Palette,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
@@ -12,6 +13,10 @@ import { Logo } from "@/components/shared/Logo";
 
 const items = [
   { title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
+  { title: "Executive", url: "/admin/executive", icon: TrendingUp },
+  { title: "BI Center", url: "/admin/bi", icon: BarChart3 },
+  { title: "Health Scores", url: "/admin/health", icon: Heart },
+  { title: "Report Builder", url: "/admin/report-builder", icon: FileText },
   { title: "Search", url: "/admin/search", icon: Search },
   { title: "Societies", url: "/admin/societies", icon: Building2 },
   { title: "Users", url: "/admin/users", icon: Users },
@@ -20,6 +25,7 @@ const items = [
   { title: "Revenue", url: "/admin/revenue", icon: BarChart3 },
   { title: "Income", url: "/admin/income", icon: BarChart3 },
   { title: "Ads", url: "/admin/ads", icon: Megaphone },
+  { title: "Branding", url: "/admin/branding", icon: Palette },
   { title: "Razorpay", url: "/admin/razorpay", icon: CreditCard },
   { title: "Withdrawals", url: "/admin/withdrawals", icon: Banknote },
   { title: "Audit", url: "/admin/audit", icon: ScrollText },

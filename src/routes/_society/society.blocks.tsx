@@ -181,7 +181,10 @@ function BlocksPage() {
         title="Blocks"
         description="Apartments, bungalows or mixed — describe once, duplicate easily."
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" className="rounded-xl" onClick={() => setAutoOpen(true)}>
+              <Wand2 className="h-4 w-4 mr-2" /> Auto Design
+            </Button>
             <Button variant="secondary" className="rounded-xl" onClick={() => setAiOpen(true)}>
               <Sparkles className="h-4 w-4 mr-2" /> AI Build
             </Button>

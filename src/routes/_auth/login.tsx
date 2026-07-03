@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
-import { Loader2, Mail, Lock, ShieldCheck, FileCheck2 } from "lucide-react";
+import { Loader2, Mail, Lock, ShieldCheck, FileCheck2, Phone, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { ROLE_HOME, ROLES } from "@/config/roles";
 import { AuthShell } from "@/components/shared/AuthShell";
@@ -11,25 +11,32 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
 import { GoogleButton } from "@/components/auth/GoogleButton";
+import { PhoneOtpForm } from "@/components/auth/PhoneOtpForm";
+import { TruecallerButton } from "@/components/auth/TruecallerButton";
+import { getCapabilities, startTruecallerAuth } from "@/lib/auth-service";
 
 export const Route = createFileRoute("/_auth/login")({
   head: () => ({
     meta: [
       { title: "Sign in — SocioHub" },
-      { name: "description", content: "Sign in to SocioHub — email, password, or Google." },
+      { name: "description", content: "Sign in to SocioHub — Google, Phone, Truecaller or email." },
     ],
   }),
   component: LoginPage,
 });
 
+type Step = "choose" | "phone" | "email";
+
 function LoginPage() {
   const navigate = useNavigate();
   const { isLoading, isAuthenticated, primaryRole, profile } = useAuth();
+  const [step, setStep] = useState<Step>("choose");
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [busy, setBusy] = useState<null | "email" | "google">(null);
+  const [busy, setBusy] = useState<null | "email" | "google" | "truecaller">(null);
+  const caps = useMemo(() => getCapabilities(), []);
 
   if (isLoading) {
     return (
@@ -69,7 +76,6 @@ function LoginPage() {
         });
         if (error) throw error;
       }
-      // AuthProvider will redirect via the isAuthenticated branch above.
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not sign in");
     } finally {
@@ -94,84 +100,147 @@ function LoginPage() {
     }
   }
 
+  async function withTruecaller() {
+    setBusy("truecaller");
+    try {
+      const r = await startTruecallerAuth();
+      if (!r.ok) toast.error(r.error ?? "Truecaller sign-in unavailable");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   return (
     <AuthShell>
+      {step !== "choose" && (
+        <button
+          type="button"
+          onClick={() => setStep("choose")}
+          className="mb-3 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" /> Back
+        </button>
+      )}
+
       <h1 className="text-2xl font-semibold tracking-tight text-center">
-        {mode === "signin" ? "Welcome back" : "Create your account"}
+        {step === "email"
+          ? mode === "signin" ? "Sign in with email" : "Create your account"
+          : step === "phone"
+            ? "Continue with phone"
+            : "Welcome to SocioHub"}
       </h1>
       <p className="mt-2 text-sm text-muted-foreground text-center">
         Society management, simplified.
       </p>
 
-      <div className="mt-6 space-y-3">
-        <GoogleButton onClick={withGoogle} loading={busy === "google"} />
-      </div>
-
-      <div className="mt-6 flex items-center gap-3 text-[11px] text-muted-foreground">
-        <div className="h-px flex-1 bg-border" />
-        or with email
-        <div className="h-px flex-1 bg-border" />
-      </div>
-
-      <form onSubmit={submitEmail} className="mt-4 space-y-3">
-        {mode === "signup" && (
-          <div className="space-y-1.5">
-            <Label className="text-sm">Full name</Label>
-            <Input
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Your name"
-              className="h-12 rounded-2xl"
-              autoComplete="name"
-            />
-          </div>
-        )}
-        <div className="space-y-1.5">
-          <Label className="flex items-center gap-1.5 text-sm">
-            <Mail className="h-4 w-4 text-primary" /> Email
-          </Label>
-          <Input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-            className="h-12 rounded-2xl"
-            autoComplete="email"
-            required
-          />
+      {step === "choose" && (
+        <div className="mt-6 space-y-3">
+          <GoogleButton onClick={withGoogle} loading={busy === "google"} />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setStep("phone")}
+            className="w-full h-12 rounded-2xl font-semibold gap-2"
+          >
+            <Phone className="h-4 w-4" /> Continue with Phone
+          </Button>
+          {caps.truecaller && (
+            <TruecallerButton onClick={withTruecaller} loading={busy === "truecaller"} />
+          )}
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => setStep("email")}
+            className="w-full h-12 rounded-2xl font-semibold gap-2"
+          >
+            <Mail className="h-4 w-4" /> Continue with Email
+          </Button>
         </div>
-        <div className="space-y-1.5">
-          <Label className="flex items-center gap-1.5 text-sm">
-            <Lock className="h-4 w-4 text-primary" /> Password
-          </Label>
-          <Input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-            className="h-12 rounded-2xl"
-            autoComplete={mode === "signup" ? "new-password" : "current-password"}
-            minLength={6}
-            required
-          />
-        </div>
-        <Button
-          type="submit"
-          disabled={busy === "email"}
-          className="w-full h-12 rounded-2xl text-base font-semibold"
-        >
-          {busy === "email" && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-          {mode === "signin" ? "Sign in" : "Create account"}
-        </Button>
-      </form>
+      )}
 
-      <button
-        type="button"
-        onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-        className="mt-4 w-full text-sm text-muted-foreground hover:text-foreground"
-      >
-        {mode === "signin" ? "New here? Create an account" : "Already have an account? Sign in"}
-      </button>
+      {step === "phone" && (
+        <div className="mt-6">
+          <PhoneOtpForm
+            submitLabel="Verify & continue"
+            onVerified={({ phone, firebaseUid }) => {
+              try {
+                sessionStorage.setItem(
+                  "sociohub:pending_phone",
+                  JSON.stringify({ phone, firebaseUid }),
+                );
+              } catch {}
+              toast.success("Phone verified. Complete sign in below.");
+              setStep("choose");
+            }}
+          />
+          <p className="mt-4 text-[11px] text-muted-foreground text-center">
+            After verifying, complete sign-in with Google or Email — your phone will link automatically.
+          </p>
+        </div>
+      )}
+
+      {step === "email" && (
+        <>
+          <form onSubmit={submitEmail} className="mt-6 space-y-3">
+            {mode === "signup" && (
+              <div className="space-y-1.5">
+                <Label className="text-sm">Full name</Label>
+                <Input
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Your name"
+                  className="h-12 rounded-2xl"
+                  autoComplete="name"
+                />
+              </div>
+            )}
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5 text-sm">
+                <Mail className="h-4 w-4 text-primary" /> Email
+              </Label>
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="h-12 rounded-2xl"
+                autoComplete="email"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5 text-sm">
+                <Lock className="h-4 w-4 text-primary" /> Password
+              </Label>
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="h-12 rounded-2xl"
+                autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                minLength={6}
+                required
+              />
+            </div>
+            <Button
+              type="submit"
+              disabled={busy === "email"}
+              className="w-full h-12 rounded-2xl text-base font-semibold"
+            >
+              {busy === "email" && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {mode === "signin" ? "Sign in" : "Create account"}
+            </Button>
+          </form>
+          <button
+            type="button"
+            onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
+            className="mt-4 w-full text-sm text-muted-foreground hover:text-foreground"
+          >
+            {mode === "signin" ? "New here? Create an account" : "Already have an account? Sign in"}
+          </button>
+        </>
+      )}
 
       <div className="mt-6 rounded-2xl bg-secondary/60 p-4 space-y-2">
         <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">

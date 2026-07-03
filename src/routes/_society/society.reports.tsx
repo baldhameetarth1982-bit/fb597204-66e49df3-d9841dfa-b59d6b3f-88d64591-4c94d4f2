@@ -10,6 +10,7 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
 } from "recharts";
 import { PageHeader, PageShell, EmptyState } from "@/components/shared/PageHeader";
+import { FinanceTabs } from "@/components/shared/FinanceTabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -130,7 +131,8 @@ function ReportsPage() {
         actions={
           <div className="flex gap-2 print:hidden">
             <Button variant="outline" className="rounded-xl" onClick={() => window.print()}>
-              <Printer className="h-4 w-4 mr-1.5" /> PDF
+              <Printer className="h-4 w-4 mr-1.5" />
+      <FinanceTabs /> PDF
             </Button>
             <Button className="rounded-xl" onClick={exportCsv} disabled={!txns.length}>
               <FileDown className="h-4 w-4 mr-1.5" /> Excel (CSV)

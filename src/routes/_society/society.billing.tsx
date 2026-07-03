@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { PageHeader, PageShell, EmptyState } from "@/components/shared/PageHeader";
+import { FinanceTabs } from "@/components/shared/FinanceTabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -191,7 +192,8 @@ function BillingPage() {
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button className="rounded-xl h-11">
-                <Plus className="h-4 w-4 mr-2" /> Generate bills
+                <Plus className="h-4 w-4 mr-2" />
+      <FinanceTabs /> Generate bills
               </Button>
             </DialogTrigger>
             <DialogContent>

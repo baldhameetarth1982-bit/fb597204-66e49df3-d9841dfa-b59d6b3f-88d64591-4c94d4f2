@@ -13,6 +13,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { PageShell, PageHeader } from "@/components/shared/PageHeader";
+import { FinanceTabs } from "@/components/shared/FinanceTabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useSocietyId } from "@/hooks/useSocietyId";
@@ -108,7 +109,8 @@ function AdminLedger() {
         actions={
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button className="rounded-xl"><Plus className="h-4 w-4 mr-1" /> New entry</Button>
+              <Button className="rounded-xl"><Plus className="h-4 w-4 mr-1" />
+      <FinanceTabs /> New entry</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle>Add ledger entry</DialogTitle></DialogHeader>

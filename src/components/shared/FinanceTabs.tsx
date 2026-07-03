@@ -1,14 +1,15 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Receipt, FileText, Wallet, BookOpen, TrendingDown, BarChart3 } from "lucide-react";
+import { Receipt, FileText, Wallet, BookOpen, TrendingDown, BarChart3, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TABS = [
-  { to: "/society/billing", label: "Bills", icon: Receipt, group: "billing" },
-  { to: "/society/bill-studio", label: "Bill Studio", icon: FileText, group: "billing" },
-  { to: "/society/accounts", label: "Accounts", icon: Wallet, group: "accounts" },
-  { to: "/society/ledger", label: "Ledger", icon: BookOpen, group: "accounts" },
-  { to: "/society/expenses", label: "Expenses", icon: TrendingDown, group: "accounts" },
-  { to: "/society/reports", label: "Reports", icon: BarChart3, group: "accounts" },
+  { to: "/society/billing", label: "Bills", icon: Receipt },
+  { to: "/society/bill-studio", label: "Bill Studio", icon: FileText },
+  { to: "/society/accounts", label: "Accounts", icon: Wallet },
+  { to: "/society/ledger", label: "Ledger", icon: BookOpen },
+  { to: "/society/expenses", label: "Expenses", icon: TrendingDown },
+  { to: "/society/reports", label: "Reports", icon: BarChart3 },
+  { to: "/society/billing-settings", label: "Settings", icon: Settings2 },
 ] as const;
 
 export function FinanceTabs() {

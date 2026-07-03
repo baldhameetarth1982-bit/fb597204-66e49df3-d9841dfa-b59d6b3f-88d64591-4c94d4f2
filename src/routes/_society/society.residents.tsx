@@ -146,9 +146,14 @@ function ResidentsPage() {
         title="Residents"
         description={`${residents.length} people · ${flats.length} houses · ${vacantFlats.length} vacant`}
         actions={
-          <Button size="sm" variant="outline" className="rounded-xl" onClick={exportExcel}>
-            <Download className="h-4 w-4 mr-1.5" /> Export
-          </Button>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" className="rounded-xl" onClick={exportExcel}>
+              <Download className="h-4 w-4 mr-1.5" /> Excel
+            </Button>
+            <Button size="sm" variant="outline" className="rounded-xl" onClick={exportPDF}>
+              <Download className="h-4 w-4 mr-1.5" /> PDF
+            </Button>
+          </div>
         }
       />
 

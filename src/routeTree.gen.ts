@@ -96,6 +96,7 @@ import { Route as AdminAdminCustomPlansRouteImport } from './routes/_admin/admin
 import { Route as AdminAdminAdsRouteImport } from './routes/_admin/admin.ads'
 import { Route as ApiPublicHooksRunBillingRouteImport } from './routes/api/public/hooks/run-billing'
 import { Route as ApiPublicHooksRazorpayRouteImport } from './routes/api/public/hooks/razorpay'
+import { Route as ApiPublicHooksMaintenanceRemindersRouteImport } from './routes/api/public/hooks/maintenance-reminders'
 import { Route as ApiPublicAuthFirebaseSessionRouteImport } from './routes/api/public/auth/firebase-session'
 import { Route as SocietySocietyResidentsIdRouteImport } from './routes/_society/society.residents.$id'
 import { Route as ResidentAppFeedPostIdRouteImport } from './routes/_resident/app.feed.$postId'
@@ -541,6 +542,12 @@ const ApiPublicHooksRazorpayRoute = ApiPublicHooksRazorpayRouteImport.update({
   path: '/api/public/hooks/razorpay',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksMaintenanceRemindersRoute =
+  ApiPublicHooksMaintenanceRemindersRouteImport.update({
+    id: '/api/public/hooks/maintenance-reminders',
+    path: '/api/public/hooks/maintenance-reminders',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicAuthFirebaseSessionRoute =
   ApiPublicAuthFirebaseSessionRouteImport.update({
     id: '/api/public/auth/firebase-session',
@@ -644,6 +651,7 @@ export interface FileRoutesByFullPath {
   '/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
   '/society/residents/$id': typeof SocietySocietyResidentsIdRoute
   '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
+  '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
 }
@@ -731,6 +739,7 @@ export interface FileRoutesByTo {
   '/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
   '/society/residents/$id': typeof SocietySocietyResidentsIdRoute
   '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
+  '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
 }
@@ -824,6 +833,7 @@ export interface FileRoutesById {
   '/_resident/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
   '/_society/society/residents/$id': typeof SocietySocietyResidentsIdRoute
   '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
+  '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
 }
@@ -914,6 +924,7 @@ export interface FileRouteTypes {
     | '/app/feed/$postId'
     | '/society/residents/$id'
     | '/api/public/auth/firebase-session'
+    | '/api/public/hooks/maintenance-reminders'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
   fileRoutesByTo: FileRoutesByTo
@@ -1001,6 +1012,7 @@ export interface FileRouteTypes {
     | '/app/feed/$postId'
     | '/society/residents/$id'
     | '/api/public/auth/firebase-session'
+    | '/api/public/hooks/maintenance-reminders'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
   id:
@@ -1093,6 +1105,7 @@ export interface FileRouteTypes {
     | '/_resident/app/feed/$postId'
     | '/_society/society/residents/$id'
     | '/api/public/auth/firebase-session'
+    | '/api/public/hooks/maintenance-reminders'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
   fileRoutesById: FileRoutesById
@@ -1118,6 +1131,7 @@ export interface RootRouteChildren {
   ApiSupportChatRoute: typeof ApiSupportChatRoute
   CheckoutPlanIdRoute: typeof CheckoutPlanIdRoute
   ApiPublicAuthFirebaseSessionRoute: typeof ApiPublicAuthFirebaseSessionRoute
+  ApiPublicHooksMaintenanceRemindersRoute: typeof ApiPublicHooksMaintenanceRemindersRoute
   ApiPublicHooksRazorpayRoute: typeof ApiPublicHooksRazorpayRoute
   ApiPublicHooksRunBillingRoute: typeof ApiPublicHooksRunBillingRoute
 }
@@ -1733,6 +1747,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksRazorpayRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/maintenance-reminders': {
+      id: '/api/public/hooks/maintenance-reminders'
+      path: '/api/public/hooks/maintenance-reminders'
+      fullPath: '/api/public/hooks/maintenance-reminders'
+      preLoaderRoute: typeof ApiPublicHooksMaintenanceRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/auth/firebase-session': {
       id: '/api/public/auth/firebase-session'
       path: '/api/public/auth/firebase-session'
@@ -1981,6 +2002,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiSupportChatRoute: ApiSupportChatRoute,
   CheckoutPlanIdRoute: CheckoutPlanIdRoute,
   ApiPublicAuthFirebaseSessionRoute: ApiPublicAuthFirebaseSessionRoute,
+  ApiPublicHooksMaintenanceRemindersRoute:
+    ApiPublicHooksMaintenanceRemindersRoute,
   ApiPublicHooksRazorpayRoute: ApiPublicHooksRazorpayRoute,
   ApiPublicHooksRunBillingRoute: ApiPublicHooksRunBillingRoute,
 }

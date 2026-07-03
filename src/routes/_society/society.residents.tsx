@@ -7,6 +7,8 @@ import {
   Link2, Download, Filter, ChevronRight, Home, UserCheck, UserX,
 } from "lucide-react";
 import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { toast } from "sonner";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { PageHeader, PageShell, EmptyState } from "@/components/shared/PageHeader";

@@ -130,6 +130,44 @@ function MyVisitors() {
         </Dialog>
       </header>
 
+      {(() => {
+        const seen = new Map<string, VisitorRow>();
+        for (const v of list) {
+          const key = (v.visitor_name || "").trim().toLowerCase();
+          if (!key) continue;
+          if (!seen.has(key)) seen.set(key, v);
+          if (seen.size >= 6) break;
+        }
+        const freq = Array.from(seen.values());
+        if (freq.length === 0) return null;
+        return (
+          <div>
+            <p className="text-xs font-medium text-muted-foreground mb-1.5">Frequent visitors — tap to pre-approve again</p>
+            <div className="flex flex-wrap gap-1.5">
+              {freq.map((v) => (
+                <button
+                  key={v.id}
+                  onClick={() => {
+                    setForm({
+                      visitor_name: v.visitor_name,
+                      phone: v.phone ?? "",
+                      vehicle_number: v.vehicle_number ?? "",
+                      purpose: v.purpose ?? "",
+                      expected_at: "",
+                    });
+                    setOpen(true);
+                  }}
+                  className="text-xs rounded-full bg-secondary hover:bg-secondary/80 px-3 py-1.5 font-medium"
+                >
+                  {v.visitor_name}
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
+
       {issued && (
         <Card className="rounded-2xl border-success/40 bg-success/5">
           <CardContent className="p-5 flex items-center gap-4">

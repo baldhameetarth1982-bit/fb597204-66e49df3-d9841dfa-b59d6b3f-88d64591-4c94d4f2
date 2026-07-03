@@ -33,7 +33,6 @@ import { Route as OnboardingJoinRouteImport } from './routes/onboarding.join'
 import { Route as OnboardingCreateRouteImport } from './routes/onboarding.create'
 import { Route as CheckoutPlanIdRouteImport } from './routes/checkout.$planId'
 import { Route as ApiSupportChatRouteImport } from './routes/api/support-chat'
-import { Route as AuthPhoneOtpRouteImport } from './routes/_auth/phone-otp'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as SocietySocietyVisitorsRouteImport } from './routes/_society/society.visitors'
 import { Route as SocietySocietyVerificationsRouteImport } from './routes/_society/society.verifications'
@@ -213,11 +212,6 @@ const ApiSupportChatRoute = ApiSupportChatRouteImport.update({
   id: '/api/support-chat',
   path: '/api/support-chat',
   getParentRoute: () => rootRouteImport,
-} as any)
-const AuthPhoneOtpRoute = AuthPhoneOtpRouteImport.update({
-  id: '/phone-otp',
-  path: '/phone-otp',
-  getParentRoute: () => AuthRoute,
 } as any)
 const AuthLoginRoute = AuthLoginRouteImport.update({
   id: '/login',
@@ -559,7 +553,6 @@ export interface FileRoutesByFullPath {
   '/verify-phone': typeof VerifyPhoneRoute
   '/welcome': typeof WelcomeRoute
   '/login': typeof AuthLoginRoute
-  '/phone-otp': typeof AuthPhoneOtpRoute
   '/api/support-chat': typeof ApiSupportChatRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/onboarding/create': typeof OnboardingCreateRoute
@@ -644,7 +637,6 @@ export interface FileRoutesByTo {
   '/verify-phone': typeof VerifyPhoneRoute
   '/welcome': typeof WelcomeRoute
   '/login': typeof AuthLoginRoute
-  '/phone-otp': typeof AuthPhoneOtpRoute
   '/api/support-chat': typeof ApiSupportChatRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/onboarding/create': typeof OnboardingCreateRoute
@@ -735,7 +727,6 @@ export interface FileRoutesById {
   '/verify-phone': typeof VerifyPhoneRoute
   '/welcome': typeof WelcomeRoute
   '/_auth/login': typeof AuthLoginRoute
-  '/_auth/phone-otp': typeof AuthPhoneOtpRoute
   '/api/support-chat': typeof ApiSupportChatRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/onboarding/create': typeof OnboardingCreateRoute
@@ -823,7 +814,6 @@ export interface FileRouteTypes {
     | '/verify-phone'
     | '/welcome'
     | '/login'
-    | '/phone-otp'
     | '/api/support-chat'
     | '/checkout/$planId'
     | '/onboarding/create'
@@ -908,7 +898,6 @@ export interface FileRouteTypes {
     | '/verify-phone'
     | '/welcome'
     | '/login'
-    | '/phone-otp'
     | '/api/support-chat'
     | '/checkout/$planId'
     | '/onboarding/create'
@@ -998,7 +987,6 @@ export interface FileRouteTypes {
     | '/verify-phone'
     | '/welcome'
     | '/_auth/login'
-    | '/_auth/phone-otp'
     | '/api/support-chat'
     | '/checkout/$planId'
     | '/onboarding/create'
@@ -1263,13 +1251,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/support-chat'
       preLoaderRoute: typeof ApiSupportChatRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/_auth/phone-otp': {
-      id: '/_auth/phone-otp'
-      path: '/phone-otp'
-      fullPath: '/phone-otp'
-      preLoaderRoute: typeof AuthPhoneOtpRouteImport
-      parentRoute: typeof AuthRoute
     }
     '/_auth/login': {
       id: '/_auth/login'
@@ -1741,12 +1722,10 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface AuthRouteChildren {
   AuthLoginRoute: typeof AuthLoginRoute
-  AuthPhoneOtpRoute: typeof AuthPhoneOtpRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
   AuthLoginRoute: AuthLoginRoute,
-  AuthPhoneOtpRoute: AuthPhoneOtpRoute,
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)

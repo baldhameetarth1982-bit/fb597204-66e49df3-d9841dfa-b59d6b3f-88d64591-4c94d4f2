@@ -36,13 +36,11 @@ function BusinessProfilePage() {
     enabled: !!societyId,
     queryKey: ["society-business", societyId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("societies")
-        .select("id, name, legal_business_name, business_address, business_city, business_state, business_pincode, business_gstin, business_pan, payout_status, razorpay_account_id")
-        .eq("id", societyId!)
-        .maybeSingle();
+      const { data, error } = await (supabase as any).rpc("get_society_business_profile", {
+        _society_id: societyId!,
+      });
       if (error) throw error;
-      return data;
+      return Array.isArray(data) ? data[0] ?? null : data;
     },
   });
 

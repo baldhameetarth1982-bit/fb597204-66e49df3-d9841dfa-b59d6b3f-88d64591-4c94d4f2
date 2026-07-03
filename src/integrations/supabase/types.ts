@@ -2268,6 +2268,24 @@ export type Database = {
           key_id: string
         }[]
       }
+      get_society_business_profile: {
+        Args: { _society_id: string }
+        Returns: {
+          business_address: string
+          business_city: string
+          business_gstin: string
+          business_pan: string
+          business_pincode: string
+          business_state: string
+          id: string
+          legal_business_name: string
+          name: string
+          payout_bank_last4: string
+          payout_holder_name: string
+          payout_status: string
+          razorpay_account_id: string
+        }[]
+      }
       get_society_invite_code: {
         Args: { _society_id: string }
         Returns: string

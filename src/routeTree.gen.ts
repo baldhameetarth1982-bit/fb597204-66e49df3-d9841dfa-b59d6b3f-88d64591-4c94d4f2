@@ -99,11 +99,16 @@ import { Route as AdminAdminSettingsRouteImport } from './routes/_admin/admin.se
 import { Route as AdminAdminSecurityRouteImport } from './routes/_admin/admin.security'
 import { Route as AdminAdminSearchRouteImport } from './routes/_admin/admin.search'
 import { Route as AdminAdminRevenueRouteImport } from './routes/_admin/admin.revenue'
+import { Route as AdminAdminReportBuilderRouteImport } from './routes/_admin/admin.report-builder'
 import { Route as AdminAdminRazorpayRouteImport } from './routes/_admin/admin.razorpay'
 import { Route as AdminAdminPlansRouteImport } from './routes/_admin/admin.plans'
 import { Route as AdminAdminIncomeRouteImport } from './routes/_admin/admin.income'
+import { Route as AdminAdminHealthRouteImport } from './routes/_admin/admin.health'
+import { Route as AdminAdminExecutiveRouteImport } from './routes/_admin/admin.executive'
 import { Route as AdminAdminDashboardRouteImport } from './routes/_admin/admin.dashboard'
 import { Route as AdminAdminCustomPlansRouteImport } from './routes/_admin/admin.custom-plans'
+import { Route as AdminAdminBrandingRouteImport } from './routes/_admin/admin.branding'
+import { Route as AdminAdminBiRouteImport } from './routes/_admin/admin.bi'
 import { Route as AdminAdminAuditRouteImport } from './routes/_admin/admin.audit'
 import { Route as AdminAdminAdsRouteImport } from './routes/_admin/admin.ads'
 import { Route as ApiPublicHooksRunBillingRouteImport } from './routes/api/public/hooks/run-billing'
@@ -571,6 +576,11 @@ const AdminAdminRevenueRoute = AdminAdminRevenueRouteImport.update({
   path: '/admin/revenue',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAdminReportBuilderRoute = AdminAdminReportBuilderRouteImport.update({
+  id: '/admin/report-builder',
+  path: '/admin/report-builder',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAdminRazorpayRoute = AdminAdminRazorpayRouteImport.update({
   id: '/admin/razorpay',
   path: '/admin/razorpay',
@@ -586,6 +596,16 @@ const AdminAdminIncomeRoute = AdminAdminIncomeRouteImport.update({
   path: '/admin/income',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAdminHealthRoute = AdminAdminHealthRouteImport.update({
+  id: '/admin/health',
+  path: '/admin/health',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminExecutiveRoute = AdminAdminExecutiveRouteImport.update({
+  id: '/admin/executive',
+  path: '/admin/executive',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAdminDashboardRoute = AdminAdminDashboardRouteImport.update({
   id: '/admin/dashboard',
   path: '/admin/dashboard',
@@ -594,6 +614,16 @@ const AdminAdminDashboardRoute = AdminAdminDashboardRouteImport.update({
 const AdminAdminCustomPlansRoute = AdminAdminCustomPlansRouteImport.update({
   id: '/admin/custom-plans',
   path: '/admin/custom-plans',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminBrandingRoute = AdminAdminBrandingRouteImport.update({
+  id: '/admin/branding',
+  path: '/admin/branding',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminBiRoute = AdminAdminBiRouteImport.update({
+  id: '/admin/bi',
+  path: '/admin/bi',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminAdminAuditRoute = AdminAdminAuditRouteImport.update({
@@ -665,11 +695,16 @@ export interface FileRoutesByFullPath {
   '/onboarding/': typeof OnboardingIndexRoute
   '/admin/ads': typeof AdminAdminAdsRoute
   '/admin/audit': typeof AdminAdminAuditRoute
+  '/admin/bi': typeof AdminAdminBiRoute
+  '/admin/branding': typeof AdminAdminBrandingRoute
   '/admin/custom-plans': typeof AdminAdminCustomPlansRoute
   '/admin/dashboard': typeof AdminAdminDashboardRoute
+  '/admin/executive': typeof AdminAdminExecutiveRoute
+  '/admin/health': typeof AdminAdminHealthRoute
   '/admin/income': typeof AdminAdminIncomeRoute
   '/admin/plans': typeof AdminAdminPlansRoute
   '/admin/razorpay': typeof AdminAdminRazorpayRoute
+  '/admin/report-builder': typeof AdminAdminReportBuilderRoute
   '/admin/revenue': typeof AdminAdminRevenueRoute
   '/admin/search': typeof AdminAdminSearchRoute
   '/admin/security': typeof AdminAdminSecurityRoute
@@ -765,11 +800,16 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingIndexRoute
   '/admin/ads': typeof AdminAdminAdsRoute
   '/admin/audit': typeof AdminAdminAuditRoute
+  '/admin/bi': typeof AdminAdminBiRoute
+  '/admin/branding': typeof AdminAdminBrandingRoute
   '/admin/custom-plans': typeof AdminAdminCustomPlansRoute
   '/admin/dashboard': typeof AdminAdminDashboardRoute
+  '/admin/executive': typeof AdminAdminExecutiveRoute
+  '/admin/health': typeof AdminAdminHealthRoute
   '/admin/income': typeof AdminAdminIncomeRoute
   '/admin/plans': typeof AdminAdminPlansRoute
   '/admin/razorpay': typeof AdminAdminRazorpayRoute
+  '/admin/report-builder': typeof AdminAdminReportBuilderRoute
   '/admin/revenue': typeof AdminAdminRevenueRoute
   '/admin/search': typeof AdminAdminSearchRoute
   '/admin/security': typeof AdminAdminSecurityRoute
@@ -871,11 +911,16 @@ export interface FileRoutesById {
   '/onboarding/': typeof OnboardingIndexRoute
   '/_admin/admin/ads': typeof AdminAdminAdsRoute
   '/_admin/admin/audit': typeof AdminAdminAuditRoute
+  '/_admin/admin/bi': typeof AdminAdminBiRoute
+  '/_admin/admin/branding': typeof AdminAdminBrandingRoute
   '/_admin/admin/custom-plans': typeof AdminAdminCustomPlansRoute
   '/_admin/admin/dashboard': typeof AdminAdminDashboardRoute
+  '/_admin/admin/executive': typeof AdminAdminExecutiveRoute
+  '/_admin/admin/health': typeof AdminAdminHealthRoute
   '/_admin/admin/income': typeof AdminAdminIncomeRoute
   '/_admin/admin/plans': typeof AdminAdminPlansRoute
   '/_admin/admin/razorpay': typeof AdminAdminRazorpayRoute
+  '/_admin/admin/report-builder': typeof AdminAdminReportBuilderRoute
   '/_admin/admin/revenue': typeof AdminAdminRevenueRoute
   '/_admin/admin/search': typeof AdminAdminSearchRoute
   '/_admin/admin/security': typeof AdminAdminSecurityRoute
@@ -974,11 +1019,16 @@ export interface FileRouteTypes {
     | '/onboarding/'
     | '/admin/ads'
     | '/admin/audit'
+    | '/admin/bi'
+    | '/admin/branding'
     | '/admin/custom-plans'
     | '/admin/dashboard'
+    | '/admin/executive'
+    | '/admin/health'
     | '/admin/income'
     | '/admin/plans'
     | '/admin/razorpay'
+    | '/admin/report-builder'
     | '/admin/revenue'
     | '/admin/search'
     | '/admin/security'
@@ -1074,11 +1124,16 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/admin/ads'
     | '/admin/audit'
+    | '/admin/bi'
+    | '/admin/branding'
     | '/admin/custom-plans'
     | '/admin/dashboard'
+    | '/admin/executive'
+    | '/admin/health'
     | '/admin/income'
     | '/admin/plans'
     | '/admin/razorpay'
+    | '/admin/report-builder'
     | '/admin/revenue'
     | '/admin/search'
     | '/admin/security'
@@ -1179,11 +1234,16 @@ export interface FileRouteTypes {
     | '/onboarding/'
     | '/_admin/admin/ads'
     | '/_admin/admin/audit'
+    | '/_admin/admin/bi'
+    | '/_admin/admin/branding'
     | '/_admin/admin/custom-plans'
     | '/_admin/admin/dashboard'
+    | '/_admin/admin/executive'
+    | '/_admin/admin/health'
     | '/_admin/admin/income'
     | '/_admin/admin/plans'
     | '/_admin/admin/razorpay'
+    | '/_admin/admin/report-builder'
     | '/_admin/admin/revenue'
     | '/_admin/admin/search'
     | '/_admin/admin/security'
@@ -1915,6 +1975,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminRevenueRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/admin/report-builder': {
+      id: '/_admin/admin/report-builder'
+      path: '/admin/report-builder'
+      fullPath: '/admin/report-builder'
+      preLoaderRoute: typeof AdminAdminReportBuilderRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_admin/admin/razorpay': {
       id: '/_admin/admin/razorpay'
       path: '/admin/razorpay'
@@ -1936,6 +2003,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminIncomeRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/admin/health': {
+      id: '/_admin/admin/health'
+      path: '/admin/health'
+      fullPath: '/admin/health'
+      preLoaderRoute: typeof AdminAdminHealthRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/executive': {
+      id: '/_admin/admin/executive'
+      path: '/admin/executive'
+      fullPath: '/admin/executive'
+      preLoaderRoute: typeof AdminAdminExecutiveRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_admin/admin/dashboard': {
       id: '/_admin/admin/dashboard'
       path: '/admin/dashboard'
@@ -1948,6 +2029,20 @@ declare module '@tanstack/react-router' {
       path: '/admin/custom-plans'
       fullPath: '/admin/custom-plans'
       preLoaderRoute: typeof AdminAdminCustomPlansRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/branding': {
+      id: '/_admin/admin/branding'
+      path: '/admin/branding'
+      fullPath: '/admin/branding'
+      preLoaderRoute: typeof AdminAdminBrandingRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/bi': {
+      id: '/_admin/admin/bi'
+      path: '/admin/bi'
+      fullPath: '/admin/bi'
+      preLoaderRoute: typeof AdminAdminBiRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_admin/admin/audit': {
@@ -2012,11 +2107,16 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminAdminAdsRoute: typeof AdminAdminAdsRoute
   AdminAdminAuditRoute: typeof AdminAdminAuditRoute
+  AdminAdminBiRoute: typeof AdminAdminBiRoute
+  AdminAdminBrandingRoute: typeof AdminAdminBrandingRoute
   AdminAdminCustomPlansRoute: typeof AdminAdminCustomPlansRoute
   AdminAdminDashboardRoute: typeof AdminAdminDashboardRoute
+  AdminAdminExecutiveRoute: typeof AdminAdminExecutiveRoute
+  AdminAdminHealthRoute: typeof AdminAdminHealthRoute
   AdminAdminIncomeRoute: typeof AdminAdminIncomeRoute
   AdminAdminPlansRoute: typeof AdminAdminPlansRoute
   AdminAdminRazorpayRoute: typeof AdminAdminRazorpayRoute
+  AdminAdminReportBuilderRoute: typeof AdminAdminReportBuilderRoute
   AdminAdminRevenueRoute: typeof AdminAdminRevenueRoute
   AdminAdminSearchRoute: typeof AdminAdminSearchRoute
   AdminAdminSecurityRoute: typeof AdminAdminSecurityRoute
@@ -2029,11 +2129,16 @@ interface AdminRouteChildren {
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAdminAdsRoute: AdminAdminAdsRoute,
   AdminAdminAuditRoute: AdminAdminAuditRoute,
+  AdminAdminBiRoute: AdminAdminBiRoute,
+  AdminAdminBrandingRoute: AdminAdminBrandingRoute,
   AdminAdminCustomPlansRoute: AdminAdminCustomPlansRoute,
   AdminAdminDashboardRoute: AdminAdminDashboardRoute,
+  AdminAdminExecutiveRoute: AdminAdminExecutiveRoute,
+  AdminAdminHealthRoute: AdminAdminHealthRoute,
   AdminAdminIncomeRoute: AdminAdminIncomeRoute,
   AdminAdminPlansRoute: AdminAdminPlansRoute,
   AdminAdminRazorpayRoute: AdminAdminRazorpayRoute,
+  AdminAdminReportBuilderRoute: AdminAdminReportBuilderRoute,
   AdminAdminRevenueRoute: AdminAdminRevenueRoute,
   AdminAdminSearchRoute: AdminAdminSearchRoute,
   AdminAdminSecurityRoute: AdminAdminSecurityRoute,

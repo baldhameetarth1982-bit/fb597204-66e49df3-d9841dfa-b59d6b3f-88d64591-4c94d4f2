@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   Bell, ArrowRight, Receipt, ShieldCheck, ShieldAlert, Fingerprint, Inbox,
-  Megaphone, LifeBuoy, FileText, Phone, Wallet, Building2,
+  Megaphone, LifeBuoy, FileText, Phone, Wallet, Building2, Bot,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

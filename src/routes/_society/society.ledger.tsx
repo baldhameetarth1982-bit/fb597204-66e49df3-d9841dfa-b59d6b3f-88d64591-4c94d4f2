@@ -103,6 +103,7 @@ function AdminLedger() {
 
   return (
     <PageShell>
+      <FinanceTabs />
       <PageHeader
         title="Accounting Ledger"
         description="Track income & expenses for your society"

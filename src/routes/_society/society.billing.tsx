@@ -185,6 +185,7 @@ function BillingPage() {
 
   return (
     <PageShell>
+      <FinanceTabs />
       <PageHeader
         title="Billing"
         description="Generate monthly maintenance bills and track payments."

@@ -125,6 +125,7 @@ function ReportsPage() {
 
   return (
     <PageShell>
+      <FinanceTabs />
       <PageHeader
         title="Reports"
         description="Income, expenses & net position — export for accountant or audit."

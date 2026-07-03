@@ -43,7 +43,7 @@ function HealthPage() {
         supabase.rpc("admin_list_societies"),
         supabase.from("bills").select("society_id, amount, status"),
         supabase.from("flat_residents").select("flat_id, flats!inner(society_id)"),
-        supabase.from("posts").select("society_id, type"),
+        supabase.from("posts").select("society_id"),
       ]);
       const paidBy = new Map<string, number>();
       const unpaidBy = new Map<string, number>();
@@ -57,17 +57,15 @@ function HealthPage() {
         const sid = r.flats?.society_id;
         if (sid) residentsBy.set(sid, (residentsBy.get(sid) ?? 0) + 1);
       }
-      const complaintsBy = new Map<string, number>();
-      for (const p of posts.data ?? []) {
-        if (p.type === "complaint" && p.society_id) {
-          complaintsBy.set(p.society_id, (complaintsBy.get(p.society_id) ?? 0) + 1);
-        }
+      const postsBy = new Map<string, number>();
+      for (const p of (posts.data ?? []) as any[]) {
+        if (p.society_id) postsBy.set(p.society_id, (postsBy.get(p.society_id) ?? 0) + 1);
       }
       return (socs.data ?? []).map((s: any): Row => {
         const paid = paidBy.get(s.id) ?? 0;
         const unpaid = unpaidBy.get(s.id) ?? 0;
         const residents = residentsBy.get(s.id) ?? 0;
-        const complaints = complaintsBy.get(s.id) ?? 0;
+        const complaints = postsBy.get(s.id) ?? 0;
         const planActive = s.plan_status === "active";
         const score = scoreFor(paid, unpaid, residents, complaints, planActive);
         return { id: s.id, name: s.name, score, label: labelFor(score), paid, unpaid, residents, complaints, planActive };

@@ -16,12 +16,12 @@ function ExecutiveDashboard() {
     queryKey: ["exec-dashboard"],
     queryFn: async () => {
       const since = new Date(Date.now() - 30 * 86400_000).toISOString();
-      const [summary, plans, socs, visitors30, complaints, residentsCount] = await Promise.all([
+      const [summary, plans, socs, visitors30, postsCount, residentsCount] = await Promise.all([
         supabase.rpc("admin_platform_summary"),
         supabase.from("plans").select("id, price_monthly_inr"),
         supabase.from("societies").select("plan_id, plan_status, created_at"),
         supabase.from("visitors").select("id", { count: "exact", head: true }).gte("created_at", since),
-        supabase.from("posts").select("id", { count: "exact", head: true }).eq("type", "complaint"),
+        supabase.from("posts").select("id", { count: "exact", head: true }).gte("created_at", since),
         supabase.from("flat_residents").select("id", { count: "exact", head: true }),
       ]);
       const priceMap = new Map<string, number>((plans.data ?? []).map((p: any) => [p.id, p.price_monthly_inr ?? 0]));
@@ -34,10 +34,10 @@ function ExecutiveDashboard() {
       const total = (socs.data ?? []).length || 1;
       const growth30 = (newSocieties30 / total) * 100;
       return {
-        s: summary.data?.[0] ?? {},
+        s: (summary.data?.[0] ?? {}) as Record<string, any>,
         mrr, arr: mrr * 12,
         visitors30: visitors30.count ?? 0,
-        complaints: complaints.count ?? 0,
+        posts30: postsCount.count ?? 0,
         residents: residentsCount.count ?? 0,
         newSocieties30, growth30,
       };
@@ -57,7 +57,7 @@ function ExecutiveDashboard() {
     let score = 0;
     if (collectionPct >= 70) score += 25; else if (collectionPct >= 40) score += 15; else score += 5;
     if (data.mrr > 0) score += 25; else score += 5;
-    if (data.complaints < 50) score += 20;
+    if (data.posts30 > 10) score += 20; else if (data.posts30 > 0) score += 10;
     if ((data.s.active_societies ?? 0) > 0) score += 20;
     if (data.growth30 > 5) score += 10; else score += 5;
     return Math.min(100, score);
@@ -97,7 +97,7 @@ function ExecutiveDashboard() {
         <Metric title="Trials" value={String(data.s.trialing_societies ?? 0)} icon={Building2} />
         <Metric title="Residents" value={String(data.residents)} icon={Users} />
         <Metric title="Visitors 30d" value={String(data.visitors30)} icon={UserCheck} />
-        <Metric title="Complaints" value={String(data.complaints)} icon={MessageSquare} />
+        <Metric title="Complaints/Posts 30d" value={String(data.posts30)} icon={MessageSquare} />
         <Metric title="Payments (all-time)" value={fmt(Number(data.s.successful_payment_total ?? 0))} icon={Receipt} />
         <Metric title="Outstanding" value={fmt(Number(data.s.unpaid_bill_total ?? 0))} icon={Wallet} />
         <Metric title="New societies 30d" value={String(data.newSocieties30)} icon={Building2} />

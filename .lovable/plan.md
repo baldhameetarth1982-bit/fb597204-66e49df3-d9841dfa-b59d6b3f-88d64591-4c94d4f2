@@ -1,74 +1,123 @@
 
-## Razorpay Merchant Compliance Overhaul
+# Phase 1 — Foundation UI, Mobile Design System & UX Cleanup
 
-Goal: make SocioHub look like a mature, legally compliant SaaS so Razorpay activation and merchant review pass cleanly.
+Frontend-only refactor. No changes to auth, RLS, billing, subscriptions, visitor/resident/maintenance logic, DB schema, edge functions, or server functions. Only `src/styles.css`, `src/components/**`, `src/layouts/**`, and route JSX/className usage are touched.
 
-### 1. Legal Center (4 policy routes)
+## 1. Design tokens (src/styles.css)
 
-Rewrite / create formal enterprise-tone legal pages. All contact points use `sociohub710@gmail.com` and `Pethapur, Gandhinagar, Gujarat — 382610`.
+Rebuild the token layer so every component adapts to light/dark from CSS variables. No hardcoded `text-white`, `bg-black`, `bg-[#…]` anywhere in components.
 
-- `src/routes/legal.tsx` — Legal Center hub with 4 cards linking to the sub-pages, plus last-updated date.
-- `src/routes/privacy.tsx` (rewrite existing) — Privacy Policy:
-  - Data collected: name, flat/unit details, contact number, email, KYC (Aadhaar last-4 only shown), payment metadata.
-  - No sale of data to third parties.
-  - SSL / TLS 1.2+ in transit, encryption at rest, Razorpay PCI-DSS for card data (we never store card numbers).
-  - User rights: access, correction, deletion via grievance email.
-- `src/routes/terms.tsx` (rewrite) — Terms & Conditions:
-  - SocioHub is a SaaS platform provider, NOT the society administration.
-  - Maintenance payments = society dues collected on behalf of the society admin; SocioHub only charges a 1.5% platform fee.
-  - Acceptable use, account termination, limitation of liability, governing law (India, Gujarat jurisdiction).
-- `src/routes/refund.tsx` (NEW) — Refund & Cancellation Policy with the exact wording requested:
-  > "Transactions processed for society maintenance are final. Refunds are only applicable in case of double-payment or technical failure. Requests must be submitted via sociohub710@gmail.com within 48 hours. Valid refunds will be credited back to the original source within 5-7 working days."
-  - Add matching clause for SaaS plan cancellations (pro-rated NOT offered; cancel to stop renewal).
-- `src/routes/contact.tsx` (NEW) — Contact & Grievance:
-  - Grievance Officer: Support Team
-  - Email: sociohub710@gmail.com
-  - Address: Pethapur, Gandhinagar, Gujarat — 382610
-  - Response SLA: 48 business hours.
+Semantic tokens (both `:root` and `.dark`):
+`--background`, `--surface`, `--surface-2` (sheets/dialogs), `--card`, `--overlay`,
+`--primary`, `--primary-container`, `--secondary`, `--secondary-container`,
+`--success`, `--warning`, `--danger`, `--info` (+ `-foreground` and `-container` for each),
+`--outline`, `--border`, `--divider`,
+`--text-primary`, `--text-secondary`, `--text-disabled`,
+`--ring`, `--focus`,
+elevation: `--elevation-1..4` (soft shadows, no backdrop blur — perf rule already set),
+motion: `--ease-standard`, `--ease-emphasized`, `--dur-fast/base/slow`,
+radii: keep 12px base, add `--radius-pill`,
+spacing scale documented (4/8/12/16/20/24/32).
 
-### 2. Transaction transparency
+Typography scale via `@utility`: `.type-display`, `.type-headline`, `.type-title`, `.type-body`, `.type-caption`, `.type-button`. All map to Inter with defined weights/sizes/line-heights.
 
-- New shared component `src/components/payments/TransactionSummaryModal.tsx`:
-  - Rows: Item, Amount, Platform Fee (1.5% for maintenance, 0 for SaaS plans), GST if applicable, **Total**.
-  - Footer strip: shield icon + "Secured by Razorpay · 128-bit SSL Encrypted".
-  - Buttons: Cancel / **Pay Now** (opens Razorpay via existing `openRazorpayCheckout` / `openRazorpayForOrder`).
-- Wire it into:
-  - `src/routes/checkout.$planId.tsx` (plan purchase)
-  - `src/routes/_resident/app.bills.tsx` and `app.dues.tsx` (maintenance pay button)
-  - `src/routes/pricing.tsx` upgrade CTA
-- Persistent security badge: add a small `<PaymentSecurityBadge />` under every checkout entry.
+Charts, badges, chips, tables consume the new tokens (chart palette already in place — remap to semantic).
 
-### 3. Merchant legitimacy — Business Profile
+## 2. Core primitives (shadcn wrappers, single source of truth)
 
-- Migration: add columns to `societies` — `legal_business_name TEXT`, `business_address TEXT`, `business_city TEXT`, `business_state TEXT`, `business_pincode TEXT`, `business_gstin TEXT NULL`, `business_pan TEXT NULL`. Add RPC `update_society_business_profile(...)` guarded by `is_society_admin_for`.
-- New page `src/routes/_society/society.business-profile.tsx`:
-  - Form for the fields above with helper text: "Must match name submitted to Razorpay."
-  - Show green "Ready for Razorpay activation" badge when all required fields are filled AND payout linked.
-- Link entry from society Settings and from `society.payouts.tsx` (prerequisite gate before "Attach Bank").
+Under `src/components/ui/` (extend existing) and `src/components/system/` (new umbrella):
 
-### 4. Global footer
+- `Button` — variants: primary, secondary, outlined, danger, text, fab; sizes sm/md/lg/icon; built-in `loading` prop with spinner swap; 48dp min height on md; ripple via CSS `:active` scale + opacity.
+- `IconButton` — 48dp target with 24dp icon, accessible label required.
+- `TextField`, `Select`, `DatePicker`, `OTPInput`, `Checkbox`, `Radio`, `Switch`, `SearchField`, `Autocomplete` — unified label/helper/error slots, live validation, focus/disabled/loading/error/success states, 44–48dp height.
+- `Card` — one component, `padding` and `elevation` props, consistent radius.
+- `Sheet` (bottom sheet), `Dialog`, `ConfirmDialog`, `AlertDialog` — replace any `window.confirm/alert` in codebase.
+- `Chip`, `Badge`, `StatusChip` (success/warning/danger/info/neutral).
+- `EmptyState` — illustration/icon + title + description + primary action.
+- `ErrorState` — explanation + retry + optional support link.
+- `ListRow` — leading/title/subtitle/trailing, 56dp min height, ripple.
+- `SectionHeader`, `Divider`, `Skeleton` presets (row, card, avatar, chart).
+- `PageTransition` — fade+slide wrapper for route content.
 
-- New component `src/components/shared/LegalFooter.tsx` — high-contrast, always visible on:
-  - `src/routes/__root.tsx` (site-wide)
-  - Login/auth screens (`_auth` layout)
-  - Checkout screens
-  - Resident & society shells (above the mobile bottom-nav with correct safe-area padding so it doesn't collide)
-- Links: Privacy · Terms · Refund · Contact · "Secured by Razorpay". Small copyright line with legal entity name.
+## 3. Toast system rebuild
 
-### 5. UI stability polish
+Replace the current sonner styling with a fully token-driven variant that fixes the misaligned close button.
 
-- Remove "Beta", "Coming Soon", "Test" strings — grep and replace across `src/routes/**` and `src/components/**`. Any still-incomplete surface gets a neutral empty-state instead ("No data yet").
-- Checkout error handling:
-  - `createMaintenanceOrder` / plan checkout: surface Razorpay error `description` via toast, keep user on same page, log to `error_log` server fn.
-  - Add fallback empty routes so no button leads to a blank page.
-- Verify `checkout.$planId.tsx` guards against manual URL bypass (already RPC-gated; add double-check).
+- Grid layout: `[icon] [message 1fr] [close]` with `items-center`, `gap-3`, `min-h-14`.
+- Icon slot 24dp, close slot 32dp centered, message wraps without clipping.
+- Variants: success, error, warning, info, loading (spinner in icon slot).
+- Uses `--success/--danger/…` with `-container` for background and `-foreground` for text.
+- Configure globally in `src/components/ui/sonner.tsx` via `toastOptions.classNames` (only presentation).
+- Codebase-wide sweep: keep `toast()` call sites, do not change payloads.
 
-### Technical notes
+## 4. Loading experience
 
-- Files created: `src/routes/legal.tsx`, `src/routes/refund.tsx`, `src/routes/contact.tsx`, `src/routes/_society/society.business-profile.tsx`, `src/components/payments/TransactionSummaryModal.tsx`, `src/components/payments/PaymentSecurityBadge.tsx`, `src/components/shared/LegalFooter.tsx`.
-- Files edited: `src/routes/privacy.tsx`, `src/routes/terms.tsx`, `src/routes/__root.tsx`, `src/routes/_auth.tsx`, `src/routes/checkout.$planId.tsx`, `src/routes/pricing.tsx`, `src/routes/_resident/app.bills.tsx`, `src/routes/_resident/app.dues.tsx`, `src/routes/_society/society.payouts.tsx`, `src/layouts/ResidentLayout.tsx`, sidebar/settings entry points.
-- Migration: `societies` business profile columns + `update_society_business_profile` RPC (GRANT EXECUTE to authenticated, RLS via `is_society_admin_for`).
-- No new deps.
-- Head metadata: each new legal route gets its own `head()` with unique title/description and canonical link.
+- `SocioHubLoader` — logo + subtle pulse/fade (SVG or existing `sociohub-logo`), lightweight (no heavy filters).
+- `SuspenseScreen` — full-screen loader shown for route-level suspense; `pendingComponent` set at router level via existing route defs (no logic change, just wire `pendingComponent`/`defaultPendingComponent`).
+- `SkeletonScreen` — matches page layouts (dashboard, lists, forms) for query-driven states; no blank flashes.
+- Fade-in on content mount, no white flash: root sets `background` on `<html>` and shows loader on initial paint.
 
-Confirm and I'll execute in build mode.
+## 5. Layout / shells (mobile-first, safe area)
+
+- `ResidentLayout`, `SocietyLayout`, `AdminLayout`, `AuthLayout` refactored to:
+  - `min-h-dvh`, `pt-[env(safe-area-inset-top)]`, `pb-[calc(4rem+env(safe-area-inset-bottom))]` when bottom nav present, gesture-safe FAB offset.
+  - Sticky `AppBar` (56dp) with title/back/actions; `MobileTopBar` becomes the canonical top bar.
+  - `ResidentBottomNav` and `SocietyBottomNav` — 64dp height, 48dp targets, active pill uses `--primary-container`.
+  - Desktop: same components, upscaled max-width containers (`max-w-[420px]` mobile shell → `max-w-6xl` desktop content), never desktop-first.
+- No button ever touches the edge — enforced via layout padding rather than per-page fixes.
+
+## 6. Global sweep across routes
+
+For every file under `src/routes/**` and `src/components/**` (mechanical, no logic touched):
+
+- Replace raw shadcn button/card/input usage where it diverges from system primitives; keep imports where already aligned.
+- Remove hardcoded color classes (`text-white`, `bg-black`, `bg-[#…]`, `text-gray-*`, `bg-slate-*`) → semantic tokens.
+- Normalize spacing to the scale (4/8/12/16/20/24/32).
+- Add `EmptyState` / `ErrorState` where blank/plain error strings exist.
+- Add `Skeleton` placeholders for query-loading branches.
+- Ensure every list uses `ListRow`; every dialog uses `Dialog`/`ConfirmDialog`.
+- Search inputs → `SearchField` (instant search stays; only visuals change).
+- Add `PageTransition` at each route's root wrapper.
+
+## 7. Accessibility & touch
+
+- 48dp minimum on all interactive elements (already partly enforced in `@layer base`; extend to `IconButton`).
+- Visible focus ring on all inputs/buttons via `:focus-visible` token.
+- `aria-label` on every icon-only control.
+- Respect existing `.a11y` mode; ensure new components scale.
+
+## 8. Responsive verification
+
+Manual (Playwright) verification at 360/375/390/412/414/768/1024 across:
+Auth (login, OTP), Onboarding, Resident dashboard/bills/feed/services/profile, Society dashboard/residents/maintenance/payouts/business-profile, Admin dashboard, Legal pages, Checkout, Pricing. Screenshot each, fix overflow/clipping/overlap issues found.
+
+## 9. Explicit non-goals
+
+Untouched files (business logic):
+- `src/lib/*.functions.ts`, `*.server.ts`
+- `src/routes/api/**`
+- `src/integrations/supabase/**`
+- `supabase/migrations/**`
+- `.env`, `wrangler.jsonc`, `src/server.ts`, `src/start.ts`
+- Auth, RLS, plans, billing, Razorpay, maintenance, visitors, dynamic fields — logic unchanged.
+
+## Technical notes
+
+- Tailwind v4: extend tokens in `@theme inline`, add utilities via `@utility`, custom variants via `@custom-variant`. No `tailwind.config.js`.
+- Sonner customization stays in `src/components/ui/sonner.tsx` (project uses sonner, per modern stack).
+- Route-level loaders wired through `pendingComponent` on existing `createFileRoute` calls — signature only, no loader logic change.
+- Framer-motion already available for `PageTransition`; keep durations ≤ 200ms.
+- No new dependencies expected. If a headless date/OTP primitive is missing, use existing shadcn parts (`input-otp`, `calendar`) already in the repo.
+
+## Deliverable batches (executed in order once approved)
+
+1. Tokens + typography + motion in `src/styles.css`; toast rebuild.
+2. System primitives (`Button`, `Card`, `ListRow`, `EmptyState`, `ErrorState`, `Dialog/Sheet`, `SearchField`, form fields).
+3. `SocioHubLoader` + route `pendingComponent` wiring + `PageTransition`.
+4. Layout shells (Resident/Society/Admin/Auth) with safe-area + bottom nav polish.
+5. Route-by-route sweep: hardcoded colors, spacing, skeletons, empty/error states.
+6. Responsive audit + fixes across the viewport matrix.
+
+## Open question before I start
+
+Do you want me to touch **every route** in one pass (batch 5 will be large and take multiple turns), or ship batches 1–4 first as the reusable foundation and then sweep routes incrementally on later turns? Either way, no business logic changes.

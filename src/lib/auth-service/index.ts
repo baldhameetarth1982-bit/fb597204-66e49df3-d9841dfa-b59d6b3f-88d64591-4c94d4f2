@@ -142,6 +142,43 @@ export async function linkVerifiedPhoneToCurrentUser(phone: string, firebaseUid:
 }
 
 /* ------------------------------------------------------------------------ */
+/* Phone-first sign in: mint a Supabase session from the Firebase phone     */
+/* ID token. No prior Supabase account required.                            */
+/* ------------------------------------------------------------------------ */
+
+export async function signInWithVerifiedPhone(input: {
+  phone: string;
+  firebaseIdToken: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  return completeFirebaseSession({
+    provider: "phone",
+    idToken: input.firebaseIdToken,
+    phone: input.phone,
+  });
+}
+
+/* ------------------------------------------------------------------------ */
+/* Google via Firebase (popup → ID token → Supabase session).               */
+/* We use Firebase's Google provider so the OAuth consent screen shows the  */
+/* SocioHub brand (not the Lovable brand).                                  */
+/* ------------------------------------------------------------------------ */
+
+export async function signInWithGoogleFirebase(): Promise<{ ok: boolean; error?: string }> {
+  if (!isFirebaseConfigured()) return { ok: false, error: "Google sign-in unavailable" };
+  try {
+    const auth = getFirebaseAuth();
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
+    const res = await signInWithPopup(auth, provider);
+    const idToken = await res.user.getIdToken();
+    return completeFirebaseSession({ provider: "google", idToken });
+  } catch (e: any) {
+    if (e?.code === "auth/popup-closed-by-user") return { ok: false, error: "Sign-in cancelled" };
+    return { ok: false, error: e?.message ?? "Google sign-in failed" };
+  }
+}
+
+/* ------------------------------------------------------------------------ */
 /* Truecaller (OAuth redirect on web, native SDK inside Capacitor shells)   */
 /* ------------------------------------------------------------------------ */
 

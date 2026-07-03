@@ -1,227 +1,603 @@
-# Phase 2 — Authentication, Onboarding & Payment Abstraction
+# Phase 3 Plan — Login UX Correction + Society Setup Wizard + Hierarchy Engine
 
-Frontend + minimal backend work to replace the login/onboarding stack. Maintenance, Billing, Accounts, Visitors, Reports, Society Structure and Dashboard are OUT of scope.
-
----
-
-## 1. Authentication Rebuild
-
-Replace the current email-first login with a mobile-first stack. Order of precedence:
-
-1. **Truecaller One-Tap** (Android WebView / SDK-supported devices) — fetches verified phone; on success we mint a Supabase session server-side.
-2. **Phone + OTP** (fallback for all other devices).
-3. **Google Sign-In** — allowed only as a convenience; if the Google account has no linked verified phone in `phone_verifications`, force an OTP step before the session is considered "active".
-
-**Removed:** Email + Password. `/_auth/login`, `/_auth/forgot-password`, `/_auth/reset-password` deleted. Existing email users continue to log in via their linked verified phone.
-
-New route: `src/routes/_auth/index.tsx` — single screen with Logo, "Welcome to SocioHub", three buttons (Truecaller shown only if `window.TruecallerSDK` / UA detection succeeds).
-
-Server functions in `src/lib/auth.functions.ts`:
-
-- `startPhoneOtp({ phone })` — rate-limited, Firebase SMS (existing infra).
-- `verifyPhoneOtp({ phone, firebaseIdToken })` — verifies Firebase token server-side, upserts `phone_verifications`, links to `auth.users` (creates via Supabase admin if new), returns Supabase session.
-- `verifyTruecallerToken({ requestId, accessToken })` — server-side call to Truecaller profile endpoint, same account resolution as above.
-- `linkPhoneAfterGoogle({ phone, firebaseIdToken })` — for Google users missing a verified phone.
-
-Guard component `<PhoneVerifiedGate />` wraps `_authenticated` layout: if session exists but no row in `phone_verifications`, redirect to `/auth/verify-phone`.
-
-Session persistence unchanged (Supabase localStorage), so reinstall + Google/Truecaller relogin is instant.
-
-## 2. Route & Guard Hardening (no flash)
-
-`__root.tsx` and `_authenticated` gate must resolve `{ session, phoneVerified, societyId, primaryRole }` **before** any child renders. Implementation:
-
-- Extend `AuthContext` to expose `bootstrapping: boolean` — true until initial `getUser()` + `user_roles` + `phone_verifications` queries settle.
-- Root shell renders `<SocioHubLoader />` while `bootstrapping`. No route body mounts until resolved.
-- `_auth` layout: if `session && phoneVerified && societyId` → `Navigate` to `ROLE_HOME[role]`.
-- `/onboarding/*`: same guard; existing members are redirected in `beforeLoad`, not in-component, to avoid flash.
-
-## 3. Onboarding Redesign
-
-New route `src/routes/onboarding.index.tsx` (rewrite): two large gradient cards — **Create Society** / **Join Society**. Progress stepper component added to `src/components/system/OnboardingStepper.tsx` (1/4 → 4/4).
-
-### 3a. Create Society (`/onboarding/create` rewrite)
-
-Single-form: Society Logo (optional, Supabase Storage), Society Name, Registration Number (optional), Full Address, State, City, PIN Code, Creator Name (prefilled), Creator Mobile (prefilled read-only from verified phone). Aadhaar + captcha blocks REMOVED. Idempotency key on submit prevents double-tap duplicate societies.
-
-After save → `/onboarding/plan` (pricing) → payment → **Society Structure Wizard placeholder** at `/society/setup` (existing) — no wizard changes in this phase.
-
-### 3b. Join Society (`/onboarding/join` rewrite)
-
-New workflow, one screen per step:
-
-1. **Search** — by name or city; server function `searchSocieties({ q })` returns `{ id, name, city, state, logo_url }`. Debounced query, cards list.
-2. **Enter Society Code** — 6-digit code; `verifySocietyCode({ societyId, code })` server function; wrong code → toast, cannot advance.
-3. **Basic Details** — Full Name, Flat Number, Owner/Tenant toggle, verified mobile (read-only).
-4. **Submit** → creates `join_requests` row (unique index on `(user_id, society_id) WHERE status='pending'` — already needed, add migration if missing).
-5. **Waiting screen** (`/onboarding/pending`) — refresh + logout buttons, existing.
-
-Single-society rule enforced server-side: `create_society_for_current_user` and `submit_join_request` both check the user has no active society membership.
-
-## 4. Society Code
-
-Reuses the existing `societies.invite_code` column (already 6-digit). Add a "Regenerate Code" action on `/society/settings` (or business-profile) — server function `regenerate_society_invite_code` gated by `has_role(auth.uid(), 'society_admin')`.
-
-## 5. Pricing Engine (dynamic)
-
-New tables (migration):
-
-- `pricing_config` — singleton row managed by super admin: `enterprise_threshold_units int`, `trial_days int`, per-module rates for Custom.
-- `plan_prices` — existing? extend with `plan_key`, `billing_cycle`, `price_inr`, `active`. Editable from `/admin/plans`.
-
-Server function `getApplicablePlans({ totalUnits })`:
-
-- If `totalUnits > enterprise_threshold_units` → return `{ tier: 'enterprise', contactOnly: true }`.
-- Else → return `[trial, basic, pro, premium, custom(moduleCatalog)]` with live prices.
-
-`/onboarding/plan` route rewritten to consume this; no hardcoded prices.
-
-`/pricing` public route redesigned: mobile-first, light/dark polished, trial hero band, custom plan module picker with live totals, enterprise CTA card. **Resident plan removed** everywhere.
-
-## 6. One-Time, Server-Controlled Trial
-
-Add column `societies.trial_consumed_at timestamptz`. Server function `startTrial({ societyId })`:
-
-- Rejects if `trial_consumed_at IS NOT NULL`.
-- Sets `trial_consumed_at = now()`, creates `subscriptions` row with `status='trial'`, `trial_ends_at = now() + interval '{trial_days} days'`.
-
-Access enforcement moved to a single server function `getSocietyAccessStatus()` used by `_society` and `_resident` guards:
-
-- `active | trial | trial_expired | past_due | canceled`.
-- On `trial_expired` / `past_due`: admin sees only `/society/plan-required` + `/checkout/*`; residents see `/app/plan-required`. Client cannot bypass — RLS on maintenance/bills/etc. gates via `has_active_subscription(society_id)` (already exists or add helper).
-
-## 7. Payment Gateway Abstraction
-
-New folder `src/lib/payments/`:
-
-```
-payments/
-  types.ts              // PaymentIntent, PaymentResult, SubscriptionPlan, Webhook types
-  gateway.interface.ts  // interface PaymentGateway { createSubscription, cancel, verifyWebhook, ... }
-  payu.adapter.ts
-  cashfree.adapter.ts
-  index.ts              // getGateway(name) factory, reads env PAYMENT_GATEWAY
-```
-
-- Onboarding checkout calls `gateway.createSubscription({ planId, societyId, customer })` — returns a redirect URL or hosted-checkout token. UI is gateway-agnostic.
-- Webhook route `src/routes/api/public/hooks/payments.$gateway.ts` dispatches to the adapter's `verifyWebhook` + `handleEvent`. Existing `razorpay.ts` webhook kept read-only for legacy rows; new subscriptions go through the abstraction.
-- Recurring/AutoPay mandate handled per-adapter (PayU: SI, Cashfree: Subscriptions API).
-- Env: `PAYMENT_GATEWAY=payu|cashfree`, plus provider keys via `add_secret`.
-
-Post-payment success page shows: monthly charge, next billing date, "Cancel anytime" link, then routes to `/society/setup`.
-
-## 8. Admin Approvals — Bulk Actions
-
-Update `/society/approvals`:
-
-- Checkbox per row + header "select all".
-- Buttons: **Approve**, **Reject**, **Approve Selected**, **Approve All**.
-- New server function `bulkApproveJoinRequests({ ids | all: true, societyId })` — batches, respects `has_role`.
-
-## 9. Cleanup / Deletions
-
-- Remove: `src/routes/_auth/login.tsx`, `forgot-password.tsx`, `reset-password.tsx`, resident subscription plan entries in seed & `/admin/plans` UI, Aadhaar block in create-society, all hardcoded plan arrays.
-- Keep AuthContext, Supabase client, RLS, existing dashboards untouched.
-
-## 10. Technical Details
-
-**New/edited routes**
-
-- `src/routes/_auth/index.tsx` (new unified login), `_auth/verify-phone.tsx` (new).
-- `src/routes/onboarding.index.tsx`, `onboarding.create.tsx`, `onboarding.join.tsx`, `onboarding.plan.tsx`, `onboarding.pending.tsx` — rewritten.
-- `src/routes/checkout.$planId.tsx` — gateway-agnostic.
-- `src/routes/pricing.tsx` — redesign.
-- `src/routes/api/public/hooks/payments.$gateway.ts` — new.
-
-**New server functions** in `src/lib/`:
-
-- `auth.functions.ts`, `societies.functions.ts` (search + code verify + regenerate), `join-requests.functions.ts` (submit + bulk approve), `pricing.functions.ts`, `subscription.functions.ts` (trial + access status).
-
-**New components**
-
-- `src/components/system/OnboardingStepper.tsx`
-- `src/components/auth/TruecallerButton.tsx`, `PhoneOtpForm.tsx`, `GoogleButton.tsx`
-- `src/components/payments/GatewayCheckout.tsx`
-
-**Migrations** (`supabase/migrations/…`)
-
-- `pricing_config` table + seed row.
-- `plan_prices` extension (module pricing json).
-- `societies.trial_consumed_at`.
-- Unique partial index on `join_requests(user_id, society_id) WHERE status='pending'`.
-- `regenerate_society_invite_code`, `submit_join_request`, `bulk_approve_join_requests`, `get_society_access_status`, `start_trial` SQL functions with `SECURITY DEFINER` + role checks.
-- GRANTs + RLS policies for every new table.
-
-**Untouched:** Maintenance, Billing, Accounts, Visitors, Reports, Society Structure Wizard, Dashboard pages and their RLS.
+Scope: ship the Phase 2 login-flow correction and the full Phase 3 wizard in one pass. The Enterprise-Dark theme overhaul is intentionally deferred to Phase 4 (separate plan). No backend, RLS, subscription, Razorpay, Truecaller, or auth-architecture changes beyond what's required to introduce the hierarchy engine.
 
 ---
 
-## Open questions before build
+## Part A — Phase 2 Correction: Restore Login Flow
 
-1. **Truecaller SDK** — the app is a web PWA. Truecaller One-Tap is Android-native SDK only; on the web the closest is Truecaller OAuth (redirect flow). Confirm: (a) treat Truecaller as a native-shell-only feature (hidden on web, shown only if you later wrap in Capacitor), or (b) implement Truecaller OAuth web redirect now? - Implement Truecaller OAuth for now because SocioHub is currently a PWA/web application. Keep the authentication architecture abstracted so that when we later release Android and iOS apps using Capacitor or native wrappers, the authentication provider can automatically switch to the native Truecaller SDK without changing the rest of the authentication flow. The login UI should not change between implementations.
-2. **Payment gateway** — do you already have PayU + Cashfree merchant accounts / API keys ready to add via secrets, or should I stub both adapters behind a feature flag until keys are provided? - Implement the complete Payment Gateway Abstraction Layer now, but keep both PayU and Cashfree adapters behind feature flags until API credentials are provided. The onboarding, subscription engine and pricing engine must already use the abstraction layer instead of directly calling any gateway. This ensures we only need to add secrets later without changing business logic.
-3. **Firebase Phone Auth** billing — current OTP flow uses Firebase. Keep Firebase, or switch to a cheaper SMS provider (MSG91 / Twilio Verify) as part of this phase? - Keep Firebase Phone Authentication for now because it is already integrated and stable. The OTP provider should also be abstracted behind an Authentication Service interface so we can migrate to MSG91, Twilio Verify or another provider later without changing onboarding, login or verification workflows. Do not migrate providers during this phase.                                                                                                                      Account Recovery
-  Every account is permanently linked to its verified phone number.
-  If the user reinstalls the app or changes devices:
-  - Logging in with the same verified phone number or linked Google account should restore the same account.
-  - No duplicate account should ever be created for the same verified phone.
-  - Account identity must always resolve on the server before creating a new user.
-  ---
-  ## Session Recovery
-  When the app starts:
-  1. Check existing Supabase session.
-  2. If no valid session exists:
-    - Try Truecaller (when available).
-    - Otherwise prompt for Phone OTP or Google Sign-In.
-  3. Never create duplicate users because of repeated login attempts.
-  ---
-  # Another Addition
-  In your plan, this part says:
-  > `pricing_config` singleton.
-  I recommend changing that.
-  Instead of:
-  ```
+Goal: put the login screen back to its intended two-step shape. Onboarding never appears before authentication.
 
-  ```
-  ```
-  pricing_config
-  ```
-  Make it:
-  ```
+### A1. `/login` screen (restored)
 
-  ```
-  ```
-  pricing_settings
-  ```
-  Because you're going to store much more than prices there:
-  -   
-  Unit threshold  
+- SocioHub Logo + Welcome copy (existing animations retained).
+- Primary buttons:
+  1. **Continue with Google** (unchanged; uses `lovable.auth.signInWithOAuth`).
+  2. **Continue with Phone** — routes to `/login/phone`, does NOT render OTP inline.
+  3. **Continue with Truecaller** (only when `capabilities.truecaller === true`).
+- Remove the "phone-first, OTP inline" collapse introduced in Phase 2.
 
-  -   
-  Trial days  
+### A2. `/login/phone` (dedicated screen)
 
-  -   
-  Enterprise settings  
+- Fields: Mobile number + Continue. OTP form renders only after Continue is pressed (existing `PhoneOtpForm` two-step mode).
+- Back button returns to `/login`.
 
-  -   
-  Custom module prices  
+### A3. Post-auth routing (in `__root.tsx` / `AuthGuard`)
 
-  -   
-  Taxes (future)  
+Existing authenticated users bypass everything:
 
-  -   
-  Promotional pricing  
+```
+session? → phoneVerified? → society membership?
+   no          →                    → /login
+   yes    no  →                    → /verify-phone
+   yes    yes  no                  → /onboarding
+   yes    yes  yes                 → ROLE_HOME[role]
+```
 
-  -   
-  Discounts  
+Guard runs before render — no flash. `bootstrapping` flag from Phase 2 stays.
 
-  -   
-  Feature toggles  
+### A4. Files touched
 
-  `pricing_settings` is a more future-proof name.
-  ---
-  # One more recommendation
-  Under:
-  > Society Code
-  Add:
-  > **The Society Code should be configurable by the Society Admin. They should be able to regenerate it, manually customize it (subject to uniqueness rules), temporarily disable joining through the code, and view the current active code from Society Settings.**
+- `src/routes/_auth/login.tsx` — restore two-tier layout.
+- `src/routes/_auth/login.phone.tsx` — new dedicated phone screen.
+- `src/components/auth/PhoneOtpForm.tsx` — expose "number-only step" mode.
+- `src/routes/__root.tsx` — tighten redirect precedence.
+
+No changes to auth service, Supabase, Truecaller, or session logic.
+
+---
+
+## Part B — Unified Hierarchy Engine (backend)
+
+Chosen: **new `hierarchy_nodes` table + compatibility views** over `blocks`/`flats`. Existing modules keep working via views until they're migrated in later phases.
+
+### B1. Schema (single migration)
+
+```sql
+create type public.hierarchy_kind as enum ('society','structure','floor','unit');
+create type public.society_layout as enum ('structured','serial');
+
+create table public.hierarchy_nodes (
+  id uuid primary key default gen_random_uuid(),
+  society_id uuid not null references public.societies(id) on delete cascade,
+  parent_id uuid references public.hierarchy_nodes(id) on delete cascade,
+  kind hierarchy_kind not null,
+  name text not null,
+  code text,               -- e.g. "A", "101"
+  sort_order int not null default 0,
+  meta jsonb not null default '{}'::jsonb,   -- floors_count, units_per_floor, numbering_pattern, etc.
+  legacy_block_id uuid,    -- back-reference to blocks.id during migration
+  legacy_flat_id  uuid,    -- back-reference to flats.id
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (society_id, parent_id, name),
+  unique (society_id, parent_id, code)
+);
+-- GRANTs + RLS scoped to society membership via has_society_access(society_id).
+```
+
+Adds to `societies`:
+
+- `layout society_layout default 'structured'`
+- `structure_label text default 'Block'`  (Wing/Tower/Block/Building/Sector/Phase/Custom)
+
+Adds to `society_settings` (reuse existing table; already has opening balances, maintenance policy, wizard_step):
+
+- `dynamic_profile_fields jsonb default '[]'` (list of `{key,label,type,required,options}`).
+- `wizard_state jsonb default '{}'` (autosave payload).
+- `default_bill_template_id uuid` (nullable).
+
+### B2. Read/write API (server functions in `src/lib/hierarchy.functions.ts`)
+
+- `getHierarchy(societyId)` — tree.
+- `saveWizardDraft(societyId, state)` — upsert `society_settings.wizard_state`.
+- `commitWizard(societyId, payload)` — atomic RPC that:
+  1. Writes society info + `layout` + `structure_label`.
+  2. Generates all `hierarchy_nodes` in batches (up to 20 000 units).
+  3. Backfills legacy `blocks` + `flats` for compat (so existing residents/maintenance/visitors reads keep working unchanged).
+  4. Writes opening balances (locked), maintenance policy, dynamic fields, default bill template.
+  5. Marks `society_settings.setup_completed_at`.
+
+Everything inside one `SECURITY DEFINER` RPC → transactional, no partial states.
+
+### B3. Compatibility views (later-phase-friendly)
+
+- `v_blocks_from_hierarchy` and `v_flats_from_hierarchy` are shipped but existing tables remain the source of truth for now. Future phases migrate module by module.
+
+---
+
+## Part C — Society Setup Wizard (frontend, metadata-driven)
+
+### C1. Wizard framework (`src/features/onboarding/wizard/`)
+
+Reusable definition model — new steps can be inserted without touching navigation:
+
+```ts
+type WizardStep<S> = {
+  id: string;
+  title: string;
+  progressWeight: number;
+  Component: React.FC<StepProps<S>>;
+  validate: (state: S) => ValidationResult;
+  canSkip?: (state: S) => boolean;
+};
+type WizardDef<S> = { id: string; steps: WizardStep<S>[]; initial: S };
+```
+
+- `<WizardRunner def={societySetupDef}/>` handles nav, progress bar, autosave (debounced 800ms → `saveWizardDraft`), back-without-loss, inline validation, sticky bottom CTA, mobile transitions (`PageTransition`).
+- Resumes from `wizard_state` on load.
+
+### C2. Steps (society setup)
+
+1. **Society Info** — logo, name, registration (opt), address, state, city, PIN, creator (prefilled/editable), phone (locked), email (opt).
+2. **Layout Choice** — two large cards: *Structured* vs *Serial Number*.
+3. **Structure Naming** (Structured only) — pick label (Wing/Tower/Block/Building/Sector/Phase/Custom) + count. Auto-generates names, each rename-able.
+4. **Configure Each Structure** (Structured; one screen per structure via sub-stepper) — floors, units/floor, ground-floor toggle, numbering format (Sequential / Simple / Floor-Unit / Custom pattern with tokens `{S}`, `{F}`, `{N}`, `{FF}`, `{NN}`). Live preview grid updates on every keystroke.
+5. **Total Houses** (Serial only) — single number input, live preview of first 20.
+6. **Flat/House Editor** — virtualized list (react-virtual). Rename, delete, insert, reorder (drag), mark default Owner/Tenant, add note. Duplicate detection inline.
+7. **Pricing** — calls `pricing-engine.getApplicablePlans({ totalUnits })`. If units > threshold → Enterprise auto. Otherwise show Trial (if eligible) + Basic/Pro/Premium/Custom. Wizard hands off to existing checkout, returns to step 8 after success.
+8. **Opening Balances** — cash, bank, as-of date. Warning banner: locks on finish.
+9. **Maintenance Policy** — amount, billing type (Prepaid/Current/Postpaid), due day, grace, late fee, auto-generation toggle. All become defaults, all editable later.
+10. **Dynamic Profile Fields** — add/edit/remove custom resident fields (text/number/date/dropdown/checkbox/file/image). Optional step.
+11. **Review & Finish** — one-tap `commitWizard`. Triggers initialization of society settings, hierarchy, opening balances, maintenance policy, default bill template, society code (already generated in Phase 2), financial year, default reports flags, default theme.
+
+### C3. Numbering-format engine (`src/lib/hierarchy/numbering.ts`)
+
+Pure function `generateUnits(config): Unit[]`:
+
+- Handles all four formats + custom token expansion.
+- Batched generation (chunks of 500) with `requestIdleCallback` fallback → no UI freeze for 5 000+ units.
+- Duplicate & validation checks return typed errors consumed by inline UI.
+
+### C4. Mobile UX rules applied
+
+- One primary CTA per screen; sticky bottom.
+- Animated progress bar (weighted).
+- Bottom sheets (Vaul `<Drawer>`) instead of dialogs.
+- Auto-scroll to first error.
+- Smart defaults (Block=5, floors=4, units/floor=4, format=Sequential, due day=10, grace=5).
+- Large touch targets (min 44px).
+
+### C5. Performance
+
+- Virtualized list for flat editor.
+- Batch generation with progress toast for >1 000 units.
+- Generation runs client-side; commit sends compact payload (config + edits diff), server expands via RPC.
+
+---
+
+## Part D — What is NOT changing this phase
+
+- Auth architecture, Truecaller, Firebase phone, Google OAuth wiring.
+- Subscriptions, Razorpay/PayU/Cashfree adapters, pricing engine DB.
+- RLS on `residents`, `maintenance_periods`, `bills`, `visitors`, `expenses`, `payments`.
+- Super Admin, resident-side modules (untouched surface area).
+- Global theme tokens (Enterprise-Dark = Phase 4).
+
+---
+
+## Part E — Deliverables
+
+**Migrations (1)**
+
+- `hierarchy_nodes` + enums + `societies.layout` + `societies.structure_label` + `society_settings.dynamic_profile_fields`/`wizard_state`/`default_bill_template_id` + `commitWizard` RPC + `saveWizardDraft` RPC + compat views.
+
+**New files**
+
+- `src/features/onboarding/wizard/{WizardRunner,useWizardAutosave,types}.tsx`
+- `src/features/onboarding/wizard/steps/*.tsx` (11 files)
+- `src/lib/hierarchy/{numbering,validation}.ts`
+- `src/lib/hierarchy.functions.ts`
+- `src/routes/_auth/login.phone.tsx`
+
+**Edited files**
+
+- `src/routes/_auth/login.tsx` (restore two-tier)
+- `src/components/auth/PhoneOtpForm.tsx` (number-only step)
+- `src/routes/onboarding.create.tsx` — replaced by `<WizardRunner def={societySetupDef}/>`
+- `src/routes/onboarding.plan.tsx` — merged into wizard step 7
+- `src/routes/__root.tsx` — redirect precedence
+- `src/lib/pricing-engine.ts` — expose `getApplicablePlans({ totalUnits })` for wizard
+
+**Untouched**
+
+- `_resident/*`, `_society/{maintenance,billing,accounts,visitors,reports,expenses,payouts}.tsx`
+- All payment adapters, `join-approvals.ts`, `society-code.ts`, all RLS.
+
+---
+
+## Completion criteria
+
+- Existing signed-in user hitting `/` goes straight to role home — no login/OTP/onboarding flash.
+- New user can create a Structured society (5 blocks × 4 floors × 4 flats) OR a Serial society (150 houses) end-to-end on a 360px viewport.
+- Refreshing mid-wizard resumes at the last step with all inputs intact.
+- Duplicate flat numbers, empty name, zero floors surface inline before Next.
+- Pricing step auto-shows Enterprise when units > threshold; otherwise Standard plans.
+- On Finish: hierarchy exists, opening balances locked, maintenance policy stored, dynamic fields saved, society code visible, default bill template row present. Society dashboard opens without errors.
+- No changes to `blocks`/`flats` reads in other modules — they still work via backfill.
+
+Enterprise-Dark theme overhaul (splash, glass tiles, Quantum Ring, Bill Studio canvas, WhatsApp exporter UI, Cashless checkout redesign) will be planned separately as Phase 4 once this ships.                                                                                                                                     1. Financial Year Initialization
+
+When the wizard finishes, automatically create:
+
+```
+
+```
+
+```
+Current Financial Year
+
+Example:
+
+2026-27
+
+Opening balances belong to this FY.
+```
+
+Future accounting modules should immediately know which FY is active.
+
+---
+
+# 2. Resident Number Capacity
+
+Every generated flat should immediately contain:
+
+```
+
+```
+
+```
+Maximum Residents
+
+default = unlimited
+
+editable later
+```
+
+This helps future visitor and occupancy features.
+
+---
+
+# 3. Parking Initialization
+
+During setup, optionally ask:
+
+```
+
+```
+
+```
+Does your society have parking?
+
+Yes / No
+```
+
+If Yes:
+
+```
+
+```
+
+```
+Parking Types
+
+Two Wheeler
+
+Four Wheeler
+
+Visitor Parking
+
+Commercial
+```
+
+Skip if No.
+
+---
+
+# 4. Amenities Initialization
+
+Optional screen:
+
+```
+
+```
+
+```
+Amenities
+
+Garden
+
+Club House
+
+Gym
+
+Temple
+
+Swimming Pool
+
+Community Hall
+
+Other
+```
+
+These become available later.
+
+---
+
+# 5. Water Meter / Electricity Number Support
+
+When creating Dynamic Profile Fields,
+
+provide quick templates.
+
+Example:
+
+```
+
+```
+
+```
+Property Number
+
+Electric Meter
+
+Water Meter
+
+Gas Connection
+
+Parking Slot
+
+Vehicle Number
+```
+
+instead of forcing admins to create everything manually.
+
+---
+
+# 6. Undo Before Finish
+
+Before clicking Finish,
+
+allow
+
+```
+
+```
+
+```
+Preview
+
+↓
+
+Edit
+
+↓
+
+Finish
+```
+
+instead of immediately committing.
+
+---
+
+# 7. Duplicate Detection
+
+Besides duplicate flat numbers,
+
+also detect
+
+```
+
+```
+
+```
+Duplicate structure names
+
+Duplicate custom numbering patterns
+
+Duplicate generated IDs
+```
+
+---
+
+# 8. Migration Safety
+
+Since hierarchy is changing,
+
+ask Lovable to guarantee:
+
+```
+
+```
+
+```
+Existing societies
+
+↓
+
+Auto migrate
+
+↓
+
+Nothing breaks
+
+↓
+
+No data loss
+
+↓
+
+Rollback available
+```
+
+---
+
+# 9. Wizard Versioning
+
+Very important.
+
+Save
+
+```
+
+```
+
+```
+wizard_version = 1
+```
+
+inside society settings.
+
+Later, if setup changes,
+
+the app knows which wizard version created the society.
+
+---
+
+# 10. Initialization Queue
+
+Instead of doing everything synchronously,
+
+after Finish:
+
+```
+
+```
+
+```
+Commit
+
+↓
+
+Background Initialization
+
+↓
+
+Generate Flats
+
+↓
+
+Generate Reports
+
+↓
+
+Default Bill Template
+
+↓
+
+Financial Year
+
+↓
+
+Complete
+```
+
+Show a progress indicator.
+
+This prevents freezes on societies with thousands of units.
+
+---
+
+# 11. Enterprise Support
+
+You've already added Enterprise pricing.
+
+Also add:
+
+```
+
+```
+
+```
+If Total Units > Enterprise Threshold
+
+↓
+
+Recommend contacting Sales
+
+↓
+
+Still allow demo setup
+
+↓
+
+Lock activation until subscription.
+```
+
+---
+
+# 12. Recovery
+
+If initialization fails at 90%,
+
+the admin should never lose progress.
+
+Resume from the failed step automatically.
+
+---
+
+# My only concern
+
+One thing I'd watch is this line:
+
+> **Pricing — calls pricing-engine.getApplicablePlans() inside the wizard.**
+
+I would slightly change the flow.
+
+Instead of:
+
+```
+
+```
+
+```
+Setup
+
+↓
+
+Pricing
+
+↓
+
+Continue
+```
+
+I'd recommend:
+
+```
+
+```
+
+```
+Society Info
+
+↓
+
+Structure
+
+↓
+
+Wizard
+
+↓
+
+Review
+
+↓
+
+Pricing
+
+↓
+
+Payment
+
+↓
+
+Initialize Society
+
+↓
+
+Dashboard
+```
+
+This way, the admin configures the society first, then chooses the plan based on the final number of units. It avoids situations where they change the structure after seeing the price and have to go back.

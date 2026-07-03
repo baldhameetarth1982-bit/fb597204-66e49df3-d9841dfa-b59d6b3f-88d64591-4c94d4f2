@@ -727,6 +727,66 @@ export type Database = {
           },
         ]
       }
+      hierarchy_nodes: {
+        Row: {
+          code: string | null
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["hierarchy_kind"]
+          legacy_block_id: string | null
+          legacy_flat_id: string | null
+          meta: Json
+          name: string
+          parent_id: string | null
+          society_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          id?: string
+          kind: Database["public"]["Enums"]["hierarchy_kind"]
+          legacy_block_id?: string | null
+          legacy_flat_id?: string | null
+          meta?: Json
+          name: string
+          parent_id?: string | null
+          society_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["hierarchy_kind"]
+          legacy_block_id?: string | null
+          legacy_flat_id?: string | null
+          meta?: Json
+          name?: string
+          parent_id?: string | null
+          society_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hierarchy_nodes_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "hierarchy_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hierarchy_nodes_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       join_requests: {
         Row: {
           created_at: string
@@ -1563,6 +1623,7 @@ export type Database = {
           id: string
           invite_code: string | null
           invite_code_enabled: boolean
+          layout: Database["public"]["Enums"]["society_layout"]
           legal_business_name: string | null
           logo_url: string | null
           name: string
@@ -1582,6 +1643,7 @@ export type Database = {
           signature_url: string | null
           state: string | null
           status: string
+          structure_label: string
           total_units: number | null
           trial_consumed_at: string | null
           trial_ends_at: string | null
@@ -1603,6 +1665,7 @@ export type Database = {
           id?: string
           invite_code?: string | null
           invite_code_enabled?: boolean
+          layout?: Database["public"]["Enums"]["society_layout"]
           legal_business_name?: string | null
           logo_url?: string | null
           name: string
@@ -1622,6 +1685,7 @@ export type Database = {
           signature_url?: string | null
           state?: string | null
           status?: string
+          structure_label?: string
           total_units?: number | null
           trial_consumed_at?: string | null
           trial_ends_at?: string | null
@@ -1643,6 +1707,7 @@ export type Database = {
           id?: string
           invite_code?: string | null
           invite_code_enabled?: boolean
+          layout?: Database["public"]["Enums"]["society_layout"]
           legal_business_name?: string | null
           logo_url?: string | null
           name?: string
@@ -1662,6 +1727,7 @@ export type Database = {
           signature_url?: string | null
           state?: string | null
           status?: string
+          structure_label?: string
           total_units?: number | null
           trial_consumed_at?: string | null
           trial_ends_at?: string | null
@@ -1731,6 +1797,9 @@ export type Database = {
           bylaws_pdf_path: string | null
           city: string | null
           created_at: string
+          default_bill_template_id: string | null
+          dynamic_profile_fields: Json
+          financial_year_label: string | null
           financial_year_start_month: number
           grace_days: number
           late_fee_amount: number
@@ -1747,7 +1816,9 @@ export type Database = {
           state: string | null
           structure_type: string
           updated_at: string
+          wizard_state: Json
           wizard_step: number
+          wizard_version: number
         }
         Insert: {
           address?: string | null
@@ -1755,6 +1826,9 @@ export type Database = {
           bylaws_pdf_path?: string | null
           city?: string | null
           created_at?: string
+          default_bill_template_id?: string | null
+          dynamic_profile_fields?: Json
+          financial_year_label?: string | null
           financial_year_start_month?: number
           grace_days?: number
           late_fee_amount?: number
@@ -1771,7 +1845,9 @@ export type Database = {
           state?: string | null
           structure_type?: string
           updated_at?: string
+          wizard_state?: Json
           wizard_step?: number
+          wizard_version?: number
         }
         Update: {
           address?: string | null
@@ -1779,6 +1855,9 @@ export type Database = {
           bylaws_pdf_path?: string | null
           city?: string | null
           created_at?: string
+          default_bill_template_id?: string | null
+          dynamic_profile_fields?: Json
+          financial_year_label?: string | null
           financial_year_start_month?: number
           grace_days?: number
           late_fee_amount?: number
@@ -1795,7 +1874,9 @@ export type Database = {
           state?: string | null
           structure_type?: string
           updated_at?: string
+          wizard_state?: Json
           wizard_step?: number
+          wizard_version?: number
         }
         Relationships: [
           {
@@ -2228,6 +2309,10 @@ export type Database = {
         Args: { _bill_id: string; _reason: string }
         Returns: undefined
       }
+      commit_society_wizard: {
+        Args: { _payload: Json; _society_id: string }
+        Returns: undefined
+      }
       complete_setup_wizard: {
         Args: { _society_id: string }
         Returns: undefined
@@ -2486,6 +2571,10 @@ export type Database = {
         Args: { _aadhaar_last4: string; _aadhaar_url: string }
         Returns: undefined
       }
+      save_wizard_draft: {
+        Args: { _society_id: string; _state: Json }
+        Returns: undefined
+      }
       search_societies_by_name: {
         Args: { _q: string }
         Returns: {
@@ -2556,6 +2645,8 @@ export type Database = {
         | "resident"
         | "block_admin"
         | "security"
+      hierarchy_kind: "society" | "structure" | "floor" | "unit"
+      society_layout: "structured" | "serial"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2690,6 +2781,8 @@ export const Constants = {
         "block_admin",
         "security",
       ],
+      hierarchy_kind: ["society", "structure", "floor", "unit"],
+      society_layout: ["structured", "serial"],
     },
   },
 } as const

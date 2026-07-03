@@ -135,7 +135,7 @@ function AchievementsScreen() {
                       const rank = i + 1;
                       const medal =
                         rank === 1 ? "text-amber-500" :
-                        rank === 2 ? "text-zinc-400" :
+                        rank === 2 ? "text-muted-foreground" :
                         rank === 3 ? "text-orange-700" : "";
                       return (
                         <li key={row.user_id} className={`flex items-center gap-3 p-2.5 ${me ? "bg-primary/5 rounded-xl" : ""}`}>

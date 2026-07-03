@@ -95,6 +95,7 @@ import { Route as AdminAdminCustomPlansRouteImport } from './routes/_admin/admin
 import { Route as AdminAdminAdsRouteImport } from './routes/_admin/admin.ads'
 import { Route as ApiPublicHooksRunBillingRouteImport } from './routes/api/public/hooks/run-billing'
 import { Route as ApiPublicHooksRazorpayRouteImport } from './routes/api/public/hooks/razorpay'
+import { Route as ApiPublicAuthFirebaseSessionRouteImport } from './routes/api/public/auth/firebase-session'
 import { Route as ResidentAppFeedPostIdRouteImport } from './routes/_resident/app.feed.$postId'
 
 const WelcomeRoute = WelcomeRouteImport.update({
@@ -532,6 +533,12 @@ const ApiPublicHooksRazorpayRoute = ApiPublicHooksRazorpayRouteImport.update({
   path: '/api/public/hooks/razorpay',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicAuthFirebaseSessionRoute =
+  ApiPublicAuthFirebaseSessionRouteImport.update({
+    id: '/api/public/auth/firebase-session',
+    path: '/api/public/auth/firebase-session',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ResidentAppFeedPostIdRoute = ResidentAppFeedPostIdRouteImport.update({
   id: '/$postId',
   path: '/$postId',
@@ -620,6 +627,7 @@ export interface FileRoutesByFullPath {
   '/society/verifications': typeof SocietySocietyVerificationsRoute
   '/society/visitors': typeof SocietySocietyVisitorsRoute
   '/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
+  '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
 }
@@ -704,6 +712,7 @@ export interface FileRoutesByTo {
   '/society/verifications': typeof SocietySocietyVerificationsRoute
   '/society/visitors': typeof SocietySocietyVisitorsRoute
   '/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
+  '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
 }
@@ -794,6 +803,7 @@ export interface FileRoutesById {
   '/_society/society/verifications': typeof SocietySocietyVerificationsRoute
   '/_society/society/visitors': typeof SocietySocietyVisitorsRoute
   '/_resident/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
+  '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
 }
@@ -881,6 +891,7 @@ export interface FileRouteTypes {
     | '/society/verifications'
     | '/society/visitors'
     | '/app/feed/$postId'
+    | '/api/public/auth/firebase-session'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
   fileRoutesByTo: FileRoutesByTo
@@ -965,6 +976,7 @@ export interface FileRouteTypes {
     | '/society/verifications'
     | '/society/visitors'
     | '/app/feed/$postId'
+    | '/api/public/auth/firebase-session'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
   id:
@@ -1054,6 +1066,7 @@ export interface FileRouteTypes {
     | '/_society/society/verifications'
     | '/_society/society/visitors'
     | '/_resident/app/feed/$postId'
+    | '/api/public/auth/firebase-session'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
   fileRoutesById: FileRoutesById
@@ -1078,6 +1091,7 @@ export interface RootRouteChildren {
   WelcomeRoute: typeof WelcomeRoute
   ApiSupportChatRoute: typeof ApiSupportChatRoute
   CheckoutPlanIdRoute: typeof CheckoutPlanIdRoute
+  ApiPublicAuthFirebaseSessionRoute: typeof ApiPublicAuthFirebaseSessionRoute
   ApiPublicHooksRazorpayRoute: typeof ApiPublicHooksRazorpayRoute
   ApiPublicHooksRunBillingRoute: typeof ApiPublicHooksRunBillingRoute
 }
@@ -1686,6 +1700,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksRazorpayRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/auth/firebase-session': {
+      id: '/api/public/auth/firebase-session'
+      path: '/api/public/auth/firebase-session'
+      fullPath: '/api/public/auth/firebase-session'
+      preLoaderRoute: typeof ApiPublicAuthFirebaseSessionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_resident/app/feed/$postId': {
       id: '/_resident/app/feed/$postId'
       path: '/$postId'
@@ -1903,6 +1924,7 @@ const rootRouteChildren: RootRouteChildren = {
   WelcomeRoute: WelcomeRoute,
   ApiSupportChatRoute: ApiSupportChatRoute,
   CheckoutPlanIdRoute: CheckoutPlanIdRoute,
+  ApiPublicAuthFirebaseSessionRoute: ApiPublicAuthFirebaseSessionRoute,
   ApiPublicHooksRazorpayRoute: ApiPublicHooksRazorpayRoute,
   ApiPublicHooksRunBillingRoute: ApiPublicHooksRunBillingRoute,
 }

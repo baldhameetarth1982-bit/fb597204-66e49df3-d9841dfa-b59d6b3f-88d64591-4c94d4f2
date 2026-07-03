@@ -14,10 +14,39 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getFirebaseAuth, isFirebaseConfigured } from "@/lib/firebase";
 import {
+  GoogleAuthProvider,
   RecaptchaVerifier,
   signInWithPhoneNumber,
+  signInWithPopup,
   type ConfirmationResult,
 } from "firebase/auth";
+
+/**
+ * Exchange a Firebase ID token for a Supabase session via our server route
+ * and hydrate the browser session. Used by phone-first and Firebase-Google
+ * sign-in paths.
+ */
+async function completeFirebaseSession(input: {
+  provider: "phone" | "google";
+  idToken: string;
+  phone?: string;
+}) {
+  const res = await fetch("/api/public/auth/firebase-session", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  const data = (await res.json().catch(() => ({}))) as { email?: string; token_hash?: string; error?: string };
+  if (!res.ok || !data.token_hash || !data.email) {
+    return { ok: false, error: data.error ?? "Sign-in failed" };
+  }
+  const { error } = await supabase.auth.verifyOtp({
+    type: "magiclink",
+    token_hash: data.token_hash,
+  });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
 
 export type OtpProviderName = "firebase" | "msg91" | "twilio";
 export type SocialProviderName = "google" | "truecaller";

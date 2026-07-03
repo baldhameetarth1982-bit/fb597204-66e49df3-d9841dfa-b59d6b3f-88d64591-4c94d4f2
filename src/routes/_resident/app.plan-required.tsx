@@ -91,7 +91,7 @@ function PlanRequiredResident() {
   }
 
   return (
-    <main className="min-h-screen bg-background text-foreground px-5 py-12">
+    <main className="min-h-dvh bg-background text-foreground px-5 py-12">
       <div className="max-w-md mx-auto space-y-6 text-center">
         <div className="mx-auto h-16 w-16 rounded-2xl bg-primary/15 border border-primary/30 grid place-items-center">
           <Rocket className="h-8 w-8 text-primary" />
@@ -99,8 +99,8 @@ function PlanRequiredResident() {
         <Badge className="bg-primary/15 text-primary border-primary/30 rounded-full">
           <Sparkles className="h-3 w-3 mr-1" /> Renew to keep your perks
         </Badge>
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-50">Unlock SocioHub's Full Power</h1>
-        <p className="text-slate-600 dark:text-slate-300">
+        <h1 className="text-3xl font-bold text-foreground">Unlock SocioHub's Full Power</h1>
+        <p className="text-muted-foreground">
           Your society's plan is paused. Ask your <b>Society Admin</b> to renew so everyone stays connected — or unlock
           the ad-free personal experience just for you.
         </p>
@@ -109,10 +109,10 @@ function PlanRequiredResident() {
           <Card className="rounded-2xl bg-card border p-5 text-left space-y-3">
             <p className="text-xs uppercase tracking-wider text-primary font-semibold">Resident plan</p>
             <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-bold text-slate-900 dark:text-slate-50">₹{residentPlan.price_monthly_inr}</span>
-              <span className="text-sm text-slate-500 dark:text-slate-400">/month</span>
+              <span className="text-3xl font-bold text-foreground">₹{residentPlan.price_monthly_inr}</span>
+              <span className="text-sm text-muted-foreground">/month</span>
             </div>
-            <p className="text-sm text-slate-600 dark:text-slate-300">
+            <p className="text-sm text-muted-foreground">
               Ad-free experience, priority notifications, and full visitor pre-approval.
             </p>
             <Button onClick={handleBuy} disabled={busy} className="w-full min-h-[52px] rounded-xl">
@@ -123,13 +123,13 @@ function PlanRequiredResident() {
         )}
 
         <Card className="rounded-2xl bg-card border p-5 text-left space-y-2">
-          <p className="text-sm font-medium text-slate-900 dark:text-slate-50">Message your admin</p>
-          <p className="text-xs text-slate-600 dark:text-slate-300">
+          <p className="text-sm font-medium text-foreground">Message your admin</p>
+          <p className="text-xs text-muted-foreground">
             "Our SocioHub plan has ended. Please pick a plan from the dashboard so we can use visitors, dues, polls and notices again."
           </p>
         </Card>
 
-        <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2">
+        <p className="text-xs text-muted-foreground flex items-center justify-center gap-2">
           <ShieldCheck className="h-4 w-4" /> Your data is safe and untouched.
         </p>
         <Button variant="ghost" onClick={() => signOut()} className="text-xs">Sign out</Button>

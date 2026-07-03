@@ -86,7 +86,7 @@ function PlanRequired() {
   }
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
+    <main className="min-h-dvh bg-background text-foreground">
       <div className="max-w-5xl mx-auto px-5 py-12 space-y-8">
         <div className="text-center space-y-3">
           <div className="mx-auto h-16 w-16 rounded-2xl bg-primary/15 border border-primary/30 grid place-items-center">
@@ -95,10 +95,10 @@ function PlanRequired() {
           <Badge className="bg-primary/15 text-primary border-primary/30 rounded-full">
             <Sparkles className="h-3 w-3 mr-1" /> Premium plan ready
           </Badge>
-          <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
+          <h1 className="text-4xl font-bold tracking-tight text-foreground">
             Unlock SocioHub's Full Power
           </h1>
-          <p className="text-slate-600 dark:text-slate-300 max-w-xl mx-auto">
+          <p className="text-muted-foreground max-w-xl mx-auto">
             Upgrade {society?.name ? <b>{society.name}</b> : "your society"}'s plan to automate security, finances, and
             community communications — seamlessly.
           </p>
@@ -118,12 +118,12 @@ function PlanRequired() {
               {p.is_recommended && (
                 <Badge className="self-start mb-3 bg-primary text-primary-foreground"><Sparkles className="h-3 w-3 mr-1" /> Best value</Badge>
               )}
-              <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-50">{p.name}</h3>
+              <h3 className="text-xl font-semibold text-foreground">{p.name}</h3>
               <div className="mt-2 flex items-baseline gap-1">
-                <span className="text-3xl font-bold text-slate-900 dark:text-slate-50">₹{p.price_monthly_inr}</span>
-                <span className="text-slate-500 dark:text-slate-400">/mo</span>
+                <span className="text-3xl font-bold text-foreground">₹{p.price_monthly_inr}</span>
+                <span className="text-muted-foreground">/mo</span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+              <p className="text-xs text-muted-foreground mt-2">
                 {p.txn_fee_pct}% txn fee · {p.ads_enabled ? "ads on" : "no ads"}
               </p>
               <Button
@@ -138,9 +138,9 @@ function PlanRequired() {
           ))}
         </div>
 
-        <div className="text-center text-sm text-slate-600 dark:text-slate-300 space-y-2">
+        <div className="text-center text-sm text-muted-foreground space-y-2">
           <p className="flex items-center justify-center gap-2"><ShieldCheck className="h-4 w-4" /> Secured by Razorpay · GST invoice</p>
-          <button onClick={() => signOut()} className="underline text-xs text-slate-500 dark:text-slate-400">Sign out</button>
+          <button onClick={() => signOut()} className="underline text-xs text-muted-foreground">Sign out</button>
         </div>
       </div>
     </main>
@@ -152,8 +152,8 @@ function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; va
     <div className="flex items-center gap-3">
       <div className="h-9 w-9 rounded-xl bg-primary/10 grid place-items-center text-primary">{icon}</div>
       <div>
-        <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
-        <p className="font-medium text-slate-900 dark:text-slate-50">{value}</p>
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="font-medium text-foreground">{value}</p>
       </div>
     </div>
   );

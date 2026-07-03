@@ -149,7 +149,7 @@ function CreateSociety() {
   return (
     <div className="px-5 py-6 space-y-6">
       <Link
-        to="/onboarding"
+        to="/onboarding" search={{} as any}
         className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4 mr-1" /> Back

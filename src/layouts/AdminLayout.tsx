@@ -11,7 +11,7 @@ export function AdminLayout({
   children: ReactNode;
 }) {
   return (
-    <div className="min-h-screen flex bg-background text-foreground">
+    <div className="min-h-dvh flex bg-background text-foreground">
       <aside className="hidden md:flex w-64 border-r border-border flex-col">
         {sidebar}
       </aside>

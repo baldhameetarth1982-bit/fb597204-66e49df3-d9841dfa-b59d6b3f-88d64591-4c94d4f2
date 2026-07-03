@@ -79,7 +79,7 @@ export function SocietyFinanceChart({ societyId }: { societyId: string }) {
             "px-3 py-1.5 rounded-xl text-sm font-semibold flex items-center gap-1.5",
             tone === "growth" ? "bg-emerald-500/10 text-emerald-500"
               : tone === "loss" ? "bg-red-500/10 text-red-500"
-              : "bg-white/10 text-foreground",
+              : "bg-muted text-foreground",
           ].join(" ")}
         >
           {tone === "growth" ? <TrendingUp className="h-4 w-4" />

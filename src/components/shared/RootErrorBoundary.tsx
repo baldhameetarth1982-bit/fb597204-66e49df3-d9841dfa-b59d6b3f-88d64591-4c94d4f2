@@ -32,7 +32,7 @@ export class RootErrorBoundary extends Component<{ children: ReactNode }, State>
   render() {
     if (!this.state.error) return this.props.children;
     return (
-      <div className="min-h-screen grid place-items-center p-6 bg-background">
+      <div className="min-h-dvh grid place-items-center p-6 bg-background">
         <div className="max-w-md w-full rounded-2xl border bg-card p-6 text-center space-y-4">
           <AlertTriangle className="h-10 w-10 text-amber-500 mx-auto" />
           <h1 className="text-xl font-semibold">Something went wrong</h1>

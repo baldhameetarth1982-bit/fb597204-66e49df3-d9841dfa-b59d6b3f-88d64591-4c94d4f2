@@ -66,7 +66,7 @@ function PendingApproval() {
     return (
       <div className="px-5 py-10 text-center space-y-5">
         <p className="text-sm text-muted-foreground">You don't have a pending request.</p>
-        <Button asChild className="h-12 rounded-2xl px-6"><Link to="/onboarding">Get started</Link></Button>
+        <Button asChild className="h-12 rounded-2xl px-6"><Link to="/onboarding" search={{} as any}>Get started</Link></Button>
       </div>
     );
   }

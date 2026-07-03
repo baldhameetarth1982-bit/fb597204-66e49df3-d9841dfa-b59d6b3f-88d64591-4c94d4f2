@@ -62,7 +62,7 @@ function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="min-h-dvh bg-background text-foreground flex flex-col">
       <main className="flex-1 py-12 px-4">
         <div className="max-w-xl mx-auto">
           <Link to="/pricing" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-6">
@@ -83,7 +83,7 @@ function CheckoutPage() {
               ) : (
                 <div className="rounded-xl bg-secondary p-4">
                   <p className="text-sm text-muted-foreground">You are subscribing to</p>
-                  <p className="text-2xl font-semibold mt-0.5 text-slate-900 dark:text-slate-50">{plan.name}</p>
+                  <p className="text-2xl font-semibold mt-0.5 text-foreground">{plan.name}</p>
                   <p className="text-lg mt-1">
                     ₹{plan.price_monthly_inr}/month · {plan.txn_fee_pct}% transaction fee on maintenance
                   </p>

@@ -23,10 +23,12 @@ import { SplashScreen } from "@/components/shared/SplashScreen";
 import { RootErrorBoundary, installGlobalErrorLogger } from "@/components/shared/RootErrorBoundary";
 import { ProtectedRoute } from "@/components/shared/AuthGuard";
 import { LegalFooter } from "@/components/shared/LegalFooter";
+import { PageTransition } from "@/components/system/PageTransition";
+
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-dvh items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-foreground">404</h1>
         <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
@@ -51,7 +53,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-dvh items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
           This page didn't load
@@ -199,6 +201,18 @@ function MarketingAnalytics() {
   return null;
 }
 
+function TransitionedOutlet() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  // Re-key on top-level path segment so transitions fire on section change
+  // without thrashing on every param tweak.
+  const seg = pathname.split("/").slice(0, 3).join("/") || "/";
+  return (
+    <PageTransition key={seg} className="contents">
+      <Outlet />
+    </PageTransition>
+  );
+}
+
 function ShellSwitcher() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isProtectedPath = ["/app", "/society", "/admin", "/settings", "/onboarding"].some(
@@ -207,7 +221,7 @@ function ShellSwitcher() {
 
   // Bare shell: auth/redirect pages must not mount app layouts before routing settles.
   if (pathname === "/" || AUTH_PATHS.some((p) => pathname.startsWith(p))) {
-    return <Outlet />;
+    return <TransitionedOutlet />;
   }
 
   if (isProtectedPath) {
@@ -225,14 +239,14 @@ function ProtectedShell({ pathname }: { pathname: string }) {
   // Resident shell: native mobile app frame, fixed bottom nav
   if (pathname.startsWith("/app") || pathname.startsWith("/onboarding")) {
     return (
-      <div className="min-h-[100dvh] w-full bg-secondary/40">
+      <div className="min-h-[100dvh] w-full bg-muted/40">
         <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-[480px] flex-col bg-background shadow-xl">
           <AppHeader withSidebarTrigger={false} />
           <main
             className="flex-1"
             style={{ paddingBottom: "calc(96px + env(safe-area-inset-bottom))" }}
           >
-            <Outlet />
+            <TransitionedOutlet />
           </main>
           {pathname.startsWith("/app") && <ResidentBottomNav />}
         </div>
@@ -243,7 +257,7 @@ function ProtectedShell({ pathname }: { pathname: string }) {
   if (pathname.startsWith("/society")) {
     return (
       <SidebarProvider>
-        <div className="min-h-[100dvh] w-full bg-secondary/40 md:bg-background">
+        <div className="min-h-[100dvh] w-full bg-muted/40 md:bg-background">
           <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-[480px] bg-background shadow-xl md:max-w-none md:shadow-none">
             {/* Desktop sidebar only — hidden on mobile to make room for drawer */}
             <div className="hidden md:block">
@@ -255,7 +269,7 @@ function ProtectedShell({ pathname }: { pathname: string }) {
                 className="flex-1"
                 style={{ paddingBottom: "calc(40px + env(safe-area-inset-bottom))" }}
               >
-                <Outlet />
+                <TransitionedOutlet />
               </main>
               <SocietyFab />
             </div>
@@ -272,12 +286,12 @@ function ProtectedShell({ pathname }: { pathname: string }) {
 function DefaultShell() {
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
+      <div className="min-h-dvh flex w-full bg-background">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <AppHeader />
           <main className="flex-1">
-            <Outlet />
+            <TransitionedOutlet />
           </main>
           <LegalFooter />
         </div>

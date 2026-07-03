@@ -49,7 +49,7 @@ function PricingPage() {
   const trial = !isResident ? (plans ?? []).find((p) => p.id === "trial") : undefined;
 
   return (
-    <main className="min-h-screen bg-[#121212] text-foreground py-16 px-4">
+    <main className="min-h-dvh bg-[#121212] text-foreground py-16 px-4">
       <div className="max-w-6xl mx-auto">
         <header className="text-center mb-10">
           <Badge className="bg-[#B91C1C]/15 text-[#F87171] border-[#B91C1C]/30 mb-4">14-day free trial</Badge>

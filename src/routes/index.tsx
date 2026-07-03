@@ -44,12 +44,12 @@ function IndexRedirect() {
 
   // Brand-new users without any society still land on onboarding.
   if (!profile?.society_id) {
-    return <Navigate to="/onboarding" replace />;
+    return <Navigate to="/onboarding" search={{} as any} replace />;
   }
 
   if (primaryRole) {
     return <Navigate to={ROLE_HOME[primaryRole]} replace />;
   }
 
-  return <Navigate to="/onboarding" replace />;
+  return <Navigate to="/onboarding" search={{} as any} replace />;
 }

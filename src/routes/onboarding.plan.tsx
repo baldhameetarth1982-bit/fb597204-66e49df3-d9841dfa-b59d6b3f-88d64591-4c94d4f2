@@ -52,7 +52,7 @@ function PlanGate() {
 
   if (isLoading || sLoading) {
     return (
-      <div className="min-h-screen grid place-items-center bg-[#0a0a0a]">
+      <div className="min-h-dvh grid place-items-center bg-[#0a0a0a]">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
@@ -72,7 +72,7 @@ function PlanGate() {
   const paid = (plans ?? []).filter((p: any) => p.id !== "trial");
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-[#0a0a0a] via-[#150505] to-[#0a0a0a] text-white">
+    <main className="min-h-dvh bg-gradient-to-br from-[#0a0a0a] via-[#150505] to-[#0a0a0a] text-white">
       <div className="max-w-6xl mx-auto px-5 py-12">
         {/* Hero */}
         <header className="text-center mb-10 space-y-3">

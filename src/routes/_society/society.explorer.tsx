@@ -226,7 +226,7 @@ function ExplorerPage() {
           {items.map((f) => {
             const s = flatSummary[f.id];
             return (
-              <Link key={f.id} to="/society/explorer" search={{ flat: f.id }}>
+              <Link key={f.id} to="/society/explorer" search={{ flat: f.id } as any}>
                 <Card className="rounded-2xl active:scale-[0.97] transition-transform">
                   <CardContent className="p-3">
                     <div className="flex items-center gap-1.5">
@@ -266,7 +266,7 @@ function ExplorerPage() {
           {blocks.map((b) => {
             const k = blockKpi[b.id];
             return (
-              <Link key={b.id} to="/society/explorer" search={{ block: b.id }}>
+              <Link key={b.id} to="/society/explorer" search={{ block: b.id } as any}>
                 <Card className="rounded-2xl active:scale-[0.97] transition-transform">
                   <CardContent className="p-4">
                     <Building2 className="h-5 w-5 text-primary mb-2" />

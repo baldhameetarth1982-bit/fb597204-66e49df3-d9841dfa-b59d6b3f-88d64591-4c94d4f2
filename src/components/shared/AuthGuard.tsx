@@ -6,7 +6,7 @@ import { ROLE_HOME, ROLES } from "@/config/roles";
 
 function FullScreenLoader() {
   return (
-    <div className="min-h-screen grid place-items-center bg-background text-muted-foreground">
+    <div className="min-h-dvh grid place-items-center bg-background text-muted-foreground">
       <span className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
     </div>
   );

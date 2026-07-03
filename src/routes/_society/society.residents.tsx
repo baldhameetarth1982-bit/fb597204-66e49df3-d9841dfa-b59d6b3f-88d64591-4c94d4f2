@@ -7,6 +7,8 @@ import {
   Link2, Download, Filter, ChevronRight, Home, UserCheck, UserX,
 } from "lucide-react";
 import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { toast } from "sonner";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { PageHeader, PageShell, EmptyState } from "@/components/shared/PageHeader";
@@ -88,6 +90,45 @@ function ResidentsPage() {
     toast.success(`Exported ${src.length} row${src.length === 1 ? "" : "s"}`);
   }
 
+  function exportPDF() {
+    const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+    doc.setFontSize(14);
+    doc.text("Residents", 40, 40);
+    doc.setFontSize(9);
+    doc.setTextColor(120);
+    doc.text(`Generated ${new Date().toLocaleString("en-IN")} · ${filtered.length} residents`, 40, 56);
+    doc.setTextColor(0);
+
+    if (filter === "vacant") {
+      autoTable(doc, {
+        startY: 74,
+        head: [["Block", "Unit", "Status"]],
+        body: vacantFlats.map((f) => [f.block_name ?? "—", f.flat_number, "Vacant"]),
+        styles: { fontSize: 9, cellPadding: 4 },
+        headStyles: { fillColor: [30, 41, 59] },
+      });
+    } else {
+      autoTable(doc, {
+        startY: 74,
+        head: [["Name", "Phone", "House", "Type", "Property No", "UGVCL", "Share Cert", "KYC"]],
+        body: filtered.map((r) => [
+          r.full_name ?? "",
+          r.phone ?? "",
+          [r.block_name, r.flat_number].filter(Boolean).join(" ") || "—",
+          r.relationship ?? "",
+          r.property_number ?? "",
+          r.ugvcl_number ?? "",
+          r.share_certificate_number ?? "",
+          r.aadhaar_verified ? "Verified" : "Pending",
+        ]),
+        styles: { fontSize: 8, cellPadding: 3 },
+        headStyles: { fillColor: [30, 41, 59] },
+      });
+    }
+    doc.save(`residents-${new Date().toISOString().slice(0, 10)}.pdf`);
+    toast.success("PDF exported");
+  }
+
   const unassignedCount = residents.filter((r) => !r.flat_id).length;
 
   if (!sidLoading && !societyId) {
@@ -105,9 +146,14 @@ function ResidentsPage() {
         title="Residents"
         description={`${residents.length} people · ${flats.length} houses · ${vacantFlats.length} vacant`}
         actions={
-          <Button size="sm" variant="outline" className="rounded-xl" onClick={exportExcel}>
-            <Download className="h-4 w-4 mr-1.5" /> Export
-          </Button>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" className="rounded-xl" onClick={exportExcel}>
+              <Download className="h-4 w-4 mr-1.5" /> Excel
+            </Button>
+            <Button size="sm" variant="outline" className="rounded-xl" onClick={exportPDF}>
+              <Download className="h-4 w-4 mr-1.5" /> PDF
+            </Button>
+          </div>
         }
       />
 

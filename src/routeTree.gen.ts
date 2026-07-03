@@ -44,6 +44,7 @@ import { Route as SocietySocietyReportsRouteImport } from './routes/_society/soc
 import { Route as SocietySocietyPollsRouteImport } from './routes/_society/society.polls'
 import { Route as SocietySocietyPlanRequiredRouteImport } from './routes/_society/society.plan-required'
 import { Route as SocietySocietyPayoutsRouteImport } from './routes/_society/society.payouts'
+import { Route as SocietySocietyMatrixImportRouteImport } from './routes/_society/society.matrix-import'
 import { Route as SocietySocietyMatrixRouteImport } from './routes/_society/society.matrix'
 import { Route as SocietySocietyMaintenanceRouteImport } from './routes/_society/society.maintenance'
 import { Route as SocietySocietyLedgerRouteImport } from './routes/_society/society.ledger'
@@ -95,6 +96,7 @@ import { Route as AdminAdminCustomPlansRouteImport } from './routes/_admin/admin
 import { Route as AdminAdminAdsRouteImport } from './routes/_admin/admin.ads'
 import { Route as ApiPublicHooksRunBillingRouteImport } from './routes/api/public/hooks/run-billing'
 import { Route as ApiPublicHooksRazorpayRouteImport } from './routes/api/public/hooks/razorpay'
+import { Route as ApiPublicHooksMaintenanceRemindersRouteImport } from './routes/api/public/hooks/maintenance-reminders'
 import { Route as ApiPublicAuthFirebaseSessionRouteImport } from './routes/api/public/auth/firebase-session'
 import { Route as SocietySocietyResidentsIdRouteImport } from './routes/_society/society.residents.$id'
 import { Route as ResidentAppFeedPostIdRouteImport } from './routes/_resident/app.feed.$postId'
@@ -272,6 +274,12 @@ const SocietySocietyPayoutsRoute = SocietySocietyPayoutsRouteImport.update({
   path: '/society/payouts',
   getParentRoute: () => SocietyRoute,
 } as any)
+const SocietySocietyMatrixImportRoute =
+  SocietySocietyMatrixImportRouteImport.update({
+    id: '/society/matrix-import',
+    path: '/society/matrix-import',
+    getParentRoute: () => SocietyRoute,
+  } as any)
 const SocietySocietyMatrixRoute = SocietySocietyMatrixRouteImport.update({
   id: '/society/matrix',
   path: '/society/matrix',
@@ -534,6 +542,12 @@ const ApiPublicHooksRazorpayRoute = ApiPublicHooksRazorpayRouteImport.update({
   path: '/api/public/hooks/razorpay',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksMaintenanceRemindersRoute =
+  ApiPublicHooksMaintenanceRemindersRouteImport.update({
+    id: '/api/public/hooks/maintenance-reminders',
+    path: '/api/public/hooks/maintenance-reminders',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicAuthFirebaseSessionRoute =
   ApiPublicAuthFirebaseSessionRouteImport.update({
     id: '/api/public/auth/firebase-session',
@@ -623,6 +637,7 @@ export interface FileRoutesByFullPath {
   '/society/ledger': typeof SocietySocietyLedgerRoute
   '/society/maintenance': typeof SocietySocietyMaintenanceRoute
   '/society/matrix': typeof SocietySocietyMatrixRoute
+  '/society/matrix-import': typeof SocietySocietyMatrixImportRoute
   '/society/payouts': typeof SocietySocietyPayoutsRoute
   '/society/plan-required': typeof SocietySocietyPlanRequiredRoute
   '/society/polls': typeof SocietySocietyPollsRoute
@@ -636,6 +651,7 @@ export interface FileRoutesByFullPath {
   '/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
   '/society/residents/$id': typeof SocietySocietyResidentsIdRoute
   '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
+  '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
 }
@@ -709,6 +725,7 @@ export interface FileRoutesByTo {
   '/society/ledger': typeof SocietySocietyLedgerRoute
   '/society/maintenance': typeof SocietySocietyMaintenanceRoute
   '/society/matrix': typeof SocietySocietyMatrixRoute
+  '/society/matrix-import': typeof SocietySocietyMatrixImportRoute
   '/society/payouts': typeof SocietySocietyPayoutsRoute
   '/society/plan-required': typeof SocietySocietyPlanRequiredRoute
   '/society/polls': typeof SocietySocietyPollsRoute
@@ -722,6 +739,7 @@ export interface FileRoutesByTo {
   '/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
   '/society/residents/$id': typeof SocietySocietyResidentsIdRoute
   '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
+  '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
 }
@@ -801,6 +819,7 @@ export interface FileRoutesById {
   '/_society/society/ledger': typeof SocietySocietyLedgerRoute
   '/_society/society/maintenance': typeof SocietySocietyMaintenanceRoute
   '/_society/society/matrix': typeof SocietySocietyMatrixRoute
+  '/_society/society/matrix-import': typeof SocietySocietyMatrixImportRoute
   '/_society/society/payouts': typeof SocietySocietyPayoutsRoute
   '/_society/society/plan-required': typeof SocietySocietyPlanRequiredRoute
   '/_society/society/polls': typeof SocietySocietyPollsRoute
@@ -814,6 +833,7 @@ export interface FileRoutesById {
   '/_resident/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
   '/_society/society/residents/$id': typeof SocietySocietyResidentsIdRoute
   '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
+  '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
 }
@@ -890,6 +910,7 @@ export interface FileRouteTypes {
     | '/society/ledger'
     | '/society/maintenance'
     | '/society/matrix'
+    | '/society/matrix-import'
     | '/society/payouts'
     | '/society/plan-required'
     | '/society/polls'
@@ -903,6 +924,7 @@ export interface FileRouteTypes {
     | '/app/feed/$postId'
     | '/society/residents/$id'
     | '/api/public/auth/firebase-session'
+    | '/api/public/hooks/maintenance-reminders'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
   fileRoutesByTo: FileRoutesByTo
@@ -976,6 +998,7 @@ export interface FileRouteTypes {
     | '/society/ledger'
     | '/society/maintenance'
     | '/society/matrix'
+    | '/society/matrix-import'
     | '/society/payouts'
     | '/society/plan-required'
     | '/society/polls'
@@ -989,6 +1012,7 @@ export interface FileRouteTypes {
     | '/app/feed/$postId'
     | '/society/residents/$id'
     | '/api/public/auth/firebase-session'
+    | '/api/public/hooks/maintenance-reminders'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
   id:
@@ -1067,6 +1091,7 @@ export interface FileRouteTypes {
     | '/_society/society/ledger'
     | '/_society/society/maintenance'
     | '/_society/society/matrix'
+    | '/_society/society/matrix-import'
     | '/_society/society/payouts'
     | '/_society/society/plan-required'
     | '/_society/society/polls'
@@ -1080,6 +1105,7 @@ export interface FileRouteTypes {
     | '/_resident/app/feed/$postId'
     | '/_society/society/residents/$id'
     | '/api/public/auth/firebase-session'
+    | '/api/public/hooks/maintenance-reminders'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
   fileRoutesById: FileRoutesById
@@ -1105,6 +1131,7 @@ export interface RootRouteChildren {
   ApiSupportChatRoute: typeof ApiSupportChatRoute
   CheckoutPlanIdRoute: typeof CheckoutPlanIdRoute
   ApiPublicAuthFirebaseSessionRoute: typeof ApiPublicAuthFirebaseSessionRoute
+  ApiPublicHooksMaintenanceRemindersRoute: typeof ApiPublicHooksMaintenanceRemindersRoute
   ApiPublicHooksRazorpayRoute: typeof ApiPublicHooksRazorpayRoute
   ApiPublicHooksRunBillingRoute: typeof ApiPublicHooksRunBillingRoute
 }
@@ -1354,6 +1381,13 @@ declare module '@tanstack/react-router' {
       path: '/society/payouts'
       fullPath: '/society/payouts'
       preLoaderRoute: typeof SocietySocietyPayoutsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/matrix-import': {
+      id: '/_society/society/matrix-import'
+      path: '/society/matrix-import'
+      fullPath: '/society/matrix-import'
+      preLoaderRoute: typeof SocietySocietyMatrixImportRouteImport
       parentRoute: typeof SocietyRoute
     }
     '/_society/society/matrix': {
@@ -1713,6 +1747,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksRazorpayRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/maintenance-reminders': {
+      id: '/api/public/hooks/maintenance-reminders'
+      path: '/api/public/hooks/maintenance-reminders'
+      fullPath: '/api/public/hooks/maintenance-reminders'
+      preLoaderRoute: typeof ApiPublicHooksMaintenanceRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/auth/firebase-session': {
       id: '/api/public/auth/firebase-session'
       path: '/api/public/auth/firebase-session'
@@ -1870,6 +1911,7 @@ interface SocietyRouteChildren {
   SocietySocietyLedgerRoute: typeof SocietySocietyLedgerRoute
   SocietySocietyMaintenanceRoute: typeof SocietySocietyMaintenanceRoute
   SocietySocietyMatrixRoute: typeof SocietySocietyMatrixRoute
+  SocietySocietyMatrixImportRoute: typeof SocietySocietyMatrixImportRoute
   SocietySocietyPayoutsRoute: typeof SocietySocietyPayoutsRoute
   SocietySocietyPlanRequiredRoute: typeof SocietySocietyPlanRequiredRoute
   SocietySocietyPollsRoute: typeof SocietySocietyPollsRoute
@@ -1903,6 +1945,7 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyLedgerRoute: SocietySocietyLedgerRoute,
   SocietySocietyMaintenanceRoute: SocietySocietyMaintenanceRoute,
   SocietySocietyMatrixRoute: SocietySocietyMatrixRoute,
+  SocietySocietyMatrixImportRoute: SocietySocietyMatrixImportRoute,
   SocietySocietyPayoutsRoute: SocietySocietyPayoutsRoute,
   SocietySocietyPlanRequiredRoute: SocietySocietyPlanRequiredRoute,
   SocietySocietyPollsRoute: SocietySocietyPollsRoute,
@@ -1959,19 +2002,11 @@ const rootRouteChildren: RootRouteChildren = {
   ApiSupportChatRoute: ApiSupportChatRoute,
   CheckoutPlanIdRoute: CheckoutPlanIdRoute,
   ApiPublicAuthFirebaseSessionRoute: ApiPublicAuthFirebaseSessionRoute,
+  ApiPublicHooksMaintenanceRemindersRoute:
+    ApiPublicHooksMaintenanceRemindersRoute,
   ApiPublicHooksRazorpayRoute: ApiPublicHooksRazorpayRoute,
   ApiPublicHooksRunBillingRoute: ApiPublicHooksRunBillingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

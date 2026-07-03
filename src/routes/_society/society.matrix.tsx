@@ -1,8 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Download, TrendingUp, Home, IndianRupee, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Loader2, Download, Upload, TrendingUp, Home, IndianRupee, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { PageHeader, PageShell } from "@/components/shared/PageHeader";
@@ -12,6 +12,8 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { societyMaintenanceSummary } from "@/lib/residents.functions";
 
 export const Route = createFileRoute("/_society/society/matrix")({
@@ -111,6 +113,29 @@ function MatrixPage() {
     XLSX.writeFile(wb, `maintenance-matrix-${year}.xlsx`);
   }
 
+  function exportPDF() {
+    const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+    doc.setFontSize(14);
+    doc.text(`Maintenance Matrix ${year}`, 40, 40);
+    doc.setFontSize(9);
+    doc.setTextColor(120);
+    doc.text(`Generated ${new Date().toLocaleString("en-IN")} · ${filtered.length} units`, 40, 56);
+    doc.setTextColor(0);
+    autoTable(doc, {
+      startY: 74,
+      head: [["Unit", ...MONTH_NAMES]],
+      body: filtered.map((f) => [
+        `${f.block_name}-${f.flat_number}`,
+        ...Array.from({ length: 12 }, (_, m) => cell(f.id, m).label),
+      ]),
+      styles: { fontSize: 7, cellPadding: 3 },
+      headStyles: { fillColor: [30, 41, 59] },
+      columnStyles: { 0: { fontStyle: "bold" } },
+    });
+    doc.save(`maintenance-matrix-${year}.pdf`);
+    toast.success("PDF exported");
+  }
+
   return (
     <PageShell>
       <PageHeader
@@ -124,8 +149,14 @@ function MatrixPage() {
               onChange={(e) => setYear(Number(e.target.value) || year)}
               className="w-20 h-9"
             />
+            <Button asChild variant="outline" size="sm" className="rounded-xl">
+              <Link to="/society/matrix-import"><Upload className="h-4 w-4 mr-1" /> Import</Link>
+            </Button>
             <Button variant="outline" size="sm" onClick={exportExcel} className="rounded-xl">
               <Download className="h-4 w-4 mr-1" /> Excel
+            </Button>
+            <Button variant="outline" size="sm" onClick={exportPDF} className="rounded-xl">
+              <Download className="h-4 w-4 mr-1" /> PDF
             </Button>
           </div>
         }

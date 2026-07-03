@@ -1,11 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowLeft, Loader2, User, Home, Phone, Mail, IndianRupee, FileText,
   History, ChevronDown, ChevronRight, Edit2, Save, X, AlertTriangle,
-  Calendar, ShieldCheck,
+  Calendar, ShieldCheck, Upload, Trash2, Paperclip, Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -313,6 +313,10 @@ function ResidentDetailPage() {
           </div>
         </Section>
 
+        <Section id="documents" title="Documents" icon={Paperclip}>
+          <DocumentsPanel userId={p.id} active={openSection === "documents"} />
+        </Section>
+
         <Section id="history" title="Occupancy history" icon={History}>
           <div className="pt-3 space-y-2">
             {!history ? (
@@ -366,6 +370,113 @@ function Row({ label, value }: { label: string; value: string | null | undefined
     <div className="flex justify-between gap-3">
       <dt className="text-muted-foreground text-xs">{label}</dt>
       <dd className="text-sm font-medium text-right">{value || "—"}</dd>
+    </div>
+  );
+}
+
+type DocRow = { name: string; size: number; updated_at: string | null };
+
+function DocumentsPanel({ userId, active }: { userId: string; active: boolean }) {
+  const [items, setItems] = useState<DocRow[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  const prefix = useMemo(() => `residents/${userId}`, [userId]);
+
+  async function refresh() {
+    const { data, error } = await supabase.storage.from("uploads").list(prefix, {
+      limit: 100, sortBy: { column: "updated_at", order: "desc" },
+    });
+    if (error) { toast.error(error.message); setItems([]); return; }
+    setItems(
+      (data ?? [])
+        .filter((f) => f.name && !f.name.endsWith("/"))
+        .map((f) => ({
+          name: f.name,
+          size: (f.metadata as any)?.size ?? 0,
+          updated_at: f.updated_at ?? null,
+        })),
+    );
+  }
+
+  useEffect(() => { if (active && items === null) refresh(); /* eslint-disable-next-line */ }, [active]);
+
+  async function onUpload(files: FileList | null) {
+    if (!files || !files.length) return;
+    setBusy(true);
+    let ok = 0, fail = 0;
+    for (const file of Array.from(files)) {
+      if (file.size > 15 * 1024 * 1024) { toast.error(`${file.name}: exceeds 15 MB`); fail++; continue; }
+      const safe = file.name.replace(/[^a-z0-9._-]/gi, "_");
+      const path = `${prefix}/${Date.now()}-${safe}`;
+      const { error } = await supabase.storage.from("uploads").upload(path, file, {
+        cacheControl: "3600", upsert: false, contentType: file.type || undefined,
+      });
+      if (error) { toast.error(`${file.name}: ${error.message}`); fail++; } else ok++;
+    }
+    setBusy(false);
+    if (ok) toast.success(`Uploaded ${ok} file${ok === 1 ? "" : "s"}`);
+    await refresh();
+  }
+
+  async function openDoc(name: string) {
+    const { data, error } = await supabase.storage.from("uploads")
+      .createSignedUrl(`${prefix}/${name}`, 60 * 10);
+    if (error || !data?.signedUrl) { toast.error(error?.message ?? "Failed"); return; }
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  }
+
+  async function deleteDoc(name: string) {
+    if (!confirm(`Delete ${name}?`)) return;
+    const { error } = await supabase.storage.from("uploads").remove([`${prefix}/${name}`]);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Deleted");
+    await refresh();
+  }
+
+  return (
+    <div className="pt-3 space-y-3">
+      <label className="inline-flex">
+        <input
+          type="file"
+          multiple
+          className="hidden"
+          onChange={(e) => onUpload(e.target.files)}
+        />
+        <span className="inline-flex items-center px-3 h-9 rounded-lg border bg-primary text-primary-foreground text-xs font-medium cursor-pointer hover:opacity-90">
+          {busy ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Upload className="h-3.5 w-3.5 mr-1.5" />}
+          Upload documents
+        </span>
+      </label>
+
+      {items === null ? (
+        <div className="py-6 text-center"><Loader2 className="h-4 w-4 animate-spin inline text-muted-foreground" /></div>
+      ) : items.length === 0 ? (
+        <p className="text-sm text-muted-foreground py-3 text-center">No documents uploaded yet.</p>
+      ) : (
+        <div className="space-y-1.5">
+          {items.map((f) => {
+            const display = f.name.replace(/^\d{10,}-/, "");
+            return (
+              <div key={f.name} className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm">
+                <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-medium">{display}</div>
+                  <div className="text-[10px] text-muted-foreground">
+                    {(f.size / 1024).toFixed(1)} KB
+                    {f.updated_at ? " · " + new Date(f.updated_at).toLocaleDateString() : ""}
+                  </div>
+                </div>
+                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openDoc(f.name)} title="Open">
+                  <Download className="h-3.5 w-3.5" />
+                </Button>
+                <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => deleteDoc(f.name)} title="Delete">
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <p className="text-[10px] text-muted-foreground">Max 15 MB per file. Stored in the private "uploads" bucket.</p>
     </div>
   );
 }

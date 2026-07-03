@@ -19,7 +19,7 @@ export interface ApplicablePlan {
 
 export async function getApplicablePlans(totalUnits: number | null): Promise<ApplicablePlan[]> {
   const { data, error } = await supabase.rpc("get_applicable_plans", {
-    _total_units: totalUnits,
+    _total_units: (totalUnits ?? undefined) as any,
   });
   if (error) throw new Error(error.message);
   return ((data ?? []) as any[]).map((r) => ({

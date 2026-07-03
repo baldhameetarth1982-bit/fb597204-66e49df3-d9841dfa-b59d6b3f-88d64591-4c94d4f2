@@ -22,7 +22,7 @@ export async function listPendingJoinRequests(societyId: string): Promise<Pendin
 export async function bulkApproveJoinRequests(societyId: string, ids: string[] | null) {
   const { data, error } = await supabase.rpc("bulk_approve_join_requests", {
     _society_id: societyId,
-    _request_ids: ids,
+    _request_ids: ids as any,
   });
   if (error) throw new Error(error.message);
   return data as number;
@@ -31,8 +31,8 @@ export async function bulkApproveJoinRequests(societyId: string, ids: string[] |
 export async function bulkRejectJoinRequests(societyId: string, ids: string[], reason: string | null) {
   const { data, error } = await supabase.rpc("bulk_reject_join_requests", {
     _society_id: societyId,
-    _request_ids: ids,
-    _reason: reason,
+    _request_ids: ids as any,
+    _reason: reason as any,
   });
   if (error) throw new Error(error.message);
   return data as number;

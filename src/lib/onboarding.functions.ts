@@ -60,7 +60,7 @@ export async function submitJoinRequest(input: {
     _code: input.code,
     _full_name: input.fullName,
     _flat_number: input.flatNumber,
-    _mobile: input.mobile ?? null,
+    _mobile: (input.mobile ?? "") as any,
     _owner_or_tenant: input.ownerOrTenant,
   });
   if (error) throw new Error(error.message);

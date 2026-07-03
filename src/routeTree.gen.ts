@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WelcomeRouteImport } from './routes/welcome'
+import { Route as VerifyPhoneRouteImport } from './routes/verify-phone'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SupportRouteImport } from './routes/support'
 import { Route as SettingsRouteImport } from './routes/settings'
@@ -100,6 +101,11 @@ import { Route as ResidentAppFeedPostIdRouteImport } from './routes/_resident/ap
 const WelcomeRoute = WelcomeRouteImport.update({
   id: '/welcome',
   path: '/welcome',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifyPhoneRoute = VerifyPhoneRouteImport.update({
+  id: '/verify-phone',
+  path: '/verify-phone',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TermsRoute = TermsRouteImport.update({
@@ -550,6 +556,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
+  '/verify-phone': typeof VerifyPhoneRoute
   '/welcome': typeof WelcomeRoute
   '/login': typeof AuthLoginRoute
   '/phone-otp': typeof AuthPhoneOtpRoute
@@ -634,6 +641,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
+  '/verify-phone': typeof VerifyPhoneRoute
   '/welcome': typeof WelcomeRoute
   '/login': typeof AuthLoginRoute
   '/phone-otp': typeof AuthPhoneOtpRoute
@@ -724,6 +732,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
+  '/verify-phone': typeof VerifyPhoneRoute
   '/welcome': typeof WelcomeRoute
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/phone-otp': typeof AuthPhoneOtpRoute
@@ -811,6 +820,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/support'
     | '/terms'
+    | '/verify-phone'
     | '/welcome'
     | '/login'
     | '/phone-otp'
@@ -895,6 +905,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/support'
     | '/terms'
+    | '/verify-phone'
     | '/welcome'
     | '/login'
     | '/phone-otp'
@@ -984,6 +995,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/support'
     | '/terms'
+    | '/verify-phone'
     | '/welcome'
     | '/_auth/login'
     | '/_auth/phone-otp'
@@ -1074,6 +1086,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   SupportRoute: typeof SupportRoute
   TermsRoute: typeof TermsRoute
+  VerifyPhoneRoute: typeof VerifyPhoneRoute
   WelcomeRoute: typeof WelcomeRoute
   ApiSupportChatRoute: typeof ApiSupportChatRoute
   CheckoutPlanIdRoute: typeof CheckoutPlanIdRoute
@@ -1088,6 +1101,13 @@ declare module '@tanstack/react-router' {
       path: '/welcome'
       fullPath: '/welcome'
       preLoaderRoute: typeof WelcomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify-phone': {
+      id: '/verify-phone'
+      path: '/verify-phone'
+      fullPath: '/verify-phone'
+      preLoaderRoute: typeof VerifyPhoneRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/terms': {
@@ -1900,6 +1920,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   SupportRoute: SupportRoute,
   TermsRoute: TermsRoute,
+  VerifyPhoneRoute: VerifyPhoneRoute,
   WelcomeRoute: WelcomeRoute,
   ApiSupportChatRoute: ApiSupportChatRoute,
   CheckoutPlanIdRoute: CheckoutPlanIdRoute,

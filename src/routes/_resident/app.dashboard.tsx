@@ -243,3 +243,39 @@ function ResidentDashboard() {
     </div>
   );
 }
+
+const QUICK_ACTIONS: Array<{ to: string; label: string; icon: any; tone: string }> = [
+  { to: "/app/dues", label: "Pay", icon: Wallet, tone: "bg-emerald-500/10 text-emerald-600" },
+  { to: "/app/bills", label: "Bills", icon: Receipt, tone: "bg-primary/10 text-primary" },
+  { to: "/app/visitors", label: "Visitors", icon: ShieldCheck, tone: "bg-sky-500/10 text-sky-600" },
+  { to: "/app/helpdesk", label: "Complaints", icon: LifeBuoy, tone: "bg-rose-500/10 text-rose-600" },
+  { to: "/app/comm", label: "Notices", icon: Megaphone, tone: "bg-amber-500/10 text-amber-600" },
+  { to: "/app/bylaws", label: "Documents", icon: FileText, tone: "bg-violet-500/10 text-violet-600" },
+  { to: "/app/comm", label: "Contacts", icon: Phone, tone: "bg-teal-500/10 text-teal-600" },
+  { to: "/app/emergency", label: "SOS", icon: ShieldAlert, tone: "bg-destructive/10 text-destructive" },
+];
+
+function QuickActions() {
+  return (
+    <section aria-label="Quick actions">
+      <div className="grid grid-cols-4 gap-2">
+        {QUICK_ACTIONS.map((a) => {
+          const Icon = a.icon;
+          return (
+            <Link
+              key={a.label}
+              to={a.to}
+              className="flex flex-col items-center gap-1.5 rounded-2xl border bg-card p-3 hover:bg-accent/40 transition-colors"
+            >
+              <span className={`h-10 w-10 rounded-xl grid place-items-center ${a.tone}`}>
+                <Icon className="h-5 w-5" />
+              </span>
+              <span className="text-[11px] font-medium text-center leading-tight">{a.label}</span>
+            </Link>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+

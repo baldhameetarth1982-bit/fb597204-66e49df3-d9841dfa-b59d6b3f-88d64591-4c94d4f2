@@ -83,18 +83,26 @@ function JoinFlow() {
 
   async function verifyCode() {
     if (!society) return;
-    if (code.trim().length < 4) {
+    const trimmed = code.trim().toUpperCase();
+    if (trimmed.length < 4) {
       toast.error("Enter the society code");
       return;
     }
     setCodeBusy(true);
-    // Verify by attempting a dry-check via search + code guard on submit.
-    // We do a lightweight round-trip: attempt to fetch the invite_code
-    // through the public search RPC by name AND compare — but the real check
-    // happens server-side in submit_join_request. Advance the UI here; a
-    // wrong code will surface as a toast on the final submit step.
-    setCodeBusy(false);
-    setStep("details");
+    try {
+      const { data, error } = await supabase.rpc("find_society_by_code", { _code: trimmed });
+      if (error) throw new Error(error.message);
+      const match = Array.isArray(data) ? data[0] : data;
+      if (!match || match.id !== society.id) {
+        toast.error("That code doesn't match this society");
+        return;
+      }
+      setStep("details");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not verify code");
+    } finally {
+      setCodeBusy(false);
+    }
   }
 
   async function submit() {

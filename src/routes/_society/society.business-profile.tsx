@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { SocietyInviteCodeCard } from "@/components/society/SocietyInviteCodeCard";
 
 export const Route = createFileRoute("/_society/society/business-profile")({
   head: () => ({ meta: [{ title: "Business Profile — SocioHub" }] }),

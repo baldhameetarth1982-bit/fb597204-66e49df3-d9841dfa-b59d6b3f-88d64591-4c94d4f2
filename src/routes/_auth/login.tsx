@@ -161,20 +161,19 @@ function LoginPage() {
       {step === "phone" && (
         <div className="mt-6">
           <PhoneOtpForm
-            submitLabel="Verify & continue"
-            onVerified={({ phone, firebaseUid }) => {
-              try {
-                sessionStorage.setItem(
-                  "sociohub:pending_phone",
-                  JSON.stringify({ phone, firebaseUid }),
-                );
-              } catch {}
-              toast.success("Phone verified. Complete sign in below.");
-              setStep("choose");
+            submitLabel="Verify & sign in"
+            onVerified={async ({ phone, firebaseIdToken }) => {
+              const r = await signInWithVerifiedPhone({ phone, firebaseIdToken });
+              if (!r.ok) {
+                toast.error(r.error ?? "Could not sign in");
+                return;
+              }
+              toast.success("Signed in");
+              navigate({ to: "/" });
             }}
           />
           <p className="mt-4 text-[11px] text-muted-foreground text-center">
-            After verifying, complete sign-in with Google or Email — your phone will link automatically.
+            We'll create your account automatically if this is your first time.
           </p>
         </div>
       )}

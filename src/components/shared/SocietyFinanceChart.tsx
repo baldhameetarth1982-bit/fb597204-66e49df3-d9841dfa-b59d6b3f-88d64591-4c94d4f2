@@ -58,8 +58,15 @@ export function SocietyFinanceChart({ societyId }: { societyId: string }) {
   const prev = series[series.length - 2];
   const lastNet = last ? last.income - last.expense : 0;
   const prevNet = prev ? prev.income - prev.expense : 0;
-  const pct = prevNet === 0 ? (lastNet === 0 ? 0 : 100) : ((lastNet - prevNet) / Math.abs(prevNet)) * 100;
-  const tone = lastNet > prevNet ? "growth" : lastNet < prevNet ? "loss" : "flat";
+  const hasComparable = !!prev && (prev.income !== 0 || prev.expense !== 0);
+  // Only compute % when there's a meaningful prior period AND its net is non-zero.
+  // Otherwise show a neutral "new" indicator rather than a misleading -100% / +100%.
+  const pct = hasComparable && prevNet !== 0
+    ? ((lastNet - prevNet) / Math.abs(prevNet)) * 100
+    : null;
+  const tone = !hasComparable
+    ? "flat"
+    : lastNet > prevNet ? "growth" : lastNet < prevNet ? "loss" : "flat";
 
   const totalIncome = series.reduce((s, b) => s + b.income, 0);
   const totalExpense = series.reduce((s, b) => s + b.expense, 0);

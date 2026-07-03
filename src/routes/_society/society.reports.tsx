@@ -111,6 +111,30 @@ function ReportsPage() {
     a.click(); URL.revokeObjectURL(url);
   }
 
+  async function exportPdf() {
+    const [{ default: jsPDF }, autoTable] = await Promise.all([
+      import("jspdf"),
+      import("jspdf-autotable").then((m) => m.default),
+    ]);
+    const doc = new jsPDF({ orientation: "landscape" });
+    doc.setFontSize(16);
+    doc.text("SocioHub — Financial Report", 14, 14);
+    doc.setFontSize(10);
+    doc.text(`Period: ${from} to ${to}`, 14, 22);
+    doc.text(`Income: ${INR.format(summary.income)}   Expense: ${INR.format(summary.expense)}   Net: ${INR.format(summary.net)}`, 14, 28);
+    autoTable(doc, {
+      startY: 34,
+      head: [["Date", "Type", "Category", "Description", "Amount", "Source"]],
+      body: txns.map((t) => [
+        t.date, t.kind, t.category, t.description,
+        (t.kind === "income" ? "+" : "-") + INR.format(t.amount), t.source,
+      ]),
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [14, 165, 233] },
+    });
+    doc.save(`sociohub-report-${from}-to-${to}.pdf`);
+  }
+
   const netTone =
     summary.net > 0 ? "text-emerald-600" :
     summary.net < 0 ? "text-rose-600" : "text-foreground";

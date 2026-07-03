@@ -1,4 +1,4 @@
-import logoAsset from "@/assets/sociohub-logo.jpeg.asset.json";
+import logoAsset from "@/assets/sociohub-logo-v2.png.asset.json";
 
 /**
  * Premium branded loading indicator. Lightweight — no heavy filters or

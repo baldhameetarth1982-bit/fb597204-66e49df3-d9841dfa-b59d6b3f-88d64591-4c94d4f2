@@ -1,4 +1,4 @@
-import logoAsset from "@/assets/sociohub-logo.jpeg.asset.json";
+import logoAsset from "@/assets/sociohub-logo-v2.png.asset.json";
 import { cn } from "@/lib/utils";
 
 /** Official SocioHub app icon. Use this everywhere a logo mark is needed. */

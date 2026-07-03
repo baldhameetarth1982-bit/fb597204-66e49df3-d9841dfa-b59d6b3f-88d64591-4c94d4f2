@@ -61,7 +61,7 @@ function PricingPage() {
           <label className="block text-xs uppercase tracking-wider text-muted-foreground mb-2">
             How many units does your society have?
           </label>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <input
               type="number"
               min={1}
@@ -71,11 +71,11 @@ function PricingPage() {
                 const n = Number(e.target.value);
                 setUnits(Number.isFinite(n) && n > 0 ? n : null);
               }}
-              className="flex-1 h-11 rounded-2xl border border-border bg-background px-3 text-base outline-none focus:border-primary"
+              className="flex-1 min-w-0 h-11 rounded-2xl border border-border bg-background px-3 text-base outline-none focus:border-primary"
             />
             <Button
               variant="outline"
-              className="rounded-2xl h-11"
+              className="rounded-2xl h-11 w-full sm:w-auto shrink-0"
               onClick={() => {
                 setUnits(threshold + 1);
                 setShowEnterprise(true);
@@ -84,6 +84,7 @@ function PricingPage() {
               I need enterprise
             </Button>
           </div>
+
           <p className="mt-2 text-[11px] text-muted-foreground">
             Societies with more than {threshold} units automatically qualify for enterprise pricing.
           </p>

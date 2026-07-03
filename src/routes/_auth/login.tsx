@@ -90,12 +90,8 @@ function LoginPage() {
   async function withGoogle() {
     setBusy("google");
     try {
-      const res = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
-        extraParams: { prompt: "select_account" },
-      });
-      if (res.error) throw res.error;
-      if (res.redirected) return;
+      const r = await signInWithGoogleFirebase();
+      if (!r.ok) throw new Error(r.error ?? "Google sign-in failed");
       navigate({ to: "/" });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Google sign-in failed");

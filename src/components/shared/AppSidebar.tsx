@@ -2,7 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Building2, DoorOpen, Users, Receipt, Megaphone,
   ShieldCheck, Vote, Calculator, Sparkles, Car, UserCheck, Trophy, Wallet,
-  Wand2,
+  Wand2, Search, Zap,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
@@ -13,6 +13,7 @@ import { Logo } from "@/components/shared/Logo";
 
 const items = [
   { title: "Dashboard", url: "/society/dashboard", icon: LayoutDashboard },
+  { title: "Search", url: "/society/search", icon: Search },
   { title: "Blocks", url: "/society/blocks", icon: Building2 },
   { title: "Flats", url: "/society/flats", icon: DoorOpen },
   { title: "Residents", url: "/society/residents", icon: Users },
@@ -28,6 +29,7 @@ const items = [
   { title: "AI Digest", url: "/society/digest", icon: Sparkles },
   { title: "Team & Roles", url: "/society/team", icon: ShieldCheck },
   { title: "Verifications", url: "/society/verifications", icon: ShieldCheck },
+  { title: "Automations", url: "/society/automations", icon: Zap },
 ] as const;
 
 export function AppSidebar() {

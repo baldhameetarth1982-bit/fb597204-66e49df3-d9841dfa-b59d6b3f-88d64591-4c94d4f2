@@ -89,7 +89,7 @@ function JoinFlow() {
     <div className="px-5 py-5 space-y-5">
       <button
         onClick={() => {
-          if (step === "search") navigate({ to: "/onboarding", search: {} });
+          if (step === "search") navigate({ to: "/onboarding", search: {} as any });
           else if (step === "flat") setStep("search");
           else if (step === "relation") setStep("flat");
           else setStep("relation");

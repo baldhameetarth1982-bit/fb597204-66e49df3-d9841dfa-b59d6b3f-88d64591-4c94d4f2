@@ -104,6 +104,8 @@ function BusinessProfilePage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 space-y-6">
+      {societyId && <SocietyInviteCodeCard societyId={societyId} />}
+
       <header className="flex items-start gap-3">
         <div className="h-11 w-11 rounded-xl bg-primary/10 text-primary grid place-items-center">
           <Building2 className="h-5 w-5" />

@@ -635,28 +635,37 @@ export type Database = {
       flat_residents: {
         Row: {
           created_at: string
+          ended_reason: string | null
           flat_id: string
           id: string
+          is_active: boolean
           is_primary: boolean
           moved_in_at: string | null
+          moved_out_at: string | null
           relationship: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          ended_reason?: string | null
           flat_id: string
           id?: string
+          is_active?: boolean
           is_primary?: boolean
           moved_in_at?: string | null
+          moved_out_at?: string | null
           relationship?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          ended_reason?: string | null
           flat_id?: string
           id?: string
+          is_active?: boolean
           is_primary?: boolean
           moved_in_at?: string | null
+          moved_out_at?: string | null
           relationship?: string
           user_id?: string
         }
@@ -1449,11 +1458,15 @@ export type Database = {
           full_name: string | null
           id: string
           is_offline: boolean
+          move_in_date: string | null
           phone: string | null
+          property_number: string | null
           referral_code: string | null
           referred_by: string | null
+          share_certificate_number: string | null
           society_id: string | null
           theme: string
+          ugvcl_number: string | null
           updated_at: string
         }
         Insert: {
@@ -1472,11 +1485,15 @@ export type Database = {
           full_name?: string | null
           id: string
           is_offline?: boolean
+          move_in_date?: string | null
           phone?: string | null
+          property_number?: string | null
           referral_code?: string | null
           referred_by?: string | null
+          share_certificate_number?: string | null
           society_id?: string | null
           theme?: string
+          ugvcl_number?: string | null
           updated_at?: string
         }
         Update: {
@@ -1495,11 +1512,15 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_offline?: boolean
+          move_in_date?: string | null
           phone?: string | null
+          property_number?: string | null
           referral_code?: string | null
           referred_by?: string | null
+          share_certificate_number?: string | null
           society_id?: string | null
           theme?: string
+          ugvcl_number?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -2389,6 +2410,10 @@ export type Database = {
           id: string
         }[]
       }
+      deactivate_flat_resident: {
+        Args: { _flat_resident_id: string; _reason?: string }
+        Returns: undefined
+      }
       ensure_maintenance_period: {
         Args: {
           _amount: number
@@ -2406,6 +2431,14 @@ export type Database = {
           id: string
           name: string
           state: string
+        }[]
+      }
+      flat_outstanding: {
+        Args: { _flat_id: string }
+        Returns: {
+          next_due: string
+          overdue_count: number
+          pending: number
         }[]
       }
       generate_flat_bill: {
@@ -2603,6 +2636,19 @@ export type Database = {
         Returns: boolean
       }
       society_has_access: { Args: { _society_id: string }; Returns: boolean }
+      society_maintenance_summary: {
+        Args: { _society_id: string }
+        Returns: {
+          advance_amount: number
+          advance_periods: number
+          collection_percent: number
+          outstanding_amount: number
+          overdue_periods: number
+          paid_periods: number
+          pending_periods: number
+          total_houses: number
+        }[]
+      }
       society_payout_active: { Args: { _society_id: string }; Returns: boolean }
       start_society_trial: { Args: { _society_id: string }; Returns: string }
       start_trial_for_society: {

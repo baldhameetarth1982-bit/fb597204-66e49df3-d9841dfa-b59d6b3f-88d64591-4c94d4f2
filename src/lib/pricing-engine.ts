@@ -74,12 +74,15 @@ export interface PricingSettings {
 }
 
 export async function getPricingSettings(): Promise<PricingSettings | null> {
-  const { data } = await (supabase as any)
-    .from("pricing_settings")
-    .select(
-      "enterprise_threshold_units, trial_days, enterprise_contact_email, enterprise_contact_phone, active_gateway",
-    )
-    .eq("id", 1)
-    .maybeSingle();
-  return (data as PricingSettings | null) ?? null;
+  const { data, error } = await (supabase as any).rpc("get_public_pricing_settings");
+  if (error) return null;
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) return null;
+  return {
+    enterprise_threshold_units: row.enterprise_threshold_units,
+    trial_days: row.trial_days,
+    active_gateway: row.active_gateway,
+    enterprise_contact_email: null,
+    enterprise_contact_phone: null,
+  };
 }

@@ -2494,6 +2494,14 @@ export type Database = {
           total_earnings: number
         }[]
       }
+      get_public_pricing_settings: {
+        Args: never
+        Returns: {
+          active_gateway: string
+          enterprise_threshold_units: number
+          trial_days: number
+        }[]
+      }
       get_razorpay_public_config: {
         Args: never
         Returns: {

@@ -16,7 +16,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/shared/AppSidebar";
 import { AdminSidebar } from "@/components/shared/AdminSidebar";
 import { AppHeader } from "@/components/shared/AppHeader";
-import { ResidentBottomNav } from "@/components/shared/ResidentBottomNav";
+
 import { SocietyDrawer } from "@/components/shared/SocietyDrawer";
 import { SocietyFab } from "@/components/shared/SocietyFab";
 import { Toaster } from "@/components/ui/sonner";

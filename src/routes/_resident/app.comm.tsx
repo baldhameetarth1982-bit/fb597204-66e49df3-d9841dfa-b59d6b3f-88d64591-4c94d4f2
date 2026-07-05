@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Megaphone, LifeBuoy, FileText, Phone, Search, ArrowRight, Inbox, Pin,
+  Megaphone, LifeBuoy, FileText, Phone, Search, ArrowRight, Inbox,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
@@ -34,9 +34,8 @@ function CommunicationCenter() {
     queryFn: async () => {
       const { data } = await supabase
         .from("posts")
-        .select("id, body, created_at, is_pinned")
+        .select("id, body, created_at")
         .eq("society_id", societyId!)
-        .order("is_pinned", { ascending: false })
         .order("created_at", { ascending: false })
         .limit(50);
       return data ?? [];
@@ -64,7 +63,7 @@ function CommunicationCenter() {
     queryFn: async () => {
       const { data } = await supabase
         .from("society_contacts")
-        .select("id, name, role, category, phone, email")
+        .select("id, name, role_label, category, phone")
         .eq("society_id", societyId!)
         .order("category")
         .limit(200);
@@ -83,7 +82,7 @@ function CommunicationCenter() {
     const s = q.toLowerCase();
     return contacts.filter((c: any) =>
       (c.name ?? "").toLowerCase().includes(s) ||
-      (c.role ?? "").toLowerCase().includes(s) ||
+      (c.role_label ?? "").toLowerCase().includes(s) ||
       (c.category ?? "").toLowerCase().includes(s),
     );
   }, [contacts, q]);
@@ -147,7 +146,6 @@ function CommunicationCenter() {
               <Card key={n.id} className="rounded-2xl">
                 <CardContent className="p-4">
                   <div className="flex items-start gap-2">
-                    {n.is_pinned && <Pin className="h-4 w-4 shrink-0 text-primary mt-0.5" />}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm whitespace-pre-line">{(n.body ?? "").slice(0, 240)}</p>
                       <p className="mt-1.5 text-[11px] text-muted-foreground">
@@ -225,7 +223,7 @@ function CommunicationCenter() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm truncate">{c.name}</p>
-                          <p className="text-[11px] text-muted-foreground truncate">{c.role ?? cat}</p>
+                          <p className="text-[11px] text-muted-foreground truncate">{c.role_label ?? cat}</p>
                         </div>
                         {c.phone && (
                           <Button asChild size="sm" variant="outline" className="rounded-xl">

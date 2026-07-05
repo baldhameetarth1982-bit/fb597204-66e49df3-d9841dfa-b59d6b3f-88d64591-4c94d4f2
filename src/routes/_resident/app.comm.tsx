@@ -63,7 +63,7 @@ function CommunicationCenter() {
     queryFn: async () => {
       const { data } = await supabase
         .from("society_contacts")
-        .select("id, name, role, category, phone, email")
+        .select("id, name, role_label, category, phone")
         .eq("society_id", societyId!)
         .order("category")
         .limit(200);

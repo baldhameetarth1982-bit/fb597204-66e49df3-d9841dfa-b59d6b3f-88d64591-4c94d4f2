@@ -82,7 +82,7 @@ function CommunicationCenter() {
     const s = q.toLowerCase();
     return contacts.filter((c: any) =>
       (c.name ?? "").toLowerCase().includes(s) ||
-      (c.role ?? "").toLowerCase().includes(s) ||
+      (c.role_label ?? "").toLowerCase().includes(s) ||
       (c.category ?? "").toLowerCase().includes(s),
     );
   }, [contacts, q]);

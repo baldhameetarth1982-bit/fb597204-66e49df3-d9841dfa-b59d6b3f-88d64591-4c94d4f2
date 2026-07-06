@@ -1,74 +1,212 @@
-# Master Phase 1 – Five-Track Stabilization
+# Pass 1 — Global SocioHub UI System & Role-Based Shell
 
-This is genuinely five separate projects. Attempting all in a single response produces shallow, unverified edits and regressions. I'll do them **sequentially in one thread**, verifying each before the next. Please approve the sequence and I'll start Track 1 immediately.
-
----
-
-## Track 1 — Phone-as-primary login backend
-
-**Goal:** A user can enter phone → OTP → be signed into Supabase, with no prior account.
-
-**Implementation:**
-
-1. New server route `src/routes/api/public/auth/phone-session.ts` (public prefix, secured by Firebase token verification, not by Supabase auth).
-2. Handler:
-  - Accept `{ firebaseIdToken, phone }`.
-  - Verify token against Google's Firebase public JWKS (`https://www.googleapis.com/robot/v1/metadata/x509/[email protected]`), check `aud === projectId`, `iss === https://securetoken.google.com/<projectId>`, `phone_number === phone`.
-  - Load `supabaseAdmin` inside handler (Auth Admin API).
-  - Look up user by phone in `phone_verifications` → if exists, get that `user_id`; else `admin.createUser({ phone, phone_confirm: true })` and insert `phone_verifications` row.
-  - Mint a session via `admin.auth.admin.generateLink({ type: 'magiclink', email: <synthetic-or-existing> })` **won't work for phone-only**. Instead use `admin.auth.admin.generateLink` OR create a short-lived one-time token flow: return `access_token`/`refresh_token` from `admin.auth.admin.signInWithId` (Supabase JS v2.46+ has `admin.generateLink` for OTP; for phone we use `admin.createSession` if available on this project's version — I'll verify at implementation time and fall back to email-shadow if not).
-3. Client change: `PhoneOtpForm` on login gets an alternate `mode="primary"` that POSTs to the new route and calls `supabase.auth.setSession()` with the returned tokens.
-
-**Risks I'll flag before shipping if hit:** Supabase JS admin API on this project may not expose direct session minting. Fallback: sign the user in with a deterministic email like `phone+<uid>@phone.sociohub.local` + service-role-generated password stored in `phone_verifications`; phone remains the UX primary.
-
-**Verification:** curl the new endpoint with a mocked token in dev; then Playwright login via phone against live preview.
+Scope is **strictly** the global shell, navigation, and design tokens. No feature screens are rebuilt in this pass. No DB, RLS, auth, payment, billing, maintenance, or accounts logic is changed.
 
 ---
 
-## Track 2 — Wizard E2E smoke test
+## 1. Route & role audit (deliverable: audit doc, no code)
 
-Playwright script under `/tmp/browser/wizard/`:
+I'll produce `.lovable/ui-audit.md` mapping every route under `src/routes/` to:
 
-1. Restore injected Supabase session (managed auth is present).
-2. Navigate `/onboarding/create`.
-3. Walk each wizard step (`societySetup.tsx` blueprint), fill required fields, click Next.
-4. Screenshot each step; assert `hierarchy_nodes` rows created via `psql`.
-5. Report broken steps, missing validation, console errors.
+- Owner role — Resident / Society Admin / Guard / Super Admin / Public / Onboarding
+- Current shell (from `__root.tsx` `ShellSwitcher`)
+- Duplicate/dead status (e.g. two `ResidentBottomNav` components exist today: `src/components/resident/ResidentBottomNav.tsx` and `src/components/shared/ResidentBottomNav.tsx`)
+- Target nav slot per your spec
 
-No code changes unless a bug is found.
+Known collisions I already see and will flag:
+
+- Two Resident bottom navs coexist (shared/ vs resident/). The `_resident` layout renders one; the shared one is currently unused but exists — will be removed from the codebase after confirming no imports.
+- Society shell uses `SocietyDrawer` + `SocietyFab` + desktop `AppSidebar`. On mobile it has no bottom nav — spec wants: Dashboard, Billing, Residents, Operations, More.
+- No Guard shell exists; guard routes (`app.guard.tsx`) currently ride the Resident shell. Needs its own shell + 3-tab bottom nav.
+- No Super Admin bottom nav on mobile; `_admin` uses `AdminSidebar` only. Needs mobile bottom nav: Overview, Societies, Users, Reports, More.
+
+## 2. Design tokens extracted from the reference PDF
+
+I'll parse `user-uploads://sociohub_App_Ui.pdf` (pdfplumber + image sampling of the hero/primary CTAs, chips, backgrounds) and rewrite the token block in `src/styles.css` under `@theme inline` + `:root` so tokens flow through shadcn. Existing token names are preserved; only values change.
+
+Expected extraction targets (values TBD from PDF sampling — will be reported back before finalization):
+
+- `--primary` (SocioHub teal-green)
+- `--primary-foreground`
+- `--background` (soft app background)
+- `--card` / `--card-foreground`
+- `--foreground` (navy)
+- `--muted` / `--muted-foreground`
+- `--border` / `--input`
+- `--ring`
+- Status chips: `--success`, `--warning`, `--destructive`, `--info` + their `-foreground` and soft/tinted variants used by chips
+- `--radius` (rounded card scale)
+- `--shadow-card` (soft elevation)
+
+A short **Token Report** is delivered at end of pass listing before/after hex for each token above. If the theme-neon opt-in class exists in `ThemeApplier`, it is left untouched.
+
+Fonts: only add a `<link>` in `__root.tsx` head if the reference clearly uses a specific family; otherwise keep the current stack (no speculative font swap in this pass).
+
+## 3. Role-based shells (replace `ShellSwitcher` branches)
+
+`src/routes/__root.tsx` — `ProtectedShell` is refactored so each role gets a dedicated shell component, all mobile-first, all wrapped in a 480px-max mobile frame on small screens and a proper responsive layout at md+:
+
+```text
+/app/*         → ResidentShell     (bottom nav: Home, Bills, Visitors, Society, Profile)
+/society/*     → SocietyAdminShell (bottom nav on mobile: Dashboard, Billing, Residents, Operations, More
+                                    sidebar preserved on md+)
+/app/guard/*   → GuardShell        (bottom nav: Dashboard, History, Settings)   [see routing note below]
+/admin/*       → SuperAdminShell   (bottom nav on mobile: Overview, Societies, Users, Reports, More
+                                    sidebar preserved on md+)
+/onboarding/*  → OnboardingShell   (no bottom nav; back button top bar)
+```
+
+Guard routing note: today `app.guard.tsx` lives under `_resident`. I will NOT move the route file in this pass (would risk breaking guard access). Instead the shell switcher will branch on `pathname.startsWith("/app/guard")` (and any known guard subpaths) and render `GuardShell` instead of the resident shell. A follow-up pass can migrate to a proper `_guard` layout.
+
+## 4. Unified top bar
+
+Single `AppTopBar` component with slots:
+
+- Leading: back button (auto-shown on detail routes: pattern `pathname.split("/").length > 3` or explicit prop)
+- Logo (home routes only) OR page title
+- Trailing: search icon → `/app/search` etc. per role, notifications bell w/ unread badge, avatar
+- Sticky, `bg-background/95 backdrop-blur`, safe-area top padding
+
+`AppHeader` is refactored to delegate to `AppTopBar`; per-role wrappers pass the correct trailing actions. `SocietyDrawer` mobile trigger is removed once the Society bottom nav lands (drawer contents move to the "More" tab).
+
+## 5. Bottom nav components
+
+Four dedicated components under `src/components/nav/`:
+
+- `ResidentBottomNav.tsx` — replaces both existing copies; icons per spec, unread badge on "Society" (notices) hook stays via `useUnreadNotifications`.
+- `SocietyAdminBottomNav.tsx` — new.
+- `GuardBottomNav.tsx` — new.
+- `SuperAdminBottomNav.tsx` — new.
+
+Each: `fixed bottom-0`, safe-area padding, 5-column grid (3 for guard), min 56px touch target, active state uses `text-primary` + soft tinted pill, both text + color for chips throughout.
+
+Main content padding-bottom becomes `calc(72px + env(safe-area-inset-bottom))` in every shell that renders a bottom nav so no content is hidden behind it.
+
+## 6. Duplicate / dead cleanup (UI-only)
+
+- Delete `src/components/shared/ResidentBottomNav.tsx` after confirming zero imports.
+- Delete `src/components/resident/ResidentBottomNav.tsx` after the new `nav/ResidentBottomNav.tsx` is wired.
+- Remove `SocietyDrawer` mobile trigger from `AppHeader` (component file kept for now — desktop still may use it; will be re-evaluated in society pass).
+- Redirect known duplicate routes to unified centers only if the target already exists. Concretely I will NOT add redirects blindly — instead the audit doc lists proposed redirects; nothing is redirected in this pass unless it's a strict duplicate with zero unique content (e.g. `/app/notices` → `/app/comm` if `comm` already covers notices; will verify per-file before touching).
+- No route files deleted in this pass. Dead-looking routes are listed in the audit for a later pass.
+
+## 7. Nothing to add in this pass (explicit non-goals)
+
+- No new feature screens.
+- No placeholder routes created — if a bottom-nav tab points at a missing route, the audit doc flags it and the tab links to the closest existing route; a real screen is built in the follow-up role pass.
+- No changes to `src/integrations/supabase/*`, RLS, migrations, payment adapters, billing, maintenance, accounts, or resident onboarding logic.
+- No dark-mode overhaul beyond token value updates.
+- No copy changes.
+
+## 8. Verification checklist (run before closing pass)
+
+- `tsgo` clean; `bun run build` clean; no new console errors on `/`, `/login`, `/app/dashboard`, `/society/dashboard`, `/admin/dashboard`, `/app/guard`.
+- Playwright at 360 / 390 / 414 / 768 / 1024 for one representative route per role: no horizontal overflow, bottom nav visible, top bar sticky, safe-area respected.
+- `ProtectedRoute` still gates each shell; resident URL → no admin nav, admin URL → no resident nav, guard → 3-tab only.
+- Token Report attached to the reply.
 
 ---
 
-## Track 3 — Route/build audit
+## Deliverables at end of pass
 
-1. Enumerate all files under `src/routes/`.
-2. For each: check `errorComponent`, `notFoundComponent`, loading state, empty state.
-3. Produce a CSV report at `/mnt/documents/route-audit.csv` (route → has-error → has-notfound → has-loading → has-empty → notes).
-4. Fix only the **critical omissions** on `_authenticated` / `_society` / `_resident` roots (protected subtrees where a loader crash blanks the app). Everything else stays in the report as follow-up.
+1. `.lovable/ui-audit.md` — full route × role × shell × duplicate matrix
+2. Updated `src/styles.css` tokens (values from PDF sampling)
+3. New `src/components/nav/{Resident,SocietyAdmin,Guard,SuperAdmin}BottomNav.tsx`
+4. Refactored `src/routes/__root.tsx` `ShellSwitcher` + per-role shell components
+5. New `AppTopBar` + refactored `AppHeader`
+6. Two deleted duplicate `ResidentBottomNav` files
+7. **Token Report** in the closing message (before/after hex for each token listed in §2)
 
----
+Follow-up passes (not in this plan): Society Admin screens → Resident screens → Guard screens → Super Admin screens → remaining/optional.                                                                                                                                                                                                                                              Approved — execute Pass 1: Global SocioHub UI System & Role-Based Shell.
 
-## Track 4 — RLS + storage audit
+But apply these corrections before starting:
 
-1. `psql` query pg_policies for every `public.*` table.
-2. Produce `/mnt/documents/rls-audit.md`: table → policies → society-scoped? → anon exposure?
-3. Focus checks: `bills`, `payments`, `flats`, `hierarchy_nodes`, `profiles`, `user_roles`, `join_requests`, `visitors` — must all filter by `society_id` matching the current user's society via `has_role` or equivalent security-definer.
-4. File a migration ONLY for confirmed leaks (e.g. anon SELECT on a private table, missing society filter). No speculative rewrites.
+1. Use the attached SocioHub reference images/PDF as the exact visual source of truth.
 
----
+   Do not approximate the theme. Extract exact teal/green/navy/status colors from the references and update tokens accordingly.
 
-## Track 5 — Mobile UI pass @ 360px
+2. Do not physically delete duplicate navigation files unless:
 
-Playwright at viewport 360×780, signed-in as a resident:
+   - imports are confirmed to be zero, OR
 
-1. Screenshot each authenticated route (`/app/*`).
-2. View screenshots; flag horizontal scroll, tap-target < 44px, overflow, illegible text.
-3. Fix only clear-cut issues (padding, overflow, sticky headers). Deeper redesigns belong to Phase 4 Enterprise-Dark theme.
+   - the old file is replaced with a compatibility re-export to the new component.
 
----
+   I do not want broken imports caused by deleting components too early.
 
-## What I need from you
+3. No destructive changes.
 
-**Approve this sequence** (Track 1 → 5 in order, one message per track with verification evidence). Or say "start with Track N" if you want a different order.
+   Do not delete routes, database tables, columns, records, migrations, RLS policies, payment logic, billing logic, maintenance logic, or auth logic.
 
-If approved, I begin Track 1 in the next message.  for google login use firebase google login not lovable in build because it shows lovable logo when joining society after searching society name society code is required for security purposes 
+4. For duplicate/dead routes:
+
+   - Do not delete them in this pass.
+
+   - Do not blindly redirect them.
+
+   - Document them in `.lovable/ui-audit.md`.
+
+   - Only redirect a route if it is confirmed to be a strict duplicate and the target route already exists and works.
+
+5. For the 480px mobile shell:
+
+   - On real mobile widths, the app should use the full viewport naturally.
+
+   - Do not make it look like a phone mockup inside the phone.
+
+   - Use max-width only for large desktop preview containers where appropriate.
+
+6. Guard routes:
+
+   Keep the current route location for now.
+
+   Shell switching based on `/app/guard` is acceptable for this pass.
+
+   Do not migrate guard routes yet.
+
+7. Role-based navigation must be strict:
+
+   - Resident must not see admin nav.
+
+   - Society Admin must not see resident nav.
+
+   - Guard must only see guard nav.
+
+   - Super Admin must only see super admin nav.
+
+8. Do not create placeholder feature screens.
+
+   If a nav item route does not exist, link it to the closest existing working route and document the missing final screen in the audit.
+
+9. Keep this pass limited to:
+
+   - tokens
+
+   - global shell
+
+   - top bar
+
+   - role-based bottom nav
+
+   - safe-area spacing
+
+   - route audit
+
+   - duplicate nav cleanup
+
+   - mobile responsiveness
+
+10. Do not start rebuilding Society Admin, Resident, Guard, or Super Admin feature screens in this pass.
+
+11. Final deliverables must include:
+
+   - `.lovable/ui-audit.md`
+
+   - token report with before/after hex values
+
+   - list of files changed
+
+   - confirmation that build/typecheck pass
+
+   - confirmation that no auth/RLS/payment/billing/maintenance/accounting logic was touched
+
+Proceed with Pass 1.

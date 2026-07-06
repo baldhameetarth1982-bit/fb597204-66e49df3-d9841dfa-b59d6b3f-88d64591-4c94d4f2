@@ -5,8 +5,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { supabase } from "@/integrations/supabase/client";
 import { ROLES, ROLE_HOME } from "@/config/roles";
-import { ResidentBottomNav } from "@/components/resident/ResidentBottomNav";
 import { AskAIFab } from "@/components/resident/AskAIFab";
+
 
 /** Resident layout. All `/app/*` routes require an authenticated user and an active society plan. */
 export const Route = createFileRoute("/_resident")({
@@ -46,11 +46,9 @@ function ResidentGuard() {
   }
   return (
     <>
-      <div className="pb-20">
-        <Outlet />
-      </div>
+      <Outlet />
       <AskAIFab />
-      <ResidentBottomNav />
     </>
   );
 }
+

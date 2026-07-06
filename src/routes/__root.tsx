@@ -17,8 +17,12 @@ import { AppSidebar } from "@/components/shared/AppSidebar";
 import { AdminSidebar } from "@/components/shared/AdminSidebar";
 import { AppHeader } from "@/components/shared/AppHeader";
 
-import { SocietyDrawer } from "@/components/shared/SocietyDrawer";
 import { SocietyFab } from "@/components/shared/SocietyFab";
+import { ResidentBottomNav } from "@/components/nav/ResidentBottomNav";
+import { SocietyAdminBottomNav } from "@/components/nav/SocietyAdminBottomNav";
+import { GuardBottomNav } from "@/components/nav/GuardBottomNav";
+import { SuperAdminBottomNav } from "@/components/nav/SuperAdminBottomNav";
+
 import { Toaster } from "@/components/ui/sonner";
 import { SplashScreen } from "@/components/shared/SplashScreen";
 import { RootErrorBoundary, installGlobalErrorLogger } from "@/components/shared/RootErrorBoundary";
@@ -237,49 +241,90 @@ function ShellSwitcher() {
 }
 
 function ProtectedShell({ pathname }: { pathname: string }) {
-  // Resident shell: native mobile app frame, fixed bottom nav
-  if (pathname.startsWith("/app") || pathname.startsWith("/onboarding")) {
+  const isGuard = pathname.startsWith("/app/guard");
+  const isOnboarding = pathname.startsWith("/onboarding");
+  const isPlanBlocker =
+    pathname.endsWith("/plan-required") ||
+    pathname === "/app/plan-required" ||
+    pathname === "/society/plan-required";
+
+  // Guard shell: minimal 3-tab mobile app.
+  if (isGuard) {
     return (
       <div className="min-h-[100dvh] w-full bg-muted/40">
-        <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-[480px] flex-col bg-background shadow-xl">
+        <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-[480px] flex-col bg-background shadow-xl md:shadow-none">
           <AppHeader withSidebarTrigger={false} />
           <main
             className="flex-1"
-            style={{ paddingBottom: "calc(96px + env(safe-area-inset-bottom))" }}
+            style={{ paddingBottom: "calc(88px + env(safe-area-inset-bottom))" }}
           >
             <TransitionedOutlet />
           </main>
-          {/* Bottom nav rendered by /_resident layout to avoid duplicate stacked bars */}
+          <GuardBottomNav />
         </div>
       </div>
     );
   }
 
+  // Onboarding shell: no bottom nav.
+  if (isOnboarding) {
+    return (
+      <div className="min-h-[100dvh] w-full bg-muted/40">
+        <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-[480px] flex-col bg-background shadow-xl md:shadow-none">
+          <AppHeader withSidebarTrigger={false} />
+          <main className="flex-1">
+            <TransitionedOutlet />
+          </main>
+        </div>
+      </div>
+    );
+  }
+
+  // Resident shell.
+  if (pathname.startsWith("/app")) {
+    return (
+      <div className="min-h-[100dvh] w-full bg-muted/40">
+        <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-[480px] flex-col bg-background shadow-xl md:shadow-none">
+          <AppHeader withSidebarTrigger={false} />
+          <main
+            className="flex-1"
+            style={{ paddingBottom: isPlanBlocker ? undefined : "calc(88px + env(safe-area-inset-bottom))" }}
+          >
+            <TransitionedOutlet />
+          </main>
+          {!isPlanBlocker && <ResidentBottomNav />}
+        </div>
+      </div>
+    );
+  }
+
+  // Society Admin shell: sidebar on md+, mobile bottom nav below md.
   if (pathname.startsWith("/society")) {
     return (
       <SidebarProvider>
-        <div className="min-h-[100dvh] w-full bg-muted/40 md:bg-background">
-          <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-[480px] bg-background shadow-xl md:max-w-none md:shadow-none">
-            {/* Desktop sidebar only — hidden on mobile to make room for drawer */}
+        <div className="min-h-[100dvh] w-full bg-background">
+          <div className="relative mx-auto flex min-h-[100dvh] w-full bg-background md:max-w-none">
             <div className="hidden md:block">
               <AppSidebar />
             </div>
             <div className="flex min-w-0 flex-1 flex-col">
-              <AppHeader leading={<div className="md:hidden"><SocietyDrawer /></div>} />
+              <AppHeader />
               <main
                 className="flex-1"
-                style={{ paddingBottom: "calc(40px + env(safe-area-inset-bottom))" }}
+                style={{ paddingBottom: "calc(88px + env(safe-area-inset-bottom))" }}
               >
                 <TransitionedOutlet />
               </main>
               <SocietyFab />
             </div>
           </div>
+          {!isPlanBlocker && <SocietyAdminBottomNav />}
         </div>
       </SidebarProvider>
     );
   }
 
+  // Super Admin shell: sidebar on md+, mobile bottom nav below md.
   if (pathname.startsWith("/admin")) {
     return (
       <SidebarProvider>
@@ -289,18 +334,23 @@ function ProtectedShell({ pathname }: { pathname: string }) {
           </div>
           <div className="flex-1 flex flex-col min-w-0">
             <AppHeader />
-            <main className="flex-1">
+            <main
+              className="flex-1"
+              style={{ paddingBottom: "calc(88px + env(safe-area-inset-bottom))" }}
+            >
               <TransitionedOutlet />
             </main>
           </div>
+          <SuperAdminBottomNav />
         </div>
       </SidebarProvider>
     );
   }
 
-  // Default admin shell: sidebar + header
+  // Default (settings, misc protected pages).
   return <DefaultShell />;
 }
+
 
 function DefaultShell() {
   return (

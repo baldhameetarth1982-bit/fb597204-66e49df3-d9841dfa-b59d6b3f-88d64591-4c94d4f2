@@ -5,24 +5,25 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * SocioHub theme — premium, trustworthy, enterprise-grade.
- * DEFAULT = light (emerald + crisp white, modeled on SocioHub reference).
- * OPTIONAL = dark (toggled via .dark class on <html>).
+ * SocioHub theme — sampled from the official app-UI reference (Pass 1).
+ * DEFAULT = light. OPTIONAL = dark (.dark on <html>).
  *
- * Color rules:
- *   Primary brand        #004B49  deep premium emerald
- *   Accent / focus ring  #007A78  vibrant teal
- *   Background           #FFFFFF
- *   Surface card         #F8F9FA
- *   Text primary         #0F172A
- *   Text secondary       #475569
- *   Border               #CBD5E1
- *   Success              #00875A
- *   Destructive          #DE350B
+ * Reference-derived colors:
+ *   Primary brand teal   #00A896  (sampled cluster #009080 / #00A090)
+ *   Accent teal          #06B6A4
+ *   Foreground navy      #0B2545
+ *   Background app       #F6F8F7  (soft off-white)
+ *   Card surface         #FFFFFF
+ *   Border               #E3E8E6
+ *   Success              #10B981
+ *   Warning              #F59E0B
+ *   Destructive          #E11D48
+ *   Info                 #2563EB
  *
  * Perf rules: no backdrop-filter, no heavy drop-shadows. Subtle 1px borders + soft shadows allowed.
  * Sizing: 48px minimum interactive height, 12px corner radius default.
  */
+
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
@@ -97,66 +98,68 @@
 :root {
   --radius: 0.75rem; /* 12px */
 
-  --background: oklch(1 0 0);                      /* #FFFFFF */
-  --foreground: oklch(0.21 0.034 264);             /* #0F172A */
+  --background: oklch(0.98 0.005 180);             /* #F6F8F7 soft app bg */
+  --foreground: oklch(0.22 0.06 260);              /* #0B2545 navy */
 
-  --card: oklch(0.985 0.002 247);                  /* #F8F9FA */
-  --card-foreground: oklch(0.21 0.034 264);
+  --card: oklch(1 0 0);                            /* #FFFFFF */
+  --card-foreground: oklch(0.22 0.06 260);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.21 0.034 264);
+  --popover-foreground: oklch(0.22 0.06 260);
 
-  --primary: oklch(0.39 0.072 192);                /* #004B49 emerald */
+  --primary: oklch(0.66 0.11 180);                 /* #00A896 SocioHub teal */
   --primary-foreground: oklch(1 0 0);
 
-  --secondary: oklch(0.97 0.003 247);              /* light surface for chips/rows */
-  --secondary-foreground: oklch(0.21 0.034 264);
-  --muted: oklch(0.97 0.003 247);
-  --muted-foreground: oklch(0.5 0.034 257);        /* #475569 */
-  --accent: oklch(0.52 0.094 192);                 /* #007A78 vibrant teal */
+  --secondary: oklch(0.96 0.008 180);              /* light teal-tinted surface */
+  --secondary-foreground: oklch(0.22 0.06 260);
+  --muted: oklch(0.96 0.005 200);
+  --muted-foreground: oklch(0.52 0.03 250);        /* slate-500 navy-leaning */
+  --accent: oklch(0.72 0.13 180);                  /* #06B6A4 brighter teal */
   --accent-foreground: oklch(1 0 0);
 
-  --destructive: oklch(0.58 0.22 30);              /* #DE350B */
+  --destructive: oklch(0.6 0.22 15);               /* #E11D48 */
   --destructive-foreground: oklch(1 0 0);
-  --success: oklch(0.55 0.13 158);                 /* #00875A */
+  --success: oklch(0.68 0.15 160);                 /* #10B981 */
   --success-foreground: oklch(1 0 0);
-  --warning: oklch(0.78 0.15 75);
-  --warning-foreground: oklch(0.21 0.034 264);
+  --warning: oklch(0.78 0.16 70);                  /* #F59E0B */
+  --warning-foreground: oklch(0.22 0.06 260);
 
-  --border: oklch(0.87 0.013 256);                 /* #CBD5E1 */
-  --input: oklch(0.87 0.013 256);
-  --ring: oklch(0.52 0.094 192);                   /* teal focus */
+  --border: oklch(0.9 0.008 200);                  /* #E3E8E6 */
+  --input: oklch(0.9 0.008 200);
+  --ring: oklch(0.66 0.11 180);                    /* teal focus */
 
-  --chart-1: oklch(0.39 0.072 192);
-  --chart-2: oklch(0.55 0.13 158);
-  --chart-3: oklch(0.78 0.15 75);
-  --chart-4: oklch(0.58 0.22 30);
-  --chart-5: oklch(0.55 0.15 230);
+  --chart-1: oklch(0.66 0.11 180);
+  --chart-2: oklch(0.68 0.15 160);
+  --chart-3: oklch(0.78 0.16 70);
+  --chart-4: oklch(0.6 0.22 15);
+  --chart-5: oklch(0.6 0.15 250);
 
-  --sidebar: oklch(0.985 0.002 247);
-  --sidebar-foreground: oklch(0.21 0.034 264);
-  --sidebar-primary: oklch(0.39 0.072 192);
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.22 0.06 260);
+  --sidebar-primary: oklch(0.66 0.11 180);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.97 0.003 247);
-  --sidebar-accent-foreground: oklch(0.21 0.034 264);
-  --sidebar-border: oklch(0.87 0.013 256);
-  --sidebar-ring: oklch(0.52 0.094 192);
+  --sidebar-accent: oklch(0.96 0.008 180);
+  --sidebar-accent-foreground: oklch(0.22 0.06 260);
+  --sidebar-border: oklch(0.9 0.008 200);
+  --sidebar-ring: oklch(0.66 0.11 180);
+
 
   /* Semantic containers */
-  --primary-container: oklch(0.94 0.03 192);
-  --primary-container-foreground: oklch(0.28 0.07 192);
-  --success-container: oklch(0.94 0.05 158);
-  --success-container-foreground: oklch(0.32 0.11 158);
-  --warning-container: oklch(0.96 0.08 85);
-  --warning-container-foreground: oklch(0.36 0.12 70);
-  --danger-container: oklch(0.95 0.04 30);
-  --danger-container-foreground: oklch(0.42 0.18 30);
-  --info: oklch(0.55 0.15 230);
+  --primary-container: oklch(0.95 0.03 180);
+  --primary-container-foreground: oklch(0.35 0.09 180);
+  --success-container: oklch(0.95 0.05 160);
+  --success-container-foreground: oklch(0.35 0.12 160);
+  --warning-container: oklch(0.96 0.08 80);
+  --warning-container-foreground: oklch(0.38 0.13 70);
+  --danger-container: oklch(0.95 0.05 15);
+  --danger-container-foreground: oklch(0.44 0.18 15);
+  --info: oklch(0.6 0.15 250);
   --info-foreground: oklch(1 0 0);
-  --info-container: oklch(0.94 0.04 230);
-  --info-container-foreground: oklch(0.34 0.14 230);
-  --surface: oklch(0.985 0.002 247);
-  --surface-2: oklch(0.97 0.003 247);
-  --outline: oklch(0.78 0.015 256);
+  --info-container: oklch(0.95 0.04 250);
+  --info-container-foreground: oklch(0.36 0.14 250);
+  --surface: oklch(1 0 0);
+  --surface-2: oklch(0.96 0.005 200);
+  --outline: oklch(0.82 0.008 200);
+
 
   /* Elevation (soft, no backdrop-filter). */
   --elevation-1: 0 1px 2px rgb(15 23 42 / 0.04), 0 1px 1px rgb(15 23 42 / 0.03);

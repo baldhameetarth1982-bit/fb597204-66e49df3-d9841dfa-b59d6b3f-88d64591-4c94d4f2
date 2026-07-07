@@ -1,15 +1,16 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Home, Receipt, ShieldCheck, Building2, User } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 
 const TABS = [
-  { to: "/app/dashboard", label: "Home", icon: Home, match: ["/app/dashboard"] },
-  { to: "/app/bills", label: "Bills", icon: Receipt, match: ["/app/bills", "/app/dues", "/app/ledger"] },
-  { to: "/app/visitors", label: "Visitors", icon: ShieldCheck, match: ["/app/visitors"] },
+  { to: "/app/dashboard", labelKey: "nav.home", icon: Home, match: ["/app/dashboard"] },
+  { to: "/app/bills", labelKey: "nav.bills", icon: Receipt, match: ["/app/bills", "/app/dues", "/app/ledger"] },
+  { to: "/app/visitors", labelKey: "nav.visitors", icon: ShieldCheck, match: ["/app/visitors"] },
   {
     to: "/app/comm",
-    label: "Society",
+    labelKey: "nav.society",
     icon: Building2,
     match: [
       "/app/comm",
@@ -26,7 +27,7 @@ const TABS = [
   },
   {
     to: "/app/profile",
-    label: "Profile",
+    labelKey: "nav.profile",
     icon: User,
     match: [
       "/app/profile",
@@ -43,6 +44,7 @@ const TABS = [
 export function ResidentBottomNav() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const unread = useUnreadNotifications();
+  const { t } = useTranslation();
   return (
     <nav
       aria-label="Resident navigation"
@@ -75,7 +77,7 @@ export function ResidentBottomNav() {
                     </span>
                   )}
                 </span>
-                <span className="leading-none">{it.label}</span>
+                <span className="leading-none">{t(it.labelKey)}</span>
               </Link>
             </li>
           );

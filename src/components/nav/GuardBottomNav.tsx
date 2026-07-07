@@ -1,12 +1,12 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, History, Settings } from "lucide-react";
+import { LayoutDashboard, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Guard sub-routes for History/Settings do not exist yet; link to closest existing routes.
+// Guard mobile nav. A dedicated visitor-history screen for guards does not
+// exist yet; when it lands, add it here between Dashboard and Settings.
 // See .lovable/ui-audit.md.
 const TABS = [
   { to: "/app/guard", label: "Dashboard", icon: LayoutDashboard, match: ["/app/guard"] },
-  { to: "/app/guard", label: "History", icon: History, match: [] },
   { to: "/settings", label: "Settings", icon: Settings, match: ["/settings"] },
 ] as const;
 
@@ -17,7 +17,7 @@ export function GuardBottomNav() {
       aria-label="Guard navigation"
       className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-background/98 pb-[env(safe-area-inset-bottom)]"
     >
-      <ul className="mx-auto grid grid-cols-3 max-w-[480px] px-1">
+      <ul className="mx-auto grid grid-cols-2 max-w-[480px] px-1">
         {TABS.map((it, i) => {
           const active = it.match.some((p) => path === p || path.startsWith(p + "/"));
           const Icon = it.icon;

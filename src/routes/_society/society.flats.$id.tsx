@@ -154,7 +154,7 @@ function HouseDetailPage() {
               )}
             </div>
             <Button asChild size="sm" className="rounded-xl shrink-0">
-              <Link to="/society/billing">Generate Bill</Link>
+              <Link to="/society/billing/generate">Generate Bill</Link>
             </Button>
           </CardContent>
         </Card>
@@ -208,7 +208,7 @@ function HouseDetailPage() {
               <FileText className="h-4 w-4" /> Recent bills
             </h3>
             <Button asChild variant="ghost" size="sm" className="rounded-xl">
-              <Link to="/society/billing">All bills</Link>
+              <Link to="/society/billing/generate">All bills</Link>
             </Button>
           </div>
           {!bills || bills.length === 0 ? (

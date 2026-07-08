@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/sheet";
 
 const ACTIONS = [
-  { label: "Generate Bill", to: "/society/bill-studio", icon: Receipt, color: "bg-blue-500/10 text-blue-600" },
+  { label: "Generate Bill", to: "/society/billing", icon: Receipt, color: "bg-blue-500/10 text-blue-600" },
   { label: "Add Expense", to: "/society/expenses", icon: Wallet, color: "bg-amber-500/10 text-amber-600" },
   { label: "Log Visitor", to: "/society/visitors", icon: UserCheck, color: "bg-emerald-500/10 text-emerald-600" },
   { label: "Announcement", to: "/society/announcements", icon: Megaphone, color: "bg-purple-500/10 text-purple-600" },

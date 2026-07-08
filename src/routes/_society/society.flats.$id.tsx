@@ -154,7 +154,7 @@ function HouseDetailPage() {
               )}
             </div>
             <Button asChild size="sm" className="rounded-xl shrink-0">
-              <Link to="/society/bill-studio">Generate Bill</Link>
+              <Link to="/society/billing">Generate Bill</Link>
             </Button>
           </CardContent>
         </Card>

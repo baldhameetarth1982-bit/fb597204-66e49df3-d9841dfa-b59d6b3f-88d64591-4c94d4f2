@@ -262,6 +262,22 @@ function ResidentsPage() {
   );
 }
 
+function SummaryCard({
+  label, value, tone = "primary",
+}: { label: string; value: number; tone?: "primary" | "success" | "warning" | "muted" }) {
+  const toneClass =
+    tone === "success" ? "text-success"
+    : tone === "warning" ? "text-warning"
+    : tone === "muted" ? "text-muted-foreground"
+    : "text-primary";
+  return (
+    <div className="rounded-2xl border bg-card p-3">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className={`mt-0.5 text-xl font-semibold tabular-nums ${toneClass}`}>{value}</p>
+    </div>
+  );
+}
+
 function ResidentCard({
   r,
   onAssign,

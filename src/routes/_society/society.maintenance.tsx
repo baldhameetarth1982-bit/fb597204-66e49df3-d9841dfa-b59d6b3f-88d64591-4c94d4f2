@@ -1,303 +1,306 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, CalendarRange, Plus, Trash2, IndianRupee, FileText } from "lucide-react";
-import { toast } from "sonner";
+import {
+  Loader2, Home, CheckCircle2, AlertTriangle, TrendingUp, IndianRupee,
+  Upload, Download, FileText, ArrowRight, CalendarRange,
+} from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { PageHeader, PageShell, EmptyState } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import {
-  listSocietyMaintenance, seedCurrentMonthMaintenance, generateFlatBill,
-} from "@/lib/maintenance.functions";
+import { cn } from "@/lib/utils";
+import { societyMaintenanceSummary } from "@/lib/residents.functions";
 
 export const Route = createFileRoute("/_society/society/maintenance")({
   head: () => ({ meta: [{ title: "Maintenance — SocioHub" }] }),
   component: MaintenancePage,
 });
 
-type Period = {
-  id: string; flat_id: string; period_label: string; period_start: string;
-  amount_due: number; status: string; due_date: string | null;
-  bill_id: string | null; paid_at: string | null;
-};
-type Flat = { id: string; flat_number: string; blocks: { name: string } | null };
-
-const statusTone: Record<string, string> = {
-  paid: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-  pending: "bg-amber-500/10 text-amber-600 border-amber-500/20",
-  outstanding: "bg-rose-500/10 text-rose-600 border-rose-500/20",
-  upcoming: "bg-blue-500/10 text-blue-600 border-blue-500/20",
-};
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 function MaintenancePage() {
   const { societyId, loading: sidLoading } = useSocietyId();
-  const list = useServerFn(listSocietyMaintenance);
-  const seed = useServerFn(seedCurrentMonthMaintenance);
-  const genBill = useServerFn(generateFlatBill);
-  const qc = useQueryClient();
+  const summaryFn = useServerFn(societyMaintenanceSummary);
+  const now = new Date();
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState<number | "all">("all");
+  const [blockId, setBlockId] = useState<string>("all");
 
-  const [seedAmount, setSeedAmount] = useState("2500");
-  const [seeding, setSeeding] = useState(false);
-  const [visible, setVisible] = useState(20);
-
-  const { data, isLoading } = useQuery({
+  const { data: summary, isLoading: sLoading } = useQuery({
     enabled: !!societyId,
-    queryKey: ["society-maintenance", societyId],
-    queryFn: async () => list({ data: { societyId: societyId! } }),
+    queryKey: ["society-maintenance-summary", societyId],
+    queryFn: async () => summaryFn({ data: { societyId: societyId! } }),
+    staleTime: 30_000,
+  });
+
+  const { data: blocks } = useQuery({
+    enabled: !!societyId,
+    queryKey: ["society-blocks", societyId],
+    queryFn: async () => {
+      const { data } = await supabase.from("blocks").select("id, name").eq("society_id", societyId!).order("name");
+      return data ?? [];
+    },
     staleTime: 60_000,
   });
-  const periods = (data?.periods ?? []) as Period[];
-  const flats = (data?.flats ?? []) as Flat[];
-  const reload = () => qc.invalidateQueries({ queryKey: ["society-maintenance", societyId] });
 
-  // bill dialog
-  const [billFlat, setBillFlat] = useState<Flat | null>(null);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [extras, setExtras] = useState<{ description: string; amount: string }[]>([]);
-  const [dueDate, setDueDate] = useState("");
-  const [notes, setNotes] = useState("");
-  const [creating, setCreating] = useState(false);
+  const { data: periods, isLoading: pLoading } = useQuery({
+    enabled: !!societyId,
+    queryKey: ["maintenance-periods", societyId, year, blockId],
+    queryFn: async () => {
+      let q = supabase
+        .from("maintenance_periods")
+        .select("period_start, status, amount_due, due_date, flat_id, flats!inner(block_id)")
+        .eq("society_id", societyId!)
+        .gte("period_start", `${year}-01-01`)
+        .lte("period_start", `${year}-12-31`);
+      if (blockId !== "all") q = q.eq("flats.block_id", blockId);
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+    staleTime: 30_000,
+  });
 
-  const byFlat = useMemo(() => {
-    const m = new Map<string, Period[]>();
-    for (const p of periods) {
-      if (!m.has(p.flat_id)) m.set(p.flat_id, []);
-      m.get(p.flat_id)!.push(p);
+  const filtered = useMemo(() => {
+    if (!periods) return [];
+    if (month === "all") return periods;
+    return periods.filter((p: any) => new Date(p.period_start).getMonth() === month);
+  }, [periods, month]);
+
+  const monthlyBreakdown = useMemo(() => {
+    const buckets: { paid: number; pending: number; overdue: number; total: number }[] =
+      Array.from({ length: 12 }, () => ({ paid: 0, pending: 0, overdue: 0, total: 0 }));
+    const today = new Date();
+    for (const p of periods ?? []) {
+      const mi = new Date(p.period_start).getMonth();
+      const b = buckets[mi];
+      b.total += 1;
+      if (p.status === "paid") b.paid += 1;
+      else if (p.due_date && new Date(p.due_date) < today) b.overdue += 1;
+      else b.pending += 1;
     }
-    return m;
+    return buckets;
   }, [periods]);
 
-  const flatLabel = (f: Flat) =>
-    f.blocks?.name ? `${f.blocks.name} · ${f.flat_number}` : f.flat_number;
+  const scopeTotals = useMemo(() => {
+    const today = new Date();
+    let paid = 0, pending = 0, overdue = 0, outstandingAmt = 0;
+    for (const p of filtered) {
+      if (p.status === "paid") paid++;
+      else {
+        if (p.due_date && new Date(p.due_date) < today) overdue++;
+        else pending++;
+        outstandingAmt += Number(p.amount_due || 0);
+      }
+    }
+    const total = paid + pending + overdue;
+    const pct = total > 0 ? Math.round((paid / total) * 100) : null;
+    return { paid, pending, overdue, outstandingAmt, total, pct };
+  }, [filtered]);
 
-  function openBill(flat: Flat) {
-    setBillFlat(flat);
-    const open = (byFlat.get(flat.id) ?? []).filter(
-      (p) => p.status !== "paid" && !p.bill_id,
-    );
-    setSelected(new Set(open.map((p) => p.id)));
-    setExtras([]);
-    setDueDate("");
-    setNotes("");
-  }
-
-  async function handleSeed() {
-    const amt = Number(seedAmount);
-    if (!amt || amt <= 0) return toast.error("Enter a valid amount");
-    setSeeding(true);
-    try {
-      const { created } = await seed({ data: { societyId: societyId!, amount: amt } });
-      toast.success(`Seeded ${created} flat(s) for this month`);
-      reload();
-    } catch (e: any) { toast.error(e.message); } finally { setSeeding(false); }
-  }
-
-  async function submitBill() {
-    if (!billFlat) return;
-    setCreating(true);
-    try {
-      const cleanExtras = extras
-        .map((e) => ({ description: e.description.trim(), amount: Number(e.amount) }))
-        .filter((e) => e.description && !Number.isNaN(e.amount) && e.amount >= 0);
-      const { billId } = await genBill({
-        data: {
-          flatId: billFlat.id,
-          periodIds: Array.from(selected),
-          additional: cleanExtras,
-          dueDate: dueDate || undefined,
-          notes: notes || undefined,
-        },
-      });
-      toast.success("Bill generated");
-      setBillFlat(null);
-      reload();
-      if (billId) window.location.href = `/society/billing#${billId}`;
-    } catch (e: any) { toast.error(e.message); } finally { setCreating(false); }
-  }
-
-  if (sidLoading || isLoading) {
+  if (sidLoading || sLoading) {
     return (
-      <div className="min-h-[40vh] grid place-items-center text-muted-foreground">
-        <Loader2 className="h-5 w-5 animate-spin" />
-      </div>
+      <PageShell>
+        <div className="min-h-[40vh] grid place-items-center">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      </PageShell>
     );
   }
+
+  const hasAnyData = (summary?.total_houses ?? 0) > 0;
+  const years = [year - 1, year, year + 1];
 
   return (
     <PageShell>
       <PageHeader
         title="Maintenance"
-        description="Track every flat's monthly maintenance — independent of bills."
+        description="Monthly maintenance status per house — independent of bills."
       />
 
+      {/* Filters */}
       <Card className="rounded-2xl">
-        <CardHeader>
-          <CardTitle className="text-base">Seed this month</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <div className="flex-1">
-            <Label htmlFor="seed-amt">Monthly amount (₹)</Label>
-            <Input id="seed-amt" inputMode="numeric" value={seedAmount}
-              onChange={(e) => setSeedAmount(e.target.value)} />
-          </div>
-          <Button onClick={handleSeed} disabled={seeding}>
-            {seeding ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
-            Apply to all flats
+        <CardContent className="p-3 sm:p-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
+            <SelectTrigger className="rounded-xl"><SelectValue placeholder="Year" /></SelectTrigger>
+            <SelectContent>
+              {years.map((y) => (
+                <SelectItem key={y} value={String(y)}>FY {y}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={String(month)} onValueChange={(v) => setMonth(v === "all" ? "all" : Number(v))}>
+            <SelectTrigger className="rounded-xl"><SelectValue placeholder="Month" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All months</SelectItem>
+              {MONTHS.map((m, i) => (
+                <SelectItem key={m} value={String(i)}>{m}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={blockId} onValueChange={setBlockId}>
+            <SelectTrigger className="rounded-xl col-span-2 sm:col-span-1">
+              <SelectValue placeholder="Block" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All blocks</SelectItem>
+              {(blocks ?? []).map((b: any) => (
+                <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button asChild variant="outline" className="rounded-xl">
+            <Link to="/society/matrix"><ArrowRight className="h-4 w-4 mr-1.5" />Open Matrix</Link>
           </Button>
         </CardContent>
       </Card>
 
-      {flats.length === 0 ? (
-        <EmptyState icon={CalendarRange} title="No flats yet"
-          description="Add blocks and flats to start tracking maintenance." />
-      ) : (
-        <div className="grid gap-3">
-          {flats.slice(0, visible).map((f) => {
-            const fp = byFlat.get(f.id) ?? [];
-            const openCount = fp.filter((p) => p.status !== "paid" && !p.bill_id).length;
-            const openAmt = fp
-              .filter((p) => p.status !== "paid" && !p.bill_id)
-              .reduce((s, p) => s + Number(p.amount_due), 0);
-            return (
-              <Card key={f.id} className="rounded-2xl">
-                <CardHeader className="flex flex-row items-start justify-between gap-3">
-                  <div>
-                    <CardTitle className="text-base">{flatLabel(f)}</CardTitle>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {fp.length} period(s) · {openCount} unbilled · ₹{openAmt.toFixed(0)} pending
-                    </p>
-                  </div>
-                  <Button size="sm" onClick={() => openBill(f)} disabled={openCount === 0}>
-                    <FileText className="h-4 w-4 mr-1.5" /> Generate Bill
-                  </Button>
-                </CardHeader>
-                {fp.length > 0 && (
-                  <CardContent className="flex flex-wrap gap-2">
-                    {fp.slice(0, 12).map((p) => (
-                      <Badge key={p.id} variant="outline"
-                        className={`rounded-full ${statusTone[p.status] ?? ""}`}>
-                        {p.period_label} · ₹{Number(p.amount_due).toFixed(0)} · {p.status}
-                        {p.bill_id ? " · billed" : ""}
-                      </Badge>
-                    ))}
-                  </CardContent>
-                )}
-              </Card>
-            );
-          })}
-          {visible < flats.length && (
-            <Button variant="outline" className="rounded-2xl" onClick={() => setVisible((v) => v + 20)}>
-              Show more ({flats.length - visible} remaining)
-            </Button>
+      {/* KPIs — only when we have real data */}
+      {hasAnyData && summary && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <Kpi icon={Home} label="Total Houses" value={summary.total_houses} tone="neutral" />
+          <Kpi icon={CheckCircle2} label="Paid" value={scopeTotals.paid} tone="ok" />
+          <Kpi icon={AlertTriangle} label="Pending" value={scopeTotals.pending + scopeTotals.overdue} tone="warn" />
+          {scopeTotals.pct !== null && (
+            <Kpi icon={TrendingUp} label="Collection" value={`${scopeTotals.pct}%`} tone="ok" />
+          )}
+          {scopeTotals.outstandingAmt > 0 && (
+            <Kpi icon={IndianRupee} label="Outstanding"
+              value={`₹${scopeTotals.outstandingAmt.toLocaleString("en-IN")}`} tone="danger" />
+          )}
+          {Number(summary.advance_amount) > 0 && (
+            <Kpi icon={TrendingUp} label="Advance"
+              value={`₹${Number(summary.advance_amount).toLocaleString("en-IN")}`} tone="info" />
+          )}
+          {scopeTotals.overdue > 0 && (
+            <Kpi icon={AlertTriangle} label="Overdue" value={scopeTotals.overdue} tone="danger" />
           )}
         </div>
       )}
 
-      <Dialog open={!!billFlat} onOpenChange={(o) => !o && setBillFlat(null)}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Generate bill · {billFlat ? flatLabel(billFlat) : ""}</DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
-            <div>
-              <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-                Pending maintenance
-              </Label>
-              <div className="mt-2 space-y-1.5">
-                {(byFlat.get(billFlat?.id ?? "") ?? [])
-                  .filter((p) => p.status !== "paid" && !p.bill_id)
-                  .map((p) => (
-                    <label key={p.id}
-                      className="flex items-center gap-3 rounded-xl border p-3 cursor-pointer">
-                      <Checkbox
-                        checked={selected.has(p.id)}
-                        onCheckedChange={(v) => {
-                          const next = new Set(selected);
-                          if (v) next.add(p.id); else next.delete(p.id);
-                          setSelected(next);
-                        }}
-                      />
-                      <div className="flex-1 text-sm">{p.period_label}</div>
-                      <div className="text-sm font-semibold">
-                        <IndianRupee className="inline h-3.5 w-3.5" />{Number(p.amount_due).toFixed(0)}
-                      </div>
-                    </label>
-                  ))}
-                {(byFlat.get(billFlat?.id ?? "") ?? []).filter((p) => p.status !== "paid" && !p.bill_id).length === 0 && (
-                  <p className="text-xs text-muted-foreground">No pending periods.</p>
-                )}
-              </div>
+      {/* Monthly summary (calendar-style) */}
+      {hasAnyData && (
+        <Card className="rounded-2xl">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <CalendarRange className="h-4 w-4 text-muted-foreground" />
+              <h3 className="text-sm font-semibold">Collection status · {year}</h3>
             </div>
-
-            <div>
-              <div className="flex items-center justify-between">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-                  Additional charges
-                </Label>
-                <Button size="sm" variant="ghost"
-                  onClick={() => setExtras((x) => [...x, { description: "", amount: "" }])}>
-                  <Plus className="h-4 w-4 mr-1" /> Add
-                </Button>
-              </div>
-              <div className="mt-2 space-y-2">
-                {extras.map((e, i) => (
-                  <div key={i} className="flex gap-2">
-                    <Input placeholder="Description (e.g. Water tanker)"
-                      value={e.description}
-                      onChange={(ev) => {
-                        const n = [...extras]; n[i].description = ev.target.value; setExtras(n);
-                      }} />
-                    <Input type="number" inputMode="numeric" className="w-28" placeholder="₹"
-                      value={e.amount}
-                      onChange={(ev) => {
-                        const n = [...extras]; n[i].amount = ev.target.value; setExtras(n);
-                      }} />
-                    <Button variant="ghost" size="icon"
-                      onClick={() => setExtras(extras.filter((_, j) => j !== i))}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+              {MONTHS.map((m, i) => {
+                const b = monthlyBreakdown[i];
+                const pct = b.total > 0 ? Math.round((b.paid / b.total) * 100) : null;
+                const isActive = month === i;
+                return (
+                  <button
+                    key={m}
+                    onClick={() => setMonth(month === i ? "all" : i)}
+                    className={cn(
+                      "rounded-xl border p-2.5 text-left transition-colors",
+                      isActive ? "border-primary bg-primary/5" : "hover:bg-muted/50",
+                    )}
+                  >
+                    <div className="text-xs font-medium">{m}</div>
+                    {b.total === 0 ? (
+                      <div className="text-[10px] text-muted-foreground mt-1">No data</div>
+                    ) : (
+                      <>
+                        <div className="mt-1.5 h-1.5 rounded-full bg-muted overflow-hidden">
+                          <div
+                            className="h-full bg-emerald-500"
+                            style={{ width: `${pct ?? 0}%` }}
+                          />
+                        </div>
+                        <div className="text-[10px] text-muted-foreground mt-1">
+                          {b.paid}/{b.total} · {pct}%
+                        </div>
+                      </>
+                    )}
+                  </button>
+                );
+              })}
             </div>
+          </CardContent>
+        </Card>
+      )}
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="due">Due date</Label>
-                <Input id="due" type="date" value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)} />
-              </div>
-              <div>
-                <Label htmlFor="notes">Notes</Label>
-                <Input id="notes" value={notes} onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Optional" />
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setBillFlat(null)}>Cancel</Button>
-            <Button onClick={submitBill}
-              disabled={creating || (selected.size === 0 && extras.length === 0)}>
-              {creating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Generate
+      {/* Quick actions */}
+      <Card className="rounded-2xl">
+        <CardContent className="p-4">
+          <h3 className="text-sm font-semibold mb-3">Quick actions</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <Button asChild variant="outline" className="rounded-xl h-auto py-3 flex-col gap-1.5">
+              <Link to="/society/matrix-import">
+                <Upload className="h-4 w-4" />
+                <span className="text-xs">Import Excel</span>
+              </Link>
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <Button asChild variant="outline" className="rounded-xl h-auto py-3 flex-col gap-1.5">
+              <Link to="/society/matrix">
+                <Download className="h-4 w-4" />
+                <span className="text-xs">Export Matrix</span>
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="rounded-xl h-auto py-3 flex-col gap-1.5">
+              <Link to="/society/bill-studio">
+                <FileText className="h-4 w-4" />
+                <span className="text-xs">Generate Bill</span>
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="rounded-xl h-auto py-3 flex-col gap-1.5">
+              <Link to="/society/billing">
+                <ArrowRight className="h-4 w-4" />
+                <span className="text-xs">Billing Center</span>
+              </Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {pLoading && (
+        <div className="grid place-items-center py-6">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      )}
+
+      {!hasAnyData && !pLoading && (
+        <EmptyState
+          icon={CalendarRange}
+          title="No maintenance data yet"
+          description="Import the yearly matrix or open the Matrix to start tracking maintenance."
+        />
+      )}
     </PageShell>
+  );
+}
+
+function Kpi({
+  icon: Icon, label, value, tone,
+}: {
+  icon: any; label: string; value: string | number;
+  tone: "ok" | "warn" | "danger" | "info" | "neutral";
+}) {
+  const toneCls =
+    tone === "ok" ? "text-emerald-600 bg-emerald-500/10"
+    : tone === "warn" ? "text-amber-600 bg-amber-500/10"
+    : tone === "danger" ? "text-rose-600 bg-rose-500/10"
+    : tone === "info" ? "text-violet-600 bg-violet-500/10"
+    : "text-muted-foreground bg-muted";
+  return (
+    <Card className="rounded-2xl p-3 flex items-center gap-2.5">
+      <div className={cn("h-9 w-9 rounded-xl grid place-items-center shrink-0", toneCls)}>
+        <Icon className="h-4 w-4" />
+      </div>
+      <div className="min-w-0">
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+        <div className="text-sm font-semibold truncate">{value}</div>
+      </div>
+    </Card>
   );
 }

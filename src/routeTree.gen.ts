@@ -59,6 +59,7 @@ import { Route as SocietySocietyDigestRouteImport } from './routes/_society/soci
 import { Route as SocietySocietyDashboardRouteImport } from './routes/_society/society.dashboard'
 import { Route as SocietySocietyCustomFieldsRouteImport } from './routes/_society/society.custom-fields'
 import { Route as SocietySocietyContactsRouteImport } from './routes/_society/society.contacts'
+import { Route as SocietySocietyCommunicationRouteImport } from './routes/_society/society.communication'
 import { Route as SocietySocietyBylawsRouteImport } from './routes/_society/society.bylaws'
 import { Route as SocietySocietyBusinessProfileRouteImport } from './routes/_society/society.business-profile'
 import { Route as SocietySocietyBlocksRouteImport } from './routes/_society/society.blocks'
@@ -117,6 +118,7 @@ import { Route as ApiPublicHooksRazorpayRouteImport } from './routes/api/public/
 import { Route as ApiPublicHooksMaintenanceRemindersRouteImport } from './routes/api/public/hooks/maintenance-reminders'
 import { Route as ApiPublicAuthFirebaseSessionRouteImport } from './routes/api/public/auth/firebase-session'
 import { Route as SocietySocietyResidentsIdRouteImport } from './routes/_society/society.residents.$id'
+import { Route as SocietySocietyFlatsIdRouteImport } from './routes/_society/society.flats.$id'
 import { Route as ResidentAppFeedPostIdRouteImport } from './routes/_resident/app.feed.$postId'
 
 const WelcomeRoute = WelcomeRouteImport.update({
@@ -371,6 +373,12 @@ const SocietySocietyContactsRoute = SocietySocietyContactsRouteImport.update({
   path: '/society/contacts',
   getParentRoute: () => SocietyRoute,
 } as any)
+const SocietySocietyCommunicationRoute =
+  SocietySocietyCommunicationRouteImport.update({
+    id: '/society/communication',
+    path: '/society/communication',
+    getParentRoute: () => SocietyRoute,
+  } as any)
 const SocietySocietyBylawsRoute = SocietySocietyBylawsRouteImport.update({
   id: '/society/bylaws',
   path: '/society/bylaws',
@@ -671,6 +679,11 @@ const SocietySocietyResidentsIdRoute =
     path: '/$id',
     getParentRoute: () => SocietySocietyResidentsRoute,
   } as any)
+const SocietySocietyFlatsIdRoute = SocietySocietyFlatsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => SocietySocietyFlatsRoute,
+} as any)
 const ResidentAppFeedPostIdRoute = ResidentAppFeedPostIdRouteImport.update({
   id: '/$postId',
   path: '/$postId',
@@ -752,13 +765,14 @@ export interface FileRoutesByFullPath {
   '/society/blocks': typeof SocietySocietyBlocksRoute
   '/society/business-profile': typeof SocietySocietyBusinessProfileRoute
   '/society/bylaws': typeof SocietySocietyBylawsRoute
+  '/society/communication': typeof SocietySocietyCommunicationRoute
   '/society/contacts': typeof SocietySocietyContactsRoute
   '/society/custom-fields': typeof SocietySocietyCustomFieldsRoute
   '/society/dashboard': typeof SocietySocietyDashboardRoute
   '/society/digest': typeof SocietySocietyDigestRoute
   '/society/expenses': typeof SocietySocietyExpensesRoute
   '/society/explorer': typeof SocietySocietyExplorerRoute
-  '/society/flats': typeof SocietySocietyFlatsRoute
+  '/society/flats': typeof SocietySocietyFlatsRouteWithChildren
   '/society/import': typeof SocietySocietyImportRoute
   '/society/leaderboard': typeof SocietySocietyLeaderboardRoute
   '/society/ledger': typeof SocietySocietyLedgerRoute
@@ -778,6 +792,7 @@ export interface FileRoutesByFullPath {
   '/society/verifications': typeof SocietySocietyVerificationsRoute
   '/society/visitors': typeof SocietySocietyVisitorsRoute
   '/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
+  '/society/flats/$id': typeof SocietySocietyFlatsIdRoute
   '/society/residents/$id': typeof SocietySocietyResidentsIdRoute
   '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
   '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
@@ -858,13 +873,14 @@ export interface FileRoutesByTo {
   '/society/blocks': typeof SocietySocietyBlocksRoute
   '/society/business-profile': typeof SocietySocietyBusinessProfileRoute
   '/society/bylaws': typeof SocietySocietyBylawsRoute
+  '/society/communication': typeof SocietySocietyCommunicationRoute
   '/society/contacts': typeof SocietySocietyContactsRoute
   '/society/custom-fields': typeof SocietySocietyCustomFieldsRoute
   '/society/dashboard': typeof SocietySocietyDashboardRoute
   '/society/digest': typeof SocietySocietyDigestRoute
   '/society/expenses': typeof SocietySocietyExpensesRoute
   '/society/explorer': typeof SocietySocietyExplorerRoute
-  '/society/flats': typeof SocietySocietyFlatsRoute
+  '/society/flats': typeof SocietySocietyFlatsRouteWithChildren
   '/society/import': typeof SocietySocietyImportRoute
   '/society/leaderboard': typeof SocietySocietyLeaderboardRoute
   '/society/ledger': typeof SocietySocietyLedgerRoute
@@ -884,6 +900,7 @@ export interface FileRoutesByTo {
   '/society/verifications': typeof SocietySocietyVerificationsRoute
   '/society/visitors': typeof SocietySocietyVisitorsRoute
   '/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
+  '/society/flats/$id': typeof SocietySocietyFlatsIdRoute
   '/society/residents/$id': typeof SocietySocietyResidentsIdRoute
   '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
   '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
@@ -970,13 +987,14 @@ export interface FileRoutesById {
   '/_society/society/blocks': typeof SocietySocietyBlocksRoute
   '/_society/society/business-profile': typeof SocietySocietyBusinessProfileRoute
   '/_society/society/bylaws': typeof SocietySocietyBylawsRoute
+  '/_society/society/communication': typeof SocietySocietyCommunicationRoute
   '/_society/society/contacts': typeof SocietySocietyContactsRoute
   '/_society/society/custom-fields': typeof SocietySocietyCustomFieldsRoute
   '/_society/society/dashboard': typeof SocietySocietyDashboardRoute
   '/_society/society/digest': typeof SocietySocietyDigestRoute
   '/_society/society/expenses': typeof SocietySocietyExpensesRoute
   '/_society/society/explorer': typeof SocietySocietyExplorerRoute
-  '/_society/society/flats': typeof SocietySocietyFlatsRoute
+  '/_society/society/flats': typeof SocietySocietyFlatsRouteWithChildren
   '/_society/society/import': typeof SocietySocietyImportRoute
   '/_society/society/leaderboard': typeof SocietySocietyLeaderboardRoute
   '/_society/society/ledger': typeof SocietySocietyLedgerRoute
@@ -996,6 +1014,7 @@ export interface FileRoutesById {
   '/_society/society/verifications': typeof SocietySocietyVerificationsRoute
   '/_society/society/visitors': typeof SocietySocietyVisitorsRoute
   '/_resident/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
+  '/_society/society/flats/$id': typeof SocietySocietyFlatsIdRoute
   '/_society/society/residents/$id': typeof SocietySocietyResidentsIdRoute
   '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
   '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
@@ -1079,6 +1098,7 @@ export interface FileRouteTypes {
     | '/society/blocks'
     | '/society/business-profile'
     | '/society/bylaws'
+    | '/society/communication'
     | '/society/contacts'
     | '/society/custom-fields'
     | '/society/dashboard'
@@ -1105,6 +1125,7 @@ export interface FileRouteTypes {
     | '/society/verifications'
     | '/society/visitors'
     | '/app/feed/$postId'
+    | '/society/flats/$id'
     | '/society/residents/$id'
     | '/api/public/auth/firebase-session'
     | '/api/public/hooks/maintenance-reminders'
@@ -1185,6 +1206,7 @@ export interface FileRouteTypes {
     | '/society/blocks'
     | '/society/business-profile'
     | '/society/bylaws'
+    | '/society/communication'
     | '/society/contacts'
     | '/society/custom-fields'
     | '/society/dashboard'
@@ -1211,6 +1233,7 @@ export interface FileRouteTypes {
     | '/society/verifications'
     | '/society/visitors'
     | '/app/feed/$postId'
+    | '/society/flats/$id'
     | '/society/residents/$id'
     | '/api/public/auth/firebase-session'
     | '/api/public/hooks/maintenance-reminders'
@@ -1296,6 +1319,7 @@ export interface FileRouteTypes {
     | '/_society/society/blocks'
     | '/_society/society/business-profile'
     | '/_society/society/bylaws'
+    | '/_society/society/communication'
     | '/_society/society/contacts'
     | '/_society/society/custom-fields'
     | '/_society/society/dashboard'
@@ -1322,6 +1346,7 @@ export interface FileRouteTypes {
     | '/_society/society/verifications'
     | '/_society/society/visitors'
     | '/_resident/app/feed/$postId'
+    | '/_society/society/flats/$id'
     | '/_society/society/residents/$id'
     | '/api/public/auth/firebase-session'
     | '/api/public/hooks/maintenance-reminders'
@@ -1705,6 +1730,13 @@ declare module '@tanstack/react-router' {
       path: '/society/contacts'
       fullPath: '/society/contacts'
       preLoaderRoute: typeof SocietySocietyContactsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/communication': {
+      id: '/_society/society/communication'
+      path: '/society/communication'
+      fullPath: '/society/communication'
+      preLoaderRoute: typeof SocietySocietyCommunicationRouteImport
       parentRoute: typeof SocietyRoute
     }
     '/_society/society/bylaws': {
@@ -2113,6 +2145,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SocietySocietyResidentsIdRouteImport
       parentRoute: typeof SocietySocietyResidentsRoute
     }
+    '/_society/society/flats/$id': {
+      id: '/_society/society/flats/$id'
+      path: '/$id'
+      fullPath: '/society/flats/$id'
+      preLoaderRoute: typeof SocietySocietyFlatsIdRouteImport
+      parentRoute: typeof SocietySocietyFlatsRoute
+    }
     '/_resident/app/feed/$postId': {
       id: '/_resident/app/feed/$postId'
       path: '/$postId'
@@ -2249,6 +2288,17 @@ const ResidentRouteWithChildren = ResidentRoute._addFileChildren(
   ResidentRouteChildren,
 )
 
+interface SocietySocietyFlatsRouteChildren {
+  SocietySocietyFlatsIdRoute: typeof SocietySocietyFlatsIdRoute
+}
+
+const SocietySocietyFlatsRouteChildren: SocietySocietyFlatsRouteChildren = {
+  SocietySocietyFlatsIdRoute: SocietySocietyFlatsIdRoute,
+}
+
+const SocietySocietyFlatsRouteWithChildren =
+  SocietySocietyFlatsRoute._addFileChildren(SocietySocietyFlatsRouteChildren)
+
 interface SocietySocietyResidentsRouteChildren {
   SocietySocietyResidentsIdRoute: typeof SocietySocietyResidentsIdRoute
 }
@@ -2274,13 +2324,14 @@ interface SocietyRouteChildren {
   SocietySocietyBlocksRoute: typeof SocietySocietyBlocksRoute
   SocietySocietyBusinessProfileRoute: typeof SocietySocietyBusinessProfileRoute
   SocietySocietyBylawsRoute: typeof SocietySocietyBylawsRoute
+  SocietySocietyCommunicationRoute: typeof SocietySocietyCommunicationRoute
   SocietySocietyContactsRoute: typeof SocietySocietyContactsRoute
   SocietySocietyCustomFieldsRoute: typeof SocietySocietyCustomFieldsRoute
   SocietySocietyDashboardRoute: typeof SocietySocietyDashboardRoute
   SocietySocietyDigestRoute: typeof SocietySocietyDigestRoute
   SocietySocietyExpensesRoute: typeof SocietySocietyExpensesRoute
   SocietySocietyExplorerRoute: typeof SocietySocietyExplorerRoute
-  SocietySocietyFlatsRoute: typeof SocietySocietyFlatsRoute
+  SocietySocietyFlatsRoute: typeof SocietySocietyFlatsRouteWithChildren
   SocietySocietyImportRoute: typeof SocietySocietyImportRoute
   SocietySocietyLeaderboardRoute: typeof SocietySocietyLeaderboardRoute
   SocietySocietyLedgerRoute: typeof SocietySocietyLedgerRoute
@@ -2312,13 +2363,14 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyBlocksRoute: SocietySocietyBlocksRoute,
   SocietySocietyBusinessProfileRoute: SocietySocietyBusinessProfileRoute,
   SocietySocietyBylawsRoute: SocietySocietyBylawsRoute,
+  SocietySocietyCommunicationRoute: SocietySocietyCommunicationRoute,
   SocietySocietyContactsRoute: SocietySocietyContactsRoute,
   SocietySocietyCustomFieldsRoute: SocietySocietyCustomFieldsRoute,
   SocietySocietyDashboardRoute: SocietySocietyDashboardRoute,
   SocietySocietyDigestRoute: SocietySocietyDigestRoute,
   SocietySocietyExpensesRoute: SocietySocietyExpensesRoute,
   SocietySocietyExplorerRoute: SocietySocietyExplorerRoute,
-  SocietySocietyFlatsRoute: SocietySocietyFlatsRoute,
+  SocietySocietyFlatsRoute: SocietySocietyFlatsRouteWithChildren,
   SocietySocietyImportRoute: SocietySocietyImportRoute,
   SocietySocietyLeaderboardRoute: SocietySocietyLeaderboardRoute,
   SocietySocietyLedgerRoute: SocietySocietyLedgerRoute,

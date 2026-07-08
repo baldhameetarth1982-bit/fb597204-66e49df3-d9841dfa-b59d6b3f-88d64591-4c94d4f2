@@ -10,7 +10,7 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
 } from "recharts";
 import { PageHeader, PageShell, EmptyState } from "@/components/shared/PageHeader";
-import { FinanceTabs } from "@/components/shared/FinanceTabs";
+import { AccountsCenterTabs } from "@/components/nav/AccountsCenterTabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -149,7 +149,7 @@ function ReportsPage() {
 
   return (
     <PageShell>
-      <FinanceTabs />
+      <AccountsCenterTabs />
       <PageHeader
         title="Reports"
         description="Income, expenses & net position — export for accountant or audit."

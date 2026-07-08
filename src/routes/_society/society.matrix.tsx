@@ -26,6 +26,9 @@ const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Se
 type FlatRow = { id: string; flat_number: string; block_name: string };
 type Period = { flat_id: string; period_start: string; status: string; amount_due: number; due_date: string | null };
 
+const STATUS_KEYS = ["Paid", "Pending", "Overdue", "Advance", "Upcoming"] as const;
+type StatusKey = (typeof STATUS_KEYS)[number] | "all";
+
 function MatrixPage() {
   const { societyId, loading: sidLoading } = useSocietyId();
   const [year, setYear] = useState(new Date().getFullYear());
@@ -33,6 +36,8 @@ function MatrixPage() {
   const [periods, setPeriods] = useState<Period[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
+  const [blockFilter, setBlockFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusKey>("all");
 
   const summaryFn = useServerFn(societyMaintenanceSummary);
   const { data: summary } = useQuery({
@@ -97,9 +102,23 @@ function MatrixPage() {
     return { label: "Pending", cls: "bg-amber-500/15 text-amber-700 dark:text-amber-300" };
   };
 
-  const filtered = flats.filter(
-    (f) => !q || (f.flat_number + " " + f.block_name).toLowerCase().includes(q.toLowerCase()),
-  );
+  const blockOptions = useMemo(() => {
+    const s = new Set<string>();
+    flats.forEach((f) => f.block_name && s.add(f.block_name));
+    return Array.from(s).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  }, [flats]);
+
+  const filtered = useMemo(() => {
+    return flats.filter((f) => {
+      if (q && !(f.flat_number + " " + f.block_name).toLowerCase().includes(q.toLowerCase())) return false;
+      if (blockFilter !== "all" && f.block_name !== blockFilter) return false;
+      if (statusFilter !== "all") {
+        const has = Array.from({ length: 12 }, (_, m) => cell(f.id, m).label).includes(statusFilter);
+        if (!has) return false;
+      }
+      return true;
+    });
+  }, [flats, q, blockFilter, statusFilter, periods, year]);
 
   function exportExcel() {
     const rows = filtered.map((f) => {
@@ -190,12 +209,40 @@ function MatrixPage() {
         </div>
       )}
 
-      <Input
-        placeholder="Search unit or block…"
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        className="max-w-sm mb-3 rounded-xl"
-      />
+      <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2 mb-3">
+        <Input
+          placeholder="Search unit or block…"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          className="rounded-xl"
+        />
+        <select
+          value={blockFilter}
+          onChange={(e) => setBlockFilter(e.target.value)}
+          className="rounded-xl border bg-background px-3 py-2 text-sm h-9"
+          aria-label="Block filter"
+        >
+          <option value="all">All blocks</option>
+          {blockOptions.map((b) => <option key={b} value={b}>{b}</option>)}
+        </select>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as StatusKey)}
+          className="rounded-xl border bg-background px-3 py-2 text-sm h-9"
+          aria-label="Status filter"
+        >
+          <option value="all">All statuses</option>
+          {STATUS_KEYS.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+      </div>
+
+      <div className="flex flex-wrap gap-1.5 mb-3 text-[10px]">
+        <LegendChip label="Paid" cls="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" />
+        <LegendChip label="Pending" cls="bg-amber-500/15 text-amber-700 dark:text-amber-300" />
+        <LegendChip label="Overdue" cls="bg-destructive/15 text-destructive" />
+        <LegendChip label="Advance" cls="bg-violet-500/15 text-violet-700 dark:text-violet-300" />
+        <LegendChip label="Upcoming" cls="bg-blue-500/10 text-blue-600" />
+      </div>
 
       {sidLoading || loading ? (
         <div className="grid place-items-center h-60">
@@ -239,6 +286,12 @@ function MatrixPage() {
         </div>
       )}
     </PageShell>
+  );
+}
+
+function LegendChip({ label, cls }: { label: string; cls: string }) {
+  return (
+    <span className={cn("rounded-full px-2 py-0.5 font-medium", cls)}>{label}</span>
   );
 }
 

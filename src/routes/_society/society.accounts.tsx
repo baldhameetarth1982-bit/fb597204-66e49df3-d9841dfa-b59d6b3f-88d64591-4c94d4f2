@@ -4,7 +4,7 @@ import { Calculator, Download, Loader2, TrendingUp, TrendingDown, Wallet, Landma
 import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { PageHeader, PageShell } from "@/components/shared/PageHeader";
-import { FinanceTabs } from "@/components/shared/FinanceTabs";
+import { AccountsCenterTabs } from "@/components/nav/AccountsCenterTabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -138,8 +138,8 @@ function AccountsPage() {
 
   return (
     <PageShell>
-      <PageHeader title="Income & Expense Accounts" description="Society finances with opening balances, FY filter & exports" />
-      <FinanceTabs />
+      <PageHeader title="Accounts Center" description="Society finances — opening balances, FY filter & exports." />
+      <AccountsCenterTabs />
 
       {/* Opening balances */}
       <Card className="rounded-2xl">

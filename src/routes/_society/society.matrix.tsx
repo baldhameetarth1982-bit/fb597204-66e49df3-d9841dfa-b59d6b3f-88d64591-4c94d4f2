@@ -26,6 +26,9 @@ const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Se
 type FlatRow = { id: string; flat_number: string; block_name: string };
 type Period = { flat_id: string; period_start: string; status: string; amount_due: number; due_date: string | null };
 
+const STATUS_KEYS = ["Paid", "Pending", "Overdue", "Advance", "Upcoming"] as const;
+type StatusKey = (typeof STATUS_KEYS)[number] | "all";
+
 function MatrixPage() {
   const { societyId, loading: sidLoading } = useSocietyId();
   const [year, setYear] = useState(new Date().getFullYear());
@@ -33,6 +36,8 @@ function MatrixPage() {
   const [periods, setPeriods] = useState<Period[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
+  const [blockFilter, setBlockFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusKey>("all");
 
   const summaryFn = useServerFn(societyMaintenanceSummary);
   const { data: summary } = useQuery({

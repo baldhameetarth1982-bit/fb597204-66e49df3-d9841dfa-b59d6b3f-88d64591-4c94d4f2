@@ -13,7 +13,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { PageShell, PageHeader } from "@/components/shared/PageHeader";
-import { FinanceTabs } from "@/components/shared/FinanceTabs";
+import { AccountsCenterTabs } from "@/components/nav/AccountsCenterTabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useSocietyId } from "@/hooks/useSocietyId";
@@ -103,7 +103,7 @@ function AdminLedger() {
 
   return (
     <PageShell>
-      <FinanceTabs />
+      <AccountsCenterTabs />
       <PageHeader
         title="Accounting Ledger"
         description="Track income & expenses for your society"

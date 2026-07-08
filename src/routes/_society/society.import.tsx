@@ -235,15 +235,65 @@ function ImportPage() {
     if (errors.length === 0) toast.success(`Imported ${flatCount} houses and ${resCount} residents`);
     else toast.warning(`Imported with ${errors.length} issue${errors.length === 1 ? "" : "s"}`);
   }
+  const currentStep: 1 | 2 | 3 =
+    result ? 3 : rows.length > 0 ? 2 : 1;
+
+  function downloadErrorReport() {
+    const errored = rows.filter((r) => r.errors.length > 0);
+    if (!errored.length) return;
+    const rowsOut = errored.map((r) => ({
+      excel_row: r.idx,
+      block: r.block,
+      flat_number: r.flat_number,
+      resident_name: r.resident_name,
+      phone: r.phone,
+      email: r.email,
+      type: r.type,
+      errors: r.errors.join("; "),
+    }));
+    const ws = XLSX.utils.json_to_sheet(rowsOut);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Errors");
+    XLSX.writeFile(wb, "sociohub-import-errors.xlsx");
+  }
+
+  const steps = [
+    { n: 1 as const, label: "Upload", icon: Upload },
+    { n: 2 as const, label: "Review", icon: ClipboardList },
+    { n: 3 as const, label: "Done", icon: ListChecks },
+  ];
 
   return (
     <PageShell>
       <PageHeader
         title="Bulk Import Residents"
-        description="Upload an Excel file to add blocks, houses, and offline residents in one shot"
+        description="Upload an Excel file to add blocks, houses, and offline residents in one shot."
       />
 
-      <Card className="rounded-2xl">
+      {/* Step tracker */}
+      <div className="mb-4 flex items-center gap-2">
+        {steps.map((s, i) => {
+          const Icon = s.icon;
+          const active = currentStep === s.n;
+          const done = currentStep > s.n;
+          return (
+            <div key={s.n} className="flex items-center gap-2 flex-1">
+              <div className={cn(
+                "flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium border w-full",
+                active ? "border-primary bg-primary text-primary-foreground" :
+                done ? "border-success-container bg-success-container text-success-container-foreground" :
+                "border-border bg-card text-muted-foreground",
+              )}>
+                <Icon className="h-3.5 w-3.5" />
+                <span className="truncate">Step {s.n}: {s.label}</span>
+              </div>
+              {i < steps.length - 1 && <div className="h-px flex-1 bg-border hidden sm:block" />}
+            </div>
+          );
+        })}
+      </div>
+
+      <Card className="rounded-2xl mb-4">
         <CardContent className="p-5 space-y-4">
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={downloadTemplate} className="rounded-xl">
@@ -267,52 +317,53 @@ function ImportPage() {
               <p>
                 Columns: <code>block, flat_number, resident_name, phone, email, type, property_number, ugvcl_number, share_certificate_number, offline</code>
               </p>
-              <p>Set <code>offline=yes</code> for residents who don't use the app. Online residents sign up & join via invite code.</p>
-              <p>Validation runs on upload; invalid rows won't be imported.</p>
+              <p>Set <code>offline=yes</code> for residents who don't use the app. Online residents sign up &amp; join via invite code.</p>
+              <p>Validation runs on upload. Only valid rows are imported — the file is never partially applied for corrupted data.</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
       {rows.length > 0 && (
-        <Card className="rounded-2xl">
+        <Card className="rounded-2xl mb-4">
           <CardContent className="p-5 space-y-3">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2 flex-wrap">
-                <p className="font-medium">Preview · {summary.total} rows</p>
-                <Badge variant="outline" className="border-emerald-500/30 text-emerald-600">
-                  {summary.valid} valid
-                </Badge>
-                {summary.invalid > 0 && (
-                  <Badge variant="outline" className="border-rose-500/30 text-rose-600">
-                    {summary.invalid} with errors
-                  </Badge>
-                )}
+                <p className="font-semibold">Preview · {summary.total} rows</p>
+                <StatusChip tone="success">{summary.valid} valid</StatusChip>
+                {summary.invalid > 0 && <StatusChip tone="danger">{summary.invalid} with errors</StatusChip>}
               </div>
-              <Button onClick={commit} disabled={busy || summary.valid === 0} className="rounded-xl">
-                {busy && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-                Import {summary.valid} row{summary.valid === 1 ? "" : "s"}
-              </Button>
+              <div className="flex gap-2 flex-wrap">
+                {summary.invalid > 0 && (
+                  <Button variant="outline" size="sm" onClick={downloadErrorReport} className="rounded-xl">
+                    <FileDown className="h-3.5 w-3.5 mr-1.5" />Error report
+                  </Button>
+                )}
+                <Button onClick={commit} disabled={busy || summary.valid === 0} className="rounded-xl">
+                  {busy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Send className="h-4 w-4 mr-1" />}
+                  Review &amp; import {summary.valid}
+                </Button>
+              </div>
             </div>
-            <div className="overflow-auto max-h-96 rounded-xl border">
+            <div className="overflow-auto max-h-96 rounded-xl border border-border">
               <table className="w-full text-xs">
-                <thead className="bg-secondary sticky top-0">
+                <thead className="bg-muted sticky top-0">
                   <tr>
                     {["#", "Block", "House", "Name", "Phone", "Type", "Errors"].map((h) => (
-                      <th key={h} className="p-2 text-left font-medium">{h}</th>
+                      <th key={h} className="p-2 text-left font-medium text-muted-foreground">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {rows.slice(0, 300).map((r) => (
-                    <tr key={r.idx} className={r.errors.length ? "border-t bg-rose-500/5" : "border-t"}>
+                    <tr key={r.idx} className={cn("border-t border-border", r.errors.length && "bg-danger-container/40")}>
                       <td className="p-2 text-muted-foreground">{r.idx}</td>
                       <td className="p-2">{r.block}</td>
                       <td className="p-2">{r.flat_number}</td>
                       <td className="p-2">{r.resident_name || "—"}</td>
                       <td className="p-2">{r.phone || "—"}</td>
                       <td className="p-2 capitalize">{r.type}</td>
-                      <td className="p-2 text-rose-600 text-[10px]">
+                      <td className="p-2 text-destructive text-[10px]">
                         {r.errors.length ? r.errors.join("; ") : ""}
                       </td>
                     </tr>
@@ -320,23 +371,32 @@ function ImportPage() {
                 </tbody>
               </table>
             </div>
+            {rows.length > 300 && (
+              <p className="text-[11px] text-muted-foreground">Showing first 300 rows in preview. All valid rows will be imported.</p>
+            )}
           </CardContent>
         </Card>
       )}
 
       {result && (
         <Card className="rounded-2xl">
-          <CardContent className="p-5 space-y-2">
-            <div className="flex items-center gap-2 text-emerald-600">
-              <CheckCircle2 className="h-5 w-5" />
-              Created {result.flats} houses · {result.residents} offline residents
+          <CardContent className="p-5 space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="h-9 w-9 rounded-xl bg-success-container text-success-container-foreground grid place-items-center">
+                <CheckCircle2 className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-semibold">Import complete</p>
+                <p className="text-xs text-muted-foreground">Created {result.flats} houses · {result.residents} offline residents.</p>
+              </div>
             </div>
             {result.errors.length > 0 && (
-              <div className="space-y-1 text-sm">
-                <div className="flex items-center gap-2 text-amber-600">
-                  <AlertTriangle className="h-4 w-4" /> {result.errors.length} issue{result.errors.length === 1 ? "" : "s"}
+              <div className="rounded-xl border border-warning-container bg-warning-container/40 p-3">
+                <div className="flex items-center gap-2 text-warning-container-foreground font-medium text-sm">
+                  <AlertTriangle className="h-4 w-4" />
+                  {result.errors.length} row{result.errors.length === 1 ? "" : "s"} had issues
                 </div>
-                <ul className="list-disc pl-5 text-xs text-muted-foreground">
+                <ul className="mt-1.5 list-disc pl-5 text-xs text-muted-foreground max-h-32 overflow-y-auto">
                   {result.errors.slice(0, 30).map((e, i) => <li key={i}>{e}</li>)}
                 </ul>
               </div>

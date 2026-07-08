@@ -160,15 +160,30 @@ function BillingPage() {
   }
 
 
+  const [statusFilter, setStatusFilter] = useState<"all" | "paid" | "unpaid" | "overdue" | "cancelled">("all");
+  const now = Date.now();
+
   const filtered = rows.filter((r) => {
-    if (!q.trim()) return true;
-    const t = q.toLowerCase();
-    return (
-      r.period_label.toLowerCase().includes(t) ||
-      r.flat?.flat_number.toLowerCase().includes(t) ||
-      r.flat?.block?.name?.toLowerCase().includes(t)
-    );
+    if (q.trim()) {
+      const t = q.toLowerCase();
+      const match =
+        r.period_label.toLowerCase().includes(t) ||
+        r.flat?.flat_number.toLowerCase().includes(t) ||
+        r.flat?.block?.name?.toLowerCase().includes(t);
+      if (!match) return false;
+    }
+    if (statusFilter === "all") return true;
+    if (statusFilter === "overdue") return r.status !== "paid" && r.status !== "cancelled" && new Date(r.due_date).getTime() < now;
+    return r.status === statusFilter;
   });
+
+  const counts = {
+    all: rows.length,
+    paid: rows.filter((r) => r.status === "paid").length,
+    unpaid: rows.filter((r) => r.status === "unpaid").length,
+    overdue: rows.filter((r) => r.status !== "paid" && r.status !== "cancelled" && new Date(r.due_date).getTime() < now).length,
+    cancelled: rows.filter((r) => r.status === "cancelled").length,
+  };
 
   if (sidLoading || loading) {
     return (
@@ -177,6 +192,14 @@ function BillingPage() {
       </div>
     );
   }
+
+  const FILTERS: Array<{ key: typeof statusFilter; label: string }> = [
+    { key: "all", label: `All (${counts.all})` },
+    { key: "unpaid", label: `Pending (${counts.unpaid})` },
+    { key: "overdue", label: `Overdue (${counts.overdue})` },
+    { key: "paid", label: `Paid (${counts.paid})` },
+    { key: "cancelled", label: `Cancelled (${counts.cancelled})` },
+  ];
 
   return (
     <PageShell>
@@ -209,6 +232,9 @@ function BillingPage() {
                   <Label>Due date</Label>
                   <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Bills are generated for every occupied flat in your society. Residents pay via the configured payment gateway.
+                </p>
               </div>
               <DialogFooter>
                 <Button onClick={generateBills} disabled={generating} className="rounded-xl">
@@ -229,7 +255,7 @@ function BillingPage() {
         />
       ) : (
         <>
-          <div className="relative mb-4 max-w-sm">
+          <div className="relative mb-3 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search by flat or period"
@@ -238,88 +264,108 @@ function BillingPage() {
               className="pl-9 rounded-xl"
             />
           </div>
-          <div className="rounded-2xl border border-border overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Flat</TableHead>
-                  <TableHead>Period</TableHead>
-                  <TableHead>Due</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="font-medium">
-                      {r.flat?.block?.name ? `${r.flat.block.name}-` : ""}{r.flat?.flat_number ?? "—"}
-                    </TableCell>
-                    <TableCell>{r.period_label}</TableCell>
-                    <TableCell>{new Date(r.due_date).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-right">
-                      <span className="inline-flex items-center"><IndianRupee className="h-3.5 w-3.5" />{Number(r.amount).toLocaleString("en-IN")}</span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={r.status === "paid" ? "secondary" : "destructive"} className="rounded-md">
-                        {r.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1.5 flex-wrap">
-                        {/* Mark-paid removed: settlements are automatic via Razorpay */}
 
+          <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
+            {FILTERS.map((f) => (
+              <button
+                key={f.key}
+                onClick={() => setStatusFilter(f.key)}
+                className={cn(
+                  "whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                  statusFilter === f.key
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-card text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {filtered.length === 0 ? (
+            <EmptyState icon={Receipt} title="No matching bills" description="Try a different filter or search term." />
+          ) : (
+            <div className="grid gap-2 pb-24">
+              {filtered.map((r) => {
+                const overdue = r.status !== "paid" && r.status !== "cancelled" && new Date(r.due_date).getTime() < now;
+                const tone =
+                  r.status === "paid" ? "success" :
+                  r.status === "cancelled" ? "neutral" :
+                  overdue ? "danger" : "warning";
+                const label = r.status === "unpaid" && overdue ? "OVERDUE" : r.status.toUpperCase();
+                const flatLabel = `${r.flat?.block?.name ? r.flat.block.name + "-" : ""}${r.flat?.flat_number ?? "—"}`;
+                return (
+                  <div key={r.id} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                    <Link
+                      to="/society/bills/$id"
+                      params={{ id: r.id }}
+                      className="flex items-start justify-between gap-3"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="font-semibold truncate">{flatLabel}</p>
+                          <StatusChip tone={tone}>{label}</StatusChip>
+                        </div>
+                        <p className="text-sm text-muted-foreground truncate">{r.period_label}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Due {new Date(r.due_date).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="inline-flex items-baseline text-lg font-bold">
+                          <IndianRupee className="h-4 w-4" />{Number(r.amount).toLocaleString("en-IN")}
+                        </p>
+                        <ChevronRight className="h-4 w-4 ml-auto text-muted-foreground" />
+                      </div>
+                    </Link>
+                    <div className="mt-3 flex flex-wrap gap-1.5 border-t border-border pt-3">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="rounded-lg h-8 text-xs"
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          try {
+                            await shareBillAsImage({
+                              societyName: "Society Bill",
+                              flatLabel,
+                              period: r.period_label,
+                              amount: Number(r.amount),
+                              dueDate: new Date(r.due_date).toLocaleDateString(),
+                              status: (r.status as any) || "due",
+                              adminSignature: user?.email?.split("@")[0],
+                            });
+                          } catch (err: any) { toast.error(err?.message ?? "Could not share"); }
+                        }}
+                      >
+                        Share
+                      </Button>
+                      {r.status !== "paid" && r.status !== "cancelled" && (
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="rounded-lg h-8"
-                          onClick={async () => {
-                            try {
-                              await shareBillAsImage({
-                                societyName: "Society Bill",
-                                flatLabel: `${r.flat?.block?.name ? r.flat.block.name + "-" : ""}${r.flat?.flat_number ?? ""}`,
-                                period: r.period_label,
-                                amount: Number(r.amount),
-                                dueDate: new Date(r.due_date).toLocaleDateString(),
-                                status: (r.status as any) || "due",
-                                adminSignature: user?.email?.split("@")[0],
-                              });
-                            } catch (e: any) {
-                              toast.error(e?.message ?? "Could not share");
-                            }
+                          className="rounded-lg h-8 text-xs text-destructive"
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            const reason = window.prompt("Reason for cancellation?");
+                            if (!reason) return;
+                            const { error } = await supabase.rpc("cancel_bill", { _bill_id: r.id, _reason: reason });
+                            if (error) toast.error(error.message);
+                            else { toast.success("Bill cancelled"); load(); }
                           }}
                         >
-                          Share
+                          Cancel
                         </Button>
-                        {r.status !== "paid" && r.status !== "cancelled" && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="rounded-lg h-8 text-destructive"
-                            onClick={async () => {
-                              const reason = window.prompt("Reason for cancellation?");
-                              if (!reason) return;
-                              const { error } = await supabase.rpc("cancel_bill", { _bill_id: r.id, _reason: reason });
-                              if (error) toast.error(error.message);
-                              else { toast.success("Bill cancelled"); load(); }
-                            }}
-                          >
-                            Cancel
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </>
       )}
-
-      {/* Manual payment dialog removed — Razorpay settles automatically */}
-
     </PageShell>
   );
 }
+

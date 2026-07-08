@@ -140,11 +140,14 @@ function ResidentsPage() {
     );
   }
 
+  const verifiedCount = residents.filter((r) => r.aadhaar_verified).length;
+  const unverifiedCount = residents.length - verifiedCount;
+
   return (
     <PageShell>
       <PageHeader
         title="Residents"
-        description={`${residents.length} people · ${flats.length} houses · ${vacantFlats.length} vacant`}
+        description={`${residents.length} people · ${flats.length} houses`}
         actions={
           <div className="flex gap-2">
             <Button size="sm" variant="outline" className="rounded-xl" onClick={exportExcel}>
@@ -157,9 +160,19 @@ function ResidentsPage() {
         }
       />
 
+      {/* Summary cards (real counts only) */}
+      {!isLoading && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4">
+          <SummaryCard label="Total" value={residents.length} />
+          <SummaryCard label="Verified" value={verifiedCount} tone="success" />
+          <SummaryCard label="Unverified" value={unverifiedCount} tone="warning" />
+          <SummaryCard label="Vacant houses" value={vacantFlats.length} tone="muted" />
+        </div>
+      )}
+
       {!isLoading && unassignedCount > 0 && (
-        <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-200 px-4 py-3 flex items-start gap-3">
-          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+        <div className="mb-4 rounded-xl border border-warning/30 bg-warning/10 text-warning-foreground px-4 py-3 flex items-start gap-3">
+          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-warning" />
           <div className="text-sm">
             <p className="font-medium">
               {unassignedCount} resident{unassignedCount === 1 ? "" : "s"} not linked to a house

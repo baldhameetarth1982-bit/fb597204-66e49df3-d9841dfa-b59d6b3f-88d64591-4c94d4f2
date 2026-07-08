@@ -254,7 +254,8 @@ function MaintenancePage() {
               </Link>
             </Button>
             <Button asChild variant="outline" className="rounded-xl h-auto py-3 flex-col gap-1.5">
-              <Link to="/society/billing/generate">
+              <Link to="/society/billing">
+
                 <ArrowRight className="h-4 w-4" />
                 <span className="text-xs">Billing Center</span>
               </Link>

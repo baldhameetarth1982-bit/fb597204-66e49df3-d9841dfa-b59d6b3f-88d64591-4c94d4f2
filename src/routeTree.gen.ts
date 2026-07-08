@@ -119,6 +119,7 @@ import { Route as ApiPublicHooksMaintenanceRemindersRouteImport } from './routes
 import { Route as ApiPublicAuthFirebaseSessionRouteImport } from './routes/api/public/auth/firebase-session'
 import { Route as SocietySocietyResidentsIdRouteImport } from './routes/_society/society.residents.$id'
 import { Route as SocietySocietyFlatsIdRouteImport } from './routes/_society/society.flats.$id'
+import { Route as SocietySocietyBillsIdRouteImport } from './routes/_society/society.bills.$id'
 import { Route as ResidentAppFeedPostIdRouteImport } from './routes/_resident/app.feed.$postId'
 
 const WelcomeRoute = WelcomeRouteImport.update({
@@ -684,6 +685,11 @@ const SocietySocietyFlatsIdRoute = SocietySocietyFlatsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => SocietySocietyFlatsRoute,
 } as any)
+const SocietySocietyBillsIdRoute = SocietySocietyBillsIdRouteImport.update({
+  id: '/society/bills/$id',
+  path: '/society/bills/$id',
+  getParentRoute: () => SocietyRoute,
+} as any)
 const ResidentAppFeedPostIdRoute = ResidentAppFeedPostIdRouteImport.update({
   id: '/$postId',
   path: '/$postId',
@@ -792,6 +798,7 @@ export interface FileRoutesByFullPath {
   '/society/verifications': typeof SocietySocietyVerificationsRoute
   '/society/visitors': typeof SocietySocietyVisitorsRoute
   '/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
+  '/society/bills/$id': typeof SocietySocietyBillsIdRoute
   '/society/flats/$id': typeof SocietySocietyFlatsIdRoute
   '/society/residents/$id': typeof SocietySocietyResidentsIdRoute
   '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
@@ -900,6 +907,7 @@ export interface FileRoutesByTo {
   '/society/verifications': typeof SocietySocietyVerificationsRoute
   '/society/visitors': typeof SocietySocietyVisitorsRoute
   '/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
+  '/society/bills/$id': typeof SocietySocietyBillsIdRoute
   '/society/flats/$id': typeof SocietySocietyFlatsIdRoute
   '/society/residents/$id': typeof SocietySocietyResidentsIdRoute
   '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
@@ -1014,6 +1022,7 @@ export interface FileRoutesById {
   '/_society/society/verifications': typeof SocietySocietyVerificationsRoute
   '/_society/society/visitors': typeof SocietySocietyVisitorsRoute
   '/_resident/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
+  '/_society/society/bills/$id': typeof SocietySocietyBillsIdRoute
   '/_society/society/flats/$id': typeof SocietySocietyFlatsIdRoute
   '/_society/society/residents/$id': typeof SocietySocietyResidentsIdRoute
   '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
@@ -1125,6 +1134,7 @@ export interface FileRouteTypes {
     | '/society/verifications'
     | '/society/visitors'
     | '/app/feed/$postId'
+    | '/society/bills/$id'
     | '/society/flats/$id'
     | '/society/residents/$id'
     | '/api/public/auth/firebase-session'
@@ -1233,6 +1243,7 @@ export interface FileRouteTypes {
     | '/society/verifications'
     | '/society/visitors'
     | '/app/feed/$postId'
+    | '/society/bills/$id'
     | '/society/flats/$id'
     | '/society/residents/$id'
     | '/api/public/auth/firebase-session'
@@ -1346,6 +1357,7 @@ export interface FileRouteTypes {
     | '/_society/society/verifications'
     | '/_society/society/visitors'
     | '/_resident/app/feed/$postId'
+    | '/_society/society/bills/$id'
     | '/_society/society/flats/$id'
     | '/_society/society/residents/$id'
     | '/api/public/auth/firebase-session'
@@ -2152,6 +2164,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SocietySocietyFlatsIdRouteImport
       parentRoute: typeof SocietySocietyFlatsRoute
     }
+    '/_society/society/bills/$id': {
+      id: '/_society/society/bills/$id'
+      path: '/society/bills/$id'
+      fullPath: '/society/bills/$id'
+      preLoaderRoute: typeof SocietySocietyBillsIdRouteImport
+      parentRoute: typeof SocietyRoute
+    }
     '/_resident/app/feed/$postId': {
       id: '/_resident/app/feed/$postId'
       path: '/$postId'
@@ -2350,6 +2369,7 @@ interface SocietyRouteChildren {
   SocietySocietyVehiclesRoute: typeof SocietySocietyVehiclesRoute
   SocietySocietyVerificationsRoute: typeof SocietySocietyVerificationsRoute
   SocietySocietyVisitorsRoute: typeof SocietySocietyVisitorsRoute
+  SocietySocietyBillsIdRoute: typeof SocietySocietyBillsIdRoute
 }
 
 const SocietyRouteChildren: SocietyRouteChildren = {
@@ -2389,6 +2409,7 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyVehiclesRoute: SocietySocietyVehiclesRoute,
   SocietySocietyVerificationsRoute: SocietySocietyVerificationsRoute,
   SocietySocietyVisitorsRoute: SocietySocietyVisitorsRoute,
+  SocietySocietyBillsIdRoute: SocietySocietyBillsIdRoute,
 }
 
 const SocietyRouteWithChildren =

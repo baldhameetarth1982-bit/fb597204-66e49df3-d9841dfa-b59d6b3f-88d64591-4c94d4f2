@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Receipt, Loader2, Plus, IndianRupee, Search, CheckCircle2 } from "lucide-react";
+import { Receipt, Loader2, Plus, IndianRupee, Search, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useSocietyId } from "@/hooks/useSocietyId";
@@ -8,17 +8,12 @@ import { PageHeader, PageShell, EmptyState } from "@/components/shared/PageHeade
 import { BillingCenterTabs } from "@/components/nav/BillingCenterTabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
+import { StatusChip } from "@/components/system/StatusChip";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { shareBillAsImage } from "@/components/billing/BillCardImage";
 

@@ -248,7 +248,7 @@ function MaintenancePage() {
               </Link>
             </Button>
             <Button asChild variant="outline" className="rounded-xl h-auto py-3 flex-col gap-1.5">
-              <Link to="/society/bill-studio">
+              <Link to="/society/billing">
                 <FileText className="h-4 w-4" />
                 <span className="text-xs">Generate Bill</span>
               </Link>

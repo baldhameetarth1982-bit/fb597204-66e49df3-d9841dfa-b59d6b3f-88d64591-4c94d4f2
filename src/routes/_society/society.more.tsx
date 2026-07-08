@@ -16,35 +16,31 @@ export const Route = createFileRoute("/_society/society/more")({
 type Tile = { to: string; label: string; icon: any };
 
 const MANAGEMENT: Tile[] = [
-  { to: "/society/blocks", label: "Blocks", icon: Building },
+  { to: "/society/residents", label: "Residents", icon: Users },
   { to: "/society/flats", label: "Houses", icon: Home },
-  { to: "/society/vehicles", label: "Vehicles", icon: Car },
-  { to: "/society/visitors", label: "Visitors", icon: UsersRound },
+  { to: "/society/blocks", label: "Blocks", icon: Building },
   { to: "/society/approvals", label: "Approvals", icon: UserCheck },
   { to: "/society/verifications", label: "Verifications", icon: ShieldCheck },
-  { to: "/society/announcements", label: "Announcements", icon: Megaphone },
-  { to: "/society/polls", label: "Polls", icon: Vote },
-  { to: "/society/bylaws", label: "Documents", icon: FileText },
-  { to: "/society/contacts", label: "Contacts", icon: PhoneIcon },
-  { to: "/society/digest", label: "AI Digest", icon: Sparkles },
+  { to: "/society/visitors", label: "Visitors", icon: UsersRound },
+  { to: "/society/vehicles", label: "Vehicles", icon: Car },
+  { to: "/society/maintenance", label: "Maintenance", icon: BookOpen },
+  { to: "/society/communication", label: "Communication", icon: MessageSquare },
 ];
 
 const FINANCE: Tile[] = [
   { to: "/society/billing", label: "Billing", icon: Receipt },
-  { to: "/society/maintenance", label: "Maintenance", icon: BookOpen },
   { to: "/society/accounts", label: "Accounts", icon: Wallet },
   { to: "/society/reports", label: "Reports", icon: BarChart3 },
   { to: "/society/expenses", label: "Expenses", icon: TrendingDown },
-  { to: "/society/ledger", label: "Ledger", icon: ClipboardList },
   { to: "/society/payouts", label: "Payouts", icon: Building2 },
 ];
 
 const OTHER: Tile[] = [
-  { to: "/society/business-profile", label: "Business profile", icon: Building2 },
+  { to: "/society/business-profile", label: "Society profile", icon: Building2 },
   { to: "/society/team", label: "Team & roles", icon: Users },
   { to: "/society/custom-fields", label: "Custom fields", icon: Settings2 },
   { to: "/society/setup", label: "Setup wizard", icon: Activity },
-  { to: "/society/leaderboard", label: "Leaderboard", icon: MessageSquare },
+  { to: "/society/leaderboard", label: "Leaderboard", icon: Sparkles },
   { to: "/society/explorer", label: "Explorer", icon: KeyRound },
   { to: "/support", label: "Help & support", icon: LifeBuoy },
 ];

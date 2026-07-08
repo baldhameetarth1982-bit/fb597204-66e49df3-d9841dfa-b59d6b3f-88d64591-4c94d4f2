@@ -289,6 +289,12 @@ function MatrixPage() {
   );
 }
 
+function LegendChip({ label, cls }: { label: string; cls: string }) {
+  return (
+    <span className={cn("rounded-full px-2 py-0.5 font-medium", cls)}>{label}</span>
+  );
+}
+
 function Kpi({
   icon: Icon,
   label,

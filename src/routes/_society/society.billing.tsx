@@ -9,16 +9,12 @@ import { BillingCenterTabs } from "@/components/nav/BillingCenterTabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { StatusChip } from "@/components/system/StatusChip";
-import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { shareBillAsImage } from "@/components/billing/BillCardImage";
 
 export const Route = createFileRoute("/_society/society/billing")({
-  head: () => ({ meta: [{ title: "Billing — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Bill History — SocioHub" }] }),
   component: BillingPage,
 });
 
@@ -38,16 +34,7 @@ function BillingPage() {
   const [rows, setRows] = useState<BillRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
-  const [open, setOpen] = useState(false);
-
-  // Generate dialog state
-  const [period, setPeriod] = useState("");
-  const [amount, setAmount] = useState("");
-  const [dueDate, setDueDate] = useState("");
-  const [generating, setGenerating] = useState(false);
-
-  // Cash / manual mark-paid removed — all payments are online (Razorpay)
-
+  const [statusFilter, setStatusFilter] = useState<"all" | "paid" | "unpaid" | "overdue" | "cancelled">("all");
 
   async function load() {
     if (!societyId) {
@@ -94,73 +81,6 @@ function BillingPage() {
 
   useEffect(() => { void load(); }, [societyId]);
 
-  async function generateBills() {
-    if (!societyId) return;
-    const amt = Number(amount);
-    if (!period.trim() || !amt || !dueDate) {
-      return toast.error("Fill all fields");
-    }
-    setGenerating(true);
-    const { data: flats, error: fErr } = await supabase
-      .from("flats")
-      .select("id, block_id")
-      .eq("society_id", societyId)
-      .not("block_id", "is", null);
-    if (fErr) {
-      setGenerating(false);
-      return toast.error(fErr.message);
-    }
-    if (!flats?.length) {
-      setGenerating(false);
-      return toast.error("Add blocks and assigned flats before generating bills.");
-    }
-    const { data: assigned } = await supabase
-      .from("flat_residents")
-      .select("flat_id")
-      .in("flat_id", flats.map((f: any) => f.id));
-    const assignedFlatIds = new Set((assigned ?? []).map((r: any) => r.flat_id));
-    const billableFlats = flats.filter((f: any) => assignedFlatIds.has(f.id));
-    if (!billableFlats.length) {
-      setGenerating(false);
-      return toast.error("Assign residents to flats before generating bills.");
-    }
-    const due = new Date(dueDate);
-    const start = new Date(due.getFullYear(), due.getMonth(), 1)
-      .toISOString().slice(0, 10);
-    const end = new Date(due.getFullYear(), due.getMonth() + 1, 0)
-      .toISOString().slice(0, 10);
-
-    const payload = billableFlats.map((f: any) => ({
-      society_id: societyId,
-      flat_id: f.id,
-      period_label: period.trim(),
-      period_start: start,
-      period_end: end,
-      amount: amt,
-      due_date: dueDate,
-      status: "unpaid",
-    }));
-    const { error } = await supabase.from("bills").insert(payload);
-    setGenerating(false);
-    if (error) return toast.error(error.message);
-    toast.success(`Generated ${payload.length} bills`);
-    setOpen(false);
-    setPeriod(""); setAmount(""); setDueDate("");
-    void load();
-  }
-
-  // Manual "mark paid" removed — all settlements arrive automatically via Razorpay.
-
-
-  async function markUnpaid(r: BillRow) {
-    const { error } = await supabase.from("bills").update({ status: "unpaid" }).eq("id", r.id);
-    if (error) return toast.error(error.message);
-    toast.success("Marked unpaid");
-    void load();
-  }
-
-
-  const [statusFilter, setStatusFilter] = useState<"all" | "paid" | "unpaid" | "overdue" | "cancelled">("all");
   const now = Date.now();
 
   const filtered = rows.filter((r) => {
@@ -203,49 +123,20 @@ function BillingPage() {
 
   return (
     <PageShell>
-      <BillingCenterTabs onGenerate={() => setOpen(true)} />
+      <BillingCenterTabs />
       <PageHeader
-        title="Billing"
-        description="Generate monthly maintenance bills and track payments."
+        title="Bill History"
+        description="Track every generated bill and its payment status."
         actions={
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button className="rounded-xl h-11">
-                <Plus className="h-4 w-4 mr-2" />
-                Generate bills
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Generate monthly bills</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="grid gap-2">
-                  <Label>Period label</Label>
-                  <Input value={period} onChange={(e) => setPeriod(e.target.value)} placeholder="e.g. June 2026" />
-                </div>
-                <div className="grid gap-2">
-                  <Label>Amount per flat (₹)</Label>
-                  <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="2500" />
-                </div>
-                <div className="grid gap-2">
-                  <Label>Due date</Label>
-                  <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Bills are generated for every occupied flat in your society. Residents pay via the configured payment gateway.
-                </p>
-              </div>
-              <DialogFooter>
-                <Button onClick={generateBills} disabled={generating} className="rounded-xl">
-                  {generating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Generate
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <Button asChild className="rounded-xl h-11">
+            <Link to="/society/billing/generate">
+              <Plus className="h-4 w-4 mr-2" />
+              Generate bills
+            </Link>
+          </Button>
         }
       />
+
 
       {rows.length === 0 ? (
         <EmptyState

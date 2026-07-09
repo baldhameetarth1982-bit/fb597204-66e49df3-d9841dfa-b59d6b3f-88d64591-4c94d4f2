@@ -99,22 +99,30 @@ function BillingSettingsPage() {
         description="Configure billing cycle, grace period, late fees, and payment gateway."
       />
 
-      {/* Payment gateway status */}
+      {/* Payment collection */}
       <Card className="rounded-2xl mb-4">
-        <CardContent className="p-5 flex items-center gap-4 flex-wrap">
-          <div className={`h-11 w-11 rounded-xl grid place-items-center shrink-0 ${gatewayConfigured ? "bg-success-container text-success-container-foreground" : "bg-warning-container text-warning-container-foreground"}`}>
-            {gatewayConfigured ? <ShieldCheck className="h-5 w-5" /> : <AlertTriangle className="h-5 w-5" />}
+        <CardContent className="p-5 flex items-start gap-4 flex-wrap">
+          <div className="h-11 w-11 rounded-xl grid place-items-center shrink-0 bg-primary/10 text-primary">
+            <ShieldCheck className="h-5 w-5" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold">Online payment gateway</p>
-            <p className="text-xs text-muted-foreground">
-              {gatewayConfigured
-                ? "Residents can pay bills online. Settlements are received automatically."
-                : "Gateway is not yet configured by the platform. Residents will not see a pay button."}
+            <p className="text-sm font-semibold">Maintenance payment methods</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Residents can pay by <b>Cash</b> or <b>Bank Transfer</b>. Bank transfers are marked
+              <span className="whitespace-nowrap"> "Pending verification" </span>
+              until you confirm the receipt.
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              Want online collection (UPI / cards / net-banking) for your society?
+              {" "}
+              <a href="mailto:support@sociohub.live" className="text-primary font-medium underline">
+                Contact SocioHub Support
+              </a>
+              {" "}to enable online payments.
             </p>
           </div>
           <StatusChip tone={gatewayConfigured ? "success" : "warning"}>
-            {gatewayConfigured ? "Active" : "Pending"}
+            {gatewayConfigured ? "Online enabled" : "Offline only"}
           </StatusChip>
         </CardContent>
       </Card>

@@ -68,10 +68,11 @@ function TermsPage() {
               <h2 className="text-lg font-semibold mb-2">4. Maintenance payments</h2>
               <p className="text-muted-foreground">
                 Maintenance dues collected via SocioHub are <strong>society dues</strong> owed by the resident to their
-                housing society. SocioHub facilitates the collection through Razorpay and routes the funds directly to
-                the society's verified bank account. SocioHub charges a transparent platform fee of{" "}
-                <strong>1.5% per successful transaction</strong>; the remaining 98.5% is credited to the society. The
-                fee breakdown is shown to the payer in a Transaction Summary before every payment.
+                housing society. By default, societies collect maintenance via <strong>Cash</strong> or{" "}
+                <strong>Bank Transfer</strong> and record receipts inside SocioHub. An online maintenance payment
+                gateway can be enabled per-society on request to SocioHub support. SocioHub does{" "}
+                <strong>not charge any platform fee, commission, or transaction fee</strong> on maintenance payments —
+                the full amount paid by the resident is credited to the society's verified bank account.
               </p>
             </section>
 

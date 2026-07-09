@@ -256,7 +256,7 @@ function ProtectedShell({ pathname }: { pathname: string }) {
           <AppHeader withSidebarTrigger={false} />
           <main
             className="flex-1"
-            style={{ paddingBottom: "calc(88px + env(safe-area-inset-bottom))" }}
+            style={{ paddingBottom: "calc(96px + env(safe-area-inset-bottom))" }}
           >
             <TransitionedOutlet />
           </main>
@@ -288,7 +288,7 @@ function ProtectedShell({ pathname }: { pathname: string }) {
           <AppHeader withSidebarTrigger={false} />
           <main
             className="flex-1"
-            style={{ paddingBottom: isPlanBlocker ? undefined : "calc(88px + env(safe-area-inset-bottom))" }}
+            style={{ paddingBottom: isPlanBlocker ? undefined : "calc(96px + env(safe-area-inset-bottom))" }}
           >
             <TransitionedOutlet />
           </main>
@@ -311,7 +311,7 @@ function ProtectedShell({ pathname }: { pathname: string }) {
               <AppHeader />
               <main
                 className="flex-1"
-                style={{ paddingBottom: "calc(88px + env(safe-area-inset-bottom))" }}
+                style={{ paddingBottom: "calc(96px + env(safe-area-inset-bottom))" }}
               >
                 <TransitionedOutlet />
               </main>
@@ -336,7 +336,7 @@ function ProtectedShell({ pathname }: { pathname: string }) {
             <AppHeader />
             <main
               className="flex-1"
-              style={{ paddingBottom: "calc(88px + env(safe-area-inset-bottom))" }}
+              style={{ paddingBottom: "calc(96px + env(safe-area-inset-bottom))" }}
             >
               <TransitionedOutlet />
             </main>

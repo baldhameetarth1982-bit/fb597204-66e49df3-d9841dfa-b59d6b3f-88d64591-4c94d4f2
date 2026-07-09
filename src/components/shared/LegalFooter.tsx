@@ -24,7 +24,7 @@ export function LegalFooter({ compact = false }: { compact?: boolean }) {
         </nav>
         <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
           <ShieldCheck className="h-3.5 w-3.5" aria-hidden />
-          <span>Secured by Razorpay · 128-bit SSL Encrypted</span>
+          <span>Secure payment gateway · 128-bit SSL Encrypted</span>
         </div>
       </div>
       <div className="mx-auto max-w-6xl px-5 mt-2 text-[10px] text-muted-foreground">

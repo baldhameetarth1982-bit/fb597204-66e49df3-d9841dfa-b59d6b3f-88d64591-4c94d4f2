@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useEffect, useMemo, useState } from "react";
 import { Calculator, Download, Loader2, TrendingUp, TrendingDown, Wallet, Landmark, Receipt, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,7 +20,7 @@ import autoTable from "jspdf-autotable";
 
 export const Route = createFileRoute("/_society/society/accounts")({
   head: () => ({ meta: [{ title: "Income & Expense Accounts — SocioHub" }] }),
-  component: AccountsPage,
+  component: () => (<FeatureGate feature="ledger"><AccountsPage /></FeatureGate>),
 });
 
 function fyRange(startMonth: number, anchor: Date) {

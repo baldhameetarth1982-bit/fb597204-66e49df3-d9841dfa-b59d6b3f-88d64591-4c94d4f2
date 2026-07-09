@@ -3,7 +3,7 @@ import { Receipt, Download, Clock, CheckCircle2, ArrowRight, Loader2, Home, Indi
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FeeBreakdown } from "@/components/shared/FeeBreakdown";
+
 import { cacheSet, cacheGet } from "@/lib/offline-cache";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -147,7 +147,6 @@ function BillsScreen() {
         <CardContent className="p-6">
           <div className="flex items-center gap-2 opacity-80">
             <p className="text-sm">Outstanding</p>
-            {outstanding && <FeeBreakdown amount={outstanding.amount} />}
           </div>
           <p className="mt-1 text-4xl font-semibold tabular-nums">₹{(outstanding?.amount ?? 0).toLocaleString("en-IN")}</p>
           <p className="mt-1 text-xs opacity-80">{outstanding ? `Due ${outstanding.due}` : "No outstanding dues"}</p>
@@ -254,7 +253,6 @@ function BillsScreen() {
                       <p className="font-semibold tabular-nums">
                         ₹{b.amount.toLocaleString("en-IN")}
                       </p>
-                      <FeeBreakdown amount={b.amount} />
                     </div>
                     {paid ? (
                       <Badge variant="secondary" className="mt-1 rounded-full text-[10px]">

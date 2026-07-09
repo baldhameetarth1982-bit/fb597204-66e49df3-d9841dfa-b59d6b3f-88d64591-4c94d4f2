@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useEffect, useState } from "react";
 import { ShieldCheck, Loader2, Plus, Trash2, Crown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,7 +20,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_society/society/team")({
   head: () => ({ meta: [{ title: "Team & Roles — SocioHub" }] }),
-  component: TeamPage,
+  component: () => (<FeatureGate feature="team_roles"><TeamPage /></FeatureGate>),
 });
 
 interface Profile {

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Loader2, Vote, X, Lock } from "lucide-react";
@@ -18,7 +19,7 @@ import { useSocietyId } from "@/hooks/useSocietyId";
 
 export const Route = createFileRoute("/_society/society/polls")({
   head: () => ({ meta: [{ title: "Polls — SocioHub" }] }),
-  component: AdminPolls,
+  component: () => (<FeatureGate feature="polls"><AdminPolls /></FeatureGate>),
 });
 
 interface Poll {

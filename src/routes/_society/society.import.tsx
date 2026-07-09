@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useMemo, useState } from "react";
 import {
   Upload, Loader2, FileDown, CheckCircle2, AlertTriangle, Info, ClipboardList, ListChecks, Send,
@@ -15,7 +16,7 @@ import * as XLSX from "xlsx";
 
 export const Route = createFileRoute("/_society/society/import")({
   head: () => ({ meta: [{ title: "Bulk Import — SocioHub" }] }),
-  component: ImportPage,
+  component: () => (<FeatureGate feature="resident_import"><ImportPage /></FeatureGate>),
 });
 
 type RawRow = Record<string, unknown>;

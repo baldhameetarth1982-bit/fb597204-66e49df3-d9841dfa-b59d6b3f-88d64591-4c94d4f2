@@ -90,7 +90,9 @@ function TrustScreen() {
               <div className="text-sm">
                 <p className="font-semibold">Where your maintenance goes</p>
                 <p className="text-muted-foreground text-xs mt-0.5">
-                  <span className="font-semibold text-foreground">98.5%</span> goes directly to your Society Fund · <span className="font-semibold text-foreground">1.5%</span> covers SocioHub platform fees. No hidden charges.
+                  <span className="font-semibold text-foreground">100%</span> of every maintenance
+                  payment goes directly to your Society Fund. SocioHub charges no platform fee on
+                  resident payments.
                 </p>
               </div>
             </CardContent>

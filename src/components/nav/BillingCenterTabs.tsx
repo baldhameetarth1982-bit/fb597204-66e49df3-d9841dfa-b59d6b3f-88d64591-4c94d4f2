@@ -18,7 +18,8 @@ const TABS: Array<{ to: string; label: string; icon: any; matches?: string[] }> 
 export function BillingCenterTabs() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   return (
-    <div className="-mx-4 mb-4 overflow-x-auto border-b border-border px-4 sm:mx-0 sm:px-0">
+    <div className="overflow-x-auto border-b border-border">
+
       <nav className="flex min-w-max gap-1 sm:gap-2" aria-label="Billing sections">
         {TABS.map((t) => {
           // Exact match for /society/billing (History) so /society/billing/generate doesn't also activate it.

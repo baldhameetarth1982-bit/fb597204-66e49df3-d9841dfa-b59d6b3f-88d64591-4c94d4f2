@@ -67,7 +67,7 @@ function PayoutsPage() {
       const res = await create({
         data: { societyId, holderName, email, phone, accountNumber, ifsc: ifsc.toUpperCase(), beneficiaryName, pan: pan.toUpperCase() },
       });
-      toast.success(res.status === "active" ? "Bank attached — payments live" : "Submitted — pending Razorpay review");
+      toast.success(res.status === "active" ? "Bank attached — payments live" : "Submitted — pending verification");
       setState(await info({ data: { societyId } }));
     } catch (e: any) { toast.error(e.message); }
     setSaving(false);

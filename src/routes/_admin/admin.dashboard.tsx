@@ -105,7 +105,7 @@ function AdminDashboard() {
         }
       />
 
-      <div className="px-4 -mt-6 space-y-4 max-w-5xl mx-auto">
+      <div className="px-4 pt-4 space-y-4 max-w-5xl mx-auto">
         <SectionCard title="Platform pulse" icon={ShieldCheck} bodyClassName="p-0">
           <ListCardGroup>
             <ListCard

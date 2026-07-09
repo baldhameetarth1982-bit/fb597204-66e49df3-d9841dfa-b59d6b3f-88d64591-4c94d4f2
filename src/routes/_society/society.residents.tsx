@@ -144,7 +144,7 @@ function ResidentsPage() {
     return (
       <div className="pb-24">
         <MobileHero title="Residents" icon={Users} variant="teal" />
-        <div className="px-4 -mt-6">
+        <div className="px-4 pt-4">
           <EmptyState icon={Users} title="Set up your society first" />
         </div>
       </div>
@@ -179,7 +179,7 @@ function ResidentsPage() {
         }
       />
 
-      <div className="px-4 -mt-6 space-y-4">
+      <div className="px-4 pt-4 space-y-4">
         {!isLoading && unassignedCount > 0 && (
           <div className="rounded-2xl border border-warning/30 bg-warning/10 text-warning-foreground px-4 py-3 flex items-start gap-3">
             <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-warning" />

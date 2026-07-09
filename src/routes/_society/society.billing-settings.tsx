@@ -101,7 +101,7 @@ function BillingSettingsPage() {
         icon={SlidersHorizontal}
         variant="teal"
       />
-      <div className="px-4 -mt-6 space-y-4">
+      <div className="px-4 pt-4 space-y-4">
         <div className="rounded-2xl bg-card border shadow-sm">
           <BillingCenterTabs />
         </div>

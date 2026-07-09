@@ -133,7 +133,7 @@ function ExplorerPage() {
         <PageHeader
           title={`${block?.name ?? ""} — ${flat.flat_number}`}
           description="Resident details, payment history & month grid"
-          actions={<Button variant="ghost" onClick={() => navigate({ to: "/society/explorer", search: { block: flat.block_id } })}><ArrowLeft className="h-4 w-4 mr-1" /> Back</Button>}
+          actions={<Button variant="ghost" onClick={() => navigate({ to: "/society/explorer", search: { block: flat.block_id, flat: undefined } })}><ArrowLeft className="h-4 w-4 mr-1" /> Back</Button>}
         />
         <Card className="rounded-2xl">
           <CardContent className="p-4 space-y-3">
@@ -220,7 +220,7 @@ function ExplorerPage() {
         <PageHeader
           title={block.name}
           description={`${k.total} units · ${k.clear} clear · ${k.pending} pending · ${k.overdue} overdue`}
-          actions={<Button variant="ghost" onClick={() => navigate({ to: "/society/explorer", search: {} })}><ArrowLeft className="h-4 w-4 mr-1" /> Blocks</Button>}
+          actions={<Button variant="ghost" onClick={() => navigate({ to: "/society/explorer", search: { block: undefined, flat: undefined } })}><ArrowLeft className="h-4 w-4 mr-1" /> Blocks</Button>}
         />
         <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 gap-3">
           {items.map((f) => {

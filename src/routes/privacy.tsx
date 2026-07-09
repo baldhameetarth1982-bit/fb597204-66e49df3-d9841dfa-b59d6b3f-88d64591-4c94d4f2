@@ -52,7 +52,7 @@ function PrivacyPage() {
                 <li><strong>Identity:</strong> full name, flat/unit details, block, relationship (owner / tenant / family).</li>
                 <li><strong>Contact:</strong> email address and phone number, used for authentication and notifications.</li>
                 <li><strong>Optional KYC:</strong> last four digits of Aadhaar and a document image, only when you choose to verify.</li>
-                <li><strong>Payment metadata:</strong> Razorpay payment/order IDs, amount, bill reference. We never store card numbers, CVV, or UPI PIN — those are handled directly by Razorpay under PCI-DSS compliance.</li>
+                <li><strong>Payment metadata:</strong> payment/order reference IDs, amount, bill reference. We never store card numbers, CVV, or UPI PIN — those are handled directly by our PCI-DSS compliant payment gateway.</li>
                 <li><strong>Community activity:</strong> posts, comments, complaints, poll votes and other content you publish inside your society.</li>
                 <li><strong>Device data:</strong> push-notification token, browser/user-agent, basic crash and error diagnostics.</li>
               </ul>

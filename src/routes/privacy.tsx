@@ -73,7 +73,7 @@ function PrivacyPage() {
                 <li>All traffic between your device and our servers is encrypted over TLS (HTTPS with 128-bit SSL or higher).</li>
                 <li>Data at rest is encrypted on managed Postgres storage.</li>
                 <li>Row-level security policies scope every query to your society; residents of one society cannot access another society's data.</li>
-                <li>Card and UPI data never touches our servers — Razorpay processes and stores it under PCI-DSS.</li>
+                <li>Card and UPI data never touches our servers — our PCI-DSS compliant payment gateway processes and stores it.</li>
                 <li>Aadhaar images live in a private storage bucket accessible only to authorised society admins for verification.</li>
               </ul>
             </section>

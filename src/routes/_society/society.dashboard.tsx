@@ -3,7 +3,7 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Building2, Wallet, AlertTriangle, Megaphone, Receipt, UserCheck, Users,
-  UsersRound, Bell, KeyRound, Copy, TrendingUp, Sparkles, ArrowUpRight,
+  UsersRound, KeyRound, Copy, TrendingUp, Sparkles, ArrowUpRight, Home,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { SocietyFinanceChart } from "@/components/shared/SocietyFinanceChart";
+import { MobileHero } from "@/components/shared/MobileHero";
+import { StatPill, StatPillRow } from "@/components/shared/StatPill";
+import { SectionCard } from "@/components/shared/SectionCard";
+import { ListCard, ListCardGroup } from "@/components/shared/ListCard";
 
 export const Route = createFileRoute("/_society/society/dashboard")({
   head: () => ({
@@ -161,29 +165,37 @@ function SocietyDashboard() {
 
   const displayName = profile?.full_name?.split(" ")[0] ?? "there";
 
+  const outstandingLabel = data && data.outstandingAmount > 0 ? INR.format(data.outstandingAmount) : "₹0";
+  const collectedLabel = data ? INR.format(data.collectedThisMonth) : "₹0";
+
   return (
-    <div className="px-4 md:px-8 py-5 md:py-8 max-w-7xl mx-auto">
-      {/* Top bar: greeting + notifications */}
-      <header className="mb-5 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
-        <div className="min-w-0">
-          <p className="text-xs text-muted-foreground">{greeting()}, {displayName}</p>
-          <h1 className="truncate text-xl md:text-2xl font-semibold tracking-tight">
-            {data?.societyName || "Your society"}
-          </h1>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Button asChild variant="ghost" size="icon" className="rounded-xl h-10 w-10">
-            <Link to="/app/notifications"><Bell className="h-5 w-5" /></Link>
+    <div className="pb-24">
+      <MobileHero
+        eyebrow={`${greeting()}, ${displayName}`}
+        title={data?.societyName || "Your society"}
+        subtitle="Your society at a glance — collections, approvals, and today's visitor flow."
+        icon={Home}
+        variant="teal"
+        action={
+          <Button asChild size="sm" className="rounded-xl h-9 bg-white/15 hover:bg-white/25 text-white border-0">
+            <Link to="/society/residents"><Users className="h-4 w-4 mr-1.5" /> Add</Link>
           </Button>
-          <Button asChild size="sm" className="rounded-xl h-10">
-            <Link to="/society/residents"><Users className="h-4 w-4 mr-1.5" /> Add resident</Link>
-          </Button>
-        </div>
-      </header>
+        }
+        stats={
+          <StatPillRow>
+            <StatPill label="Collected (mo)" value={collectedLabel} icon={Wallet} />
+            <StatPill label="Outstanding" value={outstandingLabel} icon={TrendingUp} />
+            <StatPill label="Houses" value={data?.totalFlats ?? "—"} icon={Building2} />
+            <StatPill label="Collection" value={data?.collectionPercent ? `${Math.round(data.collectionPercent)}%` : "—"} icon={Sparkles} />
+          </StatPillRow>
+        }
+      />
+
+      <div className="px-4 -mt-6 space-y-4 max-w-7xl mx-auto md:px-8">
 
       {/* Invite code (only if present) */}
       {data?.inviteCode && (
-        <Card className="rounded-2xl mb-5 border-primary/20 bg-primary/5">
+        <Card className="rounded-2xl border-primary/20 bg-primary/5">
           <CardContent className="p-4 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
             <div className="h-10 w-10 shrink-0 rounded-xl bg-primary/10 grid place-items-center">
               <KeyRound className="h-4 w-4 text-primary" />
@@ -198,6 +210,8 @@ function SocietyDashboard() {
           </CardContent>
         </Card>
       )}
+
+
 
       {/* Primary action tiles — highest urgency */}
       <section className="grid grid-cols-3 gap-2 sm:gap-3 mb-5">
@@ -343,6 +357,7 @@ function SocietyDashboard() {
           </CardContent>
         </Card>
       )}
+      </div>
     </div>
   );
 }

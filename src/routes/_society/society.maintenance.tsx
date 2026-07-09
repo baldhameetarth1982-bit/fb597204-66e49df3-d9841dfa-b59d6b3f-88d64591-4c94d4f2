@@ -4,11 +4,14 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   Loader2, Home, CheckCircle2, AlertTriangle, TrendingUp, IndianRupee,
-  Upload, Download, FileText, ArrowRight, CalendarRange,
+  Upload, Download, FileText, ArrowRight, CalendarRange, BookOpen,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
-import { PageHeader, PageShell, EmptyState } from "@/components/shared/PageHeader";
+import { EmptyState } from "@/components/shared/PageHeader";
+import { MobileHero } from "@/components/shared/MobileHero";
+import { StatPill, StatPillRow } from "@/components/shared/StatPill";
+import { SectionCard } from "@/components/shared/SectionCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -106,23 +109,43 @@ function MaintenancePage() {
 
   if (sidLoading || sLoading) {
     return (
-      <PageShell>
-        <div className="min-h-[40vh] grid place-items-center">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
-      </PageShell>
+      <div className="min-h-[40vh] grid place-items-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
     );
   }
 
   const hasAnyData = (summary?.total_houses ?? 0) > 0;
   const years = [year - 1, year, year + 1];
+  const outstandingAmt = scopeTotals.outstandingAmt;
 
   return (
-    <PageShell>
-      <PageHeader
+    <div className="pb-24">
+      <MobileHero
+        eyebrow="Operations"
         title="Maintenance"
-        description="Monthly maintenance status per house — independent of bills."
+        subtitle="Monthly maintenance status per house — independent of bills."
+        icon={BookOpen}
+        variant="teal"
+        action={
+          <Button asChild size="sm" variant="secondary" className="rounded-xl h-9 bg-white/15 hover:bg-white/25 text-white border-0">
+            <Link to="/society/matrix">Matrix <ArrowRight className="h-3.5 w-3.5 ml-1" /></Link>
+          </Button>
+        }
+        stats={
+          hasAnyData && summary ? (
+            <StatPillRow>
+              <StatPill label="Houses" value={summary.total_houses} icon={Home} />
+              <StatPill label="Paid" value={scopeTotals.paid} icon={CheckCircle2} />
+              <StatPill label="Pending" value={scopeTotals.pending + scopeTotals.overdue} icon={AlertTriangle} />
+              <StatPill label="Outstanding" value={outstandingAmt > 0 ? `₹${outstandingAmt.toLocaleString("en-IN")}` : "₹0"} icon={IndianRupee} />
+            </StatPillRow>
+          ) : undefined
+        }
       />
+
+      <div className="px-4 -mt-6 space-y-4">
+
 
       {/* Filters */}
       <Card className="rounded-2xl">
@@ -277,7 +300,8 @@ function MaintenancePage() {
           description="Import the yearly matrix or open the Matrix to start tracking maintenance."
         />
       )}
-    </PageShell>
+      </div>
+    </div>
   );
 }
 

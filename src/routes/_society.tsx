@@ -38,7 +38,7 @@ function SocietyGuard() {
   if (primaryRole !== ROLES.SOCIETY_ADMIN && primaryRole !== ROLES.BLOCK_ADMIN) {
     return <Navigate to={primaryRole ? ROLE_HOME[primaryRole] : "/login"} replace />;
   }
-  if (!societyId) return <Navigate to="/onboarding" replace />;
+  if (!societyId) return <Navigate to="/onboarding" search={{ ref: undefined }} replace />;
   if (!isSuper && societyId && access === false && !pathname.endsWith("/plan-required")) {
     return <Navigate to="/society/plan-required" replace />;
   }

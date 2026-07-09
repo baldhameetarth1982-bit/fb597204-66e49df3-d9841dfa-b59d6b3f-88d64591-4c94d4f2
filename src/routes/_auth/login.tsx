@@ -55,7 +55,7 @@ function LoginPage() {
   if (isAuthenticated) {
     if (primaryRole === ROLES.SUPER_ADMIN) return <Navigate to={ROLE_HOME[ROLES.SUPER_ADMIN]} replace />;
     if (primaryRole && profile?.society_id) return <Navigate to={ROLE_HOME[primaryRole]} replace />;
-    return <Navigate to="/onboarding" replace />;
+    return <Navigate to="/onboarding" search={{ ref: undefined }} replace />;
   }
 
   async function submitEmail(e: React.FormEvent) {

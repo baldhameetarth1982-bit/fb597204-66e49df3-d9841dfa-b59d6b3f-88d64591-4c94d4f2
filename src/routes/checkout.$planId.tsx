@@ -112,7 +112,7 @@ function CheckoutPage() {
                     <div>
                       <p className="font-semibold">Payments are being finalised</p>
                       <p className="text-sm text-muted-foreground mt-1">
-                        We are completing our Razorpay merchant verification. Checkout will go live shortly. For
+                        We are completing our payment gateway verification. Checkout will go live shortly. For
                         anything urgent, email{" "}
                         <a href="mailto:sociohub710@gmail.com" className="underline">sociohub710@gmail.com</a>.
                       </p>

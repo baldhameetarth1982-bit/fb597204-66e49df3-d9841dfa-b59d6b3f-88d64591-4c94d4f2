@@ -139,7 +139,7 @@ function PlanRequired() {
         </div>
 
         <div className="text-center text-sm text-muted-foreground space-y-2">
-          <p className="flex items-center justify-center gap-2"><ShieldCheck className="h-4 w-4" /> Secured by Razorpay · GST invoice</p>
+          <p className="flex items-center justify-center gap-2"><ShieldCheck className="h-4 w-4" /> Secure payment gateway · GST invoice</p>
           <button onClick={() => signOut()} className="underline text-xs text-muted-foreground">Sign out</button>
         </div>
       </div>

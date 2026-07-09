@@ -1,17 +1,27 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Building2, Search, Loader2, Gift, Ban, RotateCcw, KeyRound, Plus } from "lucide-react";
+import {
+  Building2, Search, Loader2, Gift, Ban, RotateCcw, KeyRound, Plus, MoreVertical,
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import { MobileHero } from "@/components/shared/MobileHero";
+import { StatPill, StatPillRow } from "@/components/shared/StatPill";
+import { SectionCard } from "@/components/shared/SectionCard";
+import { StatusChip } from "@/components/system/StatusChip";
 
 export const Route = createFileRoute("/_admin/admin/societies")({
   head: () => ({ meta: [{ title: "Societies — Super Admin" }] }),
@@ -24,9 +34,20 @@ type Society = {
   status: string; created_at: string;
 };
 
+type Filter = "all" | "active" | "trialing" | "suspended";
+
+function statusTone(s: string): "success" | "warning" | "danger" | "info" | "neutral" {
+  if (s === "active") return "success";
+  if (s === "trialing") return "info";
+  if (s === "suspended") return "danger";
+  if (s === "expired") return "warning";
+  return "neutral";
+}
+
 function SocietiesPage() {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
+  const [filter, setFilter] = useState<Filter>("all");
   const [grantFor, setGrantFor] = useState<Society | null>(null);
   const [planId, setPlanId] = useState("basic");
   const [months, setMonths] = useState(1);
@@ -42,14 +63,29 @@ function SocietiesPage() {
 
   const { data: plans = [] } = useQuery({
     queryKey: ["plans-min"],
-    queryFn: async () => (await supabase.from("plans").select("id,name").order("sort_order")).data ?? [],
+    queryFn: async () =>
+      (await supabase.from("plans").select("id,name").order("sort_order")).data ?? [],
   });
+
+  const counts = useMemo(() => {
+    const c = { all: rows.length, active: 0, trialing: 0, suspended: 0 };
+    for (const r of rows) {
+      if (r.status === "suspended") c.suspended++;
+      else if (r.plan_status === "active") c.active++;
+      else if (r.plan_status === "trialing") c.trialing++;
+    }
+    return c;
+  }, [rows]);
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
-    if (!s) return rows;
-    return rows.filter((r) => r.name.toLowerCase().includes(s) || r.id.includes(s));
-  }, [rows, q]);
+    let list = rows;
+    if (filter === "active") list = list.filter((r) => r.plan_status === "active" && r.status !== "suspended");
+    else if (filter === "trialing") list = list.filter((r) => r.plan_status === "trialing");
+    else if (filter === "suspended") list = list.filter((r) => r.status === "suspended");
+    if (s) list = list.filter((r) => r.name.toLowerCase().includes(s) || r.id.includes(s));
+    return list;
+  }, [rows, q, filter]);
 
   const setStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
@@ -88,94 +124,141 @@ function SocietiesPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  return (
-    <div className="px-6 py-8 space-y-6 max-w-7xl">
-      <header className="flex items-center gap-3">
-        <Building2 className="h-7 w-7 text-primary" />
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Societies</h1>
-          <p className="text-sm text-muted-foreground">Manage every society across the platform.</p>
-        </div>
-      </header>
+  const chips: { key: Filter; label: string; count: number }[] = [
+    { key: "all", label: "All", count: counts.all },
+    { key: "active", label: "Active", count: counts.active },
+    { key: "trialing", label: "Trial", count: counts.trialing },
+    { key: "suspended", label: "Suspended", count: counts.suspended },
+  ];
 
-      <Card className="rounded-2xl">
-        <CardContent className="p-4">
+  return (
+    <div className="min-h-dvh bg-muted/30 pb-24">
+      <MobileHero
+        eyebrow="Super Admin"
+        title="Societies"
+        subtitle="Every society on SocioHub — grant, suspend, restore, reset invites."
+        icon={Building2}
+        variant="navy"
+        stats={
+          <StatPillRow>
+            <StatPill label="Total" value={counts.all} />
+            <StatPill label="Active" value={counts.active} />
+            <StatPill label="Trial" value={counts.trialing} />
+            <StatPill label="Suspended" value={counts.suspended} />
+          </StatPillRow>
+        }
+      />
+
+      <div className="px-4 -mt-6 space-y-4 max-w-5xl mx-auto">
+        <div className="rounded-3xl bg-card border shadow-sm p-3 space-y-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search by name or id…" value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
+            <Input
+              placeholder="Search by name or id…"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              className="pl-9 rounded-xl border-0 bg-muted/60"
+            />
           </div>
-        </CardContent>
-      </Card>
+          <div className="flex gap-1.5 overflow-x-auto -mx-1 px-1 no-scrollbar">
+            {chips.map((c) => (
+              <button
+                key={c.key}
+                onClick={() => setFilter(c.key)}
+                className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold border transition ${
+                  filter === c.key
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background text-foreground border-border hover:bg-muted"
+                }`}
+              >
+                {c.label} · {c.count}
+              </button>
+            ))}
+          </div>
+        </div>
 
-      <Card className="rounded-2xl">
-        <CardContent className="p-0">
+        <SectionCard
+          title={filter === "all" ? "All societies" : chips.find((c) => c.key === filter)?.label}
+          description={`${filtered.length} shown`}
+          bodyClassName="p-0"
+        >
           {isLoading ? (
-            <div className="p-8 text-center"><Loader2 className="h-5 w-5 animate-spin inline" /></div>
+            <div className="p-10 text-center">
+              <Loader2 className="h-5 w-5 animate-spin inline text-muted-foreground" />
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="p-10 text-center text-sm text-muted-foreground">No societies match.</div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Plan</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Expires</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="font-medium">{r.name}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{r.plan_id ?? "—"}</Badge>{" "}
-                      <span className="text-xs text-muted-foreground">{r.plan_status}</span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={r.status === "active" ? "default" : r.status === "suspended" ? "destructive" : "outline"}>
-                        {r.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-xs">
-                      {r.plan_expires_at ? new Date(r.plan_expires_at).toLocaleDateString() : "—"}
-                    </TableCell>
-                    <TableCell className="text-xs">{new Date(r.created_at).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-right space-x-1">
-                      <Button size="sm" variant="outline" onClick={() => { setGrantFor(r); setPlanId(r.plan_id ?? "basic"); setMonths(1); }}>
+            <div className="divide-y divide-border/60">
+              {filtered.map((r) => (
+                <div key={r.id} className="p-4 grid grid-cols-[minmax(0,1fr)_auto] gap-3 items-start">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-semibold truncate">{r.name}</span>
+                      <StatusChip tone={statusTone(r.status === "suspended" ? "suspended" : r.plan_status)}>
+                        {r.status === "suspended" ? "suspended" : r.plan_status}
+                      </StatusChip>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1 truncate">
+                      Plan <span className="font-medium text-foreground">{r.plan_id ?? "—"}</span>
+                      {r.plan_expires_at && (
+                        <> · expires {new Date(r.plan_expires_at).toLocaleDateString()}</>
+                      )}
+                      <> · joined {new Date(r.created_at).toLocaleDateString()}</>
+                    </div>
+                    <div className="flex gap-1.5 mt-3 flex-wrap">
+                      <Button
+                        size="sm" variant="outline" className="rounded-full h-8 text-xs"
+                        onClick={() => { setGrantFor(r); setPlanId(r.plan_id ?? "basic"); setMonths(1); }}
+                      >
                         <Gift className="h-3.5 w-3.5 mr-1" />Grant
                       </Button>
                       {r.status === "active" ? (
-                        <Button size="sm" variant="outline" onClick={() => setStatus.mutate({ id: r.id, status: "suspended" })}>
+                        <Button
+                          size="sm" variant="outline" className="rounded-full h-8 text-xs"
+                          onClick={() => setStatus.mutate({ id: r.id, status: "suspended" })}
+                        >
                           <Ban className="h-3.5 w-3.5 mr-1" />Suspend
                         </Button>
                       ) : (
-                        <Button size="sm" variant="outline" onClick={() => setStatus.mutate({ id: r.id, status: "active" })}>
+                        <Button
+                          size="sm" variant="outline" className="rounded-full h-8 text-xs"
+                          onClick={() => setStatus.mutate({ id: r.id, status: "active" })}
+                        >
                           <RotateCcw className="h-3.5 w-3.5 mr-1" />Restore
                         </Button>
                       )}
-                      <Button size="sm" variant="outline" onClick={() => resetInvite.mutate(r.id)}>
-                        <KeyRound className="h-3.5 w-3.5 mr-1" />Invite
+                    </div>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="icon" variant="ghost" className="rounded-full h-8 w-8">
+                        <MoreVertical className="h-4 w-4" />
                       </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {filtered.length === 0 && (
-                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No societies</TableCell></TableRow>
-                )}
-              </TableBody>
-            </Table>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => resetInvite.mutate(r.id)}>
+                        <KeyRound className="h-4 w-4 mr-2" />Reset invite code
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              ))}
+            </div>
           )}
-        </CardContent>
-      </Card>
+        </SectionCard>
+      </div>
 
       <Dialog open={!!grantFor} onOpenChange={(o) => !o && setGrantFor(null)}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Grant / Extend plan — {grantFor?.name}</DialogTitle></DialogHeader>
+        <DialogContent className="rounded-3xl">
+          <DialogHeader>
+            <DialogTitle>Grant / extend plan — {grantFor?.name}</DialogTitle>
+          </DialogHeader>
           <div className="space-y-3">
             <div>
               <Label>Plan</Label>
               <Select value={planId} onValueChange={setPlanId}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className="rounded-xl mt-1"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {plans.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                 </SelectContent>
@@ -183,12 +266,20 @@ function SocietiesPage() {
             </div>
             <div>
               <Label>Months</Label>
-              <Input type="number" min={1} max={120} value={months} onChange={(e) => setMonths(Math.max(1, Number(e.target.value) || 1))} />
+              <Input
+                type="number" min={1} max={120} value={months}
+                onChange={(e) => setMonths(Math.max(1, Number(e.target.value) || 1))}
+                className="rounded-xl mt-1"
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setGrantFor(null)}>Cancel</Button>
-            <Button onClick={() => grantPlan.mutate()} disabled={grantPlan.isPending}>
+            <Button variant="outline" className="rounded-xl" onClick={() => setGrantFor(null)}>Cancel</Button>
+            <Button
+              className="rounded-xl"
+              onClick={() => grantPlan.mutate()}
+              disabled={grantPlan.isPending}
+            >
               {grantPlan.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
               <Plus className="h-4 w-4 mr-1" />Apply
             </Button>

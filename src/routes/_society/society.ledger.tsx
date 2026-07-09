@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Loader2, TrendingUp, TrendingDown, Trash2 } from "lucide-react";
@@ -20,7 +21,7 @@ import { useSocietyId } from "@/hooks/useSocietyId";
 
 export const Route = createFileRoute("/_society/society/ledger")({
   head: () => ({ meta: [{ title: "Accounting — SocioHub" }] }),
-  component: AdminLedger,
+  component: () => (<FeatureGate feature="ledger"><AdminLedger /></FeatureGate>),
 });
 
 interface Entry {

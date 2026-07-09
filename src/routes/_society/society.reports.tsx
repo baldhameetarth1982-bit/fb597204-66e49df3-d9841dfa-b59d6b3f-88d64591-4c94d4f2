@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, startOfMonth, subMonths } from "date-fns";
@@ -21,7 +22,7 @@ import { useSocietyId } from "@/hooks/useSocietyId";
 
 export const Route = createFileRoute("/_society/society/reports")({
   head: () => ({ meta: [{ title: "Reports — SocioHub" }] }),
-  component: ReportsPage,
+  component: () => (<FeatureGate feature="advanced_reports"><ReportsPage /></FeatureGate>),
 });
 
 const INR = new Intl.NumberFormat("en-IN", {

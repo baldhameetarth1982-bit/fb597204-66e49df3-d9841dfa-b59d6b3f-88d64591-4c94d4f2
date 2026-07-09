@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useEffect, useState } from "react";
 import { Loader2, Sparkles, Save, Building2, ArrowRight } from "lucide-react";
 import { Link } from "@tanstack/react-router";
@@ -14,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_society/society/bill-studio")({
   head: () => ({ meta: [{ title: "Bill Templates — SocioHub" }] }),
-  component: BillTemplatesPage,
+  component: () => (<FeatureGate feature="bill_templates"><BillTemplatesPage /></FeatureGate>),
 });
 
 /**

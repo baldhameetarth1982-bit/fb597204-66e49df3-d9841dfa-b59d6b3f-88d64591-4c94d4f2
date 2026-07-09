@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Sparkles, Loader2, TrendingUp, AlertTriangle, Users, Receipt, Lightbulb } from "lucide-react";
@@ -13,7 +14,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_society/society/digest")({
   head: () => ({ meta: [{ title: "AI Insights — SocioHub" }] }),
-  component: DigestPage,
+  component: () => (<FeatureGate feature="ai_digest"><DigestPage /></FeatureGate>),
 });
 
 interface Insights {

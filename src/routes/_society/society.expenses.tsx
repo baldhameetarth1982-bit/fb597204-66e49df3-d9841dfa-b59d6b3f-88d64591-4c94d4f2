@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Wallet, Loader2, Plus, Trash2 } from "lucide-react";
@@ -14,7 +15,7 @@ import { AccountsCenterTabs } from "@/components/nav/AccountsCenterTabs";
 
 export const Route = createFileRoute("/_society/society/expenses")({
   head: () => ({ meta: [{ title: "Expenses — SocioHub" }] }),
-  component: ExpensesPage,
+  component: () => (<FeatureGate feature="expenses"><ExpensesPage /></FeatureGate>),
 });
 
 const INR = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });

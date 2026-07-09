@@ -76,8 +76,8 @@ function RefundPage() {
             <h2 className="text-lg font-semibold mb-2">5. How to submit a refund request</h2>
             <ol className="list-decimal pl-6 space-y-1 text-muted-foreground">
               <li>Email <a href="mailto:sociohub710@gmail.com" className="underline">sociohub710@gmail.com</a> from your registered email.</li>
-              <li>Include the Razorpay Payment ID (starts with <code>pay_</code>) and a short description.</li>
-              <li>Attach a screenshot of the bank debit or Razorpay receipt.</li>
+              <li>Include the payment reference ID and a short description.</li>
+              <li>Attach a screenshot of the bank debit or payment receipt.</li>
               <li>You will receive an acknowledgement within 24 hours and a resolution within 5–7 working days.</li>
             </ol>
           </section>

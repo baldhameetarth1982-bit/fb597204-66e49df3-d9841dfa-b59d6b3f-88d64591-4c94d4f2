@@ -7,7 +7,7 @@ export function PaymentSecurityBadge({ className = "" }: { className?: string })
       aria-label="Payment security"
     >
       <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" aria-hidden />
-      <span>Secured by Razorpay</span>
+      <span>Secure payment gateway</span>
       <span className="opacity-40">·</span>
       <Lock className="h-3 w-3" aria-hidden />
       <span>128-bit SSL Encrypted Transactions</span>

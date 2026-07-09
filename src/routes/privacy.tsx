@@ -52,7 +52,7 @@ function PrivacyPage() {
                 <li><strong>Identity:</strong> full name, flat/unit details, block, relationship (owner / tenant / family).</li>
                 <li><strong>Contact:</strong> email address and phone number, used for authentication and notifications.</li>
                 <li><strong>Optional KYC:</strong> last four digits of Aadhaar and a document image, only when you choose to verify.</li>
-                <li><strong>Payment metadata:</strong> Razorpay payment/order IDs, amount, bill reference. We never store card numbers, CVV, or UPI PIN — those are handled directly by Razorpay under PCI-DSS compliance.</li>
+                <li><strong>Payment metadata:</strong> payment/order reference IDs, amount, bill reference. We never store card numbers, CVV, or UPI PIN — those are handled directly by our PCI-DSS compliant payment gateway.</li>
                 <li><strong>Community activity:</strong> posts, comments, complaints, poll votes and other content you publish inside your society.</li>
                 <li><strong>Device data:</strong> push-notification token, browser/user-agent, basic crash and error diagnostics.</li>
               </ul>
@@ -73,7 +73,7 @@ function PrivacyPage() {
                 <li>All traffic between your device and our servers is encrypted over TLS (HTTPS with 128-bit SSL or higher).</li>
                 <li>Data at rest is encrypted on managed Postgres storage.</li>
                 <li>Row-level security policies scope every query to your society; residents of one society cannot access another society's data.</li>
-                <li>Card and UPI data never touches our servers — Razorpay processes and stores it under PCI-DSS.</li>
+                <li>Card and UPI data never touches our servers — our PCI-DSS compliant payment gateway processes and stores it.</li>
                 <li>Aadhaar images live in a private storage bucket accessible only to authorised society admins for verification.</li>
               </ul>
             </section>

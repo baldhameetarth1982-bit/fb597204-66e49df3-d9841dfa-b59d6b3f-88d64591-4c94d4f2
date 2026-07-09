@@ -113,13 +113,13 @@ function BusinessProfilePage() {
         <div className="flex-1">
           <h1 className="text-2xl font-semibold tracking-tight">Business Profile</h1>
           <p className="text-sm text-muted-foreground">
-            Legal identity used for Razorpay merchant verification. Must match the business proof submitted to the
-            gateway.
+            Legal identity used for payment gateway merchant verification. Must match the business proof submitted to
+            the gateway.
           </p>
         </div>
         {payoutReady && (
           <Badge className="bg-emerald-500/15 text-emerald-500 border-emerald-500/30">
-            <ShieldCheck className="h-3 w-3 mr-1" /> Ready for Razorpay
+            <ShieldCheck className="h-3 w-3 mr-1" /> Payout ready
           </Badge>
         )}
       </header>

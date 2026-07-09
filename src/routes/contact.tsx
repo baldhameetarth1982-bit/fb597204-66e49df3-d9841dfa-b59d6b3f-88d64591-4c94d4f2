@@ -78,7 +78,7 @@ function ContactPage() {
         <Card className="rounded-2xl">
           <CardContent className="p-6 text-sm text-muted-foreground leading-relaxed">
             <p>
-              For payment disputes, please include your Razorpay Payment ID (starts with <code>pay_</code>) and a
+              For payment disputes, please include your payment reference ID and a
               screenshot of the debit. For account or data-privacy requests, email us from your registered account.
             </p>
             <p className="mt-2">

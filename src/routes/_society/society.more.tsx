@@ -3,10 +3,11 @@ import {
   Building2, Home, Car, Users, UserCheck, ShieldCheck, MessageSquare,
   Receipt, Wallet, BarChart3, TrendingDown, BookOpen,
   Settings2, UsersRound, Activity, LifeBuoy, Sparkles, KeyRound, Building, Lock,
+  LayoutGrid,
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { PageHeader, PageShell } from "@/components/shared/PageHeader";
+import { MobileHero } from "@/components/shared/MobileHero";
+import { SectionCard } from "@/components/shared/SectionCard";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { FEATURE_MIN_PLAN, PLAN_LABELS, type FeatureKey } from "@/lib/plan-features";
 
@@ -53,7 +54,7 @@ const OTHER: Tile[] = [
 function TileGrid({ tiles }: { tiles: Tile[] }) {
   const { hasFeature } = useFeatureAccess();
   return (
-    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
+    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
       {tiles.map((t) => {
         const locked = t.feature ? !hasFeature(t.feature) : false;
         const required = t.feature ? FEATURE_MIN_PLAN[t.feature] : null;
@@ -61,10 +62,10 @@ function TileGrid({ tiles }: { tiles: Tile[] }) {
           <Link
             key={t.to}
             to={locked ? "/society/plan-required" : (t.to as any)}
-            className="group relative rounded-2xl border bg-card hover:bg-primary/5 hover:border-primary/40 transition p-3 flex flex-col items-center justify-center gap-1.5 text-center min-h-[92px]"
+            className="group relative rounded-2xl border bg-card hover:bg-primary/5 hover:border-primary/40 active:scale-[0.98] transition p-3 flex flex-col items-center justify-center gap-1.5 text-center min-h-[96px]"
           >
-            <div className={`h-9 w-9 rounded-xl grid place-items-center ${locked ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"}`}>
-              <t.icon className="h-4 w-4" />
+            <div className={`h-10 w-10 rounded-2xl grid place-items-center ${locked ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"}`}>
+              <t.icon className="h-4.5 w-4.5" />
             </div>
             <span className="text-[11px] sm:text-xs font-medium leading-tight">{t.label}</span>
             {locked && required && (
@@ -80,31 +81,27 @@ function TileGrid({ tiles }: { tiles: Tile[] }) {
   );
 }
 
-function Section({ title, tiles }: { title: string; tiles: Tile[] }) {
-  return (
-    <section className="space-y-3">
-      <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</h2>
-      <Card className="rounded-2xl">
-        <CardContent className="p-3 sm:p-4">
-          <TileGrid tiles={tiles} />
-        </CardContent>
-      </Card>
-    </section>
-  );
-}
-
 function MoreDirectory() {
   return (
-    <PageShell>
-      <PageHeader
+    <div className="pb-24">
+      <MobileHero
+        eyebrow="Operations directory"
         title="More"
-        description="All society management modules organised by area. Locked modules show the plan required to unlock."
+        subtitle="Every society module in one place. Locked modules show the plan needed to unlock."
+        icon={LayoutGrid}
+        variant="teal"
       />
-      <div className="space-y-6">
-        <Section title="Management" tiles={MANAGEMENT} />
-        <Section title="Finance" tiles={FINANCE} />
-        <Section title="Other" tiles={OTHER} />
+      <div className="px-4 -mt-6 space-y-4">
+        <SectionCard title="Management" description={`${MANAGEMENT.length} modules`}>
+          <TileGrid tiles={MANAGEMENT} />
+        </SectionCard>
+        <SectionCard title="Finance" description={`${FINANCE.length} modules`}>
+          <TileGrid tiles={FINANCE} />
+        </SectionCard>
+        <SectionCard title="Other" description={`${OTHER.length} modules`}>
+          <TileGrid tiles={OTHER} />
+        </SectionCard>
       </div>
-    </PageShell>
+    </div>
   );
 }

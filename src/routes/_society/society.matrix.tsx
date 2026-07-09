@@ -2,10 +2,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Download, Upload, TrendingUp, Home, IndianRupee, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Loader2, Download, Upload, TrendingUp, Home, IndianRupee, AlertTriangle, CheckCircle2, LayoutGrid } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
-import { PageHeader, PageShell } from "@/components/shared/PageHeader";
+import { MobileHero } from "@/components/shared/MobileHero";
+import { StatPill, StatPillRow } from "@/components/shared/StatPill";
+import { SectionCard } from "@/components/shared/SectionCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -156,17 +158,34 @@ function MatrixPage() {
   }
 
   return (
-    <PageShell>
-      <PageHeader
-        title="Maintenance Matrix"
-        description="Every unit, every month — at one glance"
-        actions={
-          <div className="flex items-center gap-2">
+    <div className="pb-24">
+      <MobileHero
+        eyebrow="Operations"
+        title="Maintenance matrix"
+        subtitle="Every unit, every month — at one glance."
+        icon={LayoutGrid}
+        variant="teal"
+        stats={
+          summary ? (
+            <StatPillRow>
+              <StatPill label="Houses" value={summary.total_houses} icon={Home} />
+              <StatPill label="Paid" value={summary.paid_periods} icon={CheckCircle2} />
+              <StatPill label="Outstanding" value={`₹${Number(summary.outstanding_amount).toLocaleString("en-IN")}`} icon={IndianRupee} />
+              <StatPill label="Collection" value={`${Number(summary.collection_percent).toFixed(0)}%`} icon={TrendingUp} />
+            </StatPillRow>
+          ) : undefined
+        }
+      />
+
+      <div className="px-4 -mt-6 space-y-4">
+        <SectionCard bodyClassName="p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="text-xs text-muted-foreground">Year</label>
             <Input
               type="number"
               value={year}
               onChange={(e) => setYear(Number(e.target.value) || year)}
-              className="w-20 h-9"
+              className="w-20 h-9 rounded-xl"
             />
             <Button asChild variant="outline" size="sm" className="rounded-xl">
               <Link to="/society/matrix-import"><Upload className="h-4 w-4 mr-1" /> Import</Link>
@@ -178,116 +197,108 @@ function MatrixPage() {
               <Download className="h-4 w-4 mr-1" /> PDF
             </Button>
           </div>
-        }
-      />
+        </SectionCard>
 
-      {summary && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-4">
-          <Kpi icon={Home} label="Houses" value={summary.total_houses} tone="neutral" />
-          <Kpi icon={CheckCircle2} label="Paid" value={summary.paid_periods} tone="ok" />
-          <Kpi
-            icon={IndianRupee}
-            label="Outstanding"
-            value={`₹${Number(summary.outstanding_amount).toLocaleString("en-IN")}`}
-            tone="danger"
-          />
-          <Kpi
-            icon={TrendingUp}
-            label="Collection"
-            value={`${Number(summary.collection_percent).toFixed(1)}%`}
-            tone="ok"
-          />
-          <Kpi icon={AlertTriangle} label="Overdue" value={summary.overdue_periods} tone="warn" />
-          <Kpi icon={Home} label="Pending" value={summary.pending_periods} tone="warn" />
-          <Kpi icon={TrendingUp} label="Advance" value={summary.advance_periods} tone="info" />
-          <Kpi
-            icon={IndianRupee}
-            label="Advance ₹"
-            value={`₹${Number(summary.advance_amount).toLocaleString("en-IN")}`}
-            tone="info"
-          />
-        </div>
-      )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2 mb-3">
-        <Input
-          placeholder="Search unit or block…"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          className="rounded-xl"
-        />
-        <select
-          value={blockFilter}
-          onChange={(e) => setBlockFilter(e.target.value)}
-          className="rounded-xl border bg-background px-3 py-2 text-sm h-9"
-          aria-label="Block filter"
-        >
-          <option value="all">All blocks</option>
-          {blockOptions.map((b) => <option key={b} value={b}>{b}</option>)}
-        </select>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as StatusKey)}
-          className="rounded-xl border bg-background px-3 py-2 text-sm h-9"
-          aria-label="Status filter"
-        >
-          <option value="all">All statuses</option>
-          {STATUS_KEYS.map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
-      </div>
+        {summary && (
+          <div className="grid grid-cols-2 gap-2.5">
+            <Kpi icon={AlertTriangle} label="Overdue" value={summary.overdue_periods} tone="warn" />
+            <Kpi icon={Home} label="Pending" value={summary.pending_periods} tone="warn" />
+            <Kpi icon={TrendingUp} label="Advance" value={summary.advance_periods} tone="info" />
+            <Kpi
+              icon={IndianRupee}
+              label="Advance ₹"
+              value={`₹${Number(summary.advance_amount).toLocaleString("en-IN")}`}
+              tone="info"
+            />
+          </div>
+        )}
 
-      <div className="flex flex-wrap gap-1.5 mb-3 text-[10px]">
-        <LegendChip label="Paid" cls="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" />
-        <LegendChip label="Pending" cls="bg-amber-500/15 text-amber-700 dark:text-amber-300" />
-        <LegendChip label="Overdue" cls="bg-destructive/15 text-destructive" />
-        <LegendChip label="Advance" cls="bg-violet-500/15 text-violet-700 dark:text-violet-300" />
-        <LegendChip label="Upcoming" cls="bg-blue-500/10 text-blue-600" />
-      </div>
+        <SectionCard bodyClassName="p-3 space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2">
+            <Input
+              placeholder="Search unit or block…"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              className="rounded-xl"
+            />
+            <select
+              value={blockFilter}
+              onChange={(e) => setBlockFilter(e.target.value)}
+              className="rounded-xl border bg-background px-3 py-2 text-sm h-9"
+              aria-label="Block filter"
+            >
+              <option value="all">All blocks</option>
+              {blockOptions.map((b) => <option key={b} value={b}>{b}</option>)}
+            </select>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as StatusKey)}
+              className="rounded-xl border bg-background px-3 py-2 text-sm h-9"
+              aria-label="Status filter"
+            >
+              <option value="all">All statuses</option>
+              {STATUS_KEYS.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+          <div className="flex flex-wrap gap-1.5 text-[10px]">
+            <LegendChip label="Paid" cls="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" />
+            <LegendChip label="Pending" cls="bg-amber-500/15 text-amber-700 dark:text-amber-300" />
+            <LegendChip label="Overdue" cls="bg-destructive/15 text-destructive" />
+            <LegendChip label="Advance" cls="bg-violet-500/15 text-violet-700 dark:text-violet-300" />
+            <LegendChip label="Upcoming" cls="bg-blue-500/10 text-blue-600" />
+          </div>
+        </SectionCard>
 
-      {sidLoading || loading ? (
-        <div className="grid place-items-center h-60">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="grid place-items-center h-60 text-sm text-muted-foreground">
-          No houses match your search.
-        </div>
-      ) : (
-        <div className="overflow-auto rounded-2xl border bg-card max-h-[70vh]">
-          <table className="w-full text-xs">
-            <thead className="bg-secondary sticky top-0 z-10">
-              <tr>
-                <th className="text-left p-2 sticky left-0 bg-secondary z-20 min-w-[100px]">Unit</th>
-                {MONTH_NAMES.map((m) => (
-                  <th key={m} className="p-2 text-center font-medium min-w-[72px]">{m}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((f) => (
-                <tr key={f.id} className="border-t">
-                  <td className="p-2 sticky left-0 bg-card font-medium whitespace-nowrap z-10">
-                    {f.block_name}-{f.flat_number}
-                  </td>
-                  {Array.from({ length: 12 }, (_, mi) => {
-                    const c = cell(f.id, mi);
-                    return (
-                      <td key={mi} className="p-1">
-                        <div className={cn("rounded-md py-1.5 text-center font-medium text-[11px]", c.cls)}>
-                          {c.label}
-                        </div>
+        {sidLoading || loading ? (
+          <div className="grid place-items-center h-60">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="grid place-items-center h-60 text-sm text-muted-foreground">
+            No houses match your search.
+          </div>
+        ) : (
+          <div className="-mx-4 sm:mx-0">
+            <div className="overflow-auto sm:rounded-2xl border-y sm:border bg-card max-h-[70vh]">
+              <table className="w-full text-xs">
+                <thead className="bg-secondary sticky top-0 z-10">
+                  <tr>
+                    <th className="text-left p-2 sticky left-0 bg-secondary z-20 min-w-[100px]">Unit</th>
+                    {MONTH_NAMES.map((m) => (
+                      <th key={m} className="p-2 text-center font-medium min-w-[64px]">{m}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((f) => (
+                    <tr key={f.id} className="border-t">
+                      <td className="p-2 sticky left-0 bg-card font-medium whitespace-nowrap z-10">
+                        {f.block_name}-{f.flat_number}
                       </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </PageShell>
+                      {Array.from({ length: 12 }, (_, mi) => {
+                        const c = cell(f.id, mi);
+                        return (
+                          <td key={mi} className="p-1">
+                            <div className={cn("rounded-md py-1.5 text-center font-medium text-[11px]", c.cls)}>
+                              {c.label}
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="px-4 mt-2 text-[11px] text-muted-foreground sm:hidden">Swipe horizontally to see all months →</p>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
+
 
 function LegendChip({ label, cls }: { label: string; cls: string }) {
   return (

@@ -1,11 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useEffect, useState } from "react";
-import { Loader2, Sparkles, Save, Building2, ArrowRight } from "lucide-react";
+import { Loader2, Sparkles, Save, Building2, ArrowRight, LayoutTemplate } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useSocietyId } from "@/hooks/useSocietyId";
-import { PageHeader, PageShell, EmptyState } from "@/components/shared/PageHeader";
+import { EmptyState } from "@/components/shared/PageHeader";
 import { BillingCenterTabs } from "@/components/nav/BillingCenterTabs";
+import { MobileHero } from "@/components/shared/MobileHero";
+import { SectionCard } from "@/components/shared/SectionCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -18,12 +20,6 @@ export const Route = createFileRoute("/_society/society/bill-studio")({
   component: () => (<FeatureGate feature="bill_templates"><BillTemplatesPage /></FeatureGate>),
 });
 
-/**
- * Bill Studio is now the "Templates" tab of Billing Center.
- * Scope: only appearance for future generated bills.
- * Historical bill generation, scheduling, and one-off bills moved to Generate/Settings tabs.
- * Existing generated bill PDFs/images are untouched; only future bills use these settings.
- */
 function BillTemplatesPage() {
   const { societyId, loading: sidLoading } = useSocietyId();
 
@@ -32,38 +28,48 @@ function BillTemplatesPage() {
   }
   if (!societyId) {
     return (
-      <PageShell>
-        <BillingCenterTabs />
-        <EmptyState icon={Building2} title="No society linked" description="Set up your society first." />
-      </PageShell>
+      <div className="pb-24">
+        <MobileHero title="Bill templates" icon={LayoutTemplate} variant="teal" />
+        <div className="px-4 -mt-6">
+          <div className="rounded-2xl bg-card border shadow-sm mb-4"><BillingCenterTabs /></div>
+          <EmptyState icon={Building2} title="No society linked" description="Set up your society first." />
+        </div>
+      </div>
     );
   }
 
   return (
-    <PageShell>
-      <BillingCenterTabs />
-      <PageHeader
-        title="Bill Templates"
-        description="Design how your society's bills look. Changes apply to future bills only — existing bills stay as generated."
+    <div className="pb-24">
+      <MobileHero
+        eyebrow="Billing centre"
+        title="Bill templates"
+        subtitle="Design how your bills look. Changes apply to future bills only — existing bills stay as generated."
+        icon={LayoutTemplate}
+        variant="teal"
       />
-      <BillAppearanceCard societyId={societyId} />
-
-      <Card className="rounded-2xl mt-4">
-        <CardContent className="p-5 flex items-start gap-3 flex-wrap">
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold">Need to run a billing cycle?</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Use the Generate tab for a bulk run, or Settings to configure auto-billing schedule.
-            </p>
+      <div className="px-4 -mt-6 space-y-4">
+        <div className="rounded-2xl bg-card border shadow-sm">
+          <BillingCenterTabs />
+        </div>
+        <BillAppearanceCard societyId={societyId} />
+        <SectionCard>
+          <div className="flex items-start gap-3 flex-wrap">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold">Need to run a billing cycle?</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Use the Generate tab for a bulk run, or Settings to configure auto-billing.
+              </p>
+            </div>
+            <Button asChild variant="outline" size="sm" className="rounded-xl">
+              <Link to="/society/billing/generate">Go to Generate <ArrowRight className="h-3.5 w-3.5 ml-1" /></Link>
+            </Button>
           </div>
-          <Button asChild variant="outline" size="sm" className="rounded-xl">
-            <Link to="/society/billing/generate">Go to Generate <ArrowRight className="h-3.5 w-3.5 ml-1" /></Link>
-          </Button>
-        </CardContent>
-      </Card>
-    </PageShell>
+        </SectionCard>
+      </div>
+    </div>
   );
 }
+
 
 /* -------------------------------------------------------------------------- */
 /*  Bill Appearance — logo, signature image, theme color, header text.        */

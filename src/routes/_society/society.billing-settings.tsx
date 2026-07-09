@@ -2,12 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  Loader2, Save, Settings2, CalendarClock, Play, Sparkles, ShieldCheck, AlertTriangle,
+  Loader2, Save, Settings2, CalendarClock, Play, Sparkles, ShieldCheck, SlidersHorizontal,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
-import { PageHeader, PageShell } from "@/components/shared/PageHeader";
 import { BillingCenterTabs } from "@/components/nav/BillingCenterTabs";
+import { MobileHero } from "@/components/shared/MobileHero";
+import { SectionCard } from "@/components/shared/SectionCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -92,12 +93,19 @@ function BillingSettingsPage() {
   }
 
   return (
-    <PageShell>
-      <BillingCenterTabs />
-      <PageHeader
-        title="Billing Settings"
-        description="Configure billing cycle, grace period, late fees, and payment gateway."
+    <div className="pb-24">
+      <MobileHero
+        eyebrow="Billing centre"
+        title="Billing settings"
+        subtitle="Payment methods, billing cycle, grace period, late fees, and auto-billing."
+        icon={SlidersHorizontal}
+        variant="teal"
       />
+      <div className="px-4 -mt-6 space-y-4">
+        <div className="rounded-2xl bg-card border shadow-sm">
+          <BillingCenterTabs />
+        </div>
+
 
       {/* Payment collection */}
       <Card className="rounded-2xl mb-4">
@@ -197,7 +205,8 @@ function BillingSettingsPage() {
           Save policy
         </Button>
       </div>
-    </PageShell>
+      </div>
+    </div>
   );
 }
 

@@ -91,7 +91,7 @@ function MoreDirectory() {
         icon={LayoutGrid}
         variant="teal"
       />
-      <div className="px-4 -mt-6 space-y-4">
+      <div className="px-4 pt-4 space-y-4">
         <SectionCard title="Management" description={`${MANAGEMENT.length} modules`}>
           <TileGrid tiles={MANAGEMENT} />
         </SectionCard>

@@ -87,7 +87,7 @@ function RazorpayPage() {
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : (
-        <div className="px-4 -mt-6 space-y-4 max-w-2xl mx-auto">
+        <div className="px-4 pt-4 space-y-4 max-w-2xl mx-auto">
           <SectionCard
             icon={ShieldCheck}
             title="Gateway status"

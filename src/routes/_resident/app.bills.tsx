@@ -3,7 +3,7 @@ import { Receipt, Download, Clock, CheckCircle2, ArrowRight, Loader2, Home, Indi
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FeeBreakdown } from "@/components/shared/FeeBreakdown";
+
 import { cacheSet, cacheGet } from "@/lib/offline-cache";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";

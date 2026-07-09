@@ -147,7 +147,6 @@ function BillsScreen() {
         <CardContent className="p-6">
           <div className="flex items-center gap-2 opacity-80">
             <p className="text-sm">Outstanding</p>
-            {outstanding && <FeeBreakdown amount={outstanding.amount} />}
           </div>
           <p className="mt-1 text-4xl font-semibold tabular-nums">₹{(outstanding?.amount ?? 0).toLocaleString("en-IN")}</p>
           <p className="mt-1 text-xs opacity-80">{outstanding ? `Due ${outstanding.due}` : "No outstanding dues"}</p>

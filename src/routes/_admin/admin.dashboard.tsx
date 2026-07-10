@@ -43,7 +43,7 @@ const GROWTH: ModuleItem[] = [
 const MONEY: ModuleItem[] = [
   { to: "/admin/revenue", icon: TrendingUp, title: "Revenue", desc: "MRR, ARR, subscription income." },
   { to: "/admin/income", icon: BarChart3, title: "Income ledger", desc: "Detailed payment log." },
-  { to: "/admin/razorpay", icon: CreditCard, title: "Payment gateway", desc: "Cashfree / Razorpay keys." },
+  { to: "/admin/razorpay", icon: CreditCard, title: "Payment gateway", desc: "Razorpay keys & status." },
   { to: "/admin/withdrawals", icon: Banknote, title: "Withdrawals", desc: "Referral payouts." },
 ];
 const PLATFORM: ModuleItem[] = [

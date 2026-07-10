@@ -130,12 +130,31 @@ function TeamPage() {
     r.role === "society_admin" || r.role === "block_admin" || r.role === "security",
   );
 
+  const chairmanCount = adminRoles.filter((r) => r.role === "society_admin").length;
+  const blockAdminCount = adminRoles.filter((r) => r.role === "block_admin").length;
+  const securityCount = adminRoles.filter((r) => r.role === "security").length;
+
   return (
-    <PageShell>
-      <PageHeader
+    <div className="pb-[calc(96px+env(safe-area-inset-bottom))]">
+      <MobileHero
+        eyebrow="Society Admin"
         title="Team & Roles"
-        description="Promote residents to Block Admin or Security. Chairman sees everything."
-        actions={
+        subtitle="Promote residents to Block Admin or Security. Chairman sees everything."
+        icon={ShieldCheck}
+        variant="teal"
+        stats={
+          <StatPillRow>
+            <StatPill label="Chairman" value={chairmanCount} />
+            <StatPill label="Block admins" value={blockAdminCount} />
+            <StatPill label="Guards" value={securityCount} />
+            <StatPill label="Residents" value={profiles.length} />
+          </StatPillRow>
+        }
+        action={
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="rounded-xl h-9 bg-white/15 hover:bg-white/25 text-white border-0">
+                <Plus className="h-4 w-4 mr-1" /> Assign
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button className="rounded-xl">

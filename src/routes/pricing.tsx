@@ -184,8 +184,8 @@ function PricingPage() {
         )}
 
         <p className="text-center text-xs text-muted-foreground mt-10">
-          Prices in INR, exclusive of applicable taxes. Payments are processed through secure Indian gateways
-          (PayU / Cashfree) with UPI, cards, net banking and wallet support.
+          Prices in INR, exclusive of applicable taxes. Payments are processed through a
+          secure Indian payment gateway with UPI, cards, net banking and wallet support.
         </p>
       </section>
       <LegalFooter />

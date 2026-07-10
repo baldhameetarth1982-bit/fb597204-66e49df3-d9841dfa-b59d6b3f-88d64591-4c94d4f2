@@ -84,7 +84,7 @@ function SettingsPage() {
           <div>
             <Label>Maintenance transaction fee (%)</Label>
             <Input type="number" step="0.01" value={state.maintenance_fee_percent ?? 1.5} onChange={(e) => setState((s: any) => ({ ...s, maintenance_fee_percent: e.target.value }))} />
-            <p className="text-xs text-muted-foreground mt-1">Platform fee applied on top of every Razorpay maintenance payment.</p>
+            <p className="text-xs text-muted-foreground mt-1">Internal-only. Not shown to residents or societies. No fee is charged on maintenance today.</p>
           </div>
         </CardContent>
       </Card>

@@ -2,25 +2,29 @@ import { createFileRoute } from "@tanstack/react-router";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Loader2, TrendingUp, TrendingDown, Trash2 } from "lucide-react";
+import { Plus, Loader2, TrendingUp, TrendingDown, Trash2, BookOpen, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { PageShell, PageHeader } from "@/components/shared/PageHeader";
 import { AccountsCenterTabs } from "@/components/nav/AccountsCenterTabs";
+import { MobileHero } from "@/components/shared/MobileHero";
+import { StatPill, StatPillRow } from "@/components/shared/StatPill";
+import { SectionCard } from "@/components/shared/SectionCard";
+import { ListCard, ListCardGroup } from "@/components/shared/ListCard";
+import { EmptyState } from "@/components/shared/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useSocietyId } from "@/hooks/useSocietyId";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_society/society/ledger")({
-  head: () => ({ meta: [{ title: "Accounting — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Ledger — SocioHub" }] }),
   component: () => (<FeatureGate feature="ledger"><AdminLedger /></FeatureGate>),
 });
 
@@ -42,6 +46,8 @@ function AdminLedger() {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [query, setQuery] = useState("");
+  const [kindFilter, setKindFilter] = useState<"all" | "income" | "expense">("all");
   const [form, setForm] = useState({
     kind: "expense" as "income" | "expense",
     category: "",
@@ -58,7 +64,7 @@ function AdminLedger() {
       .select("id,entry_date,kind,category,description,amount")
       .eq("society_id", societyId)
       .order("entry_date", { ascending: false })
-      .limit(100);
+      .limit(200);
     setEntries((data as Entry[]) ?? []);
     setLoading(false);
   }
@@ -72,6 +78,15 @@ function AdminLedger() {
     }
     return { inc, exp, net: inc - exp };
   }, [entries]);
+
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return entries.filter((e) => {
+      if (kindFilter !== "all" && e.kind !== kindFilter) return false;
+      if (!q) return true;
+      return (e.description || "").toLowerCase().includes(q) || (e.category || "").toLowerCase().includes(q);
+    });
+  }, [entries, query, kindFilter]);
 
   async function add(e: React.FormEvent) {
     e.preventDefault();
@@ -103,18 +118,21 @@ function AdminLedger() {
   }
 
   return (
-    <PageShell>
-      <AccountsCenterTabs />
-      <PageHeader
-        title="Accounting Ledger"
-        description="Track income & expenses for your society"
-        actions={
+    <div className="pb-[calc(96px+env(safe-area-inset-bottom))]">
+      <MobileHero
+        eyebrow="Accounts Center"
+        title="Ledger"
+        subtitle="Manual income & expense entries. Filter, search, add."
+        icon={BookOpen}
+        variant="teal"
+        action={
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button className="rounded-xl"><Plus className="h-4 w-4 mr-1" />
-              New entry</Button>
+              <Button size="sm" className="rounded-xl h-9 bg-white/15 hover:bg-white/25 text-white border-0">
+                <Plus className="h-4 w-4 mr-1" /> Add
+              </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="rounded-2xl">
               <DialogHeader><DialogTitle>Add ledger entry</DialogTitle></DialogHeader>
               <form onSubmit={add} className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
@@ -146,64 +164,82 @@ function AdminLedger() {
                   <Input type="number" min="0" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} required />
                 </div>
                 <Button type="submit" className="w-full rounded-xl" disabled={submitting}>
-                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add"}
+                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add entry"}
                 </Button>
               </form>
             </DialogContent>
           </Dialog>
         }
+        stats={
+          <StatPillRow>
+            <StatPill label="Income" value={fmt.format(totals.inc)} icon={TrendingUp} />
+            <StatPill label="Expense" value={fmt.format(totals.exp)} icon={TrendingDown} />
+            <StatPill label={totals.net >= 0 ? "Surplus" : "Deficit"} value={fmt.format(Math.abs(totals.net))} />
+            <StatPill label="Entries" value={entries.length} />
+          </StatPillRow>
+        }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-        <Card className="rounded-2xl bg-success/5 border-success/20">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-success"><TrendingUp className="h-4 w-4" /><span className="text-xs font-medium">Total Income</span></div>
-            <p className="mt-1 text-2xl font-bold">{fmt.format(totals.inc)}</p>
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl bg-destructive/5 border-destructive/20">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-destructive"><TrendingDown className="h-4 w-4" /><span className="text-xs font-medium">Total Expense</span></div>
-            <p className="mt-1 text-2xl font-bold">{fmt.format(totals.exp)}</p>
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl">
-          <CardContent className="p-4">
-            <span className="text-xs font-medium text-muted-foreground">Net Balance</span>
-            <p className={`mt-1 text-2xl font-bold ${totals.net >= 0 ? "text-success" : "text-destructive"}`}>{fmt.format(totals.net)}</p>
-          </CardContent>
-        </Card>
-      </div>
+      <div className="px-4 pt-4 space-y-4 max-w-5xl mx-auto md:px-8">
+        <AccountsCenterTabs />
 
-      {loading ? (
-        <div className="text-center py-10"><Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" /></div>
-      ) : entries.length === 0 ? (
-        <Card className="rounded-2xl"><CardContent className="p-10 text-center text-sm text-muted-foreground">No entries yet</CardContent></Card>
-      ) : (
-        <Card className="rounded-2xl">
-          <CardContent className="p-2">
-            <ul className="divide-y divide-border">
-              {entries.map((e) => (
-                <li key={e.id} className="p-3 flex items-center gap-3">
-                  <span className={`h-9 w-9 rounded-xl grid place-items-center ${e.kind === "income" ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
-                    {e.kind === "income" ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{e.description || e.category || "—"}</p>
-                    <p className="text-[11px] text-muted-foreground">{new Date(e.entry_date).toLocaleDateString()}{e.category ? ` · ${e.category}` : ""}</p>
-                  </div>
-                  <p className={`text-sm font-semibold ${e.kind === "income" ? "text-success" : "text-destructive"}`}>
-                    {e.kind === "income" ? "+" : "−"}{fmt.format(Number(e.amount))}
-                  </p>
-                  <Button size="icon" variant="ghost" onClick={() => remove(e.id)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </li>
+        <SectionCard title="Filters">
+          <div className="flex flex-wrap gap-2 items-center">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search description or category" className="pl-9" />
+            </div>
+            <div className="flex gap-1.5">
+              {(["all", "income", "expense"] as const).map((k) => (
+                <Button
+                  key={k}
+                  size="sm"
+                  variant={kindFilter === k ? "default" : "outline"}
+                  onClick={() => setKindFilter(k)}
+                  className="rounded-full h-8 capitalize"
+                >
+                  {k}
+                </Button>
               ))}
-            </ul>
-          </CardContent>
-        </Card>
-      )}
-    </PageShell>
+            </div>
+          </div>
+        </SectionCard>
+
+        <SectionCard title={`Entries · ${visible.length}`} bodyClassName="p-0">
+          {loading ? (
+            <div className="p-10 grid place-items-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+          ) : visible.length === 0 ? (
+            <div className="p-6">
+              <EmptyState icon={BookOpen} title="No entries" description="Add your first manual ledger entry to begin tracking." />
+            </div>
+          ) : (
+            <ListCardGroup>
+              {visible.map((e) => (
+                <ListCard
+                  key={e.id}
+                  leading={
+                    <span className={cn("h-10 w-10 rounded-xl grid place-items-center", e.kind === "income" ? "bg-emerald-500/10 text-emerald-600" : "bg-rose-500/10 text-rose-600")}>
+                      {e.kind === "income" ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                    </span>
+                  }
+                  title={e.description || e.category || "—"}
+                  subtitle={`${new Date(e.entry_date).toLocaleDateString()}${e.category ? ` · ${e.category}` : ""}`}
+                  trailing={
+                    <div className="flex items-center gap-1">
+                      <span className={cn("text-sm font-semibold tabular-nums", e.kind === "income" ? "text-emerald-600" : "text-rose-600")}>
+                        {e.kind === "income" ? "+" : "−"}{fmt.format(Number(e.amount))}
+                      </span>
+                      <Button size="icon" variant="ghost" onClick={() => remove(e.id)} className="h-8 w-8">
+                        <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                      </Button>
+                    </div>
+                  }
+                />
+              ))}
+            </ListCardGroup>
+          )}
+        </SectionCard>
+      </div>
+    </div>
   );
 }

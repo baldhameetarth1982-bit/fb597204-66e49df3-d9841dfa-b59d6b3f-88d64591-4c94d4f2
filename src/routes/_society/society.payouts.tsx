@@ -90,7 +90,7 @@ function PayoutsPage() {
 
   return (
     <PageShell>
-      <PageHeader title="Payouts" description="Attach your society's bank to receive maintenance directly. The full amount collected lands in your account — SocioHub charges no platform fee." />
+      <PageHeader title="Payouts" description="Attach your society's bank account to record maintenance payouts. Online maintenance collection is enabled by SocioHub support on request." />
 
       <Card className="rounded-2xl mb-5">
         <CardContent className="p-5 flex items-center justify-between gap-3">

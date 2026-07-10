@@ -139,7 +139,6 @@ function CheckoutPage() {
             description={`${plan.name} plan — monthly subscription`}
             lines={[
               { label: `${plan.name} plan (monthly)`, amount: plan.price_monthly_inr },
-              { label: "Platform fee", amount: 0, muted: true },
               { label: "Taxes (incl.)", amount: 0, muted: true },
             ]}
             total={plan.price_monthly_inr}

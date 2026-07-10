@@ -77,7 +77,7 @@ function RazorpayPage() {
       <MobileHero
         eyebrow="Super Admin"
         title="Payment gateway"
-        subtitle="Cashfree handles SocioHub plan payments. No platform fee is charged on maintenance."
+        subtitle="Razorpay handles SocioHub plan payments. No platform fee is charged on maintenance."
         icon={CreditCard}
         variant="navy"
       />

@@ -183,8 +183,6 @@ function BillsScreen() {
           description={outstanding.title}
           lines={[
             { label: "Maintenance amount", amount: outstanding.amount },
-            { label: "Platform fee (1.5%)", amount: Math.max(1, Math.round(outstanding.amount * 1.5) / 100), muted: true },
-            { label: "Payable to society (98.5%)", amount: outstanding.amount - Math.max(0.01, Math.round(outstanding.amount * 1.5) / 100), muted: true },
           ]}
           total={outstanding.amount}
           busy={paying}

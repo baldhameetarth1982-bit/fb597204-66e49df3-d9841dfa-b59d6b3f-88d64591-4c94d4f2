@@ -10,15 +10,18 @@ import {
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
 } from "recharts";
-import { PageHeader, PageShell, EmptyState } from "@/components/shared/PageHeader";
 import { AccountsCenterTabs } from "@/components/nav/AccountsCenterTabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MobileHero } from "@/components/shared/MobileHero";
+import { StatPill, StatPillRow } from "@/components/shared/StatPill";
+import { SectionCard } from "@/components/shared/SectionCard";
+import { ListCard, ListCardGroup } from "@/components/shared/ListCard";
+import { EmptyState } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_society/society/reports")({
   head: () => ({ meta: [{ title: "Reports — SocioHub" }] }),
@@ -136,10 +139,6 @@ function ReportsPage() {
     doc.save(`sociohub-report-${from}-to-${to}.pdf`);
   }
 
-  const netTone =
-    summary.net > 0 ? "text-emerald-600" :
-    summary.net < 0 ? "text-rose-600" : "text-foreground";
-
   if (sidLoading) {
     return (
       <div className="min-h-[40vh] grid place-items-center text-muted-foreground">
@@ -148,159 +147,121 @@ function ReportsPage() {
     );
   }
 
+  const y = today.getFullYear();
+  const fyStart = today.getMonth() >= 3 ? y : y - 1;
+  const presets = [
+    { label: "This month", from: format(startOfMonth(today), "yyyy-MM-dd"), to: format(today, "yyyy-MM-dd") },
+    { label: "Last 3 months", from: format(subMonths(today, 2), "yyyy-MM-01"), to: format(today, "yyyy-MM-dd") },
+    { label: "Last 6 months", from: format(subMonths(today, 5), "yyyy-MM-01"), to: format(today, "yyyy-MM-dd") },
+    { label: `FY ${fyStart}-${String(fyStart + 1).slice(2)}`, from: `${fyStart}-04-01`, to: `${fyStart + 1}-03-31` },
+    { label: `FY ${fyStart - 1}-${String(fyStart).slice(2)}`, from: `${fyStart - 1}-04-01`, to: `${fyStart}-03-31` },
+  ];
+
   return (
-    <PageShell>
-      <AccountsCenterTabs />
-      <PageHeader
+    <div className="pb-[calc(96px+env(safe-area-inset-bottom))]">
+      <MobileHero
+        eyebrow="Accounts Center"
         title="Reports"
-        description="Income, expenses & net position — export for accountant or audit."
-        actions={
-          <div className="flex gap-2 print:hidden">
-            <Button variant="outline" className="rounded-xl" onClick={exportPdf} disabled={!txns.length}>
-              <Printer className="h-4 w-4 mr-1.5" />
-              PDF
-            </Button>
-            <Button className="rounded-xl" onClick={exportCsv} disabled={!txns.length}>
-              <FileDown className="h-4 w-4 mr-1.5" /> Excel (CSV)
-            </Button>
-          </div>
+        subtitle="Income, expenses & net position — export for accountant or audit."
+        icon={BarChart3}
+        variant="teal"
+        stats={
+          <StatPillRow>
+            <StatPill label="Income" value={INR.format(summary.income)} icon={TrendingUp} />
+            <StatPill label="Expense" value={INR.format(summary.expense)} icon={TrendingDown} />
+            <StatPill label={summary.net >= 0 ? "Net surplus" : "Net deficit"} value={INR.format(Math.abs(summary.net))} icon={ArrowUpDown} />
+            <StatPill label="Margin" value={summary.income > 0 ? `${summary.ratio.toFixed(0)}%` : "—"} />
+          </StatPillRow>
         }
       />
 
-      <Card className="rounded-2xl mb-4 print:hidden">
-        <CardContent className="p-4 space-y-3">
-          <div className="flex flex-wrap gap-2">
-            {(() => {
-              const y = today.getFullYear();
-              const fyStart = today.getMonth() >= 3 ? y : y - 1;
-              const presets = [
-                { label: "This month", from: format(startOfMonth(today), "yyyy-MM-dd"), to: format(today, "yyyy-MM-dd") },
-                { label: "Last 3 months", from: format(subMonths(today, 2), "yyyy-MM-01"), to: format(today, "yyyy-MM-dd") },
-                { label: "Last 6 months", from: format(subMonths(today, 5), "yyyy-MM-01"), to: format(today, "yyyy-MM-dd") },
-                { label: `FY ${fyStart}-${String(fyStart + 1).slice(2)}`, from: `${fyStart}-04-01`, to: `${fyStart + 1}-03-31` },
-                { label: `FY ${fyStart - 1}-${String(fyStart).slice(2)}`, from: `${fyStart - 1}-04-01`, to: `${fyStart}-03-31` },
-              ];
-              return presets.map((p) => (
-                <Button key={p.label} variant="outline" size="sm" className="rounded-full h-7 text-xs"
+      <div className="px-4 pt-4 space-y-4 max-w-5xl mx-auto md:px-8">
+        <AccountsCenterTabs />
+
+        <SectionCard title="Period" description="Presets & custom range">
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+              {presets.map((p) => (
+                <Button key={p.label} variant="outline" size="sm" className="rounded-full h-8 text-xs"
                   onClick={() => { setFrom(p.from); setTo(p.to); }}>
                   {p.label}
                 </Button>
-              ));
-            })()}
+              ))}
+            </div>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">From</Label>
+                <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs">To</Label>
+                <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+              </div>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <Button variant="outline" className="rounded-xl" size="sm" onClick={exportPdf} disabled={!txns.length}>
+                <Printer className="h-4 w-4 mr-1.5" /> PDF
+              </Button>
+              <Button className="rounded-xl" size="sm" onClick={exportCsv} disabled={!txns.length}>
+                <FileDown className="h-4 w-4 mr-1.5" /> Excel (CSV)
+              </Button>
+            </div>
           </div>
-          <div className="grid sm:grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs">From</Label>
-              <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-            </div>
-            <div>
-              <Label className="text-xs">To</Label>
-              <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        </SectionCard>
 
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-        <Card className="rounded-2xl bg-emerald-500/5 border-emerald-500/20">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-emerald-600">
-              <TrendingUp className="h-4 w-4" />
-              <span className="text-xs font-medium">Total Income</span>
+        {summary.chart.length > 0 && (
+          <SectionCard icon={BarChart3} title="Monthly breakdown">
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={summary.chart}>
+                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                  <XAxis dataKey="month" fontSize={11} />
+                  <YAxis fontSize={11} />
+                  <Tooltip formatter={(v: number) => INR.format(v)} />
+                  <Legend />
+                  <Bar dataKey="income" fill="hsl(142 71% 45%)" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="expense" fill="hsl(0 72% 51%)" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
-            <p className="mt-1 text-2xl font-bold">{INR.format(summary.income)}</p>
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl bg-rose-500/5 border-rose-500/20">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-rose-600">
-              <TrendingDown className="h-4 w-4" />
-              <span className="text-xs font-medium">Total Expense</span>
-            </div>
-            <p className="mt-1 text-2xl font-bold">{INR.format(summary.expense)}</p>
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <ArrowUpDown className="h-4 w-4" />
-              <span className="text-xs font-medium">Net</span>
-            </div>
-            <p className={`mt-1 text-2xl font-bold ${netTone}`}>{INR.format(summary.net)}</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {summary.income > 0 ? `${summary.ratio.toFixed(1)}% margin` : "—"}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+          </SectionCard>
+        )}
 
-      {summary.chart.length > 0 && (
-        <Card className="rounded-2xl mb-4">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" /> Monthly breakdown
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={summary.chart}>
-                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                <XAxis dataKey="month" fontSize={11} />
-                <YAxis fontSize={11} />
-                <Tooltip formatter={(v: number) => INR.format(v)} />
-                <Legend />
-                <Bar dataKey="income" fill="hsl(142 71% 45%)" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="expense" fill="hsl(0 72% 51%)" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      )}
-
-      <Card className="rounded-2xl">
-        <CardHeader>
-          <CardTitle className="text-base">Transactions ({txns.length})</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
+        <SectionCard title={`Transactions · ${txns.length}`} bodyClassName="p-0">
           {isLoading ? (
-            <div className="p-10 text-center"><Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" /></div>
+            <div className="p-10 grid place-items-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
           ) : txns.length === 0 ? (
-            <EmptyState icon={Download} title="No transactions in this range"
-              description="Try widening the date range or add income/expenses." />
+            <div className="p-6">
+              <EmptyState icon={Download} title="No transactions in this range" description="Try widening the date range or record income/expenses first." />
+            </div>
           ) : (
-            <ul className="divide-y divide-border">
+            <ListCardGroup>
               {txns.slice(0, 300).map((t) => (
-                <li key={t.id} className="px-4 py-3 flex items-center gap-3">
-                  <Badge variant="outline" className={`rounded-full ${
-                    t.kind === "income"
-                      ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
-                      : "bg-rose-500/10 text-rose-600 border-rose-500/20"
-                  }`}>
-                    {t.kind}
-                  </Badge>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{t.description || t.category}</p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {format(new Date(t.date), "dd MMM yyyy")} · {t.category} · {t.source}
-                    </p>
-                  </div>
-                  <p className={`text-sm font-semibold ${
-                    t.kind === "income" ? "text-emerald-600" : "text-rose-600"
-                  }`}>
-                    {t.kind === "income" ? "+" : "−"}{INR.format(t.amount)}
-                  </p>
-                </li>
+                <ListCard
+                  key={t.id}
+                  leading={
+                    <span className={cn("h-10 w-10 rounded-xl grid place-items-center", t.kind === "income" ? "bg-emerald-500/10 text-emerald-600" : "bg-rose-500/10 text-rose-600")}>
+                      {t.kind === "income" ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                    </span>
+                  }
+                  title={t.description || t.category}
+                  subtitle={`${format(new Date(t.date), "dd MMM yyyy")} · ${t.category} · ${t.source}`}
+                  trailing={
+                    <span className={cn("text-sm font-semibold tabular-nums", t.kind === "income" ? "text-emerald-600" : "text-rose-600")}>
+                      {t.kind === "income" ? "+" : "−"}{INR.format(t.amount)}
+                    </span>
+                  }
+                />
               ))}
               {txns.length > 300 && (
-                <li className="p-3 text-center text-xs text-muted-foreground">
+                <div className="p-3 text-center text-xs text-muted-foreground">
                   Showing 300 of {txns.length}. Export CSV for full data.
-                </li>
+                </div>
               )}
-            </ul>
+            </ListCardGroup>
           )}
-        </CardContent>
-      </Card>
-    </PageShell>
+        </SectionCard>
+      </div>
+    </div>
   );
 }

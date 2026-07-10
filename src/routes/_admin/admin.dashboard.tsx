@@ -122,7 +122,7 @@ function AdminDashboard() {
             />
             <ListCard
               title="Payment gateway"
-              subtitle="Cashfree for SocioHub plans · no platform fee"
+              subtitle="Razorpay handles SocioHub plan payments"
               trailing={<StatusChip tone="info">Live</StatusChip>}
             />
           </ListCardGroup>

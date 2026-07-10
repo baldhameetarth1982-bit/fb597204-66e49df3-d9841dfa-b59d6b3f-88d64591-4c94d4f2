@@ -116,10 +116,12 @@ function TeamPage() {
 
   if (!sidLoading && !societyId) {
     return (
-      <PageShell>
-        <PageHeader title="Team & Roles" />
-        <EmptyState icon={ShieldCheck} title="Set up your society first" />
-      </PageShell>
+      <div className="pb-[calc(96px+env(safe-area-inset-bottom))]">
+        <MobileHero eyebrow="Society Admin" title="Team & Roles" icon={ShieldCheck} variant="teal" />
+        <div className="px-4 pt-4 max-w-5xl mx-auto md:px-8">
+          <EmptyState icon={ShieldCheck} title="Set up your society first" />
+        </div>
+      </div>
     );
   }
 

@@ -266,11 +266,16 @@ function ImportPage() {
   ];
 
   return (
-    <PageShell>
-      <PageHeader
-        title="Bulk Import Residents"
-        description="Upload an Excel file to add blocks, houses, and offline residents in one shot."
+    <div className="pb-[calc(96px+env(safe-area-inset-bottom))]">
+      <MobileHero
+        eyebrow="Society Admin"
+        title="Bulk import residents"
+        subtitle="Upload an Excel file to add blocks, houses, and offline residents in one shot."
+        icon={Upload}
+        variant="teal"
       />
+      <div className="px-4 pt-4 space-y-4 max-w-5xl mx-auto md:px-8">
+
 
       {/* Step tracker */}
       <div className="mb-4 flex items-center gap-2">

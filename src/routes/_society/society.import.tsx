@@ -411,6 +411,7 @@ function ImportPage() {
           </CardContent>
         </Card>
       )}
-    </PageShell>
+      </div>
+    </div>
   );
 }

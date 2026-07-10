@@ -4,13 +4,15 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Sparkles, Loader2, TrendingUp, AlertTriangle, Users, Receipt, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { PageHeader, PageShell } from "@/components/shared/PageHeader";
+import { MobileHero } from "@/components/shared/MobileHero";
+import { StatPill, StatPillRow } from "@/components/shared/StatPill";
+import { SectionCard } from "@/components/shared/SectionCard";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { supabase } from "@/integrations/supabase/client";
 import { generateCommunityDigest } from "@/lib/digest.functions";
 import { formatCurrency } from "@/utils/format";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_society/society/digest")({
   head: () => ({ meta: [{ title: "AI Insights — SocioHub" }] }),
@@ -83,107 +85,81 @@ function DigestPage() {
 
   const suggestions: string[] = [];
   if (insights) {
-    if (insights.overdueCount > 0) {
-      suggestions.push(`Send payment reminders to ${insights.defaulterCount} defaulter${insights.defaulterCount === 1 ? "" : "s"}.`);
-    }
-    if (efficiency !== null && efficiency < 70 && insights.totalBills > 5) {
-      suggestions.push("Collection efficiency is below 70%. Consider enabling auto reminders.");
-    }
-    if (insights.totalBills === 0) {
-      suggestions.push("No bills generated yet. Head to Billing Center → Generate to create your first monthly bill.");
-    }
-    if (insights.recentVisitors === 0) {
-      suggestions.push("No visitors logged this month. Ensure guards are logging entries.");
-    }
+    if (insights.overdueCount > 0) suggestions.push(`Send payment reminders to ${insights.defaulterCount} defaulter${insights.defaulterCount === 1 ? "" : "s"}.`);
+    if (efficiency !== null && efficiency < 70 && insights.totalBills > 5) suggestions.push("Collection efficiency is below 70%. Consider enabling auto reminders.");
+    if (insights.totalBills === 0) suggestions.push("No bills generated yet. Head to Billing Center → Generate to create your first monthly bill.");
+    if (insights.recentVisitors === 0) suggestions.push("No visitors logged this month. Ensure guards are logging entries.");
   }
 
   return (
-    <PageShell>
-      <PageHeader
+    <div className="pb-[calc(96px+env(safe-area-inset-bottom))]">
+      <MobileHero
+        eyebrow="Society Admin"
         title="AI Insights"
-        description="Rule-based insights from your society's real data, plus optional AI-written community digest."
+        subtitle="Rule-based insights from your society's real data, plus an optional AI-written community digest."
+        icon={Sparkles}
+        variant="teal"
+        stats={
+          insights ? (
+            <StatPillRow>
+              <StatPill label="Collection" value={efficiency !== null ? `${efficiency}%` : "—"} icon={TrendingUp} />
+              <StatPill label="Pending" value={formatCurrency(insights.pendingAmount)} icon={Receipt} />
+              <StatPill label="Defaulters" value={insights.defaulterCount} icon={AlertTriangle} />
+              <StatPill label="Visitors 30d" value={insights.recentVisitors} icon={Users} />
+            </StatPillRow>
+          ) : undefined
+        }
       />
 
-      {loadingInsights ? (
-        <div className="grid place-items-center py-10"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
-      ) : insights && (
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <InsightCard
-            icon={TrendingUp}
-            label="Collection efficiency"
-            value={efficiency !== null ? `${efficiency}%` : "—"}
-            subtitle={insights.totalBills ? `${insights.paidBills} of ${insights.totalBills} bills paid` : "No bills yet"}
-            tone={efficiency !== null && efficiency >= 80 ? "success" : efficiency !== null && efficiency >= 50 ? "warning" : "danger"}
-          />
-          <InsightCard
-            icon={Receipt}
-            label="Pending dues"
-            value={formatCurrency(insights.pendingAmount)}
-            subtitle={`${insights.overdueCount} overdue`}
-            tone={insights.pendingAmount > 0 ? "warning" : "success"}
-          />
-          <InsightCard
-            icon={AlertTriangle}
-            label="Defaulters"
-            value={String(insights.defaulterCount)}
-            subtitle="flats with overdue bills"
-            tone={insights.defaulterCount > 0 ? "danger" : "success"}
-          />
-          <InsightCard
-            icon={Users}
-            label="Visitors (30d)"
-            value={String(insights.recentVisitors)}
-            subtitle="entries logged"
-            tone="info"
-          />
-        </div>
-      )}
+      <div className="px-4 pt-4 space-y-4 max-w-5xl mx-auto md:px-8">
+        {loadingInsights && (
+          <div className="grid place-items-center py-10"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+        )}
 
-      {suggestions.length > 0 && (
-        <Card className="rounded-2xl mb-4">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <Lightbulb className="h-4 w-4 text-primary" />
-              <p className="font-semibold">Smart suggestions</p>
-            </div>
+        {insights && (
+          <div className="grid grid-cols-2 gap-3">
+            <InsightCard
+              icon={TrendingUp}
+              label="Collection efficiency"
+              value={efficiency !== null ? `${efficiency}%` : "—"}
+              subtitle={insights.totalBills ? `${insights.paidBills}/${insights.totalBills} paid` : "No bills yet"}
+              tone={efficiency !== null && efficiency >= 80 ? "success" : efficiency !== null && efficiency >= 50 ? "warning" : "danger"}
+            />
+            <InsightCard icon={Receipt} label="Pending dues" value={formatCurrency(insights.pendingAmount)} subtitle={`${insights.overdueCount} overdue`} tone={insights.pendingAmount > 0 ? "warning" : "success"} />
+            <InsightCard icon={AlertTriangle} label="Defaulters" value={String(insights.defaulterCount)} subtitle="flats with overdue bills" tone={insights.defaulterCount > 0 ? "danger" : "success"} />
+            <InsightCard icon={Users} label="Visitors (30d)" value={String(insights.recentVisitors)} subtitle="entries logged" tone="info" />
+          </div>
+        )}
+
+        {suggestions.length > 0 && (
+          <SectionCard icon={Lightbulb} title="Smart suggestions">
             <ul className="space-y-2">
               {suggestions.map((s, i) => (
-                <li key={i} className="text-sm text-muted-foreground flex gap-2">
-                  <span className="text-primary">•</span>{s}
-                </li>
+                <li key={i} className="text-sm text-muted-foreground flex gap-2"><span className="text-primary">•</span>{s}</li>
               ))}
             </ul>
-          </CardContent>
-        </Card>
-      )}
+          </SectionCard>
+        )}
 
-      <Card className="rounded-2xl mb-4">
-        <CardContent className="p-5 flex items-center gap-4 flex-wrap">
-          <div className="h-12 w-12 rounded-2xl bg-primary/10 text-primary grid place-items-center shrink-0">
-            <Sparkles className="h-6 w-6" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold">AI community digest</p>
-            <p className="text-sm text-muted-foreground">
-              Summarises past week's posts and comments. Published to every resident's feed.
+        <SectionCard icon={Sparkles} title="AI community digest" description="Summarise past week's posts and comments" tone="primary">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <p className="text-sm text-muted-foreground min-w-0 flex-1">
+              Published to every resident's feed. Honest output — no AI is generated if no source data exists.
             </p>
+            <Button onClick={run} disabled={loading || !societyId} className="rounded-xl">
+              {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Generate
+            </Button>
           </div>
-          <Button onClick={run} disabled={loading || !societyId} className="rounded-xl">
-            {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Generate
-          </Button>
-        </CardContent>
-      </Card>
+        </SectionCard>
 
-      {result && (
-        <Card className="rounded-2xl">
-          <CardContent className="p-5">
-            <p className="text-xs font-semibold text-primary uppercase tracking-wide mb-2">Preview</p>
+        {result && (
+          <SectionCard title="Preview">
             <p className="text-sm leading-relaxed whitespace-pre-line">{result}</p>
-          </CardContent>
-        </Card>
-      )}
-    </PageShell>
+          </SectionCard>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -194,20 +170,18 @@ function InsightCard({
   tone: "success" | "warning" | "danger" | "info";
 }) {
   const bg =
-    tone === "success" ? "bg-success-container text-success-container-foreground" :
-    tone === "warning" ? "bg-warning-container text-warning-container-foreground" :
-    tone === "danger" ? "bg-danger-container text-danger-container-foreground" :
-    "bg-info-container text-info-container-foreground";
+    tone === "success" ? "bg-emerald-500/10 text-emerald-600" :
+    tone === "warning" ? "bg-amber-500/10 text-amber-600" :
+    tone === "danger" ? "bg-rose-500/10 text-rose-600" :
+    "bg-sky-500/10 text-sky-600";
   return (
-    <Card className="rounded-2xl">
-      <CardContent className="p-4">
-        <div className={`h-9 w-9 rounded-xl grid place-items-center mb-2 ${bg}`}>
-          <Icon className="h-4 w-4" />
-        </div>
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-lg font-bold leading-tight mt-0.5">{value}</p>
-        <p className="text-xs text-muted-foreground mt-0.5 truncate">{subtitle}</p>
-      </CardContent>
-    </Card>
+    <div className="rounded-2xl border bg-card p-4">
+      <div className={cn("h-9 w-9 rounded-xl grid place-items-center mb-2", bg)}>
+        <Icon className="h-4 w-4" />
+      </div>
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-lg font-bold leading-tight mt-0.5 truncate">{value}</p>
+      <p className="text-xs text-muted-foreground mt-0.5 truncate">{subtitle}</p>
+    </div>
   );
 }

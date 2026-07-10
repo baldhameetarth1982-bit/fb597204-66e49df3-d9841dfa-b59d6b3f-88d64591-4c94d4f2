@@ -6,8 +6,10 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
-import { PageHeader, PageShell } from "@/components/shared/PageHeader";
-import { Card, CardContent } from "@/components/ui/card";
+import { MobileHero } from "@/components/shared/MobileHero";
+import { StatPill, StatPillRow } from "@/components/shared/StatPill";
+import { SectionCard } from "@/components/shared/SectionCard";
+import { ListCard, ListCardGroup } from "@/components/shared/ListCard";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -24,19 +26,10 @@ function CommunicationCenter() {
     queryKey: ["comm-counts", societyId],
     queryFn: async () => {
       const [notices, contacts] = await Promise.all([
-        supabase
-          .from("posts")
-          .select("id", { count: "exact", head: true })
-          .eq("society_id", societyId!),
-        supabase
-          .from("society_contacts")
-          .select("id", { count: "exact", head: true })
-          .eq("society_id", societyId!),
+        supabase.from("posts").select("id", { count: "exact", head: true }).eq("society_id", societyId!),
+        supabase.from("society_contacts").select("id", { count: "exact", head: true }).eq("society_id", societyId!),
       ]);
-      return {
-        notices: notices.count ?? 0,
-        contacts: contacts.count ?? 0,
-      };
+      return { notices: notices.count ?? 0, contacts: contacts.count ?? 0 };
     },
     staleTime: 60_000,
   });
@@ -50,134 +43,84 @@ function CommunicationCenter() {
         .select("id, title, body, created_at, kind")
         .eq("society_id", societyId!)
         .order("created_at", { ascending: false })
-        .limit(5);
+        .limit(6);
       return data ?? [];
     },
     staleTime: 30_000,
   });
 
   return (
-    <PageShell>
-      <PageHeader
+    <div className="pb-[calc(96px+env(safe-area-inset-bottom))]">
+      <MobileHero
+        eyebrow="Society Admin"
         title="Communication"
-        description="Notices, documents, contacts, and community updates in one place."
+        subtitle="Notices, documents, contacts, and community updates in one place."
+        icon={MessageSquare}
+        variant="teal"
+        action={
+          <Button asChild size="sm" className="rounded-xl h-9 bg-white/15 hover:bg-white/25 text-white border-0">
+            <Link to="/society/announcements"><Megaphone className="h-4 w-4 mr-1.5" /> Notice</Link>
+          </Button>
+        }
+        stats={
+          <StatPillRow>
+            <StatPill label="Notices" value={counts?.notices ?? "—"} icon={Megaphone} />
+            <StatPill label="Contacts" value={counts?.contacts ?? "—"} icon={PhoneIcon} />
+          </StatPillRow>
+        }
       />
 
-      {/* Hero */}
-      <Card className="rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-background border-primary/20">
-        <CardContent className="p-5 flex items-center gap-4">
-          <div className="h-12 w-12 rounded-2xl bg-primary/15 grid place-items-center shrink-0">
-            <MessageSquare className="h-6 w-6 text-primary" />
+      <div className="px-4 pt-4 space-y-4 max-w-5xl mx-auto md:px-8">
+        <SectionCard title="Channels">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            <ChannelTile to="/society/announcements" icon={Megaphone} label="Notices" count={counts?.notices} tone="ok" />
+            <ChannelTile to="/society/bylaws" icon={FileText} label="Documents" tone="info" />
+            <ChannelTile to="/society/contacts" icon={PhoneIcon} label="Contacts" count={counts?.contacts} tone="neutral" />
+            <ChannelTile to="/society/polls" icon={Vote} label="Polls" tone="warn" />
           </div>
-          <div className="min-w-0 flex-1">
-            <h2 className="font-semibold">Keep your community informed</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Post announcements, share documents, and manage contacts.
-            </p>
-          </div>
-          <Button asChild size="sm" className="rounded-xl shrink-0">
-            <Link to="/society/announcements">
-              New Notice <ArrowRight className="h-3.5 w-3.5 ml-1" />
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
+        </SectionCard>
 
-      {/* Channels */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-        <ChannelTile
-          to="/society/announcements"
-          icon={Megaphone}
-          label="Notices"
-          count={counts?.notices}
-          tone="ok"
-        />
-        <ChannelTile
-          to="/society/bylaws"
-          icon={FileText}
-          label="Documents"
-          tone="info"
-        />
-        <ChannelTile
-          to="/society/contacts"
-          icon={PhoneIcon}
-          label="Contacts"
-          count={counts?.contacts}
-          tone="neutral"
-        />
-        <ChannelTile
-          to="/society/polls"
-          icon={Vote}
-          label="Polls"
-          tone="warn"
-        />
-      </div>
-
-      {/* Admin actions */}
-      <Card className="rounded-2xl">
-        <CardContent className="p-4">
-          <h3 className="text-sm font-semibold mb-3">Admin actions</h3>
+        <SectionCard title="Admin actions">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <Button asChild variant="outline" className="rounded-xl h-auto py-3 flex-col gap-1.5">
-              <Link to="/society/announcements">
-                <Megaphone className="h-4 w-4" />
-                <span className="text-xs">Create Notice</span>
-              </Link>
+              <Link to="/society/announcements"><Megaphone className="h-4 w-4" /><span className="text-xs">New Notice</span></Link>
             </Button>
             <Button asChild variant="outline" className="rounded-xl h-auto py-3 flex-col gap-1.5">
-              <Link to="/society/bylaws">
-                <FileText className="h-4 w-4" />
-                <span className="text-xs">Upload Document</span>
-              </Link>
+              <Link to="/society/bylaws"><FileText className="h-4 w-4" /><span className="text-xs">Upload Doc</span></Link>
             </Button>
             <Button asChild variant="outline" className="rounded-xl h-auto py-3 flex-col gap-1.5">
-              <Link to="/society/contacts">
-                <PhoneIcon className="h-4 w-4" />
-                <span className="text-xs">Manage Contacts</span>
-              </Link>
+              <Link to="/society/contacts"><PhoneIcon className="h-4 w-4" /><span className="text-xs">Contacts</span></Link>
             </Button>
             <Button asChild variant="outline" className="rounded-xl h-auto py-3 flex-col gap-1.5">
-              <Link to="/society/digest">
-                <Sparkles className="h-4 w-4" />
-                <span className="text-xs">AI Digest</span>
-              </Link>
+              <Link to="/society/digest"><Sparkles className="h-4 w-4" /><span className="text-xs">AI Digest</span></Link>
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </SectionCard>
 
-      {/* Recent */}
-      {recent && recent.length > 0 && (
-        <Card className="rounded-2xl">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold">Recent communications</h3>
+        {recent && recent.length > 0 && (
+          <SectionCard
+            title="Recent communications"
+            action={
               <Button asChild variant="ghost" size="sm" className="rounded-xl">
-                <Link to="/society/announcements">View all</Link>
+                <Link to="/society/announcements">View all <ArrowRight className="h-3 w-3 ml-1" /></Link>
               </Button>
-            </div>
-            <ul className="divide-y">
+            }
+            bodyClassName="p-0"
+          >
+            <ListCardGroup>
               {recent.map((r: any) => (
-                <li key={r.id} className="py-2.5 flex gap-3 items-start">
-                  <div className="h-8 w-8 rounded-xl bg-primary/10 grid place-items-center shrink-0 mt-0.5">
-                    <BookOpen className="h-4 w-4 text-primary" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{r.title ?? "Notice"}</p>
-                    {r.body && (
-                      <p className="text-xs text-muted-foreground line-clamp-2">{r.body}</p>
-                    )}
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
-                      {new Date(r.created_at).toLocaleDateString("en-IN")}
-                    </p>
-                  </div>
-                </li>
+                <ListCard
+                  key={r.id}
+                  leading={<span className="h-10 w-10 rounded-xl bg-primary/10 text-primary grid place-items-center"><BookOpen className="h-4 w-4" /></span>}
+                  title={r.title ?? "Notice"}
+                  subtitle={r.body || new Date(r.created_at).toLocaleDateString("en-IN")}
+                />
               ))}
-            </ul>
-          </CardContent>
-        </Card>
-      )}
-    </PageShell>
+            </ListCardGroup>
+          </SectionCard>
+        )}
+      </div>
+    </div>
   );
 }
 

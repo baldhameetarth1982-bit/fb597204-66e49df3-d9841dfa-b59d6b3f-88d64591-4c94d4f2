@@ -1,13 +1,43 @@
 import { useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
-  Building2, Car, DoorOpen, LayoutDashboard, Megaphone, Menu, Receipt,
-  ShieldCheck, Trophy, UserCheck, Users, Vote, Wallet, Wand2, Sparkles,
-  Calculator, BadgeCheck, LogOut, Settings, ListChecks, Wrench, CalendarRange,
-  BarChart3, Compass, Grid3x3, Upload, BookOpen, PhoneCall, Landmark,
+  Building2,
+  Car,
+  DoorOpen,
+  LayoutDashboard,
+  Megaphone,
+  Menu,
+  Receipt,
+  ShieldCheck,
+  Trophy,
+  UserCheck,
+  Users,
+  Vote,
+  Wallet,
+  Wand2,
+  Sparkles,
+  Calculator,
+  BadgeCheck,
+  LogOut,
+  Settings,
+  ListChecks,
+  Wrench,
+  CalendarRange,
+  BarChart3,
+  Compass,
+  Grid3x3,
+  Upload,
+  BookOpen,
+  PhoneCall,
+  Landmark,
 } from "lucide-react";
 import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetClose,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/shared/Logo";
@@ -44,8 +74,9 @@ const GROUPS: Group[] = [
     label: "Money",
     items: [
       { label: "Maintenance", to: "/society/maintenance", icon: CalendarRange },
-      { label: "Bill Studio", to: "/society/billing", icon: Wand2 },
+      { label: "Bill Studio", to: "/society/bill-studio", icon: Wand2 },
       { label: "Billing", to: "/society/billing", icon: Receipt },
+      { label: "No-Dues Certificates", to: "/society/no-dues", icon: BadgeCheck },
       { label: "Payouts (Bank)", to: "/society/payouts", icon: Landmark },
       { label: "Expenses", to: "/society/expenses", icon: Wallet },
       { label: "Income & Expense", to: "/society/accounts", icon: Calculator },
@@ -95,7 +126,9 @@ export function SocietyDrawer() {
           <div className="flex items-center gap-3">
             <Logo size={40} />
             <div className="min-w-0">
-              <SheetTitle className="text-base truncate">{profile?.full_name ?? "Society Admin"}</SheetTitle>
+              <SheetTitle className="text-base truncate">
+                {profile?.full_name ?? "Society Admin"}
+              </SheetTitle>
               <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
             </div>
           </div>
@@ -145,7 +178,10 @@ export function SocietyDrawer() {
             </Link>
           </SheetClose>
           <button
-            onClick={async () => { setOpen(false); await signOut(); }}
+            onClick={async () => {
+              setOpen(false);
+              await signOut();
+            }}
             className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium text-destructive hover:bg-destructive/5"
           >
             <LogOut className="h-5 w-5" /> Log out

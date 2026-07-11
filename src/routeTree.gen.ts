@@ -34,6 +34,7 @@ import { Route as OnboardingCreateRouteImport } from './routes/onboarding.create
 import { Route as CheckoutPlanIdRouteImport } from './routes/checkout.$planId'
 import { Route as ApiSupportChatRouteImport } from './routes/api/support-chat'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
+import { Route as VerifyNoDuesTokenRouteImport } from './routes/verify.no-dues.$token'
 import { Route as SocietySocietyVisitorsRouteImport } from './routes/_society/society.visitors'
 import { Route as SocietySocietyVerificationsRouteImport } from './routes/_society/society.verifications'
 import { Route as SocietySocietyVehiclesRouteImport } from './routes/_society/society.vehicles'
@@ -45,6 +46,7 @@ import { Route as SocietySocietyReportsRouteImport } from './routes/_society/soc
 import { Route as SocietySocietyPollsRouteImport } from './routes/_society/society.polls'
 import { Route as SocietySocietyPlanRequiredRouteImport } from './routes/_society/society.plan-required'
 import { Route as SocietySocietyPayoutsRouteImport } from './routes/_society/society.payouts'
+import { Route as SocietySocietyNoDuesRouteImport } from './routes/_society/society.no-dues'
 import { Route as SocietySocietyMoreRouteImport } from './routes/_society/society.more'
 import { Route as SocietySocietyMatrixImportRouteImport } from './routes/_society/society.matrix-import'
 import { Route as SocietySocietyMatrixRouteImport } from './routes/_society/society.matrix'
@@ -244,6 +246,11 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => AuthRoute,
 } as any)
+const VerifyNoDuesTokenRoute = VerifyNoDuesTokenRouteImport.update({
+  id: '/verify/no-dues/$token',
+  path: '/verify/no-dues/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SocietySocietyVisitorsRoute = SocietySocietyVisitorsRouteImport.update({
   id: '/society/visitors',
   path: '/society/visitors',
@@ -299,6 +306,11 @@ const SocietySocietyPlanRequiredRoute =
 const SocietySocietyPayoutsRoute = SocietySocietyPayoutsRouteImport.update({
   id: '/society/payouts',
   path: '/society/payouts',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyNoDuesRoute = SocietySocietyNoDuesRouteImport.update({
+  id: '/society/no-dues',
+  path: '/society/no-dues',
   getParentRoute: () => SocietyRoute,
 } as any)
 const SocietySocietyMoreRoute = SocietySocietyMoreRouteImport.update({
@@ -793,6 +805,7 @@ export interface FileRoutesByFullPath {
   '/society/matrix': typeof SocietySocietyMatrixRoute
   '/society/matrix-import': typeof SocietySocietyMatrixImportRoute
   '/society/more': typeof SocietySocietyMoreRoute
+  '/society/no-dues': typeof SocietySocietyNoDuesRoute
   '/society/payouts': typeof SocietySocietyPayoutsRoute
   '/society/plan-required': typeof SocietySocietyPlanRequiredRoute
   '/society/polls': typeof SocietySocietyPollsRoute
@@ -804,6 +817,7 @@ export interface FileRoutesByFullPath {
   '/society/vehicles': typeof SocietySocietyVehiclesRoute
   '/society/verifications': typeof SocietySocietyVerificationsRoute
   '/society/visitors': typeof SocietySocietyVisitorsRoute
+  '/verify/no-dues/$token': typeof VerifyNoDuesTokenRoute
   '/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
   '/society/billing/generate': typeof SocietySocietyBillingGenerateRoute
   '/society/bills/$id': typeof SocietySocietyBillsIdRoute
@@ -903,6 +917,7 @@ export interface FileRoutesByTo {
   '/society/matrix': typeof SocietySocietyMatrixRoute
   '/society/matrix-import': typeof SocietySocietyMatrixImportRoute
   '/society/more': typeof SocietySocietyMoreRoute
+  '/society/no-dues': typeof SocietySocietyNoDuesRoute
   '/society/payouts': typeof SocietySocietyPayoutsRoute
   '/society/plan-required': typeof SocietySocietyPlanRequiredRoute
   '/society/polls': typeof SocietySocietyPollsRoute
@@ -914,6 +929,7 @@ export interface FileRoutesByTo {
   '/society/vehicles': typeof SocietySocietyVehiclesRoute
   '/society/verifications': typeof SocietySocietyVerificationsRoute
   '/society/visitors': typeof SocietySocietyVisitorsRoute
+  '/verify/no-dues/$token': typeof VerifyNoDuesTokenRoute
   '/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
   '/society/billing/generate': typeof SocietySocietyBillingGenerateRoute
   '/society/bills/$id': typeof SocietySocietyBillsIdRoute
@@ -1019,6 +1035,7 @@ export interface FileRoutesById {
   '/_society/society/matrix': typeof SocietySocietyMatrixRoute
   '/_society/society/matrix-import': typeof SocietySocietyMatrixImportRoute
   '/_society/society/more': typeof SocietySocietyMoreRoute
+  '/_society/society/no-dues': typeof SocietySocietyNoDuesRoute
   '/_society/society/payouts': typeof SocietySocietyPayoutsRoute
   '/_society/society/plan-required': typeof SocietySocietyPlanRequiredRoute
   '/_society/society/polls': typeof SocietySocietyPollsRoute
@@ -1030,6 +1047,7 @@ export interface FileRoutesById {
   '/_society/society/vehicles': typeof SocietySocietyVehiclesRoute
   '/_society/society/verifications': typeof SocietySocietyVerificationsRoute
   '/_society/society/visitors': typeof SocietySocietyVisitorsRoute
+  '/verify/no-dues/$token': typeof VerifyNoDuesTokenRoute
   '/_resident/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
   '/_society/society/billing/generate': typeof SocietySocietyBillingGenerateRoute
   '/_society/society/bills/$id': typeof SocietySocietyBillsIdRoute
@@ -1132,6 +1150,7 @@ export interface FileRouteTypes {
     | '/society/matrix'
     | '/society/matrix-import'
     | '/society/more'
+    | '/society/no-dues'
     | '/society/payouts'
     | '/society/plan-required'
     | '/society/polls'
@@ -1143,6 +1162,7 @@ export interface FileRouteTypes {
     | '/society/vehicles'
     | '/society/verifications'
     | '/society/visitors'
+    | '/verify/no-dues/$token'
     | '/app/feed/$postId'
     | '/society/billing/generate'
     | '/society/bills/$id'
@@ -1242,6 +1262,7 @@ export interface FileRouteTypes {
     | '/society/matrix'
     | '/society/matrix-import'
     | '/society/more'
+    | '/society/no-dues'
     | '/society/payouts'
     | '/society/plan-required'
     | '/society/polls'
@@ -1253,6 +1274,7 @@ export interface FileRouteTypes {
     | '/society/vehicles'
     | '/society/verifications'
     | '/society/visitors'
+    | '/verify/no-dues/$token'
     | '/app/feed/$postId'
     | '/society/billing/generate'
     | '/society/bills/$id'
@@ -1357,6 +1379,7 @@ export interface FileRouteTypes {
     | '/_society/society/matrix'
     | '/_society/society/matrix-import'
     | '/_society/society/more'
+    | '/_society/society/no-dues'
     | '/_society/society/payouts'
     | '/_society/society/plan-required'
     | '/_society/society/polls'
@@ -1368,6 +1391,7 @@ export interface FileRouteTypes {
     | '/_society/society/vehicles'
     | '/_society/society/verifications'
     | '/_society/society/visitors'
+    | '/verify/no-dues/$token'
     | '/_resident/app/feed/$postId'
     | '/_society/society/billing/generate'
     | '/_society/society/bills/$id'
@@ -1399,6 +1423,7 @@ export interface RootRouteChildren {
   WelcomeRoute: typeof WelcomeRoute
   ApiSupportChatRoute: typeof ApiSupportChatRoute
   CheckoutPlanIdRoute: typeof CheckoutPlanIdRoute
+  VerifyNoDuesTokenRoute: typeof VerifyNoDuesTokenRoute
   ApiPublicAuthFirebaseSessionRoute: typeof ApiPublicAuthFirebaseSessionRoute
   ApiPublicHooksMaintenanceRemindersRoute: typeof ApiPublicHooksMaintenanceRemindersRoute
   ApiPublicHooksRazorpayRoute: typeof ApiPublicHooksRazorpayRoute
@@ -1582,6 +1607,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/verify/no-dues/$token': {
+      id: '/verify/no-dues/$token'
+      path: '/verify/no-dues/$token'
+      fullPath: '/verify/no-dues/$token'
+      preLoaderRoute: typeof VerifyNoDuesTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_society/society/visitors': {
       id: '/_society/society/visitors'
       path: '/society/visitors'
@@ -1657,6 +1689,13 @@ declare module '@tanstack/react-router' {
       path: '/society/payouts'
       fullPath: '/society/payouts'
       preLoaderRoute: typeof SocietySocietyPayoutsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/no-dues': {
+      id: '/_society/society/no-dues'
+      path: '/society/no-dues'
+      fullPath: '/society/no-dues'
+      preLoaderRoute: typeof SocietySocietyNoDuesRouteImport
       parentRoute: typeof SocietyRoute
     }
     '/_society/society/more': {
@@ -2391,6 +2430,7 @@ interface SocietyRouteChildren {
   SocietySocietyMatrixRoute: typeof SocietySocietyMatrixRoute
   SocietySocietyMatrixImportRoute: typeof SocietySocietyMatrixImportRoute
   SocietySocietyMoreRoute: typeof SocietySocietyMoreRoute
+  SocietySocietyNoDuesRoute: typeof SocietySocietyNoDuesRoute
   SocietySocietyPayoutsRoute: typeof SocietySocietyPayoutsRoute
   SocietySocietyPlanRequiredRoute: typeof SocietySocietyPlanRequiredRoute
   SocietySocietyPollsRoute: typeof SocietySocietyPollsRoute
@@ -2431,6 +2471,7 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyMatrixRoute: SocietySocietyMatrixRoute,
   SocietySocietyMatrixImportRoute: SocietySocietyMatrixImportRoute,
   SocietySocietyMoreRoute: SocietySocietyMoreRoute,
+  SocietySocietyNoDuesRoute: SocietySocietyNoDuesRoute,
   SocietySocietyPayoutsRoute: SocietySocietyPayoutsRoute,
   SocietySocietyPlanRequiredRoute: SocietySocietyPlanRequiredRoute,
   SocietySocietyPollsRoute: SocietySocietyPollsRoute,
@@ -2488,6 +2529,7 @@ const rootRouteChildren: RootRouteChildren = {
   WelcomeRoute: WelcomeRoute,
   ApiSupportChatRoute: ApiSupportChatRoute,
   CheckoutPlanIdRoute: CheckoutPlanIdRoute,
+  VerifyNoDuesTokenRoute: VerifyNoDuesTokenRoute,
   ApiPublicAuthFirebaseSessionRoute: ApiPublicAuthFirebaseSessionRoute,
   ApiPublicHooksMaintenanceRemindersRoute:
     ApiPublicHooksMaintenanceRemindersRoute,
@@ -2497,3 +2539,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

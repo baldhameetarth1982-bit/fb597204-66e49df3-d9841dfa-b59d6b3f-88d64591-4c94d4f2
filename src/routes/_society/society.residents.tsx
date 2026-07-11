@@ -3,10 +3,19 @@ import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  Users, Loader2, Search, AlertTriangle, Phone, MessageCircle,
-  Link2, Download, ChevronRight, Home, UserCheck, UserX,
+  Users,
+  Loader2,
+  Search,
+  AlertTriangle,
+  Phone,
+  MessageCircle,
+  Link2,
+  Download,
+  ChevronRight,
+  Home,
+  UserCheck,
+  UserX,
 } from "lucide-react";
-import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { toast } from "sonner";
@@ -22,6 +31,7 @@ import { SectionCard } from "@/components/shared/SectionCard";
 import { AssignFlatDialog } from "@/components/society/AssignFlatDialog";
 import { listSocietyResidents } from "@/lib/residents.functions";
 import { cn } from "@/lib/utils";
+import { downloadWorkbook } from "@/lib/spreadsheet";
 
 export const Route = createFileRoute("/_society/society/residents")({
   head: () => ({ meta: [{ title: "Residents — SocioHub" }] }),
@@ -32,7 +42,12 @@ type Filter = "all" | "owner" | "tenant" | "unassigned" | "vacant";
 
 function initials(name?: string | null) {
   if (!name) return "?";
-  return name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
+  return name
+    .split(" ")
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 }
 
 function ResidentsPage() {
@@ -41,7 +56,9 @@ function ResidentsPage() {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
-  const [assignTarget, setAssignTarget] = useState<{ id: string; full_name: string | null } | null>(null);
+  const [assignTarget, setAssignTarget] = useState<{ id: string; full_name: string | null } | null>(
+    null,
+  );
 
   const { data, isLoading } = useQuery({
     enabled: !!societyId,
@@ -61,34 +78,46 @@ function ResidentsPage() {
       if (filter === "unassigned" && r.flat_id) return false;
       if (!ql) return true;
       const hay = [
-        r.full_name, r.email, r.phone,
-        r.flat_number, r.block_name,
-        r.property_number, r.ugvcl_number, r.share_certificate_number,
-      ].filter(Boolean).join(" ").toLowerCase();
+        r.full_name,
+        r.email,
+        r.phone,
+        r.flat_number,
+        r.block_name,
+        r.property_number,
+        r.ugvcl_number,
+        r.share_certificate_number,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
       return hay.includes(ql);
     });
   }, [residents, q, filter]);
 
-  function exportExcel() {
-    const src = filter === "vacant"
-      ? vacantFlats.map((f) => ({ Block: f.block_name ?? "—", Unit: f.flat_number, Status: "Vacant" }))
-      : filtered.map((r) => ({
-          Name: r.full_name ?? "",
-          Phone: r.phone ?? "",
-          Email: r.email ?? "",
-          Block: r.block_name ?? "",
-          Unit: r.flat_number ?? "",
-          Type: r.relationship ?? "",
-          "Property No": r.property_number ?? "",
-          UGVCL: r.ugvcl_number ?? "",
-          "Share Cert": r.share_certificate_number ?? "",
-          "Move-in": r.move_in_date ?? "",
-          KYC: r.aadhaar_verified ? "Verified" : "Pending",
-        }));
-    const ws = XLSX.utils.json_to_sheet(src);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Residents");
-    XLSX.writeFile(wb, `residents-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  async function exportExcel() {
+    const src =
+      filter === "vacant"
+        ? vacantFlats.map((f) => ({
+            Block: f.block_name ?? "—",
+            Unit: f.flat_number,
+            Status: "Vacant",
+          }))
+        : filtered.map((r) => ({
+            Name: r.full_name ?? "",
+            Phone: r.phone ?? "",
+            Email: r.email ?? "",
+            Block: r.block_name ?? "",
+            Unit: r.flat_number ?? "",
+            Type: r.relationship ?? "",
+            "Property No": r.property_number ?? "",
+            UGVCL: r.ugvcl_number ?? "",
+            "Share Cert": r.share_certificate_number ?? "",
+            "Move-in": r.move_in_date ?? "",
+            KYC: r.aadhaar_verified ? "Verified" : "Pending",
+          }));
+    await downloadWorkbook(`residents-${new Date().toISOString().slice(0, 10)}.xlsx`, [
+      { name: "Residents", rows: src },
+    ]);
     toast.success(`Exported ${src.length} row${src.length === 1 ? "" : "s"}`);
   }
 
@@ -98,7 +127,11 @@ function ResidentsPage() {
     doc.text("Residents", 40, 40);
     doc.setFontSize(9);
     doc.setTextColor(120);
-    doc.text(`Generated ${new Date().toLocaleString("en-IN")} · ${filtered.length} residents`, 40, 56);
+    doc.text(
+      `Generated ${new Date().toLocaleString("en-IN")} · ${filtered.length} residents`,
+      40,
+      56,
+    );
     doc.setTextColor(0);
     if (filter === "vacant") {
       autoTable(doc, {
@@ -113,10 +146,12 @@ function ResidentsPage() {
         startY: 74,
         head: [["Name", "Phone", "House", "Type", "Property No", "UGVCL", "Share Cert", "KYC"]],
         body: filtered.map((r) => [
-          r.full_name ?? "", r.phone ?? "",
+          r.full_name ?? "",
+          r.phone ?? "",
           [r.block_name, r.flat_number].filter(Boolean).join(" ") || "—",
           r.relationship ?? "",
-          r.property_number ?? "", r.ugvcl_number ?? "",
+          r.property_number ?? "",
+          r.ugvcl_number ?? "",
           r.share_certificate_number ?? "",
           r.aadhaar_verified ? "Verified" : "Pending",
         ]),
@@ -134,8 +169,16 @@ function ResidentsPage() {
 
   const FILTERS: Array<{ key: Filter; label: string; count: number }> = [
     { key: "all", label: "All", count: residents.length },
-    { key: "owner", label: "Owners", count: residents.filter((r) => r.relationship === "owner").length },
-    { key: "tenant", label: "Tenants", count: residents.filter((r) => r.relationship === "tenant").length },
+    {
+      key: "owner",
+      label: "Owners",
+      count: residents.filter((r) => r.relationship === "owner").length,
+    },
+    {
+      key: "tenant",
+      label: "Tenants",
+      count: residents.filter((r) => r.relationship === "tenant").length,
+    },
     { key: "unassigned", label: "Unassigned", count: unassignedCount },
     { key: "vacant", label: "Vacant", count: vacantFlats.length },
   ];
@@ -161,10 +204,20 @@ function ResidentsPage() {
         variant="teal"
         action={
           <div className="flex gap-1.5">
-            <Button size="sm" variant="secondary" className="rounded-xl h-9 bg-white/15 hover:bg-white/25 text-white border-0" onClick={exportExcel}>
+            <Button
+              size="sm"
+              variant="secondary"
+              className="rounded-xl h-9 bg-white/15 hover:bg-white/25 text-white border-0"
+              onClick={exportExcel}
+            >
               <Download className="h-3.5 w-3.5 mr-1" /> XLSX
             </Button>
-            <Button size="sm" variant="secondary" className="rounded-xl h-9 bg-white/15 hover:bg-white/25 text-white border-0" onClick={exportPDF}>
+            <Button
+              size="sm"
+              variant="secondary"
+              className="rounded-xl h-9 bg-white/15 hover:bg-white/25 text-white border-0"
+              onClick={exportPDF}
+            >
               <Download className="h-3.5 w-3.5 mr-1" /> PDF
             </Button>
           </div>
@@ -226,23 +279,33 @@ function ResidentsPage() {
           </div>
         ) : filter === "vacant" ? (
           vacantFlats.length === 0 ? (
-            <EmptyState icon={Home} title="No vacant houses" description="Every house is occupied." />
+            <EmptyState
+              icon={Home}
+              title="No vacant houses"
+              description="Every house is occupied."
+            />
           ) : (
             <div className="space-y-2">
               {vacantFlats.map((f) => (
-                <div key={f.id} className="rounded-2xl border bg-card p-4 flex items-center justify-between">
+                <div
+                  key={f.id}
+                  className="rounded-2xl border bg-card p-4 flex items-center justify-between"
+                >
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-xl bg-muted grid place-items-center">
                       <Home className="h-4 w-4 text-muted-foreground" />
                     </div>
                     <div>
                       <div className="font-medium">
-                        {f.block_name ? `${f.block_name} · ` : ""}{f.flat_number}
+                        {f.block_name ? `${f.block_name} · ` : ""}
+                        {f.flat_number}
                       </div>
                       <div className="text-xs text-muted-foreground">Vacant house</div>
                     </div>
                   </div>
-                  <Badge variant="outline" className="text-xs">Vacant</Badge>
+                  <Badge variant="outline" className="text-xs">
+                    Vacant
+                  </Badge>
                 </div>
               ))}
             </div>
@@ -251,7 +314,9 @@ function ResidentsPage() {
           <EmptyState
             icon={Users}
             title="No residents match"
-            description={q ? "Try a different search." : "Approve join requests or bulk import residents."}
+            description={
+              q ? "Try a different search." : "Approve join requests or bulk import residents."
+            }
           />
         ) : (
           <div className="space-y-2">
@@ -268,7 +333,9 @@ function ResidentsPage() {
         {assignTarget && societyId && (
           <AssignFlatDialog
             open={!!assignTarget}
-            onOpenChange={(v) => { if (!v) setAssignTarget(null); }}
+            onOpenChange={(v) => {
+              if (!v) setAssignTarget(null);
+            }}
             societyId={societyId}
             userId={assignTarget.id}
             userName={assignTarget.full_name}
@@ -307,12 +374,18 @@ function ResidentCard({ r, onAssign }: { r: any; onAssign: () => void }) {
             </Link>
             <div className="flex items-center gap-1.5 shrink-0">
               {r.aadhaar_verified ? (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-emerald-500/30 text-emerald-600">
+                <Badge
+                  variant="outline"
+                  className="text-[10px] px-1.5 py-0 border-emerald-500/30 text-emerald-600"
+                >
                   <UserCheck className="h-2.5 w-2.5 mr-0.5" /> KYC
                 </Badge>
               ) : null}
               {!r.flat_id ? (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-500/30 text-amber-600">
+                <Badge
+                  variant="outline"
+                  className="text-[10px] px-1.5 py-0 border-amber-500/30 text-amber-600"
+                >
                   <UserX className="h-2.5 w-2.5 mr-0.5" /> Unlinked
                 </Badge>
               ) : null}
@@ -322,12 +395,26 @@ function ResidentCard({ r, onAssign }: { r: any; onAssign: () => void }) {
           <div className="mt-3 flex items-center gap-1.5">
             {r.phone && (
               <>
-                <Button asChild size="sm" variant="outline" className="rounded-lg h-8 px-2.5 text-xs">
-                  <a href={`tel:${r.phone}`}><Phone className="h-3 w-3 mr-1" /> Call</a>
+                <Button
+                  asChild
+                  size="sm"
+                  variant="outline"
+                  className="rounded-lg h-8 px-2.5 text-xs"
+                >
+                  <a href={`tel:${r.phone}`}>
+                    <Phone className="h-3 w-3 mr-1" /> Call
+                  </a>
                 </Button>
                 {wa && (
-                  <Button asChild size="sm" variant="outline" className="rounded-lg h-8 px-2.5 text-xs">
-                    <a href={wa} target="_blank" rel="noreferrer"><MessageCircle className="h-3 w-3 mr-1" /> WA</a>
+                  <Button
+                    asChild
+                    size="sm"
+                    variant="outline"
+                    className="rounded-lg h-8 px-2.5 text-xs"
+                  >
+                    <a href={wa} target="_blank" rel="noreferrer">
+                      <MessageCircle className="h-3 w-3 mr-1" /> WA
+                    </a>
                   </Button>
                 )}
               </>
@@ -340,7 +427,12 @@ function ResidentCard({ r, onAssign }: { r: any; onAssign: () => void }) {
             >
               <Link2 className="h-3 w-3 mr-1" /> {r.flat_id ? "Change" : "Assign"}
             </Button>
-            <Button asChild size="sm" variant="ghost" className="rounded-lg h-8 px-2 text-xs ml-auto">
+            <Button
+              asChild
+              size="sm"
+              variant="ghost"
+              className="rounded-lg h-8 px-2 text-xs ml-auto"
+            >
               <Link to="/society/residents/$id" params={{ id: r.id }}>
                 <ChevronRight className="h-4 w-4" />
               </Link>

@@ -8,8 +8,8 @@ and Lovable Cloud (Supabase).
 
 ```bash
 cp .env.example .env       # then fill in real values
-bun install
-bun dev
+npm install
+npm run dev
 ```
 
 The app starts on `http://localhost:8080`.
@@ -31,9 +31,10 @@ See [`.env.example`](./.env.example) for the full list. Quick reference:
 
 - **Auth**: Supabase email/password, Google OAuth (via Lovable broker) and
   phone OTP through Firebase.
-- **Authorization**: every protected route lives under
-  `src/routes/_authenticated/` (managed gate); `/admin/*` additionally checks
-  `super_admin` role; role storage is in the separate `user_roles` table.
+- **Authorization**: protected routes live under role-specific layouts:
+  `src/routes/_resident.tsx`, `src/routes/_society.tsx`, and
+  `src/routes/_admin.tsx`. Role storage is kept in the separate `user_roles`
+  table.
 - **RLS**: enabled on every public-schema table. Service-role usage is limited
   to verified webhooks and admin maintenance jobs.
 - **Secrets**: never commit `.env`. Runtime secrets (Razorpay, Firebase admin,
@@ -57,3 +58,6 @@ See [`.env.example`](./.env.example) for the full list. Quick reference:
 - `src/lib/*.functions.ts` — server functions called from the client.
 - `src/integrations/supabase/` — auto-generated Supabase clients; do not edit.
 - `supabase/migrations/` — database schema.
+
+`package-lock.json` is the canonical dependency lock file. Keep local `.env`
+files out of Git and store production secrets in the deployment secret manager.

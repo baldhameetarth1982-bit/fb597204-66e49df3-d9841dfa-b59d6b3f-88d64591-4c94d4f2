@@ -2,7 +2,17 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Download, Upload, TrendingUp, Home, IndianRupee, AlertTriangle, CheckCircle2, LayoutGrid } from "lucide-react";
+import {
+  Loader2,
+  Download,
+  Upload,
+  TrendingUp,
+  Home,
+  IndianRupee,
+  AlertTriangle,
+  CheckCircle2,
+  LayoutGrid,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { MobileHero } from "@/components/shared/MobileHero";
@@ -13,20 +23,39 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { societyMaintenanceSummary } from "@/lib/residents.functions";
+import { downloadWorkbook } from "@/lib/spreadsheet";
 
 export const Route = createFileRoute("/_society/society/matrix")({
   head: () => ({ meta: [{ title: "Maintenance Matrix — SocioHub" }] }),
   component: MatrixPage,
 });
 
-const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTH_NAMES = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
 
 type FlatRow = { id: string; flat_number: string; block_name: string };
-type Period = { flat_id: string; period_start: string; status: string; amount_due: number; due_date: string | null };
+type Period = {
+  flat_id: string;
+  period_start: string;
+  status: string;
+  amount_due: number;
+  due_date: string | null;
+};
 
 const STATUS_KEYS = ["Paid", "Pending", "Overdue", "Advance", "Upcoming"] as const;
 type StatusKey = (typeof STATUS_KEYS)[number] | "all";
@@ -55,7 +84,10 @@ function MatrixPage() {
     (async () => {
       setLoading(true);
       const [f, p] = await Promise.all([
-        supabase.from("flats").select("id,flat_number,blocks!flats_block_id_fkey(name)").eq("society_id", societyId),
+        supabase
+          .from("flats")
+          .select("id,flat_number,blocks!flats_block_id_fkey(name)")
+          .eq("society_id", societyId),
         supabase
           .from("maintenance_periods")
           .select("flat_id,period_start,status,amount_due,due_date")
@@ -69,13 +101,19 @@ function MatrixPage() {
         ((f.data ?? []) as any[])
           .map((x) => ({ id: x.id, flat_number: x.flat_number, block_name: x.blocks?.name ?? "—" }))
           .sort((a, b) =>
-            (a.block_name + a.flat_number).localeCompare(b.block_name + b.flat_number, undefined, { numeric: true }),
+            (a.block_name + a.flat_number).localeCompare(b.block_name + b.flat_number, undefined, {
+              numeric: true,
+            }),
           ),
       );
-      setPeriods(((p.data ?? []) as any[]).map((x) => ({ ...x, amount_due: Number(x.amount_due) })));
+      setPeriods(
+        ((p.data ?? []) as any[]).map((x) => ({ ...x, amount_due: Number(x.amount_due) })),
+      );
       setLoading(false);
     })();
-    return () => { cancel = true; };
+    return () => {
+      cancel = true;
+    };
   }, [societyId, year]);
 
   const today = useMemo(() => new Date(), []);
@@ -85,7 +123,8 @@ function MatrixPage() {
       (x) => x.flat_id === flatId && new Date(x.period_start).getMonth() === mi,
     );
     if (!period) {
-      const isFuture = year > today.getFullYear() || (year === today.getFullYear() && mi > today.getMonth());
+      const isFuture =
+        year > today.getFullYear() || (year === today.getFullYear() && mi > today.getMonth());
       return {
         label: isFuture ? "Upcoming" : "—",
         cls: isFuture ? "bg-blue-500/10 text-blue-600" : "bg-muted text-muted-foreground",
@@ -112,26 +151,26 @@ function MatrixPage() {
 
   const filtered = useMemo(() => {
     return flats.filter((f) => {
-      if (q && !(f.flat_number + " " + f.block_name).toLowerCase().includes(q.toLowerCase())) return false;
+      if (q && !(f.flat_number + " " + f.block_name).toLowerCase().includes(q.toLowerCase()))
+        return false;
       if (blockFilter !== "all" && f.block_name !== blockFilter) return false;
       if (statusFilter !== "all") {
-        const has = Array.from({ length: 12 }, (_, m) => cell(f.id, m).label).includes(statusFilter);
+        const has = Array.from({ length: 12 }, (_, m) => cell(f.id, m).label).includes(
+          statusFilter,
+        );
         if (!has) return false;
       }
       return true;
     });
   }, [flats, q, blockFilter, statusFilter, periods, year]);
 
-  function exportExcel() {
+  async function exportExcel() {
     const rows = filtered.map((f) => {
       const row: Record<string, string> = { Block: f.block_name, Unit: f.flat_number };
       for (let m = 0; m < 12; m++) row[MONTH_NAMES[m]] = cell(f.id, m).label;
       return row;
     });
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, `Matrix ${year}`);
-    XLSX.writeFile(wb, `maintenance-matrix-${year}.xlsx`);
+    await downloadWorkbook(`maintenance-matrix-${year}.xlsx`, [{ name: `Matrix ${year}`, rows }]);
   }
 
   function exportPDF() {
@@ -170,8 +209,16 @@ function MatrixPage() {
             <StatPillRow>
               <StatPill label="Houses" value={summary.total_houses} icon={Home} />
               <StatPill label="Paid" value={summary.paid_periods} icon={CheckCircle2} />
-              <StatPill label="Outstanding" value={`₹${Number(summary.outstanding_amount).toLocaleString("en-IN")}`} icon={IndianRupee} />
-              <StatPill label="Collection" value={`${Number(summary.collection_percent).toFixed(0)}%`} icon={TrendingUp} />
+              <StatPill
+                label="Outstanding"
+                value={`₹${Number(summary.outstanding_amount).toLocaleString("en-IN")}`}
+                icon={IndianRupee}
+              />
+              <StatPill
+                label="Collection"
+                value={`${Number(summary.collection_percent).toFixed(0)}%`}
+                icon={TrendingUp}
+              />
             </StatPillRow>
           ) : undefined
         }
@@ -188,7 +235,9 @@ function MatrixPage() {
               className="w-20 h-9 rounded-xl"
             />
             <Button asChild variant="outline" size="sm" className="rounded-xl">
-              <Link to="/society/matrix-import"><Upload className="h-4 w-4 mr-1" /> Import</Link>
+              <Link to="/society/matrix-import">
+                <Upload className="h-4 w-4 mr-1" /> Import
+              </Link>
             </Button>
             <Button variant="outline" size="sm" onClick={exportExcel} className="rounded-xl">
               <Download className="h-4 w-4 mr-1" /> Excel
@@ -198,7 +247,6 @@ function MatrixPage() {
             </Button>
           </div>
         </SectionCard>
-
 
         {summary && (
           <div className="grid grid-cols-2 gap-2.5">
@@ -229,7 +277,11 @@ function MatrixPage() {
               aria-label="Block filter"
             >
               <option value="all">All blocks</option>
-              {blockOptions.map((b) => <option key={b} value={b}>{b}</option>)}
+              {blockOptions.map((b) => (
+                <option key={b} value={b}>
+                  {b}
+                </option>
+              ))}
             </select>
             <select
               value={statusFilter}
@@ -238,14 +290,24 @@ function MatrixPage() {
               aria-label="Status filter"
             >
               <option value="all">All statuses</option>
-              {STATUS_KEYS.map((s) => <option key={s} value={s}>{s}</option>)}
+              {STATUS_KEYS.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
             </select>
           </div>
           <div className="flex flex-wrap gap-1.5 text-[10px]">
-            <LegendChip label="Paid" cls="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" />
+            <LegendChip
+              label="Paid"
+              cls="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+            />
             <LegendChip label="Pending" cls="bg-amber-500/15 text-amber-700 dark:text-amber-300" />
             <LegendChip label="Overdue" cls="bg-destructive/15 text-destructive" />
-            <LegendChip label="Advance" cls="bg-violet-500/15 text-violet-700 dark:text-violet-300" />
+            <LegendChip
+              label="Advance"
+              cls="bg-violet-500/15 text-violet-700 dark:text-violet-300"
+            />
             <LegendChip label="Upcoming" cls="bg-blue-500/10 text-blue-600" />
           </div>
         </SectionCard>
@@ -264,9 +326,13 @@ function MatrixPage() {
               <table className="w-full text-xs">
                 <thead className="bg-secondary sticky top-0 z-10">
                   <tr>
-                    <th className="text-left p-2 sticky left-0 bg-secondary z-20 min-w-[100px]">Unit</th>
+                    <th className="text-left p-2 sticky left-0 bg-secondary z-20 min-w-[100px]">
+                      Unit
+                    </th>
                     {MONTH_NAMES.map((m) => (
-                      <th key={m} className="p-2 text-center font-medium min-w-[64px]">{m}</th>
+                      <th key={m} className="p-2 text-center font-medium min-w-[64px]">
+                        {m}
+                      </th>
                     ))}
                   </tr>
                 </thead>
@@ -280,7 +346,12 @@ function MatrixPage() {
                         const c = cell(f.id, mi);
                         return (
                           <td key={mi} className="p-1">
-                            <div className={cn("rounded-md py-1.5 text-center font-medium text-[11px]", c.cls)}>
+                            <div
+                              className={cn(
+                                "rounded-md py-1.5 text-center font-medium text-[11px]",
+                                c.cls,
+                              )}
+                            >
                               {c.label}
                             </div>
                           </td>
@@ -291,7 +362,9 @@ function MatrixPage() {
                 </tbody>
               </table>
             </div>
-            <p className="px-4 mt-2 text-[11px] text-muted-foreground sm:hidden">Swipe horizontally to see all months →</p>
+            <p className="px-4 mt-2 text-[11px] text-muted-foreground sm:hidden">
+              Swipe horizontally to see all months →
+            </p>
           </div>
         )}
       </div>
@@ -299,11 +372,8 @@ function MatrixPage() {
   );
 }
 
-
 function LegendChip({ label, cls }: { label: string; cls: string }) {
-  return (
-    <span className={cn("rounded-full px-2 py-0.5 font-medium", cls)}>{label}</span>
-  );
+  return <span className={cn("rounded-full px-2 py-0.5 font-medium", cls)}>{label}</span>;
 }
 
 function Kpi({
@@ -321,12 +391,12 @@ function Kpi({
     tone === "ok"
       ? "text-emerald-600 bg-emerald-500/10"
       : tone === "warn"
-      ? "text-amber-600 bg-amber-500/10"
-      : tone === "danger"
-      ? "text-rose-600 bg-rose-500/10"
-      : tone === "info"
-      ? "text-violet-600 bg-violet-500/10"
-      : "text-muted-foreground bg-muted";
+        ? "text-amber-600 bg-amber-500/10"
+        : tone === "danger"
+          ? "text-rose-600 bg-rose-500/10"
+          : tone === "info"
+            ? "text-violet-600 bg-violet-500/10"
+            : "text-muted-foreground bg-muted";
   return (
     <Card className="rounded-2xl p-3 flex items-center gap-2.5">
       <div className={cn("h-9 w-9 rounded-xl grid place-items-center shrink-0", toneCls)}>

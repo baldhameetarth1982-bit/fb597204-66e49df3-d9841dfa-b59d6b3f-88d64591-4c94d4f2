@@ -2386,15 +2386,15 @@ export type Database = {
       }
       create_society_full: {
         Args: {
-          _city: string
-          _full_address: string
-          _logo_url: string
+          _city?: string
+          _full_address?: string
+          _logo_url?: string
           _name: string
-          _pincode: string
+          _pincode?: string
           _referral_code?: string
-          _registration_number: string
-          _state: string
-          _total_units: number
+          _registration_number?: string
+          _state?: string
+          _total_units?: number
         }
         Returns: {
           id: string

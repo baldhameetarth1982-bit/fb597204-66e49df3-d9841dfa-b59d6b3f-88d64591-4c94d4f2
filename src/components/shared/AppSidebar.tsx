@@ -1,13 +1,32 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
-  LayoutDashboard, Building2, DoorOpen, Users, Receipt, Megaphone,
-  ShieldCheck, Vote, Sparkles, Car, UserCheck, Trophy,
-  Search, Zap,
+  LayoutDashboard,
+  Building2,
+  DoorOpen,
+  Users,
+  Receipt,
+  Megaphone,
+  ShieldCheck,
+  Vote,
+  Sparkles,
+  Car,
+  UserCheck,
+  Trophy,
+  Search,
+  Zap,
+  BadgeCheck,
 } from "lucide-react";
 import {
-  Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
-  SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton,
-  SidebarMenuItem, useSidebar,
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Logo } from "@/components/shared/Logo";
 
@@ -18,6 +37,7 @@ const items = [
   { title: "Flats", url: "/society/flats", icon: DoorOpen },
   { title: "Residents", url: "/society/residents", icon: Users },
   { title: "Billing", url: "/society/billing", icon: Receipt },
+  { title: "No-Dues", url: "/society/no-dues", icon: BadgeCheck },
   { title: "Vehicles", url: "/society/vehicles", icon: Car },
   { title: "Visitors", url: "/society/visitors", icon: UserCheck },
   { title: "Announcements", url: "/society/announcements", icon: Megaphone },
@@ -40,9 +60,7 @@ export function AppSidebar() {
         <Link to="/" className="flex items-center gap-2">
           <Logo size={36} />
           {!collapsed && (
-            <span className="text-lg font-semibold tracking-tight text-foreground">
-              SocioHub
-            </span>
+            <span className="text-lg font-semibold tracking-tight text-foreground">SocioHub</span>
           )}
         </Link>
       </SidebarHeader>
@@ -57,8 +75,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu className="gap-1">
               {items.map((item) => {
-                const active =
-                  pathname === item.url || pathname.startsWith(item.url + "/");
+                const active = pathname === item.url || pathname.startsWith(item.url + "/");
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
@@ -69,9 +86,7 @@ export function AppSidebar() {
                     >
                       <Link to={item.url} className="flex items-center gap-3">
                         <item.icon className="h-5 w-5 shrink-0" />
-                        {!collapsed && (
-                          <span className="text-sm font-medium">{item.title}</span>
-                        )}
+                        {!collapsed && <span className="text-sm font-medium">{item.title}</span>}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

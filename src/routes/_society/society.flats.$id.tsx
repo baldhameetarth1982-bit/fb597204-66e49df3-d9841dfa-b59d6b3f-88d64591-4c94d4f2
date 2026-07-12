@@ -2,8 +2,23 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  ArrowLeft, Home, User, IndianRupee, Loader2, FileText, ArrowRight,
-  History, DoorOpen, MapPin,
+  ArrowLeft,
+  Home,
+  User,
+  IndianRupee,
+  Loader2,
+  FileText,
+  ArrowRight,
+  History,
+  DoorOpen,
+  MapPin,
+  Users,
+  Car,
+  UserCheck,
+  LifeBuoy,
+  CreditCard,
+  Sparkles,
+  BadgeCheck,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageShell } from "@/components/shared/PageHeader";
@@ -42,7 +57,9 @@ function HouseDetailPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("flat_residents")
-        .select("id, is_primary, relationship, moved_in_at, profiles(id, full_name, phone, email, avatar_url)")
+        .select(
+          "id, is_primary, relationship, moved_in_at, profiles(id, full_name, phone, email, avatar_url)",
+        )
         .eq("flat_id", id)
         .eq("is_active", true)
         .order("is_primary", { ascending: false });
@@ -76,6 +93,75 @@ function HouseDetailPage() {
     queryFn: async () => getHistory({ data: { flatId: id } }),
   });
 
+  const residentIds = (current ?? []).map((resident) => resident.profiles?.id).filter(Boolean);
+
+  const { data: family } = useQuery({
+    enabled: residentIds.length > 0,
+    queryKey: ["flat-family-detail", id, residentIds],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("family_members")
+        .select("id, user_id, full_name, relation, age, phone")
+        .in("user_id", residentIds);
+      return (data ?? []) as any[];
+    },
+  });
+
+  const { data: vehicles } = useQuery({
+    enabled: !!id,
+    queryKey: ["flat-vehicles-detail", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("vehicles")
+        .select("id, plate_number, type, make_model, color")
+        .eq("flat_id", id)
+        .order("created_at", { ascending: false });
+      return (data ?? []) as any[];
+    },
+  });
+
+  const { data: visitors } = useQuery({
+    enabled: !!id,
+    queryKey: ["flat-visitors-detail", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("visitors")
+        .select("id, visitor_name, purpose, status, entry_at, exit_at")
+        .eq("flat_id", id)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      return (data ?? []) as any[];
+    },
+  });
+
+  const { data: tickets } = useQuery({
+    enabled: residentIds.length > 0,
+    queryKey: ["flat-tickets-detail", id, residentIds],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("support_tickets")
+        .select("id, subject, category, status, priority, created_at")
+        .in("user_id", residentIds)
+        .order("created_at", { ascending: false })
+        .limit(8);
+      return (data ?? []) as any[];
+    },
+  });
+
+  const { data: payments } = useQuery({
+    enabled: !!id,
+    queryKey: ["flat-payments-detail", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("payments")
+        .select("id, amount, status, method, paid_at, reference_no")
+        .eq("flat_id", id)
+        .order("paid_at", { ascending: false })
+        .limit(8);
+      return (data ?? []) as any[];
+    },
+  });
+
   if (isLoading) {
     return (
       <PageShell>
@@ -95,16 +181,31 @@ function HouseDetailPage() {
 
   const primary = current?.find((r) => r.is_primary) ?? current?.[0];
   const isVacant = !current || current.length === 0;
+  const pendingAmount = Number(outstanding?.pending ?? 0);
+  const openTickets = (tickets ?? []).filter(
+    (ticket) => ticket.status === "open" || ticket.status === "in_progress",
+  ).length;
+  const paidTotal = (payments ?? [])
+    .filter((payment) => payment.status === "success")
+    .reduce((sum, payment) => sum + Number(payment.amount), 0);
+  const unitSummary = isVacant
+    ? "This unit is vacant. Review any pending dues before assigning a new resident."
+    : pendingAmount > 0
+      ? `Occupied by ${primary?.profiles?.full_name ?? "a resident"}. ${moneySummary(pendingAmount)} is pending${openTickets ? ` and ${openTickets} helpdesk request${openTickets === 1 ? " is" : "s are"} still open` : ""}.`
+      : `Occupied by ${primary?.profiles?.full_name ?? "a resident"}. Dues are clear${openTickets ? `, with ${openTickets} unresolved helpdesk request${openTickets === 1 ? "" : "s"}` : " and there are no unresolved helpdesk requests"}.`;
 
   return (
     <PageShell>
       <div className="flex items-center gap-2 mb-3">
         <Button asChild variant="ghost" size="sm" className="rounded-xl">
-          <Link to="/society/flats"><ArrowLeft className="h-4 w-4 mr-1" />Houses</Link>
+          <Link to="/society/flats">
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Houses
+          </Link>
         </Button>
       </div>
 
-      {/* Header card */}
+      {/* Flat 360 header */}
       <Card className="rounded-2xl">
         <CardContent className="p-5">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
@@ -114,11 +215,12 @@ function HouseDetailPage() {
               </div>
               <div className="min-w-0">
                 <h1 className="truncate text-xl font-bold">
-                  {flat.blocks?.name ? `${flat.blocks.name} · ` : ""}{flat.flat_number}
+                  {flat.blocks?.name ? `${flat.blocks.name} · ` : ""}
+                  {flat.flat_number}
                 </h1>
                 <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                   <MapPin className="h-3 w-3" />
-                  {flat.floor != null ? `Floor ${flat.floor}` : "Floor —"}
+                  {flat.floor != null ? `Floor ${flat.floor}` : "Floor —"} · 360° unit view
                 </p>
               </div>
             </div>
@@ -133,6 +235,41 @@ function HouseDetailPage() {
             >
               {isVacant ? "Vacant" : "Occupied"}
             </Badge>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <Snapshot icon={Users} label="Residents" value={current?.length ?? 0} />
+        <Snapshot icon={Car} label="Vehicles" value={vehicles?.length ?? 0} />
+        <Snapshot icon={LifeBuoy} label="Open tickets" value={openTickets} />
+        <Snapshot
+          icon={CreditCard}
+          label="Recent paid"
+          value={`₹${paidTotal.toLocaleString("en-IN")}`}
+        />
+      </div>
+
+      <Card className="rounded-2xl border-primary/20 bg-primary/5">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10">
+              <Sparkles className="h-4 w-4 text-primary" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold">Unit summary</p>
+              <p className="mt-1 text-sm text-muted-foreground">{unitSummary}</p>
+            </div>
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="hidden rounded-xl sm:inline-flex"
+            >
+              <Link to="/society/no-dues">
+                <BadgeCheck className="mr-1 h-3.5 w-3.5" /> No-dues
+              </Link>
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -200,6 +337,49 @@ function HouseDetailPage() {
         </CardContent>
       </Card>
 
+      <div className="grid gap-4 md:grid-cols-2">
+        <ActivityCard
+          icon={Users}
+          title="Family members"
+          empty="No family members added."
+          items={(family ?? []).map((member) => ({
+            id: member.id,
+            title: member.full_name,
+            subtitle: `${member.relation}${member.age ? ` · Age ${member.age}` : ""}`,
+          }))}
+        />
+        <ActivityCard
+          icon={Car}
+          title="Vehicles"
+          empty="No vehicles registered."
+          items={(vehicles ?? []).map((vehicle) => ({
+            id: vehicle.id,
+            title: vehicle.plate_number,
+            subtitle: [vehicle.type, vehicle.make_model, vehicle.color].filter(Boolean).join(" · "),
+          }))}
+        />
+        <ActivityCard
+          icon={UserCheck}
+          title="Recent visitors"
+          empty="No recent visitors."
+          items={(visitors ?? []).map((visitor) => ({
+            id: visitor.id,
+            title: visitor.visitor_name,
+            subtitle: `${visitor.purpose ?? "Visitor"} · ${visitor.status}`,
+          }))}
+        />
+        <ActivityCard
+          icon={LifeBuoy}
+          title="Helpdesk"
+          empty="No helpdesk requests."
+          items={(tickets ?? []).map((ticket) => ({
+            id: ticket.id,
+            title: ticket.subject,
+            subtitle: `${ticket.category.replace("_", " ")} · ${ticket.status.replace("_", " ")}`,
+          }))}
+        />
+      </div>
+
       {/* Recent bills */}
       <Card className="rounded-2xl">
         <CardContent className="p-4">
@@ -236,8 +416,8 @@ function HouseDetailPage() {
                         b.status === "paid"
                           ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
                           : b.status === "cancelled"
-                          ? "bg-muted text-muted-foreground"
-                          : "bg-amber-500/10 text-amber-600 border-amber-500/20",
+                            ? "bg-muted text-muted-foreground"
+                            : "bg-amber-500/10 text-amber-600 border-amber-500/20",
                       )}
                     >
                       {b.status}
@@ -273,7 +453,10 @@ function HouseDetailPage() {
                     </p>
                   </div>
                   {h.is_active && (
-                    <Badge variant="outline" className="rounded-full bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px]">
+                    <Badge
+                      variant="outline"
+                      className="rounded-full bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px]"
+                    >
                       Active
                     </Badge>
                   )}
@@ -284,5 +467,65 @@ function HouseDetailPage() {
         </Card>
       )}
     </PageShell>
+  );
+}
+
+function moneySummary(value: number) {
+  return `₹${value.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+}
+
+function Snapshot({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof Users;
+  label: string;
+  value: string | number;
+}) {
+  return (
+    <Card className="rounded-2xl">
+      <CardContent className="p-4">
+        <Icon className="h-4 w-4 text-primary" />
+        <p className="mt-2 text-lg font-bold tabular-nums">{value}</p>
+        <p className="text-[11px] text-muted-foreground">{label}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ActivityCard({
+  icon: Icon,
+  title,
+  empty,
+  items,
+}: {
+  icon: typeof Users;
+  title: string;
+  empty: string;
+  items: Array<{ id: string; title: string; subtitle: string }>;
+}) {
+  return (
+    <Card className="rounded-2xl">
+      <CardContent className="p-4">
+        <h3 className="mb-3 flex items-center gap-1.5 text-sm font-semibold">
+          <Icon className="h-4 w-4" /> {title}
+        </h3>
+        {items.length === 0 ? (
+          <p className="py-2 text-sm text-muted-foreground">{empty}</p>
+        ) : (
+          <ul className="divide-y">
+            {items.slice(0, 5).map((item) => (
+              <li key={item.id} className="py-2.5">
+                <p className="truncate text-sm font-medium">{item.title}</p>
+                <p className="truncate text-[11px] capitalize text-muted-foreground">
+                  {item.subtitle || "—"}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
   );
 }

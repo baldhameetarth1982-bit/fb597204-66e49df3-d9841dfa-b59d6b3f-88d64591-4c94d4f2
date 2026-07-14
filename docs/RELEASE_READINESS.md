@@ -172,3 +172,29 @@ Anything marked `implemented_unverified` remains so until the above are executed
 **Confirmations**
 - No payment integration changed. Razorpay untouched. No platform fee added. Cash + Bank Transfer maintenance flow preserved.
 - No real society data modified. Firebase → Supabase auth flow untouched.
+
+## Turn 10 — 2026-07-14
+
+### Fixed
+- **Eligibility double-count** (correctness): DB function `compute_no_dues_eligibility_internal` v3 now returns `total_outstanding` = bill remaining balances only, plus a separate informational `pending_payment_total`. Pending offline payments no longer inflate the outstanding total.
+- **Missing role helpers** (critical runtime bug): `is_society_admin_for(_user_id, _society_id)` and `is_super_admin(_user_id)` were referenced by No-Dues admin auth and `payouts.functions.ts` but did not exist in the database — every admin authorization was silently failing. Both helpers are now defined (SECURITY DEFINER, scoped via `user_roles.society_id`) and executable by `authenticated`/`service_role` only.
+- **Flat 360 authorization**: `getFlat360` no longer grants access on a broad `has_role(_,'admin')` global check. It authenticates the user, derives `society_id` from the flat, and requires one of: society-scoped admin (`is_society_admin_for`), super_admin, or an active resident of that flat. A viewer discriminator (`society_admin | super_admin | resident`) is returned for downstream UI decisions.
+- **Flat 360 PII minimization**: default projection drops resident `phone`/`email` and family `dob`. Retained: display name, relationship, occupancy dates, vehicle plate.
+- **Flat 360 honest section states**: `visitors`/`approvals`/`complaints`/`documents` return `{ status: "unsupported" }` instead of hardcoded `0` counts (a `0` falsely implied "no visitors ever").
+- **Eligibility TypeScript shape** aligned with DB result (adds `pending_payment_total`).
+
+### Verified this turn
+- `bunx tsgo --noEmit` clean.
+- Migration applied successfully. Pre-existing linter warnings on unrelated SECURITY DEFINER functions unchanged.
+
+### Deferred (state: implemented_unverified / not_started)
+- **Verification-link encryption**: encryption-at-rest for raw verification tokens + `getCertificateVerificationLink` server fn is NOT implemented. Certificate PDFs still embed the raw token via QR at issuance; there is no post-issuance recovery path. Requires `CERTIFICATE_TOKEN_ENCRYPTION_KEY` secret + additive migration.
+- **Admin/resident dialogs** (Approve/Reject/Issue/Revoke/Resubmit): current UI uses buttons + toasts, no confirmation dialogs.
+- **Flat 360 UI upgrade** of `/society/flats/$id`: still using the pre-Flat-360 direct-query layout; server function is upgraded but the route has not been switched over.
+- **Deterministic + AI summary**: not implemented.
+- **Integration test infrastructure** (`tests/integration/*`, CI workflow, client-bundle secret scanner): not created. No local Supabase test project available in this sandbox.
+- **Runtime authorization matrix / eligibility scenarios / rate-limit thresholds**: not executed.
+- **Pending-payment classification module** (settled / pending_offline_verification / pending_online / invalid / unknown centralization): DB function treats all `status='pending'` as pending offline; a dedicated classifier is not extracted.
+
+### Constraints honored
+- No payment integration changes. Razorpay untouched. No platform fee. Cash + Bank Transfer maintenance preserved. No real society data modified. Firebase→Supabase auth preserved. Flat 360 remains Pro (FeatureGate not touched).

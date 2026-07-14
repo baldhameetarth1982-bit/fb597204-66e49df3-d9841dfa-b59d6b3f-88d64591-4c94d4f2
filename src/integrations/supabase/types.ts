@@ -2580,6 +2580,10 @@ export type Database = {
         Args: { _reason?: string; _request_ids: string[]; _society_id: string }
         Returns: number
       }
+      can_manage_flat_internal: {
+        Args: { _actor_id: string; _flat_id: string }
+        Returns: boolean
+      }
       cancel_bill: {
         Args: { _bill_id: string; _reason: string }
         Returns: undefined
@@ -2668,6 +2672,10 @@ export type Database = {
           id: string
         }[]
       }
+      current_user_can_manage_flat: {
+        Args: { _flat_id: string }
+        Returns: boolean
+      }
       current_user_is_society_admin_for: {
         Args: { _society_id: string }
         Returns: boolean
@@ -2693,7 +2701,10 @@ export type Database = {
           _request_id: string
           _storage_path: string
           _valid_until: string
+          _verification_token_ciphertext: string
           _verification_token_hash: string
+          _verification_token_iv: string
+          _verification_token_key_version: number
         }
         Returns: {
           certificate_id: string
@@ -2841,6 +2852,10 @@ export type Database = {
         Args: { _block_id: string; _user_id: string }
         Returns: boolean
       }
+      is_block_admin_for_flat_internal: {
+        Args: { _actor_id: string; _flat_id: string }
+        Returns: boolean
+      }
       is_razorpay_live: { Args: never; Returns: boolean }
       is_society_admin_for: {
         Args: { _society_id: string; _user_id: string }
@@ -2881,6 +2896,13 @@ export type Database = {
       next_no_dues_cert_number_internal: {
         Args: { _actor_id: string; _society_id: string }
         Returns: string
+      }
+      recheck_no_dues_request_internal: {
+        Args: { _actor_id: string; _request_id: string }
+        Returns: {
+          eligibility: Json
+          new_status: string
+        }[]
       }
       regenerate_society_invite_code: {
         Args: { _society_id: string }

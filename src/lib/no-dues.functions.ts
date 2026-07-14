@@ -61,15 +61,35 @@ function logServerError(scope: string, e: unknown) {
 /*  Canonical eligibility — DB-level source of truth                     */
 /* -------------------------------------------------------------------- */
 
+export type EligibilityBlocker = {
+  type: "bill_due" | "pending_offline_payment" | "financial_data_inconsistency";
+  bill_id?: string;
+  bill_number?: string | null;
+  due_date?: string | null;
+  total_amount?: number;
+  paid_amount?: number;
+  remaining_amount?: number;
+  payment_state?: "unpaid" | "partial" | "other";
+  overdue?: boolean;
+  inconsistent?: boolean;
+  unknown_status?: boolean;
+  payment_id?: string;
+  method?: string;
+  amount?: number;
+};
+
 export type Eligibility = {
   eligible: boolean;
   total_outstanding: number;
-  unpaid_bills: Array<Record<string, any>>;
-  overdue_bills: Array<Record<string, any>>;
-  partially_paid_bills: Array<Record<string, any>>;
-  pending_cash_payments: Array<Record<string, any>>;
-  pending_bank_transfer_payments: Array<Record<string, any>>;
-  blockers: Array<Record<string, any>>;
+  counts: {
+    overdue: number;
+    partial: number;
+    unpaid: number;
+    pending_offline: number;
+    unknown_status: number;
+    inconsistent: number;
+  };
+  blockers: EligibilityBlocker[];
   calculated_at: string;
 };
 

@@ -148,6 +148,29 @@ export const Route = createFileRoute("/api/public/auth/firebase-session")({
           emailFromToken ??
           (phone ? `phone_${payload.sub}@phone.sociohub.local` : `fb_${payload.sub}@fb.sociohub.local`);
 
+        if (provider === "google" && emailFromToken) {
+          const { data: link, error: linkErr } = await admin.generateLink({
+            type: "magiclink",
+            email: emailFromToken,
+            options: {
+              data: {
+                full_name: payload.name ?? null,
+                avatar_url: payload.picture ?? null,
+                firebase_uid: payload.sub,
+                provider,
+              },
+            },
+          });
+          if (linkErr || !link?.properties?.hashed_token) {
+            return json({ error: linkErr?.message ?? "Could not mint session" }, { status: 500 });
+          }
+
+          return json({
+            email: emailFromToken,
+            token_hash: link.properties.hashed_token,
+          });
+        }
+
         let userId: string | null = null;
 
         // Look up by phone first

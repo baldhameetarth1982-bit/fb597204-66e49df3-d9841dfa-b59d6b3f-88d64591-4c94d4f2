@@ -59,6 +59,30 @@ interface FirebasePayload {
   firebase?: { sign_in_provider?: string };
 }
 
+type SupabaseAdminAuth = typeof import("@/integrations/supabase/client.server").supabaseAdmin.auth.admin;
+
+async function findAuthUserByEmail(admin: SupabaseAdminAuth, email: string) {
+  const normalizedEmail = email.trim().toLowerCase();
+  const perPage = 1000;
+
+  for (let page = 1; page <= 100; page += 1) {
+    const { data, error } = await admin.listUsers({ page, perPage });
+    if (error) throw error;
+
+    const match = data.users.find((user) => user.email?.trim().toLowerCase() === normalizedEmail);
+    if (match) return match;
+
+    if (data.users.length < perPage || (data as any).nextPage === null) break;
+  }
+
+  return null;
+}
+
+function isDuplicateEmailError(error: unknown) {
+  const message = error instanceof Error ? error.message : String((error as any)?.message ?? error ?? "");
+  return /already.*registered|already.*exists|email.*exists|duplicate/i.test(message);
+}
+
 async function verifyFirebaseIdToken(idToken: string): Promise<FirebasePayload> {
   const keySet = await getKeySet();
   const { payload } = await jwtVerify(idToken, keySet, {
@@ -124,6 +148,29 @@ export const Route = createFileRoute("/api/public/auth/firebase-session")({
           emailFromToken ??
           (phone ? `phone_${payload.sub}@phone.sociohub.local` : `fb_${payload.sub}@fb.sociohub.local`);
 
+        if (provider === "google" && emailFromToken) {
+          const { data: link, error: linkErr } = await admin.generateLink({
+            type: "magiclink",
+            email: emailFromToken,
+            options: {
+              data: {
+                full_name: payload.name ?? null,
+                avatar_url: payload.picture ?? null,
+                firebase_uid: payload.sub,
+                provider,
+              },
+            },
+          });
+          if (linkErr || !link?.properties?.hashed_token) {
+            return json({ error: linkErr?.message ?? "Could not mint session" }, { status: 500 });
+          }
+
+          return json({
+            email: emailFromToken,
+            token_hash: link.properties.hashed_token,
+          });
+        }
+
         let userId: string | null = null;
 
         // Look up by phone first
@@ -136,19 +183,12 @@ export const Route = createFileRoute("/api/public/auth/firebase-session")({
           if (existing?.user_id) userId = existing.user_id as string;
         }
 
-        // Otherwise look up by email directly in auth.users using service role.
-        // admin.listUsers has no server-side email filter, so a paginated scan
-        // would miss existing users past the first page and then createUser
-        // would fail with "A user with this email address has already been
-        // registered".
+        // Otherwise look up by email through the Auth Admin API. Do not query
+        // the private auth schema through Data API here; that can fail silently
+        // in production and fall through to a duplicate createUser call.
         if (!userId && emailFromToken) {
-          const { data: found } = await (supabaseAdmin as any)
-            .schema("auth")
-            .from("users")
-            .select("id")
-            .ilike("email", emailFromToken)
-            .maybeSingle();
-          if (found?.id) userId = found.id as string;
+          const found = await findAuthUserByEmail(admin, emailFromToken);
+          if (found?.id) userId = found.id;
         }
 
         if (!userId) {
@@ -165,9 +205,19 @@ export const Route = createFileRoute("/api/public/auth/firebase-session")({
             },
           });
           if (createErr || !created?.user) {
+            if (emailFromToken && isDuplicateEmailError(createErr)) {
+              const found = await findAuthUserByEmail(admin, emailFromToken);
+              if (found?.id) {
+                userId = found.id;
+              } else {
+                return json({ error: "Account already exists, but could not be linked for sign-in" }, { status: 409 });
+              }
+            } else {
             return json({ error: createErr?.message ?? "Could not create user" }, { status: 500 });
+            }
+          } else {
+            userId = created.user.id;
           }
-          userId = created.user.id;
         }
 
         // Upsert phone_verifications row so future logins find it

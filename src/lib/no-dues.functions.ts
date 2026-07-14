@@ -567,7 +567,7 @@ export const issueNoDuesCertificate = createServerFn({ method: "POST" })
     }
 
     // Atomic: insert cert + flip request status + write audit
-    const { data: rpcRows, error: fErr } = await supabaseAdmin.rpc(
+    const { data: rpcRows, error: fErr } = await (supabaseAdmin.rpc as any)(
       "finalize_no_dues_issuance",
       {
         _request_id: req.id,

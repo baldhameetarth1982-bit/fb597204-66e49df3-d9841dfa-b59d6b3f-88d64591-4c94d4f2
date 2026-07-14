@@ -9,25 +9,62 @@ async function loadFresh() {
   return await import("../../src/lib/public-origin.server");
 }
 
-describe("constantTimeEqualHex", () => {
-  it("returns true for equal hex", async () => {
+// Two distinct valid SHA-256 hex digests (64 chars each).
+const H_A = "a".repeat(64);
+const H_B = "b".repeat(64);
+const H_MIX_FIRST = "0" + "a".repeat(63);
+const H_MIX_MID = "a".repeat(31) + "0" + "a".repeat(32);
+const H_MIX_LAST = "a".repeat(63) + "0";
+
+describe("constantTimeEqualHex (SHA-256, 64 hex chars)", () => {
+  it("matching 64-char lowercase", async () => {
     const { constantTimeEqualHex } = await loadFresh();
-    expect(constantTimeEqualHex("deadbeef", "deadbeef")).toBe(true);
-    expect(constantTimeEqualHex("DEADBEEF", "deadbeef")).toBe(true);
+    expect(constantTimeEqualHex(H_A, H_A)).toBe(true);
   });
-  it("returns false for unequal", async () => {
+  it("matching mixed-case", async () => {
     const { constantTimeEqualHex } = await loadFresh();
-    expect(constantTimeEqualHex("deadbeef", "deadbeee")).toBe(false);
+    const upper = H_A.toUpperCase();
+    expect(constantTimeEqualHex(H_A, upper)).toBe(true);
   });
-  it("returns false for length mismatch", async () => {
+  it("first-byte mismatch", async () => {
     const { constantTimeEqualHex } = await loadFresh();
-    expect(constantTimeEqualHex("deadbeef", "deadbeefaa")).toBe(false);
+    expect(constantTimeEqualHex(H_A, H_MIX_FIRST)).toBe(false);
   });
-  it("returns false for malformed hex", async () => {
+  it("middle-byte mismatch", async () => {
     const { constantTimeEqualHex } = await loadFresh();
-    expect(constantTimeEqualHex("zzzzzzzz", "deadbeef")).toBe(false);
+    expect(constantTimeEqualHex(H_A, H_MIX_MID)).toBe(false);
+  });
+  it("final-byte mismatch", async () => {
+    const { constantTimeEqualHex } = await loadFresh();
+    expect(constantTimeEqualHex(H_A, H_MIX_LAST)).toBe(false);
+  });
+  it("full mismatch", async () => {
+    const { constantTimeEqualHex } = await loadFresh();
+    expect(constantTimeEqualHex(H_A, H_B)).toBe(false);
+  });
+  it("rejects 8-char input", async () => {
+    const { constantTimeEqualHex } = await loadFresh();
+    expect(constantTimeEqualHex("deadbeef", "deadbeef")).toBe(false);
+  });
+  it("rejects 62-char input", async () => {
+    const { constantTimeEqualHex } = await loadFresh();
+    expect(constantTimeEqualHex("a".repeat(62), "a".repeat(62))).toBe(false);
+  });
+  it("rejects 66-char input", async () => {
+    const { constantTimeEqualHex } = await loadFresh();
+    expect(constantTimeEqualHex("a".repeat(66), "a".repeat(66))).toBe(false);
+  });
+  it("rejects odd length", async () => {
+    const { constantTimeEqualHex } = await loadFresh();
+    expect(constantTimeEqualHex("a".repeat(63), "a".repeat(63))).toBe(false);
+  });
+  it("rejects non-hex", async () => {
+    const { constantTimeEqualHex } = await loadFresh();
+    expect(constantTimeEqualHex("z".repeat(64), H_A)).toBe(false);
+  });
+  it("rejects empty", async () => {
+    const { constantTimeEqualHex } = await loadFresh();
     expect(constantTimeEqualHex("", "")).toBe(false);
-    expect(constantTimeEqualHex("abc", "abc")).toBe(false);
   });
 });
 

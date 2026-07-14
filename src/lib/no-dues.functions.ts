@@ -444,8 +444,14 @@ export const issueNoDuesCertificate = createServerFn({ method: "POST" })
       logServerError("issue.encrypt", e);
       throw new NoDuesError("ISSUE_FAILED", "Certificate encryption unavailable");
     }
-    const origin = process.env.PUBLIC_APP_URL ?? "https://sociohub.live";
-    const verificationUrl = `${origin}/verify/no-dues/${rawToken}`;
+    let verificationUrl: string;
+    try {
+      const { buildNoDuesVerificationUrl } = await import("@/lib/public-origin.server");
+      verificationUrl = buildNoDuesVerificationUrl(rawToken);
+    } catch (e) {
+      logServerError("issue.origin", e);
+      throw new NoDuesError("ISSUE_FAILED", "Public origin misconfigured");
+    }
     const validUntil = data.validForDays
       ? new Date(Date.now() + data.validForDays * 86400_000)
       : null;

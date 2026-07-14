@@ -423,3 +423,65 @@ None of them touch payments / Razorpay / Cash-Bank-Transfer / platform fees
 - Basic flat detail route preserved.
 - Flat 360 advanced sections remain Pro (unchanged; UI expansion deferred).
 - Premium inherits all catalog features.
+
+---
+
+## Stage 3A — Turn 15 (No-Dues security closure)
+
+### What actually ran this turn
+| Command | Exit | Result |
+|---|---|---|
+| `git diff --check` | 0 | clean |
+| `bunx tsgo --noEmit` | 0 | clean |
+| `bunx vitest run tests/unit` | 0 | **21 passed / 0 failed / 0 skipped** across 3 files (`public-origin`, `certificate-token`, `certificate-backfill`) |
+| `bun run build` (production) | 0 | `dist/client` + `dist/server` (Cloudflare Worker) generated |
+| `bun scripts/verify-client-bundle-secrets.ts` | 0 | Scanned 882 `dist/client/` files — no server-only indicators |
+| `supabase--migration` (token_storage_version + constraints + revoke SELECT) | applied | Linter reports pre-existing warnings on unrelated functions; no new issues from this migration |
+
+### Certificate table access
+- Base-table `SELECT` on `public.no_dues_certificates` **REVOKED** from `PUBLIC`, `anon`, `authenticated`.
+- All authenticated table-level rights on `no_dues_certificates` **REVOKED** from `authenticated`.
+- `service_role` retains `ALL` for internal RPCs and server functions.
+- **Runtime penetration matrix (anon/auth/admin/block-admin/cross-society) NOT executed this turn** — no isolated test-database environment configured. Explicitly deferred; `implemented_unverified` for policy-level assertions, `implemented_unverified` for the GRANT changes themselves (schema-level verified only via migration).
+
+### New encrypted certificate invariant
+- `token_storage_version smallint NULL` added.
+- `ck_no_dues_certificates_v1` constraint requires (for `version = 1`): plaintext `verification_token` NULL, `verification_token_hash ~ '^[0-9a-f]{64}$'`, non-empty ciphertext/IV, positive key version, non-empty storage_path, and non-null request/society/flat/certificate_number.
+- Legacy rows (`token_storage_version IS NULL`) are preserved unchanged.
+- Unique indexes: `no_dues_certificates_one_active_per_request` (partial, `revoked_at IS NULL`) and `no_dues_certificates_number_per_society`.
+- `finalize_no_dues_issuance_internal` stamps `token_storage_version = 1` on every new row, validates hash format, rejects malformed IV/ciphertext/key version, and rejects storage paths containing `..`, `\`, or `http(s)://`.
+
+### Verification-link recovery — legacy handling fixed
+- `getCertificateVerificationLink` for legacy plaintext-only certs now returns `{ available: false, reason: "legacy_migration_required" }`. Recovered URL is **not** returned via runtime code.
+- Hash-only certificates → `legacy_token_unavailable`.
+- Encrypted certificates → constant-time hash check, then canonical URL via `buildNoDuesVerificationUrl`.
+
+### Rate-limit failure policy
+- `recheckAndResubmitNoDues`: rate-limit exceptions now **fail closed** in production (`NODE_ENV=production` → throw `RATE_LIMITED`). Dev/test fall open so local work isn't blocked.
+
+### Admin & resident dialogs
+- Approve / Reject / Issue → `Dialog` with confirm/cancel, pending state, disable-while-processing, mandatory reject reason (3–500 chars).
+- Revoke → destructive `AlertDialog`, mandatory reason, revoked-visibility warning.
+- Resident recheck → confirmation `Dialog` explaining that the existing request will be reused.
+
+### Backfill script
+- `scripts/backfill-certificate-token-encryption.ts` — guards: `ALLOW_CERTIFICATE_TOKEN_BACKFILL=true`, `BACKFILL_PROJECT_REF`, `BACKFILL_ENVIRONMENT`, defaults `DRY_RUN=true`, refuses known production ref without `ALLOW_PRODUCTION_CERTIFICATE_BACKFILL=true`, never prints tokens/hashes/ciphertext/IVs.
+- Dry-run classifier logic covered by `tests/unit/certificate-backfill.test.ts` (4/4 pass).
+- **Not executed** against real data this turn.
+
+### Bundle secret scan
+- `scripts/verify-client-bundle-secrets.ts` scans `dist/client/` (browser output only, **NOT** `dist/server/` Worker SSR).
+- Indicators: `SUPABASE_SERVICE_ROLE_KEY`, `sb_secret_*`, `supabaseAdmin`, `RATE_LIMIT_HMAC_SECRET`, `CERTIFICATE_TOKEN_ENCRYPTION_KEY`, `encrypt/decryptCertificateToken`, Razorpay `key_secret`, Firebase `private_key`, `verification_token_hash|ciphertext|iv`, `storage_path: *.pdf`.
+- Result: **clean** (0 hits over 882 files).
+
+### Deferred to a subsequent turn (honest, not-done list)
+- Runtime authorization penetration matrix (anon/auth/admin/block-admin/cross-society) against an isolated test project — no test project provisioned this turn.
+- Backfill dry-run against an isolated staging environment.
+- Integration test suite (`tests/integration/*`) — files not created; SKIPPED with reason "no `ALLOW_SOCIOHUB_TEST_FIXTURES=true` isolated environment configured".
+- Complete Flat 360 UI, deterministic summary, AI summary — next dedicated turn.
+
+### Confirmations
+- Razorpay untouched; no new gateway added; no platform fee; Cash + Bank Transfer maintenance workflows unchanged.
+- No writes to real society data (`baldha Meetarth` or otherwise) from this turn's tests or scripts.
+- Firebase → Supabase auth architecture unchanged.
+- Basic flat-detail functionality preserved; Flat 360 remains Pro; Premium inherits.

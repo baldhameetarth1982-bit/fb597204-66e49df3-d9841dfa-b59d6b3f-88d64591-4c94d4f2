@@ -313,38 +313,16 @@ export const reviewNoDuesRequest = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // On approve: re-check eligibility. If blocked, transition to blocked_by_dues instead.
-    if (data.decision === "approve") {
-      const snap = await computeEligibility(supabase, req.society_id, req.flat_id);
-      if (!snap.eligible) {
-        const { error: bErr } = await (supabaseAdmin.rpc as any)(
-          "transition_no_dues_request_internal",
-          {
-            _actor_id: userId,
-            _request_id: data.requestId,
-            _decision: "block",
-            _notes: data.notes ?? null,
-            _reason: null,
-            _new_snapshot: snap,
-          },
-        );
-        if (bErr) {
-          logServerError("review.block", bErr);
-          throw new NoDuesError(mapPgError(bErr.message));
-        }
-        return { status: "blocked_by_dues", eligibility: snap };
-      }
-    }
-
+    // Transition RPC recomputes eligibility internally and, on approve, moves
+    // to `blocked_by_dues` automatically if new dues appeared.
     const { data: rows, error: tErr } = await (supabaseAdmin.rpc as any)(
       "transition_no_dues_request_internal",
       {
         _actor_id: userId,
         _request_id: data.requestId,
-        _decision: data.decision,
+        _decision: data.decision, // 'approve' | 'reject'
         _notes: data.notes ?? null,
         _reason: data.decision === "reject" ? data.reason ?? null : null,
-        _new_snapshot: null,
       },
     );
     if (tErr) {
@@ -352,7 +330,10 @@ export const reviewNoDuesRequest = createServerFn({ method: "POST" })
       throw new NoDuesError(mapPgError(tErr.message));
     }
     const row = Array.isArray(rows) ? rows[0] : rows;
-    return { status: row?.new_status as string };
+    return {
+      status: row?.new_status as string,
+      eligibility: (row?.eligibility ?? null) as Eligibility | null,
+    };
   });
 
 /* -------------------------------------------------------------------- */

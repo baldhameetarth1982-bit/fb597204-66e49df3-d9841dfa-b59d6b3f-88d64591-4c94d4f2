@@ -11,6 +11,15 @@ import {
   getNoDuesRequestDetail,
   getCertificateDownloadUrl,
 } from "@/lib/no-dues.functions";
+import {
+  statusLabel,
+  statusExplanation,
+  auditActionLabel,
+  formatCurrency,
+  blockerTitle,
+  blockerSubtitle,
+  blockerResolution,
+} from "@/lib/no-dues-labels";
 
 export const Route = createFileRoute("/_resident/app/no-dues/$id")({
   head: () => ({

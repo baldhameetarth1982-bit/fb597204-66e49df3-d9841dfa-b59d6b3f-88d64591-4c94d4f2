@@ -15,6 +15,7 @@ import {
   issueNoDuesCertificate,
   revokeNoDuesCertificate,
   getCertificateDownloadUrl,
+  getCertificateVerificationLink,
 } from "@/lib/no-dues.functions";
 import {
   statusLabel,

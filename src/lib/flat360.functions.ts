@@ -170,10 +170,9 @@ export const getFlat360 = createServerFn({ method: "POST" })
           .maybeSingle(),
       ]);
 
-    // Eligibility via canonical DB function (service-role client).
+    // Eligibility via canonical DB function (service-role client, already loaded).
     let eligibility: Record<string, any> | null = null;
     try {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { data: eligData } = await (supabaseAdmin.rpc as any)(
         "compute_no_dues_eligibility_internal",
         { _society_id: societyId, _flat_id: flatId },

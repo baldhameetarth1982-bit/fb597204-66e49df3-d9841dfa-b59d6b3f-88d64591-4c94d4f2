@@ -97,6 +97,12 @@ function ResidentNoDuesDetail() {
     );
   }
 
+  const req = (data as any).request;
+  const flat = (data as any).flat;
+  const audit = (data as any).audit ?? [];
+  const cert = (data as any).certificate;
+  const elig = req?.eligibility_snapshot ?? {};
+  const blockers = elig?.blockers ?? [];
 
   return (
     <div className="pb-24">
@@ -115,6 +121,17 @@ function ResidentNoDuesDetail() {
           )}
           {req.rejection_reason && (
             <p className="text-xs mt-2 text-destructive">Reason: {req.rejection_reason}</p>
+          )}
+          {req.status === "blocked_by_dues" && (
+            <div className="mt-3">
+              <Button
+                size="sm"
+                onClick={() => recheck.mutate()}
+                disabled={recheck.isPending}
+              >
+                {recheck.isPending ? "Rechecking…" : "Recheck and resubmit"}
+              </Button>
+            </div>
           )}
         </SectionCard>
 
@@ -148,13 +165,12 @@ function ResidentNoDuesDetail() {
             ) : (
               <div className="flex gap-2 mt-2 flex-wrap">
                 <Button size="sm" variant="outline" onClick={handleDownload}>Download PDF</Button>
-                {verifyUrl && (
-                  <Button size="sm" variant="ghost" onClick={copyVerify}>Copy verify link</Button>
-                )}
+                <Button size="sm" variant="ghost" onClick={handleCopyVerify}>Copy verify link</Button>
               </div>
             )}
           </SectionCard>
         )}
+
 
         <SectionCard>
           <p className="text-sm font-medium mb-2">Timeline</p>

@@ -342,7 +342,7 @@ export const reviewNoDuesRequest = createServerFn({ method: "POST" })
       .eq("id", data.requestId)
       .maybeSingle();
     if (error || !req) throw new NoDuesError("REQUEST_NOT_FOUND");
-    await assertSocietyScopeAdmin(userId, req.society_id);
+    await assertCanManageFlat(userId, req.flat_id);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -392,7 +392,7 @@ export const issueNoDuesCertificate = createServerFn({ method: "POST" })
       .eq("id", data.requestId)
       .maybeSingle();
     if (error || !req) throw new NoDuesError("REQUEST_NOT_FOUND");
-    await assertSocietyScopeAdmin(userId, req.society_id);
+    await assertCanManageFlat(userId, req.flat_id);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 

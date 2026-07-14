@@ -36,7 +36,8 @@
 | Bills / Ledger | implemented_unverified | — |
 | Visitors / Guard | implemented_unverified | — |
 | Announcements / Notices / Polls | implemented_unverified | — |
-| No-Dues (workflow + verification) | implemented_unverified | Trusted-actor RPCs, HMAC-fingerprinted rate limit, dual bucket (30/60s + 10/60s invalid). Runtime authz tests pending. |
+| No-Dues (workflow + verification) | implemented_unverified | Canonical DB eligibility fn `compute_no_dues_eligibility_internal` (service_role only). Submit/transition/finalize RPCs no longer accept `_eligible`/`_snapshot` from callers — each recomputes in-transaction. Runtime authz/eligibility/concurrency tests still pending. |
+| No-Dues detail routes | implemented_unverified | `/society/no-dues/$id` and `/app/no-dues/$id` render request, blockers, timeline, certificate actions. Visual verification pending. |
 | Flat 360 | not_started | Existing `/society/flats/$id` to be upgraded |
 | Gamification | not_started | — |
 | Feature Directory | implemented_unverified | — |

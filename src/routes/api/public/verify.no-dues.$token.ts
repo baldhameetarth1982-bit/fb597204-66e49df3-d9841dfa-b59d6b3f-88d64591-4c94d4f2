@@ -1,17 +1,64 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createHash } from "node:crypto";
+import { getRequestIP } from "@tanstack/react-start/server";
 
+const GENERIC_BODY = JSON.stringify({
+  valid: false,
+  reason: "Invalid or expired certificate",
+});
+const RATE_BODY = JSON.stringify({
+  valid: false,
+  reason: "Too many requests. Please try again shortly.",
+});
+
+/**
+ * Public verification.
+ * Rate limit: 30 requests / IP / 60s (all outcomes counted the same to avoid
+ * timing-based token enumeration). Invalid-format hits burn the same slot.
+ * Storage: DB-backed `rate_limits` table via checkRateLimit (works across
+ * Cloudflare Worker instances).
+ */
 export const Route = createFileRoute("/api/public/verify/no-dues/$token")({
   server: {
     handlers: {
-      GET: async ({ params }) => {
+      GET: async ({ params, request }) => {
+        const genericInvalid = (extraHeaders?: Record<string, string>) =>
+          new Response(GENERIC_BODY, {
+            status: 200,
+            headers: {
+              "content-type": "application/json",
+              "cache-control": "no-store",
+              ...(extraHeaders ?? {}),
+            },
+          });
+
+        // --- Rate limit ---------------------------------------------------
+        let ip = "anon";
+        try {
+          ip = getRequestIP({ xForwardedFor: true }) ?? "anon";
+        } catch {
+          /* ignore */
+        }
+        try {
+          const { checkRateLimit } = await import("@/lib/rate-limit.server");
+          await checkRateLimit({
+            bucket: "verify-no-dues",
+            subject: ip,
+            limit: 30,
+            windowSec: 60,
+          });
+        } catch {
+          return new Response(RATE_BODY, {
+            status: 429,
+            headers: {
+              "content-type": "application/json",
+              "cache-control": "no-store",
+              "retry-after": "60",
+            },
+          });
+        }
+
         const raw = String(params.token ?? "");
-        // Format check — silent generic response for anything malformed
-        const genericInvalid = () =>
-          new Response(
-            JSON.stringify({ valid: false, reason: "Invalid or expired certificate" }),
-            { status: 200, headers: { "content-type": "application/json" } },
-          );
         if (!raw || raw.length < 20 || raw.length > 128 || !/^[A-Za-z0-9_-]+$/.test(raw)) {
           return genericInvalid();
         }
@@ -22,7 +69,7 @@ export const Route = createFileRoute("/api/public/verify/no-dues/$token")({
         const { data: cert } = await supabaseAdmin
           .from("no_dues_certificates")
           .select(
-            "id,certificate_number,issued_at,valid_until,revoked_at,revoke_reason,society_id,flat_id",
+            "id,certificate_number,issued_at,valid_until,revoked_at,society_id,flat_id",
           )
           .eq("verification_token_hash", tokenHash)
           .maybeSingle();

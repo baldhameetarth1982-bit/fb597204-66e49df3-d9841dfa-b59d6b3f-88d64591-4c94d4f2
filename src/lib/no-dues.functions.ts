@@ -2,16 +2,56 @@
  * No-Dues server functions.
  *
  * Security invariants:
- * - All state transitions are enforced server-side.
- * - Client cannot set approved/issued/revoked directly.
- * - Society/flat membership re-verified on every mutation.
- * - Raw verification token only lives in the URL/QR; DB stores SHA-256 hash.
+ * - All state transitions run through DB RPCs (finalize_no_dues_issuance,
+ *   revoke_no_dues_certificate) or authorized admin paths.
+ * - Certificate numbers come from next_no_dues_cert_number(society)
+ *   (per-society sequence — concurrency safe).
+ * - Client never receives storage_path.
+ * - Errors are structured codes; raw DB messages stay server-side.
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const uuid = z.string().uuid();
+
+/** Structured error codes returned to clients. */
+type NoDuesErrorCode =
+  | "UNAUTHENTICATED"
+  | "NOT_AUTHORIZED"
+  | "INVALID_REQUEST"
+  | "INVALID_TRANSITION"
+  | "BLOCKED_BY_DUES"
+  | "REQUEST_NOT_FOUND"
+  | "CERTIFICATE_NOT_FOUND"
+  | "ISSUE_FAILED"
+  | "DOWNLOAD_FAILED"
+  | "RATE_LIMITED";
+
+class NoDuesError extends Error {
+  code: NoDuesErrorCode;
+  constructor(code: NoDuesErrorCode, publicMessage?: string) {
+    super(publicMessage ?? code);
+    this.code = code;
+  }
+}
+
+function mapPgError(msg: string | undefined): NoDuesErrorCode {
+  const m = (msg ?? "").toUpperCase();
+  if (m.includes("UNAUTHENTICATED")) return "UNAUTHENTICATED";
+  if (m.includes("NOT_AUTHORIZED")) return "NOT_AUTHORIZED";
+  if (m.includes("INVALID_REQUEST")) return "INVALID_REQUEST";
+  if (m.includes("INVALID_TRANSITION")) return "INVALID_TRANSITION";
+  if (m.includes("REQUEST_NOT_FOUND")) return "REQUEST_NOT_FOUND";
+  if (m.includes("CERTIFICATE_NOT_FOUND")) return "CERTIFICATE_NOT_FOUND";
+  return "ISSUE_FAILED";
+}
+
+function logServerError(scope: string, e: unknown) {
+  // Server-side only — never returned to the client.
+  // eslint-disable-next-line no-console
+  console.error(`[no-dues:${scope}]`, e);
+}
 
 /* -------------------------------------------------------------------- */
 /*  Eligibility                                                          */
@@ -22,13 +62,18 @@ async function computeEligibility(
   societyId: string,
   flatId: string,
 ) {
+  // Uses public.bills (status IN unpaid/overdue/partial) and payments (status = pending).
+  // Cancelled bills excluded via status filter. Paid bills excluded.
   const { data: bills, error } = await supabase
     .from("bills")
     .select("id,bill_number,amount,due_date,status,period_label")
     .eq("society_id", societyId)
     .eq("flat_id", flatId)
     .in("status", ["unpaid", "overdue", "partial"]);
-  if (error) throw new Error(error.message);
+  if (error) {
+    logServerError("eligibility.bills", error);
+    throw new NoDuesError("INVALID_REQUEST");
+  }
 
   const outstanding = (bills ?? []).map((b: any) => ({
     id: b.id,
@@ -46,7 +91,10 @@ async function computeEligibility(
     .eq("society_id", societyId)
     .eq("flat_id", flatId)
     .eq("status", "pending");
-  if (pErr) throw new Error(pErr.message);
+  if (pErr) {
+    logServerError("eligibility.payments", pErr);
+    throw new NoDuesError("INVALID_REQUEST");
+  }
 
   const eligible = outstanding.length === 0 && (pending ?? []).length === 0;
   return {
@@ -62,22 +110,51 @@ async function computeEligibility(
   };
 }
 
+async function assertResidentOfFlat(
+  supabase: any,
+  userId: string,
+  flatId: string,
+  societyId: string,
+) {
+  const { data, error } = await supabase
+    .from("flat_residents")
+    .select("id,flats!inner(society_id)")
+    .eq("user_id", userId)
+    .eq("flat_id", flatId)
+    .eq("is_active", true)
+    .maybeSingle();
+  if (error) {
+    logServerError("assertResidentOfFlat", error);
+    throw new NoDuesError("NOT_AUTHORIZED");
+  }
+  if (!data || (data as any).flats?.society_id !== societyId) {
+    throw new NoDuesError("NOT_AUTHORIZED");
+  }
+}
+
+async function assertSocietyAdmin(supabase: any, societyId: string, userId: string) {
+  const { data, error } = await supabase.rpc("is_society_admin_for", {
+    _user_id: userId,
+    _society_id: societyId,
+  });
+  if (error) {
+    logServerError("assertSocietyAdmin", error);
+    throw new NoDuesError("NOT_AUTHORIZED");
+  }
+  if (!data) {
+    const { data: sa } = await supabase.rpc("is_super_admin", { _user_id: userId });
+    if (!sa) throw new NoDuesError("NOT_AUTHORIZED");
+  }
+}
+
 export const checkNoDuesEligibility = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { societyId: string; flatId: string }) =>
     z.object({ societyId: uuid, flatId: uuid }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    const { supabase } = context as any;
-    // Membership check via RLS: try to read the flat
-    const { data: flat, error } = await supabase
-      .from("flats")
-      .select("id,society_id,flat_number")
-      .eq("id", data.flatId)
-      .eq("society_id", data.societyId)
-      .maybeSingle();
-    if (error) throw new Error(error.message);
-    if (!flat) throw new Error("Flat not found or access denied");
+    const { supabase, userId } = context as any;
+    await assertResidentOfFlat(supabase, userId, data.flatId, data.societyId);
     return await computeEligibility(supabase, data.societyId, data.flatId);
   });
 
@@ -94,16 +171,7 @@ export const submitNoDuesRequest = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
-    // Confirm caller is a resident of this flat
-    const { data: link, error: lErr } = await supabase
-      .from("flat_residents")
-      .select("id")
-      .eq("flat_id", data.flatId)
-      .eq("user_id", userId)
-      .eq("is_active", true)
-      .maybeSingle();
-    if (lErr) throw new Error(lErr.message);
-    if (!link) throw new Error("You are not linked to this flat");
+    await assertResidentOfFlat(supabase, userId, data.flatId, data.societyId);
 
     const snapshot = await computeEligibility(supabase, data.societyId, data.flatId);
     const status = snapshot.eligible ? "submitted" : "blocked_by_dues";
@@ -120,9 +188,13 @@ export const submitNoDuesRequest = createServerFn({ method: "POST" })
       })
       .select("id,status")
       .single();
-    if (error) throw new Error(error.message);
+    if (error) {
+      logServerError("submit.insert", error);
+      throw new NoDuesError("INVALID_REQUEST");
+    }
 
-    await supabase.from("no_dues_audit").insert({
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error: auditErr } = await supabaseAdmin.from("no_dues_audit").insert({
       request_id: row.id,
       society_id: data.societyId,
       actor_id: userId,
@@ -130,6 +202,11 @@ export const submitNoDuesRequest = createServerFn({ method: "POST" })
       new_status: status,
       metadata: { eligible: snapshot.eligible },
     });
+    if (auditErr) {
+      // Audit write failed — surface as ISSUE_FAILED so operators notice; do not silently continue.
+      logServerError("submit.audit", auditErr);
+      throw new NoDuesError("ISSUE_FAILED", "Failed to record request audit");
+    }
 
     return { id: row.id, status: row.status, snapshot };
   });
@@ -150,7 +227,10 @@ export const listMyNoDuesRequests = createServerFn({ method: "GET" })
       .eq("requester_id", userId)
       .order("submitted_at", { ascending: false })
       .limit(50);
-    if (error) throw new Error(error.message);
+    if (error) {
+      logServerError("listMy", error);
+      throw new NoDuesError("INVALID_REQUEST");
+    }
     return data ?? [];
   });
 
@@ -160,7 +240,8 @@ export const listSocietyNoDuesRequests = createServerFn({ method: "POST" })
     z.object({ societyId: uuid, status: z.string().optional() }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    const { supabase } = context as any;
+    const { supabase, userId } = context as any;
+    await assertSocietyAdmin(supabase, data.societyId, userId);
     let q = supabase
       .from("no_dues_requests")
       .select(
@@ -171,8 +252,74 @@ export const listSocietyNoDuesRequests = createServerFn({ method: "POST" })
       .limit(200);
     if (data.status) q = q.eq("status", data.status);
     const { data: rows, error } = await q;
-    if (error) throw new Error(error.message);
+    if (error) {
+      logServerError("listSociety", error);
+      throw new NoDuesError("INVALID_REQUEST");
+    }
     return rows ?? [];
+  });
+
+export const getNoDuesRequestDetail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { requestId: string }) =>
+    z.object({ requestId: uuid }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as any;
+    const { data: req, error } = await supabase
+      .from("no_dues_requests")
+      .select(
+        "id,society_id,flat_id,requester_id,status,purpose,submitted_at,reviewed_at,admin_notes,rejection_reason,eligibility_snapshot",
+      )
+      .eq("id", data.requestId)
+      .maybeSingle();
+    if (error) {
+      logServerError("detail.load", error);
+      throw new NoDuesError("REQUEST_NOT_FOUND");
+    }
+    if (!req) throw new NoDuesError("REQUEST_NOT_FOUND");
+
+    // Authorization: society admin OR requester
+    let ok = req.requester_id === userId;
+    if (!ok) {
+      const { data: isAdmin } = await supabase.rpc("is_society_admin_for", {
+        _user_id: userId,
+        _society_id: req.society_id,
+      });
+      ok = !!isAdmin;
+      if (!ok) {
+        const { data: sa } = await supabase.rpc("is_super_admin", { _user_id: userId });
+        ok = !!sa;
+      }
+    }
+    if (!ok) throw new NoDuesError("NOT_AUTHORIZED");
+
+    // Load related data
+    const [{ data: flat }, { data: resident }, { data: audit }, { data: cert }] =
+      await Promise.all([
+        supabase
+          .from("flats")
+          .select("id,flat_number,floor,block_id")
+          .eq("id", req.flat_id)
+          .maybeSingle(),
+        supabase
+          .from("profiles")
+          .select("id,full_name")
+          .eq("id", req.requester_id)
+          .maybeSingle(),
+        supabase
+          .from("no_dues_audit")
+          .select("id,action,previous_status,new_status,actor_id,metadata,created_at")
+          .eq("request_id", req.id)
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("no_dues_certificates")
+          .select("id,certificate_number,issued_at,valid_until,revoked_at,revoke_reason")
+          .eq("request_id", req.id)
+          .maybeSingle(),
+      ]);
+
+    return { request: req, flat, resident, audit: audit ?? [], certificate: cert };
   });
 
 /* -------------------------------------------------------------------- */
@@ -190,18 +337,6 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   revoked: [],
 };
 
-async function assertSocietyAdmin(supabase: any, societyId: string, userId: string) {
-  const { data, error } = await supabase.rpc("is_society_admin_for", {
-    _user_id: userId,
-    _society_id: societyId,
-  });
-  if (error) throw new Error(error.message);
-  if (!data) {
-    const { data: sa } = await supabase.rpc("is_super_admin", { _user_id: userId });
-    if (!sa) throw new Error("Not authorized");
-  }
-}
-
 export const reviewNoDuesRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(
@@ -216,7 +351,11 @@ export const reviewNoDuesRequest = createServerFn({ method: "POST" })
           requestId: uuid,
           decision: z.enum(["approve", "reject"]),
           notes: z.string().trim().max(1000).optional(),
-          reason: z.string().trim().max(500).optional(),
+          reason: z.string().trim().min(3).max(500).optional(),
+        })
+        .refine((d) => d.decision !== "reject" || !!d.reason, {
+          message: "Rejection reason required",
+          path: ["reason"],
         })
         .parse(d),
   )
@@ -227,23 +366,24 @@ export const reviewNoDuesRequest = createServerFn({ method: "POST" })
       .select("id,society_id,flat_id,status")
       .eq("id", data.requestId)
       .maybeSingle();
-    if (error) throw new Error(error.message);
-    if (!req) throw new Error("Request not found");
+    if (error) {
+      logServerError("review.load", error);
+      throw new NoDuesError("REQUEST_NOT_FOUND");
+    }
+    if (!req) throw new NoDuesError("REQUEST_NOT_FOUND");
 
     await assertSocietyAdmin(supabase, req.society_id, userId);
 
     const nextStatus = data.decision === "approve" ? "approved" : "rejected";
     const allowed = ALLOWED_TRANSITIONS[req.status] ?? [];
-    if (!allowed.includes(nextStatus)) {
-      throw new Error(`Cannot transition ${req.status} → ${nextStatus}`);
-    }
+    if (!allowed.includes(nextStatus)) throw new NoDuesError("INVALID_TRANSITION");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // Re-verify eligibility on approve
     if (data.decision === "approve") {
       const snap = await computeEligibility(supabase, req.society_id, req.flat_id);
       if (!snap.eligible) {
-        // Import admin only inside handler
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         await supabaseAdmin
           .from("no_dues_requests")
           .update({
@@ -254,7 +394,7 @@ export const reviewNoDuesRequest = createServerFn({ method: "POST" })
             admin_notes: data.notes ?? null,
           })
           .eq("id", data.requestId);
-        await supabaseAdmin.from("no_dues_audit").insert({
+        const { error: aErr } = await supabaseAdmin.from("no_dues_audit").insert({
           request_id: data.requestId,
           society_id: req.society_id,
           actor_id: userId,
@@ -263,11 +403,14 @@ export const reviewNoDuesRequest = createServerFn({ method: "POST" })
           new_status: "blocked_by_dues",
           metadata: { total_outstanding: snap.total_outstanding },
         });
+        if (aErr) {
+          logServerError("review.blocked.audit", aErr);
+          throw new NoDuesError("ISSUE_FAILED");
+        }
         return { status: "blocked_by_dues", eligibility: snap };
       }
     }
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error: uErr } = await supabaseAdmin
       .from("no_dues_requests")
       .update({
@@ -278,9 +421,12 @@ export const reviewNoDuesRequest = createServerFn({ method: "POST" })
         rejection_reason: data.decision === "reject" ? data.reason ?? null : null,
       })
       .eq("id", data.requestId);
-    if (uErr) throw new Error(uErr.message);
+    if (uErr) {
+      logServerError("review.update", uErr);
+      throw new NoDuesError("ISSUE_FAILED");
+    }
 
-    await supabaseAdmin.from("no_dues_audit").insert({
+    const { error: aErr } = await supabaseAdmin.from("no_dues_audit").insert({
       request_id: data.requestId,
       society_id: req.society_id,
       actor_id: userId,
@@ -289,12 +435,16 @@ export const reviewNoDuesRequest = createServerFn({ method: "POST" })
       new_status: nextStatus,
       metadata: { reason: data.reason, notes: data.notes },
     });
+    if (aErr) {
+      logServerError("review.audit", aErr);
+      throw new NoDuesError("ISSUE_FAILED");
+    }
 
     return { status: nextStatus };
   });
 
 /* -------------------------------------------------------------------- */
-/*  Issue certificate                                                    */
+/*  Issue certificate — atomic via RPC                                   */
 /* -------------------------------------------------------------------- */
 
 export const issueNoDuesCertificate = createServerFn({ method: "POST" })
@@ -309,21 +459,25 @@ export const issueNoDuesCertificate = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
+
     const { data: req, error } = await supabase
       .from("no_dues_requests")
       .select("id,society_id,flat_id,status,requester_id")
       .eq("id", data.requestId)
       .maybeSingle();
-    if (error) throw new Error(error.message);
-    if (!req) throw new Error("Request not found");
+    if (error) {
+      logServerError("issue.load", error);
+      throw new NoDuesError("REQUEST_NOT_FOUND");
+    }
+    if (!req) throw new NoDuesError("REQUEST_NOT_FOUND");
     await assertSocietyAdmin(supabase, req.society_id, userId);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Idempotent: return existing certificate if already issued
+    // Idempotent short-circuit — already issued and not revoked
     const { data: existing } = await supabaseAdmin
       .from("no_dues_certificates")
-      .select("id,certificate_number,storage_path")
+      .select("id,certificate_number")
       .eq("request_id", data.requestId)
       .is("revoked_at", null)
       .maybeSingle();
@@ -331,19 +485,26 @@ export const issueNoDuesCertificate = createServerFn({ method: "POST" })
       return {
         certificateId: existing.id,
         certificateNumber: existing.certificate_number,
-        storagePath: existing.storage_path,
       };
     }
 
-    if (!ALLOWED_TRANSITIONS[req.status].includes("issued")) {
-      throw new Error(`Cannot issue from status ${req.status}`);
-    }
+    if (req.status !== "approved") throw new NoDuesError("INVALID_TRANSITION");
 
     // Re-verify eligibility at issue time
     const snap = await computeEligibility(supabase, req.society_id, req.flat_id);
-    if (!snap.eligible) throw new Error("Unit no longer eligible for no-dues");
+    if (!snap.eligible) throw new NoDuesError("BLOCKED_BY_DUES");
 
-    // Load society + flat + resident
+    // Reserve certificate number atomically (per-society sequence)
+    const { data: certNumber, error: nErr } = await supabase.rpc(
+      "next_no_dues_cert_number",
+      { _society_id: req.society_id },
+    );
+    if (nErr || !certNumber) {
+      logServerError("issue.nextNum", nErr);
+      throw new NoDuesError("ISSUE_FAILED");
+    }
+
+    // Load society + flat + resident for PDF
     const [{ data: society }, { data: flat }, { data: resident }] = await Promise.all([
       supabaseAdmin
         .from("societies")
@@ -362,40 +523,36 @@ export const issueNoDuesCertificate = createServerFn({ method: "POST" })
         .single(),
     ]);
 
-    // Reserve immutable cert number
-    const { count } = await supabaseAdmin
-      .from("no_dues_certificates")
-      .select("id", { count: "exact", head: true })
-      .eq("society_id", req.society_id);
-    const certNumber = `ND-${new Date().getFullYear()}-${String((count ?? 0) + 1).padStart(5, "0")}`;
-
-    // Token
     const { generateRawToken, hashToken, renderCertificatePdf } = await import(
       "@/lib/no-dues.server"
     );
     const rawToken = generateRawToken();
     const tokenHash = hashToken(rawToken);
-
     const origin = process.env.PUBLIC_APP_URL ?? "https://sociohub.live";
     const verificationUrl = `${origin}/verify/no-dues/${rawToken}`;
 
-    const issuedAt = new Date();
     const validUntil = data.validForDays
       ? new Date(Date.now() + data.validForDays * 86400_000)
       : null;
 
-    const pdfBytes = await renderCertificatePdf({
-      societyName: society?.name ?? "Society",
-      societyAddress: [society?.address, society?.city, society?.state]
-        .filter(Boolean)
-        .join(", ") || null,
-      unitLabel: flat?.flat_number ?? "—",
-      residentName: resident?.full_name ?? "Resident",
-      certificateNumber: certNumber,
-      issuedAt,
-      validUntil,
-      verificationUrl,
-    });
+    let pdfBytes: Uint8Array;
+    try {
+      pdfBytes = await renderCertificatePdf({
+        societyName: society?.name ?? "Society",
+        societyAddress:
+          [society?.address, society?.city, society?.state].filter(Boolean).join(", ") ||
+          null,
+        unitLabel: flat?.flat_number ?? "—",
+        residentName: resident?.full_name ?? "Resident",
+        certificateNumber: certNumber,
+        issuedAt: new Date(),
+        validUntil,
+        verificationUrl,
+      });
+    } catch (e) {
+      logServerError("issue.pdf", e);
+      throw new NoDuesError("ISSUE_FAILED", "Failed to render certificate");
+    }
 
     const storagePath = `${req.society_id}/${certNumber}.pdf`;
     const { error: upErr } = await supabaseAdmin.storage
@@ -404,55 +561,43 @@ export const issueNoDuesCertificate = createServerFn({ method: "POST" })
         contentType: "application/pdf",
         upsert: false,
       });
-    if (upErr) throw new Error(`Storage upload failed: ${upErr.message}`);
-
-    // Insert cert row; if this fails, clean up storage
-    const { data: cert, error: cErr } = await supabaseAdmin
-      .from("no_dues_certificates")
-      .insert({
-        request_id: req.id,
-        society_id: req.society_id,
-        flat_id: req.flat_id,
-        certificate_number: certNumber,
-        verification_token_hash: tokenHash,
-        issued_by: userId,
-        issued_at: issuedAt.toISOString(),
-        valid_until: validUntil ? validUntil.toISOString().slice(0, 10) : null,
-        storage_path: storagePath,
-      })
-      .select("id,certificate_number")
-      .single();
-    if (cErr) {
-      await supabaseAdmin.storage.from("no-dues-certificates").remove([storagePath]);
-      throw new Error(`Certificate insert failed: ${cErr.message}`);
+    if (upErr) {
+      logServerError("issue.upload", upErr);
+      throw new NoDuesError("ISSUE_FAILED", "Failed to upload certificate");
     }
 
-    await supabaseAdmin
-      .from("no_dues_requests")
-      .update({ status: "issued" })
-      .eq("id", req.id);
-
-    await supabaseAdmin.from("no_dues_audit").insert({
-      request_id: req.id,
-      certificate_id: cert.id,
-      society_id: req.society_id,
-      actor_id: userId,
-      action: "issued",
-      previous_status: req.status,
-      new_status: "issued",
-      metadata: { certificate_number: certNumber },
-    });
+    // Atomic: insert cert + flip request status + write audit
+    const { data: rpcRows, error: fErr } = await supabaseAdmin.rpc(
+      "finalize_no_dues_issuance",
+      {
+        _request_id: req.id,
+        _certificate_number: certNumber,
+        _verification_token_hash: tokenHash,
+        _storage_path: storagePath,
+        _valid_until: validUntil ? validUntil.toISOString().slice(0, 10) : null,
+      },
+    );
+    if (fErr) {
+      // Compensation: remove uploaded PDF
+      await supabaseAdmin.storage.from("no-dues-certificates").remove([storagePath]);
+      logServerError("issue.finalize", fErr);
+      throw new NoDuesError(mapPgError(fErr.message), "Certificate finalization failed");
+    }
+    const row = Array.isArray(rpcRows) ? rpcRows[0] : rpcRows;
+    if (!row?.certificate_id) {
+      await supabaseAdmin.storage.from("no-dues-certificates").remove([storagePath]);
+      throw new NoDuesError("ISSUE_FAILED");
+    }
 
     return {
-      certificateId: cert.id,
-      certificateNumber: cert.certificate_number,
-      storagePath,
+      certificateId: row.certificate_id,
+      certificateNumber: row.certificate_number,
       verificationUrl,
     };
   });
 
 /* -------------------------------------------------------------------- */
-/*  Signed URL for owner/admin                                           */
+/*  Signed URL for owner/admin — never returns storage_path              */
 /* -------------------------------------------------------------------- */
 
 export const getCertificateDownloadUrl = createServerFn({ method: "POST" })
@@ -467,36 +612,44 @@ export const getCertificateDownloadUrl = createServerFn({ method: "POST" })
       .select("id,storage_path,society_id,flat_id,request_id")
       .eq("id", data.certificateId)
       .maybeSingle();
-    if (error) throw new Error(error.message);
-    if (!cert) throw new Error("Not found");
+    if (error) {
+      logServerError("dl.load", error);
+      throw new NoDuesError("CERTIFICATE_NOT_FOUND");
+    }
+    if (!cert) throw new NoDuesError("CERTIFICATE_NOT_FOUND");
 
-    // Authorization: society admin OR requester
     const { data: req } = await supabase
       .from("no_dues_requests")
       .select("requester_id")
       .eq("id", cert.request_id)
       .maybeSingle();
-    const isRequester = req?.requester_id === userId;
-    let ok = isRequester;
+    let ok = req?.requester_id === userId;
     if (!ok) {
       const { data: adm } = await supabase.rpc("is_society_admin_for", {
         _user_id: userId,
         _society_id: cert.society_id,
       });
       ok = !!adm;
+      if (!ok) {
+        const { data: sa } = await supabase.rpc("is_super_admin", { _user_id: userId });
+        ok = !!sa;
+      }
     }
-    if (!ok) throw new Error("Not authorized");
+    if (!ok) throw new NoDuesError("NOT_AUTHORIZED");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: signed, error: sErr } = await supabaseAdmin.storage
       .from("no-dues-certificates")
       .createSignedUrl(cert.storage_path, 300);
-    if (sErr) throw new Error(sErr.message);
+    if (sErr || !signed) {
+      logServerError("dl.sign", sErr);
+      throw new NoDuesError("DOWNLOAD_FAILED");
+    }
     return { url: signed.signedUrl };
   });
 
 /* -------------------------------------------------------------------- */
-/*  Revoke                                                               */
+/*  Revoke — atomic via RPC                                              */
 /* -------------------------------------------------------------------- */
 
 export const revokeNoDuesCertificate = createServerFn({ method: "POST" })
@@ -507,39 +660,14 @@ export const revokeNoDuesCertificate = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context as any;
-    const { data: cert, error } = await supabase
-      .from("no_dues_certificates")
-      .select("id,society_id,request_id,revoked_at")
-      .eq("id", data.certificateId)
-      .maybeSingle();
-    if (error) throw new Error(error.message);
-    if (!cert) throw new Error("Not found");
-    if (cert.revoked_at) return { alreadyRevoked: true };
-    await assertSocietyAdmin(supabase, cert.society_id, userId);
-
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await supabaseAdmin
-      .from("no_dues_certificates")
-      .update({
-        revoked_at: new Date().toISOString(),
-        revoked_by: userId,
-        revoke_reason: data.reason,
-      })
-      .eq("id", data.certificateId);
-    await supabaseAdmin
-      .from("no_dues_requests")
-      .update({ status: "revoked" })
-      .eq("id", cert.request_id);
-    await supabaseAdmin.from("no_dues_audit").insert({
-      request_id: cert.request_id,
-      certificate_id: cert.id,
-      society_id: cert.society_id,
-      actor_id: userId,
-      action: "revoked",
-      previous_status: "issued",
-      new_status: "revoked",
-      metadata: { reason: data.reason },
+    const { supabase } = context as any;
+    const { error } = await supabase.rpc("revoke_no_dues_certificate", {
+      _certificate_id: data.certificateId,
+      _reason: data.reason,
     });
+    if (error) {
+      logServerError("revoke", error);
+      throw new NoDuesError(mapPgError(error.message));
+    }
     return { ok: true };
   });

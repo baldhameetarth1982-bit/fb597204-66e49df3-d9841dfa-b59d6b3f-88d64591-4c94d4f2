@@ -379,10 +379,9 @@ export const issueNoDuesCertificate = createServerFn({ method: "POST" })
 
     if (req.status !== "approved") throw new NoDuesError("INVALID_TRANSITION");
 
-    // Pre-check (finalization RPC re-checks inside the transaction too)
-    const snap = await computeEligibility(supabase, req.society_id, req.flat_id);
-
-    // Reserve certificate number (service-role RPC with trusted actor)
+    // Reserve certificate number (service-role RPC with trusted actor).
+    // The finalization RPC recomputes eligibility inside the same transaction;
+    // no client-side pre-check needed.
     const { data: certNumber, error: nErr } = await (supabaseAdmin.rpc as any)(
       "next_no_dues_cert_number_internal",
       { _actor_id: userId, _society_id: req.society_id },

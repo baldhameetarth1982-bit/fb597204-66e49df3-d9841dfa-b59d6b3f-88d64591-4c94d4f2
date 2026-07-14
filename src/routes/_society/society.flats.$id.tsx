@@ -120,12 +120,18 @@ function HouseDetailPage() {
               </div>
               <div className="min-w-0">
                 <h1 className="truncate text-xl font-bold">
-                  {flat.blocks?.name ? `${flat.blocks.name} · ` : ""}{flat.flat_number}
+                  {buildUnitLabel({
+                    flat_number: flat.flat_number,
+                    floor: flat.floor,
+                    block_name: flat.blocks?.name ?? null,
+                  })}
                 </h1>
-                <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                  <MapPin className="h-3 w-3" />
-                  {flat.floor != null ? `Floor ${flat.floor}` : "Floor —"}
-                </p>
+                {(flat.blocks?.name || flat.floor != null) && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                    <MapPin className="h-3 w-3" />
+                    {flat.floor != null ? `Floor ${flat.floor}` : "Direct unit"}
+                  </p>
+                )}
               </div>
             </div>
             <Badge

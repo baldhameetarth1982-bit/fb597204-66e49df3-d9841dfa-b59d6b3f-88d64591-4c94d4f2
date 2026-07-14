@@ -101,6 +101,55 @@ function HouseDetailPage() {
 
   const primary = current?.find((r) => r.is_primary) ?? current?.[0];
   const isVacant = !current || current.length === 0;
+  const activeCount = current?.length ?? 0;
+
+  const { hasFeature, isLoading: planLoading } = useFeatureAccess();
+  const hasFlat360 = hasFeature("flat_360");
+
+  // Deterministic Unit Summary — pure function, no AI, no PII.
+  const unit_label = flat
+    ? buildUnitLabel({
+        flat_number: flat.flat_number,
+        floor: flat.floor,
+        block_name: flat.blocks?.name ?? null,
+      })
+    : "Unit";
+  const is_serial = !(flat?.blocks?.name || flat?.floor != null);
+
+  const summaryInput = useMemo<Flat360SummaryInput>(() => {
+    const relationship = (primary?.relationship ?? "").toLowerCase();
+    let occKind: Flat360SummaryInput["occupancy"]["kind"] = "unknown";
+    if (isVacant) occKind = "vacant";
+    else if (activeCount > 1) occKind = "multi_resident";
+    else if (relationship.includes("owner")) occKind = "owner_occupied";
+    else if (relationship.includes("tenant") || relationship.includes("rent")) occKind = "tenant_occupied";
+    else occKind = "owner_occupied";
+
+    const out = Number(outstanding?.pending ?? 0);
+    const overdue = Number(outstanding?.overdue_count ?? 0);
+    const unpaid = (bills ?? []).filter((b) => b.status === "unpaid").length;
+
+    return {
+      unit_label,
+      is_serial,
+      occupancy: { kind: occKind, active_count: activeCount },
+      financial: {
+        total_outstanding: out,
+        overdue_count: overdue,
+        partial_count: 0,
+        unpaid_count: unpaid,
+        pending_verification_count: 0,
+        inconsistency_count: 0,
+      },
+      complaints: { status: "unsupported" },
+      approvals: { status: "unsupported" },
+      no_dues: { status: "unavailable" },
+      errors: [],
+    };
+  }, [unit_label, is_serial, isVacant, activeCount, primary, outstanding, bills]);
+
+  const summary = useMemo(() => buildUnitSummary(summaryInput), [summaryInput]);
+
 
   return (
     <PageShell>

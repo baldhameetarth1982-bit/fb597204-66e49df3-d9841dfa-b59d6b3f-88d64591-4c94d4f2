@@ -52,7 +52,7 @@ async function getKey(): Promise<CryptoKey> {
   const material = decodeKeyMaterial(raw);
   cachedKey = await crypto.subtle.importKey(
     "raw",
-    material,
+    material.buffer.slice(material.byteOffset, material.byteOffset + material.byteLength) as ArrayBuffer,
     { name: "AES-GCM" },
     false,
     ["encrypt", "decrypt"],

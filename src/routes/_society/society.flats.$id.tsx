@@ -344,6 +344,58 @@ function HouseDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* --- Pro / Premium: Deterministic Unit Summary --- */}
+      {planLoading ? null : hasFlat360 ? (
+        <Card className="rounded-2xl">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-semibold flex items-center gap-1.5">
+                <ListChecks className="h-4 w-4" /> Unit summary
+              </h3>
+              <Badge variant="outline" className="rounded-full text-[10px]">
+                Pro
+              </Badge>
+            </div>
+            <p className="text-sm font-medium">{summary.headline}</p>
+            {summary.facts.length > 0 && (
+              <ul className="mt-2 space-y-1 text-xs text-muted-foreground list-disc pl-4">
+                {summary.facts.map((f, i) => <li key={i}>{f}</li>)}
+              </ul>
+            )}
+            {summary.warnings.length > 0 && (
+              <ul className="mt-2 space-y-1 text-xs text-amber-600 list-disc pl-4">
+                {summary.warnings.map((w, i) => <li key={i}>{w}</li>)}
+              </ul>
+            )}
+            {summary.next_actions.some((a) => a.type !== "none") && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {summary.next_actions
+                  .filter((a) => a.type !== "none" && a.route)
+                  .map((a, i) => (
+                    <Button
+                      key={i}
+                      asChild
+                      size="sm"
+                      variant="outline"
+                      className="rounded-xl"
+                    >
+                      <a href={a.route}>{a.label}</a>
+                    </Button>
+                  ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <LockedFeatureCard
+          feature="flat_360"
+          message="Unlock the full Flat 360 experience: unit summary, advanced financial insight, occupancy history, and safe No-Dues integration."
+        />
+      )}
+
+      {/* --- Pro / Premium: AI Summary slot (provider next turn) --- */}
+      {hasFlat360 && <AISummarySlot contract={{ state: "not_implemented" }} />}
     </PageShell>
   );
 }

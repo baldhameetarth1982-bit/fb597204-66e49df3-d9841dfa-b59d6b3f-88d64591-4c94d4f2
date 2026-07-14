@@ -16,6 +16,13 @@ import {
   revokeNoDuesCertificate,
   getCertificateDownloadUrl,
 } from "@/lib/no-dues.functions";
+import {
+  statusLabel,
+  auditActionLabel,
+  formatCurrency,
+  blockerTitle,
+  blockerSubtitle,
+} from "@/lib/no-dues-labels";
 
 export const Route = createFileRoute("/_society/society/no-dues/$id")({
   head: () => ({

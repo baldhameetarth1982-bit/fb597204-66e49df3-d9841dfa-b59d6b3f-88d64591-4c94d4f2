@@ -82,29 +82,13 @@ function HouseDetailPage() {
     queryFn: async () => getHistory({ data: { flatId: id } }),
   });
 
-  if (isLoading) {
-    return (
-      <PageShell>
-        <div className="grid place-items-center py-20">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
-      </PageShell>
-    );
-  }
-  if (!flat) {
-    return (
-      <PageShell>
-        <p className="text-muted-foreground">House not found.</p>
-      </PageShell>
-    );
-  }
+  // Hooks MUST come before conditional returns.
+  const { hasFeature, isLoading: planLoading } = useFeatureAccess();
+  const hasFlat360 = hasFeature("flat_360");
 
   const primary = current?.find((r) => r.is_primary) ?? current?.[0];
   const isVacant = !current || current.length === 0;
   const activeCount = current?.length ?? 0;
-
-  const { hasFeature, isLoading: planLoading } = useFeatureAccess();
-  const hasFlat360 = hasFeature("flat_360");
 
   // Deterministic Unit Summary — pure function, no AI, no PII.
   const unit_label = flat
@@ -149,6 +133,24 @@ function HouseDetailPage() {
   }, [unit_label, is_serial, isVacant, activeCount, primary, outstanding, bills]);
 
   const summary = useMemo(() => buildUnitSummary(summaryInput), [summaryInput]);
+
+  if (isLoading) {
+    return (
+      <PageShell>
+        <div className="grid place-items-center py-20">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      </PageShell>
+    );
+  }
+  if (!flat) {
+    return (
+      <PageShell>
+        <p className="text-muted-foreground">House not found.</p>
+      </PageShell>
+    );
+  }
+
 
 
   return (

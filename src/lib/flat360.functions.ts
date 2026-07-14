@@ -107,29 +107,24 @@ export const getFlat360 = createServerFn({ method: "POST" })
     if (flatErr || !flat) throw new Error("FLAT_NOT_FOUND");
     const societyId = flat.society_id as string;
 
-    // 2. Society-scoped authorization.
-    const [adminRes, superRes, residentRes] = await Promise.all([
-      supabase.rpc("is_society_admin_for", { _user_id: userId, _society_id: societyId }),
-      supabase.rpc("is_super_admin", { _user_id: userId }),
-      supabase
-        .from("flat_residents")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("flat_id", flatId)
-        .eq("is_active", true)
-        .maybeSingle(),
+    // 2. Society-scoped ADMIN authorization only. Residents are denied here
+    //    and must use a separate resident-safe server function.
+    //    Uses service-role `_internal` helpers (trusted-actor) since the
+    //    request context has already authenticated the caller.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const [adminRes, superRes] = await Promise.all([
+      (supabaseAdmin.rpc as any)("is_society_admin_for_internal", {
+        _actor_id: userId,
+        _society_id: societyId,
+      }),
+      (supabaseAdmin.rpc as any)("is_super_admin_internal", { _actor_id: userId }),
     ]);
     const isSocietyAdmin = !!adminRes.data;
     const isSuperAdmin = !!superRes.data;
-    const isResident = !!residentRes.data;
-    if (!isSocietyAdmin && !isSuperAdmin && !isResident) {
+    if (!isSocietyAdmin && !isSuperAdmin) {
       throw new Error("NOT_AUTHORIZED");
     }
-    const viewer: Flat360Viewer = isSocietyAdmin
-      ? "society_admin"
-      : isSuperAdmin
-        ? "super_admin"
-        : "resident";
+    const viewer: Flat360Viewer = isSocietyAdmin ? "society_admin" : "super_admin";
 
     const [society, occupantsRes, familyRes, vehiclesRes, billsRes, paymentsRes, noDuesReqRes, noDuesCertRes] =
       await Promise.all([

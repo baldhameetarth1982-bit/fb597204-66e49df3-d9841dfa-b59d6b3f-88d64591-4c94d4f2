@@ -125,3 +125,38 @@ Basic still contains: `society_setup`, `society_profile`, `blocks`, `flats`, `re
 **Verification:** `bunx tsgo --noEmit` — 0 errors.
 
 **Deferred to next turn** (explicitly gated by user's Turn 6 instructions on runtime auth tests passing): No-Dues detail routes, Flat 360, Gamification, Checkpoint I runtime tests, Checkpoint J visual audit.
+
+## Stage 3A — Turn 8 (2026-07-14)
+
+**Canonical No-Dues Eligibility + Trusted-Server-Only RPC Rewrite**
+
+Migration `20260714_compute_eligibility_and_rpc_rewrite`:
+- Added `public.compute_no_dues_eligibility_internal(_society_id, _flat_id)` — sole authoritative eligibility source. Service-role EXECUTE only.
+- Dropped and recreated `submit_no_dues_request_internal`, `transition_no_dues_request_internal`, `finalize_no_dues_issuance_internal` **without** the caller-supplied `_eligible` / `_snapshot` / `_new_snapshot` / `_eligibility_snapshot` parameters. Each RPC now derives eligibility itself inside the transaction.
+- Finalization performs an independent eligibility recheck in the same transaction; if blocked, sets request → `blocked_by_dues` and returns before creating the certificate (server compensates by removing the staged PDF).
+
+Billing schema (real, audited):
+- `bills`: status text ∈ {paid, unpaid, cancelled}; amount numeric; cancelled_at nullable; paid_at nullable.
+- `payments`: status text (observed: pending, success); method text (observed: cash + bank transfer variants); bill_id nullable.
+- Remaining balance formula (canonical): `GREATEST(0, bill.amount - Σ payments.amount WHERE bill_id = bill.id AND status='success')` — clamped ≥ 0; excludes cancelled bills and non-success payments.
+
+Files:
+- `supabase/migrations/20260714_*` (new eligibility fn + 3 RPC replacements)
+- `src/lib/no-dues.functions.ts` (removed local `computeEligibility`; all eligibility comes from the DB fn via a service-role wrapper; submit/review/issue calls updated to new RPC signatures)
+- `src/routes/_society/society.no-dues.$id.tsx` (new admin detail route with blockers, timeline, approve/reject/issue/revoke/download)
+- `src/routes/_resident/app.no-dues.$id.tsx` (new resident detail route with blockers, timeline, download)
+- `docs/RELEASE_READINESS.md` (canonical eligibility marked ✅; detail routes noted implemented_unverified)
+
+Verification performed:
+- `bunx tsgo --noEmit` → exit 0
+
+Verification NOT yet performed (honestly `implemented_unverified`, not `tested`):
+- runtime eligibility test matrix (parts 10.1–10.10 of the turn spec)
+- authorization negative tests (10.11–10.18)
+- transaction rollback / concurrency tests (10.19–10.28)
+- rate-limit threshold tests (10.29–10.31)
+- production `bun run build`
+- client-bundle secret scan
+- visual verification of the two new routes
+
+No payment integration changed. Razorpay untouched. Cash + Bank Transfer maintenance behavior unchanged. No platform fee added. No real society data modified.

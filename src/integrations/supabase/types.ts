@@ -2668,9 +2668,12 @@ export type Database = {
         }
         Returns: string
       }
-      finalize_no_dues_issuance: {
+      finalize_no_dues_issuance_internal: {
         Args: {
+          _actor_id: string
           _certificate_number: string
+          _eligibility_snapshot: Json
+          _eligible: boolean
           _request_id: string
           _storage_path: string
           _valid_until: string
@@ -2679,6 +2682,7 @@ export type Database = {
         Returns: {
           certificate_id: string
           certificate_number: string
+          status: Database["public"]["Enums"]["no_dues_status"]
         }[]
       }
       find_referrer_by_code: { Args: { _code: string }; Returns: string }
@@ -2853,8 +2857,8 @@ export type Database = {
         }[]
       }
       mark_aadhaar_verified: { Args: { _last4: string }; Returns: undefined }
-      next_no_dues_cert_number: {
-        Args: { _society_id: string }
+      next_no_dues_cert_number_internal: {
+        Args: { _actor_id: string; _society_id: string }
         Returns: string
       }
       regenerate_society_invite_code: {
@@ -2874,8 +2878,8 @@ export type Database = {
         Args: { _aadhaar_last4: string; _aadhaar_url: string }
         Returns: undefined
       }
-      revoke_no_dues_certificate: {
-        Args: { _certificate_id: string; _reason: string }
+      revoke_no_dues_certificate_internal: {
+        Args: { _actor_id: string; _certificate_id: string; _reason: string }
         Returns: undefined
       }
       save_wizard_draft: {
@@ -2939,6 +2943,46 @@ export type Database = {
           _society_id: string
         }
         Returns: string
+      }
+      submit_no_dues_request_internal: {
+        Args: {
+          _actor_id: string
+          _eligible: boolean
+          _flat_id: string
+          _purpose: string
+          _snapshot: Json
+          _society_id: string
+        }
+        Returns: {
+          request_id: string
+          status: Database["public"]["Enums"]["no_dues_status"]
+        }[]
+      }
+      touch_rate_limit: {
+        Args: {
+          _bucket: string
+          _limit: number
+          _subject: string
+          _window_seconds: number
+        }
+        Returns: {
+          allowed: boolean
+          remaining: number
+          retry_after_seconds: number
+        }[]
+      }
+      transition_no_dues_request_internal: {
+        Args: {
+          _actor_id: string
+          _decision: string
+          _new_snapshot: Json
+          _notes: string
+          _reason: string
+          _request_id: string
+        }
+        Returns: {
+          new_status: Database["public"]["Enums"]["no_dues_status"]
+        }[]
       }
       update_society_business_profile: {
         Args: {

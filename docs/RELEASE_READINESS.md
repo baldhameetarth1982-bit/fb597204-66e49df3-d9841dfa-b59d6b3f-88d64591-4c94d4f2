@@ -131,3 +131,44 @@
 After every development turn, edit this file to reflect newly `tested` /
 `security_verified` / `visually_verified` items. Never downgrade evidence;
 never mark `release_ready` without linked commit + test output.
+
+## Turn 9 update (2026-07-14)
+
+**No-Dues eligibility v2**
+- `compute_no_dues_eligibility_internal` rewritten: each bill appears at most once in the blocker list, with `primary_type` + `overdue`/`inconsistent`/`unknown_status`/`payment_state` flags. Deterministic ordering: overdue first, then earliest due date, then bill number.
+- Bills marked `paid` with `remaining > 0` (or with an unknown-status payment) now surface as `financial_data_inconsistency` for admin review instead of silently certifying.
+- Pending offline payments (all methods) remain a separate blocker (`pending_offline_payment`).
+- Invalid flat/society pairs raise a server-side error rather than pretending the flat has dues.
+- Grants: `service_role` only. `anon`/`authenticated` execution revoked (verified via last migration).
+
+**Observed schema (via `psql \d`, `SELECT DISTINCT`)**
+- `payments.status`: only `success` observed. Constraint permits any text (no CHECK on status). Function still classifies `success` / `pending` / `failed|rejected|cancelled|refunded|reversed` explicitly; anything else is treated as "unknown_status" and blocks with `financial_data_inconsistency`.
+- `payments.method`: only `cash` observed. Constraint (`payments_method_chk`, NOT VALID) permits `razorpay | manual | online`. Eligibility no longer filters by method — any `status='pending'` row is a blocker regardless of method (defensive against wider method vocab used elsewhere in the app).
+- `bills.status`: `paid`, `unpaid`, `cancelled`.
+- **Source of truth chosen:** Remaining amount from valid payments is authoritative for balance. Bill `status='paid'` is treated as a *hint*, not the truth: if `remaining > 0`, we emit `financial_data_inconsistency` — never silently certify.
+
+**UX**
+- Human labels for status, audit actions, and every blocker type live in `src/lib/no-dues-labels.ts`. No raw identifiers (`pending_bank_transfer_payment`, `finalize_blocked`, …) reach the UI.
+- Currency formatted via `formatCurrency` (₹, en-IN grouping).
+- Resident + admin detail pages: friendly status explanation, structured blocker cards with resolution guidance, timeline with human action labels, copy-verify-link button for issued certificates.
+- **Not yet done this turn:** AlertDialog wrappers for approve/reject/issue/revoke (dialogs still inline Textareas). Deferred to Turn 10.
+
+**Flat 360**
+- Typed data service added: `src/lib/flat360.functions.ts` → `getFlat360({ flatId })`.
+- Society isolation enforced, auth: society admin/manager or active resident of the flat.
+- Bundles: flat, society, occupants, family, vehicles, recent bills, recent payments, No-Dues eligibility (canonical), latest No-Dues request, latest certificate.
+- Visitors/approvals scaffolded with honest zero counts pending further schema audit.
+- Typecheck: **pass**.
+
+**Verification not performed this turn (honest gaps)**
+- Production `vite build` not executed (sandbox constraints).
+- Runtime authorization matrix (service_role vs authenticated vs anon vs cross-society) not executed — deferred until a safe test-only fixture harness is defined that cannot touch real society data.
+- Concurrency / idempotency tests (parallel issuance, rollback on audit failure) not executed.
+- Rate-limit threshold tests (30/60s general, 10/60s invalid) not executed.
+- Client-bundle secret leak scan not executed.
+
+Anything marked `implemented_unverified` remains so until the above are executed.
+
+**Confirmations**
+- No payment integration changed. Razorpay untouched. No platform fee added. Cash + Bank Transfer maintenance flow preserved.
+- No real society data modified. Firebase → Supabase auth flow untouched.

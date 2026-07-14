@@ -485,3 +485,45 @@ None of them touch payments / Razorpay / Cash-Bank-Transfer / platform fees
 - No writes to real society data (`baldha Meetarth` or otherwise) from this turn's tests or scripts.
 - Firebase → Supabase auth architecture unchanged.
 - Basic flat-detail functionality preserved; Flat 360 remains Pro; Premium inherits.
+
+## Stage 3A · Turn 16 — Flat 360 deterministic summary + Turn 15 correctness
+
+### Turn 15 correctness fixes
+- `constantTimeEqualHex` now requires **exactly 64 hex characters** on both inputs (SHA-256). Malformed / 62 / 66 / odd / non-hex / empty inputs return `false`. Mixed-case supported. Every byte compared with no early exit after validation.
+- Backfill pagination rewritten to **keyset (`ORDER BY id ASC, id > cursor LIMIT batch`)**. OFFSET is unsafe when write mode removes processed rows from the query. Cursor advances per row; final short batch terminates the loop.
+- Classifier + pagination extracted to `src/lib/certificate-backfill.ts`; CLI script and unit tests now import the SAME implementation.
+
+### Deterministic Unit Summary
+- `src/lib/unit-summary.ts` — pure function `buildUnitSummary(input) → UnitSummary`. No AI, no randomness, no PII. `unsupported` never collapses into zero. Section errors surface as safe warnings. Actions only reference existing routes (`/society/billing`, `/society/accounts`, `/society/approvals`, `/society/no-dues`).
+- `tests/unit/unit-summary.test.ts` — 21 scenarios (vacant, owner, tenant, multi, dues, overdue, partial, pending verify, inconsistency, complaints, approvals, blocked/eligible no-dues, unsupported, error, no PII, stable output, known routes only, serial vs structured).
+
+### AI Summary slot (Pro)
+- `src/components/flat360/AISummarySlot.tsx` — typed contract (`AISummaryContract`, `AISummaryProviderState`), Pro badge, dev-only "Coming in the next implementation stage" copy. **No fake generated text. No working-looking refresh button.** Provider integration deferred to the next dedicated turn.
+
+### Flat detail route (section-level gating)
+- `src/routes/_society/society.flats.$id.tsx` upgraded:
+  - Header now uses `buildUnitLabel()` (`src/lib/unit-label.ts`), supporting both structured (`Tower B · Floor 7 · Flat 704`) and serial (`House 118`) societies.
+  - **Basic** users retain all existing core sections (identity, current resident, outstanding, recent bills, occupancy history).
+  - **Pro/Premium** users get the Deterministic Unit Summary card and AI Summary slot.
+  - Basic users see a single `LockedFeatureCard` for the Pro sections — no aggressive repeated popups; whole route remains accessible.
+
+### Verification results
+| Check | Result | Notes |
+|-------|--------|-------|
+| `bunx vitest run tests/unit` | **54 / 54 passed** | public-origin (19), unit-summary (21), certificate-token (6), certificate-backfill (8) |
+| `bunx tsgo --noEmit` | **pass** | no type errors |
+| `bun scripts/verify-client-bundle-secrets.ts` | **clean** | 0 hits across 882 client-bundle files |
+| Flat 360 integration harness | **SKIPPED** (expected) | `tests/integration/flat360.integration.test.ts` requires `ALLOW_SOCIOHUB_TEST_FIXTURES=true` + isolated `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`; file present, cases stubbed for the environment turn |
+
+### Deferred (honest, not-done)
+- Full strict rewrite of `flat360.functions.ts` `Snapshot` (SectionState<T> for every module). Current shape retains a narrow set of `any` casts on nested joined selects; refactor is the next Flat 360 turn together with the AI Summary provider.
+- Lovable AI Gateway integration for the AI Summary slot — next dedicated turn (caching, rate limiting, provider fallback, prompt-injection resistance).
+- Integration test bodies (fixture project not yet provisioned).
+- Visual regression screenshots at 360 / 390 / 414 / 1280 px — not captured in this focused turn.
+
+### Confirmations
+- Razorpay untouched; no new gateway; no platform fee; Cash + Bank Transfer unchanged.
+- No writes to real society data.
+- Firebase → Supabase auth unchanged.
+- Basic flat detail preserved; Flat 360 advanced sections remain Pro; Premium inherits.
+- **AI Summary is NOT marked complete.** The slot is a typed placeholder only.

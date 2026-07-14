@@ -449,8 +449,6 @@ export const issueNoDuesCertificate = createServerFn({ method: "POST" })
         _verification_token_hash: tokenHash,
         _storage_path: storagePath,
         _valid_until: validUntil ? validUntil.toISOString().slice(0, 10) : null,
-        _eligibility_snapshot: snap,
-        _eligible: snap.eligible,
       },
     );
     if (fErr) {

@@ -198,3 +198,36 @@ Anything marked `implemented_unverified` remains so until the above are executed
 
 ### Constraints honored
 - No payment integration changes. Razorpay untouched. No platform fee. Cash + Bank Transfer maintenance preserved. No real society data modified. Firebase→Supabase auth preserved. Flat 360 remains Pro (FeatureGate not touched).
+
+## Turn 11 — 2026-07-14 (partial slice, honest)
+
+Focused, narrow slice this turn — the full Turn 11 spec covers ~20 major work areas (dialogs, resubmit, full Flat 360 UI, deterministic + AI summaries, verification-link decrypt fn, test infra, CI, screenshots, runtime tests, doc sweeps) and cannot be truthfully completed in a single turn. What actually changed:
+
+### Delivered
+- **Role-helper security redesign (schema).** New internal (service_role only) trusted-actor helpers `is_society_admin_for_internal(_actor_id, _society_id)` and `is_super_admin_internal(_actor_id)`; new authenticated self-check wrappers `current_user_is_society_admin_for(_society_id)` and `current_user_is_super_admin()` that only reveal the caller's own permission (auth.uid()). Old arbitrary-user helpers `is_society_admin_for(_user_id, _society_id)` and `is_super_admin(_user_id)` are now REVOKED from `authenticated` (service_role only) — account-role probing from client sessions is no longer possible.
+- **Flat 360 admin service hardened.** `getFlat360` now denies residents entirely (previously returned `viewer: "resident"` with the admin projection) and uses the new `_internal` trusted-actor helpers via `supabaseAdmin`. `Flat360Viewer` type is now `"society_admin" | "super_admin"` only.
+- **Certificate encryption schema (additive).** `no_dues_certificates` gained `verification_token_ciphertext`, `verification_token_iv`, `verification_token_key_version`. Purely additive — no backfill, no drops, no impact on existing rows or existing PDF/QR flows.
+- **Encryption key provisioned.** `CERTIFICATE_TOKEN_ENCRYPTION_KEY` generated (64 chars, server-only). No code reads it yet.
+
+### Deferred to next turn(s) — NOT done this turn
+- Verification-link recovery server function (`getCertificateVerificationLink`) — schema and key are in place; the encrypt-at-issuance + authorized-decrypt server code is not written yet.
+- Encrypt-at-issuance wiring inside `finalize_no_dues_issuance_internal` / issuance server function.
+- No-Dues Approve/Reject/Issue/Revoke AlertDialog wrappers.
+- Resident "Recheck and Resubmit" flow for `blocked_by_dues`.
+- Full `/society/flats/$id` Flat 360 UI (identity, occupancy, financial, occupancy history, vehicles, visitors, complaints, documents, approvals, notices, no-dues, deterministic summary, AI summary).
+- Deterministic Unit Summary implementation.
+- Pro-gated server-verified AI Summary (Lovable AI Gateway) with rate-limit + snapshot-hash cache + timeout + injection-safe prompt.
+- Integration test infrastructure (`tests/integration/*`), CI workflow, client-bundle secret scanner.
+- Runtime role/certificate/no-dues/flat-360/AI test matrix.
+- Multi-viewport screenshot verification (360/390/414/1280).
+- Documentation sweep across `SECURITY_REQUIREMENTS.md`, `FEATURE_MATRIX.md`, `UI_REFERENCE_MAP.md`, `NEXT_STAGES.md`, `SOCIOHUB_MASTER_CONTEXT.md`, `DEVELOPMENT_HISTORY.md`.
+- Migration to remove/backfill the legacy plaintext `verification_token` column on `no_dues_certificates` (still present; not read by new code paths, but a follow-up migration should backfill encrypted columns from it and then drop it).
+
+### Verification this turn
+- `bunx tsgo --noEmit` — passes.
+- Migration applied cleanly; linter warnings surfaced are pre-existing SECURITY DEFINER catalog signals, unchanged in scope by this migration.
+- No production build, no runtime tests, no screenshots executed this turn.
+
+### Constraints honored
+- No payment integration changes. Razorpay untouched. No Cashfree/PayU activation. No platform fee. Cash + Bank Transfer maintenance behavior preserved. No real society data modified. Firebase→Supabase auth preserved. Flat 360 remains Pro; Premium inherits.
+

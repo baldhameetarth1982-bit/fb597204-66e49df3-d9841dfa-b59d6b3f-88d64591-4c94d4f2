@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowLeft, Home, User, IndianRupee, Loader2, FileText, ArrowRight,
-  History, DoorOpen, MapPin,
+  History, DoorOpen, MapPin, ListChecks,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageShell } from "@/components/shared/PageHeader";
@@ -12,6 +13,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { flatOutstanding, flatOccupancyHistory } from "@/lib/residents.functions";
 import { cn } from "@/lib/utils";
+import { buildUnitLabel } from "@/lib/unit-label";
+import { buildUnitSummary, type Flat360SummaryInput } from "@/lib/unit-summary";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { LockedFeatureCard } from "@/components/subscription/LockedFeatureCard";
+import { AISummarySlot } from "@/components/flat360/AISummarySlot";
 
 export const Route = createFileRoute("/_society/society/flats/$id")({
   head: () => ({ meta: [{ title: "House — SocioHub" }] }),
@@ -76,6 +82,58 @@ function HouseDetailPage() {
     queryFn: async () => getHistory({ data: { flatId: id } }),
   });
 
+  // Hooks MUST come before conditional returns.
+  const { hasFeature, isLoading: planLoading } = useFeatureAccess();
+  const hasFlat360 = hasFeature("flat_360");
+
+  const primary = current?.find((r) => r.is_primary) ?? current?.[0];
+  const isVacant = !current || current.length === 0;
+  const activeCount = current?.length ?? 0;
+
+  // Deterministic Unit Summary — pure function, no AI, no PII.
+  const unit_label = flat
+    ? buildUnitLabel({
+        flat_number: flat.flat_number,
+        floor: flat.floor,
+        block_name: flat.blocks?.name ?? null,
+      })
+    : "Unit";
+  const is_serial = !(flat?.blocks?.name || flat?.floor != null);
+
+  const summaryInput = useMemo<Flat360SummaryInput>(() => {
+    const relationship = (primary?.relationship ?? "").toLowerCase();
+    let occKind: Flat360SummaryInput["occupancy"]["kind"] = "unknown";
+    if (isVacant) occKind = "vacant";
+    else if (activeCount > 1) occKind = "multi_resident";
+    else if (relationship.includes("owner")) occKind = "owner_occupied";
+    else if (relationship.includes("tenant") || relationship.includes("rent")) occKind = "tenant_occupied";
+    else occKind = "owner_occupied";
+
+    const out = Number(outstanding?.pending ?? 0);
+    const overdue = Number(outstanding?.overdue_count ?? 0);
+    const unpaid = (bills ?? []).filter((b) => b.status === "unpaid").length;
+
+    return {
+      unit_label,
+      is_serial,
+      occupancy: { kind: occKind, active_count: activeCount },
+      financial: {
+        total_outstanding: out,
+        overdue_count: overdue,
+        partial_count: 0,
+        unpaid_count: unpaid,
+        pending_verification_count: 0,
+        inconsistency_count: 0,
+      },
+      complaints: { status: "unsupported" },
+      approvals: { status: "unsupported" },
+      no_dues: { status: "unavailable" },
+      errors: [],
+    };
+  }, [unit_label, is_serial, isVacant, activeCount, primary, outstanding, bills]);
+
+  const summary = useMemo(() => buildUnitSummary(summaryInput), [summaryInput]);
+
   if (isLoading) {
     return (
       <PageShell>
@@ -93,8 +151,7 @@ function HouseDetailPage() {
     );
   }
 
-  const primary = current?.find((r) => r.is_primary) ?? current?.[0];
-  const isVacant = !current || current.length === 0;
+
 
   return (
     <PageShell>
@@ -114,12 +171,18 @@ function HouseDetailPage() {
               </div>
               <div className="min-w-0">
                 <h1 className="truncate text-xl font-bold">
-                  {flat.blocks?.name ? `${flat.blocks.name} · ` : ""}{flat.flat_number}
+                  {buildUnitLabel({
+                    flat_number: flat.flat_number,
+                    floor: flat.floor,
+                    block_name: flat.blocks?.name ?? null,
+                  })}
                 </h1>
-                <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                  <MapPin className="h-3 w-3" />
-                  {flat.floor != null ? `Floor ${flat.floor}` : "Floor —"}
-                </p>
+                {(flat.blocks?.name || flat.floor != null) && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                    <MapPin className="h-3 w-3" />
+                    {flat.floor != null ? `Floor ${flat.floor}` : "Direct unit"}
+                  </p>
+                )}
               </div>
             </div>
             <Badge
@@ -283,6 +346,58 @@ function HouseDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* --- Pro / Premium: Deterministic Unit Summary --- */}
+      {planLoading ? null : hasFlat360 ? (
+        <Card className="rounded-2xl">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-semibold flex items-center gap-1.5">
+                <ListChecks className="h-4 w-4" /> Unit summary
+              </h3>
+              <Badge variant="outline" className="rounded-full text-[10px]">
+                Pro
+              </Badge>
+            </div>
+            <p className="text-sm font-medium">{summary.headline}</p>
+            {summary.facts.length > 0 && (
+              <ul className="mt-2 space-y-1 text-xs text-muted-foreground list-disc pl-4">
+                {summary.facts.map((f, i) => <li key={i}>{f}</li>)}
+              </ul>
+            )}
+            {summary.warnings.length > 0 && (
+              <ul className="mt-2 space-y-1 text-xs text-amber-600 list-disc pl-4">
+                {summary.warnings.map((w, i) => <li key={i}>{w}</li>)}
+              </ul>
+            )}
+            {summary.next_actions.some((a) => a.type !== "none") && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {summary.next_actions
+                  .filter((a) => a.type !== "none" && a.route)
+                  .map((a, i) => (
+                    <Button
+                      key={i}
+                      asChild
+                      size="sm"
+                      variant="outline"
+                      className="rounded-xl"
+                    >
+                      <a href={a.route}>{a.label}</a>
+                    </Button>
+                  ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <LockedFeatureCard
+          feature="flat_360"
+          message="Unlock the full Flat 360 experience: unit summary, advanced financial insight, occupancy history, and safe No-Dues integration."
+        />
+      )}
+
+      {/* --- Pro / Premium: AI Summary slot (provider next turn) --- */}
+      {hasFlat360 && <AISummarySlot contract={{ state: "not_implemented" }} />}
     </PageShell>
   );
 }

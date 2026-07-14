@@ -20,7 +20,7 @@
  * Never prints tokens, hashes, ciphertext, or IVs.
  */
 import { createClient } from "@supabase/supabase-js";
-import { createHash } from "node:crypto";
+import { classifyBackfillRow, type BackfillRow } from "../src/lib/certificate-backfill";
 
 const KNOWN_PRODUCTION_PROJECT_REF = "kfnpyzvhyjmfkcnvjjji";
 
@@ -69,33 +69,34 @@ async function run() {
     skipped: 0,
   };
 
+  // Keyset pagination: order by id, always fetch rows with id > cursor.
+  // OFFSET is unsafe for a mutable backfill — processed rows disappear from
+  // the query in write mode and would shift the window backwards.
+  let cursor: string | null = null;
+
   for (let batch = 0; batch < maxBatches; batch++) {
-    const { data: rows, error } = await admin
+    let q = admin
       .from("no_dues_certificates")
       .select("id, verification_token, verification_token_hash, verification_token_ciphertext")
-      .is("verification_token_ciphertext", null)
-      .not("verification_token", "is", null)
+      .order("id", { ascending: true })
       .limit(batchSize);
+    if (cursor != null) q = q.gt("id", cursor);
 
+    const { data: rows, error } = await q;
     if (error) { console.error("[backfill] fetch failed"); stats.failed++; break; }
     if (!rows || rows.length === 0) break;
 
-    for (const row of rows) {
+    for (const row of rows as BackfillRow[]) {
       stats.scanned++;
-      const id = row.id as string;
-      if (row.verification_token_ciphertext) { stats.already_encrypted++; continue; }
-      const rawToken = row.verification_token as string | null;
-      if (!rawToken || !/^[A-Za-z0-9_-]{32,128}$/.test(rawToken)) { stats.malformed++; continue; }
-      if (row.verification_token_hash) {
-        const h = createHash("sha256").update(rawToken).digest("hex");
-        if (h !== (row.verification_token_hash as string).toLowerCase()) {
-          stats.hash_mismatch++;
-          continue;
-        }
-      }
+      cursor = row.id;
+      const cls = classifyBackfillRow(row);
+      if (cls === "already_encrypted") { stats.already_encrypted++; continue; }
+      if (cls === "malformed") { stats.malformed++; continue; }
+      if (cls === "hash_mismatch") { stats.hash_mismatch++; continue; }
       stats.eligible++;
       if (dryRun) continue;
 
+      const rawToken = row.verification_token as string;
       try {
         const enc = await encryptCertificateToken(rawToken);
         const { error: uErr } = await admin
@@ -107,14 +108,14 @@ async function run() {
             token_storage_version: 1,
             verification_token: null,
           })
-          .eq("id", id)
+          .eq("id", row.id)
           .is("verification_token_ciphertext", null);
         if (uErr) { stats.failed++; continue; }
 
         const { data: verify } = await admin
           .from("no_dues_certificates")
           .select("verification_token_ciphertext, verification_token")
-          .eq("id", id)
+          .eq("id", row.id)
           .maybeSingle();
         if (!verify?.verification_token_ciphertext || verify?.verification_token) {
           stats.failed++;
@@ -125,9 +126,12 @@ async function run() {
         stats.failed++;
       }
     }
+
+    if (rows.length < batchSize) break;
   }
 
   console.log("[backfill] result", { dryRun, ...stats });
 }
 
 run().catch((e) => { console.error("[backfill] fatal", e?.message ?? "error"); process.exit(1); });
+

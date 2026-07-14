@@ -84,19 +84,24 @@ export function buildNoDuesVerificationUrl(rawToken: string): string {
 }
 
 /**
- * Constant-time comparison of two hex-encoded hashes.
+ * Constant-time comparison of two SHA-256 hex digests.
  *
- * Worker/Web-Crypto safe: no `node:crypto.timingSafeEqual`, no early return
- * after length validation. Malformed hex fails safely (returns false).
+ * Strict contract:
+ *   - both inputs must be exactly 64 hex characters (SHA-256)
+ *   - malformed input (wrong length, odd length, non-hex, empty) returns false
+ *   - mixed-case accepted
+ *   - iterates every byte after validation with no early exit
+ *
+ * Worker/Web-Crypto safe: no `node:crypto.timingSafeEqual`.
  */
+const HEX64 = /^[0-9a-fA-F]{64}$/;
+
 export function constantTimeEqualHex(a: string, b: string): boolean {
   if (typeof a !== "string" || typeof b !== "string") return false;
-  if (a.length === 0 || a.length % 2 !== 0) return false;
-  if (a.length !== b.length) return false;
-  if (!/^[0-9a-fA-F]+$/.test(a) || !/^[0-9a-fA-F]+$/.test(b)) return false;
-
+  if (!HEX64.test(a) || !HEX64.test(b)) return false;
+  // Both are validated 64-char hex — compare every byte without early exit.
   let diff = 0;
-  for (let i = 0; i < a.length; i += 2) {
+  for (let i = 0; i < 64; i += 2) {
     const av = parseInt(a.slice(i, i + 2), 16);
     const bv = parseInt(b.slice(i, i + 2), 16);
     diff |= av ^ bv;

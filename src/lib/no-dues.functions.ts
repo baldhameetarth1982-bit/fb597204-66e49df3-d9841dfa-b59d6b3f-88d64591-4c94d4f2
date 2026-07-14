@@ -58,80 +58,32 @@ function logServerError(scope: string, e: unknown) {
 }
 
 /* -------------------------------------------------------------------- */
-/*  Canonical eligibility (shared source of truth)                       */
+/*  Canonical eligibility — DB-level source of truth                     */
 /* -------------------------------------------------------------------- */
 
-type Eligibility = {
+export type Eligibility = {
   eligible: boolean;
-  computed_at: string;
-  outstanding_bills: Array<{
-    id: string;
-    bill_number: string | null;
-    amount: number;
-    due_date: string | null;
-    status: string;
-    period_label: string | null;
-  }>;
   total_outstanding: number;
-  pending_payments: Array<{ id: string; amount: number; method: string | null }>;
-  blockers: string[];
+  unpaid_bills: Array<Record<string, any>>;
+  overdue_bills: Array<Record<string, any>>;
+  partially_paid_bills: Array<Record<string, any>>;
+  pending_cash_payments: Array<Record<string, any>>;
+  pending_bank_transfer_payments: Array<Record<string, any>>;
+  blockers: Array<Record<string, any>>;
+  calculated_at: string;
 };
 
-async function computeEligibility(
-  supabase: any,
-  societyId: string,
-  flatId: string,
-): Promise<Eligibility> {
-  const [billsRes, paymentsRes] = await Promise.all([
-    supabase
-      .from("bills")
-      .select("id,bill_number,amount,due_date,status,period_label")
-      .eq("society_id", societyId)
-      .eq("flat_id", flatId)
-      .in("status", ["unpaid", "overdue", "partial"]),
-    supabase
-      .from("payments")
-      .select("id,amount,method,status")
-      .eq("society_id", societyId)
-      .eq("flat_id", flatId)
-      .eq("status", "pending"),
-  ]);
-  if (billsRes.error) {
-    logServerError("eligibility.bills", billsRes.error);
+async function computeEligibilityAdmin(societyId: string, flatId: string): Promise<Eligibility> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await (supabaseAdmin.rpc as any)(
+    "compute_no_dues_eligibility_internal",
+    { _society_id: societyId, _flat_id: flatId },
+  );
+  if (error) {
+    logServerError("eligibility", error);
     throw new NoDuesError("ISSUE_FAILED");
   }
-  if (paymentsRes.error) {
-    logServerError("eligibility.payments", paymentsRes.error);
-    throw new NoDuesError("ISSUE_FAILED");
-  }
-
-  const outstanding = (billsRes.data ?? []).map((b: any) => ({
-    id: b.id as string,
-    bill_number: b.bill_number ?? null,
-    amount: Number(b.amount ?? 0),
-    due_date: b.due_date ?? null,
-    status: b.status as string,
-    period_label: b.period_label ?? null,
-  }));
-  const pending = (paymentsRes.data ?? []).map((p: any) => ({
-    id: p.id as string,
-    amount: Number(p.amount ?? 0),
-    method: p.method ?? null,
-  }));
-
-  const totalDue = outstanding.reduce((s: number, b: { amount: number }) => s + b.amount, 0);
-  const blockers: string[] = [];
-  if (outstanding.length > 0) blockers.push(`${outstanding.length} unpaid bill(s)`);
-  if (pending.length > 0) blockers.push(`${pending.length} pending payment(s) awaiting verification`);
-
-  return {
-    eligible: outstanding.length === 0 && pending.length === 0,
-    computed_at: new Date().toISOString(),
-    outstanding_bills: outstanding,
-    total_outstanding: totalDue,
-    pending_payments: pending,
-    blockers,
-  };
+  return data as Eligibility;
 }
 
 /* -------------------------------------------------------------------- */
@@ -171,7 +123,7 @@ async function assertSocietyAdmin(supabase: any, societyId: string, userId: stri
 }
 
 /* -------------------------------------------------------------------- */
-/*  Public: check eligibility                                            */
+/*  Public: check eligibility (DB-derived, never client-supplied)        */
 /* -------------------------------------------------------------------- */
 
 export const checkNoDuesEligibility = createServerFn({ method: "POST" })
@@ -182,7 +134,7 @@ export const checkNoDuesEligibility = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
     await assertResidentOfFlat(supabase, userId, data.flatId, data.societyId);
-    return await computeEligibility(supabase, data.societyId, data.flatId);
+    return await computeEligibilityAdmin(data.societyId, data.flatId);
   });
 
 /* -------------------------------------------------------------------- */
@@ -203,7 +155,6 @@ export const submitNoDuesRequest = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
     await assertResidentOfFlat(supabase, userId, data.flatId, data.societyId);
-    const snapshot = await computeEligibility(supabase, data.societyId, data.flatId);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await (supabaseAdmin.rpc as any)(
@@ -213,8 +164,6 @@ export const submitNoDuesRequest = createServerFn({ method: "POST" })
         _society_id: data.societyId,
         _flat_id: data.flatId,
         _purpose: data.purpose ?? null,
-        _snapshot: snapshot,
-        _eligible: snapshot.eligible,
       },
     );
     if (error) {
@@ -222,7 +171,11 @@ export const submitNoDuesRequest = createServerFn({ method: "POST" })
       throw new NoDuesError(mapPgError(error.message));
     }
     const row = Array.isArray(rows) ? rows[0] : rows;
-    return { id: row.request_id as string, status: row.status as string, snapshot };
+    return {
+      id: row.request_id as string,
+      status: row.status as string,
+      snapshot: row.eligibility as Eligibility,
+    };
   });
 
 /* -------------------------------------------------------------------- */
@@ -360,38 +313,16 @@ export const reviewNoDuesRequest = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // On approve: re-check eligibility. If blocked, transition to blocked_by_dues instead.
-    if (data.decision === "approve") {
-      const snap = await computeEligibility(supabase, req.society_id, req.flat_id);
-      if (!snap.eligible) {
-        const { error: bErr } = await (supabaseAdmin.rpc as any)(
-          "transition_no_dues_request_internal",
-          {
-            _actor_id: userId,
-            _request_id: data.requestId,
-            _decision: "block",
-            _notes: data.notes ?? null,
-            _reason: null,
-            _new_snapshot: snap,
-          },
-        );
-        if (bErr) {
-          logServerError("review.block", bErr);
-          throw new NoDuesError(mapPgError(bErr.message));
-        }
-        return { status: "blocked_by_dues", eligibility: snap };
-      }
-    }
-
+    // Transition RPC recomputes eligibility internally and, on approve, moves
+    // to `blocked_by_dues` automatically if new dues appeared.
     const { data: rows, error: tErr } = await (supabaseAdmin.rpc as any)(
       "transition_no_dues_request_internal",
       {
         _actor_id: userId,
         _request_id: data.requestId,
-        _decision: data.decision,
+        _decision: data.decision, // 'approve' | 'reject'
         _notes: data.notes ?? null,
         _reason: data.decision === "reject" ? data.reason ?? null : null,
-        _new_snapshot: null,
       },
     );
     if (tErr) {
@@ -399,7 +330,10 @@ export const reviewNoDuesRequest = createServerFn({ method: "POST" })
       throw new NoDuesError(mapPgError(tErr.message));
     }
     const row = Array.isArray(rows) ? rows[0] : rows;
-    return { status: row?.new_status as string };
+    return {
+      status: row?.new_status as string,
+      eligibility: (row?.eligibility ?? null) as Eligibility | null,
+    };
   });
 
 /* -------------------------------------------------------------------- */
@@ -445,10 +379,9 @@ export const issueNoDuesCertificate = createServerFn({ method: "POST" })
 
     if (req.status !== "approved") throw new NoDuesError("INVALID_TRANSITION");
 
-    // Pre-check (finalization RPC re-checks inside the transaction too)
-    const snap = await computeEligibility(supabase, req.society_id, req.flat_id);
-
-    // Reserve certificate number (service-role RPC with trusted actor)
+    // Reserve certificate number (service-role RPC with trusted actor).
+    // The finalization RPC recomputes eligibility inside the same transaction;
+    // no client-side pre-check needed.
     const { data: certNumber, error: nErr } = await (supabaseAdmin.rpc as any)(
       "next_no_dues_cert_number_internal",
       { _actor_id: userId, _society_id: req.society_id },
@@ -516,8 +449,6 @@ export const issueNoDuesCertificate = createServerFn({ method: "POST" })
         _verification_token_hash: tokenHash,
         _storage_path: storagePath,
         _valid_until: validUntil ? validUntil.toISOString().slice(0, 10) : null,
-        _eligibility_snapshot: snap,
-        _eligible: snap.eligible,
       },
     );
     if (fErr) {

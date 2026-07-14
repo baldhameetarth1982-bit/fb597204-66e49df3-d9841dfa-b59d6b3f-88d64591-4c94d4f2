@@ -244,7 +244,7 @@ export const listSocietyNoDuesRequests = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
-    await assertSocietyAdmin(supabase, data.societyId, userId);
+    await assertSocietyScopeAdmin(userId, data.societyId);
     let q = supabase
       .from("no_dues_requests")
       .select(
@@ -345,7 +345,7 @@ export const reviewNoDuesRequest = createServerFn({ method: "POST" })
       .eq("id", data.requestId)
       .maybeSingle();
     if (error || !req) throw new NoDuesError("REQUEST_NOT_FOUND");
-    await assertSocietyAdmin(supabase, req.society_id, userId);
+    await assertSocietyScopeAdmin(userId, req.society_id);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -395,7 +395,7 @@ export const issueNoDuesCertificate = createServerFn({ method: "POST" })
       .eq("id", data.requestId)
       .maybeSingle();
     if (error || !req) throw new NoDuesError("REQUEST_NOT_FOUND");
-    await assertSocietyAdmin(supabase, req.society_id, userId);
+    await assertSocietyScopeAdmin(userId, req.society_id);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 

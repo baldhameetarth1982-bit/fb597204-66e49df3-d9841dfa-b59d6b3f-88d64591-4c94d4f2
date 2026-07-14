@@ -1,12 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { useState } from "react";
 import { toast } from "sonner";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { MobileHero } from "@/components/shared/MobileHero";
 import { SectionCard } from "@/components/shared/SectionCard";
 import { StatusChip } from "@/components/system/StatusChip";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+  DialogTrigger, DialogClose,
+} from "@/components/ui/dialog";
 import {
   getNoDuesRequestDetail,
   getCertificateDownloadUrl,
@@ -67,7 +72,11 @@ function ResidentNoDuesDetail() {
     try {
       const r: any = await linkFn({ data: { certificateId: cid } });
       if (!r?.available) {
-        toast.error("Verification link is unavailable for this older certificate. The downloaded certificate may still contain its original QR code.");
+        const msg =
+          r?.reason === "legacy_migration_required"
+            ? "Verification link unavailable for this legacy certificate. The downloaded PDF's original QR remains valid."
+            : "Verification link is unavailable for this certificate.";
+        toast.error(msg);
         return;
       }
       await navigator.clipboard.writeText(r.url);
@@ -77,15 +86,19 @@ function ResidentNoDuesDetail() {
     }
   };
 
+  const [recheckOpen, setRecheckOpen] = useState(false);
   const recheck = useMutation({
     mutationFn: () => recheckFn({ data: { requestId: id } }),
     onSuccess: (r: any) => {
+      setRecheckOpen(false);
       if (r?.status === "submitted") toast.success("Request submitted for review");
       else toast.info("Dues are still pending");
       qc.invalidateQueries({ queryKey: ["nd-detail-resident", id] });
     },
     onError: (e: any) => {
-      toast.error(e?.message === "RATE_LIMITED" ? "Please wait before rechecking again" : "Recheck failed");
+      toast.error(e?.message === "RATE_LIMITED"
+        ? "Please wait a few minutes before rechecking again."
+        : "Recheck failed. Please try again later.");
     },
   });
 
@@ -124,13 +137,30 @@ function ResidentNoDuesDetail() {
           )}
           {req.status === "blocked_by_dues" && (
             <div className="mt-3">
-              <Button
-                size="sm"
-                onClick={() => recheck.mutate()}
-                disabled={recheck.isPending}
-              >
-                {recheck.isPending ? "Rechecking…" : "Recheck and resubmit"}
-              </Button>
+              <Dialog open={recheckOpen} onOpenChange={setRecheckOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm">Recheck and resubmit…</Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Recheck eligibility?</DialogTitle>
+                    <DialogDescription>
+                      We'll recompute your outstanding bills and pending offline
+                      payments. This uses your existing request — no new request
+                      will be created. If you're clear, it will be resubmitted for
+                      review; otherwise you'll see the updated blockers.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button variant="outline" disabled={recheck.isPending}>Cancel</Button>
+                    </DialogClose>
+                    <Button onClick={() => recheck.mutate()} disabled={recheck.isPending}>
+                      {recheck.isPending ? "Rechecking…" : "Confirm recheck"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           )}
         </SectionCard>

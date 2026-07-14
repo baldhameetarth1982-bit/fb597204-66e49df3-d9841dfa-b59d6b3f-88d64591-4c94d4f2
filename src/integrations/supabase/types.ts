@@ -1078,6 +1078,7 @@ export type Database = {
           revoked_by: string | null
           society_id: string
           storage_path: string
+          token_storage_version: number | null
           updated_at: string
           valid_until: string | null
           verification_token: string | null
@@ -1099,6 +1100,7 @@ export type Database = {
           revoked_by?: string | null
           society_id: string
           storage_path: string
+          token_storage_version?: number | null
           updated_at?: string
           valid_until?: string | null
           verification_token?: string | null
@@ -1120,6 +1122,7 @@ export type Database = {
           revoked_by?: string | null
           society_id?: string
           storage_path?: string
+          token_storage_version?: number | null
           updated_at?: string
           valid_until?: string | null
           verification_token?: string | null

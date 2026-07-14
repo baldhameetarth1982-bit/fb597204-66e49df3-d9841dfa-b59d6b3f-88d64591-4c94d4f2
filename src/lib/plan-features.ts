@@ -71,11 +71,13 @@ export interface FeatureCatalogEntry {
   label: string;
   shortDescription: string;
   category: FeatureCategory;
-  /** Minimum plan required. Omit → defaults to `pro`. */
+  /** Minimum plan required. Omit → defaults to `pro`. Set `null` for plan-neutral routes (auth, onboarding, super_admin). */
   minPlan: PlanKey;
   roles: AppRole[];
   /** In-app route the feature opens. Omitted for background capabilities. */
   route?: string;
+  /** Additional routes covered by this feature (detail, edit, create, sub-tabs). */
+  routes?: string[];
   /** Search keywords + synonyms. Case-insensitive. */
   keywords: string[];
   /** Lucide icon name (looked up by the directory UI). */
@@ -84,6 +86,8 @@ export interface FeatureCatalogEntry {
   backendReady: boolean;
   /** Sub-heading inside the More / Feature Directory list. */
   navigationGroup: string;
+  /** If true, this key is not gated by subscription plan (e.g., platform-role routes). */
+  planNeutral?: boolean;
 }
 
 const CATALOG: FeatureCatalogEntry[] = [

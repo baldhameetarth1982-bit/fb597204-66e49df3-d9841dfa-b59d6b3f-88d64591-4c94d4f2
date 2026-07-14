@@ -96,7 +96,7 @@ function NoDuesAdminInner() {
                     {new Date(r.submitted_at).toLocaleString()}
                   </p>
                 </div>
-                <StatusChip status={r.status} />
+                <StatusChip>{r.status}</StatusChip>
               </div>
               {r.purpose && (
                 <p className="text-sm mb-2">

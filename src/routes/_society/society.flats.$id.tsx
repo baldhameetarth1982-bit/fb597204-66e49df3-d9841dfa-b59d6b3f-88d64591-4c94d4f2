@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowLeft, Home, User, IndianRupee, Loader2, FileText, ArrowRight,
-  History, DoorOpen, MapPin,
+  History, DoorOpen, MapPin, ListChecks,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageShell } from "@/components/shared/PageHeader";
@@ -12,6 +13,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { flatOutstanding, flatOccupancyHistory } from "@/lib/residents.functions";
 import { cn } from "@/lib/utils";
+import { buildUnitLabel } from "@/lib/unit-label";
+import { buildUnitSummary, type Flat360SummaryInput } from "@/lib/unit-summary";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { LockedFeatureCard } from "@/components/subscription/LockedFeatureCard";
+import { AISummarySlot } from "@/components/flat360/AISummarySlot";
 
 export const Route = createFileRoute("/_society/society/flats/$id")({
   head: () => ({ meta: [{ title: "House — SocioHub" }] }),

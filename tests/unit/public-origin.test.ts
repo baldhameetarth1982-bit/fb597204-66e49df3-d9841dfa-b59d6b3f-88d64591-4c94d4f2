@@ -1,24 +1,21 @@
 /**
  * Unit tests for src/lib/public-origin.server.ts
- *
- * Run with: bunx vitest run tests/unit/public-origin.test.mjs
- * (or the project's configured test runner).
+ * Run with: bunx vitest run tests/unit
  */
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 async function loadFresh() {
-  // Bust the module cache so NODE_ENV / PUBLIC_APP_URL changes apply.
-  const mod = await import(`../../src/lib/public-origin.server.ts?t=${Date.now()}`);
-  return mod;
+  vi.resetModules();
+  return await import("../../src/lib/public-origin.server");
 }
 
 describe("constantTimeEqualHex", () => {
-  it("returns true for equal hex strings", async () => {
+  it("returns true for equal hex", async () => {
     const { constantTimeEqualHex } = await loadFresh();
     expect(constantTimeEqualHex("deadbeef", "deadbeef")).toBe(true);
     expect(constantTimeEqualHex("DEADBEEF", "deadbeef")).toBe(true);
   });
-  it("returns false for unequal hex strings", async () => {
+  it("returns false for unequal", async () => {
     const { constantTimeEqualHex } = await loadFresh();
     expect(constantTimeEqualHex("deadbeef", "deadbeee")).toBe(false);
   });
@@ -30,45 +27,45 @@ describe("constantTimeEqualHex", () => {
     const { constantTimeEqualHex } = await loadFresh();
     expect(constantTimeEqualHex("zzzzzzzz", "deadbeef")).toBe(false);
     expect(constantTimeEqualHex("", "")).toBe(false);
-    expect(constantTimeEqualHex("abc", "abc")).toBe(false); // odd length
+    expect(constantTimeEqualHex("abc", "abc")).toBe(false);
   });
 });
 
 describe("getPublicAppOrigin", () => {
-  const originalUrl = process.env.PUBLIC_APP_URL;
-  const originalEnv = process.env.NODE_ENV;
+  const origUrl = process.env.PUBLIC_APP_URL;
+  const origEnv = process.env.NODE_ENV;
   beforeEach(() => {
     delete process.env.PUBLIC_APP_URL;
     process.env.NODE_ENV = "development";
   });
   afterEach(() => {
-    if (originalUrl == null) delete process.env.PUBLIC_APP_URL;
-    else process.env.PUBLIC_APP_URL = originalUrl;
-    if (originalEnv == null) delete process.env.NODE_ENV;
-    else process.env.NODE_ENV = originalEnv;
+    if (origUrl == null) delete process.env.PUBLIC_APP_URL;
+    else process.env.PUBLIC_APP_URL = origUrl;
+    if (origEnv == null) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = origEnv;
   });
 
-  it("falls back to localhost in dev with no PUBLIC_APP_URL", async () => {
+  it("falls back to localhost in dev", async () => {
     const { getPublicAppOrigin } = await loadFresh();
     expect(getPublicAppOrigin()).toBe("http://localhost:8080");
   });
-
   it("throws in production with no PUBLIC_APP_URL", async () => {
     process.env.NODE_ENV = "production";
     const { getPublicAppOrigin, PublicOriginError } = await loadFresh();
     expect(() => getPublicAppOrigin()).toThrow(PublicOriginError);
   });
-
-  it("rejects http and localhost in production", async () => {
+  it("rejects http in production", async () => {
     process.env.NODE_ENV = "production";
-    process.env.PUBLIC_APP_URL = "http://localhost:8080";
+    process.env.PUBLIC_APP_URL = "http://sociohub.live";
     const { getPublicAppOrigin } = await loadFresh();
     expect(() => getPublicAppOrigin()).toThrow();
-    process.env.PUBLIC_APP_URL = "https://localhost";
-    const { getPublicAppOrigin: g2 } = await loadFresh();
-    expect(() => g2()).toThrow();
   });
-
+  it("rejects localhost in production", async () => {
+    process.env.NODE_ENV = "production";
+    process.env.PUBLIC_APP_URL = "https://localhost";
+    const { getPublicAppOrigin } = await loadFresh();
+    expect(() => getPublicAppOrigin()).toThrow();
+  });
   it("normalizes trailing slash", async () => {
     process.env.NODE_ENV = "production";
     process.env.PUBLIC_APP_URL = "https://sociohub.live/";
@@ -81,11 +78,11 @@ describe("buildNoDuesVerificationUrl", () => {
   it("rejects malformed tokens", async () => {
     const { buildNoDuesVerificationUrl } = await loadFresh();
     expect(() => buildNoDuesVerificationUrl("short")).toThrow();
-    expect(() => buildNoDuesVerificationUrl("not*valid*chars******************")).toThrow();
+    expect(() => buildNoDuesVerificationUrl("has*invalid*chars!".padEnd(40, "!"))).toThrow();
   });
-  it("produces the exact URL a QR code would encode", async () => {
+  it("produces canonical URL", async () => {
     const { buildNoDuesVerificationUrl } = await loadFresh();
-    const token = "a".repeat(43);
-    expect(buildNoDuesVerificationUrl(token)).toBe(`http://localhost:8080/verify/no-dues/${token}`);
+    const t = "a".repeat(43);
+    expect(buildNoDuesVerificationUrl(t)).toBe(`http://localhost:8080/verify/no-dues/${t}`);
   });
 });

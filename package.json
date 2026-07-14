@@ -9,7 +9,12 @@
     "build:dev": "NODE_OPTIONS=\"--max-old-space-size=8192\" vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "scan:bundle": "bun scripts/verify-client-bundle-secrets.ts",
+    "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^2.0.48",

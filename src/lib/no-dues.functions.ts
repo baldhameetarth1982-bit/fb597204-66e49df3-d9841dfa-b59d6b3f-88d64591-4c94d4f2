@@ -660,8 +660,9 @@ export const getCertificateVerificationLink = createServerFn({ method: "POST" })
         return { available: false as const, reason: "encryption_unavailable" as const };
       }
     } else if (cert.verification_token) {
-      // Legacy plaintext token — recoverable via server only.
-      rawToken = cert.verification_token as string;
+      // Legacy plaintext-only certificate — do NOT return recovered URL through
+      // runtime code. The certificate PDF (with its embedded QR) remains valid.
+      return { available: false as const, reason: "legacy_migration_required" as const };
     }
 
     if (!rawToken) {
@@ -712,18 +713,20 @@ export const recheckAndResubmitNoDues = createServerFn({ method: "POST" })
     const { userId } = context as any;
     // Endpoint-specific rate limit: 5 rechecks / 10 min per (user, request)
     try {
-      const { checkRateLimit, RateLimitedError } = await import("@/lib/rate-limit.server");
+      const { checkRateLimit } = await import("@/lib/rate-limit.server");
       await checkRateLimit({
         bucket: "no_dues_recheck",
         subject: `${userId}:${data.requestId}`,
         limit: 5,
         windowSec: 600,
       });
-      void RateLimitedError;
     } catch (e: any) {
       if (e?.name === "RateLimitedError") throw new NoDuesError("RATE_LIMITED");
-      // Rate limiter unavailable — fail open to avoid blocking legitimate users
+      // Fail closed in production; only fail open in dev/test.
       logServerError("recheck.rateLimit", e);
+      if ((process.env.NODE_ENV ?? "").toLowerCase() === "production") {
+        throw new NoDuesError("RATE_LIMITED", "Recheck temporarily unavailable");
+      }
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

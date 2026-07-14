@@ -46,7 +46,7 @@
 - Server functions via `createServerFn` — ✅ in use
 - `_internal` RPCs receive trusted `_actor_id` from server session — ✅ No-Dues
 - Service-role EXECUTE only on privileged RPCs — ✅ No-Dues
-- Canonical DB-level eligibility function (`compute_no_dues_eligibility_internal`) — **not yet migrated**
+- Canonical DB-level eligibility function (`compute_no_dues_eligibility_internal`) — ✅ migrated Turn 8 (service_role only; unpaid/overdue/partial bills, pending cash + bank transfer payments, cancelled bills excluded, per-bill remaining = amount − sum successful payments, clamped ≥ 0)
 - Atomic rate limiter (`touch_rate_limit` RPC) — ✅
 - Never `auth.uid()` inside service-role RPC — ✅
 

@@ -133,14 +133,29 @@ async function assertResidentOfFlat(
   }
 }
 
-async function assertSocietyAdmin(supabase: any, societyId: string, userId: string) {
-  const { data } = await supabase.rpc("is_society_admin_for", {
-    _user_id: userId,
-    _society_id: societyId,
+async function assertCanManageFlat(userId: string, flatId: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await (supabaseAdmin.rpc as any)("can_manage_flat_internal", {
+    _actor_id: userId,
+    _flat_id: flatId,
   });
-  if (data) return;
-  const { data: sa } = await supabase.rpc("is_super_admin", { _user_id: userId });
-  if (!sa) throw new NoDuesError("NOT_AUTHORIZED");
+  if (error) {
+    logServerError("assertCanManageFlat", error);
+    throw new NoDuesError("NOT_AUTHORIZED");
+  }
+  if (!data) throw new NoDuesError("NOT_AUTHORIZED");
+}
+
+async function assertSocietyScopeAdmin(userId: string, societyId: string) {
+  // For list views not tied to a single flat — society_admin or super_admin.
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const [{ data: sa }, { data: su }] = await Promise.all([
+    (supabaseAdmin.rpc as any)("is_society_admin_for_internal", {
+      _actor_id: userId, _society_id: societyId,
+    }),
+    (supabaseAdmin.rpc as any)("is_super_admin_internal", { _actor_id: userId }),
+  ]);
+  if (!sa && !su) throw new NoDuesError("NOT_AUTHORIZED");
 }
 
 /* -------------------------------------------------------------------- */

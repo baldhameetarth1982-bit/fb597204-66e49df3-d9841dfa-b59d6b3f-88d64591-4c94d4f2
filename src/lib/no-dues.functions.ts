@@ -444,8 +444,14 @@ export const issueNoDuesCertificate = createServerFn({ method: "POST" })
       logServerError("issue.encrypt", e);
       throw new NoDuesError("ISSUE_FAILED", "Certificate encryption unavailable");
     }
-    const origin = process.env.PUBLIC_APP_URL ?? "https://sociohub.live";
-    const verificationUrl = `${origin}/verify/no-dues/${rawToken}`;
+    let verificationUrl: string;
+    try {
+      const { buildNoDuesVerificationUrl } = await import("@/lib/public-origin.server");
+      verificationUrl = buildNoDuesVerificationUrl(rawToken);
+    } catch (e) {
+      logServerError("issue.origin", e);
+      throw new NoDuesError("ISSUE_FAILED", "Public origin misconfigured");
+    }
     const validUntil = data.validForDays
       ? new Date(Date.now() + data.validForDays * 86400_000)
       : null;
@@ -628,7 +634,16 @@ export const getCertificateVerificationLink = createServerFn({ method: "POST" })
     }
     if (!ok) throw new NoDuesError("NOT_AUTHORIZED");
 
-    const origin = resolvePublicAppOrigin();
+    const { getPublicAppOrigin, buildNoDuesVerificationUrl, constantTimeEqualHex } =
+      await import("@/lib/public-origin.server");
+    let origin: string;
+    try {
+      origin = getPublicAppOrigin();
+    } catch (e) {
+      logServerError("verifyLink.origin", e);
+      return { available: false as const, reason: "temporarily_unavailable" as const };
+    }
+    void origin;
     let rawToken: string | null = null;
 
     if (cert.verification_token_ciphertext && cert.verification_token_iv) {
@@ -640,8 +655,9 @@ export const getCertificateVerificationLink = createServerFn({ method: "POST" })
           cert.verification_token_key_version ?? null,
         );
       } catch (e) {
-        logServerError("verifyLink.decrypt", e);
-        return { available: false as const, reason: "decryption_failed" as const };
+        logServerError("verifyLink.decrypt", { certId: cert.id });
+        void e;
+        return { available: false as const, reason: "encryption_unavailable" as const };
       }
     } else if (cert.verification_token) {
       // Legacy plaintext token — recoverable via server only.
@@ -658,57 +674,30 @@ export const getCertificateVerificationLink = createServerFn({ method: "POST" })
       return { available: false as const, reason: "integrity_check_failed" as const };
     }
 
-    // Constant-time integrity check against stored hash
+    // Constant-time integrity check against stored hash (Worker-safe pure JS)
     if (cert.verification_token_hash) {
       try {
         const { hashToken } = await import("@/lib/no-dues.server");
-        const { timingSafeEqual } = await import("node:crypto");
-        const recovered = Buffer.from(hashToken(rawToken), "hex");
-        const stored = Buffer.from(cert.verification_token_hash as string, "hex");
-        if (
-          recovered.length !== stored.length ||
-          !timingSafeEqual(recovered, stored)
-        ) {
+        const recoveredHex = hashToken(rawToken);
+        const storedHex = cert.verification_token_hash as string;
+        if (!constantTimeEqualHex(recoveredHex, storedHex)) {
           logServerError("verifyLink.integrity_mismatch", { certId: cert.id });
           return { available: false as const, reason: "integrity_check_failed" as const };
         }
       } catch (e) {
-        logServerError("verifyLink.integrity_error", e);
+        logServerError("verifyLink.integrity_error", { certId: cert.id });
+        void e;
         return { available: false as const, reason: "integrity_check_failed" as const };
       }
     }
 
-    return { available: true as const, url: `${origin}/verify/no-dues/${rawToken}` };
-  });
-
-/* -------------------------------------------------------------------- */
-/*  Public app origin — validated server-side. Fails closed in prod.     */
-/* -------------------------------------------------------------------- */
-function resolvePublicAppOrigin(): string {
-  const raw = (process.env.PUBLIC_APP_URL ?? "").trim();
-  const env = (process.env.NODE_ENV ?? "").toLowerCase();
-  const isProd = env === "production";
-  if (raw) {
     try {
-      const u = new URL(raw);
-      const host = u.hostname;
-      const isHttps = u.protocol === "https:";
-      const isLocal = host === "localhost" || host === "127.0.0.1";
-      if (isProd && (!isHttps || isLocal)) {
-        throw new Error("PUBLIC_APP_URL invalid for production");
-      }
-      // No trailing slash
-      return `${u.protocol}//${u.host}`;
+      return { available: true as const, url: buildNoDuesVerificationUrl(rawToken) };
     } catch (e) {
-      if (isProd) throw new NoDuesError("ISSUE_FAILED", "Public origin misconfigured");
-      // dev/test fallthrough
+      logServerError("verifyLink.build", e);
+      return { available: false as const, reason: "temporarily_unavailable" as const };
     }
-  }
-  if (isProd) {
-    throw new NoDuesError("ISSUE_FAILED", "PUBLIC_APP_URL missing");
-  }
-  return "http://localhost:8080";
-}
+  });
 
 /* -------------------------------------------------------------------- */
 /*  Resident: recheck & resubmit (only from blocked_by_dues)             */

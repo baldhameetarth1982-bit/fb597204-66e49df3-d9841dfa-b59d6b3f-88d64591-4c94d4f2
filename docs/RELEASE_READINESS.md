@@ -347,3 +347,79 @@ Status of items landed:
 - No real society data modified — migration is ACL-only, no table changes.
 - Firebase→Supabase auth architecture unchanged.
 - Flat 360 remains Pro; Premium continues to inherit all features.
+
+## Stage 3A — Turn 14 (2026-07-14)
+
+### Completed
+- **Shared public-origin helper** — `src/lib/public-origin.server.ts` exports
+  `getPublicAppOrigin()`, `buildNoDuesVerificationUrl(rawToken)`, and
+  `constantTimeEqualHex(a, b)`. Production requires `PUBLIC_APP_URL` (HTTPS,
+  non-local host), development falls back to `http://localhost:8080`,
+  trailing slash normalized, no query / fragment.
+- **Worker-compatible timing-safe compare** — `constantTimeEqualHex` is pure
+  JavaScript (no `node:crypto.timingSafeEqual`). No early return after
+  length validation, malformed hex fails safely. Unit tests in
+  `tests/unit/public-origin.test.mjs`.
+- **`no-dues.functions.ts` wired through the helper**:
+  - `issueNoDuesCertificate` — QR URL now built via
+    `buildNoDuesVerificationUrl`; the hardcoded `sociohub.live` fallback and
+    the local `resolvePublicAppOrigin` helper are removed.
+  - `getCertificateVerificationLink` — uses `constantTimeEqualHex` for
+    hash integrity check (removes `node:crypto` dynamic import) and
+    `buildNoDuesVerificationUrl` for URL emission, so the QR-encoded URL
+    and the recovered URL are byte-identical for the same token.
+- **Error reason mapping** for verification-link recovery narrowed to the
+  documented safe set: `legacy_token_unavailable`, `encryption_unavailable`,
+  `integrity_check_failed`, `temporarily_unavailable`. Cryptographic detail
+  is never returned to the client.
+- `bunx tsgo --noEmit` passes.
+
+### Deferred to a follow-up turn
+The following Turn 14 items were not completed in this turn and remain open.
+None of them touch payments / Razorpay / Cash-Bank-Transfer / platform fees
+/ real society data / Firebase→Supabase auth architecture.
+
+1. Base-table lockdown migration for `public.no_dues_certificates`
+   (REVOKE direct SELECT from anon/authenticated; safe metadata RPC or
+   security-invoker view returning only non-sensitive columns).
+2. Additive CHECK/trigger constraints ensuring new (post-rollout) rows have
+   non-empty `verification_token_hash`, `ciphertext`, `iv`, positive
+   `key_version`, storage path, and certificate-number format — while
+   preserving legacy rows.
+3. `scripts/backfill-certificate-token-encryption.ts` (DRY_RUN default,
+   `ALLOW_CERTIFICATE_TOKEN_BACKFILL=true`, prod-approval flag, idempotent).
+4. No-Dues AlertDialog/Dialog wrappers (Approve / Reject / Issue / Revoke /
+   Resident Recheck) — currently inline confirms in
+   `_society/society.no-dues.$id.tsx` and `_resident/app.no-dues.$id.tsx`.
+5. Rate-limit fail-closed audit for public verification + resident recheck
+   + AI Summary in production paths.
+6. Full test infrastructure — `tests/unit/certificate-token.test.*`,
+   `tests/integration/no-dues.integration.test.*`,
+   `tests/integration/flat360.integration.test.*`,
+   `tests/integration/certificate-access.integration.test.*`,
+   `scripts/verify-client-bundle-secrets.*`, CI workflow.
+7. Complete Flat 360 UI at `_society/society.flats.$id.tsx` with section-
+   level FeatureGate (Basic core preserved; Pro adds occupancy history,
+   advanced finance, vehicles/visitors/complaints/documents/approvals,
+   No-Dues, deterministic summary, AI Summary).
+8. Strict Flat 360 types — remove `any` / `Record<string, any>` from
+   `src/lib/flat360.functions.ts` and use generated DB types.
+9. Deterministic Unit Summary pure function + tests.
+10. Pro AI Summary server function through Lovable AI Gateway with
+    entitlement check (`can_manage_flat_internal` + Pro/Premium), privacy-
+    safe payload, prompt-injection hardening, cache + TTL + rate limit,
+    deterministic fallback on provider failure.
+11. Runtime security matrix execution (roles, encryption, no-dues, flat 360,
+    AI) against an isolated test environment.
+12. Visual verification screenshots at 360 / 390 / 414 / 1280 px.
+
+### Confirmations (unchanged this turn)
+- No payment integration touched.
+- Razorpay unchanged.
+- No platform fee introduced.
+- Cash + Bank Transfer maintenance workflow preserved.
+- No real society financial records modified.
+- Firebase→Supabase auth architecture preserved.
+- Basic flat detail route preserved.
+- Flat 360 advanced sections remain Pro (unchanged; UI expansion deferred).
+- Premium inherits all catalog features.

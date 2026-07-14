@@ -47,6 +47,7 @@ function SocietyNoDuesDetail() {
   const issueFn = useServerFn(issueNoDuesCertificate);
   const revokeFn = useServerFn(revokeNoDuesCertificate);
   const dlFn = useServerFn(getCertificateDownloadUrl);
+  const linkFn = useServerFn(getCertificateVerificationLink);
 
   const [notes, setNotes] = useState("");
   const [rejectReason, setRejectReason] = useState("");

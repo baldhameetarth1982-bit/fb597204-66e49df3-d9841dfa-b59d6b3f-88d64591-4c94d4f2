@@ -2583,6 +2583,10 @@ export type Database = {
         Args: { _society_id: string }
         Returns: undefined
       }
+      compute_no_dues_eligibility_internal: {
+        Args: { _flat_id: string; _society_id: string }
+        Returns: Json
+      }
       create_oneoff_bills:
         | {
             Args: {
@@ -2672,8 +2676,6 @@ export type Database = {
         Args: {
           _actor_id: string
           _certificate_number: string
-          _eligibility_snapshot: Json
-          _eligible: boolean
           _request_id: string
           _storage_path: string
           _valid_until: string
@@ -2682,7 +2684,7 @@ export type Database = {
         Returns: {
           certificate_id: string
           certificate_number: string
-          status: Database["public"]["Enums"]["no_dues_status"]
+          status: string
         }[]
       }
       find_referrer_by_code: { Args: { _code: string }; Returns: string }
@@ -2947,13 +2949,12 @@ export type Database = {
       submit_no_dues_request_internal: {
         Args: {
           _actor_id: string
-          _eligible: boolean
           _flat_id: string
           _purpose: string
-          _snapshot: Json
           _society_id: string
         }
         Returns: {
+          eligibility: Json
           request_id: string
           status: Database["public"]["Enums"]["no_dues_status"]
         }[]
@@ -2975,12 +2976,12 @@ export type Database = {
         Args: {
           _actor_id: string
           _decision: string
-          _new_snapshot: Json
           _notes: string
           _reason: string
           _request_id: string
         }
         Returns: {
+          eligibility: Json
           new_status: Database["public"]["Enums"]["no_dues_status"]
         }[]
       }

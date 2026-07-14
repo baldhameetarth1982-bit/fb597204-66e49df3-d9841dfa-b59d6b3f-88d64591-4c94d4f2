@@ -835,6 +835,7 @@ export const FEATURE_LABELS: Record<string, string> = Object.fromEntries(
  */
 export function hasFeature(plan: PlanKey, feature: FeatureKey): boolean {
   const entry = CATALOG_BY_KEY.get(feature);
+  if (entry?.planNeutral) return true;
   const requiredRank = entry ? PLAN_RANK[entry.minPlan] : PLAN_RANK.pro;
   return PLAN_RANK[plan] >= requiredRank;
 }

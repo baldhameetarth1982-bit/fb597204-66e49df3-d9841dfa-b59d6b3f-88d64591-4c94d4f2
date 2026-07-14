@@ -295,10 +295,7 @@ function SocietyNoDuesDetail() {
           <ul className="space-y-2 text-xs">
             {audit.map((a: any) => (
               <li key={a.id} className="flex justify-between">
-                <span>
-                  {a.action}
-                  {a.previous_status && a.new_status ? ` · ${a.previous_status} → ${a.new_status}` : ""}
-                </span>
+                <span>{auditActionLabel(a.action)}</span>
                 <span className="text-muted-foreground">
                   {new Date(a.created_at).toLocaleString()}
                 </span>

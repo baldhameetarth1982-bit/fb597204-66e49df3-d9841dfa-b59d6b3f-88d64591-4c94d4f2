@@ -33,3 +33,27 @@ All Pro. Feature keys: `smart_qr_collections`, `migration`, `privacy_controls`.
 
 ## Stage 3E — Premium enhancements
 Advanced AI limits, deeper automation, advanced forecasting, custom branding, higher usage caps, priority support. Premium differentiation lives here — **not** by removing Pro workflows.
+
+---
+
+## Stage 4 — Remaining Feature Completion
+Complaints/helpdesk, documents, approvals, notifications, communication, imports/exports, advanced reports across resident/admin/guard/super-admin.
+
+## Stage 5 — Production Security Hardening
+Dependency audit, secrets audit, endpoint rate limiting on remaining surfaces, strict schema validation, RLS penetration tests, upload security, audit logs, backups/recovery, export/deletion, session/device security.
+
+## Stage 6 — UI/UX, Accessibility, Performance
+Whole-app usability sweep, WCAG-level accessibility, performance budget, offline/error/empty/loading states, user onboarding polish, old-age-friendly usability.
+
+## Stage 7 — Android / Play Store Readiness
+PWA vs native wrapper decision, app icons, splash, deep links, notification permissions, Privacy/Data Safety forms, account deletion, legal pages, crash monitoring, release build, internal/closed testing.
+
+## Final Stage — Payment Integration
+Payment-provider review, live gateway integration, webhook verification, reconciliation, failure/refund handling, production payment testing. **Absolutely no payment activation before this stage.**
+
+---
+
+**Roadmap Lock:** Payment integration MUST remain the final stage. Any earlier
+stage that touches payment activation, platform fees, or replaces
+Cash + Bank Transfer maintenance behavior violates the lock. See
+`docs/RELEASE_READINESS.md` for permanent rules.

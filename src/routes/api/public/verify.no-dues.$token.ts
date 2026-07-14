@@ -63,9 +63,38 @@ export const Route = createFileRoute("/api/public/verify/no-dues/$token")({
           });
         }
 
+        // Second bucket: invalid/unknown attempts (tighter, 10/60s) — burned
+        // for malformed OR unknown tokens so attackers can't enumerate hashes
+        // even under the general 30/60s allowance.
+        const burnInvalid = async () => {
+          try {
+            const { checkRateLimit, fingerprintSubject } = await import(
+              "@/lib/rate-limit.server"
+            );
+            await checkRateLimit({
+              bucket: "verify-no-dues-invalid",
+              subject: fingerprintSubject(ip, "verify-no-dues-invalid"),
+              limit: 10,
+              windowSec: 60,
+            });
+          } catch (e) {
+            const retry =
+              (e as { retryAfterSeconds?: number })?.retryAfterSeconds ?? 60;
+            return new Response(RATE_BODY, {
+              status: 429,
+              headers: {
+                "content-type": "application/json",
+                "cache-control": "no-store",
+                "retry-after": String(retry),
+              },
+            });
+          }
+          return null;
+        };
+
         const raw = String(params.token ?? "");
         if (!raw || raw.length < 20 || raw.length > 128 || !/^[A-Za-z0-9_-]+$/.test(raw)) {
-          return genericInvalid();
+          return (await burnInvalid()) ?? genericInvalid();
         }
 
         const tokenHash = createHash("sha256").update(raw).digest("hex");
@@ -78,7 +107,7 @@ export const Route = createFileRoute("/api/public/verify/no-dues/$token")({
           )
           .eq("verification_token_hash", tokenHash)
           .maybeSingle();
-        if (!cert) return genericInvalid();
+        if (!cert) return (await burnInvalid()) ?? genericInvalid();
 
         const [{ data: society }, { data: flat }] = await Promise.all([
           supabaseAdmin.from("societies").select("name,city").eq("id", cert.society_id).single(),

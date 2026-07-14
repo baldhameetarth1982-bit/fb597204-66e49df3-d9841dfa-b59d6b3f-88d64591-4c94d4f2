@@ -32,7 +32,7 @@ export const Route = createFileRoute("/api/public/verify/no-dues/$token")({
             },
           });
 
-        // --- Rate limit ---------------------------------------------------
+        // --- Rate limit (atomic, HMAC-fingerprinted subject) --------------
         let ip = "anon";
         try {
           ip = getRequestIP({ xForwardedFor: true }) ?? "anon";
@@ -40,20 +40,25 @@ export const Route = createFileRoute("/api/public/verify/no-dues/$token")({
           /* ignore */
         }
         try {
-          const { checkRateLimit } = await import("@/lib/rate-limit.server");
+          const { checkRateLimit, fingerprintSubject } = await import(
+            "@/lib/rate-limit.server"
+          );
+          const subject = fingerprintSubject(ip, "verify-no-dues");
           await checkRateLimit({
             bucket: "verify-no-dues",
-            subject: ip,
+            subject,
             limit: 30,
             windowSec: 60,
           });
-        } catch {
+        } catch (e) {
+          const retry =
+            (e as { retryAfterSeconds?: number })?.retryAfterSeconds ?? 60;
           return new Response(RATE_BODY, {
             status: 429,
             headers: {
               "content-type": "application/json",
               "cache-control": "no-store",
-              "retry-after": "60",
+              "retry-after": String(retry),
             },
           });
         }

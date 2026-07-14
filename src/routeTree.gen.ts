@@ -123,9 +123,11 @@ import { Route as ApiPublicHooksRazorpayRouteImport } from './routes/api/public/
 import { Route as ApiPublicHooksMaintenanceRemindersRouteImport } from './routes/api/public/hooks/maintenance-reminders'
 import { Route as ApiPublicAuthFirebaseSessionRouteImport } from './routes/api/public/auth/firebase-session'
 import { Route as SocietySocietyResidentsIdRouteImport } from './routes/_society/society.residents.$id'
+import { Route as SocietySocietyNoDuesIdRouteImport } from './routes/_society/society.no-dues.$id'
 import { Route as SocietySocietyFlatsIdRouteImport } from './routes/_society/society.flats.$id'
 import { Route as SocietySocietyBillsIdRouteImport } from './routes/_society/society.bills.$id'
 import { Route as SocietySocietyBillingGenerateRouteImport } from './routes/_society/society.billing.generate'
+import { Route as ResidentAppNoDuesIdRouteImport } from './routes/_resident/app.no-dues.$id'
 import { Route as ResidentAppFeedPostIdRouteImport } from './routes/_resident/app.feed.$postId'
 import { Route as ApiPublicVerifyNoDuesTokenRouteImport } from './routes/api/public/verify.no-dues.$token'
 
@@ -712,6 +714,11 @@ const SocietySocietyResidentsIdRoute =
     path: '/$id',
     getParentRoute: () => SocietySocietyResidentsRoute,
   } as any)
+const SocietySocietyNoDuesIdRoute = SocietySocietyNoDuesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => SocietySocietyNoDuesRoute,
+} as any)
 const SocietySocietyFlatsIdRoute = SocietySocietyFlatsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -728,6 +735,11 @@ const SocietySocietyBillingGenerateRoute =
     path: '/generate',
     getParentRoute: () => SocietySocietyBillingRoute,
   } as any)
+const ResidentAppNoDuesIdRoute = ResidentAppNoDuesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ResidentAppNoDuesRoute,
+} as any)
 const ResidentAppFeedPostIdRoute = ResidentAppFeedPostIdRouteImport.update({
   id: '/$postId',
   path: '/$postId',
@@ -796,7 +808,7 @@ export interface FileRoutesByFullPath {
   '/app/guard': typeof ResidentAppGuardRoute
   '/app/helpdesk': typeof ResidentAppHelpdeskRoute
   '/app/ledger': typeof ResidentAppLedgerRoute
-  '/app/no-dues': typeof ResidentAppNoDuesRoute
+  '/app/no-dues': typeof ResidentAppNoDuesRouteWithChildren
   '/app/notices': typeof ResidentAppNoticesRoute
   '/app/notifications': typeof ResidentAppNotificationsRoute
   '/app/plan-required': typeof ResidentAppPlanRequiredRoute
@@ -833,7 +845,7 @@ export interface FileRoutesByFullPath {
   '/society/matrix': typeof SocietySocietyMatrixRoute
   '/society/matrix-import': typeof SocietySocietyMatrixImportRoute
   '/society/more': typeof SocietySocietyMoreRoute
-  '/society/no-dues': typeof SocietySocietyNoDuesRoute
+  '/society/no-dues': typeof SocietySocietyNoDuesRouteWithChildren
   '/society/payouts': typeof SocietySocietyPayoutsRoute
   '/society/plan-required': typeof SocietySocietyPlanRequiredRoute
   '/society/polls': typeof SocietySocietyPollsRoute
@@ -847,9 +859,11 @@ export interface FileRoutesByFullPath {
   '/society/visitors': typeof SocietySocietyVisitorsRoute
   '/verify/no-dues/$token': typeof VerifyNoDuesTokenRoute
   '/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
+  '/app/no-dues/$id': typeof ResidentAppNoDuesIdRoute
   '/society/billing/generate': typeof SocietySocietyBillingGenerateRoute
   '/society/bills/$id': typeof SocietySocietyBillsIdRoute
   '/society/flats/$id': typeof SocietySocietyFlatsIdRoute
+  '/society/no-dues/$id': typeof SocietySocietyNoDuesIdRoute
   '/society/residents/$id': typeof SocietySocietyResidentsIdRoute
   '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
   '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
@@ -912,7 +926,7 @@ export interface FileRoutesByTo {
   '/app/guard': typeof ResidentAppGuardRoute
   '/app/helpdesk': typeof ResidentAppHelpdeskRoute
   '/app/ledger': typeof ResidentAppLedgerRoute
-  '/app/no-dues': typeof ResidentAppNoDuesRoute
+  '/app/no-dues': typeof ResidentAppNoDuesRouteWithChildren
   '/app/notices': typeof ResidentAppNoticesRoute
   '/app/notifications': typeof ResidentAppNotificationsRoute
   '/app/plan-required': typeof ResidentAppPlanRequiredRoute
@@ -949,7 +963,7 @@ export interface FileRoutesByTo {
   '/society/matrix': typeof SocietySocietyMatrixRoute
   '/society/matrix-import': typeof SocietySocietyMatrixImportRoute
   '/society/more': typeof SocietySocietyMoreRoute
-  '/society/no-dues': typeof SocietySocietyNoDuesRoute
+  '/society/no-dues': typeof SocietySocietyNoDuesRouteWithChildren
   '/society/payouts': typeof SocietySocietyPayoutsRoute
   '/society/plan-required': typeof SocietySocietyPlanRequiredRoute
   '/society/polls': typeof SocietySocietyPollsRoute
@@ -963,9 +977,11 @@ export interface FileRoutesByTo {
   '/society/visitors': typeof SocietySocietyVisitorsRoute
   '/verify/no-dues/$token': typeof VerifyNoDuesTokenRoute
   '/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
+  '/app/no-dues/$id': typeof ResidentAppNoDuesIdRoute
   '/society/billing/generate': typeof SocietySocietyBillingGenerateRoute
   '/society/bills/$id': typeof SocietySocietyBillsIdRoute
   '/society/flats/$id': typeof SocietySocietyFlatsIdRoute
+  '/society/no-dues/$id': typeof SocietySocietyNoDuesIdRoute
   '/society/residents/$id': typeof SocietySocietyResidentsIdRoute
   '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
   '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
@@ -1034,7 +1050,7 @@ export interface FileRoutesById {
   '/_resident/app/guard': typeof ResidentAppGuardRoute
   '/_resident/app/helpdesk': typeof ResidentAppHelpdeskRoute
   '/_resident/app/ledger': typeof ResidentAppLedgerRoute
-  '/_resident/app/no-dues': typeof ResidentAppNoDuesRoute
+  '/_resident/app/no-dues': typeof ResidentAppNoDuesRouteWithChildren
   '/_resident/app/notices': typeof ResidentAppNoticesRoute
   '/_resident/app/notifications': typeof ResidentAppNotificationsRoute
   '/_resident/app/plan-required': typeof ResidentAppPlanRequiredRoute
@@ -1071,7 +1087,7 @@ export interface FileRoutesById {
   '/_society/society/matrix': typeof SocietySocietyMatrixRoute
   '/_society/society/matrix-import': typeof SocietySocietyMatrixImportRoute
   '/_society/society/more': typeof SocietySocietyMoreRoute
-  '/_society/society/no-dues': typeof SocietySocietyNoDuesRoute
+  '/_society/society/no-dues': typeof SocietySocietyNoDuesRouteWithChildren
   '/_society/society/payouts': typeof SocietySocietyPayoutsRoute
   '/_society/society/plan-required': typeof SocietySocietyPlanRequiredRoute
   '/_society/society/polls': typeof SocietySocietyPollsRoute
@@ -1085,9 +1101,11 @@ export interface FileRoutesById {
   '/_society/society/visitors': typeof SocietySocietyVisitorsRoute
   '/verify/no-dues/$token': typeof VerifyNoDuesTokenRoute
   '/_resident/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
+  '/_resident/app/no-dues/$id': typeof ResidentAppNoDuesIdRoute
   '/_society/society/billing/generate': typeof SocietySocietyBillingGenerateRoute
   '/_society/society/bills/$id': typeof SocietySocietyBillsIdRoute
   '/_society/society/flats/$id': typeof SocietySocietyFlatsIdRoute
+  '/_society/society/no-dues/$id': typeof SocietySocietyNoDuesIdRoute
   '/_society/society/residents/$id': typeof SocietySocietyResidentsIdRoute
   '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
   '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
@@ -1204,9 +1222,11 @@ export interface FileRouteTypes {
     | '/society/visitors'
     | '/verify/no-dues/$token'
     | '/app/feed/$postId'
+    | '/app/no-dues/$id'
     | '/society/billing/generate'
     | '/society/bills/$id'
     | '/society/flats/$id'
+    | '/society/no-dues/$id'
     | '/society/residents/$id'
     | '/api/public/auth/firebase-session'
     | '/api/public/hooks/maintenance-reminders'
@@ -1320,9 +1340,11 @@ export interface FileRouteTypes {
     | '/society/visitors'
     | '/verify/no-dues/$token'
     | '/app/feed/$postId'
+    | '/app/no-dues/$id'
     | '/society/billing/generate'
     | '/society/bills/$id'
     | '/society/flats/$id'
+    | '/society/no-dues/$id'
     | '/society/residents/$id'
     | '/api/public/auth/firebase-session'
     | '/api/public/hooks/maintenance-reminders'
@@ -1441,9 +1463,11 @@ export interface FileRouteTypes {
     | '/_society/society/visitors'
     | '/verify/no-dues/$token'
     | '/_resident/app/feed/$postId'
+    | '/_resident/app/no-dues/$id'
     | '/_society/society/billing/generate'
     | '/_society/society/bills/$id'
     | '/_society/society/flats/$id'
+    | '/_society/society/no-dues/$id'
     | '/_society/society/residents/$id'
     | '/api/public/auth/firebase-session'
     | '/api/public/hooks/maintenance-reminders'
@@ -2280,6 +2304,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SocietySocietyResidentsIdRouteImport
       parentRoute: typeof SocietySocietyResidentsRoute
     }
+    '/_society/society/no-dues/$id': {
+      id: '/_society/society/no-dues/$id'
+      path: '/$id'
+      fullPath: '/society/no-dues/$id'
+      preLoaderRoute: typeof SocietySocietyNoDuesIdRouteImport
+      parentRoute: typeof SocietySocietyNoDuesRoute
+    }
     '/_society/society/flats/$id': {
       id: '/_society/society/flats/$id'
       path: '/$id'
@@ -2300,6 +2331,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/society/billing/generate'
       preLoaderRoute: typeof SocietySocietyBillingGenerateRouteImport
       parentRoute: typeof SocietySocietyBillingRoute
+    }
+    '/_resident/app/no-dues/$id': {
+      id: '/_resident/app/no-dues/$id'
+      path: '/$id'
+      fullPath: '/app/no-dues/$id'
+      preLoaderRoute: typeof ResidentAppNoDuesIdRouteImport
+      parentRoute: typeof ResidentAppNoDuesRoute
     }
     '/_resident/app/feed/$postId': {
       id: '/_resident/app/feed/$postId'
@@ -2386,6 +2424,17 @@ const ResidentAppFeedRouteWithChildren = ResidentAppFeedRoute._addFileChildren(
   ResidentAppFeedRouteChildren,
 )
 
+interface ResidentAppNoDuesRouteChildren {
+  ResidentAppNoDuesIdRoute: typeof ResidentAppNoDuesIdRoute
+}
+
+const ResidentAppNoDuesRouteChildren: ResidentAppNoDuesRouteChildren = {
+  ResidentAppNoDuesIdRoute: ResidentAppNoDuesIdRoute,
+}
+
+const ResidentAppNoDuesRouteWithChildren =
+  ResidentAppNoDuesRoute._addFileChildren(ResidentAppNoDuesRouteChildren)
+
 interface ResidentRouteChildren {
   ResidentAppAchievementsRoute: typeof ResidentAppAchievementsRoute
   ResidentAppActivityRoute: typeof ResidentAppActivityRoute
@@ -2402,7 +2451,7 @@ interface ResidentRouteChildren {
   ResidentAppGuardRoute: typeof ResidentAppGuardRoute
   ResidentAppHelpdeskRoute: typeof ResidentAppHelpdeskRoute
   ResidentAppLedgerRoute: typeof ResidentAppLedgerRoute
-  ResidentAppNoDuesRoute: typeof ResidentAppNoDuesRoute
+  ResidentAppNoDuesRoute: typeof ResidentAppNoDuesRouteWithChildren
   ResidentAppNoticesRoute: typeof ResidentAppNoticesRoute
   ResidentAppNotificationsRoute: typeof ResidentAppNotificationsRoute
   ResidentAppPlanRequiredRoute: typeof ResidentAppPlanRequiredRoute
@@ -2431,7 +2480,7 @@ const ResidentRouteChildren: ResidentRouteChildren = {
   ResidentAppGuardRoute: ResidentAppGuardRoute,
   ResidentAppHelpdeskRoute: ResidentAppHelpdeskRoute,
   ResidentAppLedgerRoute: ResidentAppLedgerRoute,
-  ResidentAppNoDuesRoute: ResidentAppNoDuesRoute,
+  ResidentAppNoDuesRoute: ResidentAppNoDuesRouteWithChildren,
   ResidentAppNoticesRoute: ResidentAppNoticesRoute,
   ResidentAppNotificationsRoute: ResidentAppNotificationsRoute,
   ResidentAppPlanRequiredRoute: ResidentAppPlanRequiredRoute,
@@ -2471,6 +2520,17 @@ const SocietySocietyFlatsRouteChildren: SocietySocietyFlatsRouteChildren = {
 
 const SocietySocietyFlatsRouteWithChildren =
   SocietySocietyFlatsRoute._addFileChildren(SocietySocietyFlatsRouteChildren)
+
+interface SocietySocietyNoDuesRouteChildren {
+  SocietySocietyNoDuesIdRoute: typeof SocietySocietyNoDuesIdRoute
+}
+
+const SocietySocietyNoDuesRouteChildren: SocietySocietyNoDuesRouteChildren = {
+  SocietySocietyNoDuesIdRoute: SocietySocietyNoDuesIdRoute,
+}
+
+const SocietySocietyNoDuesRouteWithChildren =
+  SocietySocietyNoDuesRoute._addFileChildren(SocietySocietyNoDuesRouteChildren)
 
 interface SocietySocietyResidentsRouteChildren {
   SocietySocietyResidentsIdRoute: typeof SocietySocietyResidentsIdRoute
@@ -2513,7 +2573,7 @@ interface SocietyRouteChildren {
   SocietySocietyMatrixRoute: typeof SocietySocietyMatrixRoute
   SocietySocietyMatrixImportRoute: typeof SocietySocietyMatrixImportRoute
   SocietySocietyMoreRoute: typeof SocietySocietyMoreRoute
-  SocietySocietyNoDuesRoute: typeof SocietySocietyNoDuesRoute
+  SocietySocietyNoDuesRoute: typeof SocietySocietyNoDuesRouteWithChildren
   SocietySocietyPayoutsRoute: typeof SocietySocietyPayoutsRoute
   SocietySocietyPlanRequiredRoute: typeof SocietySocietyPlanRequiredRoute
   SocietySocietyPollsRoute: typeof SocietySocietyPollsRoute
@@ -2555,7 +2615,7 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyMatrixRoute: SocietySocietyMatrixRoute,
   SocietySocietyMatrixImportRoute: SocietySocietyMatrixImportRoute,
   SocietySocietyMoreRoute: SocietySocietyMoreRoute,
-  SocietySocietyNoDuesRoute: SocietySocietyNoDuesRoute,
+  SocietySocietyNoDuesRoute: SocietySocietyNoDuesRouteWithChildren,
   SocietySocietyPayoutsRoute: SocietySocietyPayoutsRoute,
   SocietySocietyPlanRequiredRoute: SocietySocietyPlanRequiredRoute,
   SocietySocietyPollsRoute: SocietySocietyPollsRoute,

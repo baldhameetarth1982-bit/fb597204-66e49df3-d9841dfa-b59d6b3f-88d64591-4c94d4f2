@@ -198,18 +198,25 @@ function SocietyNoDuesDetail() {
               <Button size="sm" variant="outline" onClick={handleDownload}>
                 Download
               </Button>
-              {cert.verification_url && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={async () => {
-                    try { await navigator.clipboard.writeText(cert.verification_url); toast.success("Link copied"); }
-                    catch { toast.error("Copy failed"); }
-                  }}
-                >
-                  Copy verify link
-                </Button>
-              )}
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={async () => {
+                  try {
+                    const r: any = await linkFn({ data: { certificateId: cert.id } });
+                    if (!r?.available) {
+                      toast.error("Verification link unavailable for this older certificate.");
+                      return;
+                    }
+                    await navigator.clipboard.writeText(r.url);
+                    toast.success("Link copied");
+                  } catch {
+                    toast.error("Failed to fetch verification link");
+                  }
+                }}
+              >
+                Copy verify link
+              </Button>
             </div>
           </SectionCard>
         )}

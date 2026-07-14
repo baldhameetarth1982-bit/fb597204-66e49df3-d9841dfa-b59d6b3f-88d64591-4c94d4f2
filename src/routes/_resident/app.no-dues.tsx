@@ -103,12 +103,12 @@ function ResidentNoDues() {
               <p className="text-sm font-medium">
                 {new Date(r.submitted_at).toLocaleDateString()}
               </p>
-              <StatusChip>{r.status}</StatusChip>
+              <StatusChip>{statusLabel(r.status)}</StatusChip>
             </div>
             {r.purpose && <p className="text-xs text-muted-foreground">{r.purpose}</p>}
             {r.eligibility_snapshot?.total_outstanding > 0 && (
               <p className="text-xs text-destructive mt-1">
-                Outstanding ₹{r.eligibility_snapshot.total_outstanding}
+                Outstanding {formatCurrency(r.eligibility_snapshot.total_outstanding)}
               </p>
             )}
             {r.status === "issued" && (

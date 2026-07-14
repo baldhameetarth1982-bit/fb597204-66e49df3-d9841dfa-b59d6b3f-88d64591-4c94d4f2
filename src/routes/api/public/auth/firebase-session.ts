@@ -19,17 +19,32 @@
  * across new signups and returning users.
  */
 import { createFileRoute } from "@tanstack/react-router";
-import { createRemoteJWKSet, jwtVerify } from "jose";
+import { createLocalJWKSet, jwtVerify, type JSONWebKeySet } from "jose";
 
 const FIREBASE_PROJECT_ID = "sociohub-49e4f";
 const ISSUER = `https://securetoken.google.com/${FIREBASE_PROJECT_ID}`;
 
-// Google's JWK endpoint for Firebase ID tokens. `createRemoteJWKSet` handles
-// caching, kid rotation, and cooldown natively — works on Cloudflare Workers.
-const JWKS = createRemoteJWKSet(
-  new URL("https://www.googleapis.com/robot/v1/metadata/jwk/[email protected]"),
-  { cooldownDuration: 60_000 },
-);
+// Firebase ID tokens are signed by the securetoken service account. Google
+// publishes the JWK set here. We fetch it manually (instead of relying on
+// jose's createRemoteJWKSet) so we control error handling in the Worker
+// runtime and can surface real HTTP failures.
+const JWKS_URL =
+  "https://www.googleapis.com/robot/v1/metadata/jwk/[email protected]";
+
+let cached: { at: number; keySet: ReturnType<typeof createLocalJWKSet> } | null = null;
+const TTL_MS = 60 * 60 * 1000; // 1h — Google rotates ~daily
+
+async function getKeySet() {
+  if (cached && Date.now() - cached.at < TTL_MS) return cached.keySet;
+  const res = await fetch(JWKS_URL, { headers: { accept: "application/json" } });
+  if (!res.ok) {
+    throw new Error(`JWKS fetch failed: HTTP ${res.status}`);
+  }
+  const jwks = (await res.json()) as JSONWebKeySet;
+  const keySet = createLocalJWKSet(jwks);
+  cached = { at: Date.now(), keySet };
+  return keySet;
+}
 
 interface FirebasePayload {
   sub: string;
@@ -45,7 +60,8 @@ interface FirebasePayload {
 }
 
 async function verifyFirebaseIdToken(idToken: string): Promise<FirebasePayload> {
-  const { payload } = await jwtVerify(idToken, JWKS, {
+  const keySet = await getKeySet();
+  const { payload } = await jwtVerify(idToken, keySet, {
     algorithms: ["RS256"],
     issuer: ISSUER,
     audience: FIREBASE_PROJECT_ID,

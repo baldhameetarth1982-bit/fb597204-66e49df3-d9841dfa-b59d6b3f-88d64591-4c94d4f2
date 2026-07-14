@@ -1,12 +1,13 @@
 /**
- * Flat 360 — typed server data service.
+ * Flat 360 — typed server data service (ADMIN surface only).
  *
  * Society isolation: reads are filtered by (society_id, flat_id).
- * Authorization:
- *   - society_admin / block_admin for THAT society (via `is_society_admin_for`)
- *   - super_admin (via `is_super_admin`) for platform support access
- *   - active resident of THAT flat (limited resident-safe projection)
- * A resident is NOT treated as an admin. Broad global role names are not used.
+ * Authorization (admin route only):
+ *   - society-scoped admin (society_admin / block_admin for THAT society) via
+ *     `is_society_admin_for_internal` (service-role trusted-actor helper)
+ *   - super_admin (platform support) via `is_super_admin_internal`
+ * Residents are DENIED here. A resident-facing unit summary must use a
+ * separate resident-safe server function with a narrower projection.
  *
  * PII minimization: default projection excludes phone, email, DOB, and other
  * sensitive fields. Sections without real backing data return
@@ -24,7 +25,7 @@ export type SectionState<T> =
   | { status: "unsupported" }
   | { status: "error"; message: string };
 
-export type Flat360Viewer = "society_admin" | "super_admin" | "resident";
+export type Flat360Viewer = "society_admin" | "super_admin";
 
 export type Flat360Snapshot = {
   viewer: Flat360Viewer;
@@ -106,29 +107,24 @@ export const getFlat360 = createServerFn({ method: "POST" })
     if (flatErr || !flat) throw new Error("FLAT_NOT_FOUND");
     const societyId = flat.society_id as string;
 
-    // 2. Society-scoped authorization.
-    const [adminRes, superRes, residentRes] = await Promise.all([
-      supabase.rpc("is_society_admin_for", { _user_id: userId, _society_id: societyId }),
-      supabase.rpc("is_super_admin", { _user_id: userId }),
-      supabase
-        .from("flat_residents")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("flat_id", flatId)
-        .eq("is_active", true)
-        .maybeSingle(),
+    // 2. Society-scoped ADMIN authorization only. Residents are denied here
+    //    and must use a separate resident-safe server function.
+    //    Uses service-role `_internal` helpers (trusted-actor) since the
+    //    request context has already authenticated the caller.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const [adminRes, superRes] = await Promise.all([
+      (supabaseAdmin.rpc as any)("is_society_admin_for_internal", {
+        _actor_id: userId,
+        _society_id: societyId,
+      }),
+      (supabaseAdmin.rpc as any)("is_super_admin_internal", { _actor_id: userId }),
     ]);
     const isSocietyAdmin = !!adminRes.data;
     const isSuperAdmin = !!superRes.data;
-    const isResident = !!residentRes.data;
-    if (!isSocietyAdmin && !isSuperAdmin && !isResident) {
+    if (!isSocietyAdmin && !isSuperAdmin) {
       throw new Error("NOT_AUTHORIZED");
     }
-    const viewer: Flat360Viewer = isSocietyAdmin
-      ? "society_admin"
-      : isSuperAdmin
-        ? "super_admin"
-        : "resident";
+    const viewer: Flat360Viewer = isSocietyAdmin ? "society_admin" : "super_admin";
 
     const [society, occupantsRes, familyRes, vehiclesRes, billsRes, paymentsRes, noDuesReqRes, noDuesCertRes] =
       await Promise.all([
@@ -174,10 +170,9 @@ export const getFlat360 = createServerFn({ method: "POST" })
           .maybeSingle(),
       ]);
 
-    // Eligibility via canonical DB function (service-role client).
+    // Eligibility via canonical DB function (service-role client, already loaded).
     let eligibility: Record<string, any> | null = null;
     try {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { data: eligData } = await (supabaseAdmin.rpc as any)(
         "compute_no_dues_eligibility_internal",
         { _society_id: societyId, _flat_id: flatId },

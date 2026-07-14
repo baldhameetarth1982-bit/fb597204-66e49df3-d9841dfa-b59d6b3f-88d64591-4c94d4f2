@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import {
   getNoDuesRequestDetail,
   getCertificateDownloadUrl,
+  getCertificateVerificationLink,
+  recheckAndResubmitNoDues,
 } from "@/lib/no-dues.functions";
 import {
   statusLabel,
@@ -37,8 +39,12 @@ export const Route = createFileRoute("/_resident/app/no-dues/$id")({
 
 function ResidentNoDuesDetail() {
   const { id } = Route.useParams();
+  const qc = useQueryClient();
   const detailFn = useServerFn(getNoDuesRequestDetail);
   const dlFn = useServerFn(getCertificateDownloadUrl);
+  const linkFn = useServerFn(getCertificateVerificationLink);
+  const recheckFn = useServerFn(recheckAndResubmitNoDues);
+
   const { data, isLoading } = useQuery({
     queryKey: ["nd-detail-resident", id],
     queryFn: () => detailFn({ data: { requestId: id } }),
@@ -55,6 +61,34 @@ function ResidentNoDuesDetail() {
     }
   };
 
+  const handleCopyVerify = async () => {
+    const cid = (data as any)?.certificate?.id;
+    if (!cid) return;
+    try {
+      const r: any = await linkFn({ data: { certificateId: cid } });
+      if (!r?.available) {
+        toast.error("Verification link is unavailable for this older certificate. The downloaded certificate may still contain its original QR code.");
+        return;
+      }
+      await navigator.clipboard.writeText(r.url);
+      toast.success("Link copied");
+    } catch {
+      toast.error("Failed to fetch verification link");
+    }
+  };
+
+  const recheck = useMutation({
+    mutationFn: () => recheckFn({ data: { requestId: id } }),
+    onSuccess: (r: any) => {
+      if (r?.status === "submitted") toast.success("Request submitted for review");
+      else toast.info("Dues are still pending");
+      qc.invalidateQueries({ queryKey: ["nd-detail-resident", id] });
+    },
+    onError: (e: any) => {
+      toast.error(e?.message === "RATE_LIMITED" ? "Please wait before rechecking again" : "Recheck failed");
+    },
+  });
+
   if (isLoading || !data) {
     return (
       <div className="pb-24">
@@ -63,19 +97,6 @@ function ResidentNoDuesDetail() {
     );
   }
 
-  const req = (data as any).request;
-  const flat = (data as any).flat;
-  const audit = (data as any).audit ?? [];
-  const cert = (data as any).certificate;
-  const elig = req?.eligibility_snapshot ?? {};
-  const blockers = elig?.blockers ?? [];
-
-  const verifyUrl = cert?.verification_url as string | undefined;
-  const copyVerify = async () => {
-    if (!verifyUrl) return;
-    try { await navigator.clipboard.writeText(verifyUrl); toast.success("Link copied"); }
-    catch { toast.error("Copy failed"); }
-  };
 
   return (
     <div className="pb-24">

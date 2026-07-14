@@ -3,7 +3,7 @@ import {
   Building2, Home, Car, Users, UserCheck, ShieldCheck, MessageSquare,
   Receipt, Wallet, BarChart3, TrendingDown, BookOpen,
   Settings2, UsersRound, Activity, LifeBuoy, Sparkles, KeyRound, Building, Lock,
-  LayoutGrid,
+  LayoutGrid, Compass, FileCheck2, Trophy,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { MobileHero } from "@/components/shared/MobileHero";
@@ -17,6 +17,10 @@ export const Route = createFileRoute("/_society/society/more")({
 });
 
 type Tile = { to: string; label: string; icon: any; feature?: FeatureKey };
+
+const DISCOVER: Tile[] = [
+  { to: "/society/features", label: "Feature Directory", icon: Compass },
+];
 
 const MANAGEMENT: Tile[] = [
   { to: "/society/residents", label: "Residents", icon: Users },
@@ -39,6 +43,14 @@ const FINANCE: Tile[] = [
   { to: "/society/digest", label: "AI Digest", icon: Sparkles, feature: "ai_digest" },
 ];
 
+const COMMUNITY: Tile[] = [
+  { to: "/society/leaderboard", label: "Leaderboard", icon: Trophy, feature: "leaderboard" },
+];
+
+const CERTIFICATES: Tile[] = [
+  { to: "/society/features", label: "No-Dues (soon)", icon: FileCheck2, feature: "no_dues" },
+];
+
 const OTHER: Tile[] = [
   { to: "/society/business-profile", label: "Society profile", icon: Building2 },
   { to: "/society/team", label: "Team & roles", icon: Users, feature: "team_roles" },
@@ -46,7 +58,6 @@ const OTHER: Tile[] = [
   { to: "/society/bill-studio", label: "Bill templates", icon: Receipt, feature: "bill_templates" },
   { to: "/society/custom-fields", label: "Custom fields", icon: Settings2 },
   { to: "/society/setup", label: "Setup wizard", icon: Activity },
-  { to: "/society/leaderboard", label: "Leaderboard", icon: Sparkles },
   { to: "/society/explorer", label: "Explorer", icon: KeyRound },
   { to: "/support", label: "Help & support", icon: LifeBuoy },
 ];

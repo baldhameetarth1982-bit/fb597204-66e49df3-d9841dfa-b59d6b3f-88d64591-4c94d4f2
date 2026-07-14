@@ -87,10 +87,12 @@ export async function decryptCertificateToken(
     throw new Error("CERT_TOKEN_KEY_VERSION_MISMATCH");
   }
   const key = await getKey();
+  const ivBytes = b64UrlDecode(iv);
+  const ctBytes = b64UrlDecode(ciphertext);
   const buf = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: b64UrlDecode(iv) },
+    { name: "AES-GCM", iv: ivBytes.buffer.slice(ivBytes.byteOffset, ivBytes.byteOffset + ivBytes.byteLength) as ArrayBuffer },
     key,
-    b64UrlDecode(ciphertext),
+    ctBytes.buffer.slice(ctBytes.byteOffset, ctBytes.byteOffset + ctBytes.byteLength) as ArrayBuffer,
   );
   return new TextDecoder().decode(buf);
 }

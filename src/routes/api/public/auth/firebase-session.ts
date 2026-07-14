@@ -19,28 +19,17 @@
  * across new signups and returning users.
  */
 import { createFileRoute } from "@tanstack/react-router";
-import { importX509, jwtVerify } from "jose";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 
 const FIREBASE_PROJECT_ID = "sociohub-49e4f";
 const ISSUER = `https://securetoken.google.com/${FIREBASE_PROJECT_ID}`;
-const CERTS_URL =
-  "https://www.googleapis.com/robot/v1/metadata/x509/[email protected]";
 
-interface CertCache {
-  fetchedAt: number;
-  certs: Record<string, string>;
-}
-let certCache: CertCache | null = null;
-
-async function loadCerts(): Promise<Record<string, string>> {
-  const now = Date.now();
-  if (certCache && now - certCache.fetchedAt < 60 * 60 * 1000) return certCache.certs;
-  const res = await fetch(CERTS_URL);
-  if (!res.ok) throw new Error("Could not load Firebase certs");
-  const certs = (await res.json()) as Record<string, string>;
-  certCache = { fetchedAt: now, certs };
-  return certs;
-}
+// Google's JWK endpoint for Firebase ID tokens. `createRemoteJWKSet` handles
+// caching, kid rotation, and cooldown natively — works on Cloudflare Workers.
+const JWKS = createRemoteJWKSet(
+  new URL("https://www.googleapis.com/service_accounts/v1/jwk/[email protected]"),
+  { cooldownDuration: 60_000 },
+);
 
 interface FirebasePayload {
   sub: string;
@@ -56,20 +45,7 @@ interface FirebasePayload {
 }
 
 async function verifyFirebaseIdToken(idToken: string): Promise<FirebasePayload> {
-  // Read the kid from the header without validating first
-  const [rawHeader] = idToken.split(".");
-  const header = JSON.parse(
-    new TextDecoder().decode(
-      Uint8Array.from(atob(rawHeader.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0)),
-    ),
-  ) as { kid: string; alg: string };
-
-  const certs = await loadCerts();
-  const pem = certs[header.kid];
-  if (!pem) throw new Error("Unknown token key id");
-
-  const key = await importX509(pem, "RS256");
-  const { payload } = await jwtVerify(idToken, key, {
+  const { payload } = await jwtVerify(idToken, JWKS, {
     algorithms: ["RS256"],
     issuer: ISSUER,
     audience: FIREBASE_PROJECT_ID,

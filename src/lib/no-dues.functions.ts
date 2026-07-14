@@ -661,7 +661,7 @@ export const revokeNoDuesCertificate = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase } = context as any;
-    const { error } = await supabase.rpc("revoke_no_dues_certificate", {
+    const { error } = await (supabase.rpc as any)("revoke_no_dues_certificate", {
       _certificate_id: data.certificateId,
       _reason: data.reason,
     });

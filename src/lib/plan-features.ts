@@ -71,11 +71,13 @@ export interface FeatureCatalogEntry {
   label: string;
   shortDescription: string;
   category: FeatureCategory;
-  /** Minimum plan required. Omit → defaults to `pro`. */
+  /** Minimum plan required. Omit → defaults to `pro`. Set `null` for plan-neutral routes (auth, onboarding, super_admin). */
   minPlan: PlanKey;
   roles: AppRole[];
   /** In-app route the feature opens. Omitted for background capabilities. */
   route?: string;
+  /** Additional routes covered by this feature (detail, edit, create, sub-tabs). */
+  routes?: string[];
   /** Search keywords + synonyms. Case-insensitive. */
   keywords: string[];
   /** Lucide icon name (looked up by the directory UI). */
@@ -84,6 +86,8 @@ export interface FeatureCatalogEntry {
   backendReady: boolean;
   /** Sub-heading inside the More / Feature Directory list. */
   navigationGroup: string;
+  /** If true, this key is not gated by subscription plan (e.g., platform-role routes). */
+  planNeutral?: boolean;
 }
 
 const CATALOG: FeatureCatalogEntry[] = [
@@ -159,6 +163,21 @@ const CATALOG: FeatureCatalogEntry[] = [
     navigationGroup: "People",
   },
   {
+    key: "residents",
+    label: "Residents",
+    shortDescription: "Owner, tenant, and family member records.",
+    category: "residents_units",
+    minPlan: "basic",
+    roles: ["society_admin"],
+    route: "/society/residents",
+    routes: ["/society/residents/$id"],
+    keywords: ["resident", "owner", "tenant", "family", "people"],
+    icon: "Users",
+    status: "available",
+    backendReady: true,
+    navigationGroup: "People",
+  },
+  {
     key: "billing",
     label: "Maintenance Billing",
     shortDescription: "Generate and track maintenance bills.",
@@ -166,6 +185,12 @@ const CATALOG: FeatureCatalogEntry[] = [
     minPlan: "basic",
     roles: ["society_admin"],
     route: "/society/billing",
+    routes: [
+      "/society/billing/generate",
+      "/society/bills/$id",
+      "/society/billing-settings",
+      "/society/maintenance",
+    ],
     keywords: ["bill", "invoice", "maintenance", "collection"],
     icon: "Receipt",
     status: "available",
@@ -396,6 +421,7 @@ const CATALOG: FeatureCatalogEntry[] = [
     minPlan: "pro",
     roles: ["society_admin"],
     route: "/society/flats",
+    routes: ["/society/flats/$id"],
     keywords: ["flat 360", "unit 360", "house 360", "dashboard", "unit"],
     icon: "Home",
     status: "partial",
@@ -411,6 +437,7 @@ const CATALOG: FeatureCatalogEntry[] = [
     minPlan: "pro",
     roles: ["society_admin", "resident"],
     route: "/society/no-dues",
+    routes: ["/app/no-dues", "/verify/no-dues/$token"],
     keywords: [
       "no dues",
       "no-dues",
@@ -421,8 +448,8 @@ const CATALOG: FeatureCatalogEntry[] = [
       "verification",
     ],
     icon: "FileCheck2",
-    status: "planned",
-    backendReady: false,
+    status: "available",
+    backendReady: true,
     navigationGroup: "Certificates",
   },
   {
@@ -615,6 +642,161 @@ const CATALOG: FeatureCatalogEntry[] = [
     backendReady: true,
     navigationGroup: "Administration",
   },
+
+  /* Resident-facing product features (Basic — every resident gets these) --- */
+  {
+    key: "resident_dashboard",
+    label: "Resident Home",
+    shortDescription: "Your society home: dues, notices, quick actions.",
+    category: "core_management",
+    minPlan: "basic",
+    roles: ["resident"],
+    route: "/app/dashboard",
+    routes: ["/app/profile", "/app/search"],
+    keywords: ["home", "dashboard", "resident"],
+    icon: "Home",
+    status: "available",
+    backendReady: true,
+    navigationGroup: "Home",
+  },
+  {
+    key: "resident_bills",
+    label: "My Bills & Dues",
+    shortDescription: "View maintenance bills, pay via Cash or Bank Transfer.",
+    category: "billing_finance",
+    minPlan: "basic",
+    roles: ["resident"],
+    route: "/app/bills",
+    routes: ["/app/dues", "/app/ledger"],
+    keywords: ["bill", "dues", "pay", "maintenance"],
+    icon: "Receipt",
+    status: "available",
+    backendReady: true,
+    navigationGroup: "Billing",
+  },
+  {
+    key: "community_feed",
+    label: "Community Feed",
+    shortDescription: "Neighborhood posts, comments and reactions.",
+    category: "communication",
+    minPlan: "pro",
+    roles: ["resident", "society_admin"],
+    route: "/app/feed",
+    routes: ["/app/feed/$postId"],
+    keywords: ["feed", "post", "community", "social"],
+    icon: "MessageSquare",
+    status: "available",
+    backendReady: true,
+    navigationGroup: "Community",
+  },
+  {
+    key: "family_members",
+    label: "Family Members",
+    shortDescription: "Add and manage family members for your unit.",
+    category: "residents_units",
+    minPlan: "basic",
+    roles: ["resident"],
+    route: "/app/family",
+    keywords: ["family", "members"],
+    icon: "Users",
+    status: "available",
+    backendReady: true,
+    navigationGroup: "People",
+  },
+  {
+    key: "helpdesk",
+    label: "Helpdesk",
+    shortDescription: "Raise tickets for maintenance and complaints.",
+    category: "communication",
+    minPlan: "pro",
+    roles: ["resident", "society_admin"],
+    route: "/app/helpdesk",
+    keywords: ["helpdesk", "ticket", "complaint", "service"],
+    icon: "MessageSquare",
+    status: "available",
+    backendReady: true,
+    navigationGroup: "Support",
+  },
+  {
+    key: "notifications",
+    label: "Notifications",
+    shortDescription: "Bills, notices, approvals, and alerts.",
+    category: "communication",
+    minPlan: "basic",
+    roles: ["resident", "society_admin"],
+    route: "/app/notifications",
+    keywords: ["notification", "alert"],
+    icon: "MessageSquare",
+    status: "available",
+    backendReady: true,
+    navigationGroup: "Communication",
+  },
+  {
+    key: "achievements_hub",
+    label: "Achievements",
+    shortDescription: "Badges and rewards for community participation.",
+    category: "community_gamification",
+    minPlan: "pro",
+    roles: ["resident"],
+    route: "/app/achievements",
+    routes: ["/app/activity", "/app/trust"],
+    keywords: ["achievement", "badge", "reward"],
+    icon: "Sparkles",
+    status: "available",
+    backendReady: true,
+    navigationGroup: "Community",
+  },
+  {
+    key: "guard_visitor_entry",
+    label: "Guard — Visitor Entry",
+    shortDescription: "Gate operations: log visitors, verify pre-approvals.",
+    category: "visitors_security",
+    minPlan: "pro",
+    roles: ["guard"],
+    route: "/app/guard",
+    keywords: ["guard", "gate", "visitor entry"],
+    icon: "ShieldCheck",
+    status: "available",
+    backendReady: true,
+    navigationGroup: "Operations",
+  },
+
+  /* Super Admin platform tools (plan-neutral — gated by role, not plan) --- */
+  {
+    key: "platform_super_admin",
+    label: "Platform Admin Console",
+    shortDescription: "SocioHub platform administration (all societies).",
+    category: "settings_admin",
+    minPlan: "basic",
+    planNeutral: true,
+    roles: ["super_admin"],
+    route: "/admin/dashboard",
+    routes: [
+      "/admin/societies",
+      "/admin/users",
+      "/admin/plans",
+      "/admin/custom-plans",
+      "/admin/revenue",
+      "/admin/withdrawals",
+      "/admin/razorpay",
+      "/admin/security",
+      "/admin/audit",
+      "/admin/health",
+      "/admin/executive",
+      "/admin/bi",
+      "/admin/report-builder",
+      "/admin/income",
+      "/admin/settings",
+      "/admin/branding",
+      "/admin/ads",
+      "/admin/search",
+    ],
+    keywords: ["super admin", "platform", "admin"],
+    icon: "ShieldCheck",
+    status: "available",
+    backendReady: true,
+    navigationGroup: "Platform",
+  },
 ];
 
 const CATALOG_BY_KEY = new Map<string, FeatureCatalogEntry>(
@@ -653,6 +835,7 @@ export const FEATURE_LABELS: Record<string, string> = Object.fromEntries(
  */
 export function hasFeature(plan: PlanKey, feature: FeatureKey): boolean {
   const entry = CATALOG_BY_KEY.get(feature);
+  if (entry?.planNeutral) return true;
   const requiredRank = entry ? PLAN_RANK[entry.minPlan] : PLAN_RANK.pro;
   return PLAN_RANK[plan] >= requiredRank;
 }

@@ -34,6 +34,7 @@ import { Route as OnboardingCreateRouteImport } from './routes/onboarding.create
 import { Route as CheckoutPlanIdRouteImport } from './routes/checkout.$planId'
 import { Route as ApiSupportChatRouteImport } from './routes/api/support-chat'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
+import { Route as VerifyNoDuesTokenRouteImport } from './routes/verify.no-dues.$token'
 import { Route as SocietySocietyVisitorsRouteImport } from './routes/_society/society.visitors'
 import { Route as SocietySocietyVerificationsRouteImport } from './routes/_society/society.verifications'
 import { Route as SocietySocietyVehiclesRouteImport } from './routes/_society/society.vehicles'
@@ -45,6 +46,7 @@ import { Route as SocietySocietyReportsRouteImport } from './routes/_society/soc
 import { Route as SocietySocietyPollsRouteImport } from './routes/_society/society.polls'
 import { Route as SocietySocietyPlanRequiredRouteImport } from './routes/_society/society.plan-required'
 import { Route as SocietySocietyPayoutsRouteImport } from './routes/_society/society.payouts'
+import { Route as SocietySocietyNoDuesRouteImport } from './routes/_society/society.no-dues'
 import { Route as SocietySocietyMoreRouteImport } from './routes/_society/society.more'
 import { Route as SocietySocietyMatrixImportRouteImport } from './routes/_society/society.matrix-import'
 import { Route as SocietySocietyMatrixRouteImport } from './routes/_society/society.matrix'
@@ -81,6 +83,7 @@ import { Route as ResidentAppPollsRouteImport } from './routes/_resident/app.pol
 import { Route as ResidentAppPlanRequiredRouteImport } from './routes/_resident/app.plan-required'
 import { Route as ResidentAppNotificationsRouteImport } from './routes/_resident/app.notifications'
 import { Route as ResidentAppNoticesRouteImport } from './routes/_resident/app.notices'
+import { Route as ResidentAppNoDuesRouteImport } from './routes/_resident/app.no-dues'
 import { Route as ResidentAppLedgerRouteImport } from './routes/_resident/app.ledger'
 import { Route as ResidentAppHelpdeskRouteImport } from './routes/_resident/app.helpdesk'
 import { Route as ResidentAppGuardRouteImport } from './routes/_resident/app.guard'
@@ -124,6 +127,7 @@ import { Route as SocietySocietyFlatsIdRouteImport } from './routes/_society/soc
 import { Route as SocietySocietyBillsIdRouteImport } from './routes/_society/society.bills.$id'
 import { Route as SocietySocietyBillingGenerateRouteImport } from './routes/_society/society.billing.generate'
 import { Route as ResidentAppFeedPostIdRouteImport } from './routes/_resident/app.feed.$postId'
+import { Route as ApiPublicVerifyNoDuesTokenRouteImport } from './routes/api/public/verify.no-dues.$token'
 
 const WelcomeRoute = WelcomeRouteImport.update({
   id: '/welcome',
@@ -246,6 +250,11 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => AuthRoute,
 } as any)
+const VerifyNoDuesTokenRoute = VerifyNoDuesTokenRouteImport.update({
+  id: '/verify/no-dues/$token',
+  path: '/verify/no-dues/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SocietySocietyVisitorsRoute = SocietySocietyVisitorsRouteImport.update({
   id: '/society/visitors',
   path: '/society/visitors',
@@ -301,6 +310,11 @@ const SocietySocietyPlanRequiredRoute =
 const SocietySocietyPayoutsRoute = SocietySocietyPayoutsRouteImport.update({
   id: '/society/payouts',
   path: '/society/payouts',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyNoDuesRoute = SocietySocietyNoDuesRouteImport.update({
+  id: '/society/no-dues',
+  path: '/society/no-dues',
   getParentRoute: () => SocietyRoute,
 } as any)
 const SocietySocietyMoreRoute = SocietySocietyMoreRouteImport.update({
@@ -492,6 +506,11 @@ const ResidentAppNotificationsRoute =
 const ResidentAppNoticesRoute = ResidentAppNoticesRouteImport.update({
   id: '/app/notices',
   path: '/app/notices',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppNoDuesRoute = ResidentAppNoDuesRouteImport.update({
+  id: '/app/no-dues',
+  path: '/app/no-dues',
   getParentRoute: () => ResidentRoute,
 } as any)
 const ResidentAppLedgerRoute = ResidentAppLedgerRouteImport.update({
@@ -714,6 +733,12 @@ const ResidentAppFeedPostIdRoute = ResidentAppFeedPostIdRouteImport.update({
   path: '/$postId',
   getParentRoute: () => ResidentAppFeedRoute,
 } as any)
+const ApiPublicVerifyNoDuesTokenRoute =
+  ApiPublicVerifyNoDuesTokenRouteImport.update({
+    id: '/api/public/verify/no-dues/$token',
+    path: '/api/public/verify/no-dues/$token',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -771,6 +796,7 @@ export interface FileRoutesByFullPath {
   '/app/guard': typeof ResidentAppGuardRoute
   '/app/helpdesk': typeof ResidentAppHelpdeskRoute
   '/app/ledger': typeof ResidentAppLedgerRoute
+  '/app/no-dues': typeof ResidentAppNoDuesRoute
   '/app/notices': typeof ResidentAppNoticesRoute
   '/app/notifications': typeof ResidentAppNotificationsRoute
   '/app/plan-required': typeof ResidentAppPlanRequiredRoute
@@ -807,6 +833,7 @@ export interface FileRoutesByFullPath {
   '/society/matrix': typeof SocietySocietyMatrixRoute
   '/society/matrix-import': typeof SocietySocietyMatrixImportRoute
   '/society/more': typeof SocietySocietyMoreRoute
+  '/society/no-dues': typeof SocietySocietyNoDuesRoute
   '/society/payouts': typeof SocietySocietyPayoutsRoute
   '/society/plan-required': typeof SocietySocietyPlanRequiredRoute
   '/society/polls': typeof SocietySocietyPollsRoute
@@ -818,6 +845,7 @@ export interface FileRoutesByFullPath {
   '/society/vehicles': typeof SocietySocietyVehiclesRoute
   '/society/verifications': typeof SocietySocietyVerificationsRoute
   '/society/visitors': typeof SocietySocietyVisitorsRoute
+  '/verify/no-dues/$token': typeof VerifyNoDuesTokenRoute
   '/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
   '/society/billing/generate': typeof SocietySocietyBillingGenerateRoute
   '/society/bills/$id': typeof SocietySocietyBillsIdRoute
@@ -827,6 +855,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
+  '/api/public/verify/no-dues/$token': typeof ApiPublicVerifyNoDuesTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -883,6 +912,7 @@ export interface FileRoutesByTo {
   '/app/guard': typeof ResidentAppGuardRoute
   '/app/helpdesk': typeof ResidentAppHelpdeskRoute
   '/app/ledger': typeof ResidentAppLedgerRoute
+  '/app/no-dues': typeof ResidentAppNoDuesRoute
   '/app/notices': typeof ResidentAppNoticesRoute
   '/app/notifications': typeof ResidentAppNotificationsRoute
   '/app/plan-required': typeof ResidentAppPlanRequiredRoute
@@ -919,6 +949,7 @@ export interface FileRoutesByTo {
   '/society/matrix': typeof SocietySocietyMatrixRoute
   '/society/matrix-import': typeof SocietySocietyMatrixImportRoute
   '/society/more': typeof SocietySocietyMoreRoute
+  '/society/no-dues': typeof SocietySocietyNoDuesRoute
   '/society/payouts': typeof SocietySocietyPayoutsRoute
   '/society/plan-required': typeof SocietySocietyPlanRequiredRoute
   '/society/polls': typeof SocietySocietyPollsRoute
@@ -930,6 +961,7 @@ export interface FileRoutesByTo {
   '/society/vehicles': typeof SocietySocietyVehiclesRoute
   '/society/verifications': typeof SocietySocietyVerificationsRoute
   '/society/visitors': typeof SocietySocietyVisitorsRoute
+  '/verify/no-dues/$token': typeof VerifyNoDuesTokenRoute
   '/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
   '/society/billing/generate': typeof SocietySocietyBillingGenerateRoute
   '/society/bills/$id': typeof SocietySocietyBillsIdRoute
@@ -939,6 +971,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
+  '/api/public/verify/no-dues/$token': typeof ApiPublicVerifyNoDuesTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -1001,6 +1034,7 @@ export interface FileRoutesById {
   '/_resident/app/guard': typeof ResidentAppGuardRoute
   '/_resident/app/helpdesk': typeof ResidentAppHelpdeskRoute
   '/_resident/app/ledger': typeof ResidentAppLedgerRoute
+  '/_resident/app/no-dues': typeof ResidentAppNoDuesRoute
   '/_resident/app/notices': typeof ResidentAppNoticesRoute
   '/_resident/app/notifications': typeof ResidentAppNotificationsRoute
   '/_resident/app/plan-required': typeof ResidentAppPlanRequiredRoute
@@ -1037,6 +1071,7 @@ export interface FileRoutesById {
   '/_society/society/matrix': typeof SocietySocietyMatrixRoute
   '/_society/society/matrix-import': typeof SocietySocietyMatrixImportRoute
   '/_society/society/more': typeof SocietySocietyMoreRoute
+  '/_society/society/no-dues': typeof SocietySocietyNoDuesRoute
   '/_society/society/payouts': typeof SocietySocietyPayoutsRoute
   '/_society/society/plan-required': typeof SocietySocietyPlanRequiredRoute
   '/_society/society/polls': typeof SocietySocietyPollsRoute
@@ -1048,6 +1083,7 @@ export interface FileRoutesById {
   '/_society/society/vehicles': typeof SocietySocietyVehiclesRoute
   '/_society/society/verifications': typeof SocietySocietyVerificationsRoute
   '/_society/society/visitors': typeof SocietySocietyVisitorsRoute
+  '/verify/no-dues/$token': typeof VerifyNoDuesTokenRoute
   '/_resident/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
   '/_society/society/billing/generate': typeof SocietySocietyBillingGenerateRoute
   '/_society/society/bills/$id': typeof SocietySocietyBillsIdRoute
@@ -1057,6 +1093,7 @@ export interface FileRoutesById {
   '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
+  '/api/public/verify/no-dues/$token': typeof ApiPublicVerifyNoDuesTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -1116,6 +1153,7 @@ export interface FileRouteTypes {
     | '/app/guard'
     | '/app/helpdesk'
     | '/app/ledger'
+    | '/app/no-dues'
     | '/app/notices'
     | '/app/notifications'
     | '/app/plan-required'
@@ -1152,6 +1190,7 @@ export interface FileRouteTypes {
     | '/society/matrix'
     | '/society/matrix-import'
     | '/society/more'
+    | '/society/no-dues'
     | '/society/payouts'
     | '/society/plan-required'
     | '/society/polls'
@@ -1163,6 +1202,7 @@ export interface FileRouteTypes {
     | '/society/vehicles'
     | '/society/verifications'
     | '/society/visitors'
+    | '/verify/no-dues/$token'
     | '/app/feed/$postId'
     | '/society/billing/generate'
     | '/society/bills/$id'
@@ -1172,6 +1212,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/maintenance-reminders'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
+    | '/api/public/verify/no-dues/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -1228,6 +1269,7 @@ export interface FileRouteTypes {
     | '/app/guard'
     | '/app/helpdesk'
     | '/app/ledger'
+    | '/app/no-dues'
     | '/app/notices'
     | '/app/notifications'
     | '/app/plan-required'
@@ -1264,6 +1306,7 @@ export interface FileRouteTypes {
     | '/society/matrix'
     | '/society/matrix-import'
     | '/society/more'
+    | '/society/no-dues'
     | '/society/payouts'
     | '/society/plan-required'
     | '/society/polls'
@@ -1275,6 +1318,7 @@ export interface FileRouteTypes {
     | '/society/vehicles'
     | '/society/verifications'
     | '/society/visitors'
+    | '/verify/no-dues/$token'
     | '/app/feed/$postId'
     | '/society/billing/generate'
     | '/society/bills/$id'
@@ -1284,6 +1328,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/maintenance-reminders'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
+    | '/api/public/verify/no-dues/$token'
   id:
     | '__root__'
     | '/'
@@ -1345,6 +1390,7 @@ export interface FileRouteTypes {
     | '/_resident/app/guard'
     | '/_resident/app/helpdesk'
     | '/_resident/app/ledger'
+    | '/_resident/app/no-dues'
     | '/_resident/app/notices'
     | '/_resident/app/notifications'
     | '/_resident/app/plan-required'
@@ -1381,6 +1427,7 @@ export interface FileRouteTypes {
     | '/_society/society/matrix'
     | '/_society/society/matrix-import'
     | '/_society/society/more'
+    | '/_society/society/no-dues'
     | '/_society/society/payouts'
     | '/_society/society/plan-required'
     | '/_society/society/polls'
@@ -1392,6 +1439,7 @@ export interface FileRouteTypes {
     | '/_society/society/vehicles'
     | '/_society/society/verifications'
     | '/_society/society/visitors'
+    | '/verify/no-dues/$token'
     | '/_resident/app/feed/$postId'
     | '/_society/society/billing/generate'
     | '/_society/society/bills/$id'
@@ -1401,6 +1449,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/maintenance-reminders'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
+    | '/api/public/verify/no-dues/$token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1423,10 +1472,12 @@ export interface RootRouteChildren {
   WelcomeRoute: typeof WelcomeRoute
   ApiSupportChatRoute: typeof ApiSupportChatRoute
   CheckoutPlanIdRoute: typeof CheckoutPlanIdRoute
+  VerifyNoDuesTokenRoute: typeof VerifyNoDuesTokenRoute
   ApiPublicAuthFirebaseSessionRoute: typeof ApiPublicAuthFirebaseSessionRoute
   ApiPublicHooksMaintenanceRemindersRoute: typeof ApiPublicHooksMaintenanceRemindersRoute
   ApiPublicHooksRazorpayRoute: typeof ApiPublicHooksRazorpayRoute
   ApiPublicHooksRunBillingRoute: typeof ApiPublicHooksRunBillingRoute
+  ApiPublicVerifyNoDuesTokenRoute: typeof ApiPublicVerifyNoDuesTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1606,6 +1657,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/verify/no-dues/$token': {
+      id: '/verify/no-dues/$token'
+      path: '/verify/no-dues/$token'
+      fullPath: '/verify/no-dues/$token'
+      preLoaderRoute: typeof VerifyNoDuesTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_society/society/visitors': {
       id: '/_society/society/visitors'
       path: '/society/visitors'
@@ -1681,6 +1739,13 @@ declare module '@tanstack/react-router' {
       path: '/society/payouts'
       fullPath: '/society/payouts'
       preLoaderRoute: typeof SocietySocietyPayoutsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/no-dues': {
+      id: '/_society/society/no-dues'
+      path: '/society/no-dues'
+      fullPath: '/society/no-dues'
+      preLoaderRoute: typeof SocietySocietyNoDuesRouteImport
       parentRoute: typeof SocietyRoute
     }
     '/_society/society/more': {
@@ -1933,6 +1998,13 @@ declare module '@tanstack/react-router' {
       path: '/app/notices'
       fullPath: '/app/notices'
       preLoaderRoute: typeof ResidentAppNoticesRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/no-dues': {
+      id: '/_resident/app/no-dues'
+      path: '/app/no-dues'
+      fullPath: '/app/no-dues'
+      preLoaderRoute: typeof ResidentAppNoDuesRouteImport
       parentRoute: typeof ResidentRoute
     }
     '/_resident/app/ledger': {
@@ -2236,6 +2308,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResidentAppFeedPostIdRouteImport
       parentRoute: typeof ResidentAppFeedRoute
     }
+    '/api/public/verify/no-dues/$token': {
+      id: '/api/public/verify/no-dues/$token'
+      path: '/api/public/verify/no-dues/$token'
+      fullPath: '/api/public/verify/no-dues/$token'
+      preLoaderRoute: typeof ApiPublicVerifyNoDuesTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -2323,6 +2402,7 @@ interface ResidentRouteChildren {
   ResidentAppGuardRoute: typeof ResidentAppGuardRoute
   ResidentAppHelpdeskRoute: typeof ResidentAppHelpdeskRoute
   ResidentAppLedgerRoute: typeof ResidentAppLedgerRoute
+  ResidentAppNoDuesRoute: typeof ResidentAppNoDuesRoute
   ResidentAppNoticesRoute: typeof ResidentAppNoticesRoute
   ResidentAppNotificationsRoute: typeof ResidentAppNotificationsRoute
   ResidentAppPlanRequiredRoute: typeof ResidentAppPlanRequiredRoute
@@ -2351,6 +2431,7 @@ const ResidentRouteChildren: ResidentRouteChildren = {
   ResidentAppGuardRoute: ResidentAppGuardRoute,
   ResidentAppHelpdeskRoute: ResidentAppHelpdeskRoute,
   ResidentAppLedgerRoute: ResidentAppLedgerRoute,
+  ResidentAppNoDuesRoute: ResidentAppNoDuesRoute,
   ResidentAppNoticesRoute: ResidentAppNoticesRoute,
   ResidentAppNotificationsRoute: ResidentAppNotificationsRoute,
   ResidentAppPlanRequiredRoute: ResidentAppPlanRequiredRoute,
@@ -2432,6 +2513,7 @@ interface SocietyRouteChildren {
   SocietySocietyMatrixRoute: typeof SocietySocietyMatrixRoute
   SocietySocietyMatrixImportRoute: typeof SocietySocietyMatrixImportRoute
   SocietySocietyMoreRoute: typeof SocietySocietyMoreRoute
+  SocietySocietyNoDuesRoute: typeof SocietySocietyNoDuesRoute
   SocietySocietyPayoutsRoute: typeof SocietySocietyPayoutsRoute
   SocietySocietyPlanRequiredRoute: typeof SocietySocietyPlanRequiredRoute
   SocietySocietyPollsRoute: typeof SocietySocietyPollsRoute
@@ -2473,6 +2555,7 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyMatrixRoute: SocietySocietyMatrixRoute,
   SocietySocietyMatrixImportRoute: SocietySocietyMatrixImportRoute,
   SocietySocietyMoreRoute: SocietySocietyMoreRoute,
+  SocietySocietyNoDuesRoute: SocietySocietyNoDuesRoute,
   SocietySocietyPayoutsRoute: SocietySocietyPayoutsRoute,
   SocietySocietyPlanRequiredRoute: SocietySocietyPlanRequiredRoute,
   SocietySocietyPollsRoute: SocietySocietyPollsRoute,
@@ -2530,11 +2613,13 @@ const rootRouteChildren: RootRouteChildren = {
   WelcomeRoute: WelcomeRoute,
   ApiSupportChatRoute: ApiSupportChatRoute,
   CheckoutPlanIdRoute: CheckoutPlanIdRoute,
+  VerifyNoDuesTokenRoute: VerifyNoDuesTokenRoute,
   ApiPublicAuthFirebaseSessionRoute: ApiPublicAuthFirebaseSessionRoute,
   ApiPublicHooksMaintenanceRemindersRoute:
     ApiPublicHooksMaintenanceRemindersRoute,
   ApiPublicHooksRazorpayRoute: ApiPublicHooksRazorpayRoute,
   ApiPublicHooksRunBillingRoute: ApiPublicHooksRunBillingRoute,
+  ApiPublicVerifyNoDuesTokenRoute: ApiPublicVerifyNoDuesTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

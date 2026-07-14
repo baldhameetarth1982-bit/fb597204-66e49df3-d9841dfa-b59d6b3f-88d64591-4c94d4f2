@@ -1051,7 +1051,8 @@ export type Database = {
           storage_path: string
           updated_at: string
           valid_until: string | null
-          verification_token: string
+          verification_token: string | null
+          verification_token_hash: string | null
         }
         Insert: {
           certificate_number: string
@@ -1068,7 +1069,8 @@ export type Database = {
           storage_path: string
           updated_at?: string
           valid_until?: string | null
-          verification_token: string
+          verification_token?: string | null
+          verification_token_hash?: string | null
         }
         Update: {
           certificate_number?: string
@@ -1085,7 +1087,8 @@ export type Database = {
           storage_path?: string
           updated_at?: string
           valid_until?: string | null
-          verification_token?: string
+          verification_token?: string | null
+          verification_token_hash?: string | null
         }
         Relationships: [
           {
@@ -2921,6 +2924,7 @@ export type Database = {
         | "rejected"
         | "issued"
         | "revoked"
+        | "blocked_by_dues"
       society_layout: "structured" | "serial"
     }
     CompositeTypes: {
@@ -3065,6 +3069,7 @@ export const Constants = {
         "rejected",
         "issued",
         "revoked",
+        "blocked_by_dues",
       ],
       society_layout: ["structured", "serial"],
     },

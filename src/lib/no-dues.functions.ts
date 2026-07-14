@@ -667,15 +667,16 @@ export const recheckAndResubmitNoDues = createServerFn({ method: "POST" })
     const { userId } = context as any;
     // Endpoint-specific rate limit: 5 rechecks / 10 min per (user, request)
     try {
-      const { checkRateLimit } = await import("@/lib/rate-limit.server");
-      const rl = await (checkRateLimit as any)({
-        key: `nd:recheck:${userId}:${data.requestId}`,
+      const { checkRateLimit, RateLimitedError } = await import("@/lib/rate-limit.server");
+      await checkRateLimit({
+        bucket: "no_dues_recheck",
+        subject: `${userId}:${data.requestId}`,
         limit: 5,
-        windowSeconds: 600,
+        windowSec: 600,
       });
-      if (rl && rl.allowed === false) throw new NoDuesError("RATE_LIMITED");
-    } catch (e) {
-      if (e instanceof NoDuesError) throw e;
+      void RateLimitedError;
+    } catch (e: any) {
+      if (e?.name === "RateLimitedError") throw new NoDuesError("RATE_LIMITED");
       // Rate limiter unavailable — fail open to avoid blocking legitimate users
       logServerError("recheck.rateLimit", e);
     }

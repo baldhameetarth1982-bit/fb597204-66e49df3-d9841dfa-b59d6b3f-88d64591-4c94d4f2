@@ -231,3 +231,60 @@ Focused, narrow slice this turn — the full Turn 11 spec covers ~20 major work 
 ### Constraints honored
 - No payment integration changes. Razorpay untouched. No Cashfree/PayU activation. No platform fee. Cash + Bank Transfer maintenance behavior preserved. No real society data modified. Firebase→Supabase auth preserved. Flat 360 remains Pro; Premium inherits.
 
+
+## Turn 12 — Role-Scope Correction, Certificate Encryption Wiring, UX Recheck
+
+Status of items landed:
+
+- **Block-admin scope fix (implemented)**: `is_society_admin_for_internal` now
+  requires `role = 'society_admin'`. Added `is_block_admin_for_flat_internal`,
+  `can_manage_flat_internal`, `current_user_can_manage_flat`.
+  All No-Dues review / issue / revoke / detail / download paths now authorize
+  via `can_manage_flat_internal(actor, flat_id)` instead of society-wide.
+- **Old role-probe helpers revoked (implemented)**: `is_society_admin_for(uuid, uuid)`
+  and `is_super_admin(uuid)` EXECUTE removed from `anon` and `authenticated`.
+- **Certificate encryption wiring (implemented)**:
+  - `src/lib/certificate-token.server.ts` — AES-GCM via Web Crypto, 32-byte key
+    from `CERTIFICATE_TOKEN_ENCRYPTION_KEY` (hex-64 or base64 of 32 bytes),
+    12-byte random IV per certificate, key-version tag.
+  - `finalize_no_dues_issuance_internal` replaced to accept
+    `_verification_token_ciphertext`, `_verification_token_iv`,
+    `_verification_token_key_version`; recomputes eligibility and authorizes
+    via `can_manage_flat_internal` inside the transaction.
+  - `no_dues_certificates.verification_token` is now nullable; new
+    certificates store encrypted-only (no plaintext).
+  - `issueNoDuesCertificate` no longer returns the raw verification URL by
+    default — clients call `getCertificateVerificationLink` instead.
+- **Authorized verification-link recovery (implemented)**:
+  `getCertificateVerificationLink` — decrypts server-side after checking
+  requester-or-flat-manager authorization; returns `{ available: false,
+  reason: "legacy_token_unavailable" }` for hash-only legacy certificates.
+- **Resident recheck & resubmit (implemented)**:
+  `recheck_no_dues_request_internal` DB RPC + `recheckAndResubmitNoDues`
+  server fn (rate-limited 5/10 min per user+request). Only `blocked_by_dues`
+  requests can transition; DB recomputes eligibility, never trusts client
+  snapshot.
+- **UI**:
+  - Society detail: verify link now fetched via authorized server fn (no more
+    fabricated `cert.verification_url`).
+  - Resident detail: same server fn + "Recheck and resubmit" button for
+    `blocked_by_dues`, with friendly messaging for still-pending dues.
+
+### Still deferred / not yet delivered this turn
+
+- Full AlertDialog wrappers on approve / reject / issue / revoke (current UI
+  keeps inline textareas + confirm buttons; destructive semantics preserved).
+- Runtime authorization matrix and encryption-tampering tests (documented,
+  test harness not yet added).
+- Legacy plaintext-token backfill script gated by
+  `ALLOW_CERTIFICATE_TOKEN_BACKFILL=true`.
+- Base-table certificate SELECT hardening (safe view + revoke direct SELECT).
+
+### Constraints preserved
+
+- No payment integration changes; Razorpay untouched; Cash + Bank Transfer
+  workflow untouched; no platform fee added.
+- No real society financial records modified — only schema functions and a
+  nullable-column relaxation on `no_dues_certificates.verification_token`.
+- Firebase→Supabase auth architecture unchanged.
+- Flat 360 remains Pro; Premium continues to inherit all features.

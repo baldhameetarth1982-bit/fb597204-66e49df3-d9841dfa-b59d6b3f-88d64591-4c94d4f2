@@ -974,6 +974,209 @@ export type Database = {
           },
         ]
       }
+      no_dues_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          certificate_id: string | null
+          created_at: string
+          id: string
+          metadata: Json
+          new_status: Database["public"]["Enums"]["no_dues_status"] | null
+          previous_status: Database["public"]["Enums"]["no_dues_status"] | null
+          request_id: string | null
+          society_id: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          certificate_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          new_status?: Database["public"]["Enums"]["no_dues_status"] | null
+          previous_status?: Database["public"]["Enums"]["no_dues_status"] | null
+          request_id?: string | null
+          society_id: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          certificate_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          new_status?: Database["public"]["Enums"]["no_dues_status"] | null
+          previous_status?: Database["public"]["Enums"]["no_dues_status"] | null
+          request_id?: string | null
+          society_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "no_dues_audit_certificate_id_fkey"
+            columns: ["certificate_id"]
+            isOneToOne: false
+            referencedRelation: "no_dues_certificates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "no_dues_audit_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "no_dues_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "no_dues_audit_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      no_dues_certificates: {
+        Row: {
+          certificate_number: string
+          created_at: string
+          flat_id: string
+          id: string
+          issued_at: string
+          issued_by: string
+          request_id: string
+          revoke_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          society_id: string
+          storage_path: string
+          updated_at: string
+          valid_until: string | null
+          verification_token: string
+        }
+        Insert: {
+          certificate_number: string
+          created_at?: string
+          flat_id: string
+          id?: string
+          issued_at?: string
+          issued_by: string
+          request_id: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          society_id: string
+          storage_path: string
+          updated_at?: string
+          valid_until?: string | null
+          verification_token: string
+        }
+        Update: {
+          certificate_number?: string
+          created_at?: string
+          flat_id?: string
+          id?: string
+          issued_at?: string
+          issued_by?: string
+          request_id?: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          society_id?: string
+          storage_path?: string
+          updated_at?: string
+          valid_until?: string | null
+          verification_token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "no_dues_certificates_flat_id_fkey"
+            columns: ["flat_id"]
+            isOneToOne: false
+            referencedRelation: "flats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "no_dues_certificates_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: true
+            referencedRelation: "no_dues_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "no_dues_certificates_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      no_dues_requests: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          eligibility_snapshot: Json
+          flat_id: string
+          id: string
+          purpose: string | null
+          rejection_reason: string | null
+          requester_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          society_id: string
+          status: Database["public"]["Enums"]["no_dues_status"]
+          submitted_at: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          eligibility_snapshot?: Json
+          flat_id: string
+          id?: string
+          purpose?: string | null
+          rejection_reason?: string | null
+          requester_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          society_id: string
+          status?: Database["public"]["Enums"]["no_dues_status"]
+          submitted_at?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          eligibility_snapshot?: Json
+          flat_id?: string
+          id?: string
+          purpose?: string | null
+          rejection_reason?: string | null
+          requester_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          society_id?: string
+          status?: Database["public"]["Enums"]["no_dues_status"]
+          submitted_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "no_dues_requests_flat_id_fkey"
+            columns: ["flat_id"]
+            isOneToOne: false
+            referencedRelation: "flats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "no_dues_requests_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       offline_residents: {
         Row: {
           created_at: string
@@ -2003,6 +2206,7 @@ export type Database = {
           points: number
           reason: string
           society_id: string
+          source_ref: string | null
           user_id: string
         }
         Insert: {
@@ -2011,6 +2215,7 @@ export type Database = {
           points: number
           reason: string
           society_id: string
+          source_ref?: string | null
           user_id: string
         }
         Update: {
@@ -2019,6 +2224,7 @@ export type Database = {
           points?: number
           reason?: string
           society_id?: string
+          source_ref?: string | null
           user_id?: string
         }
         Relationships: []
@@ -2707,6 +2913,14 @@ export type Database = {
         | "block_admin"
         | "security"
       hierarchy_kind: "society" | "structure" | "floor" | "unit"
+      no_dues_status:
+        | "draft"
+        | "submitted"
+        | "under_review"
+        | "approved"
+        | "rejected"
+        | "issued"
+        | "revoked"
       society_layout: "structured" | "serial"
     }
     CompositeTypes: {
@@ -2843,6 +3057,15 @@ export const Constants = {
         "security",
       ],
       hierarchy_kind: ["society", "structure", "floor", "unit"],
+      no_dues_status: [
+        "draft",
+        "submitted",
+        "under_review",
+        "approved",
+        "rejected",
+        "issued",
+        "revoked",
+      ],
       society_layout: ["structured", "serial"],
     },
   },

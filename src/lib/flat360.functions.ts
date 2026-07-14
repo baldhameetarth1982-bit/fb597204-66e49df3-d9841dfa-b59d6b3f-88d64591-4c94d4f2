@@ -25,7 +25,7 @@ export type SectionState<T> =
   | { status: "unsupported" }
   | { status: "error"; message: string };
 
-export type Flat360Viewer = "society_admin" | "super_admin" | "resident";
+export type Flat360Viewer = "society_admin" | "super_admin";
 
 export type Flat360Snapshot = {
   viewer: Flat360Viewer;

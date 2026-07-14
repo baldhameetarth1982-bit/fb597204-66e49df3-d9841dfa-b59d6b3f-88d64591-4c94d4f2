@@ -288,3 +288,62 @@ Status of items landed:
   nullable-column relaxation on `no_dues_certificates.verification_token`.
 - Firebase→Supabase auth architecture unchanged.
 - Flat 360 remains Pro; Premium continues to inherit all features.
+
+---
+
+## Turn 13 — Function ACL hardening + token integrity check
+
+### Delivered
+
+- **Function ACL hardening migration** applied. Additive, idempotent
+  REVOKE/GRANT pass over every No-Dues / Flat 360 helper:
+  - Internal trusted-actor + privileged mutation RPCs (`*_internal`,
+    `touch_rate_limit`, legacy `is_society_admin_for`, `is_super_admin`) —
+    REVOKE from PUBLIC/anon/authenticated, GRANT EXECUTE to `service_role`
+    only.
+  - Current-user wrappers (`current_user_is_society_admin_for`,
+    `current_user_is_super_admin`, `current_user_can_manage_flat`) — REVOKE
+    from PUBLIC/anon, GRANT EXECUTE to `authenticated` + `service_role`.
+  - Verified via `pg_proc.proacl` before migration; belt-and-suspenders even
+    where defaults already matched.
+- **Decrypted-token integrity check** in `getCertificateVerificationLink`:
+  1. Format-validates recovered raw token (`^[A-Za-z0-9_-]{32,128}$`).
+  2. SHA-256 hashes the recovered token and constant-time compares
+     (`node:crypto.timingSafeEqual`) against stored `verification_token_hash`.
+  3. Returns `{ available: false, reason: "integrity_check_failed" }` on
+     mismatch, malformed token, or hash error — no URL leaked, no
+     hash/token logged.
+  Protects against ciphertext copied between rows, mismatched fields,
+  corrupted legacy backfill.
+- **Public app origin validated** (`resolvePublicAppOrigin`): production
+  requires `PUBLIC_APP_URL` (HTTPS, non-localhost). Missing/invalid in
+  production fails closed. Dev falls back to `http://localhost:8080`. Origin
+  is normalized (no trailing slash) so QR + recovered URL match.
+
+### Still deferred (documented)
+
+- The unified origin helper is currently local to `no-dues.functions.ts`;
+  issuance path still reads `process.env.PUBLIC_APP_URL ?? "https://sociohub.live"`
+  inline. Both paths use the same env var, but the shared helper has not yet
+  been extracted to a `.server.ts` module and reused by issuance / QR /
+  public verify route.
+- Column-level SELECT hardening on `no_dues_certificates` (safe columns only
+  to `authenticated`) — not yet applied.
+- Legacy plaintext-token backfill script + integration test harness — not yet
+  added; documented as gated by `ALLOW_CERTIFICATE_TOKEN_BACKFILL=true`.
+- Full No-Dues AlertDialog wrappers — inline confirm UI still in place.
+- Flat 360 UI upgrade of `/society/flats/$id`, deterministic Unit Summary,
+  and AI Summary — not implemented this turn.
+- Runtime auth matrix (Society A vs B, block-scope, resident-denied, anon-
+  denied) — verified via ACL inspection only; live-client tests not yet run.
+- Rate-limit fail-closed policy in production — server helper already fails
+  closed on limiter outage; explicit production/dev branching not audited
+  this turn.
+
+### Constraints preserved
+
+- No payment integration changes; Razorpay untouched; Cash + Bank Transfer
+  workflow untouched; no platform fee.
+- No real society data modified — migration is ACL-only, no table changes.
+- Firebase→Supabase auth architecture unchanged.
+- Flat 360 remains Pro; Premium continues to inherit all features.

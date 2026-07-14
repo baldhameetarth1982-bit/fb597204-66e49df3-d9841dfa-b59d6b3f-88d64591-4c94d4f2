@@ -434,8 +434,16 @@ export const issueNoDuesCertificate = createServerFn({ method: "POST" })
     const { generateRawToken, hashToken, renderCertificatePdf } = await import(
       "@/lib/no-dues.server"
     );
+    const { encryptCertificateToken } = await import("@/lib/certificate-token.server");
     const rawToken = generateRawToken();
     const tokenHash = hashToken(rawToken);
+    let encrypted: { ciphertext: string; iv: string; keyVersion: number };
+    try {
+      encrypted = await encryptCertificateToken(rawToken);
+    } catch (e) {
+      logServerError("issue.encrypt", e);
+      throw new NoDuesError("ISSUE_FAILED", "Certificate encryption unavailable");
+    }
     const origin = process.env.PUBLIC_APP_URL ?? "https://sociohub.live";
     const verificationUrl = `${origin}/verify/no-dues/${rawToken}`;
     const validUntil = data.validForDays

@@ -103,11 +103,20 @@ function MoreDirectory() {
         variant="teal"
       />
       <div className="px-4 pt-4 space-y-4">
+        <SectionCard title="Discover" description="Every feature in one searchable place">
+          <TileGrid tiles={DISCOVER} />
+        </SectionCard>
         <SectionCard title="Management" description={`${MANAGEMENT.length} modules`}>
           <TileGrid tiles={MANAGEMENT} />
         </SectionCard>
         <SectionCard title="Finance" description={`${FINANCE.length} modules`}>
           <TileGrid tiles={FINANCE} />
+        </SectionCard>
+        <SectionCard title="Community" description={`${COMMUNITY.length} modules`}>
+          <TileGrid tiles={COMMUNITY} />
+        </SectionCard>
+        <SectionCard title="Certificates" description={`${CERTIFICATES.length} modules`}>
+          <TileGrid tiles={CERTIFICATES} />
         </SectionCard>
         <SectionCard title="Other" description={`${OTHER.length} modules`}>
           <TileGrid tiles={OTHER} />

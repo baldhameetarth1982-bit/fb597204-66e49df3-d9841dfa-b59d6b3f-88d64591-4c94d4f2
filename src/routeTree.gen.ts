@@ -124,6 +124,7 @@ import { Route as SocietySocietyFlatsIdRouteImport } from './routes/_society/soc
 import { Route as SocietySocietyBillsIdRouteImport } from './routes/_society/society.bills.$id'
 import { Route as SocietySocietyBillingGenerateRouteImport } from './routes/_society/society.billing.generate'
 import { Route as ResidentAppFeedPostIdRouteImport } from './routes/_resident/app.feed.$postId'
+import { Route as ApiPublicVerifyNoDuesTokenRouteImport } from './routes/api/public/verify.no-dues.$token'
 
 const WelcomeRoute = WelcomeRouteImport.update({
   id: '/welcome',
@@ -714,6 +715,12 @@ const ResidentAppFeedPostIdRoute = ResidentAppFeedPostIdRouteImport.update({
   path: '/$postId',
   getParentRoute: () => ResidentAppFeedRoute,
 } as any)
+const ApiPublicVerifyNoDuesTokenRoute =
+  ApiPublicVerifyNoDuesTokenRouteImport.update({
+    id: '/api/public/verify/no-dues/$token',
+    path: '/api/public/verify/no-dues/$token',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -827,6 +834,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
+  '/api/public/verify/no-dues/$token': typeof ApiPublicVerifyNoDuesTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -939,6 +947,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
+  '/api/public/verify/no-dues/$token': typeof ApiPublicVerifyNoDuesTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -1057,6 +1066,7 @@ export interface FileRoutesById {
   '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
+  '/api/public/verify/no-dues/$token': typeof ApiPublicVerifyNoDuesTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -1172,6 +1182,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/maintenance-reminders'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
+    | '/api/public/verify/no-dues/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -1284,6 +1295,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/maintenance-reminders'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
+    | '/api/public/verify/no-dues/$token'
   id:
     | '__root__'
     | '/'
@@ -1401,6 +1413,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/maintenance-reminders'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
+    | '/api/public/verify/no-dues/$token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1427,6 +1440,7 @@ export interface RootRouteChildren {
   ApiPublicHooksMaintenanceRemindersRoute: typeof ApiPublicHooksMaintenanceRemindersRoute
   ApiPublicHooksRazorpayRoute: typeof ApiPublicHooksRazorpayRoute
   ApiPublicHooksRunBillingRoute: typeof ApiPublicHooksRunBillingRoute
+  ApiPublicVerifyNoDuesTokenRoute: typeof ApiPublicVerifyNoDuesTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -2236,6 +2250,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResidentAppFeedPostIdRouteImport
       parentRoute: typeof ResidentAppFeedRoute
     }
+    '/api/public/verify/no-dues/$token': {
+      id: '/api/public/verify/no-dues/$token'
+      path: '/api/public/verify/no-dues/$token'
+      fullPath: '/api/public/verify/no-dues/$token'
+      preLoaderRoute: typeof ApiPublicVerifyNoDuesTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -2535,6 +2556,7 @@ const rootRouteChildren: RootRouteChildren = {
     ApiPublicHooksMaintenanceRemindersRoute,
   ApiPublicHooksRazorpayRoute: ApiPublicHooksRazorpayRoute,
   ApiPublicHooksRunBillingRoute: ApiPublicHooksRunBillingRoute,
+  ApiPublicVerifyNoDuesTokenRoute: ApiPublicVerifyNoDuesTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

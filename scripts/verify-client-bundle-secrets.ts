@@ -12,7 +12,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 
-const BUNDLE_DIRS = [".output/public", "dist"]; // TanStack Start / Vite outputs
+const BUNDLE_DIRS = ["dist/client", ".output/public"]; // browser-shipped assets only; NEVER dist/server (Worker SSR)
 const EXTS = [".js", ".mjs", ".cjs", ".map", ".css", ".html"];
 
 // Indicators of leakage. Each entry is a literal or regex that MUST NOT appear

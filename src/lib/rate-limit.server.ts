@@ -1,43 +1,45 @@
 /**
- * Tiny DB-backed rate limiter for server functions.
- * Fixed 60s windows. Server-only.
+ * Atomic DB-backed rate limiter — service_role only.
+ *
+ * Uses the `public.touch_rate_limit(_bucket, _subject, _limit, _window_seconds)`
+ * RPC which performs an atomic INSERT ... ON CONFLICT DO UPDATE and returns
+ * whether the caller is over the limit. Works across Cloudflare Worker
+ * instances with no SELECT-then-write race.
  */
+import { createHmac } from "node:crypto";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+
+export class RateLimitedError extends Error {
+  retryAfterSeconds: number;
+  constructor(retryAfterSeconds: number) {
+    super("Rate limited");
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
+
+/** HMAC-fingerprint an IP with a server-only secret so raw IPs are never stored. */
+export function fingerprintSubject(raw: string, salt = "verify"): string {
+  const secret = process.env.RATE_LIMIT_SECRET || process.env.SUPABASE_URL || "sociohub";
+  return createHmac("sha256", secret).update(`${salt}:${raw}`).digest("hex").slice(0, 32);
+}
 
 export async function checkRateLimit(opts: {
   bucket: string;
   subject: string;
   limit: number;
   windowSec?: number;
-}) {
-  const windowSec = opts.windowSec ?? 60;
-  const slot = new Date(
-    Math.floor(Date.now() / (windowSec * 1000)) * windowSec * 1000,
-  ).toISOString();
-
-  const { data: existing } = await supabaseAdmin
-    .from("rate_limits")
-    .select("count")
-    .eq("bucket", opts.bucket)
-    .eq("subject", opts.subject)
-    .eq("window_start", slot)
-    .maybeSingle();
-
-  const current = existing?.count ?? 0;
-  if (current >= opts.limit) {
-    throw new Error("Too many requests. Please slow down and try again in a moment.");
-  }
-
-  if (existing) {
-    await supabaseAdmin
-      .from("rate_limits")
-      .update({ count: current + 1 })
-      .eq("bucket", opts.bucket)
-      .eq("subject", opts.subject)
-      .eq("window_start", slot);
-  } else {
-    await supabaseAdmin
-      .from("rate_limits")
-      .insert({ bucket: opts.bucket, subject: opts.subject, window_start: slot, count: 1 });
-  }
+}): Promise<{ remaining: number; retryAfterSeconds: number }> {
+  const { data, error } = await (supabaseAdmin.rpc as any)("touch_rate_limit", {
+    _bucket: opts.bucket,
+    _subject: opts.subject,
+    _limit: opts.limit,
+    _window_seconds: opts.windowSec ?? 60,
+  });
+  if (error) throw error;
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row?.allowed) throw new RateLimitedError(row?.retry_after_seconds ?? 60);
+  return {
+    remaining: row.remaining ?? 0,
+    retryAfterSeconds: row.retry_after_seconds ?? 0,
+  };
 }

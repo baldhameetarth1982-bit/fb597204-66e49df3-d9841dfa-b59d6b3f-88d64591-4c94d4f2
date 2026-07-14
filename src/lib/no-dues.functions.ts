@@ -58,80 +58,32 @@ function logServerError(scope: string, e: unknown) {
 }
 
 /* -------------------------------------------------------------------- */
-/*  Canonical eligibility (shared source of truth)                       */
+/*  Canonical eligibility — DB-level source of truth                     */
 /* -------------------------------------------------------------------- */
 
-type Eligibility = {
+export type Eligibility = {
   eligible: boolean;
-  computed_at: string;
-  outstanding_bills: Array<{
-    id: string;
-    bill_number: string | null;
-    amount: number;
-    due_date: string | null;
-    status: string;
-    period_label: string | null;
-  }>;
   total_outstanding: number;
-  pending_payments: Array<{ id: string; amount: number; method: string | null }>;
-  blockers: string[];
+  unpaid_bills: Array<Record<string, any>>;
+  overdue_bills: Array<Record<string, any>>;
+  partially_paid_bills: Array<Record<string, any>>;
+  pending_cash_payments: Array<Record<string, any>>;
+  pending_bank_transfer_payments: Array<Record<string, any>>;
+  blockers: Array<Record<string, any>>;
+  calculated_at: string;
 };
 
-async function computeEligibility(
-  supabase: any,
-  societyId: string,
-  flatId: string,
-): Promise<Eligibility> {
-  const [billsRes, paymentsRes] = await Promise.all([
-    supabase
-      .from("bills")
-      .select("id,bill_number,amount,due_date,status,period_label")
-      .eq("society_id", societyId)
-      .eq("flat_id", flatId)
-      .in("status", ["unpaid", "overdue", "partial"]),
-    supabase
-      .from("payments")
-      .select("id,amount,method,status")
-      .eq("society_id", societyId)
-      .eq("flat_id", flatId)
-      .eq("status", "pending"),
-  ]);
-  if (billsRes.error) {
-    logServerError("eligibility.bills", billsRes.error);
+async function computeEligibilityAdmin(societyId: string, flatId: string): Promise<Eligibility> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await (supabaseAdmin.rpc as any)(
+    "compute_no_dues_eligibility_internal",
+    { _society_id: societyId, _flat_id: flatId },
+  );
+  if (error) {
+    logServerError("eligibility", error);
     throw new NoDuesError("ISSUE_FAILED");
   }
-  if (paymentsRes.error) {
-    logServerError("eligibility.payments", paymentsRes.error);
-    throw new NoDuesError("ISSUE_FAILED");
-  }
-
-  const outstanding = (billsRes.data ?? []).map((b: any) => ({
-    id: b.id as string,
-    bill_number: b.bill_number ?? null,
-    amount: Number(b.amount ?? 0),
-    due_date: b.due_date ?? null,
-    status: b.status as string,
-    period_label: b.period_label ?? null,
-  }));
-  const pending = (paymentsRes.data ?? []).map((p: any) => ({
-    id: p.id as string,
-    amount: Number(p.amount ?? 0),
-    method: p.method ?? null,
-  }));
-
-  const totalDue = outstanding.reduce((s: number, b: { amount: number }) => s + b.amount, 0);
-  const blockers: string[] = [];
-  if (outstanding.length > 0) blockers.push(`${outstanding.length} unpaid bill(s)`);
-  if (pending.length > 0) blockers.push(`${pending.length} pending payment(s) awaiting verification`);
-
-  return {
-    eligible: outstanding.length === 0 && pending.length === 0,
-    computed_at: new Date().toISOString(),
-    outstanding_bills: outstanding,
-    total_outstanding: totalDue,
-    pending_payments: pending,
-    blockers,
-  };
+  return data as Eligibility;
 }
 
 /* -------------------------------------------------------------------- */
@@ -171,7 +123,7 @@ async function assertSocietyAdmin(supabase: any, societyId: string, userId: stri
 }
 
 /* -------------------------------------------------------------------- */
-/*  Public: check eligibility                                            */
+/*  Public: check eligibility (DB-derived, never client-supplied)        */
 /* -------------------------------------------------------------------- */
 
 export const checkNoDuesEligibility = createServerFn({ method: "POST" })
@@ -182,7 +134,7 @@ export const checkNoDuesEligibility = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
     await assertResidentOfFlat(supabase, userId, data.flatId, data.societyId);
-    return await computeEligibility(supabase, data.societyId, data.flatId);
+    return await computeEligibilityAdmin(data.societyId, data.flatId);
   });
 
 /* -------------------------------------------------------------------- */

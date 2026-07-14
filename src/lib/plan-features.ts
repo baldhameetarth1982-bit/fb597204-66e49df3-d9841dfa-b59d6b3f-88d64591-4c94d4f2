@@ -421,6 +421,7 @@ const CATALOG: FeatureCatalogEntry[] = [
     minPlan: "pro",
     roles: ["society_admin"],
     route: "/society/flats",
+    routes: ["/society/flats/$id"],
     keywords: ["flat 360", "unit 360", "house 360", "dashboard", "unit"],
     icon: "Home",
     status: "partial",
@@ -436,6 +437,7 @@ const CATALOG: FeatureCatalogEntry[] = [
     minPlan: "pro",
     roles: ["society_admin", "resident"],
     route: "/society/no-dues",
+    routes: ["/app/no-dues", "/verify/no-dues/$token"],
     keywords: [
       "no dues",
       "no-dues",
@@ -446,8 +448,8 @@ const CATALOG: FeatureCatalogEntry[] = [
       "verification",
     ],
     icon: "FileCheck2",
-    status: "planned",
-    backendReady: false,
+    status: "available",
+    backendReady: true,
     navigationGroup: "Certificates",
   },
   {

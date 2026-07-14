@@ -1,12 +1,13 @@
 /**
- * Flat 360 — typed server data service.
+ * Flat 360 — typed server data service (ADMIN surface only).
  *
  * Society isolation: reads are filtered by (society_id, flat_id).
- * Authorization:
- *   - society_admin / block_admin for THAT society (via `is_society_admin_for`)
- *   - super_admin (via `is_super_admin`) for platform support access
- *   - active resident of THAT flat (limited resident-safe projection)
- * A resident is NOT treated as an admin. Broad global role names are not used.
+ * Authorization (admin route only):
+ *   - society-scoped admin (society_admin / block_admin for THAT society) via
+ *     `is_society_admin_for_internal` (service-role trusted-actor helper)
+ *   - super_admin (platform support) via `is_super_admin_internal`
+ * Residents are DENIED here. A resident-facing unit summary must use a
+ * separate resident-safe server function with a narrower projection.
  *
  * PII minimization: default projection excludes phone, email, DOB, and other
  * sensitive fields. Sections without real backing data return

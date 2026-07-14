@@ -81,6 +81,7 @@ export type EligibilityBlocker = {
 export type Eligibility = {
   eligible: boolean;
   total_outstanding: number;
+  pending_payment_total: number;
   counts: {
     overdue: number;
     partial: number;

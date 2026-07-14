@@ -590,3 +590,108 @@ export const revokeNoDuesCertificate = createServerFn({ method: "POST" })
     }
     return { ok: true };
   });
+
+/* -------------------------------------------------------------------- */
+/*  Verification-link recovery (authorized, server-side decrypt)         */
+/* -------------------------------------------------------------------- */
+
+export const getCertificateVerificationLink = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { certificateId: string }) =>
+    z.object({ certificateId: uuid }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { userId } = context as any;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: cert, error } = await supabaseAdmin
+      .from("no_dues_certificates")
+      .select(
+        "id,request_id,society_id,flat_id,verification_token,verification_token_ciphertext,verification_token_iv,verification_token_key_version",
+      )
+      .eq("id", data.certificateId)
+      .maybeSingle();
+    if (error || !cert) throw new NoDuesError("CERTIFICATE_NOT_FOUND");
+
+    const { data: req } = await supabaseAdmin
+      .from("no_dues_requests")
+      .select("id,requester_id,flat_id")
+      .eq("id", cert.request_id)
+      .maybeSingle();
+    let ok = req?.requester_id === userId;
+    if (!ok) {
+      try {
+        await assertCanManageFlat(userId, cert.flat_id);
+        ok = true;
+      } catch {
+        ok = false;
+      }
+    }
+    if (!ok) throw new NoDuesError("NOT_AUTHORIZED");
+
+    const origin = process.env.PUBLIC_APP_URL ?? "https://sociohub.live";
+    let rawToken: string | null = null;
+
+    if (cert.verification_token_ciphertext && cert.verification_token_iv) {
+      try {
+        const { decryptCertificateToken } = await import("@/lib/certificate-token.server");
+        rawToken = await decryptCertificateToken(
+          cert.verification_token_ciphertext,
+          cert.verification_token_iv,
+          cert.verification_token_key_version ?? null,
+        );
+      } catch (e) {
+        logServerError("verifyLink.decrypt", e);
+        return { available: false as const, reason: "decryption_failed" as const };
+      }
+    } else if (cert.verification_token) {
+      // Legacy plaintext token — recoverable via server only.
+      rawToken = cert.verification_token as string;
+    }
+
+    if (!rawToken) {
+      return { available: false as const, reason: "legacy_token_unavailable" as const };
+    }
+    return { available: true as const, url: `${origin}/verify/no-dues/${rawToken}` };
+  });
+
+/* -------------------------------------------------------------------- */
+/*  Resident: recheck & resubmit (only from blocked_by_dues)             */
+/* -------------------------------------------------------------------- */
+
+export const recheckAndResubmitNoDues = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { requestId: string }) =>
+    z.object({ requestId: uuid }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { userId } = context as any;
+    // Endpoint-specific rate limit: 5 rechecks / 10 min per (user, request)
+    try {
+      const { checkRateLimit } = await import("@/lib/rate-limit.server");
+      const rl = await (checkRateLimit as any)({
+        key: `nd:recheck:${userId}:${data.requestId}`,
+        limit: 5,
+        windowSeconds: 600,
+      });
+      if (rl && rl.allowed === false) throw new NoDuesError("RATE_LIMITED");
+    } catch (e) {
+      if (e instanceof NoDuesError) throw e;
+      // Rate limiter unavailable — fail open to avoid blocking legitimate users
+      logServerError("recheck.rateLimit", e);
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await (supabaseAdmin.rpc as any)(
+      "recheck_no_dues_request_internal",
+      { _actor_id: userId, _request_id: data.requestId },
+    );
+    if (error) {
+      logServerError("recheck", error);
+      throw new NoDuesError(mapPgError(error.message));
+    }
+    const row = Array.isArray(rows) ? rows[0] : rows;
+    return {
+      status: row?.new_status as string,
+      eligibility: (row?.eligibility ?? null) as Eligibility | null,
+    };
+  });

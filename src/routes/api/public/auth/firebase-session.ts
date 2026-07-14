@@ -27,7 +27,7 @@ const ISSUER = `https://securetoken.google.com/${FIREBASE_PROJECT_ID}`;
 // Google's JWK endpoint for Firebase ID tokens. `createRemoteJWKSet` handles
 // caching, kid rotation, and cooldown natively — works on Cloudflare Workers.
 const JWKS = createRemoteJWKSet(
-  new URL("https://www.googleapis.com/service_accounts/v1/jwk/[email protected]"),
+  new URL("https://www.googleapis.com/robot/v1/metadata/jwk/[email protected]"),
   { cooldownDuration: 60_000 },
 );
 

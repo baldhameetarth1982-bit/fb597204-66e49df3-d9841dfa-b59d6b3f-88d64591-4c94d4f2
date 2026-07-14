@@ -71,7 +71,7 @@ export type Flat360Snapshot = {
   visitors: { recent_count: number };
   approvals: { pending_count: number };
   no_dues: {
-    eligibility: unknown;
+    eligibility: Record<string, any> | null;
     latest_request: {
       id: string;
       status: string;
@@ -170,7 +170,7 @@ export const getFlat360 = createServerFn({ method: "POST" })
       ]);
 
     // Eligibility from canonical DB function via admin client (service-role only).
-    let eligibility: unknown = null;
+    let eligibility: Record<string, any> | null = null;
     try {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { data: eligData } = await (supabaseAdmin.rpc as any)(

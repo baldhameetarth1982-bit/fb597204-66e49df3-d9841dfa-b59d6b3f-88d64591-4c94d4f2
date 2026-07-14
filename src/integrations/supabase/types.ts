@@ -1081,7 +1081,10 @@ export type Database = {
           updated_at: string
           valid_until: string | null
           verification_token: string | null
+          verification_token_ciphertext: string | null
           verification_token_hash: string | null
+          verification_token_iv: string | null
+          verification_token_key_version: number | null
         }
         Insert: {
           certificate_number: string
@@ -1099,7 +1102,10 @@ export type Database = {
           updated_at?: string
           valid_until?: string | null
           verification_token?: string | null
+          verification_token_ciphertext?: string | null
           verification_token_hash?: string | null
+          verification_token_iv?: string | null
+          verification_token_key_version?: number | null
         }
         Update: {
           certificate_number?: string
@@ -1117,7 +1123,10 @@ export type Database = {
           updated_at?: string
           valid_until?: string | null
           verification_token?: string | null
+          verification_token_ciphertext?: string | null
           verification_token_hash?: string | null
+          verification_token_iv?: string | null
+          verification_token_key_version?: number | null
         }
         Relationships: [
           {
@@ -2659,6 +2668,11 @@ export type Database = {
           id: string
         }[]
       }
+      current_user_is_society_admin_for: {
+        Args: { _society_id: string }
+        Returns: boolean
+      }
+      current_user_is_super_admin: { Args: never; Returns: boolean }
       deactivate_flat_resident: {
         Args: { _flat_resident_id: string; _reason?: string }
         Returns: undefined
@@ -2832,7 +2846,12 @@ export type Database = {
         Args: { _society_id: string; _user_id: string }
         Returns: boolean
       }
+      is_society_admin_for_internal: {
+        Args: { _actor_id: string; _society_id: string }
+        Returns: boolean
+      }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_super_admin_internal: { Args: { _actor_id: string }; Returns: boolean }
       join_society_with_code: { Args: { _code: string }; Returns: string }
       list_pending_join_requests: {
         Args: { _society_id: string }

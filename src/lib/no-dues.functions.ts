@@ -155,7 +155,6 @@ export const submitNoDuesRequest = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
     await assertResidentOfFlat(supabase, userId, data.flatId, data.societyId);
-    const snapshot = await computeEligibility(supabase, data.societyId, data.flatId);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await (supabaseAdmin.rpc as any)(
@@ -165,8 +164,6 @@ export const submitNoDuesRequest = createServerFn({ method: "POST" })
         _society_id: data.societyId,
         _flat_id: data.flatId,
         _purpose: data.purpose ?? null,
-        _snapshot: snapshot,
-        _eligible: snapshot.eligible,
       },
     );
     if (error) {
@@ -174,7 +171,11 @@ export const submitNoDuesRequest = createServerFn({ method: "POST" })
       throw new NoDuesError(mapPgError(error.message));
     }
     const row = Array.isArray(rows) ? rows[0] : rows;
-    return { id: row.request_id as string, status: row.status as string, snapshot };
+    return {
+      id: row.request_id as string,
+      status: row.status as string,
+      snapshot: row.eligibility as Eligibility,
+    };
   });
 
 /* -------------------------------------------------------------------- */

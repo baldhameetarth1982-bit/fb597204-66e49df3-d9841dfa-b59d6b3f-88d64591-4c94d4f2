@@ -119,7 +119,7 @@ async function computeEligibility(
     method: p.method ?? null,
   }));
 
-  const totalDue = outstanding.reduce((s, b) => s + b.amount, 0);
+  const totalDue = outstanding.reduce((s: number, b: { amount: number }) => s + b.amount, 0);
   const blockers: string[] = [];
   if (outstanding.length > 0) blockers.push(`${outstanding.length} unpaid bill(s)`);
   if (pending.length > 0) blockers.push(`${pending.length} pending payment(s) awaiting verification`);

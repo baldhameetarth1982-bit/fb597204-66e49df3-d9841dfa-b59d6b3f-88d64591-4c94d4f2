@@ -133,14 +133,29 @@ async function assertResidentOfFlat(
   }
 }
 
-async function assertSocietyAdmin(supabase: any, societyId: string, userId: string) {
-  const { data } = await supabase.rpc("is_society_admin_for", {
-    _user_id: userId,
-    _society_id: societyId,
+async function assertCanManageFlat(userId: string, flatId: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await (supabaseAdmin.rpc as any)("can_manage_flat_internal", {
+    _actor_id: userId,
+    _flat_id: flatId,
   });
-  if (data) return;
-  const { data: sa } = await supabase.rpc("is_super_admin", { _user_id: userId });
-  if (!sa) throw new NoDuesError("NOT_AUTHORIZED");
+  if (error) {
+    logServerError("assertCanManageFlat", error);
+    throw new NoDuesError("NOT_AUTHORIZED");
+  }
+  if (!data) throw new NoDuesError("NOT_AUTHORIZED");
+}
+
+async function assertSocietyScopeAdmin(userId: string, societyId: string) {
+  // For list views not tied to a single flat — society_admin or super_admin.
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const [{ data: sa }, { data: su }] = await Promise.all([
+    (supabaseAdmin.rpc as any)("is_society_admin_for_internal", {
+      _actor_id: userId, _society_id: societyId,
+    }),
+    (supabaseAdmin.rpc as any)("is_super_admin_internal", { _actor_id: userId }),
+  ]);
+  if (!sa && !su) throw new NoDuesError("NOT_AUTHORIZED");
 }
 
 /* -------------------------------------------------------------------- */
@@ -229,7 +244,7 @@ export const listSocietyNoDuesRequests = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
-    await assertSocietyAdmin(supabase, data.societyId, userId);
+    await assertSocietyScopeAdmin(userId, data.societyId);
     let q = supabase
       .from("no_dues_requests")
       .select(
@@ -265,14 +280,11 @@ export const getNoDuesRequestDetail = createServerFn({ method: "POST" })
 
     let ok = req.requester_id === userId;
     if (!ok) {
-      const { data: adm } = await supabase.rpc("is_society_admin_for", {
-        _user_id: userId,
-        _society_id: req.society_id,
-      });
-      ok = !!adm;
-      if (!ok) {
-        const { data: sa } = await supabase.rpc("is_super_admin", { _user_id: userId });
-        ok = !!sa;
+      try {
+        await assertCanManageFlat(userId, req.flat_id);
+        ok = true;
+      } catch {
+        ok = false;
       }
     }
     if (!ok) throw new NoDuesError("NOT_AUTHORIZED");
@@ -330,7 +342,7 @@ export const reviewNoDuesRequest = createServerFn({ method: "POST" })
       .eq("id", data.requestId)
       .maybeSingle();
     if (error || !req) throw new NoDuesError("REQUEST_NOT_FOUND");
-    await assertSocietyAdmin(supabase, req.society_id, userId);
+    await assertCanManageFlat(userId, req.flat_id);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -380,7 +392,7 @@ export const issueNoDuesCertificate = createServerFn({ method: "POST" })
       .eq("id", data.requestId)
       .maybeSingle();
     if (error || !req) throw new NoDuesError("REQUEST_NOT_FOUND");
-    await assertSocietyAdmin(supabase, req.society_id, userId);
+    await assertCanManageFlat(userId, req.flat_id);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -422,8 +434,16 @@ export const issueNoDuesCertificate = createServerFn({ method: "POST" })
     const { generateRawToken, hashToken, renderCertificatePdf } = await import(
       "@/lib/no-dues.server"
     );
+    const { encryptCertificateToken } = await import("@/lib/certificate-token.server");
     const rawToken = generateRawToken();
     const tokenHash = hashToken(rawToken);
+    let encrypted: { ciphertext: string; iv: string; keyVersion: number };
+    try {
+      encrypted = await encryptCertificateToken(rawToken);
+    } catch (e) {
+      logServerError("issue.encrypt", e);
+      throw new NoDuesError("ISSUE_FAILED", "Certificate encryption unavailable");
+    }
     const origin = process.env.PUBLIC_APP_URL ?? "https://sociohub.live";
     const verificationUrl = `${origin}/verify/no-dues/${rawToken}`;
     const validUntil = data.validForDays
@@ -468,6 +488,9 @@ export const issueNoDuesCertificate = createServerFn({ method: "POST" })
         _request_id: req.id,
         _certificate_number: certNumber,
         _verification_token_hash: tokenHash,
+        _verification_token_ciphertext: encrypted.ciphertext,
+        _verification_token_iv: encrypted.iv,
+        _verification_token_key_version: encrypted.keyVersion,
         _storage_path: storagePath,
         _valid_until: validUntil ? validUntil.toISOString().slice(0, 10) : null,
       },
@@ -519,14 +542,11 @@ export const getCertificateDownloadUrl = createServerFn({ method: "POST" })
       .maybeSingle();
     let ok = req?.requester_id === userId;
     if (!ok) {
-      const { data: adm } = await supabase.rpc("is_society_admin_for", {
-        _user_id: userId,
-        _society_id: cert.society_id,
-      });
-      ok = !!adm;
-      if (!ok) {
-        const { data: sa } = await supabase.rpc("is_super_admin", { _user_id: userId });
-        ok = !!sa;
+      try {
+        await assertCanManageFlat(userId, cert.flat_id);
+        ok = true;
+      } catch {
+        ok = false;
       }
     }
     if (!ok) throw new NoDuesError("NOT_AUTHORIZED");
@@ -569,4 +589,110 @@ export const revokeNoDuesCertificate = createServerFn({ method: "POST" })
       throw new NoDuesError(mapPgError(error.message));
     }
     return { ok: true };
+  });
+
+/* -------------------------------------------------------------------- */
+/*  Verification-link recovery (authorized, server-side decrypt)         */
+/* -------------------------------------------------------------------- */
+
+export const getCertificateVerificationLink = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { certificateId: string }) =>
+    z.object({ certificateId: uuid }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { userId } = context as any;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: cert, error } = await supabaseAdmin
+      .from("no_dues_certificates")
+      .select(
+        "id,request_id,society_id,flat_id,verification_token,verification_token_ciphertext,verification_token_iv,verification_token_key_version",
+      )
+      .eq("id", data.certificateId)
+      .maybeSingle();
+    if (error || !cert) throw new NoDuesError("CERTIFICATE_NOT_FOUND");
+
+    const { data: req } = await supabaseAdmin
+      .from("no_dues_requests")
+      .select("id,requester_id,flat_id")
+      .eq("id", cert.request_id)
+      .maybeSingle();
+    let ok = req?.requester_id === userId;
+    if (!ok) {
+      try {
+        await assertCanManageFlat(userId, cert.flat_id);
+        ok = true;
+      } catch {
+        ok = false;
+      }
+    }
+    if (!ok) throw new NoDuesError("NOT_AUTHORIZED");
+
+    const origin = process.env.PUBLIC_APP_URL ?? "https://sociohub.live";
+    let rawToken: string | null = null;
+
+    if (cert.verification_token_ciphertext && cert.verification_token_iv) {
+      try {
+        const { decryptCertificateToken } = await import("@/lib/certificate-token.server");
+        rawToken = await decryptCertificateToken(
+          cert.verification_token_ciphertext,
+          cert.verification_token_iv,
+          cert.verification_token_key_version ?? null,
+        );
+      } catch (e) {
+        logServerError("verifyLink.decrypt", e);
+        return { available: false as const, reason: "decryption_failed" as const };
+      }
+    } else if (cert.verification_token) {
+      // Legacy plaintext token — recoverable via server only.
+      rawToken = cert.verification_token as string;
+    }
+
+    if (!rawToken) {
+      return { available: false as const, reason: "legacy_token_unavailable" as const };
+    }
+    return { available: true as const, url: `${origin}/verify/no-dues/${rawToken}` };
+  });
+
+/* -------------------------------------------------------------------- */
+/*  Resident: recheck & resubmit (only from blocked_by_dues)             */
+/* -------------------------------------------------------------------- */
+
+export const recheckAndResubmitNoDues = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { requestId: string }) =>
+    z.object({ requestId: uuid }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { userId } = context as any;
+    // Endpoint-specific rate limit: 5 rechecks / 10 min per (user, request)
+    try {
+      const { checkRateLimit, RateLimitedError } = await import("@/lib/rate-limit.server");
+      await checkRateLimit({
+        bucket: "no_dues_recheck",
+        subject: `${userId}:${data.requestId}`,
+        limit: 5,
+        windowSec: 600,
+      });
+      void RateLimitedError;
+    } catch (e: any) {
+      if (e?.name === "RateLimitedError") throw new NoDuesError("RATE_LIMITED");
+      // Rate limiter unavailable — fail open to avoid blocking legitimate users
+      logServerError("recheck.rateLimit", e);
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await (supabaseAdmin.rpc as any)(
+      "recheck_no_dues_request_internal",
+      { _actor_id: userId, _request_id: data.requestId },
+    );
+    if (error) {
+      logServerError("recheck", error);
+      throw new NoDuesError(mapPgError(error.message));
+    }
+    const row = Array.isArray(rows) ? rows[0] : rows;
+    return {
+      status: row?.new_status as string,
+      eligibility: (row?.eligibility ?? null) as Eligibility | null,
+    };
   });

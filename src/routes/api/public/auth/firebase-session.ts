@@ -24,12 +24,11 @@ import { createLocalJWKSet, jwtVerify, type JSONWebKeySet } from "jose";
 const FIREBASE_PROJECT_ID = "sociohub-49e4f";
 const ISSUER = `https://securetoken.google.com/${FIREBASE_PROJECT_ID}`;
 
-// Firebase ID tokens are signed by the securetoken service account. Google
-// publishes the JWK set here. We fetch it manually (instead of relying on
-// jose's createRemoteJWKSet) so we control error handling in the Worker
-// runtime and can surface real HTTP failures.
+// Firebase ID tokens are signed by Google's securetoken service account.
+// Keep the real service-account email in the URL; placeholder/redacted forms
+// make Google return HTTP 400.
 const JWKS_URL =
-  "https://www.googleapis.com/robot/v1/metadata/jwk/[email protected]";
+  "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
 
 let cached: { at: number; keySet: ReturnType<typeof createLocalJWKSet> } | null = null;
 const TTL_MS = 60 * 60 * 1000; // 1h — Google rotates ~daily
@@ -38,7 +37,8 @@ async function getKeySet() {
   if (cached && Date.now() - cached.at < TTL_MS) return cached.keySet;
   const res = await fetch(JWKS_URL, { headers: { accept: "application/json" } });
   if (!res.ok) {
-    throw new Error(`JWKS fetch failed: HTTP ${res.status}`);
+    const detail = await res.text().catch(() => "");
+    throw new Error(`Firebase signing keys unavailable: HTTP ${res.status}${detail ? ` — ${detail.slice(0, 120)}` : ""}`);
   }
   const jwks = (await res.json()) as JSONWebKeySet;
   const keySet = createLocalJWKSet(jwks);

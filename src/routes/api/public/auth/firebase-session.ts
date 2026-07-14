@@ -136,13 +136,19 @@ export const Route = createFileRoute("/api/public/auth/firebase-session")({
           if (existing?.user_id) userId = existing.user_id as string;
         }
 
-        // Otherwise try by email (via admin list — filtered by email)
+        // Otherwise look up by email directly in auth.users using service role.
+        // admin.listUsers has no server-side email filter, so a paginated scan
+        // would miss existing users past the first page and then createUser
+        // would fail with "A user with this email address has already been
+        // registered".
         if (!userId && emailFromToken) {
-          const { data: list } = await admin.listUsers({ page: 1, perPage: 1 } as any);
-          // listUsers doesn't filter — fall back to a targeted lookup
-          // via the users view isn't accessible, so use a getUserByEmail workaround:
-          const found = list?.users?.find((u: any) => u.email?.toLowerCase() === emailFromToken.toLowerCase());
-          if (found) userId = found.id;
+          const { data: found } = await (supabaseAdmin as any)
+            .schema("auth")
+            .from("users")
+            .select("id")
+            .ilike("email", emailFromToken)
+            .maybeSingle();
+          if (found?.id) userId = found.id as string;
         }
 
         if (!userId) {

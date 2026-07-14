@@ -16,6 +16,13 @@ import {
   revokeNoDuesCertificate,
   getCertificateDownloadUrl,
 } from "@/lib/no-dues.functions";
+import {
+  statusLabel,
+  auditActionLabel,
+  formatCurrency,
+  blockerTitle,
+  blockerSubtitle,
+} from "@/lib/no-dues-labels";
 
 export const Route = createFileRoute("/_society/society/no-dues/$id")({
   head: () => ({
@@ -138,11 +145,11 @@ function SocietyNoDuesDetail() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground">Status</p>
-              <StatusChip>{req.status}</StatusChip>
+              <StatusChip>{statusLabel(req.status)}</StatusChip>
             </div>
             <div className="text-right">
               <p className="text-xs text-muted-foreground">Outstanding</p>
-              <p className="font-semibold">₹{Number(elig?.total_outstanding ?? 0)}</p>
+              <p className="font-semibold">{formatCurrency(elig?.total_outstanding)}</p>
             </div>
           </div>
           {req.purpose && (
@@ -158,14 +165,14 @@ function SocietyNoDuesDetail() {
 
         {blockers.length > 0 && (
           <SectionCard>
-            <p className="text-sm font-medium mb-1">Blockers</p>
-            <ul className="text-xs space-y-1">
+            <p className="text-sm font-medium mb-2">Blockers</p>
+            <ul className="space-y-3">
               {blockers.slice(0, 20).map((b: any, i: number) => (
-                <li key={i} className="text-muted-foreground">
-                  {b.type}
-                  {b.bill_number ? ` · ${b.bill_number}` : ""}
-                  {b.remaining_amount != null ? ` · ₹${b.remaining_amount}` : ""}
-                  {b.due_date ? ` · due ${b.due_date}` : ""}
+                <li key={i} className="border-l-2 border-destructive/40 pl-3">
+                  <p className="text-sm font-medium">{blockerTitle(b)}</p>
+                  {blockerSubtitle(b) && (
+                    <p className="text-xs text-muted-foreground">{blockerSubtitle(b)}</p>
+                  )}
                 </li>
               ))}
             </ul>
@@ -185,10 +192,22 @@ function SocietyNoDuesDetail() {
                 Revoked · {cert.revoke_reason ?? ""}
               </p>
             )}
-            <div className="flex gap-2 mt-2">
+            <div className="flex gap-2 mt-2 flex-wrap">
               <Button size="sm" variant="outline" onClick={handleDownload}>
                 Download
               </Button>
+              {cert.verification_url && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={async () => {
+                    try { await navigator.clipboard.writeText(cert.verification_url); toast.success("Link copied"); }
+                    catch { toast.error("Copy failed"); }
+                  }}
+                >
+                  Copy verify link
+                </Button>
+              )}
             </div>
           </SectionCard>
         )}
@@ -276,10 +295,7 @@ function SocietyNoDuesDetail() {
           <ul className="space-y-2 text-xs">
             {audit.map((a: any) => (
               <li key={a.id} className="flex justify-between">
-                <span>
-                  {a.action}
-                  {a.previous_status && a.new_status ? ` · ${a.previous_status} → ${a.new_status}` : ""}
-                </span>
+                <span>{auditActionLabel(a.action)}</span>
                 <span className="text-muted-foreground">
                   {new Date(a.created_at).toLocaleString()}
                 </span>

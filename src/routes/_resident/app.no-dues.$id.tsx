@@ -11,6 +11,15 @@ import {
   getNoDuesRequestDetail,
   getCertificateDownloadUrl,
 } from "@/lib/no-dues.functions";
+import {
+  statusLabel,
+  statusExplanation,
+  auditActionLabel,
+  formatCurrency,
+  blockerTitle,
+  blockerSubtitle,
+  blockerResolution,
+} from "@/lib/no-dues-labels";
 
 export const Route = createFileRoute("/_resident/app/no-dues/$id")({
   head: () => ({
@@ -61,15 +70,25 @@ function ResidentNoDuesDetail() {
   const elig = req?.eligibility_snapshot ?? {};
   const blockers = elig?.blockers ?? [];
 
+  const verifyUrl = cert?.verification_url as string | undefined;
+  const copyVerify = async () => {
+    if (!verifyUrl) return;
+    try { await navigator.clipboard.writeText(verifyUrl); toast.success("Link copied"); }
+    catch { toast.error("Copy failed"); }
+  };
+
   return (
     <div className="pb-24">
-      <MobileHero title={`Request · ${flat?.flat_number ?? "—"}`} subtitle={req.status} />
+      <MobileHero title={`Request · ${flat?.flat_number ?? "—"}`} subtitle={statusLabel(req.status)} />
       <div className="px-4 space-y-3">
         <SectionCard>
           <div className="flex items-center justify-between">
-            <StatusChip>{req.status}</StatusChip>
-            <p className="text-sm">Outstanding ₹{Number(elig?.total_outstanding ?? 0)}</p>
+            <StatusChip>{statusLabel(req.status)}</StatusChip>
+            <p className="text-sm">Outstanding {formatCurrency(elig?.total_outstanding)}</p>
           </div>
+          {statusExplanation(req.status) && (
+            <p className="text-xs mt-2 text-muted-foreground">{statusExplanation(req.status)}</p>
+          )}
           {req.purpose && (
             <p className="text-xs mt-2 text-muted-foreground">Purpose: {req.purpose}</p>
           )}
@@ -80,13 +99,15 @@ function ResidentNoDuesDetail() {
 
         {blockers.length > 0 && (
           <SectionCard>
-            <p className="text-sm font-medium mb-1">Why it's blocked</p>
-            <ul className="text-xs space-y-1">
+            <p className="text-sm font-medium mb-2">Why it's blocked</p>
+            <ul className="space-y-3">
               {blockers.slice(0, 20).map((b: any, i: number) => (
-                <li key={i} className="text-muted-foreground">
-                  {b.type}
-                  {b.bill_number ? ` · ${b.bill_number}` : ""}
-                  {b.remaining_amount != null ? ` · ₹${b.remaining_amount}` : ""}
+                <li key={i} className="border-l-2 border-destructive/40 pl-3">
+                  <p className="text-sm font-medium">{blockerTitle(b)}</p>
+                  {blockerSubtitle(b) && (
+                    <p className="text-xs text-muted-foreground">{blockerSubtitle(b)}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-1">{blockerResolution(b)}</p>
                 </li>
               ))}
             </ul>
@@ -102,11 +123,14 @@ function ResidentNoDuesDetail() {
               {cert.valid_until ? ` · valid till ${cert.valid_until}` : ""}
             </p>
             {cert.revoked_at ? (
-              <p className="text-xs text-destructive">Revoked</p>
+              <p className="text-xs text-destructive mt-1">This certificate has been revoked.</p>
             ) : (
-              <Button size="sm" variant="outline" onClick={handleDownload} className="mt-2">
-                Download PDF
-              </Button>
+              <div className="flex gap-2 mt-2 flex-wrap">
+                <Button size="sm" variant="outline" onClick={handleDownload}>Download PDF</Button>
+                {verifyUrl && (
+                  <Button size="sm" variant="ghost" onClick={copyVerify}>Copy verify link</Button>
+                )}
+              </div>
             )}
           </SectionCard>
         )}
@@ -116,10 +140,7 @@ function ResidentNoDuesDetail() {
           <ul className="space-y-2 text-xs">
             {audit.map((a: any) => (
               <li key={a.id} className="flex justify-between">
-                <span>
-                  {a.action}
-                  {a.new_status ? ` → ${a.new_status}` : ""}
-                </span>
+                <span>{auditActionLabel(a.action)}</span>
                 <span className="text-muted-foreground">
                   {new Date(a.created_at).toLocaleString()}
                 </span>

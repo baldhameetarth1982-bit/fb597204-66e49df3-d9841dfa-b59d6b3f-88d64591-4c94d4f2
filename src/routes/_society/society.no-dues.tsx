@@ -13,6 +13,7 @@ import {
   reviewNoDuesRequest,
   issueNoDuesCertificate,
 } from "@/lib/no-dues.functions";
+import { statusLabel, formatCurrency } from "@/lib/no-dues-labels";
 import { useSocietyId } from "@/hooks/useSocietyId";
 
 export const Route = createFileRoute("/_society/society/no-dues")({
@@ -96,7 +97,7 @@ function NoDuesAdminInner() {
                     {new Date(r.submitted_at).toLocaleString()}
                   </p>
                 </div>
-                <StatusChip>{r.status}</StatusChip>
+                <StatusChip>{statusLabel(r.status)}</StatusChip>
               </div>
               {r.purpose && (
                 <p className="text-sm mb-2">
@@ -105,7 +106,7 @@ function NoDuesAdminInner() {
               )}
               {snap.total_outstanding > 0 && (
                 <p className="text-xs text-destructive mb-2">
-                  Outstanding: ₹{snap.total_outstanding} ({snap.outstanding_bills?.length ?? 0} bills)
+                  Outstanding: {formatCurrency(snap.total_outstanding)} ({(snap.blockers?.length ?? 0)} items)
                 </p>
               )}
               <div className="flex gap-2 flex-wrap">

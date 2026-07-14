@@ -16,6 +16,7 @@ import {
   checkNoDuesEligibility,
   getCertificateDownloadUrl,
 } from "@/lib/no-dues.functions";
+import { statusLabel, formatCurrency } from "@/lib/no-dues-labels";
 
 export const Route = createFileRoute("/_resident/app/no-dues")({
   head: () => ({
@@ -103,12 +104,12 @@ function ResidentNoDues() {
               <p className="text-sm font-medium">
                 {new Date(r.submitted_at).toLocaleDateString()}
               </p>
-              <StatusChip>{r.status}</StatusChip>
+              <StatusChip>{statusLabel(r.status)}</StatusChip>
             </div>
             {r.purpose && <p className="text-xs text-muted-foreground">{r.purpose}</p>}
             {r.eligibility_snapshot?.total_outstanding > 0 && (
               <p className="text-xs text-destructive mt-1">
-                Outstanding ₹{r.eligibility_snapshot.total_outstanding}
+                Outstanding {formatCurrency(r.eligibility_snapshot.total_outstanding)}
               </p>
             )}
             {r.status === "issued" && (

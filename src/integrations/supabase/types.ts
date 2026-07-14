@@ -1035,6 +1035,35 @@ export type Database = {
           },
         ]
       }
+      no_dues_cert_counters: {
+        Row: {
+          last_seq: number
+          society_id: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          last_seq?: number
+          society_id: string
+          updated_at?: string
+          year?: number
+        }
+        Update: {
+          last_seq?: number
+          society_id?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "no_dues_cert_counters_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: true
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       no_dues_certificates: {
         Row: {
           certificate_number: string
@@ -2639,6 +2668,19 @@ export type Database = {
         }
         Returns: string
       }
+      finalize_no_dues_issuance: {
+        Args: {
+          _certificate_number: string
+          _request_id: string
+          _storage_path: string
+          _valid_until: string
+          _verification_token_hash: string
+        }
+        Returns: {
+          certificate_id: string
+          certificate_number: string
+        }[]
+      }
       find_referrer_by_code: { Args: { _code: string }; Returns: string }
       find_society_by_code: {
         Args: { _code: string }
@@ -2811,6 +2853,10 @@ export type Database = {
         }[]
       }
       mark_aadhaar_verified: { Args: { _last4: string }; Returns: undefined }
+      next_no_dues_cert_number: {
+        Args: { _society_id: string }
+        Returns: string
+      }
       regenerate_society_invite_code: {
         Args: { _society_id: string }
         Returns: string
@@ -2826,6 +2872,10 @@ export type Database = {
       }
       reupload_own_kyc: {
         Args: { _aadhaar_last4: string; _aadhaar_url: string }
+        Returns: undefined
+      }
+      revoke_no_dues_certificate: {
+        Args: { _certificate_id: string; _reason: string }
         Returns: undefined
       }
       save_wizard_draft: {

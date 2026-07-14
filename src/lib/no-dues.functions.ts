@@ -531,14 +531,11 @@ export const getCertificateDownloadUrl = createServerFn({ method: "POST" })
       .maybeSingle();
     let ok = req?.requester_id === userId;
     if (!ok) {
-      const { data: adm } = await supabase.rpc("is_society_admin_for", {
-        _user_id: userId,
-        _society_id: cert.society_id,
-      });
-      ok = !!adm;
-      if (!ok) {
-        const { data: sa } = await supabase.rpc("is_super_admin", { _user_id: userId });
-        ok = !!sa;
+      try {
+        await assertCanManageFlat(userId, cert.flat_id);
+        ok = true;
+      } catch {
+        ok = false;
       }
     }
     if (!ok) throw new NoDuesError("NOT_AUTHORIZED");

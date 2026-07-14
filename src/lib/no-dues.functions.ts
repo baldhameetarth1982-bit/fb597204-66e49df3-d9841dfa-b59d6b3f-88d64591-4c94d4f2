@@ -495,7 +495,7 @@ export const issueNoDuesCertificate = createServerFn({ method: "POST" })
     if (!snap.eligible) throw new NoDuesError("BLOCKED_BY_DUES");
 
     // Reserve certificate number atomically (per-society sequence)
-    const { data: certNumber, error: nErr } = await supabase.rpc(
+    const { data: certNumber, error: nErr } = await (supabase.rpc as any)(
       "next_no_dues_cert_number",
       { _society_id: req.society_id },
     );

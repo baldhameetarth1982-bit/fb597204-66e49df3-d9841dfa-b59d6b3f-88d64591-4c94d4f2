@@ -46,6 +46,17 @@ import type {
   IncomeSort,
 } from "@/lib/non-member-income.server";
 
+interface CategoryItem {
+  id: string;
+  key: string;
+  display_name: string;
+  description: string | null;
+  category_group: string | null;
+  is_active: boolean;
+  is_system: boolean;
+  created_at: string;
+}
+
 export const Route = createFileRoute("/_society/society/income")({
   head: () => ({
     meta: [

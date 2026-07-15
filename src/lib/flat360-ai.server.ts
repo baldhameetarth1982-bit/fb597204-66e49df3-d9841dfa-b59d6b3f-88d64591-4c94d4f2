@@ -313,7 +313,7 @@ export function deterministicToAiResult(summary: UnitSummary): AISummaryResult {
     .map((a) => ({
       type: a.type,
       label: a.label.slice(0, 100),
-      route: a.route && (AI_ALLOWED_ROUTES as readonly string[]).includes(a.route) ? a.route : undefined,
+      route: isAIAllowedRoute(a.route) ? a.route : undefined,
     }));
   return {
     headline,

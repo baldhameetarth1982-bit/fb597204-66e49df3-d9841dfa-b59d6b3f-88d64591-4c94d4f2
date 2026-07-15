@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { SociyoHubLoader } from "@/components/system/SociyoHubLoader";
+import { SociyoHubLogo } from "@/components/shared/SociyoHubLogo";
 
 const SESSION_KEY = "sociohub:splashed";
 

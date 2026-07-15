@@ -211,3 +211,60 @@ No payment integration changed. Razorpay untouched. Cash + Bank Transfer mainten
 
 No migration was required — the block-admin helper and `user_roles.block_id`
 already existed.
+
+## Turn 17 — Sub-turn B: Secure Pro/Premium AI Unit Summary Server Core
+
+### Preflight fix — financial-unknown never collapses to zero
+- Added `FinancialAvailability` discriminator on `Flat360Snapshot` (`available` / `unsupported` / `error`).
+- `Flat360SummaryInput.financial` gained an optional `status` field; `buildUnitSummary` now
+  emits "Financial data could not be loaded." (or "not available") instead of "No outstanding dues."
+  when the authoritative eligibility engine is unavailable.
+- Deterministic Unit Summary forwards this status; AI DTO consumes it directly and omits
+  numeric fields when the status is not `available`.
+
+### New server modules
+- `src/lib/flat360-ai.server.ts` — pure AI core:
+  - AI-safe DTO builder (`buildAiDto`) with 180-char string capping.
+  - Recursive forbidden-key / PII scanner (`assertAiSafe`).
+  - Zod-strict output contract (`AISummaryResultSchema`) with allow-listed action types
+    and routes drawn from `AI_ALLOWED_ROUTES`.
+  - Deterministic fallback conversion.
+  - Deterministic SHA-256 snapshot fingerprint (32 hex chars) — scoped by AI-safe DTO only.
+  - Injected `generateFlat360AISummary({snapshot, actorId, forceRefresh?}, {cache, limiter, provider})`.
+- `src/lib/flat360-ai.functions.ts` — TanStack server function boundary:
+  - `requireSupabaseAuth` middleware; input = `{flatId, forceRefresh?}` only.
+  - Reuses `loadFlat360Snapshot` for authorization + plan derivation.
+  - Real cache adapter → `public.flat360_ai_summary_cache` (service_role only).
+  - Real rate limiter → `checkRateLimit` (user_manual 10/h, per_flat 20/h, per_society 200/h).
+  - Real provider → Lovable AI Gateway (`google/gemini-3.5-flash`, temperature 0.2, structured JSON only).
+
+### Migration
+- `public.flat360_ai_summary_cache` — private cache table:
+  columns `society_id`, `flat_id`, `snapshot_fingerprint`, `schema_version`,
+  `result_json`, `generated_at`, `expires_at`; unique
+  `(society_id, flat_id, snapshot_fingerprint, schema_version)`; RLS enabled with no
+  policies; service_role only.
+- TTL: 6 hours. Fingerprint change causes a natural cache miss even before TTL.
+
+### Prompt-injection defence
+- System prompt states data is untrusted; only structured JSON facts sent; no complaint bodies,
+  notice HTML, resident notes, browser prompt, or rejection reasons reach the provider.
+- Every string in the DTO capped to 180 chars.
+
+### Client-bundle secret scan indicators added
+- `LOVABLE_API_KEY`, `Flat 360 operational summarizer` prompt marker, and
+  `createLovableAiGatewayProvider` identifier — all confirmed absent from client bundle.
+
+### Exit gate (Sub-turn B)
+- `bunx tsgo --noEmit` — clean (exit 0).
+- `bunx vitest run tests/unit` — 149 passed / 0 failed / 0 skipped (9 files).
+  - `flat360-ai-dto.test.ts`: 18 tests.
+  - `flat360-ai-validation.test.ts`: 18 tests.
+  - `flat360-ai-plan-cache.test.ts`: 15 tests.
+- `bun run build` — succeeded (`✓ built in 56.74s`).
+- `bun scripts/verify-client-bundle-secrets.ts` — 885 files scanned, 0 findings.
+
+### Scope guarantees
+- SociyoHub branding, co-founder pages, Razorpay/Cash/Bank Transfer, Firebase→Supabase auth,
+  No-Dues cryptography — all unchanged.
+- No real society data written; Basic denied at server without any provider call.

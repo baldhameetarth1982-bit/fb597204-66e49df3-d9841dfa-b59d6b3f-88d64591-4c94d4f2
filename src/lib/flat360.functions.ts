@@ -438,6 +438,18 @@ export async function loadFlat360Snapshot(input: {
   );
 
   /* 9. Deterministic summary — Pro/Premium only ------------------- */
+  const financialStatus: "available" | "error" | "unsupported" = eligOk
+    ? "available"
+    : eligError
+      ? "error"
+      : "unsupported";
+  const financialAvailability =
+    financialStatus === "available"
+      ? { status: "available" as const }
+      : financialStatus === "error"
+        ? { status: "error" as const, message: eligError ?? "Financial engine unavailable." }
+        : { status: "unsupported" as const, message: "Financial engine unavailable." };
+
   const deterministicSummary: SectionState<ReturnType<typeof buildUnitSummary>> = advanced
     ? (() => {
         const summaryInput: Flat360SummaryInput = {
@@ -445,6 +457,7 @@ export async function loadFlat360Snapshot(input: {
           is_serial: isSerial,
           occupancy: { kind: occupancy.kind, active_count: occupancy.active_count },
           financial: {
+            status: financialStatus,
             total_outstanding: eligOk ? eligOk.total_outstanding : 0,
             overdue_count: eligOk ? eligOk.counts.overdue : 0,
             partial_count: eligOk ? eligOk.counts.partial : 0,
@@ -474,6 +487,7 @@ export async function loadFlat360Snapshot(input: {
     occupancy,
     family,
     occupancyHistory,
+    financialAvailability,
     basicFinancial,
     advancedFinancial,
     payments: paymentsSection,
@@ -524,7 +538,7 @@ function errMsg(e: unknown): string {
   return "Query failed";
 }
 
-function buildRealDeps(supabase: unknown): Flat360Deps {
+export function buildRealDeps(supabase: unknown): Flat360Deps {
   // Runtime narrows via method calls; typed as `unknown` and cast at use.
   const db = supabase as {
     from: (t: string) => {
@@ -730,7 +744,7 @@ function buildRealDeps(supabase: unknown): Flat360Deps {
   };
 }
 
-function attachAdminRpcs(deps: Flat360Deps, admin: RpcClient): Flat360Deps {
+export function attachAdminRpcs(deps: Flat360Deps, admin: RpcClient): Flat360Deps {
   const callBool = async (fn: string, args: Record<string, string>): Promise<boolean> => {
     try {
       const { data, error } = await admin.rpc(fn, args);

@@ -212,6 +212,11 @@ export type SafeNoDuesSection = {
 /*  Top-level snapshot                                                 */
 /* ------------------------------------------------------------------ */
 
+export type FinancialAvailability =
+  | { status: "available" }
+  | { status: "unsupported"; message: string }
+  | { status: "error"; message: string };
+
 export type Flat360Snapshot = {
   viewer: Flat360Viewer;
   identity: FlatIdentity;
@@ -219,6 +224,10 @@ export type Flat360Snapshot = {
   occupancy: OccupancySection;
   family: SectionState<FamilyMember[]>;
   occupancyHistory: SectionState<OccupancyHistoryItem[]>;
+
+  // Whether the authoritative financial engine (eligibility) responded.
+  // A zero in basicFinancial is only meaningful when this is "available".
+  financialAvailability: FinancialAvailability;
 
   basicFinancial: BasicFinancialSection;
   advancedFinancial: SectionState<AdvancedFinancialSection>;

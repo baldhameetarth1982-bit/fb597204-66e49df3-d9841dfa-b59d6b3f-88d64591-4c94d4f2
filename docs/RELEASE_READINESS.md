@@ -527,3 +527,15 @@ None of them touch payments / Razorpay / Cash-Bank-Transfer / platform fees
 - Firebase → Supabase auth unchanged.
 - Basic flat detail preserved; Flat 360 advanced sections remain Pro; Premium inherits.
 - **AI Summary is NOT marked complete.** The slot is a typed placeholder only.
+
+### Turn 17 — Sub-turn B: Flat 360 AI Server Core (complete, UI pending Sub-turn C)
+- Provider: Lovable AI Gateway (`google/gemini-3.5-flash`, temperature 0.2, JSON-only).
+- DTO: strict, PII-free, capped strings, recursive safety scanner.
+- Output validation: Zod strict schema; disallows HTML, script, markdown links, emails,
+  phones, UUIDs, token-like values, unknown action types, non-allow-listed routes.
+- Cache: `public.flat360_ai_summary_cache` (service_role only, 6-hour TTL, keyed by
+  society + flat + snapshot fingerprint + schema version).
+- Rate limits: user_manual 10/h, per_flat 20/h, per_society 200/h. Limiter failure
+  fails closed for new generation; cache still returns.
+- Fallback: deterministic Unit Summary → `AISummaryResult` shape, `source: "deterministic_fallback"`.
+- Tests: 149/149 unit tests pass; production build clean; bundle secret scan clean.

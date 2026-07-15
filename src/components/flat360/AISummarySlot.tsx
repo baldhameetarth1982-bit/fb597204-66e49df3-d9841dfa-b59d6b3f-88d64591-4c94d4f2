@@ -112,7 +112,7 @@ export function AISummarySlot({
             <Button
               variant="ghost"
               size="sm"
-              className="rounded-xl h-9 min-h-[36px] px-3"
+              className="rounded-xl h-11 min-h-[44px] px-3"
               onClick={onRefresh}
               disabled={!canRefresh || isLoading}
               aria-label="Refresh AI summary"

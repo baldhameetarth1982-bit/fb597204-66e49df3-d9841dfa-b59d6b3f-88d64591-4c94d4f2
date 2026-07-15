@@ -47,6 +47,7 @@ type Step = "choose" | "phone" | "email";
 
 function LoginPage() {
   const navigate = useNavigate();
+  const { next } = Route.useSearch();
   const { isLoading, isAuthenticated, primaryRole, profile } = useAuth();
   const [step, setStep] = useState<Step>("choose");
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -67,10 +68,23 @@ function LoginPage() {
   }
 
   if (isAuthenticated) {
+    if (next) {
+      window.location.href = next;
+      return (
+        <AuthShell>
+          <div className="min-h-[200px] grid place-items-center text-muted-foreground">
+            <Loader2 className="h-6 w-6 animate-spin" />
+          </div>
+        </AuthShell>
+      );
+    }
     if (primaryRole === ROLES.SUPER_ADMIN) return <Navigate to={ROLE_HOME[ROLES.SUPER_ADMIN]} replace />;
     if (primaryRole && profile?.society_id) return <Navigate to={ROLE_HOME[primaryRole]} replace />;
     return <Navigate to="/onboarding" search={{ ref: undefined }} replace />;
   }
+
+  const emailRedirect = `${window.location.origin}${next ?? "/"}`;
+
 
   async function submitEmail(e: React.FormEvent) {
     e.preventDefault();

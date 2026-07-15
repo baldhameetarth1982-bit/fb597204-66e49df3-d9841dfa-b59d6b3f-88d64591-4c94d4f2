@@ -160,3 +160,54 @@ Verification NOT yet performed (honestly `implemented_unverified`, not `tested`)
 - visual verification of the two new routes
 
 No payment integration changed. Razorpay untouched. Cash + Bank Transfer maintenance behavior unchanged. No platform fee added. No real society data modified.
+
+---
+
+## Stage 3A — Turn 17 Sub-turn A.1 (Flat 360 server-core closure)
+
+### Authorization model (final)
+- Society Admin: `is_society_admin_for_internal(_actor_id, _society_id)`.
+- Block Admin: `is_block_admin_for_flat_internal(_actor_id, _flat_id)` (already
+  present in the schema; `user_roles` has `society_id` and `block_id`). No
+  society-wide fallback; unassigned block admins are denied.
+- Super Admin: `is_super_admin_internal(_actor_id)`.
+- Viewer role in the snapshot is the actual role (`society_admin` /
+  `block_admin` / `super_admin`), not a blanket "society_admin".
+
+### Server plan enforcement
+- `normalizePlan()` now degrades `expired`, `cancelled`, `past_due`, `inactive`
+  to `basic`. Trial/trialing remains Premium.
+- Basic returns `locked` for advanced-financial, payments, vehicles, occupancy
+  history, visitors, complaints, documents, approvals, notices, No-Dues, and
+  the deterministic Unit Summary. Advanced DB reads are not issued for Basic.
+- Premium inherits Pro via `canViewAdvanced`.
+
+### Data honesty
+- `inconsistency_count` comes from the canonical
+  `compute_no_dues_eligibility_internal` counts (`inconsistent + unknown_status`)
+  and its Zod-validated JSON payload — never fabricated `0`.
+- Eligibility failure surfaces as `error` / `unsupported`, never as `₹0`.
+- No-Dues section never queries `no_dues_certificates`; certificate secrets,
+  tokens, hashes, IVs, key versions, storage paths, and QR payloads are absent
+  from the snapshot by construction.
+
+### Typing & tests
+- `flat360.functions.ts` and `flat360-types.ts` contain zero `any` and zero
+  `no-explicit-any` disables; the service is dependency-injected via a typed
+  `Flat360Deps` contract with typed row shapes.
+- `tests/unit/flat360-service.test.ts` now covers authorization matrix, plan
+  gating (Basic query suppression, Pro/Premium execution, expired/missing
+  plan), data safety (no PII/secret keys, no fabricated zeros, honest
+  section states), and structured/serial unit labeling. 98/98 unit tests pass.
+- `tests/integration/flat360.integration.test.ts` remains honestly skipped
+  unless `ALLOW_SOCIOHUB_TEST_FIXTURES=true` and isolated Supabase creds.
+
+### Exit gate (this closure)
+- `bunx tsgo --noEmit` — clean.
+- `bunx vitest run tests/unit` — 98 passed / 0 failed.
+- `bunx vitest run tests/integration/flat360.integration.test.ts` — 13 skipped.
+- `bun run build` — succeeded (`✓ built in 57.02s`).
+- `bun scripts/verify-client-bundle-secrets.ts` — clean (885 files, 0 findings).
+
+No migration was required — the block-admin helper and `user_roles.block_id`
+already existed.

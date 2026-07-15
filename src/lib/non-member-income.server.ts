@@ -338,3 +338,119 @@ export function normalizeCategoryKey(input: string): string {
     .replace(/[^a-z0-9_-]+/gu, "_")
     .replace(/^_+|_+$/gu, "");
 }
+
+// ---------------------------------------------------------------------------
+// Strict financial amount parsing (Turn 18B.1A)
+// ---------------------------------------------------------------------------
+
+/**
+ * Parse a database or client-supplied numeric amount into a finite number.
+ * Does not silently fall back to zero on invalid input.
+ *
+ * - `allowZero: true` accepts zero (aggregate totals may legitimately be 0).
+ * - `allowZero: false` (default) requires strictly positive.
+ * Returns `null` when the value cannot be trusted as a financial amount.
+ */
+export function parseFinancialAmount(
+  value: unknown,
+  opts: { allowZero?: boolean } = {},
+): number | null {
+  const allowZero = opts.allowZero === true;
+  let n: number;
+  if (typeof value === "number") n = value;
+  else if (typeof value === "string" && value.trim() !== "") n = Number(value);
+  else return null;
+  if (!Number.isFinite(n)) return null;
+  if (n < 0) return null;
+  if (!allowZero && n <= 0) return null;
+  if (n > 1e12) return null;
+  return n;
+}
+
+// ---------------------------------------------------------------------------
+// Strict result types for Income read services (Turn 18B.1A)
+// ---------------------------------------------------------------------------
+
+export type IncomeVerificationStatus = (typeof VERIFICATION_STATES)[number];
+export type IncomeReconciliationStatus = (typeof RECONCILIATION_STATES)[number];
+export type IncomePaymentMethod = (typeof SUPPORTED_METHODS)[number];
+export type IncomePayerKind = (typeof PAYER_KINDS)[number];
+export type IncomeSort = "newest" | "oldest" | "amount_desc" | "amount_asc";
+
+export type MetricState<T> =
+  | { status: "available"; value: T }
+  | { status: "error"; message: string }
+  | { status: "unsupported"; message: string };
+
+export interface IncomeCategoryTotal {
+  category_id: string;
+  total: number;
+}
+export interface IncomeMethodTotal {
+  method: IncomePaymentMethod;
+  total: number;
+}
+export interface IncomeReconciliationTotal {
+  status: IncomeReconciliationStatus;
+  count: number;
+}
+
+export interface IncomeDashboardResult {
+  verifiedTotal: number;
+  pendingCount: number;
+  rejectedCount: number;
+  reversedCount: number;
+  unreconciled: number;
+  needsReview: number;
+  activePayerCount: MetricState<number>;
+  byCategory: IncomeCategoryTotal[];
+  byMethod: IncomeMethodTotal[];
+  byReconciliation: IncomeReconciliationTotal[];
+  recordCount: number;
+  truncated: boolean;
+  aggregateSource: "javascript_scan" | "sql_rpc";
+}
+
+export interface IncomeRecordListItem {
+  id: string;
+  category_id: string;
+  category_display_name: string | null;
+  payer_kind: IncomePayerKind;
+  payer_display_name: string | null;
+  amount: number;
+  payment_method: IncomePaymentMethod;
+  payment_status: string;
+  verification_status: IncomeVerificationStatus;
+  reconciliation_status: IncomeReconciliationStatus;
+  payment_date: string;
+  reference_suffix: string | null;
+}
+
+export interface IncomeRecordDetail {
+  id: string;
+  amount: number;
+  payer_kind: IncomePayerKind;
+  payment_method: IncomePaymentMethod;
+  payment_status: string;
+  verification_status: IncomeVerificationStatus;
+  reconciliation_status: IncomeReconciliationStatus;
+  payment_date: string;
+  reference_suffix: string | null;
+  description: string | null;
+  created_at: string;
+  verified_at: string | null;
+  reversed_at: string | null;
+  reversal_reason: string | null;
+  category: { display_name: string; group: string | null } | null;
+  payer: {
+    display_name: string;
+    payer_type: string;
+    organization_name: string | null;
+  } | null;
+}
+
+export type IncomeRecordDetailResult =
+  | { status: "available"; record: IncomeRecordDetail }
+  | { status: "not_found" }
+  | { status: "error"; message: string };
+

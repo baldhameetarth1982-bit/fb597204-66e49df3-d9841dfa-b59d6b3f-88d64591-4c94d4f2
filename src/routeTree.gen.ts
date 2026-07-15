@@ -59,6 +59,7 @@ import { Route as SocietySocietyMatrixRouteImport } from './routes/_society/soci
 import { Route as SocietySocietyMaintenanceRouteImport } from './routes/_society/society.maintenance'
 import { Route as SocietySocietyLedgerRouteImport } from './routes/_society/society.ledger'
 import { Route as SocietySocietyLeaderboardRouteImport } from './routes/_society/society.leaderboard'
+import { Route as SocietySocietyIncomeRouteImport } from './routes/_society/society.income'
 import { Route as SocietySocietyImportRouteImport } from './routes/_society/society.import'
 import { Route as SocietySocietyFlatsRouteImport } from './routes/_society/society.flats'
 import { Route as SocietySocietyFeaturesRouteImport } from './routes/_society/society.features'
@@ -392,6 +393,11 @@ const SocietySocietyLeaderboardRoute =
     path: '/society/leaderboard',
     getParentRoute: () => SocietyRoute,
   } as any)
+const SocietySocietyIncomeRoute = SocietySocietyIncomeRouteImport.update({
+  id: '/society/income',
+  path: '/society/income',
+  getParentRoute: () => SocietyRoute,
+} as any)
 const SocietySocietyImportRoute = SocietySocietyImportRouteImport.update({
   id: '/society/import',
   path: '/society/import',
@@ -898,6 +904,7 @@ export interface FileRoutesByFullPath {
   '/society/features': typeof SocietySocietyFeaturesRoute
   '/society/flats': typeof SocietySocietyFlatsRouteWithChildren
   '/society/import': typeof SocietySocietyImportRoute
+  '/society/income': typeof SocietySocietyIncomeRoute
   '/society/leaderboard': typeof SocietySocietyLeaderboardRoute
   '/society/ledger': typeof SocietySocietyLedgerRoute
   '/society/maintenance': typeof SocietySocietyMaintenanceRoute
@@ -1024,6 +1031,7 @@ export interface FileRoutesByTo {
   '/society/features': typeof SocietySocietyFeaturesRoute
   '/society/flats': typeof SocietySocietyFlatsRouteWithChildren
   '/society/import': typeof SocietySocietyImportRoute
+  '/society/income': typeof SocietySocietyIncomeRoute
   '/society/leaderboard': typeof SocietySocietyLeaderboardRoute
   '/society/ledger': typeof SocietySocietyLedgerRoute
   '/society/maintenance': typeof SocietySocietyMaintenanceRoute
@@ -1156,6 +1164,7 @@ export interface FileRoutesById {
   '/_society/society/features': typeof SocietySocietyFeaturesRoute
   '/_society/society/flats': typeof SocietySocietyFlatsRouteWithChildren
   '/_society/society/import': typeof SocietySocietyImportRoute
+  '/_society/society/income': typeof SocietySocietyIncomeRoute
   '/_society/society/leaderboard': typeof SocietySocietyLeaderboardRoute
   '/_society/society/ledger': typeof SocietySocietyLedgerRoute
   '/_society/society/maintenance': typeof SocietySocietyMaintenanceRoute
@@ -1285,6 +1294,7 @@ export interface FileRouteTypes {
     | '/society/features'
     | '/society/flats'
     | '/society/import'
+    | '/society/income'
     | '/society/leaderboard'
     | '/society/ledger'
     | '/society/maintenance'
@@ -1411,6 +1421,7 @@ export interface FileRouteTypes {
     | '/society/features'
     | '/society/flats'
     | '/society/import'
+    | '/society/income'
     | '/society/leaderboard'
     | '/society/ledger'
     | '/society/maintenance'
@@ -1542,6 +1553,7 @@ export interface FileRouteTypes {
     | '/_society/society/features'
     | '/_society/society/flats'
     | '/_society/society/import'
+    | '/_society/society/income'
     | '/_society/society/leaderboard'
     | '/_society/society/ledger'
     | '/_society/society/maintenance'
@@ -1961,6 +1973,13 @@ declare module '@tanstack/react-router' {
       path: '/society/leaderboard'
       fullPath: '/society/leaderboard'
       preLoaderRoute: typeof SocietySocietyLeaderboardRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/income': {
+      id: '/_society/society/income'
+      path: '/society/income'
+      fullPath: '/society/income'
+      preLoaderRoute: typeof SocietySocietyIncomeRouteImport
       parentRoute: typeof SocietyRoute
     }
     '/_society/society/import': {
@@ -2730,6 +2749,7 @@ interface SocietyRouteChildren {
   SocietySocietyFeaturesRoute: typeof SocietySocietyFeaturesRoute
   SocietySocietyFlatsRoute: typeof SocietySocietyFlatsRouteWithChildren
   SocietySocietyImportRoute: typeof SocietySocietyImportRoute
+  SocietySocietyIncomeRoute: typeof SocietySocietyIncomeRoute
   SocietySocietyLeaderboardRoute: typeof SocietySocietyLeaderboardRoute
   SocietySocietyLedgerRoute: typeof SocietySocietyLedgerRoute
   SocietySocietyMaintenanceRoute: typeof SocietySocietyMaintenanceRoute
@@ -2772,6 +2792,7 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyFeaturesRoute: SocietySocietyFeaturesRoute,
   SocietySocietyFlatsRoute: SocietySocietyFlatsRouteWithChildren,
   SocietySocietyImportRoute: SocietySocietyImportRoute,
+  SocietySocietyIncomeRoute: SocietySocietyIncomeRoute,
   SocietySocietyLeaderboardRoute: SocietySocietyLeaderboardRoute,
   SocietySocietyLedgerRoute: SocietySocietyLedgerRoute,
   SocietySocietyMaintenanceRoute: SocietySocietyMaintenanceRoute,

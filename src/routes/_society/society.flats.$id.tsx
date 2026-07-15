@@ -41,7 +41,7 @@ import type {
 import type { UnitSummary } from "@/lib/unit-summary";
 import { AISummarySlot, type AISummaryUiState } from "@/components/flat360/AISummarySlot";
 import { UpgradePrompt } from "@/components/subscription/UpgradePrompt";
-import { AI_ALLOWED_ROUTES } from "@/lib/flat360-types";
+import { isAIAllowedRoute } from "@/lib/flat360-types";
 
 export const Route = createFileRoute("/_society/society/flats/$id")({
   head: () => ({ meta: [{ title: "Flat 360 — SociyoHub" }] }),
@@ -565,26 +565,25 @@ function DeterministicSummaryCard({ state }: { state: SectionState<UnitSummary> 
               ))}
             </ul>
           )}
-          {s.next_actions.some((a) => a.type !== "none" && a.route) && (
+          {s.next_actions.some((a) => a.type !== "none" && isAIAllowedRoute(a.route)) && (
             <div className="flex flex-wrap gap-2 pt-1">
               {s.next_actions
-                .filter(
-                  (a) =>
-                    a.type !== "none" &&
-                    a.route &&
-                    (AI_ALLOWED_ROUTES as readonly string[]).includes(a.route),
-                )
-                .map((a, i) => (
-                  <Button
-                    key={i}
-                    asChild
-                    size="sm"
-                    variant="outline"
-                    className="rounded-xl h-9 min-h-[36px]"
-                  >
-                    <Link to={a.route as never}>{a.label}</Link>
-                  </Button>
-                ))}
+                .filter((a) => a.type !== "none" && isAIAllowedRoute(a.route))
+                .map((a, i) => {
+                  const safeRoute = a.route!;
+                  if (!isAIAllowedRoute(safeRoute)) return null;
+                  return (
+                    <Button
+                      key={i}
+                      asChild
+                      size="sm"
+                      variant="outline"
+                      className="rounded-xl h-11 min-h-[44px]"
+                    >
+                      <Link to={safeRoute}>{a.label}</Link>
+                    </Button>
+                  );
+                })}
             </div>
           )}
         </div>

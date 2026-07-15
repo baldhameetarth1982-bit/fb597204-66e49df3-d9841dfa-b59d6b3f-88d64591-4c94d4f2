@@ -15,7 +15,7 @@
  */
 import { createHash } from "node:crypto";
 import { z } from "zod";
-import { AI_ALLOWED_ROUTES, AI_DTO_FORBIDDEN_KEYS } from "@/lib/flat360-types";
+import { AI_DTO_FORBIDDEN_KEYS, isAIAllowedRoute } from "@/lib/flat360-types";
 import type { Flat360Snapshot } from "@/lib/flat360-types";
 import type { PlanKey } from "@/lib/plan-features";
 import type { UnitSummary } from "@/lib/unit-summary";
@@ -78,10 +78,9 @@ export const AISummaryResultSchema = z.object({
         route: z
           .string()
           .optional()
-          .refine(
-            (r) => r === undefined || (AI_ALLOWED_ROUTES as readonly string[]).includes(r),
-            { message: "route_not_allowed" },
-          ),
+          .refine((r) => r === undefined || isAIAllowedRoute(r), {
+            message: "route_not_allowed",
+          }),
       }),
     )
     .max(4)
@@ -314,7 +313,7 @@ export function deterministicToAiResult(summary: UnitSummary): AISummaryResult {
     .map((a) => ({
       type: a.type,
       label: a.label.slice(0, 100),
-      route: a.route && (AI_ALLOWED_ROUTES as readonly string[]).includes(a.route) ? a.route : undefined,
+      route: isAIAllowedRoute(a.route) ? a.route : undefined,
     }));
   return {
     headline,

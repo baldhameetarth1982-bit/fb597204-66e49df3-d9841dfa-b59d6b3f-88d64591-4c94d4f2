@@ -539,3 +539,72 @@ None of them touch payments / Razorpay / Cash-Bank-Transfer / platform fees
   fails closed for new generation; cache still returns.
 - Fallback: deterministic Unit Summary → `AISummaryResult` shape, `source: "deterministic_fallback"`.
 - Tests: 149/149 unit tests pass; production build clean; bundle secret scan clean.
+
+---
+
+## Turn 17 — Sub-turn D: Final closure (audit, tests, docs)
+
+Focus: audit and clean final Flat 360 UI source, add UI-logic tests, remove
+unsafe route casts, complete Turn 17 documentation, and run the exit gate.
+
+### Exit gate
+
+| Command | Exit code | Notes |
+|---|---|---|
+| `bunx tsgo --noEmit` | 0 | Clean typecheck. |
+| `bunx vitest run tests/unit` | 0 | **156 / 156 passed** across 10 files. New UI test file: `tests/unit/flat360-ui.test.ts` (7 tests). |
+| `bun run build` | 0 | Production build passes (see build output for exact duration in this run). |
+| `bun scripts/verify-client-bundle-secrets.ts` | 0 | Clean — 0 hits across 887 client-bundle files. |
+| `bunx vitest run tests/integration/flat360.integration.test.ts` | SKIPPED — missing isolated fixture environment | Requires `ALLOW_SOCIYOHUB_TEST_FIXTURES=true` + isolated `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`; will never run against real Society `1907a918-c4b8-4f43-a837-450530cc7c34`. |
+| Playwright UI harness | SKIPPED — no Playwright config in project | The project does not currently configure Playwright. Visual regression evidence deferred to a dedicated verification turn. |
+| Provider runtime smoke test | SKIPPED — provider credential unavailable to Sub-turn D | Requires a safe dev/test `LOVABLE_API_KEY` scoped to a non-production gateway. No such isolated credential is exposed to this sub-turn; production key is not usable for a smoke test that must not touch real cache/rate-limit state. |
+
+### Code audit — remaining safety casts
+
+| Pattern | Location | Status |
+|---|---|---|
+| `as never` on route `<Link>` | 0 remaining | Removed from `AISummarySlot.tsx` and `society.flats.$id.tsx`; both now use `isAIAllowedRoute` guard + typed `AIAllowedRoute` union. |
+| `as any` in AI cache queries | `src/lib/flat360-ai.functions.ts` (3 sites, all on `supabaseAdmin`) | Retained: the `flat360_ai_summary_cache` migration is present but the generated `supabase/types.ts` is not regenerated in this turn. Casts are scoped to a service_role-only table read/upsert, never crossing an RLS boundary. Tracked as a follow-up regen. |
+| `Record<string, any>` in Flat 360 code | 0 remaining | Not found in audited files. |
+| `HouseDetailPage` stale component | Not present in current tree. | — |
+| Duplicate client-side Supabase Flat 360 queries | 0 | Route is a single `getFlat360` `useQuery` + one AI query + one manual refresh mutation. |
+
+### UI tests added
+
+`tests/unit/flat360-ui.test.ts` (7 tests) — pure logic coverage that does not
+require a DOM environment:
+
+1. `isAIAllowedRoute` accepts every listed route.
+2. `isAIAllowedRoute` rejects unknown routes, `""`, `undefined`, `null`, and `javascript:` schemes.
+3. `isAIAllowedRoute` narrows to `AIAllowedRoute` on the truthy branch (compile-time check).
+4. `AI_ALLOWED_ROUTES` snapshot — any future change to the list surfaces as a visible diff.
+5. `reasonCopy` returns friendly copy for each known reason (5 assertions).
+6. `reasonCopy` never leaks snake_case codes, the word "error", or provider/model names.
+7. `reasonCopy` returns `null` when no reason is provided.
+
+### Deferred to a follow-up verification turn (documented, not-done)
+
+- **Full React component rendering tests** (state-by-state matrix for
+  `AISummarySlot` and the flat route): require `jsdom` + `@testing-library/react`
+  which are not yet installed. Not added in this closure turn to keep the
+  change footprint minimal and reversible; can be introduced in a dedicated
+  test-infra turn.
+- **Responsive screenshots** at 360/390/414/768/1280 px: require a Playwright
+  visual harness route and Playwright config. Not present in this project;
+  intentionally not scaffolded in this closure turn.
+- **Provider runtime smoke test**: pending a safe isolated dev
+  `LOVABLE_API_KEY` that will not pollute real cache or rate-limit counters.
+- **Regenerate `src/integrations/supabase/types.ts`** to remove the three
+  `supabaseAdmin as any` casts around `flat360_ai_summary_cache`.
+
+### Confirmations (Sub-turn D)
+
+- SociyoHub branding unchanged; both co-founders unchanged; founder SEO unchanged.
+- Basic flat route remains fully useful (identity/occupancy/finance/latest bill).
+- Basic never invokes any AI server function (locked state; no query enabled).
+- Pro / Premium AI Summary path unchanged; refresh disabled while pending; typed `<Link>` only for allow-listed routes.
+- No browser AI provider key introduced.
+- No certificate secret, No-Dues token, or payment-proof URL exposed by the route or AI DTO.
+- Razorpay untouched; no payment integration changes; no platform fee; Cash + Bank Transfer preserved.
+- Firebase → Supabase authentication preserved; RLS preserved; No-Dues cryptography untouched.
+- No writes to real society data during audit; Society `1907a918-c4b8-4f43-a837-450530cc7c34` never used as fixture.

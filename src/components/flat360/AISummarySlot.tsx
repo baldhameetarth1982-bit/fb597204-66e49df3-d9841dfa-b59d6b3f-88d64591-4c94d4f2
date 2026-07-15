@@ -14,7 +14,7 @@ import type {
   AISummaryResult,
   Flat360AISummaryResponse,
 } from "@/lib/flat360-ai.server";
-import { AI_ALLOWED_ROUTES } from "@/lib/flat360-types";
+import { isAIAllowedRoute, type AIAllowedRoute } from "@/lib/flat360-types";
 
 export type AISummaryUiState =
   | { kind: "locked" }
@@ -22,7 +22,7 @@ export type AISummaryUiState =
   | { kind: "response"; response: Flat360AISummaryResponse }
   | { kind: "error" };
 
-function reasonCopy(reason: Flat360AISummaryResponse["reason"]): string | null {
+export function reasonCopy(reason: Flat360AISummaryResponse["reason"]): string | null {
   switch (reason) {
     case "provider_unavailable":
       return "AI service is temporarily unavailable — showing a deterministic summary instead.";
@@ -48,18 +48,17 @@ function ActionButton({
   label: string;
   route?: string;
 }) {
-  const allowed = route && (AI_ALLOWED_ROUTES as readonly string[]).includes(route);
-  if (!allowed || type === "none") {
+  if (type === "none" || !isAIAllowedRoute(route)) {
     return (
       <Badge variant="outline" className="rounded-full text-[11px]">
         {label}
       </Badge>
     );
   }
+  const safeRoute: AIAllowedRoute = route;
   return (
-    <Button asChild size="sm" variant="outline" className="rounded-xl h-9 min-h-[36px]">
-      {/* Route is validated against AI_ALLOWED_ROUTES; safe to cast for typed Link. */}
-      <Link to={route as never}>{label}</Link>
+    <Button asChild size="sm" variant="outline" className="rounded-xl h-11 min-h-[44px]">
+      <Link to={safeRoute}>{label}</Link>
     </Button>
   );
 }
@@ -113,7 +112,7 @@ export function AISummarySlot({
             <Button
               variant="ghost"
               size="sm"
-              className="rounded-xl h-9 min-h-[36px] px-3"
+              className="rounded-xl h-11 min-h-[44px] px-3"
               onClick={onRefresh}
               disabled={!canRefresh || isLoading}
               aria-label="Refresh AI summary"

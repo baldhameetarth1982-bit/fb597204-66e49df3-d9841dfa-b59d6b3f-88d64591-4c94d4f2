@@ -306,3 +306,73 @@ describe("Income UI/service files: no handwritten `any` (Turn 18B.1A)", () => {
     });
   }
 });
+
+// ---------------------------------------------------------------------------
+// Turn 18B.2 — Transition input, state machine, safety
+// ---------------------------------------------------------------------------
+
+import { IncomeTransitionReason } from "@/lib/non-member-income.server";
+
+describe("IncomeTransitionReason schema (Turn 18B.2)", () => {
+  it("accepts a 5+ char trimmed reason", () => {
+    expect(IncomeTransitionReason.parse("  duplicate entry ")).toBe("duplicate entry");
+  });
+  it("rejects short reasons", () => {
+    expect(() => IncomeTransitionReason.parse("hi")).toThrow();
+    expect(() => IncomeTransitionReason.parse("   ")).toThrow();
+    expect(() => IncomeTransitionReason.parse("")).toThrow();
+  });
+  it("rejects oversized reasons", () => {
+    expect(() => IncomeTransitionReason.parse("x".repeat(501))).toThrow();
+  });
+  it("rejects HTML in reason", () => {
+    expect(() => IncomeTransitionReason.parse("bad <script>x</script>")).toThrow();
+    expect(() => IncomeTransitionReason.parse("<b>nope</b>")).toThrow();
+  });
+});
+
+describe("full canonical state machine (Turn 18B.2)", () => {
+  it("verified cannot be verified again", () => {
+    expect(canTransitionVerification("verified", "verified")).toBe(false);
+  });
+  it("rejected cannot be verified/reversed", () => {
+    expect(canTransitionVerification("rejected", "verified")).toBe(false);
+    expect(canTransitionVerification("rejected", "reversed")).toBe(false);
+  });
+  it("pending cannot be reversed directly", () => {
+    expect(canTransitionVerification("pending", "reversed")).toBe(false);
+  });
+  it("reversed is fully terminal", () => {
+    expect(canTransitionVerification("reversed", "verified")).toBe(false);
+    expect(canTransitionVerification("reversed", "rejected")).toBe(false);
+    expect(canTransitionVerification("reversed", "reversed")).toBe(false);
+    expect(canTransitionVerification("reversed", "pending")).toBe(false);
+  });
+});
+
+describe("mutation input surface is minimal (Turn 18B.2)", () => {
+  it("browser-facing route file uses recordId-only mutation shape", () => {
+    const src = fs.readFileSync(
+      path.resolve(__dirname, "../..", "src/routes/_society/society.income.$id.tsx"),
+      "utf8",
+    );
+    expect(src).toMatch(/verifyIncomeRecordByIdFn/);
+    expect(src).toMatch(/rejectIncomeRecordByIdFn/);
+    expect(src).toMatch(/reverseIncomeRecordByIdFn/);
+    expect(src).not.toMatch(/verified_by\s*:/);
+    expect(src).not.toMatch(/rejected_by\s*:/);
+    expect(src).not.toMatch(/reversed_by\s*:/);
+  });
+});
+
+describe("safe-next path (preflight)", () => {
+  it("rejects protocol-relative, absolute and encoded evil URLs", async () => {
+    const { sanitizeNextPath } = await import("@/lib/safe-next");
+    expect(sanitizeNextPath("//evil.com")).toBeUndefined();
+    expect(sanitizeNextPath("http://evil.com")).toBeUndefined();
+    expect(sanitizeNextPath("javascript:alert(1)")).toBeUndefined();
+    expect(sanitizeNextPath("/\\evil.com")).toBeUndefined();
+    expect(sanitizeNextPath("/ok/path")).toBe("/ok/path");
+  });
+});
+

@@ -459,28 +459,36 @@ export const listIncomeRecordsFn = createServerFn({ method: "POST" })
 
     const catLabels = new Map<string, string>();
     if (categoryIds.length > 0) {
-      const { data: cats } = await ctx.supabase
+      const catsRes = await ctx.supabase
         .from("society_income_categories")
         .select("id, display_name")
         .in("id", categoryIds);
-      for (const c of (cats ?? []) as Array<{ id: string; display_name: string }>) {
+      if (catsRes.error) throw new Error("list_failed");
+      for (const c of (catsRes.data ?? []) as Array<{ id: string; display_name: string }>) {
         catLabels.set(c.id, c.display_name);
       }
     }
     const payerLabels = new Map<string, string>();
     if (payerIds.length > 0) {
-      const { data: payers } = await ctx.supabase
+      const payersRes = await ctx.supabase
         .from("non_member_payers")
         .select("id, display_name")
         .in("id", payerIds);
-      for (const p of (payers ?? []) as Array<{ id: string; display_name: string }>) {
+      if (payersRes.error) throw new Error("list_failed");
+      for (const p of (payersRes.data ?? []) as Array<{ id: string; display_name: string }>) {
         payerLabels.set(p.id, p.display_name);
       }
     }
 
-    const items = typedRows.map((r) => {
-      const amt =
-        typeof r.amount === "string" ? Number(r.amount) : r.amount;
+    const { parseFinancialAmount } = await import("@/lib/non-member-income.server");
+    const items: import("@/lib/non-member-income.server").IncomeRecordListItem[] = [];
+    for (const r of typedRows) {
+      const amt = parseFinancialAmount(r.amount, { allowZero: true });
+      if (amt === null) {
+        // Never surface an invalid amount as ₹0. Surface a safe list error
+        // so the admin knows the underlying data needs attention.
+        throw new Error("list_failed");
+      }
       const ref = typeof r.reference_number === "string" ? r.reference_number.trim() : "";
       const reference_suffix =
         ref.length === 0
@@ -494,21 +502,21 @@ export const listIncomeRecordsFn = createServerFn({ method: "POST" })
           : r.non_member_payer_id
             ? payerLabels.get(r.non_member_payer_id) ?? null
             : null;
-      return {
+      items.push({
         id: r.id,
         category_id: r.category_id,
         category_display_name: catLabels.get(r.category_id) ?? null,
         payer_kind: r.payer_kind as import("@/lib/non-member-income.server").IncomePayerKind,
         payer_display_name,
-        amount: Number.isFinite(amt) ? amt : 0,
+        amount: amt,
         payment_method: r.payment_method as import("@/lib/non-member-income.server").IncomePaymentMethod,
         payment_status: r.payment_status,
         verification_status: r.verification_status as import("@/lib/non-member-income.server").IncomeVerificationStatus,
         reconciliation_status: r.reconciliation_status as import("@/lib/non-member-income.server").IncomeReconciliationStatus,
         payment_date: r.payment_date,
         reference_suffix,
-      };
-    });
+      });
+    }
 
     return {
       items,
@@ -517,6 +525,7 @@ export const listIncomeRecordsFn = createServerFn({ method: "POST" })
       offset,
     };
   });
+
 
 const DASHBOARD_SCAN_CAP = 5000;
 

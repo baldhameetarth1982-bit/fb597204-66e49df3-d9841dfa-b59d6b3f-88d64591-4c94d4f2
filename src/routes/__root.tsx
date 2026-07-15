@@ -103,7 +103,25 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:title", content: "SociyoHub" },
       { name: "twitter:description", content: "Society management, simplified." },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: "SociyoHub",
+          description: "A society-management software platform.",
+          founder: [
+            { "@type": "Person", name: "Meetarth Baldha", jobTitle: "Co-Founder" },
+            { "@type": "Person", name: "Divyaraj Vaghela", jobTitle: "Co-Founder" },
+          ],
+        }),
+      },
+    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,

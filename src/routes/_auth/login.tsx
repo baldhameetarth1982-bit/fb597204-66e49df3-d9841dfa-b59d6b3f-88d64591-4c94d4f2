@@ -197,7 +197,7 @@ function LoginPage() {
                 return;
               }
               toast.success("Signed in");
-              navigate({ to: "/" });
+              goNext(next, () => navigate({ to: "/" }));
             }}
           />
           <p className="mt-4 text-[11px] text-muted-foreground text-center">

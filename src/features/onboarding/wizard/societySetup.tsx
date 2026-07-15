@@ -94,11 +94,26 @@ function StepInfo({ state, patch }: StepProps<WizardState>) {
   async function upload(file: File) {
     setUploading(true);
     try {
-      const path = `logos/${crypto.randomUUID()}-${file.name}`;
-      const { error } = await supabase.storage.from("public-assets").upload(path, file, { upsert: false });
+      const MAX_BYTES = 2 * 1024 * 1024; // 2MB
+      const ALLOWED = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
+      if (!ALLOWED.includes(file.type)) {
+        throw new Error("Only PNG, JPEG, WEBP, or SVG images are allowed");
+      }
+      if (file.size > MAX_BYTES) {
+        throw new Error("Image must be 2MB or smaller");
+      }
+      const ext = file.name.split(".").pop()?.toLowerCase() ?? "img";
+      const path = `logos/${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("branding")
+        .upload(path, file, { upsert: false, contentType: file.type });
       if (error) throw error;
-      const { data } = supabase.storage.from("public-assets").getPublicUrl(path);
-      patch({ info: { ...state.info, logo_url: data.publicUrl } });
+      // Long-lived signed URL (1 year) — bucket is private, so signed URLs are required.
+      const { data, error: signErr } = await supabase.storage
+        .from("branding")
+        .createSignedUrl(path, 60 * 60 * 24 * 365);
+      if (signErr || !data?.signedUrl) throw signErr ?? new Error("Failed to sign URL");
+      patch({ info: { ...state.info, logo_url: data.signedUrl } });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Upload failed");
     } finally {

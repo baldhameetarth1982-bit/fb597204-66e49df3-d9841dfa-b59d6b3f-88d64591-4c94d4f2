@@ -181,18 +181,19 @@ export const getFlat360 = createServerFn({ method: "POST" })
     const overdueBills = unpaidBills.filter((b) => new Date(b.due_date) < now);
 
     // Eligibility via canonical DB function (source of truth for outstanding).
-    let elig: {
+    type EligibilityRow = {
       total_outstanding?: number;
       pending_payment_total?: number;
       eligible?: boolean;
       blockers?: Array<{ label?: string; message?: string }>;
-    } | null = null;
+    };
+    let elig: EligibilityRow | null = null;
     try {
       const { data: eligData } = await adminRpc("compute_no_dues_eligibility_internal", {
         _society_id: societyId,
         _flat_id: flatId,
       });
-      elig = (eligData as typeof elig) ?? null;
+      elig = (eligData as EligibilityRow | null) ?? null;
     } catch {
       elig = null;
     }

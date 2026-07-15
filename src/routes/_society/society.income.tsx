@@ -318,7 +318,7 @@ function IncomePage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All categories</SelectItem>
-                {(catsQ.data?.items ?? []).map((c) => (
+                {((catsQ.data?.items ?? []) as CategoryItem[]).map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.display_name}
                   </SelectItem>

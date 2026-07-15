@@ -9,7 +9,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { generateText } from "ai";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { loadFlat360Snapshot } from "@/lib/flat360.functions";
+import { loadFlat360Snapshot, buildRealDeps, attachAdminRpcs } from "@/lib/flat360.functions";
 import {
   AI_SUMMARY_SCHEMA_VERSION,
   AI_SYSTEM_PROMPT,

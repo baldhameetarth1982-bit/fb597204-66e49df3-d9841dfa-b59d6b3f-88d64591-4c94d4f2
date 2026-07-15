@@ -26,8 +26,22 @@ export const Route = createFileRoute("/_auth/login")({
       { name: "description", content: "Sign in to SociyoHub — Google, Phone, Truecaller or email." },
     ],
   }),
+  validateSearch: (s: Record<string, unknown>) => {
+    // Only accept same-origin relative paths as post-login return targets.
+    const raw = typeof s.next === "string" ? s.next : "";
+    const safe = raw.startsWith("/") && !raw.startsWith("//") ? raw : "";
+    return { next: safe || undefined };
+  },
   component: LoginPage,
 });
+
+function goNext(next: string | undefined, fallback: () => void) {
+  if (next) {
+    window.location.href = next;
+    return;
+  }
+  fallback();
+}
 
 type Step = "choose" | "phone" | "email";
 

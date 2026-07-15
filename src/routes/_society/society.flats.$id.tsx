@@ -41,7 +41,7 @@ import type {
 import type { UnitSummary } from "@/lib/unit-summary";
 import { AISummarySlot, type AISummaryUiState } from "@/components/flat360/AISummarySlot";
 import { UpgradePrompt } from "@/components/subscription/UpgradePrompt";
-import { AI_ALLOWED_ROUTES } from "@/lib/flat360-types";
+import { isAIAllowedRoute } from "@/lib/flat360-types";
 
 export const Route = createFileRoute("/_society/society/flats/$id")({
   head: () => ({ meta: [{ title: "Flat 360 — SociyoHub" }] }),

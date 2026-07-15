@@ -78,10 +78,9 @@ export const AISummaryResultSchema = z.object({
         route: z
           .string()
           .optional()
-          .refine(
-            (r) => r === undefined || (AI_ALLOWED_ROUTES as readonly string[]).includes(r),
-            { message: "route_not_allowed" },
-          ),
+          .refine((r) => r === undefined || isAIAllowedRoute(r), {
+            message: "route_not_allowed",
+          }),
       }),
     )
     .max(4)

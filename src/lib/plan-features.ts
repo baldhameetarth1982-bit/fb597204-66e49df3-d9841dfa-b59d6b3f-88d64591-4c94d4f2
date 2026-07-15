@@ -854,12 +854,26 @@ export const PLAN_FEATURES: Record<PlanKey, FeatureKey[]> = {
   premium: CATALOG.map((e) => e.key), // every key
 };
 
-/** Normalize DB plan_id + plan_status → canonical PlanKey. */
+/**
+ * Normalize DB `plan_id` + `plan_status` → canonical `PlanKey`.
+ *
+ * Safe fallback: explicit inactive statuses collapse to `basic` so an
+ * expired trial or cancelled subscription cannot leak Pro features.
+ */
 export function normalizePlan(
   raw: string | null | undefined,
   status?: string | null,
 ): PlanKey {
-  const s = (status ?? "").toLowerCase();
+  const s = (status ?? "").toLowerCase().trim();
+  if (
+    s === "expired" ||
+    s === "cancelled" ||
+    s === "canceled" ||
+    s === "past_due" ||
+    s === "inactive"
+  ) {
+    return "basic";
+  }
   if (s === "trial" || s === "trialing") return "premium";
   const p = (raw ?? "").toLowerCase().trim();
   if (!p) return "basic";

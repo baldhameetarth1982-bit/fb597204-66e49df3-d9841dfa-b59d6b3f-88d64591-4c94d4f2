@@ -42,7 +42,7 @@ Legend:
 | verifications | Resident Verifications | Residents & Units | Pro | built | /society/verifications |
 | flat_360 | Flat / Unit 360 | Residents & Units | Pro | **partial** | /society/flats |
 | no_dues | No-Dues Certificate | Certificates & Compliance | Pro | **planned** | /society/no-dues |
-| non_member_payments | Non-Member Payments | Billing & Finance | Pro | planned | — |
+| non_member_payments | Non-Member Payments | Billing & Finance | Pro | **partial** (Turn 18A backend; UI in Turn 18B) | — |
 | ai_income_categorization | AI Income Categorization | AI & Insights | Pro | planned | — |
 | ai_secretary | AI Secretary | AI & Insights | Pro | planned | — |
 | smart_qr_collections | Smart QR Collections | Billing & Finance | Pro | planned | — |

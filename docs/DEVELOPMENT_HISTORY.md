@@ -363,3 +363,63 @@ Still deferred:
 - SQL dashboard aggregate (JavaScript scan with `truncated` warning retained).
 - Category management UI, payer directory UI, offline income entry (Turn 18B.3).
 - Reconciliation actions, bank statement import, AI categorization, online gateways.
+
+## Turn 18B.2A — Direct-RPC bypass + record-existence enumeration closure
+
+**Original defect.** `public.transition_income_record(uuid, text, text)` was
+`SECURITY DEFINER` and executable by every authenticated user. Pro/Premium
+entitlement lived only in the TypeScript wrapper, so an authenticated Basic
+Society Admin could call the RPC directly through the Supabase client and
+bypass the plan gate. The same RPC returned `not_found` for unknown UUIDs and
+`not_authorized` for existing-but-inaccessible rows, letting a caller probe
+which record IDs exist across societies.
+
+**Selected exposure model — Design A (fully authorized authenticated RPC).**
+`authenticated` continues to hold `EXECUTE`; the RPC itself is now solely
+responsible for its own authorization decisions.
+
+**Corrective migration** (`20260715173243_...sql`) — additive; no in-place edit
+of the already-applied 18B.2 migration; no production backfill.
+
+- Adds `public.is_non_member_income_enabled_internal(_society_id uuid)` — a
+  DB-side mirror of `normalizePlan()`. `EXECUTE` revoked from `PUBLIC`/`anon`;
+  granted only to `authenticated`. Fixed `SET search_path = public`.
+  Denies Basic / expired / cancelled / past_due / inactive / missing plan.
+  Allows Pro, Premium, and any active-trial society.
+- Replaces `public.transition_income_record(uuid, text, text)`:
+  - Non-enumerating response — missing row, cross-society row, and
+    non-admin caller all return `{ status: "not_found" }`. `plan_required`
+    is returned only after society membership is established.
+  - Plan entitlement enforced *inside* the RPC via
+    `is_non_member_income_enabled_internal`.
+  - Unused `v_new_recon` variable removed.
+  - Grants unchanged: `REVOKE ALL ... FROM PUBLIC`, `REVOKE ALL ... FROM anon`,
+    `GRANT EXECUTE ... TO authenticated`.
+
+**Wrapper hardening** (`src/lib/non-member-income.functions.ts`).
+- Mutation input surface remains `{ recordId }` (+ optional `reason`). No
+  caller-controlled `societyId`, `actorId`, `plan`, `currentStatus`, `amount`,
+  or `category`.
+- `authorizeMutation` collapses "signed-in but not a society admin" to
+  `not_found`, matching the RPC's non-enumerating shape.
+- `callTransitionRpc` validates the RPC response with the new strict
+  `IncomeTransitionResultSchema` (Zod `discriminatedUnion`). Any malformed
+  payload becomes `{ status: "error" }`; raw RPC JSON is never surfaced.
+
+**OAuth consent audit.** `src/routes/[.]lovable.oauth.consent.tsx` builds its
+`?next=` return path from `location.pathname + location.searchStr` at redirect
+time — a same-origin app path never taken from user input — so no
+`sanitizeNextPath` change was required for the OAuth-protocol callback. The
+generic post-login return path was already sanitized in Turn 18B Part 0.
+
+**Test surface.** +16 unit tests covering `IncomeTransitionResultSchema`
+(success/malformed/unknown-status), wrapper input minimalism, wrapper
+non-enumerating response, migration hardening (helper presence, plan gate,
+argument allow-list, GRANT/REVOKE lines, `v_new_recon` removal). Full unit
+suite: 228 / 228 passing.
+
+**Integration status.** Direct-PostgreSQL role-transition scenarios (bypass
+tests #1–#20 in the turn brief) require isolated PostgreSQL fixture variables
+that are unavailable in this sandbox. Wrapper- and schema-level behavior is
+verified by the unit suite; direct-RPC runtime authorization is *not* claimed
+verified end-to-end and is deferred to Turn 18B.3's guarded integration run.

@@ -475,6 +475,30 @@ export type IncomeTransitionResult =
   | { status: "plan_required" }
   | { status: "error" };
 
+/**
+ * Turn 18B.2A — strict runtime schema for the transition RPC response.
+ * The database returns a jsonb; we never cast it directly. Any malformed
+ * payload collapses to `{ status: "error" }` at the call site.
+ */
+export const IncomeTransitionResultSchema: z.ZodType<IncomeTransitionResult> =
+  z.discriminatedUnion("status", [
+    z.object({
+      status: z.literal("success"),
+      recordId: z.string().uuid(),
+      verificationStatus: z.enum(["verified", "rejected", "reversed"]),
+      changedAt: z.string().min(1),
+    }),
+    z.object({
+      status: z.literal("already_processed"),
+      currentStatus: z.enum(["verified", "rejected", "reversed", "pending"]),
+    }),
+    z.object({ status: z.literal("invalid_transition") }),
+    z.object({ status: z.literal("not_found") }),
+    z.object({ status: z.literal("not_authorized") }),
+    z.object({ status: z.literal("plan_required") }),
+    z.object({ status: z.literal("error") }),
+  ]);
+
 /** Reason input schema for reject/reverse mutations. Trimmed, 5-500 chars, no HTML. */
 export const IncomeTransitionReason = z
   .string()

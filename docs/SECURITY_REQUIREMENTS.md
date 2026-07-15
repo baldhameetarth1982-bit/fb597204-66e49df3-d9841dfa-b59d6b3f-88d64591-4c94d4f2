@@ -38,3 +38,22 @@ Sensitive workflow status (`no_dues_requests.status`, points-ledger `source`, pa
 - Every server fn `.inputValidator()` uses Zod (or equivalent) with bounds.
 - Format checks on emails/phones/UUIDs/URLs.
 - Client-provided IDs cross-checked against caller's society membership on every mutation.
+
+## Non-member income transitions (Turn 18B.2A)
+
+`public.transition_income_record(uuid, text, text)` is authenticated-callable
+by design. It **must not** rely on any TypeScript wrapper for security:
+
+- Society-admin (or super-admin) membership is verified inside the RPC.
+- Pro/Premium plan entitlement is verified inside the RPC via
+  `public.is_non_member_income_enabled_internal(_society_id)`.
+- Missing row, cross-society row, and non-admin caller all return the same
+  `{ status: "not_found" }` shape — no record-existence enumeration.
+- `plan_required` is returned only after society membership succeeds.
+- The RPC never accepts `society_id`, `actor_id`, `plan`, `current_status`,
+  `amount`, or `category` as arguments — they are derived server-side.
+- `EXECUTE` on both functions is revoked from `PUBLIC` and `anon`; granted
+  only to `authenticated`.
+- Server callers validate the RPC's `jsonb` reply with
+  `IncomeTransitionResultSchema` (Zod discriminated union) before returning
+  to the browser. Raw RPC JSON is never surfaced.

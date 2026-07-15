@@ -608,3 +608,10 @@ require a DOM environment:
 - Razorpay untouched; no payment integration changes; no platform fee; Cash + Bank Transfer preserved.
 - Firebase → Supabase authentication preserved; RLS preserved; No-Dues cryptography untouched.
 - No writes to real society data during audit; Society `1907a918-c4b8-4f43-a837-450530cc7c34` never used as fixture.
+
+## Turn 18A closure (Stage 3B foundation)
+
+- New migrations: income categories, non-member payers, income records (RLS + trigger + revokes). Verified via `supabase--migration` linter (no new findings from Turn 18A tables; pre-existing 77 project-level linter items unchanged).
+- Unit tests: **181 passed / 0 failed**. Build **exit 0**. Bundle secret scan **0 findings** across 886 files.
+- Integration matrix skipped honestly (`ALLOW_SOCIOHUB_TEST_FIXTURES` not set). Fixtures deferred to Turn 18B.
+- Untouched: SociyoHub branding, co-founders, Razorpay subscription checkout, Cash+Bank Transfer maintenance, no-platform-fee policy, Firebase→Supabase exchange, No-Dues cryptography, Flat 360.

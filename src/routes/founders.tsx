@@ -29,17 +29,43 @@ export const Route = createFileRoute("/founders")({
         type: "application/ld+json",
         children: JSON.stringify({
           "@context": "https://schema.org",
-          "@type": "Organization",
-          name: "SociyoHub",
-          description: "A society-management software platform.",
-          founder: BRAND.coFounders.map((f) => ({
-            "@type": "Person",
-            name: f.name,
-            jobTitle: f.role,
-          })),
+          "@graph": [
+            {
+              "@type": "Organization",
+              "@id": "https://sociohub.live/#organization",
+              name: "SociyoHub",
+              url: "https://sociohub.live/",
+              description: "SociyoHub is a society-management software platform.",
+              logo: {
+                "@type": "ImageObject",
+                url: "https://sociohub.live/__l5e/assets-v1/69d18846-1754-4422-9ca0-161f59a2293d/sociohub-logo-v2.png",
+              },
+              founder: [
+                { "@id": "https://sociohub.live/founders#meetarth-baldha" },
+                { "@id": "https://sociohub.live/founders#divyaraj-vaghela" },
+              ],
+            },
+            {
+              "@type": "Person",
+              "@id": "https://sociohub.live/founders#meetarth-baldha",
+              name: "Meetarth Baldha",
+              jobTitle: "Co-Founder",
+              url: "https://sociohub.live/founders#meetarth-baldha",
+              worksFor: { "@id": "https://sociohub.live/#organization" },
+            },
+            {
+              "@type": "Person",
+              "@id": "https://sociohub.live/founders#divyaraj-vaghela",
+              name: "Divyaraj Vaghela",
+              jobTitle: "Co-Founder",
+              url: "https://sociohub.live/founders#divyaraj-vaghela",
+              worksFor: { "@id": "https://sociohub.live/#organization" },
+            },
+          ],
         }),
       },
     ],
+
   }),
   component: FoundersPage,
 });

@@ -12,10 +12,53 @@ export const Route = createFileRoute("/")({
         content:
           "SociyoHub helps housing societies collect maintenance, share notices, and manage residents — all in one clean dashboard.",
       },
+      { property: "og:title", content: "SociyoHub — Society management, simplified" },
+      {
+        property: "og:description",
+        content:
+          "SociyoHub helps housing societies collect maintenance, share notices, and manage residents — all in one clean dashboard.",
+      },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://sociohub.live/" },
+    ],
+    links: [{ rel: "canonical", href: "https://sociohub.live/" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          "@id": "https://sociohub.live/#organization",
+          name: "SociyoHub",
+          url: "https://sociohub.live/",
+          description: "SociyoHub is a society-management software platform.",
+          logo: {
+            "@type": "ImageObject",
+            url: "https://sociohub.live/__l5e/assets-v1/69d18846-1754-4422-9ca0-161f59a2293d/sociohub-logo-v2.png",
+          },
+          founder: [
+            {
+              "@type": "Person",
+              "@id": "https://sociohub.live/founders#meetarth-baldha",
+              name: "Meetarth Baldha",
+              jobTitle: "Co-Founder",
+              url: "https://sociohub.live/founders#meetarth-baldha",
+            },
+            {
+              "@type": "Person",
+              "@id": "https://sociohub.live/founders#divyaraj-vaghela",
+              name: "Divyaraj Vaghela",
+              jobTitle: "Co-Founder",
+              url: "https://sociohub.live/founders#divyaraj-vaghela",
+            },
+          ],
+        }),
+      },
     ],
   }),
   component: IndexRedirect,
 });
+
 
 function IndexRedirect() {
   const { isLoading, isAuthenticated, primaryRole, profile } = useAuth();

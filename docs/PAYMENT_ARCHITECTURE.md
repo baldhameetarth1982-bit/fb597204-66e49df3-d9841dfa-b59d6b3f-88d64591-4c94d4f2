@@ -23,3 +23,17 @@ Planned but not implemented. Vendor/advertiser/coach/event-organizer/shop/guest/
 ## Reconciliation (Stage 3B)
 
 Feature key = `reconciliation`, min plan = Pro. Cash / Bank Transfer / Online → pending / verified / rejected + reconciliation history.
+
+---
+
+## Non-member income (Stage 3B, Turn 18A backend)
+
+Tables (additive):
+
+- `society_income_categories` — society-scoped income taxonomy.
+- `non_member_payers` — society-scoped external payer directory. Contact fields optional; contact details NEVER included in default list responses.
+- `society_income_records` — canonical income record. Method ∈ `cash | bank_transfer | other_offline`. Verification ∈ `pending | verified | rejected | reversed` (reversed is terminal). Reconciliation ∈ `unreconciled | matched | partially_matched | needs_review | reversed` — deliberately independent of verification.
+
+Access: `society_admin` of that society or `super_admin`. Every state transition is audit-logged. No DELETE grant on income records — reversal only. Feature key: `non_member_payments`, min plan **Pro** (Premium inherits). Basic and expired plans are denied server-side, not just in the UI.
+
+Still deferred: online gateway remains at the final payment stage; only Cash + Bank Transfer + other-offline supported for non-member income today.

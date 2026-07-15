@@ -57,3 +57,16 @@ Payment-provider review, live gateway integration, webhook verification, reconci
 stage that touches payment activation, platform fees, or replaces
 Cash + Bank Transfer maintenance behavior violates the lock. See
 `docs/RELEASE_READINESS.md` for permanent rules.
+
+---
+
+## Stage 3B — Turn 18A status (2026-07-15)
+
+Backend foundation for Non-Member Payments landed:
+
+- Tables `society_income_categories`, `non_member_payers`, `society_income_records` (additive, admin-only RLS).
+- Server functions in `src/lib/non-member-income.functions.ts` with strict Pro/Premium gating.
+- 25 new unit tests; integration matrix scaffolded but honestly skipped without isolated fixtures.
+
+Next (Turn 18B): Society Admin UI for categories, payers, income entry + verification/reversal, and Reports wiring. Still no online payment gateway.
+Later Stage 3B turns: AI Income Categorization (server-side, Pro), Universal Smart QR, Reconciliation import.

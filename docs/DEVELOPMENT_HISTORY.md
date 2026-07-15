@@ -278,3 +278,46 @@ already existed.
 - Added `tests/unit/flat360-ui.test.ts` — 7 UI-logic tests (allow-list guard + reason copy safety). Unit total: **156 / 156** passing.
 - Documented Sub-turn D exit gate, remaining `as any` scope (service-role-only cache upsert, gated by types regen), and honestly-skipped items (Playwright screenshots, provider runtime smoke, full RTL rendering) in `docs/RELEASE_READINESS.md`.
 - No changes to Razorpay, payments, founders, branding, sitemap, robots, RLS, or No-Dues crypto.
+
+## Stage 3B — Turn 18A (Non-Member Payment Foundation)
+
+**Backend/domain only. No UI, no AI, no online gateway.**
+
+### Canonical income architecture
+- `society_income_categories` — society-scoped taxonomy (`key` unique per society, active/inactive flag, system defaults allowed but seeding deferred).
+- `non_member_payers` — society-scoped external payer directory (vendor/advertiser/coach/event_organizer/shop/guest/temporary/other). Contact fields optional; no gov-ID, no bank fields.
+- `society_income_records` — canonical income record with strict payer XOR check, positive amount, method in `cash | bank_transfer | other_offline`, verification (`pending | verified | rejected | reversed`), reconciliation (`unreconciled | matched | partially_matched | needs_review | reversed`), reversal audit fields.
+- Cross-table society consistency trigger `enforce_income_record_society_consistency` rejects records whose category or payer belongs to another society.
+- No DELETE grant on income records to `authenticated` — reversal is the only removal path.
+
+### RLS
+- All three new tables: `is_society_admin_for(auth.uid(), society_id) OR is_super_admin(auth.uid())` for SELECT/INSERT/UPDATE (+DELETE on categories/payers). No `anon`, no resident, no guard access.
+- Trigger + `updated_at` helpers are `SET search_path = public` and `REVOKE EXECUTE ... FROM PUBLIC, anon, authenticated`.
+
+### Server functions (`src/lib/non-member-income.functions.ts`)
+- `listIncomeCategoriesFn`, `createIncomeCategoryFn`, `updateIncomeCategoryFn`
+- `listNonMemberPayersFn`, `createNonMemberPayerFn`, `updateNonMemberPayerFn`
+- `createNonMemberIncomeRecordFn`, `verifyNonMemberIncomeRecordFn`, `rejectNonMemberIncomeRecordFn`, `reverseIncomeRecordFn`, `listIncomeRecordsFn`
+- Every function re-verifies society admin AND Pro/Premium plan server-side via `is_society_admin_for` RPC + `normalizePlan(plan_id, plan_status)`. Basic/expired/cancelled → denied.
+- Verification transitions gated by `canTransitionVerification` state machine; `reversed` is terminal.
+- Every state-change writes an `audit_log` entry (`income_record.created/verified/rejected/reversed`).
+
+### Pure logic (`src/lib/non-member-income.server.ts`)
+- Zod schemas, `PAYER_TYPES`, `PAYER_KINDS`, `SUPPORTED_METHODS`, `VERIFICATION_STATES`, `RECONCILIATION_STATES`.
+- `toPublicPayerList` / `toPublicIncomeList` data-minimization projections: default list responses exclude phone, email, notes, reference_code, raw reference number (replaced by `••••<last4>` suffix). No payment-proof URL, no bank fields exposed anywhere.
+
+### Tests
+- `tests/unit/non-member-income.test.ts` — **25 tests** covering plan gating (3), category validation & normalization (3), payer validation (4), income record validation incl. payer XOR / cash / bank_transfer / rejected online method (6), state machine (6), and data minimization (2). Suite: **181 / 181** passing.
+- `tests/integration/non-member-income.integration.test.ts` — guarded by `ALLOW_SOCIOHUB_TEST_FIXTURES=true` + `SOCIOHUB_TEST_SOCIETY_A/B`. Skips honestly when isolated env missing. Matrix items filed as `it.todo` for Turn 18B fixture provisioning.
+
+### Exit gate
+- `bunx tsgo --noEmit` — exit **0**.
+- `bunx vitest run tests/unit` — 11 files, **181 passed**.
+- `bunx vitest run tests/integration/non-member-income.integration.test.ts` — 12 tests, 1 pass + 11 todo, 0 failed (fixtures absent as expected).
+- `bun run build` — exit **0** (`✓ built in 49.92s`).
+- `bun scripts/verify-client-bundle-secrets.ts` — **886 files, 0 findings**.
+
+### Scope guarantees
+- Turn 17 unchanged. SociyoHub branding, both co-founders, founder SEO, Razorpay subscription billing, Cash+Bank Transfer maintenance flow, no-platform-fee policy, Firebase→Supabase auth, RLS, Flat 360, No-Dues cryptography — all untouched.
+- No real society (`1907a918-…`) data read or written by this turn.
+- Deferred to later turns: Turn 18B admin UI, later Stage 3B AI income categorization, final payment stage for any online gateway.

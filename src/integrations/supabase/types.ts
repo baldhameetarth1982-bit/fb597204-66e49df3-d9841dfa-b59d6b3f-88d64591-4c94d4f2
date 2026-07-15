@@ -1272,6 +1272,62 @@ export type Database = {
           },
         ]
       }
+      non_member_payers: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          display_name: string
+          email: string | null
+          id: string
+          is_active: boolean
+          notes: string | null
+          organization_name: string | null
+          payer_type: string
+          phone: string | null
+          reference_code: string | null
+          society_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          display_name: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          organization_name?: string | null
+          payer_type: string
+          phone?: string | null
+          reference_code?: string | null
+          society_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          display_name?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          organization_name?: string | null
+          payer_type?: string
+          phone?: string | null
+          reference_code?: string | null
+          society_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "non_member_payers_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       offline_residents: {
         Row: {
           created_at: string
@@ -2102,6 +2158,156 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "society_contacts_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      society_income_categories: {
+        Row: {
+          category_group: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          display_name: string
+          id: string
+          is_active: boolean
+          is_system: boolean
+          key: string
+          society_id: string
+          updated_at: string
+        }
+        Insert: {
+          category_group?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          display_name: string
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          key: string
+          society_id: string
+          updated_at?: string
+        }
+        Update: {
+          category_group?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          key?: string
+          society_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "society_income_categories_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      society_income_records: {
+        Row: {
+          amount: number
+          category_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          non_member_payer_id: string | null
+          payer_kind: string
+          payment_date: string
+          payment_method: string
+          payment_status: string
+          reconciliation_status: string
+          reference_number: string | null
+          resident_user_id: string | null
+          reversal_reason: string | null
+          reversed_at: string | null
+          reversed_by: string | null
+          society_id: string
+          source: string
+          updated_at: string
+          verification_status: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          amount: number
+          category_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          non_member_payer_id?: string | null
+          payer_kind: string
+          payment_date?: string
+          payment_method: string
+          payment_status?: string
+          reconciliation_status?: string
+          reference_number?: string | null
+          resident_user_id?: string | null
+          reversal_reason?: string | null
+          reversed_at?: string | null
+          reversed_by?: string | null
+          society_id: string
+          source?: string
+          updated_at?: string
+          verification_status?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          amount?: number
+          category_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          non_member_payer_id?: string | null
+          payer_kind?: string
+          payment_date?: string
+          payment_method?: string
+          payment_status?: string
+          reconciliation_status?: string
+          reference_number?: string | null
+          resident_user_id?: string | null
+          reversal_reason?: string | null
+          reversed_at?: string | null
+          reversed_by?: string | null
+          society_id?: string
+          source?: string
+          updated_at?: string
+          verification_status?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "society_income_records_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "society_income_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "society_income_records_non_member_payer_id_fkey"
+            columns: ["non_member_payer_id"]
+            isOneToOne: false
+            referencedRelation: "non_member_payers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "society_income_records_society_id_fkey"
             columns: ["society_id"]
             isOneToOne: false
             referencedRelation: "societies"

@@ -427,17 +427,31 @@ describe("IncomeTransitionResultSchema (Turn 18B.2A)", () => {
       }).success,
     ).toBe(false);
   });
-  it("rejects extra top-level keys leaking metadata is safe (parsed via discriminatedUnion)", () => {
-    // zod .object() strips unknown keys by default; ensure it does not include them.
+  it("rejects extra top-level keys via .strict() (Turn 18B.2B)", () => {
     const parsed = IncomeTransitionResultSchema.safeParse({
       status: "not_found",
       society_id: "leak",
       amount: 999,
     });
-    expect(parsed.success).toBe(true);
-    if (parsed.success) {
-      expect(parsed.data).toEqual({ status: "not_found" });
-    }
+    expect(parsed.success).toBe(false);
+  });
+  it("rejects success payloads whose changedAt is not an ISO datetime (Turn 18B.2B)", () => {
+    expect(
+      IncomeTransitionResultSchema.safeParse({
+        status: "success",
+        recordId: UUID,
+        verificationStatus: "verified",
+        changedAt: "not-a-datetime",
+      }).success,
+    ).toBe(false);
+    expect(
+      IncomeTransitionResultSchema.safeParse({
+        status: "success",
+        recordId: UUID,
+        verificationStatus: "verified",
+        changedAt: "2026-07-15T12:00:00+05:30",
+      }).success,
+    ).toBe(true);
   });
 });
 

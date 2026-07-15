@@ -1,11 +1,7 @@
-import { SociyoHubMark } from "@/components/shared/SociyoHubLogo";
+import logoAsset from "@/assets/sociohub-logo-v2.png.asset.json";
 import { cn } from "@/lib/utils";
 
-/**
- * Official SociyoHub app icon — the premium branded mark (navy→teal gradient
- * tile with the signature "y" bridge glyph) used on /founders. Rendered
- * everywhere a logo mark is needed so the whole app matches that identity.
- */
+/** Official SociyoHub app icon. Use this everywhere a logo mark is needed. */
 export function Logo({
   className,
   size = 36,
@@ -13,5 +9,14 @@ export function Logo({
   className?: string;
   size?: number;
 }) {
-  return <SociyoHubMark size={size} className={cn(className)} />;
+  return (
+    <img
+      src={logoAsset.url}
+      alt="SociyoHub"
+      width={size}
+      height={size}
+      style={{ width: size, height: size }}
+      className={cn("rounded-[22%] object-cover shadow-sm", className)}
+    />
+  );
 }

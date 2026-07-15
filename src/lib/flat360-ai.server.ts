@@ -15,7 +15,7 @@
  */
 import { createHash } from "node:crypto";
 import { z } from "zod";
-import { AI_ALLOWED_ROUTES, AI_DTO_FORBIDDEN_KEYS, isAIAllowedRoute } from "@/lib/flat360-types";
+import { AI_DTO_FORBIDDEN_KEYS, isAIAllowedRoute } from "@/lib/flat360-types";
 import type { Flat360Snapshot } from "@/lib/flat360-types";
 import type { PlanKey } from "@/lib/plan-features";
 import type { UnitSummary } from "@/lib/unit-summary";

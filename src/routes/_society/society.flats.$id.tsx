@@ -858,9 +858,6 @@ function AISummaryTrigger({ onMount }: { onMount: () => void }) {
   return null;
 }
 
-// Small helper to run an effect exactly once without pulling useEffect from React
-// (avoid extra import churn while satisfying strict lint).
-import { useEffect, useRef } from "react";
 function useOnce(fn: () => void) {
   const ran = useRef(false);
   useEffect(() => {

@@ -105,12 +105,12 @@ function StepInfo({ state, patch }: StepProps<WizardState>) {
       const ext = file.name.split(".").pop()?.toLowerCase() ?? "img";
       const path = `logos/${crypto.randomUUID()}.${ext}`;
       const { error } = await supabase.storage
-        .from("branding")
+        .from("public-assets")
         .upload(path, file, { upsert: false, contentType: file.type });
       if (error) throw error;
-      // Long-lived signed URL (1 year) — bucket is private, so signed URLs are required.
+      // Bucket is private; use a long-lived signed URL (1 year) for display.
       const { data, error: signErr } = await supabase.storage
-        .from("branding")
+        .from("public-assets")
         .createSignedUrl(path, 60 * 60 * 24 * 365);
       if (signErr || !data?.signedUrl) throw signErr ?? new Error("Failed to sign URL");
       patch({ info: { ...state.info, logo_url: data.signedUrl } });

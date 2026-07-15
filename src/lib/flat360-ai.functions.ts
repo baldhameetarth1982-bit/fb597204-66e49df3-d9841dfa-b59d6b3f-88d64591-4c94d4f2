@@ -95,7 +95,7 @@ function realCache(): AICacheAdapter {
       try {
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const expiresAt = new Date(Date.now() + AI_CACHE_TTL_SECONDS * 1000).toISOString();
-        await (supabaseAdmin.from("flat360_ai_summary_cache") as any).upsert(
+        await (supabaseAdmin as any).from("flat360_ai_summary_cache").upsert(
           {
             society_id: societyId,
             flat_id: flatId,

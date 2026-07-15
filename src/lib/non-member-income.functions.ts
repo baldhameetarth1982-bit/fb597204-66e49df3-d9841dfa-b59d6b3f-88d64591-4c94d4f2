@@ -764,4 +764,101 @@ export const getIncomeRecordDetailFn = createServerFn({ method: "POST" })
     },
   );
 
+// ---------------------------------------------------------------------------
+// Turn 18B.2 — Atomic transition mutations (minimal input, RPC-backed)
+// ---------------------------------------------------------------------------
+
+import {
+  IncomeTransitionReason,
+  type IncomeTransitionResult,
+} from "@/lib/non-member-income.server";
+
+const RecordIdOnly = z.object({ recordId: z.string().uuid() });
+const RecordIdWithReason = z.object({
+  recordId: z.string().uuid(),
+  reason: IncomeTransitionReason,
+});
+
+/**
+ * Server-side entitlement + admin check derived purely from the record.
+ * Returns `null` on success or a safe transition error to surface.
+ */
+async function authorizeMutation(
+  ctx: Ctx,
+  recordId: string,
+): Promise<
+  | { ok: true; societyId: string }
+  | { ok: false; result: IncomeTransitionResult }
+> {
+  const { data: row, error } = await ctx.supabase
+    .from("society_income_records")
+    .select("id, society_id")
+    .eq("id", recordId)
+    .maybeSingle();
+  if (error) return { ok: false, result: { status: "error" } };
+  const r = row as { society_id: string } | null;
+  if (!r) return { ok: false, result: { status: "not_found" } };
+  try {
+    await assertSocietyAdmin(ctx, r.society_id);
+  } catch {
+    return { ok: false, result: { status: "not_authorized" } };
+  }
+  try {
+    await assertProPlan(ctx, r.society_id);
+  } catch {
+    return { ok: false, result: { status: "plan_required" } };
+  }
+  return { ok: true, societyId: r.society_id };
+}
+
+async function callTransitionRpc(
+  ctx: Ctx,
+  recordId: string,
+  target: "verified" | "rejected" | "reversed",
+  reason: string | null,
+): Promise<IncomeTransitionResult> {
+  const { data, error } = await ctx.supabase.rpc("transition_income_record", {
+    _record_id: recordId,
+    _target_status: target,
+    _reason: reason,
+  });
+  if (error) return { status: "error" };
+  const res = data as IncomeTransitionResult | null;
+  if (!res || typeof res !== "object" || typeof (res as { status?: unknown }).status !== "string") {
+    return { status: "error" };
+  }
+  return res;
+}
+
+export const verifyIncomeRecordByIdFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw) => RecordIdOnly.parse(raw))
+  .handler(async ({ data, context }): Promise<IncomeTransitionResult> => {
+    const ctx = context as Ctx;
+    const auth = await authorizeMutation(ctx, data.recordId);
+    if (!auth.ok) return auth.result;
+    return callTransitionRpc(ctx, data.recordId, "verified", null);
+  });
+
+export const rejectIncomeRecordByIdFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw) => RecordIdWithReason.parse(raw))
+  .handler(async ({ data, context }): Promise<IncomeTransitionResult> => {
+    const ctx = context as Ctx;
+    const auth = await authorizeMutation(ctx, data.recordId);
+    if (!auth.ok) return auth.result;
+    return callTransitionRpc(ctx, data.recordId, "rejected", data.reason);
+  });
+
+export const reverseIncomeRecordByIdFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw) => RecordIdWithReason.parse(raw))
+  .handler(async ({ data, context }): Promise<IncomeTransitionResult> => {
+    const ctx = context as Ctx;
+    const auth = await authorizeMutation(ctx, data.recordId);
+    if (!auth.ok) return auth.result;
+    return callTransitionRpc(ctx, data.recordId, "reversed", data.reason);
+  });
+
+
 

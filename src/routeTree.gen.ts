@@ -19,6 +19,7 @@ import { Route as RefundRouteImport } from './routes/refund'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as McpRouteImport } from './routes/mcp'
 import { Route as LegalRouteImport } from './routes/legal'
 import { Route as GdprRouteImport } from './routes/gdpr'
 import { Route as FoundersRouteImport } from './routes/founders'
@@ -37,6 +38,8 @@ import { Route as OnboardingCreateRouteImport } from './routes/onboarding.create
 import { Route as CheckoutPlanIdRouteImport } from './routes/checkout.$planId'
 import { Route as ApiSupportChatRouteImport } from './routes/api/support-chat'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
+import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as VerifyNoDuesTokenRouteImport } from './routes/verify.no-dues.$token'
 import { Route as SocietySocietyVisitorsRouteImport } from './routes/_society/society.visitors'
 import { Route as SocietySocietyVerificationsRouteImport } from './routes/_society/society.verifications'
@@ -121,6 +124,7 @@ import { Route as AdminAdminBrandingRouteImport } from './routes/_admin/admin.br
 import { Route as AdminAdminBiRouteImport } from './routes/_admin/admin.bi'
 import { Route as AdminAdminAuditRouteImport } from './routes/_admin/admin.audit'
 import { Route as AdminAdminAdsRouteImport } from './routes/_admin/admin.ads'
+import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as ApiPublicHooksRunBillingRouteImport } from './routes/api/public/hooks/run-billing'
 import { Route as ApiPublicHooksRazorpayRouteImport } from './routes/api/public/hooks/razorpay'
 import { Route as ApiPublicHooksMaintenanceRemindersRouteImport } from './routes/api/public/hooks/maintenance-reminders'
@@ -182,6 +186,11 @@ const PricingRoute = PricingRouteImport.update({
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LegalRoute = LegalRouteImport.update({
@@ -270,6 +279,18 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => AuthRoute,
 } as any)
+const Char91DotwellKnownChar93OauthProtectedResourceRoute =
+  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const Char91DotmcpChar93ListToolsRoute =
+  Char91DotmcpChar93ListToolsRouteImport.update({
+    id: '/.mcp/list-tools',
+    path: '/.mcp/list-tools',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const VerifyNoDuesTokenRoute = VerifyNoDuesTokenRouteImport.update({
   id: '/verify/no-dues/$token',
   path: '/verify/no-dues/$token',
@@ -703,6 +724,12 @@ const AdminAdminAdsRoute = AdminAdminAdsRouteImport.update({
   path: '/admin/ads',
   getParentRoute: () => AdminRoute,
 } as any)
+const Char91DotmcpChar93InvokeToolToolRoute =
+  Char91DotmcpChar93InvokeToolToolRouteImport.update({
+    id: '/.mcp/invoke-tool/$tool',
+    path: '/.mcp/invoke-tool/$tool',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksRunBillingRoute =
   ApiPublicHooksRunBillingRouteImport.update({
     id: '/api/public/hooks/run-billing',
@@ -777,6 +804,7 @@ export interface FileRoutesByFullPath {
   '/founders': typeof FoundersRoute
   '/gdpr': typeof GdprRoute
   '/legal': typeof LegalRoute
+  '/mcp': typeof McpRoute
   '/onboarding': typeof OnboardingRouteWithChildren
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
@@ -787,6 +815,8 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/verify-phone': typeof VerifyPhoneRoute
   '/welcome': typeof WelcomeRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/login': typeof AuthLoginRoute
   '/api/support-chat': typeof ApiSupportChatRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
@@ -795,6 +825,7 @@ export interface FileRoutesByFullPath {
   '/onboarding/pending': typeof OnboardingPendingRoute
   '/onboarding/plan': typeof OnboardingPlanRoute
   '/onboarding/': typeof OnboardingIndexRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/ads': typeof AdminAdminAdsRoute
   '/admin/audit': typeof AdminAdminAuditRoute
   '/admin/bi': typeof AdminAdminBiRoute
@@ -899,6 +930,7 @@ export interface FileRoutesByTo {
   '/founders': typeof FoundersRoute
   '/gdpr': typeof GdprRoute
   '/legal': typeof LegalRoute
+  '/mcp': typeof McpRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/refund': typeof RefundRoute
@@ -908,6 +940,8 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/verify-phone': typeof VerifyPhoneRoute
   '/welcome': typeof WelcomeRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/login': typeof AuthLoginRoute
   '/api/support-chat': typeof ApiSupportChatRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
@@ -916,6 +950,7 @@ export interface FileRoutesByTo {
   '/onboarding/pending': typeof OnboardingPendingRoute
   '/onboarding/plan': typeof OnboardingPlanRoute
   '/onboarding': typeof OnboardingIndexRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/ads': typeof AdminAdminAdsRoute
   '/admin/audit': typeof AdminAdminAuditRoute
   '/admin/bi': typeof AdminAdminBiRoute
@@ -1025,6 +1060,7 @@ export interface FileRoutesById {
   '/founders': typeof FoundersRoute
   '/gdpr': typeof GdprRoute
   '/legal': typeof LegalRoute
+  '/mcp': typeof McpRoute
   '/onboarding': typeof OnboardingRouteWithChildren
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
@@ -1035,6 +1071,8 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/verify-phone': typeof VerifyPhoneRoute
   '/welcome': typeof WelcomeRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_auth/login': typeof AuthLoginRoute
   '/api/support-chat': typeof ApiSupportChatRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
@@ -1043,6 +1081,7 @@ export interface FileRoutesById {
   '/onboarding/pending': typeof OnboardingPendingRoute
   '/onboarding/plan': typeof OnboardingPlanRoute
   '/onboarding/': typeof OnboardingIndexRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_admin/admin/ads': typeof AdminAdminAdsRoute
   '/_admin/admin/audit': typeof AdminAdminAuditRoute
   '/_admin/admin/bi': typeof AdminAdminBiRoute
@@ -1149,6 +1188,7 @@ export interface FileRouteTypes {
     | '/founders'
     | '/gdpr'
     | '/legal'
+    | '/mcp'
     | '/onboarding'
     | '/pricing'
     | '/privacy'
@@ -1159,6 +1199,8 @@ export interface FileRouteTypes {
     | '/terms'
     | '/verify-phone'
     | '/welcome'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/login'
     | '/api/support-chat'
     | '/checkout/$planId'
@@ -1167,6 +1209,7 @@ export interface FileRouteTypes {
     | '/onboarding/pending'
     | '/onboarding/plan'
     | '/onboarding/'
+    | '/.mcp/invoke-tool/$tool'
     | '/admin/ads'
     | '/admin/audit'
     | '/admin/bi'
@@ -1271,6 +1314,7 @@ export interface FileRouteTypes {
     | '/founders'
     | '/gdpr'
     | '/legal'
+    | '/mcp'
     | '/pricing'
     | '/privacy'
     | '/refund'
@@ -1280,6 +1324,8 @@ export interface FileRouteTypes {
     | '/terms'
     | '/verify-phone'
     | '/welcome'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/login'
     | '/api/support-chat'
     | '/checkout/$planId'
@@ -1288,6 +1334,7 @@ export interface FileRouteTypes {
     | '/onboarding/pending'
     | '/onboarding/plan'
     | '/onboarding'
+    | '/.mcp/invoke-tool/$tool'
     | '/admin/ads'
     | '/admin/audit'
     | '/admin/bi'
@@ -1396,6 +1443,7 @@ export interface FileRouteTypes {
     | '/founders'
     | '/gdpr'
     | '/legal'
+    | '/mcp'
     | '/onboarding'
     | '/pricing'
     | '/privacy'
@@ -1406,6 +1454,8 @@ export interface FileRouteTypes {
     | '/terms'
     | '/verify-phone'
     | '/welcome'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/_auth/login'
     | '/api/support-chat'
     | '/checkout/$planId'
@@ -1414,6 +1464,7 @@ export interface FileRouteTypes {
     | '/onboarding/pending'
     | '/onboarding/plan'
     | '/onboarding/'
+    | '/.mcp/invoke-tool/$tool'
     | '/_admin/admin/ads'
     | '/_admin/admin/audit'
     | '/_admin/admin/bi'
@@ -1523,6 +1574,7 @@ export interface RootRouteChildren {
   FoundersRoute: typeof FoundersRoute
   GdprRoute: typeof GdprRoute
   LegalRoute: typeof LegalRoute
+  McpRoute: typeof McpRoute
   OnboardingRoute: typeof OnboardingRouteWithChildren
   PricingRoute: typeof PricingRoute
   PrivacyRoute: typeof PrivacyRoute
@@ -1533,8 +1585,11 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   VerifyPhoneRoute: typeof VerifyPhoneRoute
   WelcomeRoute: typeof WelcomeRoute
+  Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
+  Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ApiSupportChatRoute: typeof ApiSupportChatRoute
   CheckoutPlanIdRoute: typeof CheckoutPlanIdRoute
+  Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   VerifyNoDuesTokenRoute: typeof VerifyNoDuesTokenRoute
   ApiPublicAuthFirebaseSessionRoute: typeof ApiPublicAuthFirebaseSessionRoute
   ApiPublicHooksMaintenanceRemindersRoute: typeof ApiPublicHooksMaintenanceRemindersRoute
@@ -1613,6 +1668,13 @@ declare module '@tanstack/react-router' {
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/legal': {
@@ -1740,6 +1802,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/login'
       preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof AuthRoute
+    }
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.mcp/list-tools': {
+      id: '/.mcp/list-tools'
+      path: '/.mcp/list-tools'
+      fullPath: '/.mcp/list-tools'
+      preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/verify/no-dues/$token': {
       id: '/verify/no-dues/$token'
@@ -2329,6 +2405,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminAdsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/.mcp/invoke-tool/$tool': {
+      id: '/.mcp/invoke-tool/$tool'
+      path: '/.mcp/invoke-tool/$tool'
+      fullPath: '/.mcp/invoke-tool/$tool'
+      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/run-billing': {
       id: '/api/public/hooks/run-billing'
       path: '/api/public/hooks/run-billing'
@@ -2724,6 +2807,7 @@ const rootRouteChildren: RootRouteChildren = {
   FoundersRoute: FoundersRoute,
   GdprRoute: GdprRoute,
   LegalRoute: LegalRoute,
+  McpRoute: McpRoute,
   OnboardingRoute: OnboardingRouteWithChildren,
   PricingRoute: PricingRoute,
   PrivacyRoute: PrivacyRoute,
@@ -2734,8 +2818,12 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   VerifyPhoneRoute: VerifyPhoneRoute,
   WelcomeRoute: WelcomeRoute,
+  Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
+  Char91DotwellKnownChar93OauthProtectedResourceRoute:
+    Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ApiSupportChatRoute: ApiSupportChatRoute,
   CheckoutPlanIdRoute: CheckoutPlanIdRoute,
+  Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   VerifyNoDuesTokenRoute: VerifyNoDuesTokenRoute,
   ApiPublicAuthFirebaseSessionRoute: ApiPublicAuthFirebaseSessionRoute,
   ApiPublicHooksMaintenanceRemindersRoute:

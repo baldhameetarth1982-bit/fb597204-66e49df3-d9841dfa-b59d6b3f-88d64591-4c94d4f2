@@ -321,3 +321,27 @@ already existed.
 - Turn 17 unchanged. SociyoHub branding, both co-founders, founder SEO, Razorpay subscription billing, Cash+Bank Transfer maintenance flow, no-platform-fee policy, Firebase→Supabase auth, RLS, Flat 360, No-Dues cryptography — all untouched.
 - No real society (`1907a918-…`) data read or written by this turn.
 - Deferred to later turns: Turn 18B admin UI, later Stage 3B AI income categorization, final payment stage for any online gateway.
+
+## Turn 18B.1A — Income Read UI Strictness (2026-07-15)
+
+Focused strictness closure on Turn 18B.1:
+
+- **Strict types**: added `IncomeVerificationStatus`, `IncomeReconciliationStatus`, `IncomePaymentMethod`, `IncomePayerKind`, `IncomeSort`, `IncomeCategoryTotal`, `IncomeMethodTotal`, `IncomeReconciliationTotal`, `IncomeDashboardResult`, `IncomeRecordListItem`, `IncomeRecordDetail`, `IncomeRecordDetailResult`, `MetricState<T>` in `src/lib/non-member-income.server.ts`. Both income route files (`society.income.tsx`, `society.income.$id.tsx`) are now fully typed — handwritten `any` count went from 12 to 0 (verified by an automated test that scans these files).
+- **Honest metrics**: `activePayerCount` is now a `MetricState<number>` — a failed count query returns `{ status: "error" }` instead of silently rendering zero.
+- **Strict amount parsing**: new `parseFinancialAmount(value, { allowZero })` helper — invalid DB amounts propagate as errors, never silently `₹0`. Used by dashboard aggregation and detail.
+- **Detail discriminated union**: `getIncomeRecordDetailFn` returns `{ status: "available" | "not_found" | "error" }`. Database errors are now surfaced as errors, not fake not-found. Category / payer lookup errors are also honestly surfaced.
+- **Complete filter UI**: This Month / Last Month / Last 90 / Custom Range (with validated from ≤ to), category, payer kind, method, verification, reconciliation, sort (newest / oldest / amount desc / amount asc), reset action. All filter values are typed enums (no `as any`).
+- **Real pagination**: 25 records per page. Previous / Next buttons, disabled correctly on first / last page. Total-count indicator when available. Filters reset to page 0. 44px touch targets.
+- **Safe payer label in list**: `IncomeRecordListItem` now includes `payer_display_name` and `category_display_name`, populated via batched authorized lookups. No phone / email / notes / reference_code / bank data returned to the client.
+- **Dashboard truncation**: `truncated: boolean` + `aggregateSource: "javascript_scan" | "sql_rpc"` flags so the UI can honestly warn when the 5000-row JavaScript scan cap is hit. **SQL RPC aggregate deferred** to a follow-up turn — the JavaScript scan is retained with an honest truncation flag rather than shipping an under-reviewed SECURITY DEFINER migration.
+- **Tests**: 202 unit tests passing (was 194). New tests cover strict amount parsing (7 cases), no-`any` regression scan on both income route files.
+
+### Honestly deferred to Turn 18B.2
+- SQL RPC aggregation function (dashboard still JS-scan with truncation flag)
+- Verify / reject / reverse controls
+- Category / payer editor UI
+- Income entry form
+- Reconciliation actions
+- Playwright viewport inspection (360 / 390 / 414 / 768 / 1280) — inspected only via responsive CSS review, not automated capture
+- AI income categorization
+- Any online gateway (Razorpay stays subscription-only)

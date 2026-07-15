@@ -380,27 +380,193 @@ export const reverseIncomeRecordFn = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const ListFilters = z.object({
+  societyId: z.string().uuid(),
+  limit: z.number().int().min(1).max(200).optional(),
+  offset: z.number().int().min(0).max(10000).optional(),
+  verification_status: z.enum(VERIFICATION_STATES_ARR).optional(),
+  reconciliation_status: z.enum(RECONCILIATION_STATES_ARR).optional(),
+  payment_method: z.enum(["cash", "bank_transfer", "other_offline"]).optional(),
+  payer_kind: z.enum(["resident", "non_member", "anonymous"]).optional(),
+  category_id: z.string().uuid().optional(),
+  from_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u).optional(),
+  to_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u).optional(),
+  sort: z.enum(["newest", "oldest", "amount_desc", "amount_asc"]).optional(),
+});
+
 export const listIncomeRecordsFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw) => ListFilters.parse(raw))
+  .handler(async ({ data, context }) => {
+    const ctx = context as Ctx;
+    await requireAdminAndPlan(ctx, data.societyId);
+    const limit = Math.min(data.limit ?? 50, 200);
+    let q = ctx.supabase
+      .from("society_income_records")
+      .select(
+        "id, society_id, category_id, payer_kind, amount, payment_method, payment_status, verification_status, reconciliation_status, payment_date, reference_number",
+        { count: "exact" },
+      )
+      .eq("society_id", data.societyId);
+    if (data.verification_status) q = q.eq("verification_status", data.verification_status);
+    if (data.reconciliation_status) q = q.eq("reconciliation_status", data.reconciliation_status);
+    if (data.payment_method) q = q.eq("payment_method", data.payment_method);
+    if (data.payer_kind) q = q.eq("payer_kind", data.payer_kind);
+    if (data.category_id) q = q.eq("category_id", data.category_id);
+    if (data.from_date) q = q.gte("payment_date", data.from_date);
+    if (data.to_date) q = q.lte("payment_date", data.to_date);
+    const sort = data.sort ?? "newest";
+    if (sort === "newest") q = q.order("payment_date", { ascending: false });
+    else if (sort === "oldest") q = q.order("payment_date", { ascending: true });
+    else if (sort === "amount_desc") q = q.order("amount", { ascending: false });
+    else q = q.order("amount", { ascending: true });
+    const offset = data.offset ?? 0;
+    q = q.range(offset, offset + limit - 1);
+    const { data: rows, error, count } = await q;
+    if (error) throw new Error("list_failed");
+    return {
+      items: toPublicIncomeList((rows ?? []) as any),
+      total: count ?? null,
+      limit,
+      offset,
+    };
+  });
+
+export const getIncomeDashboardFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((raw) =>
     z
       .object({
         societyId: z.string().uuid(),
-        limit: z.number().int().min(1).max(200).optional(),
+        from_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u).optional(),
+        to_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u).optional(),
       })
       .parse(raw),
   )
   .handler(async ({ data, context }) => {
     const ctx = context as Ctx;
     await requireAdminAndPlan(ctx, data.societyId);
-    const { data: rows, error } = await ctx.supabase
+    let q = ctx.supabase
       .from("society_income_records")
       .select(
-        "id, society_id, category_id, payer_kind, amount, payment_method, payment_status, verification_status, reconciliation_status, payment_date, reference_number",
+        "id, category_id, payer_kind, amount, payment_method, verification_status, reconciliation_status, payment_date",
       )
       .eq("society_id", data.societyId)
-      .order("payment_date", { ascending: false })
-      .limit(data.limit ?? 100);
-    if (error) throw new Error("list_failed");
-    return { items: toPublicIncomeList((rows ?? []) as any) };
+      .limit(5000);
+    if (data.from_date) q = q.gte("payment_date", data.from_date);
+    if (data.to_date) q = q.lte("payment_date", data.to_date);
+    const { data: rows, error } = await q;
+    if (error) throw new Error("dashboard_failed");
+
+    let verifiedTotal = 0;
+    let pendingCount = 0;
+    let rejectedCount = 0;
+    let reversedCount = 0;
+    let unreconciled = 0;
+    let needsReview = 0;
+    const byCategory = new Map<string, number>();
+    const byMethod = new Map<string, number>();
+    const byReconciliation = new Map<string, number>();
+    for (const r of rows ?? []) {
+      const row = r as any;
+      const amt = Number(row.amount) || 0;
+      const v = row.verification_status as string;
+      const rec = row.reconciliation_status as string;
+      byReconciliation.set(rec, (byReconciliation.get(rec) ?? 0) + 1);
+      if (v === "verified") {
+        verifiedTotal += amt;
+        byCategory.set(row.category_id, (byCategory.get(row.category_id) ?? 0) + amt);
+        byMethod.set(row.payment_method, (byMethod.get(row.payment_method) ?? 0) + amt);
+      } else if (v === "pending") pendingCount += 1;
+      else if (v === "rejected") rejectedCount += 1;
+      else if (v === "reversed") reversedCount += 1;
+      if (rec === "unreconciled") unreconciled += 1;
+      if (rec === "needs_review") needsReview += 1;
+    }
+
+    // Active payer count (only when the policy allows the caller to read them).
+    const { count: activePayerCount } = await ctx.supabase
+      .from("non_member_payers")
+      .select("id", { count: "exact", head: true })
+      .eq("society_id", data.societyId)
+      .eq("is_active", true);
+
+    return {
+      verifiedTotal,
+      pendingCount,
+      rejectedCount,
+      reversedCount,
+      unreconciled,
+      needsReview,
+      activePayerCount: activePayerCount ?? 0,
+      byCategory: Array.from(byCategory.entries()).map(([id, total]) => ({ category_id: id, total })),
+      byMethod: Array.from(byMethod.entries()).map(([method, total]) => ({ method, total })),
+      byReconciliation: Array.from(byReconciliation.entries()).map(([status, count]) => ({ status, count })),
+      recordCount: rows?.length ?? 0,
+    };
   });
+
+export const getIncomeRecordDetailFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw) => z.object({ societyId: z.string().uuid(), id: z.string().uuid() }).parse(raw))
+  .handler(async ({ data, context }) => {
+    const ctx = context as Ctx;
+    await requireAdminAndPlan(ctx, data.societyId);
+    const { data: row, error } = await ctx.supabase
+      .from("society_income_records")
+      .select(
+        "id, society_id, category_id, payer_kind, non_member_payer_id, amount, payment_method, payment_status, verification_status, reconciliation_status, payment_date, reference_number, description, created_at, verified_at, reversed_at, reversal_reason",
+      )
+      .eq("id", data.id)
+      .maybeSingle();
+    // Never confirm existence in another society — same safe not-found shape.
+    if (error || !row || (row as any).society_id !== data.societyId) {
+      return { found: false as const };
+    }
+    const r = row as any;
+    // Fetch related labels via joined lookups (RLS scopes them).
+    const [{ data: cat }, { data: payer }] = await Promise.all([
+      ctx.supabase
+        .from("society_income_categories")
+        .select("display_name, category_group")
+        .eq("id", r.category_id)
+        .maybeSingle(),
+      r.non_member_payer_id
+        ? ctx.supabase
+            .from("non_member_payers")
+            .select("display_name, payer_type, organization_name")
+            .eq("id", r.non_member_payer_id)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
+    const ref = typeof r.reference_number === "string" ? r.reference_number.trim() : "";
+    const reference_suffix = ref.length === 0 ? null : ref.length <= 4 ? "•".repeat(ref.length) : `••••${ref.slice(-4)}`;
+    return {
+      found: true as const,
+      record: {
+        id: r.id,
+        amount: Number(r.amount) || 0,
+        payer_kind: r.payer_kind,
+        payment_method: r.payment_method,
+        payment_status: r.payment_status,
+        verification_status: r.verification_status,
+        reconciliation_status: r.reconciliation_status,
+        payment_date: r.payment_date,
+        reference_suffix,
+        description: typeof r.description === "string" ? r.description.slice(0, 500) : null,
+        created_at: r.created_at,
+        verified_at: r.verified_at,
+        reversed_at: r.reversed_at,
+        reversal_reason: typeof r.reversal_reason === "string" ? r.reversal_reason.slice(0, 500) : null,
+        category: cat ? { display_name: (cat as any).display_name, group: (cat as any).category_group } : null,
+        payer: payer
+          ? {
+              display_name: (payer as any).display_name,
+              payer_type: (payer as any).payer_type,
+              organization_name: (payer as any).organization_name,
+            }
+          : null,
+      },
+    };
+  });
+

@@ -679,6 +679,57 @@ export type Database = {
           },
         ]
       }
+      flat360_ai_summary_cache: {
+        Row: {
+          created_at: string
+          expires_at: string
+          flat_id: string
+          generated_at: string
+          id: string
+          result_json: Json
+          schema_version: number
+          snapshot_fingerprint: string
+          society_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          flat_id: string
+          generated_at?: string
+          id?: string
+          result_json: Json
+          schema_version: number
+          snapshot_fingerprint: string
+          society_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          flat_id?: string
+          generated_at?: string
+          id?: string
+          result_json?: Json
+          schema_version?: number
+          snapshot_fingerprint?: string
+          society_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flat360_ai_summary_cache_flat_id_fkey"
+            columns: ["flat_id"]
+            isOneToOne: false
+            referencedRelation: "flats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flat360_ai_summary_cache_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       flats: {
         Row: {
           area_sqft: number | null

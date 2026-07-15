@@ -12,6 +12,10 @@ export function LegalFooter({ compact = false }: { compact?: boolean }) {
     >
       <div className="mx-auto max-w-6xl px-5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <nav className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium">
+          <Link to="/about" className="hover:underline">About</Link>
+          <span className="opacity-30">·</span>
+          <Link to="/founders" className="hover:underline">Founders</Link>
+          <span className="opacity-30">·</span>
           <Link to="/privacy" className="hover:underline">Privacy</Link>
           <span className="opacity-30">·</span>
           <Link to="/terms" className="hover:underline">Terms</Link>

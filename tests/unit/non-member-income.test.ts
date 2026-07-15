@@ -1,8 +1,10 @@
 /**
- * Stage 3B — Turn 18A
+ * Stage 3B — Turn 18A / 18B.1A
  * Unit tests for Non-Member Payments pure logic.
  */
 import { describe, it, expect } from "vitest";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import {
   isNonMemberIncomeAllowed,
   canTransitionVerification,
@@ -12,6 +14,7 @@ import {
   normalizeCategoryKey,
   toPublicPayerList,
   toPublicIncomeList,
+  parseFinancialAmount,
   PAYER_TYPES,
   SUPPORTED_METHODS,
 } from "@/lib/non-member-income.server";

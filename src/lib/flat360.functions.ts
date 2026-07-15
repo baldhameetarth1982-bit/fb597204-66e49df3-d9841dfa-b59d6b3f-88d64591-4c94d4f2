@@ -744,7 +744,7 @@ export function buildRealDeps(supabase: unknown): Flat360Deps {
   };
 }
 
-function attachAdminRpcs(deps: Flat360Deps, admin: RpcClient): Flat360Deps {
+export function attachAdminRpcs(deps: Flat360Deps, admin: RpcClient): Flat360Deps {
   const callBool = async (fn: string, args: Record<string, string>): Promise<boolean> => {
     try {
       const { data, error } = await admin.rpc(fn, args);

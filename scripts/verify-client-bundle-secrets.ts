@@ -33,6 +33,9 @@ const INDICATORS: { name: string; pattern: RegExp; allowlist?: RegExp[] }[] = [
   { name: "verification_token_hash", pattern: /verification_token_hash/ },
   // sb_secret_* is the new-format service-role key prefix
   { name: "service-role key literal", pattern: /sb_secret_[A-Za-z0-9_-]{10,}/ },
+  { name: "LOVABLE_API_KEY literal reference", pattern: /LOVABLE_API_KEY/ },
+  { name: "Flat 360 AI system prompt marker", pattern: /Flat 360 operational summarizer/ },
+  { name: "createLovableAiGatewayProvider identifier", pattern: /\bcreateLovableAiGatewayProvider\b/ },
 ];
 
 function walk(dir: string, out: string[] = []): string[] {

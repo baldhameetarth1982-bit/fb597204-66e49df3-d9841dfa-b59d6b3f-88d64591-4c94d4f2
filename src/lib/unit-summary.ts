@@ -16,7 +16,8 @@ export type SectionSummary =
   | { status: "available"; count?: number; total?: number }
   | { status: "empty" }
   | { status: "unsupported" }
-  | { status: "error"; message?: string };
+  | { status: "error"; message?: string }
+  | { status: "locked" };
 
 export type Flat360SummaryInput = {
   unit_label: string;

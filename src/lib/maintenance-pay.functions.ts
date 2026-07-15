@@ -13,7 +13,7 @@ function rzpAuthHeader() {
 
 /**
  * Create a Razorpay order for a maintenance bill.
- * Splits 98.5% to the society's linked account and 1.5% to SocioHub.
+ * Splits 98.5% to the society's linked account and 1.5% to SociyoHub.
  * If Route is not available, falls back to a plain order (platform still settles to admin manually).
  */
 export const createMaintenanceOrder = createServerFn({ method: "POST" })

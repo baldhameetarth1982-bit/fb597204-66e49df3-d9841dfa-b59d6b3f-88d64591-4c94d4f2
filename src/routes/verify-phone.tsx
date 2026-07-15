@@ -8,7 +8,7 @@ import { PhoneOtpForm } from "@/components/auth/PhoneOtpForm";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/verify-phone")({
-  head: () => ({ meta: [{ title: "Verify phone — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Verify phone — SociyoHub" }] }),
   component: VerifyPhonePage,
 });
 
@@ -74,7 +74,7 @@ function VerifyPhonePage() {
         </div>
         <h1 className="text-2xl font-semibold tracking-tight">Verify your phone</h1>
         <p className="text-sm text-muted-foreground">
-          Every SocioHub account is linked to a verified mobile number.
+          Every SociyoHub account is linked to a verified mobile number.
         </p>
       </div>
 

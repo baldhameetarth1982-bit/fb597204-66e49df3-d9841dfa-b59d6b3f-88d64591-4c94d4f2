@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
 
 export const Route = createFileRoute("/_resident/app/ledger")({
-  head: () => ({ meta: [{ title: "Financial Summary — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Financial Summary — SociyoHub" }] }),
   // Residents shouldn't see society-wide ledger. Send them back to their bills.
   beforeLoad: () => { throw redirect({ to: "/app/bills" }); },
   component: ResidentLedger,

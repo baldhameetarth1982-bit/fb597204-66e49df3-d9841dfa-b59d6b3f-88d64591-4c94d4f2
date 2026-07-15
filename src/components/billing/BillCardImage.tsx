@@ -93,9 +93,9 @@ export const BillCardImage = forwardRef<HTMLDivElement, { data: BillCardData }>(
         <div style={{ position: "absolute", bottom: 48, left: 48, right: 48 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
             <div style={{ fontSize: 12, opacity: 0.85 }}>
-              Pay securely in the SocioHub app
+              Pay securely in the SociyoHub app
               <div style={{ marginTop: 4, fontSize: 11, opacity: 0.7 }}>
-                Powered by SocioHub · 100% cashless settlement
+                Powered by SociyoHub · 100% cashless settlement
               </div>
             </div>
             {data.adminSignature && (

@@ -15,7 +15,7 @@ import { searchSocietiesPublic, submitJoinRequest } from "@/lib/onboarding.funct
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/onboarding/join")({
-  head: () => ({ meta: [{ title: "Join society — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Join society — SociyoHub" }] }),
   component: JoinFlow,
 });
 

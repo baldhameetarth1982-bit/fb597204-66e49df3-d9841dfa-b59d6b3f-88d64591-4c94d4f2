@@ -53,7 +53,7 @@ export function AppHeader({
 
         <Link to="/" className="md:hidden flex items-center gap-2 ml-1">
           <Logo size={32} />
-          <span className="font-semibold tracking-tight">SocioHub</span>
+          <span className="font-semibold tracking-tight">SociyoHub</span>
         </Link>
 
         <div className="ml-auto flex items-center gap-1 md:gap-2">

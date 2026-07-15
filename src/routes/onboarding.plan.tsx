@@ -13,7 +13,7 @@ import { OnboardingStepper } from "@/components/system/OnboardingStepper";
 import { getApplicablePlans, startSocietyTrial, getPricingSettings } from "@/lib/pricing-engine";
 
 export const Route = createFileRoute("/onboarding/plan")({
-  head: () => ({ meta: [{ title: "Choose your plan — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Choose your plan — SociyoHub" }] }),
   component: PlanGate,
 });
 

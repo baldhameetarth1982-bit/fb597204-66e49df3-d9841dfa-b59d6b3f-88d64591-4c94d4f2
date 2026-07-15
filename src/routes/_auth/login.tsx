@@ -22,8 +22,8 @@ import {
 export const Route = createFileRoute("/_auth/login")({
   head: () => ({
     meta: [
-      { title: "Sign in — SocioHub" },
-      { name: "description", content: "Sign in to SocioHub — Google, Phone, Truecaller or email." },
+      { title: "Sign in — SociyoHub" },
+      { name: "description", content: "Sign in to SociyoHub — Google, Phone, Truecaller or email." },
     ],
   }),
   component: LoginPage,
@@ -127,7 +127,7 @@ function LoginPage() {
           ? mode === "signin" ? "Sign in with email" : "Create your account"
           : step === "phone"
             ? "Continue with phone"
-            : "Welcome to SocioHub"}
+            : "Welcome to SociyoHub"}
       </h1>
       <p className="mt-2 text-sm text-muted-foreground text-center">
         Society management, simplified.
@@ -243,7 +243,7 @@ function LoginPage() {
 
       <div className="mt-6 rounded-2xl bg-secondary/60 p-4 space-y-2">
         <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-          <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Your data is safe with SocioHub
+          <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Your data is safe with SociyoHub
         </p>
         <ul className="text-[11px] text-muted-foreground space-y-1.5">
           <li className="flex gap-1.5">

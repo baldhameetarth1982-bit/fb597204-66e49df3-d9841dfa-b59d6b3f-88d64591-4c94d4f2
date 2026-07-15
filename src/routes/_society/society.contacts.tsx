@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_society/society/contacts")({
-  head: () => ({ meta: [{ title: "Society Contacts — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Society Contacts — SociyoHub" }] }),
   component: ContactsPage,
 });
 

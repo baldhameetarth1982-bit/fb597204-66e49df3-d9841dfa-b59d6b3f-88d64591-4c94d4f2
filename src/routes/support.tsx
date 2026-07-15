@@ -14,7 +14,7 @@ import { Shimmer } from "@/components/ai-elements/shimmer";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/support")({
-  head: () => ({ meta: [{ title: "Support — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Support — SociyoHub" }] }),
   component: SupportPage,
 });
 
@@ -22,7 +22,7 @@ const initialMessages: UIMessage[] = [
   {
     id: "support-welcome",
     role: "assistant",
-    parts: [{ type: "text", text: "Hi — I’m SocioHub Support. Tell me what’s stuck and I’ll either solve it here or open a support ticket automatically." }],
+    parts: [{ type: "text", text: "Hi — I’m SociyoHub Support. Tell me what’s stuck and I’ll either solve it here or open a support ticket automatically." }],
   },
 ];
 

@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_society/society/setup")({
-  head: () => ({ meta: [{ title: "Setup Wizard — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Setup Wizard — SociyoHub" }] }),
   component: SetupWizardPage,
 });
 

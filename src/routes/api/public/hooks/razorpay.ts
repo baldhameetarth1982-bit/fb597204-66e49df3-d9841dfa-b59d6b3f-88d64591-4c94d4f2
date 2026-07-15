@@ -189,7 +189,7 @@ export const Route = createFileRoute("/api/public/hooks/razorpay")({
                     Authorization: `Bearer ${resendKey}`,
                   },
                   body: JSON.stringify({
-                    from: "SocioHub <receipts@sociohub.live>",
+                    from: "SociyoHub <receipts@sociohub.live>",
                     to: emails,
                     subject: `Payment received — ${soc?.name ?? "Society"}`,
                     html: `<div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;padding:24px;">
@@ -198,7 +198,7 @@ export const Route = createFileRoute("/api/public/hooks/razorpay")({
                       <p style="color:#64748b;font-size:13px">Razorpay Payment ID: ${pay.id}</p>
                       <p style="color:#64748b;font-size:13px">This is your official receipt.</p>
                       <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0"/>
-                      <p style="color:#94a3b8;font-size:12px">Sent by SocioHub · sociohub.live</p>
+                      <p style="color:#94a3b8;font-size:12px">Sent by SociyoHub · sociohub.live</p>
                     </div>`,
                   }),
                 }).catch((e) => console.error("[rzp webhook] email send", e));

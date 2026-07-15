@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { openRazorpayCheckout } from "@/lib/razorpay";
 
 export const Route = createFileRoute("/_society/society/plan-required")({
-  head: () => ({ meta: [{ title: "Unlock SocioHub — Renew plan" }] }),
+  head: () => ({ meta: [{ title: "Unlock SociyoHub — Renew plan" }] }),
   component: PlanRequired,
 });
 
@@ -96,7 +96,7 @@ function PlanRequired() {
             <Sparkles className="h-3 w-3 mr-1" /> Premium plan ready
           </Badge>
           <h1 className="text-4xl font-bold tracking-tight text-foreground">
-            Unlock SocioHub's Full Power
+            Unlock SociyoHub's Full Power
           </h1>
           <p className="text-muted-foreground max-w-xl mx-auto">
             Upgrade {society?.name ? <b>{society.name}</b> : "your society"}'s plan to automate security, finances, and

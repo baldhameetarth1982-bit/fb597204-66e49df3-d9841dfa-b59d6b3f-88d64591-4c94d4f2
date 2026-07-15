@@ -31,7 +31,7 @@ import {
 export const Route = createFileRoute("/_resident/app/no-dues/$id")({
   head: () => ({
     meta: [
-      { title: "No-Dues Request — SocioHub" },
+      { title: "No-Dues Request — SociyoHub" },
       { name: "description", content: "Track your no-dues request." },
     ],
   }),

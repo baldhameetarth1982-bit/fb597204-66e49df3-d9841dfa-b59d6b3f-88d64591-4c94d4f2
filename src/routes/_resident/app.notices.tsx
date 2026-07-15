@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useState } from "react";
 
 export const Route = createFileRoute("/_resident/app/notices")({
-  head: () => ({ meta: [{ title: "Notices — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Notices — SociyoHub" }] }),
   component: NoticesPage,
 });
 

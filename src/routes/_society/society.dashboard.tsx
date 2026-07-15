@@ -20,7 +20,7 @@ import { ListCard, ListCardGroup } from "@/components/shared/ListCard";
 export const Route = createFileRoute("/_society/society/dashboard")({
   head: () => ({
     meta: [
-      { title: "Dashboard — SocioHub" },
+      { title: "Dashboard — SociyoHub" },
       { name: "description", content: "Society admin overview." },
     ],
   }),

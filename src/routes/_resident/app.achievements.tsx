@@ -9,7 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useSocietyId } from "@/hooks/useSocietyId";
 
 export const Route = createFileRoute("/_resident/app/achievements")({
-  head: () => ({ meta: [{ title: "Achievements — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Achievements — SociyoHub" }] }),
   component: AchievementsScreen,
 });
 

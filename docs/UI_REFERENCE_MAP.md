@@ -2,13 +2,13 @@
 
 Route → reference screenshot → current UI status. Update at the end of every stage.
 
-**No reference screenshots or PDFs have been attached by the user for Stage 3A.** All routes are therefore marked `reference-missing` and rendered against the SocioHub visual system (tokens + primitives from `docs/SOCIOHUB_MASTER_CONTEXT.md`). Checkpoint J will re-classify routes to `matched` / `partial` / `unmatched` when references are provided.
+**No reference screenshots or PDFs have been attached by the user for Stage 3A.** All routes are therefore marked `reference-missing` and rendered against the SociyoHub visual system (tokens + primitives from `docs/SOCIYOHUB_MASTER_CONTEXT.md`). Checkpoint J will re-classify routes to `matched` / `partial` / `unmatched` when references are provided.
 
 Status legend:
 - `matched` — matches reference exactly (verified at 390 + 1280).
 - `partial` — functionality present, visual polish incomplete.
 - `unmatched` — reference exists, current UI diverges materially.
-- `reference-missing` — no attached reference; uses SocioHub visual system.
+- `reference-missing` — no attached reference; uses SociyoHub visual system.
 - `stage-3A-updated` — touched in Stage 3A this pass.
 
 ## Checkpoint A/D Completeness Audit
@@ -64,7 +64,7 @@ Public routes intentionally excluded from catalog (marketing / legal / auth surf
 
 ## Not touched in Stage 3A — Checkpoint J pass
 
-All remaining routes above have status `reference-missing`. Reusable components across every route: `MobileHero`, `SectionCard`, `ListCard`, `StatPill(Row)`, `StatusChip`, `FeatureGate`, `UpgradePrompt`, `LockedFeatureCard`. Backend data sources: existing Supabase tables listed in `SOCIOHUB_MASTER_CONTEXT.md` plus new `no_dues_requests`, `no_dues_certificates`, `no_dues_audit`, and `payment_points_ledger` (or reuse `user_points` with idempotency constraint — decided in migration).
+All remaining routes above have status `reference-missing`. Reusable components across every route: `MobileHero`, `SectionCard`, `ListCard`, `StatPill(Row)`, `StatusChip`, `FeatureGate`, `UpgradePrompt`, `LockedFeatureCard`. Backend data sources: existing Supabase tables listed in `SOCIYOHUB_MASTER_CONTEXT.md` plus new `no_dues_requests`, `no_dues_certificates`, `no_dues_audit`, and `payment_points_ledger` (or reuse `user_points` with idempotency constraint — decided in migration).
 
 Checkpoint J will:
 1. Screenshot each route at 360/390/414/1280.

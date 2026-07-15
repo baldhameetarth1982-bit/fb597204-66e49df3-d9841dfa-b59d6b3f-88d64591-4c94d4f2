@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
 
 export const Route = createFileRoute("/_resident/app/trust")({
-  head: () => ({ meta: [{ title: "Financial Trust — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Financial Trust — SociyoHub" }] }),
   component: TrustScreen,
 });
 
@@ -91,7 +91,7 @@ function TrustScreen() {
                 <p className="font-semibold">Where your maintenance goes</p>
                 <p className="text-muted-foreground text-xs mt-0.5">
                   <span className="font-semibold text-foreground">100%</span> of every maintenance
-                  payment goes directly to your Society Fund. SocioHub charges no platform fee on
+                  payment goes directly to your Society Fund. SociyoHub charges no platform fee on
                   resident payments.
                 </p>
               </div>

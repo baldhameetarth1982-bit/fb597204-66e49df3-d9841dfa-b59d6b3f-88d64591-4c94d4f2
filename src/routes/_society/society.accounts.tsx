@@ -22,7 +22,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 export const Route = createFileRoute("/_society/society/accounts")({
-  head: () => ({ meta: [{ title: "Accounts Center — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Accounts Center — SociyoHub" }] }),
   component: () => (<FeatureGate feature="ledger"><AccountsPage /></FeatureGate>),
 });
 

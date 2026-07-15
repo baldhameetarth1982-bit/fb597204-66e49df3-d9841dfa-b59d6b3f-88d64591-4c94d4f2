@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { listFamily, addFamily, deleteFamily } from "@/lib/family.functions";
 
 export const Route = createFileRoute("/_resident/app/family")({
-  head: () => ({ meta: [{ title: "Family — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Family — SociyoHub" }] }),
   component: FamilyPage,
 });
 

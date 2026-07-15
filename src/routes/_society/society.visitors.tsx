@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_society/society/visitors")({
-  head: () => ({ meta: [{ title: "Visitors — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Visitors — SociyoHub" }] }),
   component: () => (<FeatureGate feature="visitors"><SocietyVisitors /></FeatureGate>),
 });
 

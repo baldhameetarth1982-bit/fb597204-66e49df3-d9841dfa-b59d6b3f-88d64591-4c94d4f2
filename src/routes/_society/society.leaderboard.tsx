@@ -7,7 +7,7 @@ import { PageHeader, PageShell, EmptyState } from "@/components/shared/PageHeade
 import { Card, CardContent } from "@/components/ui/card";
 
 export const Route = createFileRoute("/_society/society/leaderboard")({
-  head: () => ({ meta: [{ title: "Leaderboard — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Leaderboard — SociyoHub" }] }),
   component: Leaderboard,
 });
 

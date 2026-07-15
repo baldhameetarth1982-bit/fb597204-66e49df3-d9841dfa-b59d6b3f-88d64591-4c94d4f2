@@ -19,7 +19,7 @@ import { useSocietyId } from "@/hooks/useSocietyId";
 export const Route = createFileRoute("/_society/society/no-dues")({
   head: () => ({
     meta: [
-      { title: "No-Dues Requests — SocioHub" },
+      { title: "No-Dues Requests — SociyoHub" },
       { name: "description", content: "Review resident no-dues requests and issue certificates." },
     ],
   }),

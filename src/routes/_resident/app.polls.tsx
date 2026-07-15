@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 
 export const Route = createFileRoute("/_resident/app/polls")({
-  head: () => ({ meta: [{ title: "Polls — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Polls — SociyoHub" }] }),
   component: PollsPage,
 });
 

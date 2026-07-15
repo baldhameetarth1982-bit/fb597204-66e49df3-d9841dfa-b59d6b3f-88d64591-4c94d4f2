@@ -15,8 +15,8 @@ import { LegalFooter } from "@/components/shared/LegalFooter";
 export const Route = createFileRoute("/checkout/$planId")({
   head: () => ({
     meta: [
-      { title: "Checkout — SocioHub" },
-      { name: "description", content: "Secure checkout for SocioHub subscription plans." },
+      { title: "Checkout — SociyoHub" },
+      { name: "description", content: "Secure checkout for SociyoHub subscription plans." },
     ],
   }),
   component: CheckoutPage,

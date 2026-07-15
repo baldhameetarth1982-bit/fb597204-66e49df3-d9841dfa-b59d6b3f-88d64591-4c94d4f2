@@ -30,7 +30,7 @@ const searchSchema = z.object({
 });
 
 export const Route = createFileRoute("/_resident/app/helpdesk")({
-  head: () => ({ meta: [{ title: "Helpdesk — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Helpdesk — SociyoHub" }] }),
   validateSearch: searchSchema,
   component: HelpdeskPage,
 });

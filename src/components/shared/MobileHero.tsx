@@ -10,7 +10,7 @@ const variants: Record<HeroVariant, string> = {
 };
 
 /**
- * SocioHub mobile-first hero band. Rounded bottom, gradient surface,
+ * SociyoHub mobile-first hero band. Rounded bottom, gradient surface,
  * optional stat pills row and trailing action. Sits at the top of a route
  * and the page body pulls back into it with `-mt-6`.
  */

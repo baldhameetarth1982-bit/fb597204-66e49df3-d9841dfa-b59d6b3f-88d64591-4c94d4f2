@@ -13,7 +13,7 @@ import { useSocietyId } from "@/hooks/useSocietyId";
 import { requireBiometric } from "@/lib/biometric";
 
 export const Route = createFileRoute("/_resident/app/guard")({
-  head: () => ({ meta: [{ title: "Guard Dashboard — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Guard Dashboard — SociyoHub" }] }),
   component: GuardDashboard,
 });
 

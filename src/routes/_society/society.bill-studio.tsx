@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_society/society/bill-studio")({
-  head: () => ({ meta: [{ title: "Bill Templates — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Bill Templates — SociyoHub" }] }),
   component: () => (<FeatureGate feature="bill_templates"><BillTemplatesPage /></FeatureGate>),
 });
 

@@ -5,8 +5,8 @@ import { FileText, ArrowLeft } from "lucide-react";
 export const Route = createFileRoute("/gdpr")({
   head: () => ({
     meta: [
-      { title: "Data Retention & Deletion — SocioHub" },
-      { name: "description", content: "How long SocioHub keeps your data and how to request deletion or export." },
+      { title: "Data Retention & Deletion — SociyoHub" },
+      { name: "description", content: "How long SociyoHub keeps your data and how to request deletion or export." },
     ],
   }),
   component: GdprPage,
@@ -50,7 +50,7 @@ function GdprPage() {
         </section>
         <section>
           <h2 className="text-lg font-semibold mb-2">Data export</h2>
-          <p className="text-muted-foreground">You can request a copy of all data we hold about you. Email your society admin or SocioHub support; we deliver a JSON export within 30 days at no cost.</p>
+          <p className="text-muted-foreground">You can request a copy of all data we hold about you. Email your society admin or SociyoHub support; we deliver a JSON export within 30 days at no cost.</p>
         </section>
         <section>
           <h2 className="text-lg font-semibold mb-2">What deletion does not remove</h2>

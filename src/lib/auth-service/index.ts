@@ -1,7 +1,7 @@
 /**
  * Authentication Service abstraction.
  *
- * SocioHub supports multiple identity paths:
+ * SociyoHub supports multiple identity paths:
  *   - Truecaller (native SDK when running inside a Capacitor shell, OAuth on web)
  *   - Phone OTP (Firebase today; MSG91/Twilio Verify tomorrow — same interface)
  *   - Google Sign-In (managed by Lovable Cloud)
@@ -160,7 +160,7 @@ export async function signInWithVerifiedPhone(input: {
 /* ------------------------------------------------------------------------ */
 /* Google via Firebase (popup → ID token → Supabase session).               */
 /* We use Firebase's Google provider so the OAuth consent screen shows the  */
-/* SocioHub brand (not the Lovable brand).                                  */
+/* SociyoHub brand (not the Lovable brand).                                  */
 /* ------------------------------------------------------------------------ */
 
 export async function signInWithGoogleFirebase(): Promise<{ ok: boolean; error?: string }> {

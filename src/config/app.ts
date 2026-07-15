@@ -3,7 +3,7 @@
  * Secrets/keys must be loaded from env vars (Lovable Cloud secrets), not hardcoded.
  */
 export const APP_CONFIG = {
-  name: "SocioHub",
+  name: "SociyoHub",
   tagline: "Society management, simplified.",
   supportEmail: "support@sociohub.app",
   currency: "INR",

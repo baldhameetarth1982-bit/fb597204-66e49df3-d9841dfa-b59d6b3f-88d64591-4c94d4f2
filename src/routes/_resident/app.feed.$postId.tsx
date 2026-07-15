@@ -10,7 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_resident/app/feed/$postId")({
-  head: () => ({ meta: [{ title: "Post — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Post — SociyoHub" }] }),
   component: PostThread,
 });
 

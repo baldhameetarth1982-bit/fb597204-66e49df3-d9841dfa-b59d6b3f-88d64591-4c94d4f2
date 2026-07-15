@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { shareBillAsImage } from "@/components/billing/BillCardImage";
 
 export const Route = createFileRoute("/_society/society/billing")({
-  head: () => ({ meta: [{ title: "Bill History — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Bill History — SociyoHub" }] }),
   component: BillingPage,
 });
 

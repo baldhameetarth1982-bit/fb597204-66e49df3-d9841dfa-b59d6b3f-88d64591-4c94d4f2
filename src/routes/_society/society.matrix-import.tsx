@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { ensureMaintenancePeriod } from "@/lib/maintenance.functions";
 
 export const Route = createFileRoute("/_society/society/matrix-import")({
-  head: () => ({ meta: [{ title: "Bulk Maintenance Import — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Bulk Maintenance Import — SociyoHub" }] }),
   component: MatrixImportPage,
 });
 

@@ -141,7 +141,7 @@ export function SocietyInviteCodeCard({ societyId }: Props) {
                   className="h-11 rounded-2xl text-center tracking-[0.3em] font-mono"
                 />
                 <p className="text-[11px] text-muted-foreground">
-                  4–12 letters or numbers. Must be unique across SocioHub.
+                  4–12 letters or numbers. Must be unique across SociyoHub.
                 </p>
                 <div className="flex gap-2">
                   <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setEditing(false)}>

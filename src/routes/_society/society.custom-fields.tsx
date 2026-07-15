@@ -19,7 +19,7 @@ import { useSocietyId } from "@/hooks/useSocietyId";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_society/society/custom-fields")({
-  head: () => ({ meta: [{ title: "Custom Fields — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Custom Fields — SociyoHub" }] }),
   component: CustomFieldsPage,
 });
 

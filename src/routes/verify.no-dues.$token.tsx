@@ -4,8 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 export const Route = createFileRoute("/verify/no-dues/$token")({
   head: () => ({
     meta: [
-      { title: "Verify No-Dues Certificate — SocioHub" },
-      { name: "description", content: "Verify the authenticity of a SocioHub no-dues certificate." },
+      { title: "Verify No-Dues Certificate — SociyoHub" },
+      { name: "description", content: "Verify the authenticity of a SociyoHub no-dues certificate." },
     ],
   }),
   component: VerifyPage,

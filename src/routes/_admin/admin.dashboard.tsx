@@ -13,7 +13,7 @@ import { ListCard, ListCardGroup } from "@/components/shared/ListCard";
 import { StatusChip } from "@/components/system/StatusChip";
 
 export const Route = createFileRoute("/_admin/admin/dashboard")({
-  head: () => ({ meta: [{ title: "Super Admin — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Super Admin — SociyoHub" }] }),
   component: AdminDashboard,
 });
 
@@ -122,7 +122,7 @@ function AdminDashboard() {
             />
             <ListCard
               title="Payment gateway"
-              subtitle="Razorpay handles SocioHub plan payments"
+              subtitle="Razorpay handles SociyoHub plan payments"
               trailing={<StatusChip tone="info">Live</StatusChip>}
             />
           </ListCardGroup>

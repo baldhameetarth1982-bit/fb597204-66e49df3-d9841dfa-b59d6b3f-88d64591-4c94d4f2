@@ -6,7 +6,7 @@ import { useSocietyId } from "@/hooks/useSocietyId";
 import { Card, CardContent } from "@/components/ui/card";
 
 export const Route = createFileRoute("/_resident/app/bylaws")({
-  head: () => ({ meta: [{ title: "By-Laws — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "By-Laws — SociyoHub" }] }),
   component: BylawsScreen,
 });
 

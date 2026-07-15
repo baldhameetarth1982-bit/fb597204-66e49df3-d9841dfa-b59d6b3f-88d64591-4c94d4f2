@@ -1,4 +1,4 @@
-# SocioHub — Release Readiness (Source of Truth)
+# SociyoHub — Release Readiness (Source of Truth)
 
 **Every future agent MUST read this file before claiming release status.**
 
@@ -220,7 +220,7 @@ Focused, narrow slice this turn — the full Turn 11 spec covers ~20 major work 
 - Integration test infrastructure (`tests/integration/*`), CI workflow, client-bundle secret scanner.
 - Runtime role/certificate/no-dues/flat-360/AI test matrix.
 - Multi-viewport screenshot verification (360/390/414/1280).
-- Documentation sweep across `SECURITY_REQUIREMENTS.md`, `FEATURE_MATRIX.md`, `UI_REFERENCE_MAP.md`, `NEXT_STAGES.md`, `SOCIOHUB_MASTER_CONTEXT.md`, `DEVELOPMENT_HISTORY.md`.
+- Documentation sweep across `SECURITY_REQUIREMENTS.md`, `FEATURE_MATRIX.md`, `UI_REFERENCE_MAP.md`, `NEXT_STAGES.md`, `SOCIYOHUB_MASTER_CONTEXT.md`, `DEVELOPMENT_HISTORY.md`.
 - Migration to remove/backfill the legacy plaintext `verification_token` column on `no_dues_certificates` (still present; not read by new code paths, but a follow-up migration should backfill encrypted columns from it and then drop it).
 
 ### Verification this turn
@@ -477,7 +477,7 @@ None of them touch payments / Razorpay / Cash-Bank-Transfer / platform fees
 ### Deferred to a subsequent turn (honest, not-done list)
 - Runtime authorization penetration matrix (anon/auth/admin/block-admin/cross-society) against an isolated test project — no test project provisioned this turn.
 - Backfill dry-run against an isolated staging environment.
-- Integration test suite (`tests/integration/*`) — files not created; SKIPPED with reason "no `ALLOW_SOCIOHUB_TEST_FIXTURES=true` isolated environment configured".
+- Integration test suite (`tests/integration/*`) — files not created; SKIPPED with reason "no `ALLOW_SOCIYOHUB_TEST_FIXTURES=true` isolated environment configured".
 - Complete Flat 360 UI, deterministic summary, AI summary — next dedicated turn.
 
 ### Confirmations
@@ -513,7 +513,7 @@ None of them touch payments / Razorpay / Cash-Bank-Transfer / platform fees
 | `bunx vitest run tests/unit` | **54 / 54 passed** | public-origin (19), unit-summary (21), certificate-token (6), certificate-backfill (8) |
 | `bunx tsgo --noEmit` | **pass** | no type errors |
 | `bun scripts/verify-client-bundle-secrets.ts` | **clean** | 0 hits across 882 client-bundle files |
-| Flat 360 integration harness | **SKIPPED** (expected) | `tests/integration/flat360.integration.test.ts` requires `ALLOW_SOCIOHUB_TEST_FIXTURES=true` + isolated `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`; file present, cases stubbed for the environment turn |
+| Flat 360 integration harness | **SKIPPED** (expected) | `tests/integration/flat360.integration.test.ts` requires `ALLOW_SOCIYOHUB_TEST_FIXTURES=true` + isolated `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`; file present, cases stubbed for the environment turn |
 
 ### Deferred (honest, not-done)
 - Full strict rewrite of `flat360.functions.ts` `Snapshot` (SectionState<T> for every module). Current shape retains a narrow set of `any` casts on nested joined selects; refactor is the next Flat 360 turn together with the AI Summary provider.

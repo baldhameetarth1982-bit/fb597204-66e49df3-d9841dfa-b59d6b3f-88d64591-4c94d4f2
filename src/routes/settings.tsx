@@ -28,7 +28,7 @@ import { NeonThemePreview } from "@/components/shared/NeonThemePreview";
 import { TwoFactorCard } from "@/components/security/TwoFactorCard";
 
 export const Route = createFileRoute("/settings")({
-  head: () => ({ meta: [{ title: "Settings — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Settings — SociyoHub" }] }),
   component: SettingsPage,
 });
 
@@ -271,7 +271,7 @@ function SettingsPage() {
               <Separator />
               <Row
                 label="Marketing emails"
-                desc="Product updates and tips from SocioHub"
+                desc="Product updates and tips from SociyoHub"
                 checked={prefs.marketingEmails}
                 onChange={(v) => setPrefs({ ...prefs, marketingEmails: v })}
               />

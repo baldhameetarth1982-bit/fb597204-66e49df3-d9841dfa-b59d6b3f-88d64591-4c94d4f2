@@ -1,5 +1,5 @@
 /**
- * SocioHub subscription entitlement matrix — **single source of truth**.
+ * SociyoHub subscription entitlement matrix — **single source of truth**.
  *
  * Every entitlement check in the app must go through this file:
  *   - `hasFeature(plan, key)`
@@ -765,7 +765,7 @@ const CATALOG: FeatureCatalogEntry[] = [
   {
     key: "platform_super_admin",
     label: "Platform Admin Console",
-    shortDescription: "SocioHub platform administration (all societies).",
+    shortDescription: "SociyoHub platform administration (all societies).",
     category: "settings_admin",
     minPlan: "basic",
     planNeutral: true,

@@ -12,7 +12,7 @@ import { Link } from "@tanstack/react-router";
 export const Route = createFileRoute("/pricing")({
   head: () => ({
     meta: [
-      { title: "Pricing — SocioHub" },
+      { title: "Pricing — SociyoHub" },
       {
         name: "description",
         content:

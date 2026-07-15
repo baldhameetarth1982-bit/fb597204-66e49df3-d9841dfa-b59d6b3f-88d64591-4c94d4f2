@@ -14,7 +14,7 @@ import {
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_society/society/announcements")({
-  head: () => ({ meta: [{ title: "Announcements — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Announcements — SociyoHub" }] }),
   component: AnnouncementsPage,
 });
 

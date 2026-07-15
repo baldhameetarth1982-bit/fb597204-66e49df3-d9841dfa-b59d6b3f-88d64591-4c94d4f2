@@ -4,7 +4,7 @@ import { PageHeader, PageShell } from "@/components/shared/PageHeader";
 import { GlobalSearch } from "@/components/shared/GlobalSearch";
 
 export const Route = createFileRoute("/_society/society/search")({
-  head: () => ({ meta: [{ title: "Search — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Search — SociyoHub" }] }),
   component: SocietySearch,
 });
 

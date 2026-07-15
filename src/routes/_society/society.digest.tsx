@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_society/society/digest")({
-  head: () => ({ meta: [{ title: "AI Insights — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "AI Insights — SociyoHub" }] }),
   component: () => (<FeatureGate feature="ai_digest"><DigestPage /></FeatureGate>),
 });
 

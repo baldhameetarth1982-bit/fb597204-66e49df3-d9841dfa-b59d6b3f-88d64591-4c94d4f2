@@ -1,7 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 import { createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
-import { SocioHubLoader } from "@/components/system/SocioHubLoader";
+import { SociyoHubLoader } from "@/components/system/SociyoHubLoader";
 
 export const getRouter = () => {
   const queryClient = new QueryClient();
@@ -13,7 +13,7 @@ export const getRouter = () => {
     defaultPreloadStaleTime: 0,
     defaultPendingComponent: () => (
       <div className="min-h-[50dvh] grid place-items-center p-6">
-        <SocioHubLoader />
+        <SociyoHubLoader />
       </div>
     ),
     defaultPendingMs: 150,

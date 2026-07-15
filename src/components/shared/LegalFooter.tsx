@@ -28,7 +28,7 @@ export function LegalFooter({ compact = false }: { compact?: boolean }) {
         </div>
       </div>
       <div className="mx-auto max-w-6xl px-5 mt-2 text-[10px] text-muted-foreground">
-        © {new Date().getFullYear()} SocioHub. A SaaS platform for housing society management. Pethapur, Gandhinagar, Gujarat — 382610.
+        © {new Date().getFullYear()} SociyoHub. A SaaS platform for housing society management. Pethapur, Gandhinagar, Gujarat — 382610.
       </div>
     </footer>
   );

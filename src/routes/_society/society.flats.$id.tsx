@@ -20,7 +20,7 @@ import { LockedFeatureCard } from "@/components/subscription/LockedFeatureCard";
 import { AISummarySlot } from "@/components/flat360/AISummarySlot";
 
 export const Route = createFileRoute("/_society/society/flats/$id")({
-  head: () => ({ meta: [{ title: "House — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "House — SociyoHub" }] }),
   component: HouseDetailPage,
 });
 

@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * SocioHub theme — sampled from the official app-UI reference (Pass 1).
+ * SociyoHub theme — sampled from the official app-UI reference (Pass 1).
  * DEFAULT = light. OPTIONAL = dark (.dark on <html>).
  *
  * Reference-derived colors:
@@ -106,7 +106,7 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.22 0.06 260);
 
-  --primary: oklch(0.66 0.11 180);                 /* #00A896 SocioHub teal */
+  --primary: oklch(0.66 0.11 180);                 /* #00A896 SociyoHub teal */
   --primary-foreground: oklch(1 0 0);
 
   --secondary: oklch(0.96 0.008 180);              /* light teal-tinted surface */

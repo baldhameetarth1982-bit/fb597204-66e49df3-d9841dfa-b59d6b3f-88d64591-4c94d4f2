@@ -48,18 +48,17 @@ function ActionButton({
   label: string;
   route?: string;
 }) {
-  const allowed = route && (AI_ALLOWED_ROUTES as readonly string[]).includes(route);
-  if (!allowed || type === "none") {
+  if (type === "none" || !isAIAllowedRoute(route)) {
     return (
       <Badge variant="outline" className="rounded-full text-[11px]">
         {label}
       </Badge>
     );
   }
+  const safeRoute: AIAllowedRoute = route;
   return (
-    <Button asChild size="sm" variant="outline" className="rounded-xl h-9 min-h-[36px]">
-      {/* Route is validated against AI_ALLOWED_ROUTES; safe to cast for typed Link. */}
-      <Link to={route as never}>{label}</Link>
+    <Button asChild size="sm" variant="outline" className="rounded-xl h-11 min-h-[44px]">
+      <Link to={safeRoute}>{label}</Link>
     </Button>
   );
 }

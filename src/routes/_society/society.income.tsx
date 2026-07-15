@@ -465,8 +465,9 @@ function IncomePage() {
                 className="flex items-center justify-between rounded-md border p-2 text-sm"
               >
                 <span>
-                  {(catsQ.data?.items ?? []).find((x) => x.id === c.category_id)
-                    ?.display_name ?? "—"}
+                  {((catsQ.data?.items ?? []) as CategoryItem[]).find(
+                    (x) => x.id === c.category_id,
+                  )?.display_name ?? "—"}
                 </span>
                 <span className="font-medium tabular-nums">{inr(c.total)}</span>
               </div>

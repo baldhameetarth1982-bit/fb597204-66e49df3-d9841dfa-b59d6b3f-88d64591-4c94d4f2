@@ -14,7 +14,7 @@ import type {
   AISummaryResult,
   Flat360AISummaryResponse,
 } from "@/lib/flat360-ai.server";
-import { AI_ALLOWED_ROUTES } from "@/lib/flat360-types";
+import { isAIAllowedRoute, type AIAllowedRoute } from "@/lib/flat360-types";
 
 export type AISummaryUiState =
   | { kind: "locked" }

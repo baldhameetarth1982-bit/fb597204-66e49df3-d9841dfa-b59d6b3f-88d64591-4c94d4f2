@@ -423,3 +423,48 @@ tests #1–#20 in the turn brief) require isolated PostgreSQL fixture variables
 that are unavailable in this sandbox. Wrapper- and schema-level behavior is
 verified by the unit suite; direct-RPC runtime authorization is *not* claimed
 verified end-to-end and is deferred to Turn 18B.3's guarded integration run.
+
+## Turn 18B.2B — Entitlement helper privacy + exact plan parity
+
+Additive migration `20260715181730_3e51af37-...sql`:
+
+- `public.is_non_member_income_enabled_internal(uuid)` — EXECUTE revoked from
+  `PUBLIC`, `anon`, and `authenticated`. Only reachable through
+  `public.transition_income_record`, which runs SECURITY DEFINER as the
+  owning role (`postgres`) and thus retains execute privilege on the helper.
+  No caller-facing role can any longer probe arbitrary society UUIDs for plan
+  entitlement.
+- Helper alias list now mirrors `normalizePlan()` exactly:
+  `pro | standard | growth | premium | business | enterprise` for paid;
+  `expired | cancelled | canceled | past_due | inactive` for denied;
+  `trial | trialing` gated on `trial_ends_at` being NULL or in the future.
+- `plan_id = 'trial'` (18B.2A) no longer grants entitlement on its own —
+  stale trial rows can no longer inherit Premium indefinitely.
+
+TypeScript `normalizePlan(raw, status, trialEndsAt?)` extended with an
+optional `trialEndsAt` argument: an active trial status with a past expiry
+normalizes to `basic`. Legacy 2-arg callers preserve historical behavior.
+`assertProPlan` in `non-member-income.functions.ts` now selects
+`trial_ends_at` and passes it into `normalizePlan`.
+
+`IncomeTransitionResultSchema` hardened: every variant is `.strict()`,
+`success.changedAt` requires `z.string().datetime({ offset: true })`. Any
+unknown field or malformed timestamp collapses to `{ status: "error" }`.
+
+**Tests.** 264/264 unit tests passing. New coverage:
+
+- Canonical plan-parity matrix (26 cases, active/expired trials, aliases,
+  case/whitespace, unknown data).
+- Migration privacy checks (REVOKE from PUBLIC/anon/authenticated, no
+  re-GRANT).
+- Alias/trial-expiry SQL parity to `normalizePlan`.
+- No client, hook, component, or MCP tool references the helper.
+- Strict schema + ISO datetime enforcement.
+
+**Direct-PostgreSQL runtime status.** Isolated PG fixtures for
+authenticated-role EXECUTE probing remain deferred to Turn 18B.3's guarded
+integration suite; grant state is verified through migration-string tests
+and observed via `information_schema.routine_privileges` in the applied DB.
+
+Build passing. Client bundle secret scan clean (892 files, no server-only
+indicators).

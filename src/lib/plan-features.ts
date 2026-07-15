@@ -855,14 +855,22 @@ export const PLAN_FEATURES: Record<PlanKey, FeatureKey[]> = {
 };
 
 /**
- * Normalize DB `plan_id` + `plan_status` → canonical `PlanKey`.
+ * Normalize DB `plan_id` + `plan_status` (+ optional `trial_ends_at`) →
+ * canonical `PlanKey`.
  *
  * Safe fallback: explicit inactive statuses collapse to `basic` so an
  * expired trial or cancelled subscription cannot leak Pro features.
+ *
+ * When `trialEndsAt` is provided and its timestamp has already passed, a
+ * trial/trialing status is treated as expired and normalizes to `basic`.
+ * When `trialEndsAt` is omitted (legacy callers), an active trial status
+ * still grants Premium — this preserves the historical product rule for
+ * trials that predate the trial_ends_at column.
  */
 export function normalizePlan(
   raw: string | null | undefined,
   status?: string | null,
+  trialEndsAt?: string | Date | null,
 ): PlanKey {
   const s = (status ?? "").toLowerCase().trim();
   if (
@@ -874,10 +882,19 @@ export function normalizePlan(
   ) {
     return "basic";
   }
-  if (s === "trial" || s === "trialing") return "premium";
+  if (s === "trial" || s === "trialing") {
+    if (trialEndsAt !== undefined && trialEndsAt !== null) {
+      const end = trialEndsAt instanceof Date ? trialEndsAt : new Date(trialEndsAt);
+      if (!Number.isFinite(end.getTime()) || end.getTime() <= Date.now()) {
+        return "basic";
+      }
+    }
+    return "premium";
+  }
   const p = (raw ?? "").toLowerCase().trim();
   if (!p) return "basic";
-  if (p === "trial") return "premium";
+  // plan_id='trial' is NOT independently sufficient — a trial requires the
+  // corresponding status (handled above). Fall through to inactive → basic.
   if (p === "basic" || p === "starter") return "basic";
   if (p === "pro" || p === "standard" || p === "growth") return "pro";
   if (p === "premium" || p === "business" || p === "enterprise") return "premium";

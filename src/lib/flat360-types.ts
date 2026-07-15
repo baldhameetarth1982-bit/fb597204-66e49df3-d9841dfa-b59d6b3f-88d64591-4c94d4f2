@@ -312,14 +312,23 @@ export function lockAdvancedForBasic<T>(
   return build();
 }
 
-/** Whitelist of AI-safe action routes. Kept in one place so tests can import it. */
-export const AI_ALLOWED_ROUTES: readonly string[] = [
+/** Whitelist of AI-safe action routes. Kept in one place so tests and the
+ *  route/component layer can import it. Every entry MUST exist in the actual
+ *  route tree — verified against src/routes/_society/*. */
+export const AI_ALLOWED_ROUTES = [
   "/society/billing",
   "/society/accounts",
   "/society/approvals",
   "/society/no-dues",
   "/society/flats",
 ] as const;
+
+export type AIAllowedRoute = (typeof AI_ALLOWED_ROUTES)[number];
+
+/** Runtime type guard — narrows a string to an allow-listed route. */
+export function isAIAllowedRoute(value: string | undefined | null): value is AIAllowedRoute {
+  return typeof value === "string" && (AI_ALLOWED_ROUTES as readonly string[]).includes(value);
+}
 
 /** Keys that MUST NEVER appear in the AI-safe DTO. Enforced by tests. */
 export const AI_DTO_FORBIDDEN_KEYS: readonly string[] = [

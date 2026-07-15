@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import type { LucideIcon } from "lucide-react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   ArrowLeft,
   Loader2,
@@ -18,8 +18,28 @@ import { MobileHero } from "@/components/shared/MobileHero";
 import { SectionCard } from "@/components/shared/SectionCard";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { getIncomeRecordDetailFn } from "@/lib/non-member-income.functions";
-import type { IncomeRecordDetail } from "@/lib/non-member-income.server";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
+import {
+  getIncomeRecordDetailFn,
+  verifyIncomeRecordByIdFn,
+  rejectIncomeRecordByIdFn,
+  reverseIncomeRecordByIdFn,
+} from "@/lib/non-member-income.functions";
+import type {
+  IncomeRecordDetail,
+  IncomeTransitionResult,
+} from "@/lib/non-member-income.server";
 
 export const Route = createFileRoute("/_society/society/income/$id")({
   head: () => ({
@@ -37,20 +57,67 @@ export const Route = createFileRoute("/_society/society/income/$id")({
 
 const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
 
+type DialogKind = "verify" | "reject" | "reverse" | null;
+
+function statusMessage(result: IncomeTransitionResult): string {
+  switch (result.status) {
+    case "plan_required":
+      return "Upgrade to Pro to manage non-member income.";
+    case "not_authorized":
+      return "You do not have permission to update this record.";
+    case "not_found":
+      return "This record is unavailable or you do not have access.";
+    case "invalid_transition":
+      return "This action is no longer valid for the record's current status.";
+    case "already_processed":
+      return "This record was already updated. The latest status has been loaded.";
+    case "error":
+      return "The record could not be updated right now. Please try again.";
+    default:
+      return "";
+  }
+}
+
 function IncomeDetail() {
   const { id } = Route.useParams();
   const { societyId, loading } = useSocietyId();
   const getDetail = useServerFn(getIncomeRecordDetailFn);
+  const queryClient = useQueryClient();
+  const [dialog, setDialog] = useState<DialogKind>(null);
+
+  const detailKey = ["society-income", "detail", societyId, id];
 
   const q = useQuery({
     enabled: !!societyId && !!id,
-    queryKey: ["society-income", "detail", societyId, id],
+    queryKey: detailKey,
     retry: (n, e: unknown) => {
       const msg = e instanceof Error ? e.message : "";
       return n < 1 && !msg.includes("forbidden") && !msg.includes("not_found");
     },
     queryFn: async () => getDetail({ data: { societyId: societyId!, id } }),
   });
+
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: detailKey });
+    queryClient.invalidateQueries({ queryKey: ["society-income", "list", societyId] });
+    queryClient.invalidateQueries({ queryKey: ["society-income", "dashboard", societyId] });
+  };
+
+  const handleResult = (r: IncomeTransitionResult) => {
+    if (r.status === "success") {
+      toast.success("Record updated.");
+      setDialog(null);
+      invalidateAll();
+      return;
+    }
+    if (r.status === "already_processed") {
+      toast.message(statusMessage(r));
+      setDialog(null);
+      invalidateAll();
+      return;
+    }
+    toast.error(statusMessage(r) || "Update failed.");
+  };
 
   if (loading || !societyId) {
     return (
@@ -63,6 +130,7 @@ function IncomeDetail() {
   const result = q.data;
   const isServerError = q.isError || result?.status === "error";
   const isNotFound = result?.status === "not_found";
+  const record = result?.status === "available" ? result.record : null;
 
   return (
     <div className="px-4 py-6 max-w-3xl mx-auto space-y-4">
@@ -94,9 +162,33 @@ function IncomeDetail() {
             </div>
           </CardContent>
         </Card>
-      ) : result?.status === "available" ? (
-        <RecordView r={result.record} />
+      ) : record ? (
+        <RecordView r={record} onAction={setDialog} />
       ) : null}
+
+      {record && dialog === "verify" && (
+        <VerifyDialog
+          record={record}
+          onClose={() => setDialog(null)}
+          onResult={handleResult}
+        />
+      )}
+      {record && dialog === "reject" && (
+        <ReasonDialog
+          kind="reject"
+          record={record}
+          onClose={() => setDialog(null)}
+          onResult={handleResult}
+        />
+      )}
+      {record && dialog === "reverse" && (
+        <ReasonDialog
+          kind="reverse"
+          record={record}
+          onClose={() => setDialog(null)}
+          onResult={handleResult}
+        />
+      )}
     </div>
   );
 }
@@ -123,8 +215,17 @@ function buildTimeline(r: IncomeRecordDetail): TimelineEvent[] {
   return events.filter((e): e is TimelineEvent => e !== null);
 }
 
-function RecordView({ r }: { r: IncomeRecordDetail }) {
+function RecordView({
+  r,
+  onAction,
+}: {
+  r: IncomeRecordDetail;
+  onAction: (d: DialogKind) => void;
+}) {
   const events = buildTimeline(r);
+  const canVerify = r.verification_status === "pending";
+  const canReject = r.verification_status === "pending";
+  const canReverse = r.verification_status === "verified";
 
   return (
     <>
@@ -173,6 +274,40 @@ function RecordView({ r }: { r: IncomeRecordDetail }) {
             </Field>
           )}
         </div>
+
+        {(canVerify || canReverse) && (
+          <div className="flex flex-wrap gap-2 pt-4">
+            {canVerify && (
+              <>
+                <Button
+                  onClick={() => onAction("verify")}
+                  className="min-h-[44px]"
+                  aria-label="Verify income record"
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-1" /> Verify
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => onAction("reject")}
+                  className="min-h-[44px]"
+                  aria-label="Reject income record"
+                >
+                  <XCircle className="h-4 w-4 mr-1" /> Reject
+                </Button>
+              </>
+            )}
+            {canReverse && !canReject && (
+              <Button
+                variant="destructive"
+                onClick={() => onAction("reverse")}
+                className="min-h-[44px]"
+                aria-label="Reverse verified income record"
+              >
+                <RotateCcw className="h-4 w-4 mr-1" /> Reverse
+              </Button>
+            )}
+          </div>
+        )}
       </SectionCard>
 
       <SectionCard title="Timeline">
@@ -213,5 +348,185 @@ function Field({
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className="mt-0.5">{children}</div>
     </div>
+  );
+}
+
+function RecordSummary({ r }: { r: IncomeRecordDetail }) {
+  const payerLabel =
+    r.payer_kind === "anonymous"
+      ? "Anonymous"
+      : r.payer
+        ? r.payer.display_name
+        : "—";
+  return (
+    <dl className="rounded-md border p-3 text-sm space-y-1">
+      <div className="flex justify-between">
+        <dt className="text-muted-foreground">Payer</dt>
+        <dd>{payerLabel}</dd>
+      </div>
+      <div className="flex justify-between">
+        <dt className="text-muted-foreground">Category</dt>
+        <dd>{r.category?.display_name ?? "—"}</dd>
+      </div>
+      <div className="flex justify-between">
+        <dt className="text-muted-foreground">Amount</dt>
+        <dd className="font-semibold tabular-nums">{inr(r.amount)}</dd>
+      </div>
+      <div className="flex justify-between">
+        <dt className="text-muted-foreground">Method</dt>
+        <dd className="capitalize">{r.payment_method.replace(/_/g, " ")}</dd>
+      </div>
+      <div className="flex justify-between">
+        <dt className="text-muted-foreground">Payment date</dt>
+        <dd>{r.payment_date}</dd>
+      </div>
+      <div className="flex justify-between">
+        <dt className="text-muted-foreground">Reference</dt>
+        <dd>{r.reference_suffix ?? "—"}</dd>
+      </div>
+      <div className="flex justify-between">
+        <dt className="text-muted-foreground">Status</dt>
+        <dd className="capitalize">{r.verification_status}</dd>
+      </div>
+    </dl>
+  );
+}
+
+function VerifyDialog({
+  record,
+  onClose,
+  onResult,
+}: {
+  record: IncomeRecordDetail;
+  onClose: () => void;
+  onResult: (r: IncomeTransitionResult) => void;
+}) {
+  const verifyFn = useServerFn(verifyIncomeRecordByIdFn);
+  const m = useMutation({
+    mutationFn: async () => verifyFn({ data: { recordId: record.id } }),
+    onSuccess: onResult,
+    onError: () => onResult({ status: "error" }),
+  });
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && !m.isPending && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Verify income record?</DialogTitle>
+          <DialogDescription>
+            Confirm that this offline payment has been received and reviewed.
+          </DialogDescription>
+        </DialogHeader>
+        <RecordSummary r={record} />
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={onClose}
+            disabled={m.isPending}
+            className="min-h-[44px]"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => m.mutate()}
+            disabled={m.isPending}
+            className="min-h-[44px]"
+          >
+            {m.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+            Verify Income
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ReasonDialog({
+  kind,
+  record,
+  onClose,
+  onResult,
+}: {
+  kind: "reject" | "reverse";
+  record: IncomeRecordDetail;
+  onClose: () => void;
+  onResult: (r: IncomeTransitionResult) => void;
+}) {
+  const [reason, setReason] = useState("");
+  const rejectFn = useServerFn(rejectIncomeRecordByIdFn);
+  const reverseFn = useServerFn(reverseIncomeRecordByIdFn);
+
+  const trimmed = reason.trim();
+  const hasHtml = /<[^>]+>/.test(trimmed);
+  const valid = trimmed.length >= 5 && trimmed.length <= 500 && !hasHtml;
+
+  const m = useMutation({
+    mutationFn: async () => {
+      const fn = kind === "reject" ? rejectFn : reverseFn;
+      return fn({ data: { recordId: record.id, reason: trimmed } });
+    },
+    onSuccess: onResult,
+    onError: () => onResult({ status: "error" }),
+  });
+
+  const title =
+    kind === "reject" ? "Reject income record?" : "Reverse verified income?";
+  const supporting =
+    kind === "reject"
+      ? "Provide a reason so this decision remains clear in the audit history."
+      : "This keeps the original record and adds a reversal to the audit history.";
+  const cta = kind === "reject" ? "Reject Record" : "Reverse Income";
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && !m.isPending && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{supporting}</DialogDescription>
+        </DialogHeader>
+        <RecordSummary r={record} />
+        <div className="space-y-1">
+          <Label htmlFor="reason" className="text-xs">
+            Reason (required, 5–500 characters)
+          </Label>
+          <Textarea
+            id="reason"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            maxLength={500}
+            rows={4}
+            placeholder="Explain the reason for this decision…"
+          />
+          {reason.length > 0 && !valid && (
+            <p className="text-xs text-destructive">
+              {trimmed.length < 5
+                ? "Please enter at least 5 characters."
+                : hasHtml
+                  ? "HTML is not allowed in the reason."
+                  : "Reason must be 500 characters or fewer."}
+            </p>
+          )}
+        </div>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={onClose}
+            disabled={m.isPending}
+            className="min-h-[44px]"
+          >
+            Cancel
+          </Button>
+          <Button
+            variant={kind === "reject" ? "destructive" : "destructive"}
+            onClick={() => m.mutate()}
+            disabled={m.isPending || !valid}
+            className="min-h-[44px]"
+          >
+            {m.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+            {cta}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

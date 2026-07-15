@@ -19,6 +19,8 @@ export type SectionSummary =
   | { status: "error"; message?: string }
   | { status: "locked" };
 
+export type FinancialAvailabilityStatus = "available" | "unsupported" | "error";
+
 export type Flat360SummaryInput = {
   unit_label: string;
   is_serial: boolean;
@@ -27,6 +29,8 @@ export type Flat360SummaryInput = {
     active_count: number; // 0 when vacant / unknown
   };
   financial: {
+    // undefined defaults to "available" for legacy callers.
+    status?: FinancialAvailabilityStatus;
     total_outstanding: number;
     overdue_count: number;
     partial_count: number;

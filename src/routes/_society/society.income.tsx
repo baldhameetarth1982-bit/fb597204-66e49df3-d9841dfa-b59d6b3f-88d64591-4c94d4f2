@@ -161,8 +161,8 @@ function IncomePage() {
         </CardContent></Card>
       ) : (
         <StatPillRow>
-          <StatPill icon={TrendingUp} label="Verified income" value={inr(d.verifiedTotal)} tone="emerald" />
-          <StatPill icon={Clock} label="Pending" value={String(d.pendingCount)} tone="amber" />
+          <StatPill icon={TrendingUp} label="Verified income" value={inr(d.verifiedTotal)} />
+          <StatPill icon={Clock} label="Pending" value={String(d.pendingCount)} />
           <StatPill icon={AlertCircle} label="Unreconciled" value={String(d.unreconciled)} />
           <StatPill icon={AlertCircle} label="Needs review" value={String(d.needsReview)} />
           <StatPill icon={XCircle} label="Rejected" value={String(d.rejectedCount)} />

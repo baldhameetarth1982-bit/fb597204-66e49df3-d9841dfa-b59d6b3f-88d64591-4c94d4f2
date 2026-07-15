@@ -63,8 +63,8 @@ function realCache(): AICacheAdapter {
       try {
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const nowIso = new Date().toISOString();
-        const { data, error } = await (supabaseAdmin
-          .from("flat360_ai_summary_cache") as any)
+        const { data, error } = await (supabaseAdmin as any)
+          .from("flat360_ai_summary_cache")
           .select("result_json, generated_at, schema_version, snapshot_fingerprint")
           .eq("society_id", societyId)
           .eq("flat_id", flatId)

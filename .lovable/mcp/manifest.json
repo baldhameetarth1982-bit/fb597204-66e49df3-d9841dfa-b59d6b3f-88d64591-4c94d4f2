@@ -19,7 +19,7 @@
       {
         "name": "whoami",
         "title": "Who am I",
-        "description": "Return the SociyoHub profile of the currently signed-in user.",
+        "description": "Return a minimal profile of the currently signed-in SociyoHub user.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,

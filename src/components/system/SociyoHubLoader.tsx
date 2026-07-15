@@ -1,4 +1,4 @@
-import logoAsset from "@/assets/sociohub-logo-v2.png.asset.json";
+import { SociyoHubMark } from "@/components/shared/SociyoHubLogo";
 
 /**
  * Premium branded loading indicator. Lightweight — no heavy filters or
@@ -15,16 +15,11 @@ export function SociyoHubLoader({
 }) {
   const inner = (
     <div className="flex flex-col items-center gap-4" role="status" aria-live="polite">
-      <div className="relative" style={{ width: size, height: size }}>
-        <img
-          src={logoAsset.url}
-          alt=""
-          aria-hidden
-          width={size}
-          height={size}
-          className="rounded-[28%] elevation-2 animate-[sh-pulse_1.6s_ease-in-out_infinite]"
-          style={{ width: size, height: size }}
-        />
+      <div
+        className="relative elevation-2 rounded-[28%] animate-[sh-pulse_1.6s_ease-in-out_infinite]"
+        style={{ width: size, height: size }}
+      >
+        <SociyoHubMark size={size} />
       </div>
       <div className="h-1 w-24 overflow-hidden rounded-full bg-muted">
         <div className="h-full w-1/3 rounded-full bg-primary animate-[sh-bar_1.4s_ease-in-out_infinite]" />

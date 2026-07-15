@@ -1,30 +1,32 @@
 import { defineTool } from "@lovable.dev/mcp-js";
-import { z } from "zod";
 import { supabaseForMcpUser } from "../supabase";
+import { logMcpToolError, mcpErrorContent } from "../errors";
 
 export default defineTool({
   name: "list_my_societies",
   title: "List my societies",
   description:
-    "List societies the signed-in user belongs to (as resident, admin, or via profile).",
+    "List societies the signed-in user belongs to. Returns minimal identifying fields only.",
   inputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async (_input, ctx) => {
     if (!ctx.isAuthenticated()) {
-      return { content: [{ type: "text", text: "Not authenticated." }], isError: true };
+      return mcpErrorContent("Not authenticated.");
     }
     const sb = supabaseForMcpUser(ctx);
-    // RLS on societies restricts to the user's accessible societies.
+    // Minimize: id, name, city. No plan_id, no plan_status, no billing internals.
     const { data, error } = await sb
       .from("societies")
-      .select("id, name, city, plan_id, plan_status, created_at")
+      .select("id, name, city")
       .limit(50);
     if (error) {
-      return { content: [{ type: "text", text: `Error: ${error.message}` }], isError: true };
+      logMcpToolError("list_my_societies", error);
+      return mcpErrorContent("Unable to load societies.");
     }
+    const societies = data ?? [];
     return {
-      content: [{ type: "text", text: JSON.stringify(data ?? [], null, 2) }],
-      structuredContent: { societies: data ?? [] },
+      content: [{ type: "text", text: JSON.stringify(societies, null, 2) }],
+      structuredContent: { societies },
     };
   },
 });

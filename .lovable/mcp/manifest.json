@@ -19,7 +19,7 @@
       {
         "name": "whoami",
         "title": "Who am I",
-        "description": "Return the SociyoHub profile of the currently signed-in user.",
+        "description": "Return a minimal profile of the currently signed-in SociyoHub user.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,
@@ -35,7 +35,7 @@
       {
         "name": "list_my_societies",
         "title": "List my societies",
-        "description": "List societies the signed-in user belongs to (as resident, admin, or via profile).",
+        "description": "List societies the signed-in user belongs to. Returns minimal identifying fields only.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,
@@ -63,8 +63,8 @@
             "limit": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 50,
-              "description": "Max rows to return (default 20)."
+              "maximum": 20,
+              "description": "Max rows to return (default 10)."
             },
             "status": {
               "type": "string",
@@ -97,8 +97,8 @@
             "limit": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 50,
-              "description": "Max rows to return (default 20)."
+              "maximum": 20,
+              "description": "Max rows to return (default 10)."
             }
           },
           "additionalProperties": false,

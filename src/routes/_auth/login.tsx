@@ -18,6 +18,7 @@ import {
   signInWithVerifiedPhone,
   startTruecallerAuth,
 } from "@/lib/auth-service";
+import { sanitizeNextPath } from "@/lib/safe-next";
 
 export const Route = createFileRoute("/_auth/login")({
   head: () => ({
@@ -28,8 +29,7 @@ export const Route = createFileRoute("/_auth/login")({
   }),
   validateSearch: (s: Record<string, unknown>): { next?: string } => {
     // Only accept same-origin relative paths as post-login return targets.
-    const raw = typeof s.next === "string" ? s.next : "";
-    const safe = raw.startsWith("/") && !raw.startsWith("//") ? raw : "";
+    const safe = sanitizeNextPath(s.next);
     return safe ? { next: safe } : {};
   },
   component: LoginPage,

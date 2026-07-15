@@ -1,6 +1,9 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { supabaseForMcpUser } from "../supabase";
+import { logMcpToolError, mcpErrorContent } from "../errors";
+
+const MAX_LIMIT = 20;
 
 export default defineTool({
   name: "list_my_bills",
@@ -8,7 +11,7 @@ export default defineTool({
   description:
     "List maintenance/other bills payable by the signed-in resident, most recent first.",
   inputSchema: {
-    limit: z.number().int().min(1).max(50).optional().describe("Max rows to return (default 20)."),
+    limit: z.number().int().min(1).max(MAX_LIMIT).optional().describe("Max rows to return (default 10)."),
     status: z
       .enum(["paid", "unpaid", "pending", "overdue"])
       .optional()
@@ -17,22 +20,26 @@ export default defineTool({
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ limit, status }, ctx) => {
     if (!ctx.isAuthenticated()) {
-      return { content: [{ type: "text", text: "Not authenticated." }], isError: true };
+      return mcpErrorContent("Not authenticated.");
     }
     const sb = supabaseForMcpUser(ctx);
+    // Minimize: no payment proof, no bank reference, no reconciliation metadata,
+    // no admin-only notes. Safe fields only, capped result count.
     let q = sb
       .from("bills")
-      .select("id, society_id, flat_id, period, amount, status, due_date, created_at")
+      .select("id, period, amount, status, due_date")
       .order("created_at", { ascending: false })
-      .limit(limit ?? 20);
+      .limit(Math.min(limit ?? 10, MAX_LIMIT));
     if (status) q = q.eq("status", status);
     const { data, error } = await q;
     if (error) {
-      return { content: [{ type: "text", text: `Error: ${error.message}` }], isError: true };
+      logMcpToolError("list_my_bills", error);
+      return mcpErrorContent("Unable to load bills.");
     }
+    const bills = data ?? [];
     return {
-      content: [{ type: "text", text: JSON.stringify(data ?? [], null, 2) }],
-      structuredContent: { bills: data ?? [] },
+      content: [{ type: "text", text: JSON.stringify(bills, null, 2) }],
+      structuredContent: { bills },
     };
   },
 });

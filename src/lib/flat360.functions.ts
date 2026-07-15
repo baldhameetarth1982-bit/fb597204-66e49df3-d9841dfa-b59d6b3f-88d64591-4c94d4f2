@@ -252,20 +252,20 @@ export const getFlat360 = createServerFn({ method: "POST" })
       };
     });
 
-    const paymentsSection = lockAdvancedForBasic(plan, () =>
-      payments.length === 0
-        ? ({ status: "empty" } as const)
-        : ({
-            status: "available",
-            data: payments.map((p) => ({
-              id: p.id,
-              amount: Number(p.amount ?? 0),
-              method_label: safeMethodLabel(p.method),
-              status: safePaymentStatus(p.status),
-              paid_at: p.paid_at ?? null,
-            })),
-          } as const),
-    );
+    const paymentsSection: SectionState<import("@/lib/flat360-types").SafePaymentItem[]> =
+      lockAdvancedForBasic<import("@/lib/flat360-types").SafePaymentItem[]>(plan, () => {
+        if (payments.length === 0) return { status: "empty" };
+        return {
+          status: "available",
+          data: payments.map((p) => ({
+            id: p.id as string,
+            amount: Number(p.amount ?? 0),
+            method_label: safeMethodLabel(p.method),
+            status: safePaymentStatus(p.status),
+            paid_at: (p.paid_at as string | null) ?? null,
+          })),
+        };
+      });
 
     // Vehicles + occupancy history — real queries when Pro.
     const [vehiclesRes, historyRes] = advanced
@@ -284,48 +284,65 @@ export const getFlat360 = createServerFn({ method: "POST" })
         ])
       : [null, null];
 
-    const vehicles = lockAdvancedForBasic(plan, () => {
-      if (!vehiclesRes) return unsupported<never>("Vehicles unavailable.");
-      if (vehiclesRes.error) return errorState<never>("Vehicles could not be loaded.");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const rows = (vehiclesRes.data ?? []) as any[];
-      if (rows.length === 0) return { status: "empty" } as const;
-      return {
-        status: "available",
-        data: rows.map((v) => ({
-          id: v.id,
-          display_plate: String(v.number_plate ?? "").toUpperCase(),
-          type: v.type ?? null,
-          is_active: v.is_active ?? true,
-        })),
-      } as const;
-    });
+    const vehicles: SectionState<import("@/lib/flat360-types").VehicleItem[]> =
+      lockAdvancedForBasic<import("@/lib/flat360-types").VehicleItem[]>(plan, () => {
+        if (!vehiclesRes) return unsupported("Vehicles unavailable.");
+        if (vehiclesRes.error) return errorState("Vehicles could not be loaded.");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const rows = (vehiclesRes.data ?? []) as any[];
+        if (rows.length === 0) return { status: "empty" };
+        return {
+          status: "available",
+          data: rows.map((v) => ({
+            id: v.id as string,
+            display_plate: String(v.number_plate ?? "").toUpperCase(),
+            type: (v.type as string | null) ?? null,
+            is_active: v.is_active ?? true,
+          })),
+        };
+      });
 
-    const occupancyHistory = lockAdvancedForBasic(plan, () => {
-      if (!historyRes) return unsupported<never>("Occupancy history unavailable.");
-      if (historyRes.error) return errorState<never>("Occupancy history could not be loaded.");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const rows = (historyRes.data ?? []) as any[];
-      if (rows.length === 0) return { status: "empty" } as const;
-      return {
-        status: "available",
-        data: rows.map((r) => ({
-          user_id: r.user_id,
-          display_name: r.profiles?.full_name ?? null,
-          relationship: r.relationship ?? null,
-          moved_in_at: r.moved_in_at ?? null,
-          moved_out_at: r.moved_out_at ?? null,
-          is_active: !!r.is_active,
-        })),
-      } as const;
-    });
+    const occupancyHistory: SectionState<import("@/lib/flat360-types").OccupancyHistoryItem[]> =
+      lockAdvancedForBasic<import("@/lib/flat360-types").OccupancyHistoryItem[]>(plan, () => {
+        if (!historyRes) return unsupported("Occupancy history unavailable.");
+        if (historyRes.error) return errorState("Occupancy history could not be loaded.");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const rows = (historyRes.data ?? []) as any[];
+        if (rows.length === 0) return { status: "empty" };
+        return {
+          status: "available",
+          data: rows.map((r) => ({
+            user_id: r.user_id as string,
+            display_name: (r.profiles?.full_name as string | null) ?? null,
+            relationship: (r.relationship as string | null) ?? null,
+            moved_in_at: (r.moved_in_at as string | null) ?? null,
+            moved_out_at: (r.moved_out_at as string | null) ?? null,
+            is_active: !!r.is_active,
+          })),
+        };
+      });
 
     /* 7. Operational sections without stable backing → unsupported --- */
-    const visitors = lockAdvancedForBasic(plan, () => unsupported("Visitors section not backed yet."));
-    const complaints = lockAdvancedForBasic(plan, () => unsupported("Complaints section not backed yet."));
-    const documents = lockAdvancedForBasic(plan, () => unsupported("Documents section not backed yet."));
-    const approvals = lockAdvancedForBasic(plan, () => unsupported("Approvals section not backed yet."));
-    const notices = lockAdvancedForBasic(plan, () => unsupported("Notices section not backed yet."));
+    const visitors: SectionState<import("@/lib/flat360-types").VisitorSummary> =
+      lockAdvancedForBasic<import("@/lib/flat360-types").VisitorSummary>(plan, () =>
+        unsupported("Visitors section not backed yet."),
+      );
+    const complaints: SectionState<import("@/lib/flat360-types").ComplaintSummary> =
+      lockAdvancedForBasic<import("@/lib/flat360-types").ComplaintSummary>(plan, () =>
+        unsupported("Complaints section not backed yet."),
+      );
+    const documents: SectionState<import("@/lib/flat360-types").DocumentSummary> =
+      lockAdvancedForBasic<import("@/lib/flat360-types").DocumentSummary>(plan, () =>
+        unsupported("Documents section not backed yet."),
+      );
+    const approvals: SectionState<import("@/lib/flat360-types").ApprovalSummary> =
+      lockAdvancedForBasic<import("@/lib/flat360-types").ApprovalSummary>(plan, () =>
+        unsupported("Approvals section not backed yet."),
+      );
+    const notices: SectionState<import("@/lib/flat360-types").NoticeItem[]> =
+      lockAdvancedForBasic<import("@/lib/flat360-types").NoticeItem[]>(plan, () =>
+        unsupported("Notices section not backed yet."),
+      );
 
     /* 8. Safe No-Dues section --------------------------------------- */
     const noDues: SectionState<SafeNoDuesSection> = lockAdvancedForBasic<SafeNoDuesSection>(

@@ -63,8 +63,8 @@
             "limit": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 50,
-              "description": "Max rows to return (default 20)."
+              "maximum": 20,
+              "description": "Max rows to return (default 10)."
             },
             "status": {
               "type": "string",

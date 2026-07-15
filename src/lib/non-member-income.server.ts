@@ -454,3 +454,37 @@ export type IncomeRecordDetailResult =
   | { status: "not_found" }
   | { status: "error"; message: string };
 
+// ---------------------------------------------------------------------------
+// Turn 18B.2 — Discriminated transition result and reason schema
+// ---------------------------------------------------------------------------
+
+export type IncomeTransitionResult =
+  | {
+      status: "success";
+      recordId: string;
+      verificationStatus: "verified" | "rejected" | "reversed";
+      changedAt: string;
+    }
+  | {
+      status: "already_processed";
+      currentStatus: "verified" | "rejected" | "reversed" | "pending";
+    }
+  | { status: "invalid_transition" }
+  | { status: "not_found" }
+  | { status: "not_authorized" }
+  | { status: "plan_required" }
+  | { status: "error" };
+
+/** Reason input schema for reject/reverse mutations. Trimmed, 5-500 chars, no HTML. */
+export const IncomeTransitionReason = z
+  .string()
+  .transform((s) => s.trim())
+  .pipe(
+    z
+      .string()
+      .min(5, "reason_too_short")
+      .max(500, "reason_too_long")
+      .refine((s) => !/<[^>]+>/.test(s), "reason_html_forbidden"),
+  );
+
+

@@ -345,3 +345,21 @@ Focused strictness closure on Turn 18B.1:
 - Playwright viewport inspection (360 / 390 / 414 / 768 / 1280) — inspected only via responsive CSS review, not automated capture
 - AI income categorization
 - Any online gateway (Razorpay stays subscription-only)
+
+## Turn 18B.2 — Secure Verify / Reject / Reverse workflows
+
+- Additive migration adds `rejected_at`, `rejected_by`, `rejection_reason` columns to `society_income_records` and a new `public.transition_income_record(uuid, text, text)` SECURITY DEFINER RPC.
+  - Fixed `search_path = public`, EXECUTE revoked from PUBLIC, granted only to `authenticated`.
+  - Actor/society derived server-side from `auth.uid()` and the record; browser cannot supply them.
+  - Conditional expected-status UPDATE with `ROW_COUNT` check → concurrent transitions return `already_processed` instead of overwriting.
+  - Audit_log INSERT runs in the same transaction: audit failure rolls back the state change.
+  - Reason validated inside the RPC: 5-500 chars, no HTML.
+- New `verifyIncomeRecordByIdFn` / `rejectIncomeRecordByIdFn` / `reverseIncomeRecordByIdFn` server functions accept minimal input (`recordId` + optional `reason`) and return a strict discriminated `IncomeTransitionResult`.
+- Detail route `/society/income/$id` now surfaces per-status action buttons and Verify / Reject / Reverse dialogs with masked references and required, validated reasons. Cache invalidation covers detail + list + dashboard on success and on `already_processed`.
+- Preflight: income list now uses `parseFinancialAmount` (invalid amounts surface a safe list error instead of silent ₹0), and category/payer label batch queries check `.error` before proceeding.
+- Tests: 43 in the income suite, 212 across `tests/unit`. Full `bunx tsgo --noEmit`, `bun run build`, and secret-scan pass.
+
+Still deferred:
+- SQL dashboard aggregate (JavaScript scan with `truncated` warning retained).
+- Category management UI, payer directory UI, offline income entry (Turn 18B.3).
+- Reconciliation actions, bank statement import, AI categorization, online gateways.

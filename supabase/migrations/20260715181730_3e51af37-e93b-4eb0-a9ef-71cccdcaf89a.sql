@@ -64,4 +64,4 @@ REVOKE ALL ON FUNCTION public.is_non_member_income_enabled_internal(uuid) FROM a
 REVOKE ALL ON FUNCTION public.is_non_member_income_enabled_internal(uuid) FROM authenticated;
 
 COMMENT ON FUNCTION public.is_non_member_income_enabled_internal(uuid)
-  IS 'Turn 18B.2B: internal Pro/Premium entitlement gate. Not callable by anon, authenticated, or PUBLIC — invoked only inside public.transition_income_record via SECURITY DEFINER owner. Mirrors normalizePlan() aliases and requires an active, non-expired trial for trial-status entitlement.';
+  IS 'Turn 18B.2B: internal Pro/Premium entitlement gate. Not callable by anon, authenticated, or PUBLIC — invoked only inside the transition RPC via SECURITY DEFINER owner. Mirrors normalizePlan() aliases and requires an active, non-expired trial for trial-status entitlement.';

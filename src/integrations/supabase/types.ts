@@ -2230,6 +2230,9 @@ export type Database = {
           payment_status: string
           reconciliation_status: string
           reference_number: string | null
+          rejected_at: string | null
+          rejected_by: string | null
+          rejection_reason: string | null
           resident_user_id: string | null
           reversal_reason: string | null
           reversed_at: string | null
@@ -2255,6 +2258,9 @@ export type Database = {
           payment_status?: string
           reconciliation_status?: string
           reference_number?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
           resident_user_id?: string | null
           reversal_reason?: string | null
           reversed_at?: string | null
@@ -2280,6 +2286,9 @@ export type Database = {
           payment_status?: string
           reconciliation_status?: string
           reference_number?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
           resident_user_id?: string | null
           reversal_reason?: string | null
           reversed_at?: string | null
@@ -3272,6 +3281,10 @@ export type Database = {
           remaining: number
           retry_after_seconds: number
         }[]
+      }
+      transition_income_record: {
+        Args: { _reason?: string; _record_id: string; _target_status: string }
+        Returns: Json
       }
       transition_no_dues_request_internal: {
         Args: {

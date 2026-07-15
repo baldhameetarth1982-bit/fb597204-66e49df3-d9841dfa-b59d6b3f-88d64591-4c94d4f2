@@ -770,6 +770,7 @@ export const getIncomeRecordDetailFn = createServerFn({ method: "POST" })
 
 import {
   IncomeTransitionReason,
+  IncomeTransitionResultSchema,
   type IncomeTransitionResult,
 } from "@/lib/non-member-income.server";
 
@@ -780,8 +781,14 @@ const RecordIdWithReason = z.object({
 });
 
 /**
- * Server-side entitlement + admin check derived purely from the record.
- * Returns `null` on success or a safe transition error to surface.
+ * Turn 18B.2A — server-side pre-authorization.
+ *
+ * We keep the wrapper's admin+plan check as *defense in depth* — the RPC now
+ * independently enforces the same rules at the database layer — but any
+ * failure returns the same non-enumerating `not_found` shape used by the
+ * RPC, so callers cannot distinguish missing records from records they
+ * simply cannot access. Basic / expired plan collapses to `plan_required`
+ * only *after* society membership is established, matching the RPC.
  */
 async function authorizeMutation(
   ctx: Ctx,
@@ -801,7 +808,8 @@ async function authorizeMutation(
   try {
     await assertSocietyAdmin(ctx, r.society_id);
   } catch {
-    return { ok: false, result: { status: "not_authorized" } };
+    // Do not distinguish "exists but you can't see it" from "doesn't exist".
+    return { ok: false, result: { status: "not_found" } };
   }
   try {
     await assertProPlan(ctx, r.society_id);
@@ -823,11 +831,9 @@ async function callTransitionRpc(
     _reason: reason,
   });
   if (error) return { status: "error" };
-  const res = data as IncomeTransitionResult | null;
-  if (!res || typeof res !== "object" || typeof (res as { status?: unknown }).status !== "string") {
-    return { status: "error" };
-  }
-  return res;
+  const parsed = IncomeTransitionResultSchema.safeParse(data);
+  if (!parsed.success) return { status: "error" };
+  return parsed.data;
 }
 
 export const verifyIncomeRecordByIdFn = createServerFn({ method: "POST" })

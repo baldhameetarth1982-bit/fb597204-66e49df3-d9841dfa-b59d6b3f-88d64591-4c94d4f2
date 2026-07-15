@@ -376,3 +376,158 @@ describe("safe-next path (preflight)", () => {
   });
 });
 
+
+// ---------------------------------------------------------------------------
+// Turn 18B.2A — Direct-RPC bypass + non-enumerating response closure
+// ---------------------------------------------------------------------------
+
+import { IncomeTransitionResultSchema } from "@/lib/non-member-income.server";
+
+describe("IncomeTransitionResultSchema (Turn 18B.2A)", () => {
+  it("accepts a fully-formed success payload", () => {
+    const ok = IncomeTransitionResultSchema.safeParse({
+      status: "success",
+      recordId: UUID,
+      verificationStatus: "verified",
+      changedAt: "2026-07-15T12:00:00Z",
+    });
+    expect(ok.success).toBe(true);
+  });
+  it("accepts already_processed with a valid currentStatus", () => {
+    const r = IncomeTransitionResultSchema.safeParse({
+      status: "already_processed",
+      currentStatus: "verified",
+    });
+    expect(r.success).toBe(true);
+  });
+  it("accepts non-enumerating not_found and plan_required", () => {
+    expect(IncomeTransitionResultSchema.safeParse({ status: "not_found" }).success).toBe(true);
+    expect(IncomeTransitionResultSchema.safeParse({ status: "plan_required" }).success).toBe(true);
+  });
+  it("rejects unknown status values", () => {
+    expect(IncomeTransitionResultSchema.safeParse({ status: "hacked" }).success).toBe(false);
+    expect(IncomeTransitionResultSchema.safeParse(null).success).toBe(false);
+    expect(IncomeTransitionResultSchema.safeParse("success").success).toBe(false);
+  });
+  it("rejects success payload with malformed uuid or verificationStatus", () => {
+    expect(
+      IncomeTransitionResultSchema.safeParse({
+        status: "success",
+        recordId: "not-a-uuid",
+        verificationStatus: "verified",
+        changedAt: "2026-07-15T12:00:00Z",
+      }).success,
+    ).toBe(false);
+    expect(
+      IncomeTransitionResultSchema.safeParse({
+        status: "success",
+        recordId: UUID,
+        verificationStatus: "pending",
+        changedAt: "2026-07-15T12:00:00Z",
+      }).success,
+    ).toBe(false);
+  });
+  it("rejects extra top-level keys leaking metadata is safe (parsed via discriminatedUnion)", () => {
+    // zod .object() strips unknown keys by default; ensure it does not include them.
+    const parsed = IncomeTransitionResultSchema.safeParse({
+      status: "not_found",
+      society_id: "leak",
+      amount: 999,
+    });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data).toEqual({ status: "not_found" });
+    }
+  });
+});
+
+describe("Wrapper input surface cannot forward caller-controlled auth (Turn 18B.2A)", () => {
+  const src = fs.readFileSync(
+    path.resolve(__dirname, "../..", "src/lib/non-member-income.functions.ts"),
+    "utf8",
+  );
+  it("mutation wrappers accept only recordId (+ optional reason), never societyId/actorId/plan", () => {
+    // The Zod schemas guarding the mutation surface.
+    expect(src).toMatch(/const\s+RecordIdOnly\s*=\s*z\.object\(\{\s*recordId:\s*z\.string\(\)\.uuid\(\)\s*\}\)/);
+    expect(src).toMatch(/const\s+RecordIdWithReason\s*=\s*z\.object\(\{\s*recordId:\s*z\.string\(\)\.uuid\(\),\s*reason:\s*IncomeTransitionReason,\s*\}\)/);
+    // No mutation input accepts these caller-forgeable fields.
+    expect(src).not.toMatch(/RecordId[A-Za-z]*\s*=\s*z\.object\(\{[^}]*societyId/);
+    expect(src).not.toMatch(/RecordId[A-Za-z]*\s*=\s*z\.object\(\{[^}]*actorId/);
+    expect(src).not.toMatch(/RecordId[A-Za-z]*\s*=\s*z\.object\(\{[^}]*plan\s*:/);
+    expect(src).not.toMatch(/RecordId[A-Za-z]*\s*=\s*z\.object\(\{[^}]*currentStatus/);
+  });
+  it("wrapper collapses non-admin access to a non-enumerating not_found", () => {
+    // The only 'not_authorized' left is unauthenticated-callers (RPC branch).
+    // The wrapper must never return not_authorized for signed-in-but-wrong-society.
+    const authorize = src.match(/async function authorizeMutation[\s\S]*?^\}/m)?.[0] ?? "";
+    expect(authorize).toMatch(/status:\s*"not_found"/);
+    expect(authorize).not.toMatch(/status:\s*"not_authorized"/);
+  });
+  it("callTransitionRpc validates result with the strict Zod schema", () => {
+    const rpc = src.match(/async function callTransitionRpc[\s\S]*?^\}/m)?.[0] ?? "";
+    expect(rpc).toMatch(/IncomeTransitionResultSchema\.safeParse/);
+    expect(rpc).not.toMatch(/as\s+IncomeTransitionResult/);
+  });
+});
+
+describe("Migration hardening (Turn 18B.2A)", () => {
+  const migPath = path.resolve(
+    __dirname,
+    "../..",
+    "supabase/migrations",
+  );
+  const files = fs.readdirSync(migPath).sort();
+  const latest = files
+    .filter((f) => f.endsWith(".sql"))
+    .map((f) => ({ f, sql: fs.readFileSync(path.join(migPath, f), "utf8") }))
+    .filter((x) => /transition_income_record/.test(x.sql));
+  const hardening = latest[latest.length - 1];
+
+  it("has an additive corrective migration for transition_income_record", () => {
+    expect(hardening).toBeTruthy();
+  });
+  it("introduces the internal plan entitlement helper", () => {
+    const all = latest.map((x) => x.sql).join("\n");
+    expect(all).toMatch(/is_non_member_income_enabled_internal/);
+  });
+  it("RPC returns non-enumerating not_found for inaccessible records", () => {
+    const sql = hardening.sql;
+    // No branch returns bare 'not_authorized' when a record was found but
+    // the caller lacks admin membership.
+    const notAuthorizedForNonAdmin = /IF NOT \(public\.is_society_admin_for[\s\S]*?not_authorized/;
+    expect(notAuthorizedForNonAdmin.test(sql)).toBe(false);
+    expect(sql).toMatch(/IF NOT v_accessible[\s\S]*?not_found/);
+  });
+  it("RPC enforces plan entitlement inside the database", () => {
+    expect(hardening.sql).toMatch(
+      /is_non_member_income_enabled_internal\(v_rec\.society_id\)[\s\S]*?plan_required/,
+    );
+  });
+  it("RPC does not accept plan/society/actor from arguments", () => {
+    // Signature is exactly (_record_id uuid, _target_status text, _reason text).
+    const sig = hardening.sql.match(
+      /CREATE OR REPLACE FUNCTION public\.transition_income_record\(([\s\S]*?)\)\s*RETURNS/,
+    );
+    expect(sig).toBeTruthy();
+    const args = sig![1];
+    expect(args).toMatch(/_record_id\s+uuid/);
+    expect(args).toMatch(/_target_status\s+text/);
+    expect(args).toMatch(/_reason\s+text/);
+    expect(args).not.toMatch(/_society_id/);
+    expect(args).not.toMatch(/_actor_id/);
+    expect(args).not.toMatch(/_plan\b/);
+  });
+  it("revokes execute from PUBLIC and anon; grants only to authenticated", () => {
+    expect(hardening.sql).toMatch(/REVOKE ALL ON FUNCTION public\.transition_income_record[^;]*FROM PUBLIC/);
+    expect(hardening.sql).toMatch(/REVOKE ALL ON FUNCTION public\.transition_income_record[^;]*FROM anon/);
+    expect(hardening.sql).toMatch(/GRANT EXECUTE ON FUNCTION public\.transition_income_record[^;]*TO authenticated/);
+  });
+  it("removes the unused v_new_recon declaration from the RPC body", () => {
+    // Scope the check to the CREATE OR REPLACE ... transition_income_record body.
+    const body = hardening.sql.match(
+      /CREATE OR REPLACE FUNCTION public\.transition_income_record[\s\S]*?\$\$;/,
+    );
+    expect(body).toBeTruthy();
+    expect(body![0]).not.toMatch(/v_new_recon/);
+  });
+});

@@ -3125,6 +3125,10 @@ export type Database = {
         Args: { _actor_id: string; _flat_id: string }
         Returns: boolean
       }
+      is_non_member_income_enabled_internal: {
+        Args: { _society_id: string }
+        Returns: boolean
+      }
       is_razorpay_live: { Args: never; Returns: boolean }
       is_society_admin_for: {
         Args: { _society_id: string; _user_id: string }

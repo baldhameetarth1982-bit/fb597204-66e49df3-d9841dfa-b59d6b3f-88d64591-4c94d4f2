@@ -145,10 +145,6 @@ export const generateFlat360AISummaryFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<Flat360AISummaryResponse> => {
     const { supabase, userId } = context as { supabase: unknown; userId: string };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    // Reuse authorized snapshot loader.
-    const { attachAdminRpcs, buildRealDeps } = await import(
-      "@/lib/flat360-real-deps.server"
-    );
     const deps = attachAdminRpcs(buildRealDeps(supabase), supabaseAdmin as any);
     const snapshot = await loadFlat360Snapshot({ actorId: userId, flatId: data.flatId, deps });
 

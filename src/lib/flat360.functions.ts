@@ -538,7 +538,7 @@ function errMsg(e: unknown): string {
   return "Query failed";
 }
 
-function buildRealDeps(supabase: unknown): Flat360Deps {
+export function buildRealDeps(supabase: unknown): Flat360Deps {
   // Runtime narrows via method calls; typed as `unknown` and cast at use.
   const db = supabase as {
     from: (t: string) => {

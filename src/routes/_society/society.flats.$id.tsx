@@ -91,9 +91,9 @@ function SectionErrorRow({ message }: { message: string }) {
 
 function renderSectionState<T>(
   state: SectionState<T>,
-  render: (data: T) => JSX.Element,
+  render: (data: T) => React.ReactElement,
   opts: { emptyMessage?: string; unsupportedMessage?: string } = {},
-): JSX.Element | null {
+): React.ReactElement | null {
   switch (state.status) {
     case "available":
       return render(state.data);

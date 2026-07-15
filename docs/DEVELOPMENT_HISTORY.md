@@ -268,3 +268,13 @@ already existed.
 - SociyoHub branding, co-founder pages, Razorpay/Cash/Bank Transfer, Firebase→Supabase auth,
   No-Dues cryptography — all unchanged.
 - No real society data written; Basic denied at server without any provider call.
+
+## Turn 17 — Sub-turn D (final closure)
+
+- Introduced strict `AIAllowedRoute` union + `isAIAllowedRoute` runtime guard in `src/lib/flat360-types.ts`.
+- Removed both remaining `<Link to={... as never}>` casts (`AISummarySlot.tsx`, `society.flats.$id.tsx`); typed `<Link>` now always resolves against a real route.
+- Raised action-button min touch target from 36 → 44 px in `AISummarySlot` and the flat route.
+- Exported `reasonCopy` from `AISummarySlot` for direct unit coverage.
+- Added `tests/unit/flat360-ui.test.ts` — 7 UI-logic tests (allow-list guard + reason copy safety). Unit total: **156 / 156** passing.
+- Documented Sub-turn D exit gate, remaining `as any` scope (service-role-only cache upsert, gated by types regen), and honestly-skipped items (Playwright screenshots, provider runtime smoke, full RTL rendering) in `docs/RELEASE_READINESS.md`.
+- No changes to Razorpay, payments, founders, branding, sitemap, robots, RLS, or No-Dues crypto.

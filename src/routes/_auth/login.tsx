@@ -95,7 +95,7 @@ function LoginPage() {
           email: email.trim(),
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/`,
+            emailRedirectTo: emailRedirect,
             data: { full_name: fullName.trim() || null },
           },
         });
@@ -120,7 +120,7 @@ function LoginPage() {
     try {
       const r = await signInWithGoogleFirebase();
       if (!r.ok) throw new Error(r.error ?? "Google sign-in failed");
-      navigate({ to: "/" });
+      goNext(next, () => navigate({ to: "/" }));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Google sign-in failed");
     } finally {

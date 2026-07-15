@@ -249,3 +249,60 @@ describe("data minimization", () => {
     expect(projected[0]).not.toHaveProperty("reference_number");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Turn 18B.1A — Strict amount parsing
+// ---------------------------------------------------------------------------
+
+describe("parseFinancialAmount (Turn 18B.1A)", () => {
+  it("accepts a valid positive number", () => {
+    expect(parseFinancialAmount(123.45)).toBe(123.45);
+  });
+  it("accepts a numeric string", () => {
+    expect(parseFinancialAmount("500")).toBe(500);
+  });
+  it("accepts aggregate zero when allowZero", () => {
+    expect(parseFinancialAmount(0, { allowZero: true })).toBe(0);
+  });
+  it("rejects zero for individual amounts by default", () => {
+    expect(parseFinancialAmount(0)).toBeNull();
+  });
+  it("rejects NaN, Infinity, negatives, non-strings", () => {
+    expect(parseFinancialAmount(NaN)).toBeNull();
+    expect(parseFinancialAmount(Infinity)).toBeNull();
+    expect(parseFinancialAmount(-1)).toBeNull();
+    expect(parseFinancialAmount(-0.01, { allowZero: true })).toBeNull();
+    expect(parseFinancialAmount("abc")).toBeNull();
+    expect(parseFinancialAmount(null)).toBeNull();
+    expect(parseFinancialAmount(undefined)).toBeNull();
+    expect(parseFinancialAmount({} as unknown)).toBeNull();
+    expect(parseFinancialAmount("")).toBeNull();
+  });
+  it("rejects absurdly large values", () => {
+    expect(parseFinancialAmount(1e13)).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Turn 18B.1A — Route files must not use handwritten `any` on Income code
+// ---------------------------------------------------------------------------
+
+describe("Income UI/service files: no handwritten `any` (Turn 18B.1A)", () => {
+  const files = [
+    "src/routes/_society/society.income.tsx",
+    "src/routes/_society/society.income.$id.tsx",
+  ];
+  for (const rel of files) {
+    it(`${rel} has no ": any" / "as any" / "Record<string, any>"`, () => {
+      const src = fs.readFileSync(path.resolve(__dirname, "../..", rel), "utf8");
+      // Strip line/block comments so allowed docs are not scanned.
+      const stripped = src
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .replace(/\/\/[^\n]*/g, "");
+      expect(stripped).not.toMatch(/:\s*any\b/);
+      expect(stripped).not.toMatch(/\bas\s+any\b/);
+      expect(stripped).not.toMatch(/Record<string,\s*any>/);
+      expect(stripped).not.toMatch(/\[\]\s+as\s+any\[\]/);
+    });
+  }
+});

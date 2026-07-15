@@ -40,8 +40,20 @@ describe("sanitizeNextPath (OAuth `next` guard)", () => {
 });
 
 describe("MCP notice body sanitization", () => {
-  it("strips HTML tags", () => {
-    expect(sanitizeNoticeBody("<b>hi</b> <script>alert(1)</script>there")).toBe("hi alert(1) there");
+  it("strips HTML tags and removes script contents", () => {
+    // Script contents must NOT be preserved — no `alert(1)` in output.
+    const out = sanitizeNoticeBody("<b>hi</b> <script>alert(1)</script>there");
+    expect(out).not.toMatch(/alert/);
+    expect(out).toBe("hi there");
+  });
+  it("removes <style> contents too", () => {
+    const out = sanitizeNoticeBody("hi <style>body{color:red}</style> there");
+    expect(out).not.toMatch(/color:red|body\{/);
+    expect(out).toBe("hi there");
+  });
+  it("handles case-insensitive and self-closing script/style tags", () => {
+    expect(sanitizeNoticeBody("<SCRIPT>x=1</SCRIPT>ok")).toBe("ok");
+    expect(sanitizeNoticeBody("<Style>a{}</Style>ok")).toBe("ok");
   });
   it("caps length", () => {
     const long = "a".repeat(2000);

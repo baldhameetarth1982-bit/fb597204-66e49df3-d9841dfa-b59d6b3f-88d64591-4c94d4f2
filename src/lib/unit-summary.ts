@@ -107,7 +107,15 @@ export function buildUnitSummary(input: Flat360SummaryInput): UnitSummary {
 
   // --- Financial facts + actions ---
   const f = input.financial;
-  if (f.total_outstanding > 0) {
+  const financialStatus: FinancialAvailabilityStatus = f.status ?? "available";
+  if (financialStatus !== "available") {
+    // Never claim "No outstanding dues" when data was unavailable.
+    warnings.push(
+      financialStatus === "error"
+        ? "Financial data could not be loaded."
+        : "Financial data is not available for this unit.",
+    );
+  } else if (f.total_outstanding > 0) {
     facts.push(`Outstanding balance: ${formatINR(f.total_outstanding)}.`);
     if (f.overdue_count > 0) {
       warnings.push(`${f.overdue_count} overdue bill${f.overdue_count === 1 ? "" : "s"}.`);
@@ -120,14 +128,14 @@ export function buildUnitSummary(input: Flat360SummaryInput): UnitSummary {
     facts.push("No outstanding dues.");
   }
 
-  if (f.pending_verification_count > 0) {
+  if (financialStatus === "available" && f.pending_verification_count > 0) {
     warnings.push(
       `${f.pending_verification_count} payment${f.pending_verification_count === 1 ? "" : "s"} pending verification.`,
     );
     actions.push({ type: "verify_payment", label: "Verify payments", route: "/society/accounts" });
   }
 
-  if (f.inconsistency_count > 0) {
+  if (financialStatus === "available" && f.inconsistency_count > 0) {
     warnings.push(`${f.inconsistency_count} financial inconsistency flagged for review.`);
   }
 

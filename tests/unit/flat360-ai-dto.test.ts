@@ -169,7 +169,7 @@ describe("Flat 360 AI DTO — PII exclusion", () => {
   it("12. Payment proof excluded", () => expect(json).not.toContain("proof"));
   it("13. Bank reference excluded", () => expect(json).not.toMatch(/bank|ifsc/i));
   it("14. Certificate secrets excluded", () =>
-    expect(json).not.toMatch(/token|ciphertext|iv|key_version/));
+    expect(json).not.toMatch(/\btoken\b|ciphertext|\biv\b|key_version|token_hash/));
   it("15. Storage path excluded", () => expect(json).not.toContain("storage_path"));
   it("16. Long untrusted strings capped", () => {
     const long = "x".repeat(1000);

@@ -427,17 +427,31 @@ describe("IncomeTransitionResultSchema (Turn 18B.2A)", () => {
       }).success,
     ).toBe(false);
   });
-  it("rejects extra top-level keys leaking metadata is safe (parsed via discriminatedUnion)", () => {
-    // zod .object() strips unknown keys by default; ensure it does not include them.
+  it("rejects extra top-level keys via .strict() (Turn 18B.2B)", () => {
     const parsed = IncomeTransitionResultSchema.safeParse({
       status: "not_found",
       society_id: "leak",
       amount: 999,
     });
-    expect(parsed.success).toBe(true);
-    if (parsed.success) {
-      expect(parsed.data).toEqual({ status: "not_found" });
-    }
+    expect(parsed.success).toBe(false);
+  });
+  it("rejects success payloads whose changedAt is not an ISO datetime (Turn 18B.2B)", () => {
+    expect(
+      IncomeTransitionResultSchema.safeParse({
+        status: "success",
+        recordId: UUID,
+        verificationStatus: "verified",
+        changedAt: "not-a-datetime",
+      }).success,
+    ).toBe(false);
+    expect(
+      IncomeTransitionResultSchema.safeParse({
+        status: "success",
+        recordId: UUID,
+        verificationStatus: "verified",
+        changedAt: "2026-07-15T12:00:00+05:30",
+      }).success,
+    ).toBe(true);
   });
 });
 
@@ -529,5 +543,136 @@ describe("Migration hardening (Turn 18B.2A)", () => {
     );
     expect(body).toBeTruthy();
     expect(body![0]).not.toMatch(/v_new_recon/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Turn 18B.2B — canonical plan-parity matrix + helper-privacy migration
+// ---------------------------------------------------------------------------
+
+import { normalizePlan } from "@/lib/plan-features";
+
+describe("normalizePlan canonical matrix (Turn 18B.2B)", () => {
+  const future = new Date(Date.now() + 7 * 86400_000).toISOString();
+  const past = new Date(Date.now() - 86400_000).toISOString();
+
+  const cases: Array<{ raw: unknown; status: unknown; end?: string | null; expected: "basic" | "pro" | "premium"; label: string }> = [
+    { raw: "basic", status: "active", expected: "basic", label: "Basic active" },
+    { raw: "pro", status: "active", expected: "pro", label: "Pro active" },
+    { raw: "premium", status: "active", expected: "premium", label: "Premium active" },
+    { raw: "standard", status: "active", expected: "pro", label: "Standard alias -> pro" },
+    { raw: "growth", status: "active", expected: "pro", label: "Growth alias -> pro" },
+    { raw: "starter", status: "active", expected: "basic", label: "Starter alias -> basic" },
+    { raw: "business", status: "active", expected: "premium", label: "Business alias -> premium" },
+    { raw: "enterprise", status: "active", expected: "premium", label: "Enterprise alias -> premium" },
+    { raw: "pro", status: "trial", expected: "premium", label: "Trial status inherits premium" },
+    { raw: "pro", status: "trialing", expected: "premium", label: "Trialing status inherits premium" },
+    { raw: "pro", status: "trial", end: future, expected: "premium", label: "Active trial (future end)" },
+    { raw: "pro", status: "trial", end: past, expected: "basic", label: "Expired trial denied" },
+    { raw: "pro", status: "trialing", end: past, expected: "basic", label: "Expired trialing denied" },
+    { raw: "trial", status: "active", expected: "basic", label: "plan_id=trial alone denied" },
+    { raw: "trial", status: null, expected: "basic", label: "plan_id=trial with missing status denied" },
+    { raw: "pro", status: "cancelled", expected: "basic", label: "cancelled denied" },
+    { raw: "pro", status: "canceled", expected: "basic", label: "canceled (US) denied" },
+    { raw: "pro", status: "expired", expected: "basic", label: "expired denied" },
+    { raw: "pro", status: "past_due", expected: "basic", label: "past_due denied" },
+    { raw: "pro", status: "inactive", expected: "basic", label: "inactive denied" },
+    { raw: null, status: null, expected: "basic", label: "missing plan denied" },
+    { raw: "", status: "", expected: "basic", label: "empty strings denied" },
+    { raw: "gold-super-plan", status: "active", expected: "basic", label: "unknown plan denied" },
+    { raw: "pro", status: "  ACTIVE  ", expected: "pro", label: "whitespace/case normalized" },
+    { raw: "  PREMIUM  ", status: "active", expected: "premium", label: "raw whitespace/case normalized" },
+    { raw: "pro", status: "who-knows", expected: "pro", label: "unknown status falls to plan_id" },
+  ];
+
+  for (const c of cases) {
+    it(c.label, () => {
+      expect(
+        normalizePlan(c.raw as string | null, c.status as string | null, c.end),
+      ).toBe(c.expected);
+    });
+  }
+
+  it("Premium inherits Pro entitlements", () => {
+    expect(isNonMemberIncomeAllowed("premium")).toBe(true);
+    expect(isNonMemberIncomeAllowed("pro")).toBe(true);
+    expect(isNonMemberIncomeAllowed("basic")).toBe(false);
+  });
+});
+
+describe("Turn 18B.2B migration — helper privacy + parity", () => {
+  const migDir = path.resolve(__dirname, "../..", "supabase/migrations");
+  const files = fs.readdirSync(migDir).filter((f) => f.endsWith(".sql")).sort();
+  const b2b = files
+    .map((f) => ({ f, sql: fs.readFileSync(path.join(migDir, f), "utf8") }))
+    .filter((x) => /is_non_member_income_enabled_internal/.test(x.sql))
+    .pop()!;
+
+  it("has an additive Turn 18B.2B migration touching the helper", () => {
+    expect(b2b).toBeTruthy();
+  });
+
+  it("revokes helper EXECUTE from PUBLIC, anon and authenticated", () => {
+    expect(b2b.sql).toMatch(/REVOKE ALL ON FUNCTION public\.is_non_member_income_enabled_internal\(uuid\) FROM PUBLIC/);
+    expect(b2b.sql).toMatch(/REVOKE ALL ON FUNCTION public\.is_non_member_income_enabled_internal\(uuid\) FROM anon/);
+    expect(b2b.sql).toMatch(/REVOKE ALL ON FUNCTION public\.is_non_member_income_enabled_internal\(uuid\) FROM authenticated/);
+  });
+
+  it("does not re-grant helper EXECUTE to any caller-facing role", () => {
+    expect(b2b.sql).not.toMatch(/GRANT EXECUTE ON FUNCTION public\.is_non_member_income_enabled_internal\(uuid\) TO (authenticated|anon|PUBLIC)/);
+  });
+
+  it("helper mirrors normalizePlan aliases exactly", () => {
+    const body = b2b.sql.match(/CREATE OR REPLACE FUNCTION public\.is_non_member_income_enabled_internal[\s\S]*?\$\$;/)![0];
+    expect(body).toMatch(/'pro','standard','growth','premium','business','enterprise'/);
+    expect(body).toMatch(/'expired','cancelled','canceled','past_due','inactive'/);
+    expect(body).toMatch(/'trial','trialing'/);
+  });
+
+  it("helper requires non-expired trial_ends_at for trial/trialing", () => {
+    const body = b2b.sql.match(/CREATE OR REPLACE FUNCTION public\.is_non_member_income_enabled_internal[\s\S]*?\$\$;/)![0];
+    expect(body).toMatch(/trial_ends_at/);
+    expect(body).toMatch(/v_trial_ends IS NULL OR v_trial_ends > now\(\)/);
+  });
+
+  it("helper does not grant Premium for plan_id='trial' independently", () => {
+    const body = b2b.sql.match(/CREATE OR REPLACE FUNCTION public\.is_non_member_income_enabled_internal[\s\S]*?\$\$;/)![0];
+    // The bare `IF v_plan = 'trial' THEN RETURN true` branch from 18B.2A must be gone.
+    expect(body).not.toMatch(/v_plan\s*=\s*'trial'\s*THEN\s*RETURN\s+true/i);
+  });
+});
+
+describe("Turn 18B.2B — helper is not reachable from client code or MCP", () => {
+  const root = path.resolve(__dirname, "../..");
+  function scanDir(dir: string): string[] {
+    const out: string[] = [];
+    for (const name of fs.readdirSync(dir)) {
+      const p = path.join(dir, name);
+      const stat = fs.statSync(p);
+      if (stat.isDirectory()) out.push(...scanDir(p));
+      else if (/\.(ts|tsx)$/.test(name)) out.push(p);
+    }
+    return out;
+  }
+  const clientFiles = [
+    ...scanDir(path.join(root, "src/routes")),
+    ...scanDir(path.join(root, "src/components")),
+    ...scanDir(path.join(root, "src/hooks")),
+    ...scanDir(path.join(root, "src/lib/mcp")),
+  ];
+
+  it("no client, hook, component, or MCP tool references the helper", () => {
+    const offenders = clientFiles.filter((f) =>
+      /is_non_member_income_enabled_internal/.test(fs.readFileSync(f, "utf8")),
+    );
+    expect(offenders).toEqual([]);
+  });
+
+  it("MCP manifest exposes no write / entitlement-probe tool", () => {
+    const manifest = JSON.parse(fs.readFileSync(path.join(root, ".lovable/mcp/manifest.json"), "utf8"));
+    const names: string[] = (manifest.tools ?? []).map((t: { name: string }) => t.name);
+    for (const n of names) {
+      expect(n).not.toMatch(/transition|is_non_member_income|entitle|verify|reject|reverse/i);
+    }
   });
 });

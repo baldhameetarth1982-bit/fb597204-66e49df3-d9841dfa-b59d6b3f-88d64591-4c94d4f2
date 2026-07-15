@@ -51,14 +51,16 @@ async function assertSocietyAdmin(ctx: Ctx, societyId: string): Promise<void> {
 async function assertProPlan(ctx: Ctx, societyId: string): Promise<void> {
   const { data, error } = await ctx.supabase
     .from("societies")
-    .select("plan_id,plan_status")
+    .select("plan_id,plan_status,trial_ends_at")
     .eq("id", societyId)
     .maybeSingle();
   if (error || !data) throw new ForbiddenSocietyError();
-  const plan = normalizePlan(
-    (data as { plan_id: string | null }).plan_id,
-    (data as { plan_status: string | null }).plan_status,
-  );
+  const row = data as {
+    plan_id: string | null;
+    plan_status: string | null;
+    trial_ends_at: string | null;
+  };
+  const plan = normalizePlan(row.plan_id, row.plan_status, row.trial_ends_at);
   if (!isNonMemberIncomeAllowed(plan)) throw new ForbiddenPlanError(plan);
 }
 

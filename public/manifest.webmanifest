@@ -1,0 +1,12 @@
+{
+  "name": "SociyoHub",
+  "short_name": "SociyoHub",
+  "description": "Society management, simplified.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F6F8F7",
+  "theme_color": "#00A896",
+  "icons": [
+    { "src": "/favicon.ico", "sizes": "any", "type": "image/x-icon" }
+  ]
+}

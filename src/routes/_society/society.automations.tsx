@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_society/society/automations")({
-  head: () => ({ meta: [{ title: "Automations — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Automations — SociyoHub" }] }),
   component: AutomationsPage,
 });
 

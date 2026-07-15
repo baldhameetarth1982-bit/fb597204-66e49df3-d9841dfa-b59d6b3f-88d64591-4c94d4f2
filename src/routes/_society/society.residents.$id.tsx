@@ -21,7 +21,7 @@ import {
 } from "@/lib/residents.functions";
 
 export const Route = createFileRoute("/_society/society/residents/$id")({
-  head: () => ({ meta: [{ title: "Resident — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Resident — SociyoHub" }] }),
   component: ResidentDetailPage,
 });
 

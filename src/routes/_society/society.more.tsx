@@ -12,7 +12,7 @@ import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { FEATURE_MIN_PLAN, PLAN_LABELS, type FeatureKey } from "@/lib/plan-features";
 
 export const Route = createFileRoute("/_society/society/more")({
-  head: () => ({ meta: [{ title: "More — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "More — SociyoHub" }] }),
   component: MoreDirectory,
 });
 

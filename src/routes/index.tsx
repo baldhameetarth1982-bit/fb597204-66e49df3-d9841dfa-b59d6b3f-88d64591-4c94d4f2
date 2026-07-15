@@ -6,11 +6,11 @@ import { ROLE_HOME, ROLES } from "@/config/roles";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "SocioHub — Society management, simplified" },
+      { title: "SociyoHub — Society management, simplified" },
       {
         name: "description",
         content:
-          "SocioHub helps housing societies collect maintenance, share notices, and manage residents — all in one clean dashboard.",
+          "SociyoHub helps housing societies collect maintenance, share notices, and manage residents — all in one clean dashboard.",
       },
     ],
   }),

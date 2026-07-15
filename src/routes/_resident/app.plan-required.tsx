@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { openRazorpayCheckout } from "@/lib/razorpay";
 
 export const Route = createFileRoute("/_resident/app/plan-required")({
-  head: () => ({ meta: [{ title: "Unlock SocioHub — Subscription" }] }),
+  head: () => ({ meta: [{ title: "Unlock SociyoHub — Subscription" }] }),
   component: PlanRequiredResident,
 });
 
@@ -99,7 +99,7 @@ function PlanRequiredResident() {
         <Badge className="bg-primary/15 text-primary border-primary/30 rounded-full">
           <Sparkles className="h-3 w-3 mr-1" /> Renew to keep your perks
         </Badge>
-        <h1 className="text-3xl font-bold text-foreground">Unlock SocioHub's Full Power</h1>
+        <h1 className="text-3xl font-bold text-foreground">Unlock SociyoHub's Full Power</h1>
         <p className="text-muted-foreground">
           Your society's plan is paused. Ask your <b>Society Admin</b> to renew so everyone stays connected — or unlock
           the ad-free personal experience just for you.
@@ -125,7 +125,7 @@ function PlanRequiredResident() {
         <Card className="rounded-2xl bg-card border p-5 text-left space-y-2">
           <p className="text-sm font-medium text-foreground">Message your admin</p>
           <p className="text-xs text-muted-foreground">
-            "Our SocioHub plan has ended. Please pick a plan from the dashboard so we can use visitors, dues, polls and notices again."
+            "Our SociyoHub plan has ended. Please pick a plan from the dashboard so we can use visitors, dues, polls and notices again."
           </p>
         </Card>
 

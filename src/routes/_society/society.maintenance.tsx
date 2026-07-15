@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 import { societyMaintenanceSummary } from "@/lib/residents.functions";
 
 export const Route = createFileRoute("/_society/society/maintenance")({
-  head: () => ({ meta: [{ title: "Maintenance — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Maintenance — SociyoHub" }] }),
   component: MaintenancePage,
 });
 

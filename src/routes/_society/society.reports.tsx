@@ -24,7 +24,7 @@ import { useSocietyId } from "@/hooks/useSocietyId";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_society/society/reports")({
-  head: () => ({ meta: [{ title: "Reports — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Reports — SociyoHub" }] }),
   component: () => (<FeatureGate feature="advanced_reports"><ReportsPage /></FeatureGate>),
 });
 
@@ -122,7 +122,7 @@ function ReportsPage() {
     ]);
     const doc = new jsPDF({ orientation: "landscape" });
     doc.setFontSize(16);
-    doc.text("SocioHub — Financial Report", 14, 14);
+    doc.text("SociyoHub — Financial Report", 14, 14);
     doc.setFontSize(10);
     doc.text(`Period: ${from} to ${to}`, 14, 22);
     doc.text(`Income: ${INR.format(summary.income)}   Expense: ${INR.format(summary.expense)}   Net: ${INR.format(summary.net)}`, 14, 28);

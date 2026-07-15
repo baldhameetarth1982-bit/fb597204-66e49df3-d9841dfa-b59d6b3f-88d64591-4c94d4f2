@@ -1,4 +1,4 @@
-export { SocioHubLoader } from "./SocioHubLoader";
+export { SociyoHubLoader } from "./SociyoHubLoader";
 export { PageTransition } from "./PageTransition";
 export { EmptyState } from "./EmptyState";
 export { ErrorState } from "./ErrorState";

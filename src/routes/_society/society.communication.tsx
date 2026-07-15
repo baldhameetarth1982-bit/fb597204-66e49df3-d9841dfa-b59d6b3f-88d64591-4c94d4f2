@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_society/society/communication")({
-  head: () => ({ meta: [{ title: "Communication Center — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Communication Center — SociyoHub" }] }),
   component: CommunicationCenter,
 });
 

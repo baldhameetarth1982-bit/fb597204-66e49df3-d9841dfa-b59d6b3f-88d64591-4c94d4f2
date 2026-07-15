@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { planSocietyFromText, applySocietyPlan, duplicateBlock } from "@/lib/blocks-ai.functions";
 
 export const Route = createFileRoute("/_society/society/blocks")({
-  head: () => ({ meta: [{ title: "Blocks — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Blocks — SociyoHub" }] }),
   component: BlocksPage,
 });
 

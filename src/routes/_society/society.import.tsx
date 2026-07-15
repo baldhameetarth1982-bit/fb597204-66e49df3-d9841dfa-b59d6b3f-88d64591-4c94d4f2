@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import * as XLSX from "xlsx";
 
 export const Route = createFileRoute("/_society/society/import")({
-  head: () => ({ meta: [{ title: "Bulk Import — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Bulk Import — SociyoHub" }] }),
   component: () => (<FeatureGate feature="resident_import"><ImportPage /></FeatureGate>),
 });
 

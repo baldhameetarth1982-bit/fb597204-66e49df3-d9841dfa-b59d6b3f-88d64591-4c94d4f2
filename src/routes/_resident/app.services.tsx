@@ -14,7 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
 
 export const Route = createFileRoute("/_resident/app/services")({
-  head: () => ({ meta: [{ title: "Services — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Services — SociyoHub" }] }),
   component: ServicesScreen,
 });
 

@@ -1,5 +1,5 @@
 /**
- * Deprecated. SocioHub no longer charges a platform fee.
+ * Deprecated. SociyoHub no longer charges a platform fee.
  * Kept as a no-op stub to preserve older imports without breaking builds.
  * New code must not import this component.
  */

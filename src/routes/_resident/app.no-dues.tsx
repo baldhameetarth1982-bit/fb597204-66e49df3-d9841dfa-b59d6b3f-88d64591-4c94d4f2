@@ -21,7 +21,7 @@ import { statusLabel, formatCurrency } from "@/lib/no-dues-labels";
 export const Route = createFileRoute("/_resident/app/no-dues")({
   head: () => ({
     meta: [
-      { title: "No-Dues Certificate — SocioHub" },
+      { title: "No-Dues Certificate — SociyoHub" },
       { name: "description", content: "Request and download your no-dues certificate." },
     ],
   }),

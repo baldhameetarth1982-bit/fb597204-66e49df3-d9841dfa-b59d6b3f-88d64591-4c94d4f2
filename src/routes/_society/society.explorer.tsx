@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_society/society/explorer")({
-  head: () => ({ meta: [{ title: "Society Explorer — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Society Explorer — SociyoHub" }] }),
   validateSearch: (s: Record<string, unknown>) => ({
     block: typeof s.block === "string" ? s.block : undefined,
     flat: typeof s.flat === "string" ? s.flat : undefined,

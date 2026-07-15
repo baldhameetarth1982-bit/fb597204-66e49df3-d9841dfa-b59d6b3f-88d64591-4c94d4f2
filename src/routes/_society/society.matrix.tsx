@@ -19,7 +19,7 @@ import autoTable from "jspdf-autotable";
 import { societyMaintenanceSummary } from "@/lib/residents.functions";
 
 export const Route = createFileRoute("/_society/society/matrix")({
-  head: () => ({ meta: [{ title: "Maintenance Matrix — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Maintenance Matrix — SociyoHub" }] }),
   component: MatrixPage,
 });
 

@@ -1,5 +1,5 @@
 /**
- * SocioHub - Role-Based Access Control definitions.
+ * SociyoHub - Role-Based Access Control definitions.
  * Routes and UI are gated by these roles via the auth context.
  */
 export const ROLES = {

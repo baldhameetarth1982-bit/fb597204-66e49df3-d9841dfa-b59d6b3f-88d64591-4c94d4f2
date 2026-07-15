@@ -12,7 +12,7 @@ import slide5 from "@/assets/welcome-5.jpg";
 export const Route = createFileRoute("/welcome")({
   head: () => ({
     meta: [
-      { title: "Welcome — SocioHub" },
+      { title: "Welcome — SociyoHub" },
       { name: "description", content: "Society management, simplified — payments, visitors, community in one app." },
     ],
   }),
@@ -20,7 +20,7 @@ export const Route = createFileRoute("/welcome")({
 });
 
 const slides = [
-  { img: slide1, title: "Welcome to a new\nliving experience", body: "SocioHub brings your entire society together — one calm, simple home for everything." },
+  { img: slide1, title: "Welcome to a new\nliving experience", body: "SociyoHub brings your entire society together — one calm, simple home for everything." },
   { img: slide2, title: "Knock, knock", body: "Always know who's at the gate. Approve visitors and deliveries in a single tap." },
   { img: slide3, title: "Know a guy?", body: "Find trusted electricians, plumbers and helpers — all rated by your community." },
   { img: slide4, title: "Pay like a pro", body: "Stay on top of maintenance, rent and society dues with secure UPI & card payments." },

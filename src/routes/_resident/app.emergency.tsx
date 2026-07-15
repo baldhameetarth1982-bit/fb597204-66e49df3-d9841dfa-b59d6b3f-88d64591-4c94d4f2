@@ -13,7 +13,7 @@ import {
 import { isOnline } from "@/lib/offline-cache";
 
 export const Route = createFileRoute("/_resident/app/emergency")({
-  head: () => ({ meta: [{ title: "Emergency Contacts — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Emergency Contacts — SociyoHub" }] }),
   component: EmergencyPage,
 });
 

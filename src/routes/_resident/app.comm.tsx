@@ -15,7 +15,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 export const Route = createFileRoute("/_resident/app/comm")({
   head: () => ({
     meta: [
-      { title: "Society — SocioHub" },
+      { title: "Society — SociyoHub" },
       { name: "description", content: "Notices, complaints, documents & contacts in one place." },
     ],
   }),

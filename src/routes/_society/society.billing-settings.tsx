@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import { getBillingSchedule, saveBillingSchedule, runBillingNow } from "@/lib/billing.functions";
 
 export const Route = createFileRoute("/_society/society/billing-settings")({
-  head: () => ({ meta: [{ title: "Billing Settings — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Billing Settings — SociyoHub" }] }),
   component: BillingSettingsPage,
 });
 
@@ -124,7 +124,7 @@ function BillingSettingsPage() {
               Want online collection (UPI / cards / net-banking) for your society?
               {" "}
               <a href="mailto:support@sociohub.live" className="text-primary font-medium underline">
-                Contact SocioHub Support
+                Contact SociyoHub Support
               </a>
               {" "}to enable online payments.
             </p>

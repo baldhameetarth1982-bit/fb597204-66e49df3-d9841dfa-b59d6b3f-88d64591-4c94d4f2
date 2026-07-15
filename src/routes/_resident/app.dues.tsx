@@ -13,7 +13,7 @@ import { openRazorpayForOrder } from "@/lib/razorpay";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_resident/app/dues")({
-  head: () => ({ meta: [{ title: "Dues — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Dues — SociyoHub" }] }),
   component: DuesPage,
 });
 
@@ -52,7 +52,7 @@ function DuesPage() {
         orderId: order.orderId,
         keyId: order.keyId,
         amount: order.amount,
-        name: order.societyName ?? "SocioHub",
+        name: order.societyName ?? "SociyoHub",
         description: order.label ?? "Maintenance bill",
         prefill: { email: profile?.email ?? undefined, contact: profile?.phone ?? undefined, name: profile?.full_name ?? undefined },
         onSuccess: () => { toast.success("Payment received — updating bill…"); setTimeout(() => window.location.reload(), 1500); },

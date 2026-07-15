@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { SocietyInviteCodeCard } from "@/components/society/SocietyInviteCodeCard";
 
 export const Route = createFileRoute("/_society/society/business-profile")({
-  head: () => ({ meta: [{ title: "Business Profile — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Business Profile — SociyoHub" }] }),
   component: BusinessProfilePage,
 });
 

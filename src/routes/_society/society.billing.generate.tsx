@@ -18,7 +18,7 @@ import { StatusChip } from "@/components/system/StatusChip";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_society/society/billing/generate")({
-  head: () => ({ meta: [{ title: "Generate Bills — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Generate Bills — SociyoHub" }] }),
   component: GenerateBillsPage,
 });
 

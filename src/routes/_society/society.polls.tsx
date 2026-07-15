@@ -18,7 +18,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useSocietyId } from "@/hooks/useSocietyId";
 
 export const Route = createFileRoute("/_society/society/polls")({
-  head: () => ({ meta: [{ title: "Polls — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Polls — SociyoHub" }] }),
   component: () => (<FeatureGate feature="polls"><AdminPolls /></FeatureGate>),
 });
 

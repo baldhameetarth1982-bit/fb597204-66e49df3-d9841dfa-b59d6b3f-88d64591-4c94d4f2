@@ -7,7 +7,7 @@ import { ROLE_HOME } from "@/config/roles";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/onboarding/")({
-  head: () => ({ meta: [{ title: "Get started — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Get started — SociyoHub" }] }),
   validateSearch: (s: Record<string, unknown>) => ({ ref: typeof s.ref === "string" ? s.ref : undefined }),
   component: OnboardingChoice,
 });

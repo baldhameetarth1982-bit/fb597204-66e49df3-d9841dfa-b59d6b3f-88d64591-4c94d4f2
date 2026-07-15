@@ -15,7 +15,7 @@ import { shareBillAsImage } from "@/components/billing/BillCardImage";
 import { formatCurrency, formatDate } from "@/utils/format";
 
 export const Route = createFileRoute("/_society/society/bills/$id")({
-  head: () => ({ meta: [{ title: "Bill Detail — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Bill Detail — SociyoHub" }] }),
   component: BillDetailPage,
 });
 

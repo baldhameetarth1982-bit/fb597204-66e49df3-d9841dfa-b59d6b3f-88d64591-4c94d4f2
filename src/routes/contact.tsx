@@ -6,10 +6,10 @@ import { LegalFooter } from "@/components/shared/LegalFooter";
 export const Route = createFileRoute("/contact")({
   head: () => ({
     meta: [
-      { title: "Contact & Grievance — SocioHub" },
-      { name: "description", content: "Contact the SocioHub Grievance Officer. Response within 48 business hours." },
-      { property: "og:title", content: "Contact & Grievance — SocioHub" },
-      { property: "og:description", content: "Grievance Officer contact for SocioHub SaaS platform." },
+      { title: "Contact & Grievance — SociyoHub" },
+      { name: "description", content: "Contact the SociyoHub Grievance Officer. Response within 48 business hours." },
+      { property: "og:title", content: "Contact & Grievance — SociyoHub" },
+      { property: "og:description", content: "Grievance Officer contact for SociyoHub SaaS platform." },
     ],
   }),
   component: ContactPage,
@@ -37,7 +37,7 @@ function ContactPage() {
           <CardContent className="p-6 space-y-5">
             <div>
               <p className="text-xs uppercase tracking-wider text-muted-foreground">Grievance Officer</p>
-              <p className="text-lg font-semibold mt-1">SocioHub Support Team</p>
+              <p className="text-lg font-semibold mt-1">SociyoHub Support Team</p>
             </div>
 
             <div className="grid gap-3 text-sm">

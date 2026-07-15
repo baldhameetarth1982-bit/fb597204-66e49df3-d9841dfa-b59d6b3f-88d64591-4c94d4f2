@@ -1,7 +1,7 @@
 import logoAsset from "@/assets/sociohub-logo-v2.png.asset.json";
 import { cn } from "@/lib/utils";
 
-/** Official SocioHub app icon. Use this everywhere a logo mark is needed. */
+/** Official SociyoHub app icon. Use this everywhere a logo mark is needed. */
 export function Logo({
   className,
   size = 36,
@@ -12,7 +12,7 @@ export function Logo({
   return (
     <img
       src={logoAsset.url}
-      alt="SocioHub"
+      alt="SociyoHub"
       width={size}
       height={size}
       style={{ width: size, height: size }}

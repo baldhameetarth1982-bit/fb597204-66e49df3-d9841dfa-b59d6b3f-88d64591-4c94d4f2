@@ -4,7 +4,7 @@ import logoAsset from "@/assets/sociohub-logo-v2.png.asset.json";
  * Premium branded loading indicator. Lightweight — no heavy filters or
  * backdrop-blur. Used for route pending states and initial data hydration.
  */
-export function SocioHubLoader({
+export function SociyoHubLoader({
   label = "Loading",
   fullscreen = false,
   size = 72,

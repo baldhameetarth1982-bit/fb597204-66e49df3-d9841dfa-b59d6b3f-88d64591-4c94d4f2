@@ -17,7 +17,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useSocietyId } from "@/hooks/useSocietyId";
 
 export const Route = createFileRoute("/_resident/app/vehicles")({
-  head: () => ({ meta: [{ title: "My Vehicles — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "My Vehicles — SociyoHub" }] }),
   component: VehiclesPage,
 });
 

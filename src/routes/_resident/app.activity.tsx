@@ -11,7 +11,7 @@ import { useAuth } from "@/context/AuthContext";
 import { formatDistanceToNow } from "date-fns";
 
 export const Route = createFileRoute("/_resident/app/activity")({
-  head: () => ({ meta: [{ title: "Activity — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Activity — SociyoHub" }] }),
   component: ActivityScreen,
 });
 

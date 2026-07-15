@@ -14,7 +14,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useSocietyId } from "@/hooks/useSocietyId";
 
 export const Route = createFileRoute("/_resident/app/visitors")({
-  head: () => ({ meta: [{ title: "My Visitors — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "My Visitors — SociyoHub" }] }),
   component: MyVisitors,
 });
 
@@ -98,7 +98,7 @@ function MyVisitors() {
 
   async function shareCode() {
     if (!issued) return;
-    const text = `SocioHub Gate Pass\nVisitor: ${issued.name}\nCode: ${issued.code}\nShow this code at the gate.`;
+    const text = `SociyoHub Gate Pass\nVisitor: ${issued.name}\nCode: ${issued.code}\nShow this code at the gate.`;
     if (navigator.share) { try { await navigator.share({ text }); } catch { /* noop */ } }
     else { copyCode(text); }
   }

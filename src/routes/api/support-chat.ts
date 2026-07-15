@@ -4,7 +4,7 @@ import { convertToModelMessages, streamText, stepCountIs, tool, type UIMessage }
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 
-const SYSTEM = `You are SocioHub Support, a crisp AI assistant for residents, society admins, and guards using the SocioHub housing society app.
+const SYSTEM = `You are SociyoHub Support, a crisp AI assistant for residents, society admins, and guards using the SociyoHub housing society app.
 
 You can help with maintenance bills, payments, invite codes, creating or joining societies, referral partner earnings, withdrawals, visitors, polls, notices, offline emergency contacts, and app navigation.
 
@@ -86,7 +86,7 @@ export const Route = createFileRoute("/api/support-chat")({
           stopWhen: stepCountIs(50),
           tools: {
             create_support_ticket: tool({
-              description: "Create a human support ticket when the SocioHub AI cannot solve the user's issue directly.",
+              description: "Create a human support ticket when the SociyoHub AI cannot solve the user's issue directly.",
               inputSchema: z.object({
                 subject: z.string().min(3).max(120),
                 description: z.string().min(10).max(1200),

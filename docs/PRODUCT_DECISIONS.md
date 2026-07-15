@@ -1,4 +1,4 @@
-# SocioHub — Product Decisions
+# SociyoHub — Product Decisions
 
 Chronological log of binding product decisions. Newest date wins on conflict.
 

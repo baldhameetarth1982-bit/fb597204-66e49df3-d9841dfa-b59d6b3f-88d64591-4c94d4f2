@@ -20,7 +20,7 @@ Upgrade `src/routes/_society/society.flats.$id.tsx` in place (no duplicate route
 - Leaderboard route already exists — wire it to the new ledger.
 
 ### Checkpoint J — Whole-app visual parity
-Iterate every route in the "Not touched in Stage 3A" section of `UI_REFERENCE_MAP.md`. Route-level visible changes required. Reference screenshots (user-provided) are source of truth; where absent, use SocioHub tokens + primitives.
+Iterate every route in the "Not touched in Stage 3A" section of `UI_REFERENCE_MAP.md`. Route-level visible changes required. Reference screenshots (user-provided) are source of truth; where absent, use SociyoHub tokens + primitives.
 
 ## Stage 3B — Non-Member Payments, AI Income Categorization, Reconciliation
 All Pro. Feature keys: `non_member_payments`, `ai_income_categorization`, `reconciliation`.

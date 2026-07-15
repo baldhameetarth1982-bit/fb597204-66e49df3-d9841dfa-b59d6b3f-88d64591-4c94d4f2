@@ -1,6 +1,6 @@
-# SocioHub — Master Context
+# SociyoHub — Master Context
 
-> **Read this file, and every file in `/docs/`, before planning or editing SocioHub.**
+> **Read this file, and every file in `/docs/`, before planning or editing SociyoHub.**
 > Do not remove, contradict, downgrade, or silently replace any approved decision below.
 > When two decisions conflict, follow the newest dated decision and report the conflict in your response.
 
@@ -10,7 +10,7 @@ Last stage: **Stage 3A** — Unified feature catalog, Feature Directory, Flat 36
 
 ## Product identity
 
-SocioHub is a mobile-first management platform for Indian residential societies (apartments, gated communities, row-house layouts). Roles: **Super Admin** (SocioHub staff), **Society Admin** (elected committee / secretary), **Resident** (owner or tenant), **Guard** (security).
+SociyoHub is a mobile-first management platform for Indian residential societies (apartments, gated communities, row-house layouts). Roles: **Super Admin** (SociyoHub staff), **Society Admin** (elected committee / secretary), **Resident** (owner or tenant), **Guard** (security).
 
 Design system tokens (locked): primary `#00A896`, accent `#06B6A4`, foreground `#0B2545`, background `#F6F8F7`, card `#FFFFFF`, border `#E3E8E6`, success `#10B981`, warning `#F59E0B`, destructive `#E11D48`, info `#2563EB`. Reuse `MobileHero`, `SectionCard`, `ListCard`, `StatPill(Row)`, existing `StatusChip`, `FeatureGate`, `UpgradePrompt`, `LockedFeatureCard`. Never revert to generic `PageHeader`/`PageShell` on user-facing screens the reference covers.
 
@@ -29,9 +29,9 @@ See `AUTH_ARCHITECTURE.md` for the full path.
 
 ## Payments (locked)
 
-- **Razorpay** is used **only** for SocioHub subscription checkout (Basic / Pro / Premium).
+- **Razorpay** is used **only** for SociyoHub subscription checkout (Basic / Pro / Premium).
 - **Maintenance** collection defaults to **Cash** and **Bank Transfer** with Society-Admin verification.
-- **Online maintenance gateways** are enabled per-society by SocioHub Support only.
+- **Online maintenance gateways** are enabled per-society by SociyoHub Support only.
 - **There is no platform fee.** No 1.5%, 1.7%, 98.5%-payable-to-society, or `FeeBreakdown` UI. Do not reintroduce.
 
 See `PAYMENT_ARCHITECTURE.md`.

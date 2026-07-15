@@ -33,7 +33,7 @@ import {
 export const Route = createFileRoute("/_society/society/no-dues/$id")({
   head: () => ({
     meta: [
-      { title: "No-Dues Request — SocioHub" },
+      { title: "No-Dues Request — SociyoHub" },
       { name: "description", content: "Review and issue no-dues certificates." },
     ],
   }),

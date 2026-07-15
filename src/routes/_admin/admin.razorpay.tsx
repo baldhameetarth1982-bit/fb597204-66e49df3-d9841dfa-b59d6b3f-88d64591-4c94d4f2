@@ -77,7 +77,7 @@ function RazorpayPage() {
       <MobileHero
         eyebrow="Super Admin"
         title="Payment gateway"
-        subtitle="Razorpay handles SocioHub plan payments. No platform fee is charged on maintenance."
+        subtitle="Razorpay handles SociyoHub plan payments. No platform fee is charged on maintenance."
         icon={CreditCard}
         variant="navy"
       />
@@ -101,7 +101,7 @@ function RazorpayPage() {
           >
             <p className="text-sm text-muted-foreground">
               {configured
-                ? "Users can purchase SocioHub plans. Society maintenance payments remain Cash + Bank Transfer by default; online maintenance gateway is enabled per-society by support."
+                ? "Users can purchase SociyoHub plans. Society maintenance payments remain Cash + Bank Transfer by default; online maintenance gateway is enabled per-society by support."
                 : "Until valid credentials are saved, the server rejects checkout attempts. Users cannot bypass this."}
             </p>
           </SectionCard>

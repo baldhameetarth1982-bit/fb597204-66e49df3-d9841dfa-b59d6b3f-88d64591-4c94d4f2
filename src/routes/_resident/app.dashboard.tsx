@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/_resident/app/dashboard")({
   head: () => ({
     meta: [
-      { title: "Home — SocioHub" },
+      { title: "Home — SociyoHub" },
       { name: "description", content: "Your maintenance dues and society updates." },
     ],
   }),

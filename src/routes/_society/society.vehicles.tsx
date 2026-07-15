@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_society/society/vehicles")({
-  head: () => ({ meta: [{ title: "Vehicles — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Vehicles — SociyoHub" }] }),
   component: () => (<FeatureGate feature="vehicles"><SocietyVehicles /></FeatureGate>),
 });
 

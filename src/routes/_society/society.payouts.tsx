@@ -15,7 +15,7 @@ import {
 } from "@/lib/payouts.functions";
 
 export const Route = createFileRoute("/_society/society/payouts")({
-  head: () => ({ meta: [{ title: "Payouts — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Payouts — SociyoHub" }] }),
   component: PayoutsPage,
 });
 
@@ -90,7 +90,7 @@ function PayoutsPage() {
 
   return (
     <PageShell>
-      <PageHeader title="Payouts" description="Attach your society's bank account to record maintenance payouts. Online maintenance collection is enabled by SocioHub support on request." />
+      <PageHeader title="Payouts" description="Attach your society's bank account to record maintenance payouts. Online maintenance collection is enabled by SociyoHub support on request." />
 
       <Card className="rounded-2xl mb-5">
         <CardContent className="p-5 flex items-center justify-between gap-3">

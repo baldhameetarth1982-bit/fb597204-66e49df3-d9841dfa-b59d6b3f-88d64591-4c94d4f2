@@ -41,7 +41,7 @@ export function AppSidebar() {
           <Logo size={36} />
           {!collapsed && (
             <span className="text-lg font-semibold tracking-tight text-foreground">
-              SocioHub
+              SociyoHub
             </span>
           )}
         </Link>

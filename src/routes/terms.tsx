@@ -6,10 +6,10 @@ import { LegalFooter } from "@/components/shared/LegalFooter";
 export const Route = createFileRoute("/terms")({
   head: () => ({
     meta: [
-      { title: "Terms & Conditions — SocioHub" },
-      { name: "description", content: "SocioHub Terms of Service governing use of the SaaS platform for housing societies." },
-      { property: "og:title", content: "Terms & Conditions — SocioHub" },
-      { property: "og:description", content: "Terms of Service for the SocioHub SaaS platform." },
+      { title: "Terms & Conditions — SociyoHub" },
+      { name: "description", content: "SociyoHub Terms of Service governing use of the SaaS platform for housing societies." },
+      { property: "og:title", content: "Terms & Conditions — SociyoHub" },
+      { property: "og:description", content: "Terms of Service for the SociyoHub SaaS platform." },
     ],
   }),
   component: TermsPage,
@@ -40,16 +40,16 @@ function TermsPage() {
               <p className="text-muted-foreground">
                 By creating an account, you agree to these Terms and to our{" "}
                 <Link to="/privacy" className="underline">Privacy Policy</Link> and{" "}
-                <Link to="/refund" className="underline">Refund Policy</Link>. If you do not agree, do not use SocioHub.
+                <Link to="/refund" className="underline">Refund Policy</Link>. If you do not agree, do not use SociyoHub.
               </p>
             </section>
 
             <section>
               <h2 className="text-lg font-semibold mb-2">2. The SaaS model</h2>
               <p className="text-muted-foreground">
-                SocioHub is a Software-as-a-Service platform that provides digital tools for housing-society
+                SociyoHub is a Software-as-a-Service platform that provides digital tools for housing-society
                 management — resident directory, notices, complaints, visitor logs, and maintenance-billing collection.
-                <strong> SocioHub is a platform provider, not the society administration itself.</strong> Each society's
+                <strong> SociyoHub is a platform provider, not the society administration itself.</strong> Each society's
                 admin is responsible for the accuracy of member data, dues, and community content posted under their
                 society.
               </p>
@@ -67,10 +67,10 @@ function TermsPage() {
             <section>
               <h2 className="text-lg font-semibold mb-2">4. Maintenance payments</h2>
               <p className="text-muted-foreground">
-                Maintenance dues collected via SocioHub are <strong>society dues</strong> owed by the resident to their
+                Maintenance dues collected via SociyoHub are <strong>society dues</strong> owed by the resident to their
                 housing society. By default, societies collect maintenance via <strong>Cash</strong> or{" "}
-                <strong>Bank Transfer</strong> and record receipts inside SocioHub. An online maintenance payment
-                gateway can be enabled per-society on request to SocioHub support. SocioHub does{" "}
+                <strong>Bank Transfer</strong> and record receipts inside SociyoHub. An online maintenance payment
+                gateway can be enabled per-society on request to SociyoHub support. SociyoHub does{" "}
                 <strong>not charge any platform fee, commission, or transaction fee</strong> on maintenance payments —
                 the full amount paid by the resident is credited to the society's verified bank account.
               </p>
@@ -105,10 +105,10 @@ function TermsPage() {
             <section>
               <h2 className="text-lg font-semibold mb-2">8. Limitation of liability</h2>
               <p className="text-muted-foreground">
-                SocioHub is provided on an "as-is" basis. To the maximum extent permitted by law, SocioHub is not
+                SociyoHub is provided on an "as-is" basis. To the maximum extent permitted by law, SociyoHub is not
                 liable for disputes between residents or societies, delays caused by banking partners or the payment
                 gateway, or any indirect, incidental, or consequential damages. Our aggregate liability is limited to
-                the fees paid to SocioHub for the affected transaction.
+                the fees paid to SociyoHub for the affected transaction.
               </p>
             </section>
 
@@ -131,7 +131,7 @@ function TermsPage() {
             <section>
               <h2 className="text-lg font-semibold mb-2">11. Contact</h2>
               <p className="text-muted-foreground">
-                Grievance Officer — SocioHub Support Team,{" "}
+                Grievance Officer — SociyoHub Support Team,{" "}
                 <a href="mailto:sociohub710@gmail.com" className="underline">sociohub710@gmail.com</a>,
                 Pethapur, Gandhinagar, Gujarat — 382610.
               </p>

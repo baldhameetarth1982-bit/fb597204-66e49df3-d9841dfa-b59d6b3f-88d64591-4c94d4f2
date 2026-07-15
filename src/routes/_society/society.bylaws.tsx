@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_society/society/bylaws")({
-  head: () => ({ meta: [{ title: "Society By-Laws — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Society By-Laws — SociyoHub" }] }),
   component: BylawsAdmin,
 });
 

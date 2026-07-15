@@ -136,7 +136,7 @@ function SocietiesPage() {
       <MobileHero
         eyebrow="Super Admin"
         title="Societies"
-        subtitle="Every society on SocioHub — grant, suspend, restore, reset invites."
+        subtitle="Every society on SociyoHub — grant, suspend, restore, reset invites."
         icon={Building2}
         variant="navy"
         stats={

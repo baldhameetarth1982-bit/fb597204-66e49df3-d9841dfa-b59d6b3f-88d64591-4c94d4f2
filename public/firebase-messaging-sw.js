@@ -15,7 +15,7 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-  const title = (payload.notification && payload.notification.title) || "SocioHub";
+  const title = (payload.notification && payload.notification.title) || "SociyoHub";
   const options = {
     body: (payload.notification && payload.notification.body) || "",
     icon: "/favicon.ico",

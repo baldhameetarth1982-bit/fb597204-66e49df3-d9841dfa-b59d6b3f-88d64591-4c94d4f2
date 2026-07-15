@@ -24,7 +24,7 @@ import { useSocietyId } from "@/hooks/useSocietyId";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_society/society/ledger")({
-  head: () => ({ meta: [{ title: "Ledger — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Ledger — SociyoHub" }] }),
   component: () => (<FeatureGate feature="ledger"><AdminLedger /></FeatureGate>),
 });
 

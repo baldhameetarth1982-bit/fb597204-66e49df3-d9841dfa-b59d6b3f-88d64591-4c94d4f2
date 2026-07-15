@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/onboarding/pending")({
-  head: () => ({ meta: [{ title: "Awaiting approval — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Awaiting approval — SociyoHub" }] }),
   component: PendingApproval,
 });
 

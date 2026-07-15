@@ -6,10 +6,10 @@ import { LegalFooter } from "@/components/shared/LegalFooter";
 export const Route = createFileRoute("/privacy")({
   head: () => ({
     meta: [
-      { title: "Privacy Policy — SocioHub" },
-      { name: "description", content: "How SocioHub collects, uses and protects your personal data. We do not sell data to third parties." },
-      { property: "og:title", content: "Privacy Policy — SocioHub" },
-      { property: "og:description", content: "How SocioHub collects, uses and protects your personal data." },
+      { title: "Privacy Policy — SociyoHub" },
+      { name: "description", content: "How SociyoHub collects, uses and protects your personal data. We do not sell data to third parties." },
+      { property: "og:title", content: "Privacy Policy — SociyoHub" },
+      { property: "og:description", content: "How SociyoHub collects, uses and protects your personal data." },
     ],
   }),
   component: PrivacyPage,
@@ -38,9 +38,9 @@ function PrivacyPage() {
             <section>
               <h2 className="text-lg font-semibold mb-2">1. Overview</h2>
               <p className="text-muted-foreground">
-                SocioHub ("we", "us", "the Service") is a Software-as-a-Service platform operated for the purpose of
+                SociyoHub ("we", "us", "the Service") is a Software-as-a-Service platform operated for the purpose of
                 housing-society management. This policy explains what personal information we collect, why we collect
-                it, how we secure it, and the rights you have over it. SocioHub is <strong>not</strong> the society
+                it, how we secure it, and the rights you have over it. SociyoHub is <strong>not</strong> the society
                 administration; each society controls its own community content within the platform.
               </p>
             </section>
@@ -84,7 +84,7 @@ function PrivacyPage() {
                 <li>Other residents in your society see your name, flat, and posts you publish.</li>
                 <li>Your society admin sees contact details and payment history for billing purposes.</li>
                 <li>Phone visibility to neighbours is opt-in from Settings.</li>
-                <li>SocioHub staff access production data only for support requests you initiate.</li>
+                <li>SociyoHub staff access production data only for support requests you initiate.</li>
               </ul>
             </section>
 
@@ -109,7 +109,7 @@ function PrivacyPage() {
             <section>
               <h2 className="text-lg font-semibold mb-2">8. Grievance contact</h2>
               <p className="text-muted-foreground">
-                Grievance Officer — SocioHub Support Team,{" "}
+                Grievance Officer — SociyoHub Support Team,{" "}
                 <a href="mailto:sociohub710@gmail.com" className="underline">sociohub710@gmail.com</a>,
                 Pethapur, Gandhinagar, Gujarat — 382610.
               </p>

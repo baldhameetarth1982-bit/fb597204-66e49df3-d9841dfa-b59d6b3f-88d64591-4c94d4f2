@@ -55,7 +55,7 @@ export function TwoFactorCard() {
     setWorking(true);
     const { data, error } = await supabase.auth.mfa.enroll({
       factorType: "totp",
-      friendlyName: `SocioHub-${Date.now()}`,
+      friendlyName: `SociyoHub-${Date.now()}`,
     });
     setWorking(false);
     if (error) return toast.error(error.message);

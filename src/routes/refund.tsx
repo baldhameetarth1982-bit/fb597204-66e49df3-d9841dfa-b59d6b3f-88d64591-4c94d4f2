@@ -6,9 +6,9 @@ import { LegalFooter } from "@/components/shared/LegalFooter";
 export const Route = createFileRoute("/refund")({
   head: () => ({
     meta: [
-      { title: "Refund & Cancellation Policy — SocioHub" },
-      { name: "description", content: "SocioHub refund and cancellation policy for society maintenance and subscription plans." },
-      { property: "og:title", content: "Refund & Cancellation Policy — SocioHub" },
+      { title: "Refund & Cancellation Policy — SociyoHub" },
+      { name: "description", content: "SociyoHub refund and cancellation policy for society maintenance and subscription plans." },
+      { property: "og:title", content: "Refund & Cancellation Policy — SociyoHub" },
       { property: "og:description", content: "Refund eligibility, timelines and how to raise a request." },
     ],
   }),
@@ -50,7 +50,7 @@ function RefundPage() {
             <ul className="list-disc pl-6 space-y-1 text-muted-foreground">
               <li>Duplicate payment for the same bill within a short window.</li>
               <li>Payment debited from your bank but bill still shows Unpaid after 24 hours.</li>
-              <li>Technical failure attributable to SocioHub or the payment gateway.</li>
+              <li>Technical failure attributable to SociyoHub or the payment gateway.</li>
             </ul>
           </section>
 
@@ -64,7 +64,7 @@ function RefundPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold mb-2">4. SocioHub SaaS subscription plans</h2>
+            <h2 className="text-lg font-semibold mb-2">4. SociyoHub SaaS subscription plans</h2>
             <p className="text-muted-foreground">
               Subscription plans (Basic, Pro, Premium, custom) are billed in advance for the selected term. Cancellation
               stops future renewals but the current term is <strong>non-refundable</strong>. If you were charged in error or

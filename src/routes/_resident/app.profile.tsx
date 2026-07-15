@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { LanguageSelector } from "@/components/shared/LanguageSelector";
 
 export const Route = createFileRoute("/_resident/app/profile")({
-  head: () => ({ meta: [{ title: "My profile — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "My profile — SociyoHub" }] }),
   component: ProfilePage,
 });
 
@@ -52,7 +52,7 @@ function ProfilePage() {
   }
   async function shareLink() {
     if (navigator.share) {
-      try { await navigator.share({ title: "Join SocioHub", url: link }); } catch { /* user cancel */ }
+      try { await navigator.share({ title: "Join SociyoHub", url: link }); } catch { /* user cancel */ }
     } else copyLink();
   }
 

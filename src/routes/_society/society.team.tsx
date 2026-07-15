@@ -22,7 +22,7 @@ import {
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_society/society/team")({
-  head: () => ({ meta: [{ title: "Team & Roles — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Team & Roles — SociyoHub" }] }),
   component: () => (<FeatureGate feature="team_roles"><TeamPage /></FeatureGate>),
 });
 

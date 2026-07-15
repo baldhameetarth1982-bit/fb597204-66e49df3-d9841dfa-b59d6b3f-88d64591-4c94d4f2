@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_society/society/verifications")({
-  head: () => ({ meta: [{ title: "Pending Verifications — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Pending Verifications — SociyoHub" }] }),
   component: VerificationsPage,
 });
 

@@ -8,7 +8,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
       <div className="w-full max-w-md">
         <div className="mb-8 flex flex-col items-center justify-center gap-3">
           <Logo size={56} />
-          <span className="text-xl font-semibold tracking-tight">SocioHub</span>
+          <span className="text-xl font-semibold tracking-tight">SociyoHub</span>
         </div>
         <div className="rounded-2xl border border-border bg-background shadow-sm p-6 md:p-8">
           {children}

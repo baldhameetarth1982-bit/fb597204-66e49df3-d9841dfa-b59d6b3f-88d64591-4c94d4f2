@@ -13,7 +13,7 @@ import { markNotificationsSeen, getLastSeen } from "@/hooks/useUnreadNotificatio
 export const Route = createFileRoute("/_resident/app/notifications")({
   head: () => ({
     meta: [
-      { title: "Notifications — SocioHub" },
+      { title: "Notifications — SociyoHub" },
       { name: "description", content: "All your society activity in one feed." },
     ],
   }),

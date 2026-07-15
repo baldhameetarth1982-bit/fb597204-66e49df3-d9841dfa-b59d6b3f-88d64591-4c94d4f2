@@ -17,7 +17,7 @@ import { TransactionSummaryModal } from "@/components/payments/TransactionSummar
 import { PaymentSecurityBadge } from "@/components/payments/PaymentSecurityBadge";
 
 export const Route = createFileRoute("/_resident/app/bills")({
-  head: () => ({ meta: [{ title: "Bills — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Bills — SociyoHub" }] }),
   component: BillsScreen,
 });
 
@@ -165,7 +165,7 @@ function BillsScreen() {
           )}
           {outstanding && payoutActive && (
             <p className="mt-3 text-[11px] opacity-80">
-              Payment processing? Contact SocioHub Support for instant reconciliation.
+              Payment processing? Contact SociyoHub Support for instant reconciliation.
             </p>
           )}
         </CardContent>
@@ -196,7 +196,7 @@ function BillsScreen() {
                 orderId: order.orderId,
                 keyId: order.keyId,
                 amount: order.amount,
-                name: order.societyName ?? "SocioHub",
+                name: order.societyName ?? "SociyoHub",
                 description: order.label ?? "Maintenance bill",
                 prefill: { email: profile?.email ?? undefined, contact: profile?.phone ?? undefined, name: profile?.full_name ?? undefined },
                 onSuccess: async () => {
@@ -275,7 +275,7 @@ function BillsScreen() {
 
       <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
         <Receipt className="h-3.5 w-3.5" />
-        Powered by SocioHub
+        Powered by SociyoHub
       </div>
 
       {profile?.society_id && (

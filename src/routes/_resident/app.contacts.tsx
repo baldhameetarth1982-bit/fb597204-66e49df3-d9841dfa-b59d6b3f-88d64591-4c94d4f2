@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_resident/app/contacts")({
-  head: () => ({ meta: [{ title: "Contacts — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Contacts — SociyoHub" }] }),
   component: ContactsScreen,
 });
 

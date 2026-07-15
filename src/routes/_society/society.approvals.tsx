@@ -23,7 +23,7 @@ import {
 } from "@/lib/join-approvals";
 
 export const Route = createFileRoute("/_society/society/approvals")({
-  head: () => ({ meta: [{ title: "Resident approvals — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Resident approvals — SociyoHub" }] }),
   component: ApprovalsPage,
 });
 

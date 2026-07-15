@@ -14,7 +14,7 @@ import { useSocietyId } from "@/hooks/useSocietyId";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_resident/app/feed")({
-  head: () => ({ meta: [{ title: "Community Feed — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Community Feed — SociyoHub" }] }),
   component: FeedScreen,
 });
 

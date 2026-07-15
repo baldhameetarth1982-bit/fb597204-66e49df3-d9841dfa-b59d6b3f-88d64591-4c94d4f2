@@ -33,7 +33,7 @@ import {
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_society/society/flats")({
-  head: () => ({ meta: [{ title: "Flats — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Flats — SociyoHub" }] }),
   component: FlatsPage,
 });
 

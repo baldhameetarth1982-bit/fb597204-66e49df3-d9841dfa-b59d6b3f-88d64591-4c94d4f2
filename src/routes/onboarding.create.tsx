@@ -13,7 +13,7 @@ import { createSocietyFull } from "@/lib/onboarding.functions";
 import { PhoneOtpForm } from "@/components/auth/PhoneOtpForm";
 
 export const Route = createFileRoute("/onboarding/create")({
-  head: () => ({ meta: [{ title: "Create society — SocioHub" }] }),
+  head: () => ({ meta: [{ title: "Create society — SociyoHub" }] }),
   component: CreateSocietyWizardPage,
 });
 

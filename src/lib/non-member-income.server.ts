@@ -476,27 +476,32 @@ export type IncomeTransitionResult =
   | { status: "error" };
 
 /**
- * Turn 18B.2A — strict runtime schema for the transition RPC response.
- * The database returns a jsonb; we never cast it directly. Any malformed
- * payload collapses to `{ status: "error" }` at the call site.
+ * Turn 18B.2B — strict runtime schema for the transition RPC response.
+ * Every variant is `.strict()`, so unknown fields cause the payload to
+ * collapse to `{ status: "error" }` at the call site. `changedAt` must
+ * be a real ISO 8601 timestamp with offset (Postgres `to_json(now())`).
  */
 export const IncomeTransitionResultSchema: z.ZodType<IncomeTransitionResult> =
   z.discriminatedUnion("status", [
-    z.object({
-      status: z.literal("success"),
-      recordId: z.string().uuid(),
-      verificationStatus: z.enum(["verified", "rejected", "reversed"]),
-      changedAt: z.string().min(1),
-    }),
-    z.object({
-      status: z.literal("already_processed"),
-      currentStatus: z.enum(["verified", "rejected", "reversed", "pending"]),
-    }),
-    z.object({ status: z.literal("invalid_transition") }),
-    z.object({ status: z.literal("not_found") }),
-    z.object({ status: z.literal("not_authorized") }),
-    z.object({ status: z.literal("plan_required") }),
-    z.object({ status: z.literal("error") }),
+    z
+      .object({
+        status: z.literal("success"),
+        recordId: z.string().uuid(),
+        verificationStatus: z.enum(["verified", "rejected", "reversed"]),
+        changedAt: z.string().datetime({ offset: true }),
+      })
+      .strict(),
+    z
+      .object({
+        status: z.literal("already_processed"),
+        currentStatus: z.enum(["verified", "rejected", "reversed", "pending"]),
+      })
+      .strict(),
+    z.object({ status: z.literal("invalid_transition") }).strict(),
+    z.object({ status: z.literal("not_found") }).strict(),
+    z.object({ status: z.literal("not_authorized") }).strict(),
+    z.object({ status: z.literal("plan_required") }).strict(),
+    z.object({ status: z.literal("error") }).strict(),
   ]);
 
 /** Reason input schema for reject/reverse mutations. Trimmed, 5-500 chars, no HTML. */

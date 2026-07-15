@@ -468,3 +468,44 @@ and observed via `information_schema.routine_privileges` in the applied DB.
 
 Build passing. Client bundle secret scan clean (892 files, no server-only
 indicators).
+
+## Stage 1D — Category Management, Payer Directory, Offline Income Entry
+
+Stage 1D is the first delivery under the **V2 roadmap format**
+(`docs/SOCIYOHUB_MASTER_ROADMAP_V2.md`). The old nested Turn-based names are
+now historical; further Income & Collections work uses only Stage 1 letters.
+
+### Part 1 — security debt (already closed)
+
+The Part 1 security checklist (entitlement helper not executable by
+PUBLIC/anon/authenticated, exact `normalizePlan` parity in SQL, stale/expired
+trial denied, unknown plan denied, strict `IncomeTransitionResultSchema`
+with `.strict()` variants and ISO-offset `changedAt`) was **already fully
+delivered** by migration `20260715181730_3e51af37…` and the schema hardening
+recorded above. Stage 1D adds no new migration for Part 1 — re-migrating
+would only churn history. The V2 roadmap records this state as complete
+under Stage 1C.
+
+### Foundation documents (this stage)
+
+- `docs/SOCIYOHUB_MASTER_ROADMAP_V2.md` — flat, letter-scoped roadmap.
+- `docs/FEATURE_COVERAGE_V2.md` — coverage matrix across 24-prompt inventory,
+  current implementation, plan/role, tests, visual QA, remaining stage.
+- `docs/UI_DESIGN_SYSTEM_V2.md` — tokens (color / gradient / radius /
+  spacing / typography / motion) and composition rules.
+
+### Remaining Stage 1D scope (in progress)
+
+- `/society/income/categories` — category management screen + create/edit
+  dialog, reusing existing `listIncomeCategoriesFn` /
+  `createIncomeCategoryFn` / `updateIncomeCategoryFn`.
+- `/society/income/payers` — external-payer directory, reusing
+  `listNonMemberPayersFn` / `createNonMemberPayerFn` /
+  `updateNonMemberPayerFn`, with data-minimized default list.
+- `/society/income/new` — 3-step Details / Review / Saved flow reusing
+  `createNonMemberIncomeRecordFn`.
+- Dashboard action wiring (Record Income / Add Payer / Manage Categories).
+- Unit + integration tests, exit gate.
+
+No Stage 1D work touches AI categorization, Smart QR, online gateways, or
+platform fees; those remain Stage 9 / 10 / 14.

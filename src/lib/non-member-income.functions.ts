@@ -399,14 +399,19 @@ const ListFilters = z.object({
 export const listIncomeRecordsFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((raw) => ListFilters.parse(raw))
-  .handler(async ({ data, context }) => {
+  .handler(async ({ data, context }): Promise<{
+    items: import("@/lib/non-member-income.server").IncomeRecordListItem[];
+    total: number | null;
+    limit: number;
+    offset: number;
+  }> => {
     const ctx = context as Ctx;
     await requireAdminAndPlan(ctx, data.societyId);
-    const limit = Math.min(data.limit ?? 50, 200);
+    const limit = Math.min(data.limit ?? 25, 200);
     let q = ctx.supabase
       .from("society_income_records")
       .select(
-        "id, society_id, category_id, payer_kind, amount, payment_method, payment_status, verification_status, reconciliation_status, payment_date, reference_number",
+        "id, society_id, category_id, non_member_payer_id, payer_kind, amount, payment_method, payment_status, verification_status, reconciliation_status, payment_date, reference_number",
         { count: "exact" },
       )
       .eq("society_id", data.societyId);
@@ -426,13 +431,94 @@ export const listIncomeRecordsFn = createServerFn({ method: "POST" })
     q = q.range(offset, offset + limit - 1);
     const { data: rows, error, count } = await q;
     if (error) throw new Error("list_failed");
+
+    type Row = {
+      id: string;
+      category_id: string;
+      non_member_payer_id: string | null;
+      payer_kind: string;
+      amount: number | string;
+      payment_method: string;
+      payment_status: string;
+      verification_status: string;
+      reconciliation_status: string;
+      payment_date: string;
+      reference_number: string | null;
+    };
+    const typedRows = (rows ?? []) as Row[];
+
+    // Batched, authorized lookups for display labels only.
+    const categoryIds = Array.from(new Set(typedRows.map((r) => r.category_id)));
+    const payerIds = Array.from(
+      new Set(
+        typedRows
+          .map((r) => r.non_member_payer_id)
+          .filter((x): x is string => typeof x === "string" && x.length > 0),
+      ),
+    );
+
+    const catLabels = new Map<string, string>();
+    if (categoryIds.length > 0) {
+      const { data: cats } = await ctx.supabase
+        .from("society_income_categories")
+        .select("id, display_name")
+        .in("id", categoryIds);
+      for (const c of (cats ?? []) as Array<{ id: string; display_name: string }>) {
+        catLabels.set(c.id, c.display_name);
+      }
+    }
+    const payerLabels = new Map<string, string>();
+    if (payerIds.length > 0) {
+      const { data: payers } = await ctx.supabase
+        .from("non_member_payers")
+        .select("id, display_name")
+        .in("id", payerIds);
+      for (const p of (payers ?? []) as Array<{ id: string; display_name: string }>) {
+        payerLabels.set(p.id, p.display_name);
+      }
+    }
+
+    const items = typedRows.map((r) => {
+      const amt =
+        typeof r.amount === "string" ? Number(r.amount) : r.amount;
+      const ref = typeof r.reference_number === "string" ? r.reference_number.trim() : "";
+      const reference_suffix =
+        ref.length === 0
+          ? null
+          : ref.length <= 4
+            ? "•".repeat(ref.length)
+            : `••••${ref.slice(-4)}`;
+      const payer_display_name =
+        r.payer_kind === "anonymous"
+          ? null
+          : r.non_member_payer_id
+            ? payerLabels.get(r.non_member_payer_id) ?? null
+            : null;
+      return {
+        id: r.id,
+        category_id: r.category_id,
+        category_display_name: catLabels.get(r.category_id) ?? null,
+        payer_kind: r.payer_kind as import("@/lib/non-member-income.server").IncomePayerKind,
+        payer_display_name,
+        amount: Number.isFinite(amt) ? amt : 0,
+        payment_method: r.payment_method as import("@/lib/non-member-income.server").IncomePaymentMethod,
+        payment_status: r.payment_status,
+        verification_status: r.verification_status as import("@/lib/non-member-income.server").IncomeVerificationStatus,
+        reconciliation_status: r.reconciliation_status as import("@/lib/non-member-income.server").IncomeReconciliationStatus,
+        payment_date: r.payment_date,
+        reference_suffix,
+      };
+    });
+
     return {
-      items: toPublicIncomeList((rows ?? []) as any),
+      items,
       total: count ?? null,
       limit,
       offset,
     };
   });
+
+const DASHBOARD_SCAN_CAP = 5000;
 
 export const getIncomeDashboardFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -445,130 +531,228 @@ export const getIncomeDashboardFn = createServerFn({ method: "POST" })
       })
       .parse(raw),
   )
-  .handler(async ({ data, context }) => {
-    const ctx = context as Ctx;
-    await requireAdminAndPlan(ctx, data.societyId);
-    let q = ctx.supabase
-      .from("society_income_records")
-      .select(
-        "id, category_id, payer_kind, amount, payment_method, verification_status, reconciliation_status, payment_date",
-      )
-      .eq("society_id", data.societyId)
-      .limit(5000);
-    if (data.from_date) q = q.gte("payment_date", data.from_date);
-    if (data.to_date) q = q.lte("payment_date", data.to_date);
-    const { data: rows, error } = await q;
-    if (error) throw new Error("dashboard_failed");
+  .handler(
+    async ({
+      data,
+      context,
+    }): Promise<import("@/lib/non-member-income.server").IncomeDashboardResult> => {
+      const ctx = context as Ctx;
+      await requireAdminAndPlan(ctx, data.societyId);
+      let q = ctx.supabase
+        .from("society_income_records")
+        .select(
+          "id, category_id, payer_kind, amount, payment_method, verification_status, reconciliation_status, payment_date",
+        )
+        .eq("society_id", data.societyId)
+        .limit(DASHBOARD_SCAN_CAP);
+      if (data.from_date) q = q.gte("payment_date", data.from_date);
+      if (data.to_date) q = q.lte("payment_date", data.to_date);
+      const { data: rows, error } = await q;
+      if (error) throw new Error("dashboard_failed");
 
-    let verifiedTotal = 0;
-    let pendingCount = 0;
-    let rejectedCount = 0;
-    let reversedCount = 0;
-    let unreconciled = 0;
-    let needsReview = 0;
-    const byCategory = new Map<string, number>();
-    const byMethod = new Map<string, number>();
-    const byReconciliation = new Map<string, number>();
-    for (const r of rows ?? []) {
-      const row = r as any;
-      const amt = Number(row.amount) || 0;
-      const v = row.verification_status as string;
-      const rec = row.reconciliation_status as string;
-      byReconciliation.set(rec, (byReconciliation.get(rec) ?? 0) + 1);
-      if (v === "verified") {
-        verifiedTotal += amt;
-        byCategory.set(row.category_id, (byCategory.get(row.category_id) ?? 0) + amt);
-        byMethod.set(row.payment_method, (byMethod.get(row.payment_method) ?? 0) + amt);
-      } else if (v === "pending") pendingCount += 1;
-      else if (v === "rejected") rejectedCount += 1;
-      else if (v === "reversed") reversedCount += 1;
-      if (rec === "unreconciled") unreconciled += 1;
-      if (rec === "needs_review") needsReview += 1;
-    }
+      type Row = {
+        category_id: string;
+        payer_kind: string;
+        amount: number | string;
+        payment_method: string;
+        verification_status: string;
+        reconciliation_status: string;
+      };
+      const typedRows = (rows ?? []) as Row[];
 
-    // Active payer count (only when the policy allows the caller to read them).
-    const { count: activePayerCount } = await ctx.supabase
-      .from("non_member_payers")
-      .select("id", { count: "exact", head: true })
-      .eq("society_id", data.societyId)
-      .eq("is_active", true);
+      let verifiedTotal = 0;
+      let pendingCount = 0;
+      let rejectedCount = 0;
+      let reversedCount = 0;
+      let unreconciled = 0;
+      let needsReview = 0;
+      const byCategory = new Map<string, number>();
+      const byMethod = new Map<string, number>();
+      const byReconciliation = new Map<string, number>();
+      const { parseFinancialAmount } = await import("@/lib/non-member-income.server");
+      for (const row of typedRows) {
+        const v = row.verification_status;
+        const rec = row.reconciliation_status;
+        byReconciliation.set(rec, (byReconciliation.get(rec) ?? 0) + 1);
+        if (v === "verified") {
+          const amt = parseFinancialAmount(row.amount, { allowZero: true });
+          if (amt === null) throw new Error("dashboard_failed");
+          verifiedTotal += amt;
+          byCategory.set(row.category_id, (byCategory.get(row.category_id) ?? 0) + amt);
+          byMethod.set(row.payment_method, (byMethod.get(row.payment_method) ?? 0) + amt);
+        } else if (v === "pending") pendingCount += 1;
+        else if (v === "rejected") rejectedCount += 1;
+        else if (v === "reversed") reversedCount += 1;
+        if (rec === "unreconciled") unreconciled += 1;
+        if (rec === "needs_review") needsReview += 1;
+      }
 
-    return {
-      verifiedTotal,
-      pendingCount,
-      rejectedCount,
-      reversedCount,
-      unreconciled,
-      needsReview,
-      activePayerCount: activePayerCount ?? 0,
-      byCategory: Array.from(byCategory.entries()).map(([id, total]) => ({ category_id: id, total })),
-      byMethod: Array.from(byMethod.entries()).map(([method, total]) => ({ method, total })),
-      byReconciliation: Array.from(byReconciliation.entries()).map(([status, count]) => ({ status, count })),
-      recordCount: rows?.length ?? 0,
-    };
-  });
+      // Honest MetricState for the active payer count. A DB error must NOT
+      // silently render as zero.
+      let activePayerCount: import("@/lib/non-member-income.server").MetricState<number>;
+      const payerRes = await ctx.supabase
+        .from("non_member_payers")
+        .select("id", { count: "exact", head: true })
+        .eq("society_id", data.societyId)
+        .eq("is_active", true);
+      if (payerRes.error) {
+        activePayerCount = {
+          status: "error",
+          message: "Active payer count is temporarily unavailable.",
+        };
+      } else {
+        activePayerCount = { status: "available", value: payerRes.count ?? 0 };
+      }
+
+      return {
+        verifiedTotal,
+        pendingCount,
+        rejectedCount,
+        reversedCount,
+        unreconciled,
+        needsReview,
+        activePayerCount,
+        byCategory: Array.from(byCategory.entries()).map(([id, total]) => ({
+          category_id: id,
+          total,
+        })),
+        byMethod: Array.from(byMethod.entries()).map(([method, total]) => ({
+          method:
+            method as import("@/lib/non-member-income.server").IncomePaymentMethod,
+          total,
+        })),
+        byReconciliation: Array.from(byReconciliation.entries()).map(
+          ([status, count]) => ({
+            status:
+              status as import("@/lib/non-member-income.server").IncomeReconciliationStatus,
+            count,
+          }),
+        ),
+        recordCount: typedRows.length,
+        truncated: typedRows.length >= DASHBOARD_SCAN_CAP,
+        aggregateSource: "javascript_scan",
+      };
+    },
+  );
 
 export const getIncomeRecordDetailFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((raw) => z.object({ societyId: z.string().uuid(), id: z.string().uuid() }).parse(raw))
-  .handler(async ({ data, context }) => {
-    const ctx = context as Ctx;
-    await requireAdminAndPlan(ctx, data.societyId);
-    const { data: row, error } = await ctx.supabase
-      .from("society_income_records")
-      .select(
-        "id, society_id, category_id, payer_kind, non_member_payer_id, amount, payment_method, payment_status, verification_status, reconciliation_status, payment_date, reference_number, description, created_at, verified_at, reversed_at, reversal_reason",
-      )
-      .eq("id", data.id)
-      .maybeSingle();
-    // Never confirm existence in another society — same safe not-found shape.
-    if (error || !row || (row as any).society_id !== data.societyId) {
-      return { found: false as const };
-    }
-    const r = row as any;
-    // Fetch related labels via joined lookups (RLS scopes them).
-    const [{ data: cat }, { data: payer }] = await Promise.all([
-      ctx.supabase
-        .from("society_income_categories")
-        .select("display_name, category_group")
-        .eq("id", r.category_id)
-        .maybeSingle(),
-      r.non_member_payer_id
-        ? ctx.supabase
-            .from("non_member_payers")
-            .select("display_name, payer_type, organization_name")
-            .eq("id", r.non_member_payer_id)
-            .maybeSingle()
-        : Promise.resolve({ data: null }),
-    ]);
-    const ref = typeof r.reference_number === "string" ? r.reference_number.trim() : "";
-    const reference_suffix = ref.length === 0 ? null : ref.length <= 4 ? "•".repeat(ref.length) : `••••${ref.slice(-4)}`;
-    return {
-      found: true as const,
-      record: {
-        id: r.id,
-        amount: Number(r.amount) || 0,
-        payer_kind: r.payer_kind,
-        payment_method: r.payment_method,
-        payment_status: r.payment_status,
-        verification_status: r.verification_status,
-        reconciliation_status: r.reconciliation_status,
-        payment_date: r.payment_date,
-        reference_suffix,
-        description: typeof r.description === "string" ? r.description.slice(0, 500) : null,
-        created_at: r.created_at,
-        verified_at: r.verified_at,
-        reversed_at: r.reversed_at,
-        reversal_reason: typeof r.reversal_reason === "string" ? r.reversal_reason.slice(0, 500) : null,
-        category: cat ? { display_name: (cat as any).display_name, group: (cat as any).category_group } : null,
-        payer: payer
-          ? {
-              display_name: (payer as any).display_name,
-              payer_type: (payer as any).payer_type,
-              organization_name: (payer as any).organization_name,
-            }
-          : null,
-      },
-    };
-  });
+  .inputValidator((raw) =>
+    z.object({ societyId: z.string().uuid(), id: z.string().uuid() }).parse(raw),
+  )
+  .handler(
+    async ({
+      data,
+      context,
+    }): Promise<import("@/lib/non-member-income.server").IncomeRecordDetailResult> => {
+      const ctx = context as Ctx;
+      await requireAdminAndPlan(ctx, data.societyId);
+      const { data: row, error } = await ctx.supabase
+        .from("society_income_records")
+        .select(
+          "id, society_id, category_id, payer_kind, non_member_payer_id, amount, payment_method, payment_status, verification_status, reconciliation_status, payment_date, reference_number, description, created_at, verified_at, reversed_at, reversal_reason",
+        )
+        .eq("id", data.id)
+        .maybeSingle();
+      if (error) {
+        return { status: "error", message: "record_fetch_failed" };
+      }
+      type Row = {
+        id: string;
+        society_id: string;
+        category_id: string;
+        payer_kind: string;
+        non_member_payer_id: string | null;
+        amount: number | string;
+        payment_method: string;
+        payment_status: string;
+        verification_status: string;
+        reconciliation_status: string;
+        payment_date: string;
+        reference_number: string | null;
+        description: string | null;
+        created_at: string;
+        verified_at: string | null;
+        reversed_at: string | null;
+        reversal_reason: string | null;
+      };
+      const r = row as Row | null;
+      // Same not-found shape for missing rows and for cross-society lookups.
+      if (!r || r.society_id !== data.societyId) {
+        return { status: "not_found" };
+      }
+      const [catRes, payerRes] = await Promise.all([
+        ctx.supabase
+          .from("society_income_categories")
+          .select("display_name, category_group")
+          .eq("id", r.category_id)
+          .maybeSingle(),
+        r.non_member_payer_id
+          ? ctx.supabase
+              .from("non_member_payers")
+              .select("display_name, payer_type, organization_name")
+              .eq("id", r.non_member_payer_id)
+              .maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
+      ]);
+      // If either lookup errored (not merely absent), surface honestly instead
+      // of silently rendering a record with missing labels.
+      if (catRes.error || (payerRes as { error?: unknown }).error) {
+        return { status: "error", message: "record_related_lookup_failed" };
+      }
+      const cat = catRes.data as
+        | { display_name: string; category_group: string | null }
+        | null;
+      const payer = (payerRes as { data: unknown }).data as
+        | { display_name: string; payer_type: string; organization_name: string | null }
+        | null;
+
+      const ref = typeof r.reference_number === "string" ? r.reference_number.trim() : "";
+      const reference_suffix =
+        ref.length === 0
+          ? null
+          : ref.length <= 4
+            ? "•".repeat(ref.length)
+            : `••••${ref.slice(-4)}`;
+
+      const { parseFinancialAmount } = await import("@/lib/non-member-income.server");
+      const parsedAmount = parseFinancialAmount(r.amount, { allowZero: true });
+      if (parsedAmount === null) {
+        return { status: "error", message: "record_amount_invalid" };
+      }
+
+      return {
+        status: "available",
+        record: {
+          id: r.id,
+          amount: parsedAmount,
+          payer_kind: r.payer_kind as import("@/lib/non-member-income.server").IncomePayerKind,
+          payment_method: r.payment_method as import("@/lib/non-member-income.server").IncomePaymentMethod,
+          payment_status: r.payment_status,
+          verification_status: r.verification_status as import("@/lib/non-member-income.server").IncomeVerificationStatus,
+          reconciliation_status: r.reconciliation_status as import("@/lib/non-member-income.server").IncomeReconciliationStatus,
+          payment_date: r.payment_date,
+          reference_suffix,
+          description:
+            typeof r.description === "string" ? r.description.slice(0, 500) : null,
+          created_at: r.created_at,
+          verified_at: r.verified_at,
+          reversed_at: r.reversed_at,
+          reversal_reason:
+            typeof r.reversal_reason === "string"
+              ? r.reversal_reason.slice(0, 500)
+              : null,
+          category: cat ? { display_name: cat.display_name, group: cat.category_group } : null,
+          payer: payer
+            ? {
+                display_name: payer.display_name,
+                payer_type: payer.payer_type,
+                organization_name: payer.organization_name,
+              }
+            : null,
+        },
+      };
+    },
+  );
+
 

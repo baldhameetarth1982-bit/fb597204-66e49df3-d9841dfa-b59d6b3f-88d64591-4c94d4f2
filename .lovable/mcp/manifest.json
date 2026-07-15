@@ -35,7 +35,7 @@
       {
         "name": "list_my_societies",
         "title": "List my societies",
-        "description": "List societies the signed-in user belongs to (as resident, admin, or via profile).",
+        "description": "List societies the signed-in user belongs to. Returns minimal identifying fields only.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,

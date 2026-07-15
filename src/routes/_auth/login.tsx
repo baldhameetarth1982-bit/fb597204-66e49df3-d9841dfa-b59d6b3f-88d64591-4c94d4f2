@@ -18,6 +18,7 @@ import {
   signInWithVerifiedPhone,
   startTruecallerAuth,
 } from "@/lib/auth-service";
+import { sanitizeNextPath } from "@/lib/safe-next";
 
 export const Route = createFileRoute("/_auth/login")({
   head: () => ({

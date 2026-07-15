@@ -14,6 +14,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { Logo } from "@/components/shared/Logo";
+import { SociyoHubLogo } from "@/components/shared/SociyoHubLogo";
 
 function initials(name?: string | null, email?: string | null) {
   const src = (name && name.trim()) || email || "U";
@@ -53,7 +54,7 @@ export function AppHeader({
 
         <Link to="/" className="md:hidden flex items-center gap-2 ml-1">
           <Logo size={32} />
-          <span className="font-semibold tracking-tight">SociyoHub</span>
+          <SociyoHubLogo size={18} />
         </Link>
 
         <div className="ml-auto flex items-center gap-1 md:gap-2">

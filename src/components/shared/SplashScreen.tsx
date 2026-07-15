@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { SociyoHubLoader } from "@/components/system/SociyoHubLoader";
+import { SociyoHubLogo } from "@/components/shared/SociyoHubLogo";
 
 const SESSION_KEY = "sociohub:splashed";
 
@@ -32,7 +33,7 @@ export function SplashScreen() {
       <div className="flex flex-col items-center gap-6">
         <SociyoHubLoader size={112} />
         <div className="flex flex-col items-center gap-1">
-          <span className="type-headline text-foreground">SociyoHub</span>
+          <SociyoHubLogo size={28} />
           <span className="text-xs text-muted-foreground">
             Society management, simplified
           </span>

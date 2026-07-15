@@ -37,3 +37,13 @@ Tables (additive):
 Access: `society_admin` of that society or `super_admin`. Every state transition is audit-logged. No DELETE grant on income records — reversal only. Feature key: `non_member_payments`, min plan **Pro** (Premium inherits). Basic and expired plans are denied server-side, not just in the UI.
 
 Still deferred: online gateway remains at the final payment stage; only Cash + Bank Transfer + other-offline supported for non-member income today.
+
+### Turn 18B.1 — read-only UI
+
+Routes wired:
+- `/society/income` — dashboard + record list with period, verification, and method filters. Uses `getIncomeDashboardFn` (aggregates) and `listIncomeRecordsFn` (paginated, filtered).
+- `/society/income/$id` — safe record detail. Uses `getIncomeRecordDetailFn`, which returns a same-shape `{ found: false }` for missing records or records in another society (no cross-society existence disclosure).
+
+Both routes are wrapped in `<FeatureGate feature="non_member_payments">`, so Basic / expired / cancelled plans see the standard UpgradePrompt and never call the protected read services. All authoritative gating (society admin + Pro plan) happens server-side in `requireAdminAndPlan`.
+
+Verify / Reject / Reverse / Reconcile controls, category/payer management, offline income entry, AI categorization, and any online gateway remain deferred to Turn 18B.2 and 18B.3.

@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Wallet, BookOpen, BarChart3, TrendingDown } from "lucide-react";
+import { Wallet, BookOpen, BarChart3, TrendingDown, Coins } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 const TABS = [
   { to: "/society/accounts", label: "Dashboard", icon: Wallet, match: ["/society/accounts"] },
   { to: "/society/ledger", label: "Transactions", icon: BookOpen, match: ["/society/ledger"] },
+  { to: "/society/income", label: "Income & Collections", icon: Coins, match: ["/society/income"] },
   { to: "/society/reports", label: "Reports", icon: BarChart3, match: ["/society/reports"] },
   { to: "/society/expenses", label: "Expenses", icon: TrendingDown, match: ["/society/expenses"] },
 ] as const;

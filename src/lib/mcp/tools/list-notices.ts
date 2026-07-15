@@ -6,11 +6,17 @@ import { logMcpToolError, mcpErrorContent } from "../errors";
 const MAX_LIMIT = 20;
 const MAX_BODY_CHARS = 500;
 
-/** Strip HTML tags and collapse whitespace, then cap length. */
+/** Strip HTML tags and script/style contents, collapse whitespace, cap length. */
 function sanitizeNoticeBody(raw: unknown): string {
   if (typeof raw !== "string") return "";
-  // Remove tags (including malformed) and script/style contents.
-  const noTags = raw.replace(/<[^>]*>/g, " ");
+  // Remove entire <script>…</script> and <style>…</style> blocks including their
+  // text contents (an earlier version left `alert(1)` in the output).
+  const withoutScripts = raw
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, " ")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style\s*>/gi, " ")
+    // Drop any lone/unclosed script or style opener too.
+    .replace(/<\/?(?:script|style)\b[^>]*>/gi, " ");
+  const noTags = withoutScripts.replace(/<[^>]*>/g, " ");
   const collapsed = noTags.replace(/\s+/g, " ").trim();
   return collapsed.length > MAX_BODY_CHARS
     ? `${collapsed.slice(0, MAX_BODY_CHARS)}…`

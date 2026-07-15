@@ -20,7 +20,9 @@ import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LegalRouteImport } from './routes/legal'
 import { Route as GdprRouteImport } from './routes/gdpr'
+import { Route as FoundersRouteImport } from './routes/founders'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as AboutRouteImport } from './routes/about'
 import { Route as SocietyRouteImport } from './routes/_society'
 import { Route as ResidentRouteImport } from './routes/_resident'
 import { Route as AuthRouteImport } from './routes/_auth'
@@ -186,9 +188,19 @@ const GdprRoute = GdprRouteImport.update({
   path: '/gdpr',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FoundersRoute = FoundersRouteImport.update({
+  id: '/founders',
+  path: '/founders',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ContactRoute = ContactRouteImport.update({
   id: '/contact',
   path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SocietyRoute = SocietyRouteImport.update({
@@ -754,7 +766,9 @@ const ApiPublicVerifyNoDuesTokenRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/contact': typeof ContactRoute
+  '/founders': typeof FoundersRoute
   '/gdpr': typeof GdprRoute
   '/legal': typeof LegalRoute
   '/onboarding': typeof OnboardingRouteWithChildren
@@ -873,7 +887,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/contact': typeof ContactRoute
+  '/founders': typeof FoundersRoute
   '/gdpr': typeof GdprRoute
   '/legal': typeof LegalRoute
   '/pricing': typeof PricingRoute
@@ -996,7 +1012,9 @@ export interface FileRoutesById {
   '/_auth': typeof AuthRouteWithChildren
   '/_resident': typeof ResidentRouteWithChildren
   '/_society': typeof SocietyRouteWithChildren
+  '/about': typeof AboutRoute
   '/contact': typeof ContactRoute
+  '/founders': typeof FoundersRoute
   '/gdpr': typeof GdprRoute
   '/legal': typeof LegalRoute
   '/onboarding': typeof OnboardingRouteWithChildren
@@ -1117,7 +1135,9 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/about'
     | '/contact'
+    | '/founders'
     | '/gdpr'
     | '/legal'
     | '/onboarding'
@@ -1236,7 +1256,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/about'
     | '/contact'
+    | '/founders'
     | '/gdpr'
     | '/legal'
     | '/pricing'
@@ -1358,7 +1380,9 @@ export interface FileRouteTypes {
     | '/_auth'
     | '/_resident'
     | '/_society'
+    | '/about'
     | '/contact'
+    | '/founders'
     | '/gdpr'
     | '/legal'
     | '/onboarding'
@@ -1482,7 +1506,9 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   ResidentRoute: typeof ResidentRouteWithChildren
   SocietyRoute: typeof SocietyRouteWithChildren
+  AboutRoute: typeof AboutRoute
   ContactRoute: typeof ContactRoute
+  FoundersRoute: typeof FoundersRoute
   GdprRoute: typeof GdprRoute
   LegalRoute: typeof LegalRoute
   OnboardingRoute: typeof OnboardingRouteWithChildren
@@ -1583,11 +1609,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GdprRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/founders': {
+      id: '/founders'
+      path: '/founders'
+      fullPath: '/founders'
+      preLoaderRoute: typeof FoundersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/contact': {
       id: '/contact'
       path: '/contact'
       fullPath: '/contact'
       preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_society': {
@@ -2659,7 +2699,9 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   ResidentRoute: ResidentRouteWithChildren,
   SocietyRoute: SocietyRouteWithChildren,
+  AboutRoute: AboutRoute,
   ContactRoute: ContactRoute,
+  FoundersRoute: FoundersRoute,
   GdprRoute: GdprRoute,
   LegalRoute: LegalRoute,
   OnboardingRoute: OnboardingRouteWithChildren,

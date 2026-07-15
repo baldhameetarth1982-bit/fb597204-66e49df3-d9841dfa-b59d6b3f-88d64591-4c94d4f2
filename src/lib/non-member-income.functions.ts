@@ -384,8 +384,10 @@ const ListFilters = z.object({
   societyId: z.string().uuid(),
   limit: z.number().int().min(1).max(200).optional(),
   offset: z.number().int().min(0).max(10000).optional(),
-  verification_status: z.enum(VERIFICATION_STATES_ARR).optional(),
-  reconciliation_status: z.enum(RECONCILIATION_STATES_ARR).optional(),
+  verification_status: z.enum(["pending", "verified", "rejected", "reversed"]).optional(),
+  reconciliation_status: z
+    .enum(["unreconciled", "matched", "partially_matched", "needs_review", "reversed"])
+    .optional(),
   payment_method: z.enum(["cash", "bank_transfer", "other_offline"]).optional(),
   payer_kind: z.enum(["resident", "non_member", "anonymous"]).optional(),
   category_id: z.string().uuid().optional(),

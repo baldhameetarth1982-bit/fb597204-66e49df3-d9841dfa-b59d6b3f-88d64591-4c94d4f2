@@ -22,7 +22,7 @@ export type AISummaryUiState =
   | { kind: "response"; response: Flat360AISummaryResponse }
   | { kind: "error" };
 
-function reasonCopy(reason: Flat360AISummaryResponse["reason"]): string | null {
+export function reasonCopy(reason: Flat360AISummaryResponse["reason"]): string | null {
   switch (reason) {
     case "provider_unavailable":
       return "AI service is temporarily unavailable — showing a deterministic summary instead.";

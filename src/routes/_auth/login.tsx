@@ -26,13 +26,28 @@ export const Route = createFileRoute("/_auth/login")({
       { name: "description", content: "Sign in to SociyoHub — Google, Phone, Truecaller or email." },
     ],
   }),
+  validateSearch: (s: Record<string, unknown>): { next?: string } => {
+    // Only accept same-origin relative paths as post-login return targets.
+    const raw = typeof s.next === "string" ? s.next : "";
+    const safe = raw.startsWith("/") && !raw.startsWith("//") ? raw : "";
+    return safe ? { next: safe } : {};
+  },
   component: LoginPage,
 });
+
+function goNext(next: string | undefined, fallback: () => void) {
+  if (next) {
+    window.location.href = next;
+    return;
+  }
+  fallback();
+}
 
 type Step = "choose" | "phone" | "email";
 
 function LoginPage() {
   const navigate = useNavigate();
+  const { next } = Route.useSearch();
   const { isLoading, isAuthenticated, primaryRole, profile } = useAuth();
   const [step, setStep] = useState<Step>("choose");
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -53,10 +68,23 @@ function LoginPage() {
   }
 
   if (isAuthenticated) {
+    if (next) {
+      window.location.href = next;
+      return (
+        <AuthShell>
+          <div className="min-h-[200px] grid place-items-center text-muted-foreground">
+            <Loader2 className="h-6 w-6 animate-spin" />
+          </div>
+        </AuthShell>
+      );
+    }
     if (primaryRole === ROLES.SUPER_ADMIN) return <Navigate to={ROLE_HOME[ROLES.SUPER_ADMIN]} replace />;
     if (primaryRole && profile?.society_id) return <Navigate to={ROLE_HOME[primaryRole]} replace />;
     return <Navigate to="/onboarding" search={{ ref: undefined }} replace />;
   }
+
+  const emailRedirect = `${window.location.origin}${next ?? "/"}`;
+
 
   async function submitEmail(e: React.FormEvent) {
     e.preventDefault();
@@ -67,7 +95,7 @@ function LoginPage() {
           email: email.trim(),
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/`,
+            emailRedirectTo: emailRedirect,
             data: { full_name: fullName.trim() || null },
           },
         });
@@ -92,7 +120,7 @@ function LoginPage() {
     try {
       const r = await signInWithGoogleFirebase();
       if (!r.ok) throw new Error(r.error ?? "Google sign-in failed");
-      navigate({ to: "/" });
+      goNext(next, () => navigate({ to: "/" }));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Google sign-in failed");
     } finally {
@@ -169,7 +197,7 @@ function LoginPage() {
                 return;
               }
               toast.success("Signed in");
-              navigate({ to: "/" });
+              goNext(next, () => navigate({ to: "/" }));
             }}
           />
           <p className="mt-4 text-[11px] text-muted-foreground text-center">

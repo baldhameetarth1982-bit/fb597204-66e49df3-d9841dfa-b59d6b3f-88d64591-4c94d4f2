@@ -40,10 +40,11 @@ export const Route = createFileRoute("/_society/society/income/new")({
     ],
   }),
   component: () => (
-    <FeatureGate feature="non_member_payments">
-      <NewIncomePage />
-    </FeatureGate>
+    <IncomeAccessBoundary>
+      {(societyId) => <NewIncomePage societyId={societyId} />}
+    </IncomeAccessBoundary>
   ),
+
 });
 
 function todayISO(): string {

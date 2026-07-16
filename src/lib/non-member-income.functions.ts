@@ -361,22 +361,27 @@ export const createNonMemberIncomeRecordFn = createServerFn({ method: "POST" })
     // (removed hashed/canonical inputs, missing creation request id, etc.)
     // is a compile error rather than a silent bypass cast.
     const supabase = ctx.supabase as StrictSupabase;
+    const args = {
+      _society_id: data.societyId,
+      _category_id: data.category_id,
+      _payer_kind: data.payer_kind,
+      _resident_user_id: null,
+      _non_member_payer_id: data.non_member_payer_id ?? null,
+      _amount: data.amount,
+      _payment_method: data.payment_method,
+      _payment_date: data.payment_date ?? null,
+      _reference_number: data.reference_number ?? null,
+      _description: data.description ?? null,
+      _creation_request_id: data.creation_request_id,
+    } satisfies CreateIncomeRpcArgs;
+    // Cast to the generator-emitted (non-null) shape at the boundary once.
+    // The runtime PostgreSQL function accepts NULLs; the generator does not
+    // model that. See CreateIncomeRpcArgs above for the honest shape.
     const { data: raw, error } = await supabase.rpc(
       "create_non_member_income_record",
-      {
-        _society_id: data.societyId,
-        _category_id: data.category_id,
-        _payer_kind: data.payer_kind,
-        _resident_user_id: null as unknown as string,
-        _non_member_payer_id: (data.non_member_payer_id ?? null) as unknown as string,
-        _amount: data.amount,
-        _payment_method: data.payment_method,
-        _payment_date: (data.payment_date ?? null) as unknown as string,
-        _reference_number: (data.reference_number ?? null) as unknown as string,
-        _description: (data.description ?? null) as unknown as string,
-        _creation_request_id: data.creation_request_id,
-      },
+      args as unknown as Database["public"]["Functions"]["create_non_member_income_record"]["Args"],
     );
+
 
 
     if (error) return { status: "temporary_error" as const };

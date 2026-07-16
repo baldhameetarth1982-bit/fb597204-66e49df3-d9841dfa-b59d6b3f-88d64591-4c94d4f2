@@ -31,6 +31,28 @@ export type IncomeAccessState =
 
 const INCOME_FEATURE = "non_member_payments" as const;
 
+export interface AccessInputs {
+  authLoading: boolean;
+  sidLoading: boolean;
+  planLoading: boolean;
+  societyId: string | null;
+  hasFinanceRole: boolean;
+  hasNonMemberPaymentsFeature: boolean;
+}
+
+/**
+ * Pure decision function — the single source of truth for Income access.
+ * Extracted so behavioral tests can exhaustively verify every plan/role
+ * combination without a React renderer.
+ */
+export function computeIncomeAccess(i: AccessInputs): IncomeAccessState {
+  if (i.authLoading || i.sidLoading || i.planLoading) return { kind: "loading" };
+  if (!i.societyId) return { kind: "society_unavailable" };
+  if (!i.hasFinanceRole) return { kind: "role_denied" };
+  if (!i.hasNonMemberPaymentsFeature) return { kind: "plan_locked" };
+  return { kind: "allowed", societyId: i.societyId };
+}
+
 /**
  * Behavioral hook — the single source of truth for Income access.
  * Never returns `allowed` until society is resolved, plan is loaded, and
@@ -39,17 +61,17 @@ const INCOME_FEATURE = "non_member_payments" as const;
 export function useIncomeAccessState(): IncomeAccessState {
   const { isLoading: authLoading, hasRole } = useAuth();
   const { societyId, loading: sidLoading } = useSocietyId();
-  const { plan: _plan, isLoading: planLoading, hasFeature } = useFeatureAccess();
-
-  if (authLoading || sidLoading || planLoading) return { kind: "loading" };
-  if (!societyId) return { kind: "society_unavailable" };
-  // Society layout already gates SOCIETY_ADMIN / BLOCK_ADMIN, but keep the
-  // check local so this boundary is safe in isolation and in unit tests.
-  const isFinanceAdmin = hasRole(ROLES.SOCIETY_ADMIN) || hasRole(ROLES.BLOCK_ADMIN);
-  if (!isFinanceAdmin) return { kind: "role_denied" };
-  if (!hasFeature(INCOME_FEATURE)) return { kind: "plan_locked" };
-  return { kind: "allowed", societyId };
+  const { isLoading: planLoading, hasFeature } = useFeatureAccess();
+  return computeIncomeAccess({
+    authLoading,
+    sidLoading,
+    planLoading,
+    societyId,
+    hasFinanceRole: hasRole(ROLES.SOCIETY_ADMIN) || hasRole(ROLES.BLOCK_ADMIN),
+    hasNonMemberPaymentsFeature: hasFeature(INCOME_FEATURE),
+  });
 }
+
 
 interface Props {
   children: (societyId: string) => ReactNode;

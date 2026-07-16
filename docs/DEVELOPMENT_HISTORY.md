@@ -509,3 +509,114 @@ under Stage 1C.
 
 No Stage 1D work touches AI categorization, Smart QR, online gateways, or
 platform fees; those remain Stage 9 / 10 / 14.
+
+---
+
+# Stage 1D — Partial Closure (Product Quality Pass)
+
+## What shipped in this pass
+
+Focused fixes on the three routes already created for Stage 1D — quality,
+privacy, and workflow correctness. No new stages started, no skills touched.
+
+### Payer privacy split (server)
+
+- `listNonMemberPayersFn` now selects **only safe columns** from
+  `non_member_payers`: `id, payer_type, display_name, organization_name,
+  is_active, created_at`. Phone, email, reference_code, notes and
+  society_id are never fetched or transmitted on the default list path.
+- New authorized detail server function
+  `getNonMemberPayerDetailFn(societyId, payerId)`:
+  - `requireSupabaseAuth` + admin + Pro plan on the target society.
+  - Returns the editable contact fields only after society-scoped
+    ownership matches.
+  - A missing or cross-society record returns `{ code: "not_found" }`,
+    identical to the truly missing case — no enumeration side-channel.
+
+### Render-phase state bug fixed
+
+- `CategoryDialog` and `PayerDialog` previously called setState during
+  render via a `lastOpen` sentinel. Both now use `useEffect(..., [openKey])`
+  to hydrate their form state safely. React no longer warns; behaviour is
+  identical from the user's perspective.
+
+### External Payers page
+
+- Renamed the page to "External Payers"; supporting copy updated to
+  "Manage vendors, advertisers and other non-member payers."
+- Row rendering no longer displays phone (default list contract does
+  not carry it in the first place).
+- Edit action now opens a dialog that shows a loading state, fetches the
+  authorized detail through `getNonMemberPayerDetailFn`, and renders a
+  generic "This payer is unavailable" message when the detail is missing
+  or inaccessible.
+- Local `PayerItem` interface reduced to the safe list contract; the
+  full contact object no longer flows through the list at all.
+
+### Record Offline Income — three-step flow
+
+`/society/income/new` is now a proper three-step wizard:
+
+1. **Details** — category, payer kind (non-member or anonymous), external
+   payer selector, amount, payment date, payment method, reference,
+   description. Client validation is convenience-only; server remains
+   authoritative.
+2. **Review** — read-only accounting review with masked reference,
+   `Pending` verification chip, `Unreconciled` reconciliation chip, and
+   the explicit sentence "This record will be saved as pending
+   verification." Actions: **Back**, **Save Income Record**.
+3. **Saved** — restrained confirmation. Shows amount, payer, category,
+   method, date, masked reference and short record identifier. Actions:
+   **View Record**, **Record Another**, **Back to Income**. Never uses
+   "Payment successful" copy.
+
+Cash and Bank Transfer are the **only** payment methods visible in the
+UI. The `other_offline` option has been removed from the entry form.
+The server still accepts existing `other_offline` records for backward
+compatibility with previously-created rows.
+
+Query invalidation on successful create broadens to
+`["society-income"]`, refreshing dashboard, list, categories and payers.
+
+Amount validation rejects scientific notation and more than two decimal
+places. Future dates are rejected.
+
+Errors are mapped through a `friendlyError()` helper that never surfaces
+raw Supabase / PostgreSQL error text.
+
+### Verification
+
+- `bunx tsgo --noEmit` — passed.
+- `bun run build` — passed (build succeeded, ~47s).
+- `bun scripts/verify-client-bundle-secrets.ts` — OK, no server-only
+  indicators in the client bundle.
+- Protected society `baldha Meetarth`
+  (`1907a918-c4b8-4f43-a837-450530cc7c34`) not accessed at any point.
+
+## Explicitly still remaining inside Stage 1D
+
+The full Stage 1D exit gate described in the roadmap is **not yet**
+complete. The following items remain and are the honest gap this pass
+did not close in a single response:
+
+1. Premium V2 redesign of the Categories page: summary cards, typed
+   filters (search/All/Active/Inactive/System/Custom/group), safe usage
+   count, semantic pastel icon tiles, glass dialog shell.
+2. Premium V2 redesign of the External Payers page: summary cards,
+   debounced search, payer type filter, active/inactive filter, server
+   pagination, initials avatar.
+3. Server-side idempotency token for create-income (browser-provided
+   UUID, society-scoped unique constraint, additive migration). Current
+   double-submit prevention is UI-only via mutation state.
+4. Additional unit tests in `tests/unit/non-member-income.test.ts`
+   covering the new list projection (no phone/email/notes/reference_code
+   in the default contract), the three-step controller, amount
+   validation edge cases, and query-key invalidation.
+5. Integration tests behind `ALLOW_SOCIOHUB_TEST_FIXTURES` for Society A
+   / Society B isolation, plan gating, and role gating.
+6. Direct responsive inspection at 360 / 390 / 414 / 768 / 1280 px with
+   screenshots.
+7. Basic-plan protected-call-count verification against the current
+   FeatureGate + `requireAdminAndPlan` chain.
+
+These items remain **inside Stage 1D**. Stage 1E has not been started.

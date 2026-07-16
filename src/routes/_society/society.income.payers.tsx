@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2, AlertCircle, Plus, Pencil, Users } from "lucide-react";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useSocietyId } from "@/hooks/useSocietyId";
@@ -32,12 +32,13 @@ import {
   listNonMemberPayersFn,
   createNonMemberPayerFn,
   updateNonMemberPayerFn,
+  getNonMemberPayerDetailFn,
 } from "@/lib/non-member-income.functions";
 
 export const Route = createFileRoute("/_society/society/income/payers")({
   head: () => ({
     meta: [
-      { title: "Non-Member Payers — SociyoHub" },
+      { title: "External Payers — SociyoHub" },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -61,23 +62,22 @@ const PAYER_TYPE_OPTIONS = [
 
 type PayerType = (typeof PAYER_TYPE_OPTIONS)[number]["value"];
 
-interface PayerItem {
+/**
+ * Default list contract — PRIVACY-SAFE. Never carries phone, email,
+ * reference_code, notes or society_id.
+ */
+interface PayerListItem {
   id: string;
-  society_id: string;
-  payer_type: PayerType;
+  payer_type: string;
   display_name: string;
   organization_name: string | null;
-  phone: string | null;
-  email: string | null;
-  reference_code: string | null;
-  notes: string | null;
   is_active: boolean;
   created_at: string;
 }
 
 type Editing =
   | { mode: "create" }
-  | { mode: "edit"; row: PayerItem }
+  | { mode: "edit"; payerId: string }
   | null;
 
 function PayersPage() {
@@ -144,7 +144,7 @@ function PayersPage() {
     );
   }
 
-  const items = (listQ.data?.items ?? []) as PayerItem[];
+  const items = (listQ.data?.items ?? []) as PayerListItem[];
 
   return (
     <div className="px-4 py-6 max-w-3xl mx-auto space-y-4">
@@ -156,8 +156,8 @@ function PayersPage() {
       </Link>
       <MobileHero
         icon={Users}
-        title="Non-Member Payers"
-        subtitle="Vendors, advertisers, coaches and other external payers."
+        title="External Payers"
+        subtitle="Manage vendors, advertisers and other non-member payers."
       />
 
       <div className="flex justify-end">
@@ -199,14 +199,13 @@ function PayersPage() {
                   <div className="text-xs text-muted-foreground truncate">
                     {p.payer_type.replace(/_/g, " ")}
                     {p.organization_name ? ` · ${p.organization_name}` : ""}
-                    {p.phone ? ` · ${p.phone}` : ""}
                   </div>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
                   className="min-h-[44px]"
-                  onClick={() => setEditing({ mode: "edit", row: p })}
+                  onClick={() => setEditing({ mode: "edit", payerId: p.id })}
                   aria-label={`Edit ${p.display_name}`}
                 >
                   <Pencil className="h-4 w-4" />
@@ -219,6 +218,7 @@ function PayersPage() {
 
       <PayerDialog
         editing={editing}
+        societyId={societyId}
         onClose={() => setEditing(null)}
         onCreate={(v) => createMut.mutate(v)}
         onUpdate={(v) => updateMut.mutate(v)}
@@ -228,8 +228,31 @@ function PayersPage() {
   );
 }
 
+interface PayerDetailForm {
+  payer_type: PayerType;
+  display_name: string;
+  organization_name: string;
+  phone: string;
+  email: string;
+  reference_code: string;
+  notes: string;
+  is_active: boolean;
+}
+
+const EMPTY_FORM: PayerDetailForm = {
+  payer_type: "vendor",
+  display_name: "",
+  organization_name: "",
+  phone: "",
+  email: "",
+  reference_code: "",
+  notes: "",
+  is_active: true,
+};
+
 function PayerDialog(props: {
   editing: Editing;
+  societyId: string;
   onClose: () => void;
   onCreate: (v: {
     payer_type: PayerType;
@@ -253,61 +276,66 @@ function PayerDialog(props: {
   }) => void;
   submitting: boolean;
 }) {
-  const { editing, onClose, onCreate, onUpdate, submitting } = props;
+  const { editing, societyId, onClose, onCreate, onUpdate, submitting } = props;
   const isEdit = editing?.mode === "edit";
-  const row = editing?.mode === "edit" ? editing.row : null;
+  const editingPayerId = editing?.mode === "edit" ? editing.payerId : null;
+  const detailFn = useServerFn(getNonMemberPayerDetailFn);
 
-  const [payerType, setPayerType] = useState<PayerType>("vendor");
-  const [displayName, setDisplayName] = useState("");
-  const [organization, setOrganization] = useState("");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-  const [reference, setReference] = useState("");
-  const [notes, setNotes] = useState("");
-  const [active, setActive] = useState(true);
+  const detailQ = useQuery({
+    enabled: !!editingPayerId,
+    queryKey: ["society-income", "payer-detail", societyId, editingPayerId],
+    queryFn: async () =>
+      detailFn({ data: { societyId, payerId: editingPayerId! } }),
+  });
 
-  const openKey = editing ? (isEdit ? row!.id : "new") : "closed";
-  const [lastOpen, setLastOpen] = useState<string>("closed");
-  if (openKey !== lastOpen) {
-    setLastOpen(openKey);
-    if (isEdit && row) {
-      setPayerType(row.payer_type);
-      setDisplayName(row.display_name);
-      setOrganization(row.organization_name ?? "");
-      setPhone(row.phone ?? "");
-      setEmail(row.email ?? "");
-      setReference(row.reference_code ?? "");
-      setNotes(row.notes ?? "");
-      setActive(row.is_active);
-    } else if (editing?.mode === "create") {
-      setPayerType("vendor");
-      setDisplayName("");
-      setOrganization("");
-      setPhone("");
-      setEmail("");
-      setReference("");
-      setNotes("");
-      setActive(true);
+  const [form, setForm] = useState<PayerDetailForm>(EMPTY_FORM);
+
+  const openKey = editing ? (isEdit ? editingPayerId! : "new") : "closed";
+  useEffect(() => {
+    if (editing?.mode === "create") setForm(EMPTY_FORM);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openKey]);
+
+  useEffect(() => {
+    if (isEdit && detailQ.data && detailQ.data.code === "ok") {
+      const p = detailQ.data.payer;
+      setForm({
+        payer_type: p.payer_type as PayerType,
+        display_name: p.display_name,
+        organization_name: p.organization_name ?? "",
+        phone: p.phone ?? "",
+        email: p.email ?? "",
+        reference_code: p.reference_code ?? "",
+        notes: p.notes ?? "",
+        is_active: p.is_active,
+      });
     }
-  }
+  }, [isEdit, detailQ.data]);
+
+  const detailLoading = isEdit && detailQ.isLoading;
+  const detailUnavailable =
+    isEdit && (detailQ.isError || detailQ.data?.code === "not_found");
 
   const submit = () => {
-    if (!displayName.trim()) return;
+    if (!form.display_name.trim()) return;
     const base = {
-      payer_type: payerType,
-      display_name: displayName.trim(),
-      organization_name: organization.trim() || undefined,
-      phone: phone.trim() || undefined,
-      email: email.trim() || undefined,
-      reference_code: reference.trim() || undefined,
-      notes: notes.trim() || undefined,
+      payer_type: form.payer_type,
+      display_name: form.display_name.trim(),
+      organization_name: form.organization_name.trim() || undefined,
+      phone: form.phone.trim() || undefined,
+      email: form.email.trim() || undefined,
+      reference_code: form.reference_code.trim() || undefined,
+      notes: form.notes.trim() || undefined,
     };
-    if (isEdit && row) {
-      onUpdate({ id: row.id, ...base, is_active: active });
+    if (isEdit && editingPayerId) {
+      onUpdate({ id: editingPayerId, ...base, is_active: form.is_active });
     } else {
       onCreate(base);
     }
   };
+
+  const set = <K extends keyof PayerDetailForm>(k: K, v: PayerDetailForm[K]) =>
+    setForm((f) => ({ ...f, [k]: v }));
 
   return (
     <Dialog open={!!editing} onOpenChange={(o) => !o && onClose()}>
@@ -320,94 +348,109 @@ function PayerDialog(props: {
               : "Add a vendor, advertiser or other external payer."}
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
-          <div>
-            <Label className="text-xs">Type</Label>
-            <Select
-              value={payerType}
-              onValueChange={(v) => setPayerType(v as PayerType)}
-            >
-              <SelectTrigger className="min-h-[44px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {PAYER_TYPE_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {detailLoading ? (
+          <div className="p-4 text-sm text-muted-foreground flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" /> Loading payer…
           </div>
-          <div>
-            <Label htmlFor="payer-name" className="text-xs">Display name</Label>
-            <Input
-              id="payer-name"
-              className="min-h-[44px]"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="ACME Signage Pvt Ltd"
-            />
+        ) : detailUnavailable ? (
+          <div className="p-4 text-sm text-destructive flex items-center gap-2">
+            <AlertCircle className="h-4 w-4" /> This payer is unavailable.
           </div>
-          <div>
-            <Label htmlFor="payer-org" className="text-xs">Organization (optional)</Label>
-            <Input
-              id="payer-org"
-              className="min-h-[44px]"
-              value={organization}
-              onChange={(e) => setOrganization(e.target.value)}
-            />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        ) : (
+          <div className="space-y-3">
             <div>
-              <Label htmlFor="payer-phone" className="text-xs">Phone (optional)</Label>
+              <Label className="text-xs">Type</Label>
+              <Select
+                value={form.payer_type}
+                onValueChange={(v) => set("payer_type", v as PayerType)}
+              >
+                <SelectTrigger className="min-h-[44px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {PAYER_TYPE_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="payer-name" className="text-xs">Display name</Label>
               <Input
-                id="payer-phone"
+                id="payer-name"
                 className="min-h-[44px]"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+91 98xxxxxxx"
-                inputMode="tel"
+                value={form.display_name}
+                onChange={(e) => set("display_name", e.target.value)}
+                placeholder="ACME Signage Pvt Ltd"
+                maxLength={120}
               />
             </div>
             <div>
-              <Label htmlFor="payer-email" className="text-xs">Email (optional)</Label>
+              <Label htmlFor="payer-org" className="text-xs">Organization (optional)</Label>
               <Input
-                id="payer-email"
+                id="payer-org"
                 className="min-h-[44px]"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={form.organization_name}
+                onChange={(e) => set("organization_name", e.target.value)}
+                maxLength={120}
               />
             </div>
-          </div>
-          <div>
-            <Label htmlFor="payer-ref" className="text-xs">Reference code (optional)</Label>
-            <Input
-              id="payer-ref"
-              className="min-h-[44px]"
-              value={reference}
-              onChange={(e) => setReference(e.target.value)}
-              placeholder="GST / internal code"
-            />
-          </div>
-          <div>
-            <Label htmlFor="payer-notes" className="text-xs">Notes (optional)</Label>
-            <Textarea
-              id="payer-notes"
-              rows={3}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              maxLength={1000}
-            />
-          </div>
-          {isEdit && (
-            <label className="flex items-center gap-2 text-sm min-h-[44px]">
-              <input
-                type="checkbox"
-                checked={active}
-                onChange={(e) => setActive(e.target.checked)}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <Label htmlFor="payer-phone" className="text-xs">Phone (optional)</Label>
+                <Input
+                  id="payer-phone"
+                  className="min-h-[44px]"
+                  value={form.phone}
+                  onChange={(e) => set("phone", e.target.value)}
+                  placeholder="+91 98xxxxxxx"
+                  inputMode="tel"
+                  maxLength={20}
+                />
+              </div>
+              <div>
+                <Label htmlFor="payer-email" className="text-xs">Email (optional)</Label>
+                <Input
+                  id="payer-email"
+                  className="min-h-[44px]"
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => set("email", e.target.value)}
+                  maxLength={160}
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="payer-ref" className="text-xs">Reference code (optional)</Label>
+              <Input
+                id="payer-ref"
+                className="min-h-[44px]"
+                value={form.reference_code}
+                onChange={(e) => set("reference_code", e.target.value)}
+                placeholder="GST / internal code"
+                maxLength={60}
               />
-              Active
-            </label>
-          )}
-        </div>
+            </div>
+            <div>
+              <Label htmlFor="payer-notes" className="text-xs">Notes (optional)</Label>
+              <Textarea
+                id="payer-notes"
+                rows={3}
+                value={form.notes}
+                onChange={(e) => set("notes", e.target.value)}
+                maxLength={1000}
+              />
+            </div>
+            {isEdit && (
+              <label className="flex items-center gap-2 text-sm min-h-[44px]">
+                <input
+                  type="checkbox"
+                  checked={form.is_active}
+                  onChange={(e) => set("is_active", e.target.checked)}
+                />
+                Active
+              </label>
+            )}
+          </div>
+        )}
         <DialogFooter>
           <Button
             variant="outline"
@@ -420,7 +463,9 @@ function PayerDialog(props: {
           <Button
             className="min-h-[44px]"
             onClick={submit}
-            disabled={submitting || !displayName.trim()}
+            disabled={
+              submitting || detailLoading || detailUnavailable || !form.display_name.trim()
+            }
           >
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : isEdit ? "Save" : "Create"}
           </Button>

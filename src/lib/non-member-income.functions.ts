@@ -167,16 +167,79 @@ export const listNonMemberPayersFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const ctx = context as Ctx;
     await requireAdminAndPlan(ctx, data.societyId);
+    // Privacy: default list projects only safe columns.
+    // Phone/email/reference_code/notes are NEVER selected here; use
+    // getNonMemberPayerDetailFn for authorized editing.
     const { data: rows, error } = await ctx.supabase
       .from("non_member_payers")
-      .select(
-        "id, society_id, payer_type, display_name, organization_name, phone, email, reference_code, notes, is_active, created_at",
-      )
+      .select("id, payer_type, display_name, organization_name, is_active, created_at")
       .eq("society_id", data.societyId)
       .order("display_name", { ascending: true });
     if (error) throw new Error("list_failed");
-    return { items: toPublicPayerList((rows ?? []) as any) };
+    return {
+      items: (rows ?? []) as Array<{
+        id: string;
+        payer_type: string;
+        display_name: string;
+        organization_name: string | null;
+        is_active: boolean;
+        created_at: string;
+      }>,
+    };
   });
+
+/**
+ * Authorized detail fetch for editing a single payer. Returns editable
+ * contact fields only after admin + Pro + society-scoped ownership check.
+ * A missing or cross-society record returns the same generic not_found
+ * shape so the UI cannot enumerate other societies' payers.
+ */
+export const getNonMemberPayerDetailFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw) =>
+    z.object({ societyId: z.string().uuid(), payerId: z.string().uuid() }).parse(raw),
+  )
+  .handler(async ({ data, context }) => {
+    const ctx = context as Ctx;
+    await requireAdminAndPlan(ctx, data.societyId);
+    const { data: row, error } = await ctx.supabase
+      .from("non_member_payers")
+      .select(
+        "id, society_id, payer_type, display_name, organization_name, phone, email, reference_code, notes, is_active",
+      )
+      .eq("id", data.payerId)
+      .maybeSingle();
+    if (error) throw new Error("temporary_error");
+    if (!row || (row as { society_id: string }).society_id !== data.societyId) {
+      return { code: "not_found" as const };
+    }
+    const r = row as {
+      id: string;
+      payer_type: string;
+      display_name: string;
+      organization_name: string | null;
+      phone: string | null;
+      email: string | null;
+      reference_code: string | null;
+      notes: string | null;
+      is_active: boolean;
+    };
+    return {
+      code: "ok" as const,
+      payer: {
+        id: r.id,
+        payer_type: r.payer_type,
+        display_name: r.display_name,
+        organization_name: r.organization_name,
+        phone: r.phone,
+        email: r.email,
+        reference_code: r.reference_code,
+        notes: r.notes,
+        is_active: r.is_active,
+      },
+    };
+  });
+
 
 export const createNonMemberPayerFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

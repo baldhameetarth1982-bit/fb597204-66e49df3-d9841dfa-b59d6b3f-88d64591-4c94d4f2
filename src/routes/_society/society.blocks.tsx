@@ -179,6 +179,20 @@ function BlocksPage() {
     );
   }
 
+  if (overview?.structure_mode === "serial") {
+    return (
+      <PageShell>
+        <PageHeader title="Blocks" description="Manage the wings of your society." />
+        <EmptyState
+          icon={Building2}
+          title="Serial-mode society"
+          description="Your society is configured for direct houses. Blocks are not used — manage units directly."
+          action={<Button asChild><a href="/society/flats">Open Units</a></Button>}
+        />
+      </PageShell>
+    );
+  }
+
   return (
     <PageShell>
       <PageHeader

@@ -62,7 +62,7 @@ export const Route = createFileRoute("/_society/society/income/$id")({
 
 const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
 
-type DialogKind = "verify" | "reject" | "reverse" | null;
+type DialogKind = "verify" | "reject" | "reverse" | "reconcile" | "unreconcile" | null;
 
 function statusMessage(result: IncomeTransitionResult): string {
   switch (result.status) {

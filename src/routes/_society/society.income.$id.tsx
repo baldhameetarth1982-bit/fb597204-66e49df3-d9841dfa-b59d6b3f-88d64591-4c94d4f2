@@ -13,6 +13,7 @@ import {
   Clock,
 } from "lucide-react";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
+import { incomeKeys, incomeInvalidations } from "@/lib/income-query-keys";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { MobileHero } from "@/components/shared/MobileHero";
 import { SectionCard } from "@/components/shared/SectionCard";

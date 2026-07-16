@@ -40,12 +40,35 @@ import { z } from "zod";
 // Guards
 // ---------------------------------------------------------------------------
 
-// Loosely-typed context: the incoming middleware supplies a typed Supabase
-// client, but existing generated-types field ambiguity across insert/update
-// paths keeps this file's Ctx pragmatic. The RPC call site below narrows to
-// a strictly-typed client to drop the historical `as any` cast.
-type Ctx = { supabase: any; userId: string };
+// Loosely-typed context: the middleware supplies a typed Supabase client,
+// but generated field ambiguity across insert/update paths keeps this file's
+// Ctx pragmatic. The RPC call site narrows to a strictly-typed client.
+type Ctx = { supabase: SupabaseClient<Database>; userId: string };
 type StrictSupabase = SupabaseClient<Database>;
+
+/**
+ * Stage 1D generator-limitation note:
+ * Supabase's type generator emits every SQL function parameter as a
+ * non-null `string`/`number`, even when the underlying SQL argument is
+ * nullable. The narrow adapter type below reflects the true nullable shape
+ * for `create_non_member_income_record` — the only RPC in this file that
+ * passes null values — so we no longer need `as unknown as string` casts.
+ */
+type CreateIncomeRpcArgs = Omit<
+  Database["public"]["Functions"]["create_non_member_income_record"]["Args"],
+  | "_resident_user_id"
+  | "_non_member_payer_id"
+  | "_payment_date"
+  | "_reference_number"
+  | "_description"
+> & {
+  _resident_user_id: string | null;
+  _non_member_payer_id: string | null;
+  _payment_date: string | null;
+  _reference_number: string | null;
+  _description: string | null;
+};
+
 
 async function assertSocietyAdmin(ctx: Ctx, societyId: string): Promise<void> {
   const { data, error } = await ctx.supabase.rpc("is_society_admin_for", {

@@ -72,10 +72,11 @@ export const Route = createFileRoute("/_society/society/income")({
     ],
   }),
   component: () => (
-    <FeatureGate feature="non_member_payments">
-      <IncomePage />
-    </FeatureGate>
+    <IncomeAccessBoundary>
+      {(societyId) => <IncomePage societyId={societyId} />}
+    </IncomeAccessBoundary>
   ),
+
 });
 
 const PAGE_SIZE = 25;

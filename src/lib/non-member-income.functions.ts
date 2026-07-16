@@ -56,7 +56,7 @@ type StrictSupabase = SupabaseClient<Database>;
  * non-null `string`/`number`, even when the underlying SQL argument is
  * nullable. The narrow adapter type below reflects the true nullable shape
  * for `create_non_member_income_record` — the only RPC in this file that
- * passes null values — so we no longer need `as unknown as string` casts.
+ * passes null values — so we no longer need the historical double-cast.
  */
 type CreateIncomeRpcArgs = Omit<
   Database["public"]["Functions"]["create_non_member_income_record"]["Args"],

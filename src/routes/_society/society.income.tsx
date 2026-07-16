@@ -525,7 +525,7 @@ function IncomePage({ societyId }: { societyId: string }) {
         </SectionCard>
       )}
 
-      )}
+
 
       <SectionCard
         title="Records"

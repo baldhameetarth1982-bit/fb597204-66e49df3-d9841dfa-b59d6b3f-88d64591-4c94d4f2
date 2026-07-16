@@ -25,6 +25,11 @@ import {
   listNonMemberPayersFn,
   createNonMemberIncomeRecordFn,
 } from "@/lib/non-member-income.functions";
+import {
+  parseCreateIncomeResult,
+  secureRequestUuid,
+  friendlyIncomeError,
+} from "@/lib/income-errors";
 
 export const Route = createFileRoute("/_society/society/income/new")({
   head: () => ({
@@ -88,23 +93,6 @@ function maskReference(ref: string): string {
   return `••••${t.slice(-4)}`;
 }
 
-function friendlyError(msg: string): string {
-  switch (msg) {
-    case "category_inactive":
-      return "Selected category is inactive";
-    case "payer_inactive":
-      return "Selected payer is inactive";
-    case "category_society_mismatch":
-    case "payer_society_mismatch":
-      return "Invalid selection for this society";
-    case "plan_required":
-      return "Upgrade required to record non-member income";
-    case "not_authorized":
-      return "You don't have permission to record income";
-    default:
-      return "Could not record income. Please try again.";
-  }
-}
 
 function NewIncomePage() {
   const { societyId, loading } = useSocietyId();
@@ -152,20 +140,49 @@ function NewIncomePage() {
   } | null>(null);
   // Stage 1D — one stable UUID per Review pass. Retries reuse it so the
   // server-side unique index resolves duplicate Saves to the original row.
-  // Regenerated only on "Record Another".
+  // Regenerated on "Record Another" AND whenever the user returns to
+  // Details and materially edits the draft (so a changed payload cannot
+  // silently collide with the previous key).
   const [requestId, setRequestId] = useState<string | null>(null);
+  // Snapshot of the form at the moment the current requestId was minted.
+  // If the user edits any material field, we invalidate the key.
+  const [requestSnapshot, setRequestSnapshot] = useState<Form | null>(null);
+
+  const materialFingerprint = (f: Form): string =>
+    [
+      f.categoryId,
+      f.payerKind,
+      f.payerKind === "non_member" ? f.payerId : "",
+      f.amount.trim(),
+      f.method,
+      f.paymentDate,
+      f.reference.trim(),
+      f.description.trim(),
+    ].join("|");
 
   const set = <K extends keyof Form>(k: K, v: Form[K]) =>
-    setForm((f) => ({ ...f, [k]: v }));
+    setForm((f) => {
+      const next = { ...f, [k]: v };
+      // If we already minted a request id and the user edits the draft
+      // materially, drop the key so re-entering Review generates a fresh one.
+      if (requestId && materialFingerprint(next) !== materialFingerprint(f)) {
+        setRequestId(null);
+        setRequestSnapshot(null);
+      }
+      return next;
+    });
 
   const enterReview = () => {
+    const uuid = secureRequestUuid();
     if (!requestId) {
-      // Prefer crypto.randomUUID; fall back for very old runtimes.
-      const uuid =
-        typeof crypto !== "undefined" && "randomUUID" in crypto
-          ? crypto.randomUUID()
-          : `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}`;
+      if (!uuid) {
+        toast.error(
+          "Your browser can't securely record this entry. Please update to a modern browser.",
+        );
+        return;
+      }
       setRequestId(uuid);
+      setRequestSnapshot(form);
     }
     setStep("review");
   };
@@ -173,7 +190,7 @@ function NewIncomePage() {
   const mut = useMutation({
     mutationFn: async () => {
       const amountNum = Number(form.amount);
-      return createFn({
+      const res = await createFn({
         data: {
           societyId: societyId!,
           category_id: form.categoryId,
@@ -188,15 +205,29 @@ function NewIncomePage() {
           creation_request_id: requestId ?? undefined,
         },
       });
+      return parseCreateIncomeResult(res);
     },
     onSuccess: (res) => {
-      setSavedRecord({ id: res.id, snapshot: form });
-      setStep("saved");
-      void qc.invalidateQueries({ queryKey: ["society-income"] });
+      switch (res.status) {
+        case "created":
+        case "existing":
+          setSavedRecord({ id: res.id, snapshot: form });
+          setStep("saved");
+          void qc.invalidateQueries({ queryKey: ["society-income"] });
+          return;
+        case "idempotency_conflict":
+          toast.error(friendlyIncomeError("idempotency_conflict"));
+          // Force a fresh key on next Review.
+          setRequestId(null);
+          setRequestSnapshot(null);
+          setStep("details");
+          return;
+        default:
+          toast.error(friendlyIncomeError(res.status));
+      }
     },
     onError: (e: unknown) => {
-      const msg = e instanceof Error ? e.message : "";
-      toast.error(friendlyError(msg));
+      toast.error(friendlyIncomeError(e));
     },
   });
 

@@ -229,6 +229,44 @@ describe("Stage 1D — zero-call proof via service spies", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Access correction — Block Admin without an explicit finance permission is
+// denied. The frontend must agree with the server, which authorizes every
+// protected income mutation via `is_society_admin_for(...)`.
+// ---------------------------------------------------------------------------
+
+describe("Stage 1D — finance-role authorization matches the server contract", () => {
+  it("Society Admin: allowed", () => {
+    const s = computeIncomeAccess(base({ hasFinanceRole: true }));
+    expect(s.kind).toBe("allowed");
+  });
+  it("Block Admin without finance permission: denied", () => {
+    // The hook maps `hasFinanceRole` from the auth roles; a block admin
+    // WITHOUT an explicit finance permission resolves to `false`.
+    const s = computeIncomeAccess(base({ hasFinanceRole: false }));
+    expect(s.kind).toBe("role_denied");
+  });
+  it("Resident: denied", () => {
+    const s = computeIncomeAccess(base({ hasFinanceRole: false }));
+    expect(s.kind).toBe("role_denied");
+  });
+  it("Guard/Security: denied", () => {
+    const s = computeIncomeAccess(base({ hasFinanceRole: false }));
+    expect(s.kind).toBe("role_denied");
+  });
+  it("hook source-of-truth: only SOCIETY_ADMIN grants finance role", () => {
+    const src = readFileSync(
+      join(process.cwd(), "src/components/subscription/IncomeAccessBoundary.tsx"),
+      "utf8",
+    );
+    // Must NOT auto-grant to BLOCK_ADMIN.
+    expect(src).not.toMatch(/hasFinanceRole:\s*hasRole\(ROLES\.SOCIETY_ADMIN\)\s*\|\|\s*hasRole\(ROLES\.BLOCK_ADMIN\)/);
+    // Must derive strictly from society admin role.
+    expect(src).toMatch(/hasFinanceRole:\s*hasRole\(ROLES\.SOCIETY_ADMIN\)/);
+  });
+});
+
+
+// ---------------------------------------------------------------------------
 // Source-scan regression checks — every route must be wrapped in the shared
 // boundary and must NOT contain empty-society keys or broad root
 // invalidations.

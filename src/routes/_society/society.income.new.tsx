@@ -227,6 +227,7 @@ function NewIncomePage() {
   const resetAndRestart = () => {
     setForm({ ...EMPTY_FORM, paymentDate: todayISO() });
     setSavedRecord(null);
+    setRequestId(null); // fresh idempotency key for the next record
     setStep("details");
   };
 

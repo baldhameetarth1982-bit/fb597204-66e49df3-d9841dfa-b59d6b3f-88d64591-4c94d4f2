@@ -14,6 +14,8 @@ import {
   Users,
   ChevronLeft,
   ChevronRight,
+  Plus,
+  Tags,
 } from "lucide-react";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useSocietyId } from "@/hooks/useSocietyId";

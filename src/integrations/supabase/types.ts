@@ -2230,6 +2230,10 @@ export type Database = {
           payment_date: string
           payment_method: string
           payment_status: string
+          reconciled_at: string | null
+          reconciled_by: string | null
+          reconciliation_reason: string | null
+          reconciliation_reference: string | null
           reconciliation_status: string
           reference_number: string | null
           rejected_at: string | null
@@ -2260,6 +2264,10 @@ export type Database = {
           payment_date?: string
           payment_method: string
           payment_status?: string
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          reconciliation_reason?: string | null
+          reconciliation_reference?: string | null
           reconciliation_status?: string
           reference_number?: string | null
           rejected_at?: string | null
@@ -2290,6 +2298,10 @@ export type Database = {
           payment_date?: string
           payment_method?: string
           payment_status?: string
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          reconciliation_reason?: string | null
+          reconciliation_reference?: string | null
           reconciliation_status?: string
           reference_number?: string | null
           rejected_at?: string | null
@@ -3110,6 +3122,19 @@ export type Database = {
           razorpay_account_id: string
         }[]
       }
+      get_society_income_report: {
+        Args: {
+          _category_id?: string
+          _from_date: string
+          _payer_kind?: string
+          _payment_method?: string
+          _reconciliation_status?: string
+          _society_id: string
+          _to_date: string
+          _verification_status?: string
+        }
+        Returns: Json
+      }
       get_society_invite_code: {
         Args: { _society_id: string }
         Returns: string
@@ -3163,6 +3188,17 @@ export type Database = {
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       is_super_admin_internal: { Args: { _actor_id: string }; Returns: boolean }
       join_society_with_code: { Args: { _code: string }; Returns: string }
+      list_non_member_payers_page: {
+        Args: {
+          _active?: string
+          _limit?: number
+          _offset?: number
+          _payer_type?: string
+          _search?: string
+          _society_id: string
+        }
+        Returns: Json
+      }
       list_pending_join_requests: {
         Args: { _society_id: string }
         Returns: {
@@ -3307,6 +3343,15 @@ export type Database = {
           remaining: number
           retry_after_seconds: number
         }[]
+      }
+      transition_income_reconciliation: {
+        Args: {
+          _action: string
+          _reason?: string
+          _record_id: string
+          _reference?: string
+        }
+        Returns: Json
       }
       transition_income_record: {
         Args: { _reason?: string; _record_id: string; _target_status: string }

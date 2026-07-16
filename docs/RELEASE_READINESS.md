@@ -663,3 +663,36 @@ require a DOM environment:
 
 Verification: 408/408 unit tests pass; guarded integration suite skips
 honestly with no fixtures; production build clean; secret scan clean.
+
+## Stage 1E — SQL reporting + reconciliation foundation + payer pagination
+
+- `get_society_income_report` returns authoritative aggregates from a
+  single society-scoped SQL execution. Dashboard consumes SQL summary,
+  by-category, by-method, and trend directly — no client-side reduction
+  of the loaded record page for totals.
+- `transition_income_reconciliation` performs an idempotent, transactional
+  reconcile / unreconcile with atomic `audit_log` insert. Verification
+  state is never mutated by this RPC. Reason (5–500, no HTML) required
+  for unreconcile. Cross-society calls return `not_found`; Basic/expired
+  return `plan_required`.
+- `list_non_member_payers_page` enforces safe projection, limit clamp
+  (1..100), and search/type/active filtering entirely in SQL and returns
+  `{items, total, has_next}`. UI pagination and empty states are driven
+  by the SQL response — no unbounded fetch and no client slicing of a
+  full directory.
+- Every new RPC revokes execute from `PUBLIC` and `anon` and grants
+  only to `authenticated`.
+- 421/421 unit tests pass (adds `income-report-contract.test.ts`).
+  Guarded integration suite skipped honestly (no non-protected synthetic
+  society fixture is provisioned in this environment; the protected
+  society `baldha Meetarth` must not be used). Production build clean.
+  Secret scan clean.
+- Preview inspected at 360 / 390 / 414 / 768 / 1280 CSS widths for the
+  Income dashboard populated / empty / loading / error, filtered record
+  list, record detail with reconcile & undo-reconciliation dialogs,
+  Category page, Payer page, Basic-locked, and role-denied.
+- Protected society `baldha Meetarth`
+  (`1907a918-c4b8-4f43-a837-450530cc7c34`) untouched.
+
+**Stage 1 overall status: complete. Next: Stage 2A — Society Structure
+Audit and Canonical Setup Model.**

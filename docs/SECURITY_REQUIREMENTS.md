@@ -119,3 +119,25 @@ nullable-honest `CreateIncomeRpcArgs` adapter type in place of double-cast
 `as unknown as string` coercions; TypeScript now reflects the real
 signature of the SQL function, keeping the boundary between caller-supplied
 input and server-derived canonical JSON/hash unambiguous.
+
+## Stage 1E — Reporting and reconciliation
+
+- `get_society_income_report`, `transition_income_reconciliation`, and
+  `list_non_member_payers_page` are all `SECURITY DEFINER` with a fixed
+  `search_path = public`, revoke `EXECUTE` from `PUBLIC` and `anon`, and
+  grant `EXECUTE` only to `authenticated`.
+- Each RPC calls `public.is_society_admin_for(auth.uid(), _society_id)`
+  as its authorization primitive. Cross-society lookups collapse to
+  `not_found` (non-enumerating) rather than distinguishing a hidden
+  record from a missing one.
+- Plan gate (Pro/Premium or an active trial with a future `trial_ends_at`)
+  is enforced inside every RPC — the UI cannot bypass it.
+- Reconciliation `UPDATE` and the `audit_log` `INSERT` run in the same
+  transactional plpgsql function so an aborted update cannot leave an
+  audit trail behind or vice versa.
+- Verification (`society_income_records.verification_status`) is never
+  mutated by the reconciliation RPC. The two state machines are strictly
+  independent.
+- Payer list projection is enforced in SQL (`id, payer_type,
+  display_name, organization_name, is_active, created_at`) so the wire
+  format cannot leak `phone`, `email`, `reference_code`, or `notes`.

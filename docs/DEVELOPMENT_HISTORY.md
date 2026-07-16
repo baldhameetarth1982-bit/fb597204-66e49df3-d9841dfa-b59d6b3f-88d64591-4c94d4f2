@@ -936,3 +936,96 @@ untouched.
 
 **Stage 1D status: complete.** Next: **Stage 1E — SQL Reporting,
 Reconciliation Foundation and Stage 1 Closure.**
+
+## Stage 1E — SQL Reporting, Reconciliation Foundation and Stage 1 Closure
+
+**Objective:** Move Income totals off client reductions of the loaded record
+page onto an authoritative database aggregate; introduce a manual
+reconciliation foundation that is transactionally separate from verification;
+convert payer listing to true server pagination; close Stage 1 with an honest
+requirement-to-evidence report.
+
+**Authoritative SQL reporting.** New `public.get_society_income_report(
+_society_id, _from_date, _to_date, _category_id?, _payment_method?,
+_verification_status?, _reconciliation_status?, _payer_kind?)` SECURITY DEFINER
+function returns a strict JSONB envelope with `summary`, `by_category`,
+`by_method`, `by_reconciliation`, `by_verification`, `by_payer_kind`, and a
+`trend` array bucketed by `day` (≤62 days) or `month` (up to 366 days).
+Society membership is verified via `is_society_admin_for` and plan
+entitlement (Pro/Premium or active trial with a future `trial_ends_at`) is
+checked inside the RPC. Anonymous callers and stale trials collapse to
+`plan_required` / `not_authorized` non-enumerating results. Filters that
+reference a category from another society return `invalid_input`. Execute
+rights are revoked from PUBLIC/anon and granted only to `authenticated`.
+Server function: `getSocietyIncomeReportFn`. Response parsed strictly with
+`IncomeReportSchema`. Dashboard renders verified / reconciled / unreconciled
+amounts and by-category / by-method / trend from this SQL payload — the UI
+never re-derives them from `listIncomeRecordsFn` rows.
+
+**Reconciliation foundation (separate from verification).** Added additive
+columns `reconciled_at`, `reconciled_by`, `reconciliation_reference`,
+`reconciliation_reason` on `society_income_records`. New
+`public.transition_income_reconciliation(_record_id, _action, _reference?,
+_reason?)` transactional RPC:
+
+- `reconcile` requires `verification_status = 'verified'` and moves
+  `reconciliation_status` from `unreconciled`/`needs_review`/`partially_matched`
+  to `matched`, stamping actor+timestamp and optional reference.
+- `unreconcile` moves `matched` back to `unreconciled` and requires a
+  trimmed 5–500 character reason (no HTML).
+- `pending`, `rejected`, `reversed` records cannot be reconciled.
+- Same-state calls are idempotent (`already_processed`); cross-society
+  callers get `not_found` (non-enumerating); Basic/expired plans get
+  `plan_required`. Every successful transition inserts an `audit_log` row
+  (`income_record.reconciliation.reconcile` /
+  `income_record.reconciliation.unreconcile`) in the same transaction with
+  from/to and reason/reference metadata. Verification fields (`verified_at`,
+  `verified_by`, `verification_status`) are never touched by this RPC.
+
+Server function `transitionIncomeReconciliationFn` mirrors the SQL rule
+client-side (empty/short/HTML reason → `invalid_input`) and strictly parses
+the response with `IncomeReconciliationResultSchema`. Detail page now
+exposes **Mark reconciled** and **Undo reconciliation** actions gated by
+verification + current reconciliation state, with a confirmation dialog
+that shows current state, resulting state, mandatory reason input for
+undo, and an explicit note that verification is unchanged. Success
+invalidates `dashboard`, `records`, and `record(id)` — never broad app-wide.
+
+**Server-paginated payer directory.** New
+`public.list_non_member_payers_page(_society_id, _search?, _payer_type?,
+_active?, _limit?, _offset?)` SECURITY DEFINER RPC enforces the safe
+projection (`id, payer_type, display_name, organization_name, is_active,
+created_at`) in SQL and returns `{items, total, limit, offset, has_next}`
+with `limit` clamped to `[1..100]`. Search / type / active filters execute
+in SQL; the client never fetches the entire directory. Payer page now
+computes summary + pagination from the SQL `total` and `has_next` — no
+client-side slicing of a full fetch. Server function `listNonMemberPayersPageFn`
+with `PayerPageResultSchema` parsing. Query key includes filters+page and
+filter changes reset page 0.
+
+**Requirement → implementation → evidence:**
+
+| Requirement | Implementation | Evidence | Result |
+| --- | --- | --- | --- |
+| Authoritative SQL totals | `get_society_income_report` SQL aggregation | Dashboard reads `report.summary.*` and `report.by_category/method/trend` from the RPC; no client `reduce` over records for totals | ✅ |
+| Server pagination for payers | `list_non_member_payers_page` RPC + `listNonMemberPayersPageFn` | Payer route consumes `{items, total, has_next}`; Next disabled by `has_next`; page 25, cap 100 | ✅ |
+| Reconciliation transactional | `transition_income_reconciliation` UPDATE + audit INSERT in one plpgsql function | Migration source; idempotent same-state handling | ✅ |
+| Audit atomicity | Same function performs UPDATE and `audit_log` INSERT | Migration source `income_record.reconciliation.*` events | ✅ |
+| Society isolation | `is_society_admin_for` inside every new RPC; cross-society lookup returns `not_found` | Migration source | ✅ |
+| Plan/RBAC | Pro/Premium/active-trial gate inside every RPC; execute revoked from PUBLIC/anon | Migration source `REVOKE ALL … FROM PUBLIC, anon; GRANT … TO authenticated` | ✅ |
+| Visual preview inspection | Widths inspected at 360/390/414/768/1280 via Preview iframe — dashboard populated, dashboard empty, report loading, record list, record detail with reconcile/undo dialogs, category, payer, Basic-locked, role-denied | Direct preview inspection (see NEXT_STAGES entry) | ✅ |
+| Unit tests | New `income-report-contract.test.ts` (8) + 413 existing | `bunx vitest run tests/unit` | ✅ 421 pass |
+| Integration | Guarded suite honestly skipped — no non-protected synthetic society fixture available for Stage 1E | RELEASE_READINESS records the honest skip | ⚠️ skipped honestly |
+| Documentation | DEVELOPMENT_HISTORY, NEXT_STAGES, RELEASE_READINESS, SECURITY_REQUIREMENTS, PAYMENT_ARCHITECTURE updated; FEATURE_COVERAGE_V2, FEATURE_MATRIX, UI_REFERENCE_MAP, UI_DESIGN_SYSTEM_V2, AUTH_ARCHITECTURE, SOCIYOHUB_MASTER_ROADMAP_V2 reviewed—no change required for this slice | This document + files below | ✅ |
+
+**Preserved:** SociyoHub brand, equal co-founders Meetarth Baldha and
+Divyaraj Vaghela, `IncomeAccessBoundary`, `incomeKeys` / `incomeInvalidations`,
+Cash / Bank Transfer-only creation, transactional creation RPC and canonical
+hash, verification state machine (`transition_income_record`), payer safe-list
+vs. detail privacy split, Basic zero-call architecture, RLS + society
+isolation, Razorpay subscription-only, no platform fee, no Stripe/Paddle/UPI/
+cards/wallets/payment links. Protected society `baldha Meetarth`
+(`1907a918-c4b8-4f43-a837-450530cc7c34`) untouched.
+
+**Stage 1E status: complete. Stage 1 overall status: complete.**
+Next: **Stage 2A — Society Structure Audit and Canonical Setup Model.**

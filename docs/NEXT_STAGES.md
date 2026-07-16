@@ -71,11 +71,33 @@ Backend foundation for Non-Member Payments landed:
 Next (Turn 18B): Society Admin UI for categories, payers, income entry + verification/reversal, and Reports wiring. Still no online payment gateway.
 Later Stage 3B turns: AI Income Categorization (server-side, Pro), Universal Smart QR, Reconciliation import.
 
-## Remaining Stage 1D
+## Stage 1E — completed
 
-1. Premium category and payer UI redesign.
-2. Responsive visual verification.
-3. Stage 1D documentation/release closure.
+Authoritative SQL income reporting (`get_society_income_report`),
+manual reconciliation foundation (`transition_income_reconciliation`
+with atomic `audit_log`), server-paginated payer directory
+(`list_non_member_payers_page`), and dashboard/detail UI wired to the
+new sources. Verification and reconciliation are strictly independent
+state machines. All privileged RPCs revoke PUBLIC/anon and grant
+`authenticated` only.
 
-The shared income access boundary, plan-parity spec, query-key
-centralization, and RPC-type synchronization are complete.
+**Preview inspection (Stage 1E):** Rendered preview inspected at 360,
+390, 414, 768, and 1280 CSS widths for: Income dashboard populated,
+dashboard empty, report loading, filtered record list, record detail
+with reconcile / undo-reconciliation dialogs (verification note
+visible), category page, payer page, Basic locked, and role denied.
+No horizontal overflow, ₹ values not clipped, dialogs fit mobile,
+44px touch targets on all primary actions, status pills distinguished
+by shape+label (not color alone). Reduced motion respected.
+
+**Non-critical debt deferred to Stage 13:**
+
+- Optional server-side CSV export of the SQL report (no safe export
+  subsystem exists yet).
+- `needs_review` and `partially_matched` still surface but Stage 1E
+  only ships the manual `matched` ↔ `unreconciled` transitions.
+- Real bank-statement import, Smart QR, and AI auto-matching remain
+  future stages.
+
+## Next: Stage 2A — Society Structure Audit and Canonical Setup Model
+

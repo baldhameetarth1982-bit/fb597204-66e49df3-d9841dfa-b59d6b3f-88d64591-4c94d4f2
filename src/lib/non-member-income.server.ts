@@ -522,7 +522,146 @@ export const IncomeTransitionReason = z
       .string()
       .min(5, "reason_too_short")
       .max(500, "reason_too_long")
-      .refine((s) => !/<[^>]+>/.test(s), "reason_html_forbidden"),
+    .refine((s) => !/<[^>]+>/.test(s), "reason_html_forbidden"),
   );
+
+// ---------------------------------------------------------------------------
+// Stage 1E — Authoritative SQL income reporting
+// ---------------------------------------------------------------------------
+
+const NumericAmount = z.union([z.number(), z.string()]).transform((v) => {
+  const n = typeof v === "string" ? Number(v) : v;
+  return Number.isFinite(n) ? n : 0;
+});
+const NumericCount = z.union([z.number(), z.string()]).transform((v) => {
+  const n = typeof v === "string" ? Number(v) : v;
+  return Number.isFinite(n) ? Math.trunc(n) : 0;
+});
+
+export const IncomeReportSummarySchema = z.object({
+  record_count: NumericCount,
+  total_amount: NumericAmount,
+  verified_amount: NumericAmount,
+  pending_amount: NumericAmount,
+  rejected_amount: NumericAmount,
+  reversed_amount: NumericAmount,
+  reconciled_amount: NumericAmount,
+  unreconciled_amount: NumericAmount,
+  verified_count: NumericCount,
+  pending_count: NumericCount,
+  rejected_count: NumericCount,
+  reversed_count: NumericCount,
+  reconciled_count: NumericCount,
+  unreconciled_count: NumericCount,
+});
+export type IncomeReportSummary = z.infer<typeof IncomeReportSummarySchema>;
+
+export const IncomeReportCategoryRow = z.object({
+  category_id: z.string(),
+  display_name: z.string().nullable(),
+  amount: NumericAmount,
+  count: NumericCount,
+});
+export const IncomeReportMethodRow = z.object({
+  payment_method: z.string(),
+  amount: NumericAmount,
+  count: NumericCount,
+});
+export const IncomeReportReconRow = z.object({
+  reconciliation_status: z.string(),
+  count: NumericCount,
+  amount: NumericAmount,
+});
+export const IncomeReportVerifRow = z.object({
+  verification_status: z.string(),
+  count: NumericCount,
+  amount: NumericAmount,
+});
+export const IncomeReportKindRow = z.object({
+  payer_kind: z.string(),
+  count: NumericCount,
+  amount: NumericAmount,
+});
+export const IncomeReportTrendRow = z.object({
+  bucket: z.string(),
+  amount: NumericAmount,
+  count: NumericCount,
+});
+
+export const IncomeReportSchema = z.discriminatedUnion("status", [
+  z
+    .object({
+      status: z.literal("ok"),
+      from_date: z.string(),
+      to_date: z.string(),
+      trend_bucket: z.enum(["day", "month"]),
+      summary: IncomeReportSummarySchema,
+      by_category: z.array(IncomeReportCategoryRow),
+      by_method: z.array(IncomeReportMethodRow),
+      by_reconciliation: z.array(IncomeReportReconRow),
+      by_verification: z.array(IncomeReportVerifRow),
+      by_payer_kind: z.array(IncomeReportKindRow),
+      trend: z.array(IncomeReportTrendRow),
+    })
+    .strict(),
+  z.object({ status: z.literal("not_authorized") }),
+  z.object({ status: z.literal("plan_required") }),
+  z.object({ status: z.literal("invalid_input") }),
+]);
+export type IncomeReport = z.infer<typeof IncomeReportSchema>;
+
+// Reconciliation transition result
+export const IncomeReconciliationResultSchema = z.discriminatedUnion("status", [
+  z
+    .object({
+      status: z.literal("success"),
+      recordId: z.string().uuid(),
+      reconciliationStatus: z.enum(["matched", "unreconciled"]),
+      changedAt: z.string(),
+    })
+    ,
+  z
+    .object({
+      status: z.literal("already_processed"),
+      currentStatus: z.enum(["matched", "unreconciled"]),
+    })
+    ,
+  z.object({ status: z.literal("invalid_transition") }),
+  z.object({ status: z.literal("invalid_input") }),
+  z.object({ status: z.literal("not_found") }),
+  z.object({ status: z.literal("not_authorized") }),
+  z.object({ status: z.literal("plan_required") }),
+  z.object({ status: z.literal("error") }),
+]);
+export type IncomeReconciliationResult = z.infer<
+  typeof IncomeReconciliationResultSchema
+>;
+
+// Paginated payer list
+export const PayerPageItemSchema = z.object({
+  id: z.string().uuid(),
+  payer_type: z.string(),
+  display_name: z.string(),
+  organization_name: z.string().nullable(),
+  is_active: z.boolean(),
+  created_at: z.string(),
+});
+export const PayerPageResultSchema = z.discriminatedUnion("status", [
+  z
+    .object({
+      status: z.literal("ok"),
+      items: z.array(PayerPageItemSchema),
+      total: NumericCount,
+      limit: NumericCount,
+      offset: NumericCount,
+      has_next: z.boolean(),
+    })
+    ,
+  z.object({ status: z.literal("not_authorized") }),
+  z.object({ status: z.literal("plan_required") }),
+]);
+export type PayerPageResult = z.infer<typeof PayerPageResultSchema>;
+export type PayerPageItem = z.infer<typeof PayerPageItemSchema>;
+
 
 

@@ -36,11 +36,14 @@ import {
   verifyIncomeRecordByIdFn,
   rejectIncomeRecordByIdFn,
   reverseIncomeRecordByIdFn,
+  transitionIncomeReconciliationFn,
 } from "@/lib/non-member-income.functions";
 import type {
   IncomeRecordDetail,
   IncomeTransitionResult,
+  IncomeReconciliationResult,
 } from "@/lib/non-member-income.server";
+
 
 export const Route = createFileRoute("/_society/society/income/$id")({
   head: () => ({
@@ -59,7 +62,7 @@ export const Route = createFileRoute("/_society/society/income/$id")({
 
 const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
 
-type DialogKind = "verify" | "reject" | "reverse" | null;
+type DialogKind = "verify" | "reject" | "reverse" | "reconcile" | "unreconcile" | null;
 
 function statusMessage(result: IncomeTransitionResult): string {
   switch (result.status) {
@@ -187,6 +190,33 @@ function IncomeDetail({ societyId }: { societyId: string }) {
           onResult={handleResult}
         />
       )}
+      {record && (dialog === "reconcile" || dialog === "unreconcile") && (
+        <ReconcileDialog
+          action={dialog}
+          record={record}
+          onClose={() => setDialog(null)}
+          onDone={(r) => {
+            if (r.status === "success" || r.status === "already_processed") {
+              toast.success("Reconciliation updated.");
+              setDialog(null);
+              invalidateAll();
+              return;
+            }
+            const msg =
+              r.status === "invalid_transition"
+                ? "This record can't be reconciled in its current state."
+                : r.status === "invalid_input"
+                  ? "Please provide a reason (at least 5 characters)."
+                  : r.status === "plan_required"
+                    ? "Upgrade to Pro to reconcile income."
+                    : r.status === "not_authorized" || r.status === "not_found"
+                      ? "You don't have access to this record."
+                      : "The reconciliation could not be updated. Please try again.";
+            toast.error(msg);
+          }}
+        />
+      )}
+
     </div>
   );
 }
@@ -224,6 +254,14 @@ function RecordView({
   const canVerify = r.verification_status === "pending";
   const canReject = r.verification_status === "pending";
   const canReverse = r.verification_status === "verified";
+  const canReconcile =
+    r.verification_status === "verified" &&
+    (r.reconciliation_status === "unreconciled" ||
+      r.reconciliation_status === "needs_review" ||
+      r.reconciliation_status === "partially_matched");
+  const canUnreconcile =
+    r.verification_status === "verified" && r.reconciliation_status === "matched";
+
 
   return (
     <>
@@ -273,7 +311,7 @@ function RecordView({
           )}
         </div>
 
-        {(canVerify || canReverse) && (
+        {(canVerify || canReverse || canReconcile || canUnreconcile) && (
           <div className="flex flex-wrap gap-2 pt-4">
             {canVerify && (
               <>
@@ -304,9 +342,31 @@ function RecordView({
                 <RotateCcw className="h-4 w-4 mr-1" /> Reverse
               </Button>
             )}
+            {canReconcile && (
+              <Button
+                variant="outline"
+                onClick={() => onAction("reconcile")}
+                className="min-h-[44px]"
+                aria-label="Mark reconciled"
+              >
+                <CheckCircle2 className="h-4 w-4 mr-1" /> Mark reconciled
+              </Button>
+            )}
+            {canUnreconcile && (
+              <Button
+                variant="outline"
+                onClick={() => onAction("unreconcile")}
+                className="min-h-[44px]"
+                aria-label="Undo reconciliation"
+              >
+                <RotateCcw className="h-4 w-4 mr-1" /> Undo reconciliation
+              </Button>
+            )}
           </div>
         )}
       </SectionCard>
+
+
 
       <SectionCard title="Timeline">
         <ol className="space-y-2 text-sm">
@@ -518,6 +578,120 @@ function ReasonDialog({
             variant={kind === "reject" ? "destructive" : "destructive"}
             onClick={() => m.mutate()}
             disabled={m.isPending || !valid}
+            className="min-h-[44px]"
+          >
+            {m.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+            {cta}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ReconcileDialog({
+  action,
+  record,
+  onClose,
+  onDone,
+}: {
+  action: "reconcile" | "unreconcile";
+  record: IncomeRecordDetail;
+  onClose: () => void;
+  onDone: (r: IncomeReconciliationResult) => void;
+}) {
+  const reconcileFn = useServerFn(transitionIncomeReconciliationFn);
+  const [reference, setReference] = useState("");
+  const [reason, setReason] = useState("");
+  const isUnreconcile = action === "unreconcile";
+  const trimmedReason = reason.trim();
+  const reasonValid = !isUnreconcile || (trimmedReason.length >= 5 && trimmedReason.length <= 500 && !/<[^>]+>/.test(trimmedReason));
+
+  const m = useMutation({
+    mutationFn: async () =>
+      reconcileFn({
+        data: {
+          recordId: record.id,
+          action,
+          reference: !isUnreconcile ? reference.trim() || undefined : undefined,
+          reason: isUnreconcile ? trimmedReason : undefined,
+        },
+      }),
+    onSuccess: onDone,
+    onError: () => onDone({ status: "error" }),
+  });
+
+  const title = isUnreconcile ? "Undo reconciliation?" : "Mark as reconciled?";
+  const desc = isUnreconcile
+    ? "Return this record to unreconciled. Verification status is not changed."
+    : "Confirm this verified income record has been matched to a bank credit. Verification status is not changed.";
+  const cta = isUnreconcile ? "Undo reconciliation" : "Mark reconciled";
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && !m.isPending && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{desc}</DialogDescription>
+        </DialogHeader>
+        <RecordSummary r={record} />
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between rounded-md border p-2">
+            <span className="text-muted-foreground">Current reconciliation</span>
+            <span className="capitalize">{record.reconciliation_status.replace(/_/g, " ")}</span>
+          </div>
+          <div className="flex justify-between rounded-md border p-2">
+            <span className="text-muted-foreground">Resulting reconciliation</span>
+            <span>{isUnreconcile ? "unreconciled" : "matched"}</span>
+          </div>
+          {!isUnreconcile ? (
+            <div>
+              <Label htmlFor="rec-ref" className="text-xs">Reference (optional)</Label>
+              <Textarea
+                id="rec-ref"
+                value={reference}
+                onChange={(e) => setReference(e.target.value)}
+                maxLength={128}
+                rows={2}
+                placeholder="e.g. bank statement row / UTR"
+              />
+            </div>
+          ) : (
+            <div>
+              <Label htmlFor="rec-reason" className="text-xs">
+                Reason (required, 5–500 characters)
+              </Label>
+              <Textarea
+                id="rec-reason"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                maxLength={500}
+                rows={3}
+                placeholder="Why is this being unreconciled?"
+              />
+              {reason.length > 0 && !reasonValid && (
+                <p className="text-xs text-destructive">
+                  Reason must be 5–500 characters with no HTML.
+                </p>
+              )}
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Verification status will remain <b>{record.verification_status}</b>.
+          </p>
+        </div>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={onClose}
+            disabled={m.isPending}
+            className="min-h-[44px]"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => m.mutate()}
+            disabled={m.isPending || !reasonValid}
             className="min-h-[44px]"
           >
             {m.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}

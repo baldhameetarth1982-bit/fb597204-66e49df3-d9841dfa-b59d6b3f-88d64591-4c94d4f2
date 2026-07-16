@@ -38,9 +38,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   listIncomeRecordsFn,
-  getIncomeDashboardFn,
+  getSocietyIncomeReportFn,
   listIncomeCategoriesFn,
 } from "@/lib/non-member-income.functions";
+
 import type {
   IncomeVerificationStatus,
   IncomeReconciliationStatus,
@@ -182,7 +183,7 @@ function IncomePage({ societyId }: { societyId: string }) {
     setPage(0);
   }, [period, customFrom, customTo, verif, recon, method, kind, categoryId, sort]);
 
-  const getDashboard = useServerFn(getIncomeDashboardFn);
+  const getReport = useServerFn(getSocietyIncomeReportFn);
   const listRecords = useServerFn(listIncomeRecordsFn);
   const listCats = useServerFn(listIncomeCategoriesFn);
 
@@ -201,18 +202,32 @@ function IncomePage({ societyId }: { societyId: string }) {
     sort,
   };
 
-  const dashboardQ = useQuery({
-    enabled: dateRangeValid,
+  const reportQ = useQuery({
+    enabled: dateRangeValid && !!range.from && !!range.to,
     queryKey: incomeKeys.dashboard(societyId, {
       from_date: range.from,
       to_date: range.to,
+      verification_status: verif === "all" ? undefined : verif,
+      reconciliation_status: recon === "all" ? undefined : recon,
+      payment_method: method === "all" ? undefined : method,
+      category_id: categoryId === "all" ? undefined : categoryId,
     }),
     retry: (n, e: unknown) => n < 1 && !isForbidden(e),
     queryFn: async () =>
-      getDashboard({
-        data: { societyId, from_date: range.from, to_date: range.to },
+      getReport({
+        data: {
+          societyId,
+          from_date: range.from!,
+          to_date: range.to!,
+          verification_status: verif === "all" ? undefined : verif,
+          reconciliation_status: recon === "all" ? undefined : recon,
+          payment_method: method === "all" ? undefined : method,
+          category_id: categoryId === "all" ? undefined : categoryId,
+          payer_kind: kind === "all" ? undefined : kind,
+        },
       }),
   });
+
 
   const catsQ = useQuery({
     queryKey: incomeKeys.activeCategories(societyId),
@@ -244,7 +259,10 @@ function IncomePage({ societyId }: { societyId: string }) {
 
 
 
-  const d = dashboardQ.data;
+  const reportResp = reportQ.data;
+  const report =
+    reportResp && reportResp.status === "ok" ? reportResp : null;
+
   const items = listQ.data?.items ?? [];
   const total = listQ.data?.total ?? null;
   const totalPages =
@@ -423,13 +441,13 @@ function IncomePage({ societyId }: { societyId: string }) {
         </div>
       </SectionCard>
 
-      {dashboardQ.isError ? (
+      {reportQ.isError || (reportResp && reportResp.status !== "ok") ? (
         <Card>
           <CardContent className="p-4 flex items-center gap-2 text-sm text-destructive">
             <AlertCircle className="h-4 w-4" /> Income summary is temporarily unavailable.
           </CardContent>
         </Card>
-      ) : dashboardQ.isLoading || !d ? (
+      ) : reportQ.isLoading || !report ? (
         <Card>
           <CardContent className="p-4 flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" /> Loading income summary…
@@ -438,74 +456,76 @@ function IncomePage({ societyId }: { societyId: string }) {
       ) : (
         <>
           <StatPillRow>
-            <StatPill icon={TrendingUp} label="Verified income" value={inr(d.verifiedTotal)} />
-            <StatPill icon={Clock} label="Pending" value={String(d.pendingCount)} />
-            <StatPill icon={AlertCircle} label="Unreconciled" value={String(d.unreconciled)} />
-            <StatPill icon={AlertCircle} label="Needs review" value={String(d.needsReview)} />
-            <StatPill icon={XCircle} label="Rejected" value={String(d.rejectedCount)} />
-            <StatPill icon={RotateCcw} label="Reversed" value={String(d.reversedCount)} />
-            <StatPill
-              icon={Users}
-              label="Active payers"
-              value={
-                d.activePayerCount.status === "available"
-                  ? String(d.activePayerCount.value)
-                  : "—"
-              }
-            />
+            <StatPill icon={TrendingUp} label="Verified income" value={inr(report.summary.verified_amount)} />
+            <StatPill icon={Clock} label="Pending" value={String(report.summary.pending_count)} />
+            <StatPill icon={AlertCircle} label="Unreconciled (verified)" value={inr(report.summary.unreconciled_amount)} />
+            <StatPill icon={TrendingUp} label="Reconciled" value={inr(report.summary.reconciled_amount)} />
+            <StatPill icon={XCircle} label="Rejected" value={String(report.summary.rejected_count)} />
+            <StatPill icon={RotateCcw} label="Reversed" value={String(report.summary.reversed_count)} />
+            <StatPill icon={Users} label="Records" value={String(report.summary.record_count)} />
           </StatPillRow>
-          {d.activePayerCount.status === "error" && (
-            <p className="text-xs text-destructive">
-              Active payer count is temporarily unavailable.
-            </p>
-          )}
-          {d.truncated && (
-            <p className="text-xs text-amber-700 dark:text-amber-400">
-              Dashboard totals aggregated over the most recent {d.recordCount} records.
-              Narrow the date range for authoritative totals.
-            </p>
-          )}
+          <p className="text-[11px] text-muted-foreground">
+            Totals aggregated in the database for {report.from_date} → {report.to_date}
+            {" "}(bucket: {report.trend_bucket}).
+          </p>
         </>
       )}
 
-      {d && d.byCategory.length > 0 && (
+      {report && report.by_category.length > 0 && (
         <SectionCard
           title="Verified income by category"
           description="Excludes pending, rejected and reversed records."
         >
           <div className="grid sm:grid-cols-2 gap-2">
-            {d.byCategory.map((c) => (
+            {report.by_category.map((c) => (
               <div
                 key={c.category_id}
                 className="flex items-center justify-between rounded-md border p-2 text-sm"
               >
-                <span>
-                  {((catsQ.data?.items ?? []) as CategoryItem[]).find(
-                    (x) => x.id === c.category_id,
-                  )?.display_name ?? "—"}
-                </span>
-                <span className="font-medium tabular-nums">{inr(c.total)}</span>
+                <span>{c.display_name ?? "—"}</span>
+                <span className="font-medium tabular-nums">{inr(c.amount)}</span>
               </div>
             ))}
           </div>
         </SectionCard>
       )}
 
-      {d && d.byMethod.length > 0 && (
+      {report && report.by_method.length > 0 && (
         <SectionCard title="Verified income by payment method">
           <div className="grid sm:grid-cols-3 gap-2">
-            {d.byMethod.map((m) => (
+            {report.by_method.map((m) => (
               <div
-                key={m.method}
+                key={m.payment_method}
                 className="flex items-center justify-between rounded-md border p-2 text-sm"
               >
-                <span className="capitalize">{m.method.replace(/_/g, " ")}</span>
-                <span className="font-medium tabular-nums">{inr(m.total)}</span>
+                <span className="capitalize">{m.payment_method.replace(/_/g, " ")}</span>
+                <span className="font-medium tabular-nums">{inr(m.amount)}</span>
               </div>
             ))}
           </div>
         </SectionCard>
       )}
+
+      {report && report.trend.length > 0 && (
+        <SectionCard
+          title="Verified income trend"
+          description={`Grouped by ${report.trend_bucket}.`}
+        >
+          <ul className="grid sm:grid-cols-3 gap-2 text-sm">
+            {report.trend.map((t) => (
+              <li
+                key={t.bucket}
+                className="flex items-center justify-between rounded-md border p-2"
+              >
+                <span className="tabular-nums">{t.bucket}</span>
+                <span className="font-medium tabular-nums">{inr(t.amount)}</span>
+              </li>
+            ))}
+          </ul>
+        </SectionCard>
+      )}
+
+
 
       <SectionCard
         title="Records"

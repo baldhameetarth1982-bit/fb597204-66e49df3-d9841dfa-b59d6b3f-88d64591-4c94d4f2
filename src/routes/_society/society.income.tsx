@@ -17,8 +17,8 @@ import {
   Plus,
   Tags,
 } from "lucide-react";
-import { FeatureGate } from "@/components/subscription/FeatureGate";
-import { useSocietyId } from "@/hooks/useSocietyId";
+import { IncomeAccessBoundary } from "@/components/subscription/IncomeAccessBoundary";
+
 import { incomeKeys } from "@/lib/income-query-keys";
 import { AccountsCenterTabs } from "@/components/nav/AccountsCenterTabs";
 import { MobileHero } from "@/components/shared/MobileHero";

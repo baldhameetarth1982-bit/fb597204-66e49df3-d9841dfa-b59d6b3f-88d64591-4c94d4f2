@@ -156,8 +156,8 @@ const SORT_OPTIONS: ReadonlyArray<{ value: IncomeSort; label: string }> = [
   { value: "amount_asc", label: "Amount: low to high" },
 ];
 
-function IncomePage() {
-  const { societyId, loading } = useSocietyId();
+function IncomePage({ societyId }: { societyId: string }) {
+
 
   const [period, setPeriod] = useState<Period>("this_month");
   const [customFrom, setCustomFrom] = useState<string>(todayISO(-30));

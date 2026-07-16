@@ -109,10 +109,11 @@ export function IncomeAccessBoundary({ children }: Props) {
   if (state.kind === "plan_locked") {
     return (
       <div data-testid="income-access-plan-locked">
-        <UpgradePrompt feature={INCOME_FEATURE} currentPlan={useFeatureAccess().plan} />
+        <UpgradePrompt feature={INCOME_FEATURE} currentPlan={plan} />
       </div>
     );
   }
+
 
   return <>{children(state.societyId)}</>;
 }

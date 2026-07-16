@@ -254,6 +254,14 @@ function RecordView({
   const canVerify = r.verification_status === "pending";
   const canReject = r.verification_status === "pending";
   const canReverse = r.verification_status === "verified";
+  const canReconcile =
+    r.verification_status === "verified" &&
+    (r.reconciliation_status === "unreconciled" ||
+      r.reconciliation_status === "needs_review" ||
+      r.reconciliation_status === "partially_matched");
+  const canUnreconcile =
+    r.verification_status === "verified" && r.reconciliation_status === "matched";
+
 
   return (
     <>

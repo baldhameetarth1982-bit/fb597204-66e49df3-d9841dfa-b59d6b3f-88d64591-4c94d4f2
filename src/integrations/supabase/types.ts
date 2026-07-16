@@ -319,25 +319,37 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          display_order: number
           id: string
+          is_active: boolean
           name: string
+          normalized_name: string | null
           society_id: string
+          structure_kind: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           description?: string | null
+          display_order?: number
           id?: string
+          is_active?: boolean
           name: string
+          normalized_name?: string | null
           society_id: string
+          structure_kind?: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           description?: string | null
+          display_order?: number
           id?: string
+          is_active?: boolean
           name?: string
+          normalized_name?: string | null
           society_id?: string
+          structure_kind?: string
           updated_at?: string
         }
         Relationships: [
@@ -733,11 +745,14 @@ export type Database = {
       flats: {
         Row: {
           area_sqft: number | null
-          block_id: string
+          block_id: string | null
           created_at: string
+          display_order: number
           flat_number: string
           floor: number | null
           id: string
+          is_active: boolean
+          normalized_label: string | null
           society_id: string
           status: string
           type: string | null
@@ -746,11 +761,14 @@ export type Database = {
         }
         Insert: {
           area_sqft?: number | null
-          block_id: string
+          block_id?: string | null
           created_at?: string
+          display_order?: number
           flat_number: string
           floor?: number | null
           id?: string
+          is_active?: boolean
+          normalized_label?: string | null
           society_id: string
           status?: string
           type?: string | null
@@ -759,11 +777,14 @@ export type Database = {
         }
         Update: {
           area_sqft?: number | null
-          block_id?: string
+          block_id?: string | null
           created_at?: string
+          display_order?: number
           flat_number?: string
           floor?: number | null
           id?: string
+          is_active?: boolean
+          normalized_label?: string | null
           society_id?: string
           status?: string
           type?: string | null
@@ -2019,6 +2040,7 @@ export type Database = {
           state: string | null
           status: string
           structure_label: string
+          structure_mode: string | null
           total_units: number | null
           trial_consumed_at: string | null
           trial_ends_at: string | null
@@ -2061,6 +2083,7 @@ export type Database = {
           state?: string | null
           status?: string
           structure_label?: string
+          structure_mode?: string | null
           total_units?: number | null
           trial_consumed_at?: string | null
           trial_ends_at?: string | null
@@ -2103,6 +2126,7 @@ export type Database = {
           state?: string | null
           status?: string
           structure_label?: string
+          structure_mode?: string | null
           total_units?: number | null
           trial_consumed_at?: string | null
           trial_ends_at?: string | null
@@ -2887,6 +2911,10 @@ export type Database = {
         Args: { _flat_id: string; _society_id: string }
         Returns: Json
       }
+      configure_society_structure_mode: {
+        Args: { _mode: string; _society_id: string }
+        Returns: Json
+      }
       create_non_member_income_record: {
         Args: {
           _amount: number
@@ -2959,6 +2987,16 @@ export type Database = {
           invite_code: string
           name: string
         }[]
+      }
+      create_society_unit: {
+        Args: {
+          _block_id?: string
+          _flat_number: string
+          _floor?: number
+          _society_id: string
+          _unit_type?: string
+        }
+        Returns: Json
       }
       create_visitor_preapproval: {
         Args: {
@@ -3148,6 +3186,10 @@ export type Database = {
           payout_status: string
         }[]
       }
+      get_society_structure_overview: {
+        Args: { _society_id: string }
+        Returns: Json
+      }
       get_user_society_id: { Args: { _user_id: string }; Returns: string }
       guard_checkin_by_code: {
         Args: { _code: string; _society_id: string }
@@ -3223,6 +3265,19 @@ export type Database = {
           is_occupied: boolean
         }[]
       }
+      list_society_units_page: {
+        Args: {
+          _active?: boolean
+          _block_id?: string
+          _floor?: number
+          _limit?: number
+          _offset?: number
+          _search?: string
+          _society_id: string
+          _unit_type?: string
+        }
+        Returns: Json
+      }
       mark_aadhaar_verified: { Args: { _last4: string }; Returns: undefined }
       next_no_dues_cert_number_internal: {
         Args: { _actor_id: string; _society_id: string }
@@ -3279,6 +3334,10 @@ export type Database = {
           state: string
         }[]
       }
+      set_society_block_active: {
+        Args: { _active: boolean; _block_id: string }
+        Returns: Json
+      }
       set_society_invite_code_custom: {
         Args: { _code: string; _society_id: string }
         Returns: string
@@ -3286,6 +3345,10 @@ export type Database = {
       set_society_invite_code_enabled: {
         Args: { _enabled: boolean; _society_id: string }
         Returns: boolean
+      }
+      set_society_unit_active: {
+        Args: { _active: boolean; _unit_id: string }
+        Returns: Json
       }
       society_has_access: { Args: { _society_id: string }; Returns: boolean }
       society_maintenance_summary: {
@@ -3382,6 +3445,16 @@ export type Database = {
           _society_id: string
         }
         Returns: undefined
+      }
+      update_society_unit: {
+        Args: {
+          _display_order?: number
+          _flat_number?: string
+          _floor?: number
+          _unit_id: string
+          _unit_type?: string
+        }
+        Returns: Json
       }
       verify_resident_kyc: {
         Args: { _approved: boolean; _reason?: string; _user_id: string }

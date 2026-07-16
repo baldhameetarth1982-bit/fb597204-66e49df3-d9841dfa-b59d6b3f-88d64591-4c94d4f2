@@ -855,35 +855,61 @@ export const PLAN_FEATURES: Record<PlanKey, FeatureKey[]> = {
 };
 
 /**
+ * Stage 1D — canonical plan-normalization specification.
+ *
+ * This is the ONE source of truth used by BOTH `normalizePlan` and the
+ * plan-parity tests (which assert the SQL entitlement helper in
+ * `create_non_member_income_record` uses the exact same alias/status sets).
+ *
+ * DO NOT duplicate these arrays in other TypeScript modules or in test files.
+ * Tests must import this object rather than hardcoding a parallel list.
+ */
+export const PLAN_NORMALIZATION_SPEC = {
+  paidPlanAliases: {
+    basic: ["basic", "starter"] as const,
+    pro: ["pro", "standard", "growth"] as const,
+    premium: ["premium", "business", "enterprise"] as const,
+  },
+  /** Statuses that collapse any plan to `basic` regardless of `plan_id`. */
+  inactiveStatuses: [
+    "expired",
+    "cancelled",
+    "canceled",
+    "past_due",
+    "inactive",
+  ] as const,
+  /** Statuses that grant Premium ONLY when `trial_ends_at` is in the future. */
+  activeTrialStatuses: ["trial", "trialing"] as const,
+  /**
+   * Stage 1D safety rule: a trial row with a NULL `trial_ends_at` MUST NOT
+   * grant Premium indefinitely. Missing/past/malformed expiry → basic.
+   */
+  trialRequiresFutureExpiry: true,
+} as const;
+
+function includesLower<T extends string>(list: readonly T[], v: string): boolean {
+  return (list as readonly string[]).includes(v);
+}
+
+/**
  * Normalize DB `plan_id` + `plan_status` (+ optional `trial_ends_at`) →
- * canonical `PlanKey`.
+ * canonical `PlanKey`, driven entirely by `PLAN_NORMALIZATION_SPEC`.
  *
- * Safe fallback: explicit inactive statuses collapse to `basic` so an
- * expired trial or cancelled subscription cannot leak Pro features.
- *
- * When `trialEndsAt` is provided and its timestamp has already passed, a
- * trial/trialing status is treated as expired and normalizes to `basic`.
- * When `trialEndsAt` is omitted (legacy callers), an active trial status
- * still grants Premium — this preserves the historical product rule for
- * trials that predate the trial_ends_at column.
+ * Trial rule (Stage 1D): trial/trialing REQUIRES a non-null `trial_ends_at`
+ * whose timestamp is strictly in the future. Null/past/malformed collapse
+ * to `basic`.
  */
 export function normalizePlan(
   raw: string | null | undefined,
   status?: string | null,
   trialEndsAt?: string | Date | null,
 ): PlanKey {
+  const spec = PLAN_NORMALIZATION_SPEC;
   const s = (status ?? "").toLowerCase().trim();
-  if (
-    s === "expired" ||
-    s === "cancelled" ||
-    s === "canceled" ||
-    s === "past_due" ||
-    s === "inactive"
-  ) {
-    return "basic";
-  }
-  if (s === "trial" || s === "trialing") {
-    if (trialEndsAt !== undefined && trialEndsAt !== null) {
+  if (includesLower(spec.inactiveStatuses, s)) return "basic";
+  if (includesLower(spec.activeTrialStatuses, s)) {
+    if (spec.trialRequiresFutureExpiry) {
+      if (trialEndsAt === undefined || trialEndsAt === null) return "basic";
       const end = trialEndsAt instanceof Date ? trialEndsAt : new Date(trialEndsAt);
       if (!Number.isFinite(end.getTime()) || end.getTime() <= Date.now()) {
         return "basic";
@@ -893,10 +919,9 @@ export function normalizePlan(
   }
   const p = (raw ?? "").toLowerCase().trim();
   if (!p) return "basic";
-  // plan_id='trial' is NOT independently sufficient — a trial requires the
-  // corresponding status (handled above). Fall through to inactive → basic.
-  if (p === "basic" || p === "starter") return "basic";
-  if (p === "pro" || p === "standard" || p === "growth") return "pro";
-  if (p === "premium" || p === "business" || p === "enterprise") return "premium";
+  if (includesLower(spec.paidPlanAliases.basic, p)) return "basic";
+  if (includesLower(spec.paidPlanAliases.pro, p)) return "pro";
+  if (includesLower(spec.paidPlanAliases.premium, p)) return "premium";
   return "basic";
 }
+

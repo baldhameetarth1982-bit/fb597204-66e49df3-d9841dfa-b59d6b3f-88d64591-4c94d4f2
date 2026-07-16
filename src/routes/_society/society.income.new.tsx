@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { ArrowLeft, Loader2, Coins, CheckCircle2, AlertCircle } from "lucide-react";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useSocietyId } from "@/hooks/useSocietyId";
+import { incomeKeys, incomeInvalidations } from "@/lib/income-query-keys";
 import { MobileHero } from "@/components/shared/MobileHero";
 import { SectionCard } from "@/components/shared/SectionCard";
 import { Button } from "@/components/ui/button";
@@ -104,12 +105,12 @@ function NewIncomePage() {
 
   const catsQ = useQuery({
     enabled: !!societyId,
-    queryKey: ["society-income", "categories", societyId],
+    queryKey: incomeKeys.activeCategories(societyId ?? ""),
     queryFn: async () => listCatsFn({ data: { societyId: societyId! } }),
   });
   const payersQ = useQuery({
     enabled: !!societyId,
-    queryKey: ["society-income", "payers", societyId],
+    queryKey: incomeKeys.activePayers(societyId ?? ""),
     queryFn: async () => listPayersFn({ data: { societyId: societyId! } }),
   });
 
@@ -217,7 +218,9 @@ function NewIncomePage() {
         case "existing":
           setSavedRecord({ id: res.id, snapshot: form });
           setStep("saved");
-          void qc.invalidateQueries({ queryKey: ["society-income"] });
+          for (const key of incomeInvalidations.income(societyId ?? "")) {
+            void qc.invalidateQueries({ queryKey: key });
+          }
           return;
         case "idempotency_conflict":
           toast.error(friendlyIncomeError("idempotency_conflict"));

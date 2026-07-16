@@ -36,7 +36,7 @@ export function useFeatureAccess() {
     },
   });
 
-  const plan: PlanKey = normalizePlan(data?.plan_id, data?.plan_status);
+  const plan: PlanKey = normalizePlan(data?.plan_id, data?.plan_status, data?.trial_ends_at);
   const status = data?.plan_status ?? null;
   const loading = sidLoading || isLoading;
 

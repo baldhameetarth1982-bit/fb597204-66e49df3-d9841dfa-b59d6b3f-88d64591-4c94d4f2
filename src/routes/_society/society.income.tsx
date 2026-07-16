@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useSocietyId } from "@/hooks/useSocietyId";
+import { incomeKeys } from "@/lib/income-query-keys";
 import { AccountsCenterTabs } from "@/components/nav/AccountsCenterTabs";
 import { MobileHero } from "@/components/shared/MobileHero";
 import { StatPill, StatPillRow } from "@/components/shared/StatPill";
@@ -189,9 +190,22 @@ function IncomePage() {
     return msg.includes("forbidden");
   };
 
+  const listFilters = {
+    from_date: range.from,
+    to_date: range.to,
+    verification_status: verif,
+    reconciliation_status: recon,
+    payment_method: method,
+    category_id: categoryId,
+    sort,
+  };
+
   const dashboardQ = useQuery({
     enabled: !!societyId && dateRangeValid,
-    queryKey: ["society-income", "dashboard", societyId, period, range.from, range.to],
+    queryKey: incomeKeys.dashboard(societyId ?? "", {
+      from_date: range.from,
+      to_date: range.to,
+    }),
     retry: (n, e: unknown) => n < 1 && !isForbidden(e),
     queryFn: async () =>
       getDashboard({
@@ -201,27 +215,14 @@ function IncomePage() {
 
   const catsQ = useQuery({
     enabled: !!societyId,
-    queryKey: ["society-income", "categories", societyId],
+    queryKey: incomeKeys.activeCategories(societyId ?? ""),
     queryFn: async () => listCats({ data: { societyId: societyId! } }),
   });
 
   const listQ = useQuery({
     enabled: !!societyId && dateRangeValid,
-    queryKey: [
-      "society-income",
-      "list",
-      societyId,
-      period,
-      range.from,
-      range.to,
-      verif,
-      recon,
-      method,
-      kind,
-      categoryId,
-      sort,
-      page,
-    ],
+    queryKey: incomeKeys.records(societyId ?? "", listFilters, page),
+
     retry: (n, e: unknown) => n < 1 && !isForbidden(e),
     queryFn: async () =>
       listRecords({

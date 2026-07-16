@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2, AlertCircle, Plus, Pencil, Users } from "lucide-react";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useSocietyId } from "@/hooks/useSocietyId";
+import { incomeKeys, incomeInvalidations } from "@/lib/income-query-keys";
 import { MobileHero } from "@/components/shared/MobileHero";
 import { SectionCard } from "@/components/shared/SectionCard";
 import { Button } from "@/components/ui/button";
@@ -89,14 +90,17 @@ function PayersPage() {
 
   const listQ = useQuery({
     enabled: !!societyId,
-    queryKey: ["society-income", "payers", societyId],
+    queryKey: incomeKeys.payers(societyId ?? ""),
     queryFn: async () => listFn({ data: { societyId: societyId! } }),
   });
 
   const [editing, setEditing] = useState<Editing>(null);
 
-  const invalidate = () =>
-    qc.invalidateQueries({ queryKey: ["society-income", "payers", societyId] });
+  const invalidate = () => {
+    for (const key of incomeInvalidations.payer(societyId ?? "")) {
+      qc.invalidateQueries({ queryKey: key });
+    }
+  };
 
   const createMut = useMutation({
     mutationFn: async (v: {
@@ -283,7 +287,7 @@ function PayerDialog(props: {
 
   const detailQ = useQuery({
     enabled: !!editingPayerId,
-    queryKey: ["society-income", "payer-detail", societyId, editingPayerId],
+    queryKey: incomeKeys.payerDetail(societyId, editingPayerId ?? ""),
     queryFn: async () =>
       detailFn({ data: { societyId, payerId: editingPayerId! } }),
   });

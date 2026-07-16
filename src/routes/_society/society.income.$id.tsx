@@ -13,6 +13,7 @@ import {
   Clock,
 } from "lucide-react";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
+import { incomeKeys, incomeInvalidations } from "@/lib/income-query-keys";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { MobileHero } from "@/components/shared/MobileHero";
 import { SectionCard } from "@/components/shared/SectionCard";
@@ -85,7 +86,7 @@ function IncomeDetail() {
   const queryClient = useQueryClient();
   const [dialog, setDialog] = useState<DialogKind>(null);
 
-  const detailKey = ["society-income", "detail", societyId, id];
+  const detailKey = incomeKeys.record(societyId ?? "", id);
 
   const q = useQuery({
     enabled: !!societyId && !!id,
@@ -99,8 +100,9 @@ function IncomeDetail() {
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: detailKey });
-    queryClient.invalidateQueries({ queryKey: ["society-income", "list", societyId] });
-    queryClient.invalidateQueries({ queryKey: ["society-income", "dashboard", societyId] });
+    for (const key of incomeInvalidations.income(societyId ?? "")) {
+      queryClient.invalidateQueries({ queryKey: key });
+    }
   };
 
   const handleResult = (r: IncomeTransitionResult) => {

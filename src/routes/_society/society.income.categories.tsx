@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2, AlertCircle, Plus, Pencil } from "lucide-react";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useSocietyId } from "@/hooks/useSocietyId";
+import { incomeKeys, incomeInvalidations } from "@/lib/income-query-keys";
 
 import { MobileHero } from "@/components/shared/MobileHero";
 import { SectionCard } from "@/components/shared/SectionCard";
@@ -67,14 +68,17 @@ function CategoriesPage() {
 
   const listQ = useQuery({
     enabled: !!societyId,
-    queryKey: ["society-income", "categories", societyId],
+    queryKey: incomeKeys.categories(societyId ?? ""),
     queryFn: async () => listFn({ data: { societyId: societyId! } }),
   });
 
   const [editing, setEditing] = useState<Editing>(null);
 
-  const invalidate = () =>
-    qc.invalidateQueries({ queryKey: ["society-income", "categories", societyId] });
+  const invalidate = () => {
+    for (const key of incomeInvalidations.category(societyId ?? "")) {
+      qc.invalidateQueries({ queryKey: key });
+    }
+  };
 
   const createMut = useMutation({
     mutationFn: async (v: {

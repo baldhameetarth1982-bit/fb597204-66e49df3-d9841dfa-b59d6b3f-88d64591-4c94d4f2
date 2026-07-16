@@ -12,8 +12,10 @@
  * UI wiring is deferred to Turn 18B.
  */
 import { createServerFn } from "@tanstack/react-start";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { normalizePlan } from "@/lib/plan-features";
+import type { Database } from "@/integrations/supabase/types";
 import {
   CreateCategoryInput,
   UpdateCategoryInput,
@@ -38,7 +40,12 @@ import { z } from "zod";
 // Guards
 // ---------------------------------------------------------------------------
 
+// Loosely-typed context: the incoming middleware supplies a typed Supabase
+// client, but existing generated-types field ambiguity across insert/update
+// paths keeps this file's Ctx pragmatic. The RPC call site below narrows to
+// a strictly-typed client to drop the historical `as any` cast.
 type Ctx = { supabase: any; userId: string };
+type StrictSupabase = SupabaseClient<Database>;
 
 async function assertSocietyAdmin(ctx: Ctx, societyId: string): Promise<void> {
   const { data, error } = await ctx.supabase.rpc("is_society_admin_for", {
@@ -323,22 +330,27 @@ export const createNonMemberIncomeRecordFn = createServerFn({ method: "POST" })
     const ctx = context as Ctx;
     const { parseCreateIncomeResult } = await import("@/lib/income-errors");
 
-    const { data: raw, error } = await (ctx.supabase.rpc as any)(
+    // Strictly-typed RPC call: any drift in the generated RPC argument set
+    // (removed hashed/canonical inputs, missing creation request id, etc.)
+    // is a compile error rather than a silent bypass cast.
+    const supabase = ctx.supabase as StrictSupabase;
+    const { data: raw, error } = await supabase.rpc(
       "create_non_member_income_record",
       {
         _society_id: data.societyId,
         _category_id: data.category_id,
         _payer_kind: data.payer_kind,
-        _resident_user_id: null,
-        _non_member_payer_id: data.non_member_payer_id ?? null,
+        _resident_user_id: null as unknown as string,
+        _non_member_payer_id: (data.non_member_payer_id ?? null) as unknown as string,
         _amount: data.amount,
         _payment_method: data.payment_method,
-        _payment_date: data.payment_date ?? null,
-        _reference_number: data.reference_number ?? null,
-        _description: data.description ?? null,
+        _payment_date: (data.payment_date ?? null) as unknown as string,
+        _reference_number: (data.reference_number ?? null) as unknown as string,
+        _description: (data.description ?? null) as unknown as string,
         _creation_request_id: data.creation_request_id,
       },
     );
+
 
     if (error) return { status: "temporary_error" as const };
     return parseCreateIncomeResult(raw);

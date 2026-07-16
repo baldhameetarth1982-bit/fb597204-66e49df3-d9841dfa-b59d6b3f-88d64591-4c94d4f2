@@ -2221,6 +2221,7 @@ export type Database = {
           category_id: string
           created_at: string
           created_by: string | null
+          creation_request_id: string | null
           description: string | null
           id: string
           non_member_payer_id: string | null
@@ -2249,6 +2250,7 @@ export type Database = {
           category_id: string
           created_at?: string
           created_by?: string | null
+          creation_request_id?: string | null
           description?: string | null
           id?: string
           non_member_payer_id?: string | null
@@ -2277,6 +2279,7 @@ export type Database = {
           category_id?: string
           created_at?: string
           created_by?: string | null
+          creation_request_id?: string | null
           description?: string | null
           id?: string
           non_member_payer_id?: string | null

@@ -62,6 +62,8 @@ interface Props {
  */
 export function IncomeAccessBoundary({ children }: Props) {
   const state = useIncomeAccessState();
+  const { plan } = useFeatureAccess();
+
 
   if (state.kind === "loading") {
     return (

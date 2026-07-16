@@ -705,3 +705,15 @@ Audit and Canonical Setup Model.**
 - New RPCs (SECURITY DEFINER, authenticated-only): `get_society_structure_overview`, `configure_society_structure_mode`, `list_society_units_page`, `create_society_unit`, `update_society_unit`, `set_society_unit_active`, `set_society_block_active`.
 - Unsafe mode conversions with existing units are blocked; ambiguous legacy data left unchanged.
 - `commit_society_wizard` writes canonical rows and no longer creates a fake "Houses" block for serial.
+
+## Stage 2B (2026-07-16) — Residents, Family, Occupancy, Vehicles
+- 10 new SECURITY DEFINER RPCs; all `REVOKE FROM PUBLIC, anon`,
+  `GRANT EXECUTE TO authenticated`, gated by `is_society_admin_for`.
+- Vehicle plates normalized (uppercase, whitespace stripped) and unique
+  per society via partial index `ux_vehicles_society_plate_norm`.
+- Occupancy duplicates blocked via `ux_flat_residents_active_triplet`.
+- Directory list projection is privacy-safe — no phone/email/KYC/docs.
+- Private detail is a separately-authorized JSONB bundle; missing rows
+  return NULL (non-enumerating).
+- 449/450 unit tests pass (1 honest integration skip). Build OK. Secret
+  scan OK. Protected society untouched.

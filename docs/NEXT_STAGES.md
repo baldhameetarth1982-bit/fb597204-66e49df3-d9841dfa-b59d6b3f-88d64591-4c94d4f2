@@ -176,3 +176,19 @@ backward compatibility only — it must not be a new independent write source.
 - Multi-breakpoint launch audit → Stage 16.
 
 **Next:** Stage 2B — Residents, Family Members, Occupancy and Vehicles.
+
+---
+
+# Stage 2B — Residents, Family Members, Occupancy and Vehicles — COMPLETE
+
+Canonical `profiles` / `flat_residents` / `family_members` / `vehicles`
+reused (no new tables). Server-side RPCs added for a privacy-safe
+paginated directory, private detail bundle, occupancy assign/end with
+audit, and society-scoped family/vehicle CRUD. Thin, strictly-typed
+adapter in `src/lib/residents-admin.functions.ts` under
+`requireSupabaseAuth`; no `.rpc as any` casts. Vehicle plates normalized
+and uniquely constrained per society. All new RPCs revoked from `anon`
+and gated by `is_society_admin_for`. 449 unit tests pass; build and
+secret scan clean. Protected society untouched.
+
+**Next:** Stage 2C — Teams, Roles and Privacy Controls.

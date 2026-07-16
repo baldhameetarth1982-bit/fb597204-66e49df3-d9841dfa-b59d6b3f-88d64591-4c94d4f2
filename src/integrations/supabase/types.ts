@@ -2796,6 +2796,14 @@ export type Database = {
         }
         Returns: string
       }
+      admin_delete_family_member: {
+        Args: { _id: string; _society_id: string }
+        Returns: undefined
+      }
+      admin_delete_vehicle: {
+        Args: { _id: string; _society_id: string }
+        Returns: undefined
+      }
       admin_global_metrics: {
         Args: never
         Returns: {
@@ -2867,10 +2875,46 @@ export type Database = {
           unpaid_bill_total: number
         }[]
       }
+      admin_upsert_family_member: {
+        Args: {
+          _age: number
+          _full_name: string
+          _id: string
+          _phone: string
+          _relation: string
+          _resident_user_id: string
+          _society_id: string
+        }
+        Returns: string
+      }
+      admin_upsert_vehicle: {
+        Args: {
+          _color: string
+          _flat_id: string
+          _id: string
+          _make_model: string
+          _plate_number: string
+          _resident_user_id: string
+          _society_id: string
+          _type: string
+        }
+        Returns: string
+      }
       apply_overdue_point_decay: { Args: never; Returns: number }
       apply_referral_for_current_user: {
         Args: { _code: string }
         Returns: boolean
+      }
+      assign_resident_to_unit: {
+        Args: {
+          _flat_id: string
+          _is_primary?: boolean
+          _moved_in_at?: string
+          _relationship: string
+          _society_id: string
+          _user_id: string
+        }
+        Returns: string
       }
       authorize_membership: {
         Args: { _society_id: string; _user_id: string }
@@ -3026,6 +3070,15 @@ export type Database = {
         Args: { _flat_resident_id: string; _reason?: string }
         Returns: undefined
       }
+      end_resident_unit_relationship: {
+        Args: {
+          _flat_resident_id: string
+          _moved_out_at?: string
+          _reason?: string
+          _society_id: string
+        }
+        Returns: undefined
+      }
       ensure_maintenance_period: {
         Args: {
           _amount: number
@@ -3131,6 +3184,22 @@ export type Database = {
           configured: boolean
           key_id: string
         }[]
+      }
+      get_resident_directory_overview: {
+        Args: { _society_id: string }
+        Returns: {
+          active_residents: number
+          active_vehicles: number
+          occupied_units: number
+          owners: number
+          tenants: number
+          total_residents: number
+          vacant_units: number
+        }[]
+      }
+      get_resident_private_detail: {
+        Args: { _society_id: string; _user_id: string }
+        Returns: Json
       }
       get_society_access_status: {
         Args: { _society_id: string }
@@ -3263,6 +3332,31 @@ export type Database = {
           flat_number: string
           floor: number
           is_occupied: boolean
+        }[]
+      }
+      list_society_residents_page: {
+        Args: {
+          _active_only?: boolean
+          _flat_id?: string
+          _limit?: number
+          _offset?: number
+          _relationship?: string
+          _search?: string
+          _society_id: string
+        }
+        Returns: {
+          avatar_url: string
+          block_name: string
+          flat_id: string
+          flat_number: string
+          full_name: string
+          is_active: boolean
+          is_primary: boolean
+          moved_in_at: string
+          relationship: string
+          structure_mode: string
+          total_count: number
+          user_id: string
         }[]
       }
       list_society_units_page: {

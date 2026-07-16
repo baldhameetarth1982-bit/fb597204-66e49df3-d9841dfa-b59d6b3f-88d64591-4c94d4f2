@@ -150,3 +150,19 @@ input and server-derived canonical JSON/hash unambiguous.
 - New RPCs (SECURITY DEFINER, authenticated-only): `get_society_structure_overview`, `configure_society_structure_mode`, `list_society_units_page`, `create_society_unit`, `update_society_unit`, `set_society_unit_active`, `set_society_block_active`.
 - Unsafe mode conversions with existing units are blocked; ambiguous legacy data left unchanged.
 - `commit_society_wizard` writes canonical rows and no longer creates a fake "Houses" block for serial.
+
+## Stage 2B additions
+- Any surface that lists residents to a non-admin role MUST use
+  `listResidentsPage` (server fn) — never a direct browser Supabase call.
+  The RPC projects only safe operational fields; phone, email, KYC,
+  UGVCL/property/share identifiers, and family contacts are not part of
+  the safe list contract.
+- Private resident detail is served only by `getResidentPrivateDetail`
+  (server fn → `get_resident_private_detail` RPC) and requires the caller
+  to be a society admin for the target society. Missing/inaccessible
+  residents return NULL (non-enumerating).
+- Occupancy state changes MUST go through `assign_resident_to_unit` and
+  `end_resident_unit_relationship`. Move-out preserves history and writes
+  `audit_log`; never `DELETE` a `flat_residents` row.
+- Vehicle plates are normalized inside the RPC (uppercase, whitespace
+  stripped) and are unique per society at the DB layer.

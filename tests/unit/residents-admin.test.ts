@@ -118,10 +118,10 @@ describe("Stage 2B — SQL rules encoded in the migration", () => {
   });
 
   it("occupancy lifecycle writes to audit_log", () => {
-    const assignIdx = sql.indexOf("assign_resident_to_unit");
-    const endIdx = sql.indexOf("end_resident_unit_relationship");
-    expect(sql.slice(assignIdx, assignIdx + 1500)).toMatch(/INSERT INTO public\.audit_log/);
-    expect(sql.slice(endIdx, endIdx + 1500)).toMatch(/INSERT INTO public\.audit_log/);
+    const assignIdx = sql.indexOf("assign_resident_to_unit(\n");
+    const endIdx = sql.indexOf("end_resident_unit_relationship(\n");
+    expect(sql.slice(assignIdx, assignIdx + 4000)).toMatch(/INSERT INTO public\.audit_log/);
+    expect(sql.slice(endIdx, endIdx + 4000)).toMatch(/INSERT INTO public\.audit_log/);
   });
 
   it("family RPC rejects cross-society parent", () => {

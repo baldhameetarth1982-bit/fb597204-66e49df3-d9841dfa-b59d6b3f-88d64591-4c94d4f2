@@ -258,7 +258,7 @@ function NewIncomePage() {
           payersError={payersQ.isError}
           payersLoading={payersQ.isLoading}
           canProceed={detailsValid}
-          onNext={() => setStep("review")}
+          onNext={enterReview}
           amountValid={amountValid || !form.amount}
           dateValid={dateValid || !form.paymentDate}
         />

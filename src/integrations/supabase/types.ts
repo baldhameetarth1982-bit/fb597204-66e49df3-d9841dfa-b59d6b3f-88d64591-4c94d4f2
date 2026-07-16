@@ -2875,6 +2875,23 @@ export type Database = {
         Args: { _flat_id: string; _society_id: string }
         Returns: Json
       }
+      create_non_member_income_record: {
+        Args: {
+          _amount: number
+          _canonical_payload: string
+          _category_id: string
+          _creation_request_id: string
+          _description: string
+          _non_member_payer_id: string
+          _payer_kind: string
+          _payment_date: string
+          _payment_method: string
+          _reference_number: string
+          _resident_user_id: string
+          _society_id: string
+        }
+        Returns: Json
+      }
       create_oneoff_bills:
         | {
             Args: {

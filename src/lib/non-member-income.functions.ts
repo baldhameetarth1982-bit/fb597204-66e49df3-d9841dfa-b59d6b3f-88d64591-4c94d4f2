@@ -330,22 +330,27 @@ export const createNonMemberIncomeRecordFn = createServerFn({ method: "POST" })
     const ctx = context as Ctx;
     const { parseCreateIncomeResult } = await import("@/lib/income-errors");
 
-    const { data: raw, error } = await (ctx.supabase.rpc as any)(
+    // Strictly-typed RPC call: any drift in the generated RPC argument set
+    // (e.g. reappearance of _canonical_payload, missing _creation_request_id)
+    // is a compile error rather than a silent `as any` bypass.
+    const supabase = ctx.supabase as StrictSupabase;
+    const { data: raw, error } = await supabase.rpc(
       "create_non_member_income_record",
       {
         _society_id: data.societyId,
         _category_id: data.category_id,
         _payer_kind: data.payer_kind,
-        _resident_user_id: null,
-        _non_member_payer_id: data.non_member_payer_id ?? null,
+        _resident_user_id: null as unknown as string,
+        _non_member_payer_id: (data.non_member_payer_id ?? null) as unknown as string,
         _amount: data.amount,
         _payment_method: data.payment_method,
-        _payment_date: data.payment_date ?? null,
-        _reference_number: data.reference_number ?? null,
-        _description: data.description ?? null,
+        _payment_date: (data.payment_date ?? null) as unknown as string,
+        _reference_number: (data.reference_number ?? null) as unknown as string,
+        _description: (data.description ?? null) as unknown as string,
         _creation_request_id: data.creation_request_id,
       },
     );
+
 
     if (error) return { status: "temporary_error" as const };
     return parseCreateIncomeResult(raw);

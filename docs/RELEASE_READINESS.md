@@ -644,3 +644,22 @@ require a DOM environment:
 - Runtime PostgreSQL / direct-RPC integration coverage remains **not
   executed** (no isolated fixture harness available). Protected society
   `baldha Meetarth` (1907a918-…) untouched.
+
+## Stage 1D — Income access boundary correctness
+
+- IncomeAccessBoundary structurally unmounts the protected subtree for
+  Basic, expired, inactive, cancelled, past_due, missing-society, and
+  role-denied callers.
+- Zero protected service calls in loading, Basic, expired, inactive,
+  cancelled, past_due, missing-society, or role-denied states (proven by
+  spy-backed behavioural tests, not source-scan alone).
+- Exactly one UpgradePrompt path per locked route (rendered by the shared
+  boundary; individual routes no longer wrap FeatureGate).
+- No empty-society query keys, no `societyId!` non-null assertions and no
+  broad `["society-income"]` invalidations remain in any of the five
+  income routes.
+- RPC adapter drops every `as unknown as string` cast in favour of a
+  nullable-honest `CreateIncomeRpcArgs` adapter type.
+
+Verification: 408/408 unit tests pass; guarded integration suite skips
+honestly with no fixtures; production build clean; secret scan clean.

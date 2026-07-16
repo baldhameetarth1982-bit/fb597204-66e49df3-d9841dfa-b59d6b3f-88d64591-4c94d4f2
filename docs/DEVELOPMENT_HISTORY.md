@@ -837,3 +837,45 @@ was queried, seeded, probed, or referenced during this slice.
 1. Query-key migration + Basic zero-call tests.
 2. Premium redesign of `/society/income/categories` and `/society/income/payers`.
 3. Responsive visual verification + full documentation sync.
+
+## Stage 1D — Shared Income Access Boundary (correctness slice)
+
+**Previously omitted:** the earlier Stage 1D slice reported query-key
+migration and RPC-type synchronization, but did not prove that Basic,
+expired, inactive, cancelled, past_due, missing-society, and role-denied
+callers execute zero protected Income service calls. `enabled: !!societyId`
+gating on already-mounted query hooks was treated as equivalent to a
+structural access boundary, and evidence was source-scan only.
+
+**Root cause:** three architectural objectives were bundled together, and
+source-scan tests are cheaper to write than behavioral proofs; importing
+`incomeKeys` was mistaken for runtime access safety.
+
+**Fix:**
+- New `src/components/subscription/IncomeAccessBoundary.tsx` exports a pure
+  `computeIncomeAccess(inputs)` decision function and a
+  `useIncomeAccessState()` hook returning the strict discriminated union
+  `loading | allowed | plan_locked | role_denied | society_unavailable`.
+- The boundary structurally renders `children(societyId)` ONLY in the
+  `allowed` state. All five income routes
+  (`/society/income`, `/society/income/$id`, `/society/income/categories`,
+  `/society/income/payers`, `/society/income/new`) were refactored to pass
+  a non-null `societyId: string` down to their inner content component,
+  dropping every `societyId ?? ""` empty-key pattern and every
+  `societyId!` non-null assertion.
+- RPC adapter now declares a nullable-honest `CreateIncomeRpcArgs` adapter
+  type and uses `satisfies` at the call site; every
+  `as unknown as string` cast has been removed.
+
+**Behavioral evidence:** `tests/unit/income-access-boundary.test.ts`
+(53 tests) exercises the decision function under loading, Basic,
+expired, inactive, cancelled, past_due, missing-society, role-denied,
+Pro-allowed, Premium-allowed, and Pro→Basic transitions, and asserts
+zero protected service-call counts in every non-allowed state using
+`vi.fn()` spies. Total unit suite: 408 passing.
+
+**Preserved unchanged:** PLAN_NORMALIZATION_SPEC, `normalizePlan`
+trial-expiry rules, the authoritative transactional creation RPC and its
+server-derived canonical/hash, Cash and Bank-Transfer-only creation, payer
+privacy split, Details → Review → Saved wizard, incomeKeys/incomeInvalidations,
+RLS, and every verify/reject/reverse workflow.

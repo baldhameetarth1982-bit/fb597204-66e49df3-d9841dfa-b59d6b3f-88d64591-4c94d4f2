@@ -70,3 +70,12 @@ Backend foundation for Non-Member Payments landed:
 
 Next (Turn 18B): Society Admin UI for categories, payers, income entry + verification/reversal, and Reports wiring. Still no online payment gateway.
 Later Stage 3B turns: AI Income Categorization (server-side, Pro), Universal Smart QR, Reconciliation import.
+
+## Remaining Stage 1D
+
+1. Premium category and payer UI redesign.
+2. Responsive visual verification.
+3. Stage 1D documentation/release closure.
+
+The shared income access boundary, plan-parity spec, query-key
+centralization, and RPC-type synchronization are complete.

@@ -33,6 +33,7 @@ interface Block {
 function BlocksPage() {
   const { societyId, loading: sidLoading } = useSocietyId();
   const [blocks, setBlocks] = useState<Block[]>([]);
+  const [overview, setOverview] = useState<StructureOverview | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Add

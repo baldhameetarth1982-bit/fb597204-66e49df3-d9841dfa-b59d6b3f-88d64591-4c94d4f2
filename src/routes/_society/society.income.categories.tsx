@@ -67,14 +67,17 @@ function CategoriesPage() {
 
   const listQ = useQuery({
     enabled: !!societyId,
-    queryKey: ["society-income", "categories", societyId],
+    queryKey: incomeKeys.categories(societyId ?? ""),
     queryFn: async () => listFn({ data: { societyId: societyId! } }),
   });
 
   const [editing, setEditing] = useState<Editing>(null);
 
-  const invalidate = () =>
-    qc.invalidateQueries({ queryKey: ["society-income", "categories", societyId] });
+  const invalidate = () => {
+    for (const key of incomeInvalidations.category(societyId ?? "")) {
+      qc.invalidateQueries({ queryKey: key });
+    }
+  };
 
   const createMut = useMutation({
     mutationFn: async (v: {

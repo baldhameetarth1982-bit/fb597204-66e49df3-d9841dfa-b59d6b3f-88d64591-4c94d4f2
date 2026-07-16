@@ -80,31 +80,31 @@ function statusMessage(result: IncomeTransitionResult): string {
   }
 }
 
-function IncomeDetail() {
+function IncomeDetail({ societyId }: { societyId: string }) {
   const { id } = Route.useParams();
-  const { societyId, loading } = useSocietyId();
   const getDetail = useServerFn(getIncomeRecordDetailFn);
   const queryClient = useQueryClient();
   const [dialog, setDialog] = useState<DialogKind>(null);
 
-  const detailKey = incomeKeys.record(societyId ?? "", id);
+  const detailKey = incomeKeys.record(societyId, id);
 
   const q = useQuery({
-    enabled: !!societyId && !!id,
+    enabled: !!id,
     queryKey: detailKey,
     retry: (n, e: unknown) => {
       const msg = e instanceof Error ? e.message : "";
       return n < 1 && !msg.includes("forbidden") && !msg.includes("not_found");
     },
-    queryFn: async () => getDetail({ data: { societyId: societyId!, id } }),
+    queryFn: async () => getDetail({ data: { societyId, id } }),
   });
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: detailKey });
-    for (const key of incomeInvalidations.income(societyId ?? "")) {
+    for (const key of incomeInvalidations.income(societyId)) {
       queryClient.invalidateQueries({ queryKey: key });
     }
   };
+
 
   const handleResult = (r: IncomeTransitionResult) => {
     if (r.status === "success") {

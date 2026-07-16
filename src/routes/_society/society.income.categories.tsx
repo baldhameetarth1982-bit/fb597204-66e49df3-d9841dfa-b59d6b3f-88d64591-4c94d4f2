@@ -37,10 +37,11 @@ export const Route = createFileRoute("/_society/society/income/categories")({
     ],
   }),
   component: () => (
-    <FeatureGate feature="non_member_payments">
-      <CategoriesPage />
-    </FeatureGate>
+    <IncomeAccessBoundary>
+      {(societyId) => <CategoriesPage societyId={societyId} />}
+    </IncomeAccessBoundary>
   ),
+
 });
 
 interface CategoryItem {

@@ -287,7 +287,7 @@ function PayerDialog(props: {
 
   const detailQ = useQuery({
     enabled: !!editingPayerId,
-    queryKey: ["society-income", "payer-detail", societyId, editingPayerId],
+    queryKey: incomeKeys.payerDetail(societyId, editingPayerId ?? ""),
     queryFn: async () =>
       detailFn({ data: { societyId, payerId: editingPayerId! } }),
   });

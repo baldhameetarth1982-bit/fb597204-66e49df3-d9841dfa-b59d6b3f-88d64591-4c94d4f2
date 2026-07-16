@@ -218,7 +218,9 @@ function NewIncomePage() {
         case "existing":
           setSavedRecord({ id: res.id, snapshot: form });
           setStep("saved");
-          void qc.invalidateQueries({ queryKey: ["society-income"] });
+          for (const key of incomeInvalidations.income(societyId ?? "")) {
+            void qc.invalidateQueries({ queryKey: key });
+          }
           return;
         case "idempotency_conflict":
           toast.error(friendlyIncomeError("idempotency_conflict"));

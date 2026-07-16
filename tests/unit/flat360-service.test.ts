@@ -135,8 +135,11 @@ describe("Flat 360 — plan derivation safe fallbacks", () => {
     expect(normalizePlan(null, null)).toBe("basic");
     expect(normalizePlan("", "")).toBe("basic");
   });
-  it("trialing → premium", () => {
-    expect(normalizePlan(null, "trialing")).toBe("premium");
+  it("trialing with future expiry → premium; null expiry → basic (Stage 1D)", () => {
+    const future = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    expect(normalizePlan(null, "trialing", future)).toBe("premium");
+    expect(normalizePlan(null, "trialing")).toBe("basic");
+    expect(normalizePlan(null, "trialing", null)).toBe("basic");
   });
   it("invalid plan id → basic", () => {
     expect(normalizePlan("gold-super-plan", "active")).toBe("basic");

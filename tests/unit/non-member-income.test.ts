@@ -105,7 +105,9 @@ describe("income record validation", () => {
     societyId: UUID,
     category_id: UUID2,
     payment_method: "cash" as (typeof SUPPORTED_METHODS)[number],
+    creation_request_id: "44444444-4444-4444-8444-444444444444",
   };
+
   it("14. amount must be positive", () => {
     expect(() =>
       CreateIncomeRecordInput.parse({

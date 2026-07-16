@@ -620,3 +620,94 @@ did not close in a single response:
    FeatureGate + `requireAdminAndPlan` chain.
 
 These items remain **inside Stage 1D**. Stage 1E has not been started.
+
+## Stage 1D — Turn 19: server-side idempotency, typed errors, query-key factory
+
+Scope of this pass (honest, incremental — Stage 1D is still open):
+
+### Delivered
+
+1. **Server-side idempotency for offline income creation.**
+   - New migration (`20260716…creation_request_id`) adds a nullable
+     `creation_request_id uuid` column on `society_income_records` plus a
+     partial unique index on
+     `(society_id, created_by, creation_request_id) WHERE creation_request_id IS NOT NULL`.
+     No backfill, no seeding, no changes to existing rows or policies.
+   - `CreateIncomeRecordInput` accepts an optional `creation_request_id`
+     (UUID, validated by Zod).
+   - `createNonMemberIncomeRecordFn` now inserts with the key, and on
+     unique-index violation (`23505`) fetches and returns the original
+     record id under `{ id, idempotent: true }`. First success returns
+     `{ id, idempotent: false }`. Actor, society, plan, status and audit
+     fields are still server-derived; the browser only supplies the key.
+2. **Income wizard hardening.**
+   - `society.income.new.tsx` generates one `crypto.randomUUID()` on
+     transition to Review, reuses it across Save retries, and regenerates
+     it on "Record Another". Double-clicks and retries can no longer
+     create duplicate financial records.
+3. **Typed error contract.**
+   - New `src/lib/income-errors.ts` maps every known server code
+     (`forbidden_plan`, `forbidden_society`, `category_inactive`,
+     `payer_inactive`, `duplicate_category_key`, `not_found`, …) to a
+     small closed union and collapses unknowns to `temporary_error`. Raw
+     Postgres / constraint text cannot reach the UI through this path.
+4. **Central query-key factory.**
+   - New `src/lib/income-query-keys.ts` provides society-scoped keys for
+     dashboard, records, categories, active-categories, payers,
+     active-payers, and payer detail, plus a canonical `incomeInvalidations`
+     mutation-target map. Filters/pages are folded into the key; "all" and
+     empty values are normalised so unrelated churn is impossible.
+5. **Focused unit tests.**
+   - New `tests/unit/income-idempotency.test.ts` (11 tests) covering the
+     `creation_request_id` schema, typed error mapping, no-DB-leak
+     guarantees, and query-key factory shape.
+   - Full unit suite: **275 tests passing** (13 files).
+6. **Verification (this pass).**
+   - `bunx tsgo --noEmit` — exit 0.
+   - `bunx vitest run tests/unit` — 275/275 passing.
+   - `bun run build` — success.
+   - `bun scripts/verify-client-bundle-secrets.ts` — clean (897 files).
+   - `git diff --check` — clean.
+
+### Explicitly still remaining inside Stage 1D
+
+Stage 1D is **not** marked complete. The following items are still open
+and must not be moved into Stage 1E:
+
+1. Premium V2 redesign of `/society/income/categories` (summary cards,
+   pastel icon tiles, typed filter bar, glass dialog shell).
+2. Premium V2 redesign of `/society/income/payers` (summary cards,
+   debounced search, type filter, server pagination, initials avatar,
+   safe-loading edit dialog reusing the existing detail server fn).
+3. Migrating existing route callers to the new `incomeKeys` /
+   `incomeInvalidations` factory (currently only the new tests consume
+   it; the routes still use ad-hoc keys). This is a mechanical follow-up.
+4. Expanded unit tests: private-payer-list projection assertions on the
+   real list response shape, category-summary helpers, payer-summary
+   helpers, and wizard-controller state machine.
+5. Guarded integration tests behind `ALLOW_SOCIOHUB_TEST_FIXTURES` for
+   Society A / Society B isolation, plan gating, role gating, duplicate
+   `creation_request_id` returning one row, and safe list projection.
+6. Direct responsive inspection at 360 / 390 / 414 / 768 / 1280 px with
+   captured screenshots for every wizard step and both directory pages.
+7. Basic-plan zero-protected-call harness (component-level test that a
+   Basic society renders `UpgradePrompt` and issues zero category /
+   payer / detail / create calls).
+8. Documentation sync across `SOCIYOHUB_MASTER_ROADMAP_V2.md`,
+   `FEATURE_COVERAGE_V2.md`, `UI_DESIGN_SYSTEM_V2.md`, `FEATURE_MATRIX.md`,
+   `UI_REFERENCE_MAP.md`, `PAYMENT_ARCHITECTURE.md`,
+   `SECURITY_REQUIREMENTS.md`, `NEXT_STAGES.md`, `RELEASE_READINESS.md`.
+
+### Payment constraints reconfirmed
+
+Cash and Bank Transfer are the only methods surfaced in the Stage 1D
+income-entry UI. `other_offline` remains in the backend enum for legacy
+rows only. Razorpay stays subscription-only. No Stripe, Paddle, UPI,
+card, wallet, payment link, online gateway, platform fee, or
+reconciliation was added or removed in this pass.
+
+### Protected society
+
+`baldha Meetarth` (`1907a918-c4b8-4f43-a837-450530cc7c34`) was **not**
+queried, seeded, probed, migrated against, or otherwise accessed in this
+pass. The migration is additive DDL only; no rows were read or written.

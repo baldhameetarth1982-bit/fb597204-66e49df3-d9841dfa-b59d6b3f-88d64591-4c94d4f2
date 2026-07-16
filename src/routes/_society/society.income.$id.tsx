@@ -190,6 +190,33 @@ function IncomeDetail({ societyId }: { societyId: string }) {
           onResult={handleResult}
         />
       )}
+      {record && (dialog === "reconcile" || dialog === "unreconcile") && (
+        <ReconcileDialog
+          action={dialog}
+          record={record}
+          onClose={() => setDialog(null)}
+          onDone={(r) => {
+            if (r.status === "success" || r.status === "already_processed") {
+              toast.success("Reconciliation updated.");
+              setDialog(null);
+              invalidateAll();
+              return;
+            }
+            const msg =
+              r.status === "invalid_transition"
+                ? "This record can't be reconciled in its current state."
+                : r.status === "invalid_input"
+                  ? "Please provide a reason (at least 5 characters)."
+                  : r.status === "plan_required"
+                    ? "Upgrade to Pro to reconcile income."
+                    : r.status === "not_authorized" || r.status === "not_found"
+                      ? "You don't have access to this record."
+                      : "The reconciliation could not be updated. Please try again.";
+            toast.error(msg);
+          }}
+        />
+      )}
+
     </div>
   );
 }

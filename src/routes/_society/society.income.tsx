@@ -202,33 +202,32 @@ function IncomePage({ societyId }: { societyId: string }) {
   };
 
   const dashboardQ = useQuery({
-    enabled: !!societyId && dateRangeValid,
-    queryKey: incomeKeys.dashboard(societyId ?? "", {
+    enabled: dateRangeValid,
+    queryKey: incomeKeys.dashboard(societyId, {
       from_date: range.from,
       to_date: range.to,
     }),
     retry: (n, e: unknown) => n < 1 && !isForbidden(e),
     queryFn: async () =>
       getDashboard({
-        data: { societyId: societyId!, from_date: range.from, to_date: range.to },
+        data: { societyId, from_date: range.from, to_date: range.to },
       }),
   });
 
   const catsQ = useQuery({
-    enabled: !!societyId,
-    queryKey: incomeKeys.activeCategories(societyId ?? ""),
-    queryFn: async () => listCats({ data: { societyId: societyId! } }),
+    queryKey: incomeKeys.activeCategories(societyId),
+    queryFn: async () => listCats({ data: { societyId } }),
   });
 
   const listQ = useQuery({
-    enabled: !!societyId && dateRangeValid,
-    queryKey: incomeKeys.records(societyId ?? "", listFilters, page),
+    enabled: dateRangeValid,
+    queryKey: incomeKeys.records(societyId, listFilters, page),
 
     retry: (n, e: unknown) => n < 1 && !isForbidden(e),
     queryFn: async () =>
       listRecords({
         data: {
-          societyId: societyId!,
+          societyId,
           from_date: range.from,
           to_date: range.to,
           verification_status: verif === "all" ? undefined : verif,
@@ -243,13 +242,7 @@ function IncomePage({ societyId }: { societyId: string }) {
       }),
   });
 
-  if (loading || !societyId) {
-    return (
-      <div className="min-h-[40vh] grid place-items-center text-muted-foreground">
-        <Loader2 className="h-6 w-6 animate-spin" />
-      </div>
-    );
-  }
+
 
   const d = dashboardQ.data;
   const items = listQ.data?.items ?? [];

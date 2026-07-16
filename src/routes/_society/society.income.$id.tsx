@@ -12,9 +12,9 @@ import {
   RotateCcw,
   Clock,
 } from "lucide-react";
-import { FeatureGate } from "@/components/subscription/FeatureGate";
+import { IncomeAccessBoundary } from "@/components/subscription/IncomeAccessBoundary";
 import { incomeKeys, incomeInvalidations } from "@/lib/income-query-keys";
-import { useSocietyId } from "@/hooks/useSocietyId";
+
 import { MobileHero } from "@/components/shared/MobileHero";
 import { SectionCard } from "@/components/shared/SectionCard";
 import { Card, CardContent } from "@/components/ui/card";
@@ -50,10 +50,11 @@ export const Route = createFileRoute("/_society/society/income/$id")({
     ],
   }),
   component: () => (
-    <FeatureGate feature="non_member_payments">
-      <IncomeDetail />
-    </FeatureGate>
+    <IncomeAccessBoundary>
+      {(societyId) => <IncomeDetail societyId={societyId} />}
+    </IncomeAccessBoundary>
   ),
+
 });
 
 const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
@@ -79,31 +80,31 @@ function statusMessage(result: IncomeTransitionResult): string {
   }
 }
 
-function IncomeDetail() {
+function IncomeDetail({ societyId }: { societyId: string }) {
   const { id } = Route.useParams();
-  const { societyId, loading } = useSocietyId();
   const getDetail = useServerFn(getIncomeRecordDetailFn);
   const queryClient = useQueryClient();
   const [dialog, setDialog] = useState<DialogKind>(null);
 
-  const detailKey = incomeKeys.record(societyId ?? "", id);
+  const detailKey = incomeKeys.record(societyId, id);
 
   const q = useQuery({
-    enabled: !!societyId && !!id,
+    enabled: !!id,
     queryKey: detailKey,
     retry: (n, e: unknown) => {
       const msg = e instanceof Error ? e.message : "";
       return n < 1 && !msg.includes("forbidden") && !msg.includes("not_found");
     },
-    queryFn: async () => getDetail({ data: { societyId: societyId!, id } }),
+    queryFn: async () => getDetail({ data: { societyId, id } }),
   });
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: detailKey });
-    for (const key of incomeInvalidations.income(societyId ?? "")) {
+    for (const key of incomeInvalidations.income(societyId)) {
       queryClient.invalidateQueries({ queryKey: key });
     }
   };
+
 
   const handleResult = (r: IncomeTransitionResult) => {
     if (r.status === "success") {
@@ -121,13 +122,8 @@ function IncomeDetail() {
     toast.error(statusMessage(r) || "Update failed.");
   };
 
-  if (loading || !societyId) {
-    return (
-      <div className="min-h-[40vh] grid place-items-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
+
+
 
   const result = q.data;
   const isServerError = q.isError || result?.status === "error";

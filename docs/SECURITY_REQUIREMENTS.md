@@ -103,3 +103,19 @@ authenticated`. The previous 12-arg signature (which accepted
 Regression protection: `tests/unit/income-rpc-invariants.test.ts`
 reads the actual migration and adapter source and fails on any of the
 above conditions reappearing.
+
+## Stage 1D — Income access boundary
+
+Every route under `/society/income*` MUST mount its protected query and
+mutation hooks inside `IncomeAccessBoundary`. The boundary's
+`computeIncomeAccess` decision function is the single source of truth for
+entitlement, role, and society readiness. Callers whose state resolves to
+`plan_locked`, `role_denied`, `society_unavailable`, or `loading` never see
+the authorized subtree render, so no protected service function is invoked
+on their behalf — this is proven behaviourally, not only by static scan.
+
+The creation RPC adapter (`create_non_member_income_record`) uses a
+nullable-honest `CreateIncomeRpcArgs` adapter type in place of double-cast
+`as unknown as string` coercions; TypeScript now reflects the real
+signature of the SQL function, keeping the boundary between caller-supplied
+input and server-derived canonical JSON/hash unambiguous.

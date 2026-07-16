@@ -3,9 +3,9 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { ArrowLeft, Loader2, Coins, CheckCircle2, AlertCircle } from "lucide-react";
-import { FeatureGate } from "@/components/subscription/FeatureGate";
-import { useSocietyId } from "@/hooks/useSocietyId";
+import { IncomeAccessBoundary } from "@/components/subscription/IncomeAccessBoundary";
 import { incomeKeys, incomeInvalidations } from "@/lib/income-query-keys";
+
 import { MobileHero } from "@/components/shared/MobileHero";
 import { SectionCard } from "@/components/shared/SectionCard";
 import { Button } from "@/components/ui/button";
@@ -40,10 +40,11 @@ export const Route = createFileRoute("/_society/society/income/new")({
     ],
   }),
   component: () => (
-    <FeatureGate feature="non_member_payments">
-      <NewIncomePage />
-    </FeatureGate>
+    <IncomeAccessBoundary>
+      {(societyId) => <NewIncomePage societyId={societyId} />}
+    </IncomeAccessBoundary>
   ),
+
 });
 
 function todayISO(): string {
@@ -95,8 +96,7 @@ function maskReference(ref: string): string {
 }
 
 
-function NewIncomePage() {
-  const { societyId, loading } = useSocietyId();
+function NewIncomePage({ societyId }: { societyId: string }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const listCatsFn = useServerFn(listIncomeCategoriesFn);
@@ -104,15 +104,14 @@ function NewIncomePage() {
   const createFn = useServerFn(createNonMemberIncomeRecordFn);
 
   const catsQ = useQuery({
-    enabled: !!societyId,
-    queryKey: incomeKeys.activeCategories(societyId ?? ""),
-    queryFn: async () => listCatsFn({ data: { societyId: societyId! } }),
+    queryKey: incomeKeys.activeCategories(societyId),
+    queryFn: async () => listCatsFn({ data: { societyId } }),
   });
   const payersQ = useQuery({
-    enabled: !!societyId,
-    queryKey: incomeKeys.activePayers(societyId ?? ""),
-    queryFn: async () => listPayersFn({ data: { societyId: societyId! } }),
+    queryKey: incomeKeys.activePayers(societyId),
+    queryFn: async () => listPayersFn({ data: { societyId } }),
   });
+
 
   const activeCats = useMemo(
     () =>
@@ -196,7 +195,7 @@ function NewIncomePage() {
       }
       const res = await createFn({
         data: {
-          societyId: societyId!,
+          societyId,
           category_id: form.categoryId,
           payer_kind: form.payerKind,
           non_member_payer_id:
@@ -218,7 +217,7 @@ function NewIncomePage() {
         case "existing":
           setSavedRecord({ id: res.id, snapshot: form });
           setStep("saved");
-          for (const key of incomeInvalidations.income(societyId ?? "")) {
+          for (const key of incomeInvalidations.income(societyId)) {
             void qc.invalidateQueries({ queryKey: key });
           }
           return;
@@ -238,13 +237,8 @@ function NewIncomePage() {
     },
   });
 
-  if (loading || !societyId) {
-    return (
-      <div className="min-h-[40vh] grid place-items-center text-muted-foreground">
-        <Loader2 className="h-6 w-6 animate-spin" />
-      </div>
-    );
-  }
+
+
 
   const amountNum = Number(form.amount);
   const amountValid =

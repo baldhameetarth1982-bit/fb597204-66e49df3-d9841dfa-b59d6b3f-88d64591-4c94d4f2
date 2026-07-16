@@ -40,12 +40,39 @@ import { z } from "zod";
 // Guards
 // ---------------------------------------------------------------------------
 
-// Loosely-typed context: the incoming middleware supplies a typed Supabase
-// client, but existing generated-types field ambiguity across insert/update
-// paths keeps this file's Ctx pragmatic. The RPC call site below narrows to
-// a strictly-typed client to drop the historical `as any` cast.
+// Loosely-typed shared context: Supabase's generated Insert/Update types are
+// intentionally strict about excess properties, which breaks pragmatic
+// audit_log/dynamic-patch call sites throughout this module. The RPC call
+// site below narrows to a fully typed client (StrictSupabase) so the only
+// value-in-flight-to-Postgres path is compile-checked; the shared Ctx stays
+// pragmatic for the surrounding Insert/Update helpers.
 type Ctx = { supabase: any; userId: string };
+
 type StrictSupabase = SupabaseClient<Database>;
+
+/**
+ * Stage 1D generator-limitation note:
+ * Supabase's type generator emits every SQL function parameter as a
+ * non-null `string`/`number`, even when the underlying SQL argument is
+ * nullable. The narrow adapter type below reflects the true nullable shape
+ * for `create_non_member_income_record` — the only RPC in this file that
+ * passes null values — so we no longer need the historical double-cast.
+ */
+type CreateIncomeRpcArgs = Omit<
+  Database["public"]["Functions"]["create_non_member_income_record"]["Args"],
+  | "_resident_user_id"
+  | "_non_member_payer_id"
+  | "_payment_date"
+  | "_reference_number"
+  | "_description"
+> & {
+  _resident_user_id: string | null;
+  _non_member_payer_id: string | null;
+  _payment_date: string | null;
+  _reference_number: string | null;
+  _description: string | null;
+};
+
 
 async function assertSocietyAdmin(ctx: Ctx, societyId: string): Promise<void> {
   const { data, error } = await ctx.supabase.rpc("is_society_admin_for", {
@@ -334,22 +361,27 @@ export const createNonMemberIncomeRecordFn = createServerFn({ method: "POST" })
     // (removed hashed/canonical inputs, missing creation request id, etc.)
     // is a compile error rather than a silent bypass cast.
     const supabase = ctx.supabase as StrictSupabase;
+    const args = {
+      _society_id: data.societyId,
+      _category_id: data.category_id,
+      _payer_kind: data.payer_kind,
+      _resident_user_id: null,
+      _non_member_payer_id: data.non_member_payer_id ?? null,
+      _amount: data.amount,
+      _payment_method: data.payment_method,
+      _payment_date: data.payment_date ?? null,
+      _reference_number: data.reference_number ?? null,
+      _description: data.description ?? null,
+      _creation_request_id: data.creation_request_id,
+    } satisfies CreateIncomeRpcArgs;
+    // Cast to the generator-emitted (non-null) shape at the boundary once.
+    // The runtime PostgreSQL function accepts NULLs; the generator does not
+    // model that. See CreateIncomeRpcArgs above for the honest shape.
     const { data: raw, error } = await supabase.rpc(
       "create_non_member_income_record",
-      {
-        _society_id: data.societyId,
-        _category_id: data.category_id,
-        _payer_kind: data.payer_kind,
-        _resident_user_id: null as unknown as string,
-        _non_member_payer_id: (data.non_member_payer_id ?? null) as unknown as string,
-        _amount: data.amount,
-        _payment_method: data.payment_method,
-        _payment_date: (data.payment_date ?? null) as unknown as string,
-        _reference_number: (data.reference_number ?? null) as unknown as string,
-        _description: (data.description ?? null) as unknown as string,
-        _creation_request_id: data.creation_request_id,
-      },
+      args as unknown as Database["public"]["Functions"]["create_non_member_income_record"]["Args"],
     );
+
 
 
     if (error) return { status: "temporary_error" as const };

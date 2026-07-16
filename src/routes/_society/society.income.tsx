@@ -17,8 +17,8 @@ import {
   Plus,
   Tags,
 } from "lucide-react";
-import { FeatureGate } from "@/components/subscription/FeatureGate";
-import { useSocietyId } from "@/hooks/useSocietyId";
+import { IncomeAccessBoundary } from "@/components/subscription/IncomeAccessBoundary";
+
 import { incomeKeys } from "@/lib/income-query-keys";
 import { AccountsCenterTabs } from "@/components/nav/AccountsCenterTabs";
 import { MobileHero } from "@/components/shared/MobileHero";
@@ -72,10 +72,11 @@ export const Route = createFileRoute("/_society/society/income")({
     ],
   }),
   component: () => (
-    <FeatureGate feature="non_member_payments">
-      <IncomePage />
-    </FeatureGate>
+    <IncomeAccessBoundary>
+      {(societyId) => <IncomePage societyId={societyId} />}
+    </IncomeAccessBoundary>
   ),
+
 });
 
 const PAGE_SIZE = 25;
@@ -155,8 +156,8 @@ const SORT_OPTIONS: ReadonlyArray<{ value: IncomeSort; label: string }> = [
   { value: "amount_asc", label: "Amount: low to high" },
 ];
 
-function IncomePage() {
-  const { societyId, loading } = useSocietyId();
+function IncomePage({ societyId }: { societyId: string }) {
+
 
   const [period, setPeriod] = useState<Period>("this_month");
   const [customFrom, setCustomFrom] = useState<string>(todayISO(-30));
@@ -201,33 +202,32 @@ function IncomePage() {
   };
 
   const dashboardQ = useQuery({
-    enabled: !!societyId && dateRangeValid,
-    queryKey: incomeKeys.dashboard(societyId ?? "", {
+    enabled: dateRangeValid,
+    queryKey: incomeKeys.dashboard(societyId, {
       from_date: range.from,
       to_date: range.to,
     }),
     retry: (n, e: unknown) => n < 1 && !isForbidden(e),
     queryFn: async () =>
       getDashboard({
-        data: { societyId: societyId!, from_date: range.from, to_date: range.to },
+        data: { societyId, from_date: range.from, to_date: range.to },
       }),
   });
 
   const catsQ = useQuery({
-    enabled: !!societyId,
-    queryKey: incomeKeys.activeCategories(societyId ?? ""),
-    queryFn: async () => listCats({ data: { societyId: societyId! } }),
+    queryKey: incomeKeys.activeCategories(societyId),
+    queryFn: async () => listCats({ data: { societyId } }),
   });
 
   const listQ = useQuery({
-    enabled: !!societyId && dateRangeValid,
-    queryKey: incomeKeys.records(societyId ?? "", listFilters, page),
+    enabled: dateRangeValid,
+    queryKey: incomeKeys.records(societyId, listFilters, page),
 
     retry: (n, e: unknown) => n < 1 && !isForbidden(e),
     queryFn: async () =>
       listRecords({
         data: {
-          societyId: societyId!,
+          societyId,
           from_date: range.from,
           to_date: range.to,
           verification_status: verif === "all" ? undefined : verif,
@@ -242,13 +242,7 @@ function IncomePage() {
       }),
   });
 
-  if (loading || !societyId) {
-    return (
-      <div className="min-h-[40vh] grid place-items-center text-muted-foreground">
-        <Loader2 className="h-6 w-6 animate-spin" />
-      </div>
-    );
-  }
+
 
   const d = dashboardQ.data;
   const items = listQ.data?.items ?? [];

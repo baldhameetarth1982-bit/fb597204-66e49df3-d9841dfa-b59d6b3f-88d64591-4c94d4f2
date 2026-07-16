@@ -3,9 +3,9 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2, AlertCircle, Plus, Pencil } from "lucide-react";
-import { FeatureGate } from "@/components/subscription/FeatureGate";
-import { useSocietyId } from "@/hooks/useSocietyId";
+import { IncomeAccessBoundary } from "@/components/subscription/IncomeAccessBoundary";
 import { incomeKeys, incomeInvalidations } from "@/lib/income-query-keys";
+
 
 import { MobileHero } from "@/components/shared/MobileHero";
 import { SectionCard } from "@/components/shared/SectionCard";
@@ -37,10 +37,11 @@ export const Route = createFileRoute("/_society/society/income/categories")({
     ],
   }),
   component: () => (
-    <FeatureGate feature="non_member_payments">
-      <CategoriesPage />
-    </FeatureGate>
+    <IncomeAccessBoundary>
+      {(societyId) => <CategoriesPage societyId={societyId} />}
+    </IncomeAccessBoundary>
   ),
+
 });
 
 interface CategoryItem {
@@ -59,23 +60,21 @@ type Editing =
   | { mode: "edit"; row: CategoryItem }
   | null;
 
-function CategoriesPage() {
-  const { societyId, loading } = useSocietyId();
+function CategoriesPage({ societyId }: { societyId: string }) {
   const qc = useQueryClient();
   const listFn = useServerFn(listIncomeCategoriesFn);
   const createFn = useServerFn(createIncomeCategoryFn);
   const updateFn = useServerFn(updateIncomeCategoryFn);
 
   const listQ = useQuery({
-    enabled: !!societyId,
-    queryKey: incomeKeys.categories(societyId ?? ""),
-    queryFn: async () => listFn({ data: { societyId: societyId! } }),
+    queryKey: incomeKeys.categories(societyId),
+    queryFn: async () => listFn({ data: { societyId } }),
   });
 
   const [editing, setEditing] = useState<Editing>(null);
 
   const invalidate = () => {
-    for (const key of incomeInvalidations.category(societyId ?? "")) {
+    for (const key of incomeInvalidations.category(societyId)) {
       qc.invalidateQueries({ queryKey: key });
     }
   };
@@ -86,7 +85,7 @@ function CategoriesPage() {
       display_name: string;
       description?: string;
       category_group?: string;
-    }) => createFn({ data: { societyId: societyId!, ...v } }),
+    }) => createFn({ data: { societyId, ...v } }),
     onSuccess: () => {
       toast.success("Category created");
       setEditing(null);
@@ -109,7 +108,7 @@ function CategoriesPage() {
       description?: string;
       category_group?: string;
       is_active?: boolean;
-    }) => updateFn({ data: { societyId: societyId!, ...v } }),
+    }) => updateFn({ data: { societyId, ...v } }),
     onSuccess: () => {
       toast.success("Category updated");
       setEditing(null);
@@ -118,13 +117,7 @@ function CategoriesPage() {
     onError: () => toast.error("Could not update category"),
   });
 
-  if (loading || !societyId) {
-    return (
-      <div className="min-h-[40vh] grid place-items-center text-muted-foreground">
-        <Loader2 className="h-6 w-6 animate-spin" />
-      </div>
-    );
-  }
+
 
   const items = (listQ.data?.items ?? []) as CategoryItem[];
 

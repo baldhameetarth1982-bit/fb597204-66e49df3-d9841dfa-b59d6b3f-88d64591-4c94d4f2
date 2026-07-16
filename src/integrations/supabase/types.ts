@@ -2221,6 +2221,7 @@ export type Database = {
           category_id: string
           created_at: string
           created_by: string | null
+          creation_payload_hash: string | null
           creation_request_id: string | null
           description: string | null
           id: string
@@ -2250,6 +2251,7 @@ export type Database = {
           category_id: string
           created_at?: string
           created_by?: string | null
+          creation_payload_hash?: string | null
           creation_request_id?: string | null
           description?: string | null
           id?: string
@@ -2279,6 +2281,7 @@ export type Database = {
           category_id?: string
           created_at?: string
           created_by?: string | null
+          creation_payload_hash?: string | null
           creation_request_id?: string | null
           description?: string | null
           id?: string

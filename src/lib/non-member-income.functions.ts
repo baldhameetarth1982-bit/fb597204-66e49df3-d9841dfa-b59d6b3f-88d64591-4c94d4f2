@@ -965,3 +965,118 @@ export const reverseIncomeRecordByIdFn = createServerFn({ method: "POST" })
 
 
 
+
+// ---------------------------------------------------------------------------
+// Stage 1E — Authoritative SQL income reporting + reconciliation + paginated payers
+// ---------------------------------------------------------------------------
+
+import {
+  IncomeReportSchema,
+  IncomeReconciliationResultSchema,
+  PayerPageResultSchema,
+  type IncomeReport,
+  type IncomeReconciliationResult,
+  type PayerPageResult,
+} from "@/lib/non-member-income.server";
+
+const ReportInput = z.object({
+  societyId: z.string().uuid(),
+  from_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u),
+  to_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u),
+  category_id: z.string().uuid().optional(),
+  payment_method: z.enum(["cash", "bank_transfer", "other_offline"]).optional(),
+  verification_status: z.enum(["pending", "verified", "rejected", "reversed"]).optional(),
+  reconciliation_status: z
+    .enum(["unreconciled", "matched", "partially_matched", "needs_review", "reversed"])
+    .optional(),
+  payer_kind: z.enum(["resident", "non_member", "anonymous"]).optional(),
+});
+
+export const getSocietyIncomeReportFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw) => ReportInput.parse(raw))
+  .handler(async ({ data, context }): Promise<IncomeReport | { status: "error" }> => {
+    const ctx = context as Ctx;
+    const { data: raw, error } = await ctx.supabase.rpc("get_society_income_report", {
+      _society_id: data.societyId,
+      _from_date: data.from_date,
+      _to_date: data.to_date,
+      _category_id: data.category_id ?? null,
+      _payment_method: data.payment_method ?? null,
+      _verification_status: data.verification_status ?? null,
+      _reconciliation_status: data.reconciliation_status ?? null,
+      _payer_kind: data.payer_kind ?? null,
+    });
+    if (error) return { status: "error" };
+    const parsed = IncomeReportSchema.safeParse(raw);
+    if (!parsed.success) return { status: "error" };
+    return parsed.data;
+  });
+
+const ReconcileInput = z.object({
+  recordId: z.string().uuid(),
+  action: z.enum(["reconcile", "unreconcile"]),
+  reference: z.string().trim().max(128).optional(),
+  reason: z.string().trim().max(500).optional(),
+});
+
+export const transitionIncomeReconciliationFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw) => ReconcileInput.parse(raw))
+  .handler(
+    async ({ data, context }): Promise<IncomeReconciliationResult> => {
+      const ctx = context as Ctx;
+      // Client-side reason enforcement for parity with SQL rule.
+      if (data.action === "unreconcile") {
+        const r = (data.reason ?? "").trim();
+        if (r.length < 5 || /<[^>]+>/.test(r)) {
+          return { status: "invalid_input" };
+        }
+      }
+      const { data: raw, error } = await ctx.supabase.rpc(
+        "transition_income_reconciliation",
+        {
+          _record_id: data.recordId,
+          _action: data.action,
+          _reference: data.reference ?? null,
+          _reason: data.reason ?? null,
+        },
+      );
+      if (error) return { status: "error" };
+      const parsed = IncomeReconciliationResultSchema.safeParse(raw);
+      if (!parsed.success) return { status: "error" };
+      return parsed.data;
+    },
+  );
+
+const PayersPageInput = z.object({
+  societyId: z.string().uuid(),
+  search: z.string().trim().max(120).optional(),
+  payer_type: z.string().trim().max(64).optional(),
+  active: z.enum(["all", "active", "inactive"]).optional(),
+  limit: z.number().int().min(1).max(100).optional(),
+  offset: z.number().int().min(0).max(100000).optional(),
+});
+
+export const listNonMemberPayersPageFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw) => PayersPageInput.parse(raw))
+  .handler(async ({ data, context }): Promise<PayerPageResult | { status: "error" }> => {
+    const ctx = context as Ctx;
+    const { data: raw, error } = await ctx.supabase.rpc(
+      "list_non_member_payers_page",
+      {
+        _society_id: data.societyId,
+        _search: data.search ?? null,
+        _payer_type:
+          data.payer_type && data.payer_type !== "all" ? data.payer_type : null,
+        _active: data.active === "active" || data.active === "inactive" ? data.active : null,
+        _limit: data.limit ?? 25,
+        _offset: data.offset ?? 0,
+      },
+    );
+    if (error) return { status: "error" };
+    const parsed = PayerPageResultSchema.safeParse(raw);
+    if (!parsed.success) return { status: "error" };
+    return parsed.data;
+  });

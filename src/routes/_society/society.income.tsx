@@ -38,9 +38,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   listIncomeRecordsFn,
-  getIncomeDashboardFn,
+  getSocietyIncomeReportFn,
   listIncomeCategoriesFn,
 } from "@/lib/non-member-income.functions";
+
 import type {
   IncomeVerificationStatus,
   IncomeReconciliationStatus,
@@ -182,7 +183,7 @@ function IncomePage({ societyId }: { societyId: string }) {
     setPage(0);
   }, [period, customFrom, customTo, verif, recon, method, kind, categoryId, sort]);
 
-  const getDashboard = useServerFn(getIncomeDashboardFn);
+  const getReport = useServerFn(getSocietyIncomeReportFn);
   const listRecords = useServerFn(listIncomeRecordsFn);
   const listCats = useServerFn(listIncomeCategoriesFn);
 
@@ -201,18 +202,32 @@ function IncomePage({ societyId }: { societyId: string }) {
     sort,
   };
 
-  const dashboardQ = useQuery({
-    enabled: dateRangeValid,
+  const reportQ = useQuery({
+    enabled: dateRangeValid && !!range.from && !!range.to,
     queryKey: incomeKeys.dashboard(societyId, {
       from_date: range.from,
       to_date: range.to,
+      verification_status: verif === "all" ? undefined : verif,
+      reconciliation_status: recon === "all" ? undefined : recon,
+      payment_method: method === "all" ? undefined : method,
+      category_id: categoryId === "all" ? undefined : categoryId,
     }),
     retry: (n, e: unknown) => n < 1 && !isForbidden(e),
     queryFn: async () =>
-      getDashboard({
-        data: { societyId, from_date: range.from, to_date: range.to },
+      getReport({
+        data: {
+          societyId,
+          from_date: range.from!,
+          to_date: range.to!,
+          verification_status: verif === "all" ? undefined : verif,
+          reconciliation_status: recon === "all" ? undefined : recon,
+          payment_method: method === "all" ? undefined : method,
+          category_id: categoryId === "all" ? undefined : categoryId,
+          payer_kind: kind === "all" ? undefined : kind,
+        },
       }),
   });
+
 
   const catsQ = useQuery({
     queryKey: incomeKeys.activeCategories(societyId),
@@ -244,7 +259,10 @@ function IncomePage({ societyId }: { societyId: string }) {
 
 
 
-  const d = dashboardQ.data;
+  const reportResp = reportQ.data;
+  const report =
+    reportResp && reportResp.status === "ok" ? reportResp : null;
+
   const items = listQ.data?.items ?? [];
   const total = listQ.data?.total ?? null;
   const totalPages =

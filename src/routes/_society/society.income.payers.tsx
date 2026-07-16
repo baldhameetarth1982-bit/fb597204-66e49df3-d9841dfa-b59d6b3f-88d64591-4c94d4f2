@@ -43,11 +43,12 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
-  listNonMemberPayersFn,
+  listNonMemberPayersPageFn,
   createNonMemberPayerFn,
   updateNonMemberPayerFn,
   getNonMemberPayerDetailFn,
 } from "@/lib/non-member-income.functions";
+
 
 export const Route = createFileRoute("/_society/society/income/payers")({
   head: () => ({
@@ -151,14 +152,9 @@ function SummaryCard({
 
 function PayersPage({ societyId }: { societyId: string }) {
   const qc = useQueryClient();
-  const listFn = useServerFn(listNonMemberPayersFn);
+  const listFn = useServerFn(listNonMemberPayersPageFn);
   const createFn = useServerFn(createNonMemberPayerFn);
   const updateFn = useServerFn(updateNonMemberPayerFn);
-
-  const listQ = useQuery({
-    queryKey: incomeKeys.payers(societyId),
-    queryFn: async () => listFn({ data: { societyId } }),
-  });
 
   const [editing, setEditing] = useState<Editing>(null);
   const [search, setSearch] = useState("");
@@ -175,6 +171,25 @@ function PayersPage({ societyId }: { societyId: string }) {
   useEffect(() => {
     setPage(0);
   }, [debounced, typeFilter, status]);
+
+  const listQ = useQuery({
+    queryKey: incomeKeys.payers(
+      societyId,
+      { search: debounced, type: typeFilter, active: status },
+      page,
+    ),
+    queryFn: async () =>
+      listFn({
+        data: {
+          societyId,
+          search: debounced || undefined,
+          payer_type: typeFilter,
+          active: status,
+          limit: PAGE_SIZE,
+          offset: page * PAGE_SIZE,
+        },
+      }),
+  });
 
   const invalidate = (payerId?: string) => {
     for (const key of incomeInvalidations.payer(societyId, payerId)) {
@@ -220,36 +235,29 @@ function PayersPage({ societyId }: { societyId: string }) {
     onError: () => toast.error("Could not update payer"),
   });
 
-  const items = (listQ.data?.items ?? []) as PayerListItem[];
+  const listResp = listQ.data;
+  const okResp =
+    listResp && listResp.status === "ok" ? listResp : null;
+  const items: PayerListItem[] = okResp?.items ?? [];
+  const total = okResp?.total ?? 0;
+  const hasNext = okResp?.has_next ?? false;
+  const pageItems: PayerListItem[] = items;
+  void okResp;
+
+
 
   const summary = useMemo(
     () => ({
-      total: items.length,
+      total,
       active: items.filter((i) => i.is_active).length,
       inactive: items.filter((i) => !i.is_active).length,
     }),
-    [items],
+    [items, total],
   );
 
-  const filtered = useMemo(() => {
-    return items.filter((p) => {
-      if (typeFilter !== "all" && p.payer_type !== typeFilter) return false;
-      if (status === "active" && !p.is_active) return false;
-      if (status === "inactive" && p.is_active) return false;
-      if (debounced) {
-        const hay = `${p.display_name} ${p.organization_name ?? ""} ${p.payer_type}`.toLowerCase();
-        if (!hay.includes(debounced)) return false;
-      }
-      return true;
-    });
-  }, [items, typeFilter, status, debounced]);
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const currentPage = Math.min(page, Math.max(0, totalPages - 1));
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const currentPage = Math.min(page, totalPages - 1);
-  const pageItems = filtered.slice(
-    currentPage * PAGE_SIZE,
-    currentPage * PAGE_SIZE + PAGE_SIZE,
-  );
 
   const resetFilters = () => {
     setSearch("");
@@ -355,7 +363,7 @@ function PayersPage({ societyId }: { societyId: string }) {
                 </div>
               ))}
             </div>
-          ) : items.length === 0 ? (
+          ) : items.length === 0 && !filtersActive && page === 0 ? (
             <div className="p-8 text-center">
               <div className="mx-auto h-12 w-12 rounded-2xl bg-[#E6F7F4] text-[#007E70] grid place-items-center">
                 <Users className="h-5 w-5" />
@@ -373,7 +381,7 @@ function PayersPage({ societyId }: { societyId: string }) {
                 <Plus className="h-4 w-4 mr-1" /> Add Payer
               </Button>
             </div>
-          ) : filtered.length === 0 ? (
+          ) : items.length === 0 ? (
             <div className="p-8 text-center">
               <div className="text-sm font-medium text-[#0B2545]">No matches</div>
               <p className="text-xs text-[#667085] mt-1">
@@ -387,6 +395,7 @@ function PayersPage({ societyId }: { societyId: string }) {
                 Reset filters
               </Button>
             </div>
+
           ) : (
             <>
               <div className="divide-y divide-[#DDE9E6]">
@@ -435,10 +444,10 @@ function PayersPage({ societyId }: { societyId: string }) {
                   </div>
                 ))}
               </div>
-              {filtered.length > PAGE_SIZE && (
+              {total > PAGE_SIZE && (
                 <div className="flex items-center justify-between gap-2 border-t border-[#DDE9E6] px-4 py-3 text-sm">
                   <div className="text-[#667085]">
-                    Page {currentPage + 1} of {totalPages} · {filtered.length}{" "}
+                    Page {currentPage + 1} of {totalPages} · {total}{" "}
                     payers
                   </div>
                   <div className="flex items-center gap-2">
@@ -455,16 +464,15 @@ function PayersPage({ societyId }: { societyId: string }) {
                       variant="outline"
                       size="sm"
                       className="min-h-[40px] rounded-[14px] border-[#DDE9E6]"
-                      onClick={() =>
-                        setPage((p) => Math.min(totalPages - 1, p + 1))
-                      }
-                      disabled={currentPage >= totalPages - 1}
+                      onClick={() => setPage((p) => p + 1)}
+                      disabled={!hasNext}
                     >
                       Next <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
               )}
+
             </>
           )}
         </div>

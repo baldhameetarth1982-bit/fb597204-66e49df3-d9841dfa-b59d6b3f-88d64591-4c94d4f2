@@ -133,6 +133,7 @@ import { Route as ApiPublicHooksMaintenanceRemindersRouteImport } from './routes
 import { Route as ApiPublicAuthFirebaseSessionRouteImport } from './routes/api/public/auth/firebase-session'
 import { Route as SocietySocietyResidentsIdRouteImport } from './routes/_society/society.residents.$id'
 import { Route as SocietySocietyNoDuesIdRouteImport } from './routes/_society/society.no-dues.$id'
+import { Route as SocietySocietyIncomePayersRouteImport } from './routes/_society/society.income.payers'
 import { Route as SocietySocietyIncomeCategoriesRouteImport } from './routes/_society/society.income.categories'
 import { Route as SocietySocietyIncomeIdRouteImport } from './routes/_society/society.income.$id'
 import { Route as SocietySocietyFlatsIdRouteImport } from './routes/_society/society.flats.$id'
@@ -778,6 +779,12 @@ const SocietySocietyNoDuesIdRoute = SocietySocietyNoDuesIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => SocietySocietyNoDuesRoute,
 } as any)
+const SocietySocietyIncomePayersRoute =
+  SocietySocietyIncomePayersRouteImport.update({
+    id: '/payers',
+    path: '/payers',
+    getParentRoute: () => SocietySocietyIncomeRoute,
+  } as any)
 const SocietySocietyIncomeCategoriesRoute =
   SocietySocietyIncomeCategoriesRouteImport.update({
     id: '/categories',
@@ -944,6 +951,7 @@ export interface FileRoutesByFullPath {
   '/society/flats/$id': typeof SocietySocietyFlatsIdRoute
   '/society/income/$id': typeof SocietySocietyIncomeIdRoute
   '/society/income/categories': typeof SocietySocietyIncomeCategoriesRoute
+  '/society/income/payers': typeof SocietySocietyIncomePayersRoute
   '/society/no-dues/$id': typeof SocietySocietyNoDuesIdRoute
   '/society/residents/$id': typeof SocietySocietyResidentsIdRoute
   '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
@@ -1073,6 +1081,7 @@ export interface FileRoutesByTo {
   '/society/flats/$id': typeof SocietySocietyFlatsIdRoute
   '/society/income/$id': typeof SocietySocietyIncomeIdRoute
   '/society/income/categories': typeof SocietySocietyIncomeCategoriesRoute
+  '/society/income/payers': typeof SocietySocietyIncomePayersRoute
   '/society/no-dues/$id': typeof SocietySocietyNoDuesIdRoute
   '/society/residents/$id': typeof SocietySocietyResidentsIdRoute
   '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
@@ -1208,6 +1217,7 @@ export interface FileRoutesById {
   '/_society/society/flats/$id': typeof SocietySocietyFlatsIdRoute
   '/_society/society/income/$id': typeof SocietySocietyIncomeIdRoute
   '/_society/society/income/categories': typeof SocietySocietyIncomeCategoriesRoute
+  '/_society/society/income/payers': typeof SocietySocietyIncomePayersRoute
   '/_society/society/no-dues/$id': typeof SocietySocietyNoDuesIdRoute
   '/_society/society/residents/$id': typeof SocietySocietyResidentsIdRoute
   '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
@@ -1340,6 +1350,7 @@ export interface FileRouteTypes {
     | '/society/flats/$id'
     | '/society/income/$id'
     | '/society/income/categories'
+    | '/society/income/payers'
     | '/society/no-dues/$id'
     | '/society/residents/$id'
     | '/api/public/auth/firebase-session'
@@ -1469,6 +1480,7 @@ export interface FileRouteTypes {
     | '/society/flats/$id'
     | '/society/income/$id'
     | '/society/income/categories'
+    | '/society/income/payers'
     | '/society/no-dues/$id'
     | '/society/residents/$id'
     | '/api/public/auth/firebase-session'
@@ -1603,6 +1615,7 @@ export interface FileRouteTypes {
     | '/_society/society/flats/$id'
     | '/_society/society/income/$id'
     | '/_society/society/income/categories'
+    | '/_society/society/income/payers'
     | '/_society/society/no-dues/$id'
     | '/_society/society/residents/$id'
     | '/api/public/auth/firebase-session'
@@ -2518,6 +2531,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SocietySocietyNoDuesIdRouteImport
       parentRoute: typeof SocietySocietyNoDuesRoute
     }
+    '/_society/society/income/payers': {
+      id: '/_society/society/income/payers'
+      path: '/payers'
+      fullPath: '/society/income/payers'
+      preLoaderRoute: typeof SocietySocietyIncomePayersRouteImport
+      parentRoute: typeof SocietySocietyIncomeRoute
+    }
     '/_society/society/income/categories': {
       id: '/_society/society/income/categories'
       path: '/categories'
@@ -2745,11 +2765,13 @@ const SocietySocietyFlatsRouteWithChildren =
 interface SocietySocietyIncomeRouteChildren {
   SocietySocietyIncomeIdRoute: typeof SocietySocietyIncomeIdRoute
   SocietySocietyIncomeCategoriesRoute: typeof SocietySocietyIncomeCategoriesRoute
+  SocietySocietyIncomePayersRoute: typeof SocietySocietyIncomePayersRoute
 }
 
 const SocietySocietyIncomeRouteChildren: SocietySocietyIncomeRouteChildren = {
   SocietySocietyIncomeIdRoute: SocietySocietyIncomeIdRoute,
   SocietySocietyIncomeCategoriesRoute: SocietySocietyIncomeCategoriesRoute,
+  SocietySocietyIncomePayersRoute: SocietySocietyIncomePayersRoute,
 }
 
 const SocietySocietyIncomeRouteWithChildren =

@@ -44,10 +44,11 @@ export const Route = createFileRoute("/_society/society/income/payers")({
     ],
   }),
   component: () => (
-    <FeatureGate feature="non_member_payments">
-      <PayersPage />
-    </FeatureGate>
+    <IncomeAccessBoundary>
+      {(societyId) => <PayersPage societyId={societyId} />}
+    </IncomeAccessBoundary>
   ),
+
 });
 
 const PAYER_TYPE_OPTIONS = [

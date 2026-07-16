@@ -696,3 +696,12 @@ honestly with no fixtures; production build clean; secret scan clean.
 
 **Stage 1 overall status: complete. Next: Stage 2A — Society Structure
 Audit and Canonical Setup Model.**
+
+## Stage 2A closure (canonical structure model)
+
+- Canonical: `societies` + `blocks` + `flats`. `hierarchy_nodes` is legacy compatibility only.
+- `societies.structure_mode` is `'structured' | 'serial'` (nullable for legacy).
+- `flats.block_id` is nullable in serial mode; a BEFORE-trigger enforces mode rules.
+- New RPCs (SECURITY DEFINER, authenticated-only): `get_society_structure_overview`, `configure_society_structure_mode`, `list_society_units_page`, `create_society_unit`, `update_society_unit`, `set_society_unit_active`, `set_society_block_active`.
+- Unsafe mode conversions with existing units are blocked; ambiguous legacy data left unchanged.
+- `commit_society_wizard` writes canonical rows and no longer creates a fake "Houses" block for serial.

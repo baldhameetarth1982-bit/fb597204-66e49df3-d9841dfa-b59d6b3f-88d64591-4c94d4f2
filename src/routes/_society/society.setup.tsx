@@ -17,6 +17,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import {
+  getSocietyStructureOverview,
+  configureSocietyStructureMode,
+  type StructureMode,
+  type StructureOverview,
+} from "@/lib/society-structure";
 
 export const Route = createFileRoute("/_society/society/setup")({
   head: () => ({ meta: [{ title: "Setup Wizard — SociyoHub" }] }),
@@ -75,6 +81,45 @@ function SetupWizardPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [step, setStep] = useState(0);
+  const [overview, setOverview] = useState<StructureOverview | null>(null);
+  const [modeSaving, setModeSaving] = useState(false);
+
+  async function refreshOverview(sid: string) {
+    try {
+      const ov = await getSocietyStructureOverview(sid);
+      setOverview(ov);
+    } catch {
+      /* silent — surface via UI if needed */
+    }
+  }
+
+  async function chooseMode(mode: StructureMode) {
+    if (!societyId) return;
+    setModeSaving(true);
+    try {
+      const res = await configureSocietyStructureMode(societyId, mode);
+      if (!res.ok) {
+        toast.error(
+          res.reason === "conversion_blocked_units_exist"
+            ? "Cannot change mode — units already exist."
+            : res.reason === "review_required_mixed_units"
+            ? "Existing data is mixed. Review required before setting a mode."
+            : res.reason === "review_required_units_without_block"
+            ? "Existing units without a block. Cannot set structured mode automatically."
+            : res.reason === "review_required_units_have_block"
+            ? "Existing units belong to blocks. Cannot set serial mode automatically."
+            : "Could not set mode",
+        );
+      } else {
+        toast.success(mode === "structured" ? "Structured mode set" : "Serial mode set");
+        await refreshOverview(societyId);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not set mode");
+    } finally {
+      setModeSaving(false);
+    }
+  }
 
   useEffect(() => {
     if (sidLoading || !societyId) return;
@@ -90,6 +135,7 @@ function SetupWizardPage() {
       setS(next);
       setStep(Math.min(next.wizard_step ?? 0, STEPS.length - 1));
       setLoading(false);
+      void refreshOverview(societyId);
     })();
   }, [societyId, sidLoading]);
 
@@ -224,28 +270,90 @@ function SetupWizardPage() {
 
           {step === 1 && (
             <>
-              <h2 className="text-base font-semibold">How is your society organised?</h2>
+              <h2 className="text-base font-semibold">Society structure</h2>
               <p className="text-xs text-muted-foreground">
-                Pick the term you use for each cluster of flats. You'll add the actual blocks under <strong>Blocks</strong>.
+                Choose how units are organised. This is the canonical model — you can only
+                change it while there are no units.
               </p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {(["blocks", "towers", "wings", "buildings", "none"] as const).map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => patch("structure_type", t)}
-                    className={cn(
-                      "rounded-2xl border p-3 text-sm capitalize text-left",
-                      s.structure_type === t
-                        ? "border-primary bg-primary/5 text-primary font-semibold"
-                        : "border-border hover:bg-secondary",
-                    )}
-                  >
-                    {t === "none" ? "Single building" : t}
-                  </button>
-                ))}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {(["structured", "serial"] as const).map((m) => {
+                  const active = overview?.structure_mode === m;
+                  const isLockedByUnits =
+                    !!overview && overview.structure_mode && overview.structure_mode !== m && overview.total_units > 0;
+                  return (
+                    <button
+                      key={m}
+                      type="button"
+                      disabled={modeSaving || !!isLockedByUnits}
+                      onClick={() => chooseMode(m)}
+                      className={cn(
+                        "rounded-2xl border p-4 text-left transition-colors",
+                        active
+                          ? "border-primary bg-primary/5 text-primary"
+                          : "border-border hover:bg-secondary",
+                        isLockedByUnits && "opacity-60 cursor-not-allowed",
+                      )}
+                    >
+                      <div className="text-sm font-semibold capitalize">
+                        {m === "structured" ? "Structured (Blocks / Towers / Wings)" : "Serial (direct houses)"}
+                      </div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {m === "structured"
+                          ? "Units belong to a Block, Tower or Wing. Floor is optional."
+                          : "Units belong directly to the society, no block, no floor."}
+                      </div>
+                      {isLockedByUnits && (
+                        <div className="mt-2 text-[11px] font-medium text-amber-600">
+                          Locked — remove existing units to switch mode.
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
-              <div className="rounded-2xl bg-muted/40 p-3 text-xs text-muted-foreground">
-                Tip: Use the <strong>Blocks</strong> page after this wizard, or upload a plan-text in <strong>Bill Studio</strong> AI to auto-generate the whole hierarchy.
+
+              {overview && (
+                <div className="rounded-2xl bg-muted/40 p-3 text-xs text-muted-foreground">
+                  <div>
+                    Current mode:{" "}
+                    <b className="text-foreground">
+                      {overview.structure_mode ?? "not configured"}
+                    </b>
+                  </div>
+                  <div>
+                    Structures: <b className="text-foreground">{overview.total_structures}</b>
+                    {" · "}
+                    Units: <b className="text-foreground">{overview.total_units}</b>
+                    {overview.inconsistent_units > 0 && (
+                      <span className="ml-2 text-amber-600">
+                        ({overview.inconsistent_units} inconsistent)
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-2 border-t space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Label used across the app for structures:
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {(["blocks", "towers", "wings", "buildings", "none"] as const).map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => patch("structure_type", t)}
+                      className={cn(
+                        "rounded-2xl border p-3 text-sm capitalize text-left",
+                        s.structure_type === t
+                          ? "border-primary bg-primary/5 text-primary font-semibold"
+                          : "border-border hover:bg-secondary",
+                      )}
+                    >
+                      {t === "none" ? "Single building" : t}
+                    </button>
+                  ))}
+                </div>
               </div>
             </>
           )}

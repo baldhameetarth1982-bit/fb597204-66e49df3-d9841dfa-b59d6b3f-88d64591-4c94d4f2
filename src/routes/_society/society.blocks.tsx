@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { planSocietyFromText, applySocietyPlan, duplicateBlock } from "@/lib/blocks-ai.functions";
+import { getSocietyStructureOverview, type StructureOverview } from "@/lib/society-structure";
 
 export const Route = createFileRoute("/_society/society/blocks")({
   head: () => ({ meta: [{ title: "Blocks — SociyoHub" }] }),
@@ -32,6 +33,7 @@ interface Block {
 function BlocksPage() {
   const { societyId, loading: sidLoading } = useSocietyId();
   const [blocks, setBlocks] = useState<Block[]>([]);
+  const [overview, setOverview] = useState<StructureOverview | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Add
@@ -79,8 +81,10 @@ function BlocksPage() {
   }
 
   useEffect(() => {
-    if (societyId) void fetchBlocks(societyId);
-    else if (!sidLoading) setLoading(false);
+    if (societyId) {
+      void fetchBlocks(societyId);
+      void getSocietyStructureOverview(societyId).then(setOverview).catch(() => {});
+    } else if (!sidLoading) setLoading(false);
   }, [societyId, sidLoading]);
 
   async function handleCreate(e: React.FormEvent) {
@@ -170,6 +174,20 @@ function BlocksPage() {
           title="No society linked yet"
           description="Set up your society first to start adding blocks."
           action={<Button asChild><a href="/onboarding">Set up society</a></Button>}
+        />
+      </PageShell>
+    );
+  }
+
+  if (overview?.structure_mode === "serial") {
+    return (
+      <PageShell>
+        <PageHeader title="Blocks" description="Manage the wings of your society." />
+        <EmptyState
+          icon={Building2}
+          title="Serial-mode society"
+          description="Your society is configured for direct houses. Blocks are not used — manage units directly."
+          action={<Button asChild><a href="/society/flats">Open Units</a></Button>}
         />
       </PageShell>
     );

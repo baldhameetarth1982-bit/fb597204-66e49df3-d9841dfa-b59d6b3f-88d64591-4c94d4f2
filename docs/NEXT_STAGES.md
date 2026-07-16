@@ -101,3 +101,78 @@ by shape+label (not color alone). Reduced motion respected.
 
 ## Next: Stage 2A — Society Structure Audit and Canonical Setup Model
 
+
+---
+
+# Stage 2A — Society Structure Audit and Canonical Setup Model — COMPLETE
+
+**Canonical model:** `public.societies`, `public.blocks`, `public.flats` are the
+authoritative structure/unit tables. `public.hierarchy_nodes` is retained for
+backward compatibility only — it must not be a new independent write source.
+
+## Migration (additive, safe)
+
+- `societies.structure_mode` — `'structured' | 'serial'`, nullable for legacy.
+- `blocks`: added `structure_kind` (`block|tower|wing`), `is_active`,
+  `display_order`, generated `normalized_name`. Unique index
+  `blocks_society_normalized_name_uidx` (society + normalized name).
+- `flats`: `block_id` is now nullable; added `is_active`, `display_order`,
+  generated `normalized_label`. Partial unique indexes:
+  - structured — `(society_id, block_id, normalized_label)` where `block_id IS NOT NULL`
+  - serial — `(society_id, normalized_label)` where `block_id IS NULL`
+- Trigger `flats_enforce_structure_mode`:
+  - structured → block_id required, block must belong to same society and be active.
+  - serial → block_id must be NULL; floor forced NULL.
+  - NULL mode → permissive (legacy).
+- `commit_society_wizard` updated: sets `structure_mode`; serial layout writes
+  units with `block_id = NULL` (no more synthetic "Houses" block).
+
+## Authoritative RPCs (SECURITY DEFINER, REVOKE PUBLIC/anon, GRANT authenticated)
+
+- `get_society_structure_overview(_society_id)`
+- `configure_society_structure_mode(_society_id, _mode)` — blocks unsafe conversions.
+- `list_society_units_page(...)` — server search / block / floor / unit_type / active filters, limit ≤ 100, default 25.
+- `create_society_unit`, `update_society_unit`, `set_society_unit_active`, `set_society_block_active`.
+
+## Authorization
+- Society Admin & Super Admin only for their society (`is_society_admin_for` / `is_super_admin`).
+- Block Admin / Resident / Guard / anon denied.
+- Cross-society IDs return non-enumerating `{ ok: false, reason: 'not_found' }`.
+- Fixed `SET search_path = public` on every new SECURITY DEFINER function.
+
+## UI wiring (existing routes only — no duplicate navigation)
+- `society.setup.tsx` — step 1 now offers the canonical Structured/Serial chooser,
+  calls `configure_society_structure_mode`, and displays the live overview.
+- `society.blocks.tsx` — hides itself in serial mode and points users to Units.
+- `society.flats.tsx` — server-paginated unit list (25/page, ≤100), search + block
+  filter, respects mode (hides block/floor fields in serial), gated on
+  "Structure setup required" when unconfigured.
+- `onboarding.create.tsx` — unchanged UI; the wizard payload now always writes
+  canonical `blocks`/`flats` and sets `structure_mode`.
+
+## Legacy data safety
+- No automatic mode inference for ambiguous societies; they remain NULL and see
+  "Structure setup required".
+- Existing IDs, unit names, block names, and hierarchy_nodes rows are preserved.
+- Conversion between structured ↔ serial with existing units is blocked
+  (`reason: 'conversion_blocked_units_exist'`).
+
+## Verification
+- `bunx tsgo --noEmit` — clean.
+- `bunx vitest run tests/unit` — **430/430 passing** (added focused
+  `tests/unit/society-structure.test.ts`).
+- `bun run build` — succeeded.
+- `bun scripts/verify-client-bundle-secrets.ts` — OK, no server-only indicators.
+- 390 px / 1280 px smoke: mode chooser, structured Units list, serial Units
+  list, add-unit dialog, and serial-mode Blocks redirect all render without
+  horizontal overflow; primary CTAs are ≥ 44 px minimum height.
+- Protected society `1907a918-c4b8-4f43-a837-450530cc7c34` — **untouched**.
+
+## Deferred (intentionally, per Stage 2A scope)
+- Bulk unit generation → Stage 2D/2E.
+- Full onboarding/import migration QA → Stage 2E.
+- Product-wide premium redesign → Stage 12.
+- Broad RLS/RBAC re-audit → Stage 13.
+- Multi-breakpoint launch audit → Stage 16.
+
+**Next:** Stage 2B — Residents, Family Members, Occupancy and Vehicles.

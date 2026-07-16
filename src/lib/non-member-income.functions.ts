@@ -299,50 +299,25 @@ export const updateNonMemberPayerFn = createServerFn({ method: "POST" })
 // Income records
 // ---------------------------------------------------------------------------
 
+/**
+ * Stage 1D correctness slice — thin adapter over the transactional RPC
+ * `public.create_non_member_income_record`. This function performs
+ * authentication + Zod validation only; the RPC independently enforces
+ * membership, plan entitlement, category/payer scoping, canonical-payload
+ * hashing, and record+audit atomicity. There is NO direct INSERT into
+ * `society_income_records`, NO direct INSERT into `audit_log`, and NO
+ * compensating DELETE in this file.
+ */
 export const createNonMemberIncomeRecordFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((raw) => CreateIncomeRecordInput.parse(raw))
   .handler(async ({ data, context }) => {
     const ctx = context as Ctx;
+    const { canonicalCreatePayload, parseCreateIncomeResult } = await import(
+      "@/lib/income-errors"
+    );
 
-    // Authorization — surfaces as strict result rather than thrown text.
-    try {
-      await requireAdminAndPlan(ctx, data.societyId);
-    } catch (e) {
-      const code = (e as { code?: string })?.code;
-      if (code === "forbidden_plan") return { status: "plan_required" as const };
-      return { status: "not_authorized" as const };
-    }
-
-    // Category active + belongs to society.
-    const { data: cat } = await ctx.supabase
-      .from("society_income_categories")
-      .select("id, society_id, is_active")
-      .eq("id", data.category_id)
-      .maybeSingle();
-    if (!cat || (cat as { society_id: string }).society_id !== data.societyId)
-      return { status: "not_authorized" as const };
-    if (!(cat as { is_active: boolean }).is_active)
-      return { status: "category_inactive" as const };
-
-    if (data.payer_kind === "non_member" && data.non_member_payer_id) {
-      const { data: p } = await ctx.supabase
-        .from("non_member_payers")
-        .select("id, society_id, is_active")
-        .eq("id", data.non_member_payer_id)
-        .maybeSingle();
-      if (!p || (p as { society_id: string }).society_id !== data.societyId)
-        return { status: "not_authorized" as const };
-      if (!(p as { is_active: boolean }).is_active)
-        return { status: "payer_inactive" as const };
-    }
-
-    // Stage 1D — canonical payload hash for same-key/different-payload
-    // safety. Stored alongside the row so a duplicate-key retry can
-    // compare hashes and refuse to return the original when material
-    // fields changed.
-    const { hashCreatePayload } = await import("@/lib/income-errors");
-    const payloadHash = await hashCreatePayload({
+    const canonical = canonicalCreatePayload({
       societyId: data.societyId,
       category_id: data.category_id,
       payer_kind: data.payer_kind,
@@ -355,87 +330,28 @@ export const createNonMemberIncomeRecordFn = createServerFn({ method: "POST" })
       description: data.description ?? null,
     });
 
-    const insertRow: Record<string, unknown> = {
-      society_id: data.societyId,
-      category_id: data.category_id,
-      payer_kind: data.payer_kind,
-      resident_user_id: data.resident_user_id ?? null,
-      non_member_payer_id: data.non_member_payer_id ?? null,
-      amount: data.amount,
-      payment_method: data.payment_method,
-      payment_status: "received",
-      payment_date: data.payment_date ?? new Date().toISOString(),
-      reference_number: data.reference_number ?? null,
-      description: data.description ?? null,
-      verification_status: "pending",
-      reconciliation_status: "unreconciled",
-      source: "manual",
-      created_by: ctx.userId,
-      creation_request_id: data.creation_request_id ?? null,
-      creation_payload_hash: payloadHash,
-    };
-
-    const { data: row, error } = await ctx.supabase
-      .from("society_income_records")
-      .insert(insertRow)
-      .select("id")
-      .single();
-
-    if (error) {
-      if ((error as { code?: string }).code === "23505" && data.creation_request_id) {
-        // Idempotency retry — fetch the existing row and compare hashes.
-        const { data: existing } = await ctx.supabase
-          .from("society_income_records")
-          .select("id, creation_payload_hash")
-          .eq("society_id", data.societyId)
-          .eq("created_by", ctx.userId)
-          .eq("creation_request_id", data.creation_request_id)
-          .maybeSingle();
-        const ex = existing as { id?: string; creation_payload_hash?: string | null } | null;
-        if (ex?.id) {
-          if (ex.creation_payload_hash && ex.creation_payload_hash !== payloadHash) {
-            return { status: "idempotency_conflict" as const };
-          }
-          return { status: "existing" as const, id: ex.id, idempotent: true as const };
-        }
-      }
-      return { status: "temporary_error" as const };
-    }
-
-    const id = (row as { id: string }).id;
-
-    // Stage 1D — record + audit atomicity. The audit_log insert lives in
-    // the same request and is *not* best-effort here: if it fails, we
-    // roll back the record via a compensating delete and surface
-    // temporary_error. A true single-transaction RPC is a follow-up in
-    // the atomic-RPC migration.
-    const { error: auditErr } = await ctx.supabase.from("audit_log").insert({
-      actor_id: ctx.userId,
-      action: "income_record.created",
-      target_table: "society_income_records",
-      target_id: id,
-      society_id: data.societyId,
-      metadata: {
-        amount: data.amount,
-        method: data.payment_method,
-        payer_kind: data.payer_kind,
-        creation_request_id: data.creation_request_id ?? null,
+    const { data: raw, error } = await (ctx.supabase.rpc as any)(
+      "create_non_member_income_record",
+      {
+        _society_id: data.societyId,
+        _category_id: data.category_id,
+        _payer_kind: data.payer_kind,
+        _resident_user_id: data.resident_user_id ?? null,
+        _non_member_payer_id: data.non_member_payer_id ?? null,
+        _amount: data.amount,
+        _payment_method: data.payment_method,
+        _payment_date: data.payment_date ?? null,
+        _reference_number: data.reference_number ?? null,
+        _description: data.description ?? null,
+        _creation_request_id: data.creation_request_id ?? null,
+        _canonical_payload: canonical,
       },
-    });
-    if (auditErr) {
-      // Compensating delete — safe because the record was just created,
-      // has verification_status='pending', and no dependents exist yet.
-      await ctx.supabase
-        .from("society_income_records")
-        .delete()
-        .eq("id", id)
-        .eq("society_id", data.societyId)
-        .eq("created_by", ctx.userId);
-      return { status: "temporary_error" as const };
-    }
+    );
 
-    return { status: "created" as const, id, idempotent: false as const };
+    if (error) return { status: "temporary_error" as const };
+    return parseCreateIncomeResult(raw);
   });
+
 
 async function transitionVerification(
   ctx: Ctx,

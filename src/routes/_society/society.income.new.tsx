@@ -195,7 +195,7 @@ function NewIncomePage({ societyId }: { societyId: string }) {
       }
       const res = await createFn({
         data: {
-          societyId: societyId!,
+          societyId,
           category_id: form.categoryId,
           payer_kind: form.payerKind,
           non_member_payer_id:

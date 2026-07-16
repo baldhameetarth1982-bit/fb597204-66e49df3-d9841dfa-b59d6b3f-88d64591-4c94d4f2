@@ -40,10 +40,14 @@ import { z } from "zod";
 // Guards
 // ---------------------------------------------------------------------------
 
-// Loosely-typed context: the middleware supplies a typed Supabase client,
-// but generated field ambiguity across insert/update paths keeps this file's
-// Ctx pragmatic. The RPC call site narrows to a strictly-typed client.
-type Ctx = { supabase: SupabaseClient<Database>; userId: string };
+// Loosely-typed shared context: Supabase's generated Insert/Update types are
+// intentionally strict about excess properties, which breaks pragmatic
+// audit_log/dynamic-patch call sites throughout this module. The RPC call
+// site below narrows to a fully typed client (StrictSupabase) so the only
+// value-in-flight-to-Postgres path is compile-checked; the shared Ctx stays
+// pragmatic for the surrounding Insert/Update helpers.
+type Ctx = { supabase: any; userId: string };
+
 type StrictSupabase = SupabaseClient<Database>;
 
 /**

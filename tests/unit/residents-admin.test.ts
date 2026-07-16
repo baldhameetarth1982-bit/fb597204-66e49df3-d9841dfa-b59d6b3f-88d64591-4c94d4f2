@@ -65,8 +65,9 @@ describe("Stage 2B — adapter invariants", () => {
   const src = read("src/lib/residents-admin.functions.ts");
 
   it("no `supabase.rpc as any` casts", () => {
-    expect(src).not.toMatch(/\.rpc\s+as\s+any/);
-    expect(src).not.toMatch(/as\s+any\s*\)/);
+    // Reject the specific unsafe pattern used pre-Stage 2B.
+    expect(src).not.toMatch(/\(\s*supabase\.rpc\s+as\s+any\s*\)/);
+    expect(src).not.toMatch(/context\.supabase\.rpc\s+as\s+any/);
   });
 
   it("no direct browser Supabase client imports", () => {

@@ -190,6 +190,9 @@ function NewIncomePage() {
   const mut = useMutation({
     mutationFn: async () => {
       const amountNum = Number(form.amount);
+      if (!requestId) {
+        return { status: "invalid_input" as const };
+      }
       const res = await createFn({
         data: {
           societyId: societyId!,
@@ -202,11 +205,12 @@ function NewIncomePage() {
           payment_date: form.paymentDate,
           reference_number: form.reference.trim() || undefined,
           description: form.description.trim() || undefined,
-          creation_request_id: requestId ?? undefined,
+          creation_request_id: requestId,
         },
       });
       return parseCreateIncomeResult(res);
     },
+
     onSuccess: (res) => {
       switch (res.status) {
         case "created":

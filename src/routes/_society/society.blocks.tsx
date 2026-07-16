@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { planSocietyFromText, applySocietyPlan, duplicateBlock } from "@/lib/blocks-ai.functions";
+import { getSocietyStructureOverview, type StructureOverview } from "@/lib/society-structure";
 
 export const Route = createFileRoute("/_society/society/blocks")({
   head: () => ({ meta: [{ title: "Blocks — SociyoHub" }] }),

@@ -96,8 +96,7 @@ function maskReference(ref: string): string {
 }
 
 
-function NewIncomePage() {
-  const { societyId, loading } = useSocietyId();
+function NewIncomePage({ societyId }: { societyId: string }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const listCatsFn = useServerFn(listIncomeCategoriesFn);
@@ -105,15 +104,14 @@ function NewIncomePage() {
   const createFn = useServerFn(createNonMemberIncomeRecordFn);
 
   const catsQ = useQuery({
-    enabled: !!societyId,
-    queryKey: incomeKeys.activeCategories(societyId ?? ""),
-    queryFn: async () => listCatsFn({ data: { societyId: societyId! } }),
+    queryKey: incomeKeys.activeCategories(societyId),
+    queryFn: async () => listCatsFn({ data: { societyId } }),
   });
   const payersQ = useQuery({
-    enabled: !!societyId,
-    queryKey: incomeKeys.activePayers(societyId ?? ""),
-    queryFn: async () => listPayersFn({ data: { societyId: societyId! } }),
+    queryKey: incomeKeys.activePayers(societyId),
+    queryFn: async () => listPayersFn({ data: { societyId } }),
   });
+
 
   const activeCats = useMemo(
     () =>

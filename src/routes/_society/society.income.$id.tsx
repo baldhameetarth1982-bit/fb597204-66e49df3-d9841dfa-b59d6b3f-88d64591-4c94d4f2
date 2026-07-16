@@ -36,11 +36,14 @@ import {
   verifyIncomeRecordByIdFn,
   rejectIncomeRecordByIdFn,
   reverseIncomeRecordByIdFn,
+  transitionIncomeReconciliationFn,
 } from "@/lib/non-member-income.functions";
 import type {
   IncomeRecordDetail,
   IncomeTransitionResult,
+  IncomeReconciliationResult,
 } from "@/lib/non-member-income.server";
+
 
 export const Route = createFileRoute("/_society/society/income/$id")({
   head: () => ({

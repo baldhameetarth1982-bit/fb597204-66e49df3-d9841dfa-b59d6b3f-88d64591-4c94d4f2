@@ -81,8 +81,10 @@ function BlocksPage() {
   }
 
   useEffect(() => {
-    if (societyId) void fetchBlocks(societyId);
-    else if (!sidLoading) setLoading(false);
+    if (societyId) {
+      void fetchBlocks(societyId);
+      void getSocietyStructureOverview(societyId).then(setOverview).catch(() => {});
+    } else if (!sidLoading) setLoading(false);
   }, [societyId, sidLoading]);
 
   async function handleCreate(e: React.FormEvent) {

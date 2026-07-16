@@ -105,12 +105,12 @@ function NewIncomePage() {
 
   const catsQ = useQuery({
     enabled: !!societyId,
-    queryKey: ["society-income", "categories", societyId],
+    queryKey: incomeKeys.activeCategories(societyId ?? ""),
     queryFn: async () => listCatsFn({ data: { societyId: societyId! } }),
   });
   const payersQ = useQuery({
     enabled: !!societyId,
-    queryKey: ["society-income", "payers", societyId],
+    queryKey: incomeKeys.activePayers(societyId ?? ""),
     queryFn: async () => listPayersFn({ data: { societyId: societyId! } }),
   });
 

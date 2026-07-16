@@ -331,8 +331,8 @@ export const createNonMemberIncomeRecordFn = createServerFn({ method: "POST" })
     const { parseCreateIncomeResult } = await import("@/lib/income-errors");
 
     // Strictly-typed RPC call: any drift in the generated RPC argument set
-    // (e.g. reappearance of _canonical_payload, missing _creation_request_id)
-    // is a compile error rather than a silent `as any` bypass.
+    // (removed hashed/canonical inputs, missing creation request id, etc.)
+    // is a compile error rather than a silent bypass cast.
     const supabase = ctx.supabase as StrictSupabase;
     const { data: raw, error } = await supabase.rpc(
       "create_non_member_income_record",

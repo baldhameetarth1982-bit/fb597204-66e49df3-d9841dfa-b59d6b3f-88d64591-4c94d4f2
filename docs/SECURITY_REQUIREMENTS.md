@@ -76,3 +76,30 @@ Idempotency uses SHA-256 of a canonical JSON payload, computed with
 `society_income_records_hash_format_chk` guarantees any new hash matches
 `^[0-9a-f]{64}$`. Non-cryptographic fallbacks (djb2) have been removed
 from the codebase.
+
+## Stage 1D — Non-member income creation: authoritative RPC
+
+The transactional creator `public.create_non_member_income_record`
+accepts **only** business fields. It does not accept and never has an
+argument for:
+
+- `_canonical_payload`
+- `_payload_hash`
+- `_creation_payload_hash`
+- actor / role / plan / verification / reconciliation / audit metadata
+
+All authorization, plan entitlement, category/payer scoping, canonical
+JSON derivation, and SHA-256 hashing are performed inside PL/pgSQL
+against `auth.uid()` and the normalized values that are about to be
+persisted. `creation_request_id` is required (null → `invalid_input`).
+Only `cash` and `bank_transfer` are accepted for new records. Resident
+payer creation is refused until a canonical resident-society membership
+helper exists.
+
+Grants: `REVOKE ALL ... FROM PUBLIC, anon`; `GRANT EXECUTE ... TO
+authenticated`. The previous 12-arg signature (which accepted
+`_canonical_payload text`) has been dropped in the same migration.
+
+Regression protection: `tests/unit/income-rpc-invariants.test.ts`
+reads the actual migration and adapter source and fails on any of the
+above conditions reappearing.

@@ -760,3 +760,80 @@ into `audit_log`, no compensating DELETE.
 
 Protected society `baldha Meetarth` (1907a918-…) was not queried,
 seeded, probed, or referenced during this slice.
+
+## Stage 1D — correctness slice: authoritative RPC (no caller-controlled canonical data)
+
+**Previous mistake.** The transactional creator accepted
+`_canonical_payload text` from its caller and hashed *that value* — so an
+authenticated caller invoking the RPC directly could send any canonical
+JSON they wanted while persisting different actual values, forging
+idempotency equivalence and bypassing the same-key/different-payload
+guard. Helper-only tests missed this because they exercised the
+TypeScript `canonicalCreatePayload` in isolation, not the RPC signature
+or the direct-caller trust boundary.
+
+**Correction.** New migration replaces the RPC with a signature that
+contains **only** business inputs — no `_canonical_payload`, no
+`_payload_hash`, no `_creation_payload_hash`, no actor/role/plan
+overrides. The previous 12-arg signature has execute revoked from
+PUBLIC / anon / authenticated and is dropped in the same migration.
+
+Inside the RPC (SECURITY DEFINER, `search_path = pg_catalog, extensions,
+pg_temp`, fully qualified references):
+
+- Creator identity comes from `auth.uid()`.
+- Amount is normalized (`round(_amount, 2)`), positive, ≤ 100 000 000,
+  exactly ≤ 2 decimals.
+- Payment date defaults to today, is refused when in the future (server
+  clock, UTC).
+- Reference and description are trimmed, empty→NULL, capped at 128 / 500
+  chars.
+- `creation_request_id` is **required**; null → `invalid_input`.
+- Payment method is **cash / bank_transfer only** for new records; every
+  other method is refused. Historical `other_offline` rows remain
+  readable and unchanged.
+- Resident payer is **refused** at creation time until a canonical
+  resident-society membership helper exists. Non-member and anonymous
+  payers are supported.
+- Plan check mirrors `normalizePlan()` in `src/lib/plan-features.ts`:
+  expired / cancelled / canceled / past_due / inactive → denied; trial /
+  trialing → allowed only while `trial_ends_at` is in the future or
+  null; `pro / standard / growth / premium / business / enterprise` →
+  allowed; anything else → denied.
+- Canonical JSON is built by `jsonb_build_object` from the exact
+  normalized values (including `_uid`) that are about to be persisted.
+  SHA-256 is computed by `extensions.digest()` over that database-built
+  string. The caller cannot influence the hash independently of what is
+  stored.
+- Non-enumerating responses: missing / cross-society category, payer,
+  society all collapse to the same `not_authorized` shape.
+
+**TypeScript adapter.** `createNonMemberIncomeRecordFn` now sends only
+business fields. `canonicalCreatePayload` / `hashCreatePayload` remain
+in `income-errors.ts` but are explicitly marked **UI-only** and never
+passed to the RPC. `CreateIncomeRecordInput`:
+`creation_request_id` required (UUID), `payment_method` restricted to
+`CREATE_ALLOWED_METHODS = ["cash", "bank_transfer"]`, `payer_kind`
+restricted to `"non_member" | "anonymous"`.
+
+**Tests.** `tests/unit/income-rpc-invariants.test.ts` reads the actual
+migration and adapter source and fails when: the RPC signature contains
+`_canonical_payload` / `_payload_hash`; the old 12-arg function is not
+dropped or not revoked; `_creation_request_id` is not required;
+`other_offline` is accepted for new records; resident payer is accepted;
+a plan alias outside the canonical set appears; the adapter uses
+canonical/hash helpers, INSERTs into `society_income_records` /
+`audit_log`, or has a compensating DELETE; the create Zod schema
+diverges from the RPC contract. All 328/328 unit tests pass; `tsgo` /
+`build` / `bun scripts/verify-client-bundle-secrets.ts` / `git diff --check`
+are clean.
+
+**Runtime PostgreSQL / direct-RPC integration tests remain skipped**
+(no isolated fixture harness available). No production data or the
+protected society `baldha Meetarth` (1907a918-c4b8-4f43-a837-450530cc7c34)
+was queried, seeded, probed, or referenced during this slice.
+
+**Remaining Stage 1D slices (unchanged):**
+1. Query-key migration + Basic zero-call tests.
+2. Premium redesign of `/society/income/categories` and `/society/income/payers`.
+3. Responsive visual verification + full documentation sync.

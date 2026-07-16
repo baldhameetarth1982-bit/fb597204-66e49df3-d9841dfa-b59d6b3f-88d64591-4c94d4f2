@@ -56,3 +56,14 @@ wallet) is recorded through the transactional RPC
 `audit_log` entry inside one PL/pgSQL body; there is no compensating
 DELETE. Razorpay remains subscription-only; there is no platform fee and
 no reconciliation implementation in this slice.
+
+## Stage 1D correctness update — RPC contract
+
+`create_non_member_income_record` no longer accepts caller-controlled
+canonical data. The database derives canonical JSON from the exact
+normalized values it stores (including `auth.uid()` as `created_by`) and
+computes SHA-256 with `extensions.digest()`. `creation_request_id` is
+required. New records are Cash or Bank Transfer only; historical
+`other_offline` rows remain readable and unchanged. Resident payer
+creation is refused until a canonical resident-society membership
+helper exists; non-member and anonymous payers are supported.

@@ -2878,7 +2878,6 @@ export type Database = {
       create_non_member_income_record: {
         Args: {
           _amount: number
-          _canonical_payload: string
           _category_id: string
           _creation_request_id: string
           _description: string

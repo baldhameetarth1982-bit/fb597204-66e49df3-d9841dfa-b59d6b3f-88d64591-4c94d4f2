@@ -108,10 +108,17 @@ export function parseCreateIncomeResult(raw: unknown): CreateIncomeResult {
 }
 
 // ---------------------------------------------------------------------------
-// Stage 1D — canonical payload hash for same-key/different-payload safety.
-// Two requests share the same `creation_request_id` only if their
-// material financial fields are identical. Any changed material field
-// produces a different hash → server returns `idempotency_conflict`.
+// Stage 1D — UI-ONLY canonical fingerprint helpers.
+//
+// These helpers are NOT authoritative. The SQL RPC
+// `public.create_non_member_income_record` derives its own canonical JSON
+// from the actual normalized values it stores and computes the SHA-256
+// hash server-side. The caller MUST NOT pass canonical JSON or a payload
+// hash to the RPC — the RPC signature no longer accepts them.
+//
+// These helpers exist only for deterministic non-authoritative UI
+// fingerprints (dedupe hints, dev diagnostics). Do not send their output
+// to the server.
 // ---------------------------------------------------------------------------
 
 export interface CanonicalCreatePayload {
@@ -129,7 +136,6 @@ export interface CanonicalCreatePayload {
 
 function normDate(d?: string | null): string {
   if (!d) return "";
-  // Accept "YYYY-MM-DD" and full ISO; canonicalize to YYYY-MM-DD.
   return d.slice(0, 10);
 }
 function normText(s?: string | null): string {
@@ -141,10 +147,9 @@ function normAmount(a: number | string): string {
   return n.toFixed(2);
 }
 
-/** Produce a deterministic canonical string for a create-record payload.
- * Uses fixed-order JSON so delimiter-like characters in text fields cannot
- * cause collisions. The RPC on the server hashes the exact same string, so
- * the TypeScript layer never produces the authoritative digest. */
+/** UI-only deterministic canonical string. NOT the authoritative canonical
+ * data — the server RPC rebuilds its own JSON from normalized stored
+ * values. Never pass this to the RPC. */
 export function canonicalCreatePayload(p: CanonicalCreatePayload): string {
   const canon = {
     society_id: p.societyId,
@@ -161,14 +166,13 @@ export function canonicalCreatePayload(p: CanonicalCreatePayload): string {
   return JSON.stringify(canon);
 }
 
-/** SHA-256 (64 lowercase hex) hash of the canonical payload. Fails closed:
- * returns `null` when the runtime cannot produce a cryptographic digest.
- * NEVER uses a non-cryptographic fallback. Financial idempotency is
- * decided by the SQL RPC's own SHA-256; this helper is used only for
- * local tests and diagnostic verification. */
+/** UI-only SHA-256 hash for local dedupe hints / dev diagnostics. Fails
+ * closed and never uses a non-cryptographic fallback. The authoritative
+ * financial hash is computed by the SQL RPC. */
 export async function hashCreatePayload(
   p: CanonicalCreatePayload,
 ): Promise<string | null> {
+
   const canon = canonicalCreatePayload(p);
   const g = globalThis as unknown as { crypto?: { subtle?: SubtleCrypto } };
   if (!g.crypto?.subtle) return null;

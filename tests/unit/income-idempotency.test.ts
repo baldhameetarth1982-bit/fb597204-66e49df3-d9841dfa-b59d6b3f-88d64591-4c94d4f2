@@ -39,17 +39,46 @@ describe("Stage 1D — creation_request_id in input schema", () => {
     ).toThrow();
   });
 
-  it("still allows omitting the request id (legacy compatibility)", () => {
-    const parsed = CreateIncomeRecordInput.parse({
-      societyId: SOC,
-      category_id: CAT,
-      payer_kind: "anonymous",
-      amount: 50,
-      payment_method: "cash",
-    });
-    expect(parsed.creation_request_id).toBeUndefined();
+  it("rejects a missing creation_request_id (Stage 1D requires it)", () => {
+    expect(() =>
+      CreateIncomeRecordInput.parse({
+        societyId: SOC,
+        category_id: CAT,
+        payer_kind: "anonymous",
+        amount: 50,
+        payment_method: "cash",
+      }),
+    ).toThrow();
+  });
+
+  it("rejects other_offline for new records (Cash / Bank Transfer only)", () => {
+    expect(() =>
+      CreateIncomeRecordInput.parse({
+        societyId: SOC,
+        category_id: CAT,
+        payer_kind: "anonymous",
+        amount: 50,
+        payment_method: "other_offline",
+        creation_request_id: REQ,
+      }),
+    ).toThrow();
+  });
+
+  it("rejects resident payer at creation (denied until membership check exists)", () => {
+    expect(() =>
+      CreateIncomeRecordInput.parse({
+        societyId: SOC,
+        category_id: CAT,
+        payer_kind: "resident",
+        resident_user_id: PAY,
+        amount: 50,
+        payment_method: "cash",
+        creation_request_id: REQ,
+      }),
+    ).toThrow();
   });
 });
+
 
 describe("Stage 1D — typed error contract", () => {
   it("maps known server codes", () => {

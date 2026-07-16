@@ -626,3 +626,21 @@ require a DOM environment:
 - Runtime PostgreSQL integration is not exercised in this slice (no
   isolated fixtures). Remaining Stage 1D slices: query-key migration,
   premium categories/payers UI, responsive verification.
+
+## Stage 1D correctness slice — authoritative RPC
+
+- Old RPC signature (12 args, included `_canonical_payload text`):
+  execute revoked and function dropped in the same migration.
+- New RPC signature: 11 business args only; no canonical/hash inputs.
+- Direct-RPC validation enforced in PL/pgSQL: creator via `auth.uid()`,
+  amount ≤ 2 decimals, future dates refused, reference ≤128,
+  description ≤500, cash/bank_transfer only, resident refused.
+- Plan parity with `normalizePlan()` verified by source-invariant tests.
+- Adapter is thin (auth + Zod + RPC + strict result parse); no direct
+  TS INSERT into `society_income_records` or `audit_log`; no
+  compensating DELETE.
+- `git diff --check` clean; `tsgo` clean; `bunx vitest run tests/unit`
+  = 328/328 pass; `bun run build` succeeds; secret bundle scan clean.
+- Runtime PostgreSQL / direct-RPC integration coverage remains **not
+  executed** (no isolated fixture harness available). Protected society
+  `baldha Meetarth` (1907a918-…) untouched.

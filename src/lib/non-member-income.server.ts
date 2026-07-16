@@ -143,15 +143,23 @@ const AmountSchema = z
   .refine((n) => Number.isFinite(n) && n > 0, "amount_must_be_positive")
   .refine((n) => n <= 1e11, "amount_too_large");
 
+// Stage 1D — payment methods allowed for NEW record creation. Historical
+// `other_offline` rows remain readable but cannot be freshly created here.
+export const CREATE_ALLOWED_METHODS = ["cash", "bank_transfer"] as const;
+export type CreateAllowedMethod = (typeof CREATE_ALLOWED_METHODS)[number];
+
 export const CreateIncomeRecordInput = z
   .object({
     societyId: z.string().uuid(),
     category_id: z.string().uuid(),
-    payer_kind: z.enum(PAYER_KINDS),
+    // Stage 1D: resident creation is not supported yet (no canonical
+    // resident-society membership check). Only non_member / anonymous.
+    payer_kind: z.enum(["non_member", "anonymous"] as const),
     resident_user_id: z.string().uuid().optional(),
     non_member_payer_id: z.string().uuid().optional(),
     amount: AmountSchema,
-    payment_method: z.enum(SUPPORTED_METHODS),
+    // Stage 1D: Cash / Bank Transfer only for new records.
+    payment_method: z.enum(CREATE_ALLOWED_METHODS),
     payment_date: z
       .string()
       .datetime({ offset: true })
@@ -159,17 +167,13 @@ export const CreateIncomeRecordInput = z
       .or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/u).optional()),
     reference_number: z.string().trim().max(128).optional(),
     description: z.string().trim().max(500).optional(),
-    // Stage 1D: browser-supplied idempotency key. Optional for legacy paths;
-    // when present the server enforces uniqueness in (society, creator, key)
-    // so a retried Save resolves to the original record instead of a duplicate.
-    creation_request_id: z.string().uuid().optional(),
+    // Stage 1D: creation_request_id is REQUIRED. The wizard mints a secure
+    // UUID per Review pass; the RPC scopes idempotency by
+    // (society, creator, request id) and refuses null.
+    creation_request_id: z.string().uuid(),
   })
   .superRefine((v, ctx) => {
-    if (v.payer_kind === "resident") {
-      if (!v.resident_user_id || v.non_member_payer_id) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "exactly_one_payer" });
-      }
-    } else if (v.payer_kind === "non_member") {
+    if (v.payer_kind === "non_member") {
       if (!v.non_member_payer_id || v.resident_user_id) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: "exactly_one_payer" });
       }
@@ -180,6 +184,7 @@ export const CreateIncomeRecordInput = z
     }
   });
 export type CreateIncomeRecordInputT = z.infer<typeof CreateIncomeRecordInput>;
+
 
 export const VerifyRecordInput = z.object({
   societyId: z.string().uuid(),

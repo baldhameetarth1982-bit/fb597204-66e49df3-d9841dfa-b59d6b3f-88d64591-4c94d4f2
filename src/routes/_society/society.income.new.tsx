@@ -237,13 +237,8 @@ function NewIncomePage({ societyId }: { societyId: string }) {
     },
   });
 
-  if (loading || !societyId) {
-    return (
-      <div className="min-h-[40vh] grid place-items-center text-muted-foreground">
-        <Loader2 className="h-6 w-6 animate-spin" />
-      </div>
-    );
-  }
+
+
 
   const amountNum = Number(form.amount);
   const amountValid =

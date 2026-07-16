@@ -217,7 +217,7 @@ function NewIncomePage({ societyId }: { societyId: string }) {
         case "existing":
           setSavedRecord({ id: res.id, snapshot: form });
           setStep("saved");
-          for (const key of incomeInvalidations.income(societyId ?? "")) {
+          for (const key of incomeInvalidations.income(societyId)) {
             void qc.invalidateQueries({ queryKey: key });
           }
           return;

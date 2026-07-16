@@ -159,6 +159,10 @@ export const CreateIncomeRecordInput = z
       .or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/u).optional()),
     reference_number: z.string().trim().max(128).optional(),
     description: z.string().trim().max(500).optional(),
+    // Stage 1D: browser-supplied idempotency key. Optional for legacy paths;
+    // when present the server enforces uniqueness in (society, creator, key)
+    // so a retried Save resolves to the original record instead of a duplicate.
+    creation_request_id: z.string().uuid().optional(),
   })
   .superRefine((v, ctx) => {
     if (v.payer_kind === "resident") {

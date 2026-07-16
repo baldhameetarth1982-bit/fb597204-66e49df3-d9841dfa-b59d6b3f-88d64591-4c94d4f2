@@ -327,35 +327,56 @@ export const createNonMemberIncomeRecordFn = createServerFn({ method: "POST" })
       if (!(p as any).is_active) throw new Error("payer_inactive");
     }
 
+    const insertRow = {
+      society_id: data.societyId,
+      category_id: data.category_id,
+      payer_kind: data.payer_kind,
+      resident_user_id: data.resident_user_id ?? null,
+      non_member_payer_id: data.non_member_payer_id ?? null,
+      amount: data.amount,
+      payment_method: data.payment_method,
+      payment_status: "received" as const,
+      payment_date: data.payment_date ?? new Date().toISOString(),
+      reference_number: data.reference_number ?? null,
+      description: data.description ?? null,
+      verification_status: "pending" as const,
+      reconciliation_status: "unreconciled" as const,
+      source: "manual" as const,
+      created_by: ctx.userId,
+      creation_request_id: data.creation_request_id ?? null,
+    };
     const { data: row, error } = await ctx.supabase
       .from("society_income_records")
-      .insert({
-        society_id: data.societyId,
-        category_id: data.category_id,
-        payer_kind: data.payer_kind,
-        resident_user_id: data.resident_user_id ?? null,
-        non_member_payer_id: data.non_member_payer_id ?? null,
-        amount: data.amount,
-        payment_method: data.payment_method,
-        payment_status: "received",
-        payment_date: data.payment_date ?? new Date().toISOString(),
-        reference_number: data.reference_number ?? null,
-        description: data.description ?? null,
-        verification_status: "pending",
-        reconciliation_status: "unreconciled",
-        source: "manual",
-        created_by: ctx.userId,
-      })
+      .insert(insertRow)
       .select("id")
       .single();
-    if (error) throw new Error("create_failed");
+
+    // Stage 1D — server-side idempotency. If a retry hits the unique index
+    // on (society_id, created_by, creation_request_id), fetch the original
+    // row and return it. The caller sees success on the first record only.
+    if (error) {
+      if ((error as { code?: string }).code === "23505" && data.creation_request_id) {
+        const { data: existing } = await ctx.supabase
+          .from("society_income_records")
+          .select("id")
+          .eq("society_id", data.societyId)
+          .eq("created_by", ctx.userId)
+          .eq("creation_request_id", data.creation_request_id)
+          .maybeSingle();
+        if (existing && (existing as { id?: string }).id) {
+          return { id: (existing as { id: string }).id, idempotent: true as const };
+        }
+      }
+      throw new Error("create_failed");
+    }
     const id = (row as { id: string }).id;
     await auditLog(ctx, "income_record.created", data.societyId, id, {
       amount: data.amount,
       method: data.payment_method,
       payer_kind: data.payer_kind,
+      creation_request_id: data.creation_request_id ?? null,
     });
-    return { id };
+    return { id, idempotent: false as const };
   });
 
 async function transitionVerification(

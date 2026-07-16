@@ -150,9 +150,25 @@ function NewIncomePage() {
     id: string;
     snapshot: Form;
   } | null>(null);
+  // Stage 1D — one stable UUID per Review pass. Retries reuse it so the
+  // server-side unique index resolves duplicate Saves to the original row.
+  // Regenerated only on "Record Another".
+  const [requestId, setRequestId] = useState<string | null>(null);
 
   const set = <K extends keyof Form>(k: K, v: Form[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
+
+  const enterReview = () => {
+    if (!requestId) {
+      // Prefer crypto.randomUUID; fall back for very old runtimes.
+      const uuid =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}`;
+      setRequestId(uuid);
+    }
+    setStep("review");
+  };
 
   const mut = useMutation({
     mutationFn: async () => {
@@ -169,6 +185,7 @@ function NewIncomePage() {
           payment_date: form.paymentDate,
           reference_number: form.reference.trim() || undefined,
           description: form.description.trim() || undefined,
+          creation_request_id: requestId ?? undefined,
         },
       });
     },
@@ -210,6 +227,7 @@ function NewIncomePage() {
   const resetAndRestart = () => {
     setForm({ ...EMPTY_FORM, paymentDate: todayISO() });
     setSavedRecord(null);
+    setRequestId(null); // fresh idempotency key for the next record
     setStep("details");
   };
 
@@ -240,7 +258,7 @@ function NewIncomePage() {
           payersError={payersQ.isError}
           payersLoading={payersQ.isLoading}
           canProceed={detailsValid}
-          onNext={() => setStep("review")}
+          onNext={enterReview}
           amountValid={amountValid || !form.amount}
           dateValid={dateValid || !form.paymentDate}
         />

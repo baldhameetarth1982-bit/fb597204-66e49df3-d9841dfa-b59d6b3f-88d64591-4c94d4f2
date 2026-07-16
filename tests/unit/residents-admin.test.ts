@@ -183,14 +183,22 @@ describe("Stage 2B — SQL rules encoded in the migration", () => {
 });
 
 describe("Stage 2B — protected society untouched", () => {
-  it("no test or seed reference to the protected society ID", () => {
+  it("no source file references the protected society ID", () => {
     const forbidden = "1907a918-c4b8-4f43-a837-450530cc7c34";
-    const check = (p: string) => {
-      const s = read(p);
-      expect(s).not.toContain(forbidden);
-    };
-    check("src/lib/residents-admin.functions.ts");
-    check("tests/unit/residents-admin.test.ts");
+    const files = [
+      "src/lib/residents-admin.functions.ts",
+    ];
+    for (const p of files) {
+      expect(read(p), `${p} must not reference the protected society`).not.toContain(forbidden);
+    }
+  });
+
+  it("the latest migration does not reference the protected society", () => {
+    const fs = require("node:fs") as typeof import("node:fs");
+    const files = fs.readdirSync("supabase/migrations").filter((f: string) => f.endsWith(".sql")).sort();
+    const latest = files[files.length - 1];
+    const sql = fs.readFileSync(join("supabase/migrations", latest), "utf8");
+    expect(sql).not.toContain("1907a918-c4b8-4f43-a837-450530cc7c34");
   });
 });
 

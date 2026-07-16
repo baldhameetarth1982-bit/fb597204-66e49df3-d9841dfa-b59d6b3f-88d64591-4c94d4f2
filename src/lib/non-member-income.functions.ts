@@ -40,7 +40,12 @@ import { z } from "zod";
 // Guards
 // ---------------------------------------------------------------------------
 
-type Ctx = { supabase: SupabaseClient<Database>; userId: string };
+// Loosely-typed context: the incoming middleware supplies a typed Supabase
+// client, but existing generated-types field ambiguity across insert/update
+// paths keeps this file's Ctx pragmatic. The RPC call site below narrows to
+// a strictly-typed client to drop the historical `as any` cast.
+type Ctx = { supabase: any; userId: string };
+type StrictSupabase = SupabaseClient<Database>;
 
 async function assertSocietyAdmin(ctx: Ctx, societyId: string): Promise<void> {
   const { data, error } = await ctx.supabase.rpc("is_society_admin_for", {

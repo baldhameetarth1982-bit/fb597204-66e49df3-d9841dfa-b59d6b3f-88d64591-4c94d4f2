@@ -122,13 +122,8 @@ function IncomeDetail({ societyId }: { societyId: string }) {
     toast.error(statusMessage(r) || "Update failed.");
   };
 
-  if (loading || !societyId) {
-    return (
-      <div className="min-h-[40vh] grid place-items-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
+
+
 
   const result = q.data;
   const isServerError = q.isError || result?.status === "error";

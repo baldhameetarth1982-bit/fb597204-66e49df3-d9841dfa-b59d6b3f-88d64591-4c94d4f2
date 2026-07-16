@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { ArrowLeft, Loader2, Coins, CheckCircle2, AlertCircle } from "lucide-react";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useSocietyId } from "@/hooks/useSocietyId";
+import { incomeKeys, incomeInvalidations } from "@/lib/income-query-keys";
 import { MobileHero } from "@/components/shared/MobileHero";
 import { SectionCard } from "@/components/shared/SectionCard";
 import { Button } from "@/components/ui/button";

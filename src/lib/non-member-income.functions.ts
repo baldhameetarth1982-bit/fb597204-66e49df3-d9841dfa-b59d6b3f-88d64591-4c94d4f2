@@ -12,8 +12,10 @@
  * UI wiring is deferred to Turn 18B.
  */
 import { createServerFn } from "@tanstack/react-start";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { normalizePlan } from "@/lib/plan-features";
+import type { Database } from "@/integrations/supabase/types";
 import {
   CreateCategoryInput,
   UpdateCategoryInput,
@@ -38,7 +40,7 @@ import { z } from "zod";
 // Guards
 // ---------------------------------------------------------------------------
 
-type Ctx = { supabase: any; userId: string };
+type Ctx = { supabase: SupabaseClient<Database>; userId: string };
 
 async function assertSocietyAdmin(ctx: Ctx, societyId: string): Promise<void> {
   const { data, error } = await ctx.supabase.rpc("is_society_admin_for", {

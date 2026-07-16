@@ -93,23 +93,6 @@ function maskReference(ref: string): string {
   return `••••${t.slice(-4)}`;
 }
 
-function friendlyError(msg: string): string {
-  switch (msg) {
-    case "category_inactive":
-      return "Selected category is inactive";
-    case "payer_inactive":
-      return "Selected payer is inactive";
-    case "category_society_mismatch":
-    case "payer_society_mismatch":
-      return "Invalid selection for this society";
-    case "plan_required":
-      return "Upgrade required to record non-member income";
-    case "not_authorized":
-      return "You don't have permission to record income";
-    default:
-      return "Could not record income. Please try again.";
-  }
-}
 
 function NewIncomePage() {
   const { societyId, loading } = useSocietyId();

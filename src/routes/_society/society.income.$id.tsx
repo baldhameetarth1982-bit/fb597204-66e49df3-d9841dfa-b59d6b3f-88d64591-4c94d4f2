@@ -588,3 +588,117 @@ function ReasonDialog({
     </Dialog>
   );
 }
+
+function ReconcileDialog({
+  action,
+  record,
+  onClose,
+  onDone,
+}: {
+  action: "reconcile" | "unreconcile";
+  record: IncomeRecordDetail;
+  onClose: () => void;
+  onDone: (r: IncomeReconciliationResult) => void;
+}) {
+  const reconcileFn = useServerFn(transitionIncomeReconciliationFn);
+  const [reference, setReference] = useState("");
+  const [reason, setReason] = useState("");
+  const isUnreconcile = action === "unreconcile";
+  const trimmedReason = reason.trim();
+  const reasonValid = !isUnreconcile || (trimmedReason.length >= 5 && trimmedReason.length <= 500 && !/<[^>]+>/.test(trimmedReason));
+
+  const m = useMutation({
+    mutationFn: async () =>
+      reconcileFn({
+        data: {
+          recordId: record.id,
+          action,
+          reference: !isUnreconcile ? reference.trim() || undefined : undefined,
+          reason: isUnreconcile ? trimmedReason : undefined,
+        },
+      }),
+    onSuccess: onDone,
+    onError: () => onDone({ status: "error" }),
+  });
+
+  const title = isUnreconcile ? "Undo reconciliation?" : "Mark as reconciled?";
+  const desc = isUnreconcile
+    ? "Return this record to unreconciled. Verification status is not changed."
+    : "Confirm this verified income record has been matched to a bank credit. Verification status is not changed.";
+  const cta = isUnreconcile ? "Undo reconciliation" : "Mark reconciled";
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && !m.isPending && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{desc}</DialogDescription>
+        </DialogHeader>
+        <RecordSummary r={record} />
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between rounded-md border p-2">
+            <span className="text-muted-foreground">Current reconciliation</span>
+            <span className="capitalize">{record.reconciliation_status.replace(/_/g, " ")}</span>
+          </div>
+          <div className="flex justify-between rounded-md border p-2">
+            <span className="text-muted-foreground">Resulting reconciliation</span>
+            <span>{isUnreconcile ? "unreconciled" : "matched"}</span>
+          </div>
+          {!isUnreconcile ? (
+            <div>
+              <Label htmlFor="rec-ref" className="text-xs">Reference (optional)</Label>
+              <Textarea
+                id="rec-ref"
+                value={reference}
+                onChange={(e) => setReference(e.target.value)}
+                maxLength={128}
+                rows={2}
+                placeholder="e.g. bank statement row / UTR"
+              />
+            </div>
+          ) : (
+            <div>
+              <Label htmlFor="rec-reason" className="text-xs">
+                Reason (required, 5–500 characters)
+              </Label>
+              <Textarea
+                id="rec-reason"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                maxLength={500}
+                rows={3}
+                placeholder="Why is this being unreconciled?"
+              />
+              {reason.length > 0 && !reasonValid && (
+                <p className="text-xs text-destructive">
+                  Reason must be 5–500 characters with no HTML.
+                </p>
+              )}
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Verification status will remain <b>{record.verification_status}</b>.
+          </p>
+        </div>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={onClose}
+            disabled={m.isPending}
+            className="min-h-[44px]"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => m.mutate()}
+            disabled={m.isPending || !reasonValid}
+            className="min-h-[44px]"
+          >
+            {m.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+            {cta}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -89,14 +89,17 @@ function PayersPage() {
 
   const listQ = useQuery({
     enabled: !!societyId,
-    queryKey: ["society-income", "payers", societyId],
+    queryKey: incomeKeys.payers(societyId ?? ""),
     queryFn: async () => listFn({ data: { societyId: societyId! } }),
   });
 
   const [editing, setEditing] = useState<Editing>(null);
 
-  const invalidate = () =>
-    qc.invalidateQueries({ queryKey: ["society-income", "payers", societyId] });
+  const invalidate = () => {
+    for (const key of incomeInvalidations.payer(societyId ?? "")) {
+      qc.invalidateQueries({ queryKey: key });
+    }
+  };
 
   const createMut = useMutation({
     mutationFn: async (v: {

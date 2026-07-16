@@ -57,3 +57,22 @@ by design. It **must not** rely on any TypeScript wrapper for security:
 - Server callers validate the RPC's `jsonb` reply with
   `IncomeTransitionResultSchema` (Zod discriminated union) before returning
   to the browser. Raw RPC JSON is never surfaced.
+
+## Stage 1D — non-member income creation (2026-07-16)
+
+Non-member income records MUST be created only through the SECURITY DEFINER
+RPC `public.create_non_member_income_record`. Direct client INSERTs into
+`society_income_records` or `audit_log` are not part of the contract and
+are not audited.
+
+Grants: `PUBLIC` and `anon` are revoked; `authenticated` has EXECUTE. The
+function independently enforces society-admin membership, Pro/Premium plan
+entitlement (mirroring `normalizePlan`), category/payer society scoping,
+and the payer-kind relationship rules. All decisions happen inside the
+database — the TypeScript adapter cannot bypass them.
+
+Idempotency uses SHA-256 of a canonical JSON payload, computed with
+`extensions.digest()` inside the RPC. A `NOT VALID` CHECK constraint
+`society_income_records_hash_format_chk` guarantees any new hash matches
+`^[0-9a-f]{64}$`. Non-cryptographic fallbacks (djb2) have been removed
+from the codebase.

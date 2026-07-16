@@ -615,3 +615,14 @@ require a DOM environment:
 - Unit tests: **181 passed / 0 failed**. Build **exit 0**. Bundle secret scan **0 findings** across 886 files.
 - Integration matrix skipped honestly (`ALLOW_SOCIOHUB_TEST_FIXTURES` not set). Fixtures deferred to Turn 18B.
 - Untouched: SociyoHub branding, co-founders, Razorpay subscription checkout, Cash+Bank Transfer maintenance, no-platform-fee policy, Firebase→Supabase exchange, No-Dues cryptography, Flat 360.
+
+## Stage 1D — correctness slice sign-off
+
+- Transactional creation RPC in place; record + audit_log atomicity is
+  a database guarantee, not a JS wrapper convention.
+- Weak-hash fallback removed; SHA-256 (64 hex) enforced by RPC and by a
+  `NOT VALID` CHECK constraint on new writes.
+- 299/299 unit tests pass; build + secret scan clean.
+- Runtime PostgreSQL integration is not exercised in this slice (no
+  isolated fixtures). Remaining Stage 1D slices: query-key migration,
+  premium categories/payers UI, responsive verification.

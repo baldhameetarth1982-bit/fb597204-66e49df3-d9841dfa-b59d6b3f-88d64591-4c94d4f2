@@ -711,3 +711,52 @@ reconciliation was added or removed in this pass.
 `baldha Meetarth` (`1907a918-c4b8-4f43-a837-450530cc7c34`) was **not**
 queried, seeded, probed, migrated against, or otherwise accessed in this
 pass. The migration is additive DDL only; no rows were read or written.
+
+## Stage 1D — correctness slice: transactional income RPC
+
+**Migration:** `create_non_member_income_record` (SECURITY DEFINER, `search_path = public, extensions, pg_temp`).
+
+- Record + audit_log commit atomically inside one PL/pgSQL body. The
+  previous compensating-DELETE path (record inserted → audit insert fails →
+  JS deletes the row) has been removed from the server function. That path
+  was non-atomic: another reader could observe the record before deletion,
+  the delete itself could fail, and idempotency retries could see an
+  unaudited row.
+- Authorization enforced **inside** the RPC via `is_society_admin_for` /
+  `is_super_admin`. Plan gating replicates `normalizePlan` (Pro/Premium,
+  non-expired) directly in SQL. Category/payer are re-validated against
+  the caller's society. The TS server function no longer carries the
+  authoritative check.
+- Idempotency: SHA-256 (64 lowercase hex) of a canonical JSON payload,
+  computed with `extensions.digest()` inside the RPC. Same key + same
+  payload → `existing`. Same key + different payload → `idempotency_conflict`.
+  Concurrent same-key inserts collapse to one row via `unique_violation`
+  handling. The djb2 fallback in `hashCreatePayload` has been removed —
+  the helper now fails closed (returns `null`) when SubtleCrypto is
+  unavailable.
+- Grants: `REVOKE ... FROM PUBLIC, anon; GRANT EXECUTE ... TO authenticated`.
+  A `NOT VALID` CHECK constraint enforces the 64-hex hash format for all
+  new writes; pre-existing rows are preserved for audit traceability.
+
+**TS server function** (`createNonMemberIncomeRecordFn`) is now a thin
+adapter: middleware auth → Zod → `supabase.rpc(...)` → strict Zod-parsed
+result. No direct INSERT into `society_income_records`, no direct INSERT
+into `audit_log`, no compensating DELETE.
+
+**Verification (this slice):**
+- `bunx tsgo --noEmit` → exit 0.
+- `bunx vitest run tests/unit` → 299/299 pass (was 275; +24 new).
+- `bun run build` → success (46.48s).
+- `bun scripts/verify-client-bundle-secrets.ts` → clean (897 files).
+- `git diff --check` → clean.
+- Runtime PostgreSQL integration tests remain **skipped** — no isolated
+  fixture harness available in this workspace. The RPC has not been
+  exercised against live data.
+
+**Remaining Stage 1D slices (unchanged):**
+1. Query-key migration + Basic zero-call tests.
+2. Premium redesign of `/society/income/categories` and `/society/income/payers`.
+3. Responsive visual verification + full documentation sync.
+
+Protected society `baldha Meetarth` (1907a918-…) was not queried,
+seeded, probed, or referenced during this slice.

@@ -14,8 +14,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Json } from "@/integrations/supabase/types";
 
-// ---------- Error mapping ----------
 const KNOWN_CODES = new Set([
   "forbidden",
   "resident_not_in_society",
@@ -35,11 +35,9 @@ const KNOWN_CODES = new Set([
 function safeError(e: unknown): Error {
   const msg = (e as { message?: string } | null)?.message ?? "";
   for (const code of KNOWN_CODES) if (msg.includes(code)) return new Error(code);
-  // Never leak raw DB errors to callers.
   return new Error("operation_failed");
 }
 
-// ---------- Schemas ----------
 const uuid = z.string().uuid();
 
 const listInput = z.object({
@@ -51,11 +49,8 @@ const listInput = z.object({
   limit: z.number().int().min(1).max(100).optional().default(25),
   offset: z.number().int().min(0).max(100_000).optional().default(0),
 });
-
 const overviewInput = z.object({ societyId: uuid });
-
 const detailInput = z.object({ societyId: uuid, userId: uuid });
-
 const assignInput = z.object({
   societyId: uuid,
   userId: uuid,
@@ -64,17 +59,20 @@ const assignInput = z.object({
   isPrimary: z.boolean().optional().default(false),
   movedInAt: z.string().datetime().optional(),
 });
-
 const endInput = z.object({
   societyId: uuid,
   flatResidentId: uuid,
   movedOutAt: z.string().datetime().optional(),
   reason: z.string().trim().max(200).optional().nullable(),
 });
-
 const nameSchema = z.string().trim().min(1).max(80).regex(/^[^<>]+$/, "invalid_name");
-const phoneSchema = z.string().trim().max(20).regex(/^[+\d\s\-()]*$/, "invalid_phone").optional().nullable();
-
+const phoneSchema = z
+  .string()
+  .trim()
+  .max(20)
+  .regex(/^[+\d\s\-()]*$/, "invalid_phone")
+  .optional()
+  .nullable();
 const familyUpsertInput = z.object({
   societyId: uuid,
   residentUserId: uuid,
@@ -84,9 +82,7 @@ const familyUpsertInput = z.object({
   phone: phoneSchema,
   age: z.number().int().min(0).max(120).optional().nullable(),
 });
-
 const familyDeleteInput = z.object({ societyId: uuid, id: uuid });
-
 const vehicleUpsertInput = z.object({
   societyId: uuid,
   id: uuid.optional().nullable(),
@@ -97,10 +93,8 @@ const vehicleUpsertInput = z.object({
   makeModel: z.string().trim().max(60).optional().nullable(),
   color: z.string().trim().max(30).optional().nullable(),
 });
-
 const vehicleDeleteInput = z.object({ societyId: uuid, id: uuid });
 
-// ---------- Output schemas (privacy-safe list) ----------
 export const residentRowSchema = z.object({
   user_id: z.string().uuid(),
   full_name: z.string().nullable(),
@@ -116,16 +110,21 @@ export const residentRowSchema = z.object({
 });
 export type ResidentRow = z.infer<typeof residentRowSchema>;
 
-// ---------- Server functions ----------
+// -- helpers -------------------------------------------------
+function undef<T>(v: T | null | undefined): T | undefined {
+  return v == null ? undefined : v;
+}
+
+// -- server functions ---------------------------------------
 export const listResidentsPage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: z.input<typeof listInput>) => listInput.parse(d))
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase.rpc("list_society_residents_page", {
       _society_id: data.societyId,
-      _search: data.search ?? null,
-      _flat_id: data.flatId ?? null,
-      _relationship: data.relationship ?? null,
+      _search: undef(data.search),
+      _flat_id: undef(data.flatId),
+      _relationship: undef(data.relationship),
       _active_only: data.activeOnly ?? true,
       _limit: data.limit ?? 25,
       _offset: data.offset ?? 0,
@@ -184,12 +183,7 @@ export const getResidentPrivateDetail = createServerFn({ method: "POST" })
       _user_id: data.userId,
     });
     if (error) throw safeError(error);
-    return json as null | {
-      profile: Record<string, unknown>;
-      relationships: Array<Record<string, unknown>>;
-      family: Array<Record<string, unknown>>;
-      vehicles: Array<Record<string, unknown>>;
-    };
+    return (json as Json) ?? null;
   });
 
 export const assignResidentToUnit = createServerFn({ method: "POST" })
@@ -216,7 +210,7 @@ export const endResidentUnitRelationship = createServerFn({ method: "POST" })
       _society_id: data.societyId,
       _flat_resident_id: data.flatResidentId,
       _moved_out_at: data.movedOutAt ?? new Date().toISOString(),
-      _reason: data.reason ?? undefined,
+      _reason: undef(data.reason),
     });
     if (error) throw safeError(error);
     return { ok: true };
@@ -229,11 +223,11 @@ export const upsertFamilyMemberAsAdmin = createServerFn({ method: "POST" })
     const { data: id, error } = await context.supabase.rpc("admin_upsert_family_member", {
       _society_id: data.societyId,
       _resident_user_id: data.residentUserId,
-      _id: data.id ?? undefined,
+      _id: undef(data.id) as string,
       _full_name: data.fullName,
       _relation: data.relation,
-      _phone: data.phone ?? undefined,
-      _age: data.age ?? undefined,
+      _phone: undef(data.phone) as string,
+      _age: undef(data.age) as number,
     });
     if (error) throw safeError(error);
     return { id: id as string };
@@ -257,13 +251,13 @@ export const upsertVehicleAsAdmin = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: id, error } = await context.supabase.rpc("admin_upsert_vehicle", {
       _society_id: data.societyId,
-      _id: data.id ?? undefined,
+      _id: undef(data.id) as string,
       _resident_user_id: data.residentUserId,
-      _flat_id: data.flatId ?? undefined,
+      _flat_id: undef(data.flatId) as string,
       _plate_number: data.plateNumber,
       _type: data.type ?? "car",
-      _make_model: data.makeModel ?? undefined,
-      _color: data.color ?? undefined,
+      _make_model: undef(data.makeModel) as string,
+      _color: undef(data.color) as string,
     });
     if (error) throw safeError(error);
     return { id: id as string };
@@ -281,7 +275,6 @@ export const deleteVehicleAsAdmin = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-/** Vehicles are read by admins via a projection; never expose owner PII in the list. */
 const listVehiclesInput = z.object({
   societyId: uuid,
   search: z.string().trim().max(40).optional().nullable(),
@@ -293,14 +286,15 @@ export const listSocietyVehicles = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: z.input<typeof listVehiclesInput>) => listVehiclesInput.parse(d))
   .handler(async ({ data, context }) => {
-    // Ensure caller is a society admin before reading.
-    const { data: allowed } = await context.supabase.rpc("is_society_admin_for", {
+    const { data: allowed } = await context.supabase.rpc("current_user_is_society_admin_for", {
       _society_id: data.societyId,
     });
     if (!allowed) throw new Error("forbidden");
     let q = context.supabase
       .from("vehicles")
-      .select("id, plate_number, type, make_model, color, flat_id, user_id, created_at, flats(flat_number, blocks(name))")
+      .select(
+        "id, plate_number, type, make_model, color, flat_id, user_id, created_at, flats(flat_number, blocks(name))",
+      )
       .eq("society_id", data.societyId)
       .order("created_at", { ascending: false })
       .range(data.offset, data.offset + data.limit - 1);
@@ -315,8 +309,9 @@ export const listSocietyVehicles = createServerFn({ method: "POST" })
       color: v.color,
       flat_id: v.flat_id,
       user_id: v.user_id,
-      flat_number: (v as { flats?: { flat_number?: string | null } }).flats?.flat_number ?? null,
-      block_name: (v as { flats?: { blocks?: { name?: string | null } | null } }).flats?.blocks?.name ?? null,
+      flat_number: (v as { flats?: { flat_number?: string | null } | null }).flats?.flat_number ?? null,
+      block_name:
+        (v as { flats?: { blocks?: { name?: string | null } | null } | null }).flats?.blocks?.name ?? null,
       created_at: v.created_at,
     }));
   });

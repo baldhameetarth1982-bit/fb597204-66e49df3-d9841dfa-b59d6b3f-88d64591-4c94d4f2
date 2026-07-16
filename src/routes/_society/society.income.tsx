@@ -579,9 +579,6 @@ function IncomePage() {
         />
       </SectionCard>
 
-      <p className="text-xs text-muted-foreground">
-        Verify, reject and reverse workflows will arrive in the next update.
-      </p>
     </div>
   );
 }

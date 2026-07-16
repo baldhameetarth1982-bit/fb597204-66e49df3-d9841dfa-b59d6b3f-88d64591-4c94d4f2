@@ -142,44 +142,41 @@ function normAmount(a: number | string): string {
 }
 
 /** Produce a deterministic canonical string for a create-record payload.
- * Field order and normalization are stable; whitespace/case in text
- * fields is normalized so trivial edits don't create a spurious conflict.
- */
+ * Uses fixed-order JSON so delimiter-like characters in text fields cannot
+ * cause collisions. The RPC on the server hashes the exact same string, so
+ * the TypeScript layer never produces the authoritative digest. */
 export function canonicalCreatePayload(p: CanonicalCreatePayload): string {
-  const canon = [
-    p.societyId,
-    p.category_id,
-    p.payer_kind,
-    p.resident_user_id ?? "",
-    p.non_member_payer_id ?? "",
-    normAmount(p.amount),
-    p.payment_method,
-    normDate(p.payment_date ?? null),
-    normText(p.reference_number),
-    normText(p.description),
-  ].join("|");
-  return canon;
+  const canon = {
+    society_id: p.societyId,
+    category_id: p.category_id,
+    payer_kind: p.payer_kind,
+    resident_user_id: p.resident_user_id ?? null,
+    non_member_payer_id: p.non_member_payer_id ?? null,
+    amount: normAmount(p.amount),
+    payment_method: p.payment_method,
+    payment_date: normDate(p.payment_date ?? null),
+    reference_number: normText(p.reference_number),
+    description: normText(p.description),
+  };
+  return JSON.stringify(canon);
 }
 
-/** Hash a canonical payload with SHA-256 when available, else djb2. The
- * hash is stored server-side to detect changed-payload retries. */
-export async function hashCreatePayload(p: CanonicalCreatePayload): Promise<string> {
+/** SHA-256 (64 lowercase hex) hash of the canonical payload. Fails closed:
+ * returns `null` when the runtime cannot produce a cryptographic digest.
+ * NEVER uses a non-cryptographic fallback. Financial idempotency is
+ * decided by the SQL RPC's own SHA-256; this helper is used only for
+ * local tests and diagnostic verification. */
+export async function hashCreatePayload(
+  p: CanonicalCreatePayload,
+): Promise<string | null> {
   const canon = canonicalCreatePayload(p);
-  const g = globalThis as unknown as {
-    crypto?: { subtle?: SubtleCrypto };
-  };
-  if (g.crypto?.subtle) {
-    const buf = new TextEncoder().encode(canon);
-    const digest = await g.crypto.subtle.digest("SHA-256", buf);
-    return Array.from(new Uint8Array(digest))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-  }
-  // djb2 fallback — non-cryptographic but stable and collision-resistant
-  // enough for same-user idempotency detection.
-  let h = 5381;
-  for (let i = 0; i < canon.length; i++) h = ((h << 5) + h + canon.charCodeAt(i)) | 0;
-  return `djb2:${(h >>> 0).toString(16)}`;
+  const g = globalThis as unknown as { crypto?: { subtle?: SubtleCrypto } };
+  if (!g.crypto?.subtle) return null;
+  const buf = new TextEncoder().encode(canon);
+  const digest = await g.crypto.subtle.digest("SHA-256", buf);
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 /** Returns a secure v4 UUID or `null` when the runtime cannot generate

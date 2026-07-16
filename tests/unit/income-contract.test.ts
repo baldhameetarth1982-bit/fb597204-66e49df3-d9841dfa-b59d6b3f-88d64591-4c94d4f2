@@ -148,7 +148,7 @@ describe("canonicalCreatePayload — normalization", () => {
   });
 });
 
-describe("hashCreatePayload — produces stable, comparable digests", () => {
+describe("hashCreatePayload — SHA-256, 64 lowercase hex, fails closed", () => {
   it("same payload → same hash", async () => {
     const a = await hashCreatePayload(basePayload);
     const b = await hashCreatePayload({ ...basePayload });
@@ -161,10 +161,50 @@ describe("hashCreatePayload — produces stable, comparable digests", () => {
     expect(a).not.toBe(b);
   });
 
-  it("hash string is non-empty and deterministic length family", async () => {
+  it("produces exactly 64 lowercase hex characters (SHA-256)", async () => {
     const h = await hashCreatePayload(basePayload);
-    expect(typeof h).toBe("string");
-    expect(h.length).toBeGreaterThan(8);
+    expect(h).not.toBeNull();
+    expect(h).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("never returns a djb2:… prefixed fallback", async () => {
+    const h = await hashCreatePayload(basePayload);
+    expect(h ?? "").not.toMatch(/^djb2:/);
+  });
+
+  it("fails closed when subtle crypto is unavailable (no fallback)", async () => {
+    const original = (globalThis as { crypto?: Crypto }).crypto;
+    Object.defineProperty(globalThis, "crypto", {
+      value: {},
+      configurable: true,
+      writable: true,
+    });
+    try {
+      const h = await hashCreatePayload(basePayload);
+      expect(h).toBeNull();
+    } finally {
+      Object.defineProperty(globalThis, "crypto", {
+        value: original,
+        configurable: true,
+        writable: true,
+      });
+    }
+  });
+});
+
+describe("canonicalCreatePayload — delimiter safety", () => {
+  it("cannot be collided by pipe-like characters in text fields", () => {
+    const a = canonicalCreatePayload({
+      ...basePayload,
+      description: "a",
+      reference_number: "b|c",
+    });
+    const b = canonicalCreatePayload({
+      ...basePayload,
+      description: "a|b",
+      reference_number: "c",
+    });
+    expect(a).not.toBe(b);
   });
 });
 

@@ -47,3 +47,12 @@ Routes wired:
 Both routes are wrapped in `<FeatureGate feature="non_member_payments">`, so Basic / expired / cancelled plans see the standard UpgradePrompt and never call the protected read services. All authoritative gating (society admin + Pro plan) happens server-side in `requireAdminAndPlan`.
 
 Verify / Reject / Reverse / Reconcile controls, category/payer management, offline income entry, AI categorization, and any online gateway remain deferred to Turn 18B.2 and 18B.3.
+
+## Non-member income creation (Stage 1D)
+
+Offline non-member income (Cash / Bank Transfer only — no UPI, card, or
+wallet) is recorded through the transactional RPC
+`create_non_member_income_record`. The RPC commits the record and its
+`audit_log` entry inside one PL/pgSQL body; there is no compensating
+DELETE. Razorpay remains subscription-only; there is no platform fee and
+no reconciliation implementation in this slice.

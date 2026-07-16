@@ -82,23 +82,21 @@ type Editing =
   | { mode: "edit"; payerId: string }
   | null;
 
-function PayersPage() {
-  const { societyId, loading } = useSocietyId();
+function PayersPage({ societyId }: { societyId: string }) {
   const qc = useQueryClient();
   const listFn = useServerFn(listNonMemberPayersFn);
   const createFn = useServerFn(createNonMemberPayerFn);
   const updateFn = useServerFn(updateNonMemberPayerFn);
 
   const listQ = useQuery({
-    enabled: !!societyId,
-    queryKey: incomeKeys.payers(societyId ?? ""),
-    queryFn: async () => listFn({ data: { societyId: societyId! } }),
+    queryKey: incomeKeys.payers(societyId),
+    queryFn: async () => listFn({ data: { societyId } }),
   });
 
   const [editing, setEditing] = useState<Editing>(null);
 
   const invalidate = () => {
-    for (const key of incomeInvalidations.payer(societyId ?? "")) {
+    for (const key of incomeInvalidations.payer(societyId)) {
       qc.invalidateQueries({ queryKey: key });
     }
   };
@@ -112,7 +110,7 @@ function PayersPage() {
       email?: string;
       reference_code?: string;
       notes?: string;
-    }) => createFn({ data: { societyId: societyId!, ...v } }),
+    }) => createFn({ data: { societyId, ...v } }),
     onSuccess: () => {
       toast.success("Payer added");
       setEditing(null);
@@ -132,7 +130,7 @@ function PayersPage() {
       reference_code?: string;
       notes?: string;
       is_active?: boolean;
-    }) => updateFn({ data: { societyId: societyId!, ...v } }),
+    }) => updateFn({ data: { societyId, ...v } }),
     onSuccess: () => {
       toast.success("Payer updated");
       setEditing(null);
@@ -141,13 +139,7 @@ function PayersPage() {
     onError: () => toast.error("Could not update payer"),
   });
 
-  if (loading || !societyId) {
-    return (
-      <div className="min-h-[40vh] grid place-items-center text-muted-foreground">
-        <Loader2 className="h-6 w-6 animate-spin" />
-      </div>
-    );
-  }
+
 
   const items = (listQ.data?.items ?? []) as PayerListItem[];
 

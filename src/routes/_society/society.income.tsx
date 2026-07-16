@@ -14,6 +14,8 @@ import {
   Users,
   ChevronLeft,
   ChevronRight,
+  Plus,
+  Tags,
 } from "lucide-react";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useSocietyId } from "@/hooks/useSocietyId";
@@ -273,6 +275,24 @@ function IncomePage() {
         title="Income & Collections"
         subtitle="Track society income, external payers and offline payment verification."
       />
+
+      <div className="flex flex-wrap gap-2">
+        <Button asChild className="min-h-[44px]">
+          <Link to="/society/income/new">
+            <Plus className="h-4 w-4 mr-1" /> Record income
+          </Link>
+        </Button>
+        <Button asChild variant="outline" className="min-h-[44px]">
+          <Link to="/society/income/categories">
+            <Tags className="h-4 w-4 mr-1" /> Categories
+          </Link>
+        </Button>
+        <Button asChild variant="outline" className="min-h-[44px]">
+          <Link to="/society/income/payers">
+            <Users className="h-4 w-4 mr-1" /> Payers
+          </Link>
+        </Button>
+      </div>
 
       <SectionCard title="Filters" description="Filters reset the record list to the first page.">
         <div className="flex flex-wrap items-end gap-2">
@@ -559,9 +579,6 @@ function IncomePage() {
         />
       </SectionCard>
 
-      <p className="text-xs text-muted-foreground">
-        Verify, reject and reverse workflows will arrive in the next update.
-      </p>
     </div>
   );
 }

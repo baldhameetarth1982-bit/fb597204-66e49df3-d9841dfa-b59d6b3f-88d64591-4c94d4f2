@@ -67,3 +67,16 @@ required. New records are Cash or Bank Transfer only; historical
 `other_offline` rows remain readable and unchanged. Resident payer
 creation is refused until a canonical resident-society membership
 helper exists; non-member and anonymous payers are supported.
+
+## Stage 1E — Reporting and reconciliation
+
+- Society income reporting uses `public.get_society_income_report`.
+  Totals, breakdowns, and trend series are all computed in SQL. No
+  gateway is involved; this is entirely offline / manual bookkeeping.
+- Manual reconciliation is performed via
+  `public.transition_income_reconciliation`. Verification remains a
+  separate state machine — reconciliation cannot silently promote a
+  record from pending to verified.
+- Razorpay remains subscription-only for the SociyoHub SaaS plan. No
+  Stripe, Paddle, UPI, card, wallet, or payment-link flows exist for
+  society income. There is no platform fee.

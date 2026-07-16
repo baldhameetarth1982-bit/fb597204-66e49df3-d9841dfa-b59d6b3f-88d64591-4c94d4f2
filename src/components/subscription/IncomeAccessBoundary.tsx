@@ -55,8 +55,14 @@ export function computeIncomeAccess(i: AccessInputs): IncomeAccessState {
 
 /**
  * Behavioral hook — the single source of truth for Income access.
- * Never returns `allowed` until society is resolved, plan is loaded, and
- * role is one of the finance-capable admin roles.
+ *
+ * The finance role is intentionally strict: it maps 1:1 to the server-side
+ * `is_society_admin_for(...)` authorization used by every protected income
+ * server function. BLOCK_ADMIN is NOT considered finance-capable because
+ * SociyoHub has no canonical "block-scoped finance permission" table; the
+ * server would reject any protected mutation from a block admin, so the UI
+ * must not appear to allow it. Roles/permissions may only be added here
+ * when a real backend permission exists to match.
  */
 export function useIncomeAccessState(): IncomeAccessState {
   const { isLoading: authLoading, hasRole } = useAuth();
@@ -67,10 +73,11 @@ export function useIncomeAccessState(): IncomeAccessState {
     sidLoading,
     planLoading,
     societyId,
-    hasFinanceRole: hasRole(ROLES.SOCIETY_ADMIN) || hasRole(ROLES.BLOCK_ADMIN),
+    hasFinanceRole: hasRole(ROLES.SOCIETY_ADMIN),
     hasNonMemberPaymentsFeature: hasFeature(INCOME_FEATURE),
   });
 }
+
 
 
 interface Props {

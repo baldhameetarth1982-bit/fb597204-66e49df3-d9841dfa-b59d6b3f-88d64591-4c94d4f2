@@ -12,9 +12,9 @@ import {
   RotateCcw,
   Clock,
 } from "lucide-react";
-import { FeatureGate } from "@/components/subscription/FeatureGate";
+import { IncomeAccessBoundary } from "@/components/subscription/IncomeAccessBoundary";
 import { incomeKeys, incomeInvalidations } from "@/lib/income-query-keys";
-import { useSocietyId } from "@/hooks/useSocietyId";
+
 import { MobileHero } from "@/components/shared/MobileHero";
 import { SectionCard } from "@/components/shared/SectionCard";
 import { Card, CardContent } from "@/components/ui/card";

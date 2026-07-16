@@ -236,11 +236,9 @@ function CategoryDialog(props: {
   const [group, setGroup] = useState("");
   const [active, setActive] = useState(true);
 
-  // Reset when opening
+  // Reset form when the dialog opens or switches target.
   const openKey = editing ? (isEdit ? row!.id : "new") : "closed";
-  const [lastOpen, setLastOpen] = useState<string>("closed");
-  if (openKey !== lastOpen) {
-    setLastOpen(openKey);
+  useEffect(() => {
     if (isEdit && row) {
       setKey(row.key);
       setDisplayName(row.display_name);
@@ -254,7 +252,9 @@ function CategoryDialog(props: {
       setGroup("");
       setActive(true);
     }
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openKey]);
+
 
   const submit = () => {
     if (!displayName.trim()) return;

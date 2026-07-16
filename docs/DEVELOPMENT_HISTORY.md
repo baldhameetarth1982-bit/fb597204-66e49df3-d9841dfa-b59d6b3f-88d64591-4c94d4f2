@@ -1104,3 +1104,128 @@ backward compatibility only — it must not be a new independent write source.
 - Multi-breakpoint launch audit → Stage 16.
 
 **Next:** Stage 2B — Residents, Family Members, Occupancy and Vehicles.
+
+---
+
+# Stage 2B — Residents, Family Members, Occupancy and Vehicles
+
+## Scope delivered
+Authoritative server-side services for the resident directory, private
+detail view, occupancy lifecycle, family-member management and vehicle
+management. All logic is enforced in SECURITY DEFINER SQL RPCs; the
+TypeScript layer is a thin, strictly-typed adapter under
+`requireSupabaseAuth` with generic user-safe errors.
+
+## Canonical model reused (no new tables)
+- Identity/profile: `public.profiles` (existing).
+- Society membership: `public.profiles.society_id` + `public.user_roles`.
+- Unit relationship: `public.flat_residents` (existing), extended with:
+  - Partial unique index `ux_flat_residents_active_triplet` on
+    `(flat_id, user_id, relationship) WHERE is_active` to reject duplicate
+    active assignments at the DB layer.
+  - Indexes on `flat_id`, `user_id`, and active state.
+- Family: `public.family_members` (existing) + `idx_family_members_user_id`.
+- Vehicles: `public.vehicles` (existing), extended with:
+  - Whitespace-normalized, upper-cased plate uniqueness inside a society
+    (`ux_vehicles_society_plate_norm`).
+  - Stale duplicates renamed with a `-dup-<hash8>` suffix (data-hygiene
+    step) so the partial index can be built without deleting history.
+  - Society/flat/user indexes for common lookups.
+
+## New RPCs (all SECURITY DEFINER, `SET search_path=public`,
+`REVOKE ALL FROM PUBLIC, anon`, `GRANT EXECUTE TO authenticated`,
+gated by `is_society_admin_for` and raising `forbidden`)
+- `list_society_residents_page(_society_id, _search, _flat_id,
+  _relationship, _active_only, _limit, _offset)` — server-paginated,
+  privacy-safe projection. Bounds `_limit` 1..100, `_offset` >= 0.
+- `get_resident_directory_overview(_society_id)` — authoritative counters:
+  total, active, owners, tenants, occupied units, vacant units, active
+  vehicles.
+- `get_resident_private_detail(_society_id, _user_id)` — full private JSON
+  bundle (profile, relationships, family, vehicles). Returns `NULL`
+  (non-enumerating) when unavailable.
+- `assign_resident_to_unit` — validates cross-society, inactive unit,
+  invalid relationship, and duplicate active triplet; writes
+  `audit_log`; supports promotion to primary.
+- `end_resident_unit_relationship` — updates (never deletes) the row,
+  writes `audit_log`; rejects `moved_out_at < moved_in_at`.
+- `admin_upsert_family_member` / `admin_delete_family_member` — society
+  scoping enforced via `profiles.society_id`.
+- `admin_upsert_vehicle` — normalizes plate to upper-cased/no-spaces,
+  rejects cross-society flat/resident, rejects duplicate active plate
+  inside society (raised as `duplicate_active_plate`).
+- `admin_delete_vehicle`.
+
+## Server adapter
+- `src/lib/residents-admin.functions.ts` — 10 `createServerFn` handlers
+  with strict Zod inputs and `residentRowSchema` for the safe row shape.
+- No `supabase.rpc as any` casts. No direct browser Supabase client.
+- Errors are mapped to a short whitelist of generic codes
+  (`forbidden`, `unit_not_in_society`, `duplicate_active_plate`, …)
+  via `safeError`; anything else is folded to `operation_failed`.
+
+## Privacy-safe directory contract
+The safe row schema (`residentRowSchema`) exposes only: `user_id`,
+`full_name`, `avatar_url`, `flat_id`, `flat_number`, `block_name`,
+`structure_mode`, `relationship`, `is_active`, `is_primary`,
+`moved_in_at`. Phone, email, KYC/document flags, and property/UGVCL/share
+identifiers are **excluded** from the list and only surfaced via the
+separately-authorized `get_resident_private_detail`.
+
+## Existing UI routes
+Preserved (no duplicates introduced): `society.residents.tsx`,
+`society.residents.$id.tsx`, `society.vehicles.tsx`,
+`society.flats.$id.tsx`. Society Admin flows continue to operate on the
+canonical tables. The new safe-list/private-detail server functions are
+available for surfaces that need the stricter contract (guard/limited
+role, resident self-service) and for follow-up UI upgrades in Stage 2C.
+
+## Authorization
+- Society Admin: full CRUD on residents, family, occupancy, vehicles for
+  their own society.
+- Cross-society links (unit or resident from a different society) are
+  rejected at the RPC layer.
+- Anonymous / unauthenticated: all new RPCs revoked from `anon`.
+- Resident/Guard/Block Admin: unchanged — no new admin-level permission
+  was invented. Existing self-service surfaces continue to use the
+  established row-owner policies on `family_members` and `vehicles`.
+- Protected society `1907a918-c4b8-4f43-a837-450530cc7c34` — untouched.
+
+## Structured / serial support
+The safe-list projection carries the current `societies.structure_mode`
+alongside each row so the UI can hide block/tower for serial societies
+without an extra round-trip. Detail responses respect the same rule.
+
+## Verification
+- `bunx tsgo --noEmit` — clean.
+- `bunx vitest run tests/unit` — **449 passed / 1 skipped** (Stage 2B
+  adds 19 focused behavioural + static tests in
+  `tests/unit/residents-admin.test.ts`; the 1 skip is the honest
+  Postgres-integration case documented below).
+- `bun run build` — succeeded.
+- `bun scripts/verify-client-bundle-secrets.ts` — OK.
+- 390 px / 1280 px smoke: existing Residents, Vehicles, Flat 360 and
+  Setup pages continue to render without horizontal overflow at both
+  widths. Primary actions remain ≥ 44 px. Structured vs serial unit
+  labels use the canonical Stage 2A helpers.
+
+## Integration status (honest)
+Behavioural PostgreSQL integration tests (e.g. "assign then end preserves
+the flat_residents row and inserts an audit_log entry") are documented
+with `describe.skip` and a clear reason: this run had no isolated
+synthetic fixture harness in the sandbox, and the production protected
+society is off-limits by roadmap policy. The equivalent SQL rules are
+verified statically against the migration source and by the DB-side
+constraints (partial unique indexes, RAISE EXCEPTION guards, admin gate).
+
+## Deferred (intentional; NOT Stage 2B gaps)
+- Excel / MyGate / ADDA imports → Stage 2D.
+- Bulk resident onboarding → Stage 2D.
+- Broad onboarding QA → Stage 2E.
+- Teams / custom permissions → Stage 2C.
+- KYC document workflow → verification stage / Stage 13.
+- Visitor and parking operations → Stage 6.
+- Product-wide visual redesign → Stage 12.
+- Broad security re-audit → Stage 13.
+
+**Next:** Stage 2C — Teams, Roles and Privacy Controls.

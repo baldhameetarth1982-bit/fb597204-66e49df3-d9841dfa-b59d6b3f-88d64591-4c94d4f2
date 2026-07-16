@@ -50,10 +50,11 @@ export const Route = createFileRoute("/_society/society/income/$id")({
     ],
   }),
   component: () => (
-    <FeatureGate feature="non_member_payments">
-      <IncomeDetail />
-    </FeatureGate>
+    <IncomeAccessBoundary>
+      {(societyId) => <IncomeDetail societyId={societyId} />}
+    </IncomeAccessBoundary>
   ),
+
 });
 
 const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;

@@ -300,11 +300,19 @@ export const updateNonMemberPayerFn = createServerFn({ method: "POST" })
 // ---------------------------------------------------------------------------
 
 /**
- * Stage 1D correctness slice — thin adapter over the transactional RPC
- * `public.create_non_member_income_record`. This function performs
- * authentication + Zod validation only; the RPC independently enforces
- * membership, plan entitlement, category/payer scoping, canonical-payload
- * hashing, and record+audit atomicity. There is NO direct INSERT into
+ * Stage 1D correctness slice — thin adapter over the authoritative
+ * transactional RPC `public.create_non_member_income_record`.
+ *
+ * This adapter:
+ *   1. authenticates the caller via requireSupabaseAuth middleware
+ *   2. Zod-validates the safe business input (no canonical/hash fields)
+ *   3. calls the RPC with ONLY business fields
+ *   4. strictly parses the result
+ *
+ * The RPC derives auth.uid(), normalizes values, builds canonical JSON,
+ * and computes the SHA-256 hash entirely inside PostgreSQL. The caller
+ * cannot supply canonical JSON, cannot supply a payload hash, and cannot
+ * bypass authorization or plan gating. There is NO direct INSERT into
  * `society_income_records`, NO direct INSERT into `audit_log`, and NO
  * compensating DELETE in this file.
  */
@@ -313,22 +321,7 @@ export const createNonMemberIncomeRecordFn = createServerFn({ method: "POST" })
   .inputValidator((raw) => CreateIncomeRecordInput.parse(raw))
   .handler(async ({ data, context }) => {
     const ctx = context as Ctx;
-    const { canonicalCreatePayload, parseCreateIncomeResult } = await import(
-      "@/lib/income-errors"
-    );
-
-    const canonical = canonicalCreatePayload({
-      societyId: data.societyId,
-      category_id: data.category_id,
-      payer_kind: data.payer_kind,
-      resident_user_id: data.resident_user_id ?? null,
-      non_member_payer_id: data.non_member_payer_id ?? null,
-      amount: data.amount,
-      payment_method: data.payment_method,
-      payment_date: data.payment_date ?? null,
-      reference_number: data.reference_number ?? null,
-      description: data.description ?? null,
-    });
+    const { parseCreateIncomeResult } = await import("@/lib/income-errors");
 
     const { data: raw, error } = await (ctx.supabase.rpc as any)(
       "create_non_member_income_record",
@@ -336,21 +329,21 @@ export const createNonMemberIncomeRecordFn = createServerFn({ method: "POST" })
         _society_id: data.societyId,
         _category_id: data.category_id,
         _payer_kind: data.payer_kind,
-        _resident_user_id: data.resident_user_id ?? null,
+        _resident_user_id: null,
         _non_member_payer_id: data.non_member_payer_id ?? null,
         _amount: data.amount,
         _payment_method: data.payment_method,
         _payment_date: data.payment_date ?? null,
         _reference_number: data.reference_number ?? null,
         _description: data.description ?? null,
-        _creation_request_id: data.creation_request_id ?? null,
-        _canonical_payload: canonical,
+        _creation_request_id: data.creation_request_id,
       },
     );
 
     if (error) return { status: "temporary_error" as const };
     return parseCreateIncomeResult(raw);
   });
+
 
 
 async function transitionVerification(

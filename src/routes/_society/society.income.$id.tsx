@@ -311,7 +311,7 @@ function RecordView({
           )}
         </div>
 
-        {(canVerify || canReverse) && (
+        {(canVerify || canReverse || canReconcile || canUnreconcile) && (
           <div className="flex flex-wrap gap-2 pt-4">
             {canVerify && (
               <>
@@ -342,9 +342,31 @@ function RecordView({
                 <RotateCcw className="h-4 w-4 mr-1" /> Reverse
               </Button>
             )}
+            {canReconcile && (
+              <Button
+                variant="outline"
+                onClick={() => onAction("reconcile")}
+                className="min-h-[44px]"
+                aria-label="Mark reconciled"
+              >
+                <CheckCircle2 className="h-4 w-4 mr-1" /> Mark reconciled
+              </Button>
+            )}
+            {canUnreconcile && (
+              <Button
+                variant="outline"
+                onClick={() => onAction("unreconcile")}
+                className="min-h-[44px]"
+                aria-label="Undo reconciliation"
+              >
+                <RotateCcw className="h-4 w-4 mr-1" /> Undo reconciliation
+              </Button>
+            )}
           </div>
         )}
       </SectionCard>
+
+
 
       <SectionCard title="Timeline">
         <ol className="space-y-2 text-sm">

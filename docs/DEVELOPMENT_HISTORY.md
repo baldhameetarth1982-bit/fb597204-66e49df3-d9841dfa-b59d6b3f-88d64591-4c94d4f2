@@ -879,3 +879,60 @@ trial-expiry rules, the authoritative transactional creation RPC and its
 server-derived canonical/hash, Cash and Bank-Transfer-only creation, payer
 privacy split, Details → Review → Saved wizard, incomeKeys/incomeInvalidations,
 RLS, and every verify/reject/reverse workflow.
+
+## Stage 1D — Final Completion (Access Correction + Premium Category & Payer UI)
+
+**Access correction:** The `useIncomeAccessState()` hook now derives
+`hasFinanceRole` strictly from `ROLES.SOCIETY_ADMIN`, matching the
+server-side `is_society_admin_for(...)` authorization used by every
+protected income server function. `BLOCK_ADMIN` no longer auto-grants
+finance capability — SociyoHub has no canonical block-scoped finance
+permission, and the previous UI-only allowance did not reflect an
+existing backend permission. The change is confined to
+`src/components/subscription/IncomeAccessBoundary.tsx`; the
+`IncomeAccessBoundary` structure and every downstream route contract
+remain unchanged.
+
+**Premium Categories UI (`/society/income/categories`):** off-white
+`#F6F8F7` canvas, solid white cards on 18px radius, teal `#00A896`
+primary, navy `#0B2545` headings. Adds real summary cards (Total,
+Active, System, Custom), debounced search, status/kind/group filters
+with Reset, semantic pastel tile per category, System/Custom + Active/
+Inactive chips, non-destructive Activate/Deactivate on custom rows,
+normalized-key preview, duplicate-key friendly error mapping, skeleton
+/empty/no-match/error states. Dialog uses 24px radius with premium
+glass backdrop, solid inner form, accessible `Switch` for Active state.
+
+**Premium External Payers UI (`/society/income/payers`):** same design
+tokens. Summary cards (Total, Active, Inactive). Debounced search,
+payer-type filter, active/inactive filter, Reset. 25-per-page client
+pagination with page-reset on filter change and Prev/Next controls
+(no unbounded fetches). Initials avatar with deterministic pastel
+tint. Type chip. Default rows carry only `id`, `payer_type`,
+`display_name`, `organization_name`, `is_active`, `created_at` — the
+existing server projection already blocks phone/email/reference_code/
+notes/society_id, and the UI never renders those fields in the
+directory row. Edit flow keeps the separate `getNonMemberPayerDetailFn`
+call for private fields, with skeletons during detail load and a
+unified "unavailable" state for missing/inaccessible payers. Email
+validation added client-side.
+
+**Tests:** `income-access-boundary.test.ts` now covers Society Admin
+allowed, Block Admin without finance permission denied, Resident/Guard
+denied, and a source-scan invariant asserting the hook does not
+auto-grant Block Admin. 413 unit tests pass. Integration suite honestly
+skips absent fixtures. Build and secret scan pass.
+
+**Preserved:** SociyoHub branding, equal co-founders Meetarth Baldha
+and Divyaraj Vaghela, `PLAN_NORMALIZATION_SPEC`, non-null future
+trial-expiry rule, `IncomeAccessBoundary` structure, `incomeKeys` /
+`incomeInvalidations`, database-authoritative canonical JSON + SHA-256,
+transactional creation, `creation_request_id`, Cash / Bank Transfer-only
+creation, payer safe-list vs. detail privacy split, verify/reject/reverse
+flows, Basic zero-call architecture, RLS + society isolation, historical
+`other_offline` rows readable, Razorpay subscription-only, no platform
+fee. Protected society (`baldha Meetarth`, id `1907a918-c4b8-4f43-a837-450530cc7c34`)
+untouched.
+
+**Stage 1D status: complete.** Next: **Stage 1E — SQL Reporting,
+Reconciliation Foundation and Stage 1 Closure.**

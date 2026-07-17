@@ -170,6 +170,119 @@ export type Database = {
           },
         ]
       }
+      billing_charge_heads: {
+        Row: {
+          active: boolean
+          archived_at: string | null
+          category: string
+          created_at: string
+          created_by: string | null
+          default_amount: number | null
+          description: string | null
+          id: string
+          name: string
+          normalized_name: string
+          society_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          archived_at?: string | null
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          default_amount?: number | null
+          description?: string | null
+          id?: string
+          name: string
+          normalized_name: string
+          society_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          archived_at?: string | null
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          default_amount?: number | null
+          description?: string | null
+          id?: string
+          name?: string
+          normalized_name?: string
+          society_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_charge_heads_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_cycle_configs: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          created_by: string | null
+          cycle_name: string
+          due_date: string
+          id: string
+          period_end: string
+          period_start: string
+          society_id: string
+          status: string
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          cycle_name: string
+          due_date: string
+          id?: string
+          period_end: string
+          period_start: string
+          society_id: string
+          status?: string
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          cycle_name?: string
+          due_date?: string
+          id?: string
+          period_end?: string
+          period_start?: string
+          society_id?: string
+          status?: string
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_cycle_configs_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_cycle_configs_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "billing_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       billing_schedules: {
         Row: {
           amount: number
@@ -233,6 +346,135 @@ export type Database = {
             foreignKeyName: "billing_schedules_society_id_fkey"
             columns: ["society_id"]
             isOneToOne: true
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_template_lines: {
+        Row: {
+          active: boolean
+          amount: number | null
+          archived_at: string | null
+          area_unit: string | null
+          charge_head_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          rate_per_area: number | null
+          required_approval: boolean
+          rule_type: string
+          society_id: string
+          sort_order: number
+          template_id: string
+          unit_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          amount?: number | null
+          archived_at?: string | null
+          area_unit?: string | null
+          charge_head_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          rate_per_area?: number | null
+          required_approval?: boolean
+          rule_type: string
+          society_id: string
+          sort_order?: number
+          template_id: string
+          unit_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          amount?: number | null
+          archived_at?: string | null
+          area_unit?: string | null
+          charge_head_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          rate_per_area?: number | null
+          required_approval?: boolean
+          rule_type?: string
+          society_id?: string
+          sort_order?: number
+          template_id?: string
+          unit_type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_template_lines_charge_head_id_fkey"
+            columns: ["charge_head_id"]
+            isOneToOne: false
+            referencedRelation: "billing_charge_heads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_template_lines_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_template_lines_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "billing_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_templates: {
+        Row: {
+          archived_at: string | null
+          billing_frequency: string
+          created_at: string
+          created_by: string | null
+          effective_from: string
+          effective_to: string | null
+          id: string
+          name: string
+          society_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          billing_frequency?: string
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          name: string
+          society_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          billing_frequency?: string
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          name?: string
+          society_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_templates_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
             referencedRelation: "societies"
             referencedColumns: ["id"]
           },
@@ -3244,6 +3486,20 @@ export type Database = {
       }
     }
     Functions: {
+      _billing_audit: {
+        Args: {
+          _action: string
+          _meta: Json
+          _society_id: string
+          _target_id: string
+          _target_table: string
+        }
+        Returns: undefined
+      }
+      _billing_require_admin: {
+        Args: { _society_id: string }
+        Returns: undefined
+      }
       _migration_link_or_conflict: {
         Args: {
           _canonical_entity_id: string
@@ -3415,6 +3671,10 @@ export type Database = {
         Args: { _code: string }
         Returns: boolean
       }
+      archive_billing_template_line: {
+        Args: { _id: string; _society_id: string }
+        Returns: undefined
+      }
       assign_resident_to_unit: {
         Args: {
           _flat_id: string
@@ -3476,6 +3736,19 @@ export type Database = {
       compute_no_dues_eligibility_internal: {
         Args: { _flat_id: string; _society_id: string }
         Returns: Json
+      }
+      configure_billing_cycle: {
+        Args: {
+          _cycle_name: string
+          _due_date: string
+          _id: string
+          _period_end: string
+          _period_start: string
+          _society_id: string
+          _status: string
+          _template_id: string
+        }
+        Returns: string
       }
       configure_society_structure_mode: {
         Args: { _mode: string; _society_id: string }
@@ -4022,6 +4295,15 @@ export type Database = {
         Args: { _actor_id: string; _society_id: string }
         Returns: string
       }
+      preview_billing_template: {
+        Args: {
+          _limit: number
+          _offset: number
+          _society_id: string
+          _template_id: string
+        }
+        Returns: Json
+      }
       recheck_no_dues_request_internal: {
         Args: { _actor_id: string; _request_id: string }
         Returns: {
@@ -4061,6 +4343,47 @@ export type Database = {
       revoke_no_dues_certificate_internal: {
         Args: { _actor_id: string; _certificate_id: string; _reason: string }
         Returns: undefined
+      }
+      save_billing_template: {
+        Args: {
+          _billing_frequency: string
+          _effective_from: string
+          _effective_to: string
+          _id: string
+          _name: string
+          _society_id: string
+          _status: string
+        }
+        Returns: string
+      }
+      save_billing_template_line: {
+        Args: {
+          _active: boolean
+          _amount: number
+          _area_unit: string
+          _charge_head_id: string
+          _id: string
+          _rate_per_area: number
+          _required_approval: boolean
+          _rule_type: string
+          _society_id: string
+          _sort_order: number
+          _template_id: string
+          _unit_type: string
+        }
+        Returns: string
+      }
+      save_charge_head: {
+        Args: {
+          _active: boolean
+          _category: string
+          _default_amount: number
+          _description: string
+          _id: string
+          _name: string
+          _society_id: string
+        }
+        Returns: string
       }
       save_wizard_draft: {
         Args: { _society_id: string; _state: Json }

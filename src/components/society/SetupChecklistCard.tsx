@@ -21,6 +21,58 @@ type ChecklistItem = {
   hint?: string;
 };
 
+export type ChecklistItem = {
+  key: string;
+  label: string;
+  done: boolean;
+  to?: string;
+  optional?: boolean;
+  hint?: string;
+};
+
+export type ChecklistServerData = {
+  has_blocks: boolean;
+  has_flats: boolean;
+  has_residents: boolean;
+  has_completed_imports: boolean;
+  blocks: number;
+  flats: number;
+  active_residents: number;
+  completed_imports: number;
+};
+
+/**
+ * Pure derivation of checklist items from the server-derived state.
+ * Exposed for tests: import is optional and must never block required
+ * completion; every done flag comes from server state, not local storage.
+ */
+export function buildChecklistItems(data: ChecklistServerData): ChecklistItem[] {
+  return [
+    { key: "profile", label: "Society profile", done: true,
+      to: "/society/business-profile", hint: "Business details, address and branding." },
+    { key: "structure", label: "Structure configured",
+      done: data.has_blocks || data.has_flats,
+      to: "/society/blocks", hint: "Blocks / wings or serial-mode units." },
+    { key: "units", label: "Active units exist", done: data.has_flats,
+      to: "/society/flats",
+      hint: `${data.flats} unit${data.flats === 1 ? "" : "s"} configured.` },
+    { key: "admin", label: "Society admin active", done: true,
+      to: "/society/team", hint: "You are signed in as an active admin." },
+    { key: "team", label: "Team & roles reviewed", done: false,
+      to: "/society/team", hint: "Review scopes for block admins and helpers." },
+    { key: "privacy", label: "Privacy & finance visibility reviewed", done: false,
+      to: "/society/settings", hint: "Confirm what residents can see." },
+    { key: "residents", label: "Residents onboarded", done: data.has_residents,
+      to: "/society/residents",
+      hint: `${data.active_residents} active resident${data.active_residents === 1 ? "" : "s"}.` },
+    { key: "import", label: "Bulk import (optional)",
+      done: data.has_completed_imports, to: "/society/import", optional: true,
+      hint: data.has_completed_imports
+        ? `${data.completed_imports} completed import${data.completed_imports === 1 ? "" : "s"}.`
+        : "CSV migration is optional — skip if not needed." },
+  ];
+}
+
 export function SetupChecklistCard({ societyId }: { societyId: string }) {
   const fetchChecklist = useServerFn(getSetupChecklist);
   const { data, isLoading, isError } = useQuery({

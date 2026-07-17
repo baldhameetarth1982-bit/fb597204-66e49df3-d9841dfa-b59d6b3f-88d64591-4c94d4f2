@@ -218,11 +218,11 @@ function TeamPage() {
                   subtitle={
                     <span className="flex items-center gap-1.5 flex-wrap">
                       <Badge variant="secondary" className="rounded-md text-[10px]">{ROLE_LABELS[m.role as Role]}</Badge>
-                      {m.block_name && (
-                        <Badge variant="outline" className="rounded-md text-[10px]">
-                          <Building2 className="h-3 w-3 mr-1" />{m.block_name}
+                      {m.block_names.map((bn) => (
+                        <Badge key={bn} variant="outline" className="rounded-md text-[10px]">
+                          <Building2 className="h-3 w-3 mr-1" />{bn}
                         </Badge>
-                      )}
+                      ))}
                       {!m.is_active && (
                         <Badge variant="outline" className="rounded-md text-[10px] border-destructive/40 text-destructive">
                           Inactive

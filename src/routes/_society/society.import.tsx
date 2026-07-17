@@ -269,7 +269,6 @@ function ImportPage() {
         data: {
           job_id: jobId,
           creation_request_id: rid,
-          expected_checksum: checksum,
           confirm: true,
         },
       });

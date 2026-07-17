@@ -1,5 +1,21 @@
 # Next Stages
 
+## Stage 3A — Bill Studio and Billing Configuration (ACTIVE 2026-07-17)
+
+**Delivered this run**
+- Additive migration creates `billing_charge_heads`, `billing_templates`, `billing_template_lines`, `billing_cycle_configs`. RLS restricts reads to holders of `billing.manage` (Society/Super Admin) via the 3-arg `current_user_has_society_permission(_, _, NULL)` helper (disambiguates the two overloads). All mutations go through SECURITY DEFINER RPCs with a shared `_billing_require_admin` gate; direct `INSERT/UPDATE/DELETE` on tables is not granted to `authenticated`.
+- Server-authoritative preview: `preview_billing_template(society, template, limit, offset)` computes per-unit line amounts from canonical `flats` (block-assigned only), including `area_based` NULL/zero-area warnings and `manual_variable` markers, plus a society-wide totals summary from a full pass. Preview never writes bills.
+- Server functions in `src/lib/billing-config.functions.ts`: `listChargeHeads`, `saveChargeHead`, `listBillingTemplates`, `saveBillingTemplate`, `listTemplateLines`, `saveTemplateLine`, `archiveTemplateLine`, `configureBillingCycle`, `listBillingCycles`, `previewBillingTemplate`. All require `requireSupabaseAuth`. `mapError` translates DB error codes into safe UI messages.
+- UI: new `BillingConfigCard` (`src/components/billing/BillingConfigCard.tsx`) added under the existing Bill Studio route. Manages charge heads, templates, template lines, and runs the safe preview in a dialog. No invoice generation, no payment surfaces.
+- Focused test: `tests/unit/billing-config-stage3a.test.ts` asserts the error mapper never leaks raw DB details.
+
+**Explicitly out of scope in Stage 3A:** real bill generation, payments/receipts/dues/penalties/reminders, Razorpay, UPI, cards, wallets, online gateway, platform fee, reconciliation. Preview only.
+
+**Exact next position:** finalize Stage 3A UX polish + verification evidence, then Stage 3B.
+
+
+
+
 ## Stage 2E — Onboarding, Migration QA & Stage 2 Closure (COMPLETE 2026-07-17)
 
 **Scope delivered**

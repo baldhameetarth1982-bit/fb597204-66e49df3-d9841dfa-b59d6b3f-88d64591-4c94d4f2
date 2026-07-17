@@ -89,7 +89,7 @@
 - Lighthouse ≥ 90 (published) — not_started
 
 ### 9. Automated Testing
-- `tests/billing-cron.test.mjs` — exists
+- `tests/billing-cron.mjs` — exists
 - Vitest unit coverage — minimal
 - Playwright end-to-end flows — not_started
 - No-Dues authz tests (deny anon RPC, deny cross-society admin, etc.) — not_started

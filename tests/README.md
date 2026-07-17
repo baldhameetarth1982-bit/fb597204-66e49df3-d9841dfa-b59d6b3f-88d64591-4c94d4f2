@@ -7,7 +7,7 @@ Uses Node's built-in test runner — no extra dependencies.
 ```bash
 CRON_URL=https://<your-project>.lovable.app/api/public/hooks/run-billing \
 CRON_SECRET=<your-cron-secret> \
-node --test tests/billing-cron.test.mjs
+node --test tests/billing-cron.mjs
 ```
 
 Covers:

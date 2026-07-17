@@ -558,28 +558,38 @@ export type MigrationCommitStatus = z.infer<typeof CommitStatus>;
  * single authoritative writer: it derives society, source type, mapped rows,
  * and dependencies from the job/staging tables. Only `job_id`, `request_id`,
  * and the caller-supplied expected file checksum cross the RPC boundary.
+ *
+ * Exposed as a plain function so behavioral tests can invoke it against a
+ * mocked supabase client without rebuilding the middleware chain.
  */
+export async function _commitMigrationJobViaRpc(
+  supabase: { rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }> },
+  data: z.infer<typeof CommitInput>,
+): Promise<{ status: MigrationCommitStatus; result: MigrationCommitResult | null }> {
+  const { data: raw, error } = await supabase.rpc("commit_migration_job", {
+    _job_id: data.job_id,
+    _request_id: data.creation_request_id,
+    _expected_checksum: data.expected_checksum,
+  });
+  if (error) {
+    return { status: "operation_failed" as const, result: null };
+  }
+  const obj = (raw ?? {}) as { status?: string; result?: unknown };
+  const parsedStatus = CommitStatus.safeParse(obj.status);
+  if (!parsedStatus.success) {
+    return { status: "operation_failed" as const, result: null };
+  }
+  if (parsedStatus.data === "completed" || parsedStatus.data === "idempotent_replay") {
+    const parsed = CommitResult.safeParse(obj.result ?? {});
+    return { status: parsedStatus.data, result: parsed.success ? parsed.data : null };
+  }
+  return { status: parsedStatus.data, result: null };
+}
+
 export const commitMigrationJob = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => CommitInput.parse(input))
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
-    const { data: raw, error } = await supabase.rpc("commit_migration_job", {
-      _job_id: data.job_id,
-      _request_id: data.creation_request_id,
-      _expected_checksum: data.expected_checksum,
-    });
-    if (error) {
-      return { status: "operation_failed" as const, result: null };
-    }
-    const obj = (raw ?? {}) as { status?: string; result?: unknown };
-    const parsedStatus = CommitStatus.safeParse(obj.status);
-    if (!parsedStatus.success) {
-      return { status: "operation_failed" as const, result: null };
-    }
-    if (parsedStatus.data === "completed" || parsedStatus.data === "idempotent_replay") {
-      const parsed = CommitResult.safeParse(obj.result ?? {});
-      return { status: parsedStatus.data, result: parsed.success ? parsed.data : null };
-    }
-    return { status: parsedStatus.data, result: null };
+    return _commitMigrationJobViaRpc(context.supabase, data);
   });
+

@@ -671,3 +671,33 @@ export const getMigrationJobFailure = createServerFn({ method: "POST" })
       completed_at: latest?.completed_at ?? null,
     };
   });
+
+// ---------- getSetupChecklist ----------
+// Stage 2E closure — server-derived setup checklist. The DB function
+// `migration_setup_checklist` returns simple booleans/counts scoped to
+// the caller's admin permission on the society.
+
+const SetupChecklistInput = z.object({ society_id: z.string().uuid() });
+
+export const getSetupChecklist = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => SetupChecklistInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const { data: raw, error } = await context.supabase.rpc(
+      "migration_setup_checklist",
+      { _society_id: data.society_id },
+    );
+    if (error) throw new MigrationError("operation_failed");
+    const obj = (raw ?? {}) as Record<string, unknown>;
+    if (obj.status !== "ok") throw new MigrationError("unavailable");
+    return {
+      has_blocks: Boolean(obj.has_blocks),
+      has_flats: Boolean(obj.has_flats),
+      has_residents: Boolean(obj.has_residents),
+      has_completed_imports: Boolean(obj.has_completed_imports),
+      blocks: Number(obj.blocks ?? 0),
+      flats: Number(obj.flats ?? 0),
+      active_residents: Number(obj.active_residents ?? 0),
+      completed_imports: Number(obj.completed_imports ?? 0),
+    };
+  });

@@ -2605,6 +2605,64 @@ export type Database = {
         }
         Relationships: []
       }
+      user_role_block_scopes: {
+        Row: {
+          assigned_by: string | null
+          block_id: string
+          created_at: string
+          deactivated_at: string | null
+          deactivated_by: string | null
+          id: string
+          is_active: boolean
+          role_id: string
+          society_id: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          block_id: string
+          created_at?: string
+          deactivated_at?: string | null
+          deactivated_by?: string | null
+          id?: string
+          is_active?: boolean
+          role_id: string
+          society_id: string
+        }
+        Update: {
+          assigned_by?: string | null
+          block_id?: string
+          created_at?: string
+          deactivated_at?: string | null
+          deactivated_by?: string | null
+          id?: string
+          is_active?: boolean
+          role_id?: string
+          society_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_role_block_scopes_block_id_fkey"
+            columns: ["block_id"]
+            isOneToOne: false
+            referencedRelation: "blocks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_role_block_scopes_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "user_roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_role_block_scopes_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           assigned_by: string | null
@@ -2959,6 +3017,15 @@ export type Database = {
         }
         Returns: string
       }
+      admin_upsert_team_role_v2: {
+        Args: {
+          _block_ids?: string[]
+          _new_role: Database["public"]["Enums"]["app_role"]
+          _society_id: string
+          _target_user_id: string
+        }
+        Returns: string
+      }
       admin_upsert_vehicle: {
         Args: {
           _color?: string
@@ -3133,10 +3200,19 @@ export type Database = {
         Args: { _flat_id: string }
         Returns: boolean
       }
-      current_user_has_society_permission: {
-        Args: { _capability: string; _society_id: string }
-        Returns: boolean
-      }
+      current_user_has_society_permission:
+        | {
+            Args: { _capability: string; _society_id: string }
+            Returns: boolean
+          }
+        | {
+            Args: {
+              _block_id?: string
+              _capability: string
+              _society_id: string
+            }
+            Returns: boolean
+          }
       current_user_is_society_admin_for: {
         Args: { _society_id: string }
         Returns: boolean
@@ -3369,6 +3445,7 @@ export type Database = {
         Args: { _actor_id: string; _flat_id: string }
         Returns: boolean
       }
+      is_known_capability: { Args: { _cap: string }; Returns: boolean }
       is_non_member_income_enabled_internal: {
         Args: { _society_id: string }
         Returns: boolean
@@ -3409,6 +3486,13 @@ export type Database = {
           user_id: string
         }[]
       }
+      list_role_block_scopes: {
+        Args: { _role_id: string }
+        Returns: {
+          block_id: string
+          block_name: string
+        }[]
+      }
       list_society_flats_public: {
         Args: { _society_id: string }
         Returns: {
@@ -3445,12 +3529,42 @@ export type Database = {
           user_id: string
         }[]
       }
+      list_society_residents_safe_page: {
+        Args: {
+          _limit?: number
+          _offset?: number
+          _search?: string
+          _society_id: string
+        }
+        Returns: {
+          block_name: string
+          flat_number: string
+          full_name: string
+          total_count: number
+          user_id: string
+        }[]
+      }
       list_society_team_members: {
         Args: { _include_inactive?: boolean; _society_id: string }
         Returns: {
           assigned_by: string
           block_id: string
           block_name: string
+          created_at: string
+          full_name: string
+          is_active: boolean
+          role: Database["public"]["Enums"]["app_role"]
+          role_id: string
+          updated_at: string
+          user_id: string
+        }[]
+      }
+      list_society_team_members_v2: {
+        Args: { _include_inactive?: boolean; _society_id: string }
+        Returns: {
+          assigned_by: string
+          block_ids: string[]
+          block_names: string[]
           created_at: string
           full_name: string
           is_active: boolean
@@ -3494,6 +3608,18 @@ export type Database = {
         Returns: string
       }
       reset_own_kyc: { Args: never; Returns: undefined }
+      resolve_financial_visibility: {
+        Args: { _society_id: string }
+        Returns: string
+      }
+      resolve_privacy_access: {
+        Args: {
+          _resource: string
+          _society_id: string
+          _subject_user_id?: string
+        }
+        Returns: boolean
+      }
       respond_join_request: {
         Args: { _approve: boolean; _reason?: string; _request_id: string }
         Returns: undefined

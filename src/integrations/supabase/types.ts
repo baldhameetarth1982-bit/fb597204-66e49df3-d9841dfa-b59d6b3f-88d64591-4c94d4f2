@@ -4001,6 +4001,10 @@ export type Database = {
         Args: { _job_id: string; _rows: Json; _totals: Json }
         Returns: Json
       }
+      migration_setup_checklist: {
+        Args: { _society_id: string }
+        Returns: Json
+      }
       migration_upload_path_ok: { Args: { _name: string }; Returns: boolean }
       next_no_dues_cert_number_internal: {
         Args: { _actor_id: string; _society_id: string }

@@ -3244,6 +3244,18 @@ export type Database = {
       }
     }
     Functions: {
+      _migration_link_or_conflict: {
+        Args: {
+          _canonical_entity_id: string
+          _entity_type: Database["public"]["Enums"]["migration_entity_type"]
+          _job_id: string
+          _society_id: string
+          _source_checksum: string
+          _source_key: string
+          _source_type: string
+        }
+        Returns: undefined
+      }
       activate_society_plan: {
         Args: { _months?: number; _plan_id: string; _society_id: string }
         Returns: undefined

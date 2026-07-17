@@ -1,6 +1,61 @@
 # Next Stages
 
+## Stage 2D — Migration & Bulk Import (COMPLETE 2026-07-17)
+
+Canonical import pipeline scaffolded end-to-end:
+
+- Migration `20260717044655…` adds `migration_jobs`, `migration_rows`,
+  `migration_entity_links` (staging + provenance), plus enums
+  `migration_job_status`, `migration_entity_type`, `migration_row_action`,
+  `migration_row_status`.
+- Society-scoped SECURITY DEFINER helper
+  `public.current_user_can_admin_migrations(_society_id)` powers RLS on all
+  three tables. Residents, block admins, guards and anonymous are denied.
+- Private storage bucket `migration-uploads` with society-scoped RLS
+  (`storage.foldername(name)[1]::uuid` binds path to society id).
+- Shared browser-safe pipeline module `src/lib/migration-pipeline.ts`:
+  file-safety validator (10 MB cap, 5 000 row cap, XLSM/XLSB/macros
+  rejected), formula neutralization for downloadable error reports,
+  MyGate/ADDA/NoBrokerHood/SociyoHub/generic column-mapping presets,
+  strict Zod row schemas for structures / units / residents / occupancy /
+  family / vehicles, plate normalization, deterministic checksums.
+- Server functions in `src/lib/migration.functions.ts`
+  (`createMigrationJob`, `validateMigrationJob`, `listMigrationJobs`,
+  `getMigrationPreview`, `commitMigrationJob`) — all typed against
+  generated `Database` types, strict Zod input/output, safe stable error
+  codes only (`invalid_file`, `unsupported_format`, `too_many_rows`,
+  `invalid_mapping`, `validation_failed`, `unresolved_conflicts`,
+  `job_not_ready`, `job_already_committing`, `idempotency_conflict`,
+  `unavailable`, `operation_failed`). No `as any`.
+- Idempotent commit: `(society_id, idempotency_key)` unique on jobs;
+  identical `creation_request_id` re-runs return the existing completion;
+  changed checksum returns `idempotency_conflict`. Provenance rows are
+  upserted on `(society_id, source_type, entity_type, source_key)`.
+- Preview is server-paginated (`getMigrationPreview`) — no operational
+  mutation, no PII leaked in the job list.
+- 23 focused unit tests in `tests/unit/migration-pipeline.test.ts`:
+  file safety (CSV/XLSX accepted; XLSM/XLSB/XLTM/archives/executables
+  rejected; oversized rejected; row cap enforced; empty rejected),
+  formula neutralization, MyGate/ADDA/NoBrokerHood preset detection,
+  row-schema validation including plate normalization, and deterministic
+  checksums. All pass; `bunx tsgo --noEmit` clean.
+- Protected society `1907a918-c4b8-4f43-a837-450530cc7c34` remains
+  completely untouched — no fixture, seed, or runtime reference.
+- Canonical writes for new structures / units / residents remain the
+  responsibility of the existing Stage 2A/2B admin RPCs. The Stage 2D
+  commit records provenance for matched rows and leaves canonical inserts
+  as the Stage 2E wiring task; auth users are never fabricated.
+- Integration tests: honestly skipped pending isolated fixtures + private
+  test storage. No production data used.
+
+**Exact next position:** Stage 2E — Onboarding, Migration QA and Stage 2
+Closure (canonical write wiring, resumable partial commits, and the
+production UI consuming the pipeline).
+
+---
+
 ## Immediately after Stage 3A closes
+
 
 ### Checkpoint F — Flat 360
 Upgrade `src/routes/_society/society.flats.$id.tsx` in place (no duplicate route). Sections: Identity + Occupancy, Financial Summary, Occupancy History, Operations (vehicles, visitors, documents, approvals), No-Dues status, Deterministic Unit Summary + Lovable-AI Summary (Pro-gated, cached/rate-limited, deterministic fallback on failure). Real data only; honest empty states.

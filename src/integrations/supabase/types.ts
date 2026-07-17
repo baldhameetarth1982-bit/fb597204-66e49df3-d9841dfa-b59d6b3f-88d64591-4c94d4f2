@@ -1055,6 +1055,212 @@ export type Database = {
           },
         ]
       }
+      migration_entity_links: {
+        Row: {
+          canonical_entity_id: string
+          created_at: string
+          entity_type: Database["public"]["Enums"]["migration_entity_type"]
+          id: string
+          job_id: string | null
+          society_id: string
+          source_checksum: string | null
+          source_key: string
+          source_type: string
+        }
+        Insert: {
+          canonical_entity_id: string
+          created_at?: string
+          entity_type: Database["public"]["Enums"]["migration_entity_type"]
+          id?: string
+          job_id?: string | null
+          society_id: string
+          source_checksum?: string | null
+          source_key: string
+          source_type: string
+        }
+        Update: {
+          canonical_entity_id?: string
+          created_at?: string
+          entity_type?: Database["public"]["Enums"]["migration_entity_type"]
+          id?: string
+          job_id?: string | null
+          society_id?: string
+          source_checksum?: string | null
+          source_key?: string
+          source_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "migration_entity_links_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "migration_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "migration_entity_links_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      migration_jobs: {
+        Row: {
+          committed_at: string | null
+          committed_rows: number
+          created_at: string
+          created_by: string
+          error_rows: number
+          failed_at: string | null
+          failure_code: string | null
+          file_checksum: string
+          id: string
+          idempotency_key: string | null
+          mapping_json: Json
+          society_id: string
+          source_filename: string
+          source_type: string
+          status: Database["public"]["Enums"]["migration_job_status"]
+          storage_path: string | null
+          structure_mode: string | null
+          total_rows: number
+          updated_at: string
+          valid_rows: number
+          validated_at: string | null
+          warning_rows: number
+        }
+        Insert: {
+          committed_at?: string | null
+          committed_rows?: number
+          created_at?: string
+          created_by: string
+          error_rows?: number
+          failed_at?: string | null
+          failure_code?: string | null
+          file_checksum: string
+          id?: string
+          idempotency_key?: string | null
+          mapping_json?: Json
+          society_id: string
+          source_filename: string
+          source_type: string
+          status?: Database["public"]["Enums"]["migration_job_status"]
+          storage_path?: string | null
+          structure_mode?: string | null
+          total_rows?: number
+          updated_at?: string
+          valid_rows?: number
+          validated_at?: string | null
+          warning_rows?: number
+        }
+        Update: {
+          committed_at?: string | null
+          committed_rows?: number
+          created_at?: string
+          created_by?: string
+          error_rows?: number
+          failed_at?: string | null
+          failure_code?: string | null
+          file_checksum?: string
+          id?: string
+          idempotency_key?: string | null
+          mapping_json?: Json
+          society_id?: string
+          source_filename?: string
+          source_type?: string
+          status?: Database["public"]["Enums"]["migration_job_status"]
+          storage_path?: string | null
+          structure_mode?: string | null
+          total_rows?: number
+          updated_at?: string
+          valid_rows?: number
+          validated_at?: string | null
+          warning_rows?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "migration_jobs_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      migration_rows: {
+        Row: {
+          action: Database["public"]["Enums"]["migration_row_action"]
+          created_at: string
+          entity_type: Database["public"]["Enums"]["migration_entity_type"]
+          error_codes: string[]
+          id: string
+          job_id: string
+          mapped_json: Json
+          raw_json: Json
+          resolved_entity_id: string | null
+          row_checksum: string
+          row_number: number
+          society_id: string
+          source_key: string | null
+          status: Database["public"]["Enums"]["migration_row_status"]
+          updated_at: string
+          warning_codes: string[]
+        }
+        Insert: {
+          action?: Database["public"]["Enums"]["migration_row_action"]
+          created_at?: string
+          entity_type: Database["public"]["Enums"]["migration_entity_type"]
+          error_codes?: string[]
+          id?: string
+          job_id: string
+          mapped_json?: Json
+          raw_json?: Json
+          resolved_entity_id?: string | null
+          row_checksum: string
+          row_number: number
+          society_id: string
+          source_key?: string | null
+          status?: Database["public"]["Enums"]["migration_row_status"]
+          updated_at?: string
+          warning_codes?: string[]
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["migration_row_action"]
+          created_at?: string
+          entity_type?: Database["public"]["Enums"]["migration_entity_type"]
+          error_codes?: string[]
+          id?: string
+          job_id?: string
+          mapped_json?: Json
+          raw_json?: Json
+          resolved_entity_id?: string | null
+          row_checksum?: string
+          row_number?: number
+          society_id?: string
+          source_key?: string | null
+          status?: Database["public"]["Enums"]["migration_row_status"]
+          updated_at?: string
+          warning_codes?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "migration_rows_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "migration_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "migration_rows_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       no_dues_audit: {
         Row: {
           action: string
@@ -3200,6 +3406,10 @@ export type Database = {
           id: string
         }[]
       }
+      current_user_can_admin_migrations: {
+        Args: { _society_id: string }
+        Returns: boolean
+      }
       current_user_can_manage_flat: {
         Args: { _flat_id: string }
         Returns: boolean
@@ -3794,6 +4004,30 @@ export type Database = {
         | "block_admin"
         | "security"
       hierarchy_kind: "society" | "structure" | "floor" | "unit"
+      migration_entity_type:
+        | "structure"
+        | "unit"
+        | "resident"
+        | "occupancy"
+        | "family"
+        | "vehicle"
+      migration_job_status:
+        | "uploaded"
+        | "mapping"
+        | "validating"
+        | "ready"
+        | "committing"
+        | "completed"
+        | "failed"
+        | "cancelled"
+      migration_row_action: "create" | "match_existing" | "skip" | "conflict"
+      migration_row_status:
+        | "pending"
+        | "valid"
+        | "warning"
+        | "error"
+        | "committed"
+        | "skipped"
       no_dues_status:
         | "draft"
         | "submitted"
@@ -3939,6 +4173,33 @@ export const Constants = {
         "security",
       ],
       hierarchy_kind: ["society", "structure", "floor", "unit"],
+      migration_entity_type: [
+        "structure",
+        "unit",
+        "resident",
+        "occupancy",
+        "family",
+        "vehicle",
+      ],
+      migration_job_status: [
+        "uploaded",
+        "mapping",
+        "validating",
+        "ready",
+        "committing",
+        "completed",
+        "failed",
+        "cancelled",
+      ],
+      migration_row_action: ["create", "match_existing", "skip", "conflict"],
+      migration_row_status: [
+        "pending",
+        "valid",
+        "warning",
+        "error",
+        "committed",
+        "skipped",
+      ],
       no_dues_status: [
         "draft",
         "submitted",

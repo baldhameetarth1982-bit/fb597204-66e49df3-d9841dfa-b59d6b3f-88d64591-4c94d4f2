@@ -1430,3 +1430,10 @@ indicators in the client bundle. Protected society
 `1907a918-c4b8-4f43-a837-450530cc7c34` untouched.
 
 **Next:** Stage 2D — Migration and Bulk Import.
+
+
+## Stage 2D — Migration & Bulk Import (2026-07-17)
+
+Canonical import pipeline (staging + provenance + typed server fns) landed.
+See docs/NEXT_STAGES.md — Stage 2D section — for architecture summary.
+Protected society untouched. Next: Stage 2E — Onboarding, Migration QA and Stage 2 Closure.

@@ -185,7 +185,7 @@ export const previewBillingTemplate = createServerFn({ method: "POST" })
       _offset: data.offset ?? 0,
     });
     if (error) throw new Error(mapError(error.message));
-    return { preview: preview as Record<string, unknown> };
+    return { preview: (preview ?? {}) as PreviewResult };
   });
 
 /* -------------------------------- Cycles ------------------------------ */

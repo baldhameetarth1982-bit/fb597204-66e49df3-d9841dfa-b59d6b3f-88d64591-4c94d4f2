@@ -39,7 +39,7 @@ export const saveChargeHead = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => chargeHeadInput.parse(i))
   .handler(async ({ data, context }) => {
-    const { data: id, error } = await context.supabase.rpc("save_charge_head", {
+    const { data: id, error } = await (context.supabase.rpc as any)("save_charge_head", {
       _society_id: data.societyId,
       _id: data.id ?? null,
       _name: data.name,
@@ -81,7 +81,7 @@ export const saveBillingTemplate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => templateInput.parse(i))
   .handler(async ({ data, context }) => {
-    const { data: id, error } = await context.supabase.rpc("save_billing_template", {
+    const { data: id, error } = await (context.supabase.rpc as any)("save_billing_template", {
       _society_id: data.societyId,
       _id: data.id ?? null,
       _name: data.name,
@@ -133,7 +133,7 @@ export const saveTemplateLine = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => lineInput.parse(i))
   .handler(async ({ data, context }) => {
-    const { data: id, error } = await context.supabase.rpc("save_billing_template_line", {
+    const { data: id, error } = await (context.supabase.rpc as any)("save_billing_template_line", {
       _society_id: data.societyId,
       _template_id: data.templateId,
       _id: data.id ?? null,
@@ -155,7 +155,7 @@ export const archiveTemplateLine = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ societyId: z.string().uuid(), id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.rpc("archive_billing_template_line", {
+    const { error } = await (context.supabase.rpc as any)("archive_billing_template_line", {
       _society_id: data.societyId,
       _id: data.id,
     });
@@ -178,7 +178,7 @@ export const previewBillingTemplate = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    const { data: preview, error } = await context.supabase.rpc("preview_billing_template", {
+    const { data: preview, error } = await (context.supabase.rpc as any)("preview_billing_template", {
       _society_id: data.societyId,
       _template_id: data.templateId,
       _limit: data.limit ?? 25,
@@ -205,7 +205,7 @@ export const configureBillingCycle = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => cycleInput.parse(i))
   .handler(async ({ data, context }) => {
-    const { data: id, error } = await context.supabase.rpc("configure_billing_cycle", {
+    const { data: id, error } = await (context.supabase.rpc as any)("configure_billing_cycle", {
       _society_id: data.societyId,
       _id: data.id ?? null,
       _template_id: data.templateId,

@@ -165,7 +165,11 @@ describe("Stage 3A · source contracts", () => {
     .join("\n");
 
   it("billing-config.functions.ts contains no `as any`", () => {
-    expect(src).not.toMatch(/\bas\s+any\b/);
+    // Strip block comments and single-line comments so the check ignores documentation.
+    const stripped = src
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/(^|[^:])\/\/[^\n]*/g, "$1");
+    expect(stripped).not.toMatch(/\bas\s+any\b/);
   });
 
   it("billing-config.functions.ts contains no `(context.supabase.rpc as any)`", () => {

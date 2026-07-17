@@ -3,20 +3,22 @@
 ## Stage 2E — Onboarding, Migration QA & Stage 2 Closure (COMPLETE 2026-07-17)
 
 **Scope delivered**
-- **Migration QA fixes:** additive migration `20260717162652_...` filters `migration_entity_links` lookups by `source_type` when resolving family/vehicle resident links so colliding external keys across sources never cross-link.
-- **Atomic rollback + real provenance:** final closure migration wraps every canonical write in one PL/pgSQL sub-transaction (`BEGIN ... EXCEPTION WHEN SQLSTATE 'MG001'`). Any row-level failure (`resident_link_missing`, `resident_link_invalid`, `unit_not_found`, `duplicate_active_plate`, `invalid_plate`, `provenance_mismatch`, `rows_unresolved`) rolls back every row written in this attempt before marking the commit request failed and returning `unresolved_conflicts`. Family and vehicle rows now store their own `family_members.id` / `vehicles.id` as the canonical entity id — resident ids are no longer misused as provenance. Matched residents are re-verified against the society before linking.
-- **FK safety:** `family_members.offline_resident_id` and `vehicles.offline_resident_id` foreign keys switched from `ON DELETE CASCADE` to `ON DELETE RESTRICT` so removing an offline resident cannot silently wipe historical family/vehicle rows.
-- **Server-derived checksum:** `commitMigrationJob` no longer requires a browser-held checksum. The server function loads `migration_jobs.file_checksum` itself and forwards it to the RPC, so a resumed commit works after a page reload.
-- **Setup checklist:** new `migration_setup_checklist(_society_id)` SECURITY DEFINER RPC + `getSetupChecklist` server fn expose booleans/counts (blocks, flats, active residents, completed imports) for Stage 2 setup surfaces to consume.
-- **Validation-time honesty:** `validateMigrationJob` fails closed for `entity_type = 'occupancy'` and for `structure` rows on serial-mode societies (`occupancy_rows_unsupported`, `structure_rows_not_allowed_serial`).
-- **Recovery UX:** `/society/import` lists recent jobs with resume + status chips, mints a fresh `creation_request_id` on every retry, and renders human-readable guidance for every stored failure code.
-- **Legacy retirement:** `/society/matrix-import` redirects to `/society/import`.
-- **Test hygiene:** the Node-only `tests/billing-cron.test.mjs` was renamed to `tests/billing-cron.mjs` so vitest no longer picks it up as a broken suite; it remains runnable via `node --test tests/billing-cron.mjs`. `bunx vitest run` now exits zero (30 files, 602 tests passing, 1 skipped).
-- **Env hygiene:** `.env` (and `.env.*` variants, excluding `.env.example`) confirmed in `.gitignore`.
+- **Provenance conflict correctness (final closure):** additive migration adds `public._migration_link_or_conflict(...)` (SECURITY DEFINER, fixed `search_path`, revoked from PUBLIC/anon/authenticated, granted only to `service_role`) which enforces the exact rule: no existing link → INSERT; same key + same canonical id → safe no-op replay; same key + different canonical id → `RAISE 'provenance_mismatch' USING ERRCODE='MG001'` so the outer sub-transaction rolls back every canonical write before the commit request is marked failed. Every `migration_entity_links` write inside `commit_migration_job` (structure, unit, resident, family, vehicle) now flows through this helper — no `ON CONFLICT DO NOTHING` remains in the commit body.
+- **Pre-commit dedup:** each `create` branch for structure/unit/resident/family/vehicle first checks whether the source key already resolves to a still-present canonical row and reuses it instead of creating a duplicate. This protects repeated imports.
+- **Family/vehicle canonical ids preserved:** family provenance stores `family_members.id`, vehicle provenance stores `vehicles.id`. Resident lookup for family/vehicle is source_type-scoped.
+- **Atomic rollback preserved:** the outer PL/pgSQL sub-transaction (`BEGIN ... EXCEPTION WHEN SQLSTATE 'MG001'`) still reverts every canonical write in the current attempt before recording the failure code.
+- **FK safety preserved:** `family_members.offline_resident_id` and `vehicles.offline_resident_id` remain `ON DELETE RESTRICT`.
+- **Server-derived checksum preserved:** `commitMigrationJob` loads `migration_jobs.file_checksum` server-side; resume works without any browser-held checksum.
+- **Setup checklist wired into a real surface:** `SetupChecklistCard` (in `src/components/society/SetupChecklistCard.tsx`) consumes `getSetupChecklist` and is mounted on `src/routes/_society/society.dashboard.tsx`. Import remains optional and never blocks required completion. Team/privacy show as actionable review items with links, not fake ticks.
+- **Recovery UX preserved:** `/society/import` recent-jobs list + resume + failure-guidance map unchanged. `/society/matrix-import` still redirects to `/society/import`.
+- **Test hygiene preserved:** `tests/billing-cron.mjs` remains a Node-only script (not a vitest file).
 
-**Verification (this run):** `bunx tsgo --noEmit` clean · `bunx vitest run` 30 passed 1 skipped · `bun run build` succeeds · `bun scripts/verify-client-bundle-secrets.ts` OK.
+**Verification (this run):** provenance behaviour is proven by strong SQL contract tests that extract the effective `commit_migration_job` and `_migration_link_or_conflict` bodies from the applied migration and assert every rule (no `ON CONFLICT DO NOTHING` in commit provenance, real family/vehicle canonical ids, source_type-scoped lookups, MG001 rollback on different-ID conflict). Runtime PostgreSQL rollback verification remains deferred to the Stage 13 DB test harness.
 
 **Stage 2 closure status:** Stage 2A–2E complete. Ready for Stage 3 scoping.
+
+**Exact next position:** Stage 3A — Bill Studio and Billing Configuration.
+
 
 
 ## Stage 2D — Migration & Bulk Import (COMPLETE 2026-07-17)

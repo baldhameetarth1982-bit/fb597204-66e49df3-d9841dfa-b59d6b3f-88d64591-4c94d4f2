@@ -175,7 +175,7 @@ export const validateMigrationJob = createServerFn({ method: "POST" })
     const byEntity: Record<string, number> = {};
     const seenSourceKeys = new Set<string>();
 
-    const inserts: Array<Record<string, unknown>> = [];
+    const inserts: MigrationRowInsert[] = [];
 
     for (const row of data.rows) {
       byEntity[row.entity_type] = (byEntity[row.entity_type] ?? 0) + 1;

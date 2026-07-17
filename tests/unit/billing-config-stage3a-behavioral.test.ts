@@ -245,11 +245,11 @@ describe("Stage 3A · source contracts", () => {
 
 describe("Stage 3A · role capability parity", () => {
   it("billing.manage is granted to society_admin / super_admin and denied to block_admin/resident/security", async () => {
-    const { ROLES, hasCapability } = await import("@/lib/role-permissions");
-    expect(hasCapability(ROLES.SOCIETY_ADMIN, "billing.manage")).toBe(true);
-    expect(hasCapability(ROLES.SUPER_ADMIN, "billing.manage")).toBe(true);
-    expect(hasCapability(ROLES.BLOCK_ADMIN, "billing.manage")).toBe(false);
-    expect(hasCapability(ROLES.RESIDENT, "billing.manage")).toBe(false);
-    expect(hasCapability(ROLES.SECURITY, "billing.manage")).toBe(false);
+    const { roleHasCapability } = await import("@/lib/role-permissions");
+    expect(roleHasCapability("society_admin", "billing.manage")).toBe(true);
+    expect(roleHasCapability("super_admin", "billing.manage")).toBe(true);
+    expect(roleHasCapability("block_admin", "billing.manage")).toBe(false);
+    expect(roleHasCapability("resident", "billing.manage")).toBe(false);
+    expect(roleHasCapability("security", "billing.manage")).toBe(false);
   });
 });

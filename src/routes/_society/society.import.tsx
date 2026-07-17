@@ -399,7 +399,7 @@ function ImportPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="font-medium truncate">{j.source_filename ?? j.id}</span>
-                          <StatusChip status={isCompleted ? "success" : isBlocked ? "warning" : "info"} className="text-[10px]">
+                          <StatusChip tone={isCompleted ? "success" : isBlocked ? "warning" : "info"} className="text-[10px]">
                             {j.status}
                           </StatusChip>
                         </div>

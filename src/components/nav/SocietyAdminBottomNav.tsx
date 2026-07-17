@@ -38,7 +38,7 @@ const TABS = [
     icon: Wrench,
     match: [
       "/society/matrix",
-      "/society/matrix-import",
+      // "/society/matrix-import" retired in Stage 2E — canonical route is /society/import.
       "/society/maintenance",
       "/society/visitors",
       "/society/vehicles",

@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
   Upload, Loader2, CheckCircle2, AlertTriangle, Info, ClipboardList,
-  ListChecks, Send, Lock,
+  ListChecks, Send, Lock, RefreshCw, History,
 } from "lucide-react";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { MobileHero } from "@/components/shared/MobileHero";
@@ -19,6 +19,8 @@ import {
   validateMigrationJob,
   getMigrationPreview,
   commitMigrationJob,
+  listMigrationJobs,
+  getMigrationJobFailure,
   type MigrationCommitResult,
   type MigrationCommitStatus,
 } from "@/lib/migration.functions";
@@ -30,6 +32,69 @@ import {
   type SourceType,
   type EntityType,
 } from "@/lib/migration-pipeline";
+
+// Stage 2E — human-readable guidance for stored failure codes. Kept in
+// one place so the UX never leaks raw DB errors.
+const FAILURE_GUIDANCE: Record<string, { title: string; hint: string }> = {
+  occupancy_rows_unsupported: {
+    title: "Occupancy rows are not imported directly",
+    hint: "Occupancy is derived automatically when a resident row lands on a matching unit. Re-map the file to the Residents entity and validate again.",
+  },
+  structure_rows_not_allowed_serial: {
+    title: "This society uses serial numbering",
+    hint: "Serial-mode societies do not accept Structure rows. Either switch the structure mode in Setup, or drop the structure rows and re-upload.",
+  },
+  unit_not_found: {
+    title: "A resident references a unit that does not exist",
+    hint: "Create the missing units first (Units entity), then re-run this import. Structure name is compared case-insensitively; unit label ignores dashes and spaces.",
+  },
+  structure_not_found: {
+    title: "A unit references a missing structure",
+    hint: "Add the referenced block/tower first (Structures entity) or correct the structure_name column.",
+  },
+  resident_link_missing: {
+    title: "Family or vehicle row could not find its resident",
+    hint: "Family/vehicle rows link by external_resident_key within the same import source. Ensure the resident sheet was imported first with the same source type.",
+  },
+  resident_link_invalid: {
+    title: "Resident link no longer resolves to a society row",
+    hint: "The linked resident is not in this society. Verify the source data and re-run.",
+  },
+  resident_not_in_society: {
+    title: "Matched resident is not in this society",
+    hint: "The row matched an existing profile that belongs to a different society. Clear the match and let import create a new offline resident.",
+  },
+  duplicate_active_plate: {
+    title: "Vehicle plate already exists",
+    hint: "One or more plate numbers are already active in this society. Deactivate the duplicates or remove the row.",
+  },
+  invalid_plate: {
+    title: "Vehicle plate is too short or malformed",
+    hint: "Ensure registration numbers are at least 3 characters after normalization.",
+  },
+  provenance_mismatch: {
+    title: "A matched record no longer exists",
+    hint: "The chosen match was deleted before commit. Re-run validation to refresh matches.",
+  },
+  rows_unresolved: {
+    title: "Some staged rows were never committed",
+    hint: "Refresh validation — earlier fixes may have left orphan rows. If it persists, start a new import.",
+  },
+  operation_failed: {
+    title: "Commit failed with an internal error",
+    hint: "Retry with a fresh request id. If the error persists, contact support.",
+  },
+};
+
+function guidanceFor(code: string | null | undefined): { title: string; hint: string } {
+  if (!code) return { title: "Commit not completed", hint: "You can retry the commit." };
+  return (
+    FAILURE_GUIDANCE[code] ?? {
+      title: "Commit blocked",
+      hint: "The server reported: " + code + ". Fix the underlying data and retry.",
+    }
+  );
+}
 
 function suggestedMapping(headers: string[], entity: EntityType, source: SourceType): Record<string, string> {
   const preset = SOURCE_PRESETS[entity][source] ?? {};
@@ -65,6 +130,19 @@ type PreviewRow = {
   source_key: string | null;
 };
 
+type JobListItem = {
+  id: string;
+  source_type: string;
+  source_filename: string | null;
+  status: string;
+  total_rows: number | null;
+  valid_rows: number | null;
+  error_rows: number | null;
+  committed_rows: number | null;
+  created_at: string;
+  committed_at: string | null;
+};
+
 function ImportPage() {
   const { societyId } = useSocietyId();
   const initUpload = useServerFn(initializeMigrationUpload);
@@ -72,6 +150,8 @@ function ImportPage() {
   const validate = useServerFn(validateMigrationJob);
   const preview = useServerFn(getMigrationPreview);
   const commit = useServerFn(commitMigrationJob);
+  const listJobs = useServerFn(listMigrationJobs);
+  const jobFailure = useServerFn(getMigrationJobFailure);
 
   const [sourceType, setSourceType] = useState<SourceType>("sociyohub");
   const [entityType, setEntityType] = useState<EntityType>("resident");
@@ -83,11 +163,26 @@ function ImportPage() {
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [previewRows, setPreviewRows] = useState<PreviewRow[]>([]);
   const [totals, setTotals] = useState<{ total: number; valid: number; errors: number } | null>(null);
-  const [busy, setBusy] = useState<null | "upload" | "validate" | "preview" | "commit">(null);
+  const [busy, setBusy] = useState<null | "upload" | "validate" | "preview" | "commit" | "jobs">(null);
   const [confirmMode, setConfirmMode] = useState(false);
-  const [requestId, setRequestId] = useState<string | null>(null);
   const [commitStatus, setCommitStatus] = useState<MigrationCommitStatus | null>(null);
   const [commitResult, setCommitResult] = useState<MigrationCommitResult | null>(null);
+  const [failureCode, setFailureCode] = useState<string | null>(null);
+  const [jobsList, setJobsList] = useState<JobListItem[]>([]);
+  const [jobsError, setJobsError] = useState<string | null>(null);
+
+  // Recovery UX — always fetch the recent-jobs list for this society so admins
+  // can see in-flight or failed jobs, resume, and retry with a new request id.
+  useEffect(() => {
+    if (!societyId) return;
+    let cancelled = false;
+    setBusy("jobs");
+    listJobs({ data: { society_id: societyId, limit: 20, offset: 0 } })
+      .then((res) => { if (!cancelled) setJobsList(res.items as JobListItem[]); })
+      .catch((e) => { if (!cancelled) setJobsError((e as Error).message); })
+      .finally(() => { if (!cancelled) setBusy((b) => (b === "jobs" ? null : b)); });
+    return () => { cancelled = true; };
+  }, [societyId, listJobs, commitStatus]);
 
   const step: 1 | 2 | 3 | 4 = totals ? 4 : previewRows.length || headers.length ? 3 : jobId ? 2 : 1;
 

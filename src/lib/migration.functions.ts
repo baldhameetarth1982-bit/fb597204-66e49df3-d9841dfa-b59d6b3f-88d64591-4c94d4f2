@@ -52,6 +52,9 @@ const SafeError = z.enum([
   "cell_too_long",
   "too_many_columns",
   "format_mismatch",
+  // Stage 2E — validation-time honest failure codes.
+  "occupancy_rows_unsupported",
+  "structure_rows_not_allowed_serial",
 ]);
 export type SafeErrorCode = z.infer<typeof SafeError>;
 
@@ -302,13 +305,28 @@ export const validateMigrationJob = createServerFn({ method: "POST" })
     const { supabase } = context;
     const { data: job } = await supabase
       .from("migration_jobs")
-      .select("id, society_id, status, source_type, mapping_json")
+      .select("id, society_id, status, source_type, mapping_json, structure_mode")
       .eq("id", data.job_id)
       .maybeSingle();
     if (!job) throw new MigrationError("unavailable");
     if (!["uploaded", "mapping", "validating", "ready"].includes(job.status)) {
       throw new MigrationError("job_not_ready");
     }
+
+    // Stage 2E — validation-time fail-closed for entity categories that
+    // the commit loop cannot honestly process. Surface these as stable
+    // error codes so the UI can show human-readable guidance instead of
+    // letting the job sit in a permanently blocked state.
+    if (data.mapping.entity_type === "occupancy") {
+      throw new MigrationError("occupancy_rows_unsupported");
+    }
+    if (
+      data.mapping.entity_type === "structure" &&
+      (job.structure_mode ?? "structured") === "serial"
+    ) {
+      throw new MigrationError("structure_rows_not_allowed_serial");
+    }
+
     const headers =
       job.mapping_json && typeof job.mapping_json === "object"
         ? (((job.mapping_json as { headers?: unknown }).headers as string[]) ?? [])
@@ -603,3 +621,44 @@ export async function _commitMigrationJobViaRpc(
 }
 
 
+
+// ---------- getMigrationJobFailure ----------
+// Returns the failure_code (if any) of the most recent commit attempt for
+// a job. Used by the recovery UX to render human-readable guidance.
+
+const JobFailureInput = z.object({
+  job_id: z.string().uuid(),
+});
+
+export const getMigrationJobFailure = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => JobFailureInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: job } = await supabase
+      .from("migration_jobs")
+      .select("id, society_id, status")
+      .eq("id", data.job_id)
+      .maybeSingle();
+    if (!job) throw new MigrationError("unavailable");
+    const { data: canAdmin } = await supabase.rpc(
+      "current_user_can_admin_migrations",
+      { _society_id: job.society_id },
+    );
+    if (!canAdmin) throw new MigrationError("unavailable");
+    const { data: rows } = await supabase
+      .from("migration_commit_requests")
+      .select("request_id, status, failure_code, failed_at, completed_at")
+      .eq("job_id", data.job_id)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    const latest = rows?.[0] ?? null;
+    return {
+      job_status: job.status,
+      latest_request_id: latest?.request_id ?? null,
+      latest_status: latest?.status ?? null,
+      failure_code: latest?.failure_code ?? null,
+      failed_at: latest?.failed_at ?? null,
+      completed_at: latest?.completed_at ?? null,
+    };
+  });

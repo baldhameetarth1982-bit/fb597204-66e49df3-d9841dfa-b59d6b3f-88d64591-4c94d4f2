@@ -2395,6 +2395,11 @@ export type Database = {
           opening_bank: number
           opening_cash: number
           pincode: string | null
+          privacy_contacts: string
+          privacy_directory: string
+          privacy_documents: string
+          privacy_finances: string
+          privacy_vehicles: string
           registration_no: string | null
           setup_completed_at: string | null
           society_id: string
@@ -2424,6 +2429,11 @@ export type Database = {
           opening_bank?: number
           opening_cash?: number
           pincode?: string | null
+          privacy_contacts?: string
+          privacy_directory?: string
+          privacy_documents?: string
+          privacy_finances?: string
+          privacy_vehicles?: string
           registration_no?: string | null
           setup_completed_at?: string | null
           society_id: string
@@ -2453,6 +2463,11 @@ export type Database = {
           opening_bank?: number
           opening_cash?: number
           pincode?: string | null
+          privacy_contacts?: string
+          privacy_directory?: string
+          privacy_documents?: string
+          privacy_finances?: string
+          privacy_vehicles?: string
           registration_no?: string | null
           setup_completed_at?: string | null
           society_id?: string
@@ -2592,27 +2607,42 @@ export type Database = {
       }
       user_roles: {
         Row: {
+          assigned_by: string | null
           block_id: string | null
           created_at: string
+          deactivated_at: string | null
+          deactivated_by: string | null
           id: string
+          is_active: boolean
           role: Database["public"]["Enums"]["app_role"]
           society_id: string | null
+          updated_at: string
           user_id: string
         }
         Insert: {
+          assigned_by?: string | null
           block_id?: string | null
           created_at?: string
+          deactivated_at?: string | null
+          deactivated_by?: string | null
           id?: string
+          is_active?: boolean
           role: Database["public"]["Enums"]["app_role"]
           society_id?: string | null
+          updated_at?: string
           user_id: string
         }
         Update: {
+          assigned_by?: string | null
           block_id?: string | null
           created_at?: string
+          deactivated_at?: string | null
+          deactivated_by?: string | null
           id?: string
+          is_active?: boolean
           role?: Database["public"]["Enums"]["app_role"]
           society_id?: string | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -2893,6 +2923,21 @@ export type Database = {
           unpaid_bill_total: number
         }[]
       }
+      admin_set_society_privacy: {
+        Args: {
+          _contacts: string
+          _directory: string
+          _documents: string
+          _finances: string
+          _society_id: string
+          _vehicles: string
+        }
+        Returns: undefined
+      }
+      admin_set_team_active: {
+        Args: { _is_active: boolean; _role_id: string; _society_id: string }
+        Returns: string
+      }
       admin_upsert_family_member: {
         Args: {
           _age?: number
@@ -2902,6 +2947,15 @@ export type Database = {
           _relation?: string
           _resident_user_id: string
           _society_id: string
+        }
+        Returns: string
+      }
+      admin_upsert_team_role: {
+        Args: {
+          _block_id?: string
+          _new_role: Database["public"]["Enums"]["app_role"]
+          _society_id: string
+          _target_user_id: string
         }
         Returns: string
       }
@@ -3077,6 +3131,10 @@ export type Database = {
       }
       current_user_can_manage_flat: {
         Args: { _flat_id: string }
+        Returns: boolean
+      }
+      current_user_has_society_permission: {
+        Args: { _capability: string; _society_id: string }
         Returns: boolean
       }
       current_user_is_society_admin_for: {
@@ -3273,6 +3331,16 @@ export type Database = {
           payout_status: string
         }[]
       }
+      get_society_privacy: {
+        Args: { _society_id: string }
+        Returns: {
+          privacy_contacts: string
+          privacy_directory: string
+          privacy_documents: string
+          privacy_finances: string
+          privacy_vehicles: string
+        }[]
+      }
       get_society_structure_overview: {
         Args: { _society_id: string }
         Returns: Json
@@ -3374,6 +3442,21 @@ export type Database = {
           relationship: string
           structure_mode: string
           total_count: number
+          user_id: string
+        }[]
+      }
+      list_society_team_members: {
+        Args: { _include_inactive?: boolean; _society_id: string }
+        Returns: {
+          assigned_by: string
+          block_id: string
+          block_name: string
+          created_at: string
+          full_name: string
+          is_active: boolean
+          role: Database["public"]["Enums"]["app_role"]
+          role_id: string
+          updated_at: string
           user_id: string
         }[]
       }

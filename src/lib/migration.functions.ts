@@ -8,6 +8,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Database } from "@/integrations/supabase/types";
+type MigrationRowInsert = Database["public"]["Tables"]["migration_rows"]["Insert"];
 import {
   SOURCE_TYPES,
   ENTITY_TYPES,
@@ -19,6 +21,7 @@ import {
   validateFileSafety,
   type EntityType,
 } from "./migration-pipeline";
+
 
 const SafeError = z.enum([
   "invalid_file",

@@ -32,16 +32,20 @@ function readLatestStage2CMigration(): string {
 
 /** Extract capabilities inside the `IF v_role = '<role>' THEN` branch. */
 function extractSqlCaps(sql: string, role: Role): Set<string> {
-  const marker = `v_role = '${role}'`;
+  const marker = `IF v_role = '${role}' THEN`;
   const start = sql.indexOf(marker);
   if (start < 0) return new Set();
-  // Slice until the next role branch or END of function.
-  const rest = sql.slice(start);
-  const nextRoleIdx = rest.slice(marker.length).search(/v_role = '(?!.*THEN\s*)/);
-  const chunk = rest.slice(0, nextRoleIdx > 0 ? marker.length + nextRoleIdx : Math.min(rest.length, 4000));
+  // Find the end of this branch — the next `IF v_role =` occurrence or END $$;
+  const rest = sql.slice(start + marker.length);
+  const nextIdx = rest.search(/\bIF v_role = '/);
+  const endIdx = rest.search(/\bEND;\s*\$\$/);
+  const stopAt = Math.min(
+    nextIdx > 0 ? nextIdx : Number.MAX_SAFE_INTEGER,
+    endIdx > 0 ? endIdx : Number.MAX_SAFE_INTEGER,
+  );
+  const chunk = rest.slice(0, stopAt === Number.MAX_SAFE_INTEGER ? rest.length : stopAt);
   const caps = new Set<string>();
   for (const m of chunk.matchAll(/'([a-z_]+\.[a-z_]+)'/g)) {
-    // Only take strings that look like capability keys and are known.
     if ((ALL_CAPABILITIES as readonly string[]).includes(m[1])) caps.add(m[1]);
   }
   return caps;

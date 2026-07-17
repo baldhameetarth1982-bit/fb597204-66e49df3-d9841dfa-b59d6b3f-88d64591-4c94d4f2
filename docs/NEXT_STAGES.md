@@ -184,11 +184,21 @@ backward compatibility only — it must not be a new independent write source.
 Canonical `profiles` / `flat_residents` / `family_members` / `vehicles`
 reused (no new tables). Server-side RPCs added for a privacy-safe
 paginated directory, private detail bundle, occupancy assign/end with
-audit, and society-scoped family/vehicle CRUD. Thin, strictly-typed
-adapter in `src/lib/residents-admin.functions.ts` under
-`requireSupabaseAuth`; no `.rpc as any` casts. Vehicle plates normalized
-and uniquely constrained per society. All new RPCs revoked from `anon`
-and gated by `is_society_admin_for`. 449 unit tests pass; build and
-secret scan clean. Protected society untouched.
+audit, and society-scoped family/vehicle lifecycle. Family and vehicle
+removal are **soft deactivation** (row + registration number preserved,
+never DELETE). Vehicle plate uniqueness is enforced by a partial index
+scoped to `is_active` rows plus a race-safe `pg_advisory_xact_lock` on
+`(society, normalized plate)`. `getResidentPrivateDetail` returns a
+strict Zod-parsed discriminated union — unknown fields rejected,
+malformed shapes fold to `temporary_error`. Existing production routes
+now consume the safe services: `society.residents.tsx` uses
+`getResidentDirectoryOverview` + `listResidentsPage` and no longer
+renders phone/email/UGVCL/property in directory rows;
+`society.residents.$id.tsx` reads private detail through the authorised
+server fn; `society.vehicles.tsx` uses `listSocietyVehicles` +
+`deactivateVehicleAsAdmin` (no direct browser private-table query, no
+permanent-delete UI). No migration rewrites historical plate values.
+459 unit tests pass; build and secret scan clean. Protected society
+untouched.
 
 **Next:** Stage 2C — Teams, Roles and Privacy Controls.

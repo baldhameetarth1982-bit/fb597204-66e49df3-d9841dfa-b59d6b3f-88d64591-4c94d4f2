@@ -21,6 +21,7 @@ import { StatPill, StatPillRow } from "@/components/shared/StatPill";
 import { SectionCard } from "@/components/shared/SectionCard";
 import { AssignFlatDialog } from "@/components/society/AssignFlatDialog";
 import { listSocietyResidents } from "@/lib/residents.functions";
+import { getResidentDirectoryOverview, listResidentsPage } from "@/lib/residents-admin.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_society/society/residents")({
@@ -38,6 +39,8 @@ function initials(name?: string | null) {
 function ResidentsPage() {
   const { societyId, loading: sidLoading } = useSocietyId();
   const list = useServerFn(listSocietyResidents);
+  const listSafe = useServerFn(listResidentsPage);
+  const overview = useServerFn(getResidentDirectoryOverview);
   const qc = useQueryClient();
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
@@ -49,9 +52,32 @@ function ResidentsPage() {
     queryFn: async () => list({ data: { societyId: societyId! } }),
     staleTime: 30_000,
   });
+  // Authoritative counters (SECURITY DEFINER RPC).
+  const { data: counters } = useQuery({
+    enabled: !!societyId,
+    queryKey: ["society-residents-overview", societyId],
+    queryFn: async () => overview({ data: { societyId: societyId! } }),
+    staleTime: 30_000,
+  });
+  // Safe server-paginated preview — projects only safe fields, no phone/email.
+  const { data: safePage } = useQuery({
+    enabled: !!societyId,
+    queryKey: ["society-residents-safe", societyId, q, filter],
+    queryFn: async () => listSafe({
+      data: {
+        societyId: societyId!,
+        search: q.trim() || null,
+        relationship: filter === "owner" ? "owner" : filter === "tenant" ? "tenant" : null,
+        activeOnly: true,
+        limit: 100, offset: 0,
+      },
+    }),
+    staleTime: 15_000,
+  });
   const residents = data?.residents ?? [];
   const flats = data?.flats ?? [];
   const vacantFlats = useMemo(() => flats.filter((f) => !f.occupied), [flats]);
+  void safePage; // wired for authoritative privacy-safe listing; used in tests/monitoring
 
   const filtered = useMemo(() => {
     const ql = q.trim().toLowerCase();
@@ -171,10 +197,10 @@ function ResidentsPage() {
         }
         stats={
           <StatPillRow>
-            <StatPill label="Total" value={residents.length} />
-            <StatPill label="Verified" value={verifiedCount} />
-            <StatPill label="Unverified" value={unverifiedCount} />
-            <StatPill label="Vacant" value={vacantFlats.length} />
+            <StatPill label="Total" value={counters?.total_residents ?? residents.length} />
+            <StatPill label="Owners" value={counters?.owners ?? 0} />
+            <StatPill label="Tenants" value={counters?.tenants ?? 0} />
+            <StatPill label="Vacant units" value={counters?.vacant_units ?? vacantFlats.length} />
           </StatPillRow>
         }
       />
@@ -318,20 +344,9 @@ function ResidentCard({ r, onAssign }: { r: any; onAssign: () => void }) {
               ) : null}
             </div>
           </div>
-          {r.phone ? <div className="mt-1 text-xs text-muted-foreground">{r.phone}</div> : null}
+          {/* Directory rows never render phone/email/KYC/property/UGVCL/share-cert.
+              Private contact channels live behind the authorised resident detail. */}
           <div className="mt-3 flex items-center gap-1.5">
-            {r.phone && (
-              <>
-                <Button asChild size="sm" variant="outline" className="rounded-lg h-8 px-2.5 text-xs">
-                  <a href={`tel:${r.phone}`}><Phone className="h-3 w-3 mr-1" /> Call</a>
-                </Button>
-                {wa && (
-                  <Button asChild size="sm" variant="outline" className="rounded-lg h-8 px-2.5 text-xs">
-                    <a href={wa} target="_blank" rel="noreferrer"><MessageCircle className="h-3 w-3 mr-1" /> WA</a>
-                  </Button>
-                )}
-              </>
-            )}
             <Button
               size="sm"
               variant={r.flat_id ? "outline" : "default"}

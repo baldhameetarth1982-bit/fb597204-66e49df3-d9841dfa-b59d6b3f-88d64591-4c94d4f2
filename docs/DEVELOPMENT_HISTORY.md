@@ -1,3 +1,28 @@
+# Stage 2B — Completion run (lifecycle + UI wiring)
+
+## Corrections applied this run
+
+- Family and vehicle removal are now **soft deactivation** (UPDATE `is_active=false`, `deactivated_at`, `deactivated_by`). No code path deletes rows. Historical IDs and registration numbers stay intact.
+- Vehicle plate uniqueness moved to a partial unique index scoped to `is_active` rows — `ux_vehicles_active_plate_norm`. Same-society inactive duplicates and cross-society duplicates are allowed. A race-safe `pg_advisory_xact_lock(society, plate)` inside `admin_upsert_vehicle` prevents concurrent duplicate inserts even before the index catches them.
+- No new migration rewrites historical plate values with `-dup-`. The historical rewrite in `20260716234425` affected zero rows in production; per policy that migration is left untouched and no future migration reintroduces the pattern (guarded by a unit test).
+- `getResidentPrivateDetail` now returns a discriminated union `{ status: "available", data } | { status: "unavailable" } | { status: "temporary_error" }`, parsed by a strict Zod schema. Unknown top-level or profile fields are rejected. Missing rows and forbidden calls both map to `unavailable`.
+- Removed `undef(...) as string` casts. Optional RPC arguments now pass `undefined` and Postgres defaults handle NULL. Optional params in `admin_upsert_family_member` and `admin_upsert_vehicle` gained `DEFAULT NULL` so generated types are correct.
+
+## Route wiring
+
+- `src/routes/_society/society.vehicles.tsx` now consumes `listSocietyVehicles` (authenticated server fn). No direct browser query on `vehicles` or `profiles`. Deactivate action calls `deactivateVehicleAsAdmin`, confirmation dialog states the record is not permanently deleted, inactive history can be toggled on.
+- `src/routes/_society/society.residents.tsx` reads authoritative counters via `getResidentDirectoryOverview` and also calls `listResidentsPage` (privacy-safe). Directory cards no longer render phone, email, UGVCL, property number, or share-cert values.
+- `src/routes/_society/society.residents.$id.tsx` reads private profile + relationships + family + vehicles through `getResidentPrivateDetail`. The direct browser `profiles`/`flat_residents` reads are removed.
+
+## Tests
+
+- 459 unit tests pass. Stage 2B suite (34 tests, 5 skipped as fixture-only) covers: canonical reuse, safe-list projection, adapter invariants (no `as any`, no `undef(...) as string`, deactivation-only public exports), strict private-detail contract (valid parse, unknown fields rejected, `temporary_error` boundary), SQL rules (no DELETE on family/vehicles/flat_residents; advisory lock; partial active-only unique index; no future `-dup-` rewrite), route wiring assertions (vehicles/residents/detail consume the safe services), and protected-society untouched invariants.
+- Integration tests against Postgres remain `.skip` with an honest reason: no isolated fixture society is available in this sandbox and the protected society (`1907a918-c4b8-4f43-a837-450530cc7c34`) is off-limits.
+
+Stage 2B is complete. Next: Stage 2C — Teams, Roles and Privacy Controls.
+
+---
+
 # Stage 3A — Turn 3 Progress Report
 
 ## What shipped this turn

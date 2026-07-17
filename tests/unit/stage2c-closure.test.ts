@@ -199,7 +199,10 @@ describe("Stage 2C closure — client adapters", () => {
   });
 
   it("no Stage 2C adapter contains `as any`", () => {
-    for (const src of [priv, team]) {
+    const strip = (s: string) => s
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/(^|[^:])\/\/[^\n]*/g, "$1");
+    for (const src of [strip(priv), strip(team)]) {
       expect(src).not.toMatch(/\bas\s+any\b/);
     }
   });

@@ -89,7 +89,8 @@ describe("Stage 2C — canonical multi-block scope table exists", () => {
 
   it("backfills existing Block Admin single-block assignments (no invention)", () => {
     // Backfill inserts from user_roles where role='block_admin' and block_id IS NOT NULL only.
-    const insertBlock = sql.match(/INSERT INTO public\.user_role_block_scopes[\s\S]+?WHERE ur\.role = 'block_admin'/);
+    // Grab the full backfill statement (up to the NOT EXISTS guard).
+    const insertBlock = sql.match(/INSERT INTO public\.user_role_block_scopes[\s\S]+?NOT EXISTS[\s\S]+?\);/);
     expect(insertBlock).not.toBeNull();
     expect(insertBlock![0]).toMatch(/ur\.block_id IS NOT NULL/);
     expect(insertBlock![0]).toMatch(/COALESCE\(ur\.is_active, true\)/);

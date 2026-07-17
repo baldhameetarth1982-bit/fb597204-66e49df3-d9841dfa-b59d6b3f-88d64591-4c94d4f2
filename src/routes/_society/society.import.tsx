@@ -373,6 +373,55 @@ function ImportPage() {
           })}
         </div>
 
+        {/* Recent jobs — recovery UX */}
+        <Card className="rounded-2xl">
+          <CardContent className="p-5 space-y-3">
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <History className="h-4 w-4" /> Recent import jobs
+              {busy === "jobs" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            </div>
+            {jobsError && <p className="text-xs text-destructive">{jobsError}</p>}
+            {jobsList.length === 0 && !jobsError && (
+              <p className="text-xs text-muted-foreground">No previous imports for this society.</p>
+            )}
+            {jobsList.length > 0 && (
+              <div className="rounded-xl border divide-y">
+                {jobsList.slice(0, 10).map((j) => {
+                  const isCompleted = j.status === "completed";
+                  const isBlocked =
+                    j.status === "failed" ||
+                    j.status === "validating" ||
+                    j.status === "ready" ||
+                    j.status === "mapping" ||
+                    j.status === "committing";
+                  return (
+                    <div key={j.id} className="p-3 flex items-center gap-3 text-xs">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium truncate">{j.source_filename ?? j.id}</span>
+                          <StatusChip status={isCompleted ? "success" : isBlocked ? "warning" : "info"} className="text-[10px]">
+                            {j.status}
+                          </StatusChip>
+                        </div>
+                        <div className="text-muted-foreground truncate">
+                          {j.source_type} · {j.total_rows ?? 0} rows · {j.valid_rows ?? 0} valid · {j.error_rows ?? 0} errors
+                          {j.committed_rows != null && ` · ${j.committed_rows} committed`}
+                        </div>
+                      </div>
+                      {!isCompleted && (
+                        <Button size="sm" variant="outline" className="rounded-xl h-8" onClick={() => resumeJob(j)}>
+                          Resume
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+
         {/* Step 1 — Source */}
         <Card className="rounded-2xl">
           <CardContent className="p-5 space-y-3">

@@ -1254,3 +1254,33 @@ constraints (partial unique indexes, RAISE EXCEPTION guards, admin gate).
 - Broad security re-audit → Stage 13.
 
 **Next:** Stage 2C — Teams, Roles and Privacy Controls.
+
+## Stage 2C — Teams, Roles and Privacy Controls (2026-07-17)
+
+- Added lifecycle columns on `public.user_roles` (`is_active`,
+  `deactivated_at`, `deactivated_by`, `assigned_by`, `updated_at`) with
+  touch trigger and partial active-team index.
+- Added `privacy_directory / privacy_contacts / privacy_finances /
+  privacy_vehicles / privacy_documents` on `public.society_settings`
+  with CHECK constraints and safe defaults.
+- New SECURITY DEFINER RPCs (search_path locked, `PUBLIC`/`anon`
+  revoked, `authenticated` granted): `current_user_has_society_permission`,
+  `list_society_team_members`, `admin_upsert_team_role`,
+  `admin_set_team_active`, `get_society_privacy`,
+  `admin_set_society_privacy`. All mutating RPCs use
+  `pg_advisory_xact_lock` on the society, enforce last-admin protection
+  and write `audit_log` rows.
+- Canonical permission spec at `src/lib/role-permissions.ts` — the
+  single source of truth for capabilities, assignment authority, and
+  privacy contract. Includes fail-closed `normalizePrivacy`.
+- Server functions at `src/lib/team-admin.functions.ts` map raw DB
+  errors to known safe codes (`forbidden`,
+  `block_admin_unavailable_serial_mode`, `last_society_admin`, …).
+- `src/routes/_society/society.team.tsx` rewritten to consume server
+  functions: real Assign dialog with server-side candidate search,
+  serial-mode Block Admin block, block scope selector, capability
+  preview, soft deactivate/reactivate, Privacy & Transparency section,
+  read-only role permission preview.
+- Tests: `tests/unit/role-permissions.test.ts` (12 assertions) — full
+  suite 483 passing / 5 skipped. Build + secret scan clean.
+- Protected society untouched.

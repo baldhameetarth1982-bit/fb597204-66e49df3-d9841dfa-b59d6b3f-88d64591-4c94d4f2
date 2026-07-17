@@ -12,14 +12,6 @@ import { Check, Circle, AlertTriangle, ArrowRight, ListChecks, Loader2 } from "l
 import { Card, CardContent } from "@/components/ui/card";
 import { getSetupChecklist } from "@/lib/migration.functions";
 
-type ChecklistItem = {
-  key: string;
-  label: string;
-  done: boolean;
-  to?: string;
-  optional?: boolean;
-  hint?: string;
-};
 
 export type ChecklistItem = {
   key: string;

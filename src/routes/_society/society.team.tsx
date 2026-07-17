@@ -49,8 +49,8 @@ interface Member {
   user_id: string;
   full_name: string;
   role: TeamRole;
-  block_id: string | null;
-  block_name: string | null;
+  block_ids: string[];
+  block_names: string[];
   is_active: boolean;
   updated_at: string;
 }

@@ -562,8 +562,12 @@ export type MigrationCommitStatus = z.infer<typeof CommitStatus>;
  * Exposed as a plain function so behavioral tests can invoke it against a
  * mocked supabase client without rebuilding the middleware chain.
  */
+type CommitRpcClient = {
+  rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
+};
+
 export async function _commitMigrationJobViaRpc(
-  supabase: { rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }> } | { rpc: (...args: never[]) => unknown },
+  supabase: CommitRpcClient,
   data: z.infer<typeof CommitInput>,
 ): Promise<{ status: MigrationCommitStatus; result: MigrationCommitResult | null }> {
   const { data: raw, error } = await supabase.rpc("commit_migration_job", {

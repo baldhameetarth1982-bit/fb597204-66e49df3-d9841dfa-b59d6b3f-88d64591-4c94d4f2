@@ -57,14 +57,19 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
   const saveLine = useServerFn(saveTemplateLine);
   const archLine = useServerFn(archiveTemplateLine);
   const previewFn = useServerFn(previewBillingTemplate);
+  const listCyclesFn = useServerFn(listBillingCycles);
+  const configureCycleFn = useServerFn(configureBillingCycle);
 
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [heads, setHeads] = useState<ChargeHead[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [activeTpl, setActiveTpl] = useState<Template | null>(null);
   const [lines, setLines] = useState<Line[]>([]);
   const [preview, setPreview] = useState<PreviewResult | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [cycles, setCycles] = useState<Cycle[]>([]);
+  const [cycleOpen, setCycleOpen] = useState(false);
 
   const [headOpen, setHeadOpen] = useState(false);
   const [tplOpen, setTplOpen] = useState(false);

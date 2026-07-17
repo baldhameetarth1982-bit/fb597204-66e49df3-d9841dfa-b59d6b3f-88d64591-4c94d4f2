@@ -181,8 +181,8 @@ function ResidentDetailPage() {
           <div className="flex-1 min-w-0">
             <div className="text-lg font-semibold truncate">{p.full_name ?? "Unnamed"}</div>
             <div className="text-sm text-muted-foreground truncate">
-              {a?.flats
-                ? `${(a.flats as any).blocks?.name ? (a.flats as any).blocks.name + " · " : ""}${(a.flats as any).flat_number}${a.relationship ? " · " + a.relationship : ""}`
+              {a
+                ? `${a.block_name ? a.block_name + " · " : ""}${a.flat_number ?? ""}${a.relationship ? " · " + a.relationship : ""}`
                 : "Not linked to a house"}
             </div>
             <div className="mt-1.5 flex flex-wrap gap-1.5">

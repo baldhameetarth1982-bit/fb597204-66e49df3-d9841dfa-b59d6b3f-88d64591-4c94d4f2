@@ -77,16 +77,21 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
 
   async function refresh() {
     setLoading(true);
+    setErrorMsg(null);
     try {
-      const [h, t] = await Promise.all([
+      const [h, t, c] = await Promise.all([
         listHeads({ data: { societyId } }),
         listTpls({ data: { societyId } }),
+        listCyclesFn({ data: { societyId } }),
       ]);
       setHeads((h.chargeHeads as ChargeHead[]) ?? []);
       setTemplates((t.templates as Template[]) ?? []);
+      setCycles((c.cycles as Cycle[]) ?? []);
       if (t.templates?.length && !activeTpl) setActiveTpl(t.templates[0] as Template);
-    } catch (e: any) {
-      toast.error(e.message ?? "Failed to load billing configuration");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Failed to load billing configuration";
+      setErrorMsg(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -96,8 +101,17 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
     try {
       const r = await listLines({ data: { societyId, templateId: tplId } });
       setLines((r.lines as Line[]) ?? []);
-    } catch (e: any) {
-      toast.error(e.message ?? "Failed to load template lines");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to load template lines");
+    }
+  }
+
+  async function refreshCycles() {
+    try {
+      const c = await listCyclesFn({ data: { societyId } });
+      setCycles((c.cycles as Cycle[]) ?? []);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to load billing cycles");
     }
   }
 

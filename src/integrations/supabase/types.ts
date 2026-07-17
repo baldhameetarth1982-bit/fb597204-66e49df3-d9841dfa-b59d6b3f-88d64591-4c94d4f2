@@ -585,8 +585,11 @@ export type Database = {
         Row: {
           age: number | null
           created_at: string
+          deactivated_at: string | null
+          deactivated_by: string | null
           full_name: string
           id: string
+          is_active: boolean
           phone: string | null
           relation: string
           updated_at: string
@@ -595,8 +598,11 @@ export type Database = {
         Insert: {
           age?: number | null
           created_at?: string
+          deactivated_at?: string | null
+          deactivated_by?: string | null
           full_name: string
           id?: string
+          is_active?: boolean
           phone?: string | null
           relation: string
           updated_at?: string
@@ -605,8 +611,11 @@ export type Database = {
         Update: {
           age?: number | null
           created_at?: string
+          deactivated_at?: string | null
+          deactivated_by?: string | null
           full_name?: string
           id?: string
+          is_active?: boolean
           phone?: string | null
           relation?: string
           updated_at?: string
@@ -2627,8 +2636,11 @@ export type Database = {
         Row: {
           color: string | null
           created_at: string
+          deactivated_at: string | null
+          deactivated_by: string | null
           flat_id: string | null
           id: string
+          is_active: boolean
           make_model: string | null
           plate_number: string
           society_id: string
@@ -2639,8 +2651,11 @@ export type Database = {
         Insert: {
           color?: string | null
           created_at?: string
+          deactivated_at?: string | null
+          deactivated_by?: string | null
           flat_id?: string | null
           id?: string
+          is_active?: boolean
           make_model?: string | null
           plate_number: string
           society_id: string
@@ -2651,8 +2666,11 @@ export type Database = {
         Update: {
           color?: string | null
           created_at?: string
+          deactivated_at?: string | null
+          deactivated_by?: string | null
           flat_id?: string | null
           id?: string
+          is_active?: boolean
           make_model?: string | null
           plate_number?: string
           society_id?: string

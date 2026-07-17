@@ -30,7 +30,7 @@ export type PreviewResult = {
   total_units: number;
   page_limit: number;
   page_offset: number;
-  lines: unknown[];
+  lines: PreviewLine[];
   units: PreviewUnit[];
   summary: { total_amount: number; area_warning_units: number };
 };

@@ -96,67 +96,7 @@ export function SetupChecklistCard({ societyId }: { societyId: string }) {
     );
   }
 
-  const items: ChecklistItem[] = [
-    {
-      key: "profile",
-      label: "Society profile",
-      done: true, // presence of a societyId implies the profile exists
-      to: "/society/business-profile",
-      hint: "Business details, address and branding.",
-    },
-    {
-      key: "structure",
-      label: "Structure configured",
-      done: data.has_blocks || data.has_flats, // structured OR serial
-      to: "/society/blocks",
-      hint: "Blocks / wings or serial-mode units.",
-    },
-    {
-      key: "units",
-      label: "Active units exist",
-      done: data.has_flats,
-      to: "/society/flats",
-      hint: `${data.flats} unit${data.flats === 1 ? "" : "s"} configured.`,
-    },
-    {
-      key: "admin",
-      label: "Society admin active",
-      done: true, // guarded by RLS: getSetupChecklist requires admin scope
-      to: "/society/team",
-      hint: "You are signed in as an active admin.",
-    },
-    {
-      key: "team",
-      label: "Team & roles reviewed",
-      done: false,
-      to: "/society/team",
-      hint: "Review scopes for block admins and helpers.",
-    },
-    {
-      key: "privacy",
-      label: "Privacy & finance visibility reviewed",
-      done: false,
-      to: "/society/settings",
-      hint: "Confirm what residents can see.",
-    },
-    {
-      key: "residents",
-      label: "Residents onboarded",
-      done: data.has_residents,
-      to: "/society/residents",
-      hint: `${data.active_residents} active resident${data.active_residents === 1 ? "" : "s"}.`,
-    },
-    {
-      key: "import",
-      label: "Bulk import (optional)",
-      done: data.has_completed_imports,
-      to: "/society/import",
-      optional: true,
-      hint: data.has_completed_imports
-        ? `${data.completed_imports} completed import${data.completed_imports === 1 ? "" : "s"}.`
-        : "CSV migration is optional — skip if not needed.",
-    },
-  ];
+  const items = buildChecklistItems(data);
 
   const required = items.filter((i) => !i.optional);
   const doneCount = required.filter((i) => i.done).length;

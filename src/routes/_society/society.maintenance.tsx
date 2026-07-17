@@ -259,9 +259,9 @@ function MaintenancePage() {
           <h3 className="text-sm font-semibold mb-3">Quick actions</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <Button asChild variant="outline" className="rounded-xl h-auto py-3 flex-col gap-1.5">
-              <Link to="/society/matrix-import">
+              <Link to="/society/import">
                 <Upload className="h-4 w-4" />
-                <span className="text-xs">Import Excel</span>
+                <span className="text-xs">Bulk import (CSV)</span>
               </Link>
             </Button>
             <Button asChild variant="outline" className="rounded-xl h-auto py-3 flex-col gap-1.5">

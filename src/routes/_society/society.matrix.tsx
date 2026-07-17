@@ -188,7 +188,7 @@ function MatrixPage() {
               className="w-20 h-9 rounded-xl"
             />
             <Button asChild variant="outline" size="sm" className="rounded-xl">
-              <Link to="/society/matrix-import"><Upload className="h-4 w-4 mr-1" /> Import</Link>
+              <Link to="/society/import"><Upload className="h-4 w-4 mr-1" /> Import</Link>
             </Button>
             <Button variant="outline" size="sm" onClick={exportExcel} className="rounded-xl">
               <Download className="h-4 w-4 mr-1" /> Excel

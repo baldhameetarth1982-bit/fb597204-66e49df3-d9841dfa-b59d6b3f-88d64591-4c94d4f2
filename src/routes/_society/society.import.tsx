@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
   Upload, Loader2, CheckCircle2, AlertTriangle, Info, ClipboardList,
-  ListChecks, Send, Lock,
+  ListChecks, Send, Lock, RefreshCw, History,
 } from "lucide-react";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { MobileHero } from "@/components/shared/MobileHero";
@@ -19,6 +19,8 @@ import {
   validateMigrationJob,
   getMigrationPreview,
   commitMigrationJob,
+  listMigrationJobs,
+  getMigrationJobFailure,
   type MigrationCommitResult,
   type MigrationCommitStatus,
 } from "@/lib/migration.functions";
@@ -30,6 +32,69 @@ import {
   type SourceType,
   type EntityType,
 } from "@/lib/migration-pipeline";
+
+// Stage 2E — human-readable guidance for stored failure codes. Kept in
+// one place so the UX never leaks raw DB errors.
+const FAILURE_GUIDANCE: Record<string, { title: string; hint: string }> = {
+  occupancy_rows_unsupported: {
+    title: "Occupancy rows are not imported directly",
+    hint: "Occupancy is derived automatically when a resident row lands on a matching unit. Re-map the file to the Residents entity and validate again.",
+  },
+  structure_rows_not_allowed_serial: {
+    title: "This society uses serial numbering",
+    hint: "Serial-mode societies do not accept Structure rows. Either switch the structure mode in Setup, or drop the structure rows and re-upload.",
+  },
+  unit_not_found: {
+    title: "A resident references a unit that does not exist",
+    hint: "Create the missing units first (Units entity), then re-run this import. Structure name is compared case-insensitively; unit label ignores dashes and spaces.",
+  },
+  structure_not_found: {
+    title: "A unit references a missing structure",
+    hint: "Add the referenced block/tower first (Structures entity) or correct the structure_name column.",
+  },
+  resident_link_missing: {
+    title: "Family or vehicle row could not find its resident",
+    hint: "Family/vehicle rows link by external_resident_key within the same import source. Ensure the resident sheet was imported first with the same source type.",
+  },
+  resident_link_invalid: {
+    title: "Resident link no longer resolves to a society row",
+    hint: "The linked resident is not in this society. Verify the source data and re-run.",
+  },
+  resident_not_in_society: {
+    title: "Matched resident is not in this society",
+    hint: "The row matched an existing profile that belongs to a different society. Clear the match and let import create a new offline resident.",
+  },
+  duplicate_active_plate: {
+    title: "Vehicle plate already exists",
+    hint: "One or more plate numbers are already active in this society. Deactivate the duplicates or remove the row.",
+  },
+  invalid_plate: {
+    title: "Vehicle plate is too short or malformed",
+    hint: "Ensure registration numbers are at least 3 characters after normalization.",
+  },
+  provenance_mismatch: {
+    title: "A matched record no longer exists",
+    hint: "The chosen match was deleted before commit. Re-run validation to refresh matches.",
+  },
+  rows_unresolved: {
+    title: "Some staged rows were never committed",
+    hint: "Refresh validation — earlier fixes may have left orphan rows. If it persists, start a new import.",
+  },
+  operation_failed: {
+    title: "Commit failed with an internal error",
+    hint: "Retry with a fresh request id. If the error persists, contact support.",
+  },
+};
+
+function guidanceFor(code: string | null | undefined): { title: string; hint: string } {
+  if (!code) return { title: "Commit not completed", hint: "You can retry the commit." };
+  return (
+    FAILURE_GUIDANCE[code] ?? {
+      title: "Commit blocked",
+      hint: "The server reported: " + code + ". Fix the underlying data and retry.",
+    }
+  );
+}
 
 function suggestedMapping(headers: string[], entity: EntityType, source: SourceType): Record<string, string> {
   const preset = SOURCE_PRESETS[entity][source] ?? {};
@@ -65,6 +130,19 @@ type PreviewRow = {
   source_key: string | null;
 };
 
+type JobListItem = {
+  id: string;
+  source_type: string;
+  source_filename: string | null;
+  status: string;
+  total_rows: number | null;
+  valid_rows: number | null;
+  error_rows: number | null;
+  committed_rows: number | null;
+  created_at: string;
+  committed_at: string | null;
+};
+
 function ImportPage() {
   const { societyId } = useSocietyId();
   const initUpload = useServerFn(initializeMigrationUpload);
@@ -72,6 +150,8 @@ function ImportPage() {
   const validate = useServerFn(validateMigrationJob);
   const preview = useServerFn(getMigrationPreview);
   const commit = useServerFn(commitMigrationJob);
+  const listJobs = useServerFn(listMigrationJobs);
+  const jobFailure = useServerFn(getMigrationJobFailure);
 
   const [sourceType, setSourceType] = useState<SourceType>("sociyohub");
   const [entityType, setEntityType] = useState<EntityType>("resident");
@@ -83,11 +163,26 @@ function ImportPage() {
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [previewRows, setPreviewRows] = useState<PreviewRow[]>([]);
   const [totals, setTotals] = useState<{ total: number; valid: number; errors: number } | null>(null);
-  const [busy, setBusy] = useState<null | "upload" | "validate" | "preview" | "commit">(null);
+  const [busy, setBusy] = useState<null | "upload" | "validate" | "preview" | "commit" | "jobs">(null);
   const [confirmMode, setConfirmMode] = useState(false);
-  const [requestId, setRequestId] = useState<string | null>(null);
   const [commitStatus, setCommitStatus] = useState<MigrationCommitStatus | null>(null);
   const [commitResult, setCommitResult] = useState<MigrationCommitResult | null>(null);
+  const [failureCode, setFailureCode] = useState<string | null>(null);
+  const [jobsList, setJobsList] = useState<JobListItem[]>([]);
+  const [jobsError, setJobsError] = useState<string | null>(null);
+
+  // Recovery UX — always fetch the recent-jobs list for this society so admins
+  // can see in-flight or failed jobs, resume, and retry with a new request id.
+  useEffect(() => {
+    if (!societyId) return;
+    let cancelled = false;
+    setBusy("jobs");
+    listJobs({ data: { society_id: societyId, limit: 20, offset: 0 } })
+      .then((res) => { if (!cancelled) setJobsList(res.items as JobListItem[]); })
+      .catch((e) => { if (!cancelled) setJobsError((e as Error).message); })
+      .finally(() => { if (!cancelled) setBusy((b) => (b === "jobs" ? null : b)); });
+    return () => { cancelled = true; };
+  }, [societyId, listJobs, commitStatus]);
 
   const step: 1 | 2 | 3 | 4 = totals ? 4 : previewRows.length || headers.length ? 3 : jobId ? 2 : 1;
 
@@ -161,10 +256,13 @@ function ImportPage() {
 
   async function doCommit() {
     if (!jobId || !checksum) return;
-    // Preserve the same request id across retries within one confirm attempt.
-    const rid = requestId ?? newRequestId();
-    if (!requestId) setRequestId(rid);
+    // Stage 2E — every retry mints a fresh request id so a previously
+    // failed commit does not lock the job into an idempotent replay of
+    // the failure. The DB still enforces "one in-flight commit per job"
+    // via migration_commit_requests.
+    const rid = newRequestId();
     setBusy("commit");
+    setFailureCode(null);
     try {
       const res = await commit({
         data: {
@@ -181,9 +279,45 @@ function ImportPage() {
         setConfirmMode(false);
       } else {
         toast.error(`Commit ${res.status}`);
+        // Fetch stored failure code for guidance.
+        try {
+          const f = await jobFailure({ data: { job_id: jobId } });
+          setFailureCode(f.failure_code);
+        } catch { /* ignore */ }
       }
     } catch (e) {
       toast.error(`Commit failed: ${(e as Error).message}`);
+      if (jobId) {
+        try {
+          const f = await jobFailure({ data: { job_id: jobId } });
+          setFailureCode(f.failure_code);
+        } catch { /* ignore */ }
+      }
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function resumeJob(job: JobListItem) {
+    if (!societyId) return;
+    setJobId(job.id);
+    setSourceType(job.source_type as SourceType);
+    setBusy("preview");
+    setFailureCode(null);
+    try {
+      const p = await preview({ data: { job_id: job.id, society_id: societyId, limit: 100, offset: 0 } });
+      setPreviewRows((p.items ?? []) as PreviewRow[]);
+      setTotals({
+        total: job.total_rows ?? 0,
+        valid: job.valid_rows ?? 0,
+        errors: job.error_rows ?? 0,
+      });
+      setCommitStatus(job.status === "completed" ? "completed" : null);
+      const f = await jobFailure({ data: { job_id: job.id } });
+      setFailureCode(f.failure_code);
+      toast.success("Resumed job");
+    } catch (e) {
+      toast.error(`Resume failed: ${(e as Error).message}`);
     } finally {
       setBusy(null);
     }
@@ -238,6 +372,55 @@ function ImportPage() {
             );
           })}
         </div>
+
+        {/* Recent jobs — recovery UX */}
+        <Card className="rounded-2xl">
+          <CardContent className="p-5 space-y-3">
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <History className="h-4 w-4" /> Recent import jobs
+              {busy === "jobs" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            </div>
+            {jobsError && <p className="text-xs text-destructive">{jobsError}</p>}
+            {jobsList.length === 0 && !jobsError && (
+              <p className="text-xs text-muted-foreground">No previous imports for this society.</p>
+            )}
+            {jobsList.length > 0 && (
+              <div className="rounded-xl border divide-y">
+                {jobsList.slice(0, 10).map((j) => {
+                  const isCompleted = j.status === "completed";
+                  const isBlocked =
+                    j.status === "failed" ||
+                    j.status === "validating" ||
+                    j.status === "ready" ||
+                    j.status === "mapping" ||
+                    j.status === "committing";
+                  return (
+                    <div key={j.id} className="p-3 flex items-center gap-3 text-xs">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium truncate">{j.source_filename ?? j.id}</span>
+                          <StatusChip tone={isCompleted ? "success" : isBlocked ? "warning" : "info"} className="text-[10px]">
+                            {j.status}
+                          </StatusChip>
+                        </div>
+                        <div className="text-muted-foreground truncate">
+                          {j.source_type} · {j.total_rows ?? 0} rows · {j.valid_rows ?? 0} valid · {j.error_rows ?? 0} errors
+                          {j.committed_rows != null && ` · ${j.committed_rows} committed`}
+                        </div>
+                      </div>
+                      {!isCompleted && (
+                        <Button size="sm" variant="outline" className="rounded-xl h-8" onClick={() => resumeJob(j)}>
+                          Resume
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
 
         {/* Step 1 — Source */}
         <Card className="rounded-2xl">
@@ -399,9 +582,18 @@ function ImportPage() {
                 </table>
               </div>
               {commitStatus && commitStatus !== "completed" && commitStatus !== "idempotent_replay" && (
-                <div className="rounded-lg bg-warning-container/40 border border-warning-container p-3 text-xs flex items-start gap-2">
-                  <AlertTriangle className="h-3.5 w-3.5 mt-0.5" />
-                  <p>Commit {commitStatus}. Nothing has been written; you can retry.</p>
+                <div className="rounded-lg bg-warning-container/40 border border-warning-container p-3 text-xs flex items-start gap-3">
+                  <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                  <div className="space-y-1">
+                    <p className="font-semibold">{guidanceFor(failureCode).title}</p>
+                    <p className="text-muted-foreground">{guidanceFor(failureCode).hint}</p>
+                    <p className="text-muted-foreground">Commit status: <code className="text-[10px]">{commitStatus}</code>. Nothing has been written. Fix the data and press Retry to mint a new request.</p>
+                    <div className="pt-1">
+                      <Button size="sm" variant="outline" className="rounded-xl" onClick={doCommit} disabled={busy === "commit"}>
+                        <RefreshCw className="h-3.5 w-3.5 mr-1" /> Retry commit
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               )}
             </CardContent>

@@ -30,3 +30,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment secrets (Stage 2E)
+.env
+.env.*
+!.env.example

@@ -27,6 +27,12 @@ function stage2cCompletionSql(): string {
   return readFileSync(join(dir, found), "utf8");
 }
 
+function stripComments(src: string): string {
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, "")     // block comments
+    .replace(/(^|[^:])\/\/[^\n]*/g, "$1"); // line comments (avoid URL scheme)
+}
+
 describe("Stage 2C — typed adapters carry no `as any`", () => {
   const files = [
     "src/lib/team-admin.functions.ts",
@@ -34,8 +40,8 @@ describe("Stage 2C — typed adapters carry no `as any`", () => {
   ];
   for (const f of files) {
     it(`${f}: zero \`as any\` / \`rpc as any\``, () => {
-      const src = readFile(f);
-      expect(src, "no `as any`").not.toMatch(/as\s+any\b/);
+      const src = stripComments(readFile(f));
+      expect(src, "no `as any`").not.toMatch(/\bas\s+any\b/);
       expect(src, "no `(supabase as any).rpc`").not.toMatch(/\(supabase\s+as\s+any\)\.rpc/);
       expect(src, "no `.rpc as any`").not.toMatch(/\.rpc\s+as\s+any/);
     });

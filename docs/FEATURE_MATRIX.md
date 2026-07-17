@@ -109,3 +109,18 @@ These stay untouched — they're settings/utility routes, not "features" in the 
 - `user_role_block_scopes` role/block FKs are `ON DELETE RESTRICT` — scope history preserved.
 - 532 unit tests pass; tsgo clean; build green; client-bundle secret scan clean.
 - Protected society `1907a918-c4b8-4f43-a837-450530cc7c34` untouched.
+
+
+## Stage 2D — Bulk Import (2026-07-17)
+
+| Capability | Status |
+| --- | --- |
+| Private per-society CSV upload | ✅ delivered |
+| Server-side CSV parsing | ✅ delivered |
+| Authoritative parsed rows | ✅ delivered |
+| Transactional staging replace | ✅ delivered |
+| Server-paginated preview | ✅ delivered |
+| XLSX upload | ⛔ rejected until server parser lands |
+| Canonical commit | ⏳ remaining Stage 2D work |
+| Commit idempotency records | ⏳ remaining Stage 2D work |
+| Real provenance IDs | ⏳ remaining Stage 2D work |

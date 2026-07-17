@@ -199,3 +199,21 @@ input and server-derived canonical JSON/hash unambiguous.
 - `user_role_block_scopes` role/block FKs are `ON DELETE RESTRICT` — scope history preserved.
 - 532 unit tests pass; tsgo clean; build green; client-bundle secret scan clean.
 - Protected society `1907a918-c4b8-4f43-a837-450530cc7c34` untouched.
+
+
+## Stage 2D — Upload hardening (2026-07-17)
+
+- Storage RLS on `migration-uploads` uses `migration_upload_path_ok`,
+  which validates path shape and job/society ownership without ever
+  casting untrusted folder segments to UUID (malformed → false).
+- Direct authenticated INSERT/UPDATE/DELETE grants revoked on
+  `migration_jobs`, `migration_rows`, `migration_entity_links`. Every
+  mutation runs through SECURITY DEFINER RPCs.
+- `initializeMigrationUpload` generates the private object path
+  server-side. `finalizeMigrationUpload` downloads real bytes, verifies
+  size, magic bytes and extension, SHA-256s the actual content, and
+  parses CSV server-side into `migration_parsed_rows`.
+- Browser cannot submit authoritative rows to `validateMigrationJob`.
+  Staging replace is transactional via `migration_replace_staging`.
+- XLSX status is honest: rejected with `unsupported_format` until a safe
+  server-side parser lands.

@@ -361,3 +361,149 @@ export function stableStringify(value: unknown): string {
   };
   return JSON.stringify(walk(value));
 }
+
+// ============================================================
+// Stage 2D — Safe CSV parser
+// ============================================================
+
+export const MAX_CSV_COLUMNS = 60;
+export const MAX_CELL_LENGTH = 4000;
+
+export type CsvParseError =
+  | "empty_file"
+  | "empty_header"
+  | "duplicate_header"
+  | "too_many_columns"
+  | "cell_too_long"
+  | "malformed_quote"
+  | "too_many_rows";
+
+export interface CsvParseResult {
+  ok: boolean;
+  headers: string[];
+  rows: string[][];
+  error?: CsvParseError;
+  errorRow?: number;
+}
+
+/**
+ * Robust RFC-4180-ish CSV parser. UTF-8 only, tolerant of BOM, CRLF/LF,
+ * quoted commas, and escaped quotes. Rejects malformed quote structure and
+ * enforces column / cell / row caps. Values are preserved as raw text —
+ * formula-looking cells stay inert data.
+ */
+export function parseCsv(text: string): CsvParseResult {
+  if (!text) return { ok: false, headers: [], rows: [], error: "empty_file" };
+  // Strip UTF-8 BOM
+  if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
+
+  const rows: string[][] = [];
+  let cur: string[] = [];
+  let cell = "";
+  let inQuotes = false;
+  let i = 0;
+  const len = text.length;
+
+  const pushCell = (): CsvParseError | null => {
+    if (cell.length > MAX_CELL_LENGTH) return "cell_too_long";
+    cur.push(cell);
+    if (cur.length > MAX_CSV_COLUMNS) return "too_many_columns";
+    cell = "";
+    return null;
+  };
+
+  while (i < len) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (i + 1 < len && text[i + 1] === '"') {
+          cell += '"';
+          i += 2;
+          continue;
+        }
+        inQuotes = false;
+        i++;
+        continue;
+      }
+      cell += ch;
+      i++;
+      continue;
+    }
+    if (ch === '"') {
+      if (cell.length > 0) {
+        return { ok: false, headers: [], rows: [], error: "malformed_quote", errorRow: rows.length + 1 };
+      }
+      inQuotes = true;
+      i++;
+      continue;
+    }
+    if (ch === ",") {
+      const err = pushCell();
+      if (err) return { ok: false, headers: [], rows: [], error: err, errorRow: rows.length + 1 };
+      i++;
+      continue;
+    }
+    if (ch === "\r") {
+      i++;
+      continue;
+    }
+    if (ch === "\n") {
+      const err = pushCell();
+      if (err) return { ok: false, headers: [], rows: [], error: err, errorRow: rows.length + 1 };
+      // Skip fully blank lines
+      if (cur.length === 1 && cur[0] === "") {
+        cur = [];
+        i++;
+        continue;
+      }
+      rows.push(cur);
+      cur = [];
+      i++;
+      continue;
+    }
+    cell += ch;
+    i++;
+  }
+  if (inQuotes) {
+    return { ok: false, headers: [], rows: [], error: "malformed_quote", errorRow: rows.length + 1 };
+  }
+  // Last cell / row (no trailing newline)
+  if (cell.length > 0 || cur.length > 0) {
+    const err = pushCell();
+    if (err) return { ok: false, headers: [], rows: [], error: err };
+    if (!(cur.length === 1 && cur[0] === "")) rows.push(cur);
+  }
+
+  if (rows.length === 0) return { ok: false, headers: [], rows: [], error: "empty_file" };
+
+  const headers = rows.shift()!.map((h) => h.trim());
+  if (headers.length === 0 || headers.some((h) => h === "")) {
+    return { ok: false, headers: [], rows: [], error: "empty_header" };
+  }
+  const seen = new Set<string>();
+  for (const h of headers) {
+    const norm = h.toLowerCase();
+    if (seen.has(norm)) return { ok: false, headers: [], rows: [], error: "duplicate_header" };
+    seen.add(norm);
+  }
+  if (rows.length > MAX_ROWS) {
+    return { ok: false, headers: [], rows: [], error: "too_many_rows" };
+  }
+  return { ok: true, headers, rows };
+}
+
+/**
+ * Simple magic-byte / signature test. XLSX files begin with the PKZIP
+ * signature 50 4B 03 04. CSV must not start with that signature.
+ */
+export function detectFileSignature(bytes: Uint8Array): "csv" | "xlsx" | "unknown" {
+  if (bytes.length >= 4 && bytes[0] === 0x50 && bytes[1] === 0x4b && bytes[2] === 0x03 && bytes[3] === 0x04) {
+    return "xlsx";
+  }
+  // Reject obvious binary/executable prefixes
+  if (bytes.length >= 2 && bytes[0] === 0x4d && bytes[1] === 0x5a) return "unknown"; // MZ (exe)
+  if (bytes.length >= 4 && bytes[0] === 0x7f && bytes[1] === 0x45 && bytes[2] === 0x4c && bytes[3] === 0x46) return "unknown"; // ELF
+  // Everything else: treat as CSV candidate (validated by parser below).
+  return "csv";
+}
+

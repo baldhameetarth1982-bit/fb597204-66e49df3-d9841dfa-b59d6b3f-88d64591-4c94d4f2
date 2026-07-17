@@ -1437,3 +1437,16 @@ indicators in the client bundle. Protected society
 Canonical import pipeline (staging + provenance + typed server fns) landed.
 See docs/NEXT_STAGES.md — Stage 2D section — for architecture summary.
 Protected society untouched. Next: Stage 2E — Onboarding, Migration QA and Stage 2 Closure.
+
+
+## Stage 2D — Upload hardening (2026-07-17, IN PROGRESS)
+
+See docs/NEXT_STAGES.md — Stage 2D section — for what shipped this run
+(safe storage path helper, server-generated upload paths, server CSV
+parsing, authoritative parsed rows, transactional staging replacement,
+revoked direct grants, rewired production import UI, honest XLSX status).
+
+Stage 2D status: IN PROGRESS. Remaining: canonical commit, commit
+idempotency table, real provenance IDs, XLSX parser, result UI.
+
+Protected society untouched.

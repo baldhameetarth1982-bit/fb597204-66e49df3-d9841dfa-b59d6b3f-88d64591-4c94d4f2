@@ -197,10 +197,10 @@ function ResidentsPage() {
         }
         stats={
           <StatPillRow>
-            <StatPill label="Total" value={residents.length} />
-            <StatPill label="Verified" value={verifiedCount} />
-            <StatPill label="Unverified" value={unverifiedCount} />
-            <StatPill label="Vacant" value={vacantFlats.length} />
+            <StatPill label="Total" value={counters?.total_residents ?? residents.length} />
+            <StatPill label="Owners" value={counters?.owners ?? 0} />
+            <StatPill label="Tenants" value={counters?.tenants ?? 0} />
+            <StatPill label="Vacant units" value={counters?.vacant_units ?? vacantFlats.length} />
           </StatPillRow>
         }
       />

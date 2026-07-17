@@ -256,10 +256,13 @@ function ImportPage() {
 
   async function doCommit() {
     if (!jobId || !checksum) return;
-    // Preserve the same request id across retries within one confirm attempt.
-    const rid = requestId ?? newRequestId();
-    if (!requestId) setRequestId(rid);
+    // Stage 2E — every retry mints a fresh request id so a previously
+    // failed commit does not lock the job into an idempotent replay of
+    // the failure. The DB still enforces "one in-flight commit per job"
+    // via migration_commit_requests.
+    const rid = newRequestId();
     setBusy("commit");
+    setFailureCode(null);
     try {
       const res = await commit({
         data: {
@@ -276,9 +279,40 @@ function ImportPage() {
         setConfirmMode(false);
       } else {
         toast.error(`Commit ${res.status}`);
+        // Fetch stored failure code for guidance.
+        try {
+          const f = await jobFailure({ data: { job_id: jobId } });
+          setFailureCode(f.failure_code);
+        } catch { /* ignore */ }
       }
     } catch (e) {
       toast.error(`Commit failed: ${(e as Error).message}`);
+      if (jobId) {
+        try {
+          const f = await jobFailure({ data: { job_id: jobId } });
+          setFailureCode(f.failure_code);
+        } catch { /* ignore */ }
+      }
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function resumeJob(job: JobListItem) {
+    setJobId(job.id);
+    setSourceType(job.source_type as SourceType);
+    setBusy("preview");
+    setFailureCode(null);
+    try {
+      const p = await preview({ data: { job_id: job.id, limit: 50 } });
+      setPreviewRows((p.rows ?? []) as PreviewRow[]);
+      setTotals(p.totals ?? null);
+      setCommitStatus(job.status === "completed" ? "completed" : null);
+      const f = await jobFailure({ data: { job_id: job.id } });
+      setFailureCode(f.failure_code);
+      toast.success("Resumed job");
+    } catch (e) {
+      toast.error(`Resume failed: ${(e as Error).message}`);
     } finally {
       setBusy(null);
     }

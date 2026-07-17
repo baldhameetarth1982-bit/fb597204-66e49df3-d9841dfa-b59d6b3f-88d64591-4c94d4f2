@@ -202,3 +202,58 @@ permanent-delete UI). No migration rewrites historical plate values.
 untouched.
 
 **Next:** Stage 2C — Teams, Roles and Privacy Controls.
+
+---
+
+# Stage 2C — Teams, Roles and Privacy Controls — COMPLETE
+
+Canonical `user_roles` reused; added lifecycle columns (`is_active`,
+`deactivated_at`, `deactivated_by`, `assigned_by`, `updated_at`) with a
+touch trigger and a partial index for active team lookups. Privacy
+contract added to `society_settings` as five constrained columns
+(`privacy_directory`, `privacy_contacts`, `privacy_finances`,
+`privacy_vehicles`, `privacy_documents`) with safe defaults
+(admins_only / self-household-and-admins / owner-and-admins) — unknown
+values fail closed via `normalizePrivacy`.
+
+**Canonical permission spec** lives at `src/lib/role-permissions.ts`.
+Frontend, tests, and DB helper (`current_user_has_society_permission`)
+consume the same specification. Base grants:
+
+- Super Admin — all capabilities (platform).
+- Society Admin — team, privacy, structure, residents, private detail,
+  billing, finance admin.
+- Block Admin — no society-wide access; directory + block-scoped
+  residents + self household only.
+- Guard — guard operations + self household.
+- Resident — self household only.
+
+Server functions in `src/lib/team-admin.functions.ts` (`listTeamMembers`,
+`listAssignmentCandidates`, `upsertTeamRole`, `setTeamActive`,
+`getSocietyPrivacy`, `setSocietyPrivacy`) call SECURITY DEFINER RPCs that:
+
+- lock the society with `pg_advisory_xact_lock` inside the mutating
+  transaction,
+- protect the last active Society Admin against demotion/deactivation
+  (`last_society_admin` code),
+- reject Block Admin in serial-mode societies,
+- require active same-society block scope for Block Admin,
+- insert an `audit_log` row with previous/resulting state,
+- prefer soft deactivation (never physical delete).
+
+The existing `/society/team` route now consumes those services. The
+Privacy & Transparency section lets Society Admin pick each policy with
+inline description — "Public" is never offered. A read-only permission
+preview is generated from the canonical spec (no hand-typed matrix).
+`admin.security.tsx` continues to render the platform-level roles view
+untouched.
+
+Tests: 483 unit tests pass (12 new role-permission + privacy fail-closed
+assertions). Isolated PostgreSQL fixtures for last-admin race / block
+scope enforcement are deferred to Stage 13 hardening — not run here.
+Build passes; client-bundle secret scan clean. Visual smoke: not
+verified in this run (no preview interaction ran); deferred to Stage 16
+launch audit. Protected society `1907a918-c4b8-4f43-a837-450530cc7c34`
+untouched.
+
+**Next:** Stage 2D — Migration and Bulk Import.

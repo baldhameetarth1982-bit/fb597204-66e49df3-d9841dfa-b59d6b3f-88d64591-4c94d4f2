@@ -255,8 +255,9 @@ function ImportPage() {
   }
 
   async function doCommit() {
-    if (!jobId || !checksum) return;
-    // Stage 2E — every retry mints a fresh request id so a previously
+    if (!jobId) return;
+    // Stage 2E — checksum is derived server-side. A resumed commit
+
     // failed commit does not lock the job into an idempotent replay of
     // the failure. The DB still enforces "one in-flight commit per job"
     // via migration_commit_requests.

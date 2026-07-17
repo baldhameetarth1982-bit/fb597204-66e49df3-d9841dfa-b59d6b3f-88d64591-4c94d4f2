@@ -299,14 +299,19 @@ function ImportPage() {
   }
 
   async function resumeJob(job: JobListItem) {
+    if (!societyId) return;
     setJobId(job.id);
     setSourceType(job.source_type as SourceType);
     setBusy("preview");
     setFailureCode(null);
     try {
-      const p = await preview({ data: { job_id: job.id, limit: 50 } });
-      setPreviewRows((p.rows ?? []) as PreviewRow[]);
-      setTotals(p.totals ?? null);
+      const p = await preview({ data: { job_id: job.id, society_id: societyId, limit: 100, offset: 0 } });
+      setPreviewRows((p.items ?? []) as PreviewRow[]);
+      setTotals({
+        total: job.total_rows ?? 0,
+        valid: job.valid_rows ?? 0,
+        errors: job.error_rows ?? 0,
+      });
       setCommitStatus(job.status === "completed" ? "completed" : null);
       const f = await jobFailure({ data: { job_id: job.id } });
       setFailureCode(f.failure_code);

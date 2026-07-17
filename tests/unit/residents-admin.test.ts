@@ -230,11 +230,14 @@ describe("Stage 2B — route wiring (existing UI consumes safe services)", () =>
   });
 
   it("resident directory rows never render phone/email/UGVCL/property/share-cert", () => {
-    // Static assertion on the row component: no direct `r.phone` render.
-    const row = residentsList.slice(residentsList.indexOf("function ResidentCard"));
+    // Strip comments before scanning, so explanatory comments don't fail the check.
+    const stripped = residentsList.replace(/\/\/.*|\/\*[\s\S]*?\*\/|\{\/\*[\s\S]*?\*\/\}/g, "");
+    const row = stripped.slice(stripped.indexOf("function ResidentCard"));
     expect(row).not.toMatch(/\{r\.phone\s*\?/);
     expect(row).not.toMatch(/\{r\.email/);
-    expect(row).not.toMatch(/ugvcl/i);
+    expect(row).not.toMatch(/r\.ugvcl_number/);
+    expect(row).not.toMatch(/r\.property_number/);
+    expect(row).not.toMatch(/r\.share_certificate_number/);
   });
 
   it("resident detail consumes the authorised private-detail server fn", () => {

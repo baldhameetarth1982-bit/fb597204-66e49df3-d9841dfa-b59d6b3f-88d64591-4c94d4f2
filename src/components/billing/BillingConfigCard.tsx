@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Plus, Eye, Archive, FileText, Coins } from "lucide-react";
+import { Loader2, Plus, Eye, Archive, FileText, Coins, CalendarClock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,8 @@ import {
   saveTemplateLine,
   archiveTemplateLine,
   previewBillingTemplate,
+  listBillingCycles,
+  configureBillingCycle,
   type PreviewResult,
 } from "@/lib/billing-config.functions";
 
@@ -33,6 +35,15 @@ type Line = {
   required_approval: boolean;
   sort_order: number;
   active: boolean;
+};
+type Cycle = {
+  id: string;
+  template_id: string;
+  cycle_name: string;
+  period_start: string;
+  period_end: string;
+  due_date: string;
+  status: "draft" | "ready" | "archived";
 };
 
 const fmt = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });

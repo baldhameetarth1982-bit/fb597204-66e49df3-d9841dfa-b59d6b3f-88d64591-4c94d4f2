@@ -187,3 +187,15 @@ input and server-derived canonical JSON/hash unambiguous.
   flat, block). Contacts, vehicles and documents keep their existing
   admin-only paths; when their resident-facing variants land in later
   stages they MUST call `resolve_privacy_access` before returning data.
+
+
+## Stage 2C closure (2026-07-17)
+
+- Block-scoped permission checks require exact block ID; NULL block → false for Block Admin.
+- Two-arg permission helper fails closed for Block Admin block-scoped capabilities.
+- Legacy `admin_upsert_team_role`/`list_society_team_members` retired (revoked, body raises `deprecated_use_v2`).
+- Team directory no longer falls back to email; assignment candidates keep email under a separate authorization.
+- Privacy contacts household check is bound to `flats.society_id`; vehicles/documents require resource-specific `can_access_vehicle`.
+- `user_role_block_scopes` role/block FKs are `ON DELETE RESTRICT` — scope history preserved.
+- 532 unit tests pass; tsgo clean; build green; client-bundle secret scan clean.
+- Protected society `1907a918-c4b8-4f43-a837-450530cc7c34` untouched.

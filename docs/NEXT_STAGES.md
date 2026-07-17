@@ -328,3 +328,27 @@ the protected society.
 
 **Next:** Stage 2D — Migration and Bulk Import.
 
+
+## Stage 2C — Closure follow-up (2026-07-17)
+
+Final security closure. Fixed:
+
+- NULL-block scope bypass in the three-arg permission helper.
+- Two-arg helper now returns false for Block Admin block-scoped caps.
+- Legacy `admin_upsert_team_role` / `list_society_team_members`
+  retired: revoked from `authenticated`, body raises
+  `deprecated_use_v2`.
+- Email removed from the standard team-directory display fallback.
+- `resolve_privacy_access` contacts branch is society-bound via
+  `flats.society_id`; vehicles/documents no longer trust
+  `_subject_user_id` as ownership proof.
+- New `can_access_vehicle(society, vehicle)` derives ownership from the
+  vehicles row and fails closed for cross-society lookups.
+- `user_role_block_scopes` FKs on role/block are now `ON DELETE RESTRICT`
+  so scope history is preserved; soft deactivation is the canonical
+  lifecycle.
+
+Unit tests: 532 passed / 5 skipped. tsgo clean. Build green. Secret
+scan clean. Protected society untouched.
+
+**Next:** Stage 2D — Migration and Bulk Import.

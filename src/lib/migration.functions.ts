@@ -220,8 +220,8 @@ export const validateMigrationJob = createServerFn({ method: "POST" })
         society_id: data.society_id,
         row_number: row.row_number,
         entity_type: row.entity_type,
-        raw_json: row.raw,
-        mapped_json: parsed.success ? parsed.data : row.mapped,
+        raw_json: row.raw as unknown as MigrationRowInsert["raw_json"],
+        mapped_json: (parsed.success ? parsed.data : row.mapped) as unknown as MigrationRowInsert["mapped_json"],
         source_key: row.source_key ?? null,
         row_checksum: rowChecksum,
         action,
@@ -229,6 +229,7 @@ export const validateMigrationJob = createServerFn({ method: "POST" })
         error_codes: errorCodes,
         warning_codes: warningCodes,
       });
+
     }
 
     // Replace previous staging rows for this job, then bulk insert.

@@ -1,6 +1,39 @@
 # Next Stages
 
-## Stage 2D — Migration & Bulk Import (IN PROGRESS 2026-07-17)
+## Stage 2D — Migration & Bulk Import (COMPLETE 2026-07-17)
+
+### People commit closure (final run)
+
+- `commit_migration_job` now performs real canonical writes for every
+  supported entity type — structures, units, residents (via
+  `offline_residents` for non-login creates and `flat_residents` for
+  matched auth users), family members, and vehicles. The people counters
+  (`residents_created`, `residents_matched`, `occupancies_created`,
+  `family_created`, `vehicles_created`) are derived from actual inserts,
+  never hardcoded.
+- Additive schema extension: `family_members` and `vehicles` gained a
+  nullable `offline_resident_id` FK and a CHECK constraint requiring
+  exactly one of `user_id` / `offline_resident_id`. `family_members` also
+  gained `society_id` / `flat_id` provenance columns (backfilled for
+  existing rows) and a society-admin read policy.
+- Duplicate active vehicle plates block the commit as
+  `unresolved_conflicts` (never silently overwrite). Unresolvable resident
+  links, missing units, and invalid plates likewise mark the commit
+  request `failed` and roll the job back to `ready` so retries are safe.
+- Completion guard: after each entity loop, the RPC counts any remaining
+  valid/warning rows with `create`/`match_existing` and returns
+  `unresolved_conflicts` if any are still uncommitted or unlinked. A job
+  cannot reach `completed` while staged work remains.
+- Behavioral tests (`tests/unit/migration-behavioral.test.ts`) invoke the
+  real `_commitMigrationJobViaRpc` against a mocked supabase client and
+  assert the full status/result contract — including people counts,
+  idempotent replay, blocked-conflict handling, malformed-result guards,
+  and unknown-status rejection. No source-regex assertions.
+- UI: the confirm dialog now honestly enumerates what will be written and
+  the result card shows the full people-commit counters. The stale "no
+  residents/family/vehicles" disclaimer is removed.
+
+## Stage 2D — Migration & Bulk Import (superseded intermediate status)
 
 ### Upload hardening delivered this run
 

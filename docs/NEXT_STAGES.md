@@ -1,6 +1,77 @@
 # Next Stages
 
-## Stage 2D — Migration & Bulk Import (COMPLETE 2026-07-17)
+## Stage 2D — Migration & Bulk Import (IN PROGRESS 2026-07-17)
+
+### Upload hardening delivered this run
+
+- Storage authorization no longer casts arbitrary object folders to `uuid`.
+  New SECURITY DEFINER helper `public.migration_upload_path_ok(name)`
+  validates the exact path shape `<society-uuid>/<job-uuid>/<random>.<ext>`,
+  confirms the job belongs to the society, and confirms the caller is a
+  Society Admin (or Super Admin). Malformed paths return `false` — never
+  throw. The storage policy on `migration-uploads` uses this helper.
+- Browser CreateJob contract removed. `initializeMigrationUpload` is the
+  only entry point: it validates the declared filename/size/mime, creates
+  a job via `migration_create_job` (SECURITY DEFINER), generates the final
+  private path server-side, and returns a short-lived signed upload URL
+  for that exact path.
+- `finalizeMigrationUpload` downloads the private object server-side,
+  enforces the 10 MB cap on actual bytes, checks the magic-byte signature
+  (rejects XLSX/EXE/ELF), computes SHA-256 from real bytes, parses CSV
+  server-side, and stores authoritative parsed rows in the new
+  `migration_parsed_rows` table. Finalize records the authoritative
+  checksum/size/row count through `migration_finalize_upload`.
+- New CSV parser in `src/lib/migration-pipeline.ts` (no dependency):
+  handles UTF-8 BOM, quoted commas, escaped quotes, CRLF/LF, blank
+  lines, and rejects malformed quotes, empty headers, duplicate headers,
+  oversized cells, and row-cap breaches. Formula-looking cells stay
+  inert text — neutralization only fires on downloadable reports.
+- `validateMigrationJob` no longer accepts caller-supplied rows. It loads
+  the authoritative parsed rows, applies mapping server-side, runs Zod,
+  and replaces staging atomically through the new
+  `migration_replace_staging` RPC (locks the job, deletes stale staging,
+  bulk-inserts new staging, updates counters — all in one transaction).
+- Direct `INSERT/UPDATE/DELETE` grants on `migration_jobs`,
+  `migration_rows`, and `migration_entity_links` are revoked from
+  `authenticated`. Every mutation goes through the SECURITY DEFINER RPCs.
+- Production `/society/import` route rewritten to consume the new server
+  functions end-to-end (source → CSV upload → server parse → mapping →
+  server validate → server-paginated preview). Browser XLSX dependency
+  removed. Confirm-import is deliberately disabled with an "Import commit
+  will be enabled after final validation is complete" message — no
+  canonical writes are performed from the browser anymore.
+- Honest XLSX status: `finalizeMigrationUpload` returns
+  `unsupported_format` for `.xlsx` uploads. The UI copy advertises CSV
+  only. A safe server-side XLSX parser lands with the remaining Stage 2D
+  work.
+
+### Tests
+
+- 32 new assertions in `tests/unit/migration-stage2d-upload.test.ts`
+  cover CSV parsing edge cases, signature detection, disabled commit,
+  removed browser-write patterns, missing `as any`, and SQL-level
+  invariants (safe path helper, revoked grants, parsed-rows table,
+  replace-staging RPC). Full unit suite: 587 pass, 5 skipped.
+
+### Remaining Stage 2D work
+
+- Real transactional canonical commit (`commit_migration_job` PLPGSQL
+  dispatching to Stage 2A/2B admin functions).
+- Separate `migration_commit_requests` table for commit idempotency
+  (distinct from upload idempotency).
+- Real `canonical_entity_id` in `migration_entity_links` (currently
+  placeholder — no rows are written into that table by this run).
+- Server-side XLSX parser or a hard, documented CSV-only stance.
+- Final result UI (post-commit summary).
+- Stage 2D completion + closure.
+
+Stage 2D remains **IN PROGRESS**. Protected society
+`1907a918-c4b8-4f43-a837-450530cc7c34` is untouched — no fixture, seed,
+or runtime reference.
+
+## Stage 2D — Prior scaffolding notes
+
+
 
 Canonical import pipeline scaffolded end-to-end:
 

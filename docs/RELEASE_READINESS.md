@@ -762,3 +762,10 @@ Audit and Canonical Setup Model.**
 - `user_role_block_scopes` role/block FKs are `ON DELETE RESTRICT` — scope history preserved.
 - 532 unit tests pass; tsgo clean; build green; client-bundle secret scan clean.
 - Protected society `1907a918-c4b8-4f43-a837-450530cc7c34` untouched.
+
+
+## Stage 2D — Upload hardening (2026-07-17)
+
+Status: IN PROGRESS. Upload path, server parsing, transactional staging,
+and grant hardening are complete. Canonical commit, commit idempotency
+records, real provenance, XLSX parser, and final result UI remain.

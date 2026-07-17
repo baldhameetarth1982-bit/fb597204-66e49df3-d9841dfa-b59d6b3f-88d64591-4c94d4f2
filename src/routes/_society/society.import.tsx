@@ -1,416 +1,371 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import {
-  Upload, Loader2, FileDown, CheckCircle2, AlertTriangle, Info, ClipboardList, ListChecks, Send,
+  Upload, Loader2, CheckCircle2, AlertTriangle, Info, ClipboardList,
+  ListChecks, Send, Lock,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { MobileHero } from "@/components/shared/MobileHero";
-import { SectionCard } from "@/components/shared/SectionCard";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusChip } from "@/components/system/StatusChip";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import * as XLSX from "xlsx";
+import {
+  initializeMigrationUpload,
+  finalizeMigrationUpload,
+  validateMigrationJob,
+  getMigrationPreview,
+} from "@/lib/migration.functions";
+import {
+  SOURCE_TYPES,
+  ENTITY_TYPES,
+  SOURCE_PRESETS,
+  ROW_SCHEMAS,
+  type SourceType,
+  type EntityType,
+} from "@/lib/migration-pipeline";
+
+function suggestedMapping(headers: string[], entity: EntityType, source: SourceType): Record<string, string> {
+  const preset = SOURCE_PRESETS[entity][source] ?? {};
+  const canonicalSet = new Set<string>(Object.keys(ROW_SCHEMAS[entity].shape));
+  const mapping: Record<string, string> = {};
+  for (const h of headers) {
+    const key = h.trim().toLowerCase();
+    if (preset[key]) mapping[h] = preset[key];
+    else if (canonicalSet.has(key)) mapping[h] = key;
+  }
+  return mapping;
+}
+
+
 
 export const Route = createFileRoute("/_society/society/import")({
   head: () => ({ meta: [{ title: "Bulk Import — SociyoHub" }] }),
-  component: () => (<FeatureGate feature="resident_import"><ImportPage /></FeatureGate>),
+  component: () => (
+    <FeatureGate feature="resident_import">
+      <ImportPage />
+    </FeatureGate>
+  ),
 });
 
-type RawRow = Record<string, unknown>;
-type NormRow = {
-  idx: number;
-  block: string;
-  flat_number: string;
-  resident_name: string;
-  phone: string;
-  email: string;
-  type: string;
-  property_number: string;
-  ugvcl_number: string;
-  share_certificate_number: string;
-  offline: boolean;
-  errors: string[];
+type PreviewRow = {
+  row_number: number;
+  entity_type: string;
+  action: string;
+  status: string;
+  error_codes: string[];
+  warning_codes: string[];
+  mapped_json: Record<string, unknown>;
+  source_key: string | null;
 };
-
-const PHONE_RE = /^[+]?\d[\d\s-]{7,14}\d$/;
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-function truthy(v: unknown) {
-  const s = String(v ?? "").trim().toLowerCase();
-  return s === "yes" || s === "true" || s === "1" || s === "y";
-}
-
-function pick(r: RawRow, keys: string[]) {
-  for (const k of keys) {
-    const v = r[k] ?? r[k.toLowerCase()] ?? r[k.toUpperCase()];
-    if (v !== undefined && String(v).trim() !== "") return String(v).trim();
-  }
-  return "";
-}
 
 function ImportPage() {
   const { societyId } = useSocietyId();
-  const [rows, setRows] = useState<NormRow[]>([]);
-  const [existingFlatKeys, setExistingFlatKeys] = useState<Set<string>>(new Set());
-  const [existingPhones, setExistingPhones] = useState<Set<string>>(new Set());
-  const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<{ flats: number; residents: number; errors: string[] } | null>(null);
+  const initUpload = useServerFn(initializeMigrationUpload);
+  const finalize = useServerFn(finalizeMigrationUpload);
+  const validate = useServerFn(validateMigrationJob);
+  const preview = useServerFn(getMigrationPreview);
 
-  const summary = useMemo(() => {
-    const total = rows.length;
-    const invalid = rows.filter((r) => r.errors.length > 0).length;
-    return { total, valid: total - invalid, invalid };
-  }, [rows]);
+  const [sourceType, setSourceType] = useState<SourceType>("sociyohub");
+  const [entityType, setEntityType] = useState<EntityType>("resident");
+  const [file, setFile] = useState<File | null>(null);
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [headers, setHeaders] = useState<string[]>([]);
+  const [rowCount, setRowCount] = useState(0);
+  const [mapping, setMapping] = useState<Record<string, string>>({});
+  const [previewRows, setPreviewRows] = useState<PreviewRow[]>([]);
+  const [totals, setTotals] = useState<{ total: number; valid: number; errors: number } | null>(null);
+  const [busy, setBusy] = useState<null | "upload" | "validate" | "preview">(null);
 
-  function downloadTemplate() {
-    const ws = XLSX.utils.json_to_sheet([
-      {
-        block: "A", flat_number: "101", resident_name: "Ravi Patel", phone: "9000000001",
-        email: "ravi@example.com", type: "owner", property_number: "P-101",
-        ugvcl_number: "UG12345", share_certificate_number: "SC-001", offline: "no",
-      },
-      {
-        block: "A", flat_number: "102", resident_name: "Priya Shah", phone: "9000000002",
-        email: "", type: "tenant", property_number: "", ugvcl_number: "",
-        share_certificate_number: "", offline: "yes",
-      },
-    ]);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Residents");
-    XLSX.writeFile(wb, "sociohub-residents-template.xlsx");
-  }
+  const step: 1 | 2 | 3 | 4 = totals ? 4 : previewRows.length || headers.length ? 3 : jobId ? 2 : 1;
 
-  async function onFile(file: File) {
-    if (!societyId) return;
-    setResult(null);
-    const buf = await file.arrayBuffer();
-    const wb = XLSX.read(buf);
-    const sheet = wb.Sheets[wb.SheetNames[0]];
-    const data = XLSX.utils.sheet_to_json<RawRow>(sheet, { defval: "" });
+  const canValidate = useMemo(() => headers.length > 0 && Object.keys(mapping).length > 0, [headers, mapping]);
 
-    // Fetch existing flats + phones for duplicate detection
-    const [flatsRes, profilesRes] = await Promise.all([
-      supabase
-        .from("flats")
-        .select("flat_number, blocks!flats_block_id_fkey(name)")
-        .eq("society_id", societyId),
-      supabase.from("profiles").select("phone").eq("society_id", societyId).not("phone", "is", null),
-    ]);
-    const flatKeys = new Set<string>();
-    for (const f of (flatsRes.data ?? []) as any[]) {
-      flatKeys.add(`${(f.blocks?.name ?? "").toLowerCase()}/${String(f.flat_number).toLowerCase()}`);
-    }
-    const phones = new Set<string>();
-    for (const p of profilesRes.data ?? []) {
-      if (p.phone) phones.add(String(p.phone).replace(/\D/g, ""));
-    }
-    setExistingFlatKeys(flatKeys);
-    setExistingPhones(phones);
-
-    // Normalize + validate rows
-    const seenKeys = new Set<string>();
-    const seenPhones = new Set<string>();
-    const norm: NormRow[] = data.map((raw, idx) => {
-      const block = pick(raw, ["block", "Block", "tower", "Tower", "structure", "Structure"]);
-      const flat_number = pick(raw, ["flat_number", "Flat", "Unit", "house", "House", "flat"]);
-      const resident_name = pick(raw, ["resident_name", "Name", "name", "resident"]);
-      const phone = pick(raw, ["phone", "Phone", "mobile", "Mobile"]).replace(/\s|-/g, "");
-      const email = pick(raw, ["email", "Email"]);
-      const type = pick(raw, ["type", "Type", "relationship"]).toLowerCase() || "owner";
-      const property_number = pick(raw, ["property_number", "Property No", "property"]);
-      const ugvcl_number = pick(raw, ["ugvcl_number", "UGVCL", "ugvcl"]);
-      const share_certificate_number = pick(raw, ["share_certificate_number", "Share Cert", "share_cert"]);
-      const offline = truthy(raw.offline ?? (raw as any).Offline);
-
-      const errors: string[] = [];
-      if (!block) errors.push("Missing block/tower");
-      if (!flat_number) errors.push("Missing house number");
-      if (resident_name && !offline && !phone) errors.push("Phone required for online residents");
-      if (phone && !PHONE_RE.test(phone)) errors.push("Invalid phone format");
-      if (email && !EMAIL_RE.test(email)) errors.push("Invalid email format");
-      if (type && !["owner", "tenant", "family"].includes(type)) errors.push("Type must be owner/tenant/family");
-
-      const key = `${block.toLowerCase()}/${flat_number.toLowerCase()}`;
-      if (block && flat_number) {
-        if (seenKeys.has(key)) errors.push("Duplicate house in this file");
-        seenKeys.add(key);
-      }
-      const phoneDigits = phone.replace(/\D/g, "");
-      if (phoneDigits) {
-        if (seenPhones.has(phoneDigits)) errors.push("Duplicate mobile in this file");
-        else if (phones.has(phoneDigits)) errors.push("Mobile already exists in society");
-        seenPhones.add(phoneDigits);
-      }
-
-      return {
-        idx: idx + 2, // Excel row (+ header)
-        block, flat_number, resident_name, phone, email, type,
-        property_number, ugvcl_number, share_certificate_number, offline, errors,
-      };
-    });
-    setRows(norm);
-  }
-
-  async function commit() {
-    if (!societyId || !rows.length) return;
-    const validRows = rows.filter((r) => r.errors.length === 0);
-    if (validRows.length === 0) {
-      toast.error("No valid rows to import. Fix errors and re-upload.");
-      return;
-    }
-    setBusy(true);
-    const errors: string[] = [];
-    let flatCount = 0;
-    let resCount = 0;
-
-    // 1. Blocks
-    const blockNames = Array.from(new Set(validRows.map((r) => r.block)));
-    const existingBlocks = await supabase.from("blocks").select("id,name").eq("society_id", societyId);
-    if (existingBlocks.error) {
-      toast.error(existingBlocks.error.message);
-      setBusy(false);
-      return;
-    }
-    const blockMap = new Map<string, string>();
-    for (const b of existingBlocks.data ?? []) blockMap.set(b.name.toLowerCase(), b.id);
-    for (const name of blockNames) {
-      if (!blockMap.has(name.toLowerCase())) {
-        const { data, error } = await supabase
-          .from("blocks").insert({ society_id: societyId, name }).select("id").single();
-        if (error) errors.push(`Row: block ${name}: ${error.message}`);
-        else blockMap.set(name.toLowerCase(), data!.id);
-      }
-    }
-
-    // 2. Flats
-    const flatKey = (block: string, n: string) => `${block.toLowerCase()}/${n.toLowerCase()}`;
-    const existingFlats = await supabase
-      .from("flats")
-      .select("id,flat_number,blocks!flats_block_id_fkey(name)")
-      .eq("society_id", societyId);
-    const flatMap = new Map<string, string>();
-    for (const f of (existingFlats.data ?? []) as any[]) {
-      flatMap.set(flatKey(f.blocks?.name ?? "", f.flat_number), f.id);
-    }
-
-    for (const r of validRows) {
-      const bid = blockMap.get(r.block.toLowerCase());
-      if (!bid) continue;
-      const key = flatKey(r.block, r.flat_number);
-      if (!flatMap.has(key)) {
-        const { data, error } = await supabase
-          .from("flats")
-          .insert({ society_id: societyId, block_id: bid, flat_number: r.flat_number })
-          .select("id")
-          .single();
-        if (error) {
-          errors.push(`Row ${r.idx} (${key}): ${error.message}`);
-          continue;
-        }
-        flatMap.set(key, data!.id);
-        flatCount++;
-      }
-    }
-
-    // 3. Offline residents
-    for (const r of validRows) {
-      if (!r.resident_name || !r.offline) continue;
-      const fid = flatMap.get(flatKey(r.block, r.flat_number));
-      if (!fid) continue;
-      const { error } = await supabase.from("offline_residents").insert({
-        society_id: societyId,
-        flat_id: fid,
-        full_name: r.resident_name,
-        phone: r.phone || null,
-        email: r.email || null,
+  async function doUploadAndFinalize() {
+    if (!societyId || !file) return;
+    setBusy("upload");
+    try {
+      const init = await initUpload({
+        data: {
+          society_id: societyId,
+          source_type: sourceType,
+          filename: file.name,
+          declared_size: file.size,
+          declared_mime: file.type || null,
+          structure_mode: "structured",
+        },
       });
-      if (error) errors.push(`Row ${r.idx} (${r.resident_name}): ${error.message}`);
-      else resCount++;
+      // Upload via signed URL — private bucket, server-generated path.
+      const uploadRes = await fetch(init.upload_url, {
+        method: "PUT",
+        headers: { "content-type": file.type || "application/octet-stream" },
+        body: file,
+      });
+      if (!uploadRes.ok) throw new Error("upload_failed");
+
+      const fin = await finalize({ data: { job_id: init.job_id } });
+      setJobId(init.job_id);
+      setHeaders(fin.headers);
+      setRowCount(fin.row_count);
+      setMapping(suggestedMapping(fin.headers, entityType, sourceType));
+      toast.success(`Uploaded ${fin.row_count} rows`);
+    } catch (e) {
+      const code = (e as Error).message || "operation_failed";
+      toast.error(`Upload failed: ${code}`);
+    } finally {
+      setBusy(null);
     }
-
-    setResult({ flats: flatCount, residents: resCount, errors });
-    setBusy(false);
-    if (errors.length === 0) toast.success(`Imported ${flatCount} houses and ${resCount} residents`);
-    else toast.warning(`Imported with ${errors.length} issue${errors.length === 1 ? "" : "s"}`);
   }
-  const currentStep: 1 | 2 | 3 =
-    result ? 3 : rows.length > 0 ? 2 : 1;
 
-  function downloadErrorReport() {
-    const errored = rows.filter((r) => r.errors.length > 0);
-    if (!errored.length) return;
-    const rowsOut = errored.map((r) => ({
-      excel_row: r.idx,
-      block: r.block,
-      flat_number: r.flat_number,
-      resident_name: r.resident_name,
-      phone: r.phone,
-      email: r.email,
-      type: r.type,
-      errors: r.errors.join("; "),
-    }));
-    const ws = XLSX.utils.json_to_sheet(rowsOut);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Errors");
-    XLSX.writeFile(wb, "sociohub-import-errors.xlsx");
+  async function doValidate() {
+    if (!societyId || !jobId) return;
+    setBusy("validate");
+    try {
+      const res = await validate({
+        data: {
+          job_id: jobId,
+          mapping: { entity_type: entityType, column_map: mapping },
+        },
+      });
+      setTotals({ total: res.total, valid: res.valid, errors: res.errors });
+      const p = await preview({
+        data: { job_id: jobId, society_id: societyId, limit: 100, offset: 0 },
+      });
+      setPreviewRows(p.items as PreviewRow[]);
+      toast.success(`${res.valid} valid, ${res.errors} error rows`);
+    } catch (e) {
+      toast.error(`Validation failed: ${(e as Error).message}`);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  function updateMapping(header: string, canonical: string) {
+    setMapping((m) => {
+      const next = { ...m };
+      if (canonical === "") delete next[header];
+      else next[header] = canonical;
+      return next;
+    });
   }
 
   const steps = [
-    { n: 1 as const, label: "Upload", icon: Upload },
-    { n: 2 as const, label: "Review", icon: ClipboardList },
-    { n: 3 as const, label: "Done", icon: ListChecks },
+    { n: 1 as const, label: "Choose source", icon: Upload },
+    { n: 2 as const, label: "Upload", icon: Upload },
+    { n: 3 as const, label: "Map & validate", icon: ClipboardList },
+    { n: 4 as const, label: "Preview", icon: ListChecks },
   ];
 
   return (
     <div className="pb-[calc(96px+env(safe-area-inset-bottom))]">
       <MobileHero
         eyebrow="Society Admin"
-        title="Bulk import residents"
-        subtitle="Upload an Excel file to add blocks, houses, and offline residents in one shot."
+        title="Bulk import"
+        subtitle="Upload a CSV file to import residents, units and vehicles. Server validates every row before staging."
         icon={Upload}
         variant="teal"
       />
       <div className="px-4 pt-4 space-y-4 max-w-5xl mx-auto md:px-8">
-
-
-      {/* Step tracker */}
-      <div className="mb-4 flex items-center gap-2">
-        {steps.map((s, i) => {
-          const Icon = s.icon;
-          const active = currentStep === s.n;
-          const done = currentStep > s.n;
-          return (
-            <div key={s.n} className="flex items-center gap-2 flex-1">
-              <div className={cn(
-                "flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium border w-full",
-                active ? "border-primary bg-primary text-primary-foreground" :
-                done ? "border-success-container bg-success-container text-success-container-foreground" :
-                "border-border bg-card text-muted-foreground",
-              )}>
-                <Icon className="h-3.5 w-3.5" />
-                <span className="truncate">Step {s.n}: {s.label}</span>
-              </div>
-              {i < steps.length - 1 && <div className="h-px flex-1 bg-border hidden sm:block" />}
-            </div>
-          );
-        })}
-      </div>
-
-      <Card className="rounded-2xl mb-4">
-        <CardContent className="p-5 space-y-4">
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={downloadTemplate} className="rounded-xl">
-              <FileDown className="h-4 w-4 mr-1.5" /> Download template
-            </Button>
-            <label className="inline-flex">
-              <input
-                type="file"
-                accept=".xlsx,.xls,.csv"
-                className="hidden"
-                onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
-              />
-              <Button asChild className="rounded-xl">
-                <span><Upload className="h-4 w-4 mr-1.5" /> Choose file</span>
-              </Button>
-            </label>
-          </div>
-          <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground flex items-start gap-2">
-            <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-            <div className="space-y-1">
-              <p>
-                Columns: <code>block, flat_number, resident_name, phone, email, type, property_number, ugvcl_number, share_certificate_number, offline</code>
-              </p>
-              <p>Set <code>offline=yes</code> for residents who don't use the app. Online residents sign up &amp; join via invite code.</p>
-              <p>Validation runs on upload. Only valid rows are imported — the file is never partially applied for corrupted data.</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {rows.length > 0 && (
-        <Card className="rounded-2xl mb-4">
-          <CardContent className="p-5 space-y-3">
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <div className="flex items-center gap-2 flex-wrap">
-                <p className="font-semibold">Preview · {summary.total} rows</p>
-                <StatusChip tone="success">{summary.valid} valid</StatusChip>
-                {summary.invalid > 0 && <StatusChip tone="danger">{summary.invalid} with errors</StatusChip>}
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                {summary.invalid > 0 && (
-                  <Button variant="outline" size="sm" onClick={downloadErrorReport} className="rounded-xl">
-                    <FileDown className="h-3.5 w-3.5 mr-1.5" />Error report
-                  </Button>
+        <div className="mb-2 flex items-center gap-2 flex-wrap">
+          {steps.map((s) => {
+            const Icon = s.icon;
+            const active = step === s.n;
+            const done = step > s.n;
+            return (
+              <div
+                key={s.n}
+                className={cn(
+                  "flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium border",
+                  active
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : done
+                    ? "border-success-container bg-success-container text-success-container-foreground"
+                    : "border-border bg-card text-muted-foreground",
                 )}
-                <Button onClick={commit} disabled={busy || summary.valid === 0} className="rounded-xl">
-                  {busy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Send className="h-4 w-4 mr-1" />}
-                  Review &amp; import {summary.valid}
-                </Button>
+              >
+                <Icon className="h-3.5 w-3.5" />
+                <span>Step {s.n}: {s.label}</span>
               </div>
-            </div>
-            <div className="overflow-auto max-h-96 rounded-xl border border-border">
-              <table className="w-full text-xs">
-                <thead className="bg-muted sticky top-0">
-                  <tr>
-                    {["#", "Block", "House", "Name", "Phone", "Type", "Errors"].map((h) => (
-                      <th key={h} className="p-2 text-left font-medium text-muted-foreground">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.slice(0, 300).map((r) => (
-                    <tr key={r.idx} className={cn("border-t border-border", r.errors.length && "bg-danger-container/40")}>
-                      <td className="p-2 text-muted-foreground">{r.idx}</td>
-                      <td className="p-2">{r.block}</td>
-                      <td className="p-2">{r.flat_number}</td>
-                      <td className="p-2">{r.resident_name || "—"}</td>
-                      <td className="p-2">{r.phone || "—"}</td>
-                      <td className="p-2 capitalize">{r.type}</td>
-                      <td className="p-2 text-destructive text-[10px]">
-                        {r.errors.length ? r.errors.join("; ") : ""}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {rows.length > 300 && (
-              <p className="text-[11px] text-muted-foreground">Showing first 300 rows in preview. All valid rows will be imported.</p>
-            )}
-          </CardContent>
-        </Card>
-      )}
+            );
+          })}
+        </div>
 
-      {result && (
+        {/* Step 1 — Source */}
         <Card className="rounded-2xl">
           <CardContent className="p-5 space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="h-9 w-9 rounded-xl bg-success-container text-success-container-foreground grid place-items-center">
-                <CheckCircle2 className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="font-semibold">Import complete</p>
-                <p className="text-xs text-muted-foreground">Created {result.flats} houses · {result.residents} offline residents.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label className="text-sm">
+                <div className="text-xs text-muted-foreground mb-1">Source</div>
+                <select
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                  value={sourceType}
+                  onChange={(e) => setSourceType(e.target.value as SourceType)}
+                >
+                  {SOURCE_TYPES.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="text-sm">
+                <div className="text-xs text-muted-foreground mb-1">Entity</div>
+                <select
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                  value={entityType}
+                  onChange={(e) => setEntityType(e.target.value as EntityType)}
+                >
+                  {ENTITY_TYPES.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground flex items-start gap-2">
+              <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              <div className="space-y-1">
+                <p>Only <code>.csv</code> files are accepted in this release. Files up to 10&nbsp;MB and 5,000 rows.</p>
+                <p>Macros, archives, and XLSX are rejected server-side. Uploads are private per society.</p>
               </div>
             </div>
-            {result.errors.length > 0 && (
-              <div className="rounded-xl border border-warning-container bg-warning-container/40 p-3">
-                <div className="flex items-center gap-2 text-warning-container-foreground font-medium text-sm">
-                  <AlertTriangle className="h-4 w-4" />
-                  {result.errors.length} row{result.errors.length === 1 ? "" : "s"} had issues
-                </div>
-                <ul className="mt-1.5 list-disc pl-5 text-xs text-muted-foreground max-h-32 overflow-y-auto">
-                  {result.errors.slice(0, 30).map((e, i) => <li key={i}>{e}</li>)}
-                </ul>
-              </div>
-            )}
+
+            <div className="flex flex-wrap gap-2">
+              <label className="inline-flex">
+                <input
+                  type="file"
+                  accept=".csv,text/csv"
+                  className="hidden"
+                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                />
+                <Button asChild variant="outline" className="rounded-xl">
+                  <span>
+                    <Upload className="h-4 w-4 mr-1.5" />
+                    {file ? file.name : "Choose CSV"}
+                  </span>
+                </Button>
+              </label>
+              <Button
+                onClick={doUploadAndFinalize}
+                disabled={!file || busy !== null}
+                className="rounded-xl"
+              >
+                {busy === "upload" ? (
+                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                ) : (
+                  <Upload className="h-4 w-4 mr-1.5" />
+                )}
+                Upload &amp; parse
+              </Button>
+            </div>
           </CardContent>
         </Card>
-      )}
+
+        {/* Step 2 — Mapping */}
+        {jobId && headers.length > 0 && (
+          <Card className="rounded-2xl">
+            <CardContent className="p-5 space-y-3">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold">Column mapping</p>
+                  <StatusChip tone="info">{rowCount} rows</StatusChip>
+                </div>
+                <Button
+                  onClick={doValidate}
+                  disabled={!canValidate || busy !== null}
+                  className="rounded-xl"
+                >
+                  {busy === "validate" ? (
+                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                  ) : (
+                    <ClipboardList className="h-4 w-4 mr-1.5" />
+                  )}
+                  Validate
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {headers.map((h) => (
+                  <div key={h} className="flex items-center gap-2 text-sm">
+                    <div className="flex-1 truncate rounded-lg bg-muted px-2 py-1.5">{h}</div>
+                    <span className="text-muted-foreground">→</span>
+                    <input
+                      className="flex-1 rounded-lg border border-border bg-background px-2 py-1.5 text-xs"
+                      placeholder="canonical field (leave blank to skip)"
+                      value={mapping[h] ?? ""}
+                      onChange={(e) => updateMapping(h, e.target.value.trim())}
+                    />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step 3 — Preview */}
+        {totals && (
+          <Card className="rounded-2xl">
+            <CardContent className="p-5 space-y-3">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="font-semibold">Server preview</p>
+                  <StatusChip tone="success">{totals.valid} valid</StatusChip>
+                  {totals.errors > 0 && (
+                    <StatusChip tone="danger">{totals.errors} errors</StatusChip>
+                  )}
+                </div>
+                <Button disabled className="rounded-xl" title="Import commit is not yet enabled">
+                  <Lock className="h-4 w-4 mr-1.5" />
+                  Import commit will be enabled after final validation
+                </Button>
+              </div>
+              <div className="overflow-auto max-h-96 rounded-xl border border-border">
+                <table className="w-full text-xs">
+                  <thead className="bg-muted sticky top-0">
+                    <tr>
+                      {["#", "Entity", "Status", "Source key", "Errors"].map((h) => (
+                        <th key={h} className="p-2 text-left font-medium text-muted-foreground">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {previewRows.map((r) => (
+                      <tr
+                        key={r.row_number}
+                        className={cn("border-t border-border", r.status === "error" && "bg-danger-container/40")}
+                      >
+                        <td className="p-2 text-muted-foreground">{r.row_number}</td>
+                        <td className="p-2">{r.entity_type}</td>
+                        <td className="p-2 capitalize">{r.status}</td>
+                        <td className="p-2">{r.source_key ?? "—"}</td>
+                        <td className="p-2 text-destructive text-[10px]">
+                          {r.error_codes.join("; ")}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="rounded-lg bg-warning-container/40 border border-warning-container p-3 text-xs flex items-start gap-2">
+                <AlertTriangle className="h-3.5 w-3.5 mt-0.5" />
+                <p>
+                  Import commit will be enabled after canonical write and idempotency are wired.
+                  Nothing has been written to your society yet.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {totals && totals.errors === 0 && (
+          <Card className="rounded-2xl">
+            <CardContent className="p-5 flex items-center gap-3">
+              <CheckCircle2 className="h-5 w-5 text-success" />
+              <p className="text-sm">
+                Staging preview is ready. Canonical commit is not yet enabled — remaining Stage 2D work.
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

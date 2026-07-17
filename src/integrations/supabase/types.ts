@@ -1189,6 +1189,57 @@ export type Database = {
           },
         ]
       }
+      migration_parsed_rows: {
+        Row: {
+          created_at: string
+          id: string
+          job_id: string
+          parse_error_codes: string[]
+          parse_status: string
+          row_checksum: string
+          row_number: number
+          society_id: string
+          values_json: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          job_id: string
+          parse_error_codes?: string[]
+          parse_status?: string
+          row_checksum: string
+          row_number: number
+          society_id: string
+          values_json?: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          job_id?: string
+          parse_error_codes?: string[]
+          parse_status?: string
+          row_checksum?: string
+          row_number?: number
+          society_id?: string
+          values_json?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "migration_parsed_rows_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "migration_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "migration_parsed_rows_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       migration_rows: {
         Row: {
           action: Database["public"]["Enums"]["migration_row_action"]
@@ -3802,6 +3853,35 @@ export type Database = {
         Returns: Json
       }
       mark_aadhaar_verified: { Args: { _last4: string }; Returns: undefined }
+      migration_create_job: {
+        Args: {
+          _declared_size: number
+          _filename: string
+          _society_id: string
+          _source_type: string
+          _storage_path: string
+          _structure_mode: string
+        }
+        Returns: string
+      }
+      migration_finalize_upload: {
+        Args: {
+          _actual_size: number
+          _checksum: string
+          _job_id: string
+          _row_count: number
+        }
+        Returns: Json
+      }
+      migration_replace_staging: {
+        Args: { _job_id: string; _rows: Json; _totals: Json }
+        Returns: Json
+      }
+      migration_set_storage_path: {
+        Args: { _job_id: string; _storage_path: string }
+        Returns: boolean
+      }
+      migration_upload_path_ok: { Args: { _name: string }; Returns: boolean }
       next_no_dues_cert_number_internal: {
         Args: { _actor_id: string; _society_id: string }
         Returns: string

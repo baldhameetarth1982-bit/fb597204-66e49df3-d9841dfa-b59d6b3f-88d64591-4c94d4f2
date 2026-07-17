@@ -475,6 +475,26 @@ function ImportPage() {
                   <div className="font-semibold">{commitResult.units_matched}</div>
                 </div>
                 <div className="rounded-lg bg-muted p-2">
+                  <div className="text-muted-foreground">Residents created</div>
+                  <div className="font-semibold">{commitResult.residents_created}</div>
+                </div>
+                <div className="rounded-lg bg-muted p-2">
+                  <div className="text-muted-foreground">Residents matched</div>
+                  <div className="font-semibold">{commitResult.residents_matched}</div>
+                </div>
+                <div className="rounded-lg bg-muted p-2">
+                  <div className="text-muted-foreground">Occupancies created</div>
+                  <div className="font-semibold">{commitResult.occupancies_created}</div>
+                </div>
+                <div className="rounded-lg bg-muted p-2">
+                  <div className="text-muted-foreground">Family created</div>
+                  <div className="font-semibold">{commitResult.family_created}</div>
+                </div>
+                <div className="rounded-lg bg-muted p-2">
+                  <div className="text-muted-foreground">Vehicles created</div>
+                  <div className="font-semibold">{commitResult.vehicles_created}</div>
+                </div>
+                <div className="rounded-lg bg-muted p-2">
                   <div className="text-muted-foreground">Skipped</div>
                   <div className="font-semibold">{commitResult.skipped}</div>
                 </div>
@@ -483,10 +503,6 @@ function ImportPage() {
                   <div className="font-semibold">{commitResult.total_committed}</div>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Residents, family, and vehicles are not created in this run — they require a
-                login identity model beyond Stage 2D scope.
-              </p>
               <p className="text-[10px] text-muted-foreground">Job {jobId}</p>
             </CardContent>
           </Card>

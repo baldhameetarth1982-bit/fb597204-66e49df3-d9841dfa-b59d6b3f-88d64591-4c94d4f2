@@ -7,6 +7,34 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
  * Configuration + safe server-side preview only. No bill/invoice mutations.
  */
 
+export type PreviewLine = {
+  line_id: string;
+  name: string;
+  rule_type: string;
+  required_approval: boolean;
+  amount: number | null;
+  warning: string | null;
+};
+export type PreviewUnit = {
+  flat_id: string;
+  block_name: string | null;
+  flat_number: string;
+  unit_type: string | null;
+  area_sqft: number | null;
+  lines: PreviewLine[];
+  unit_total: number;
+  has_warning: boolean;
+};
+export type PreviewResult = {
+  preview_only: boolean;
+  total_units: number;
+  page_limit: number;
+  page_offset: number;
+  lines: unknown[];
+  units: PreviewUnit[];
+  summary: { total_amount: number; area_warning_units: number };
+};
+
 const societyOnly = z.object({ societyId: z.string().uuid() });
 
 /* ---------------------------- Charge Heads ---------------------------- */

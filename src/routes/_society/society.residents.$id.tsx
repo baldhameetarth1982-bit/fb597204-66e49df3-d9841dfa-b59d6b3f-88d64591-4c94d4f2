@@ -19,6 +19,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   updateResidentProfile, flatOutstanding, flatOccupancyHistory,
 } from "@/lib/residents.functions";
+import { getResidentPrivateDetail } from "@/lib/residents-admin.functions";
+import { useSocietyId } from "@/hooks/useSocietyId";
 
 export const Route = createFileRoute("/_society/society/residents/$id")({
   head: () => ({ meta: [{ title: "Resident — SociyoHub" }] }),
@@ -33,34 +35,31 @@ function initials(name?: string | null) {
 function ResidentDetailPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  const { societyId } = useSocietyId();
   const update = useServerFn(updateResidentProfile);
   const getOutstanding = useServerFn(flatOutstanding);
   const getHistory = useServerFn(flatOccupancyHistory);
+  const getPrivate = useServerFn(getResidentPrivateDetail);
 
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<any>({});
   const [openSection, setOpenSection] = useState<string>("basic");
 
-  const { data: resident, isLoading, refetch } = useQuery({
-    queryKey: ["resident-detail", id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, full_name, email, phone, avatar_url, property_number, ugvcl_number, share_certificate_number, move_in_date, aadhaar_verified, aadhaar_last4, society_id")
-        .eq("id", id)
-        .maybeSingle();
-      if (error) throw error;
-      if (!data) throw new Error("Resident not found");
-      const { data: fr } = await supabase
-        .from("flat_residents")
-        .select("id, flat_id, relationship, is_primary, is_active, moved_in_at, flats(flat_number, blocks(name))")
-        .eq("user_id", id)
-        .eq("is_active", true)
-        .maybeSingle();
-      return { profile: data, assignment: fr };
-    },
+  // Private detail (strict Zod-parsed server response). Directory rows never
+  // carry phone/email/KYC; this authorised server function is the only path
+  // that exposes them to the admin UI.
+  const { data: privateResult, isLoading, refetch } = useQuery({
+    enabled: !!societyId,
+    queryKey: ["resident-private", societyId, id],
+    queryFn: async () => getPrivate({ data: { societyId: societyId!, userId: id } }),
   });
+
+  const resident = (() => {
+    if (!privateResult || privateResult.status !== "available") return null;
+    const active = privateResult.data.relationships.find((r) => r.is_active) ?? null;
+    return { profile: privateResult.data.profile, assignment: active, detail: privateResult.data };
+  })();
 
   const flatId = resident?.assignment?.flat_id ?? null;
 

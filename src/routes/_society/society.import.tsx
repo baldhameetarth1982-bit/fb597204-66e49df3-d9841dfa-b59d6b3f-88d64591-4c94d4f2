@@ -71,21 +71,28 @@ function ImportPage() {
   const finalize = useServerFn(finalizeMigrationUpload);
   const validate = useServerFn(validateMigrationJob);
   const preview = useServerFn(getMigrationPreview);
+  const commit = useServerFn(commitMigrationJob);
 
   const [sourceType, setSourceType] = useState<SourceType>("sociyohub");
   const [entityType, setEntityType] = useState<EntityType>("resident");
   const [file, setFile] = useState<File | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
+  const [checksum, setChecksum] = useState<string | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
   const [rowCount, setRowCount] = useState(0);
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [previewRows, setPreviewRows] = useState<PreviewRow[]>([]);
   const [totals, setTotals] = useState<{ total: number; valid: number; errors: number } | null>(null);
-  const [busy, setBusy] = useState<null | "upload" | "validate" | "preview">(null);
+  const [busy, setBusy] = useState<null | "upload" | "validate" | "preview" | "commit">(null);
+  const [confirmMode, setConfirmMode] = useState(false);
+  const [requestId, setRequestId] = useState<string | null>(null);
+  const [commitStatus, setCommitStatus] = useState<MigrationCommitStatus | null>(null);
+  const [commitResult, setCommitResult] = useState<MigrationCommitResult | null>(null);
 
   const step: 1 | 2 | 3 | 4 = totals ? 4 : previewRows.length || headers.length ? 3 : jobId ? 2 : 1;
 
   const canValidate = useMemo(() => headers.length > 0 && Object.keys(mapping).length > 0, [headers, mapping]);
+  const canCommit = totals !== null && totals.errors === 0 && commitStatus !== "completed";
 
   async function doUploadAndFinalize() {
     if (!societyId || !file) return;
@@ -101,7 +108,6 @@ function ImportPage() {
           structure_mode: "structured",
         },
       });
-      // Upload via signed URL — private bucket, server-generated path.
       const uploadRes = await fetch(init.upload_url, {
         method: "PUT",
         headers: { "content-type": file.type || "application/octet-stream" },
@@ -111,6 +117,7 @@ function ImportPage() {
 
       const fin = await finalize({ data: { job_id: init.job_id } });
       setJobId(init.job_id);
+      setChecksum(fin.checksum);
       setHeaders(fin.headers);
       setRowCount(fin.row_count);
       setMapping(suggestedMapping(fin.headers, entityType, sourceType));
@@ -141,6 +148,42 @@ function ImportPage() {
       toast.success(`${res.valid} valid, ${res.errors} error rows`);
     } catch (e) {
       toast.error(`Validation failed: ${(e as Error).message}`);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  function newRequestId(): string {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+  }
+
+  async function doCommit() {
+    if (!jobId || !checksum) return;
+    // Preserve the same request id across retries within one confirm attempt.
+    const rid = requestId ?? newRequestId();
+    if (!requestId) setRequestId(rid);
+    setBusy("commit");
+    try {
+      const res = await commit({
+        data: {
+          job_id: jobId,
+          creation_request_id: rid,
+          expected_checksum: checksum,
+          confirm: true,
+        },
+      });
+      setCommitStatus(res.status);
+      setCommitResult(res.result);
+      if (res.status === "completed" || res.status === "idempotent_replay") {
+        toast.success(`Import committed (${res.result?.total_committed ?? 0} rows)`);
+        setConfirmMode(false);
+      } else {
+        toast.error(`Commit ${res.status}`);
+      }
+    } catch (e) {
+      toast.error(`Commit failed: ${(e as Error).message}`);
     } finally {
       setBusy(null);
     }

@@ -49,8 +49,8 @@ interface Member {
   user_id: string;
   full_name: string;
   role: TeamRole;
-  block_id: string | null;
-  block_name: string | null;
+  block_ids: string[];
+  block_names: string[];
   is_active: boolean;
   updated_at: string;
 }
@@ -218,11 +218,11 @@ function TeamPage() {
                   subtitle={
                     <span className="flex items-center gap-1.5 flex-wrap">
                       <Badge variant="secondary" className="rounded-md text-[10px]">{ROLE_LABELS[m.role as Role]}</Badge>
-                      {m.block_name && (
-                        <Badge variant="outline" className="rounded-md text-[10px]">
-                          <Building2 className="h-3 w-3 mr-1" />{m.block_name}
+                      {m.block_names.map((bn) => (
+                        <Badge key={bn} variant="outline" className="rounded-md text-[10px]">
+                          <Building2 className="h-3 w-3 mr-1" />{bn}
                         </Badge>
-                      )}
+                      ))}
                       {!m.is_active && (
                         <Badge variant="outline" className="rounded-md text-[10px] border-destructive/40 text-destructive">
                           Inactive
@@ -281,7 +281,7 @@ function AssignDialog({
   structureMode: "structured" | "serial";
   societyId: string;
   fnCandidates: (args: { data: { societyId: string; search?: string | null } }) => Promise<{ candidates: Candidate[] }>;
-  fnUpsert: (args: { data: { societyId: string; targetUserId: string; role: TeamRole; blockId?: string | null } }) => Promise<{ roleId: string }>;
+  fnUpsert: (args: { data: { societyId: string; targetUserId: string; role: TeamRole; blockIds: string[] } }) => Promise<{ roleId: string }>;
   onDone: () => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -290,7 +290,7 @@ function AssignDialog({
   const [loadingC, setLoadingC] = useState(false);
   const [selUser, setSelUser] = useState("");
   const [selRole, setSelRole] = useState<TeamRole>("block_admin");
-  const [selBlock, setSelBlock] = useState<string>("");
+  const [selBlocks, setSelBlocks] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -314,11 +314,13 @@ function AssignDialog({
   );
 
   const preview = capabilitiesForRole(selRole);
+  const toggleBlock = (id: string) =>
+    setSelBlocks((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
 
   async function handleAssign() {
     if (!selUser) return;
-    if (selRole === "block_admin" && !selBlock) {
-      toast.error("Choose a block for the Block Admin");
+    if (selRole === "block_admin" && selBlocks.length === 0) {
+      toast.error("Choose at least one block for the Block Admin");
       return;
     }
     setSaving(true);
@@ -326,12 +328,12 @@ function AssignDialog({
       await fnUpsert({
         data: {
           societyId, targetUserId: selUser, role: selRole,
-          blockId: selRole === "block_admin" ? selBlock : null,
+          blockIds: selRole === "block_admin" ? selBlocks : [],
         },
       });
       toast.success("Role assigned");
       setOpen(false);
-      setSelUser(""); setSelBlock(""); setSelRole("block_admin"); setSearch("");
+      setSelUser(""); setSelBlocks([]); setSelRole("block_admin"); setSearch("");
       onDone();
     } catch (e) {
       toast.error(friendlyError((e as Error).message));
@@ -380,7 +382,7 @@ function AssignDialog({
           </div>
           <div className="space-y-2">
             <Label>Role</Label>
-            <Select value={selRole} onValueChange={(v) => setSelRole(v as TeamRole)}>
+            <Select value={selRole} onValueChange={(v) => { setSelRole(v as TeamRole); setSelBlocks([]); }}>
               <SelectTrigger className="rounded-xl min-h-11"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {roleOptions.map((r) => (
@@ -396,13 +398,40 @@ function AssignDialog({
           </div>
           {selRole === "block_admin" && (
             <div className="space-y-2">
-              <Label>Block</Label>
-              <Select value={selBlock} onValueChange={setSelBlock}>
-                <SelectTrigger className="rounded-xl min-h-11"><SelectValue placeholder="Choose block" /></SelectTrigger>
-                <SelectContent>
-                  {blocks.map((b) => (<SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>))}
-                </SelectContent>
-              </Select>
+              <Label>Blocks (choose one or more)</Label>
+              <div
+                className="flex flex-wrap gap-2 max-h-40 overflow-auto rounded-xl border p-2"
+                role="group"
+                aria-label="Block scope"
+              >
+                {blocks.length === 0 && (
+                  <p className="text-xs text-muted-foreground">No active blocks available.</p>
+                )}
+                {blocks.map((b) => {
+                  const active = selBlocks.includes(b.id);
+                  return (
+                    <button
+                      type="button"
+                      key={b.id}
+                      onClick={() => toggleBlock(b.id)}
+                      className={
+                        "rounded-full px-3 py-1 text-xs border min-h-[32px] transition " +
+                        (active
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background hover:bg-muted")
+                      }
+                      aria-pressed={active}
+                    >
+                      {b.name}
+                    </button>
+                  );
+                })}
+              </div>
+              {selBlocks.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {selBlocks.length} block{selBlocks.length === 1 ? "" : "s"} selected.
+                </p>
+              )}
             </div>
           )}
           <div className="rounded-xl border bg-muted/30 p-3 space-y-1">

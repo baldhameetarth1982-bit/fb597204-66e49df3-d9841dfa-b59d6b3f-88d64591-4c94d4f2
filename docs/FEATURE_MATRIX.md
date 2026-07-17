@@ -85,3 +85,15 @@ These stay untouched — they're settings/utility routes, not "features" in the 
 - New RPCs (SECURITY DEFINER, authenticated-only): `get_society_structure_overview`, `configure_society_structure_mode`, `list_society_units_page`, `create_society_unit`, `update_society_unit`, `set_society_unit_active`, `set_society_block_active`.
 - Unsafe mode conversions with existing units are blocked; ambiguous legacy data left unchanged.
 - `commit_society_wizard` writes canonical rows and no longer creates a fake "Houses" block for serial.
+
+## Stage 2C completion (2026-07-17)
+- Canonical capability parity: SQL role allowlists mirror
+  `capabilitiesForRole(role)` from `src/lib/role-permissions.ts` and
+  reject unknown capabilities before any role shortcut.
+- Multi-block Block Admin scope: `public.user_role_block_scopes`
+  canonical table; `admin_upsert_team_role_v2(_block_ids uuid[])`;
+  Team & Roles UI multi-select chips.
+- Privacy decision helpers: `resolve_privacy_access`,
+  `resolve_financial_visibility`, `list_society_residents_safe_page`.
+- Typed Stage 2C adapters: no `as any` remains in
+  `team-admin.functions.ts` or `privacy-decisions.functions.ts`.

@@ -256,4 +256,75 @@ verified in this run (no preview interaction ran); deferred to Stage 16
 launch audit. Protected society `1907a918-c4b8-4f43-a837-450530cc7c34`
 untouched.
 
+## Stage 2C — Completion follow-up (2026-07-17)
+
+Focused completion run correcting four gaps found in the initial Stage 2C
+delivery:
+
+1. **Exact SQL × TypeScript capability parity.** The permission helper
+   `public.current_user_has_society_permission(_society_id, _capability,
+   _block_id uuid DEFAULT NULL)` now validates the capability against the
+   canonical `public.is_known_capability(text)` allowlist BEFORE any role
+   shortcut. Unknown capabilities return false for every role (including
+   Super Admin). Each role branch mirrors `capabilitiesForRole(role)` from
+   `src/lib/role-permissions.ts` exactly; the compatibility 2-arg
+   signature is rewritten to delegate to the 3-arg body so no stale
+   broad-grant body remains. Parity is enforced by
+   `tests/unit/role-permissions-parity.test.ts`, which parses the actual
+   SQL branches and asserts equality with the TypeScript source — no
+   hand-copied expected matrix.
+
+2. **Canonical multi-block Block Admin scope.** New table
+   `public.user_role_block_scopes` (role_id, society_id, block_id,
+   is_active, assigned_by, created_at, deactivated_at, deactivated_by)
+   with a partial unique index on (role_id, block_id) WHERE is_active
+   and RLS gated to Society/Super Admin readers. Existing active
+   single-block Block Admin rows are backfilled into the table without
+   inventing extra scopes. `admin_upsert_team_role_v2` accepts a `uuid[]`
+   of blocks, dedupes them, validates each is active + same-society,
+   deactivates removed scopes, reactivates existing ones, inserts missing
+   ones, and audits previous_block_ids/resulting_block_ids in one
+   transaction. `list_society_team_members_v2` returns aggregated active
+   block_ids and block_names. The Team & Roles dialog now uses a chip
+   multi-select; empty selection is rejected. `user_roles.block_id`
+   remains temporarily for compatibility but is not the authoritative
+   source.
+
+3. **Typed RPC adapters — zero `any`.** `src/lib/team-admin.functions.ts`
+   and the new `src/lib/privacy-decisions.functions.ts` build every RPC
+   argument object with `satisfies
+   Database["public"]["Functions"][fn]["Args"]` and validate every
+   response through Zod (`TeamMemberSchema`, `CandidateSchema`,
+   `RoleScopeSchema`, `PrivacyRowSchema`, `SafeRowSchema`). Malformed
+   responses collapse to generic `operation_failed` errors, never raw DB
+   messages.
+
+4. **Server-enforced privacy decisions.**
+   - `public.resolve_privacy_access(_society_id, _resource,
+     _subject_user_id uuid DEFAULT NULL)` decides directory / contacts /
+     finances / vehicles / documents access. Unknown resources or
+     settings return false. Guards are always denied. Block Admin
+     receives only directory. Household contact access requires an
+     actual shared `flat_residents` occupancy.
+   - `public.resolve_financial_visibility(_society_id)` returns
+     `admin | detailed | summary | none`. Any future resident financial
+     reporting MUST consume this resolver.
+   - `public.list_society_residents_safe_page(_society_id, _search,
+     _limit, _offset)` is the first data endpoint that consumes the
+     privacy decision. Block Admins see residents only in their
+     explicitly assigned active blocks; residents see the directory only
+     when the society opts into `residents_safe`; phone, email, KYC and
+     documents are never projected. Guards are denied.
+
+New tests: 25 new assertions across
+`tests/unit/role-permissions-parity.test.ts` and
+`tests/unit/stage2c-completion.test.ts` covering capability parity,
+unknown-capability denial, scope reconciliation, backfill invariants,
+privacy fail-closed and adapter typing. Full suite: 509 passed / 5
+skipped, build passes, secret scan clean. Isolated Postgres integration
+fixtures (multi-user scope enforcement, race-safe upserts) remain
+deferred to Stage 13 hardening — not simulated against production or
+the protected society.
+
 **Next:** Stage 2D — Migration and Bulk Import.
+

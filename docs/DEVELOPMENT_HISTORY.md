@@ -1284,3 +1284,79 @@ constraints (partial unique indexes, RAISE EXCEPTION guards, admin gate).
 - Tests: `tests/unit/role-permissions.test.ts` (12 assertions) — full
   suite 483 passing / 5 skipped. Build + secret scan clean.
 - Protected society untouched.
+
+## Stage 2C — completion follow-up (2026-07-17)
+
+Corrective run addressing four confirmed gaps in the initial Stage 2C
+delivery. All Stage 1 / 2A / 2B work preserved untouched.
+
+Previous flaw: `current_user_has_society_permission` returned `true`
+early for Super Admin AND Society Admin before validating the
+`_capability` argument. Effect: unknown capability strings were
+implicitly granted to admins, and any future capability was silently
+allowed for Society Admin regardless of the TypeScript allowlist. Tests
+inspected the TypeScript spec but not the actual SQL body, so the
+reported parity was false. `team-admin.functions.ts` also carried six
+`(supabase as any).rpc` casts, and Block Admin scope lived as a single
+`user_roles.block_id` although the product rule allows several assigned
+blocks.
+
+Changes:
+
+1. `public.is_known_capability(text)` is IMMUTABLE and enumerates the
+   canonical `ALL_CAPABILITIES` list. Rewrote
+   `public.current_user_has_society_permission(_society_id, _capability,
+   _block_id uuid DEFAULT NULL)` so the order is: authenticated user →
+   known capability → super admin → resolve active role → role
+   allowlist → block-scope check for block-scoped capabilities. The old
+   2-arg signature now delegates to the 3-arg body. Every role branch
+   mirrors `capabilitiesForRole(role)` exactly.
+2. Added `public.user_role_block_scopes` with soft-deactivation history
+   and a partial unique index on active (role_id, block_id). RLS
+   restricts SELECT to Society / Super Admin. Backfilled existing active
+   Block Admin single-block assignments without inventing new scopes.
+3. New `public.admin_upsert_team_role_v2(_society_id, _target_user_id,
+   _new_role, _block_ids uuid[])` accepts an array of blocks, dedupes,
+   validates every block is same-society and active, reconciles scopes
+   transactionally under `pg_advisory_xact_lock`, and audits previous /
+   resulting block ID arrays. `list_society_team_members_v2` returns
+   aggregated block scopes. `list_role_block_scopes` inspects a single
+   role's active scopes.
+4. `src/lib/team-admin.functions.ts` rewritten: every RPC argument
+   object is `satisfies Database["public"]["Functions"][fn]["Args"]`,
+   every RPC response is Zod-validated
+   (`TeamMemberSchema`, `CandidateSchema`, `RoleScopeSchema`,
+   `PrivacyRowSchema`). Zero `as any` remain.
+5. New `public.resolve_privacy_access(_society_id, _resource,
+   _subject_user_id)` for directory / contacts / finances / vehicles /
+   documents. Guard is always denied, Block Admin only receives
+   directory, resident household contact access requires an actual
+   shared `flat_residents` occupancy, and unknown resources or setting
+   values fail closed.
+6. New `public.resolve_financial_visibility(_society_id)` returns
+   `admin | detailed | summary | none`. Future resident financial views
+   must consume it; the existing admin reporting stays unchanged.
+7. New `public.list_society_residents_safe_page` is the first data
+   endpoint that consumes the privacy decision. Block Admins are
+   restricted to their explicitly assigned active scope blocks;
+   residents see the directory only when the society picks
+   `residents_safe`; phone, email, KYC and documents are never
+   projected. Guards are denied.
+8. Team & Roles UI updated: multi-block chip picker with selected-count
+   summary, empty selection rejected, current multiple scopes rendered
+   as wrap-safe badges in the team directory.
+
+New tests: 25 assertions in
+`tests/unit/role-permissions-parity.test.ts` (parses SQL branches and
+compares to `capabilitiesForRole`) and
+`tests/unit/stage2c-completion.test.ts` (adapter typing, scope
+reconciliation, backfill invariants, privacy fail-closed). Full suite
+509 passing / 5 skipped. Build passes; client-bundle secret scan clean.
+
+Deferred (non-critical): live PostgreSQL integration fixtures for
+concurrent multi-user scope races → Stage 13 hardening. Not simulated
+against production data or the protected society
+`1907a918-c4b8-4f43-a837-450530cc7c34`.
+
+**Next:** Stage 2D — Migration and Bulk Import.
+

@@ -594,6 +594,6 @@ export const commitMigrationJob = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => CommitInput.parse(input))
   .handler(async ({ data, context }) => {
-    return _commitMigrationJobViaRpc(context.supabase, data);
+    return _commitMigrationJobViaRpc(context.supabase as unknown as CommitRpcClient, data);
   });
 

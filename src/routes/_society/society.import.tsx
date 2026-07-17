@@ -18,6 +18,9 @@ import {
   finalizeMigrationUpload,
   validateMigrationJob,
   getMigrationPreview,
+  commitMigrationJob,
+  type MigrationCommitResult,
+  type MigrationCommitStatus,
 } from "@/lib/migration.functions";
 import {
   SOURCE_TYPES,

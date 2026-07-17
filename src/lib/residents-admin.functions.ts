@@ -145,7 +145,7 @@ const privateFamilySchema = z
     age: z.number().nullable(),
     created_at: z.string(),
   })
-  .passthrough(); // family may carry is_active added by migration; UI derives from it
+  .strict();
 
 const privateVehicleSchema = z
   .object({
@@ -157,7 +157,7 @@ const privateVehicleSchema = z
     flat_id: z.string().uuid().nullable(),
     created_at: z.string(),
   })
-  .passthrough();
+  .strict();
 
 export const privateDetailSchema = z
   .object({

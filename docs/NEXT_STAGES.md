@@ -1,17 +1,24 @@
 # Next Stages
 
-## Stage 3A — Bill Studio and Billing Configuration (ACTIVE 2026-07-17)
+## Stage 3A — Bill Studio and Billing Configuration (COMPLETE 2026-07-17)
 
-**Delivered this run**
-- Additive migration creates `billing_charge_heads`, `billing_templates`, `billing_template_lines`, `billing_cycle_configs`. RLS restricts reads to holders of `billing.manage` (Society/Super Admin) via the 3-arg `current_user_has_society_permission(_, _, NULL)` helper (disambiguates the two overloads). All mutations go through SECURITY DEFINER RPCs with a shared `_billing_require_admin` gate; direct `INSERT/UPDATE/DELETE` on tables is not granted to `authenticated`.
-- Server-authoritative preview: `preview_billing_template(society, template, limit, offset)` computes per-unit line amounts from canonical `flats` (block-assigned only), including `area_based` NULL/zero-area warnings and `manual_variable` markers, plus a society-wide totals summary from a full pass. Preview never writes bills.
+**Delivered (initial run)**
+- Additive migration creates `billing_charge_heads`, `billing_templates`, `billing_template_lines`, `billing_cycle_configs`. RLS restricts reads to holders of `billing.manage` (Society/Super Admin) via the 3-arg `current_user_has_society_permission(_, _, NULL)` helper. All mutations go through SECURITY DEFINER RPCs with a shared `_billing_require_admin` gate; direct `INSERT/UPDATE/DELETE` on tables is not granted to `authenticated`.
+- Server-authoritative preview: `preview_billing_template(society, template, limit, offset)` computes per-unit line amounts from canonical `flats`, including `area_based` NULL/zero-area warnings and `manual_variable` markers, plus a society-wide totals summary. Preview never writes bills.
 - Server functions in `src/lib/billing-config.functions.ts`: `listChargeHeads`, `saveChargeHead`, `listBillingTemplates`, `saveBillingTemplate`, `listTemplateLines`, `saveTemplateLine`, `archiveTemplateLine`, `configureBillingCycle`, `listBillingCycles`, `previewBillingTemplate`. All require `requireSupabaseAuth`. `mapError` translates DB error codes into safe UI messages.
-- UI: new `BillingConfigCard` (`src/components/billing/BillingConfigCard.tsx`) added under the existing Bill Studio route. Manages charge heads, templates, template lines, and runs the safe preview in a dialog. No invoice generation, no payment surfaces.
-- Focused test: `tests/unit/billing-config-stage3a.test.ts` asserts the error mapper never leaks raw DB details.
 
-**Explicitly out of scope in Stage 3A:** real bill generation, payments/receipts/dues/penalties/reminders, Razorpay, UPI, cards, wallets, online gateway, platform fee, reconciliation. Preview only.
+**Closure delivered (this run)**
+- **Serial-safe preview.** Corrective migration (`20260717192157_...`) rewrites `preview_billing_template` to include both structured and serial-mode units (no `block_id IS NOT NULL` eligibility filter), scopes to `is_active = true`, and canonicalizes unit type via `COALESCE(NULLIF(btrim(f.unit_type),''), NULLIF(btrim(f.type),''), '')`. Same migration adds `billing_templates_prevent_active_overlap` trigger raising `template_overlap` for overlapping active windows on the same society + frequency.
+- **Billing cycle UI wired.** `BillingConfigCard` now consumes `listBillingCycles`/`configureBillingCycle`, adds a "New cycle" dialog (template, name, period/due dates, draft|ready), lists cycles under the active template, and exposes an explicitly-disabled "Generate bills · Stage 3B" affordance so the boundary is honest.
+- **Safe server error handling.** All server functions route errors through `mapError`; list handlers no longer throw raw `error.message`. `template_overlap` and `area_not_available` are mapped explicitly. No PostgreSQL detail can reach the client.
+- **Typed RPC adapters (no `any`).** `BillingRpcClient` interface + `toBillingRpcClient`, `buildRpcArgs`, `callBillingRpc`, `extractRpcId` helpers replace every `as any`. Verified by a source-contract test.
+- **Capability verification.** `billing.manage` is confirmed to be held by `society_admin` / `super_admin` only, denied to `block_admin` / `resident` / `security`.
+- **Behavioral tests.** `tests/unit/billing-config-stage3a-behavioral.test.ts` (24 cases) covers safe error mapping, adapter helpers, denied-role mapping (`unavailable` → role message), cross-society (`template_not_found` → safe not-found), duplicate charge head, invalid cycle dates, preview payload shape including serial + structured rows, no `as any` in source, `useServerFn(listBillingCycles|configureBillingCycle)` wiring in `BillingConfigCard`, the Stage 3B boundary + "no bills generated" copy, latest preview migration is serial-safe and area/unit-type canonical, no Razorpay/Stripe/Paddle/UPI/platform-fee/`bills`|`payments`|`ledger_entries` writes in Stage 3A sources, and role-capability parity. Total suite: 647 passed / 19 skipped / 11 todo.
+- **Protected society safety.** Every check uses synthetic UUIDs; `1907a918-c4b8-4f43-a837-450530cc7c34` is explicitly asserted absent from Stage 3A sources.
 
-**Exact next position:** finalize Stage 3A UX polish + verification evidence, then Stage 3B.
+**Explicitly out of scope in Stage 3A:** real bill generation, payments/receipts/dues/penalties/reminders, Razorpay, UPI, cards, wallets, online gateway, platform fee, reconciliation. Preview + configuration only.
+
+**Exact next position:** Stage 3B — Real bill generation from ready cycles.
 
 
 

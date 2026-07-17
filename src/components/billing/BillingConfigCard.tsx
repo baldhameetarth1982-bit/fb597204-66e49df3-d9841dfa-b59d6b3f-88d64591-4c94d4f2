@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Plus, Eye, Archive, FileText, Coins } from "lucide-react";
+import { Loader2, Plus, Eye, Archive, FileText, Coins, CalendarClock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,8 @@ import {
   saveTemplateLine,
   archiveTemplateLine,
   previewBillingTemplate,
+  listBillingCycles,
+  configureBillingCycle,
   type PreviewResult,
 } from "@/lib/billing-config.functions";
 
@@ -34,6 +36,15 @@ type Line = {
   sort_order: number;
   active: boolean;
 };
+type Cycle = {
+  id: string;
+  template_id: string;
+  cycle_name: string;
+  period_start: string;
+  period_end: string;
+  due_date: string;
+  status: "draft" | "ready" | "archived";
+};
 
 const fmt = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 
@@ -46,14 +57,19 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
   const saveLine = useServerFn(saveTemplateLine);
   const archLine = useServerFn(archiveTemplateLine);
   const previewFn = useServerFn(previewBillingTemplate);
+  const listCyclesFn = useServerFn(listBillingCycles);
+  const configureCycleFn = useServerFn(configureBillingCycle);
 
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [heads, setHeads] = useState<ChargeHead[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [activeTpl, setActiveTpl] = useState<Template | null>(null);
   const [lines, setLines] = useState<Line[]>([]);
   const [preview, setPreview] = useState<PreviewResult | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [cycles, setCycles] = useState<Cycle[]>([]);
+  const [cycleOpen, setCycleOpen] = useState(false);
 
   const [headOpen, setHeadOpen] = useState(false);
   const [tplOpen, setTplOpen] = useState(false);
@@ -61,16 +77,21 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
 
   async function refresh() {
     setLoading(true);
+    setErrorMsg(null);
     try {
-      const [h, t] = await Promise.all([
+      const [h, t, c] = await Promise.all([
         listHeads({ data: { societyId } }),
         listTpls({ data: { societyId } }),
+        listCyclesFn({ data: { societyId } }),
       ]);
       setHeads((h.chargeHeads as ChargeHead[]) ?? []);
       setTemplates((t.templates as Template[]) ?? []);
+      setCycles((c.cycles as Cycle[]) ?? []);
       if (t.templates?.length && !activeTpl) setActiveTpl(t.templates[0] as Template);
-    } catch (e: any) {
-      toast.error(e.message ?? "Failed to load billing configuration");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Failed to load billing configuration";
+      setErrorMsg(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -80,8 +101,17 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
     try {
       const r = await listLines({ data: { societyId, templateId: tplId } });
       setLines((r.lines as Line[]) ?? []);
-    } catch (e: any) {
-      toast.error(e.message ?? "Failed to load template lines");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to load template lines");
+    }
+  }
+
+  async function refreshCycles() {
+    try {
+      const c = await listCyclesFn({ data: { societyId } });
+      setCycles((c.cycles as Cycle[]) ?? []);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to load billing cycles");
     }
   }
 
@@ -101,6 +131,13 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
       <CardContent className="space-y-6">
         {loading ? (
           <div className="py-8 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+        ) : errorMsg ? (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+            {errorMsg}
+            <div className="mt-2">
+              <Button size="sm" variant="outline" className="rounded-xl" onClick={() => void refresh()}>Retry</Button>
+            </div>
+          </div>
         ) : (
           <>
             {/* Charge heads */}
@@ -224,6 +261,55 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
                 )}
               </section>
             )}
+
+            {/* Billing cycles (Stage 3A — configuration only) */}
+            <section className="space-y-2">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <p className="text-sm font-semibold flex items-center gap-1.5"><CalendarClock className="h-4 w-4" /> Billing cycles</p>
+                  <p className="text-xs text-muted-foreground">Draft the periods your bills will cover. Nothing is generated in Stage 3A.</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="rounded-xl"
+                  onClick={() => setCycleOpen(true)}
+                  disabled={templates.length === 0}
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" /> New cycle
+                </Button>
+              </div>
+              {cycles.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic">
+                  {templates.length === 0 ? "Create a template first, then draft a cycle." : "No billing cycles yet."}
+                </p>
+              ) : (
+                <ul className="space-y-1.5">
+                  {cycles.map((c) => {
+                    const tpl = templates.find((t) => t.id === c.template_id);
+                    return (
+                      <li key={c.id} className="rounded-lg border p-2 text-xs flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="font-medium truncate">{c.cycle_name}</div>
+                          <div className="text-[10px] text-muted-foreground truncate">
+                            {tpl?.name ?? "—"} · {c.period_start} → {c.period_end} · Due {c.due_date}
+                          </div>
+                        </div>
+                        <Badge variant={c.status === "ready" ? "default" : "secondary"}>{c.status}</Badge>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+              <div className="pt-2 flex items-center justify-between flex-wrap gap-2 border-t mt-2">
+                <p className="text-[11px] text-muted-foreground">
+                  Preview only — no bills generated yet.
+                </p>
+                <Button size="sm" className="rounded-xl" disabled title="Bill generation comes in Stage 3B">
+                  Generate bills · Stage 3B
+                </Button>
+              </div>
+            </section>
           </>
         )}
       </CardContent>
@@ -263,6 +349,17 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
       )}
       {/* Preview */}
       <PreviewDialog open={previewOpen} onOpenChange={setPreviewOpen} preview={preview} />
+      {/* Billing cycle */}
+      <CycleDialog
+        open={cycleOpen}
+        onOpenChange={setCycleOpen}
+        templates={templates}
+        onSave={async (v) => {
+          await configureCycleFn({ data: { societyId, ...v } });
+          toast.success("Cycle saved as draft");
+          void refreshCycles();
+        }}
+      />
     </Card>
   );
 }
@@ -433,6 +530,98 @@ function PreviewDialog({ open, onOpenChange, preview }: { open: boolean; onOpenC
         )}
         <DialogFooter>
           <Button onClick={() => onOpenChange(false)}>Close</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function CycleDialog({ open, onOpenChange, templates, onSave }: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  templates: Template[];
+  onSave: (v: {
+    templateId: string;
+    cycleName: string;
+    periodStart: string;
+    periodEnd: string;
+    dueDate: string;
+    status: "draft" | "ready";
+  }) => Promise<void>;
+}) {
+  const [templateId, setTemplateId] = useState<string>(templates[0]?.id ?? "");
+  const [cycleName, setCycleName] = useState<string>("");
+  const today = new Date().toISOString().slice(0, 10);
+  const nextMonth = new Date(); nextMonth.setDate(1); nextMonth.setMonth(nextMonth.getMonth() + 1);
+  const [periodStart, setPeriodStart] = useState<string>(today);
+  const [periodEnd, setPeriodEnd] = useState<string>(nextMonth.toISOString().slice(0, 10));
+  const [dueDate, setDueDate] = useState<string>(nextMonth.toISOString().slice(0, 10));
+  const [status, setStatus] = useState<"draft" | "ready">("draft");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => { if (open && templates[0]) setTemplateId(templates[0].id); }, [open, templates]);
+
+  const validDates = periodEnd >= periodStart && dueDate >= periodStart;
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) setCycleName(""); }}>
+      <DialogContent className="rounded-2xl">
+        <DialogHeader>
+          <DialogTitle>New billing cycle</DialogTitle>
+          <p className="text-[11px] text-muted-foreground">
+            Draft only — bill generation comes in Stage 3B.
+          </p>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label>Template</Label>
+            <select
+              className="w-full h-10 rounded-md border bg-background px-2 text-sm"
+              value={templateId}
+              onChange={(e) => setTemplateId(e.target.value)}
+            >
+              {templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </div>
+          <div><Label>Cycle name</Label><Input value={cycleName} onChange={(e) => setCycleName(e.target.value)} placeholder="July 2026" /></div>
+          <div className="grid grid-cols-2 gap-2">
+            <div><Label>Period start</Label><Input type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} /></div>
+            <div><Label>Period end</Label><Input type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} /></div>
+          </div>
+          <div><Label>Due date</Label><Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></div>
+          <div>
+            <Label>Status</Label>
+            <select
+              className="w-full h-10 rounded-md border bg-background px-2 text-sm"
+              value={status}
+              onChange={(e) => setStatus(e.target.value as "draft" | "ready")}
+            >
+              <option value="draft">Draft</option>
+              <option value="ready">Ready (Stage 3B will pick this up)</option>
+            </select>
+          </div>
+          {!validDates && (
+            <p className="text-xs text-destructive">Cycle dates are invalid — end and due date must be on or after the start.</p>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button
+            disabled={busy || !templateId || !cycleName.trim() || !validDates}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                await onSave({ templateId, cycleName: cycleName.trim(), periodStart, periodEnd, dueDate, status });
+                onOpenChange(false);
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : "Save failed");
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            Save
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -53,6 +53,7 @@ function BillTemplatesPage() {
           <BillingCenterTabs />
         </div>
         <BillAppearanceCard societyId={societyId} />
+        <BillingConfigCard societyId={societyId} />
         <SectionCard>
           <div className="flex items-start gap-3 flex-wrap">
             <div className="flex-1 min-w-0">

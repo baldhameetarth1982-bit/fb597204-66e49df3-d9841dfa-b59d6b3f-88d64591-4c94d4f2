@@ -1360,3 +1360,73 @@ against production data or the protected society
 
 **Next:** Stage 2D — Migration and Bulk Import.
 
+
+## Stage 2C — Closure (Teams, Roles & Privacy hardening)
+
+Final security closure of Stage 2C. Focused on eliminating the residual
+NULL-block scope bypass, retiring legacy single-block RPCs, and removing
+caller-controlled privacy decisions.
+
+1. **Fail-closed block context.** The three-arg
+   `current_user_has_society_permission(_society_id, _capability, _block_id)`
+   no longer returns `true` for a Block Admin whenever "any active
+   scope" exists. Block-scoped capabilities (`directory.view`,
+   `residents.view_block`, `blocks.view`) require:
+   - `_block_id IS NOT NULL`
+   - the block belongs to `_society_id` and is active
+   - the caller has an active exact-block scope row
+2. **Two-arg compatibility helper.** Rewritten with an explicit body:
+   block-scoped capabilities always return `false` for Block Admin,
+   Guard, and Resident. Society Admin still receives `directory.view`
+   and `blocks.view` (but not `residents.view_block`, which is
+   block-only). Super Admin remains globally granted.
+3. **Legacy single-block team RPCs retired.**
+   `public.admin_upsert_team_role(uuid, uuid, app_role, uuid)` and
+   `public.list_society_team_members(uuid, boolean)` had their bodies
+   replaced with `RAISE EXCEPTION 'deprecated_use_v2'` and `EXECUTE`
+   was revoked from `authenticated`. All application code paths use the
+   v2 multi-block variants exclusively.
+4. **Team directory email fallback removed.**
+   `list_society_team_members_v2` returns
+   `COALESCE(NULLIF(TRIM(full_name), ''), 'Unnamed team member')`.
+   Email may only appear in the separately-authorized assignment
+   candidate search.
+5. **Society-bound household privacy.** `resolve_privacy_access` for
+   `contacts` now joins `flat_residents ↔ flats` and enforces
+   `flats.society_id = _society_id`. Cross-society occupancy cannot
+   grant contact access. Subject must also hold an active user_roles
+   membership in `_society_id`.
+6. **Resource-derived vehicle ownership.** New
+   `public.can_access_vehicle(_society_id, _vehicle_id)` derives owner
+   and society from the `vehicles` row. Cross-society or missing
+   vehicles return `false` without enumerating existence. Guard and
+   Block Admin are always denied at this resource. Ownership matches
+   only when `privacy_vehicles = 'owner_and_admins'` AND
+   `vehicles.user_id = auth.uid()`.
+7. **Documents and generic subject removed as ownership proof.**
+   `resolve_privacy_access` returns `false` for `vehicles`/`documents`
+   regardless of `_subject_user_id`; the resource-specific decision
+   function is required.
+8. **Scope history preserved.** `user_role_block_scopes` foreign keys
+   on `role_id` and `block_id` were switched from `ON DELETE CASCADE`
+   to `ON DELETE RESTRICT`. Soft deactivation remains the canonical
+   lifecycle. `society_id` remains `ON DELETE CASCADE` for the
+   intentional full-society deletion workflow only.
+
+New TypeScript surface: `canAccessVehicle` server function
+(`src/lib/privacy-decisions.functions.ts`) typed against
+`Database["public"]["Functions"]["can_access_vehicle"]["Args"]`, Zod
+boolean-validated. Zero `as any` in Stage 2C adapters.
+
+New assertions in `tests/unit/stage2c-closure.test.ts` (23 tests)
+parsing the actual migration bodies for the NULL-block fail-closed
+branch, the two-arg helper carve-out, legacy RPC deprecation, email
+fallback removal, society-bound household check, `can_access_vehicle`
+derivation, and RESTRICT FKs.
+
+Full test suite: 532 passed / 5 honestly skipped. tsgo clean. Build
+green. `scripts/verify-client-bundle-secrets.ts` reports no server-only
+indicators in the client bundle. Protected society
+`1907a918-c4b8-4f43-a837-450530cc7c34` untouched.
+
+**Next:** Stage 2D — Migration and Bulk Import.

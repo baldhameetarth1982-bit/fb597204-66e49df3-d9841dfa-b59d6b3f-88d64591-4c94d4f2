@@ -122,3 +122,26 @@ export const listSafeResidentDirectory = createServerFn({ method: "POST" })
     }));
     return { items, total: Number(total ?? 0) };
   });
+
+// ---------------------------------------------------------------------------
+// Vehicle access — resource-derived ownership (Stage 2C closure).
+// The DB helper joins vehicles + society_settings; caller-provided subject
+// user IDs cannot grant access. Cross-society lookups return false without
+// enumerating whether the record exists.
+// ---------------------------------------------------------------------------
+const vehicleInput = z.object({ societyId: uuid, vehicleId: uuid });
+
+export const canAccessVehicle = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw: unknown) => vehicleInput.parse(raw))
+  .handler(async ({ data, context }): Promise<{ allowed: boolean }> => {
+    const args = {
+      _society_id: data.societyId,
+      _vehicle_id: data.vehicleId,
+    } satisfies Fns["can_access_vehicle"]["Args"];
+    const { data: result, error } = await context.supabase.rpc(
+      "can_access_vehicle", args,
+    );
+    if (error) return { allowed: false };
+    return { allowed: z.boolean().catch(false).parse(result) };
+  });

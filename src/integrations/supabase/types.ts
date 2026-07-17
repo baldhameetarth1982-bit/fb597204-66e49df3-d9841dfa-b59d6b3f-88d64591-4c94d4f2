@@ -3074,6 +3074,10 @@ export type Database = {
         Args: { _reason?: string; _request_ids: string[]; _society_id: string }
         Returns: number
       }
+      can_access_vehicle: {
+        Args: { _society_id: string; _vehicle_id: string }
+        Returns: boolean
+      }
       can_manage_flat_internal: {
         Args: { _actor_id: string; _flat_id: string }
         Returns: boolean

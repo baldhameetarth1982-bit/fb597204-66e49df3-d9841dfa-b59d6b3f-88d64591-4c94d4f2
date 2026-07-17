@@ -97,3 +97,15 @@ These stay untouched — they're settings/utility routes, not "features" in the 
   `resolve_financial_visibility`, `list_society_residents_safe_page`.
 - Typed Stage 2C adapters: no `as any` remains in
   `team-admin.functions.ts` or `privacy-decisions.functions.ts`.
+
+
+## Stage 2C closure (2026-07-17)
+
+- Block-scoped permission checks require exact block ID; NULL block → false for Block Admin.
+- Two-arg permission helper fails closed for Block Admin block-scoped capabilities.
+- Legacy `admin_upsert_team_role`/`list_society_team_members` retired (revoked, body raises `deprecated_use_v2`).
+- Team directory no longer falls back to email; assignment candidates keep email under a separate authorization.
+- Privacy contacts household check is bound to `flats.society_id`; vehicles/documents require resource-specific `can_access_vehicle`.
+- `user_role_block_scopes` role/block FKs are `ON DELETE RESTRICT` — scope history preserved.
+- 532 unit tests pass; tsgo clean; build green; client-bundle secret scan clean.
+- Protected society `1907a918-c4b8-4f43-a837-450530cc7c34` untouched.

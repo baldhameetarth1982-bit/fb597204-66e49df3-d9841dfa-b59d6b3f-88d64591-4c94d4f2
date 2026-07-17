@@ -177,7 +177,8 @@ describe("Stage 2B — SQL rules (latest migration set)", () => {
   });
 
   it("vehicle upsert uses a race-safe advisory lock on (society, plate)", () => {
-    const idx = migSql.lastIndexOf("admin_upsert_vehicle");
+    // Advisory lock appears in the latest definition of admin_upsert_vehicle.
+    const idx = migSql.lastIndexOf("CREATE OR REPLACE FUNCTION public.admin_upsert_vehicle");
     const block = migSql.slice(idx, idx + 4000);
     expect(block).toMatch(/pg_advisory_xact_lock/);
     expect(block).toMatch(/duplicate_active_plate/);

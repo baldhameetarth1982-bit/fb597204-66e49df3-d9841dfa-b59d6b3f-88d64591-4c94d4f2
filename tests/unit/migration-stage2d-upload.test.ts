@@ -134,9 +134,11 @@ describe("Stage 2D — server-authoritative contract", () => {
     expect(block).not.toMatch(/storage_path:/);
   });
 
-  it("commit path throws until canonical commit is wired", () => {
+  it("commit path calls the authoritative commit_migration_job RPC", () => {
     const block = FUNCS.slice(FUNCS.indexOf("export const commitMigrationJob"));
-    expect(block).toMatch(/commit_not_enabled/);
+    expect(block).toMatch(/commit_migration_job/);
+    expect(block).toMatch(/expected_checksum/);
+    expect(block).toMatch(/_request_id/);
   });
 
   it("finalize downloads authoritative bytes and hashes them", () => {
@@ -167,8 +169,10 @@ describe("Stage 2D — server-authoritative contract", () => {
     expect(IMPORT_UI).not.toMatch(/client\.server/);
   });
 
-  it("import UI shows a disabled commit control (honest status)", () => {
-    expect(IMPORT_UI).toMatch(/Import commit will be enabled/);
+  it("import UI wires the canonical commit action and result screen", () => {
+    expect(IMPORT_UI).toMatch(/commitMigrationJob/);
+    expect(IMPORT_UI).toMatch(/Confirm import|Confirm canonical import/);
+    expect(IMPORT_UI).toMatch(/total_committed/);
   });
 
   it("no Stage 2D source references the protected society id", () => {

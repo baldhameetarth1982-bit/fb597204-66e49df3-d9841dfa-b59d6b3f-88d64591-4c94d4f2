@@ -22,8 +22,8 @@ describe("Stage 2D — file safety", () => {
   it("accepts a plain CSV under the size cap", () => {
     expect(validateFileSafety({ filename: "residents.csv", size: 1024 }).ok).toBe(true);
   });
-  it("accepts XLSX", () => {
-    expect(validateFileSafety({ filename: "society.xlsx", size: 1024 }).ok).toBe(true);
+  it("rejects XLSX in this Stage 2D run (CSV-only)", () => {
+    expect(validateFileSafety({ filename: "society.xlsx", size: 1024 }).ok).toBe(false);
   });
   it("rejects XLSM (macro-enabled)", () => {
     const r = validateFileSafety({ filename: "evil.xlsm", size: 1024 });

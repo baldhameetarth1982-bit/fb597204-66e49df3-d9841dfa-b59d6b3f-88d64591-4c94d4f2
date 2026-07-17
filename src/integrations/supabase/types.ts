@@ -1055,6 +1055,66 @@ export type Database = {
           },
         ]
       }
+      migration_commit_requests: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          failed_at: string | null
+          failure_code: string | null
+          id: string
+          job_id: string
+          payload_hash: string
+          request_id: string
+          result_json: Json | null
+          society_id: string
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          failed_at?: string | null
+          failure_code?: string | null
+          id?: string
+          job_id: string
+          payload_hash: string
+          request_id: string
+          result_json?: Json | null
+          society_id: string
+          status: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          failed_at?: string | null
+          failure_code?: string | null
+          id?: string
+          job_id?: string
+          payload_hash?: string
+          request_id?: string
+          result_json?: Json | null
+          society_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "migration_commit_requests_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "migration_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "migration_commit_requests_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       migration_entity_links: {
         Row: {
           canonical_entity_id: string
@@ -3343,6 +3403,14 @@ export type Database = {
         Args: { _bill_id: string; _reason: string }
         Returns: undefined
       }
+      commit_migration_job: {
+        Args: {
+          _expected_checksum: string
+          _job_id: string
+          _request_id: string
+        }
+        Returns: Json
+      }
       commit_society_wizard: {
         Args: { _payload: Json; _society_id: string }
         Returns: undefined
@@ -3853,6 +3921,20 @@ export type Database = {
         Returns: Json
       }
       mark_aadhaar_verified: { Args: { _last4: string }; Returns: undefined }
+      migration_begin_upload: {
+        Args: {
+          _actor: string
+          _declared_size: number
+          _filename: string
+          _society_id: string
+          _source_type: string
+          _structure_mode: string
+        }
+        Returns: {
+          job_id: string
+          storage_path: string
+        }[]
+      }
       migration_create_job: {
         Args: {
           _declared_size: number
@@ -3876,10 +3958,6 @@ export type Database = {
       migration_replace_staging: {
         Args: { _job_id: string; _rows: Json; _totals: Json }
         Returns: Json
-      }
-      migration_set_storage_path: {
-        Args: { _job_id: string; _storage_path: string }
-        Returns: boolean
       }
       migration_upload_path_ok: { Args: { _name: string }; Returns: boolean }
       next_no_dues_cert_number_internal: {
@@ -4070,6 +4148,10 @@ export type Database = {
           _unit_type?: string
         }
         Returns: Json
+      }
+      user_can_admin_migrations: {
+        Args: { _society_id: string; _user_id: string }
+        Returns: boolean
       }
       verify_resident_kyc: {
         Args: { _approved: boolean; _reason?: string; _user_id: string }

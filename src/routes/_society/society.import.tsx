@@ -18,6 +18,9 @@ import {
   finalizeMigrationUpload,
   validateMigrationJob,
   getMigrationPreview,
+  commitMigrationJob,
+  type MigrationCommitResult,
+  type MigrationCommitStatus,
 } from "@/lib/migration.functions";
 import {
   SOURCE_TYPES,
@@ -68,21 +71,28 @@ function ImportPage() {
   const finalize = useServerFn(finalizeMigrationUpload);
   const validate = useServerFn(validateMigrationJob);
   const preview = useServerFn(getMigrationPreview);
+  const commit = useServerFn(commitMigrationJob);
 
   const [sourceType, setSourceType] = useState<SourceType>("sociyohub");
   const [entityType, setEntityType] = useState<EntityType>("resident");
   const [file, setFile] = useState<File | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
+  const [checksum, setChecksum] = useState<string | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
   const [rowCount, setRowCount] = useState(0);
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [previewRows, setPreviewRows] = useState<PreviewRow[]>([]);
   const [totals, setTotals] = useState<{ total: number; valid: number; errors: number } | null>(null);
-  const [busy, setBusy] = useState<null | "upload" | "validate" | "preview">(null);
+  const [busy, setBusy] = useState<null | "upload" | "validate" | "preview" | "commit">(null);
+  const [confirmMode, setConfirmMode] = useState(false);
+  const [requestId, setRequestId] = useState<string | null>(null);
+  const [commitStatus, setCommitStatus] = useState<MigrationCommitStatus | null>(null);
+  const [commitResult, setCommitResult] = useState<MigrationCommitResult | null>(null);
 
   const step: 1 | 2 | 3 | 4 = totals ? 4 : previewRows.length || headers.length ? 3 : jobId ? 2 : 1;
 
   const canValidate = useMemo(() => headers.length > 0 && Object.keys(mapping).length > 0, [headers, mapping]);
+  const canCommit = totals !== null && totals.errors === 0 && commitStatus !== "completed";
 
   async function doUploadAndFinalize() {
     if (!societyId || !file) return;
@@ -98,7 +108,6 @@ function ImportPage() {
           structure_mode: "structured",
         },
       });
-      // Upload via signed URL — private bucket, server-generated path.
       const uploadRes = await fetch(init.upload_url, {
         method: "PUT",
         headers: { "content-type": file.type || "application/octet-stream" },
@@ -108,6 +117,7 @@ function ImportPage() {
 
       const fin = await finalize({ data: { job_id: init.job_id } });
       setJobId(init.job_id);
+      setChecksum(fin.checksum);
       setHeaders(fin.headers);
       setRowCount(fin.row_count);
       setMapping(suggestedMapping(fin.headers, entityType, sourceType));
@@ -138,6 +148,42 @@ function ImportPage() {
       toast.success(`${res.valid} valid, ${res.errors} error rows`);
     } catch (e) {
       toast.error(`Validation failed: ${(e as Error).message}`);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  function newRequestId(): string {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+  }
+
+  async function doCommit() {
+    if (!jobId || !checksum) return;
+    // Preserve the same request id across retries within one confirm attempt.
+    const rid = requestId ?? newRequestId();
+    if (!requestId) setRequestId(rid);
+    setBusy("commit");
+    try {
+      const res = await commit({
+        data: {
+          job_id: jobId,
+          creation_request_id: rid,
+          expected_checksum: checksum,
+          confirm: true,
+        },
+      });
+      setCommitStatus(res.status);
+      setCommitResult(res.result);
+      if (res.status === "completed" || res.status === "idempotent_replay") {
+        toast.success(`Import committed (${res.result?.total_committed ?? 0} rows)`);
+        setConfirmMode(false);
+      } else {
+        toast.error(`Commit ${res.status}`);
+      }
+    } catch (e) {
+      toast.error(`Commit failed: ${(e as Error).message}`);
     } finally {
       setBusy(null);
     }
@@ -313,9 +359,16 @@ function ImportPage() {
                     <StatusChip tone="danger">{totals.errors} errors</StatusChip>
                   )}
                 </div>
-                <Button disabled className="rounded-xl" title="Import commit is not yet enabled">
-                  <Lock className="h-4 w-4 mr-1.5" />
-                  Import commit will be enabled after final validation
+                <Button
+                  onClick={() => setConfirmMode(true)}
+                  disabled={!canCommit || busy !== null}
+                  className="rounded-xl"
+                  title={canCommit ? "Confirm and write canonical records" : "Resolve errors before commit"}
+                >
+                  {canCommit ? <Send className="h-4 w-4 mr-1.5" /> : <Lock className="h-4 w-4 mr-1.5" />}
+                  {commitStatus === "completed" || commitStatus === "idempotent_replay"
+                    ? "Committed"
+                    : "Confirm import"}
                 </Button>
               </div>
               <div className="overflow-auto max-h-96 rounded-xl border border-border">
@@ -345,24 +398,96 @@ function ImportPage() {
                   </tbody>
                 </table>
               </div>
-              <div className="rounded-lg bg-warning-container/40 border border-warning-container p-3 text-xs flex items-start gap-2">
-                <AlertTriangle className="h-3.5 w-3.5 mt-0.5" />
-                <p>
-                  Import commit will be enabled after canonical write and idempotency are wired.
-                  Nothing has been written to your society yet.
-                </p>
+              {commitStatus && commitStatus !== "completed" && commitStatus !== "idempotent_replay" && (
+                <div className="rounded-lg bg-warning-container/40 border border-warning-container p-3 text-xs flex items-start gap-2">
+                  <AlertTriangle className="h-3.5 w-3.5 mt-0.5" />
+                  <p>Commit {commitStatus}. Nothing has been written; you can retry.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Confirm dialog card */}
+        {confirmMode && (
+          <Card className="rounded-2xl border-primary">
+            <CardContent className="p-5 space-y-3">
+              <p className="font-semibold">Confirm canonical import</p>
+              <ul className="text-xs text-muted-foreground list-disc pl-5 space-y-1">
+                <li>Operational society records (structures and units) will be created.</li>
+                <li>Existing records will not be silently overwritten.</li>
+                <li>No login accounts will be created.</li>
+                <li>Provenance will be recorded for every canonical row.</li>
+                <li>This operation is idempotent — retrying with the same request replays the stored result.</li>
+              </ul>
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  onClick={doCommit}
+                  disabled={busy !== null}
+                  className="rounded-xl"
+                >
+                  {busy === "commit" ? (
+                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4 mr-1.5" />
+                  )}
+                  Yes, commit import
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setConfirmMode(false)}
+                  disabled={busy !== null}
+                  className="rounded-xl"
+                >
+                  Cancel
+                </Button>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {totals && totals.errors === 0 && (
-          <Card className="rounded-2xl">
-            <CardContent className="p-5 flex items-center gap-3">
-              <CheckCircle2 className="h-5 w-5 text-success" />
-              <p className="text-sm">
-                Staging preview is ready. Canonical commit is not yet enabled — remaining Stage 2D work.
+        {/* Result screen */}
+        {(commitStatus === "completed" || commitStatus === "idempotent_replay") && commitResult && (
+          <Card className="rounded-2xl border-success">
+            <CardContent className="p-5 space-y-3">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-success" />
+                <p className="font-semibold">Import committed</p>
+                <StatusChip tone="success">
+                  {commitStatus === "idempotent_replay" ? "replayed" : "completed"}
+                </StatusChip>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                <div className="rounded-lg bg-muted p-2">
+                  <div className="text-muted-foreground">Structures created</div>
+                  <div className="font-semibold">{commitResult.structures_created}</div>
+                </div>
+                <div className="rounded-lg bg-muted p-2">
+                  <div className="text-muted-foreground">Structures matched</div>
+                  <div className="font-semibold">{commitResult.structures_matched}</div>
+                </div>
+                <div className="rounded-lg bg-muted p-2">
+                  <div className="text-muted-foreground">Units created</div>
+                  <div className="font-semibold">{commitResult.units_created}</div>
+                </div>
+                <div className="rounded-lg bg-muted p-2">
+                  <div className="text-muted-foreground">Units matched</div>
+                  <div className="font-semibold">{commitResult.units_matched}</div>
+                </div>
+                <div className="rounded-lg bg-muted p-2">
+                  <div className="text-muted-foreground">Skipped</div>
+                  <div className="font-semibold">{commitResult.skipped}</div>
+                </div>
+                <div className="rounded-lg bg-muted p-2">
+                  <div className="text-muted-foreground">Total committed</div>
+                  <div className="font-semibold">{commitResult.total_committed}</div>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Residents, family, and vehicles are not created in this run — they require a
+                login identity model beyond Stage 2D scope.
               </p>
+              <p className="text-[10px] text-muted-foreground">Job {jobId}</p>
             </CardContent>
           </Card>
         )}

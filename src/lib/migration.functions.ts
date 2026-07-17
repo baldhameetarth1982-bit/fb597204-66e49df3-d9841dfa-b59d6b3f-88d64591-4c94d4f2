@@ -61,20 +61,12 @@ class MigrationError extends Error {
   }
 }
 
-// Extension → allowed set on upload. XLSX is accepted for upload but rejected
-// during finalize until a server-side XLSX parser is wired.
-const ALLOWED_EXT_RE = /\.(csv|xlsx)$/i;
+// CSV-only production policy. XLSX uploads are rejected server-side.
+const ALLOWED_EXT_RE = /\.csv$/i;
 
 function extOf(name: string): string {
   const m = name.toLowerCase().match(/\.[a-z0-9]+$/);
   return m ? m[0] : "";
-}
-
-function safeRandomId(): string {
-  // 16 bytes → 32 hex chars. Web crypto is present in the Worker runtime.
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 // ---------- initializeMigrationUpload ----------
@@ -92,9 +84,9 @@ export const initializeMigrationUpload = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => InitUploadInput.parse(input))
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
 
-    // Validate the *declared* filename shape. Extension must be csv/xlsx.
+    // CSV-only in production. Reject at the declared shape.
     if (!ALLOWED_EXT_RE.test(data.filename)) {
       throw new MigrationError("unsupported_format");
     }
@@ -113,58 +105,41 @@ export const initializeMigrationUpload = createServerFn({ method: "POST" })
       );
     }
 
-    // Server-side authorization.
+    // Server-side authorization via the authenticated client.
     const { data: canAdmin } = await supabase.rpc(
       "current_user_can_admin_migrations",
       { _society_id: data.society_id },
     );
     if (!canAdmin) throw new MigrationError("unavailable");
 
-    // Server-derived path. Extension is drawn from the validated filename
-    // (never a browser-supplied path).
-    const ext = extOf(data.filename).replace(/^\./, "") || "csv";
-    const objectName = `${safeRandomId()}.${ext}`;
-    // Placeholder — we insert with a temp path, then patch after we know the job id.
-    // But the RPC accepts the final path; we generate the job id via RPC.
-
-    // Create the job first with a temporary path — then update to the final,
-    // job-scoped path. This keeps `migration_create_job` simple and the final
-    // path deterministic.
-    const { data: jobId, error: createErr } = await supabase.rpc(
-      "migration_create_job",
+    // Trusted mutation via service role. The RPC also re-checks admin scope
+    // against the verified actor id (defence in depth).
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: beginRes, error: beginErr } = await supabaseAdmin.rpc(
+      "migration_begin_upload",
       {
+        _actor: userId,
         _society_id: data.society_id,
         _source_type: data.source_type,
         _filename: data.filename,
         _declared_size: data.declared_size,
         _structure_mode: data.structure_mode ?? "structured",
-        _storage_path: `${data.society_id}/pending/${objectName}`,
       },
     );
-    if (createErr || !jobId) throw new MigrationError("unavailable");
+    if (beginErr || !beginRes || beginRes.length === 0) {
+      throw new MigrationError("unavailable");
+    }
+    const jobId = beginRes[0].job_id as string;
+    const finalPath = beginRes[0].storage_path as string;
 
-    const finalPath = `${data.society_id}/${jobId as string}/${objectName}`;
-    // Patch the path onto the job (SELECT-only for authenticated is not enough
-    // for UPDATE, so we call a small helper RPC). For now we use the existing
-    // SECURITY DEFINER path helper by re-issuing via `migration_replace_staging`
-    // for atomicity. But since we don't yet have a rename helper, we go through
-    // the admin-guarded finalize path indirectly: the storage policy already
-    // requires that the path's job id exist, so we must set it before signed
-    // URL is issued. Do that via a tiny helper below.
-    const { error: patchErr } = await supabase.rpc("migration_set_storage_path", {
-      _job_id: jobId as string,
-      _storage_path: finalPath,
-    });
-    if (patchErr) throw new MigrationError("unavailable");
-
-    // Issue a short-lived signed upload URL for the final path.
+    // Signed upload URL for the private bucket, scoped to the server-derived path.
     const { data: signed, error: signErr } = await supabase.storage
       .from("migration-uploads")
       .createSignedUploadUrl(finalPath);
     if (signErr || !signed) throw new MigrationError("unavailable");
 
     return {
-      job_id: jobId as string,
+      job_id: jobId,
       storage_path: finalPath,
       upload_url: signed.signedUrl,
       upload_token: signed.token,
@@ -279,8 +254,10 @@ export const finalizeMigrationUpload = createServerFn({ method: "POST" })
       if (insErr) throw new MigrationError("operation_failed");
     }
 
-    // Finalize job — sets authoritative checksum, size, row count, status.
-    const { data: finRes, error: finErr } = await supabase.rpc(
+    // Finalize job via service role. Authenticated callers cannot invoke
+    // this RPC directly (grants revoked); only the trusted server pathway
+    // may write authoritative checksum/size/row totals.
+    const { data: finRes, error: finErr } = await supabaseAdmin.rpc(
       "migration_finalize_upload",
       {
         _job_id: data.job_id,
@@ -438,8 +415,9 @@ export const validateMigrationJob = createServerFn({ method: "POST" })
       });
     }
 
-    // Transactional staging replace.
-    const { data: replaceRes, error: repErr } = await supabase.rpc(
+    // Transactional staging replace via service role (authenticated grant revoked).
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: replaceRes, error: repErr } = await supabaseAdmin.rpc(
       "migration_replace_staging",
       {
         _job_id: data.job_id,
@@ -537,23 +515,71 @@ export const getMigrationPreview = createServerFn({ method: "POST" })
     return { items: rows ?? [], total: count ?? 0 };
   });
 
-// ---------- commit (unchanged; canonical commit remains a Stage 2D open item) ----------
+// ---------- commitMigrationJob — real canonical commit adapter ----------
 
 const CommitInput = z.object({
   job_id: z.string().uuid(),
-  society_id: z.string().uuid(),
   creation_request_id: z.string().trim().min(8).max(80),
+  expected_checksum: z.string().trim().min(8).max(128),
   confirm: z.literal(true),
 });
 
+const CommitResult = z.object({
+  structures_created: z.number().int().nonnegative().default(0),
+  structures_matched: z.number().int().nonnegative().default(0),
+  units_created: z.number().int().nonnegative().default(0),
+  units_matched: z.number().int().nonnegative().default(0),
+  residents_created: z.number().int().nonnegative().default(0),
+  residents_matched: z.number().int().nonnegative().default(0),
+  occupancies_created: z.number().int().nonnegative().default(0),
+  family_created: z.number().int().nonnegative().default(0),
+  vehicles_created: z.number().int().nonnegative().default(0),
+  skipped: z.number().int().nonnegative().default(0),
+  total_committed: z.number().int().nonnegative().default(0),
+});
+
+export type MigrationCommitResult = z.infer<typeof CommitResult>;
+
+const CommitStatus = z.enum([
+  "completed",
+  "idempotent_replay",
+  "unavailable",
+  "job_not_ready",
+  "unresolved_conflicts",
+  "idempotency_conflict",
+  "job_already_committing",
+  "operation_failed",
+]);
+
+export type MigrationCommitStatus = z.infer<typeof CommitStatus>;
+
 /**
- * NOT wired for canonical writes yet. This function is kept as a guarded
- * placeholder so the UI can display an accurate "not yet enabled" state.
- * Real canonical commit lands as the remaining Stage 2D work.
+ * Real canonical commit. The database function `commit_migration_job` is the
+ * single authoritative writer: it derives society, source type, mapped rows,
+ * and dependencies from the job/staging tables. Only `job_id`, `request_id`,
+ * and the caller-supplied expected file checksum cross the RPC boundary.
  */
 export const commitMigrationJob = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => CommitInput.parse(input))
-  .handler(async () => {
-    throw new MigrationError("job_not_ready", "commit_not_enabled");
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: raw, error } = await supabase.rpc("commit_migration_job", {
+      _job_id: data.job_id,
+      _request_id: data.creation_request_id,
+      _expected_checksum: data.expected_checksum,
+    });
+    if (error) {
+      return { status: "operation_failed" as const, result: null };
+    }
+    const obj = (raw ?? {}) as { status?: string; result?: unknown };
+    const parsedStatus = CommitStatus.safeParse(obj.status);
+    if (!parsedStatus.success) {
+      return { status: "operation_failed" as const, result: null };
+    }
+    if (parsedStatus.data === "completed" || parsedStatus.data === "idempotent_replay") {
+      const parsed = CommitResult.safeParse(obj.result ?? {});
+      return { status: parsedStatus.data, result: parsed.success ? parsed.data : null };
+    }
+    return { status: parsedStatus.data, result: null };
   });

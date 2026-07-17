@@ -45,9 +45,15 @@ export type StructureMode = (typeof STRUCTURE_MODES)[number];
 export const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10 MB
 export const MAX_ROWS = 5_000;
 
-/** Allowed extensions/MIME. XLSM/macro-enabled explicitly rejected. */
-export const ALLOWED_EXTENSIONS = [".csv", ".xlsx"] as const;
+/**
+ * Production Stage 2D format policy: CSV only.
+ * XLSX/XLSM/XLSB/XLS remain rejected until a later product decision.
+ * Macro-enabled variants map to `macro_enabled` so the UI can surface them
+ * distinctly; plain XLSX now maps to `unsupported_format`.
+ */
+export const ALLOWED_EXTENSIONS = [".csv"] as const;
 export const REJECTED_EXTENSIONS = [
+  ".xlsx",
   ".xlsm",
   ".xlsb",
   ".xltm",
@@ -65,7 +71,6 @@ export const ALLOWED_MIME_PREFIXES = [
   "text/csv",
   "application/csv",
   "application/vnd.ms-excel", // some CSV uploaders emit this
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 ] as const;
 
 export type FileSafetyCode =

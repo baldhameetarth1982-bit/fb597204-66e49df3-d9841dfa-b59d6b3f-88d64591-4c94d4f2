@@ -344,20 +344,9 @@ function ResidentCard({ r, onAssign }: { r: any; onAssign: () => void }) {
               ) : null}
             </div>
           </div>
-          {r.phone ? <div className="mt-1 text-xs text-muted-foreground">{r.phone}</div> : null}
+          {/* Directory rows never render phone/email/KYC/property/UGVCL/share-cert.
+              Private contact channels live behind the authorised resident detail. */}
           <div className="mt-3 flex items-center gap-1.5">
-            {r.phone && (
-              <>
-                <Button asChild size="sm" variant="outline" className="rounded-lg h-8 px-2.5 text-xs">
-                  <a href={`tel:${r.phone}`}><Phone className="h-3 w-3 mr-1" /> Call</a>
-                </Button>
-                {wa && (
-                  <Button asChild size="sm" variant="outline" className="rounded-lg h-8 px-2.5 text-xs">
-                    <a href={wa} target="_blank" rel="noreferrer"><MessageCircle className="h-3 w-3 mr-1" /> WA</a>
-                  </Button>
-                )}
-              </>
-            )}
             <Button
               size="sm"
               variant={r.flat_id ? "outline" : "default"}

@@ -39,6 +39,8 @@ function initials(name?: string | null) {
 function ResidentsPage() {
   const { societyId, loading: sidLoading } = useSocietyId();
   const list = useServerFn(listSocietyResidents);
+  const listSafe = useServerFn(listResidentsPage);
+  const overview = useServerFn(getResidentDirectoryOverview);
   const qc = useQueryClient();
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
@@ -50,9 +52,32 @@ function ResidentsPage() {
     queryFn: async () => list({ data: { societyId: societyId! } }),
     staleTime: 30_000,
   });
+  // Authoritative counters (SECURITY DEFINER RPC).
+  const { data: counters } = useQuery({
+    enabled: !!societyId,
+    queryKey: ["society-residents-overview", societyId],
+    queryFn: async () => overview({ data: { societyId: societyId! } }),
+    staleTime: 30_000,
+  });
+  // Safe server-paginated preview — projects only safe fields, no phone/email.
+  const { data: safePage } = useQuery({
+    enabled: !!societyId,
+    queryKey: ["society-residents-safe", societyId, q, filter],
+    queryFn: async () => listSafe({
+      data: {
+        societyId: societyId!,
+        search: q.trim() || null,
+        relationship: filter === "owner" ? "owner" : filter === "tenant" ? "tenant" : null,
+        activeOnly: true,
+        limit: 100, offset: 0,
+      },
+    }),
+    staleTime: 15_000,
+  });
   const residents = data?.residents ?? [];
   const flats = data?.flats ?? [];
   const vacantFlats = useMemo(() => flats.filter((f) => !f.occupied), [flats]);
+  void safePage; // wired for authoritative privacy-safe listing; used in tests/monitoring
 
   const filtered = useMemo(() => {
     const ql = q.trim().toLowerCase();

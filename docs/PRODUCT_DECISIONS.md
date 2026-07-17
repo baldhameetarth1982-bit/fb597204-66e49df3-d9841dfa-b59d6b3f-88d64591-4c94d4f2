@@ -4,6 +4,82 @@ Chronological log of binding product decisions. Newest date wins on conflict.
 
 ---
 
+## 2026-07-17 — Authoritative pricing and revenue model
+
+### Societies up to 400 flats
+
+Pricing is fixed by feature/payment capability, not charged per flat.
+
+- **Basic — ₹499/month**
+  - Structure, units, residents, households and vehicles
+  - Basic maintenance bill generation
+  - Cash and Bank Transfer records and receipts
+  - Notices, basic complaints and basic reports
+  - Core privacy, security, audit and data export
+
+- **Standard — ₹999/month**
+  - Everything in Basic
+  - Recurring billing, dues, reminders and partial payments
+  - Expenses, income categories and basic ledger
+  - Documents, polls, stronger reports and resident self-service
+
+- **Advanced — ₹1,999/month**
+  - Everything in Standard
+  - Visitor and guard management
+  - Amenities and operations
+  - Non-member income/payment workflows
+  - No-Dues certificate and QR verification
+  - Roles, privacy controls and CSV migration
+  - Flat 360 core and advanced accounting/reports
+
+- **Premium AI — ₹2,999/month**
+  - Everything in Advanced
+  - AI Secretary
+  - AI income/accounting suggestions
+  - AI Flat 360 summary
+  - Smart QR workflows
+  - Advanced automation, analytics and priority support
+  - Higher AI/usage limits and approved custom branding
+
+Security, tenant isolation, audit history, privacy and data export are never weakened or removed from a lower-priced plan.
+
+### Societies above 400 flats
+
+Public wording:
+
+> Custom pricing — contact SociyoHub for a personalised quotation.
+
+Internal negotiation range:
+
+- Open at **₹10 per flat/month**
+- Normal negotiation around **₹9 per flat/month**
+- Strategic floor **₹8 per flat/month** only when commercially justified
+
+Final rate depends on flat count, feature set, billing/payment complexity, visitor/guard usage, AI allowance, migration effort, support level and contract duration.
+
+Do not publish a guaranteed ₹8 rate.
+
+### Additional revenue
+
+Separate from subscription MRR:
+
+- Paid onboarding/migration
+- Premium support and training
+- WhatsApp/SMS usage margin
+- Hardware and QR/guard-device partnerships
+- Custom reports/integrations
+- Optional society-approved local sponsorships/ads
+
+Ads are disabled by default, clearly labelled, society-approved and never targeted using private resident data.
+
+### Revenue target
+
+- 50 societies can reach ₹2 lakh/month only with a large-society-heavy mix or meaningful add-on revenue.
+- 75–100 societies is the healthier path to ₹2–₹3 lakh monthly recurring subscription income.
+- Ads and extra services are upside, not required for the core SaaS model.
+
+---
+
 ## 2026-07-14 — Stage 3A
 
 ### Plan model
@@ -11,6 +87,8 @@ Chronological log of binding product decisions. Newest date wins on conflict.
 - Pro = Basic + **every standard functional feature** including all Reddit-validated workflows (Flat 360, complete No-Dues incl. certificate/QR/verification/audit/revocation, Non-Member Payments, AI Income Categorization, AI Secretary, Universal Smart QR Collections, Offline/Online Reconciliation, Low-Risk Migration, Privacy/Financial-Transparency controls, Gamification/payment_points/Leaderboard).
 - Premium = Pro + advanced AI limits, deeper automation, advanced analytics, custom branding, higher usage limits, priority support. **Premium auto-inherits every catalog key** — never gated by a hand-maintained array.
 - Uncategorized existing features default to Pro (never Basic) and are recorded for review.
+
+> This older three-plan naming is now superseded by the 2026-07-17 four-plan pricing model. Existing internal plan keys must be migrated carefully rather than renamed destructively.
 
 ### No-Dues workflow
 - Single feature key `no_dues` (min plan = Pro). Certificate + QR + audit + revocation are part of the **same** Pro feature — not split into Premium.

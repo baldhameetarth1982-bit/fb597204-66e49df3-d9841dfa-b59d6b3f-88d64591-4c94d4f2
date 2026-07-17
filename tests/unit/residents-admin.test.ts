@@ -64,8 +64,9 @@ describe("Stage 2B — adapter invariants", () => {
 
   it("no unsafe null-to-string casts on optional RPC arguments", () => {
     // Pre-Stage 2B pattern: `undef(v) as string`. Must be gone.
-    expect(src).not.toMatch(/undef\([^)]+\)\s+as\s+(string|number)/);
-    expect(src).not.toMatch(/\bas\s+any\b/);
+    expect(src).not.toMatch(/undef\s*\(/);
+    // `as any` is never used in this module.
+    expect(src.replace(/\/\/.*|\/\*[\s\S]*?\*\//g, "")).not.toMatch(/\bas\s+any\b/);
   });
 
   it("no direct browser Supabase client imports", () => {

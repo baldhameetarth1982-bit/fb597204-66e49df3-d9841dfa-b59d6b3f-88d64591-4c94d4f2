@@ -155,10 +155,13 @@ describe("Stage 3A · adapter behavior (real workflow simulations)", () => {
 describe("Stage 3A · source contracts", () => {
   const src = readFileSync(resolve(SRC_ROOT, "src/lib/billing-config.functions.ts"), "utf8");
   const card = readFileSync(resolve(SRC_ROOT, "src/components/billing/BillingConfigCard.tsx"), "utf8");
-  const migrations = [
-    "supabase/migrations/20260717180940_f656b58b-72fd-4f49-a967-8f1980a26fc1.sql",
-  ]
-    .map((p) => readFileSync(resolve(SRC_ROOT, p), "utf8"))
+  const fs = require("node:fs") as typeof import("node:fs");
+  const migFiles = fs
+    .readdirSync(resolve(SRC_ROOT, "supabase/migrations"))
+    .filter((f) => f.endsWith(".sql"))
+    .sort();
+  const migrations = migFiles
+    .map((f) => fs.readFileSync(resolve(SRC_ROOT, "supabase/migrations", f), "utf8"))
     .join("\n");
 
   it("billing-config.functions.ts contains no `as any`", () => {

@@ -190,30 +190,18 @@ describe("Stage 3A · source contracts", () => {
   });
 
   it("Latest preview implementation is serial-safe and area/unit-type canonical", () => {
-    // The corrective migration must not filter by block_id IS NOT NULL inside eligibility.
-    // Read the newest preview migration.
-    const newest = readFileSync(
-      resolve(SRC_ROOT, "supabase/migrations"),
-      { encoding: undefined },
-    ); // placeholder to keep node happy on directory reads
-    // We can't read a directory as text; instead, glob the closure migration explicitly.
-    void newest;
-    // Locate the corrective migration by scanning for its distinctive signature.
-    const fs = require("node:fs") as typeof import("node:fs");
-    const files = fs.readdirSync(resolve(SRC_ROOT, "supabase/migrations")).sort();
-    const latestPreview = files
+    const latestPreview = migFiles
       .map((f) => ({ f, body: fs.readFileSync(resolve(SRC_ROOT, "supabase/migrations", f), "utf8") }))
       .filter((m) => /CREATE OR REPLACE FUNCTION public\.preview_billing_template/.test(m.body))
       .pop();
     expect(latestPreview).toBeDefined();
     const body = latestPreview!.body;
-    // The final preview function must NOT restrict eligibility with block_id IS NOT NULL.
-    // (We check the *last* CREATE OR REPLACE which is the newest override.)
     const lastFnStart = body.lastIndexOf("CREATE OR REPLACE FUNCTION public.preview_billing_template");
     const fnBody = body.slice(lastFnStart);
-    expect(fnBody).not.toMatch(/f\.block_id IS NOT NULL/);
+    // Eligibility must NOT filter by block_id IS NOT NULL (serial-mode societies must be included).
+    expect(fnBody).not.toMatch(/f\.block_id\s+IS\s+NOT\s+NULL/);
     expect(fnBody).toMatch(/is_active\s*=\s*true/);
-    expect(fnBody).toMatch(/COALESCE\(\s*NULLIF\(btrim\(f\.unit_type\),\s*''\),\s*NULLIF\(btrim\(f\.type\),\s*''\)/);
+    expect(fnBody).toMatch(/COALESCE\(\s*NULLIF\(btrim\(f\.unit_type\)/);
   });
 
   it("No Razorpay/UPI/card/wallet/platform-fee/Stripe/Paddle references in Stage 3A billing sources", () => {

@@ -1,5 +1,17 @@
 # Next Stages
 
+## Stage 2E — Onboarding, Migration QA & Stage 2 Closure (COMPLETE 2026-07-17)
+
+**Scope delivered**
+- **Migration QA fixes:** additive migration `20260717162652_...` filters `migration_entity_links` lookups by `source_type` when resolving family/vehicle resident links so colliding external keys across sources never cross-link.
+- **Validation-time honesty:** `validateMigrationJob` now fails closed for `entity_type = 'occupancy'` (unsupported) and for `structure` rows on serial-mode societies. Two new stable `SafeError` codes back the UX: `occupancy_rows_unsupported`, `structure_rows_not_allowed_serial`. Jobs can no longer sit in a permanently blocked state due to these categories.
+- **Recovery UX:** `/society/import` now lists recent jobs with resume + status chips, mints a fresh `creation_request_id` on every retry (so a prior failure never locks the job into an idempotent replay), and renders human-readable guidance for every commit failure code stored in `migration_commit_requests.failure_code`.
+- **Legacy retirement:** `/society/matrix-import` redirects to `/society/import`; all navigation entry-points now point at the canonical route.
+- **Env hygiene:** `.env` (and `.env.*` variants, excluding `.env.example`) added to `.gitignore`.
+- **Tests:** 600 unit tests pass + 2 new Stage 2E guidance-contract assertions. Behavioral migration tests preserved.
+
+**Stage 2 closure status:** Stage 2A–2E complete. Ready for Stage 2F/Stage 3 scoping.
+
 ## Stage 2D — Migration & Bulk Import (COMPLETE 2026-07-17)
 
 ### People commit closure (final run)

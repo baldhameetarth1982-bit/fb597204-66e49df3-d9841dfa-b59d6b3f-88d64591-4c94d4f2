@@ -16,6 +16,7 @@ import { MobileHero } from "@/components/shared/MobileHero";
 import { StatPill, StatPillRow } from "@/components/shared/StatPill";
 import { SectionCard } from "@/components/shared/SectionCard";
 import { ListCard, ListCardGroup } from "@/components/shared/ListCard";
+import { SetupChecklistCard } from "@/components/society/SetupChecklistCard";
 
 export const Route = createFileRoute("/_society/society/dashboard")({
   head: () => ({

@@ -414,10 +414,10 @@ function ImportPage() {
             <CardContent className="p-5 space-y-3">
               <p className="font-semibold">Confirm canonical import</p>
               <ul className="text-xs text-muted-foreground list-disc pl-5 space-y-1">
-                <li>Operational society records (structures and units) will be created.</li>
-                <li>Existing records will not be silently overwritten.</li>
-                <li>No login accounts will be created.</li>
-                <li>Provenance will be recorded for every canonical row.</li>
+                <li>Society records will be created — structures, units, residents, occupancy, family and vehicles as applicable.</li>
+                <li>New non-login residents are created as offline residents (no login account is issued).</li>
+                <li>Existing records will not be silently overwritten. Duplicate active vehicle plates block the commit.</li>
+                <li>Provenance is recorded for every canonical row.</li>
                 <li>This operation is idempotent — retrying with the same request replays the stored result.</li>
               </ul>
               <div className="flex gap-2 flex-wrap">

@@ -21,6 +21,7 @@ import { StatPill, StatPillRow } from "@/components/shared/StatPill";
 import { SectionCard } from "@/components/shared/SectionCard";
 import { AssignFlatDialog } from "@/components/society/AssignFlatDialog";
 import { listSocietyResidents } from "@/lib/residents.functions";
+import { getResidentDirectoryOverview, listResidentsPage } from "@/lib/residents-admin.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_society/society/residents")({

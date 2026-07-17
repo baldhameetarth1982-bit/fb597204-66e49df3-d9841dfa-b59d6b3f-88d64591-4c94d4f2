@@ -131,6 +131,13 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
       <CardContent className="space-y-6">
         {loading ? (
           <div className="py-8 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+        ) : errorMsg ? (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+            {errorMsg}
+            <div className="mt-2">
+              <Button size="sm" variant="outline" className="rounded-xl" onClick={() => void refresh()}>Retry</Button>
+            </div>
+          </div>
         ) : (
           <>
             {/* Charge heads */}

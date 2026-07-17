@@ -535,3 +535,95 @@ function PreviewDialog({ open, onOpenChange, preview }: { open: boolean; onOpenC
     </Dialog>
   );
 }
+
+function CycleDialog({ open, onOpenChange, templates, onSave }: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  templates: Template[];
+  onSave: (v: {
+    templateId: string;
+    cycleName: string;
+    periodStart: string;
+    periodEnd: string;
+    dueDate: string;
+    status: "draft" | "ready";
+  }) => Promise<void>;
+}) {
+  const [templateId, setTemplateId] = useState<string>(templates[0]?.id ?? "");
+  const [cycleName, setCycleName] = useState<string>("");
+  const today = new Date().toISOString().slice(0, 10);
+  const nextMonth = new Date(); nextMonth.setDate(1); nextMonth.setMonth(nextMonth.getMonth() + 1);
+  const [periodStart, setPeriodStart] = useState<string>(today);
+  const [periodEnd, setPeriodEnd] = useState<string>(nextMonth.toISOString().slice(0, 10));
+  const [dueDate, setDueDate] = useState<string>(nextMonth.toISOString().slice(0, 10));
+  const [status, setStatus] = useState<"draft" | "ready">("draft");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => { if (open && templates[0]) setTemplateId(templates[0].id); }, [open, templates]);
+
+  const validDates = periodEnd >= periodStart && dueDate >= periodStart;
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) setCycleName(""); }}>
+      <DialogContent className="rounded-2xl">
+        <DialogHeader>
+          <DialogTitle>New billing cycle</DialogTitle>
+          <p className="text-[11px] text-muted-foreground">
+            Draft only — bill generation comes in Stage 3B.
+          </p>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label>Template</Label>
+            <select
+              className="w-full h-10 rounded-md border bg-background px-2 text-sm"
+              value={templateId}
+              onChange={(e) => setTemplateId(e.target.value)}
+            >
+              {templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </div>
+          <div><Label>Cycle name</Label><Input value={cycleName} onChange={(e) => setCycleName(e.target.value)} placeholder="July 2026" /></div>
+          <div className="grid grid-cols-2 gap-2">
+            <div><Label>Period start</Label><Input type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} /></div>
+            <div><Label>Period end</Label><Input type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} /></div>
+          </div>
+          <div><Label>Due date</Label><Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></div>
+          <div>
+            <Label>Status</Label>
+            <select
+              className="w-full h-10 rounded-md border bg-background px-2 text-sm"
+              value={status}
+              onChange={(e) => setStatus(e.target.value as "draft" | "ready")}
+            >
+              <option value="draft">Draft</option>
+              <option value="ready">Ready (Stage 3B will pick this up)</option>
+            </select>
+          </div>
+          {!validDates && (
+            <p className="text-xs text-destructive">Cycle dates are invalid — end and due date must be on or after the start.</p>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button
+            disabled={busy || !templateId || !cycleName.trim() || !validDates}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                await onSave({ templateId, cycleName: cycleName.trim(), periodStart, periodEnd, dueDate, status });
+                onOpenChange(false);
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : "Save failed");
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            Save
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

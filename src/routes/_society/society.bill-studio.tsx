@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { BillingConfigCard } from "@/components/billing/BillingConfigCard";
 
 export const Route = createFileRoute("/_society/society/bill-studio")({
   head: () => ({ meta: [{ title: "Bill Templates — SociyoHub" }] }),
@@ -52,6 +53,7 @@ function BillTemplatesPage() {
           <BillingCenterTabs />
         </div>
         <BillAppearanceCard societyId={societyId} />
+        <BillingConfigCard societyId={societyId} />
         <SectionCard>
           <div className="flex items-start gap-3 flex-wrap">
             <div className="flex-1 min-w-0">

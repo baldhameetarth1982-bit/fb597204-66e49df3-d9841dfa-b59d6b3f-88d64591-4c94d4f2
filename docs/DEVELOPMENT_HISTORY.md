@@ -1,3 +1,11 @@
+# Stage 3A — Bill Studio & Billing Configuration (STARTED 2026-07-17)
+
+- Additive migration: `billing_charge_heads`, `billing_templates`, `billing_template_lines`, `billing_cycle_configs` with admin-only RLS via `current_user_has_society_permission(_, _, NULL)` and SECURITY DEFINER RPCs (`save_charge_head`, `save_billing_template`, `save_billing_template_line`, `archive_billing_template_line`, `configure_billing_cycle`, `preview_billing_template`).
+- `preview_billing_template` computes per-unit line amounts from `flats` with warnings for missing area / manual variable lines. Preview only — no bill/invoice writes.
+- Server functions module: `src/lib/billing-config.functions.ts` with `requireSupabaseAuth` on every call and safe error mapping (`mapError`).
+- UI: `src/components/billing/BillingConfigCard.tsx` mounted inside `src/routes/_society/society.bill-studio.tsx`. Charge heads, templates, template lines, and safe preview in a dialog.
+- Test: `tests/unit/billing-config-stage3a.test.ts` locks the error mapper contract.
+
 # Stage 2D — Migration & Bulk Import (COMPLETE, closure run 2026-07-17)
 
 ## People commit closure

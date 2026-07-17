@@ -182,9 +182,9 @@ export const listResidentsPage = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase.rpc("list_society_residents_page", {
       _society_id: data.societyId,
-      _search: data.search ?? null,
-      _flat_id: data.flatId ?? null,
-      _relationship: data.relationship ?? null,
+      _search: data.search ?? undefined,
+      _flat_id: data.flatId ?? undefined,
+      _relationship: data.relationship ?? undefined,
       _active_only: data.activeOnly ?? true,
       _limit: data.limit ?? 25,
       _offset: data.offset ?? 0,
@@ -277,7 +277,7 @@ export const endResidentUnitRelationship = createServerFn({ method: "POST" })
       _society_id: data.societyId,
       _flat_resident_id: data.flatResidentId,
       _moved_out_at: data.movedOutAt ?? new Date().toISOString(),
-      _reason: data.reason ?? null,
+      _reason: data.reason ?? undefined,
     });
     if (error) throw safeError(error);
     return { ok: true };
@@ -290,11 +290,11 @@ export const upsertFamilyMemberAsAdmin = createServerFn({ method: "POST" })
     const { data: id, error } = await context.supabase.rpc("admin_upsert_family_member", {
       _society_id: data.societyId,
       _resident_user_id: data.residentUserId,
-      _id: data.id ?? null,
+      _id: data.id ?? undefined,
       _full_name: data.fullName,
       _relation: data.relation,
-      _phone: data.phone ?? null,
-      _age: data.age ?? null,
+      _phone: data.phone ?? undefined,
+      _age: data.age ?? undefined,
     });
     if (error) throw safeError(error);
     return { id: id as string };
@@ -322,13 +322,13 @@ export const upsertVehicleAsAdmin = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: id, error } = await context.supabase.rpc("admin_upsert_vehicle", {
       _society_id: data.societyId,
-      _id: data.id ?? null,
+      _id: data.id ?? undefined,
       _resident_user_id: data.residentUserId,
-      _flat_id: data.flatId ?? null,
+      _flat_id: data.flatId ?? undefined,
       _plate_number: data.plateNumber,
       _type: data.type ?? "car",
-      _make_model: data.makeModel ?? null,
-      _color: data.color ?? null,
+      _make_model: data.makeModel ?? undefined,
+      _color: data.color ?? undefined,
     });
     if (error) throw safeError(error);
     return { id: id as string };

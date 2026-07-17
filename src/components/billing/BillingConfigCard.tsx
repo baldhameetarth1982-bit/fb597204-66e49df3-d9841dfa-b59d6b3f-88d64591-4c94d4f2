@@ -349,6 +349,17 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
       )}
       {/* Preview */}
       <PreviewDialog open={previewOpen} onOpenChange={setPreviewOpen} preview={preview} />
+      {/* Billing cycle */}
+      <CycleDialog
+        open={cycleOpen}
+        onOpenChange={setCycleOpen}
+        templates={templates}
+        onSave={async (v) => {
+          await configureCycleFn({ data: { societyId, ...v } });
+          toast.success("Cycle saved as draft");
+          void refreshCycles();
+        }}
+      />
     </Card>
   );
 }

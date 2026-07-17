@@ -273,7 +273,7 @@ function ResidentDetailPage() {
             </div>
           ) : (
             <dl className="pt-3 space-y-2 text-sm">
-              <Row label="House" value={a?.flats ? `${(a.flats as any).blocks?.name ?? ""} ${(a.flats as any).flat_number}` : null} />
+              <Row label="House" value={a ? `${a.block_name ?? ""} ${a.flat_number ?? ""}`.trim() || null : null} />
               <Row label="Type" value={a?.relationship} />
               <Row label="Property number" value={p.property_number} />
               <Row label="UGVCL" value={p.ugvcl_number} />

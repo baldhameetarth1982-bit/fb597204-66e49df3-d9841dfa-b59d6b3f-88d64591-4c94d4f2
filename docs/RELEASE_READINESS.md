@@ -717,3 +717,36 @@ Audit and Canonical Setup Model.**
   return NULL (non-enumerating).
 - 449/450 unit tests pass (1 honest integration skip). Build OK. Secret
   scan OK. Protected society untouched.
+
+## Stage 2C (2026-07-17) — Teams, Roles and Privacy Controls
+- Canonical `role_permissions.ts` is the single source of truth for
+  role × capability mapping. SQL helper
+  `current_user_has_society_permission(_society_id, _capability,
+  _block_id uuid DEFAULT NULL)` validates the capability against
+  `is_known_capability()` BEFORE any role shortcut — unknown
+  capabilities return false for every role (including Super Admin).
+- Multi-block Block Admin scope lives in
+  `public.user_role_block_scopes` with soft-deactivation history and a
+  partial unique active index on (role_id, block_id). Existing single
+  block_id assignments were backfilled without invention.
+  `admin_upsert_team_role_v2` accepts an array of blocks, dedupes,
+  validates same-society + active, reconciles scopes transactionally
+  and audits previous/resulting arrays.
+- Stage 2C server adapters
+  (`src/lib/team-admin.functions.ts`,
+   `src/lib/privacy-decisions.functions.ts`)
+  are generated-type-safe: RPC args use
+  `satisfies Database["public"]["Functions"][fn]["Args"]` and RPC
+  responses are Zod-validated. Zero `as any` remains in Stage 2C
+  domain code.
+- Server-enforced privacy: `resolve_privacy_access` (directory,
+  contacts, finances, vehicles, documents), `resolve_financial_visibility`
+  (admin | detailed | summary | none) and the resident-safe directory
+  `list_society_residents_safe_page`. Block Admins are limited to
+  their assigned blocks; residents see the directory only when
+  `privacy_directory = 'residents_safe'`; phone / email / KYC /
+  documents are never projected.
+- Last-active-Society-Admin protection preserved; role changes remain
+  transactional and audited.
+- 509/509 unit tests pass (5 honest integration skips). Build OK.
+  Secret scan OK. Protected society untouched.

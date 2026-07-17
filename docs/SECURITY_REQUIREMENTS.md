@@ -166,3 +166,24 @@ input and server-derived canonical JSON/hash unambiguous.
   `audit_log`; never `DELETE` a `flat_residents` row.
 - Vehicle plates are normalized inside the RPC (uppercase, whitespace
   stripped) and are unique per society at the DB layer.
+
+## Stage 2C completion — server-enforced privacy
+- Every capability check goes through
+  `public.current_user_has_society_permission(_society_id, _capability,
+  _block_id)` and is denied unless the capability is in
+  `public.is_known_capability(text)`. Unknown capabilities are denied
+  for every role, including Super Admin.
+- Block Admin authority is bound to explicitly assigned active blocks
+  recorded in `public.user_role_block_scopes`. `user_roles.block_id`
+  is legacy compatibility only — never treat it as the authoritative
+  multi-block source.
+- Resident-facing data endpoints MUST consult
+  `resolve_privacy_access(_society_id, _resource, _subject_user_id)`
+  (booleans) or `resolve_financial_visibility(_society_id)` (tiered).
+  Unknown resource or setting values fail closed. Guard is denied every
+  resident-privacy resource.
+- The first data endpoint honoring the decision is
+  `list_society_residents_safe_page` — safe projection only (id, name,
+  flat, block). Contacts, vehicles and documents keep their existing
+  admin-only paths; when their resident-facing variants land in later
+  stages they MUST call `resolve_privacy_access` before returning data.

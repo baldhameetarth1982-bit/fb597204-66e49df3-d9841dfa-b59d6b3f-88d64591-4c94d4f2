@@ -212,6 +212,15 @@ function SocietyDashboard() {
         </Card>
       )}
 
+      {/* Stage 2E — server-derived setup checklist */}
+      {societyId && (
+        <section aria-label="Society setup checklist">
+          <SetupChecklistCard societyId={societyId} />
+        </section>
+      )}
+
+
+
 
 
       {/* Primary action tiles — highest urgency */}

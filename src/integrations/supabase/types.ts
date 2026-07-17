@@ -587,41 +587,72 @@ export type Database = {
           created_at: string
           deactivated_at: string | null
           deactivated_by: string | null
+          flat_id: string | null
           full_name: string
           id: string
           is_active: boolean
+          offline_resident_id: string | null
           phone: string | null
           relation: string
+          society_id: string | null
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           age?: number | null
           created_at?: string
           deactivated_at?: string | null
           deactivated_by?: string | null
+          flat_id?: string | null
           full_name: string
           id?: string
           is_active?: boolean
+          offline_resident_id?: string | null
           phone?: string | null
           relation: string
+          society_id?: string | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           age?: number | null
           created_at?: string
           deactivated_at?: string | null
           deactivated_by?: string | null
+          flat_id?: string | null
           full_name?: string
           id?: string
           is_active?: boolean
+          offline_resident_id?: string | null
           phone?: string | null
           relation?: string
+          society_id?: string | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "family_members_flat_id_fkey"
+            columns: ["flat_id"]
+            isOneToOne: false
+            referencedRelation: "flats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_members_offline_resident_id_fkey"
+            columns: ["offline_resident_id"]
+            isOneToOne: false
+            referencedRelation: "offline_residents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_members_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fcm_tokens: {
         Row: {
@@ -3047,11 +3078,12 @@ export type Database = {
           id: string
           is_active: boolean
           make_model: string | null
+          offline_resident_id: string | null
           plate_number: string
           society_id: string
           type: string
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           color?: string | null
@@ -3062,11 +3094,12 @@ export type Database = {
           id?: string
           is_active?: boolean
           make_model?: string | null
+          offline_resident_id?: string | null
           plate_number: string
           society_id: string
           type?: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           color?: string | null
@@ -3077,13 +3110,22 @@ export type Database = {
           id?: string
           is_active?: boolean
           make_model?: string | null
+          offline_resident_id?: string | null
           plate_number?: string
           society_id?: string
           type?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "vehicles_offline_resident_id_fkey"
+            columns: ["offline_resident_id"]
+            isOneToOne: false
+            referencedRelation: "offline_residents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       visitors: {
         Row: {

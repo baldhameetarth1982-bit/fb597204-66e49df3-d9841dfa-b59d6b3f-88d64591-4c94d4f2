@@ -1,3 +1,42 @@
+# Stage 2D — Migration & Bulk Import (COMPLETE, closure run 2026-07-17)
+
+## People commit closure
+
+- Additive migration extends `commit_migration_job` (SECURITY DEFINER,
+  service-role-owned; execute granted to authenticated) to perform real
+  canonical writes for residents, occupancy, family and vehicles on top
+  of the already-shipped structure/unit writers.
+- `family_members` and `vehicles` gained a nullable `offline_resident_id`
+  FK (ON DELETE CASCADE) plus a CHECK enforcing exactly-one-of
+  `user_id` / `offline_resident_id`. `family_members` also gained
+  `society_id` / `flat_id` provenance columns (backfilled) and a
+  society-admin read policy.
+- Resident `create` rows insert into `offline_residents` (non-login) and
+  count as one occupancy each (offline residents carry `flat_id`).
+  Resident `match_existing` rows attach an active `flat_residents` row
+  for the auth user; duplicates are skipped, not multiplied.
+- Family / vehicle rows resolve their owner through
+  `migration_entity_links` (`entity_type='resident'`,
+  `source_key=external_resident_key`). Family creates go to
+  `family_members` with the right owner kind; vehicles enforce active-plate
+  uniqueness inside the same commit and reject duplicates as
+  `unresolved_conflicts`. No hardcoded people counters remain.
+- Completion is gated: after every entity loop the RPC re-counts any
+  remaining valid/warning `create`/`match_existing` rows and returns
+  `unresolved_conflicts` if any are still uncommitted; the job stays at
+  `ready` and the commit request is marked `failed` with a specific
+  failure code.
+- `_commitMigrationJobViaRpc` extracted as a pure adapter so behavioral
+  tests can invoke the real RPC dispatch/parse against a mocked supabase
+  client — 12 new tests verify status parsing, full people counters,
+  idempotent replay preservation, blocked-conflict handling, malformed
+  result rejection, and unknown-status rejection.
+- UI: `/society/import` result card renders the full people-commit
+  counters (residents/occupancies/family/vehicles created and matched).
+  Confirm dialog copy now honestly enumerates what will be written. The
+  stale "residents/family/vehicles are not created" disclaimer is gone.
+- Suite: 600 tests passing (+12 this run). Build green.
+
 # Stage 2B — Completion run (lifecycle + UI wiring)
 
 ## Corrections applied this run

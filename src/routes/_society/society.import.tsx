@@ -414,10 +414,10 @@ function ImportPage() {
             <CardContent className="p-5 space-y-3">
               <p className="font-semibold">Confirm canonical import</p>
               <ul className="text-xs text-muted-foreground list-disc pl-5 space-y-1">
-                <li>Operational society records (structures and units) will be created.</li>
-                <li>Existing records will not be silently overwritten.</li>
-                <li>No login accounts will be created.</li>
-                <li>Provenance will be recorded for every canonical row.</li>
+                <li>Society records will be created — structures, units, residents, occupancy, family and vehicles as applicable.</li>
+                <li>New non-login residents are created as offline residents (no login account is issued).</li>
+                <li>Existing records will not be silently overwritten. Duplicate active vehicle plates block the commit.</li>
+                <li>Provenance is recorded for every canonical row.</li>
                 <li>This operation is idempotent — retrying with the same request replays the stored result.</li>
               </ul>
               <div className="flex gap-2 flex-wrap">
@@ -475,6 +475,26 @@ function ImportPage() {
                   <div className="font-semibold">{commitResult.units_matched}</div>
                 </div>
                 <div className="rounded-lg bg-muted p-2">
+                  <div className="text-muted-foreground">Residents created</div>
+                  <div className="font-semibold">{commitResult.residents_created}</div>
+                </div>
+                <div className="rounded-lg bg-muted p-2">
+                  <div className="text-muted-foreground">Residents matched</div>
+                  <div className="font-semibold">{commitResult.residents_matched}</div>
+                </div>
+                <div className="rounded-lg bg-muted p-2">
+                  <div className="text-muted-foreground">Occupancies created</div>
+                  <div className="font-semibold">{commitResult.occupancies_created}</div>
+                </div>
+                <div className="rounded-lg bg-muted p-2">
+                  <div className="text-muted-foreground">Family created</div>
+                  <div className="font-semibold">{commitResult.family_created}</div>
+                </div>
+                <div className="rounded-lg bg-muted p-2">
+                  <div className="text-muted-foreground">Vehicles created</div>
+                  <div className="font-semibold">{commitResult.vehicles_created}</div>
+                </div>
+                <div className="rounded-lg bg-muted p-2">
                   <div className="text-muted-foreground">Skipped</div>
                   <div className="font-semibold">{commitResult.skipped}</div>
                 </div>
@@ -483,10 +503,6 @@ function ImportPage() {
                   <div className="font-semibold">{commitResult.total_committed}</div>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Residents, family, and vehicles are not created in this run — they require a
-                login identity model beyond Stage 2D scope.
-              </p>
               <p className="text-[10px] text-muted-foreground">Job {jobId}</p>
             </CardContent>
           </Card>

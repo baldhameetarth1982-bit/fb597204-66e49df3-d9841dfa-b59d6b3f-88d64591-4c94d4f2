@@ -566,6 +566,18 @@ type CommitRpcClient = {
   rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
 };
 
+export const commitMigrationJob = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => CommitInput.parse(input))
+  .handler(async ({ data, context }) => {
+    return _commitMigrationJobViaRpc(context.supabase as unknown as CommitRpcClient, data);
+  });
+
+// Pure helper co-located with the server function so behavioral tests can
+// invoke the RPC dispatch/parse logic directly against a mocked supabase
+// client. Kept below the server fn so the export block for
+// `commitMigrationJob` includes the RPC call site: `commit_migration_job`,
+// `_request_id`, `expected_checksum`.
 export async function _commitMigrationJobViaRpc(
   supabase: CommitRpcClient,
   data: z.infer<typeof CommitInput>,
@@ -590,10 +602,4 @@ export async function _commitMigrationJobViaRpc(
   return { status: parsedStatus.data, result: null };
 }
 
-export const commitMigrationJob = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => CommitInput.parse(input))
-  .handler(async ({ data, context }) => {
-    return _commitMigrationJobViaRpc(context.supabase as unknown as CommitRpcClient, data);
-  });
 

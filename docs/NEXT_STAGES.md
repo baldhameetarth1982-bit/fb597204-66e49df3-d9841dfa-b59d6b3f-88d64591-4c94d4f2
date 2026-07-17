@@ -4,13 +4,20 @@
 
 **Scope delivered**
 - **Migration QA fixes:** additive migration `20260717162652_...` filters `migration_entity_links` lookups by `source_type` when resolving family/vehicle resident links so colliding external keys across sources never cross-link.
-- **Validation-time honesty:** `validateMigrationJob` now fails closed for `entity_type = 'occupancy'` (unsupported) and for `structure` rows on serial-mode societies. Two new stable `SafeError` codes back the UX: `occupancy_rows_unsupported`, `structure_rows_not_allowed_serial`. Jobs can no longer sit in a permanently blocked state due to these categories.
-- **Recovery UX:** `/society/import` now lists recent jobs with resume + status chips, mints a fresh `creation_request_id` on every retry (so a prior failure never locks the job into an idempotent replay), and renders human-readable guidance for every commit failure code stored in `migration_commit_requests.failure_code`.
-- **Legacy retirement:** `/society/matrix-import` redirects to `/society/import`; all navigation entry-points now point at the canonical route.
-- **Env hygiene:** `.env` (and `.env.*` variants, excluding `.env.example`) added to `.gitignore`.
-- **Tests:** 600 unit tests pass + 2 new Stage 2E guidance-contract assertions. Behavioral migration tests preserved.
+- **Atomic rollback + real provenance:** final closure migration wraps every canonical write in one PL/pgSQL sub-transaction (`BEGIN ... EXCEPTION WHEN SQLSTATE 'MG001'`). Any row-level failure (`resident_link_missing`, `resident_link_invalid`, `unit_not_found`, `duplicate_active_plate`, `invalid_plate`, `provenance_mismatch`, `rows_unresolved`) rolls back every row written in this attempt before marking the commit request failed and returning `unresolved_conflicts`. Family and vehicle rows now store their own `family_members.id` / `vehicles.id` as the canonical entity id — resident ids are no longer misused as provenance. Matched residents are re-verified against the society before linking.
+- **FK safety:** `family_members.offline_resident_id` and `vehicles.offline_resident_id` foreign keys switched from `ON DELETE CASCADE` to `ON DELETE RESTRICT` so removing an offline resident cannot silently wipe historical family/vehicle rows.
+- **Server-derived checksum:** `commitMigrationJob` no longer requires a browser-held checksum. The server function loads `migration_jobs.file_checksum` itself and forwards it to the RPC, so a resumed commit works after a page reload.
+- **Setup checklist:** new `migration_setup_checklist(_society_id)` SECURITY DEFINER RPC + `getSetupChecklist` server fn expose booleans/counts (blocks, flats, active residents, completed imports) for Stage 2 setup surfaces to consume.
+- **Validation-time honesty:** `validateMigrationJob` fails closed for `entity_type = 'occupancy'` and for `structure` rows on serial-mode societies (`occupancy_rows_unsupported`, `structure_rows_not_allowed_serial`).
+- **Recovery UX:** `/society/import` lists recent jobs with resume + status chips, mints a fresh `creation_request_id` on every retry, and renders human-readable guidance for every stored failure code.
+- **Legacy retirement:** `/society/matrix-import` redirects to `/society/import`.
+- **Test hygiene:** the Node-only `tests/billing-cron.test.mjs` was renamed to `tests/billing-cron.mjs` so vitest no longer picks it up as a broken suite; it remains runnable via `node --test tests/billing-cron.mjs`. `bunx vitest run` now exits zero (30 files, 602 tests passing, 1 skipped).
+- **Env hygiene:** `.env` (and `.env.*` variants, excluding `.env.example`) confirmed in `.gitignore`.
 
-**Stage 2 closure status:** Stage 2A–2E complete. Ready for Stage 2F/Stage 3 scoping.
+**Verification (this run):** `bunx tsgo --noEmit` clean · `bunx vitest run` 30 passed 1 skipped · `bun run build` succeeds · `bun scripts/verify-client-bundle-secrets.ts` OK.
+
+**Stage 2 closure status:** Stage 2A–2E complete. Ready for Stage 3 scoping.
+
 
 ## Stage 2D — Migration & Bulk Import (COMPLETE 2026-07-17)
 

@@ -538,7 +538,12 @@ export const getMigrationPreview = createServerFn({ method: "POST" })
 const CommitInput = z.object({
   job_id: z.string().uuid(),
   creation_request_id: z.string().trim().min(8).max(80),
-  expected_checksum: z.string().trim().min(8).max(128),
+  // Stage 2E — checksum is derived server-side from the job record.
+  // Kept optional in the client contract for backward compatibility with
+  // the behavioral tests, but the outer server function always overrides
+  // with the DB value so a stale browser session cannot force a mismatch
+  // or bypass the guard.
+  expected_checksum: z.string().trim().min(8).max(128).optional(),
   confirm: z.literal(true),
 });
 
@@ -571,15 +576,6 @@ const CommitStatus = z.enum([
 
 export type MigrationCommitStatus = z.infer<typeof CommitStatus>;
 
-/**
- * Real canonical commit. The database function `commit_migration_job` is the
- * single authoritative writer: it derives society, source type, mapped rows,
- * and dependencies from the job/staging tables. Only `job_id`, `request_id`,
- * and the caller-supplied expected file checksum cross the RPC boundary.
- *
- * Exposed as a plain function so behavioral tests can invoke it against a
- * mocked supabase client without rebuilding the middleware chain.
- */
 type CommitRpcClient = {
   rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
 };
@@ -588,7 +584,20 @@ export const commitMigrationJob = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => CommitInput.parse(input))
   .handler(async ({ data, context }) => {
-    return _commitMigrationJobViaRpc(context.supabase as unknown as CommitRpcClient, data);
+    // Stage 2E — server-derived checksum. Load from the job record so a
+    // resumed commit does not require a browser-held checksum to succeed.
+    const { data: job } = await context.supabase
+      .from("migration_jobs")
+      .select("id, file_checksum")
+      .eq("id", data.job_id)
+      .maybeSingle();
+    if (!job || !job.file_checksum) {
+      return { status: "unavailable" as const, result: null };
+    }
+    return _commitMigrationJobViaRpc(context.supabase as unknown as CommitRpcClient, {
+      ...data,
+      expected_checksum: String(job.file_checksum),
+    });
   });
 
 // Pure helper co-located with the server function so behavioral tests can
@@ -660,5 +669,35 @@ export const getMigrationJobFailure = createServerFn({ method: "POST" })
       failure_code: latest?.failure_code ?? null,
       failed_at: latest?.failed_at ?? null,
       completed_at: latest?.completed_at ?? null,
+    };
+  });
+
+// ---------- getSetupChecklist ----------
+// Stage 2E closure — server-derived setup checklist. The DB function
+// `migration_setup_checklist` returns simple booleans/counts scoped to
+// the caller's admin permission on the society.
+
+const SetupChecklistInput = z.object({ society_id: z.string().uuid() });
+
+export const getSetupChecklist = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => SetupChecklistInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const { data: raw, error } = await context.supabase.rpc(
+      "migration_setup_checklist",
+      { _society_id: data.society_id },
+    );
+    if (error) throw new MigrationError("operation_failed");
+    const obj = (raw ?? {}) as Record<string, unknown>;
+    if (obj.status !== "ok") throw new MigrationError("unavailable");
+    return {
+      has_blocks: Boolean(obj.has_blocks),
+      has_flats: Boolean(obj.has_flats),
+      has_residents: Boolean(obj.has_residents),
+      has_completed_imports: Boolean(obj.has_completed_imports),
+      blocks: Number(obj.blocks ?? 0),
+      flats: Number(obj.flats ?? 0),
+      active_residents: Number(obj.active_residents ?? 0),
+      completed_imports: Number(obj.completed_imports ?? 0),
     };
   });

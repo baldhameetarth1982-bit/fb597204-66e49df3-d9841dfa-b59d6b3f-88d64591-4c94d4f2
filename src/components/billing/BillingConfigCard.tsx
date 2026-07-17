@@ -261,6 +261,55 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
                 )}
               </section>
             )}
+
+            {/* Billing cycles (Stage 3A — configuration only) */}
+            <section className="space-y-2">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <p className="text-sm font-semibold flex items-center gap-1.5"><CalendarClock className="h-4 w-4" /> Billing cycles</p>
+                  <p className="text-xs text-muted-foreground">Draft the periods your bills will cover. Nothing is generated in Stage 3A.</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="rounded-xl"
+                  onClick={() => setCycleOpen(true)}
+                  disabled={templates.length === 0}
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" /> New cycle
+                </Button>
+              </div>
+              {cycles.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic">
+                  {templates.length === 0 ? "Create a template first, then draft a cycle." : "No billing cycles yet."}
+                </p>
+              ) : (
+                <ul className="space-y-1.5">
+                  {cycles.map((c) => {
+                    const tpl = templates.find((t) => t.id === c.template_id);
+                    return (
+                      <li key={c.id} className="rounded-lg border p-2 text-xs flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="font-medium truncate">{c.cycle_name}</div>
+                          <div className="text-[10px] text-muted-foreground truncate">
+                            {tpl?.name ?? "—"} · {c.period_start} → {c.period_end} · Due {c.due_date}
+                          </div>
+                        </div>
+                        <Badge variant={c.status === "ready" ? "default" : "secondary"}>{c.status}</Badge>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+              <div className="pt-2 flex items-center justify-between flex-wrap gap-2 border-t mt-2">
+                <p className="text-[11px] text-muted-foreground">
+                  Preview only — no bills generated yet.
+                </p>
+                <Button size="sm" className="rounded-xl" disabled title="Bill generation comes in Stage 3B">
+                  Generate bills · Stage 3B
+                </Button>
+              </div>
+            </section>
           </>
         )}
       </CardContent>

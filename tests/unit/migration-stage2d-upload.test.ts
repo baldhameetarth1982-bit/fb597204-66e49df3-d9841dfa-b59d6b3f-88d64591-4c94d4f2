@@ -134,9 +134,11 @@ describe("Stage 2D — server-authoritative contract", () => {
     expect(block).not.toMatch(/storage_path:/);
   });
 
-  it("commit path throws until canonical commit is wired", () => {
+  it("commit path calls the authoritative commit_migration_job RPC", () => {
     const block = FUNCS.slice(FUNCS.indexOf("export const commitMigrationJob"));
-    expect(block).toMatch(/commit_not_enabled/);
+    expect(block).toMatch(/commit_migration_job/);
+    expect(block).toMatch(/expected_checksum/);
+    expect(block).toMatch(/_request_id/);
   });
 
   it("finalize downloads authoritative bytes and hashes them", () => {

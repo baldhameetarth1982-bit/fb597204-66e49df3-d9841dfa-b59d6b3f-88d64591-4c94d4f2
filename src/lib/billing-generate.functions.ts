@@ -28,7 +28,10 @@ export type BillBatchPreview = {
     template_status: string;
   };
   template_preview_json: string;
+  unit_count: number;
+  current_charges_total: number;
   previous_dues_total: number;
+  total_payable: number;
   existing_bill_count: number;
   warnings: string[];
 };
@@ -81,7 +84,10 @@ export const previewBillBatch = createServerFn({ method: "POST" })
         preview_only: true,
         cycle: (raw.cycle ?? {}) as BillBatchPreview["cycle"],
         template_preview_json: JSON.stringify(raw.template_preview ?? {}),
+        unit_count: Number(raw.unit_count ?? 0),
+        current_charges_total: Number(raw.current_charges_total ?? 0),
         previous_dues_total: Number(raw.previous_dues_total ?? 0),
+        total_payable: Number(raw.total_payable ?? 0),
         existing_bill_count: Number(raw.existing_bill_count ?? 0),
         warnings: Array.isArray(raw.warnings) ? (raw.warnings as string[]) : [],
       };
@@ -203,4 +209,80 @@ export const cancelBill = createServerFn({ method: "POST" })
     } catch (e) {
       throw new Error(mapBillingError((e as Error).message));
     }
+  });
+
+/* ------------------------- Resident read-only ------------------------- */
+
+/**
+ * Resident-safe list of own bills. RLS scopes to bills for flats where the
+ * caller is a current flat_resident. Cross-society or unrelated flats are
+ * filtered by the SELECT policy on `public.bills`; we additionally verify
+ * the user has at least one active flat_residents row.
+ */
+export const getResidentBills = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z.object({
+      limit: z.number().int().min(1).max(100).optional(),
+      offset: z.number().int().min(0).max(10_000).optional(),
+    }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    // Derive resident's active flats server-side.
+    const { data: links, error: linkErr } = await context.supabase
+      .from("flat_residents")
+      .select("flat_id")
+      .eq("user_id", context.userId)
+      .is("moved_out_at", null);
+    if (linkErr) throw new Error(mapBillingError("operation_failed"));
+    const flatIds = ((links ?? []) as Array<{ flat_id: string | null }>)
+      .map((r) => r.flat_id).filter((v): v is string => !!v);
+    if (flatIds.length === 0) return { bills: [] };
+
+    const { data: rows, error } = await context.supabase
+      .from("bills")
+      .select(
+        "id, flat_id, bill_number, period_label, period_start, period_end, due_date, current_charges, previous_balance, penalties, adjustments, total_payable, amount, status, cancelled_at, finalized_at",
+      )
+      .in("flat_id", flatIds)
+      .order("due_date", { ascending: false, nullsFirst: false })
+      .range(data.offset ?? 0, (data.offset ?? 0) + (data.limit ?? 24) - 1);
+    if (error) throw new Error(mapBillingError("operation_failed"));
+    return { bills: rows ?? [] };
+  });
+
+/**
+ * Resident-safe bill detail. Fails closed if the bill does not belong to a
+ * flat the caller is actively linked to.
+ */
+export const getResidentBillDetail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ billId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { data: bill, error } = await context.supabase
+      .from("bills")
+      .select(
+        "id, society_id, flat_id, bill_number, bill_date, period_label, period_start, period_end, due_date, current_charges, previous_balance, penalties, adjustments, tax_amount, total_payable, amount, status, cancelled_at, finalized_at",
+      )
+      .eq("id", data.billId)
+      .maybeSingle();
+    if (error) throw new Error(mapBillingError("operation_failed"));
+    if (!bill) throw new Error(mapBillingError("bill_not_found"));
+
+    // Explicit ownership check — RLS already filters, this defends against
+    // any policy drift so residents can never observe another flat's bill.
+    const { data: link } = await context.supabase
+      .from("flat_residents")
+      .select("flat_id")
+      .eq("user_id", context.userId)
+      .eq("flat_id", (bill as { flat_id: string }).flat_id)
+      .is("moved_out_at", null)
+      .maybeSingle();
+    if (!link) throw new Error(mapBillingError("bill_not_found"));
+
+    const { data: lines } = await context.supabase
+      .from("bill_line_items")
+      .select("id, kind, description, amount")
+      .eq("bill_id", data.billId);
+    return { bill, lines: lines ?? [] };
   });

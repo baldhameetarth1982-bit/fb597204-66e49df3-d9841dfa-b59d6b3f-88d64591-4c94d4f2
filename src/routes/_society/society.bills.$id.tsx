@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   Loader2, ArrowLeft, Receipt, IndianRupee, Calendar, Home,
-  CheckCircle2, Clock, XCircle, FileDown, Share2,
+  CheckCircle2, Clock, XCircle, FileDown, Share2, Ban,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
@@ -10,6 +10,10 @@ import { PageShell } from "@/components/shared/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusChip } from "@/components/system/StatusChip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { useServerFn } from "@tanstack/react-start";
+import { cancelBill } from "@/lib/billing-generate.functions";
 import { toast } from "sonner";
 import { shareBillAsImage } from "@/components/billing/BillCardImage";
 import { formatCurrency, formatDate } from "@/utils/format";
@@ -41,9 +45,31 @@ interface BillDetail {
 
 function BillDetailPage() {
   const { id } = Route.useParams();
-  const { user } = useAuth();
+  const { user, hasRole } = useAuth();
+  const cancelBillFn = useServerFn(cancelBill);
   const [bill, setBill] = useState<BillDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelBusy, setCancelBusy] = useState(false);
+  const isAdmin = hasRole?.("society_admin") || hasRole?.("super_admin");
+  const hasVerifiedPayment = !!bill?.payments?.some((p) => p.status === "verified" || p.status === "captured" || p.status === "success");
+  const canCancel = isAdmin && bill && !bill.cancelled_at && !hasVerifiedPayment;
+
+  async function onCancel() {
+    if (!bill) return;
+    setCancelBusy(true);
+    try {
+      await cancelBillFn({ data: { societyId: bill.society_id, billId: bill.id, reason: cancelReason.trim() || undefined } });
+      toast.success("Bill cancelled");
+      setCancelOpen(false);
+      setBill({ ...bill, status: "cancelled", cancelled_at: new Date().toISOString(), cancel_reason: cancelReason || "cancelled" });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setCancelBusy(false);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -210,7 +236,22 @@ function BillDetailPage() {
             >
               <FileDown className="h-4 w-4 mr-2" />Print / PDF
             </Button>
+            {canCancel && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-xl text-destructive border-destructive/40 hover:bg-destructive/10"
+                onClick={() => setCancelOpen(true)}
+              >
+                <Ban className="h-4 w-4 mr-2" />Cancel bill
+              </Button>
+            )}
           </div>
+          {isAdmin && hasVerifiedPayment && !bill.cancelled_at && (
+            <p className="mt-3 text-xs text-muted-foreground">
+              This bill has verified payments and cannot be cancelled directly.
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -255,6 +296,27 @@ function BillDetailPage() {
           </ol>
         </CardContent>
       </Card>
+
+      <Dialog open={cancelOpen} onOpenChange={(v) => (cancelBusy ? null : setCancelOpen(v))}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Cancel this bill?</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            This will mark bill <span className="font-medium">{bill.bill_number ?? bill.id.slice(0, 8)}</span> as cancelled and log an audit entry. It cannot be undone. If verified payments are later recorded, cancellation is blocked.
+          </p>
+          <Textarea
+            placeholder="Reason (optional)"
+            value={cancelReason}
+            onChange={(e) => setCancelReason(e.target.value)}
+            maxLength={500}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancelOpen(false)} disabled={cancelBusy}>Keep</Button>
+            <Button variant="destructive" onClick={onCancel} disabled={cancelBusy}>
+              {cancelBusy ? "Cancelling…" : "Cancel bill"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageShell>
   );
 }

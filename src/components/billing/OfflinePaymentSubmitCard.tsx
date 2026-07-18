@@ -33,7 +33,7 @@ function randomKey(billId: string) {
 }
 
 export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cancelled }: Props) {
-  const submit = useServerFn(submitOfflinePayment);
+  const submit = useServerFn(submitResidentBankTransfer);
   const fetchReceipt = useServerFn(getPaymentReceipt);
   // Residents can only submit Bank Transfer. Cash entry is admin-only.
   const method: Method = "bank_transfer";

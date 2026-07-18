@@ -316,6 +316,15 @@ function paymentRowSchemaRef(): z.ZodTypeAny {
   return z.lazy(() => paymentRowSchema);
 }
 
+const paymentDetailSchema = z.object({
+  payment: z.lazy(() => paymentRowSchema),
+  bill_number: z.string().nullable(),
+  flat_label: z.string().nullable(),
+  summary: billPaymentSummarySchema.nullable(),
+  receipt: z.lazy(() => receiptLifecycleSchema).nullable(),
+  audience: z.enum(["admin", "resident"]),
+});
+
 export interface PaymentDetail {
   payment: OfflinePaymentRow;
   bill_number: string | null;
@@ -325,7 +334,7 @@ export interface PaymentDetail {
   audience: "admin" | "resident";
 }
 
-/** Stage 3C v5 — explicit-auth payment detail for admin/resident, Zod-validated. */
+/** Stage 3C v6 — explicit-auth payment detail; every nested field Zod-validated. */
 export const getPaymentDetail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => paymentIdOnly.parse(i))
@@ -338,14 +347,15 @@ export const getPaymentDetail = createServerFn({ method: "POST" })
       );
       if (raw === null || raw === undefined) return null;
       const parsed = paymentDetailSchema.parse(raw);
-      return {
-        payment: parsed.payment as OfflinePaymentRow,
+      const detail: PaymentDetail = {
+        payment: parsed.payment,
         bill_number: parsed.bill_number,
         flat_label: parsed.flat_label,
-        summary: (parsed.summary ?? null) as BillPaymentSummary | null,
-        receipt: (parsed.receipt ?? null) as PaymentReceiptLifecycle | null,
+        summary: parsed.summary,
+        receipt: parsed.receipt,
         audience: parsed.audience,
-      } satisfies PaymentDetail;
+      };
+      return detail;
     } catch (e) {
       throw new Error(mapPaymentError((e as Error).message));
     }
@@ -365,6 +375,7 @@ const listInput = z.object({
   limit: z.number().int().min(1).max(200).default(50),
   offset: z.number().int().min(0).default(0),
 });
+
 
 const paymentRowSchema = z.object({
   id: z.string(),

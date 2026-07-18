@@ -1,6 +1,16 @@
 # Next Stages
 
-## Stage 3B — Recurring Bills, Bill Numbering, Dues, Bill Lifecycle (COMPLETE 2026-07-18)
+## Stage 3B — Recurring Bills, Bill Numbering, Dues, Bill Lifecycle (CLOSED 2026-07-18)
+
+**Closure run — 2026-07-18**
+- **Preview enriched with server-derived totals.** `preview_bill_batch` and `BillBatchPreview` now expose `unit_count`, `current_charges_total`, and `total_payable` (server-computed as `current_charges_total + previous_dues_total`), plus a `no_active_units` warning. The generate UI + confirmation dialog display these figures; finalize is disabled on `no_active_units`, `cycle_not_ready`, `template_not_active`, or existing bills.
+- **Audit logging.** `finalize_bill_batch` writes a `billing.batch_finalized` `audit_log` row (metadata: `bills_created`, `total_amount`, `cycle_config_id`, `template_id`, `request_id`). `cancel_bill` writes `billing.bill_cancelled` with the reason.
+- **Admin cancel UI.** `society.bills.$id.tsx` now offers a "Cancel bill" affordance with a reason field, wired to `cancelBill`. Hidden when the bill has a verified payment (with an inline explanation) or is already cancelled. Confirmation dialog spells out audit + no-undo semantics.
+- **Resident read-only bills.** `getResidentBills` + `getResidentBillDetail` server fns derive owning flats from `flat_residents` under RLS and never trust client-provided flat/society ids. `_resident/app.bills.tsx` consumes `getResidentBills`, replacing the direct-client `flat_residents` + `bills` query pair.
+- **Generate confirmation copy.** Dialog explicitly states "No payments are recorded in this step. Payment entry and receipt verification comes in Stage 3C", along with the `RR/YYYYMM/####` numbering rule and regeneration lockout.
+- **Behavioral tests (closure).** `tests/unit/billing-stage3b-closure.test.ts` (20 cases) proves: no `as any`, no client-submitted totals on finalize, resident-safe reads with explicit ownership fallback, `requireSupabaseAuth` on every Stage 3B fn, migration writes `audit_log` rows on both finalize + cancel, preview JSON contains `unit_count`/`current_charges_total`/`total_payable`, `no_active_units` warning surfaces, `RR/YYYYMM/####` allocator with `lpad(_next, 4, '0')` + unique bill numbers, no Stage 3B source touches payments/receipts/ledger/platform fee, cancel-blocked-when-verified copy, and resident bills route uses `useServerFn(getResidentBills)`. Total suite: **677 passed / 19 skipped / 11 todo**.
+
+## Stage 3B — Recurring Bills, Bill Numbering, Dues, Bill Lifecycle (initial pass, 2026-07-18)
 
 **Delivered**
 - **Schema (additive).** `bills` extended with `cycle_config_id`, `template_id`, `current_charges`, `previous_balance`, `penalties`, `adjustments`, `tax_amount`, `total_payable`, `generated_by`, `finalized_at`, `generation_batch_id`, `calc_snapshot`. New tables `bill_generation_batches` (society-scoped idempotency: unique on `society_id, cycle_config_id, request_id`) and `bill_number_sequences` (per-society, per-YYYYMM prefix counter). New unique index `bills_society_bill_number_unique` guarantees no duplicate bill numbers per society.

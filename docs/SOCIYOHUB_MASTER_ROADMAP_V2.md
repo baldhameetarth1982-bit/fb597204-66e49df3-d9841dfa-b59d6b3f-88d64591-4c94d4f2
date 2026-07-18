@@ -263,10 +263,11 @@ Mandatory before completion:
 - Due dates, opening balances, late fees and waivers.
 - Reminder schedules and defaulter workflow.
 
-## 3C — Cash and Bank Transfer payments
+## 3C — Cash and Bank Transfer payments  **Status: COMPLETE (v5 closure 2026-07-18)**
 - Partial, full and overpayment handling.
 - Verification, receipt, reversal and reconciliation.
 - Resident ledger and safe payment evidence.
+
 
 ## 3D — Ledger, expenses, transparency and reports
 - Expenses, vendors, cash book, bank book and journal.

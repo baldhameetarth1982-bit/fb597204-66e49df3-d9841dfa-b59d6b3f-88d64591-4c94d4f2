@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { StatusChip } from "@/components/system/StatusChip";
@@ -24,6 +25,8 @@ import {
   Loader2,
   Receipt,
   Clock,
+  Search,
+  Plus,
 } from "lucide-react";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import {
@@ -31,9 +34,13 @@ import {
   verifyOfflinePayment,
   rejectOfflinePayment,
   reverseOfflinePayment,
+  recordAdminOfflinePayment,
+  searchOpenBillsForPayment,
   type OfflinePaymentRow,
+  type OpenBillForPayment,
 } from "@/lib/offline-payments.functions";
 import { formatDate } from "@/utils/format";
+
 
 export const Route = createFileRoute("/_society/society/payments")({
   head: () => ({ meta: [{ title: "Payments — SociyoHub" }] }),

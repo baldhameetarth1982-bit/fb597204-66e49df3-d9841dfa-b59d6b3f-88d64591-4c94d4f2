@@ -408,19 +408,23 @@ function RecordOfflinePaymentSection({
   const [submitting, setSubmitting] = useState(false);
   const [idKey, setIdKey] = useState(() => randomIdKey("adm"));
 
+  const availableToSubmit = selected?.available_to_submit ?? 0;
+  const amountNum = Number(amount);
+  const amountExceeds = selected != null && amountNum > availableToSubmit + 0.001;
   const canSubmit = useMemo(
     () =>
       !!selected &&
-      Number(amount) > 0 &&
+      amountNum > 0 &&
+      !amountExceeds &&
       (method === "cash" || reference.trim().length > 0),
-    [selected, amount, method, reference],
+    [selected, amountNum, amountExceeds, method, reference],
   );
 
   async function runSearch() {
     setSearching(true);
     try {
       const { bills } = await search({
-        data: { societyId, query, limit: 20 },
+        data: { societyId, query, limit: 20, offset: 0 },
       });
       setResults(bills);
     } catch (e) {
@@ -432,20 +436,26 @@ function RecordOfflinePaymentSection({
 
   async function onSubmit() {
     if (!selected) return;
+    if (amountExceeds) {
+      toast.error("Amount exceeds the available balance for this bill.");
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await record({
         data: {
           billId: selected.bill_id,
           method,
-          amount: Number(amount),
+          amount: amountNum,
           paymentDate,
           referenceNo: reference.trim() || null,
           notes: notes.trim() || null,
           idempotencyKey: idKey,
         },
       });
-      toast.success(`Recorded (pending verification). Payment ${res.paymentId.slice(0, 8)}…`);
+      toast.success(
+        `Payment recorded and awaiting verification. Another authorized committee member must verify this payment. (${res.paymentId.slice(0, 8)}…)`,
+      );
       // Reset for next entry
       setSelected(null);
       setAmount("");
@@ -459,6 +469,7 @@ function RecordOfflinePaymentSection({
       setSubmitting(false);
     }
   }
+
 
   if (!expanded) {
     return (

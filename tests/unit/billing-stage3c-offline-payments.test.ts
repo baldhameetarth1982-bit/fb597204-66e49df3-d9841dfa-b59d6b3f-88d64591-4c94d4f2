@@ -34,8 +34,10 @@ const maintenancePay = readFileSync(
 );
 
 describe("Stage 3C — server functions expose the canonical RPCs", () => {
-  it("exports the four write server functions", () => {
-    expect(fnSrc).toMatch(/export const submitOfflinePayment\b/);
+  it("exports the split write server functions (v5: no generic submit)", () => {
+    expect(fnSrc).not.toMatch(/export const submitOfflinePayment\b/);
+    expect(fnSrc).toMatch(/export const submitResidentBankTransfer\b/);
+    expect(fnSrc).toMatch(/export const recordAdminOfflinePayment\b/);
     expect(fnSrc).toMatch(/export const verifyOfflinePayment\b/);
     expect(fnSrc).toMatch(/export const rejectOfflinePayment\b/);
     expect(fnSrc).toMatch(/export const reverseOfflinePayment\b/);
@@ -43,7 +45,8 @@ describe("Stage 3C — server functions expose the canonical RPCs", () => {
 
   it("routes each write through requireSupabaseAuth and callBillingRpc", () => {
     for (const name of [
-      "submitOfflinePayment",
+      "submitResidentBankTransfer",
+      "recordAdminOfflinePayment",
       "verifyOfflinePayment",
       "rejectOfflinePayment",
       "reverseOfflinePayment",
@@ -62,6 +65,7 @@ describe("Stage 3C — server functions expose the canonical RPCs", () => {
     expect(fnSrc).toContain('"reject_offline_payment"');
     expect(fnSrc).toContain('"reverse_offline_payment"');
   });
+
 
   it("restricts method to cash / bank_transfer at the input schema", () => {
     expect(fnSrc).toMatch(/z\.enum\(\["cash", "bank_transfer"\]\)/);

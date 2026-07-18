@@ -110,6 +110,22 @@ export interface BillPaymentSummary {
   cancelled: boolean;
 }
 
+/** Canonical bill payment summary. Every financial field is Zod-validated. */
+const billPaymentSummarySchema = z.object({
+  bill_id: z.string(),
+  society_id: z.string(),
+  total_payable: z.coerce.number(),
+  verified_amount: z.coerce.number(),
+  pending_amount: z.coerce.number(),
+  rejected_amount: z.coerce.number(),
+  reversed_amount: z.coerce.number(),
+  remaining_verified_balance: z.coerce.number(),
+  available_to_submit: z.coerce.number(),
+  status: z.string(),
+  cancelled: z.boolean(),
+});
+
+
 /** Extend billing mapError with Stage 3C codes. Never leaks raw DB messages. */
 export function mapPaymentError(msg: string): string {
   const m = (msg || "").toLowerCase();
@@ -230,6 +246,12 @@ export const recordAdminOfflinePayment = createServerFn({ method: "POST" })
     }
   });
 
+const verifyPaymentResultSchema = z.object({
+  payment_id: z.string().optional(),
+  receipt_number: z.string().nullable().optional(),
+  receipt_id: z.string().nullable().optional(),
+});
+
 export const verifyOfflinePayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => paymentWithOptionalNotes.parse(i))
@@ -240,20 +262,17 @@ export const verifyOfflinePayment = createServerFn({ method: "POST" })
         "verify_offline_payment",
         buildRpcArgs({ _payment_id: data.paymentId, _notes: data.notes ?? null }),
       );
-      const obj = (raw ?? {}) as {
-        payment_id?: string;
-        receipt_number?: string;
-        receipt_id?: string;
-      };
+      const parsed = verifyPaymentResultSchema.parse(raw ?? {});
       return {
-        paymentId: obj.payment_id ?? data.paymentId,
-        receiptNumber: obj.receipt_number ?? null,
-        receiptId: obj.receipt_id ?? null,
+        paymentId: parsed.payment_id ?? data.paymentId,
+        receiptNumber: parsed.receipt_number ?? null,
+        receiptId: parsed.receipt_id ?? null,
       };
     } catch (e) {
       throw new Error(mapPaymentError((e as Error).message));
     }
   });
+
 
 export const rejectOfflinePayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -287,53 +306,13 @@ export const reverseOfflinePayment = createServerFn({ method: "POST" })
     }
   });
 
-const paymentDetailSchema = z.object({
-  payment: paymentRowSchemaRef(),
-  bill_number: z.string().nullable(),
-  flat_label: z.string().nullable(),
-  summary: z.unknown().nullable(),
-  receipt: z.unknown().nullable(),
-  audience: z.enum(["admin", "resident"]),
-});
-// Forward declaration bridge — paymentRowSchema is defined below.
-function paymentRowSchemaRef(): z.ZodTypeAny {
-  return z.lazy(() => paymentRowSchema);
-}
+// (paymentDetailSchema is defined below with strong nested schemas.)
 
-export interface PaymentDetail {
-  payment: OfflinePaymentRow;
-  bill_number: string | null;
-  flat_label: string | null;
-  summary: BillPaymentSummary | null;
-  receipt: PaymentReceiptLifecycle | null;
-  audience: "admin" | "resident";
-}
 
-/** Stage 3C v5 — explicit-auth payment detail for admin/resident, Zod-validated. */
-export const getPaymentDetail = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((i) => paymentIdOnly.parse(i))
-  .handler(async ({ data, context }) => {
-    try {
-      const raw = await callBillingRpc(
-        toBillingRpcClient(context),
-        "get_payment_detail",
-        buildRpcArgs({ _payment_id: data.paymentId }),
-      );
-      if (raw === null || raw === undefined) return null;
-      const parsed = paymentDetailSchema.parse(raw);
-      return {
-        payment: parsed.payment as OfflinePaymentRow,
-        bill_number: parsed.bill_number,
-        flat_label: parsed.flat_label,
-        summary: (parsed.summary ?? null) as BillPaymentSummary | null,
-        receipt: (parsed.receipt ?? null) as PaymentReceiptLifecycle | null,
-        audience: parsed.audience,
-      } satisfies PaymentDetail;
-    } catch (e) {
-      throw new Error(mapPaymentError((e as Error).message));
-    }
-  });
+
+// paymentDetailSchema and getPaymentDetail are declared below,
+// after paymentRowSchema and receiptLifecycleSchema.
+
 
 
 
@@ -349,6 +328,7 @@ const listInput = z.object({
   limit: z.number().int().min(1).max(200).default(50),
   offset: z.number().int().min(0).default(0),
 });
+
 
 const paymentRowSchema = z.object({
   id: z.string(),
@@ -410,6 +390,53 @@ const receiptLifecycleSchema = z.object({
   verified_by: z.string().nullable(),
   verified_at: z.string().nullable(),
 });
+
+const paymentDetailSchema = z.object({
+  payment: paymentRowSchema,
+  bill_number: z.string().nullable(),
+  flat_label: z.string().nullable(),
+  summary: billPaymentSummarySchema.nullable(),
+  receipt: receiptLifecycleSchema.nullable(),
+  audience: z.enum(["admin", "resident"]),
+});
+
+export interface PaymentDetail {
+  payment: OfflinePaymentRow;
+  bill_number: string | null;
+  flat_label: string | null;
+  summary: BillPaymentSummary | null;
+  receipt: PaymentReceiptLifecycle | null;
+  audience: "admin" | "resident";
+}
+
+/** Stage 3C v6 — explicit-auth payment detail; every nested field Zod-validated. */
+export const getPaymentDetail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => paymentIdOnly.parse(i))
+  .handler(async ({ data, context }) => {
+    try {
+      const raw = await callBillingRpc(
+        toBillingRpcClient(context),
+        "get_payment_detail",
+        buildRpcArgs({ _payment_id: data.paymentId }),
+      );
+      if (raw === null || raw === undefined) return null;
+      const parsed = paymentDetailSchema.parse(raw);
+      const detail: PaymentDetail = {
+        payment: parsed.payment,
+        bill_number: parsed.bill_number,
+        flat_label: parsed.flat_label,
+        summary: parsed.summary,
+        receipt: parsed.receipt,
+        audience: parsed.audience,
+      };
+      return detail;
+    } catch (e) {
+      throw new Error(mapPaymentError((e as Error).message));
+    }
+  });
+
+
 
 export const listSocietyPayments = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -487,7 +514,9 @@ export const getBillPaymentSummary = createServerFn({ method: "POST" })
         "get_bill_payment_summary",
         buildRpcArgs({ _bill_id: data.billId }),
       );
-      return { summary: (raw ?? null) as BillPaymentSummary | null };
+      if (raw === null || raw === undefined) return { summary: null };
+      const summary: BillPaymentSummary = billPaymentSummarySchema.parse(raw);
+      return { summary };
     } catch (e) {
       throw new Error(mapPaymentError((e as Error).message));
     }
@@ -498,20 +527,28 @@ export const getBillPaymentSummary = createServerFn({ method: "POST" })
 const openBillSchema = z.object({
   bill_id: z.string(),
   bill_number: z.string().nullable(),
+  society_id: z.string(),
   flat_id: z.string().nullable(),
   flat_label: z.string().nullable(),
   block_name: z.string().nullable(),
-  total_payable: z.coerce.number(),
-  status: z.string(),
-  due_date: z.string().nullable(),
   period_label: z.string().nullable(),
+  due_date: z.string().nullable(),
+  status: z.string(),
+  total_payable: z.coerce.number(),
+  verified_amount: z.coerce.number(),
+  pending_amount: z.coerce.number(),
+  remaining_verified_balance: z.coerce.number(),
+  available_to_submit: z.coerce.number(),
 });
 
 export type OpenBillForPayment = z.infer<typeof openBillSchema>;
 
 /**
- * Stage 3C v5 — Admin bill search for offline payment entry. Server-side
- * authorization: requires `manage_billing` on the target society.
+ * Stage 3C v6 — Admin bill search for offline payment entry. Server-side
+ * authorization requires the canonical `billing.manage` capability (or
+ * super_admin). Returns the same verified / pending / available balances
+ * as `get_bill_payment_summary` — the admin form never relies on the raw
+ * bill total.
  */
 export const searchOpenBillsForPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -521,6 +558,7 @@ export const searchOpenBillsForPayment = createServerFn({ method: "POST" })
         societyId: z.string().uuid(),
         query: z.string().trim().max(120).default(""),
         limit: z.number().int().min(1).max(50).default(20),
+        offset: z.number().int().min(0).default(0),
       })
       .parse(i),
   )
@@ -533,6 +571,7 @@ export const searchOpenBillsForPayment = createServerFn({ method: "POST" })
           _society_id: data.societyId,
           _query: data.query,
           _limit: data.limit,
+          _offset: data.offset,
         }),
       );
       const arr = Array.isArray(raw) ? raw : [];
@@ -542,3 +581,4 @@ export const searchOpenBillsForPayment = createServerFn({ method: "POST" })
       throw new Error(mapPaymentError((e as Error).message));
     }
   });
+

@@ -4783,8 +4783,28 @@ export type Database = {
         }[]
       }
       search_society_open_bills: {
-        Args: { _limit?: number; _query: string; _society_id: string }
-        Returns: Json
+        Args: {
+          _limit?: number
+          _offset?: number
+          _query?: string
+          _society_id: string
+        }
+        Returns: {
+          available_to_submit: number
+          bill_id: string
+          bill_number: string
+          block_name: string
+          due_date: string
+          flat_id: string
+          flat_label: string
+          pending_amount: number
+          period_label: string
+          remaining_verified_balance: number
+          society_id: string
+          status: string
+          total_payable: number
+          verified_amount: number
+        }[]
       }
       set_society_block_active: {
         Args: { _active: boolean; _block_id: string }

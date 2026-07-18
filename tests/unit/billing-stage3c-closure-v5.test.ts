@@ -67,9 +67,12 @@ describe("Stage 3C v5 — getPaymentDetail is Zod-validated", () => {
     const block =
       fnSrc.match(/export const getPaymentDetail[\s\S]{0,1200}/)?.[0] ?? "";
     expect(block).not.toMatch(/as\s+any\b/);
-    expect(block).toMatch(/satisfies PaymentDetail/);
+    // v6: typed via explicit `const detail: PaymentDetail = { ... }` rather
+    // than `... satisfies PaymentDetail` — either form is a real type check.
+    expect(block).toMatch(/const detail:\s*PaymentDetail\s*=/);
   });
 });
+
 
 describe("Stage 3C v5 — searchOpenBillsForPayment is safe", () => {
   it("server function requires auth and calls the RPC", () => {

@@ -33,7 +33,11 @@ export type OfflinePaymentStatus =
   | "reversed"
   | "success"; // legacy read-only
 
-export interface OfflinePaymentRow {
+/**
+ * Common safe payment fields returned to every audience (admin or resident)
+ * from `get_payment_detail`.
+ */
+export interface CommonSafePaymentFields {
   id: string;
   bill_id: string | null;
   society_id: string;
@@ -42,14 +46,10 @@ export interface OfflinePaymentRow {
   method: string;
   status: string;
   reference_no: string | null;
-  notes: string | null;
   submitted_at: string | null;
-  submitted_by: string | null;
   source: string | null;
   payment_date: string | null;
   verified_at: string | null;
-  verified_by: string | null;
-  verification_notes: string | null;
   rejected_at: string | null;
   rejection_reason: string | null;
   reversed_at: string | null;
@@ -57,24 +57,21 @@ export interface OfflinePaymentRow {
   created_at: string;
 }
 
-export interface ResidentPaymentRow {
-  id: string;
-  bill_id: string | null;
-  society_id: string;
-  flat_id: string | null;
-  amount: number;
-  method: string;
-  status: string;
-  reference_no: string | null;
-  submitted_at: string | null;
-  payment_date: string | null;
-  verified_at: string | null;
-  rejected_at: string | null;
-  rejection_reason: string | null;
-  reversed_at: string | null;
-  reversal_reason: string | null;
-  created_at: string;
+/** Admin-only payment fields — populated only when audience === 'admin'. */
+export interface AdminOnlyPaymentFields {
+  notes: string | null;
+  submitted_by: string | null;
+  verified_by: string | null;
+  verification_notes: string | null;
+  rejected_by: string | null;
+  reversed_by: string | null;
 }
+
+/** Admin payment row shape (list + detail). */
+export interface OfflinePaymentRow extends CommonSafePaymentFields, AdminOnlyPaymentFields {}
+
+/** Resident-safe payment row shape. */
+export type ResidentPaymentRow = CommonSafePaymentFields;
 
 export type ReceiptStatus = "valid" | "void";
 

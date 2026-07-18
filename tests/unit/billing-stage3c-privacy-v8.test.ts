@@ -15,17 +15,31 @@ import {
 
 const migrationsDir = path.join(process.cwd(), "supabase", "migrations");
 
+/** Strip SQL comments so scans only see the executable function body. */
+function stripSqlComments(sql: string): string {
+  return sql
+    .replace(/--[^\n]*/g, "")
+    .replace(/\/\*[\s\S]*?\*\//g, "");
+}
+
 function latestGetPaymentDetailBody(): string {
   const files = fs
     .readdirSync(migrationsDir)
     .filter((f) => f.endsWith(".sql"))
     .sort();
-  // Find the most recent migration that redefines get_payment_detail.
   for (let i = files.length - 1; i >= 0; i--) {
     const body = fs.readFileSync(path.join(migrationsDir, files[i]), "utf8");
-    if (body.includes("FUNCTION public.get_payment_detail")) return body;
+    if (body.includes("FUNCTION public.get_payment_detail")) return stripSqlComments(body);
   }
   throw new Error("No migration defines public.get_payment_detail");
+}
+
+/** Return just the get_payment_detail function body from the migration text. */
+function extractFunctionBody(migration: string): string {
+  const idx = migration.indexOf("FUNCTION public.get_payment_detail");
+  const dollarStart = migration.indexOf("$function$", idx);
+  const dollarEnd = migration.indexOf("$function$", dollarStart + 10);
+  return migration.slice(dollarStart, dollarEnd);
 }
 
 const validAdmin = {

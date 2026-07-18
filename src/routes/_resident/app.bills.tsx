@@ -1,21 +1,14 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Receipt, Download, Clock, CheckCircle2, ArrowRight, Loader2, Home, IndianRupee, Info } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Receipt, Clock, CheckCircle2, Loader2, Home, Info, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-
 import { cacheSet, cacheGet } from "@/lib/offline-cache";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { ClaimFlatSheet } from "@/components/resident/ClaimFlatSheet";
 import { useServerFn } from "@tanstack/react-start";
-import { createMaintenanceOrder } from "@/lib/maintenance-pay.functions";
 import { getResidentBills } from "@/lib/billing-generate.functions";
-import { openRazorpayForOrder } from "@/lib/razorpay";
-import { toast } from "sonner";
-import { TransactionSummaryModal } from "@/components/payments/TransactionSummaryModal";
-import { PaymentSecurityBadge } from "@/components/payments/PaymentSecurityBadge";
 
 export const Route = createFileRoute("/_resident/app/bills")({
   head: () => ({ meta: [{ title: "Bills — SociyoHub" }] }),
@@ -30,24 +23,28 @@ interface BillRow {
   status: string;
 }
 
+/**
+ * Resident bills — Stage 3B read-only view.
+ *
+ * Stage 3B intentionally exposes NO payment surface: no "Pay now" CTA, no
+ * gateway ordering, no online-payment status check. Payments, receipts,
+ * gateways and reconciliation belong to Stage 3C. This route only lists
+ * bills that belong to the caller's active flats (enforced server-side by
+ * getResidentBills) and links to the read-only detail view.
+ */
 function BillsScreen() {
   const { profile } = useAuth();
-  const navigate = useNavigate();
-  const createOrder = useServerFn(createMaintenanceOrder);
   const listMyBills = useServerFn(getResidentBills);
   const [visibleBills, setVisibleBills] = useState<BillRow[]>([]);
   const [online, setOnline] = useState(true);
   const [loading, setLoading] = useState(true);
   const [noFlat, setNoFlat] = useState(false);
   const [claimOpen, setClaimOpen] = useState(false);
-  const [paying, setPaying] = useState(false);
-  const [payoutActive, setPayoutActive] = useState(false);
-  const [summaryOpen, setSummaryOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     const sync = async () => {
-      const isNowOnline = navigator.onLine;
+      const isNowOnline = typeof navigator !== "undefined" ? navigator.onLine : true;
       setOnline(isNowOnline);
       const cacheKey = profile?.id ? `bills:${profile.id}` : "bills";
       if (isNowOnline) {
@@ -88,16 +85,6 @@ function BillsScreen() {
     };
   }, [profile?.id, profile?.society_id, listMyBills]);
 
-
-  useEffect(() => {
-    if (!profile?.society_id) return;
-    void (supabase as any).rpc("society_payout_active", { _society_id: profile.society_id }).then(({ data }: any) => {
-      setPayoutActive(data === true);
-    });
-  }, [profile?.society_id]);
-
-  const outstanding = visibleBills.find((b) => b.status === "unpaid" || b.status === "overdue" || b.status === "due");
-
   if (loading) {
     return (
       <div className="min-h-[60vh] grid place-items-center text-muted-foreground">
@@ -110,7 +97,9 @@ function BillsScreen() {
     <div className="px-5 py-6 space-y-6">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Bills</h1>
-        <p className="text-sm text-muted-foreground">Your maintenance & society dues{online ? "" : " · offline cache"}</p>
+        <p className="text-sm text-muted-foreground">
+          Your maintenance & society dues{online ? "" : " · offline cache"}
+        </p>
       </header>
 
       {noFlat && (
@@ -132,82 +121,21 @@ function BillsScreen() {
         </Card>
       )}
 
-
-      <Card className="rounded-3xl border-0 shadow-md bg-gradient-to-br from-primary to-primary/85 text-primary-foreground">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-2 opacity-80">
-            <p className="text-sm">Outstanding</p>
+      <Card className="rounded-2xl border-primary/10 bg-primary/5">
+        <CardContent className="p-4 flex items-start gap-3">
+          <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+          <div className="text-sm">
+            <p className="font-medium">Online payments are coming soon</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              You can view your bills here today. Please pay your society admin offline for now — we'll enable secure online payments in the next release.
+            </p>
           </div>
-          <p className="mt-1 text-4xl font-semibold tabular-nums">₹{(outstanding?.amount ?? 0).toLocaleString("en-IN")}</p>
-          <p className="mt-1 text-xs opacity-80">{outstanding ? `Due ${outstanding.due}` : "No outstanding dues"}</p>
-          <Button
-            disabled={!outstanding || paying || !payoutActive}
-            onClick={() => setSummaryOpen(true)}
-            className="mt-5 w-full h-12 rounded-xl bg-background text-primary hover:bg-background/90 font-semibold disabled:opacity-60"
-          >
-            {paying ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <IndianRupee className="h-4 w-4 mr-2" />}
-            Pay now <ArrowRight className="h-4 w-4 ml-1" />
-          </Button>
-          {!payoutActive && outstanding && (
-            <p className="mt-3 text-xs opacity-90">
-              Your society admin hasn't enabled online payments yet. Please ask them to complete bank setup so you can pay.
-            </p>
-          )}
-          {outstanding && payoutActive && (
-            <p className="mt-3 text-[11px] opacity-80">
-              Payment processing? Contact SociyoHub Support for instant reconciliation.
-            </p>
-          )}
         </CardContent>
       </Card>
 
-      {outstanding && (
-        <PaymentSecurityBadge />
-      )}
-
-      {outstanding && (
-        <TransactionSummaryModal
-          open={summaryOpen}
-          onOpenChange={(v) => (paying ? null : setSummaryOpen(v))}
-          title="Transaction Summary"
-          description={outstanding.title}
-          lines={[
-            { label: "Maintenance amount", amount: outstanding.amount },
-          ]}
-          total={outstanding.amount}
-          busy={paying}
-          confirmLabel="Pay Now"
-          onConfirm={async () => {
-            setPaying(true);
-            try {
-              const order = await createOrder({ data: { billId: outstanding.id } });
-              if (!order.orderId || !order.keyId) throw new Error("Order failed");
-              await openRazorpayForOrder({
-                orderId: order.orderId,
-                keyId: order.keyId,
-                amount: order.amount,
-                name: order.societyName ?? "SociyoHub",
-                description: order.label ?? "Maintenance bill",
-                prefill: { email: profile?.email ?? undefined, contact: profile?.phone ?? undefined, name: profile?.full_name ?? undefined },
-                onSuccess: async () => {
-                  toast.success("Payment received — updating your bill…");
-                  setSummaryOpen(false);
-                  setTimeout(() => navigate({ to: "/app/bills" }), 1500);
-                },
-                onDismiss: () => setPaying(false),
-              });
-            } catch (e: any) {
-              toast.error(e?.message ?? "Could not start payment");
-            } finally {
-              setPaying(false);
-            }
-          }}
-        />
-      )}
-
       <section>
         <h2 className="px-1 mb-3 text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-          History
+          Your bills
         </h2>
         <div className="space-y-3">
           {visibleBills.length === 0 ? (
@@ -216,52 +144,65 @@ function BillsScreen() {
                 No bills found for your flat yet.
               </CardContent>
             </Card>
-          ) : visibleBills.map((b) => {
-            const paid = b.status === "paid" || b.status === "success";
-            return (
-              <Card key={b.id} className="rounded-2xl">
-                <CardContent className="p-4 flex items-center gap-3">
-                  <div
-                    className={`h-11 w-11 rounded-xl grid place-items-center ${
-                      paid ? "bg-success/10 text-success" : "bg-primary/10 text-primary"
-                    }`}
-                  >
-                    {paid ? (
-                      <CheckCircle2 className="h-5 w-5" />
-                    ) : (
-                      <Clock className="h-5 w-5" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{b.title}</p>
-                    <p className="text-xs text-muted-foreground">{b.due}</p>
-                  </div>
-                  <div className="text-right">
-                    <div className="flex items-center gap-1 justify-end">
-                      <p className="font-semibold tabular-nums">
-                        ₹{b.amount.toLocaleString("en-IN")}
-                      </p>
-                    </div>
-                    {paid ? (
-                      <Badge variant="secondary" className="mt-1 rounded-full text-[10px]">
-                        Paid
-                      </Badge>
-                    ) : (
-                      <Badge className="mt-1 rounded-full text-[10px] bg-primary text-primary-foreground">
-                        Due
-                      </Badge>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+          ) : (
+            visibleBills.map((b) => {
+              const paid = b.status === "paid" || b.status === "success";
+              const cancelled = b.status === "cancelled";
+              return (
+                <Link
+                  key={b.id}
+                  to="/app/bills/$id"
+                  params={{ id: b.id }}
+                  className="block"
+                >
+                  <Card className="rounded-2xl hover:bg-accent/40 transition-colors">
+                    <CardContent className="p-4 flex items-center gap-3">
+                      <div
+                        className={`h-11 w-11 rounded-xl grid place-items-center ${
+                          paid
+                            ? "bg-success/10 text-success"
+                            : cancelled
+                              ? "bg-muted text-muted-foreground"
+                              : "bg-primary/10 text-primary"
+                        }`}
+                      >
+                        {paid ? (
+                          <CheckCircle2 className="h-5 w-5" />
+                        ) : (
+                          <Clock className="h-5 w-5" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{b.title}</p>
+                        <p className="text-xs text-muted-foreground">Due {b.due}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold tabular-nums">
+                          ₹{b.amount.toLocaleString("en-IN")}
+                        </p>
+                        {paid ? (
+                          <Badge variant="secondary" className="mt-1 rounded-full text-[10px]">
+                            Paid
+                          </Badge>
+                        ) : cancelled ? (
+                          <Badge variant="outline" className="mt-1 rounded-full text-[10px]">
+                            Cancelled
+                          </Badge>
+                        ) : (
+                          <Badge className="mt-1 rounded-full text-[10px] bg-primary text-primary-foreground">
+                            Due
+                          </Badge>
+                        )}
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })
+          )}
         </div>
       </section>
-
-      <Button variant="outline" className="w-full h-12 rounded-xl">
-        <Download className="h-4 w-4 mr-2" /> Download statement
-      </Button>
 
       <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
         <Receipt className="h-3.5 w-3.5" />

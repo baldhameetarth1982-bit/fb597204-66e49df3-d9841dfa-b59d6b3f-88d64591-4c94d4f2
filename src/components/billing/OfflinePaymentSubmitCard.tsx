@@ -15,10 +15,10 @@ import {
 /**
  * Stage 3C — Offline payment submission for a resident.
  *
- * Cash and Bank Transfer only. Every submission stays `pending` until an
- * admin verifies; only then does the receipt number appear here. There is
- * no gateway CTA, no "coming soon" online payment copy, and no Razorpay.
+ * Cash and Bank Transfer only. Every submission stays pending until an
+ * admin verifies it; only then does the receipt number appear here.
  */
+
 type Props = {
   billId: string;
   billAmount: number;

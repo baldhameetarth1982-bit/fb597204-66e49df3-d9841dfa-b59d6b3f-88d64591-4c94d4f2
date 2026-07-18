@@ -252,7 +252,6 @@ function ResidentDashboard() {
 }
 
 const QUICK_ACTIONS: Array<{ to: string; label: string; icon: any; tone: string }> = [
-  { to: "/app/dues", label: "Pay", icon: Wallet, tone: "bg-emerald-500/10 text-emerald-600" },
   { to: "/app/bills", label: "Bills", icon: Receipt, tone: "bg-primary/10 text-primary" },
   { to: "/app/visitors", label: "Visitors", icon: ShieldCheck, tone: "bg-sky-500/10 text-sky-600" },
   { to: "/app/helpdesk", label: "Complaints", icon: LifeBuoy, tone: "bg-rose-500/10 text-rose-600" },

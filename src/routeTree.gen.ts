@@ -143,6 +143,7 @@ import { Route as SocietySocietyBillingGenerateRouteImport } from './routes/_soc
 import { Route as SocietySocietyBillStudioGenerateRouteImport } from './routes/_society/society.bill-studio.generate'
 import { Route as ResidentAppNoDuesIdRouteImport } from './routes/_resident/app.no-dues.$id'
 import { Route as ResidentAppFeedPostIdRouteImport } from './routes/_resident/app.feed.$postId'
+import { Route as ResidentAppBillsIdRouteImport } from './routes/_resident/app.bills.$id'
 import { Route as ApiPublicVerifyNoDuesTokenRouteImport } from './routes/api/public/verify.no-dues.$token'
 
 const WelcomeRoute = WelcomeRouteImport.update({
@@ -835,6 +836,11 @@ const ResidentAppFeedPostIdRoute = ResidentAppFeedPostIdRouteImport.update({
   path: '/$postId',
   getParentRoute: () => ResidentAppFeedRoute,
 } as any)
+const ResidentAppBillsIdRoute = ResidentAppBillsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ResidentAppBillsRoute,
+} as any)
 const ApiPublicVerifyNoDuesTokenRoute =
   ApiPublicVerifyNoDuesTokenRouteImport.update({
     id: '/api/public/verify/no-dues/$token',
@@ -893,7 +899,7 @@ export interface FileRoutesByFullPath {
   '/admin/withdrawals': typeof AdminAdminWithdrawalsRoute
   '/app/achievements': typeof ResidentAppAchievementsRoute
   '/app/activity': typeof ResidentAppActivityRoute
-  '/app/bills': typeof ResidentAppBillsRoute
+  '/app/bills': typeof ResidentAppBillsRouteWithChildren
   '/app/bylaws': typeof ResidentAppBylawsRoute
   '/app/comm': typeof ResidentAppCommRoute
   '/app/contacts': typeof ResidentAppContactsRoute
@@ -957,6 +963,7 @@ export interface FileRoutesByFullPath {
   '/society/verifications': typeof SocietySocietyVerificationsRoute
   '/society/visitors': typeof SocietySocietyVisitorsRoute
   '/verify/no-dues/$token': typeof VerifyNoDuesTokenRoute
+  '/app/bills/$id': typeof ResidentAppBillsIdRoute
   '/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
   '/app/no-dues/$id': typeof ResidentAppNoDuesIdRoute
   '/society/bill-studio/generate': typeof SocietySocietyBillStudioGenerateRoute
@@ -1025,7 +1032,7 @@ export interface FileRoutesByTo {
   '/admin/withdrawals': typeof AdminAdminWithdrawalsRoute
   '/app/achievements': typeof ResidentAppAchievementsRoute
   '/app/activity': typeof ResidentAppActivityRoute
-  '/app/bills': typeof ResidentAppBillsRoute
+  '/app/bills': typeof ResidentAppBillsRouteWithChildren
   '/app/bylaws': typeof ResidentAppBylawsRoute
   '/app/comm': typeof ResidentAppCommRoute
   '/app/contacts': typeof ResidentAppContactsRoute
@@ -1089,6 +1096,7 @@ export interface FileRoutesByTo {
   '/society/verifications': typeof SocietySocietyVerificationsRoute
   '/society/visitors': typeof SocietySocietyVisitorsRoute
   '/verify/no-dues/$token': typeof VerifyNoDuesTokenRoute
+  '/app/bills/$id': typeof ResidentAppBillsIdRoute
   '/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
   '/app/no-dues/$id': typeof ResidentAppNoDuesIdRoute
   '/society/bill-studio/generate': typeof SocietySocietyBillStudioGenerateRoute
@@ -1163,7 +1171,7 @@ export interface FileRoutesById {
   '/_admin/admin/withdrawals': typeof AdminAdminWithdrawalsRoute
   '/_resident/app/achievements': typeof ResidentAppAchievementsRoute
   '/_resident/app/activity': typeof ResidentAppActivityRoute
-  '/_resident/app/bills': typeof ResidentAppBillsRoute
+  '/_resident/app/bills': typeof ResidentAppBillsRouteWithChildren
   '/_resident/app/bylaws': typeof ResidentAppBylawsRoute
   '/_resident/app/comm': typeof ResidentAppCommRoute
   '/_resident/app/contacts': typeof ResidentAppContactsRoute
@@ -1227,6 +1235,7 @@ export interface FileRoutesById {
   '/_society/society/verifications': typeof SocietySocietyVerificationsRoute
   '/_society/society/visitors': typeof SocietySocietyVisitorsRoute
   '/verify/no-dues/$token': typeof VerifyNoDuesTokenRoute
+  '/_resident/app/bills/$id': typeof ResidentAppBillsIdRoute
   '/_resident/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
   '/_resident/app/no-dues/$id': typeof ResidentAppNoDuesIdRoute
   '/_society/society/bill-studio/generate': typeof SocietySocietyBillStudioGenerateRoute
@@ -1362,6 +1371,7 @@ export interface FileRouteTypes {
     | '/society/verifications'
     | '/society/visitors'
     | '/verify/no-dues/$token'
+    | '/app/bills/$id'
     | '/app/feed/$postId'
     | '/app/no-dues/$id'
     | '/society/bill-studio/generate'
@@ -1494,6 +1504,7 @@ export interface FileRouteTypes {
     | '/society/verifications'
     | '/society/visitors'
     | '/verify/no-dues/$token'
+    | '/app/bills/$id'
     | '/app/feed/$postId'
     | '/app/no-dues/$id'
     | '/society/bill-studio/generate'
@@ -1631,6 +1642,7 @@ export interface FileRouteTypes {
     | '/_society/society/verifications'
     | '/_society/society/visitors'
     | '/verify/no-dues/$token'
+    | '/_resident/app/bills/$id'
     | '/_resident/app/feed/$postId'
     | '/_resident/app/no-dues/$id'
     | '/_society/society/bill-studio/generate'
@@ -2626,6 +2638,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResidentAppFeedPostIdRouteImport
       parentRoute: typeof ResidentAppFeedRoute
     }
+    '/_resident/app/bills/$id': {
+      id: '/_resident/app/bills/$id'
+      path: '/$id'
+      fullPath: '/app/bills/$id'
+      preLoaderRoute: typeof ResidentAppBillsIdRouteImport
+      parentRoute: typeof ResidentAppBillsRoute
+    }
     '/api/public/verify/no-dues/$token': {
       id: '/api/public/verify/no-dues/$token'
       path: '/api/public/verify/no-dues/$token'
@@ -2692,6 +2711,17 @@ const AuthRouteChildren: AuthRouteChildren = {
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
+interface ResidentAppBillsRouteChildren {
+  ResidentAppBillsIdRoute: typeof ResidentAppBillsIdRoute
+}
+
+const ResidentAppBillsRouteChildren: ResidentAppBillsRouteChildren = {
+  ResidentAppBillsIdRoute: ResidentAppBillsIdRoute,
+}
+
+const ResidentAppBillsRouteWithChildren =
+  ResidentAppBillsRoute._addFileChildren(ResidentAppBillsRouteChildren)
+
 interface ResidentAppFeedRouteChildren {
   ResidentAppFeedPostIdRoute: typeof ResidentAppFeedPostIdRoute
 }
@@ -2718,7 +2748,7 @@ const ResidentAppNoDuesRouteWithChildren =
 interface ResidentRouteChildren {
   ResidentAppAchievementsRoute: typeof ResidentAppAchievementsRoute
   ResidentAppActivityRoute: typeof ResidentAppActivityRoute
-  ResidentAppBillsRoute: typeof ResidentAppBillsRoute
+  ResidentAppBillsRoute: typeof ResidentAppBillsRouteWithChildren
   ResidentAppBylawsRoute: typeof ResidentAppBylawsRoute
   ResidentAppCommRoute: typeof ResidentAppCommRoute
   ResidentAppContactsRoute: typeof ResidentAppContactsRoute
@@ -2747,7 +2777,7 @@ interface ResidentRouteChildren {
 const ResidentRouteChildren: ResidentRouteChildren = {
   ResidentAppAchievementsRoute: ResidentAppAchievementsRoute,
   ResidentAppActivityRoute: ResidentAppActivityRoute,
-  ResidentAppBillsRoute: ResidentAppBillsRoute,
+  ResidentAppBillsRoute: ResidentAppBillsRouteWithChildren,
   ResidentAppBylawsRoute: ResidentAppBylawsRoute,
   ResidentAppCommRoute: ResidentAppCommRoute,
   ResidentAppContactsRoute: ResidentAppContactsRoute,

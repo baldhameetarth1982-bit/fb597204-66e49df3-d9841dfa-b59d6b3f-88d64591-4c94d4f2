@@ -51,16 +51,16 @@ describe("Stage 3C closure — proof_url removed from the client contract", () =
 });
 
 describe("Stage 3C closure — separation of duties in the client contract", () => {
-  it("submit schema requires an explicit actorRole (resident | admin)", () => {
+  it("submit schema still routes actorRole to the RPC (legacy adapter)", () => {
     expect(fnSrc).toMatch(/actorRole: z\.enum\(\["resident", "admin"\]\)/);
     expect(fnSrc).toMatch(/_actor_role: data\.actorRole/);
   });
-  it("resident submit card always sends actorRole: 'resident'", () => {
-    expect(submitCard).toMatch(/actorRole:\s*["']resident["']/);
+  it("resident submit card uses the resident-only server function", () => {
+    expect(submitCard).toMatch(/submitResidentBankTransfer/);
+    // The card must NOT send an actorRole from the browser — the server fixes it.
+    expect(submitCard).not.toMatch(/actorRole:/);
   });
   it("resident submit card removes the Cash method toggle", () => {
-    // Card variant that made 'cash' selectable must be gone; only the
-    // fixed 'Bank Transfer' method label remains.
     expect(submitCard).not.toMatch(/setMethod\("cash"\)/);
     expect(submitCard).toMatch(/Method:\s*Bank Transfer/);
   });

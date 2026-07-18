@@ -153,6 +153,31 @@ const submitInput = z.object({
   actorRole: z.enum(["resident", "admin"]),
 });
 
+/**
+ * Stage 3C v4 — split resident/admin submission contracts. The
+ * resident-facing schema has NO `method` and NO `actorRole`; the server
+ * fixes both. The admin-facing schema has NO `actorRole` and only accepts
+ * Cash or Bank Transfer; server fixes actor role to admin.
+ */
+const residentSubmitInput = z.object({
+  billId: z.string().uuid(),
+  amount: z.number().positive().max(10_000_000),
+  paymentDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  referenceNo: z.string().trim().min(1).max(120),
+  notes: z.string().trim().max(1000).nullable().optional(),
+  idempotencyKey: z.string().trim().min(6).max(120),
+});
+
+const adminRecordInput = z.object({
+  billId: z.string().uuid(),
+  method: z.enum(["cash", "bank_transfer"]),
+  amount: z.number().positive().max(10_000_000),
+  paymentDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  referenceNo: z.string().trim().max(120).nullable().optional(),
+  notes: z.string().trim().max(1000).nullable().optional(),
+  idempotencyKey: z.string().trim().min(6).max(120),
+});
+
 const paymentIdOnly = z.object({ paymentId: z.string().uuid() });
 const paymentWithReason = paymentIdOnly.extend({ reason: z.string().trim().min(1).max(500) });
 const paymentWithOptionalNotes = paymentIdOnly.extend({
@@ -161,6 +186,11 @@ const paymentWithOptionalNotes = paymentIdOnly.extend({
 
 /* ------------------------------ Writes ------------------------------- */
 
+/**
+ * @deprecated Prefer `submitResidentBankTransfer` or `recordAdminOfflinePayment`.
+ * Kept as a compatibility adapter; the underlying RPC still verifies the
+ * caller's permissions server-side.
+ */
 export const submitOfflinePayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => submitInput.parse(i))
@@ -178,6 +208,58 @@ export const submitOfflinePayment = createServerFn({ method: "POST" })
           _notes: data.notes ?? null,
           _idempotency_key: data.idempotencyKey,
           _actor_role: data.actorRole,
+        }),
+      );
+      return { paymentId: extractRpcId(raw) };
+    } catch (e) {
+      throw new Error(mapPaymentError((e as Error).message));
+    }
+  });
+
+/** Stage 3C v4 — resident Bank Transfer only. Method/actor fixed server-side. */
+export const submitResidentBankTransfer = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => residentSubmitInput.parse(i))
+  .handler(async ({ data, context }) => {
+    try {
+      const raw = await callBillingRpc(
+        toBillingRpcClient(context),
+        "submit_offline_payment",
+        buildRpcArgs({
+          _bill_id: data.billId,
+          _method: "bank_transfer",
+          _amount: data.amount,
+          _payment_date: data.paymentDate ?? null,
+          _reference_no: data.referenceNo,
+          _notes: data.notes ?? null,
+          _idempotency_key: data.idempotencyKey,
+          _actor_role: "resident",
+        }),
+      );
+      return { paymentId: extractRpcId(raw) };
+    } catch (e) {
+      throw new Error(mapPaymentError((e as Error).message));
+    }
+  });
+
+/** Stage 3C v4 — admin-recorded Cash or Bank Transfer. Actor fixed server-side. */
+export const recordAdminOfflinePayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => adminRecordInput.parse(i))
+  .handler(async ({ data, context }) => {
+    try {
+      const raw = await callBillingRpc(
+        toBillingRpcClient(context),
+        "submit_offline_payment",
+        buildRpcArgs({
+          _bill_id: data.billId,
+          _method: data.method,
+          _amount: data.amount,
+          _payment_date: data.paymentDate ?? null,
+          _reference_no: data.referenceNo ?? null,
+          _notes: data.notes ?? null,
+          _idempotency_key: data.idempotencyKey,
+          _actor_role: "admin",
         }),
       );
       return { paymentId: extractRpcId(raw) };
@@ -243,7 +325,31 @@ export const reverseOfflinePayment = createServerFn({ method: "POST" })
     }
   });
 
-/* ------------------------------ Reads ------------------------------- */
+/** Stage 3C v4 — explicit-auth payment detail for admin/resident. */
+export const getPaymentDetail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => paymentIdOnly.parse(i))
+  .handler(async ({ data, context }) => {
+    try {
+      const raw = await callBillingRpc(
+        toBillingRpcClient(context),
+        "get_payment_detail",
+        buildRpcArgs({ _payment_id: data.paymentId }),
+      );
+      return (raw ?? null) as {
+        payment: OfflinePaymentRow;
+        bill_number: string | null;
+        flat_label: string | null;
+        summary: BillPaymentSummary | null;
+        receipt: PaymentReceiptLifecycle | null;
+        audience: "admin" | "resident";
+      } | null;
+    } catch (e) {
+      throw new Error(mapPaymentError((e as Error).message));
+    }
+  });
+
+
 /*
  * All Stage 3C reads route through SECURITY DEFINER RPCs that verify the
  * caller's authorization explicitly. Rows come back as jsonb; we validate

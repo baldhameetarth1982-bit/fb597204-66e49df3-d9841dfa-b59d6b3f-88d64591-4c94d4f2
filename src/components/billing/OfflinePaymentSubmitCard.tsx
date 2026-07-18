@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2, IndianRupee, CheckCircle2, Clock, XCircle } from "lucide-react";
 import {
-  submitOfflinePayment,
+  submitResidentBankTransfer,
   getPaymentReceipt,
 } from "@/lib/offline-payments.functions";
 
@@ -33,7 +33,7 @@ function randomKey(billId: string) {
 }
 
 export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cancelled }: Props) {
-  const submit = useServerFn(submitOfflinePayment);
+  const submit = useServerFn(submitResidentBankTransfer);
   const fetchReceipt = useServerFn(getPaymentReceipt);
   // Residents can only submit Bank Transfer. Cash entry is admin-only.
   const method: Method = "bank_transfer";
@@ -90,13 +90,11 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
       const res = await submit({
         data: {
           billId,
-          method,
           amount: amt,
           paymentDate,
-          referenceNo: reference.trim() || null,
+          referenceNo: reference.trim(),
           notes: notes.trim() || null,
           idempotencyKey: idKey,
-          actorRole: "resident",
         },
       });
       setPaymentId(res.paymentId);

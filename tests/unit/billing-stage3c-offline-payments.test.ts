@@ -86,8 +86,8 @@ describe("Stage 3C — server functions expose the canonical RPCs", () => {
 });
 
 describe("Stage 3C — resident submission card", () => {
-  it("submits via submitOfflinePayment with useServerFn", () => {
-    expect(submitCard).toMatch(/useServerFn\(submitOfflinePayment\)/);
+  it("submits via submitResidentBankTransfer with useServerFn", () => {
+    expect(submitCard).toMatch(/useServerFn\(submitResidentBankTransfer\)/);
   });
 
   it("offers no online / gateway / UPI / card / wallet payment method", () => {

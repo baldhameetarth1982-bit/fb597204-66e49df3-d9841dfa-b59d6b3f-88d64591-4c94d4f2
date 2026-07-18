@@ -236,7 +236,22 @@ function BillDetailPage() {
             >
               <FileDown className="h-4 w-4 mr-2" />Print / PDF
             </Button>
+            {canCancel && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-xl text-destructive border-destructive/40 hover:bg-destructive/10"
+                onClick={() => setCancelOpen(true)}
+              >
+                <Ban className="h-4 w-4 mr-2" />Cancel bill
+              </Button>
+            )}
           </div>
+          {isAdmin && hasVerifiedPayment && !bill.cancelled_at && (
+            <p className="mt-3 text-xs text-muted-foreground">
+              This bill has verified payments and cannot be cancelled directly.
+            </p>
+          )}
         </CardContent>
       </Card>
 

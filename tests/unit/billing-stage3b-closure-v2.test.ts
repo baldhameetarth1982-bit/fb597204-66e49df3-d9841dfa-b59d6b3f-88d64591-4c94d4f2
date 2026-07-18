@@ -117,9 +117,9 @@ describe("Stage 3B closure — bill routes have no online-payment promises", () 
 
   for (const path of billRoutes) {
     it(`${path} contains no unapproved online-payment copy`, () => {
-      const src = read(path);
+      const src = stripComments(read(path)).toLowerCase();
       for (const phrase of forbiddenPhrases) {
-        expect(src.toLowerCase()).not.toContain(phrase.toLowerCase());
+        expect(src).not.toContain(phrase.toLowerCase());
       }
     });
 

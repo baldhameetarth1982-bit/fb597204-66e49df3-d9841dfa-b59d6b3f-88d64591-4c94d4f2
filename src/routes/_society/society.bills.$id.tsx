@@ -296,6 +296,27 @@ function BillDetailPage() {
           </ol>
         </CardContent>
       </Card>
+
+      <Dialog open={cancelOpen} onOpenChange={(v) => (cancelBusy ? null : setCancelOpen(v))}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Cancel this bill?</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            This will mark bill <span className="font-medium">{bill.bill_number ?? bill.id.slice(0, 8)}</span> as cancelled and log an audit entry. It cannot be undone. If verified payments are later recorded, cancellation is blocked.
+          </p>
+          <Textarea
+            placeholder="Reason (optional)"
+            value={cancelReason}
+            onChange={(e) => setCancelReason(e.target.value)}
+            maxLength={500}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancelOpen(false)} disabled={cancelBusy}>Keep</Button>
+            <Button variant="destructive" onClick={onCancel} disabled={cancelBusy}>
+              {cancelBusy ? "Cancelling…" : "Cancel bill"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageShell>
   );
 }

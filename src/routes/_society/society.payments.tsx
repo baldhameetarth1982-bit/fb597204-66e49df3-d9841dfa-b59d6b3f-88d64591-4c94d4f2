@@ -667,8 +667,9 @@ function RecordOfflinePaymentSection({
               Record payment (pending verification)
             </Button>
             <p className="text-[11px] text-muted-foreground">
-              Recording does not verify the payment. Verify it from the Pending tab to issue a receipt.
+              Recording does not verify the payment. Another authorized committee member must verify it from the Pending tab before a receipt is issued.
             </p>
+
           </div>
         )}
       </CardContent>

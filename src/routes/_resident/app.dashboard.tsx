@@ -81,15 +81,19 @@ function ResidentDashboard() {
             .limit(1)
         : Promise.resolve({ data: [] as any[] });
 
-      const [bills, payments, visitors, posts] = await Promise.all([
+      const paidBillsQ = flatIds.length
+        ? supabase
+            .from("bills")
+            .select("total_payable, amount, finalized_at, status")
+            .eq("society_id", societyId)
+            .in("flat_id", flatIds)
+            .eq("status", "paid")
+            .gte("finalized_at", yearStart.toISOString())
+        : Promise.resolve({ data: [] as any[] });
+
+      const [bills, paidBills, visitors, posts] = await Promise.all([
         billsQ as any,
-        supabase
-          .from("payments")
-          .select("amount, paid_at, status, user_id")
-          .eq("society_id", societyId)
-          .eq("user_id", userId)
-          .eq("status", "success")
-          .gte("paid_at", yearStart.toISOString()),
+        paidBillsQ as any,
         supabase
           .from("visitors")
           .select("id", { count: "exact", head: true })

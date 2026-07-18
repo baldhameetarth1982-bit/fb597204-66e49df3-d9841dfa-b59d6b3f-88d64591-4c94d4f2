@@ -34,6 +34,7 @@ function BillsScreen() {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const createOrder = useServerFn(createMaintenanceOrder);
+  const listMyBills = useServerFn(getResidentBills);
   const [visibleBills, setVisibleBills] = useState<BillRow[]>([]);
   const [online, setOnline] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -50,41 +51,28 @@ function BillsScreen() {
       setOnline(isNowOnline);
       const cacheKey = profile?.id ? `bills:${profile.id}` : "bills";
       if (isNowOnline) {
-        if (!profile?.id || !profile?.society_id) {
+        if (!profile?.id) {
           setVisibleBills([]);
           setLoading(false);
           return;
         }
-        const { data: flatRows } = await supabase
-          .from("flat_residents")
-          .select("flat_id")
-          .eq("user_id", profile.id);
-        const flatIds = (flatRows ?? []).map((r: any) => r.flat_id).filter(Boolean);
-        if (!flatIds.length) {
+        try {
+          const res = await listMyBills({ data: { limit: 24 } });
+          const rows: BillRow[] = (res.bills ?? []).map((b) => ({
+            id: b.id as string,
+            title: (b.period_label as string) ?? "Society bill",
+            amount: Number((b.total_payable as number | null) ?? (b.amount as number | null) ?? 0),
+            due: b.due_date ? new Date(b.due_date as string).toLocaleDateString() : "—",
+            status: (b.status as string) ?? "unpaid",
+          }));
+          cacheSet(cacheKey, rows);
           if (!cancelled) {
-            setVisibleBills([]);
-            setNoFlat(true);
-            setLoading(false);
+            setNoFlat(rows.length === 0 && !profile.society_id ? true : false);
+            setVisibleBills(rows);
           }
-          return;
+        } catch {
+          if (!cancelled) setVisibleBills([]);
         }
-        if (!cancelled) setNoFlat(false);
-        const { data } = await supabase
-          .from("bills")
-          .select("id, period_label, amount, due_date, status")
-          .eq("society_id", profile.society_id)
-          .in("flat_id", flatIds)
-          .order("due_date", { ascending: false })
-          .limit(24);
-        const rows = (data ?? []).map((b: any) => ({
-          id: b.id,
-          title: b.period_label ?? "Society bill",
-          amount: Number(b.amount ?? 0),
-          due: b.due_date ? new Date(b.due_date).toLocaleDateString() : "—",
-          status: b.status ?? "unpaid",
-        }));
-        cacheSet(cacheKey, rows);
-        if (!cancelled) setVisibleBills(rows);
       } else {
         setVisibleBills(cacheGet<BillRow[]>(cacheKey) ?? []);
       }
@@ -98,7 +86,8 @@ function BillsScreen() {
       window.removeEventListener("online", sync);
       window.removeEventListener("offline", sync);
     };
-  }, [profile?.id, profile?.society_id]);
+  }, [profile?.id, profile?.society_id, listMyBills]);
+
 
   useEffect(() => {
     if (!profile?.society_id) return;

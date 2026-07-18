@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Receipt, Download, Clock, CheckCircle2, ArrowRight, Loader2, Home, IndianRupee } from "lucide-react";
+import { Receipt, Download, Clock, CheckCircle2, ArrowRight, Loader2, Home, IndianRupee, Info } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { useAuth } from "@/context/AuthContext";
 import { ClaimFlatSheet } from "@/components/resident/ClaimFlatSheet";
 import { useServerFn } from "@tanstack/react-start";
 import { createMaintenanceOrder } from "@/lib/maintenance-pay.functions";
+import { getResidentBills } from "@/lib/billing-generate.functions";
 import { openRazorpayForOrder } from "@/lib/razorpay";
 import { toast } from "sonner";
 import { TransactionSummaryModal } from "@/components/payments/TransactionSummaryModal";

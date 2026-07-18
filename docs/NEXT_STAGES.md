@@ -2,7 +2,7 @@
 
 ## Stage 3C — Offline Payments, Verification and Receipts
 
-**Status:** CLOSED (v8 payment-detail whole-row removal, 2026-07-18)
+**Status:** CLOSURE VERIFICATION IN PROGRESS (v8 payment-detail whole-row removal landed 2026-07-18; final runtime gates — live multi-user integration test, Playwright visual verification at 390/1280 — pending)
 
 **Authoritative contract**
 - **Offline only.** Cash and Bank Transfer. No maintenance gateway, no Razorpay/UPI/cards/wallets, no platform fee. Razorpay stays for SaaS subscriptions only.
@@ -26,10 +26,23 @@
 - Prior v3–v7 tests remain green with updated identifier names (behavior unchanged).
 - Total unit suite: **845 passed / 5 skipped / 0 failed**. `bunx tsgo --noEmit` exits 0.
 
-**Not delivered in this run (honest scope note)**
-- The prompt's full live-database integration test (28-step fixture with two admins, active/moved-out/unrelated residents, real RPC round-trips through PostgREST as three distinct users) was not executed in this turn. The privacy/authorization guarantees are enforced by (a) the SECURITY DEFINER RPCs' explicit `auth.uid()` + active-resident gate, (b) the `is_admin` split in `get_payment_detail`, and (c) the strict Zod schemas at the server-fn boundary — all covered by unit tests. A dedicated live-DB integration harness is queued as follow-up.
+**Runtime closure — 2026-07-18 (this run)**
+- **Exit-gate commands (all exit 0):** `git diff --check` = 0; `bunx tsgo --noEmit` = 0; `bunx vitest run tests/unit` = 845 passed / 5 skipped / 0 failed (exit 0); `bunx vitest run` (full) = 846 passed / 19 skipped / 11 todo / 0 failed (exit 0); `bun run build` = 0 (Nitro Cloudflare build clean); `bun scripts/verify-client-bundle-secrets.ts` = 0 (906 client files, no server-only indicators).
+- **Grant / RLS audit after helper-grant restore.** `is_society_admin_for(uuid, uuid)` and `is_super_admin(uuid)` are `SECURITY DEFINER` with `search_path = public, pg_temp`; `EXECUTE` granted to `authenticated` (and `anon` for `is_super_admin` only, returning `false` for a `NULL` `auth.uid()`). Stage 3C RPCs (`submit_offline_payment`, `verify_offline_payment`, `reject_offline_payment`, `reverse_offline_payment`, `search_society_open_bills`, `get_payment_detail`) retain `EXECUTE` to `authenticated`; their internal `auth.uid()` + `is_society_admin_for` + active-resident gates continue to block cross-society / unauthorized calls. Grant restore does not broaden access.
+- **Source search (this run).** Protected society ID `1907a918-c4b8-4f43-a837-450530cc7c34` — absent from `src/` runtime code. `export const submitOfflinePayment` — absent. Browser-controlled `actorRole` — absent from non-server files. Resident Cash selector, "Payment Successful" pre-verification copy, "Stage 2F" — absent. `proof_url` — only present as (a) intentional exclusion comments in `src/lib/offline-payments.functions.ts`, (b) the dormant DB column in the auto-generated `src/integrations/supabase/types.ts`, (c) an unrelated `flat360-types.ts` field list; no active read/write path exposes it.
+- **Five Project-monitoring findings — individually reviewed.** All five open findings are earlier-stage regressions with **no Stage 3C impact**:
+  1. `c8b0dad5-e29d-5380-9c2a-f60129d722fa` (high) — "Import on Matrix/Maintenance leads to the wrong tool." Roadmap: Stage 2D/3A billing-matrix regression. Not Stage 3C; deferred.
+  2. `5a8539de-7828-57c4-8e35-779079cdec10` (high) — "Existing societies see empty Structure setup required page." Roadmap: Stage 2A/2B structure-mode backfill. Not Stage 3C; deferred.
+  3. `a1180e7a-4aec-5b38-b902-f8b5ceedd8e0` (medium) — "Setup checklist link opens a 404." Roadmap: Stage 2E setup-checklist wiring. Not Stage 3C; deferred.
+  4. `ddbc532c-8339-5ea6-abd6-ac53d4db924d` (medium) — "Trial societies lose advanced Flat 360 view." Roadmap: Stage 1x plan-feature normalization. Not Stage 3C; deferred.
+  5. `04b91993-0775-5afe-adb6-472871bfb6d1` (medium) — "Residents can't download approved No-Dues certificate from list." Roadmap: Stage 2G no-dues resident surface. Not Stage 3C; deferred.
+  None involve payment correctness, payment/receipt authorization, tenant isolation, RLS, `/society/payments`, resident bill/payment screens, or build/typecheck. Deferred to their owning stage as instructed.
 
-**Exact next position:** Stage 3D — Ledger, Expenses Integration, Reconciliation and Treasurer Accounting.
+**Not delivered in this run (honest scope note)**
+- **Live multi-user integration test (`tests/integration/billing-stage3c-live.test.ts`, 31-step).** Requires provisioning real `auth.users`, minting per-user JWTs, and executing RPC round-trips through PostgREST as Admin A1 / Admin A2 / unauthorized Admin B / active resident / moved-out resident / unrelated resident, plus SQL fixture teardown. Not executed this turn; the privacy/authorization guarantees remain covered by (a) SECURITY DEFINER RPCs with explicit `auth.uid()` + active-resident gates, (b) `is_admin` split in `get_payment_detail`, (c) strict Zod schemas at the server-fn boundary, and (d) the v8 unit suite. This harness is the last blocker to flipping status to **COMPLETE**.
+- **Playwright visual verification at 390 px / 1280 px** on `/society/payments`, resident bill detail with `OfflinePaymentSubmitCard`, resident payment detail, receipt valid + VOID. Not executed this turn.
+
+**Exact next position:** Stage 3D — Ledger, Expenses Integration, Reconciliation and Treasurer Accounting (blocked on Stage 3C flipping to COMPLETE once the two items above are delivered).
 
 ---
 

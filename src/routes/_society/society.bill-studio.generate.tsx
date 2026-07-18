@@ -143,19 +143,30 @@ function GenerateBillsPage() {
             <CardTitle className="text-base flex items-center gap-2"><FileText className="h-4 w-4" /> Preview — {previewData.cycle.name}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
+            <p className="text-xs text-muted-foreground italic">Preview only — no bills generated yet.</p>
             {previewData.warnings.length > 0 && (
               <div className="rounded-xl border border-amber-300 bg-amber-50 p-2 text-xs flex items-start gap-2 text-amber-800">
                 <ShieldAlert className="h-4 w-4 mt-0.5" />
-                <div>Warnings: {previewData.warnings.join(", ")}</div>
+                <div>Warnings ({previewData.warnings.length}): {previewData.warnings.join(", ")}</div>
               </div>
             )}
             <div className="grid grid-cols-2 gap-2">
+              <StatBox label="Units" value={String(previewData.unit_count)} />
               <StatBox label="Existing bills" value={String(previewData.existing_bill_count)} />
+              <StatBox label="Current charges" value={`₹${previewData.current_charges_total.toLocaleString("en-IN")}`} />
               <StatBox label="Previous dues" value={`₹${previewData.previous_dues_total.toLocaleString("en-IN")}`} />
+              <StatBox label="Total payable" value={`₹${previewData.total_payable.toLocaleString("en-IN")}`} />
+              <StatBox label="Due date" value={previewData.cycle.due_date} />
             </div>
             <div className="flex justify-end pt-2">
               <Button
-                disabled={busy || previewData.existing_bill_count > 0}
+                disabled={
+                  busy ||
+                  previewData.existing_bill_count > 0 ||
+                  previewData.unit_count === 0 ||
+                  previewData.warnings.includes("cycle_not_ready") ||
+                  previewData.warnings.includes("template_not_active")
+                }
                 onClick={() => setConfirmOpen(true)}
               >
                 Finalize batch
@@ -193,11 +204,24 @@ function GenerateBillsPage() {
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>Finalize this batch?</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            This will create bills for every active unit in this cycle. Bills carry structured numbers
-            (RR/YYYYMM/####), current charges, previous dues and a due date. This action cannot be
-            undone by regenerating — cancel individual bills instead.
-          </p>
+          {previewData && (
+            <div className="space-y-2 text-sm">
+              <div className="rounded-xl border p-3 space-y-1">
+                <div className="flex justify-between"><span className="text-muted-foreground">Bills to create</span><span className="font-semibold">{previewData.unit_count}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Period</span><span>{previewData.cycle.period_start} → {previewData.cycle.period_end}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Due date</span><span>{previewData.cycle.due_date}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Current charges</span><span>₹{previewData.current_charges_total.toLocaleString("en-IN")}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Previous dues</span><span>₹{previewData.previous_dues_total.toLocaleString("en-IN")}</span></div>
+                <div className="flex justify-between border-t pt-1 mt-1"><span className="font-medium">Total payable</span><span className="font-semibold">₹{previewData.total_payable.toLocaleString("en-IN")}</span></div>
+              </div>
+              <ul className="text-xs text-muted-foreground list-disc pl-4 space-y-0.5">
+                <li>Bill numbers are assigned on finalization (RR/YYYYMM/####).</li>
+                <li>No payments are recorded in this step.</li>
+                <li>Payment entry and receipt verification comes in Stage 3C.</li>
+                <li>Regeneration is blocked once bills exist — cancel individual bills instead.</li>
+              </ul>
+            </div>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={busy}>Cancel</Button>
             <Button onClick={onFinalize} disabled={busy}>{busy ? "Finalizing…" : "Finalize"}</Button>
@@ -207,6 +231,7 @@ function GenerateBillsPage() {
     </div>
   );
 }
+
 
 function StatBox({ label, value }: { label: string; value: string }) {
   return (

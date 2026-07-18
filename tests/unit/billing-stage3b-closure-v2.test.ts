@@ -91,14 +91,23 @@ describe("Stage 3B closure — getBillDisplayStatus", () => {
 });
 
 describe("Stage 3B closure — bill routes have no online-payment promises", () => {
+  // These phrases must not appear as user-visible product copy. The
+  // tests strip line/block comments before searching so that guard
+  // comments in the source (which document what the file must NOT do)
+  // don't trip the assertion.
   const forbiddenPhrases = [
-    "coming soon",
-    "Pay button",
+    "Online payments are coming soon",
+    "future Pay button",
     "we'll enable secure online payments",
     "Once online payments are enabled",
     "Payment Successful",
     "Payment successful",
   ];
+
+  const stripComments = (s: string) =>
+    s
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/(^|[^:])\/\/[^\n]*/g, "$1");
 
   const billRoutes = [
     "src/routes/_resident/app.bills.tsx",

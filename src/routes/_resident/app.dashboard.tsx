@@ -1,14 +1,13 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
-  Bell, ArrowRight, Receipt, ShieldCheck, ShieldAlert, Fingerprint, Inbox,
-  Megaphone, LifeBuoy, FileText, Phone, Wallet, Building2, Bot,
+  Bell, ArrowRight, Receipt, ShieldCheck, ShieldAlert, Inbox,
+  Megaphone, LifeBuoy, FileText, Phone, Building2, Bot,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { AdBanner } from "@/components/shared/AdBanner";
-import { requireBiometric } from "@/lib/biometric";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_resident/app/dashboard")({

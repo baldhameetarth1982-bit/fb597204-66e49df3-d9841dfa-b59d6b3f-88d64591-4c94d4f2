@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea";
 import { useServerFn } from "@tanstack/react-start";
 import { cancelBill, getAdminBillDetail, type AdminBillDetail } from "@/lib/billing-generate.functions";
+import { getBillDisplayStatus } from "@/lib/bill-display-status";
 import { toast } from "sonner";
 import { shareBillAsImage } from "@/components/billing/BillCardImage";
 import { formatDate } from "@/utils/format";

@@ -184,7 +184,7 @@ function BillDetailPage() {
                     period: bill.period_label ?? "Bill",
                     amount,
                     dueDate: bill.due_date ? formatDate(bill.due_date) : "—",
-                    status: (bill.status as "paid" | "due" | "overdue" | "cancelled") || "due",
+                    status: state.code === "paid" ? "paid" : state.code === "cancelled" ? "cancelled" : state.code === "overdue" ? "overdue" : "due",
                     adminSignature: user?.email?.split("@")[0],
                   });
                 } catch (e) {

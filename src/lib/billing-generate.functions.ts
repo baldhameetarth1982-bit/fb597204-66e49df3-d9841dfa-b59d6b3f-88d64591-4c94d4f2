@@ -206,7 +206,7 @@ export const getAdminBillDetail = createServerFn({ method: "POST" })
   .inputValidator((i) =>
     z.object({ societyId: z.string().uuid(), billId: z.string().uuid() }).parse(i),
   )
-  .handler(async ({ data, context }): Promise<AdminBillDetail> => {
+  .handler(async ({ data, context }) => {
     const { data: bill, error } = await context.supabase
       .from("bills").select("*")
       .eq("society_id", data.societyId).eq("id", data.billId).maybeSingle();

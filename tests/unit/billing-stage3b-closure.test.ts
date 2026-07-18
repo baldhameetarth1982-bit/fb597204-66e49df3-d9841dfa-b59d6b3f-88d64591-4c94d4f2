@@ -109,7 +109,6 @@ describe("Stage 3B closure — protected society + no payment/receipt scope cree
       "src/routes/_society/society.bill-studio.generate.tsx",
       "src/routes/_society/society.bills.$id.tsx",
       "src/routes/_resident/app.bills.tsx",
-      "tests/unit/billing-stage3b-closure.test.ts",
     ];
     for (const p of paths) {
       expect(readFileSync(p, "utf8")).not.toContain(

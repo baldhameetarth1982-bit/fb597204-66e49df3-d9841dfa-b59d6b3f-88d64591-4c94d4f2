@@ -10,6 +10,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { getResidentBillDetail } from "@/lib/billing-generate.functions";
 import { getBillDisplayStatus } from "@/lib/bill-display-status";
 import { formatDate } from "@/utils/format";
+import { OfflinePaymentSubmitCard } from "@/components/billing/OfflinePaymentSubmitCard";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_resident/app/bills/$id")({

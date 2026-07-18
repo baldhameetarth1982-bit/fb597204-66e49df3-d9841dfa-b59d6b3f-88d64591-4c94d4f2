@@ -45,9 +45,31 @@ interface BillDetail {
 
 function BillDetailPage() {
   const { id } = Route.useParams();
-  const { user } = useAuth();
+  const { user, hasRole } = useAuth();
+  const cancelBillFn = useServerFn(cancelBill);
   const [bill, setBill] = useState<BillDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelBusy, setCancelBusy] = useState(false);
+  const isAdmin = hasRole?.("society_admin") || hasRole?.("super_admin");
+  const hasVerifiedPayment = !!bill?.payments?.some((p) => p.status === "verified" || p.status === "captured" || p.status === "success");
+  const canCancel = isAdmin && bill && !bill.cancelled_at && !hasVerifiedPayment;
+
+  async function onCancel() {
+    if (!bill) return;
+    setCancelBusy(true);
+    try {
+      await cancelBillFn({ data: { societyId: bill.society_id, billId: bill.id, reason: cancelReason.trim() || undefined } });
+      toast.success("Bill cancelled");
+      setCancelOpen(false);
+      setBill({ ...bill, status: "cancelled", cancelled_at: new Date().toISOString(), cancel_reason: cancelReason || "cancelled" });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setCancelBusy(false);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;

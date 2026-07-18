@@ -2,7 +2,7 @@
 
 ## Stage 3C — Offline Payments, Verification and Receipts
 
-**Status:** CLOSED (v8 payment-detail whole-row removal, 2026-07-18)
+**Status:** CLOSURE VERIFICATION IN PROGRESS (v8 payment-detail whole-row removal landed 2026-07-18; final runtime gates — live multi-user integration test, Playwright visual verification at 390/1280 — pending)
 
 **Authoritative contract**
 - **Offline only.** Cash and Bank Transfer. No maintenance gateway, no Razorpay/UPI/cards/wallets, no platform fee. Razorpay stays for SaaS subscriptions only.

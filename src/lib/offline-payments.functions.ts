@@ -12,15 +12,18 @@ import {
 /**
  * Stage 3C — Offline payments (Cash / Bank Transfer only).
  *
- * All writes go through SECURITY DEFINER RPCs. This file exposes:
- *   - submitOfflinePayment: resident-of-flat OR billing.manage admin.
- *   - verifyOfflinePayment / rejectOfflinePayment / reverseOfflinePayment: admin only.
- *   - listOfflinePayments (admin), getResidentPayments (resident own flats).
- *   - getPaymentDetail (server-authorized read).
+ * All writes go through SECURITY DEFINER RPCs (submit/verify/reject/reverse).
+ * All reads also go through SECURITY DEFINER RPCs that explicitly authorize
+ * the caller (admin billing.manage / super_admin, or resident of the flat);
+ * we do not rely on RLS alone for financial reads.
+ *
+ * `proof_url` is intentionally NOT exposed on any Stage 3C read/write
+ * surface — the column is dormant until the secure signed-upload work
+ * lands in a later stage.
  *
  * No online gateway, UPI, cards, wallets, Razorpay, PayU, Cashfree.
- * Legacy `success` payment rows are readable via the same read helpers
- * but cannot be transitioned by any of these RPCs (invalid_transition).
+ * Legacy `success` payment rows are readable but cannot be transitioned
+ * by any of these RPCs (invalid_transition).
  */
 
 export type OfflinePaymentStatus =
@@ -44,7 +47,6 @@ export interface OfflinePaymentRow {
   submitted_by: string | null;
   source: string | null;
   payment_date: string | null;
-  proof_url: string | null;
   verified_at: string | null;
   verified_by: string | null;
   verification_notes: string | null;
@@ -55,12 +57,57 @@ export interface OfflinePaymentRow {
   created_at: string;
 }
 
-export interface PaymentReceiptRow {
+export interface ResidentPaymentRow {
+  id: string;
+  bill_id: string | null;
+  society_id: string;
+  flat_id: string | null;
+  amount: number;
+  method: string;
+  status: string;
+  reference_no: string | null;
+  submitted_at: string | null;
+  payment_date: string | null;
+  verified_at: string | null;
+  rejected_at: string | null;
+  rejection_reason: string | null;
+  reversed_at: string | null;
+  reversal_reason: string | null;
+  created_at: string;
+}
+
+export type ReceiptStatus = "valid" | "void";
+
+export interface PaymentReceiptLifecycle {
   id: string;
   payment_id: string;
   society_id: string;
   receipt_number: string;
   issued_at: string;
+  status: ReceiptStatus;
+  voided_at: string | null;
+  voided_by: string | null;
+  void_reason: string | null;
+  amount_snapshot: number | null;
+  method_snapshot: string | null;
+  reference_snapshot: string | null;
+  bill_number_snapshot: string | null;
+  verified_by: string | null;
+  verified_at: string | null;
+}
+
+export interface BillPaymentSummary {
+  bill_id: string;
+  society_id: string;
+  total_payable: number;
+  verified_amount: number;
+  pending_amount: number;
+  rejected_amount: number;
+  reversed_amount: number;
+  remaining_verified_balance: number;
+  available_to_submit: number;
+  status: string;
+  cancelled: boolean;
 }
 
 /** Extend billing mapError with Stage 3C codes. Never leaks raw DB messages. */
@@ -91,20 +138,6 @@ export function mapPaymentError(msg: string): string {
   if (m.includes("reason_required")) return "Please provide a reason.";
   if (m.includes("unauthenticated")) return "Please sign in and try again.";
   return mapError(msg);
-}
-
-export interface BillPaymentSummary {
-  bill_id: string;
-  society_id: string;
-  total_payable: number;
-  verified_amount: number;
-  pending_amount: number;
-  rejected_amount: number;
-  reversed_amount: number;
-  remaining_verified_balance: number;
-  available_to_submit: number;
-  status: string;
-  cancelled: boolean;
 }
 
 /* ------------------------------ Schemas ------------------------------- */
@@ -211,53 +244,144 @@ export const reverseOfflinePayment = createServerFn({ method: "POST" })
   });
 
 /* ------------------------------ Reads ------------------------------- */
+/*
+ * All Stage 3C reads route through SECURITY DEFINER RPCs that verify the
+ * caller's authorization explicitly. Rows come back as jsonb; we validate
+ * a minimal shape with Zod before returning strongly typed rows.
+ */
 
-type SupabaseRead = {
-  from: (table: string) => {
-    select: (cols: string) => any;
-  };
-};
+const listInput = z.object({
+  societyId: z.string().uuid(),
+  status: z.enum(["pending", "verified", "rejected", "reversed", "all"]).default("pending"),
+  limit: z.number().int().min(1).max(200).default(50),
+  offset: z.number().int().min(0).default(0),
+});
+
+const paymentRowSchema = z.object({
+  id: z.string(),
+  bill_id: z.string().nullable(),
+  society_id: z.string(),
+  flat_id: z.string().nullable(),
+  amount: z.coerce.number(),
+  method: z.string(),
+  status: z.string(),
+  reference_no: z.string().nullable(),
+  notes: z.string().nullable(),
+  submitted_at: z.string().nullable(),
+  submitted_by: z.string().nullable(),
+  source: z.string().nullable(),
+  payment_date: z.string().nullable(),
+  verified_at: z.string().nullable(),
+  verified_by: z.string().nullable(),
+  verification_notes: z.string().nullable(),
+  rejected_at: z.string().nullable(),
+  rejection_reason: z.string().nullable(),
+  reversed_at: z.string().nullable(),
+  reversal_reason: z.string().nullable(),
+  created_at: z.string(),
+});
+
+const residentPaymentSchema = z.object({
+  id: z.string(),
+  bill_id: z.string().nullable(),
+  society_id: z.string(),
+  flat_id: z.string().nullable(),
+  amount: z.coerce.number(),
+  method: z.string(),
+  status: z.string(),
+  reference_no: z.string().nullable(),
+  submitted_at: z.string().nullable(),
+  payment_date: z.string().nullable(),
+  verified_at: z.string().nullable(),
+  rejected_at: z.string().nullable(),
+  rejection_reason: z.string().nullable(),
+  reversed_at: z.string().nullable(),
+  reversal_reason: z.string().nullable(),
+  created_at: z.string(),
+});
+
+const receiptLifecycleSchema = z.object({
+  id: z.string(),
+  payment_id: z.string(),
+  society_id: z.string(),
+  receipt_number: z.string(),
+  issued_at: z.string(),
+  status: z.enum(["valid", "void"]),
+  voided_at: z.string().nullable(),
+  voided_by: z.string().nullable(),
+  void_reason: z.string().nullable(),
+  amount_snapshot: z.coerce.number().nullable(),
+  method_snapshot: z.string().nullable(),
+  reference_snapshot: z.string().nullable(),
+  bill_number_snapshot: z.string().nullable(),
+  verified_by: z.string().nullable(),
+  verified_at: z.string().nullable(),
+});
 
 export const listSocietyPayments = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => listInput.parse(i))
+  .handler(async ({ data, context }) => {
+    try {
+      const raw = await callBillingRpc(
+        toBillingRpcClient(context),
+        "list_society_payments_v1",
+        buildRpcArgs({
+          _society_id: data.societyId,
+          _status: data.status,
+          _limit: data.limit,
+          _offset: data.offset,
+        }),
+      );
+      const arr = Array.isArray(raw) ? raw : [];
+      const payments: OfflinePaymentRow[] = arr.map((row) => paymentRowSchema.parse(row));
+      return { payments };
+    } catch (e) {
+      throw new Error(mapPaymentError((e as Error).message));
+    }
+  });
+
+export const getResidentPayments = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) =>
     z
       .object({
-        societyId: z.string().uuid(),
-        status: z.enum(["pending", "verified", "rejected", "reversed", "all"]).default("pending"),
         limit: z.number().int().min(1).max(200).default(50),
+        offset: z.number().int().min(0).default(0),
       })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    const sb = context.supabase as unknown as SupabaseRead;
-    let q = sb
-      .from("payments")
-      .select(
-        "id, bill_id, society_id, flat_id, amount, method, status, reference_no, notes, submitted_at, submitted_by, source, payment_date, proof_url, verified_at, verified_by, verification_notes, rejected_at, rejection_reason, reversed_at, reversal_reason, created_at",
-      )
-      .eq("society_id", data.societyId)
-      .order("submitted_at", { ascending: false, nullsFirst: false })
-      .order("created_at", { ascending: false })
-      .limit(data.limit);
-    if (data.status !== "all") q = q.eq("status", data.status);
-    const { data: rows, error } = await q;
-    if (error) throw new Error(mapPaymentError(error.message));
-    return { payments: (rows ?? []) as OfflinePaymentRow[] };
+    try {
+      const raw = await callBillingRpc(
+        toBillingRpcClient(context),
+        "get_resident_payments_v1",
+        buildRpcArgs({ _limit: data.limit, _offset: data.offset }),
+      );
+      const arr = Array.isArray(raw) ? raw : [];
+      const payments: ResidentPaymentRow[] = arr.map((row) => residentPaymentSchema.parse(row));
+      return { payments };
+    } catch (e) {
+      throw new Error(mapPaymentError((e as Error).message));
+    }
   });
 
 export const getPaymentReceipt = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => paymentIdOnly.parse(i))
   .handler(async ({ data, context }) => {
-    const sb = context.supabase as unknown as SupabaseRead;
-    const { data: rec, error } = await sb
-      .from("payment_receipts")
-      .select("id, payment_id, society_id, receipt_number, issued_at")
-      .eq("payment_id", data.paymentId)
-      .maybeSingle();
-    if (error) throw new Error(mapPaymentError(error.message));
-    return { receipt: (rec ?? null) as PaymentReceiptRow | null };
+    try {
+      const raw = await callBillingRpc(
+        toBillingRpcClient(context),
+        "get_payment_receipt_lifecycle",
+        buildRpcArgs({ _payment_id: data.paymentId }),
+      );
+      if (raw === null || raw === undefined) return { receipt: null };
+      const receipt: PaymentReceiptLifecycle = receiptLifecycleSchema.parse(raw);
+      return { receipt };
+    } catch (e) {
+      throw new Error(mapPaymentError((e as Error).message));
+    }
   });
 
 export const getBillPaymentSummary = createServerFn({ method: "POST" })

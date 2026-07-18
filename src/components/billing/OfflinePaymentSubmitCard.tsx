@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2, IndianRupee, CheckCircle2, Clock, XCircle } from "lucide-react";
 import {
-  submitOfflinePayment,
+  submitResidentBankTransfer,
   getPaymentReceipt,
 } from "@/lib/offline-payments.functions";
 

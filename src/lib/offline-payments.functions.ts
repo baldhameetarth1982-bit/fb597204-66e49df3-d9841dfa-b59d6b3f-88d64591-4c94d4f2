@@ -307,50 +307,9 @@ export const reverseOfflinePayment = createServerFn({ method: "POST" })
 
 
 
-const paymentDetailSchema = z.object({
-  payment: z.lazy(() => paymentRowSchema),
-  bill_number: z.string().nullable(),
-  flat_label: z.string().nullable(),
-  summary: billPaymentSummarySchema.nullable(),
-  receipt: z.lazy(() => receiptLifecycleSchema).nullable(),
-  audience: z.enum(["admin", "resident"]),
-});
+// paymentDetailSchema and getPaymentDetail are declared below,
+// after paymentRowSchema and receiptLifecycleSchema.
 
-export interface PaymentDetail {
-  payment: OfflinePaymentRow;
-  bill_number: string | null;
-  flat_label: string | null;
-  summary: BillPaymentSummary | null;
-  receipt: PaymentReceiptLifecycle | null;
-  audience: "admin" | "resident";
-}
-
-/** Stage 3C v6 — explicit-auth payment detail; every nested field Zod-validated. */
-export const getPaymentDetail = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((i) => paymentIdOnly.parse(i))
-  .handler(async ({ data, context }) => {
-    try {
-      const raw = await callBillingRpc(
-        toBillingRpcClient(context),
-        "get_payment_detail",
-        buildRpcArgs({ _payment_id: data.paymentId }),
-      );
-      if (raw === null || raw === undefined) return null;
-      const parsed = paymentDetailSchema.parse(raw);
-      const detail: PaymentDetail = {
-        payment: parsed.payment,
-        bill_number: parsed.bill_number,
-        flat_label: parsed.flat_label,
-        summary: parsed.summary,
-        receipt: parsed.receipt,
-        audience: parsed.audience,
-      };
-      return detail;
-    } catch (e) {
-      throw new Error(mapPaymentError((e as Error).message));
-    }
-  });
 
 
 

@@ -514,7 +514,9 @@ export const getBillPaymentSummary = createServerFn({ method: "POST" })
         "get_bill_payment_summary",
         buildRpcArgs({ _bill_id: data.billId }),
       );
-      return { summary: (raw ?? null) as BillPaymentSummary | null };
+      if (raw === null || raw === undefined) return { summary: null };
+      const summary: BillPaymentSummary = billPaymentSummarySchema.parse(raw);
+      return { summary };
     } catch (e) {
       throw new Error(mapPaymentError((e as Error).message));
     }
@@ -525,20 +527,28 @@ export const getBillPaymentSummary = createServerFn({ method: "POST" })
 const openBillSchema = z.object({
   bill_id: z.string(),
   bill_number: z.string().nullable(),
+  society_id: z.string(),
   flat_id: z.string().nullable(),
   flat_label: z.string().nullable(),
   block_name: z.string().nullable(),
-  total_payable: z.coerce.number(),
-  status: z.string(),
-  due_date: z.string().nullable(),
   period_label: z.string().nullable(),
+  due_date: z.string().nullable(),
+  status: z.string(),
+  total_payable: z.coerce.number(),
+  verified_amount: z.coerce.number(),
+  pending_amount: z.coerce.number(),
+  remaining_verified_balance: z.coerce.number(),
+  available_to_submit: z.coerce.number(),
 });
 
 export type OpenBillForPayment = z.infer<typeof openBillSchema>;
 
 /**
- * Stage 3C v5 — Admin bill search for offline payment entry. Server-side
- * authorization: requires `manage_billing` on the target society.
+ * Stage 3C v6 — Admin bill search for offline payment entry. Server-side
+ * authorization requires the canonical `billing.manage` capability (or
+ * super_admin). Returns the same verified / pending / available balances
+ * as `get_bill_payment_summary` — the admin form never relies on the raw
+ * bill total.
  */
 export const searchOpenBillsForPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -548,6 +558,7 @@ export const searchOpenBillsForPayment = createServerFn({ method: "POST" })
         societyId: z.string().uuid(),
         query: z.string().trim().max(120).default(""),
         limit: z.number().int().min(1).max(50).default(20),
+        offset: z.number().int().min(0).default(0),
       })
       .parse(i),
   )
@@ -560,6 +571,7 @@ export const searchOpenBillsForPayment = createServerFn({ method: "POST" })
           _society_id: data.societyId,
           _query: data.query,
           _limit: data.limit,
+          _offset: data.offset,
         }),
       );
       const arr = Array.isArray(raw) ? raw : [];
@@ -569,3 +581,4 @@ export const searchOpenBillsForPayment = createServerFn({ method: "POST" })
       throw new Error(mapPaymentError((e as Error).message));
     }
   });
+

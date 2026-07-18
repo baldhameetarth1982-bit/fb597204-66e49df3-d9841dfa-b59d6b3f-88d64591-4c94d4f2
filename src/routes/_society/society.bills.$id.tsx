@@ -136,7 +136,7 @@ function BillDetailPage() {
                 {detail.resident?.full_name && <> · {detail.resident.full_name}</>}
               </p>
             </div>
-            <StatusChip tone={statusTone}>{(bill.status ?? "").toUpperCase()}</StatusChip>
+            <StatusChip tone={state.tone}>{state.label}</StatusChip>
           </div>
 
           <div className="mt-5 flex items-baseline gap-1">

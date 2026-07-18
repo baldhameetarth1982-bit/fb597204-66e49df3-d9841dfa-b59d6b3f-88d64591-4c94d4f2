@@ -287,7 +287,29 @@ export const reverseOfflinePayment = createServerFn({ method: "POST" })
     }
   });
 
-/** Stage 3C v4 — explicit-auth payment detail for admin/resident. */
+const paymentDetailSchema = z.object({
+  payment: paymentRowSchemaRef(),
+  bill_number: z.string().nullable(),
+  flat_label: z.string().nullable(),
+  summary: z.unknown().nullable(),
+  receipt: z.unknown().nullable(),
+  audience: z.enum(["admin", "resident"]),
+});
+// Forward declaration bridge — paymentRowSchema is defined below.
+function paymentRowSchemaRef(): z.ZodTypeAny {
+  return z.lazy(() => paymentRowSchema);
+}
+
+export interface PaymentDetail {
+  payment: OfflinePaymentRow;
+  bill_number: string | null;
+  flat_label: string | null;
+  summary: BillPaymentSummary | null;
+  receipt: PaymentReceiptLifecycle | null;
+  audience: "admin" | "resident";
+}
+
+/** Stage 3C v5 — explicit-auth payment detail for admin/resident, Zod-validated. */
 export const getPaymentDetail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => paymentIdOnly.parse(i))
@@ -298,18 +320,21 @@ export const getPaymentDetail = createServerFn({ method: "POST" })
         "get_payment_detail",
         buildRpcArgs({ _payment_id: data.paymentId }),
       );
-      return (raw ?? null) as {
-        payment: OfflinePaymentRow;
-        bill_number: string | null;
-        flat_label: string | null;
-        summary: BillPaymentSummary | null;
-        receipt: PaymentReceiptLifecycle | null;
-        audience: "admin" | "resident";
-      } | null;
+      if (raw === null || raw === undefined) return null;
+      const parsed = paymentDetailSchema.parse(raw);
+      return {
+        payment: parsed.payment as OfflinePaymentRow,
+        bill_number: parsed.bill_number,
+        flat_label: parsed.flat_label,
+        summary: (parsed.summary ?? null) as BillPaymentSummary | null,
+        receipt: (parsed.receipt ?? null) as PaymentReceiptLifecycle | null,
+        audience: parsed.audience,
+      } satisfies PaymentDetail;
     } catch (e) {
       throw new Error(mapPaymentError((e as Error).message));
     }
   });
+
 
 
 /*

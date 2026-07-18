@@ -413,28 +413,52 @@ const residentPaymentSchema = z.object({
   created_at: z.string(),
 });
 
-const receiptLifecycleSchema = z.object({
-  id: z.string(),
-  payment_id: z.string(),
-  society_id: z.string(),
-  receipt_number: z.string(),
-  issued_at: z.string(),
-  status: z.enum(["valid", "void"]),
-  voided_at: z.string().nullable(),
-  voided_by: z.string().nullable(),
-  void_reason: z.string().nullable(),
-  amount_snapshot: z.coerce.number().nullable(),
-  method_snapshot: z.string().nullable(),
-  reference_snapshot: z.string().nullable(),
-  bill_number_snapshot: z.string().nullable(),
-  verified_by: z.string().nullable(),
-  verified_at: z.string().nullable(),
-});
+// Stage 3C v8 — split receipt schemas by audience. The resident receipt is
+// intentionally the tightest projection possible: only display-safe fields.
+// Internal actor UUIDs (verified_by / voided_by) and internal database IDs
+// (receipt id, payment_id, society_id) MUST NOT appear on resident payloads.
+const adminReceiptSchema = z
+  .object({
+    id: z.string(),
+    payment_id: z.string(),
+    society_id: z.string(),
+    receipt_number: z.string(),
+    issued_at: z.string(),
+    status: z.enum(["valid", "void"]),
+    voided_at: z.string().nullable(),
+    voided_by: z.string().nullable(),
+    void_reason: z.string().nullable(),
+    amount_snapshot: z.coerce.number().nullable(),
+    method_snapshot: z.string().nullable(),
+    reference_snapshot: z.string().nullable(),
+    bill_number_snapshot: z.string().nullable(),
+    verified_by: z.string().nullable(),
+    verified_at: z.string().nullable(),
+  })
+  .strict();
 
-// Stage 3C v7 — payment detail is a discriminated union by audience.
-// Resident-shaped rows are validated with `.strict()` so any admin/internal
-// key surfacing (e.g. proof_url, submitted_by) is rejected loudly instead of
-// silently leaking to the browser.
+const residentReceiptSchema = z
+  .object({
+    receipt_number: z.string(),
+    status: z.enum(["valid", "void"]),
+    issued_at: z.string(),
+    voided_at: z.string().nullable(),
+    void_reason: z.string().nullable(),
+    amount_snapshot: z.coerce.number().nullable(),
+    method_snapshot: z.string().nullable(),
+    reference_snapshot: z.string().nullable(),
+    bill_number_snapshot: z.string().nullable(),
+    verified_at: z.string().nullable(),
+  })
+  .strict();
+
+// Kept for the standalone `get_payment_receipt_lifecycle` admin fetcher.
+const receiptLifecycleSchema = adminReceiptSchema;
+
+// Stage 3C v7/v8 — payment detail is a discriminated union by audience.
+// Resident-shaped rows use `.strict()` so any admin/internal key surfacing
+// (proof_url, submitted_by, verified_by, voided_by, etc.) is rejected loudly
+// instead of silently leaking to the browser.
 const paymentDetailCommonPaymentSchema = z.object({
   id: z.string(),
   bill_id: z.string().nullable(),
@@ -455,7 +479,7 @@ const paymentDetailCommonPaymentSchema = z.object({
   created_at: z.string(),
 });
 
-const paymentDetailAdminPaymentSchema = paymentDetailCommonPaymentSchema
+export const adminDetailPaymentSchema = paymentDetailCommonPaymentSchema
   .extend({
     notes: z.string().nullable(),
     submitted_by: z.string().nullable(),
@@ -466,34 +490,76 @@ const paymentDetailAdminPaymentSchema = paymentDetailCommonPaymentSchema
   })
   .strict();
 
-const paymentDetailResidentPaymentSchema = paymentDetailCommonPaymentSchema.strict();
+export const residentDetailPaymentSchema = paymentDetailCommonPaymentSchema.strict();
 
-const paymentDetailAdminSchema = z
+export const adminReceiptDetailSchema = adminReceiptSchema;
+export const residentReceiptDetailSchema = residentReceiptSchema;
+
+export const adminPaymentDetailSchema = z
   .object({
     audience: z.literal("admin"),
-    payment: paymentDetailAdminPaymentSchema,
+    payment: adminDetailPaymentSchema,
     bill_number: z.string().nullable(),
     flat_label: z.string().nullable(),
     summary: billPaymentSummarySchema.nullable(),
-    receipt: receiptLifecycleSchema.nullable(),
+    receipt: adminReceiptSchema.nullable(),
   })
   .strict();
 
-const paymentDetailResidentSchema = z
+export const residentPaymentDetailSchema = z
   .object({
     audience: z.literal("resident"),
-    payment: paymentDetailResidentPaymentSchema,
+    payment: residentDetailPaymentSchema,
     bill_number: z.string().nullable(),
     flat_label: z.string().nullable(),
     summary: billPaymentSummarySchema.nullable(),
-    receipt: receiptLifecycleSchema.nullable(),
+    receipt: residentReceiptSchema.nullable(),
   })
   .strict();
 
-const paymentDetailSchema = z.discriminatedUnion("audience", [
-  paymentDetailAdminSchema,
-  paymentDetailResidentSchema,
+export const paymentDetailSchema = z.discriminatedUnion("audience", [
+  adminPaymentDetailSchema,
+  residentPaymentDetailSchema,
 ]);
+
+/**
+ * Production parser for a raw `get_payment_detail` RPC payload. Tests call this
+ * to exercise the actual schema — never a test-only recreation.
+ */
+export function parsePaymentDetailResponse(raw: unknown): PaymentDetail {
+  return paymentDetailSchema.parse(raw);
+}
+
+export interface AdminReceiptDetail {
+  id: string;
+  payment_id: string;
+  society_id: string;
+  receipt_number: string;
+  issued_at: string;
+  status: ReceiptStatus;
+  voided_at: string | null;
+  voided_by: string | null;
+  void_reason: string | null;
+  amount_snapshot: number | null;
+  method_snapshot: string | null;
+  reference_snapshot: string | null;
+  bill_number_snapshot: string | null;
+  verified_by: string | null;
+  verified_at: string | null;
+}
+
+export interface ResidentReceiptDetail {
+  receipt_number: string;
+  status: ReceiptStatus;
+  issued_at: string;
+  voided_at: string | null;
+  void_reason: string | null;
+  amount_snapshot: number | null;
+  method_snapshot: string | null;
+  reference_snapshot: string | null;
+  bill_number_snapshot: string | null;
+  verified_at: string | null;
+}
 
 export interface PaymentDetailAdmin {
   audience: "admin";
@@ -501,7 +567,7 @@ export interface PaymentDetailAdmin {
   bill_number: string | null;
   flat_label: string | null;
   summary: BillPaymentSummary | null;
-  receipt: PaymentReceiptLifecycle | null;
+  receipt: AdminReceiptDetail | null;
 }
 
 export interface PaymentDetailResident {
@@ -510,7 +576,7 @@ export interface PaymentDetailResident {
   bill_number: string | null;
   flat_label: string | null;
   summary: BillPaymentSummary | null;
-  receipt: PaymentReceiptLifecycle | null;
+  receipt: ResidentReceiptDetail | null;
 }
 
 export type PaymentDetail = PaymentDetailAdmin | PaymentDetailResident;

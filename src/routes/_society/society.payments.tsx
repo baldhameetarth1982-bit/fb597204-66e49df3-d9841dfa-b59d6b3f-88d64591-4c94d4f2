@@ -375,3 +375,279 @@ function SocietyPaymentsRoute() {
     </div>
   );
 }
+
+/* ---------------- Admin Record Offline Payment section ---------------- */
+
+function randomIdKey(prefix: string) {
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function RecordOfflinePaymentSection({
+  societyId,
+  onRecorded,
+}: {
+  societyId: string;
+  onRecorded: () => void;
+}) {
+  const search = useServerFn(searchOpenBillsForPayment);
+  const record = useServerFn(recordAdminOfflinePayment);
+
+  const [expanded, setExpanded] = useState(false);
+  const [query, setQuery] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [results, setResults] = useState<OpenBillForPayment[]>([]);
+  const [selected, setSelected] = useState<OpenBillForPayment | null>(null);
+
+  const [method, setMethod] = useState<"cash" | "bank_transfer">("cash");
+  const [amount, setAmount] = useState("");
+  const [reference, setReference] = useState("");
+  const [notes, setNotes] = useState("");
+  const [paymentDate, setPaymentDate] = useState<string>(() =>
+    new Date().toISOString().slice(0, 10),
+  );
+  const [submitting, setSubmitting] = useState(false);
+  const [idKey, setIdKey] = useState(() => randomIdKey("adm"));
+
+  const canSubmit = useMemo(
+    () =>
+      !!selected &&
+      Number(amount) > 0 &&
+      (method === "cash" || reference.trim().length > 0),
+    [selected, amount, method, reference],
+  );
+
+  async function runSearch() {
+    setSearching(true);
+    try {
+      const { bills } = await search({
+        data: { societyId, query, limit: 20 },
+      });
+      setResults(bills);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  async function onSubmit() {
+    if (!selected) return;
+    setSubmitting(true);
+    try {
+      const res = await record({
+        data: {
+          billId: selected.bill_id,
+          method,
+          amount: Number(amount),
+          paymentDate,
+          referenceNo: reference.trim() || null,
+          notes: notes.trim() || null,
+          idempotencyKey: idKey,
+        },
+      });
+      toast.success(`Recorded (pending verification). Payment ${res.paymentId.slice(0, 8)}…`);
+      // Reset for next entry
+      setSelected(null);
+      setAmount("");
+      setReference("");
+      setNotes("");
+      setIdKey(randomIdKey("adm"));
+      onRecorded();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (!expanded) {
+    return (
+      <Card className="rounded-2xl">
+        <CardContent className="p-4 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold">Record offline payment</p>
+            <p className="text-xs text-muted-foreground">
+              Enter a Cash or Bank Transfer payment received at the office. Verification happens as a separate step.
+            </p>
+          </div>
+          <Button size="sm" className="rounded-lg" onClick={() => setExpanded(true)}>
+            <Plus className="h-4 w-4 mr-1" /> Record
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="rounded-2xl">
+      <CardContent className="p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold">Record offline payment</p>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="rounded-lg"
+            onClick={() => {
+              setExpanded(false);
+              setSelected(null);
+            }}
+          >
+            Cancel
+          </Button>
+        </div>
+
+        {!selected ? (
+          <div className="space-y-2">
+            <Label htmlFor="bill-search" className="text-xs">
+              Find bill by flat or bill number
+            </Label>
+            <div className="flex gap-2">
+              <Input
+                id="bill-search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="e.g. A-101 or RR/202607/0001"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") runSearch();
+                }}
+              />
+              <Button
+                size="sm"
+                className="rounded-lg"
+                onClick={runSearch}
+                disabled={searching}
+              >
+                {searching ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Search className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            {results.length > 0 && (
+              <div className="border rounded-lg divide-y max-h-64 overflow-y-auto">
+                {results.map((b) => (
+                  <button
+                    key={b.bill_id}
+                    className="w-full text-left p-2 text-xs hover:bg-muted/50"
+                    onClick={() => {
+                      setSelected(b);
+                      setAmount(String(b.total_payable ?? ""));
+                    }}
+                  >
+                    <div className="font-medium">
+                      {b.flat_label ?? "Unit ?"}{b.block_name ? ` · ${b.block_name}` : ""} · {b.bill_number ?? "no number"}
+                    </div>
+                    <div className="text-muted-foreground">
+                      ₹{Number(b.total_payable ?? 0).toLocaleString("en-IN")} · {b.status}{b.due_date ? ` · due ${b.due_date}` : ""}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+            {!searching && results.length === 0 && query.length > 0 && (
+              <p className="text-xs text-muted-foreground">No matching open bills.</p>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="rounded-lg border bg-muted/30 p-2 text-xs">
+              <div className="font-medium">
+                {selected.flat_label ?? "Unit"} · {selected.bill_number ?? "no number"}
+              </div>
+              <div className="text-muted-foreground">
+                Amount payable ₹{Number(selected.total_payable ?? 0).toLocaleString("en-IN")}
+              </div>
+              <button
+                className="text-primary underline text-xs mt-1"
+                onClick={() => setSelected(null)}
+              >
+                Change bill
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Method</Label>
+                <div className="flex gap-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={method === "cash" ? "default" : "outline"}
+                    className="rounded-lg flex-1"
+                    onClick={() => setMethod("cash")}
+                  >
+                    Cash
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={method === "bank_transfer" ? "default" : "outline"}
+                    className="rounded-lg flex-1"
+                    onClick={() => setMethod("bank_transfer")}
+                  >
+                    Bank
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="adm-amount" className="text-xs">Amount (₹)</Label>
+                <Input
+                  id="adm-amount"
+                  inputMode="decimal"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="adm-date" className="text-xs">Date</Label>
+                <Input
+                  id="adm-date"
+                  type="date"
+                  value={paymentDate}
+                  onChange={(e) => setPaymentDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="adm-ref" className="text-xs">
+                  Reference {method === "bank_transfer" ? "(required)" : "(optional)"}
+                </Label>
+                <Input
+                  id="adm-ref"
+                  value={reference}
+                  onChange={(e) => setReference(e.target.value)}
+                  placeholder={method === "bank_transfer" ? "UTR" : "Receipt / slip #"}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="adm-notes" className="text-xs">Notes</Label>
+              <Textarea
+                id="adm-notes"
+                rows={2}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+            </div>
+
+            <Button
+              size="sm"
+              className="rounded-lg w-full"
+              onClick={onSubmit}
+              disabled={!canSubmit || submitting}
+            >
+              {submitting ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : null}
+              Record payment (pending verification)
+            </Button>
+            <p className="text-[11px] text-muted-foreground">
+              Recording does not verify the payment. Verify it from the Pending tab to issue a receipt.
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

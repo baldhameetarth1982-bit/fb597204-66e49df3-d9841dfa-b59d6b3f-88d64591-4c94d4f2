@@ -175,18 +175,87 @@ export const getBillDetail = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { data: bill, error } = await context.supabase
-      .from("bills")
-      .select("*")
-      .eq("society_id", data.societyId)
-      .eq("id", data.billId)
-      .maybeSingle();
+      .from("bills").select("*")
+      .eq("society_id", data.societyId).eq("id", data.billId).maybeSingle();
     if (error) throw new Error(mapBillingError("operation_failed"));
     if (!bill) throw new Error(mapBillingError("bill_not_found"));
     const { data: lines } = await context.supabase
-      .from("bill_line_items")
-      .select("id, kind, description, amount")
+      .from("bill_line_items").select("id, kind, description, amount")
       .eq("bill_id", data.billId);
     return { bill, lines: lines ?? [] };
+  });
+
+/**
+ * Admin bill detail — server-authoritative. Returns bill + line items,
+ * flat/society labels, primary resident (safe columns only), and a neutral
+ * payment_summary used only to compute can_cancel. Cross-society bills or
+ * unauthorized callers get bill_not_found; no raw DB error text leaks.
+ */
+export type AdminBillDetail = {
+  bill: Record<string, unknown>;
+  lines: Array<Record<string, unknown>>;
+  society: { name: string | null } | null;
+  flat: { flat_number: string | null; block_name: string | null } | null;
+  resident: { full_name: string | null; phone: string | null } | null;
+  payment_summary: { has_verified_payment: boolean; recorded_count: number; last_recorded_at: string | null };
+  can_cancel: boolean;
+};
+
+export const getAdminBillDetail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z.object({ societyId: z.string().uuid(), billId: z.string().uuid() }).parse(i),
+  )
+  .handler(async ({ data, context }): Promise<AdminBillDetail> => {
+    const { data: bill, error } = await context.supabase
+      .from("bills").select("*")
+      .eq("society_id", data.societyId).eq("id", data.billId).maybeSingle();
+    if (error) throw new Error(mapBillingError("operation_failed"));
+    if (!bill) throw new Error(mapBillingError("bill_not_found"));
+    const b = bill as Record<string, unknown>;
+
+    const [linesRes, flatRes, societyRes, residentLinkRes, paymentsRes] = await Promise.all([
+      context.supabase.from("bill_line_items").select("id, kind, description, amount").eq("bill_id", data.billId),
+      context.supabase.from("flats").select("flat_number, block_id").eq("id", b.flat_id as string).maybeSingle(),
+      context.supabase.from("societies").select("name").eq("id", data.societyId).maybeSingle(),
+      context.supabase.from("flat_residents").select("user_id").eq("flat_id", b.flat_id as string).is("moved_out_at", null).limit(1).maybeSingle(),
+      context.supabase.from("payments").select("id, status, created_at").eq("bill_id", data.billId).order("created_at", { ascending: false }),
+    ]);
+
+    let block_name: string | null = null;
+    const flatRow = flatRes.data as { flat_number: string | null; block_id: string | null } | null;
+    if (flatRow?.block_id) {
+      const { data: blk } = await context.supabase
+        .from("blocks").select("name").eq("id", flatRow.block_id).maybeSingle();
+      block_name = (blk as { name: string | null } | null)?.name ?? null;
+    }
+
+    let resident: AdminBillDetail["resident"] = null;
+    const link = residentLinkRes.data as { user_id: string | null } | null;
+    if (link?.user_id) {
+      const { data: prof } = await context.supabase
+        .from("profiles").select("full_name, phone").eq("id", link.user_id).maybeSingle();
+      resident = (prof as AdminBillDetail["resident"]) ?? null;
+    }
+
+    const payments = (paymentsRes.data ?? []) as Array<{ status: string; created_at: string }>;
+    const verifiedStatuses = new Set(["verified", "captured", "success"]);
+    const has_verified_payment = payments.some((p) => verifiedStatuses.has(p.status));
+    const can_cancel = !b.cancelled_at && !has_verified_payment;
+
+    return {
+      bill: b,
+      lines: (linesRes.data ?? []) as Array<Record<string, unknown>>,
+      society: (societyRes.data as { name: string | null } | null) ?? null,
+      flat: flatRow ? { flat_number: flatRow.flat_number, block_name } : null,
+      resident,
+      payment_summary: {
+        has_verified_payment,
+        recorded_count: payments.length,
+        last_recorded_at: payments[0]?.created_at ?? null,
+      },
+      can_cancel,
+    };
   });
 
 export const cancelBill = createServerFn({ method: "POST" })

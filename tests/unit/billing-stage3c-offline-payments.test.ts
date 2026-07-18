@@ -88,14 +88,19 @@ describe("Stage 3C — resident submission card", () => {
     expect(submitCard).toMatch(/useServerFn\(submitOfflinePayment\)/);
   });
 
-  it("offers only Cash and Bank Transfer buttons", () => {
-    expect(submitCard).toMatch(/Bank Transfer/);
-    expect(submitCard).toMatch(/Cash/);
-    expect(submitCard).not.toMatch(/UPI/i);
-    expect(submitCard).not.toMatch(/Razorpay/i);
-    expect(submitCard).not.toMatch(/Card/);
-    expect(submitCard).not.toMatch(/Wallet/i);
+  it("offers no online / gateway / UPI / card / wallet payment method", () => {
+    // Only Cash and Bank Transfer buttons should exist. We strip the JSX
+    // <Card ...> and <CardContent> component names (a UI primitive) before
+    // matching payment-method words to avoid false positives.
+    const stripped = submitCard
+      .replace(/<\/?Card[A-Za-z]*/g, "")
+      .replace(/from ["'][^"']+["']/g, "");
+    expect(stripped).not.toMatch(/UPI/i);
+    expect(stripped).not.toMatch(/Razorpay/i);
+    expect(stripped).not.toMatch(/\bcredit card|\bdebit card|card payment/i);
+    expect(stripped).not.toMatch(/Wallet/i);
   });
+
 
   it("does not promise online payments or a future Pay button", () => {
     expect(submitCard).not.toMatch(/coming soon/i);

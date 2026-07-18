@@ -1,5 +1,13 @@
 # Next Stages
 
+## Stage 3C — Offline Payments, Verification and Receipts (CLOSED 2026-07-18, v7 payment-detail privacy closure 2026-07-18)
+
+**v7 closure additions (2026-07-18)**
+- **`get_payment_detail` returns explicitly shaped fields per audience.** The RPC no longer serializes `to_jsonb(p)` / `row_to_json` / `SELECT *`. It builds JSON via `jsonb_build_object` from a fixed list of common safe fields (`id, bill_id, society_id, flat_id, amount, method, status, reference_no, submitted_at, source, payment_date, verified_at, rejected_at, rejection_reason, reversed_at, reversal_reason, created_at`), plus admin-only fields (`notes, submitted_by, verified_by, verification_notes, rejected_by, reversed_by`) merged in **only when `is_admin` is true**. `proof_url`, `idempotency_key`, and every other internal/dormant column are never emitted.
+- **Discriminated audience contract.** `paymentDetailSchema` in `src/lib/offline-payments.functions.ts` is now a `z.discriminatedUnion("audience", [...])` of `.strict()` variants. Resident payloads that surface any admin/internal key (e.g. `proof_url`, `submitted_by`) throw at parse time instead of leaking. `PaymentDetail` is a typed union `PaymentDetailAdmin | PaymentDetailResident`; both branches share `CommonDetailPaymentFields`, and only the admin branch carries `AdminOnlyDetailFields`.
+- **proof_url non-exposure.** Every active Stage 3C read surface (`get_payment_detail`, `search_society_open_bills`, `list_society_payments_v1`, `get_resident_payments_v1`, `get_payment_receipt_lifecycle`, resident/admin routes and cards) has been re-audited: no `proof_url` / `proofUrl` in runtime code, response types, or projections. The dormant DB column stays out of every response.
+- **Regression tests.** `tests/unit/billing-stage3c-privacy-v7.test.ts` proves the migration body avoids `to_jsonb(p)` / `row_to_json` / `proof_url` / `idempotency_key`, gates admin fields behind `IF is_admin THEN`, uses `jsonb_build_object`; the Zod schemas are strict discriminated unions; a synthetic `proof_url` on a resident payload is rejected by the strict schema; and no active Stage 3C surface contains `proof_url`/`proofUrl` at runtime. Existing Stage 3C v3–v6 tests pass unchanged (v5 assertion updated to the new `discriminatedUnion` shape). Total suite: **830 passed / 19 skipped / 11 todo**.
+
 ## Stage 3C — Offline Payments, Verification and Receipts (CLOSED 2026-07-18, v3 read-authorization closure 2026-07-18)
 
 **v3 closure additions (2026-07-18)**

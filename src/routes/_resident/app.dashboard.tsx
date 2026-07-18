@@ -119,7 +119,12 @@ function ResidentDashboard() {
             }
           : null,
       );
-      setPaidYearTotal((payments.data ?? []).reduce((s: number, p: any) => s + Number(p.amount ?? 0), 0));
+      setPaidYearTotal(
+        (paidBills.data ?? []).reduce(
+          (s: number, b: any) => s + Number(b.total_payable ?? b.amount ?? 0),
+          0,
+        ),
+      );
       setVisitorsToday(visitors.count ?? 0);
       setNotices(
         (posts.data ?? []).map((p: any) => ({

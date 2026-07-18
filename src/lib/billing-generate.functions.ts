@@ -71,13 +71,21 @@ export const previewBillBatch = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     try {
-      const raw = await callBillingRpc(toBillingRpcClient(context), "preview_bill_batch", buildRpcArgs({
+      const raw = (await callBillingRpc(toBillingRpcClient(context), "preview_bill_batch", buildRpcArgs({
         _society_id: data.societyId,
         _cycle_config_id: data.cycleConfigId,
         _limit: data.limit ?? 25,
         _offset: data.offset ?? 0,
-      }));
-      return { preview: (raw ?? {}) as BillBatchPreview };
+      }))) as Record<string, unknown>;
+      const preview: BillBatchPreview = {
+        preview_only: true,
+        cycle: (raw.cycle ?? {}) as BillBatchPreview["cycle"],
+        template_preview_json: JSON.stringify(raw.template_preview ?? {}),
+        previous_dues_total: Number(raw.previous_dues_total ?? 0),
+        existing_bill_count: Number(raw.existing_bill_count ?? 0),
+        warnings: Array.isArray(raw.warnings) ? (raw.warnings as string[]) : [],
+      };
+      return { preview };
     } catch (e) {
       throw new Error(mapBillingError((e as Error).message));
     }

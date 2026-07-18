@@ -492,3 +492,53 @@ export const getBillPaymentSummary = createServerFn({ method: "POST" })
       throw new Error(mapPaymentError((e as Error).message));
     }
   });
+
+/* --------------------- Admin: bill search for entry ------------------- */
+
+const openBillSchema = z.object({
+  bill_id: z.string(),
+  bill_number: z.string().nullable(),
+  flat_id: z.string().nullable(),
+  flat_label: z.string().nullable(),
+  block_name: z.string().nullable(),
+  total_payable: z.coerce.number(),
+  status: z.string(),
+  due_date: z.string().nullable(),
+  period_label: z.string().nullable(),
+});
+
+export type OpenBillForPayment = z.infer<typeof openBillSchema>;
+
+/**
+ * Stage 3C v5 — Admin bill search for offline payment entry. Server-side
+ * authorization: requires `manage_billing` on the target society.
+ */
+export const searchOpenBillsForPayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z
+      .object({
+        societyId: z.string().uuid(),
+        query: z.string().trim().max(120).default(""),
+        limit: z.number().int().min(1).max(50).default(20),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    try {
+      const raw = await callBillingRpc(
+        toBillingRpcClient(context),
+        "search_society_open_bills",
+        buildRpcArgs({
+          _society_id: data.societyId,
+          _query: data.query,
+          _limit: data.limit,
+        }),
+      );
+      const arr = Array.isArray(raw) ? raw : [];
+      const bills: OpenBillForPayment[] = arr.map((r) => openBillSchema.parse(r));
+      return { bills };
+    } catch (e) {
+      throw new Error(mapPaymentError((e as Error).message));
+    }
+  });

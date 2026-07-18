@@ -90,13 +90,11 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
       const res = await submit({
         data: {
           billId,
-          method,
           amount: amt,
           paymentDate,
-          referenceNo: reference.trim() || null,
+          referenceNo: reference.trim(),
           notes: notes.trim() || null,
           idempotencyKey: idKey,
-          actorRole: "resident",
         },
       });
       setPaymentId(res.paymentId);

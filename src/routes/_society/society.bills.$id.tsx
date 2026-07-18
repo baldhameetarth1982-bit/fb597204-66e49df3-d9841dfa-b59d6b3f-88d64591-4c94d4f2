@@ -48,14 +48,10 @@ function BillDetailPage() {
     (async () => {
       setLoading(true);
       try {
-        // Read society from URL context — the admin route enforces society scope
-        // upstream. If the bill doesn't belong to the caller's society, the
-        // server returns bill_not_found (server-authoritative check).
-        // We infer societyId from the bill itself by first loading via a
-        // permissive server call — pass the profile's active society when
-        // available, else fall back to hasRole('super_admin') RLS.
-        const societyId = window.localStorage.getItem("active_society_id") ?? "";
-        const res = await loadDetail({ data: { societyId, billId: id } });
+        // societyId is intentionally omitted — RLS scopes bills to the
+        // caller's society admin / super admin rows. The server returns
+        // bill_not_found for cross-society reads.
+        const res = await loadDetail({ data: { billId: id } });
         if (!cancelled) setDetail(res);
       } catch (e) {
         if (!cancelled) toast.error((e as Error).message);

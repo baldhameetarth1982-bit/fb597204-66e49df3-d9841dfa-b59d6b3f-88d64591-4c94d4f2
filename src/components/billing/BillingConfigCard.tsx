@@ -303,10 +303,10 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
               )}
               <div className="pt-2 flex items-center justify-between flex-wrap gap-2 border-t mt-2">
                 <p className="text-[11px] text-muted-foreground">
-                  Preview only — no bills generated yet.
+                  Mark a cycle "ready" and generate bills from the Generate page.
                 </p>
-                <Button size="sm" className="rounded-xl" disabled title="Bill generation comes in Stage 3B">
-                  Generate bills · Stage 3B
+                <Button asChild size="sm" className="rounded-xl" disabled={cycles.filter((c) => c.status === "ready").length === 0}>
+                  <a href="/society/bill-studio/generate">Generate bills</a>
                 </Button>
               </div>
             </section>

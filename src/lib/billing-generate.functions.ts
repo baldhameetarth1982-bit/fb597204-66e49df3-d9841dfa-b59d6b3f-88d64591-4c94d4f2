@@ -237,12 +237,19 @@ const ADMIN_BILL_COLS =
 export const getAdminBillDetail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) =>
-    z.object({ societyId: z.string().uuid(), billId: z.string().uuid() }).parse(i),
+    z.object({
+      societyId: z.string().uuid().optional(),
+      billId: z.string().uuid(),
+    }).parse(i),
   )
   .handler(async ({ data, context }) => {
-    const { data: bill, error } = await context.supabase
+    // RLS scopes bills to society admins / super admins. When societyId is
+    // provided we additionally filter, but the primary authorization is RLS.
+    let q = context.supabase
       .from("bills").select(ADMIN_BILL_COLS)
-      .eq("society_id", data.societyId).eq("id", data.billId).maybeSingle();
+      .eq("id", data.billId);
+    if (data.societyId) q = q.eq("society_id", data.societyId);
+    const { data: bill, error } = await q.maybeSingle();
     if (error) throw new Error(mapBillingError("operation_failed"));
     if (!bill) throw new Error(mapBillingError("bill_not_found"));
     const b = bill as unknown as AdminBillRow;

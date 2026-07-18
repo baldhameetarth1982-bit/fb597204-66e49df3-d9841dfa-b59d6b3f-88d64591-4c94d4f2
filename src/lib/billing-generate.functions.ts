@@ -257,7 +257,7 @@ export const getAdminBillDetail = createServerFn({ method: "POST" })
     const [linesRes, flatRes, societyRes, residentLinkRes, paymentsRes] = await Promise.all([
       context.supabase.from("bill_line_items").select("id, kind, description, amount").eq("bill_id", data.billId),
       context.supabase.from("flats").select("flat_number, block_id").eq("id", b.flat_id).maybeSingle(),
-      context.supabase.from("societies").select("name").eq("id", data.societyId).maybeSingle(),
+      context.supabase.from("societies").select("name").eq("id", b.society_id).maybeSingle(),
       context.supabase.from("flat_residents").select("user_id").eq("flat_id", b.flat_id).is("moved_out_at", null).limit(1).maybeSingle(),
       context.supabase.from("payments").select("id, status, created_at").eq("bill_id", data.billId).order("created_at", { ascending: false }),
     ]);

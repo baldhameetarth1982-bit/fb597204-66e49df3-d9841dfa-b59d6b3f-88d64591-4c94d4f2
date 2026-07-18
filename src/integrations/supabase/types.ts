@@ -2155,6 +2155,27 @@ export type Database = {
           },
         ]
       }
+      payment_receipt_month_sequences: {
+        Row: {
+          next_number: number
+          society_id: string
+          updated_at: string
+          year_month: number
+        }
+        Insert: {
+          next_number?: number
+          society_id: string
+          updated_at?: string
+          year_month: number
+        }
+        Update: {
+          next_number?: number
+          society_id?: string
+          updated_at?: string
+          year_month?: number
+        }
+        Relationships: []
+      }
       payment_receipt_sequences: {
         Row: {
           next_number: number
@@ -2178,31 +2199,61 @@ export type Database = {
       }
       payment_receipts: {
         Row: {
+          amount_snapshot: number | null
+          bill_number_snapshot: string | null
           created_at: string
           id: string
           issued_at: string
           issued_by: string | null
+          method_snapshot: string | null
           payment_id: string
           receipt_number: string
+          reference_snapshot: string | null
           society_id: string
+          status: string
+          verified_at: string | null
+          verified_by: string | null
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
         }
         Insert: {
+          amount_snapshot?: number | null
+          bill_number_snapshot?: string | null
           created_at?: string
           id?: string
           issued_at?: string
           issued_by?: string | null
+          method_snapshot?: string | null
           payment_id: string
           receipt_number: string
+          reference_snapshot?: string | null
           society_id: string
+          status?: string
+          verified_at?: string | null
+          verified_by?: string | null
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Update: {
+          amount_snapshot?: number | null
+          bill_number_snapshot?: string | null
           created_at?: string
           id?: string
           issued_at?: string
           issued_by?: string | null
+          method_snapshot?: string | null
           payment_id?: string
           receipt_number?: string
+          reference_snapshot?: string | null
           society_id?: string
+          status?: string
+          verified_at?: string | null
+          verified_by?: string | null
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Relationships: [
           {
@@ -3754,6 +3805,10 @@ export type Database = {
         Args: { _now: string; _society_id: string }
         Returns: string
       }
+      _allocate_receipt_number_monthly: {
+        Args: { _now: string; _society_id: string }
+        Returns: string
+      }
       _billing_audit: {
         Args: {
           _action: string
@@ -4246,6 +4301,7 @@ export type Database = {
           trial_days: number
         }[]
       }
+      get_bill_payment_summary: { Args: { _bill_id: string }; Returns: Json }
       get_current_auth_context: {
         Args: never
         Returns: {
@@ -4770,13 +4826,13 @@ export type Database = {
       }
       submit_offline_payment: {
         Args: {
+          _actor_role: string
           _amount: number
           _bill_id: string
           _idempotency_key: string
           _method: string
           _notes: string
           _payment_date: string
-          _proof_url: string
           _reference_no: string
         }
         Returns: string

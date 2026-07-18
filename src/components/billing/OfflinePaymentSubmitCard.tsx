@@ -35,7 +35,10 @@ function randomKey(billId: string) {
 export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cancelled }: Props) {
   const submit = useServerFn(submitOfflinePayment);
   const fetchReceipt = useServerFn(getPaymentReceipt);
-  const [method, setMethod] = useState<Method>("bank_transfer");
+  // Residents can only submit Bank Transfer. Cash entry is admin-only.
+  const method: Method = "bank_transfer";
+  const setMethod = (_: Method) => {};
+  void setMethod;
   const [amount, setAmount] = useState<string>(billAmount ? String(billAmount) : "");
   const [reference, setReference] = useState("");
   const [notes, setNotes] = useState("");
@@ -90,8 +93,8 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
           paymentDate,
           referenceNo: reference.trim() || null,
           notes: notes.trim() || null,
-          proofUrl: null,
           idempotencyKey: idKey,
+          actorRole: "resident",
         },
       });
       setPaymentId(res.paymentId);
@@ -136,27 +139,12 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
         <div>
           <p className="text-sm font-semibold">Record payment</p>
           <p className="text-xs text-muted-foreground">
-            Cash or Bank Transfer only. Your society admin will verify and issue a receipt.
+            Bank Transfer only. Submitting this does not confirm payment — your society admin must verify it before a receipt is issued. To pay with cash, contact your society office.
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          <Button
-            type="button"
-            variant={method === "bank_transfer" ? "default" : "outline"}
-            className="rounded-xl"
-            onClick={() => setMethod("bank_transfer")}
-          >
-            Bank Transfer
-          </Button>
-          <Button
-            type="button"
-            variant={method === "cash" ? "default" : "outline"}
-            className="rounded-xl"
-            onClick={() => setMethod("cash")}
-          >
-            Cash
-          </Button>
+        <div className="rounded-xl border bg-muted/40 px-3 py-2 text-xs font-medium">
+          Method: Bank Transfer
         </div>
 
         <div className="space-y-1.5">
@@ -184,17 +172,15 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
           />
         </div>
 
-        {method === "bank_transfer" && (
-          <div className="space-y-1.5">
-            <Label htmlFor="pay-ref">Reference / UTR</Label>
-            <Input
-              id="pay-ref"
-              value={reference}
-              onChange={(e) => setReference(e.target.value)}
-              placeholder="e.g. UTR12345678"
-            />
-          </div>
-        )}
+        <div className="space-y-1.5">
+          <Label htmlFor="pay-ref">Reference / UTR</Label>
+          <Input
+            id="pay-ref"
+            value={reference}
+            onChange={(e) => setReference(e.target.value)}
+            placeholder="e.g. UTR12345678"
+          />
+        </div>
 
         <div className="space-y-1.5">
           <Label htmlFor="pay-notes">Notes (optional)</Label>

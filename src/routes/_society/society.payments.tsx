@@ -6,6 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { StatusChip } from "@/components/system/StatusChip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import {
   CheckCircle2,
@@ -31,6 +41,10 @@ export const Route = createFileRoute("/_society/society/payments")({
 });
 
 type Tab = "pending" | "verified" | "rejected" | "reversed";
+type Confirm =
+  | { kind: "verify"; p: OfflinePaymentRow }
+  | { kind: "reject"; p: OfflinePaymentRow; reason: string }
+  | { kind: "reverse"; p: OfflinePaymentRow; reason: string };
 
 function SocietyPaymentsRoute() {
   const { societyId, loading: idLoading } = useSocietyId();
@@ -43,6 +57,7 @@ function SocietyPaymentsRoute() {
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [reasonById, setReasonById] = useState<Record<string, string>>({});
+  const [confirm, setConfirm] = useState<Confirm | null>(null);
 
   async function refresh() {
     if (!societyId) return;
@@ -62,49 +77,44 @@ function SocietyPaymentsRoute() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [societyId, tab]);
 
-  async function onVerify(p: OfflinePaymentRow) {
-    setBusyId(p.id);
-    try {
-      const res = await verify({ data: { paymentId: p.id, notes: null } });
-      toast.success(
-        res.receiptNumber ? `Verified. Receipt ${res.receiptNumber}` : "Payment verified",
-      );
-      refresh();
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setBusyId(null);
-    }
+  function onVerify(p: OfflinePaymentRow) {
+    setConfirm({ kind: "verify", p });
   }
-
-  async function onReject(p: OfflinePaymentRow) {
+  function onReject(p: OfflinePaymentRow) {
     const reason = (reasonById[p.id] ?? "").trim();
     if (!reason) {
       toast.error("Enter a reason before rejecting");
       return;
     }
-    setBusyId(p.id);
-    try {
-      await reject({ data: { paymentId: p.id, reason } });
-      toast.success("Payment rejected");
-      refresh();
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setBusyId(null);
-    }
+    setConfirm({ kind: "reject", p, reason });
   }
-
-  async function onReverse(p: OfflinePaymentRow) {
+  function onReverse(p: OfflinePaymentRow) {
     const reason = (reasonById[p.id] ?? "").trim();
     if (!reason) {
       toast.error("Enter a reason before reversing");
       return;
     }
+    setConfirm({ kind: "reverse", p, reason });
+  }
+
+  async function executeConfirm() {
+    if (!confirm) return;
+    const { kind, p } = confirm;
     setBusyId(p.id);
     try {
-      await reverse({ data: { paymentId: p.id, reason } });
-      toast.success("Payment reversed");
+      if (kind === "verify") {
+        const res = await verify({ data: { paymentId: p.id, notes: null } });
+        toast.success(
+          res.receiptNumber ? `Verified. Receipt ${res.receiptNumber}` : "Payment verified",
+        );
+      } else if (kind === "reject") {
+        await reject({ data: { paymentId: p.id, reason: confirm.reason } });
+        toast.success("Payment rejected");
+      } else {
+        await reverse({ data: { paymentId: p.id, reason: confirm.reason } });
+        toast.success("Payment reversed and receipt voided");
+      }
+      setConfirm(null);
       refresh();
     } catch (e) {
       toast.error((e as Error).message);
@@ -294,6 +304,63 @@ function SocietyPaymentsRoute() {
           ))}
         </div>
       )}
+
+      <AlertDialog open={!!confirm} onOpenChange={(o) => !o && setConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirm?.kind === "verify"
+                ? "Verify this payment?"
+                : confirm?.kind === "reject"
+                  ? "Reject this payment?"
+                  : "Reverse this verified payment?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirm ? (
+                <>
+                  <div className="mb-2">
+                    <span className="font-semibold tabular-nums">
+                      ₹{Number(confirm.p.amount).toLocaleString("en-IN")}
+                    </span>{" "}
+                    ·{" "}
+                    {confirm.p.method === "bank_transfer"
+                      ? "Bank Transfer"
+                      : confirm.p.method === "cash"
+                        ? "Cash"
+                        : confirm.p.method}
+                    {confirm.p.reference_no ? ` · Ref ${confirm.p.reference_no}` : ""}
+                  </div>
+                  {confirm.kind === "verify" && (
+                    <>Verifying issues a receipt and marks the bill balance paid. This cannot be undone by editing — you would need to reverse it later.</>
+                  )}
+                  {confirm.kind === "reject" && (
+                    <>Rejecting closes this submission with the reason below. No receipt is issued.</>
+                  )}
+                  {confirm.kind === "reverse" && (
+                    <>Reversing voids the receipt and re-opens the bill balance. This is a permanent audit event.</>
+                  )}
+                </>
+              ) : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!busyId}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={executeConfirm} disabled={!!busyId}>
+              {busyId ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" /> Working…
+                </>
+              ) : confirm?.kind === "verify" ? (
+                "Verify"
+              ) : confirm?.kind === "reject" ? (
+                "Reject"
+              ) : (
+                "Reverse"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

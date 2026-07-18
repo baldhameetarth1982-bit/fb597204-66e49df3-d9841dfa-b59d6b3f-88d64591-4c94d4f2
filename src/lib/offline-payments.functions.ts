@@ -68,6 +68,20 @@ export function mapPaymentError(msg: string): string {
   const m = (msg || "").toLowerCase();
   if (m.includes("invalid_method")) return "Only Cash and Bank Transfer are supported.";
   if (m.includes("invalid_amount")) return "Enter a valid payment amount.";
+  if (m.includes("invalid_idempotency_key")) return "Please retry your submission.";
+  if (m.includes("invalid_actor_role")) return "Invalid submission context.";
+  if (m.includes("resident_cash_not_allowed"))
+    return "Residents can only submit Bank Transfer payments. Ask your admin to record cash.";
+  if (m.includes("amount_exceeds_outstanding"))
+    return "This amount exceeds the remaining bill balance. Reduce the amount and try again.";
+  if (m.includes("duplicate_reference"))
+    return "This reference number has already been used for another payment.";
+  if (m.includes("idempotency_conflict"))
+    return "This submission conflicts with an earlier one. Please refresh and try again.";
+  if (m.includes("self_verification_not_allowed"))
+    return "The person who submitted this payment cannot also verify it.";
+  if (m.includes("payment_not_pending"))
+    return "Only pending payments can be verified.";
   if (m.includes("bill_not_found")) return "Bill not found.";
   if (m.includes("bill_cancelled")) return "This bill has been cancelled.";
   if (m.includes("reference_required")) return "Reference number is required for bank transfers.";
@@ -79,6 +93,20 @@ export function mapPaymentError(msg: string): string {
   return mapError(msg);
 }
 
+export interface BillPaymentSummary {
+  bill_id: string;
+  society_id: string;
+  total_payable: number;
+  verified_amount: number;
+  pending_amount: number;
+  rejected_amount: number;
+  reversed_amount: number;
+  remaining_verified_balance: number;
+  available_to_submit: number;
+  status: string;
+  cancelled: boolean;
+}
+
 /* ------------------------------ Schemas ------------------------------- */
 
 const submitInput = z.object({
@@ -88,8 +116,8 @@ const submitInput = z.object({
   paymentDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   referenceNo: z.string().trim().max(120).nullable().optional(),
   notes: z.string().trim().max(1000).nullable().optional(),
-  proofUrl: z.string().trim().max(1000).url().nullable().optional(),
   idempotencyKey: z.string().trim().min(6).max(120),
+  actorRole: z.enum(["resident", "admin"]),
 });
 
 const paymentIdOnly = z.object({ paymentId: z.string().uuid() });
@@ -115,8 +143,8 @@ export const submitOfflinePayment = createServerFn({ method: "POST" })
           _payment_date: data.paymentDate ?? null,
           _reference_no: data.referenceNo ?? null,
           _notes: data.notes ?? null,
-          _proof_url: data.proofUrl ?? null,
           _idempotency_key: data.idempotencyKey,
+          _actor_role: data.actorRole,
         }),
       );
       return { paymentId: extractRpcId(raw) };
@@ -230,4 +258,20 @@ export const getPaymentReceipt = createServerFn({ method: "POST" })
       .maybeSingle();
     if (error) throw new Error(mapPaymentError(error.message));
     return { receipt: (rec ?? null) as PaymentReceiptRow | null };
+  });
+
+export const getBillPaymentSummary = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ billId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    try {
+      const raw = await callBillingRpc(
+        toBillingRpcClient(context),
+        "get_bill_payment_summary",
+        buildRpcArgs({ _bill_id: data.billId }),
+      );
+      return { summary: (raw ?? null) as BillPaymentSummary | null };
+    } catch (e) {
+      throw new Error(mapPaymentError((e as Error).message));
+    }
   });

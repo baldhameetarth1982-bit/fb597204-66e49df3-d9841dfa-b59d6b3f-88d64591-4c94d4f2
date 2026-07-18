@@ -186,16 +186,18 @@ describe("Stage 3C v8 — get_payment_detail whole-row removal", () => {
   });
 
   it("shapes the resident receipt without internal actor UUIDs or IDs", () => {
-    const idx = body.indexOf("FUNCTION public.get_payment_detail");
-    const end = body.indexOf("$function$;", idx + 1);
-    const fnBody = body.slice(idx, end);
-    // The resident branch must build a receipt payload that has no
-    // verified_by / voided_by / receipt id / payment_id / society_id.
-    const residentBranch = fnBody.slice(fnBody.indexOf("ELSE", fnBody.indexOf("is_admin")));
+    const fnBody = extractFunctionBody(body);
+    // Find the resident branch — the ELSE arm of the receipt-shaping IF.
+    // The admin branch is `ELSIF is_admin THEN ... receipt := full_receipt;`
+    // The resident branch is the `ELSE` after that.
+    const receiptShape = fnBody.slice(fnBody.indexOf("full_receipt IS NULL"));
+    const elseIdx = receiptShape.indexOf("ELSE\n");
+    const residentBranch = receiptShape.slice(elseIdx, receiptShape.indexOf("END IF;", elseIdx));
     expect(residentBranch).toContain("receipt_number");
     expect(residentBranch).not.toMatch(/'verified_by'/);
     expect(residentBranch).not.toMatch(/'voided_by'/);
     expect(residentBranch).not.toMatch(/'payment_id'/);
+    expect(residentBranch).not.toMatch(/'id'/);
   });
 });
 

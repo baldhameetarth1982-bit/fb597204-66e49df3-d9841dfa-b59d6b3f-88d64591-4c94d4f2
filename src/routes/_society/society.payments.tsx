@@ -614,8 +614,15 @@ function RecordOfflinePaymentSection({
                   inputMode="decimal"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
+                  aria-invalid={amountExceeds || undefined}
                 />
+                {amountExceeds && (
+                  <p className="text-[11px] text-destructive">
+                    Amount exceeds available balance (₹{Number(availableToSubmit).toLocaleString("en-IN")}).
+                  </p>
+                )}
               </div>
+
               <div className="space-y-1">
                 <Label htmlFor="adm-date" className="text-xs">Date</Label>
                 <Input

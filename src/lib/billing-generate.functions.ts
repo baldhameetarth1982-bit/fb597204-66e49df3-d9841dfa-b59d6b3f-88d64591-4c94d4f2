@@ -27,7 +27,7 @@ export type BillBatchPreview = {
     template_id: string;
     template_status: string;
   };
-  template_preview: unknown;
+  template_preview: Record<string, unknown>;
   previous_dues_total: number;
   existing_bill_count: number;
   warnings: string[];

@@ -174,16 +174,14 @@ function ResidentDashboard() {
               : "You're all caught up. No outstanding dues."}
           </p>
           <Button
+            asChild
             size="lg"
             disabled={!dueBill}
             className="mt-6 w-full md:w-auto h-12 rounded-xl bg-background text-primary hover:bg-background/90 font-semibold disabled:opacity-60"
-            onClick={async () => {
-              if (!dueBill) return;
-              const ok = await requireBiometric("authorize this payment");
-              if (ok) navigate({ to: "/app/dues" });
-            }}
           >
-            <Fingerprint className="h-4 w-4 mr-2" /> Pay now <ArrowRight className="h-4 w-4 ml-1" />
+            <Link to={dueBill ? "/app/bills/$id" : "/app/bills"} params={dueBill ? { id: dueBill.id } : undefined as never}>
+              <Receipt className="h-4 w-4 mr-2" /> View bill <ArrowRight className="h-4 w-4 ml-1" />
+            </Link>
           </Button>
         </CardContent>
       </Card>

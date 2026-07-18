@@ -84,7 +84,10 @@ export const previewBillBatch = createServerFn({ method: "POST" })
         preview_only: true,
         cycle: (raw.cycle ?? {}) as BillBatchPreview["cycle"],
         template_preview_json: JSON.stringify(raw.template_preview ?? {}),
+        unit_count: Number(raw.unit_count ?? 0),
+        current_charges_total: Number(raw.current_charges_total ?? 0),
         previous_dues_total: Number(raw.previous_dues_total ?? 0),
+        total_payable: Number(raw.total_payable ?? 0),
         existing_bill_count: Number(raw.existing_bill_count ?? 0),
         warnings: Array.isArray(raw.warnings) ? (raw.warnings as string[]) : [],
       };

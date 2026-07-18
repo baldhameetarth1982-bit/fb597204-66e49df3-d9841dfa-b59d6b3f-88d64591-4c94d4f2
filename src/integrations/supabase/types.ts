@@ -4321,6 +4321,7 @@ export type Database = {
           total_earnings: number
         }[]
       }
+      get_payment_detail: { Args: { _payment_id: string }; Returns: Json }
       get_payment_receipt_lifecycle: {
         Args: { _payment_id: string }
         Returns: Json

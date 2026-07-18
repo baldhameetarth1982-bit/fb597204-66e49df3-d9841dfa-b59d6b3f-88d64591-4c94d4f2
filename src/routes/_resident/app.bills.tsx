@@ -26,7 +26,7 @@ interface BillRow {
 /**
  * Resident bills — Stage 3B read-only view.
  *
- * Stage 3B intentionally exposes NO payment surface: no "Pay now" CTA, no
+ * Stage 3B intentionally exposes NO payment surface: no payment CTA, no
  * gateway ordering, no online-payment status check. Payments, receipts,
  * gateways and reconciliation belong to Stage 3C. This route only lists
  * bills that belong to the caller's active flats (enforced server-side by

@@ -243,8 +243,10 @@ export const getAdminBillDetail = createServerFn({ method: "POST" })
     }).parse(i),
   )
   .handler(async ({ data, context }) => {
-    // RLS scopes bills to society admins / super admins. When societyId is
-    // provided we additionally filter, but the primary authorization is RLS.
+    // Load bill under RLS first. The optional client-provided societyId
+    // must never become the authority — it is only used as an additional
+    // filter for defence-in-depth. Actual authorization is derived from
+    // the bill's true society_id, verified below.
     let q = context.supabase
       .from("bills").select(ADMIN_BILL_COLS)
       .eq("id", data.billId);
@@ -254,12 +256,24 @@ export const getAdminBillDetail = createServerFn({ method: "POST" })
     if (!bill) throw new Error(mapBillingError("bill_not_found"));
     const b = bill as unknown as AdminBillRow;
 
-    const [linesRes, flatRes, societyRes, residentLinkRes, paymentsRes] = await Promise.all([
+    // Explicit authorization on the bill's real society_id. Residents,
+    // guards and block admins without billing.manage are denied even if
+    // RLS ever drifts to permit the read.
+    const { data: canManage, error: permErr } = await context.supabase.rpc(
+      "current_user_has_society_permission",
+      { _society_id: b.society_id, _capability: "billing.manage" },
+    );
+    if (permErr) throw new Error(mapBillingError("operation_failed"));
+    if (canManage !== true) {
+      const { data: isSuper } = await context.supabase.rpc("current_user_is_super_admin");
+      if (isSuper !== true) throw new Error(mapBillingError("bill_not_found"));
+    }
+
+    const [linesRes, flatRes, societyRes, residentLinkRes] = await Promise.all([
       context.supabase.from("bill_line_items").select("id, kind, description, amount").eq("bill_id", data.billId),
       context.supabase.from("flats").select("flat_number, block_id").eq("id", b.flat_id).maybeSingle(),
       context.supabase.from("societies").select("name").eq("id", b.society_id).maybeSingle(),
       context.supabase.from("flat_residents").select("user_id").eq("flat_id", b.flat_id).is("moved_out_at", null).limit(1).maybeSingle(),
-      context.supabase.from("payments").select("id, status, created_at").eq("bill_id", data.billId).order("created_at", { ascending: false }),
     ]);
 
     let block_name: string | null = null;
@@ -278,9 +292,14 @@ export const getAdminBillDetail = createServerFn({ method: "POST" })
       resident = (prof as AdminBillDetail["resident"]) ?? null;
     }
 
-    const payments = (paymentsRes.data ?? []) as Array<{ status: string; created_at: string }>;
-    const verifiedStatuses = new Set(["verified", "captured", "success"]);
-    const has_verified_payment = payments.some((p) => verifiedStatuses.has(p.status));
+    // Stage 3B: has_verified_payment is derived ONLY from the canonical
+    // bill status. Legacy `payments` rows with status = "success" or
+    // "captured" are NOT trusted — those predate the Stage 3C
+    // verification workflow and must not independently prove a bill is
+    // paid. Cancellation is blocked when the bill's canonical status is
+    // paid or partially_paid, or when it is already cancelled.
+    const canonical = (b.status ?? "").toLowerCase();
+    const has_verified_payment = canonical === "paid" || canonical === "partially_paid";
     const can_cancel = !b.cancelled_at && !has_verified_payment;
 
     const result: AdminBillDetail = {
@@ -291,8 +310,8 @@ export const getAdminBillDetail = createServerFn({ method: "POST" })
       resident,
       payment_summary: {
         has_verified_payment,
-        recorded_count: payments.length,
-        last_recorded_at: payments[0]?.created_at ?? null,
+        recorded_count: 0,
+        last_recorded_at: null,
       },
       can_cancel,
     };

@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea";
 import { useServerFn } from "@tanstack/react-start";
 import { cancelBill, getAdminBillDetail, type AdminBillDetail } from "@/lib/billing-generate.functions";
+import { getBillDisplayStatus } from "@/lib/bill-display-status";
 import { toast } from "sonner";
 import { shareBillAsImage } from "@/components/billing/BillCardImage";
 import { formatDate } from "@/utils/format";
@@ -108,11 +109,7 @@ function BillDetailPage() {
 
   const bill = detail.bill;
   const flatLabel = `${detail.flat?.block_name ? detail.flat.block_name + "-" : ""}${detail.flat?.flat_number ?? "—"}`;
-  const overdue = bill.due_date ? new Date(bill.due_date) < new Date() : false;
-  const statusTone: "success" | "danger" | "warning" | "neutral" =
-    bill.status === "paid" ? "success" :
-    bill.status === "cancelled" ? "neutral" :
-    overdue ? "danger" : "warning";
+  const state = getBillDisplayStatus(bill);
 
   const canCancel = !!isAdmin && detail.can_cancel;
   const hasVerifiedPayment = detail.payment_summary.has_verified_payment;
@@ -139,7 +136,7 @@ function BillDetailPage() {
                 {detail.resident?.full_name && <> · {detail.resident.full_name}</>}
               </p>
             </div>
-            <StatusChip tone={statusTone}>{(bill.status ?? "").toUpperCase()}</StatusChip>
+            <StatusChip tone={state.tone}>{state.label}</StatusChip>
           </div>
 
           <div className="mt-5 flex items-baseline gap-1">
@@ -187,7 +184,7 @@ function BillDetailPage() {
                     period: bill.period_label ?? "Bill",
                     amount,
                     dueDate: bill.due_date ? formatDate(bill.due_date) : "—",
-                    status: (bill.status as "paid" | "due" | "overdue" | "cancelled") || "due",
+                    status: state.code === "paid" ? "paid" : state.code === "cancelled" ? "cancelled" : state.code === "overdue" ? "overdue" : "due",
                     adminSignature: user?.email?.split("@")[0],
                   });
                 } catch (e) {

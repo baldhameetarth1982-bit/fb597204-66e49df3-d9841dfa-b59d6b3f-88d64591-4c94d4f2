@@ -1,14 +1,13 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
-  Bell, ArrowRight, Receipt, ShieldCheck, ShieldAlert, Fingerprint, Inbox,
-  Megaphone, LifeBuoy, FileText, Phone, Wallet, Building2, Bot,
+  Bell, ArrowRight, Receipt, ShieldCheck, ShieldAlert, Inbox,
+  Megaphone, LifeBuoy, FileText, Phone, Building2, Bot,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { AdBanner } from "@/components/shared/AdBanner";
-import { requireBiometric } from "@/lib/biometric";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_resident/app/dashboard")({
@@ -42,7 +41,7 @@ function excerpt(body: string, n = 80) {
 
 function ResidentDashboard() {
   const { profile } = useAuth();
-  const navigate = useNavigate();
+  
   const firstName = profile?.full_name?.split(" ")[0] ?? "there";
 
   const [dueBill, setDueBill] = useState<DueBill | null>(null);
@@ -81,15 +80,19 @@ function ResidentDashboard() {
             .limit(1)
         : Promise.resolve({ data: [] as any[] });
 
-      const [bills, payments, visitors, posts] = await Promise.all([
+      const paidBillsQ = flatIds.length
+        ? supabase
+            .from("bills")
+            .select("total_payable, amount, finalized_at, status")
+            .eq("society_id", societyId)
+            .in("flat_id", flatIds)
+            .eq("status", "paid")
+            .gte("finalized_at", yearStart.toISOString())
+        : Promise.resolve({ data: [] as any[] });
+
+      const [bills, paidBills, visitors, posts] = await Promise.all([
         billsQ as any,
-        supabase
-          .from("payments")
-          .select("amount, paid_at, status, user_id")
-          .eq("society_id", societyId)
-          .eq("user_id", userId)
-          .eq("status", "success")
-          .gte("paid_at", yearStart.toISOString()),
+        paidBillsQ as any,
         supabase
           .from("visitors")
           .select("id", { count: "exact", head: true })
@@ -115,7 +118,12 @@ function ResidentDashboard() {
             }
           : null,
       );
-      setPaidYearTotal((payments.data ?? []).reduce((s: number, p: any) => s + Number(p.amount ?? 0), 0));
+      setPaidYearTotal(
+        (paidBills.data ?? []).reduce(
+          (s: number, b: any) => s + Number(b.total_payable ?? b.amount ?? 0),
+          0,
+        ),
+      );
       setVisitorsToday(visitors.count ?? 0);
       setNotices(
         (posts.data ?? []).map((p: any) => ({
@@ -165,16 +173,14 @@ function ResidentDashboard() {
               : "You're all caught up. No outstanding dues."}
           </p>
           <Button
+            asChild
             size="lg"
             disabled={!dueBill}
             className="mt-6 w-full md:w-auto h-12 rounded-xl bg-background text-primary hover:bg-background/90 font-semibold disabled:opacity-60"
-            onClick={async () => {
-              if (!dueBill) return;
-              const ok = await requireBiometric("authorize this payment");
-              if (ok) navigate({ to: "/app/dues" });
-            }}
           >
-            <Fingerprint className="h-4 w-4 mr-2" /> Pay now <ArrowRight className="h-4 w-4 ml-1" />
+            <Link to={dueBill ? "/app/bills/$id" : "/app/bills"} params={dueBill ? { id: dueBill.id } : undefined as never}>
+              <Receipt className="h-4 w-4 mr-2" /> View bill <ArrowRight className="h-4 w-4 ml-1" />
+            </Link>
           </Button>
         </CardContent>
       </Card>
@@ -245,7 +251,6 @@ function ResidentDashboard() {
 }
 
 const QUICK_ACTIONS: Array<{ to: string; label: string; icon: any; tone: string }> = [
-  { to: "/app/dues", label: "Pay", icon: Wallet, tone: "bg-emerald-500/10 text-emerald-600" },
   { to: "/app/bills", label: "Bills", icon: Receipt, tone: "bg-primary/10 text-primary" },
   { to: "/app/visitors", label: "Visitors", icon: ShieldCheck, tone: "bg-sky-500/10 text-sky-600" },
   { to: "/app/helpdesk", label: "Complaints", icon: LifeBuoy, tone: "bg-rose-500/10 text-rose-600" },

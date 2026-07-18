@@ -191,15 +191,48 @@ export const getBillDetail = createServerFn({ method: "POST" })
  * payment_summary used only to compute can_cancel. Cross-society bills or
  * unauthorized callers get bill_not_found; no raw DB error text leaks.
  */
+export type AdminBillRow = {
+  id: string;
+  society_id: string;
+  flat_id: string;
+  bill_number: string | null;
+  bill_date: string | null;
+  period_label: string | null;
+  period_start: string | null;
+  period_end: string | null;
+  due_date: string | null;
+  current_charges: number | null;
+  previous_balance: number | null;
+  penalties: number | null;
+  adjustments: number | null;
+  tax_amount: number | null;
+  total_payable: number | null;
+  amount: number | null;
+  status: string | null;
+  cancelled_at: string | null;
+  cancel_reason: string | null;
+  finalized_at: string | null;
+};
+
+export type AdminBillLine = {
+  id: string;
+  kind: string | null;
+  description: string | null;
+  amount: number | null;
+};
+
 export type AdminBillDetail = {
-  bill: Record<string, unknown>;
-  lines: Array<Record<string, unknown>>;
+  bill: AdminBillRow;
+  lines: AdminBillLine[];
   society: { name: string | null } | null;
   flat: { flat_number: string | null; block_name: string | null } | null;
   resident: { full_name: string | null; phone: string | null } | null;
   payment_summary: { has_verified_payment: boolean; recorded_count: number; last_recorded_at: string | null };
   can_cancel: boolean;
 };
+
+const ADMIN_BILL_COLS =
+  "id, society_id, flat_id, bill_number, bill_date, period_label, period_start, period_end, due_date, current_charges, previous_balance, penalties, adjustments, tax_amount, total_payable, amount, status, cancelled_at, cancel_reason, finalized_at";
 
 export const getAdminBillDetail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -208,17 +241,17 @@ export const getAdminBillDetail = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { data: bill, error } = await context.supabase
-      .from("bills").select("*")
+      .from("bills").select(ADMIN_BILL_COLS)
       .eq("society_id", data.societyId).eq("id", data.billId).maybeSingle();
     if (error) throw new Error(mapBillingError("operation_failed"));
     if (!bill) throw new Error(mapBillingError("bill_not_found"));
-    const b = bill as Record<string, unknown>;
+    const b = bill as unknown as AdminBillRow;
 
     const [linesRes, flatRes, societyRes, residentLinkRes, paymentsRes] = await Promise.all([
       context.supabase.from("bill_line_items").select("id, kind, description, amount").eq("bill_id", data.billId),
-      context.supabase.from("flats").select("flat_number, block_id").eq("id", b.flat_id as string).maybeSingle(),
+      context.supabase.from("flats").select("flat_number, block_id").eq("id", b.flat_id).maybeSingle(),
       context.supabase.from("societies").select("name").eq("id", data.societyId).maybeSingle(),
-      context.supabase.from("flat_residents").select("user_id").eq("flat_id", b.flat_id as string).is("moved_out_at", null).limit(1).maybeSingle(),
+      context.supabase.from("flat_residents").select("user_id").eq("flat_id", b.flat_id).is("moved_out_at", null).limit(1).maybeSingle(),
       context.supabase.from("payments").select("id, status, created_at").eq("bill_id", data.billId).order("created_at", { ascending: false }),
     ]);
 
@@ -243,9 +276,9 @@ export const getAdminBillDetail = createServerFn({ method: "POST" })
     const has_verified_payment = payments.some((p) => verifiedStatuses.has(p.status));
     const can_cancel = !b.cancelled_at && !has_verified_payment;
 
-    return {
+    const result: AdminBillDetail = {
       bill: b,
-      lines: (linesRes.data ?? []) as Array<Record<string, unknown>>,
+      lines: (linesRes.data ?? []) as unknown as AdminBillLine[],
       society: (societyRes.data as { name: string | null } | null) ?? null,
       flat: flatRow ? { flat_number: flatRow.flat_number, block_name } : null,
       resident,
@@ -256,6 +289,7 @@ export const getAdminBillDetail = createServerFn({ method: "POST" })
       },
       can_cancel,
     };
+    return result;
   });
 
 export const cancelBill = createServerFn({ method: "POST" })

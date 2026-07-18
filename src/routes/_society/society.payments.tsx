@@ -158,6 +158,10 @@ function SocietyPaymentsRoute() {
         </p>
       </div>
 
+      <RecordOfflinePaymentSection societyId={societyId} onRecorded={refresh} />
+
+
+
       <div className="flex gap-2 overflow-x-auto pb-1">
         {TABS.map((t) => (
           <Button

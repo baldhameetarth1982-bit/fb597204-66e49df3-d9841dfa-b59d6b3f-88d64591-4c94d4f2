@@ -140,6 +140,7 @@ import { Route as SocietySocietyIncomeIdRouteImport } from './routes/_society/so
 import { Route as SocietySocietyFlatsIdRouteImport } from './routes/_society/society.flats.$id'
 import { Route as SocietySocietyBillsIdRouteImport } from './routes/_society/society.bills.$id'
 import { Route as SocietySocietyBillingGenerateRouteImport } from './routes/_society/society.billing.generate'
+import { Route as SocietySocietyBillStudioGenerateRouteImport } from './routes/_society/society.bill-studio.generate'
 import { Route as ResidentAppNoDuesIdRouteImport } from './routes/_resident/app.no-dues.$id'
 import { Route as ResidentAppFeedPostIdRouteImport } from './routes/_resident/app.feed.$postId'
 import { Route as ApiPublicVerifyNoDuesTokenRouteImport } from './routes/api/public/verify.no-dues.$token'
@@ -818,6 +819,12 @@ const SocietySocietyBillingGenerateRoute =
     path: '/generate',
     getParentRoute: () => SocietySocietyBillingRoute,
   } as any)
+const SocietySocietyBillStudioGenerateRoute =
+  SocietySocietyBillStudioGenerateRouteImport.update({
+    id: '/generate',
+    path: '/generate',
+    getParentRoute: () => SocietySocietyBillStudioRoute,
+  } as any)
 const ResidentAppNoDuesIdRoute = ResidentAppNoDuesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -914,7 +921,7 @@ export interface FileRoutesByFullPath {
   '/society/announcements': typeof SocietySocietyAnnouncementsRoute
   '/society/approvals': typeof SocietySocietyApprovalsRoute
   '/society/automations': typeof SocietySocietyAutomationsRoute
-  '/society/bill-studio': typeof SocietySocietyBillStudioRoute
+  '/society/bill-studio': typeof SocietySocietyBillStudioRouteWithChildren
   '/society/billing': typeof SocietySocietyBillingRouteWithChildren
   '/society/billing-settings': typeof SocietySocietyBillingSettingsRoute
   '/society/blocks': typeof SocietySocietyBlocksRoute
@@ -952,6 +959,7 @@ export interface FileRoutesByFullPath {
   '/verify/no-dues/$token': typeof VerifyNoDuesTokenRoute
   '/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
   '/app/no-dues/$id': typeof ResidentAppNoDuesIdRoute
+  '/society/bill-studio/generate': typeof SocietySocietyBillStudioGenerateRoute
   '/society/billing/generate': typeof SocietySocietyBillingGenerateRoute
   '/society/bills/$id': typeof SocietySocietyBillsIdRoute
   '/society/flats/$id': typeof SocietySocietyFlatsIdRoute
@@ -1045,7 +1053,7 @@ export interface FileRoutesByTo {
   '/society/announcements': typeof SocietySocietyAnnouncementsRoute
   '/society/approvals': typeof SocietySocietyApprovalsRoute
   '/society/automations': typeof SocietySocietyAutomationsRoute
-  '/society/bill-studio': typeof SocietySocietyBillStudioRoute
+  '/society/bill-studio': typeof SocietySocietyBillStudioRouteWithChildren
   '/society/billing': typeof SocietySocietyBillingRouteWithChildren
   '/society/billing-settings': typeof SocietySocietyBillingSettingsRoute
   '/society/blocks': typeof SocietySocietyBlocksRoute
@@ -1083,6 +1091,7 @@ export interface FileRoutesByTo {
   '/verify/no-dues/$token': typeof VerifyNoDuesTokenRoute
   '/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
   '/app/no-dues/$id': typeof ResidentAppNoDuesIdRoute
+  '/society/bill-studio/generate': typeof SocietySocietyBillStudioGenerateRoute
   '/society/billing/generate': typeof SocietySocietyBillingGenerateRoute
   '/society/bills/$id': typeof SocietySocietyBillsIdRoute
   '/society/flats/$id': typeof SocietySocietyFlatsIdRoute
@@ -1182,7 +1191,7 @@ export interface FileRoutesById {
   '/_society/society/announcements': typeof SocietySocietyAnnouncementsRoute
   '/_society/society/approvals': typeof SocietySocietyApprovalsRoute
   '/_society/society/automations': typeof SocietySocietyAutomationsRoute
-  '/_society/society/bill-studio': typeof SocietySocietyBillStudioRoute
+  '/_society/society/bill-studio': typeof SocietySocietyBillStudioRouteWithChildren
   '/_society/society/billing': typeof SocietySocietyBillingRouteWithChildren
   '/_society/society/billing-settings': typeof SocietySocietyBillingSettingsRoute
   '/_society/society/blocks': typeof SocietySocietyBlocksRoute
@@ -1220,6 +1229,7 @@ export interface FileRoutesById {
   '/verify/no-dues/$token': typeof VerifyNoDuesTokenRoute
   '/_resident/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
   '/_resident/app/no-dues/$id': typeof ResidentAppNoDuesIdRoute
+  '/_society/society/bill-studio/generate': typeof SocietySocietyBillStudioGenerateRoute
   '/_society/society/billing/generate': typeof SocietySocietyBillingGenerateRoute
   '/_society/society/bills/$id': typeof SocietySocietyBillsIdRoute
   '/_society/society/flats/$id': typeof SocietySocietyFlatsIdRoute
@@ -1354,6 +1364,7 @@ export interface FileRouteTypes {
     | '/verify/no-dues/$token'
     | '/app/feed/$postId'
     | '/app/no-dues/$id'
+    | '/society/bill-studio/generate'
     | '/society/billing/generate'
     | '/society/bills/$id'
     | '/society/flats/$id'
@@ -1485,6 +1496,7 @@ export interface FileRouteTypes {
     | '/verify/no-dues/$token'
     | '/app/feed/$postId'
     | '/app/no-dues/$id'
+    | '/society/bill-studio/generate'
     | '/society/billing/generate'
     | '/society/bills/$id'
     | '/society/flats/$id'
@@ -1621,6 +1633,7 @@ export interface FileRouteTypes {
     | '/verify/no-dues/$token'
     | '/_resident/app/feed/$postId'
     | '/_resident/app/no-dues/$id'
+    | '/_society/society/bill-studio/generate'
     | '/_society/society/billing/generate'
     | '/_society/society/bills/$id'
     | '/_society/society/flats/$id'
@@ -2592,6 +2605,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SocietySocietyBillingGenerateRouteImport
       parentRoute: typeof SocietySocietyBillingRoute
     }
+    '/_society/society/bill-studio/generate': {
+      id: '/_society/society/bill-studio/generate'
+      path: '/generate'
+      fullPath: '/society/bill-studio/generate'
+      preLoaderRoute: typeof SocietySocietyBillStudioGenerateRouteImport
+      parentRoute: typeof SocietySocietyBillStudioRoute
+    }
     '/_resident/app/no-dues/$id': {
       id: '/_resident/app/no-dues/$id'
       path: '/$id'
@@ -2757,6 +2777,21 @@ const ResidentRouteWithChildren = ResidentRoute._addFileChildren(
   ResidentRouteChildren,
 )
 
+interface SocietySocietyBillStudioRouteChildren {
+  SocietySocietyBillStudioGenerateRoute: typeof SocietySocietyBillStudioGenerateRoute
+}
+
+const SocietySocietyBillStudioRouteChildren: SocietySocietyBillStudioRouteChildren =
+  {
+    SocietySocietyBillStudioGenerateRoute:
+      SocietySocietyBillStudioGenerateRoute,
+  }
+
+const SocietySocietyBillStudioRouteWithChildren =
+  SocietySocietyBillStudioRoute._addFileChildren(
+    SocietySocietyBillStudioRouteChildren,
+  )
+
 interface SocietySocietyBillingRouteChildren {
   SocietySocietyBillingGenerateRoute: typeof SocietySocietyBillingGenerateRoute
 }
@@ -2828,7 +2863,7 @@ interface SocietyRouteChildren {
   SocietySocietyAnnouncementsRoute: typeof SocietySocietyAnnouncementsRoute
   SocietySocietyApprovalsRoute: typeof SocietySocietyApprovalsRoute
   SocietySocietyAutomationsRoute: typeof SocietySocietyAutomationsRoute
-  SocietySocietyBillStudioRoute: typeof SocietySocietyBillStudioRoute
+  SocietySocietyBillStudioRoute: typeof SocietySocietyBillStudioRouteWithChildren
   SocietySocietyBillingRoute: typeof SocietySocietyBillingRouteWithChildren
   SocietySocietyBillingSettingsRoute: typeof SocietySocietyBillingSettingsRoute
   SocietySocietyBlocksRoute: typeof SocietySocietyBlocksRoute
@@ -2871,7 +2906,7 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyAnnouncementsRoute: SocietySocietyAnnouncementsRoute,
   SocietySocietyApprovalsRoute: SocietySocietyApprovalsRoute,
   SocietySocietyAutomationsRoute: SocietySocietyAutomationsRoute,
-  SocietySocietyBillStudioRoute: SocietySocietyBillStudioRoute,
+  SocietySocietyBillStudioRoute: SocietySocietyBillStudioRouteWithChildren,
   SocietySocietyBillingRoute: SocietySocietyBillingRouteWithChildren,
   SocietySocietyBillingSettingsRoute: SocietySocietyBillingSettingsRoute,
   SocietySocietyBlocksRoute: SocietySocietyBlocksRoute,

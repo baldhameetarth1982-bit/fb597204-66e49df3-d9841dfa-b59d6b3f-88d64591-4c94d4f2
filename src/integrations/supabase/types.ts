@@ -122,6 +122,70 @@ export type Database = {
         }
         Relationships: []
       }
+      bill_generation_batches: {
+        Row: {
+          bills_created: number
+          created_at: string
+          created_by: string | null
+          cycle_config_id: string
+          finalized_at: string
+          id: string
+          request_id: string
+          society_id: string
+          status: string
+          template_id: string
+          total_amount: number
+        }
+        Insert: {
+          bills_created?: number
+          created_at?: string
+          created_by?: string | null
+          cycle_config_id: string
+          finalized_at?: string
+          id?: string
+          request_id: string
+          society_id: string
+          status?: string
+          template_id: string
+          total_amount?: number
+        }
+        Update: {
+          bills_created?: number
+          created_at?: string
+          created_by?: string | null
+          cycle_config_id?: string
+          finalized_at?: string
+          id?: string
+          request_id?: string
+          society_id?: string
+          status?: string
+          template_id?: string
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bill_generation_batches_cycle_config_id_fkey"
+            columns: ["cycle_config_id"]
+            isOneToOne: false
+            referencedRelation: "billing_cycle_configs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bill_generation_batches_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bill_generation_batches_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "billing_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bill_line_items: {
         Row: {
           amount: number
@@ -163,6 +227,41 @@ export type Database = {
           },
           {
             foreignKeyName: "bill_line_items_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bill_number_sequences: {
+        Row: {
+          id: string
+          last_number: number
+          period_yyyymm: string
+          prefix: string
+          society_id: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          last_number?: number
+          period_yyyymm: string
+          prefix?: string
+          society_id: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          last_number?: number
+          period_yyyymm?: string
+          prefix?: string
+          society_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bill_number_sequences_society_id_fkey"
             columns: ["society_id"]
             isOneToOne: false
             referencedRelation: "societies"
@@ -482,77 +581,134 @@ export type Database = {
       }
       bills: {
         Row: {
+          adjustments: number
           amount: number
           bill_date: string
           bill_number: string | null
+          calc_snapshot: Json | null
           cancel_reason: string | null
           cancelled_at: string | null
           cancelled_by: string | null
           created_at: string
+          current_charges: number | null
+          cycle_config_id: string | null
           due_date: string
+          finalized_at: string | null
           flat_id: string
+          generated_by: string | null
+          generation_batch_id: string | null
           id: string
           last_decay_date: string | null
           notes: string | null
           paid_at: string | null
+          penalties: number
           period_end: string
           period_label: string
           period_start: string
+          previous_balance: number
           replaced_by_bill_id: string | null
           society_id: string
           status: string
+          tax_amount: number
+          template_id: string | null
+          total_payable: number | null
           updated_at: string
         }
         Insert: {
+          adjustments?: number
           amount: number
           bill_date?: string
           bill_number?: string | null
+          calc_snapshot?: Json | null
           cancel_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
           created_at?: string
+          current_charges?: number | null
+          cycle_config_id?: string | null
           due_date: string
+          finalized_at?: string | null
           flat_id: string
+          generated_by?: string | null
+          generation_batch_id?: string | null
           id?: string
           last_decay_date?: string | null
           notes?: string | null
           paid_at?: string | null
+          penalties?: number
           period_end: string
           period_label: string
           period_start: string
+          previous_balance?: number
           replaced_by_bill_id?: string | null
           society_id: string
           status?: string
+          tax_amount?: number
+          template_id?: string | null
+          total_payable?: number | null
           updated_at?: string
         }
         Update: {
+          adjustments?: number
           amount?: number
           bill_date?: string
           bill_number?: string | null
+          calc_snapshot?: Json | null
           cancel_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
           created_at?: string
+          current_charges?: number | null
+          cycle_config_id?: string | null
           due_date?: string
+          finalized_at?: string | null
           flat_id?: string
+          generated_by?: string | null
+          generation_batch_id?: string | null
           id?: string
           last_decay_date?: string | null
           notes?: string | null
           paid_at?: string | null
+          penalties?: number
           period_end?: string
           period_label?: string
           period_start?: string
+          previous_balance?: number
           replaced_by_bill_id?: string | null
           society_id?: string
           status?: string
+          tax_amount?: number
+          template_id?: string | null
+          total_payable?: number | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "bills_cycle_config_id_fkey"
+            columns: ["cycle_config_id"]
+            isOneToOne: false
+            referencedRelation: "billing_cycle_configs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bills_generation_batch_id_fkey"
+            columns: ["generation_batch_id"]
+            isOneToOne: false
+            referencedRelation: "bill_generation_batches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "bills_replaced_by_bill_id_fkey"
             columns: ["replaced_by_bill_id"]
             isOneToOne: false
             referencedRelation: "bills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bills_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "billing_templates"
             referencedColumns: ["id"]
           },
         ]
@@ -3486,6 +3642,10 @@ export type Database = {
       }
     }
     Functions: {
+      _allocate_bill_number: {
+        Args: { _period_start: string; _prefix?: string; _society_id: string }
+        Returns: string
+      }
       _billing_audit: {
         Args: {
           _action: string
@@ -3713,10 +3873,12 @@ export type Database = {
         Args: { _actor_id: string; _flat_id: string }
         Returns: boolean
       }
-      cancel_bill: {
-        Args: { _bill_id: string; _reason: string }
-        Returns: undefined
-      }
+      cancel_bill:
+        | { Args: { _bill_id: string; _reason: string }; Returns: undefined }
+        | {
+            Args: { _bill_id: string; _reason: string; _society_id: string }
+            Returns: Json
+          }
       commit_migration_job: {
         Args: {
           _expected_checksum: string
@@ -3899,6 +4061,15 @@ export type Database = {
           _period_start: string
         }
         Returns: string
+      }
+      finalize_bill_batch: {
+        Args: {
+          _cycle_config_id: string
+          _prefix?: string
+          _request_id: string
+          _society_id: string
+        }
+        Returns: Json
       }
       finalize_no_dues_issuance_internal: {
         Args: {
@@ -4294,6 +4465,15 @@ export type Database = {
       next_no_dues_cert_number_internal: {
         Args: { _actor_id: string; _society_id: string }
         Returns: string
+      }
+      preview_bill_batch: {
+        Args: {
+          _cycle_config_id: string
+          _limit?: number
+          _offset?: number
+          _society_id: string
+        }
+        Returns: Json
       }
       preview_billing_template: {
         Args: {

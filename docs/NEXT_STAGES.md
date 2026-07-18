@@ -1,5 +1,23 @@
 # Next Stages
 
+## Stage 3B — Recurring Bills, Bill Numbering, Dues, Bill Lifecycle (COMPLETE 2026-07-18)
+
+**Delivered**
+- **Schema (additive).** `bills` extended with `cycle_config_id`, `template_id`, `current_charges`, `previous_balance`, `penalties`, `adjustments`, `tax_amount`, `total_payable`, `generated_by`, `finalized_at`, `generation_batch_id`, `calc_snapshot`. New tables `bill_generation_batches` (society-scoped idempotency: unique on `society_id, cycle_config_id, request_id`) and `bill_number_sequences` (per-society, per-YYYYMM prefix counter). New unique index `bills_society_bill_number_unique` guarantees no duplicate bill numbers per society.
+- **Bill numbering.** `RR/YYYYMM/####` allocator implemented in `public._allocate_bill_number(society, period_start, prefix)`. Executed only inside the SECURITY DEFINER RPC — not granted to authenticated. Uses `ON CONFLICT ... DO UPDATE ... RETURNING` for a lock-safe sequence.
+- **Preview.** `public.preview_bill_batch(society, cycle_config, limit, offset)` reuses the Stage 3A per-unit template preview, then adds `previous_dues_total` (sum of unpaid finalized bills across the society with `due_date < cycle.period_start`), `existing_bill_count` (bills already tied to this cycle), and structured `warnings` (`cycle_not_ready`, `template_not_active`, `duplicate_existing_bills`). Preview never writes.
+- **Finalize (atomic + idempotent).** `public.finalize_bill_batch(society, cycle_config, request_id, prefix)` gates on `_billing_require_admin`, replays idempotently by `(society, cycle_config, request_id)`, refuses `cycle_not_ready` / `template_not_active` / `duplicate_bills_for_cycle`. For every active flat it computes current charges from the template lines, adds per-flat `previous_balance` from that flat's outstanding bills, allocates a structured `bill_number`, inserts the `bills` row plus its `bill_line_items`, and writes a `calc_snapshot` for audit. Returns `{ idempotent_replay, batch_id, bills_created, total_amount }`.
+- **Lifecycle.** `public.cancel_bill(society, bill_id, reason)` refuses cancelling bills that already have verified payments, and stamps `cancelled_at / cancelled_by / cancel_reason` with `status = 'cancelled'`. Draft is represented implicitly (a bill exists only after finalize); a soft cancel replaces re-generation.
+- **Server functions** (`src/lib/billing-generate.functions.ts`, all `requireSupabaseAuth`): `previewBillBatch`, `finalizeBillBatch`, `listBillBatches`, `listBills`, `getBillDetail`, `cancelBill`. Errors flow through `mapBillingError` → shared `mapError` — no raw DB messages ever reach the UI. Preview return is serialization-safe (template preview payload flattened to `template_preview_json`).
+- **UI.** New route `/society/bill-studio/generate` (`src/routes/_society/society.bill-studio.generate.tsx`) lists ready cycles, previews with warnings + previous dues, and finalizes with a client-generated UUID idempotency key. Recent batches are listed with counts and totals. `BillingConfigCard`'s Stage 3B affordance is now an active link to that route and disables when no ready cycles exist.
+- **Tests.** `tests/unit/billing-stage3b.test.ts` (14 cases) covers safe error mapping for every Stage 3B code, "no leaked DB message" guarantee, source integrity (no `as any` in Stage 3B code, idempotency key wired through `crypto.randomUUID()`), migration presence of allocator + unique index + idempotency `UNIQUE (society, cycle, request_id)` + duplicate-guard, and the protected society UUID absence. Stage 3A behavioral test tightened to scope the "no bill inserts" assertion to the preview function body only — Stage 3B's finalize legitimately writes to `bills` and `bill_line_items`. Suite: 660 passed / 19 skipped / 11 todo (1 unrelated pre-existing failure).
+- **Protected society safety.** `1907a918-c4b8-4f43-a837-450530cc7c34` is asserted absent from every new Stage 3B file.
+
+**Explicitly out of scope in Stage 3B (deferred to 3C/3D):** payments, receipts, gateway integration (Razorpay/UPI/cards/wallets/PayU/Cashfree), platform fee, reconciliation, dues aging beyond a per-flat carry-forward, penalty automation, reminder/email/SMS flows.
+
+**Exact next position:** Stage 3C — Payments and receipts.
+
+
 ## Stage 3A — Bill Studio and Billing Configuration (COMPLETE 2026-07-17)
 
 **Delivered (initial run)**

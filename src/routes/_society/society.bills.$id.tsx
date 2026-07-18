@@ -27,7 +27,7 @@ export const Route = createFileRoute("/_society/society/bills/$id")({
  *
  * All reads go through getAdminBillDetail (server-authoritative). The UI
  * never joins bills, flats, societies, payments or profiles directly from
- * the browser client, and never renders "Payment successful" copy: Stage 3B
+ * the browser client, and never renders "payment received" copy: Stage 3B
  * has no payments module. Cancellation is blocked when a verified payment
  * exists (payment_summary.has_verified_payment).
  */

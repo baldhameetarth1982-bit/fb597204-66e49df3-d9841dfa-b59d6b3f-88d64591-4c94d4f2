@@ -41,7 +41,7 @@ function excerpt(body: string, n = 80) {
 
 function ResidentDashboard() {
   const { profile } = useAuth();
-  const navigate = useNavigate();
+  
   const firstName = profile?.full_name?.split(" ")[0] ?? "there";
 
   const [dueBill, setDueBill] = useState<DueBill | null>(null);

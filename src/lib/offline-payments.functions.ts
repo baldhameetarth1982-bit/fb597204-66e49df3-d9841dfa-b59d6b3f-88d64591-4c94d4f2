@@ -431,25 +431,91 @@ const receiptLifecycleSchema = z.object({
   verified_at: z.string().nullable(),
 });
 
-const paymentDetailSchema = z.object({
-  payment: paymentRowSchema,
-  bill_number: z.string().nullable(),
-  flat_label: z.string().nullable(),
-  summary: billPaymentSummarySchema.nullable(),
-  receipt: receiptLifecycleSchema.nullable(),
-  audience: z.enum(["admin", "resident"]),
+// Stage 3C v7 — payment detail is a discriminated union by audience.
+// Resident-shaped rows are validated with `.strict()` so any admin/internal
+// key surfacing (e.g. proof_url, submitted_by) is rejected loudly instead of
+// silently leaking to the browser.
+const paymentDetailCommonPaymentSchema = z.object({
+  id: z.string(),
+  bill_id: z.string().nullable(),
+  society_id: z.string(),
+  flat_id: z.string().nullable(),
+  amount: z.coerce.number(),
+  method: z.string(),
+  status: z.string(),
+  reference_no: z.string().nullable(),
+  submitted_at: z.string().nullable(),
+  source: z.string().nullable(),
+  payment_date: z.string().nullable(),
+  verified_at: z.string().nullable(),
+  rejected_at: z.string().nullable(),
+  rejection_reason: z.string().nullable(),
+  reversed_at: z.string().nullable(),
+  reversal_reason: z.string().nullable(),
+  created_at: z.string(),
 });
 
-export interface PaymentDetail {
-  payment: OfflinePaymentRow;
+const paymentDetailAdminPaymentSchema = paymentDetailCommonPaymentSchema
+  .extend({
+    notes: z.string().nullable(),
+    submitted_by: z.string().nullable(),
+    verified_by: z.string().nullable(),
+    verification_notes: z.string().nullable(),
+    rejected_by: z.string().nullable(),
+    reversed_by: z.string().nullable(),
+  })
+  .strict();
+
+const paymentDetailResidentPaymentSchema = paymentDetailCommonPaymentSchema.strict();
+
+const paymentDetailAdminSchema = z
+  .object({
+    audience: z.literal("admin"),
+    payment: paymentDetailAdminPaymentSchema,
+    bill_number: z.string().nullable(),
+    flat_label: z.string().nullable(),
+    summary: billPaymentSummarySchema.nullable(),
+    receipt: receiptLifecycleSchema.nullable(),
+  })
+  .strict();
+
+const paymentDetailResidentSchema = z
+  .object({
+    audience: z.literal("resident"),
+    payment: paymentDetailResidentPaymentSchema,
+    bill_number: z.string().nullable(),
+    flat_label: z.string().nullable(),
+    summary: billPaymentSummarySchema.nullable(),
+    receipt: receiptLifecycleSchema.nullable(),
+  })
+  .strict();
+
+const paymentDetailSchema = z.discriminatedUnion("audience", [
+  paymentDetailAdminSchema,
+  paymentDetailResidentSchema,
+]);
+
+export interface PaymentDetailAdmin {
+  audience: "admin";
+  payment: AdminDetailPayment;
   bill_number: string | null;
   flat_label: string | null;
   summary: BillPaymentSummary | null;
   receipt: PaymentReceiptLifecycle | null;
-  audience: "admin" | "resident";
 }
 
-/** Stage 3C v6 — explicit-auth payment detail; every nested field Zod-validated. */
+export interface PaymentDetailResident {
+  audience: "resident";
+  payment: ResidentDetailPayment;
+  bill_number: string | null;
+  flat_label: string | null;
+  summary: BillPaymentSummary | null;
+  receipt: PaymentReceiptLifecycle | null;
+}
+
+export type PaymentDetail = PaymentDetailAdmin | PaymentDetailResident;
+
+/** Stage 3C v7 — explicit-auth payment detail; discriminated by audience. */
 export const getPaymentDetail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => paymentIdOnly.parse(i))
@@ -462,19 +528,13 @@ export const getPaymentDetail = createServerFn({ method: "POST" })
       );
       if (raw === null || raw === undefined) return null;
       const parsed = paymentDetailSchema.parse(raw);
-      const detail: PaymentDetail = {
-        payment: parsed.payment,
-        bill_number: parsed.bill_number,
-        flat_label: parsed.flat_label,
-        summary: parsed.summary,
-        receipt: parsed.receipt,
-        audience: parsed.audience,
-      };
+      const detail: PaymentDetail = parsed;
       return detail;
     } catch (e) {
       throw new Error(mapPaymentError((e as Error).message));
     }
   });
+
 
 
 

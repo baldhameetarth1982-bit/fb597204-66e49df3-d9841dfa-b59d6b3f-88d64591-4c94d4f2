@@ -1,6 +1,20 @@
 # Next Stages
 
-## Stage 3C — Offline Payments, Verification and Receipts (CLOSED 2026-07-18)
+## Stage 3C — Offline Payments, Verification and Receipts (CLOSED 2026-07-18, v3 read-authorization closure 2026-07-18)
+
+**v3 closure additions (2026-07-18)**
+- **Proof URL — Option B (deferred).** `proof_url` is removed from every active Stage 3C read/write surface. The dormant DB column stays for future secure signed-upload work. Neither the resident submit card nor the admin payments route reads or writes it, and it is not in the exported `OfflinePaymentRow` type.
+- **Server-authorized read RPCs.** New SECURITY DEFINER RPCs (`SET search_path = public`) shape financial reads with explicit authorization instead of relying on RLS alone:
+  - `list_society_payments_v1(_society_id, _status, _limit, _offset)` — requires `billing.manage` or `super_admin`; supports limit + offset pagination and `all|pending|verified|rejected|reversed` filter; no `proof_url` in the projection.
+  - `get_resident_payments_v1(_limit, _offset)` — scoped by `flat_residents.user_id = auth.uid()` server-side; residents cannot pass an arbitrary flat.
+  - `get_payment_receipt_lifecycle(_payment_id)` — checks admin (`billing.manage`/`super_admin`) OR resident-of-flat; returns full lifecycle (`status`, `voided_at/by/reason`, `amount_snapshot`, `method_snapshot`, `reference_snapshot`, `bill_number_snapshot`, `verified_by/at`, `receipt_number`, `issued_at`).
+- **Receipt-table read boundary.** `REVOKE SELECT ON public.payment_receipts / payment_receipt_sequences / payment_receipt_month_sequences FROM authenticated`. Every receipt read now goes through `get_payment_receipt_lifecycle`.
+- **Type safety.** `src/lib/offline-payments.functions.ts` has no `any` or `as any`. The old `SupabaseRead` adapter is gone; each RPC response is parsed by a Zod schema (`paymentRowSchema`, `residentPaymentSchema`, `receiptLifecycleSchema`) before it crosses the server-fn boundary. The resident submit card now renders a clear VOID state when the linked receipt is voided by a reversal.
+- **`get_admin_society_ids` anon grant — audited, kept.** The function is `SECURITY DEFINER STABLE` on `search_path = public` and returns the empty set for `auth.uid() IS NULL`. Anon callers therefore get zero rows and cannot enumerate any admin/society membership. Removing the anon grant would break SSR/anon reads that reference the helper inside public SELECT policies. Decision: keep the grant, no change required.
+- **Project monitoring findings.** The 5 pending findings listed at the start of this run (Import button routing on `/society/matrix` and `/society/maintenance`, structure_mode backfill on the Flats page, setup-checklist link to `/society/settings`, trial plan collapse to basic on Flat 360, resident no-dues certificate download) are all pre-Stage-3C UX/regression issues — none touch tenant isolation, RLS, auth, payments, receipts, or the Stage 3C write/read path. They are documented here as classified `earlier-stage non-Stage-3C-blockers`; fixing them is a separate follow-up.
+- **Behavioral tests.** New `tests/unit/billing-stage3c-closure-v3.test.ts` proves proof_url removal, no `any`/`as any`, `list_society_payments_v1` limit + offset wiring, `get_resident_payments_v1` server-derived flat ownership, `get_payment_receipt_lifecycle` fields, VOID state in the resident card, and the migration's REVOKE + GRANT shape. Existing `billing-stage3c-closure.test.ts` was migrated from "latest migration" scan to full-migrations-corpus scan. Total suite: **780 passed / 19 skipped / 11 todo**.
+
+
 
 **Scope delivered**
 - **Canonical offline lifecycle.** Payments live in one workflow: `pending → verified | rejected → reversed`. Cash and Bank Transfer only; no online gateway, UPI, cards, wallets, Razorpay, PayU, or Cashfree. Legacy `success` / `other_offline` rows remain readable but cannot be transitioned by any Stage 3C RPC (`invalid_transition`).

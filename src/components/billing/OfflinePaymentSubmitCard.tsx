@@ -47,6 +47,7 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
   const [submitting, setSubmitting] = useState(false);
   const [paymentId, setPaymentId] = useState<string | null>(null);
   const [receiptNumber, setReceiptNumber] = useState<string | null>(null);
+  const [receiptStatus, setReceiptStatus] = useState<"valid" | "void" | null>(null);
 
   const disabled = useMemo(
     () => cancelled || billStatus === "paid",
@@ -55,19 +56,20 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
 
   useEffect(() => {
     if (!paymentId) return;
-    let cancelled = false;
+    let stopped = false;
     (async () => {
       try {
         const r = await fetchReceipt({ data: { paymentId } });
-        if (!cancelled && r?.receipt?.receipt_number) {
+        if (!stopped && r?.receipt?.receipt_number) {
           setReceiptNumber(r.receipt.receipt_number);
+          setReceiptStatus(r.receipt.status);
         }
       } catch {
         // silent; receipt may not be issued yet
       }
     })();
     return () => {
-      cancelled = true;
+      stopped = true;
     };
   }, [paymentId, fetchReceipt]);
 
@@ -111,7 +113,12 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
       <Card className="rounded-2xl">
         <CardContent className="p-5 space-y-2">
           <div className="flex items-center gap-2 text-sm font-medium">
-            {receiptNumber ? (
+            {receiptNumber && receiptStatus === "void" ? (
+              <>
+                <XCircle className="h-4 w-4 text-red-600" />
+                <span>Receipt VOID (payment reversed)</span>
+              </>
+            ) : receiptNumber ? (
               <>
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
                 <span>Payment verified</span>
@@ -124,9 +131,11 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
             )}
           </div>
           <p className="text-xs text-muted-foreground">
-            {receiptNumber
-              ? `Receipt ${receiptNumber} issued.`
-              : "Your submission has been recorded. You'll see the receipt here once your society office verifies it."}
+            {receiptNumber && receiptStatus === "void"
+              ? `Receipt ${receiptNumber} was voided by the admin. This payment no longer counts toward your bill.`
+              : receiptNumber
+                ? `Receipt ${receiptNumber} issued.`
+                : "Your submission has been recorded. You'll see the receipt here once your society office verifies it."}
           </p>
         </CardContent>
       </Card>

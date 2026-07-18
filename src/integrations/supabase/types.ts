@@ -4321,6 +4321,10 @@ export type Database = {
           total_earnings: number
         }[]
       }
+      get_payment_receipt_lifecycle: {
+        Args: { _payment_id: string }
+        Returns: Json
+      }
       get_public_pricing_settings: {
         Args: never
         Returns: {
@@ -4347,6 +4351,10 @@ export type Database = {
           total_residents: number
           vacant_units: number
         }[]
+      }
+      get_resident_payments_v1: {
+        Args: { _limit: number; _offset: number }
+        Returns: Json[]
       }
       get_resident_private_detail: {
         Args: { _society_id: string; _user_id: string }
@@ -4502,6 +4510,15 @@ export type Database = {
           floor: number
           is_occupied: boolean
         }[]
+      }
+      list_society_payments_v1: {
+        Args: {
+          _limit: number
+          _offset: number
+          _society_id: string
+          _status: string
+        }
+        Returns: Json[]
       }
       list_society_residents_page: {
         Args: {

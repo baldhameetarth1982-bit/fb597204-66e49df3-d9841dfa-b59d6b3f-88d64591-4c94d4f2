@@ -4782,6 +4782,10 @@ export type Database = {
           state: string
         }[]
       }
+      search_society_open_bills: {
+        Args: { _limit?: number; _query: string; _society_id: string }
+        Returns: Json
+      }
       set_society_block_active: {
         Args: { _active: boolean; _block_id: string }
         Returns: Json

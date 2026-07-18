@@ -622,3 +622,19 @@ Unit tests: 532 passed / 5 skipped. tsgo clean. Build green. Secret
 scan clean. Protected society untouched.
 
 **Next:** Stage 2D — Migration and Bulk Import.
+
+
+## Stage 3C — v5 final closure (2026-07-18)
+
+Final Stage 3C closure run. Delivered:
+
+- **Generic public submission API REMOVED.** `submitOfflinePayment` and its `actorRole` schema are deleted from `src/lib/offline-payments.functions.ts`. Only `submitResidentBankTransfer` (fixed `_actor_role = 'resident'`, method fixed to `bank_transfer`) and `recordAdminOfflinePayment` (fixed `_actor_role = 'admin'`) are exported. No client can supply an actor role or forge a resident cash submission.
+- **Admin offline payment entry UI.** `/society/payments` now hosts a `RecordOfflinePaymentSection` component that (a) searches the society's own open bills through the new `search_society_open_bills(_society_id, _query, _limit)` RPC (SECURITY DEFINER, `manage_billing` required), (b) records Cash or Bank Transfer via `recordAdminOfflinePayment` with a client-generated idempotency key, (c) resets state after each submission. The recorded payment lands in the Pending tab; issuing the receipt still requires a separate Verify action (separation of duties).
+- **`getPaymentDetail` server contract typed and validated.** The RPC response is parsed with a Zod `paymentDetailSchema` before it returns; consumers get a strongly typed `PaymentDetail` value or `null`. No `as any`, no unchecked jsonb cast.
+- **Resident contract unchanged and re-verified.** `OfflinePaymentSubmitCard` still uses `submitResidentBankTransfer` with no `method`, no `actorRole`, no `proof_url`; Cash entry is admin-only.
+- **Individual finding classification.** Every one of the five Project monitoring findings is a pre-Stage-3C UX regression from Stages 2D–2E / 3A: (1) `c8b0dad5` Matrix/Maintenance Import routing — 2D/2E, non-blocking for financial correctness; (2) `5a8539de` structure_mode backfill on Flats page — 2C/2D data-migration regression; (3) `a1180e7a` Setup checklist `/society/settings` 404 — 2E navigation regression; (4) `ddbc532c` trial plan Flat 360 collapse — 4A pricing/feature-gate regression; (5) `04b91993` resident no-dues certificate download — 4B RLS regression. None touch the Stage 3C canonical write/read path, tenant isolation, auth, receipts, or reversal — recorded here as classified `earlier-stage non-Stage-3C-blockers`. Fixing them is a separate follow-up.
+- **Behavioral tests.** `tests/unit/billing-stage3c-closure-v5.test.ts` locks: (a) `submitOfflinePayment` symbol absent from the module, (b) no `actorRole` schema or RPC arg present, (c) admin route imports and wires `searchOpenBillsForPayment` + `recordAdminOfflinePayment`, (d) `getPaymentDetail` is Zod-validated, (e) `search_society_open_bills` migration exists with `SECURITY DEFINER`, `manage_billing` gate, and `REVOKE ALL … FROM PUBLIC`. Legacy `billing-stage3c-offline-payments.test.ts` and `billing-stage3c-closure.test.ts` are reconciled to match the v5 contract.
+- **RLS and security.** `search_society_open_bills` sets `search_path = public`, is `SECURITY DEFINER`, revokes public execute, grants execute only to `authenticated`, and refuses the call unless `current_user_has_society_permission(_society_id, 'manage_billing')` returns true. It never bypasses the caller's society scope. Existing DB linter INFO/WARN entries (RLS-enabled-no-policy on non-Stage-3C tables, other older search_path warnings) are pre-Stage-3C project-wide items and are not introduced by this run.
+- **Docs.** This is now the one authoritative Stage 3C closure section; Stage 3C v3/v4 sections above document the earlier hardening milestones and are retained as historical record.
+
+**Next:** Stage 3D — Ledger, expenses, transparency and reports.

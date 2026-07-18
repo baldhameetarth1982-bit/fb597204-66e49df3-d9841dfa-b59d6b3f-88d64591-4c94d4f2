@@ -142,22 +142,12 @@ export function mapPaymentError(msg: string): string {
 
 /* ------------------------------ Schemas ------------------------------- */
 
-const submitInput = z.object({
-  billId: z.string().uuid(),
-  method: z.enum(["cash", "bank_transfer"]),
-  amount: z.number().positive().max(10_000_000),
-  paymentDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
-  referenceNo: z.string().trim().max(120).nullable().optional(),
-  notes: z.string().trim().max(1000).nullable().optional(),
-  idempotencyKey: z.string().trim().min(6).max(120),
-  actorRole: z.enum(["resident", "admin"]),
-});
-
 /**
- * Stage 3C v4 — split resident/admin submission contracts. The
- * resident-facing schema has NO `method` and NO `actorRole`; the server
- * fixes both. The admin-facing schema has NO `actorRole` and only accepts
- * Cash or Bank Transfer; server fixes actor role to admin.
+ * Stage 3C v5 — split resident/admin submission contracts. The generic
+ * `submitOfflinePayment` server function has been REMOVED so that no
+ * public API accepts a browser-supplied `actorRole`. Residents call
+ * `submitResidentBankTransfer`; admins call `recordAdminOfflinePayment`.
+ * Both fix `_actor_role` server-side.
  */
 const residentSubmitInput = z.object({
   billId: z.string().uuid(),
@@ -186,35 +176,7 @@ const paymentWithOptionalNotes = paymentIdOnly.extend({
 
 /* ------------------------------ Writes ------------------------------- */
 
-/**
- * @deprecated Prefer `submitResidentBankTransfer` or `recordAdminOfflinePayment`.
- * Kept as a compatibility adapter; the underlying RPC still verifies the
- * caller's permissions server-side.
- */
-export const submitOfflinePayment = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((i) => submitInput.parse(i))
-  .handler(async ({ data, context }) => {
-    try {
-      const raw = await callBillingRpc(
-        toBillingRpcClient(context),
-        "submit_offline_payment",
-        buildRpcArgs({
-          _bill_id: data.billId,
-          _method: data.method,
-          _amount: data.amount,
-          _payment_date: data.paymentDate ?? null,
-          _reference_no: data.referenceNo ?? null,
-          _notes: data.notes ?? null,
-          _idempotency_key: data.idempotencyKey,
-          _actor_role: data.actorRole,
-        }),
-      );
-      return { paymentId: extractRpcId(raw) };
-    } catch (e) {
-      throw new Error(mapPaymentError((e as Error).message));
-    }
-  });
+
 
 /** Stage 3C v4 — resident Bank Transfer only. Method/actor fixed server-side. */
 export const submitResidentBankTransfer = createServerFn({ method: "POST" })
@@ -325,7 +287,29 @@ export const reverseOfflinePayment = createServerFn({ method: "POST" })
     }
   });
 
-/** Stage 3C v4 — explicit-auth payment detail for admin/resident. */
+const paymentDetailSchema = z.object({
+  payment: paymentRowSchemaRef(),
+  bill_number: z.string().nullable(),
+  flat_label: z.string().nullable(),
+  summary: z.unknown().nullable(),
+  receipt: z.unknown().nullable(),
+  audience: z.enum(["admin", "resident"]),
+});
+// Forward declaration bridge — paymentRowSchema is defined below.
+function paymentRowSchemaRef(): z.ZodTypeAny {
+  return z.lazy(() => paymentRowSchema);
+}
+
+export interface PaymentDetail {
+  payment: OfflinePaymentRow;
+  bill_number: string | null;
+  flat_label: string | null;
+  summary: BillPaymentSummary | null;
+  receipt: PaymentReceiptLifecycle | null;
+  audience: "admin" | "resident";
+}
+
+/** Stage 3C v5 — explicit-auth payment detail for admin/resident, Zod-validated. */
 export const getPaymentDetail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => paymentIdOnly.parse(i))
@@ -336,18 +320,21 @@ export const getPaymentDetail = createServerFn({ method: "POST" })
         "get_payment_detail",
         buildRpcArgs({ _payment_id: data.paymentId }),
       );
-      return (raw ?? null) as {
-        payment: OfflinePaymentRow;
-        bill_number: string | null;
-        flat_label: string | null;
-        summary: BillPaymentSummary | null;
-        receipt: PaymentReceiptLifecycle | null;
-        audience: "admin" | "resident";
-      } | null;
+      if (raw === null || raw === undefined) return null;
+      const parsed = paymentDetailSchema.parse(raw);
+      return {
+        payment: parsed.payment as OfflinePaymentRow,
+        bill_number: parsed.bill_number,
+        flat_label: parsed.flat_label,
+        summary: (parsed.summary ?? null) as BillPaymentSummary | null,
+        receipt: (parsed.receipt ?? null) as PaymentReceiptLifecycle | null,
+        audience: parsed.audience,
+      } satisfies PaymentDetail;
     } catch (e) {
       throw new Error(mapPaymentError((e as Error).message));
     }
   });
+
 
 
 /*
@@ -501,6 +488,56 @@ export const getBillPaymentSummary = createServerFn({ method: "POST" })
         buildRpcArgs({ _bill_id: data.billId }),
       );
       return { summary: (raw ?? null) as BillPaymentSummary | null };
+    } catch (e) {
+      throw new Error(mapPaymentError((e as Error).message));
+    }
+  });
+
+/* --------------------- Admin: bill search for entry ------------------- */
+
+const openBillSchema = z.object({
+  bill_id: z.string(),
+  bill_number: z.string().nullable(),
+  flat_id: z.string().nullable(),
+  flat_label: z.string().nullable(),
+  block_name: z.string().nullable(),
+  total_payable: z.coerce.number(),
+  status: z.string(),
+  due_date: z.string().nullable(),
+  period_label: z.string().nullable(),
+});
+
+export type OpenBillForPayment = z.infer<typeof openBillSchema>;
+
+/**
+ * Stage 3C v5 — Admin bill search for offline payment entry. Server-side
+ * authorization: requires `manage_billing` on the target society.
+ */
+export const searchOpenBillsForPayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z
+      .object({
+        societyId: z.string().uuid(),
+        query: z.string().trim().max(120).default(""),
+        limit: z.number().int().min(1).max(50).default(20),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    try {
+      const raw = await callBillingRpc(
+        toBillingRpcClient(context),
+        "search_society_open_bills",
+        buildRpcArgs({
+          _society_id: data.societyId,
+          _query: data.query,
+          _limit: data.limit,
+        }),
+      );
+      const arr = Array.isArray(raw) ? raw : [];
+      const bills: OpenBillForPayment[] = arr.map((r) => openBillSchema.parse(r));
+      return { bills };
     } catch (e) {
       throw new Error(mapPaymentError((e as Error).message));
     }

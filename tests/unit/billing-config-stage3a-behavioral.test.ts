@@ -227,10 +227,19 @@ describe("Stage 3A · source contracts", () => {
     }
   });
 
-  it("Stage 3A preview_billing_template does not INSERT into bill/payment/ledger tables", () => {
-    // Whole migration body should contain no INSERT into these canonical tables inside the preview fn.
-    const fnStart = migrations.lastIndexOf("preview_billing_template");
-    const fnSnippet = migrations.slice(fnStart);
+  it("Stage 3A preview_billing_template body itself does not INSERT into bill/payment/ledger tables", () => {
+    // Scope to the preview function body: from the last CREATE OR REPLACE FUNCTION public.preview_billing_template
+    // through the matching function-end $$; marker.
+    const marker = /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.preview_billing_template\b/gi;
+    let lastIdx = -1;
+    let m: RegExpExecArray | null;
+    while ((m = marker.exec(migrations)) !== null) lastIdx = m.index;
+    expect(lastIdx).toBeGreaterThan(-1);
+    const rest = migrations.slice(lastIdx);
+    // End of function body — first `$$;` after AS $$
+    const asIdx = rest.indexOf("AS $$");
+    const endIdx = rest.indexOf("$$;", asIdx + 5);
+    const fnSnippet = rest.slice(0, endIdx > 0 ? endIdx : rest.length);
     expect(fnSnippet).not.toMatch(/INSERT\s+INTO\s+public\.bills\b/i);
     expect(fnSnippet).not.toMatch(/INSERT\s+INTO\s+public\.bill_line_items\b/i);
     expect(fnSnippet).not.toMatch(/INSERT\s+INTO\s+public\.payments\b/i);

@@ -110,6 +110,22 @@ export interface BillPaymentSummary {
   cancelled: boolean;
 }
 
+/** Canonical bill payment summary. Every financial field is Zod-validated. */
+const billPaymentSummarySchema = z.object({
+  bill_id: z.string(),
+  society_id: z.string(),
+  total_payable: z.coerce.number(),
+  verified_amount: z.coerce.number(),
+  pending_amount: z.coerce.number(),
+  rejected_amount: z.coerce.number(),
+  reversed_amount: z.coerce.number(),
+  remaining_verified_balance: z.coerce.number(),
+  available_to_submit: z.coerce.number(),
+  status: z.string(),
+  cancelled: z.boolean(),
+});
+
+
 /** Extend billing mapError with Stage 3C codes. Never leaks raw DB messages. */
 export function mapPaymentError(msg: string): string {
   const m = (msg || "").toLowerCase();

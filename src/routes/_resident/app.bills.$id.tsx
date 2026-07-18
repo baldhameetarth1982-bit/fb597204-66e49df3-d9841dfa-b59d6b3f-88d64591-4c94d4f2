@@ -40,7 +40,7 @@ type Line = { id: string; kind: string | null; description: string | null; amoun
 /**
  * Resident bill detail — Stage 3B read-only.
  *
- * NEVER exposes a payment button, gateway order, or "Payment successful"
+ * NEVER exposes a payment button, gateway order, or payment-received
  * copy. Ownership is enforced server-side by getResidentBillDetail via the
  * caller's active flat_residents link; unauthorized reads surface as
  * "Bill not found".

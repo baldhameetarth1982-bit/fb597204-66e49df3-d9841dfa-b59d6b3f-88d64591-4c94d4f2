@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { StatusChip } from "@/components/system/StatusChip";
 import { useServerFn } from "@tanstack/react-start";
 import { getResidentBillDetail } from "@/lib/billing-generate.functions";
+import { getBillDisplayStatus } from "@/lib/bill-display-status";
 import { formatDate } from "@/utils/format";
 import { toast } from "sonner";
 
@@ -37,13 +38,17 @@ type Bill = {
 
 type Line = { id: string; kind: string | null; description: string | null; amount: number | null };
 
+const INR = (v: number | null | undefined) =>
+  `₹${Number(v ?? 0).toLocaleString("en-IN")}`;
+
 /**
  * Resident bill detail — Stage 3B read-only.
  *
- * NEVER exposes a payment button, gateway order, or payment-received
+ * NEVER exposes a payment button, gateway order, or "coming soon" payment
  * copy. Ownership is enforced server-side by getResidentBillDetail via the
  * caller's active flat_residents link; unauthorized reads surface as
- * "Bill not found".
+ * "Bill not found". Display status is derived only from canonical bill
+ * fields via `getBillDisplayStatus`.
  */
 function ResidentBillDetail() {
   const { id } = Route.useParams();
@@ -89,11 +94,14 @@ function ResidentBillDetail() {
   }
 
   const amount = Number(bill.total_payable ?? bill.amount ?? 0);
-  const overdue = bill.due_date ? new Date(bill.due_date) < new Date() : false;
-  const tone: "success" | "danger" | "warning" | "neutral" =
-    bill.status === "paid" ? "success" :
-    bill.status === "cancelled" ? "neutral" :
-    overdue ? "danger" : "warning";
+  const state = getBillDisplayStatus(bill);
+
+  const showBreakdown =
+    (bill.current_charges ?? 0) !== 0 ||
+    (bill.previous_balance ?? 0) !== 0 ||
+    (bill.penalties ?? 0) !== 0 ||
+    (bill.adjustments ?? 0) !== 0 ||
+    (bill.tax_amount ?? 0) !== 0;
 
   return (
     <div className="px-5 py-6 space-y-4">
@@ -103,23 +111,29 @@ function ResidentBillDetail() {
 
       <Card className="rounded-2xl">
         <CardContent className="p-5">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div>
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div className="min-w-0">
               <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
                 {bill.bill_number ?? "Bill"}
               </p>
-              <h1 className="text-xl font-semibold">{bill.period_label ?? "Society bill"}</h1>
+              <h1 className="text-xl font-semibold truncate">{bill.period_label ?? "Society bill"}</h1>
               <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1.5">
                 <Home className="h-3.5 w-3.5" />
                 <span>Your flat</span>
               </p>
             </div>
-            <StatusChip tone={tone}>{(bill.status ?? "").toUpperCase()}</StatusChip>
+            <StatusChip tone={state.tone}>{state.label}</StatusChip>
           </div>
 
-          <div className="mt-5 flex items-baseline gap-1">
-            <IndianRupee className="h-5 w-5 text-muted-foreground" />
-            <span className="text-3xl font-bold tabular-nums">
+          {state.isCancelled && (
+            <p className="mt-3 text-xs text-muted-foreground">
+              This bill has been cancelled and is not an active bill.
+            </p>
+          )}
+
+          <div className="mt-5 flex items-baseline gap-1 min-w-0">
+            <IndianRupee className="h-5 w-5 text-muted-foreground shrink-0" />
+            <span className="text-3xl font-bold tabular-nums truncate">
               {amount.toLocaleString("en-IN")}
             </span>
           </div>
@@ -144,28 +158,71 @@ function ResidentBillDetail() {
         </CardContent>
       </Card>
 
+      {showBreakdown && (
+        <Card className="rounded-2xl">
+          <CardContent className="p-5">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground mb-3">
+              Breakdown
+            </p>
+            <ul className="space-y-2 text-sm">
+              {(bill.current_charges ?? 0) !== 0 && (
+                <li className="flex items-center justify-between gap-3">
+                  <span>Current charges</span>
+                  <span className="tabular-nums font-medium">{INR(bill.current_charges)}</span>
+                </li>
+              )}
+              {(bill.previous_balance ?? 0) !== 0 && (
+                <li className="flex items-center justify-between gap-3">
+                  <span>Previous balance</span>
+                  <span className="tabular-nums font-medium">{INR(bill.previous_balance)}</span>
+                </li>
+              )}
+              {(bill.penalties ?? 0) !== 0 && (
+                <li className="flex items-center justify-between gap-3">
+                  <span>Penalties</span>
+                  <span className="tabular-nums font-medium">{INR(bill.penalties)}</span>
+                </li>
+              )}
+              {(bill.adjustments ?? 0) !== 0 && (
+                <li className="flex items-center justify-between gap-3">
+                  <span>
+                    Adjustments{" "}
+                    <span className="text-xs text-muted-foreground">
+                      ({Number(bill.adjustments) >= 0 ? "credit" : "debit"})
+                    </span>
+                  </span>
+                  <span className="tabular-nums font-medium">{INR(bill.adjustments)}</span>
+                </li>
+              )}
+              {(bill.tax_amount ?? 0) !== 0 && (
+                <li className="flex items-center justify-between gap-3">
+                  <span>Taxes</span>
+                  <span className="tabular-nums font-medium">{INR(bill.tax_amount)}</span>
+                </li>
+              )}
+            </ul>
+            <div className="mt-3 pt-3 border-t flex items-center justify-between">
+              <span className="text-sm font-semibold">Total payable</span>
+              <span className="text-base font-semibold tabular-nums">{INR(amount)}</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {lines.length > 0 && (
         <Card className="rounded-2xl">
           <CardContent className="p-5">
             <p className="text-xs uppercase tracking-wide text-muted-foreground mb-3">
-              Charges
+              Line items
             </p>
             <ul className="divide-y">
               {lines.map((l) => (
-                <li key={l.id} className="flex items-center justify-between py-2 text-sm">
+                <li key={l.id} className="flex items-center justify-between gap-3 py-2 text-sm">
                   <span className="truncate">{l.description ?? l.kind ?? "Charge"}</span>
-                  <span className="font-medium tabular-nums">
-                    ₹{Number(l.amount ?? 0).toLocaleString("en-IN")}
-                  </span>
+                  <span className="font-medium tabular-nums shrink-0">{INR(l.amount)}</span>
                 </li>
               ))}
             </ul>
-            <div className="mt-3 pt-3 border-t flex items-center justify-between">
-              <span className="text-sm font-semibold">Total payable</span>
-              <span className="text-base font-semibold tabular-nums">
-                ₹{amount.toLocaleString("en-IN")}
-              </span>
-            </div>
           </CardContent>
         </Card>
       )}
@@ -174,9 +231,12 @@ function ResidentBillDetail() {
         <CardContent className="p-4 flex items-start gap-3">
           <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
           <div className="text-sm">
-            <p className="font-medium">Online payments are coming soon</p>
+            <p className="font-medium">Read-only bill</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Please pay your society admin offline for now. Once online payments are enabled, you'll see a Pay button here.
+              Payment recording and receipt verification are handled
+              separately. This bill cannot be changed from this screen.
+              Contact your society office for the currently approved
+              payment instructions.
             </p>
           </div>
         </CardContent>

@@ -83,9 +83,10 @@ describe("Stage 3C v4 — split resident/admin submission server functions", () 
     expect(block).toMatch(/_actor_role: "admin"/);
   });
 
-  it("legacy submitOfflinePayment is marked @deprecated", () => {
-    expect(fnSrc).toMatch(/@deprecated[\s\S]{0,200}submitResidentBankTransfer/);
+  it("legacy submitOfflinePayment has been removed (Stage 3C v5)", () => {
+    expect(fnSrc).not.toMatch(/export const submitOfflinePayment\b/);
   });
+
 });
 
 describe("Stage 3C v4 — resident submission card contract", () => {

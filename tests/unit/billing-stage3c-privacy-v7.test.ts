@@ -81,18 +81,17 @@ describe("Stage 3C v7 — Zod discriminated union for payment detail", () => {
     );
   });
   it("has strict resident and admin variant schemas", () => {
-    expect(fnSrc).toMatch(/paymentDetailResidentPaymentSchema\s*=\s*paymentDetailCommonPaymentSchema\.strict\(\)/);
-    expect(fnSrc).toMatch(/paymentDetailAdminPaymentSchema[\s\S]{0,400}\.strict\(\)/);
-    expect(fnSrc).toMatch(/paymentDetailAdminSchema[\s\S]{0,400}\.strict\(\)/);
-    expect(fnSrc).toMatch(/paymentDetailResidentSchema[\s\S]{0,400}\.strict\(\)/);
+    // v8 renamed these but the strict/union contract is unchanged.
+    expect(fnSrc).toMatch(/residentDetailPaymentSchema\s*=\s*paymentDetailCommonPaymentSchema\.strict\(\)/);
+    expect(fnSrc).toMatch(/adminDetailPaymentSchema[\s\S]{0,400}\.strict\(\)/);
+    expect(fnSrc).toMatch(/adminPaymentDetailSchema[\s\S]{0,400}\.strict\(\)/);
+    expect(fnSrc).toMatch(/residentPaymentDetailSchema[\s\S]{0,400}\.strict\(\)/);
   });
   it("resident payment schema does NOT declare admin-only keys", () => {
     const block =
       fnSrc.match(
-        /paymentDetailResidentPaymentSchema[\s\S]*?paymentDetailAdminSchema/,
+        /residentDetailPaymentSchema[\s\S]*?adminPaymentDetailSchema/,
       )?.[0] ?? "";
-    // The resident schema derives from the common schema; ensure neither
-    // that snippet nor the common schema mentions admin-only keys.
     const common =
       fnSrc.match(
         /paymentDetailCommonPaymentSchema\s*=\s*z\.object\(\{[\s\S]*?\}\)/,
@@ -108,14 +107,13 @@ describe("Stage 3C v7 — Zod discriminated union for payment detail", () => {
       "platform_share_paise",
     ]) {
       expect(common).not.toMatch(new RegExp(`${key}\\s*:`));
-      // The resident *union* variant (audience: 'resident') also excludes them.
       expect(block).not.toMatch(new RegExp(`\\b${key}\\s*:`));
     }
   });
   it("admin schema lists exactly the approved admin-only fields", () => {
     const admin =
       fnSrc.match(
-        /paymentDetailAdminPaymentSchema[\s\S]*?paymentDetailResidentPaymentSchema/,
+        /adminDetailPaymentSchema[\s\S]*?residentDetailPaymentSchema/,
       )?.[0] ?? "";
     for (const key of [
       "notes",
@@ -127,7 +125,6 @@ describe("Stage 3C v7 — Zod discriminated union for payment detail", () => {
     ]) {
       expect(admin).toMatch(new RegExp(`${key}\\s*:`));
     }
-    // Never proof_url / idempotency_key even in the admin variant.
     expect(admin).not.toMatch(/proof_url/);
     expect(admin).not.toMatch(/idempotency_key/);
   });

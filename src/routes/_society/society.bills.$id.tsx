@@ -109,11 +109,7 @@ function BillDetailPage() {
 
   const bill = detail.bill;
   const flatLabel = `${detail.flat?.block_name ? detail.flat.block_name + "-" : ""}${detail.flat?.flat_number ?? "—"}`;
-  const overdue = bill.due_date ? new Date(bill.due_date) < new Date() : false;
-  const statusTone: "success" | "danger" | "warning" | "neutral" =
-    bill.status === "paid" ? "success" :
-    bill.status === "cancelled" ? "neutral" :
-    overdue ? "danger" : "warning";
+  const state = getBillDisplayStatus(bill);
 
   const canCancel = !!isAdmin && detail.can_cancel;
   const hasVerifiedPayment = detail.payment_summary.has_verified_payment;

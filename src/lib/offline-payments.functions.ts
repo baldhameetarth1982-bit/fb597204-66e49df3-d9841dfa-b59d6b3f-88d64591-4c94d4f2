@@ -142,22 +142,12 @@ export function mapPaymentError(msg: string): string {
 
 /* ------------------------------ Schemas ------------------------------- */
 
-const submitInput = z.object({
-  billId: z.string().uuid(),
-  method: z.enum(["cash", "bank_transfer"]),
-  amount: z.number().positive().max(10_000_000),
-  paymentDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
-  referenceNo: z.string().trim().max(120).nullable().optional(),
-  notes: z.string().trim().max(1000).nullable().optional(),
-  idempotencyKey: z.string().trim().min(6).max(120),
-  actorRole: z.enum(["resident", "admin"]),
-});
-
 /**
- * Stage 3C v4 — split resident/admin submission contracts. The
- * resident-facing schema has NO `method` and NO `actorRole`; the server
- * fixes both. The admin-facing schema has NO `actorRole` and only accepts
- * Cash or Bank Transfer; server fixes actor role to admin.
+ * Stage 3C v5 — split resident/admin submission contracts. The generic
+ * `submitOfflinePayment` server function has been REMOVED so that no
+ * public API accepts a browser-supplied `actorRole`. Residents call
+ * `submitResidentBankTransfer`; admins call `recordAdminOfflinePayment`.
+ * Both fix `_actor_role` server-side.
  */
 const residentSubmitInput = z.object({
   billId: z.string().uuid(),
@@ -186,35 +176,7 @@ const paymentWithOptionalNotes = paymentIdOnly.extend({
 
 /* ------------------------------ Writes ------------------------------- */
 
-/**
- * @deprecated Prefer `submitResidentBankTransfer` or `recordAdminOfflinePayment`.
- * Kept as a compatibility adapter; the underlying RPC still verifies the
- * caller's permissions server-side.
- */
-export const submitOfflinePayment = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((i) => submitInput.parse(i))
-  .handler(async ({ data, context }) => {
-    try {
-      const raw = await callBillingRpc(
-        toBillingRpcClient(context),
-        "submit_offline_payment",
-        buildRpcArgs({
-          _bill_id: data.billId,
-          _method: data.method,
-          _amount: data.amount,
-          _payment_date: data.paymentDate ?? null,
-          _reference_no: data.referenceNo ?? null,
-          _notes: data.notes ?? null,
-          _idempotency_key: data.idempotencyKey,
-          _actor_role: data.actorRole,
-        }),
-      );
-      return { paymentId: extractRpcId(raw) };
-    } catch (e) {
-      throw new Error(mapPaymentError((e as Error).message));
-    }
-  });
+
 
 /** Stage 3C v4 — resident Bank Transfer only. Method/actor fixed server-side. */
 export const submitResidentBankTransfer = createServerFn({ method: "POST" })

@@ -28,7 +28,10 @@ export type BillBatchPreview = {
     template_status: string;
   };
   template_preview_json: string;
+  unit_count: number;
+  current_charges_total: number;
   previous_dues_total: number;
+  total_payable: number;
   existing_bill_count: number;
   warnings: string[];
 };

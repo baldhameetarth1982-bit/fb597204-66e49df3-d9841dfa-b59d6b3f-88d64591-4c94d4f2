@@ -231,12 +231,13 @@ export const getResidentBills = createServerFn({ method: "POST" })
     // Derive resident's active flats server-side.
     const { data: links, error: linkErr } = await context.supabase
       .from("flat_residents")
-      .select("flat_id, society_id")
+      .select("flat_id")
       .eq("user_id", context.userId)
       .is("moved_out_at", null);
     if (linkErr) throw new Error(mapBillingError("operation_failed"));
-    const flatIds = (links ?? []).map((r) => r.flat_id as string).filter(Boolean);
-    if (flatIds.length === 0) return { bills: [] as Array<Record<string, unknown>> };
+    const flatIds = ((links ?? []) as Array<{ flat_id: string | null }>)
+      .map((r) => r.flat_id).filter((v): v is string => !!v);
+    if (flatIds.length === 0) return { bills: [] };
 
     const { data: rows, error } = await context.supabase
       .from("bills")

@@ -27,7 +27,11 @@ export type BillBatchPreview = {
     template_id: string;
     template_status: string;
   };
-  template_preview: Record<string, unknown>;
+  template_preview: unknown;
+};
+
+export type BillBatchPreviewSerialized = Omit<BillBatchPreview, "template_preview"> & {
+  template_preview: string;
   previous_dues_total: number;
   existing_bill_count: number;
   warnings: string[];

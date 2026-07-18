@@ -303,18 +303,9 @@ export const reverseOfflinePayment = createServerFn({ method: "POST" })
     }
   });
 
-const paymentDetailSchema = z.object({
-  payment: paymentRowSchemaRef(),
-  bill_number: z.string().nullable(),
-  flat_label: z.string().nullable(),
-  summary: z.unknown().nullable(),
-  receipt: z.unknown().nullable(),
-  audience: z.enum(["admin", "resident"]),
-});
-// Forward declaration bridge — paymentRowSchema is defined below.
-function paymentRowSchemaRef(): z.ZodTypeAny {
-  return z.lazy(() => paymentRowSchema);
-}
+// (paymentDetailSchema is defined below with strong nested schemas.)
+
+
 
 const paymentDetailSchema = z.object({
   payment: z.lazy(() => paymentRowSchema),

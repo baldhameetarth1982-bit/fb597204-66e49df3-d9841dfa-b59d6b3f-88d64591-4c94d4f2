@@ -64,11 +64,13 @@ describe("Stage 3C v7 — get_payment_detail body is safely shaped", () => {
     expect(latestGetPaymentDetail).toMatch(/'verified_by'/);
   });
   it("still revokes public and grants only authenticated", () => {
-    expect(latestGetPaymentDetail).toMatch(
+    const sql = allMigrations();
+    expect(sql).toMatch(
       /REVOKE ALL ON FUNCTION public\.get_payment_detail\(uuid\) FROM PUBLIC/,
     );
-    // The GRANT lives in the same migration text but not necessarily inside
-    // the CREATE FUNCTION $$ block — check the joined migration text.
+    expect(sql).toMatch(
+      /GRANT EXECUTE ON FUNCTION public\.get_payment_detail\(uuid\) TO authenticated/,
+    );
   });
 });
 

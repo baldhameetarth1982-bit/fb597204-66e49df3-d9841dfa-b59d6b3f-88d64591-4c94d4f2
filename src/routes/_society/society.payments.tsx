@@ -543,14 +543,14 @@ function RecordOfflinePaymentSection({
                     className="w-full text-left p-2 text-xs hover:bg-muted/50"
                     onClick={() => {
                       setSelected(b);
-                      setAmount(String(b.total_payable ?? ""));
+                      setAmount(String(b.available_to_submit ?? 0));
                     }}
                   >
                     <div className="font-medium">
                       {b.flat_label ?? "Unit ?"}{b.block_name ? ` · ${b.block_name}` : ""} · {b.bill_number ?? "no number"}
                     </div>
                     <div className="text-muted-foreground">
-                      ₹{Number(b.total_payable ?? 0).toLocaleString("en-IN")} · {b.status}{b.due_date ? ` · due ${b.due_date}` : ""}
+                      Avail ₹{Number(b.available_to_submit ?? 0).toLocaleString("en-IN")} of ₹{Number(b.total_payable ?? 0).toLocaleString("en-IN")} · {b.status}{b.due_date ? ` · due ${b.due_date}` : ""}
                     </div>
                   </button>
                 ))}
@@ -562,12 +562,17 @@ function RecordOfflinePaymentSection({
           </div>
         ) : (
           <div className="space-y-3">
-            <div className="rounded-lg border bg-muted/30 p-2 text-xs">
+            <div className="rounded-lg border bg-muted/30 p-2 text-xs space-y-0.5">
               <div className="font-medium">
-                {selected.flat_label ?? "Unit"} · {selected.bill_number ?? "no number"}
+                {selected.flat_label ?? "Unit"}
+                {selected.block_name ? ` · ${selected.block_name}` : ""} · {selected.bill_number ?? "no number"}
               </div>
               <div className="text-muted-foreground">
-                Amount payable ₹{Number(selected.total_payable ?? 0).toLocaleString("en-IN")}
+                Total payable ₹{Number(selected.total_payable ?? 0).toLocaleString("en-IN")} · Verified ₹{Number(selected.verified_amount ?? 0).toLocaleString("en-IN")} · Pending ₹{Number(selected.pending_amount ?? 0).toLocaleString("en-IN")}
+              </div>
+              <div className="text-muted-foreground">
+                Available to submit <span className="font-semibold text-foreground">₹{Number(selected.available_to_submit ?? 0).toLocaleString("en-IN")}</span>
+                {selected.due_date ? ` · due ${selected.due_date}` : ""} · {selected.status}
               </div>
               <button
                 className="text-primary underline text-xs mt-1"
@@ -576,6 +581,7 @@ function RecordOfflinePaymentSection({
                 Change bill
               </button>
             </div>
+
 
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">

@@ -51,9 +51,10 @@ describe("Stage 3C closure — proof_url removed from the client contract", () =
 });
 
 describe("Stage 3C closure — separation of duties in the client contract", () => {
-  it("submit schema still routes actorRole to the RPC (legacy adapter)", () => {
-    expect(fnSrc).toMatch(/actorRole: z\.enum\(\["resident", "admin"\]\)/);
-    expect(fnSrc).toMatch(/_actor_role: data\.actorRole/);
+  it("v5: generic submitOfflinePayment is REMOVED (no browser-supplied actorRole)", () => {
+    expect(fnSrc).not.toMatch(/export const submitOfflinePayment\b/);
+    expect(fnSrc).not.toMatch(/actorRole: z\.enum/);
+    expect(fnSrc).not.toMatch(/_actor_role: data\.actorRole/);
   });
   it("resident submit card uses the resident-only server function", () => {
     expect(submitCard).toMatch(/submitResidentBankTransfer/);
@@ -65,6 +66,7 @@ describe("Stage 3C closure — separation of duties in the client contract", () 
     expect(submitCard).toMatch(/Method:\s*Bank Transfer/);
   });
 });
+
 
 describe("Stage 3C closure — safe error mapping for hardened codes", () => {
   const cases: Array<[string, RegExp]> = [

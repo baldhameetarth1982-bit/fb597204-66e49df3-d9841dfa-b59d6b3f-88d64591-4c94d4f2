@@ -127,7 +127,7 @@ describe("Stage 3C v4 — active resident authorization enforced in migration", 
       // flat_residents. We check that both conditions appear inside the
       // function body (defined below).
       const bodyMatch = new RegExp(
-        `FUNCTION public\\.${rpc}[\\s\\S]*?\\$function\\$`,
+        `FUNCTION public\\.${rpc}\\b[\\s\\S]*?\\$function\\$;`,
         "i",
       ).exec(activeAuthMigration);
       const body = bodyMatch?.[0] ?? "";

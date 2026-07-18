@@ -33,39 +33,6 @@ export type OfflinePaymentStatus =
   | "reversed"
   | "success"; // legacy read-only
 
-/**
- * Common safe payment fields returned to every audience (admin or resident)
- * from `get_payment_detail`.
- */
-export interface CommonSafePaymentFields {
-  id: string;
-  bill_id: string | null;
-  society_id: string;
-  flat_id: string | null;
-  amount: number;
-  method: string;
-  status: string;
-  reference_no: string | null;
-  submitted_at: string | null;
-  source: string | null;
-  payment_date: string | null;
-  verified_at: string | null;
-  rejected_at: string | null;
-  rejection_reason: string | null;
-  reversed_at: string | null;
-  reversal_reason: string | null;
-  created_at: string;
-}
-
-/** Admin-only payment fields — populated only when audience === 'admin'. */
-export interface AdminOnlyPaymentFields {
-  notes: string | null;
-  submitted_by: string | null;
-  verified_by: string | null;
-  verification_notes: string | null;
-  rejected_by: string | null;
-  reversed_by: string | null;
-}
 
 /** Admin payment row shape used by `list_society_payments_v1`. */
 export interface OfflinePaymentRow {

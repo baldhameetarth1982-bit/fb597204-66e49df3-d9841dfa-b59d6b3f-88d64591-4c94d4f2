@@ -60,7 +60,7 @@ describe("Stage 3C v5 — admin route wires bill search + record", () => {
 
 describe("Stage 3C v5 — getPaymentDetail is Zod-validated", () => {
   it("defines a paymentDetailSchema and parses the RPC response", () => {
-    expect(fnSrc).toMatch(/paymentDetailSchema\s*=\s*z\.object/);
+    expect(fnSrc).toMatch(/paymentDetailSchema\s*=\s*z\.discriminatedUnion/);
     expect(fnSrc).toMatch(/paymentDetailSchema\.parse\(raw\)/);
   });
   it("returns a typed PaymentDetail (no bare `as any` cast)", () => {

@@ -4783,7 +4783,12 @@ export type Database = {
         }[]
       }
       search_society_open_bills: {
-        Args: { _limit?: number; _query: string; _society_id: string }
+        Args: {
+          _limit?: number
+          _offset?: number
+          _query: string
+          _society_id: string
+        }
         Returns: Json
       }
       set_society_block_active: {

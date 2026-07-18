@@ -48,11 +48,13 @@ describe("Stage 3C — server functions expose the canonical RPCs", () => {
       "rejectOfflinePayment",
       "reverseOfflinePayment",
     ]) {
-      const block = fnSrc.match(new RegExp(`${name}[\\s\\S]{0,900}`))?.[0] ?? "";
+      const block =
+        fnSrc.match(new RegExp(`export const ${name}[\\s\\S]{0,900}`))?.[0] ?? "";
       expect(block).toMatch(/requireSupabaseAuth/);
       expect(block).toMatch(/callBillingRpc/);
     }
   });
+
 
   it("targets the SECURITY DEFINER RPC names", () => {
     expect(fnSrc).toContain('"submit_offline_payment"');

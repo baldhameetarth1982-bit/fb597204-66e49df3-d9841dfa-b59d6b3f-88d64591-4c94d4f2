@@ -220,8 +220,9 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
 
         <p className="text-[11px] text-muted-foreground flex items-start gap-1">
           <XCircle className="h-3 w-3 mt-0.5 shrink-0" />
-          No online gateway, UPI, cards or wallets. Payment becomes final only after your society admin verifies it.
+          Payment becomes final only after your society admin verifies it.
         </p>
+
       </CardContent>
     </Card>
   );

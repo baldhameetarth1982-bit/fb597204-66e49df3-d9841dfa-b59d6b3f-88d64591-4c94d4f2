@@ -246,6 +246,12 @@ export const recordAdminOfflinePayment = createServerFn({ method: "POST" })
     }
   });
 
+const verifyPaymentResultSchema = z.object({
+  payment_id: z.string().optional(),
+  receipt_number: z.string().nullable().optional(),
+  receipt_id: z.string().nullable().optional(),
+});
+
 export const verifyOfflinePayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => paymentWithOptionalNotes.parse(i))
@@ -256,20 +262,17 @@ export const verifyOfflinePayment = createServerFn({ method: "POST" })
         "verify_offline_payment",
         buildRpcArgs({ _payment_id: data.paymentId, _notes: data.notes ?? null }),
       );
-      const obj = (raw ?? {}) as {
-        payment_id?: string;
-        receipt_number?: string;
-        receipt_id?: string;
-      };
+      const parsed = verifyPaymentResultSchema.parse(raw ?? {});
       return {
-        paymentId: obj.payment_id ?? data.paymentId,
-        receiptNumber: obj.receipt_number ?? null,
-        receiptId: obj.receipt_id ?? null,
+        paymentId: parsed.payment_id ?? data.paymentId,
+        receiptNumber: parsed.receipt_number ?? null,
+        receiptId: parsed.receipt_id ?? null,
       };
     } catch (e) {
       throw new Error(mapPaymentError((e as Error).message));
     }
   });
+
 
 export const rejectOfflinePayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

@@ -2155,6 +2155,65 @@ export type Database = {
           },
         ]
       }
+      payment_receipt_sequences: {
+        Row: {
+          next_number: number
+          society_id: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          next_number?: number
+          society_id: string
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          next_number?: number
+          society_id?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      payment_receipts: {
+        Row: {
+          created_at: string
+          id: string
+          issued_at: string
+          issued_by: string | null
+          payment_id: string
+          receipt_number: string
+          society_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          issued_at?: string
+          issued_by?: string | null
+          payment_id: string
+          receipt_number: string
+          society_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          issued_at?: string
+          issued_by?: string | null
+          payment_id?: string
+          receipt_number?: string
+          society_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_receipts_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: true
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number
@@ -2162,20 +2221,35 @@ export type Database = {
           created_at: string
           flat_id: string
           id: string
+          idempotency_key: string | null
           method: string
           notes: string | null
           paid_at: string
+          payment_date: string | null
           platform_fee_paise: number | null
           platform_share_paise: number | null
+          proof_url: string | null
           razorpay_order_id: string | null
           razorpay_payment_id: string | null
           razorpay_signature: string | null
           reference_no: string | null
+          rejected_at: string | null
+          rejected_by: string | null
+          rejection_reason: string | null
+          reversal_reason: string | null
+          reversed_at: string | null
+          reversed_by: string | null
           society_id: string
           society_share_paise: number | null
+          source: string | null
           status: string
+          submitted_at: string | null
+          submitted_by: string | null
           updated_at: string
           user_id: string | null
+          verification_notes: string | null
+          verified_at: string | null
+          verified_by: string | null
         }
         Insert: {
           amount: number
@@ -2183,20 +2257,35 @@ export type Database = {
           created_at?: string
           flat_id: string
           id?: string
+          idempotency_key?: string | null
           method?: string
           notes?: string | null
           paid_at?: string
+          payment_date?: string | null
           platform_fee_paise?: number | null
           platform_share_paise?: number | null
+          proof_url?: string | null
           razorpay_order_id?: string | null
           razorpay_payment_id?: string | null
           razorpay_signature?: string | null
           reference_no?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          reversal_reason?: string | null
+          reversed_at?: string | null
+          reversed_by?: string | null
           society_id: string
           society_share_paise?: number | null
+          source?: string | null
           status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
           updated_at?: string
           user_id?: string | null
+          verification_notes?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
         }
         Update: {
           amount?: number
@@ -2204,20 +2293,35 @@ export type Database = {
           created_at?: string
           flat_id?: string
           id?: string
+          idempotency_key?: string | null
           method?: string
           notes?: string | null
           paid_at?: string
+          payment_date?: string | null
           platform_fee_paise?: number | null
           platform_share_paise?: number | null
+          proof_url?: string | null
           razorpay_order_id?: string | null
           razorpay_payment_id?: string | null
           razorpay_signature?: string | null
           reference_no?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          reversal_reason?: string | null
+          reversed_at?: string | null
+          reversed_by?: string | null
           society_id?: string
           society_share_paise?: number | null
+          source?: string | null
           status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
           updated_at?: string
           user_id?: string | null
+          verification_notes?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
         }
         Relationships: [
           {
@@ -3646,6 +3750,10 @@ export type Database = {
         Args: { _period_start: string; _prefix?: string; _society_id: string }
         Returns: string
       }
+      _allocate_receipt_number: {
+        Args: { _now: string; _society_id: string }
+        Returns: string
+      }
       _billing_audit: {
         Args: {
           _action: string
@@ -3670,6 +3778,10 @@ export type Database = {
           _source_key: string
           _source_type: string
         }
+        Returns: undefined
+      }
+      _sync_bill_payment_state: {
+        Args: { _bill_id: string }
         Returns: undefined
       }
       activate_society_plan: {
@@ -4495,6 +4607,10 @@ export type Database = {
         Args: { _society_id: string }
         Returns: string
       }
+      reject_offline_payment: {
+        Args: { _payment_id: string; _reason: string }
+        Returns: undefined
+      }
       request_join_flat: {
         Args: { _flat_id: string; _relationship: string }
         Returns: string
@@ -4518,6 +4634,10 @@ export type Database = {
       }
       reupload_own_kyc: {
         Args: { _aadhaar_last4: string; _aadhaar_url: string }
+        Returns: undefined
+      }
+      reverse_offline_payment: {
+        Args: { _payment_id: string; _reason: string }
         Returns: undefined
       }
       revoke_no_dues_certificate_internal: {
@@ -4648,6 +4768,19 @@ export type Database = {
           status: Database["public"]["Enums"]["no_dues_status"]
         }[]
       }
+      submit_offline_payment: {
+        Args: {
+          _amount: number
+          _bill_id: string
+          _idempotency_key: string
+          _method: string
+          _notes: string
+          _payment_date: string
+          _proof_url: string
+          _reference_no: string
+        }
+        Returns: string
+      }
       touch_rate_limit: {
         Args: {
           _bucket: string
@@ -4713,6 +4846,10 @@ export type Database = {
       user_can_admin_migrations: {
         Args: { _society_id: string; _user_id: string }
         Returns: boolean
+      }
+      verify_offline_payment: {
+        Args: { _notes: string; _payment_id: string }
+        Returns: Json
       }
       verify_resident_kyc: {
         Args: { _approved: boolean; _reason?: string; _user_id: string }

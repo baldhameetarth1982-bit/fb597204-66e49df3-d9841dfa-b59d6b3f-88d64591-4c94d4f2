@@ -1,5 +1,30 @@
 # Next Stages
 
+## Stage 3C — Offline Payments, Verification and Receipts (CLOSED 2026-07-18)
+
+**Scope delivered**
+- **Canonical offline lifecycle.** Payments live in one workflow: `pending → verified | rejected → reversed`. Cash and Bank Transfer only; no online gateway, UPI, cards, wallets, Razorpay, PayU, or Cashfree. Legacy `success` / `other_offline` rows remain readable but cannot be transitioned by any Stage 3C RPC (`invalid_transition`).
+- **Database.** Additive migration extends `payments` with `submitted_at/by`, `source`, `verified_at/by`, `verification_notes`, `rejected_at/by`, `rejection_reason`, `reversed_at/by`, `reversal_reason`, `proof_url`, `payment_date`, and a unique `idempotency_key`. New tables: `payment_receipts` (unique `(society_id, receipt_number)`, unique per payment) and `payment_receipt_sequences` (per-society yearly counter). RLS scopes admin reads via `billing.manage`/`super_admin` and resident reads via `flat_residents`.
+- **Server-authoritative RPCs (SECURITY DEFINER, `SET search_path = public`).**
+  - `submit_offline_payment(_bill_id, _method, _amount, _payment_date, _reference_no, _notes, _proof_url, _idempotency_key)` — resident-of-flat OR `billing.manage`. Validates method ∈ {cash, bank_transfer}, positive amount, bank_transfer requires reference. Idempotent per (`idempotency_key`, submitter). Writes `payment.submitted` audit row.
+  - `verify_offline_payment(_payment_id, _notes)` — `billing.manage`/`super_admin`. Allocates receipt via `_allocate_receipt_number`, syncs bill status via `_sync_bill_payment_state`, writes `payment.verified` audit row. Returns `{payment_id, receipt_number, receipt_id}`.
+  - `reject_offline_payment(_payment_id, _reason)` and `reverse_offline_payment(_payment_id, _reason)` — same guard. Reject only from `pending`; reverse only from `verified`. Reversal re-syncs bill status. Reason required. Both audit-logged.
+  - `_sync_bill_payment_state` recomputes bill status **only from verified payments** — `paid` when `sum(verified) ≥ total_payable`, `partially_paid` when > 0, else `unpaid`/`overdue` based on due date.
+- **Trusted mutation boundary.** `REVOKE INSERT, UPDATE, DELETE ON public.payments FROM authenticated` — every write now goes through the four RPCs. Function `EXECUTE` scoped to `authenticated`; internal helpers (`_allocate_receipt_number`, `_sync_bill_payment_state`) revoked from all non-service roles.
+- **Server functions.** `src/lib/offline-payments.functions.ts` exposes `submitOfflinePayment`, `verifyOfflinePayment`, `rejectOfflinePayment`, `reverseOfflinePayment`, `listSocietyPayments`, `getPaymentReceipt`. All go through `requireSupabaseAuth`, the typed `BillingRpcClient` adapter (no `as any`), and `mapPaymentError` (no raw DB messages leak).
+- **UI.**
+  - Resident: `src/components/billing/OfflinePaymentSubmitCard.tsx` renders on the resident bill detail only when the bill is open (not cancelled, not paid). Two-button method picker (Bank Transfer / Cash), amount, payment date, reference (required for bank), optional notes; client-generated `idempotencyKey`. After submit → "Pending admin verification" state; once the admin verifies, the resident sees the receipt number inline. No gateway CTA, no "coming soon" copy.
+  - Admin: `/society/payments` (`src/routes/_society/society.payments.tsx`) with Pending / Verified / Rejected / Reversed tabs, verify (single-click, issues receipt), reject (reason required), reverse (reason required). Direct browser `payments` writes remain revoked.
+- **Legacy retirement.** `src/lib/maintenance-pay.functions.ts` `createMaintenanceOrder` is now a deprecation stub that throws — no Razorpay orders, no platform-fee math, no `RAZORPAY_KEY_*` reads.
+- **Behavioral tests.** `tests/unit/billing-stage3c-offline-payments.test.ts` (23 cases): server-fn exports + `requireSupabaseAuth`/`callBillingRpc` wiring, `submit_/verify_/reject_/reverse_offline_payment` targeting, method restricted to cash/bank_transfer, non-empty reason for reject/reverse, safe error mapping for `invalid_method`/`invalid_transition`/`reference_required`, no `as any`, resident card wires `submitOfflinePayment`, forbids UPI/Razorpay/wallets/coming-soon/Pay-now, generates an idempotency key, and gates receipt display behind admin verification; admin route wires `useServerFn` for all four write functions, requires reasons before reject/reverse, covers all four status tabs, and never touches the browser Supabase client for `payments`; retired maintenance-pay module no longer touches `api.razorpay.com` / `RAZORPAY_KEY_ID` / `orderPayload` and throws the Stage 3C boundary message. Total suite: **739 passed / 19 skipped / 11 todo**.
+- **Protected society safety.** `1907a918-c4b8-4f43-a837-450530cc7c34` is asserted absent from every new Stage 3C source file.
+
+**Explicitly out of scope in Stage 3C (deferred to 3D):** full ledger/accounting reconciliation, online payment gateway enablement for maintenance (Razorpay/UPI/cards/wallets/PayU/Cashfree), reminder/email/SMS automation, penalty automation.
+
+**Exact next position:** Stage 3D — Ledger and reconciliation.
+
+
+
 ## Stage 3B — Recurring Bills, Bill Numbering, Dues, Bill Lifecycle (CLOSED 2026-07-18)
 
 **Closure run — 2026-07-18**

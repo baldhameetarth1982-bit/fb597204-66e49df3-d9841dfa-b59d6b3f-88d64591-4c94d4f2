@@ -19,13 +19,15 @@ const migSrc = readFileSync(
       .filter((f) => f.endsWith(".sql"))
       .sort()
       .reverse()
-      .find((f) =>
-        readFileSync(`supabase/migrations/${f}`, "utf8").includes(
-          "audit_log",
-        ),
-      )!,
+      .find((f) => {
+        const src = readFileSync(`supabase/migrations/${f}`, "utf8");
+        // Pick the Stage 3B migration specifically (audit + finalize_bill_batch),
+        // not a later Stage 3C+ additive migration.
+        return src.includes("audit_log") && src.includes("finalize_bill_batch");
+      })!,
   "utf8",
 );
+
 
 describe("Stage 3B closure — server function hardening", () => {
   it("has no `as any` in Stage 3B source", () => {

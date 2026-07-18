@@ -10,6 +10,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { getResidentBillDetail } from "@/lib/billing-generate.functions";
 import { getBillDisplayStatus } from "@/lib/bill-display-status";
 import { formatDate } from "@/utils/format";
+import { OfflinePaymentSubmitCard } from "@/components/billing/OfflinePaymentSubmitCard";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_resident/app/bills/$id")({
@@ -227,20 +228,29 @@ function ResidentBillDetail() {
         </Card>
       )}
 
+      {!state.isCancelled && !state.isPaid && (
+        <OfflinePaymentSubmitCard
+          billId={bill.id}
+          billAmount={amount}
+          billStatus={bill.status}
+          cancelled={!!bill.cancelled_at}
+        />
+      )}
+
       <Card className="rounded-2xl border-primary/10 bg-primary/5">
         <CardContent className="p-4 flex items-start gap-3">
           <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
           <div className="text-sm">
-            <p className="font-medium">Read-only bill</p>
+            <p className="font-medium">Offline payments only</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Payment recording and receipt verification are handled
-              separately. This bill cannot be changed from this screen.
-              Contact your society office for the currently approved
-              payment instructions.
+              Record your Cash or Bank Transfer payment above. Your admin
+              will verify it and issue a receipt. No online gateway is
+              enabled for maintenance collection.
             </p>
           </div>
         </CardContent>
       </Card>
+
 
       <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground pt-2">
         <Receipt className="h-3.5 w-3.5" />

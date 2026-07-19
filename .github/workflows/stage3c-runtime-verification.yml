@@ -221,6 +221,24 @@ jobs:
             if (failed) process.exit(1);
           '
 
+      - name: Collect Supabase diagnostics on failure
+        if: failure()
+        run: |
+          mkdir -p diagnostics
+          supabase status > diagnostics/supabase-status.txt 2>&1 || true
+          docker ps -a > diagnostics/docker-ps.txt 2>&1 || true
+          for c in $(docker ps -a --format '{{.Names}}' | grep -i supabase || true); do
+            docker logs "$c" > "diagnostics/${c}.log" 2>&1 || true
+          done
+
+      - name: Upload Supabase diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage3c-supabase-diagnostics
+          path: diagnostics/
+          if-no-files-found: ignore
+
       - name: Upload app log
         if: always()
         uses: actions/upload-artifact@v4

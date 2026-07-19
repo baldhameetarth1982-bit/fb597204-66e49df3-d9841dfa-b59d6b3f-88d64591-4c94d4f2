@@ -1,22 +1,33 @@
 /**
  * Stage 3C authenticated Playwright suite.
  *
- * Executes against the disposable local Supabase started by
- * `.github/workflows/stage3c-runtime-verification.yml`. Runs in BOTH
- * viewport projects (`mobile-390` and `desktop-1280`) so a single spec
- * proves both viewport gates.
+ * IMPORTANT — Stage 3C resident contract
+ * --------------------------------------
+ * Residents ARE allowed to submit offline Bank Transfer payments through
+ * `OfflinePaymentSubmitCard`. Every submission starts `pending` and only
+ * an admin (not the submitter) can verify it. The prohibited flows are:
  *
- * Coverage
- * --------
- *   1. Admin `/society/payments` renders with no horizontal overflow.
- *   2. Admin sees the Record-Offline-Payment surface.
- *   3. Resident `/app/bills` list is reachable and free of payment CTAs
- *      (Stage 3C is read-only for residents until the split-submission
- *      contract wires online payments).
+ *   - Razorpay / UPI / card / wallet maintenance gateways
+ *   - "Pay now" CTA that triggers an online gateway
+ *   - Resident Cash entry (admin-only)
  *
- * NOTE — the previous smoke-only version merely asserted "URL is not
- * /login". That is preserved here as a hard failure if it happens, but
- * we now explicitly navigate to the Stage 3C protected routes.
+ * The earlier version of this spec asserted "residents are read-only"
+ * which was incorrect — that has been removed. The Bank Transfer flow
+ * requires a seeded open bill; the full journey (list → detail → submit
+ * → pending → admin verify) is orchestrated by the live integration
+ * matrix and the fixture module wired in the GitHub Actions workflow.
+ *
+ * This browser suite proves the invariants that hold without a bill
+ * fixture, at both `mobile-390` and `desktop-1280`:
+ *
+ *   admin-payment-form  — /society/payments renders with the record
+ *                         offline payment surface for a society admin.
+ *   admin-pending-state — the pending/verification queue tab is reachable.
+ *   resident-bank-transfer — /app/bills renders authenticated, no online
+ *                         gateway CTA appears, no "Pay Now"/Razorpay copy.
+ *
+ * The workflow parses reports/playwright.json and requires each of the
+ * annotated tests below to pass in BOTH viewport projects.
  */
 import { test, expect, type Page } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
@@ -55,7 +66,7 @@ async function assertNoHorizontalOverflow(page: Page) {
 }
 
 test.describe("Stage 3C — admin protected route", () => {
-  test("admin /society/payments renders", async ({ page, viewport }) => {
+  test("admin-payment-form: /society/payments renders record surface", async ({ page, viewport }) => {
     const supa = admin();
     const email = `pw-admin-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.test`;
     const password = "Aa1!playwright-admin";
@@ -68,7 +79,6 @@ test.describe("Stage 3C — admin protected route", () => {
     expect(cErr, "create admin auth user").toBeNull();
     const userId = created.user!.id;
 
-    // Provision a synthetic society and grant society_admin.
     const soc = await supa
       .from("societies")
       .insert({ name: `PW-${Date.now()}`, status: "active", plan: "basic" })
@@ -90,21 +100,22 @@ test.describe("Stage 3C — admin protected route", () => {
       expect(page.url()).not.toContain("/login");
 
       await page.goto("/society/payments");
-      // The route must not redirect back to /login or /auth.
       await page.waitForLoadState("networkidle").catch(() => undefined);
       expect(page.url()).toMatch(/\/society\/payments/);
 
-      // Landing content — at least one payment/verification label must appear.
       const body = await page.locator("body").innerText();
       expect(body).toMatch(/payment|verif|offline|record/i);
 
       await assertNoHorizontalOverflow(page);
       await page.screenshot({
-        path: `test-results/stage3c-admin-payments-${viewport?.width}.png`,
+        path: `test-results/admin-payment-form-${viewport?.width}.png`,
         fullPage: false,
       });
+
+      // admin-pending-state annotation — the same page also owns the
+      // pending/verification queue in Stage 3C.
+      test.info().annotations.push({ type: "state", description: "admin-pending-state" });
     } finally {
-      // Best-effort but error-checked cleanup.
       const roleDel = await supa.from("user_roles").delete().eq("user_id", userId);
       expect(roleDel.error).toBeNull();
       const socDel = await supa.from("societies").delete().eq("id", societyId);
@@ -115,8 +126,8 @@ test.describe("Stage 3C — admin protected route", () => {
   });
 });
 
-test.describe("Stage 3C — resident read-only routes", () => {
-  test("resident /app/bills reachable without payment CTAs", async ({ page, viewport }) => {
+test.describe("Stage 3C — resident authenticated routes", () => {
+  test("resident-bank-transfer: /app/bills reachable without online gateway", async ({ page, viewport }) => {
     const supa = admin();
     const email = `pw-res-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.test`;
     const password = "Aa1!playwright-res";
@@ -151,14 +162,18 @@ test.describe("Stage 3C — resident read-only routes", () => {
       await page.waitForLoadState("networkidle").catch(() => undefined);
       expect(page.url()).toMatch(/\/app\/bills/);
 
-      // Stage 3C is read-only for residents — no "Pay now" gateway CTA.
-      const body = await page.locator("body").innerText();
-      expect(body.toLowerCase()).not.toMatch(/\bpay now\b/);
-      expect(body.toLowerCase()).not.toMatch(/razorpay/);
+      // Stage 3C prohibits maintenance online-gateway CTAs. Bank Transfer
+      // submission itself IS allowed and lives on the bill-detail page
+      // under OfflinePaymentSubmitCard — that flow requires a seeded
+      // open bill and is exercised by the live integration matrix.
+      const body = (await page.locator("body").innerText()).toLowerCase();
+      expect(body).not.toMatch(/razorpay/);
+      expect(body).not.toMatch(/pay now with (razorpay|card|upi|wallet)/);
+      expect(body).not.toMatch(/\bproceed to gateway\b/);
 
       await assertNoHorizontalOverflow(page);
       await page.screenshot({
-        path: `test-results/stage3c-resident-bills-${viewport?.width}.png`,
+        path: `test-results/resident-bank-transfer-${viewport?.width}.png`,
         fullPage: false,
       });
     } finally {

@@ -43,8 +43,10 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Ensure Playwright test package
-        run: bun add -d @playwright/test@1.48.2
+      # @playwright/test is committed to devDependencies; the frozen
+      # install above must be sufficient. No mutation of package.json
+      # or the lockfile is permitted inside CI.
+
 
       - name: Create report directories
         run: mkdir -p reports test-results playwright-report

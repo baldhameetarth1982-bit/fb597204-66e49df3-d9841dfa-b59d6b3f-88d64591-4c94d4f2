@@ -1,0 +1,171 @@
+name: Stage 3C Runtime Verification
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "src/lib/offline-payments.functions.ts"
+      - "src/components/billing/OfflinePaymentSubmitCard.tsx"
+      - "src/routes/_society/society.payments.tsx"
+      - "supabase/migrations/**"
+      - "tests/integration/billing-stage3c-live.test.ts"
+      - "tests/e2e/**"
+      - ".github/workflows/stage3c-runtime-verification.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/lib/offline-payments.functions.ts"
+      - "supabase/migrations/**"
+      - "tests/integration/billing-stage3c-live.test.ts"
+      - "tests/e2e/**"
+      - ".github/workflows/stage3c-runtime-verification.yml"
+
+jobs:
+  runtime:
+    name: Isolated Supabase + Playwright
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Node (for Playwright + Supabase CLI)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start disposable local Supabase
+        run: supabase start
+
+      - name: Reset database (apply all migrations)
+        run: supabase db reset --no-seed
+
+      - name: Export local Supabase env
+        run: |
+          set -eo pipefail
+          # `supabase status -o env` prints KEY=VALUE lines for the running stack.
+          supabase status -o env > .supabase.env
+          # shellcheck disable=SC1091
+          set -a; source .supabase.env; set +a
+          {
+            echo "SOCIOHUB_TEST_SUPABASE_URL=${API_URL}"
+            echo "SOCIOHUB_TEST_SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}"
+            echo "SOCIOHUB_TEST_SUPABASE_PUBLISHABLE_KEY=${ANON_KEY}"
+            echo "ALLOW_SOCIOHUB_LIVE_STAGE3C=true"
+            echo "VITE_SUPABASE_URL=${API_URL}"
+            echo "VITE_SUPABASE_PUBLISHABLE_KEY=${ANON_KEY}"
+            echo "SUPABASE_URL_LOCAL=${API_URL}"
+          } >> "$GITHUB_ENV"
+          # Mask secrets so they don't appear in logs
+          echo "::add-mask::${SERVICE_ROLE_KEY}"
+          echo "::add-mask::${ANON_KEY}"
+          rm -f .supabase.env
+
+      - name: Unit tests
+        run: bunx vitest run tests/unit --reporter=default --reporter=json --outputFile=reports/unit.json
+
+      - name: Full vitest run (unit + integration)
+        run: bunx vitest run --reporter=default --reporter=json --outputFile=reports/full.json
+
+      - name: Stage 3C live integration (must not skip)
+        run: |
+          bunx vitest run tests/integration/billing-stage3c-live.test.ts \
+            --reporter=default --reporter=json --outputFile=reports/live.json
+
+      - name: Assert live suite executed (no silent skips)
+        run: |
+          node -e '
+            const r = require("./reports/live.json");
+            const flat = [];
+            const walk = (arr) => (arr || []).forEach(t => {
+              if (t.type === "suite") walk(t.tasks);
+              else flat.push(t);
+            });
+            (r.testResults || r.files || []).forEach(f => walk(f.tasks || f.assertionResults));
+            const total = flat.length;
+            const skipped = flat.filter(t => t.mode === "skip" || t.status === "skipped" || t.result?.state === "skip").length;
+            const passed = flat.filter(t => t.result?.state === "pass" || t.status === "passed").length;
+            console.log(JSON.stringify({ total, passed, skipped }));
+            if (total === 0) { console.error("Live suite has zero executed tests"); process.exit(1); }
+            if (skipped > 0) { console.error("Live suite has skipped tests: " + skipped); process.exit(1); }
+          '
+
+      - name: Build app
+        run: bun run build
+
+      - name: Client bundle secret scan
+        run: bun scripts/verify-client-bundle-secrets.ts
+
+      - name: Protected society ID source scan
+        env:
+          SOCIOHUB_PROTECTED_SOCIETY_ID: ${{ secrets.SOCIOHUB_PROTECTED_SOCIETY_ID }}
+        run: |
+          if [ -z "$SOCIOHUB_PROTECTED_SOCIETY_ID" ]; then
+            echo "SOCIOHUB_PROTECTED_SOCIETY_ID secret not configured — skipping protected-ID scan."
+            exit 0
+          fi
+          echo "::add-mask::$SOCIOHUB_PROTECTED_SOCIETY_ID"
+          # Search runtime/test/migration/workflow files. Fail if found.
+          if grep -R -F --exclude-dir=node_modules --exclude-dir=.git \
+               --include='*.ts' --include='*.tsx' --include='*.sql' --include='*.yml' --include='*.yaml' \
+               "$SOCIOHUB_PROTECTED_SOCIETY_ID" src tests supabase/migrations .github > /dev/null; then
+            echo "Protected society ID found in committed files"
+            exit 1
+          fi
+          echo "Protected ID not present in committed source."
+
+      - name: Install Playwright browsers
+        run: bunx playwright install --with-deps chromium
+
+      - name: Start app for Playwright
+        run: |
+          bun run start &
+          echo $! > .app.pid
+          # Wait for health
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3000 > /dev/null; then
+              echo "App up"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "App failed to start"
+          exit 1
+
+      - name: Playwright — Stage 3C authenticated (390 + 1280)
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+        run: bunx playwright test --config=playwright.config.ts
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage3c-reports
+          path: |
+            reports/
+            playwright-report/
+            test-results/
+
+      - name: Stop app
+        if: always()
+        run: |
+          if [ -f .app.pid ]; then kill "$(cat .app.pid)" || true; fi
+
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop --no-backup

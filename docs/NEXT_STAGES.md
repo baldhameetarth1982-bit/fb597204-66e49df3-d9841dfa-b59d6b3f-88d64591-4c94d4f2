@@ -2,7 +2,7 @@
 
 ## Stage 3C — Offline Payments, Verification and Receipts
 
-**Status:** CLOSURE VERIFICATION IN PROGRESS (v8 payment-detail whole-row removal landed 2026-07-18; final runtime gates — live multi-user integration test, Playwright visual verification at 390/1280 — pending)
+**Status:** CLOSURE VERIFICATION IN PROGRESS — the two remaining runtime gates (isolated multi-user live integration and authenticated Playwright at 390/1280) now execute in GitHub Actions (`.github/workflows/stage3c-runtime-verification.yml`), which boots a disposable local Supabase stack (`supabase start` + `supabase db reset`), exports its env from `supabase status -o env`, runs `tests/integration/billing-stage3c-live.test.ts` with a strict no-skip assertion, and runs `tests/e2e/billing-stage3c.spec.ts` under both `mobile-390` and `desktop-1280` viewport projects. Stage 3C flips to **COMPLETE** only after one successful workflow run. The Lovable sandbox is an unprivileged container with no Docker daemon or socket, so this cannot be closed locally; trigger via **Actions → Stage 3C Runtime Verification → Run workflow**. Provide the `SOCIOHUB_PROTECTED_SOCIETY_ID` repository secret so the protected-ID source scan step can run.
 
 **Authoritative contract**
 - **Offline only.** Cash and Bank Transfer. No maintenance gateway, no Razorpay/UPI/cards/wallets, no platform fee. Razorpay stays for SaaS subscriptions only.

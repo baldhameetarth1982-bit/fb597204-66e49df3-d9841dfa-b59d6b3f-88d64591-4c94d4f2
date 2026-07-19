@@ -173,7 +173,7 @@ jobs:
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
         run: bunx playwright test --config=playwright.config.ts
 
-      - name: Assert Playwright covered both projects
+      - name: Assert Playwright required titles executed and passed
         if: always()
         run: |
           node -e '
@@ -181,13 +181,63 @@ jobs:
             const p = "reports/playwright.json";
             if (!fs.existsSync(p)) { console.error("playwright.json missing"); process.exit(1); }
             const r = JSON.parse(fs.readFileSync(p, "utf8"));
-            const projects = new Set();
-            const walk = (s) => (s.suites||[]).forEach(walk) || (s.specs||[]).forEach(sp => sp.tests.forEach(t => projects.add(t.projectName)));
+            const REQUIRED = [
+              "admin-payment-form",
+              "admin-pending-state",
+              "admin-verification",
+              "resident-bank-transfer",
+              "resident-pending-state",
+              "resident-valid-receipt",
+              "resident-void-receipt",
+            ];
+            const PROJECTS = ["mobile-390", "desktop-1280"];
+            const seen = {}; // title -> project -> status
+            REQUIRED.forEach(t => { seen[t] = {}; });
+            const walk = (s) => {
+              (s.suites||[]).forEach(walk);
+              (s.specs||[]).forEach(sp => {
+                (sp.tests||[]).forEach(t => {
+                  const title = sp.title;
+                  if (!REQUIRED.includes(title)) return;
+                  const proj = t.projectName;
+                  const results = t.results || [];
+                  const last = results[results.length - 1];
+                  const status = last ? last.status : "missing";
+                  seen[title][proj] = status;
+                });
+              });
+            };
             (r.suites||[]).forEach(walk);
-            const need = ["mobile-390","desktop-1280"];
-            for (const n of need) if (!projects.has(n)) { console.error("Missing project: "+n); process.exit(1); }
-            console.log("Playwright projects:", [...projects].join(","));
+            let failed = false;
+            for (const title of REQUIRED) {
+              for (const proj of PROJECTS) {
+                const s = seen[title][proj];
+                if (s === "passed" || s === "expected") continue;
+                console.error("FAIL: title="+title+" project="+proj+" status="+(s||"absent"));
+                failed = true;
+              }
+            }
+            console.log("Playwright title/project matrix:", JSON.stringify(seen, null, 2));
+            if (failed) process.exit(1);
           '
+
+      - name: Collect Supabase diagnostics on failure
+        if: failure()
+        run: |
+          mkdir -p diagnostics
+          supabase status > diagnostics/supabase-status.txt 2>&1 || true
+          docker ps -a > diagnostics/docker-ps.txt 2>&1 || true
+          for c in $(docker ps -a --format '{{.Names}}' | grep -i supabase || true); do
+            docker logs "$c" > "diagnostics/${c}.log" 2>&1 || true
+          done
+
+      - name: Upload Supabase diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage3c-supabase-diagnostics
+          path: diagnostics/
+          if-no-files-found: ignore
 
       - name: Upload app log
         if: always()

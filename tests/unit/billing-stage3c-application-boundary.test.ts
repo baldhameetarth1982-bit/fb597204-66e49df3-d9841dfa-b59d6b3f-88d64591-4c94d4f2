@@ -21,8 +21,10 @@ const SRC = readFileSync(
 function slice(fnName: string): string {
   const start = SRC.indexOf(`export const ${fnName} =`);
   if (start === -1) return "";
-  // Grab a generous window that covers the .handler body.
-  return SRC.slice(start, start + 2500);
+  // Slice up to the next top-level `export const ` (or end of file).
+  const rest = SRC.slice(start + 1);
+  const nextIdx = rest.indexOf("\nexport const ");
+  return nextIdx === -1 ? SRC.slice(start) : SRC.slice(start, start + 1 + nextIdx);
 }
 
 describe("Stage 3C application boundary", () => {

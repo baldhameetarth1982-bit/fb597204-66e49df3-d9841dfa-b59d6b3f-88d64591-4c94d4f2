@@ -24,7 +24,7 @@ jobs:
   runtime:
     name: Isolated Supabase + Playwright
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
 
     steps:
       - name: Checkout
@@ -33,9 +33,9 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: "1.1.42"
 
-      - name: Setup Node (for Playwright + Supabase CLI)
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -43,10 +43,16 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Ensure Playwright test package
+        run: bun add -d @playwright/test@1.48.2
+
+      - name: Create report directories
+        run: mkdir -p reports test-results playwright-report
+
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: "1.219.2"
 
       - name: Start disposable local Supabase
         run: supabase start
@@ -57,10 +63,18 @@ jobs:
       - name: Export local Supabase env
         run: |
           set -eo pipefail
-          # `supabase status -o env` prints KEY=VALUE lines for the running stack.
           supabase status -o env > .supabase.env
           # shellcheck disable=SC1091
-          set -a; source .supabase.env; set +a
+          set -a; . ./.supabase.env; set +a
+          : "${API_URL:?API_URL missing from supabase status}"
+          : "${SERVICE_ROLE_KEY:?SERVICE_ROLE_KEY missing from supabase status}"
+          : "${ANON_KEY:?ANON_KEY missing from supabase status}"
+          case "$API_URL" in
+            http://127.0.0.1:*|http://localhost:*) : ok ;;
+            *) echo "Refusing to proceed: API_URL is not local ($API_URL)"; exit 1 ;;
+          esac
+          echo "::add-mask::${SERVICE_ROLE_KEY}"
+          echo "::add-mask::${ANON_KEY}"
           {
             echo "SOCIOHUB_TEST_SUPABASE_URL=${API_URL}"
             echo "SOCIOHUB_TEST_SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}"
@@ -68,18 +82,14 @@ jobs:
             echo "ALLOW_SOCIOHUB_LIVE_STAGE3C=true"
             echo "VITE_SUPABASE_URL=${API_URL}"
             echo "VITE_SUPABASE_PUBLISHABLE_KEY=${ANON_KEY}"
-            echo "SUPABASE_URL_LOCAL=${API_URL}"
           } >> "$GITHUB_ENV"
-          # Mask secrets so they don't appear in logs
-          echo "::add-mask::${SERVICE_ROLE_KEY}"
-          echo "::add-mask::${ANON_KEY}"
           rm -f .supabase.env
+
+      - name: Application-boundary unit tests
+        run: bunx vitest run tests/unit/billing-stage3c-application-boundary.test.ts --reporter=default
 
       - name: Unit tests
         run: bunx vitest run tests/unit --reporter=default --reporter=json --outputFile=reports/unit.json
-
-      - name: Full vitest run (unit + integration)
-        run: bunx vitest run --reporter=default --reporter=json --outputFile=reports/full.json
 
       - name: Stage 3C live integration (must not skip)
         run: |
@@ -104,22 +114,29 @@ jobs:
             if (skipped > 0) { console.error("Live suite has skipped tests: " + skipped); process.exit(1); }
           '
 
+      - name: Full vitest run (excluding live suite to avoid double-execution)
+        run: |
+          bunx vitest run --exclude 'tests/integration/billing-stage3c-live.test.ts' \
+            --reporter=default --reporter=json --outputFile=reports/full.json
+
+      - name: Typecheck
+        run: bunx tsgo --noEmit
+
       - name: Build app
         run: bun run build
 
       - name: Client bundle secret scan
         run: bun scripts/verify-client-bundle-secrets.ts
 
-      - name: Protected society ID source scan
+      - name: Protected society ID source scan (MANDATORY)
         env:
           SOCIOHUB_PROTECTED_SOCIETY_ID: ${{ secrets.SOCIOHUB_PROTECTED_SOCIETY_ID }}
         run: |
           if [ -z "$SOCIOHUB_PROTECTED_SOCIETY_ID" ]; then
-            echo "SOCIOHUB_PROTECTED_SOCIETY_ID secret not configured — skipping protected-ID scan."
-            exit 0
+            echo "Required SOCIOHUB_PROTECTED_SOCIETY_ID secret is missing"
+            exit 1
           fi
           echo "::add-mask::$SOCIOHUB_PROTECTED_SOCIETY_ID"
-          # Search runtime/test/migration/workflow files. Fail if found.
           if grep -R -F --exclude-dir=node_modules --exclude-dir=.git \
                --include='*.ts' --include='*.tsx' --include='*.sql' --include='*.yml' --include='*.yaml' \
                "$SOCIOHUB_PROTECTED_SOCIETY_ID" src tests supabase/migrations .github > /dev/null; then
@@ -132,24 +149,51 @@ jobs:
         run: bunx playwright install --with-deps chromium
 
       - name: Start app for Playwright
+        env:
+          VITE_SUPABASE_URL: ${{ env.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ env.VITE_SUPABASE_PUBLISHABLE_KEY }}
         run: |
-          bun run start &
+          nohup bun run dev -- --port 3000 --host 127.0.0.1 > app.log 2>&1 &
           echo $! > .app.pid
-          # Wait for health
-          for i in $(seq 1 60); do
-            if curl -sf http://localhost:3000 > /dev/null; then
-              echo "App up"
+          for i in $(seq 1 90); do
+            if curl -sf http://127.0.0.1:3000 > /dev/null; then
+              echo "App up on 3000"
               exit 0
             fi
             sleep 2
           done
-          echo "App failed to start"
+          echo "App failed to start; last log:"
+          tail -n 200 app.log || true
           exit 1
 
       - name: Playwright — Stage 3C authenticated (390 + 1280)
         env:
-          PLAYWRIGHT_BASE_URL: http://localhost:3000
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
         run: bunx playwright test --config=playwright.config.ts
+
+      - name: Assert Playwright covered both projects
+        if: always()
+        run: |
+          node -e '
+            const fs = require("fs");
+            const p = "reports/playwright.json";
+            if (!fs.existsSync(p)) { console.error("playwright.json missing"); process.exit(1); }
+            const r = JSON.parse(fs.readFileSync(p, "utf8"));
+            const projects = new Set();
+            const walk = (s) => (s.suites||[]).forEach(walk) || (s.specs||[]).forEach(sp => sp.tests.forEach(t => projects.add(t.projectName)));
+            (r.suites||[]).forEach(walk);
+            const need = ["mobile-390","desktop-1280"];
+            for (const n of need) if (!projects.has(n)) { console.error("Missing project: "+n); process.exit(1); }
+            console.log("Playwright projects:", [...projects].join(","));
+          '
+
+      - name: Upload app log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage3c-app-log
+          path: app.log
+          if-no-files-found: ignore
 
       - name: Upload test reports
         if: always()

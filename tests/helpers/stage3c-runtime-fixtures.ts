@@ -769,7 +769,12 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
       "insert:societyA",
       admin
         .from("societies")
-        .insert({ name: `${prefix}-A`, status: "active", plan: "basic" })
+        .insert({
+          name: `${prefix}-A`,
+          status: "active",
+          plan: "basic",
+          layout: "structured",
+        })
         .select("id")
         .single(),
     );
@@ -782,7 +787,12 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
       "insert:societyB",
       admin
         .from("societies")
-        .insert({ name: `${prefix}-B`, status: "active", plan: "basic" })
+        .insert({
+          name: `${prefix}-B`,
+          status: "active",
+          plan: "basic",
+          layout: "serial",
+        })
         .select("id")
         .single(),
     );

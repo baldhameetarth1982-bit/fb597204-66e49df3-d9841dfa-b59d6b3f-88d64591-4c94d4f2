@@ -395,13 +395,13 @@ describe("Stage 3C fixtures — source contract", () => {
   });
   it("verifyTrackedRowsAbsent checks exact block/role/resident IDs", () => {
     expect(SRC).toMatch(
-      /check\("user_role_block_scopes",\s*"user_role_block_scopes",\s*"id",\s*tracked\.userRoleBlockScopeIds\)/,
+      /check\(\s*"user_role_block_scopes",\s*"user_role_block_scopes",\s*"id",\s*tracked\.userRoleBlockScopeIds/,
     );
     expect(SRC).toMatch(
-      /check\("flat_residents",\s*"flat_residents",\s*"id",\s*tracked\.flatResidentIds\)/,
+      /check\(\s*"flat_residents",\s*"flat_residents",\s*"id",\s*tracked\.flatResidentIds/,
     );
     expect(SRC).toMatch(
-      /check\("user_roles",\s*"user_roles",\s*"id",\s*tracked\.userRoleIds\)/,
+      /check\(\s*"user_roles",\s*"user_roles",\s*"id",\s*tracked\.userRoleIds/,
     );
   });
   it("receipt sequence key derived from actual receipt.created_at", () => {

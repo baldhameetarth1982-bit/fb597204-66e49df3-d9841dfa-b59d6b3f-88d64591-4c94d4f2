@@ -215,9 +215,15 @@ export type TrackedIds = {
   authUserIds: string[];
   societyIds: string[];
   userRoles: UserRoleKey[];
+  /** Exact user_roles row PKs — used for scoped deletion. */
+  userRoleIds: string[];
+  /** Exact user_role_block_scopes row PKs. */
+  userRoleBlockScopeIds: string[];
   blockIds: string[];
   flatIds: string[];
   flatResidents: FlatResidentKey[];
+  /** Exact flat_residents row PKs — used for scoped deletion. */
+  flatResidentIds: string[];
   billIds: string[];
   billLineItemIds: string[];
   paymentIds: string[];
@@ -231,9 +237,12 @@ function makeTracker(): TrackedIds {
     authUserIds: [],
     societyIds: [],
     userRoles: [],
+    userRoleIds: [],
+    userRoleBlockScopeIds: [],
     blockIds: [],
     flatIds: [],
     flatResidents: [],
+    flatResidentIds: [],
     billIds: [],
     billLineItemIds: [],
     paymentIds: [],

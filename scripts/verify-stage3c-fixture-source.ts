@@ -118,7 +118,7 @@ must(
   /searchOpenBills\([\s\S]{0,120}options\?:\s*BillSearchOptions/.test(src),
   "searchOpenBills must accept BillSearchOptions",
 );
-must(/validatePagination\(/.test(src), "must call validatePagination helper");
+must(/validateStage3CPagination\(/.test(src), "must call the canonical validateStage3CPagination helper");
 must(
   /rpc\("get_resident_payments_v1",\s*\{\s*_limit:\s*limit,\s*_offset:\s*offset/.test(src),
   "get_resident_payments_v1 must forward runtime limit/offset (not hardcoded)",

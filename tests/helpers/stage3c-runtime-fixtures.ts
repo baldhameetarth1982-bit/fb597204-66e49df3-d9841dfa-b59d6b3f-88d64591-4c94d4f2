@@ -113,7 +113,7 @@ export function redactMessage(
     out = out.split(v).join("[REDACTED_VALUE]");
   }
   out = out
-    .replace(/eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{4,}/g, "[REDACTED_JWT]")
+    .replace(/eyJ[A-Za-z0-9_-]{4,}\.[A-Za-z0-9_-]{4,}\.[A-Za-z0-9_-]{4,}/g, "[REDACTED_JWT]")
     .replace(/sb_(?:secret|publishable)_[A-Za-z0-9_-]+/g, "[REDACTED_SB_KEY]")
     .replace(/(authorization\s*[:=]\s*)(?:bearer\s+)?[^\s"',}]+/gi, "$1[REDACTED]")
     .replace(/bearer\s+[A-Za-z0-9._-]+/gi, "Bearer [REDACTED]")

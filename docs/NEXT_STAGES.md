@@ -30,10 +30,20 @@
 - Playwright and live integration cannot execute inside the Lovable sandbox (no Docker → no isolated Supabase). This is the reason the exit gate lives in GitHub Actions.
 
 **Honest remaining gaps (source-side, not CI-side)**
-This run added the deterministic 93-case machine-readable manifest (`tests/helpers/stage3c-live-case-manifest.ts`) pinned by a unit contract test (`tests/unit/billing-stage3c-live-manifest.test.ts`, 5/5 passing), so the Stage 3C acceptance surface is now enumerated and immutable (AUTH×7, PENDING×8, VERIFY×9, RESIDENT-SUBMIT×8, IDEMPOTENCY×4, REFERENCE×4, READ×10, PRIVACY×16, REJECTION×5, REVERSAL×9, SEARCH×10, CLEANUP×3). Authoring the remaining pieces — the 93 behavioral live-test bodies keyed to those ids, the seven real Playwright UI journeys with scenario-specific fixtures, and the workflow validators that parse `reports/live.json` and `reports/playwright.json` against the manifest — requires the exact live Supabase iteration loop that the Lovable sandbox cannot provide (no Docker → no local Supabase → no way to verify RPC argument names, error codes, or column shapes without live iteration). These items remain honestly open:
-- Live integration suite covers a subset (authorization + pending + verification + reads) through the shared fixture. The remaining cases are enumerated in the manifest but not yet authored as `it(...)` bodies.
-- Playwright spec exposes the seven required titles with per-title screenshots. Deepening each into the exact real journey (form fill → dialog → submit → assert pending/verified/VOID) still requires the scenario-specific E2E fixture builder.
-- Shared fixture uses strict result inspection for setup. The cleanup collector still needs the full `collectCleanupResult` / `verifyTrackedRowsAbsent` / `verifySyntheticUsersAbsent` sweep.
+This run rewrote the shared runtime fixture (`tests/helpers/stage3c-runtime-fixtures.ts`) to eliminate every previously flagged defect:
+- Strict result helpers `assertSupabaseResult`, `assertSupabaseSingleResult`, `assertAuthAdminResult` inspect resolved `.error` and throw labeled errors — no `try`/`catch` around builders, no `as unknown as PromiseLike` casts.
+- `collectCleanupResult` + `formatCleanupFailures` accumulate every cleanup failure (Supabase error or thrown exception) and produce one readable combined message without leaking secrets.
+- Tracking type `TrackedIds` now covers auth users, societies, user_roles composite keys, blocks, flats, flat_residents composite keys, bills, bill_line_items, payments, payment_receipts, receipt sequences, and fixture audit selectors.
+- Identity graph provisions the required eight synthetic users; `unrelatedResident` is a genuine Society B resident of `unrelatedFlat` (serial mode, `block_id = null`), proving cross-society separation.
+- Financial scenarios (available open bill, pending admin Cash, pending resident Bank Transfer, verified payment + valid receipt, rejected payment, reversed payment + VOID receipt, plus fully unavailable bill) are constructed through canonical authenticated RPCs — service role is used only for structural setup, assertions, and tracked deletion, never to prove authorization.
+- Strict cleanup deletes in FK dependency order, inspects every `.error`, and then runs `verifyTrackedRowsAbsent` + `verifySyntheticUsersAbsent` before throwing a single combined failure. Partial-setup failures trigger the same cleanup and rethrow a combined `[stage3c:setup] … / [stage3c:setup:cleanup] …` message.
+- `scripts/verify-stage3c-fixture-source.ts` is a checked-in scan that fails on unsafe casts, swallowed errors, missing exports, cross-society misassignment, TODO/placeholder markers, generic `submitOfflinePayment`, or browser-controlled `actorRole`.
+- New contract suite `tests/unit/billing-stage3c-runtime-fixtures.test.ts` (25 tests) pins the strict helper behavior and source invariants. Full unit total is **883 passing / 5 skipped** across 47 files. Typecheck, build, and bundle-secret scan exit 0.
+
+Honestly open (next Stage 3C focused runs, in order):
+- Migrate `tests/integration/billing-stage3c-live.test.ts` onto the shared fixture and implement the 93 manifest-driven behavioral bodies.
+- Deepen the seven Playwright journeys into real form-fill / dialog / submit / assert flows against the seeded fixture.
+- Obtain one successful GitHub Actions run of `.github/workflows/stage3c-runtime-verification.yml`.
 
 CI executes committed source; it cannot author missing source. These items are the honest source-side remainder, not CI-side work.
 

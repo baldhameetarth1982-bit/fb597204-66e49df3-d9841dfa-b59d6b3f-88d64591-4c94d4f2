@@ -38,7 +38,28 @@ This run rewrote the shared runtime fixture (`tests/helpers/stage3c-runtime-fixt
 - Financial scenarios (available open bill, pending admin Cash, pending resident Bank Transfer, verified payment + valid receipt, rejected payment, reversed payment + VOID receipt, plus fully unavailable bill) are constructed through canonical authenticated RPCs — service role is used only for structural setup, assertions, and tracked deletion, never to prove authorization.
 - Strict cleanup deletes in FK dependency order, inspects every `.error`, and then runs `verifyTrackedRowsAbsent` + `verifySyntheticUsersAbsent` before throwing a single combined failure. Partial-setup failures trigger the same cleanup and rethrow a combined `[stage3c:setup] … / [stage3c:setup:cleanup] …` message.
 - `scripts/verify-stage3c-fixture-source.ts` is a checked-in scan that fails on unsafe casts, swallowed errors, missing exports, cross-society misassignment, TODO/placeholder markers, generic `submitOfflinePayment`, or browser-controlled `actorRole`.
-- New contract suite `tests/unit/billing-stage3c-runtime-fixtures.test.ts` (25 tests) pins the strict helper behavior and source invariants. Full unit total is **883 passing / 5 skipped** across 47 files. Typecheck, build, and bundle-secret scan exit 0.
+- New contract suite `tests/unit/billing-stage3c-runtime-fixtures.test.ts` (53 tests) pins strict-helper behavior, extractRpcId UUID validation, pagination validation, `verifySyntheticUsersAbsent` pagination behavior with mocked `listUsers`, secret redaction across all assertion helpers, and every source invariant below.
+
+**Final fixture exactness corrections (this run)**
+- `extractRpcId(label, data)` now strictly validates a trimmed UUID from a bare string, `{ id }`, or `{ payment_id }`; throws labeled errors for null/empty/whitespace/malformed/object/array/number inputs; never returns `""`. Every submission helper returns a validated UUID and pushes it unconditionally into tracking.
+- `ScenarioHelpers.getResidentPaymentHistory(actor, options?)` and `searchOpenBills(actor, societyId, options?)` accept runtime `limit`, `offset`, and `query` with strict `validatePagination` bounds (resident 1–200, search 1–50; society_id validated as UUID; query ≤120 chars). The future live matrix can drive limit=1 / offset=1 / bill-number / flat-number scenarios without touching the fixture.
+- Receipt-sequence keys are derived from the ACTUAL `payment_receipts.created_at` of the verified/void receipts (UTC `YYYY*100+MM`), then re-queried via exact composite key against `payment_receipt_month_sequences` to confirm the row exists before tracking. The pre-emptive month push is gone. Duplicate composite keys are deduped for cleanup and verification.
+- Cleanup deletes monthly sequence rows by exact `(society_id, year_month)`; never by society_id alone. Legacy `payment_receipt_sequences` is no longer referenced anywhere in the fixture. Broad fallbacks (`user_roles.in("society_id", ...)`, `flat_residents.in("flat_id", ...)`) are removed — deletion is exclusively by tracked PK.
+- `verifyTrackedRowsAbsent` now checks exact IDs for `payment_receipts`, `payments`, `bill_line_items`, `bills`, `user_role_block_scopes`, `flat_residents`, `flats`, `blocks`, `user_roles`, `societies`, each tracked receipt-sequence composite key, and each audit selector bounded by fixture start time.
+- `verifySyntheticUsersAbsent(admin, userIds, prefix, sink)` paginates `admin.auth.admin.listUsers({ page, perPage })` up to a bounded page count, inspects every `error`, stops on a short page, and reports only a redacted count of remaining `${prefix}-*` emails (never the raw email suffix).
+- `redactMessage(message, sensitiveValues?)` scrubs JWT-shaped tokens, `sb_secret_*`/`sb_publishable_*`, `Authorization`/`Bearer` values, `cookie`/`set-cookie`/`session`/`refresh_token`/`access_token` values, `service_role=`/`password=` assignments, and any explicit sensitive values (env-derived keys + synthetic passwords registered at setup). Applied inside `assertSupabaseResult`, `assertSupabaseSingleResult`, `assertAuthAdminResult`, every scenario-helper RPC error, `collectCleanupResult`, and the combined setup/cleanup rethrow.
+- Society A is explicitly `layout: "structured"` + `structure_mode: "structured"`; Society B is explicitly `layout: "serial"` + `structure_mode: "serial"`.
+- Every fixture bill has a tracked `bill_line_items` row with `kind: "maintenance"` (schema `CHECK (kind IN ('maintenance','additional'))`), amount asserted to equal the bill amount. The prior invalid `kind: "charge"` is gone.
+- Audit selectors record a fixture-time `since` ISO timestamp captured before any mutation; both cleanup and verification use `gte("created_at", sel.since)` so unrelated historical audit rows are not touched.
+
+**Local totals (this run)**
+- Focused fixture suite: **53 passed / 0 failed**.
+- Manifest / boundary / full non-live totals: **912 passed / 19 skipped / 11 todo across 49 files** (`vitest --exclude tests/integration/billing-stage3c-live.test.ts --exclude tests/e2e/**`).
+- `bunx tsgo --noEmit`: clean.
+- `bun run build`: succeeded (dist/client + dist/server emitted).
+- `bun scripts/verify-client-bundle-secrets.ts`: no server-only indicators found in 906 client files.
+- `bun scripts/verify-stage3c-fixture-source.ts`: ok.
+- Live integration run and Playwright journeys still cannot execute inside Lovable (no Docker → no isolated Supabase); the exit gate remains the GitHub Actions workflow.
 
 Honestly open (next Stage 3C focused runs, in order):
 - Migrate `tests/integration/billing-stage3c-live.test.ts` onto the shared fixture and implement the 93 manifest-driven behavioral bodies.

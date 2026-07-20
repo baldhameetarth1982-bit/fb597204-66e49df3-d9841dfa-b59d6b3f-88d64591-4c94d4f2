@@ -321,8 +321,10 @@ must(
   /"localhost"[\s\S]{0,120}"127\.0\.0\.1"/.test(src),
   "STAGE3C_ALLOWED_HOSTS must include localhost + 127.0.0.1",
 );
+// Only allowlist doc-mentions of `.supabase.co` are tolerated. Actual
+// URLs (http(s)://…supabase.co) MUST NOT appear.
 mustNot(
-  /\.supabase\.co/,
+  /https?:\/\/[^\s"'`]*\.supabase\.co/,
   "hosted supabase.co URL must not appear in fixture source",
 );
 

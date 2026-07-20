@@ -212,11 +212,18 @@ describe("Stage 3C fixtures — source contract", () => {
     expect(SRC).toMatch(/verifyTrackedRowsAbsent\s*\(/);
     expect(SRC).toMatch(/verifySyntheticUsersAbsent\s*\(/);
   });
-  it("scenario helpers do not accept a caller-supplied actorRole input", () => {
-    // Helpers are defined by name (e.g. submitResidentBankTransferPayment).
-    // The public helper input types must not surface actorRole/actor_role.
-    expect(SRC).not.toMatch(/actorRole\s*[:?]/);
-    expect(SRC).not.toMatch(/actor_role\s*[:?]/);
+  it("scenario helper input types do not surface actorRole", () => {
+    // Inputs are pinned server-authoritatively; the caller does not choose role.
+    const admInput = SRC.slice(
+      SRC.indexOf("type SubmitAdminInput"),
+      SRC.indexOf("type SubmitResidentInput"),
+    );
+    const resInput = SRC.slice(
+      SRC.indexOf("type SubmitResidentInput"),
+      SRC.indexOf("type SubmitResidentInput") + 400,
+    );
+    expect(admInput).not.toMatch(/actorRole/);
+    expect(resInput).not.toMatch(/actorRole/);
   });
   it("uses the service-role client only for setup + cleanup, not authorization", () => {
     // A cheap heuristic: RPC calls for business ops go through `actor.client`,

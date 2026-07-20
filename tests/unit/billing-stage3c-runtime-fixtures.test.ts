@@ -194,7 +194,7 @@ describe("Stage 3C — redactMessage", () => {
 
 // ---------------------------------------------------------------------------
 // Real behavioral tests — invoke exported buildScenarioHelpers with a mocked
-// SyntheticUser.client.rpc. No manual dispatch mirror.
+// SyntheticUser.client.rpc. No manual mirror implementation.
 // ---------------------------------------------------------------------------
 
 type RpcCall = { fn: string; args: unknown };

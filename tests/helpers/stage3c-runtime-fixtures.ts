@@ -380,10 +380,10 @@ function buildScenarioHelpers(admin: SupabaseClient): ScenarioHelpers {
         _reference_no: input.referenceNo ?? null,
         _notes: input.notes ?? null,
         _idempotency_key: input.idempotencyKey,
-        _actor_role: "society_admin",
+        _actor_role: "admin",
       });
       if (error) throw new Error(`[stage3c:submitAdminCash] ${extractErrorMessage(error)}`);
-      return String((data as { id?: string } | string | null) ?? "");
+      return extractRpcId(data);
     },
     async submitAdminBankTransferPayment(input) {
       const { data, error } = await input.actor.client.rpc("submit_offline_payment", {
@@ -394,10 +394,10 @@ function buildScenarioHelpers(admin: SupabaseClient): ScenarioHelpers {
         _reference_no: input.referenceNo ?? null,
         _notes: input.notes ?? null,
         _idempotency_key: input.idempotencyKey,
-        _actor_role: "society_admin",
+        _actor_role: "admin",
       });
       if (error) throw new Error(`[stage3c:submitAdminBank] ${extractErrorMessage(error)}`);
-      return String((data as { id?: string } | string | null) ?? "");
+      return extractRpcId(data);
     },
     async submitResidentBankTransferPayment(input) {
       const { data, error } = await input.actor.client.rpc("submit_offline_payment", {
@@ -411,7 +411,7 @@ function buildScenarioHelpers(admin: SupabaseClient): ScenarioHelpers {
         _actor_role: "resident",
       });
       if (error) throw new Error(`[stage3c:submitResidentBank] ${extractErrorMessage(error)}`);
-      return String((data as { id?: string } | string | null) ?? "");
+      return extractRpcId(data);
     },
     async verifyPayment(actor, paymentId, notes) {
       const { error } = await actor.client.rpc("verify_offline_payment", {
@@ -449,7 +449,11 @@ function buildScenarioHelpers(admin: SupabaseClient): ScenarioHelpers {
       return data;
     },
     async getResidentPaymentHistory(actor) {
-      const { data, error } = await actor.client.rpc("get_resident_payments_v1");
+      // `get_resident_payments_v1` requires _limit and _offset (see types.ts).
+      const { data, error } = await actor.client.rpc("get_resident_payments_v1", {
+        _limit: 50,
+        _offset: 0,
+      });
       if (error) throw new Error(`[stage3c:getResidentPayments] ${extractErrorMessage(error)}`);
       return data;
     },
@@ -457,6 +461,8 @@ function buildScenarioHelpers(admin: SupabaseClient): ScenarioHelpers {
       const { data, error } = await actor.client.rpc("search_society_open_bills", {
         _society_id: societyId,
         _query: query ?? "",
+        _limit: 25,
+        _offset: 0,
       });
       if (error) throw new Error(`[stage3c:searchOpenBills] ${extractErrorMessage(error)}`);
       return data;

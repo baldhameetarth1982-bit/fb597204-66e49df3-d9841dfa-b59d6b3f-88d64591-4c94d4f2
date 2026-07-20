@@ -165,7 +165,7 @@ export async function collectCleanupResult(
  */
 export function formatCleanupFailures(fails: CleanupFailure[]): string {
   if (fails.length === 0) return "";
-  const lines = fails.map((f) => `  - ${f.label}: ${f.message}`);
+  const lines = fails.map((f) => `  - ${f.label}: ${redactMessage(f.message)}`);
   return `Stage 3C fixture teardown had ${fails.length} failure(s):\n${lines.join("\n")}`;
 }
 

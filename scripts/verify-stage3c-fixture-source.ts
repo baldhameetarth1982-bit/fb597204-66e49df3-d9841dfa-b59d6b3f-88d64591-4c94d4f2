@@ -359,7 +359,7 @@ must(
 // ---- Unit-test file discipline -------------------------------------------
 const TEST_FILE = "tests/unit/billing-stage3c-runtime-fixtures.test.ts";
 const testSrc = readFileSync(join(process.cwd(), TEST_FILE), "utf8");
-mustNot.call(null, /manual dispatch mirror/i, "");
+
 {
   const banned: Array<[RegExp, string]> = [
     [/manual dispatch mirror/i, "test contains 'manual dispatch mirror' misleading claim"],

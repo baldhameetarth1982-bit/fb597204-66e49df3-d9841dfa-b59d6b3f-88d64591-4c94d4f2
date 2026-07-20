@@ -55,6 +55,35 @@ function extractErrorMessage(err: unknown): string {
 }
 
 /**
+ * Mirrors production `extractRpcId` in `src/lib/billing-config.functions.ts`.
+ * Pulls a canonical UUID out of an RPC response that may be a bare string,
+ * `{ id }`, or `{ payment_id }`. Returns `""` when nothing usable is present
+ * so callers can detect a missing id instead of stringifying `[object Object]`.
+ */
+export function extractRpcId(data: unknown): string {
+  if (typeof data === "string") return data;
+  if (data && typeof data === "object") {
+    const rec = data as Record<string, unknown>;
+    if (typeof rec.id === "string") return rec.id;
+    if (typeof rec.payment_id === "string") return rec.payment_id;
+  }
+  return "";
+}
+
+/**
+ * Redact JWT-shaped tokens, sb_ keys, and obvious password/service_role
+ * labels before surfacing a cleanup message to test logs. Used by
+ * {@link formatCleanupFailures}.
+ */
+export function redactMessage(msg: string): string {
+  return msg
+    .replace(/eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{4,}/g, "[REDACTED_JWT]")
+    .replace(/sb_(?:secret|publishable)_[A-Za-z0-9_-]+/g, "[REDACTED_SB_KEY]")
+    .replace(/service[_-]?role["'\s:=]+[A-Za-z0-9_.\-]+/gi, "service_role=[REDACTED]")
+    .replace(/password["'\s:=]+[^\s"']+/gi, "password=[REDACTED]");
+}
+
+/**
  * Await a Supabase query builder, inspect its resolved `.error`, and throw
  * a labeled `Error` when non-null. Returns `data` on success.
  */

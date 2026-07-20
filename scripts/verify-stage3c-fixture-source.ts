@@ -188,13 +188,24 @@ mustNot(
 );
 
 // ---- Confirmed receipt-sequence derivation -------------------------------
+// Both the verified and the void receipt paths MUST route through the
+// canonical confirmReceiptSequenceKey helper. No raw {society_id,
+// year_month} push is allowed for the void receipt.
 must(
-  /receiptMonthCode\(verifiedReceiptRow\.created_at\)/.test(src),
-  "must derive year_month from actual receipt created_at",
+  /export async function confirmReceiptSequenceKey\b/.test(src),
+  "must export the canonical confirmReceiptSequenceKey helper",
 );
 must(
-  /select:receiptSequence/.test(src),
-  "must confirm the sequence row exists after receipt creation",
+  /confirmReceiptSequenceKey\([\s\S]{0,300}verifiedReceiptRow\.created_at/.test(src),
+  "verified receipt path must call confirmReceiptSequenceKey with verifiedReceiptRow.created_at",
+);
+must(
+  /confirmReceiptSequenceKey\([\s\S]{0,300}voidReceiptRow\.created_at/.test(src),
+  "void receipt path must call confirmReceiptSequenceKey with voidReceiptRow.created_at",
+);
+mustNot(
+  /receiptSequences\.push\(\{\s*society_id:\s*societyA,\s*year_month:\s*voidYm/,
+  "void receipt path must not push a raw {society_id, year_month} without confirmation",
 );
 
 // ---- verifyTrackedRowsAbsent must cover exact IDs -----------------------

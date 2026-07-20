@@ -296,7 +296,7 @@ must(
   "validateStage3CPagination must be exported for direct testing",
 );
 must(
-  /export function fetchRemainingTrackedIds\(/.test(src),
+  /export (async )?function fetchRemainingTrackedIds\(/.test(src),
   "fetchRemainingTrackedIds must be exported for direct testing",
 );
 must(

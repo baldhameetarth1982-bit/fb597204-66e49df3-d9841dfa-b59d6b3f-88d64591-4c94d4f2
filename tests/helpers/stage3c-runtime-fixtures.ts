@@ -858,7 +858,16 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
 
     // ---- Roles --------------------------------------------------------
     // Note: unrelatedResident is a resident of SOCIETY B, not A.
-    const roleRows = [
+    // Roles are inserted one-by-one so each row PK is tracked exactly, and
+    // teardown deletes by tracked id — never by the broader society_id.
+    type RoleRow = {
+      user_id: string;
+      role: string;
+      society_id: string;
+      is_active: boolean;
+      block_id?: string;
+    };
+    const roleRows: RoleRow[] = [
       { user_id: adminA1.id, role: "society_admin", society_id: societyA, is_active: true },
       { user_id: adminA2.id, role: "society_admin", society_id: societyA, is_active: true },
       { user_id: adminB.id, role: "society_admin", society_id: societyB, is_active: true },
@@ -884,13 +893,37 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
         is_active: true,
       },
     ];
-    await assertSupabaseResult("insert:user_roles", admin.from("user_roles").insert(roleRows));
+    let blockAdminRoleId = "";
     for (const r of roleRows) {
+      const inserted = await assertSupabaseSingleResult<{ id: string }>(
+        `insert:user_role:${r.role}:${r.user_id.slice(0, 8)}`,
+        admin.from("user_roles").insert(r).select("id").single(),
+      );
+      tracked.userRoleIds.push(inserted.id);
       tracked.userRoles.push({
         user_id: r.user_id,
         role: r.role,
         society_id: r.society_id,
       });
+      if (r.role === "block_admin") blockAdminRoleId = inserted.id;
+    }
+
+    // ---- Block Admin scope (Stage 2C invariant: scoped to blockA) ----
+    if (blockAdminRoleId) {
+      const scope = await assertSupabaseSingleResult<{ id: string }>(
+        "insert:user_role_block_scope",
+        admin
+          .from("user_role_block_scopes")
+          .insert({
+            role_id: blockAdminRoleId,
+            society_id: societyA,
+            block_id: blockA,
+            is_active: true,
+          })
+          .select("id")
+          .single(),
+      );
+      tracked.userRoleBlockScopeIds.push(scope.id);
     }
 
     // ---- Flat residency ----------------------------------------------
@@ -917,11 +950,12 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
         is_active: true,
       },
     ];
-    await assertSupabaseResult(
-      "insert:flat_residents",
-      admin.from("flat_residents").insert(residencyRows),
-    );
     for (const r of residencyRows) {
+      const inserted = await assertSupabaseSingleResult<{ id: string }>(
+        `insert:flat_resident:${r.flat_id.slice(0, 8)}:${r.user_id.slice(0, 8)}`,
+        admin.from("flat_residents").insert(r).select("id").single(),
+      );
+      tracked.flatResidentIds.push(inserted.id);
       tracked.flatResidents.push({ flat_id: r.flat_id, user_id: r.user_id });
     }
 
@@ -954,6 +988,22 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
           .single(),
       );
       tracked.billIds.push(row.id);
+      // One canonical maintenance line item per bill; tracked for teardown.
+      const lineItem = await assertSupabaseSingleResult<{ id: string }>(
+        `insert:bill_line_item:${label}`,
+        admin
+          .from("bill_line_items")
+          .insert({
+            bill_id: row.id,
+            society_id: societyA,
+            kind: "charge",
+            description: `Maintenance ${label}`,
+            amount,
+          })
+          .select("id")
+          .single(),
+      );
+      tracked.billLineItemIds.push(lineItem.id);
       return row.id;
     }
 

@@ -1,10 +1,11 @@
 /**
  * Stage 3C — shared runtime fixture strict-helper contract tests.
  *
- * Non-live: exercise strict result/cleanup/formatter helpers and
- * behavioral contracts (extractRpcId, pagination, redaction) using
- * controlled fakes. The full live fixture only runs against an isolated
- * Supabase stack in GitHub Actions.
+ * Non-live. Behavioral tests invoke the REAL exported helper factory
+ * (`buildScenarioHelpers`) and the REAL exported pagination validator
+ * (`validateStage3CPagination`); no manual mirror implementation lives
+ * in this file. Source-contract regressions are labeled SOURCE and are
+ * NOT counted as behavioral pagination proof.
  */
 import { describe, it, expect, vi } from "vitest";
 import { readFileSync } from "node:fs";
@@ -18,8 +19,18 @@ import {
   extractRpcId,
   redactMessage,
   verifySyntheticUsersAbsent,
+  buildScenarioHelpers,
+  validateStage3CPagination,
+  isStage3CHostAllowed,
+  STAGE3C_ALLOWED_HOSTS,
+  STAGE3C_LIST_USERS_PAGE_CAP,
+  fetchRemainingTrackedIds,
+  confirmReceiptSequenceKey,
+  stage3cReceiptMonthCode,
   type CleanupFailure,
+  type SyntheticUser,
 } from "@/../tests/helpers/stage3c-runtime-fixtures";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 const ROOT = process.cwd();
 const SRC = readFileSync(

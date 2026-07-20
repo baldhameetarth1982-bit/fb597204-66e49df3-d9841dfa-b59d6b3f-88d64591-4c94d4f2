@@ -199,7 +199,7 @@ must(
 
 // ---- verifyTrackedRowsAbsent must cover exact IDs -----------------------
 must(
-  /check\("user_role_block_scopes",\s*"user_role_block_scopes",\s*"id",\s*tracked\.userRoleBlockScopeIds\)/.test(
+  /check\(\s*"user_role_block_scopes",\s*"user_role_block_scopes",\s*"id",\s*tracked\.userRoleBlockScopeIds/.test(
     src,
   ),
   "verifyTrackedRowsAbsent must verify user_role_block_scopes by exact id",

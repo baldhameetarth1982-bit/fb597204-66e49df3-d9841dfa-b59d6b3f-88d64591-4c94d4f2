@@ -172,6 +172,8 @@ describe("Stage 3C fixtures — source contract", () => {
       "formatCleanupFailures",
       "verifyTrackedRowsAbsent",
       "verifySyntheticUsersAbsent",
+      "extractRpcId",
+      "redactMessage",
     ]) {
       expect(SRC).toMatch(new RegExp(`export\\s+(async\\s+)?function\\s+${name}\\b`));
     }
@@ -181,9 +183,12 @@ describe("Stage 3C fixtures — source contract", () => {
       "authUserIds",
       "societyIds",
       "userRoles",
+      "userRoleIds",
+      "userRoleBlockScopeIds",
       "blockIds",
       "flatIds",
       "flatResidents",
+      "flatResidentIds",
       "billIds",
       "billLineItemIds",
       "paymentIds",
@@ -194,26 +199,60 @@ describe("Stage 3C fixtures — source contract", () => {
     for (const k of req) expect(SRC).toContain(k);
   });
   it("assigns unrelatedResident to Society B (not A)", () => {
-    // The role row for unrelatedResident must reference societyB.
     const line =
       SRC.match(/user_id:\s*unrelatedResident\.id[\s\S]{0,120}?society_id:\s*(\w+)/) ??
       [];
     expect(line[1]).toBe("societyB");
   });
   it("assigns unrelatedFlat to Society B (serial mode, block_id null)", () => {
-    // Search for the insert block of unrelatedFlat.
     const idx = SRC.indexOf("insert:unrelatedFlat");
     expect(idx).toBeGreaterThan(-1);
     const block = SRC.slice(idx, idx + 400);
     expect(block).toMatch(/society_id:\s*societyB/);
     expect(block).toMatch(/block_id:\s*null/);
   });
+  it("configures society layouts explicitly (structured / serial)", () => {
+    expect(SRC).toMatch(/name:\s*`\$\{prefix\}-A`[\s\S]{0,180}layout:\s*"structured"/);
+    expect(SRC).toMatch(/name:\s*`\$\{prefix\}-B`[\s\S]{0,180}layout:\s*"serial"/);
+  });
+  it("pins admin submissions to `_actor_role: \"admin\"`", () => {
+    expect(SRC).not.toMatch(/_actor_role:\s*"society_admin"/);
+    expect(SRC).toMatch(/submitAdminCashPayment[\s\S]{0,600}_actor_role:\s*"admin"/);
+    expect(SRC).toMatch(/submitAdminBankTransferPayment[\s\S]{0,600}_actor_role:\s*"admin"/);
+  });
+  it("uses extractRpcId for submit-payment return values", () => {
+    // No `[object Object]` risk via String(objectLiteral).
+    expect(SRC).not.toMatch(/String\(\(data as \{ id\?: string \}/);
+    expect(SRC).toMatch(/return\s+extractRpcId\(data\)/);
+  });
+  it("passes pagination arguments to paginated RPCs", () => {
+    expect(SRC).toMatch(/rpc\("get_resident_payments_v1"[\s\S]{0,200}_limit:\s*\d+/);
+    expect(SRC).toMatch(/rpc\("search_society_open_bills"[\s\S]{0,200}_limit:\s*\d+/);
+  });
+  it("inserts bill_line_items and tracks their ids", () => {
+    expect(SRC).toMatch(/from\("bill_line_items"\)\s*\.insert/);
+    expect(SRC).toMatch(/tracked\.billLineItemIds\.push/);
+  });
+  it("tracks exact user_roles and flat_residents row PKs", () => {
+    expect(SRC).toMatch(/tracked\.userRoleIds\.push/);
+    expect(SRC).toMatch(/tracked\.flatResidentIds\.push/);
+  });
+  it("provisions and tracks a user_role_block_scopes row for blockAdmin", () => {
+    expect(SRC).toMatch(/from\("user_role_block_scopes"\)\s*\.insert/);
+    expect(SRC).toMatch(/tracked\.userRoleBlockScopeIds\.push/);
+  });
+  it("cleanup deletes user_roles by tracked id, not by society_id blast radius", () => {
+    // The exact-id branch appears first in cleanup.
+    const idx = SRC.indexOf('"delete:user_roles"');
+    expect(idx).toBeGreaterThan(-1);
+    const nearby = SRC.slice(idx, idx + 400);
+    expect(nearby).toMatch(/\.in\("id",\s*tracked\.userRoleIds\)/);
+  });
   it("cleanup path invokes post-cleanup verification helpers", () => {
     expect(SRC).toMatch(/verifyTrackedRowsAbsent\s*\(/);
     expect(SRC).toMatch(/verifySyntheticUsersAbsent\s*\(/);
   });
   it("scenario helper input types do not surface actorRole", () => {
-    // Inputs are pinned server-authoritatively; the caller does not choose role.
     const admInput = SRC.slice(
       SRC.indexOf("type SubmitAdminInput"),
       SRC.indexOf("type SubmitResidentInput"),
@@ -226,14 +265,26 @@ describe("Stage 3C fixtures — source contract", () => {
     expect(resInput).not.toMatch(/actorRole/);
   });
   it("uses the service-role client only for setup + cleanup, not authorization", () => {
-    // A cheap heuristic: RPC calls for business ops go through `actor.client`,
-    // not `admin.rpc`.
     expect(SRC).toMatch(/actor\.client\.rpc\("submit_offline_payment"/);
     expect(SRC).toMatch(/actor\.client\.rpc\("verify_offline_payment"/);
     expect(SRC).toMatch(/actor\.client\.rpc\("reject_offline_payment"/);
     expect(SRC).toMatch(/actor\.client\.rpc\("reverse_offline_payment"/);
     expect(SRC).not.toMatch(/admin\.rpc\("submit_offline_payment"/);
     expect(SRC).not.toMatch(/admin\.rpc\("verify_offline_payment"/);
+  });
+  it("formatCleanupFailures redacts JWT-shaped tokens and sb_ keys", async () => {
+    const { formatCleanupFailures } = await import(
+      "@/../tests/helpers/stage3c-runtime-fixtures"
+    );
+    const msg = formatCleanupFailures([
+      { label: "x", message: "boom eyJabcdefgh.ijklmnop.qrstuvwx and sb_secret_ZZZZZZZZ" },
+      { label: "y", message: "service_role=abc.def password=hunter2" },
+    ]);
+    expect(msg).toMatch(/\[REDACTED_JWT\]/);
+    expect(msg).toMatch(/\[REDACTED_SB_KEY\]/);
+    expect(msg).toMatch(/service_role=\[REDACTED\]/);
+    expect(msg).toMatch(/password=\[REDACTED\]/);
+    expect(msg).not.toMatch(/hunter2/);
   });
   it("does not embed the protected society literal", () => {
     const protectedId = process.env.SOCIOHUB_PROTECTED_SOCIETY_ID ?? "";

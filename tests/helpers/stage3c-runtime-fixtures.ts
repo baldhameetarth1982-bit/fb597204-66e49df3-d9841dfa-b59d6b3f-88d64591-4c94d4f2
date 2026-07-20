@@ -634,11 +634,28 @@ async function strictCleanup(
       admin.from("bills").delete().in("id", tracked.billIds),
       fails,
     );
-  if (tracked.flatResidents.length) {
+  if (tracked.flatResidentIds.length) {
+    await collectCleanupResult(
+      "delete:flat_residents",
+      admin.from("flat_residents").delete().in("id", tracked.flatResidentIds),
+      fails,
+    );
+  } else if (tracked.flatResidents.length) {
+    // Fallback for older callers that only tracked composite keys.
     const flatIds = Array.from(new Set(tracked.flatResidents.map((k) => k.flat_id)));
     await collectCleanupResult(
       "delete:flat_residents",
       admin.from("flat_residents").delete().in("flat_id", flatIds),
+      fails,
+    );
+  }
+  if (tracked.userRoleBlockScopeIds.length) {
+    await collectCleanupResult(
+      "delete:user_role_block_scopes",
+      admin
+        .from("user_role_block_scopes")
+        .delete()
+        .in("id", tracked.userRoleBlockScopeIds),
       fails,
     );
   }
@@ -654,7 +671,13 @@ async function strictCleanup(
       admin.from("blocks").delete().in("id", tracked.blockIds),
       fails,
     );
-  if (tracked.userRoles.length) {
+  if (tracked.userRoleIds.length) {
+    await collectCleanupResult(
+      "delete:user_roles",
+      admin.from("user_roles").delete().in("id", tracked.userRoleIds),
+      fails,
+    );
+  } else if (tracked.userRoles.length) {
     const societyIds = Array.from(new Set(tracked.userRoles.map((k) => k.society_id)));
     await collectCleanupResult(
       "delete:user_roles",

@@ -57,7 +57,12 @@ must(
   "extractRpcId must take (label, data) and return a validated string",
 );
 must(/UUID_RE/.test(src) && /malformed UUID/.test(src), "extractRpcId must validate UUID shape");
-mustNot(/return\s+""\s*;/, "extractRpcId or helper returns empty string");
+// extractRpcId must never return empty string — enforced structurally by the
+// `empty id` throw. formatCleanupFailures may return "" for empty input.
+must(
+  /extractRpcId[\s\S]{0,600}throw new Error[\s\S]{0,100}empty id/.test(src),
+  "extractRpcId must throw on empty id (never return \"\")",
+);
 
 // ---- Cross-society correctness -------------------------------------------
 must(

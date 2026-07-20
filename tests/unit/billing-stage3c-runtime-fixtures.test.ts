@@ -715,9 +715,17 @@ describe("Stage 3C fixtures — source contract", () => {
       /check\(\s*"user_roles",\s*"user_roles",\s*"id",\s*tracked\.userRoleIds/,
     );
   });
-  it("receipt sequence key derived from actual receipt.created_at", () => {
-    expect(SRC).toContain("receiptMonthCode(verifiedReceiptRow.created_at)");
-    expect(SRC).toContain("select:receiptSequence");
+  it("SOURCE: both receipt paths go through confirmReceiptSequenceKey", () => {
+    // Verified path
+    expect(SRC).toMatch(
+      /confirmReceiptSequenceKey\([\s\S]{0,200}verifiedReceiptRow\.created_at/,
+    );
+    // Void path
+    expect(SRC).toMatch(
+      /confirmReceiptSequenceKey\([\s\S]{0,200}voidReceiptRow\.created_at/,
+    );
+    // No direct raw push of {society_id, year_month} for the void receipt.
+    expect(SRC).not.toMatch(/receiptSequences\.push\(\{\s*society_id:\s*societyA,\s*year_month:\s*voidYm/);
   });
   it("listUsers paginates with explicit page/perPage", () => {
     expect(SRC).toMatch(/admin\.auth\.admin\.listUsers\(\{\s*page,\s*perPage\s*\}\)/);

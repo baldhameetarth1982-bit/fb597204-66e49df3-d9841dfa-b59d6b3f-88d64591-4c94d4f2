@@ -193,102 +193,392 @@ describe("Stage 3C — redactMessage", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Behavioral — pagination + submit helper dispatch (mocked RPC client)
+// Real behavioral tests — invoke exported buildScenarioHelpers with a mocked
+// SyntheticUser.client.rpc. No manual dispatch mirror.
 // ---------------------------------------------------------------------------
 
-async function loadHelpers() {
-  const mod = await import("@/../tests/helpers/stage3c-runtime-fixtures");
-  // The internal helper factory is not exported; reproduce dispatch by calling
-  // the exported helper via a fake SyntheticUser whose client is a mock.
-  return mod;
-}
+type RpcCall = { fn: string; args: unknown };
 
-function fakeUser(rpc: (fn: string, args: unknown) => unknown) {
-  return {
+function makeMockedActor(
+  rpcImpl: (fn: string, args: unknown) => { data: unknown; error: unknown },
+): { actor: SyntheticUser; calls: RpcCall[]; rpc: ReturnType<typeof vi.fn> } {
+  const calls: RpcCall[] = [];
+  const rpc = vi.fn(async (fn: string, args: unknown) => {
+    calls.push({ fn, args });
+    return rpcImpl(fn, args);
+  });
+  const actor = {
     id: UUID_A,
-    email: "x@example.test",
+    email: "resident@example.test",
     password: "p",
-    client: { rpc: vi.fn(rpc) },
-  } as unknown as import("@/../tests/helpers/stage3c-runtime-fixtures").SyntheticUser;
+    client: { rpc } as unknown as SupabaseClient,
+  } as SyntheticUser;
+  return { actor, calls, rpc };
 }
 
-/**
- * We can't access the internal `buildScenarioHelpers` directly, but we can
- * mimic its RPC-dispatch surface by driving the exact same client.rpc calls
- * through the exported helper factory via structural typing. Because the
- * factory is not exported, we cover its behavior indirectly by asserting
- * validate/dispatch shape through the public source contract AND by
- * exercising the reusable pagination validator in the source.
- *
- * The behavioral coverage below imports the internal `validatePagination`
- * shape by instantiating a helper indirectly through a manual dispatch
- * mirror. That mirror is intentionally minimal: it uses the same UUID
- * regex + argument order that the fixture exports must call.
- */
+const adminStub = {} as SupabaseClient;
 
-describe("Stage 3C — pagination validator contract", () => {
-  it("SOURCE: default resident pagination values", () => {
-    // The source ships defaults limit=50 offset=0 for get_resident_payments_v1.
-    expect(SRC).toMatch(/validatePagination\(\s*"getResidentPaymentHistory"[\s\S]{0,200}limit:\s*50/);
+describe("Stage 3C — validateStage3CPagination (real validator)", () => {
+  const defaults = { limit: 50, offset: 0, max: 200 };
+  it("returns defaults when no options passed", () => {
+    expect(validateStage3CPagination("t", undefined, defaults)).toEqual({ limit: 50, offset: 0 });
   });
-  it("SOURCE: default search pagination values", () => {
-    expect(SRC).toMatch(/validatePagination\(\s*"searchOpenBills"[\s\S]{0,200}limit:\s*20/);
+  it("returns custom values within range", () => {
+    expect(validateStage3CPagination("t", { limit: 25, offset: 10 }, defaults)).toEqual({
+      limit: 25,
+      offset: 10,
+    });
   });
-  it("SOURCE: resident RPC forwards runtime limit/offset", () => {
-    expect(SRC).toMatch(
-      /rpc\("get_resident_payments_v1",\s*\{\s*_limit:\s*limit,\s*_offset:\s*offset/,
-    );
+  it("rejects limit=0", () => {
+    expect(() => validateStage3CPagination("t", { limit: 0 }, defaults)).toThrow(/invalid limit/);
   });
-  it("SOURCE: bill search RPC forwards all four args", () => {
-    expect(SRC).toMatch(
-      /rpc\("search_society_open_bills",\s*\{\s*_society_id:\s*societyId,\s*_query:\s*query,\s*_limit:\s*limit,\s*_offset:\s*offset/,
-    );
+  it("rejects limit above max", () => {
+    expect(() => validateStage3CPagination("t", { limit: 201 }, defaults)).toThrow(/invalid limit/);
   });
-  it("SOURCE: validates society UUID", () => {
-    expect(SRC).toMatch(/invalid society_id/);
+  it("rejects non-integer limit", () => {
+    expect(() => validateStage3CPagination("t", { limit: 1.5 }, defaults)).toThrow(/invalid limit/);
   });
-  it("SOURCE: query length bound", () => {
-    expect(SRC).toMatch(/query too long/);
+  it("rejects negative offset", () => {
+    expect(() => validateStage3CPagination("t", { offset: -1 }, defaults)).toThrow(/invalid offset/);
   });
-  it("SOURCE: limit range 1..200 for resident", () => {
-    expect(SRC).toMatch(/limit:\s*50,\s*offset:\s*0,\s*max:\s*200/);
-  });
-  it("SOURCE: limit range 1..50 for search", () => {
-    expect(SRC).toMatch(/limit:\s*20,\s*offset:\s*0,\s*max:\s*50/);
+  it("rejects non-integer offset", () => {
+    expect(() => validateStage3CPagination("t", { offset: 2.5 }, defaults)).toThrow(/invalid offset/);
   });
 });
 
-// Behavioral dispatch — mirror the helper factory's exact call shape.
-// We build a tiny stub factory that reproduces validatePagination by importing
-// the compiled module and using the same validator through a private surface.
-// This keeps the tests behavioral even though buildScenarioHelpers is internal.
-async function makeStubHelper() {
-  // Because buildScenarioHelpers is internal, we assert the exact contract
-  // by using the mock client's rpc + the public getScenarioHelpers surface via
-  // the setup path is not runnable in unit tests. We therefore rely on the
-  // strict source contract above plus the direct extractRpcId behavioral
-  // tests below which prove the submission helper's return-value pathway.
-  return await loadHelpers();
-}
-
-describe("Stage 3C — submission helper return path (extractRpcId)", () => {
-  it("throws when RPC returns malformed id", async () => {
-    await makeStubHelper();
-    expect(() => extractRpcId("submitAdminCash", { id: "nope" })).toThrow(/malformed/);
+describe("Stage 3C — real getResidentPaymentHistory dispatch", () => {
+  it("sends _limit=50 _offset=0 by default", async () => {
+    const helpers = buildScenarioHelpers(adminStub);
+    const { actor, calls } = makeMockedActor(() => ({ data: [], error: null }));
+    await helpers.getResidentPaymentHistory(actor);
+    expect(calls).toEqual([
+      { fn: "get_resident_payments_v1", args: { _limit: 50, _offset: 0 } },
+    ]);
   });
-  it("returns validated UUID from { id }", () => {
-    expect(extractRpcId("submitAdminCash", { id: UUID_A })).toBe(UUID_A);
+  it("forwards custom limit/offset exactly", async () => {
+    const helpers = buildScenarioHelpers(adminStub);
+    const { actor, calls } = makeMockedActor(() => ({ data: [], error: null }));
+    await helpers.getResidentPaymentHistory(actor, { limit: 1, offset: 1 });
+    expect(calls).toEqual([
+      { fn: "get_resident_payments_v1", args: { _limit: 1, _offset: 1 } },
+    ]);
   });
-  it("returns validated UUID from { payment_id }", () => {
-    expect(extractRpcId("submitResidentBank", { payment_id: UUID_B })).toBe(UUID_B);
+  it.each([
+    ["limit=0", { limit: 0 }],
+    ["limit=201", { limit: 201 }],
+    ["limit non-integer", { limit: 1.5 }],
+    ["offset negative", { offset: -1 }],
+    ["offset non-integer", { offset: 2.5 }],
+  ])("rejects invalid pagination (%s) before RPC", async (_label, opts) => {
+    const helpers = buildScenarioHelpers(adminStub);
+    const { actor, rpc } = makeMockedActor(() => ({ data: [], error: null }));
+    await expect(helpers.getResidentPaymentHistory(actor, opts)).rejects.toThrow();
+    expect(rpc).not.toHaveBeenCalled();
+  });
+  it("redacts RPC errors and throws labeled", async () => {
+    const helpers = buildScenarioHelpers(adminStub);
+    const { actor } = makeMockedActor(() => ({
+      data: null,
+      error: { message: "leak eyJabcd.efgh.ijkl details" },
+    }));
+    await expect(helpers.getResidentPaymentHistory(actor)).rejects.toThrow(
+      /\[stage3c:getResidentPayments\]/,
+    );
+    try {
+      await helpers.getResidentPaymentHistory(actor);
+    } catch (e) {
+      expect((e as Error).message).not.toContain("eyJabcd.efgh.ijkl");
+    }
   });
 });
 
-// Mock the fake user pattern; kept for future live-test wiring.
-void fakeUser;
+describe("Stage 3C — real searchOpenBills dispatch", () => {
+  const societyId = "33333333-3333-4333-8333-333333333333";
+  it("sends defaults exactly", async () => {
+    const helpers = buildScenarioHelpers(adminStub);
+    const { actor, calls } = makeMockedActor(() => ({ data: [], error: null }));
+    await helpers.searchOpenBills(actor, societyId);
+    expect(calls).toEqual([
+      {
+        fn: "search_society_open_bills",
+        args: { _society_id: societyId, _query: "", _limit: 20, _offset: 0 },
+      },
+    ]);
+  });
+  it("forwards query, limit and offset unchanged", async () => {
+    const helpers = buildScenarioHelpers(adminStub);
+    const { actor, calls } = makeMockedActor(() => ({ data: [], error: null }));
+    await helpers.searchOpenBills(actor, societyId, { query: "BILL-2026-01", limit: 5, offset: 2 });
+    expect(calls[0]?.args).toEqual({
+      _society_id: societyId,
+      _query: "BILL-2026-01",
+      _limit: 5,
+      _offset: 2,
+    });
+  });
+  it("passes flat-number query unchanged", async () => {
+    const helpers = buildScenarioHelpers(adminStub);
+    const { actor, calls } = makeMockedActor(() => ({ data: [], error: null }));
+    await helpers.searchOpenBills(actor, societyId, { query: "A-101" });
+    expect((calls[0]?.args as Record<string, unknown>)._query).toBe("A-101");
+  });
+  it("rejects invalid society UUID before RPC", async () => {
+    const helpers = buildScenarioHelpers(adminStub);
+    const { actor, rpc } = makeMockedActor(() => ({ data: [], error: null }));
+    await expect(helpers.searchOpenBills(actor, "not-a-uuid")).rejects.toThrow(
+      /invalid society_id/,
+    );
+    expect(rpc).not.toHaveBeenCalled();
+  });
+  it("rejects query longer than 120 before RPC", async () => {
+    const helpers = buildScenarioHelpers(adminStub);
+    const { actor, rpc } = makeMockedActor(() => ({ data: [], error: null }));
+    await expect(
+      helpers.searchOpenBills(actor, societyId, { query: "x".repeat(121) }),
+    ).rejects.toThrow(/query too long/);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+  it.each([
+    ["limit=0", { limit: 0 }],
+    ["limit=51", { limit: 51 }],
+    ["offset negative", { offset: -1 }],
+  ])("rejects invalid pagination (%s) before RPC", async (_l, opts) => {
+    const helpers = buildScenarioHelpers(adminStub);
+    const { actor, rpc } = makeMockedActor(() => ({ data: [], error: null }));
+    await expect(helpers.searchOpenBills(actor, societyId, opts)).rejects.toThrow();
+    expect(rpc).not.toHaveBeenCalled();
+  });
+  it("redacts RPC errors", async () => {
+    const helpers = buildScenarioHelpers(adminStub);
+    const { actor } = makeMockedActor(() => ({
+      data: null,
+      error: { message: "boom sb_secret_ABCDEFGH" },
+    }));
+    try {
+      await helpers.searchOpenBills(actor, societyId);
+    } catch (e) {
+      expect((e as Error).message).toMatch(/\[stage3c:searchOpenBills\]/);
+      expect((e as Error).message).not.toContain("sb_secret_ABCDEFGH");
+    }
+  });
+});
+
+describe("Stage 3C — real submission helper dispatch", () => {
+  const billId = "44444444-4444-4444-8444-444444444444";
+  const baseArgs = {
+    billId,
+    amount: 100,
+    paymentDate: "2026-02-01",
+    idempotencyKey: "k1",
+  };
+
+  it("submitAdminCashPayment: method=cash, actor=admin, forwards args, accepts bare UUID", async () => {
+    const helpers = buildScenarioHelpers(adminStub);
+    const { actor, calls } = makeMockedActor(() => ({ data: UUID_A, error: null }));
+    const id = await helpers.submitAdminCashPayment({ ...baseArgs, actor });
+    expect(id).toBe(UUID_A);
+    expect(calls[0]?.fn).toBe("submit_offline_payment");
+    const args = calls[0]?.args as Record<string, unknown>;
+    expect(args._method).toBe("cash");
+    expect(args._actor_role).toBe("admin");
+    expect(args._bill_id).toBe(billId);
+    expect(args._amount).toBe(100);
+    expect(args._idempotency_key).toBe("k1");
+  });
+  it("submitAdminCashPayment: accepts { id } shape", async () => {
+    const helpers = buildScenarioHelpers(adminStub);
+    const { actor } = makeMockedActor(() => ({ data: { id: UUID_B }, error: null }));
+    expect(await helpers.submitAdminCashPayment({ ...baseArgs, actor })).toBe(UUID_B);
+  });
+  it("submitAdminCashPayment: throws on malformed id", async () => {
+    const helpers = buildScenarioHelpers(adminStub);
+    const { actor } = makeMockedActor(() => ({ data: { id: "nope" }, error: null }));
+    await expect(helpers.submitAdminCashPayment({ ...baseArgs, actor })).rejects.toThrow(
+      /malformed UUID/,
+    );
+  });
+  it("submitAdminCashPayment: redacts RPC error", async () => {
+    const helpers = buildScenarioHelpers(adminStub);
+    const { actor } = makeMockedActor(() => ({
+      data: null,
+      error: { message: "boom eyJabcd.efgh.ijkl" },
+    }));
+    try {
+      await helpers.submitAdminCashPayment({ ...baseArgs, actor });
+    } catch (e) {
+      expect((e as Error).message).toMatch(/\[stage3c:submitAdminCash\]/);
+      expect((e as Error).message).not.toContain("eyJabcd.efgh.ijkl");
+    }
+  });
+
+  it("submitAdminBankTransferPayment: method=bank_transfer, actor=admin, reference forwarded", async () => {
+    const helpers = buildScenarioHelpers(adminStub);
+    const { actor, calls } = makeMockedActor(() => ({ data: UUID_A, error: null }));
+    await helpers.submitAdminBankTransferPayment({
+      ...baseArgs,
+      actor,
+      referenceNo: "REF-123",
+    });
+    const args = calls[0]?.args as Record<string, unknown>;
+    expect(args._method).toBe("bank_transfer");
+    expect(args._actor_role).toBe("admin");
+    expect(args._reference_no).toBe("REF-123");
+  });
+  it("submitAdminBankTransferPayment: throws on malformed id", async () => {
+    const helpers = buildScenarioHelpers(adminStub);
+    const { actor } = makeMockedActor(() => ({ data: "bad", error: null }));
+    await expect(
+      helpers.submitAdminBankTransferPayment({ ...baseArgs, actor, referenceNo: "R" }),
+    ).rejects.toThrow(/malformed UUID/);
+  });
+
+  it("submitResidentBankTransferPayment: method=bank_transfer, actor=resident, reference required and forwarded", async () => {
+    const helpers = buildScenarioHelpers(adminStub);
+    const { actor, calls } = makeMockedActor(() => ({ data: { payment_id: UUID_B }, error: null }));
+    const id = await helpers.submitResidentBankTransferPayment({
+      ...baseArgs,
+      actor,
+      referenceNo: "RES-REF",
+    });
+    expect(id).toBe(UUID_B);
+    const args = calls[0]?.args as Record<string, unknown>;
+    expect(args._method).toBe("bank_transfer");
+    expect(args._actor_role).toBe("resident");
+    expect(args._reference_no).toBe("RES-REF");
+    // no actorRole surface
+    expect(Object.keys(args)).not.toContain("actorRole");
+  });
+  it("submitResidentBankTransferPayment: throws on malformed id", async () => {
+    const helpers = buildScenarioHelpers(adminStub);
+    const { actor } = makeMockedActor(() => ({ data: { payment_id: "nope" }, error: null }));
+    await expect(
+      helpers.submitResidentBankTransferPayment({ ...baseArgs, actor, referenceNo: "R" }),
+    ).rejects.toThrow(/malformed UUID/);
+  });
+});
 
 // ---------------------------------------------------------------------------
-// Behavioral — verifySyntheticUsersAbsent pagination
+// Behavioral — isolated host allowlist
+// ---------------------------------------------------------------------------
+
+describe("Stage 3C — isStage3CHostAllowed (isolated-host safety)", () => {
+  it("exposes a stable allowlist", () => {
+    expect(STAGE3C_ALLOWED_HOSTS).toContain("127.0.0.1");
+    expect(STAGE3C_ALLOWED_HOSTS).toContain("localhost");
+  });
+  it.each([
+    "http://127.0.0.1:54321",
+    "http://localhost:54321",
+    "http://host.docker.internal:54321",
+    "http://kong:8000",
+  ])("accepts local host: %s", (u) => {
+    expect(isStage3CHostAllowed(u)).toBe(true);
+  });
+  it.each([
+    "https://abcxyz.supabase.co",
+    "https://sociyohub.example.com",
+    "https://prod.supabase.co",
+    "not-a-url",
+    "",
+    "http://8.8.8.8:54321",
+  ])("rejects non-disposable host: %s", (u) => {
+    expect(isStage3CHostAllowed(u)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Behavioral — fetchRemainingTrackedIds reports exact remaining IDs
+// ---------------------------------------------------------------------------
+
+function makeAdminSelectMock(rows: Array<Record<string, unknown>>, error: unknown = null) {
+  return {
+    from: () => ({
+      select: () => ({
+        in: () => ({
+          limit: async () => ({ data: error ? null : rows, error }),
+        }),
+      }),
+    }),
+  } as unknown as SupabaseClient;
+}
+
+describe("Stage 3C — fetchRemainingTrackedIds (exact remaining IDs)", () => {
+  it("returns no remaining when tracked list is empty", async () => {
+    const admin = makeAdminSelectMock([]);
+    const out = await fetchRemainingTrackedIds(admin, "payments", "id", []);
+    expect(out).toEqual({ remaining: [], error: null });
+  });
+  it("returns [] when server returns no rows", async () => {
+    const admin = makeAdminSelectMock([]);
+    const out = await fetchRemainingTrackedIds(admin, "payments", "id", [UUID_A]);
+    expect(out.remaining).toEqual([]);
+  });
+  it("returns the single remaining ID", async () => {
+    const admin = makeAdminSelectMock([{ id: UUID_A }]);
+    const out = await fetchRemainingTrackedIds(admin, "payments", "id", [UUID_A, UUID_B]);
+    expect(out.remaining).toEqual([UUID_A]);
+  });
+  it("returns multiple remaining IDs with correct count", async () => {
+    const admin = makeAdminSelectMock([{ id: UUID_A }, { id: UUID_B }]);
+    const out = await fetchRemainingTrackedIds(admin, "payments", "id", [UUID_A, UUID_B]);
+    expect(out.remaining.sort()).toEqual([UUID_A, UUID_B].sort());
+  });
+  it("ignores unrelated rows returned by the mock", async () => {
+    const admin = makeAdminSelectMock([{ id: "99999999-9999-4999-8999-999999999999" }]);
+    const out = await fetchRemainingTrackedIds(admin, "payments", "id", [UUID_A]);
+    expect(out.remaining).toEqual([]);
+  });
+  it("surfaces query errors", async () => {
+    const admin = makeAdminSelectMock([], { message: "boom" });
+    const out = await fetchRemainingTrackedIds(admin, "payments", "id", [UUID_A]);
+    expect(out.error).toBeTruthy();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Behavioral — confirmReceiptSequenceKey
+// ---------------------------------------------------------------------------
+
+function makeAdminSequenceMock(row: unknown, error: unknown = null) {
+  return {
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          eq: () => ({
+            maybeSingle: async () => ({ data: error ? null : row, error }),
+          }),
+        }),
+      }),
+    }),
+  } as unknown as SupabaseClient;
+}
+
+describe("Stage 3C — confirmReceiptSequenceKey", () => {
+  it("derives year_month from created_at (UTC)", () => {
+    expect(stage3cReceiptMonthCode("2026-02-15T10:00:00.000Z")).toBe(202602);
+  });
+  it("returns the confirmed composite key when the row exists", async () => {
+    const soc = UUID_A;
+    const admin = makeAdminSequenceMock({ society_id: soc, year_month: 202602 });
+    const key = await confirmReceiptSequenceKey(admin, soc, "2026-02-15T10:00:00.000Z", "t");
+    expect(key).toEqual({ society_id: soc, year_month: 202602 });
+  });
+  it("throws when no sequence row exists", async () => {
+    const admin = makeAdminSequenceMock(null);
+    await expect(
+      confirmReceiptSequenceKey(admin, UUID_A, "2026-02-15T10:00:00Z", "t"),
+    ).rejects.toThrow(/no sequence row/);
+  });
+  it("throws (and redacts) on RPC error", async () => {
+    const admin = makeAdminSequenceMock(null, { message: "boom eyJabcd.efgh.ijkl" });
+    await expect(
+      confirmReceiptSequenceKey(admin, UUID_A, "2026-02-15T10:00:00Z", "t"),
+    ).rejects.toThrow(/\[stage3c:t\]/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Behavioral — verifySyntheticUsersAbsent pagination (with fail-closed cap)
 // ---------------------------------------------------------------------------
 
 function makeAdminMock(pages: { users: { email: string | null }[] }[], errorOnPage?: number) {
@@ -310,7 +600,7 @@ function makeAdminMock(pages: { users: { email: string | null }[] }[], errorOnPa
         }),
       },
     },
-  } as unknown as import("@supabase/supabase-js").SupabaseClient;
+  } as unknown as SupabaseClient;
 }
 
 describe("Stage 3C — verifySyntheticUsersAbsent", () => {
@@ -319,14 +609,18 @@ describe("Stage 3C — verifySyntheticUsersAbsent", () => {
     const admin = makeAdminMock([{ users: [] }]);
     await verifySyntheticUsersAbsent(admin, [], "s3c-abc", sink);
     expect(sink.filter((f) => f.label === "verify:auth:prefix")).toHaveLength(0);
+    expect(sink.filter((f) => f.label === "verify:auth:pagination_limit")).toHaveLength(0);
+  });
+  it("completes normally when 2 pages and last page is short", async () => {
+    const full = Array.from({ length: 200 }, (_, i) => ({ email: `other-${i}@x.test` }));
+    const admin = makeAdminMock([{ users: full }, { users: [{ email: "other-last@x.test" }] }]);
+    const sink: CleanupFailure[] = [];
+    await verifySyntheticUsersAbsent(admin, [], "s3c-abc", sink);
+    expect(sink).toHaveLength(0);
   });
   it("flags a matching prefix on page 2 (multi-page)", async () => {
-    // page 1 = full page unrelated, page 2 has one prefix hit
     const full = Array.from({ length: 200 }, (_, i) => ({ email: `other-${i}@x.test` }));
-    const admin = makeAdminMock([
-      { users: full },
-      { users: [{ email: "s3c-abc-res@example.test" }] },
-    ]);
+    const admin = makeAdminMock([{ users: full }, { users: [{ email: "s3c-abc-res@example.test" }] }]);
     const sink: CleanupFailure[] = [];
     await verifySyntheticUsersAbsent(admin, [], "s3c-abc", sink);
     const hit = sink.find((f) => f.label === "verify:auth:prefix");
@@ -334,9 +628,7 @@ describe("Stage 3C — verifySyntheticUsersAbsent", () => {
     expect(hit!.message).toMatch(/1 synthetic/);
   });
   it("does not leak the full remaining email", async () => {
-    const admin = makeAdminMock([
-      { users: [{ email: "s3c-xyz-secret-victim@example.test" }] },
-    ]);
+    const admin = makeAdminMock([{ users: [{ email: "s3c-xyz-secret-victim@example.test" }] }]);
     const sink: CleanupFailure[] = [];
     await verifySyntheticUsersAbsent(admin, [], "s3c-xyz", sink);
     const hit = sink.find((f) => f.label === "verify:auth:prefix");
@@ -348,6 +640,14 @@ describe("Stage 3C — verifySyntheticUsersAbsent", () => {
     const sink: CleanupFailure[] = [];
     await verifySyntheticUsersAbsent(admin, [], "s3c-abc", sink);
     expect(sink.find((f) => f.label === "verify:auth:listUsers")).toBeTruthy();
+  });
+  it("FAILS CLOSED when safety cap is reached with every page full", async () => {
+    const full = Array.from({ length: 200 }, (_, i) => ({ email: `other-${i}@x.test` }));
+    const pages = Array.from({ length: STAGE3C_LIST_USERS_PAGE_CAP }, () => ({ users: full }));
+    const admin = makeAdminMock(pages);
+    const sink: CleanupFailure[] = [];
+    await verifySyntheticUsersAbsent(admin, [], "s3c-abc", sink);
+    expect(sink.find((f) => f.label === "verify:auth:pagination_limit")).toBeTruthy();
   });
 });
 

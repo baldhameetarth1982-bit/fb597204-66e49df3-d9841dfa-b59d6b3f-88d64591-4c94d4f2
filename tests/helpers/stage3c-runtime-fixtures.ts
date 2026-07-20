@@ -18,6 +18,7 @@
  * tracked category, and only then throws a single labeled combined error.
  */
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { z } from "zod";
 
 // ---------------------------------------------------------------------------
 // Sensitive-value redaction registry
@@ -69,13 +70,19 @@ function extractErrorMessage(err: unknown): string {
   }
 }
 
+/**
+ * Canonical strict UUID validator used across the fixture. Uses the
+ * project's existing Zod dependency; supports the RFC 4122 8-4-4-4-12
+ * grammar with variant/version enforcement. Never introduce a new dep.
+ */
+const RpcIdSchema = z.string().trim().uuid();
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Strict UUID extractor for RPC responses. Accepts a bare UUID string,
- * `{ id }`, or `{ payment_id }`; trims and validates the shape; throws
- * a labeled error on anything else. Never returns an empty string and
- * never stringifies arbitrary objects.
+ * `{ id }`, or `{ payment_id }`; trims and validates the shape using
+ * Zod; throws a labeled error on anything else. Never returns an empty
+ * string and never stringifies arbitrary objects.
  */
 export function extractRpcId(label: string, data: unknown): string {
   let raw: unknown = data;
@@ -91,10 +98,11 @@ export function extractRpcId(label: string, data: unknown): string {
   if (trimmed.length === 0) {
     throw new Error(`[stage3c:${label}] empty id in RPC response`);
   }
-  if (!UUID_RE.test(trimmed)) {
+  const parsed = RpcIdSchema.safeParse(trimmed);
+  if (!parsed.success) {
     throw new Error(`[stage3c:${label}] malformed UUID in RPC response`);
   }
-  return trimmed;
+  return parsed.data;
 }
 
 /**
@@ -197,6 +205,34 @@ export type Stage3CEnv = {
   publishableKey: string;
 };
 
+/**
+ * Canonical disposable/local hostnames allowed for the Stage 3C
+ * destructive fixture. Any other host — including normal `*.supabase.co`
+ * projects, custom public HTTPS hosts, or arbitrary URLs — is rejected
+ * before any credential is used. No general bypass env var exists.
+ */
+export const STAGE3C_ALLOWED_HOSTS: readonly string[] = Object.freeze([
+  "localhost",
+  "127.0.0.1",
+  "::1",
+  "host.docker.internal",
+  "kong",
+  "supabase_kong",
+  "supabase-kong",
+]);
+
+export function isStage3CHostAllowed(url: string): boolean {
+  if (typeof url !== "string" || url.length === 0) return false;
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
+  }
+  const host = parsed.hostname.toLowerCase();
+  return STAGE3C_ALLOWED_HOSTS.includes(host);
+}
+
 export function requireStage3CEnv(): Stage3CEnv {
   if (process.env.ALLOW_SOCIOHUB_LIVE_STAGE3C !== "true") {
     throw new Error(
@@ -215,6 +251,11 @@ export function requireStage3CEnv(): Stage3CEnv {
   if (shared && shared === url) {
     throw new Error(
       "Stage 3C fixtures refuse to run against the shared SUPABASE_URL. Use a disposable isolated project.",
+    );
+  }
+  if (!isStage3CHostAllowed(url)) {
+    throw new Error(
+      "Stage 3C fixtures refuse to run against a non-disposable Supabase host. Only local/isolated hostnames are permitted.",
     );
   }
   // Register sensitive credentials/URLs so redactMessage strips them.
@@ -381,7 +422,11 @@ export type SubmitResidentInput = Omit<SubmitAdminInput, "referenceNo"> & {
 // Pagination validation
 // ---------------------------------------------------------------------------
 
-function validatePagination(
+/**
+ * Canonical pagination validator used by every scenario helper. Exported
+ * for direct behavioral testing — do not duplicate this logic in tests.
+ */
+export function validateStage3CPagination(
   label: string,
   opts: PaginationOptions | undefined,
   defaults: { limit: number; offset: number; max: number },
@@ -433,7 +478,7 @@ async function mkUser(
   return { id: user.id, email, password, client };
 }
 
-function buildScenarioHelpers(admin: SupabaseClient): ScenarioHelpers {
+export function buildScenarioHelpers(admin: SupabaseClient): ScenarioHelpers {
   return {
     async submitAdminCashPayment(input) {
       const { data, error } = await input.actor.client.rpc("submit_offline_payment", {
@@ -518,7 +563,7 @@ function buildScenarioHelpers(admin: SupabaseClient): ScenarioHelpers {
       return data;
     },
     async getResidentPaymentHistory(actor, options) {
-      const { limit, offset } = validatePagination("getResidentPaymentHistory", options, {
+      const { limit, offset } = validateStage3CPagination("getResidentPaymentHistory", options, {
         limit: 50,
         offset: 0,
         max: 200,
@@ -541,7 +586,7 @@ function buildScenarioHelpers(admin: SupabaseClient): ScenarioHelpers {
       if (query.length > 120) {
         throw new Error(`[stage3c:searchOpenBills] query too long`);
       }
-      const { limit, offset } = validatePagination("searchOpenBills", options, {
+      const { limit, offset } = validateStage3CPagination("searchOpenBills", options, {
         limit: 20,
         offset: 0,
         max: 50,
@@ -580,8 +625,88 @@ function buildScenarioHelpers(admin: SupabaseClient): ScenarioHelpers {
 }
 
 // ---------------------------------------------------------------------------
+// Canonical confirmed-sequence helper (used for every receipt sequence key).
+// ---------------------------------------------------------------------------
+
+/**
+ * Derive UTC year_month from an ISO timestamp using the same rule the
+ * production RPC uses. Exported for reuse and direct testing.
+ */
+export function stage3cReceiptMonthCode(iso: string): number {
+  const d = new Date(iso);
+  return d.getUTCFullYear() * 100 + (d.getUTCMonth() + 1);
+}
+
+/**
+ * Look up the exact `payment_receipt_month_sequences` row for a society
+ * and a receipt's `created_at`. Fails loudly if the sequence row is
+ * missing or the RPC returned an error. Never mutates tracking; the
+ * caller decides whether to push the confirmed key.
+ *
+ * Every receipt (verified AND void) MUST go through this helper before
+ * its sequence key is tracked. The source scan enforces that neither
+ * receipt path pushes a raw key without this call.
+ */
+export async function confirmReceiptSequenceKey(
+  admin: SupabaseClient,
+  societyId: string,
+  receiptCreatedAt: string,
+  label: string,
+): Promise<ReceiptSequenceKey> {
+  const yearMonth = stage3cReceiptMonthCode(receiptCreatedAt);
+  const res = await admin
+    .from("payment_receipt_month_sequences")
+    .select("society_id, year_month")
+    .eq("society_id", societyId)
+    .eq("year_month", yearMonth)
+    .maybeSingle();
+  if (res.error) {
+    throw new Error(
+      `[stage3c:${label}] ${redactMessage(extractErrorMessage(res.error))}`,
+    );
+  }
+  if (!res.data) {
+    throw new Error(
+      `[stage3c:${label}] no sequence row for year_month=${yearMonth}`,
+    );
+  }
+  return { society_id: societyId, year_month: yearMonth };
+}
+
+// ---------------------------------------------------------------------------
 // Post-cleanup verification
 // ---------------------------------------------------------------------------
+
+/**
+ * Bounded exact-ID verifier. Returns the intersection of `tracked ∩
+ * remaining` (up to `tracked.length` rows). Never uses `.limit(1)`.
+ */
+export async function fetchRemainingTrackedIds(
+  admin: SupabaseClient,
+  table: string,
+  column: string,
+  ids: string[],
+): Promise<{ remaining: string[]; error: unknown }> {
+  if (ids.length === 0) return { remaining: [], error: null };
+  const { data, error } = await admin
+    .from(table)
+    .select(column)
+    .in(column, ids)
+    .limit(ids.length);
+  if (error) return { remaining: [], error };
+  const tracked = new Set(ids);
+  const seen = new Set<string>();
+  for (const row of (data ?? []) as Array<Record<string, unknown>>) {
+    const v = row[column];
+    if (typeof v === "string" && tracked.has(v)) seen.add(v);
+  }
+  return { remaining: Array.from(seen), error: null };
+}
+
+function summarizeIds(ids: string[]): string {
+  if (ids.length <= 8) return ids.join(",");
+  return `${ids.slice(0, 8).join(",")}...(+${ids.length - 8} more)`;
+}
 
 export async function verifyTrackedRowsAbsent(
   admin: SupabaseClient,
@@ -594,16 +719,15 @@ export async function verifyTrackedRowsAbsent(
     column: string,
     ids: string[],
   ): Promise<void> => {
-    if (ids.length === 0) return;
-    const { data, error } = await admin.from(table).select(column).in(column, ids).limit(1);
+    const { remaining, error } = await fetchRemainingTrackedIds(admin, table, column, ids);
     if (error) {
       sink.push({ label: `verify:${label}`, message: redactMessage(extractErrorMessage(error)) });
       return;
     }
-    if ((data ?? []).length > 0) {
+    if (remaining.length > 0) {
       sink.push({
         label: `verify:${label}`,
-        message: `${(data ?? []).length} tracked ${table} row(s) remain`,
+        message: `${remaining.length} tracked ${table} row(s) remain [${summarizeIds(remaining)}]`,
       });
     }
   };
@@ -626,10 +750,9 @@ export async function verifyTrackedRowsAbsent(
   for (const seq of dedupeSeq(tracked.receiptSequences)) {
     const { data, error } = await admin
       .from("payment_receipt_month_sequences")
-      .select("society_id")
+      .select("society_id, year_month")
       .eq("society_id", seq.society_id)
-      .eq("year_month", seq.year_month)
-      .limit(1);
+      .eq("year_month", seq.year_month);
     if (error) {
       sink.push({
         label: "verify:receipt_sequences",
@@ -653,20 +776,22 @@ export async function verifyTrackedRowsAbsent(
     if (error) {
       sink.push({ label: "verify:audit_log", message: redactMessage(extractErrorMessage(error)) });
     } else if ((data ?? []).length > 0) {
-      sink.push({
-        label: "verify:audit_log",
-        message: "fixture-time audit rows remain",
-      });
+      sink.push({ label: "verify:audit_log", message: "fixture-time audit rows remain" });
     }
   }
 }
 
 /**
- * Verify that no synthetic auth users are left behind. Paginates
- * `admin.auth.admin.listUsers` and fails if any remaining email starts
- * with the fixture prefix. Individual per-ID `getUserById` checks come
- * first for a fast happy path.
+ * Verify that no synthetic auth users are left behind. Individual per-ID
+ * `getUserById` checks come first for a fast happy path, then a paginated
+ * prefix scan of `admin.auth.admin.listUsers`.
+ *
+ * Pagination FAILS CLOSED: hitting the defensive safety cap while the
+ * last observed page was still full appends a labeled failure — the
+ * fixture never silently claims all users were inspected.
  */
+export const STAGE3C_LIST_USERS_PAGE_CAP = 100;
+
 export async function verifySyntheticUsersAbsent(
   admin: SupabaseClient,
   userIds: string[],
@@ -693,12 +818,12 @@ export async function verifySyntheticUsersAbsent(
     }
   }
 
-  // Paginated prefix scan — catches leaks not covered by tracked IDs.
   const perPage = 200;
   let page = 1;
   let remainingCount = 0;
-  // Bounded pagination to avoid runaway loops on a broken listUsers.
-  for (let i = 0; i < 100; i++) {
+  let completed = false;
+  let lastPageFull = false;
+  for (let i = 0; i < STAGE3C_LIST_USERS_PAGE_CAP; i++) {
     const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
     if (error) {
       sink.push({
@@ -712,7 +837,11 @@ export async function verifySyntheticUsersAbsent(
       const email = (u.email ?? "").toLowerCase();
       if (email.startsWith(`${prefix.toLowerCase()}-`)) remainingCount++;
     }
-    if (users.length < perPage) break;
+    lastPageFull = users.length >= perPage;
+    if (!lastPageFull) {
+      completed = true;
+      break;
+    }
     page++;
   }
   if (remainingCount > 0) {
@@ -721,7 +850,16 @@ export async function verifySyntheticUsersAbsent(
       message: `${remainingCount} synthetic user(s) with fixture prefix remain`,
     });
   }
+  if (!completed && lastPageFull) {
+    sink.push({
+      label: "verify:auth:pagination_limit",
+      message:
+        `listUsers safety cap ${STAGE3C_LIST_USERS_PAGE_CAP} reached with a full last page; ` +
+        `synthetic user absence NOT confirmed`,
+    });
+  }
 }
+
 
 // ---------------------------------------------------------------------------
 // Strict cleanup
@@ -862,10 +1000,9 @@ async function strictCleanup(
 // Setup
 // ---------------------------------------------------------------------------
 
-function receiptMonthCode(iso: string): number {
-  const d = new Date(iso);
-  return d.getUTCFullYear() * 100 + (d.getUTCMonth() + 1);
-}
+/** Legacy internal alias — use `stage3cReceiptMonthCode` externally. */
+const receiptMonthCode = stage3cReceiptMonthCode;
+void receiptMonthCode;
 
 export async function setupStage3CFixture(): Promise<Stage3CFixture> {
   const env = requireStage3CEnv();
@@ -1185,26 +1322,16 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
     );
     tracked.paymentReceiptIds.push(verifiedReceiptRow.id);
 
-    // Confirmed receipt-sequence tracking — derive year_month from the
-    // ACTUAL receipt creation timestamp, then verify the sequence row exists.
-    const verifiedYm = receiptMonthCode(verifiedReceiptRow.created_at);
-    const seqRow = await admin
-      .from("payment_receipt_month_sequences")
-      .select("society_id, year_month")
-      .eq("society_id", societyA)
-      .eq("year_month", verifiedYm)
-      .maybeSingle();
-    if (seqRow.error) {
-      throw new Error(
-        `[stage3c:select:receiptSequence] ${redactMessage(extractErrorMessage(seqRow.error))}`,
-      );
-    }
-    if (!seqRow.data) {
-      throw new Error(
-        `[stage3c:select:receiptSequence] no sequence row for year_month=${verifiedYm}`,
-      );
-    }
-    tracked.receiptSequences.push({ society_id: societyA, year_month: verifiedYm });
+    // Confirmed receipt-sequence tracking — the canonical helper derives
+    // year_month from the ACTUAL receipt.created_at AND verifies the exact
+    // sequence row exists before the key may be tracked.
+    const verifiedSeq = await confirmReceiptSequenceKey(
+      admin,
+      societyA,
+      verifiedReceiptRow.created_at,
+      "select:receiptSequence",
+    );
+    tracked.receiptSequences.push(verifiedSeq);
 
     // (5) Rejected payment on openBillId
     const rejectedPaymentId = await helpers.submitAdminCashPayment({
@@ -1241,8 +1368,15 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
     );
     tracked.paymentReceiptIds.push(voidReceiptRow.id);
     // Track second receipt-month if different (deduped in cleanup/verify).
-    const voidYm = receiptMonthCode(voidReceiptRow.created_at);
-    tracked.receiptSequences.push({ society_id: societyA, year_month: voidYm });
+    // Void receipt uses the SAME canonical confirmation helper — never push
+    // a raw {society_id, year_month} without confirmation.
+    const voidSeq = await confirmReceiptSequenceKey(
+      admin,
+      societyA,
+      voidReceiptRow.created_at,
+      "select:voidReceiptSequence",
+    );
+    tracked.receiptSequences.push(voidSeq);
     await helpers.reversePayment(adminA2, reversedPaymentId, "fixture reverse");
 
     const scenarios: FinancialScenarios = {

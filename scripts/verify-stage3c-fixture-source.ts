@@ -118,7 +118,7 @@ must(
   /searchOpenBills\([\s\S]{0,120}options\?:\s*BillSearchOptions/.test(src),
   "searchOpenBills must accept BillSearchOptions",
 );
-must(/validatePagination\(/.test(src), "must call validatePagination helper");
+must(/validateStage3CPagination\(/.test(src), "must call the canonical validateStage3CPagination helper");
 must(
   /rpc\("get_resident_payments_v1",\s*\{\s*_limit:\s*limit,\s*_offset:\s*offset/.test(src),
   "get_resident_payments_v1 must forward runtime limit/offset (not hardcoded)",
@@ -188,13 +188,24 @@ mustNot(
 );
 
 // ---- Confirmed receipt-sequence derivation -------------------------------
+// Both the verified and the void receipt paths MUST route through the
+// canonical confirmReceiptSequenceKey helper. No raw {society_id,
+// year_month} push is allowed for the void receipt.
 must(
-  /receiptMonthCode\(verifiedReceiptRow\.created_at\)/.test(src),
-  "must derive year_month from actual receipt created_at",
+  /export async function confirmReceiptSequenceKey\b/.test(src),
+  "must export the canonical confirmReceiptSequenceKey helper",
 );
 must(
-  /select:receiptSequence/.test(src),
-  "must confirm the sequence row exists after receipt creation",
+  /confirmReceiptSequenceKey\([\s\S]{0,300}verifiedReceiptRow\.created_at/.test(src),
+  "verified receipt path must call confirmReceiptSequenceKey with verifiedReceiptRow.created_at",
+);
+must(
+  /confirmReceiptSequenceKey\([\s\S]{0,300}voidReceiptRow\.created_at/.test(src),
+  "void receipt path must call confirmReceiptSequenceKey with voidReceiptRow.created_at",
+);
+mustNot(
+  /receiptSequences\.push\(\{\s*society_id:\s*societyA,\s*year_month:\s*voidYm/,
+  "void receipt path must not push a raw {society_id, year_month} without confirmation",
 );
 
 // ---- verifyTrackedRowsAbsent must cover exact IDs -----------------------
@@ -274,6 +285,98 @@ must(
 const protectedId = process.env.SOCIOHUB_PROTECTED_SOCIETY_ID;
 if (protectedId && src.includes(protectedId)) {
   problems.push("protected society literal is present in fixture source");
+}
+// ---- Exported testable factory + validator -------------------------------
+must(
+  /export function buildScenarioHelpers\(/.test(src),
+  "buildScenarioHelpers must be exported for direct behavioral testing",
+);
+must(
+  /export function validateStage3CPagination\(/.test(src),
+  "validateStage3CPagination must be exported for direct testing",
+);
+must(
+  /export (async )?function fetchRemainingTrackedIds\(/.test(src),
+  "fetchRemainingTrackedIds must be exported for direct testing",
+);
+must(
+  /export function isStage3CHostAllowed\(/.test(src),
+  "isStage3CHostAllowed must be exported for direct testing",
+);
+must(
+  /export const STAGE3C_ALLOWED_HOSTS/.test(src),
+  "STAGE3C_ALLOWED_HOSTS must be exported",
+);
+must(
+  /export const STAGE3C_LIST_USERS_PAGE_CAP/.test(src),
+  "STAGE3C_LIST_USERS_PAGE_CAP must be exported",
+);
+
+// ---- Isolated Supabase host safety ---------------------------------------
+must(
+  /isStage3CHostAllowed\(url\)/.test(src),
+  "requireStage3CEnv must gate on isStage3CHostAllowed(url)",
+);
+must(
+  /"localhost"[\s\S]{0,120}"127\.0\.0\.1"/.test(src),
+  "STAGE3C_ALLOWED_HOSTS must include localhost + 127.0.0.1",
+);
+// Only allowlist doc-mentions of `.supabase.co` are tolerated. Actual
+// URLs (http(s)://…supabase.co) MUST NOT appear.
+mustNot(
+  /https?:\/\/[^\s"'`]*\.supabase\.co/,
+  "hosted supabase.co URL must not appear in fixture source",
+);
+
+// ---- listUsers fail-closed ----------------------------------------------
+must(
+  /verify:auth:pagination_limit/.test(src),
+  "verifySyntheticUsersAbsent must emit a fail-closed pagination_limit failure",
+);
+must(
+  /lastPageFull/.test(src) && /completed/.test(src),
+  "verifySyntheticUsersAbsent must track lastPageFull/completed for fail-closed behavior",
+);
+
+// ---- Exact remaining-ID reporting ----------------------------------------
+// verifyTrackedRowsAbsent must NOT use .limit(1) on exact-ID categories.
+// Only the audit_log time-bounded probe is allowed to use .limit(1).
+{
+  const vf = src.indexOf("export async function verifyTrackedRowsAbsent");
+  const vfEnd = src.indexOf("export const STAGE3C_LIST_USERS_PAGE_CAP", vf);
+  const region = vf >= 0 && vfEnd > vf ? src.slice(vf, vfEnd) : "";
+  const idCheckSlice = region.slice(0, region.indexOf("auditSelectors"));
+  must(
+    !/\.limit\(1\)/.test(idCheckSlice),
+    "verifyTrackedRowsAbsent must not use .limit(1) for exact-ID categories",
+  );
+  must(
+    /fetchRemainingTrackedIds\(/.test(region),
+    "verifyTrackedRowsAbsent must route through fetchRemainingTrackedIds",
+  );
+}
+
+// ---- Unit-test file discipline -------------------------------------------
+const TEST_FILE = "tests/unit/billing-stage3c-runtime-fixtures.test.ts";
+const testSrc = readFileSync(join(process.cwd(), TEST_FILE), "utf8");
+
+{
+  const banned: Array<[RegExp, string]> = [
+    [/manual dispatch mirror/i, "test contains 'manual dispatch mirror' misleading claim"],
+    [/factory is not exported/i, "test claims factory is not exported — it now is"],
+    [/kept for future live-test wiring/i, "test retains dead 'future live-test wiring' stub"],
+    [/void\s+fakeUser\s*;/, "test retains dead `void fakeUser;` stub"],
+    [/makeStubHelper/i, "test retains obsolete makeStubHelper mirror"],
+    [/behavioral dispatch — mirror/i, "test claims mirror is behavioral"],
+  ];
+  for (const [pat, msg] of banned) {
+    if (pat.test(testSrc)) problems.push(msg);
+  }
+  // Must actually import the real helper factory.
+  must(
+    /buildScenarioHelpers/.test(testSrc) && /validateStage3CPagination/.test(testSrc),
+    "test file must import the real buildScenarioHelpers + validateStage3CPagination",
+  );
 }
 
 if (problems.length > 0) {

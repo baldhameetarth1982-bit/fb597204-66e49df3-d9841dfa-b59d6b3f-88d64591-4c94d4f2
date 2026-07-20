@@ -55,6 +55,35 @@ function extractErrorMessage(err: unknown): string {
 }
 
 /**
+ * Mirrors production `extractRpcId` in `src/lib/billing-config.functions.ts`.
+ * Pulls a canonical UUID out of an RPC response that may be a bare string,
+ * `{ id }`, or `{ payment_id }`. Returns `""` when nothing usable is present
+ * so callers can detect a missing id instead of stringifying `[object Object]`.
+ */
+export function extractRpcId(data: unknown): string {
+  if (typeof data === "string") return data;
+  if (data && typeof data === "object") {
+    const rec = data as Record<string, unknown>;
+    if (typeof rec.id === "string") return rec.id;
+    if (typeof rec.payment_id === "string") return rec.payment_id;
+  }
+  return "";
+}
+
+/**
+ * Redact JWT-shaped tokens, sb_ keys, and obvious password/service_role
+ * labels before surfacing a cleanup message to test logs. Used by
+ * {@link formatCleanupFailures}.
+ */
+export function redactMessage(msg: string): string {
+  return msg
+    .replace(/eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{4,}/g, "[REDACTED_JWT]")
+    .replace(/sb_(?:secret|publishable)_[A-Za-z0-9_-]+/g, "[REDACTED_SB_KEY]")
+    .replace(/service[_-]?role["'\s:=]+[A-Za-z0-9_.\-]+/gi, "service_role=[REDACTED]")
+    .replace(/password["'\s:=]+[^\s"']+/gi, "password=[REDACTED]");
+}
+
+/**
  * Await a Supabase query builder, inspect its resolved `.error`, and throw
  * a labeled `Error` when non-null. Returns `data` on success.
  */
@@ -136,7 +165,7 @@ export async function collectCleanupResult(
  */
 export function formatCleanupFailures(fails: CleanupFailure[]): string {
   if (fails.length === 0) return "";
-  const lines = fails.map((f) => `  - ${f.label}: ${f.message}`);
+  const lines = fails.map((f) => `  - ${f.label}: ${redactMessage(f.message)}`);
   return `Stage 3C fixture teardown had ${fails.length} failure(s):\n${lines.join("\n")}`;
 }
 
@@ -186,9 +215,15 @@ export type TrackedIds = {
   authUserIds: string[];
   societyIds: string[];
   userRoles: UserRoleKey[];
+  /** Exact user_roles row PKs — used for scoped deletion. */
+  userRoleIds: string[];
+  /** Exact user_role_block_scopes row PKs. */
+  userRoleBlockScopeIds: string[];
   blockIds: string[];
   flatIds: string[];
   flatResidents: FlatResidentKey[];
+  /** Exact flat_residents row PKs — used for scoped deletion. */
+  flatResidentIds: string[];
   billIds: string[];
   billLineItemIds: string[];
   paymentIds: string[];
@@ -202,9 +237,12 @@ function makeTracker(): TrackedIds {
     authUserIds: [],
     societyIds: [],
     userRoles: [],
+    userRoleIds: [],
+    userRoleBlockScopeIds: [],
     blockIds: [],
     flatIds: [],
     flatResidents: [],
+    flatResidentIds: [],
     billIds: [],
     billLineItemIds: [],
     paymentIds: [],
@@ -342,10 +380,10 @@ function buildScenarioHelpers(admin: SupabaseClient): ScenarioHelpers {
         _reference_no: input.referenceNo ?? null,
         _notes: input.notes ?? null,
         _idempotency_key: input.idempotencyKey,
-        _actor_role: "society_admin",
+        _actor_role: "admin",
       });
       if (error) throw new Error(`[stage3c:submitAdminCash] ${extractErrorMessage(error)}`);
-      return String((data as { id?: string } | string | null) ?? "");
+      return extractRpcId(data);
     },
     async submitAdminBankTransferPayment(input) {
       const { data, error } = await input.actor.client.rpc("submit_offline_payment", {
@@ -356,10 +394,10 @@ function buildScenarioHelpers(admin: SupabaseClient): ScenarioHelpers {
         _reference_no: input.referenceNo ?? null,
         _notes: input.notes ?? null,
         _idempotency_key: input.idempotencyKey,
-        _actor_role: "society_admin",
+        _actor_role: "admin",
       });
       if (error) throw new Error(`[stage3c:submitAdminBank] ${extractErrorMessage(error)}`);
-      return String((data as { id?: string } | string | null) ?? "");
+      return extractRpcId(data);
     },
     async submitResidentBankTransferPayment(input) {
       const { data, error } = await input.actor.client.rpc("submit_offline_payment", {
@@ -373,7 +411,7 @@ function buildScenarioHelpers(admin: SupabaseClient): ScenarioHelpers {
         _actor_role: "resident",
       });
       if (error) throw new Error(`[stage3c:submitResidentBank] ${extractErrorMessage(error)}`);
-      return String((data as { id?: string } | string | null) ?? "");
+      return extractRpcId(data);
     },
     async verifyPayment(actor, paymentId, notes) {
       const { error } = await actor.client.rpc("verify_offline_payment", {
@@ -411,7 +449,11 @@ function buildScenarioHelpers(admin: SupabaseClient): ScenarioHelpers {
       return data;
     },
     async getResidentPaymentHistory(actor) {
-      const { data, error } = await actor.client.rpc("get_resident_payments_v1");
+      // `get_resident_payments_v1` requires _limit and _offset (see types.ts).
+      const { data, error } = await actor.client.rpc("get_resident_payments_v1", {
+        _limit: 50,
+        _offset: 0,
+      });
       if (error) throw new Error(`[stage3c:getResidentPayments] ${extractErrorMessage(error)}`);
       return data;
     },
@@ -419,6 +461,8 @@ function buildScenarioHelpers(admin: SupabaseClient): ScenarioHelpers {
       const { data, error } = await actor.client.rpc("search_society_open_bills", {
         _society_id: societyId,
         _query: query ?? "",
+        _limit: 25,
+        _offset: 0,
       });
       if (error) throw new Error(`[stage3c:searchOpenBills] ${extractErrorMessage(error)}`);
       return data;
@@ -590,11 +634,28 @@ async function strictCleanup(
       admin.from("bills").delete().in("id", tracked.billIds),
       fails,
     );
-  if (tracked.flatResidents.length) {
+  if (tracked.flatResidentIds.length) {
+    await collectCleanupResult(
+      "delete:flat_residents",
+      admin.from("flat_residents").delete().in("id", tracked.flatResidentIds),
+      fails,
+    );
+  } else if (tracked.flatResidents.length) {
+    // Fallback for older callers that only tracked composite keys.
     const flatIds = Array.from(new Set(tracked.flatResidents.map((k) => k.flat_id)));
     await collectCleanupResult(
       "delete:flat_residents",
       admin.from("flat_residents").delete().in("flat_id", flatIds),
+      fails,
+    );
+  }
+  if (tracked.userRoleBlockScopeIds.length) {
+    await collectCleanupResult(
+      "delete:user_role_block_scopes",
+      admin
+        .from("user_role_block_scopes")
+        .delete()
+        .in("id", tracked.userRoleBlockScopeIds),
       fails,
     );
   }
@@ -610,7 +671,13 @@ async function strictCleanup(
       admin.from("blocks").delete().in("id", tracked.blockIds),
       fails,
     );
-  if (tracked.userRoles.length) {
+  if (tracked.userRoleIds.length) {
+    await collectCleanupResult(
+      "delete:user_roles",
+      admin.from("user_roles").delete().in("id", tracked.userRoleIds),
+      fails,
+    );
+  } else if (tracked.userRoles.length) {
     const societyIds = Array.from(new Set(tracked.userRoles.map((k) => k.society_id)));
     await collectCleanupResult(
       "delete:user_roles",
@@ -702,7 +769,12 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
       "insert:societyA",
       admin
         .from("societies")
-        .insert({ name: `${prefix}-A`, status: "active", plan: "basic" })
+        .insert({
+          name: `${prefix}-A`,
+          status: "active",
+          plan: "basic",
+          layout: "structured",
+        })
         .select("id")
         .single(),
     );
@@ -715,7 +787,12 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
       "insert:societyB",
       admin
         .from("societies")
-        .insert({ name: `${prefix}-B`, status: "active", plan: "basic" })
+        .insert({
+          name: `${prefix}-B`,
+          status: "active",
+          plan: "basic",
+          layout: "serial",
+        })
         .select("id")
         .single(),
     );
@@ -781,7 +858,16 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
 
     // ---- Roles --------------------------------------------------------
     // Note: unrelatedResident is a resident of SOCIETY B, not A.
-    const roleRows = [
+    // Roles are inserted one-by-one so each row PK is tracked exactly, and
+    // teardown deletes by tracked id — never by the broader society_id.
+    type RoleRow = {
+      user_id: string;
+      role: string;
+      society_id: string;
+      is_active: boolean;
+      block_id?: string;
+    };
+    const roleRows: RoleRow[] = [
       { user_id: adminA1.id, role: "society_admin", society_id: societyA, is_active: true },
       { user_id: adminA2.id, role: "society_admin", society_id: societyA, is_active: true },
       { user_id: adminB.id, role: "society_admin", society_id: societyB, is_active: true },
@@ -807,13 +893,37 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
         is_active: true,
       },
     ];
-    await assertSupabaseResult("insert:user_roles", admin.from("user_roles").insert(roleRows));
+    let blockAdminRoleId = "";
     for (const r of roleRows) {
+      const inserted = await assertSupabaseSingleResult<{ id: string }>(
+        `insert:user_role:${r.role}:${r.user_id.slice(0, 8)}`,
+        admin.from("user_roles").insert(r).select("id").single(),
+      );
+      tracked.userRoleIds.push(inserted.id);
       tracked.userRoles.push({
         user_id: r.user_id,
         role: r.role,
         society_id: r.society_id,
       });
+      if (r.role === "block_admin") blockAdminRoleId = inserted.id;
+    }
+
+    // ---- Block Admin scope (Stage 2C invariant: scoped to blockA) ----
+    if (blockAdminRoleId) {
+      const scope = await assertSupabaseSingleResult<{ id: string }>(
+        "insert:user_role_block_scope",
+        admin
+          .from("user_role_block_scopes")
+          .insert({
+            role_id: blockAdminRoleId,
+            society_id: societyA,
+            block_id: blockA,
+            is_active: true,
+          })
+          .select("id")
+          .single(),
+      );
+      tracked.userRoleBlockScopeIds.push(scope.id);
     }
 
     // ---- Flat residency ----------------------------------------------
@@ -840,11 +950,12 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
         is_active: true,
       },
     ];
-    await assertSupabaseResult(
-      "insert:flat_residents",
-      admin.from("flat_residents").insert(residencyRows),
-    );
     for (const r of residencyRows) {
+      const inserted = await assertSupabaseSingleResult<{ id: string }>(
+        `insert:flat_resident:${r.flat_id.slice(0, 8)}:${r.user_id.slice(0, 8)}`,
+        admin.from("flat_residents").insert(r).select("id").single(),
+      );
+      tracked.flatResidentIds.push(inserted.id);
       tracked.flatResidents.push({ flat_id: r.flat_id, user_id: r.user_id });
     }
 
@@ -877,6 +988,22 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
           .single(),
       );
       tracked.billIds.push(row.id);
+      // One canonical maintenance line item per bill; tracked for teardown.
+      const lineItem = await assertSupabaseSingleResult<{ id: string }>(
+        `insert:bill_line_item:${label}`,
+        admin
+          .from("bill_line_items")
+          .insert({
+            bill_id: row.id,
+            society_id: societyA,
+            kind: "charge",
+            description: `Maintenance ${label}`,
+            amount,
+          })
+          .select("id")
+          .single(),
+      );
+      tracked.billLineItemIds.push(lineItem.id);
       return row.id;
     }
 

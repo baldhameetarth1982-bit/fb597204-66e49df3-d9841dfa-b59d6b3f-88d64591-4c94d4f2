@@ -2,47 +2,43 @@
 
 ## Stage 3C — Offline Payments, Verification and Receipts
 
-**Status:** CLOSURE VERIFICATION IN PROGRESS — awaiting one successful GitHub Actions run of `.github/workflows/stage3c-runtime-verification.yml`. The workflow boots a disposable local Supabase stack, applies migrations, exports env from `supabase status -o env`, runs the application-boundary test, the unit suite, the live integration suite (with strict no-skip assertion), the full suite (excluding the live file), typecheck, build, client-bundle secret scan, a **mandatory** protected-ID source scan (fails if the `SOCIOHUB_PROTECTED_SOCIETY_ID` secret is missing), then authenticated Playwright at `mobile-390` and `desktop-1280`. Stage 3C flips to **COMPLETE** only after one successful workflow run captured in this section. Cannot be triggered from the Lovable sandbox — trigger via **Actions → Stage 3C Runtime Verification → Run workflow**.
+**Status:** CLOSURE VERIFICATION IN PROGRESS — awaiting one successful GitHub Actions run of `.github/workflows/stage3c-runtime-verification.yml`.
 
-**Authoritative resident contract**
-- Residents CAN submit offline **Bank Transfer** payments through `OfflinePaymentSubmitCard`. Every submission starts `pending` and only a non-submitting admin verifies it.
-- Residents CANNOT select Cash (admin-only).
-- No maintenance online gateway (Razorpay/UPI/card/wallet) — Razorpay stays for SaaS subscriptions only.
-- Earlier "residents are read-only in Stage 3C" wording was incorrect and has been removed from tests and docs.
+**Current CI repair (this run)**
+- **Bun / lockfile alignment.** Workflow pinned Bun `1.1.42`, but the committed text-based `bun.lock` uses `lockfileVersion: 1` which older Bun cannot parse — `bun install --frozen-lockfile` failed with `InvalidLockfileVersion`. Workflow now pins `bun-version: 1.3.3` and `package.json` declares `"packageManager": "bun@1.3.3"` so the version is single-sourced. Verified locally: `bun 1.3.3` parses `bun.lock` and `bun install --frozen-lockfile` reports 0 changes; a follow-up `git diff --exit-code -- package.json bun.lock` step asserts manifest immutability.
+- **Workflow control flow.** Stable step IDs (`setup_bun`, `install`, `docker_preflight`, `supabase_cli`, `supabase_start`, `supabase_env`, `live_tests`, `playwright_install`, `app_start`, `playwright`). Playwright report validator gated with `if: always() && steps.playwright.outcome != 'skipped'`, so it no longer emits a misleading "playwright.json missing" after an upstream setup failure. `supabase stop` guarded with `steps.supabase_cli.outcome == 'success'` and an inner `command -v supabase` check so cleanup cannot fail with exit 127 when CLI setup was skipped. App shutdown checks both `.app.pid` and `kill -0` before signalling.
+- **Diagnostics.** New Docker preflight step (`docker version`/`info`/`ps`) runs before Supabase start. `supabase start --debug` output is tee'd to `diagnostics/supabase-start.log`; failure-only collector adds `supabase status`, `docker ps -a`, `docker system df`, and per-container logs. Report/test-results/playwright-report directories are created early and `upload-artifact` uses `if-no-files-found: ignore` to suppress empty-artifact warnings when upstream steps skipped.
+- **Node runtime.** `actions/setup-node` bumped to `node-version: 24` to clear the Node 20 deprecation warning. `actions/checkout@v4`, `actions/setup-node@v4`, `actions/upload-artifact@v4`, `oven-sh/setup-bun@v2`, `supabase/setup-cli@v1` retained.
 
-**Authoritative payment / receipt contract**
-- **Split submission APIs.** `submitResidentBankTransfer` (fixed role=`resident`, method fixed to `bank_transfer`) and `recordAdminOfflinePayment` (fixed role=`admin`, method ∈ {cash, bank_transfer}). No generic `submitOfflinePayment`. Browser cannot supply an actor role.
-- **Active-resident access.** Every read and write requires `flat_residents.is_active = true` AND `moved_out_at IS NULL`.
-- **Canonical available balance.** All UIs read `available_to_submit` from `get_bill_payment_summary`; pending payments reserve balance.
-- **Separation of duties.** Submitter cannot self-verify (`self_verification_not_allowed`).
-- **Receipt numbering.** Per-society monthly sequences → `RCPT/YYYYMM/####`.
-- **Reversal.** Reversing a verified payment marks the receipt VOID; balance re-syncs from remaining verified payments.
-- **Payment detail is audience-shaped.** `get_payment_detail` builds JSON via `jsonb_build_object` from an explicit column list — no `SELECT *`, `%ROWTYPE`, `to_jsonb(p)`, or `row_to_json(p)`. Admin-only fields merge only when `is_admin`.
-- **Receipt is audience-shaped (v8).** Residents see only display-safe fields; internal actor UUIDs and DB IDs are omitted. Admins keep the full lifecycle shape.
-- **Proof upload deferred.** `proof_url` is not read or written by any active Stage 3C surface.
-- **Trusted mutation boundary.** All writes go through four SECURITY DEFINER RPCs; receipt reads go through `get_payment_receipt_lifecycle`.
-- **Production parser.** `parsePaymentDetailResponse` in `src/lib/offline-payments.functions.ts` is the exported strict schema (`z.discriminatedUnion("audience", ...)`, both `.strict()`).
+**Authoritative product contract (unchanged)**
+- Active resident CAN submit Bank Transfer via `OfflinePaymentSubmitCard`; every submission starts `pending`; a non-submitting admin verifies.
+- Residents CANNOT select Cash (admin-only). No maintenance Razorpay/UPI/card/wallet. Razorpay stays for SaaS subscriptions only.
+- Split submission APIs: `submitResidentBankTransfer` (role pinned server-side), `recordAdminOfflinePayment` (role pinned server-side). No generic `submitOfflinePayment`; browser cannot supply `actorRole`.
+- Active-resident enforcement (`is_active = true AND moved_out_at IS NULL`) on every read and write.
+- Available balance derived from `get_bill_payment_summary`; pending reserves balance. Separation of duties: submitter cannot self-verify (`self_verification_not_allowed`).
+- Receipt numbering `RCPT/YYYYMM/####` per society/month. Reversal marks the receipt VOID and re-syncs balance.
+- Payment detail is audience-shaped via `jsonb_build_object` — no `SELECT *`, `to_jsonb(p)`, `row_to_json(p)`. Admin-only fields merge only when `is_admin`.
+- Receipt is audience-shaped (v8): residents see display-safe fields only; internal actor UUIDs and DB IDs omitted.
+- `proof_url` is not read or written by any active Stage 3C surface.
+- Trusted mutation boundary: four SECURITY DEFINER RPCs + `get_payment_receipt_lifecycle`. `parsePaymentDetailResponse` is the exported strict Zod discriminated union.
 
-**Local-only totals (2026-07-19)**
-- `bunx tsgo --noEmit` = 0.
-- `bunx vitest run tests/unit` = passing (see workflow report for the exact `reports/unit.json` numbers).
-- `bunx vitest run` (full) = passing.
-- `bunx vitest run tests/integration/billing-stage3c-live.test.ts` = suite skips locally when `ALLOW_SOCIOHUB_LIVE_STAGE3C` is not set; CI enforces zero skips.
-- `bun run build` = 0.
-- `bun scripts/verify-client-bundle-secrets.ts` = 0.
-- Playwright cannot execute inside the Lovable sandbox (no Docker → no isolated Supabase → no authenticated fixtures). This is the reason the exit gate lives in GitHub Actions.
+**Local totals (this run)**
+- `bun --version` = `1.3.3`.
+- `bun install --frozen-lockfile` = 0 changes; `git diff -- package.json bun.lock` = clean.
+- Unit / boundary / build / bundle-secret-scan totals unchanged from previous run (see prior `reports/unit.json` on the next successful CI run).
+- Live integration suite (`tests/integration/billing-stage3c-live.test.ts`) skips locally when `ALLOW_SOCIOHUB_LIVE_STAGE3C` is unset; CI sets it to `true` and enforces zero skips.
+- Playwright and live integration cannot execute inside the Lovable sandbox (no Docker → no isolated Supabase). This is the reason the exit gate lives in GitHub Actions.
 
-**This run — source-complete CI harness**
-- **Shared runtime fixture module.** `tests/helpers/stage3c-runtime-fixtures.ts` provisions the eight synthetic identities (adminA1/adminA2/adminB/blockAdmin/guard/activeResident/movedOutResident/unrelatedResident), Society A/B, block A, flat A + unrelated flat, two open bills and one cancelled bill. All rows are tracked; teardown collects failures, deletes in dependency order, verifies prefix cleanup, and throws when any step fails. No `.catch(() => undefined)`, no best-effort deletes.
-- **E2E fixture module.** `tests/e2e/stage3c-fixtures.ts` wraps the runtime fixture with browser-facing routes and credential slices for `setupStage3CE2EFixture` / `teardownStage3CE2EFixture`.
-- **Playwright spec matches its titles.** `tests/e2e/billing-stage3c.spec.ts` exposes seven required titles — `admin-payment-form`, `admin-pending-state`, `admin-verification`, `resident-bank-transfer`, `resident-pending-state`, `resident-valid-receipt`, `resident-void-receipt` — each provisioning its own fixture, asserting the invariants it can prove without invoking privileged RPCs from the browser, and screenshotting `test-results/<title>-<width>.png`. The workflow report validator now parses `reports/playwright.json` and fails when any of the seven titles is absent, skipped, or failed in either the `mobile-390` or `desktop-1280` project.
-- **Workflow diagnostics.** On failure the workflow uploads `stage3c-supabase-diagnostics` (supabase status + docker logs for the supabase containers) alongside the existing `stage3c-app-log` and `stage3c-reports` artifacts.
+**Honest remaining gaps (source-side, not CI-side)**
+The prior "source-complete" claim was premature. The following source work is authored but not yet the deep behavioral matrix described in the roadmap; it is called out truthfully rather than hidden:
+- Live integration suite covers authorization + pending + verification + reads through the shared fixture, but the full 93-case matrix (idempotency edges, reference normalization, privacy exhaustion, rejection, reversal/VOID, search/pagination, Society-B isolation) is additive and remains to be authored against a running local stack.
+- Playwright spec exposes the seven required titles with per-title screenshots; deepening each into the exact real journey (form fill → dialog → submit → assert pending/verified/VOID) requires an already-provisioned browser-visible pending / verified / VOID financial state, which the current E2E fixture wraps but does not fully seed browser-side.
+- Shared fixture uses strict result inspection for setup; the cleanup collector still needs a full sweep to raise combined teardown errors rather than best-effort completion. No `.catch(() => undefined)` remains in Stage 3C fixture code.
 
-**Remaining closure work — CI-side only**
-- Deepen `tests/integration/billing-stage3c-live.test.ts` to the full 80-case scenario matrix (authorization, pending flow, separation of duties, resident submission, idempotency, reference normalization, reads, privacy, rejection, reversal/VOID, search/pagination). The current file already drives authorization + pending + verification + reads against the fixture; the remaining cases are additive and must be authored against a running local stack.
-- Trigger the workflow after adding the `SOCIOHUB_PROTECTED_SOCIETY_ID` repository secret. If the run fails, fix only the demonstrated failing step and rerun; do not backfill success into this section.
+CI executes committed source; it cannot author missing source. These items are the honest source-side remainder, not CI-side work.
 
-**On success record here:** workflow run ID, commit SHA, conclusion, unit / full / live / boundary totals, Playwright totals by project, artifact names, mandatory protected-ID scan result. Then flip Status to **COMPLETE**.
+**On success record here:** workflow run ID, job ID, commit SHA, conclusion, unit / full / live / boundary totals, Playwright totals by project, 14 screenshot paths, artifact names, mandatory protected-ID scan result. Then flip Status to **COMPLETE**.
+
 
 **Exact next position:** Stage 3D — Ledger, Expenses Integration, Reconciliation and Treasurer Accounting.
 

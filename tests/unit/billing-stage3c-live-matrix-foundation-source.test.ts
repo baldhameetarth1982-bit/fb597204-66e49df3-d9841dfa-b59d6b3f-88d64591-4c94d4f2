@@ -201,13 +201,13 @@ describe("checkNoProtectedIdentity — structural detection", () => {
   });
 
   it("passes on the bare redacted placeholder", () => {
-    const src = `Identity: [REDACTED-PROTECTED-SOCIETY-ID]`;
+    const src = `Identity: ${RED_TAG}`;
     expect(checkNoProtectedIdentity([["docs/b.md", src]])).toEqual([]);
   });
 
   it("flags synthetic display name attached to protected wording", () => {
     const name = `Synth ${randomUUID().slice(0, 6)}`;
-    const src = `${PHRASE} \`${name}\` had bills`;
+    const src = `${PHRASE} ${QUOTE(name)} had bills`;
     const out = checkNoProtectedIdentity([["docs/c.md", src]]);
     expect(out.length).toBe(1);
     expect(out[0]).not.toContain(name);
@@ -216,7 +216,7 @@ describe("checkNoProtectedIdentity — structural detection", () => {
 
   it("flags synthetic display name attached to redacted placeholder", () => {
     const name = `Synth ${randomUUID().slice(0, 6)}`;
-    const src = `\`${name}\` ([REDACTED-PROTECTED-SOCIETY-ID])`;
+    const src = `${QUOTE(name)} (${RED_TAG})`;
     const out = checkNoProtectedIdentity([["docs/d.md", src]]);
     expect(out.length).toBe(1);
     expect(out[0]).not.toContain(name);
@@ -232,7 +232,7 @@ describe("checkNoProtectedIdentity — structural detection", () => {
 
   it("flags synthetic partial UUID adjacent to protected wording", () => {
     const id = randomUUID();
-    const partial = id.slice(0, 8) + "-…";
+    const partial = id.slice(0, 8) + "-" + id.slice(9, 13) + "...";
     const src = `${PHRASE} (${partial})`;
     const out = checkNoProtectedIdentity([["docs/f.md", src]]);
     expect(out.length).toBe(1);
@@ -248,7 +248,7 @@ describe("checkNoProtectedIdentity — structural detection", () => {
   it("collapses multiple identity hits in one file into one failure", () => {
     const id = randomUUID();
     const name = "Synth Name";
-    const src = `${PHRASE} (${id})\n${PHRASE} \`${name}\``;
+    const src = `${PHRASE} (${id})\n${PHRASE} ${QUOTE(name)}`;
     const out = checkNoProtectedIdentity([["docs/h.md", src]]);
     expect(out.length).toBe(1);
     expect(out[0]).not.toContain(id);

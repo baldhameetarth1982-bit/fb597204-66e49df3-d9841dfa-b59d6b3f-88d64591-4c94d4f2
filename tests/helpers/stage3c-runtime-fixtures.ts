@@ -1543,6 +1543,7 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
         unrelatedResident,
       },
       scenarios,
+      matrix,
       tracked,
       helpers,
       openBillId,

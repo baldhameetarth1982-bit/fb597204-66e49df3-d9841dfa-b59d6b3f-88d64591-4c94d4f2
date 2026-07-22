@@ -41,19 +41,16 @@ export function matchesCanonicalError(message: string, token: Stage3CErrorToken)
   return re.test(message);
 }
 
+import { redactStage3CString } from "./stage3c-error-redaction";
+
 /**
- * Redact JWT-shaped tokens, sb_ keys, Authorization headers and password
- * markers from an actual error message before it is included in a
- * assertion failure. Never let a raw secret leak through a "expected
- * canonical error ... got: ..." log.
+ * Delegate to the canonical Stage 3C redaction contract. Never
+ * re-implement JWT/Bearer/cookie/password/key regexes here.
  */
 function redactForAssertion(message: string): string {
-  return message
-    .replace(/eyJ[A-Za-z0-9_-]{4,}\.[A-Za-z0-9_-]{4,}\.[A-Za-z0-9_-]{4,}/g, "[REDACTED_JWT]")
-    .replace(/sb_(?:secret|publishable)_[A-Za-z0-9_-]+/g, "[REDACTED_SB_KEY]")
-    .replace(/(authorization\s*[:=]\s*)(?:bearer\s+)?[^\s"',}]+/gi, "$1[REDACTED]")
-    .replace(/bearer\s+[A-Za-z0-9._-]+/gi, "Bearer [REDACTED]")
-    .replace(/password["'\s:=]+[^\s"']+/gi, "password=[REDACTED]");
+  return redactStage3CString(message, {
+    protectedSocietyId: process.env.SOCIOHUB_PROTECTED_SOCIETY_ID,
+  });
 }
 
 export function assertCanonicalError(

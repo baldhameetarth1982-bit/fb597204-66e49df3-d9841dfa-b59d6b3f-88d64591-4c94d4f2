@@ -414,16 +414,15 @@ export function collectTrackedTextFiles(
 /**
  * Structural rejection of the pattern where a specific display name is
  * attached to a redacted-protected-society placeholder or the phrase
- * "protected society". Uses no committed display-name literal.
+ * "protected society". The redaction placeholder itself is not a display
+ * name, so quoted content of the form `[REDACTED-...]` is exempted.
  */
 const PROTECTED_IDENTITY_PATTERNS: RegExp[] = [
-  // e.g. Protected society `Some Name` (`[REDACTED-PROTECTED-SOCIETY-ID]`)
-  /protected(?: production)? society\s+[`"'][^`"'\n]{2,80}[`"'](?:\s*\([^\n)]{0,200}\[REDACTED-PROTECTED-SOCIETY-ID\])?/i,
-  // e.g. protected society Some Name ([REDACTED-PROTECTED-SOCIETY-ID])
+  /protected(?: production)? society\s+[`"'](?!\[REDACTED-)[^`"'\n]{2,80}[`"']/i,
   /protected(?: production)? society\s+[A-Za-z][A-Za-z .'-]{1,80}\s*\(\s*[`"']?\[REDACTED-PROTECTED-SOCIETY-ID\]/i,
-  // e.g. <Name> ([REDACTED-PROTECTED-SOCIETY-ID]) not accessed
-  /[`"'][^`"'\n]{2,80}[`"']\s*\(\s*[`"']?\[REDACTED-PROTECTED-SOCIETY-ID\]/,
+  /[`"'](?!\[REDACTED-)[^`"'\n]{2,80}[`"']\s*\(\s*[`"']?\[REDACTED-PROTECTED-SOCIETY-ID\]/,
 ];
+
 
 const SELF_RELPATH = "scripts/verify-stage3c-live-matrix-foundation-source.ts";
 

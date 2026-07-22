@@ -24,6 +24,10 @@ const ROOT = process.cwd();
 
 const CORE_REGISTRY = "tests/helpers/stage3c-live-core-registry.ts";
 const RESIDENT_CASES = "tests/helpers/stage3c-live-resident-submit-cases.ts";
+const RESIDENT_CONTRACTS = "tests/helpers/stage3c-live-resident-submit-contracts.ts";
+const RESIDENT_PROD_CORE = "src/lib/offline-payment-resident-submit.ts";
+const PROD_FN = "src/lib/offline-payments.functions.ts";
+const FIXTURES = "tests/helpers/stage3c-runtime-fixtures.ts";
 const MATRIX_REGISTRY = "tests/helpers/stage3c-live-matrix-registry.ts";
 const MATRIX_CONTEXT = "tests/helpers/stage3c-live-matrix-context.ts";
 const MANIFEST = "tests/helpers/stage3c-live-case-manifest.ts";

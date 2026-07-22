@@ -138,8 +138,6 @@ export function redactStage3CString(
   }
   for (const rule of CANONICAL_RULES) {
     out = out.replace(rule.re, (match: string, ...rest: unknown[]) => {
-      const idx = out.indexOf(match);
-      if (idx >= 0 && isPlaceholderRegion(out, idx, match.length)) return match;
       const captures = rest.slice(0, -2).map((c) => (typeof c === "string" ? c : ""));
       return rule.replacer(match, ...captures);
     });

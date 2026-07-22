@@ -32,6 +32,9 @@ const WORKFLOW = ".github/workflows/stage3c-runtime-verification.yml";
 const PKG = "package.json";
 const LOCK = "bun.lock";
 const SELF = "scripts/verify-stage3c-live-matrix-foundation-source.ts";
+const RESIDENCY_SUMMARY_TEST =
+  "tests/unit/billing-stage3c-live-matrix-residency-summary.test.ts";
+
 
 const EXPECTED_DEP_VERSION = "2.7.7";
 

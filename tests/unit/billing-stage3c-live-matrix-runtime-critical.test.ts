@@ -424,3 +424,131 @@ describe("createMatrixCleanStateReader — adapter shape", () => {
 });
 
 });
+
+// ---------------------------------------------------------------------------
+// CanonicalStage3CUuidSchema — direct behavior + consuming helpers
+// ---------------------------------------------------------------------------
+
+describe("CanonicalStage3CUuidSchema — direct behavior", () => {
+  const lower = "aaaaaaaa-1111-4111-8111-111111111111";
+  const upper = "AAAAAAAA-1111-4111-8111-111111111111";
+  const mixed = "AaAaAaAa-1111-4111-8111-111111111111";
+
+  it("accepts a canonical lowercase UUID", () => {
+    expect(CanonicalStage3CUuidSchema.safeParse(lower).success).toBe(true);
+  });
+
+  it("rejects an uppercase UUID", () => {
+    expect(CanonicalStage3CUuidSchema.safeParse(upper).success).toBe(false);
+  });
+
+  it("rejects a mixed-case UUID", () => {
+    expect(CanonicalStage3CUuidSchema.safeParse(mixed).success).toBe(false);
+  });
+
+  it("rejects leading whitespace", () => {
+    expect(CanonicalStage3CUuidSchema.safeParse(" " + lower).success).toBe(false);
+  });
+
+  it("rejects trailing whitespace", () => {
+    expect(CanonicalStage3CUuidSchema.safeParse(lower + " ").success).toBe(false);
+  });
+
+  it("rejects invalid hyphen placement", () => {
+    expect(
+      CanonicalStage3CUuidSchema.safeParse("aaaaaaaa11114111-8111-111111111111-aa").success,
+    ).toBe(false);
+  });
+
+  it("rejects braces", () => {
+    expect(CanonicalStage3CUuidSchema.safeParse(`{${lower}}`).success).toBe(false);
+  });
+
+  it("rejects urn:uuid: prefix", () => {
+    expect(CanonicalStage3CUuidSchema.safeParse(`urn:uuid:${lower}`).success).toBe(false);
+  });
+
+  it("rejects malformed 36-character text", () => {
+    expect(
+      CanonicalStage3CUuidSchema.safeParse("gggggggg-0000-4000-8000-000000000000").success,
+    ).toBe(false);
+  });
+
+  it("rejects blank text", () => {
+    expect(CanonicalStage3CUuidSchema.safeParse("").success).toBe(false);
+  });
+});
+
+describe("Canonical UUID enforcement in matrix consumers", () => {
+  const m = matrix();
+  const upperOf = (v: string) => v.toUpperCase();
+
+  it("validateMatrixDedicatedBillIds rejects duplicates", () => {
+    expect(() =>
+      validateMatrixDedicatedBillIds({ ...m, referenceBillId: m.residentSubmitBillId }),
+    ).toThrow(/unique/);
+  });
+
+  it("validateMatrixDedicatedBillIds rejects an uppercase dedicated bill ID", () => {
+    expect(() =>
+      validateMatrixDedicatedBillIds({
+        ...m,
+        residentSubmitBillId: upperOf(m.residentSubmitBillId),
+      }),
+    ).toThrow(/canonical UUID/);
+  });
+
+  it("validateStage3CMatrixResources rejects uppercase ownership flatA", () => {
+    expect(() =>
+      validateStage3CMatrixResources(m, { ...OWN, flatA: upperOf(OWN.flatA) }),
+    ).toThrow(/ownership/);
+  });
+
+  it("validateStage3CMatrixResources rejects uppercase existingBillIds entry", () => {
+    const bad = [upperOf(OWN.existingBillIds[0]), ...OWN.existingBillIds.slice(1)] as [
+      string,
+      string,
+      string,
+      string,
+    ];
+    expect(() =>
+      validateStage3CMatrixResources(m, { ...OWN, existingBillIds: bad }),
+    ).toThrow(/ownership/);
+  });
+
+  it("parseOtherFlatARow rejects uppercase returned id", () => {
+    const exp = { societyId: U("s001"), blockId: U("b001"), flatNumber: "202" };
+    const row = {
+      id: upperOf(U("f001")),
+      society_id: exp.societyId,
+      block_id: exp.blockId,
+      flat_number: "202",
+      status: "occupied" as const,
+    };
+    expect(() => parseOtherFlatARow(row, exp)).toThrow();
+  });
+
+  it("parseMatrixPaymentRows rejects an uppercase payment id", () => {
+    expect(() =>
+      parseMatrixPaymentRows([{ id: upperOf(U("p001")), bill_id: U("b001") }]),
+    ).toThrow();
+  });
+
+  it("parseMatrixPaymentRows rejects an uppercase bill_id", () => {
+    expect(() =>
+      parseMatrixPaymentRows([{ id: U("p001"), bill_id: upperOf(U("b001")) }]),
+    ).toThrow();
+  });
+
+  it("parseMatrixReceiptRows rejects an uppercase receipt id", () => {
+    expect(() =>
+      parseMatrixReceiptRows([{ id: upperOf(U("r001")), payment_id: U("p001") }]),
+    ).toThrow();
+  });
+
+  it("parseMatrixReceiptRows rejects an uppercase payment_id", () => {
+    expect(() =>
+      parseMatrixReceiptRows([{ id: U("r001"), payment_id: upperOf(U("p001")) }]),
+    ).toThrow();
+  });
+});

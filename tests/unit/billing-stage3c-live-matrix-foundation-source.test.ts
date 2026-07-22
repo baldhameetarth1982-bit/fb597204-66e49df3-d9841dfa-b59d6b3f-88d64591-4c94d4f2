@@ -701,15 +701,13 @@ describe("checkStage3CRedactionMigration", () => {
   });
 
   it("23. non-error safe strings in unmanifested files do not fail", () => {
-    // A file iterating a string[] with `err` name should NOT be flagged
-    // because our patterns require actual `err`/`error` variable usage
-    // matched to the unknown-error patterns; but a plain `for (const err
-    // of xs)` with `${err}` template does match. We accept that as a
-    // required rename — false-positive safety at file scope is verified
-    // for pure static text.
+    const safe = `assertCanonicalError(e, T, "l");`;
     const out = checkStage3CRedactionMigration(
-      [[HELPER_A, `const notes = "safe"; console.log(notes);`]],
-      manifest([]),
+      [
+        [HELPER_A, safe],
+        ["src/app.ts", `const notes = "safe"; console.log(notes);`],
+      ],
+      manifest([{ path: HELPER_A, mode: "via-assertCanonicalError" }]),
     );
     expect(out).toEqual([]);
   });

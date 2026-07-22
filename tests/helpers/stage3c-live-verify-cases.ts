@@ -5,7 +5,7 @@
  * payment. A2 verifies. Balance deltas are asserted against the
  * post-pending summary captured in PENDING-06. Receipt shape is
  * verified against an anchored regex tied to the receipt's UTC month.
- * There is no unnumbered "pre-case" — VERIFY-03 owns the post-verify
+ * There is no unnumbered lifecycle-only step — VERIFY-03 owns the post-verify
  * summary fetch and VERIFY-06 owns the receipt lookup.
  */
 import { expect } from "vitest";

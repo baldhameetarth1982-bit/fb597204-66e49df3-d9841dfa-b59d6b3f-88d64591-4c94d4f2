@@ -4,7 +4,7 @@
  * Uses the shared fixture's canonical `submitAdminCashPayment` helper —
  * method and actor role are pinned server-side. Baseline capture,
  * amount selection, and post-summary reads are owned by the numbered
- * cases below; there is no unnumbered "pre-case" step.
+ * cases below; there is no unnumbered lifecycle-only step step.
  */
 import { expect } from "vitest";
 import {

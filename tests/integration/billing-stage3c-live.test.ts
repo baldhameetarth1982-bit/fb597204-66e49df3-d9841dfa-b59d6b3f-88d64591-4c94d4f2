@@ -2,7 +2,7 @@
  * Stage 3C — Live core matrix (24/93), registry-driven.
  *
  * Every registered test is one entry in `STAGE3C_CORE_LIVE_CASE_HANDLERS`
- * — no unnumbered pre-case tests, no manual `it(...)` per handler. The
+ * — no unnumbered lifecycle-only tests, no manual `it(...)` per handler. The
  * suite is gated by `ALLOW_SOCIOHUB_LIVE_STAGE3C=true`; otherwise the
  * describe block is skipped rather than emitting a fake passing test.
  */

@@ -185,8 +185,7 @@ describe("Stage 3C — RESIDENT-SUBMIT handler source shape", () => {
   });
 
   it("asserts no receipt for pending submission", () => {
-    expect(residentSrc).toMatch(/no receipt for pending payment/);
-    expect(residentSrc).toMatch(/no receipt exists/);
+    expect(residentSrc).toMatch(/assertNoReceiptForResidentPayment/);
   });
 
   it("uses canonical RESIDENT_CASH_NOT_ALLOWED token", () => {

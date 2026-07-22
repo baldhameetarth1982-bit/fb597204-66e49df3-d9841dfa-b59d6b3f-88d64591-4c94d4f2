@@ -1,24 +1,24 @@
 /**
  * Stage 3C — Live RESIDENT-SUBMIT-01..RESIDENT-SUBMIT-08 case handlers.
  *
- * All submissions run through the same code path used by the production
- * `submitResidentBankTransfer` server function: the resident's own
- * authenticated Supabase client calls `submit_offline_payment` with
- * `_method` pinned to `bank_transfer` and `_actor_role` pinned to
- * `resident`. The fixture helper
- * `submitResidentBankTransferPayment` is that exact mirror — the
- * production TanStack server function's body is a thin wrapper over
- * the same RPC + pins, and cannot be invoked over HTTP from Vitest.
+ * Every submission goes through the neutral shared production core
+ * `submitResidentBankTransferWithClient` — the fixture helper
+ * `submitResidentBankTransferPayment` is a thin wrapper over that same
+ * core (see `src/lib/offline-payment-resident-submit.ts`), so the
+ * production server function and the fixture cannot drift on method
+ * or actor pinning.
  *
- * The public schema (`residentSubmitInputSchema`) is used at the
- * boundary to reject any forbidden field the browser might attempt to
- * smuggle (method, actorRole, proofUrl, status, societyId, submittedBy,
- * verifiedAmount, receipt fields).
+ * All Zod schemas, snapshot/comparison helpers, and no-receipt
+ * assertions live in `./stage3c-live-resident-submit-contracts` — this
+ * file contains only the case control flow.
  *
- * Denial cases (RESIDENT-SUBMIT-04..07) never mutate database state:
- * the pending payment produced by RESIDENT-SUBMIT-02 remains the only
- * payment on the dedicated bill, and the dedicated other-flat bill is
- * left untouched.
+ * Denial cases (RESIDENT-SUBMIT-04..07) use a strict control-flow
+ * pattern: the RPC is invoked inside a try/catch that ONLY records
+ * `{ caught, succeededData }`; the "unexpected success" assertion is
+ * thrown OUTSIDE the catch block so it can never be mistaken for a
+ * canonical error and consumed by `assertCanonicalError`. Each denial
+ * case snapshots the full bill state before and asserts it is byte-for
+ * -byte unchanged after (summary + payment rows + receipt sequences).
  */
 import { expect } from "vitest";
 import { z } from "zod";
@@ -31,6 +31,17 @@ import { STAGE3C_ERRORS, assertCanonicalError } from "./stage3c-live-errors";
 import { safeStage3CErrorMessage } from "./stage3c-error-redaction";
 
 import { residentSubmitInputSchema } from "@/lib/offline-payment-contracts";
+import {
+  ResidentSubmittedPaymentRowSchema,
+  deriveActorRoleFromSource,
+  snapshotReceiptSequences,
+  assertReceiptSequencesExactlyEqual,
+  assertReceiptSequencesUnchanged,
+  snapshotResidentBillState,
+  assertResidentBillStateUnchanged,
+  assertNoReceiptForResidentPayment,
+  type ReceiptSequenceSnapshot,
+} from "./stage3c-live-resident-submit-contracts";
 import {
   requireMatrixFixture,
   requireResidentSubmitAmount,
@@ -58,12 +69,6 @@ export type Stage3CResidentSubmitHandler = (
 /** Canonical amount used by the resident-submit lifecycle. */
 export const RESIDENT_SUBMIT_AMOUNT = 300;
 
-/**
- * Derive bounded, run-unique but deterministic suffixes from the
- * fixture prefix (which already embeds Date.now + a random slug). The
- * fixture prefix is unique per test run and never contains protected
- * identity.
- */
 function safeSuffix(prefix: string): string {
   return prefix.replace(/[^A-Za-z0-9]/g, "").slice(0, 24) || "run";
 }
@@ -83,7 +88,9 @@ function assertCleanBaseline(
   expect(summary.total_payable, `${label}: total_payable`).toBe(1200);
   expect(summary.verified_amount, `${label}: verified_amount`).toBe(0);
   expect(summary.pending_amount, `${label}: pending_amount`).toBe(0);
-  expect(summary.available_to_submit, `${label}: available_to_submit`).toBe(1200);
+  expect(summary.available_to_submit, `${label}: available_to_submit`).toBe(
+    1200,
+  );
 }
 
 function summaryField(raw: unknown, field: string, label: string): number {
@@ -98,88 +105,52 @@ function summaryField(raw: unknown, field: string, label: string): number {
   throw new Error(`[stage3c:${label}] missing/invalid summary field "${field}"`);
 }
 
-/**
- * Snapshot the receipt-sequence + monthly-sequence rows for a society.
- * Verification allocates a receipt number and increments a sequence row;
- * a pending resident submission must NOT touch either sequence table.
- */
-const ReceiptSequenceRow = z.object({
-  society_id: z.string().uuid(),
-  year: z.number().int(),
-  next_number: z.number().int(),
-});
-const ReceiptMonthSequenceRow = z.object({
-  society_id: z.string().uuid(),
-  year_month: z.string(),
-  next_number: z.number().int(),
-});
-export type ReceiptSequenceSnapshot = {
-  yearly: Array<z.infer<typeof ReceiptSequenceRow>>;
-  monthly: Array<z.infer<typeof ReceiptMonthSequenceRow>>;
+// Re-exports kept for the 32-case validator + unit tests. Do NOT redeclare.
+export {
+  ResidentSubmittedPaymentRowSchema,
+  deriveActorRoleFromSource,
+  snapshotReceiptSequences,
+  assertReceiptSequencesExactlyEqual,
+  assertReceiptSequencesUnchanged,
+  snapshotResidentBillState,
+  assertResidentBillStateUnchanged,
+  assertNoReceiptForResidentPayment,
 };
 
-export async function snapshotReceiptSequences(
-  admin: { from: (t: string) => { select: (c: string) => { eq: (col: string, v: string) => Promise<{ data: unknown; error: unknown }> } } },
-  societyId: string,
-  label: string,
-): Promise<ReceiptSequenceSnapshot> {
-  const yr = await admin.from("payment_receipt_sequences").select("society_id, year, next_number").eq("society_id", societyId);
-  if (yr.error) throw new Error(`[stage3c:${label}] receipt-seq: ${safeStage3CErrorMessage(label, yr.error)}`);
-  const mo = await admin.from("payment_receipt_month_sequences").select("society_id, year_month, next_number").eq("society_id", societyId);
-  if (mo.error) throw new Error(`[stage3c:${label}] receipt-month-seq: ${safeStage3CErrorMessage(label, mo.error)}`);
-  return {
-    yearly: z.array(ReceiptSequenceRow).parse(Array.isArray(yr.data) ? yr.data : []),
-    monthly: z.array(ReceiptMonthSequenceRow).parse(Array.isArray(mo.data) ? mo.data : []),
-  };
-}
+// ---------------------------------------------------------------------------
+// Denial control-flow: capture outcome, then assert OUTSIDE catch.
+// ---------------------------------------------------------------------------
 
-export function assertReceiptSequencesUnchanged(
-  before: ReceiptSequenceSnapshot,
-  after: ReceiptSequenceSnapshot,
-  label: string,
-): void {
-  const key = (r: { year?: number; year_month?: string }) => String(r.year ?? r.year_month ?? "");
-  const beforeY = new Map(before.yearly.map((r) => [key(r), r.next_number]));
-  const beforeM = new Map(before.monthly.map((r) => [key(r), r.next_number]));
-  for (const r of after.yearly) {
-    expect(beforeY.get(key(r)) ?? r.next_number, `${label}: yearly seq ${key(r)} unchanged`).toBe(r.next_number);
+type RpcOutcome = {
+  caught: unknown | null;
+  succeededData: unknown | undefined;
+};
+
+async function invokeRpcCapturing(
+  actorClient: {
+    rpc: (
+      name: string,
+      args: Record<string, unknown>,
+    ) => Promise<{ data: unknown; error: unknown }>;
+  },
+  args: Record<string, unknown>,
+): Promise<RpcOutcome> {
+  const outcome: RpcOutcome = { caught: null, succeededData: undefined };
+  try {
+    const { data, error } = await actorClient.rpc(
+      "submit_offline_payment",
+      args,
+    );
+    if (error !== null && error !== undefined) {
+      outcome.caught = error;
+    } else {
+      outcome.succeededData = data;
+    }
+  } catch (thrown) {
+    outcome.caught = thrown;
   }
-  for (const r of after.monthly) {
-    expect(beforeM.get(key(r)) ?? r.next_number, `${label}: monthly seq ${key(r)} unchanged`).toBe(r.next_number);
-  }
-  expect(after.yearly.length, `${label}: yearly seq row count unchanged`).toBe(before.yearly.length);
-  expect(after.monthly.length, `${label}: monthly seq row count unchanged`).toBe(before.monthly.length);
+  return outcome;
 }
-
-/** Strict Zod schema for the persisted resident-submitted payment row. */
-export const ResidentSubmittedPaymentRowSchema = z.object({
-  id: z.string().uuid(),
-  bill_id: z.string().uuid(),
-  society_id: z.string().uuid(),
-  submitted_by: z.string().uuid(),
-  amount: z.union([z.number(), z.string()]).transform((v) => Number(v)),
-  method: z.literal("bank_transfer"),
-  status: z.literal("pending"),
-  source: z.literal("resident_submission"),
-  reference_no: z.string().min(1),
-  idempotency_key: z.string().min(1),
-  verified_by: z.null(),
-  verified_at: z.null(),
-  rejected_by: z.null(),
-  rejected_at: z.null(),
-  rejection_reason: z.null(),
-  reversed_by: z.null(),
-  reversed_at: z.null(),
-  reversal_reason: z.null(),
-});
-
-/** Derive canonical actor_role from the persisted `source` column. */
-export function deriveActorRoleFromSource(source: string): "resident" | "admin" {
-  if (source === "resident_submission") return "resident";
-  if (source === "admin_entry") return "admin";
-  throw new Error(`[stage3c] unknown payment source: ${source}`);
-}
-
 
 // ---------------------------------------------------------------------------
 // RESIDENT-SUBMIT-01
@@ -193,33 +164,43 @@ export const residentSubmit01_initializeDedicatedResidentBill: Stage3CResidentSu
     ctx.residentSubmitAmount = RESIDENT_SUBMIT_AMOUNT;
     ctx.residentSubmitReference = residentReferenceFor(fixture.prefix);
     ctx.residentSubmitIdempotencyKey = residentIdempotencyKeyFor(fixture.prefix);
-    // Also populate the foundation resident slots (validator contract).
     ctx.residentBillId = billId;
     ctx.residentAmount = ctx.residentSubmitAmount;
     ctx.residentReference = ctx.residentSubmitReference;
     ctx.residentIdempotencyKey = ctx.residentSubmitIdempotencyKey;
 
-    const rawSummary = await fixture.helpers.getBillSummary(fixture.users.adminA1, billId);
+    const rawSummary = await fixture.helpers.getBillSummary(
+      fixture.users.adminA1,
+      billId,
+    );
     const initial = parseBillSummary(rawSummary, "resident-submit-01");
     assertCleanBaseline(initial, "RESIDENT-SUBMIT-01");
-    expect(summaryField(rawSummary, "rejected_amount", "RESIDENT-SUBMIT-01")).toBe(0);
-    expect(summaryField(rawSummary, "reversed_amount", "RESIDENT-SUBMIT-01")).toBe(0);
     expect(
-      summaryField(rawSummary, "remaining_verified_balance", "RESIDENT-SUBMIT-01"),
+      summaryField(rawSummary, "rejected_amount", "RESIDENT-SUBMIT-01"),
+    ).toBe(0);
+    expect(
+      summaryField(rawSummary, "reversed_amount", "RESIDENT-SUBMIT-01"),
+    ).toBe(0);
+    expect(
+      summaryField(
+        rawSummary,
+        "remaining_verified_balance",
+        "RESIDENT-SUBMIT-01",
+      ),
     ).toBe(1200);
     expect(
       Boolean((rawSummary as Record<string, unknown>).cancelled),
       "RESIDENT-SUBMIT-01: bill must not be cancelled",
     ).toBe(false);
     const status = String((rawSummary as Record<string, unknown>).status ?? "");
-    expect(["unpaid", "open"], `RESIDENT-SUBMIT-01: canonical unpaid/open, got ${status}`).toContain(
-      status,
-    );
+    expect(
+      ["unpaid", "open"],
+      `RESIDENT-SUBMIT-01: canonical unpaid/open, got ${status}`,
+    ).toContain(status);
 
     ctx.residentSubmitInitialSummary = initial;
     ctx.residentBaselineSummary = initial;
 
-    // Snapshot receipt sequences to prove no allocation happens for pending.
     ctx.residentSubmitInitialReceiptSequences = await snapshotReceiptSequences(
       fixture.admin,
       fixture.societyA,
@@ -227,116 +208,120 @@ export const residentSubmit01_initializeDedicatedResidentBill: Stage3CResidentSu
     );
 
     const preCount = await fixture.helpers.countPayments(billId);
-    expect(preCount, "RESIDENT-SUBMIT-01: no pre-existing payments on dedicated bill").toBe(0);
+    expect(
+      preCount,
+      "RESIDENT-SUBMIT-01: no pre-existing payments on dedicated bill",
+    ).toBe(0);
   };
-
 
 // ---------------------------------------------------------------------------
 // RESIDENT-SUBMIT-02
 // ---------------------------------------------------------------------------
 
-export const residentSubmit02_submitBankTransfer: Stage3CResidentSubmitHandler = async (
-  ctx,
-) => {
-  const fixture = requireMatrixFixture(ctx);
-  const amount = requireResidentSubmitAmount(ctx);
-  const reference = requireResidentSubmitReference(ctx);
-  const idempotencyKey = requireResidentSubmitIdempotencyKey(ctx);
-  const billId = fixture.matrix.residentSubmitBillId;
+export const residentSubmit02_submitBankTransfer: Stage3CResidentSubmitHandler =
+  async (ctx) => {
+    const fixture = requireMatrixFixture(ctx);
+    const amount = requireResidentSubmitAmount(ctx);
+    const reference = requireResidentSubmitReference(ctx);
+    const idempotencyKey = requireResidentSubmitIdempotencyKey(ctx);
+    const billId = fixture.matrix.residentSubmitBillId;
 
-  // Public boundary: parse through the exact production schema. Only
-  // resident-safe public fields cross the boundary.
-  const parsed = residentSubmitInputSchema.parse({
-    billId,
-    amount,
-    paymentDate: fixture.testPaymentDate,
-    referenceNo: reference,
-    idempotencyKey,
-  });
+    const parsed = residentSubmitInputSchema.parse({
+      billId,
+      amount,
+      paymentDate: fixture.testPaymentDate,
+      referenceNo: reference,
+      idempotencyKey,
+    });
 
-  // Same code path as `submitResidentBankTransfer` in
-  // src/lib/offline-payments.functions.ts — method pinned to
-  // bank_transfer, actor role pinned to resident.
-  const paymentId = await fixture.helpers.submitResidentBankTransferPayment({
-    actor: fixture.users.activeResident,
-    billId: parsed.billId,
-    amount: parsed.amount,
-    paymentDate: parsed.paymentDate ?? fixture.testPaymentDate,
-    referenceNo: parsed.referenceNo,
-    idempotencyKey: parsed.idempotencyKey,
-  });
+    // fixture.helpers.submitResidentBankTransferPayment delegates to
+    // submitResidentBankTransferWithClient — identical code path to the
+    // production server function.
+    const paymentId = await fixture.helpers.submitResidentBankTransferPayment({
+      actor: fixture.users.activeResident,
+      billId: parsed.billId,
+      amount: parsed.amount,
+      paymentDate: parsed.paymentDate ?? fixture.testPaymentDate,
+      referenceNo: parsed.referenceNo,
+      idempotencyKey: parsed.idempotencyKey,
+    });
 
-  ctx.residentSubmitPaymentId = paymentId;
-  ctx.residentPaymentId = paymentId;
-  trackUniqueId(fixture.tracked.paymentIds, paymentId, "residentSubmitPayment");
-};
+    ctx.residentSubmitPaymentId = paymentId;
+    ctx.residentPaymentId = paymentId;
+    trackUniqueId(fixture.tracked.paymentIds, paymentId, "residentSubmitPayment");
+  };
 
 // ---------------------------------------------------------------------------
 // RESIDENT-SUBMIT-03
 // ---------------------------------------------------------------------------
 
-export const residentSubmit03_pendingRowAndNoReceipt: Stage3CResidentSubmitHandler = async (
-  ctx,
-) => {
-  const fixture = requireMatrixFixture(ctx);
-  const paymentId = requireResidentSubmitPaymentId(ctx);
-  const billId = fixture.matrix.residentSubmitBillId;
-  const reference = requireResidentSubmitReference(ctx);
-  const idempotencyKey = requireResidentSubmitIdempotencyKey(ctx);
-  const amount = requireResidentSubmitAmount(ctx);
+export const residentSubmit03_pendingRowAndNoReceipt: Stage3CResidentSubmitHandler =
+  async (ctx) => {
+    const fixture = requireMatrixFixture(ctx);
+    const paymentId = requireResidentSubmitPaymentId(ctx);
+    const billId = fixture.matrix.residentSubmitBillId;
+    const reference = requireResidentSubmitReference(ctx);
+    const idempotencyKey = requireResidentSubmitIdempotencyKey(ctx);
+    const amount = requireResidentSubmitAmount(ctx);
 
-  const { data, error } = await fixture.admin
-    .from("payments")
-    .select(
-      "id, bill_id, society_id, submitted_by, amount, method, status, source, reference_no, idempotency_key, verified_by, verified_at, rejected_by, rejected_at, rejection_reason, reversed_by, reversed_at, reversal_reason",
-    )
-    .eq("id", paymentId)
-    .single();
-  expect(error, "RESIDENT-SUBMIT-03: query error").toBeNull();
-  expect(data, "RESIDENT-SUBMIT-03: row present").not.toBeNull();
+    const { data, error } = await fixture.admin
+      .from("payments")
+      .select(
+        "id, bill_id, society_id, submitted_by, amount, method, status, source, reference_no, idempotency_key, verified_by, verified_at, rejected_by, rejected_at, rejection_reason, reversed_by, reversed_at, reversal_reason",
+      )
+      .eq("id", paymentId)
+      .single();
+    expect(error, "RESIDENT-SUBMIT-03: query error").toBeNull();
+    expect(data, "RESIDENT-SUBMIT-03: row present").not.toBeNull();
 
-  // Strict Zod parse enforces bank_transfer method, pending status,
-  // resident_submission source, and every reject/reverse/verify field null.
-  const parsedRow = ResidentSubmittedPaymentRowSchema.parse(data);
-  expect(parsedRow.society_id, "RESIDENT-SUBMIT-03: society").toBe(fixture.societyA);
-  expect(parsedRow.bill_id, "RESIDENT-SUBMIT-03: bill").toBe(billId);
-  expect(parsedRow.submitted_by, "RESIDENT-SUBMIT-03: submitter").toBe(
-    fixture.users.activeResident.id,
-  );
-  expect(parsedRow.method, "RESIDENT-SUBMIT-03: server-pinned bank_transfer").toBe(
-    "bank_transfer",
-  );
-  expect(parsedRow.status, "RESIDENT-SUBMIT-03: pending").toBe("pending");
-  expect(parsedRow.source, "RESIDENT-SUBMIT-03: server-pinned source").toBe(
-    "resident_submission",
-  );
-  expect(
-    deriveActorRoleFromSource(parsedRow.source),
-    "RESIDENT-SUBMIT-03: derived actor_role",
-  ).toBe("resident");
-  expect(parsedRow.amount, "RESIDENT-SUBMIT-03: amount").toBe(amount);
-  expect(parsedRow.reference_no, "RESIDENT-SUBMIT-03: reference").toBe(reference);
-  expect(parsedRow.idempotency_key, "RESIDENT-SUBMIT-03: idempotency key").toBe(idempotencyKey);
+    const parsedRow = ResidentSubmittedPaymentRowSchema.parse(data);
+    expect(parsedRow.society_id, "RESIDENT-SUBMIT-03: society").toBe(
+      fixture.societyA,
+    );
+    expect(parsedRow.bill_id, "RESIDENT-SUBMIT-03: bill").toBe(billId);
+    expect(parsedRow.submitted_by, "RESIDENT-SUBMIT-03: submitter").toBe(
+      fixture.users.activeResident.id,
+    );
+    expect(
+      parsedRow.method,
+      "RESIDENT-SUBMIT-03: server-pinned bank_transfer",
+    ).toBe("bank_transfer");
+    expect(parsedRow.status, "RESIDENT-SUBMIT-03: pending").toBe("pending");
+    expect(
+      parsedRow.source,
+      "RESIDENT-SUBMIT-03: server-pinned source",
+    ).toBe("resident_submission");
+    expect(
+      deriveActorRoleFromSource(parsedRow.source),
+      "RESIDENT-SUBMIT-03: derived actor_role",
+    ).toBe("resident");
+    expect(parsedRow.amount, "RESIDENT-SUBMIT-03: amount").toBe(amount);
+    expect(parsedRow.reference_no, "RESIDENT-SUBMIT-03: reference").toBe(
+      reference,
+    );
+    expect(parsedRow.idempotency_key, "RESIDENT-SUBMIT-03: idempotency key").toBe(
+      idempotencyKey,
+    );
 
-  // Also keep the legacy parsePaymentAssertionRow contract check for the
-  // fields it validates (society/flat/bill/method/submitted_by/status).
-  const assertion = parsePaymentAssertionRow(
-    {
-      society_id: parsedRow.society_id,
-      flat_id: fixture.flatA,
-      bill_id: parsedRow.bill_id,
-      method: parsedRow.method,
-      submitted_by: parsedRow.submitted_by,
-      status: parsedRow.status,
-    },
-    "resident-submit-03",
-  );
-  expect(assertion.status).toBe("pending");
+    const assertion = parsePaymentAssertionRow(
+      {
+        society_id: parsedRow.society_id,
+        flat_id: fixture.flatA,
+        bill_id: parsedRow.bill_id,
+        method: parsedRow.method,
+        submitted_by: parsedRow.submitted_by,
+        status: parsedRow.status,
+      },
+      "resident-submit-03",
+    );
+    expect(assertion.status).toBe("pending");
 
-  const receipts = await fixture.helpers.countReceipts(paymentId);
-  expect(receipts, "RESIDENT-SUBMIT-03: no receipt for pending payment").toBe(0);
-};
-
+    await assertNoReceiptForResidentPayment(
+      fixture.admin,
+      paymentId,
+      "RESIDENT-SUBMIT-03",
+    );
+  };
 
 // ---------------------------------------------------------------------------
 // RESIDENT-SUBMIT-04 — public schema strictness + resident_cash_not_allowed
@@ -349,8 +334,9 @@ export const residentSubmit04_serverPinnedMethodAndActorRole: Stage3CResidentSub
     const reference = requireResidentSubmitReference(ctx);
     const idempotencyKey = requireResidentSubmitIdempotencyKey(ctx);
     const amount = requireResidentSubmitAmount(ctx);
+    const pendingId = requireResidentSubmitPaymentId(ctx);
 
-    // A. Public boundary rejection of forbidden fields.
+    // A. Public boundary rejection.
     const baseValid = {
       billId,
       amount,
@@ -367,52 +353,60 @@ export const residentSubmit04_serverPinnedMethodAndActorRole: Stage3CResidentSub
       ["submittedBy", { submittedBy: fixture.users.activeResident.id }],
     ];
     for (const [name, extra] of forbidden) {
-      const attempt = { ...baseValid, ...extra };
-      const res = residentSubmitInputSchema.safeParse(attempt);
-      expect(res.success, `RESIDENT-SUBMIT-04: public schema must reject "${name}"`).toBe(
-        false,
-      );
+      const res = residentSubmitInputSchema.safeParse({ ...baseValid, ...extra });
+      expect(
+        res.success,
+        `RESIDENT-SUBMIT-04: public schema must reject "${name}"`,
+      ).toBe(false);
     }
 
-    // B. Direct RPC: cash as resident must be denied server-side.
-    const preCount = await fixture.helpers.countPayments(billId);
-    let threw = false;
-    let unexpectedSuccessId: string | null = null;
-    try {
-      const { data, error } = await fixture.users.activeResident.client.rpc(
-        "submit_offline_payment",
-        {
-          _bill_id: billId,
-          _method: "cash",
-          _amount: amount,
-          _payment_date: fixture.testPaymentDate,
-          _reference_no: null,
-          _notes: null,
-          _idempotency_key: `${fixture.prefix}-rs04-cash`,
-          _actor_role: "resident",
-        },
-      );
-      if (error) throw error;
-      // Do not interpolate raw RPC data into the error message.
-      const parsedId = z.string().uuid().safeParse(data);
-      unexpectedSuccessId = parsedId.success ? parsedId.data : null;
+    // B. Cash-as-resident RPC denial — full bill-state snapshot pre/post.
+    const before = await snapshotResidentBillState(
+      fixture.admin,
+      fixture.users.adminA1.client,
+      billId,
+      fixture.societyA,
+      "RESIDENT-SUBMIT-04",
+    );
+    const outcome = await invokeRpcCapturing(fixture.users.activeResident.client, {
+      _bill_id: billId,
+      _method: "cash",
+      _amount: amount,
+      _payment_date: fixture.testPaymentDate,
+      _reference_no: null,
+      _notes: null,
+      _idempotency_key: `${fixture.prefix}-rs04-cash`,
+      _actor_role: "resident",
+    });
+    if (outcome.caught === null) {
+      // Thrown OUTSIDE catch — cannot be misinterpreted as canonical error.
+      const parsedId = z.string().uuid().safeParse(outcome.succeededData);
       throw new Error(
-        `RESIDENT-SUBMIT-04: cash submission must be denied (no server error surfaced)`,
+        `RESIDENT-SUBMIT-04: cash submission must be denied — unexpected success${
+          parsedId.success ? " (id redacted)" : ""
+        }: ${safeStage3CErrorMessage("RESIDENT-SUBMIT-04", "no server error surfaced")}`,
       );
-    } catch (err) {
-      threw = true;
-      assertCanonicalError(err, STAGE3C_ERRORS.RESIDENT_CASH_NOT_ALLOWED, "RESIDENT-SUBMIT-04");
     }
-    expect(threw, "RESIDENT-SUBMIT-04: cash attempt must throw").toBe(true);
-    expect(unexpectedSuccessId, "RESIDENT-SUBMIT-04: no id returned from denied submission").toBeNull();
+    assertCanonicalError(
+      outcome.caught,
+      STAGE3C_ERRORS.RESIDENT_CASH_NOT_ALLOWED,
+      "RESIDENT-SUBMIT-04",
+    );
 
-    // No mutation.
-    const postCount = await fixture.helpers.countPayments(billId);
-    expect(postCount, "RESIDENT-SUBMIT-04: no new payment after cash denial").toBe(preCount);
-    const pendingId = requireResidentSubmitPaymentId(ctx);
-    expect(await fixture.helpers.countReceipts(pendingId)).toBe(0);
+    const after = await snapshotResidentBillState(
+      fixture.admin,
+      fixture.users.adminA1.client,
+      billId,
+      fixture.societyA,
+      "RESIDENT-SUBMIT-04",
+    );
+    assertResidentBillStateUnchanged(before, after, "RESIDENT-SUBMIT-04");
+    await assertNoReceiptForResidentPayment(
+      fixture.admin,
+      pendingId,
+      "RESIDENT-SUBMIT-04",
+    );
   };
-
 
 // ---------------------------------------------------------------------------
 // Shared denial helper for RESIDENT-SUBMIT-05..07
@@ -421,217 +415,301 @@ export const residentSubmit04_serverPinnedMethodAndActorRole: Stage3CResidentSub
 type DenialInput = {
   label: string;
   ctx: Stage3CLiveMatrixContext;
-  actorClient: { rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }> };
+  actorClient: {
+    rpc: (
+      name: string,
+      args: Record<string, unknown>,
+    ) => Promise<{ data: unknown; error: unknown }>;
+  };
   billId: string;
   suffix: string;
 };
 
-async function attemptResidentSubmitAndAssertDenied(input: DenialInput): Promise<void> {
+async function attemptResidentSubmitAndAssertDenied(
+  input: DenialInput,
+): Promise<void> {
   const { label, ctx, actorClient, billId, suffix } = input;
   const fixture = requireMatrixFixture(ctx);
   const amount = requireResidentSubmitAmount(ctx);
 
-  const preBillCount = await fixture.helpers.countPayments(billId);
-  const uniqueReference = `RS-${safeSuffix(fixture.prefix)}-${suffix}`;
-  const uniqueKey = `resident-submit-${safeSuffix(fixture.prefix)}-${suffix}`;
-
-  let threw = false;
-  let unexpectedSuccessId: string | null = null;
-  try {
-    const { data, error } = await actorClient.rpc("submit_offline_payment", {
-      _bill_id: billId,
-      _method: "bank_transfer",
-      _amount: amount,
-      _payment_date: fixture.testPaymentDate,
-      _reference_no: uniqueReference,
-      _notes: null,
-      _idempotency_key: uniqueKey,
-      _actor_role: "resident",
-    });
-    if (error) throw error;
-    const parsedId = z.string().uuid().safeParse(data);
-    unexpectedSuccessId = parsedId.success ? parsedId.data : null;
-    throw new Error(`${label}: unexpected success (no server error surfaced)`);
-  } catch (err) {
-    threw = true;
-    assertCanonicalError(err, STAGE3C_ERRORS.NOT_AUTHORIZED, label);
+  const before = await snapshotResidentBillState(
+    fixture.admin,
+    fixture.users.adminA1.client,
+    billId,
+    fixture.societyA,
+    label,
+  );
+  const outcome = await invokeRpcCapturing(actorClient, {
+    _bill_id: billId,
+    _method: "bank_transfer",
+    _amount: amount,
+    _payment_date: fixture.testPaymentDate,
+    _reference_no: `RS-${safeSuffix(fixture.prefix)}-${suffix}`,
+    _notes: null,
+    _idempotency_key: `resident-submit-${safeSuffix(fixture.prefix)}-${suffix}`,
+    _actor_role: "resident",
+  });
+  if (outcome.caught === null) {
+    const parsedId = z.string().uuid().safeParse(outcome.succeededData);
+    throw new Error(
+      `${label}: unexpected success${parsedId.success ? " (id redacted)" : ""}: ${safeStage3CErrorMessage(
+        label,
+        "no server error surfaced",
+      )}`,
+    );
   }
-  expect(threw, `${label}: must throw`).toBe(true);
-  expect(unexpectedSuccessId, `${label}: no id returned from denied submission`).toBeNull();
+  assertCanonicalError(outcome.caught, STAGE3C_ERRORS.NOT_AUTHORIZED, label);
 
-  const postBillCount = await fixture.helpers.countPayments(billId);
-  expect(postBillCount, `${label}: no new payment on target bill`).toBe(preBillCount);
+  const after = await snapshotResidentBillState(
+    fixture.admin,
+    fixture.users.adminA1.client,
+    billId,
+    fixture.societyA,
+    label,
+  );
+  assertResidentBillStateUnchanged(before, after, label);
 }
-
 
 // ---------------------------------------------------------------------------
 // RESIDENT-SUBMIT-05 — same-society other flat
 // ---------------------------------------------------------------------------
 
-export const residentSubmit05_otherFlatDenied: Stage3CResidentSubmitHandler = async (ctx) => {
-  const fixture = requireMatrixFixture(ctx);
-  const otherFlatBillId = fixture.matrix.otherFlatBillId;
+export const residentSubmit05_otherFlatDenied: Stage3CResidentSubmitHandler =
+  async (ctx) => {
+    const fixture = requireMatrixFixture(ctx);
+    const otherFlatBillId = fixture.matrix.otherFlatBillId;
 
-  await attemptResidentSubmitAndAssertDenied({
-    label: "RESIDENT-SUBMIT-05",
-    ctx,
-    actorClient: fixture.users.activeResident.client,
-    billId: otherFlatBillId,
-    suffix: "otherflat",
-  });
+    await attemptResidentSubmitAndAssertDenied({
+      label: "RESIDENT-SUBMIT-05",
+      ctx,
+      actorClient: fixture.users.activeResident.client,
+      billId: otherFlatBillId,
+      suffix: "otherflat",
+    });
 
-  // otherFlat bill must remain at canonical clean 900.
-  const raw = await fixture.helpers.getBillSummary(fixture.users.adminA1, otherFlatBillId);
-  const summary = parseBillSummary(raw, "resident-submit-05");
-  expect(summary.total_payable, "RESIDENT-SUBMIT-05: total").toBe(900);
-  expect(summary.verified_amount, "RESIDENT-SUBMIT-05: verified").toBe(0);
-  expect(summary.pending_amount, "RESIDENT-SUBMIT-05: pending").toBe(0);
-  expect(summary.available_to_submit, "RESIDENT-SUBMIT-05: available").toBe(900);
-  expect(summaryField(raw, "rejected_amount", "RESIDENT-SUBMIT-05")).toBe(0);
-  expect(summaryField(raw, "reversed_amount", "RESIDENT-SUBMIT-05")).toBe(0);
-  expect(summaryField(raw, "remaining_verified_balance", "RESIDENT-SUBMIT-05")).toBe(900);
-  expect((raw as Record<string, unknown>).cancelled).toBe(false);
-};
+    const raw = await fixture.helpers.getBillSummary(
+      fixture.users.adminA1,
+      otherFlatBillId,
+    );
+    const summary = parseBillSummary(raw, "resident-submit-05");
+    expect(summary.total_payable, "RESIDENT-SUBMIT-05: total").toBe(900);
+    expect(summary.verified_amount, "RESIDENT-SUBMIT-05: verified").toBe(0);
+    expect(summary.pending_amount, "RESIDENT-SUBMIT-05: pending").toBe(0);
+    expect(summary.available_to_submit, "RESIDENT-SUBMIT-05: available").toBe(
+      900,
+    );
+    expect(
+      summaryField(raw, "rejected_amount", "RESIDENT-SUBMIT-05"),
+    ).toBe(0);
+    expect(
+      summaryField(raw, "reversed_amount", "RESIDENT-SUBMIT-05"),
+    ).toBe(0);
+    expect(
+      summaryField(raw, "remaining_verified_balance", "RESIDENT-SUBMIT-05"),
+    ).toBe(900);
+    expect((raw as Record<string, unknown>).cancelled).toBe(false);
+  };
 
 // ---------------------------------------------------------------------------
-// RESIDENT-SUBMIT-06 — moved-out resident
+// RESIDENT-SUBMIT-06 — moved-out resident (prove via flat_residents)
 // ---------------------------------------------------------------------------
 
-export const residentSubmit06_movedOutResidentDenied: Stage3CResidentSubmitHandler = async (
-  ctx,
-) => {
-  const fixture = requireMatrixFixture(ctx);
-  const billId = fixture.matrix.residentSubmitBillId;
-  const priorPendingId = requireResidentSubmitPaymentId(ctx);
-  const priorCount = await fixture.helpers.countPayments(billId);
+export const residentSubmit06_movedOutResidentDenied: Stage3CResidentSubmitHandler =
+  async (ctx) => {
+    const fixture = requireMatrixFixture(ctx);
+    const billId = fixture.matrix.residentSubmitBillId;
+    const priorPendingId = requireResidentSubmitPaymentId(ctx);
 
-  await attemptResidentSubmitAndAssertDenied({
-    label: "RESIDENT-SUBMIT-06",
-    ctx,
-    actorClient: fixture.users.movedOutResident.client,
-    billId,
-    suffix: "movedout",
-  });
+    // Proof of moved-out state: no ACTIVE residency for movedOutResident on flatA.
+    const active = await fixture.admin
+      .from("flat_residents")
+      .select("id, is_active, moved_out_at")
+      .eq("user_id", fixture.users.movedOutResident.id)
+      .eq("flat_id", fixture.flatA)
+      .eq("is_active", true);
+    expect(active.error, "RESIDENT-SUBMIT-06: flat_residents query").toBeNull();
+    const activeRows = Array.isArray(active.data) ? active.data : null;
+    expect(
+      activeRows,
+      "RESIDENT-SUBMIT-06: flat_residents payload must be array",
+    ).not.toBeNull();
+    expect(
+      (activeRows ?? []).length,
+      "RESIDENT-SUBMIT-06: movedOutResident must have zero active residency on flatA",
+    ).toBe(0);
 
-  // Only the pending payment from RESIDENT-SUBMIT-02 remains.
-  const postCount = await fixture.helpers.countPayments(billId);
-  expect(postCount, "RESIDENT-SUBMIT-06: payment count unchanged").toBe(priorCount);
-  expect(postCount, "RESIDENT-SUBMIT-06: exactly one pending payment on dedicated bill").toBe(1);
-  expect(await fixture.helpers.countReceipts(priorPendingId)).toBe(0);
-};
+    // Also confirm the historical inactive row exists with moved_out_at set,
+    // so the fixture actually models a moved-out user (not a never-linked one).
+    const historic = await fixture.admin
+      .from("flat_residents")
+      .select("id, is_active, moved_out_at")
+      .eq("user_id", fixture.users.movedOutResident.id)
+      .eq("flat_id", fixture.flatA);
+    expect(historic.error, "RESIDENT-SUBMIT-06: flat_residents history").toBeNull();
+    const histRows = Array.isArray(historic.data) ? historic.data : [];
+    const inactiveWithDate = histRows.filter(
+      (r) =>
+        (r as { is_active?: boolean }).is_active === false &&
+        typeof (r as { moved_out_at?: unknown }).moved_out_at === "string",
+    );
+    expect(
+      inactiveWithDate.length,
+      "RESIDENT-SUBMIT-06: at least one inactive residency with moved_out_at",
+    ).toBeGreaterThanOrEqual(1);
+
+    await attemptResidentSubmitAndAssertDenied({
+      label: "RESIDENT-SUBMIT-06",
+      ctx,
+      actorClient: fixture.users.movedOutResident.client,
+      billId,
+      suffix: "movedout",
+    });
+
+    const postCount = await fixture.helpers.countPayments(billId);
+    expect(
+      postCount,
+      "RESIDENT-SUBMIT-06: exactly one pending payment on dedicated bill",
+    ).toBe(1);
+    await assertNoReceiptForResidentPayment(
+      fixture.admin,
+      priorPendingId,
+      "RESIDENT-SUBMIT-06",
+    );
+  };
 
 // ---------------------------------------------------------------------------
 // RESIDENT-SUBMIT-07 — cross-society (Society B) resident
 // ---------------------------------------------------------------------------
 
-export const residentSubmit07_crossSocietyResidentDenied: Stage3CResidentSubmitHandler = async (
-  ctx,
-) => {
-  const fixture = requireMatrixFixture(ctx);
-  const billId = fixture.matrix.residentSubmitBillId;
-  const priorCount = await fixture.helpers.countPayments(billId);
+export const residentSubmit07_crossSocietyResidentDenied: Stage3CResidentSubmitHandler =
+  async (ctx) => {
+    const fixture = requireMatrixFixture(ctx);
+    const billId = fixture.matrix.residentSubmitBillId;
 
-  await attemptResidentSubmitAndAssertDenied({
-    label: "RESIDENT-SUBMIT-07",
-    ctx,
-    actorClient: fixture.users.unrelatedResident.client,
-    billId,
-    suffix: "crosssoc",
-  });
+    await attemptResidentSubmitAndAssertDenied({
+      label: "RESIDENT-SUBMIT-07",
+      ctx,
+      actorClient: fixture.users.unrelatedResident.client,
+      billId,
+      suffix: "crosssoc",
+    });
 
-  const postCount = await fixture.helpers.countPayments(billId);
-  expect(postCount, "RESIDENT-SUBMIT-07: payment count unchanged").toBe(priorCount);
-  expect(postCount, "RESIDENT-SUBMIT-07: exactly one pending payment").toBe(1);
-};
+    const postCount = await fixture.helpers.countPayments(billId);
+    expect(
+      postCount,
+      "RESIDENT-SUBMIT-07: exactly one pending payment",
+    ).toBe(1);
+  };
 
 // ---------------------------------------------------------------------------
-// RESIDENT-SUBMIT-08 — exact summary delta
+// RESIDENT-SUBMIT-08 — exact summary delta + sequences unchanged
 // ---------------------------------------------------------------------------
 
-export const residentSubmit08_exactSummaryDelta: Stage3CResidentSubmitHandler = async (ctx) => {
-  const fixture = requireMatrixFixture(ctx);
-  const billId = fixture.matrix.residentSubmitBillId;
-  const initial = requireResidentSubmitInitialSummary(ctx);
-  const amount = requireResidentSubmitAmount(ctx);
-  const paymentId = requireResidentSubmitPaymentId(ctx);
+export const residentSubmit08_exactSummaryDelta: Stage3CResidentSubmitHandler =
+  async (ctx) => {
+    const fixture = requireMatrixFixture(ctx);
+    const billId = fixture.matrix.residentSubmitBillId;
+    const initial = requireResidentSubmitInitialSummary(ctx);
+    const amount = requireResidentSubmitAmount(ctx);
+    const paymentId = requireResidentSubmitPaymentId(ctx);
 
-  const raw = await fixture.helpers.getBillSummary(fixture.users.adminA1, billId);
-  const finalSummary = parseBillSummary(raw, "resident-submit-08");
+    const raw = await fixture.helpers.getBillSummary(
+      fixture.users.adminA1,
+      billId,
+    );
+    const finalSummary = parseBillSummary(raw, "resident-submit-08");
 
-  expect(finalSummary.total_payable, "RESIDENT-SUBMIT-08: total unchanged").toBeCloseTo(
-    initial.total_payable,
-    6,
-  );
-  expect(
-    finalSummary.pending_amount - initial.pending_amount,
-    "RESIDENT-SUBMIT-08: pending delta = +amount",
-  ).toBeCloseTo(amount, 6);
-  expect(finalSummary.pending_amount, "RESIDENT-SUBMIT-08: pending absolute").toBeCloseTo(
-    amount,
-    6,
-  );
-  expect(
-    initial.available_to_submit - finalSummary.available_to_submit,
-    "RESIDENT-SUBMIT-08: available delta = amount",
-  ).toBeCloseTo(amount, 6);
-  expect(finalSummary.available_to_submit, "RESIDENT-SUBMIT-08: available absolute").toBeCloseTo(
-    900,
-    6,
-  );
-  expect(finalSummary.verified_amount, "RESIDENT-SUBMIT-08: verified unchanged").toBeCloseTo(
-    initial.verified_amount,
-    6,
-  );
-  expect(summaryField(raw, "rejected_amount", "RESIDENT-SUBMIT-08")).toBe(0);
-  expect(summaryField(raw, "reversed_amount", "RESIDENT-SUBMIT-08")).toBe(0);
-  expect(
-    summaryField(raw, "remaining_verified_balance", "RESIDENT-SUBMIT-08"),
-  ).toBeCloseTo(1200, 6);
-  expect((raw as Record<string, unknown>).cancelled).toBe(false);
-  const status = String((raw as Record<string, unknown>).status ?? "");
-  expect(["unpaid", "open"], `RESIDENT-SUBMIT-08: unpaid/open, got ${status}`).toContain(status);
+    expect(
+      finalSummary.total_payable,
+      "RESIDENT-SUBMIT-08: total unchanged",
+    ).toBeCloseTo(initial.total_payable, 6);
+    expect(
+      finalSummary.pending_amount - initial.pending_amount,
+      "RESIDENT-SUBMIT-08: pending delta = +amount",
+    ).toBeCloseTo(amount, 6);
+    expect(
+      finalSummary.pending_amount,
+      "RESIDENT-SUBMIT-08: pending absolute",
+    ).toBeCloseTo(amount, 6);
+    expect(
+      initial.available_to_submit - finalSummary.available_to_submit,
+      "RESIDENT-SUBMIT-08: available delta = amount",
+    ).toBeCloseTo(amount, 6);
+    expect(
+      finalSummary.available_to_submit,
+      "RESIDENT-SUBMIT-08: available absolute",
+    ).toBeCloseTo(900, 6);
+    expect(
+      finalSummary.verified_amount,
+      "RESIDENT-SUBMIT-08: verified unchanged",
+    ).toBeCloseTo(initial.verified_amount, 6);
+    expect(
+      summaryField(raw, "rejected_amount", "RESIDENT-SUBMIT-08"),
+    ).toBe(0);
+    expect(
+      summaryField(raw, "reversed_amount", "RESIDENT-SUBMIT-08"),
+    ).toBe(0);
+    expect(
+      summaryField(raw, "remaining_verified_balance", "RESIDENT-SUBMIT-08"),
+    ).toBeCloseTo(1200, 6);
+    expect((raw as Record<string, unknown>).cancelled).toBe(false);
+    const status = String((raw as Record<string, unknown>).status ?? "");
+    expect(
+      ["unpaid", "open"],
+      `RESIDENT-SUBMIT-08: unpaid/open, got ${status}`,
+    ).toContain(status);
 
-  // Exact payment counts on the dedicated bill.
-  const totalPayments = await fixture.helpers.countPayments(billId);
-  expect(totalPayments, "RESIDENT-SUBMIT-08: exactly one payment").toBe(1);
-  const rowsRes = await fixture.admin
-    .from("payments")
-    .select("id, status")
-    .eq("bill_id", billId);
-  expect(rowsRes.error, "RESIDENT-SUBMIT-08: rows query").toBeNull();
-  const rows = Array.isArray(rowsRes.data) ? rowsRes.data : [];
-  const pending = rows.filter((r) => (r as { status?: string }).status === "pending");
-  const verified = rows.filter((r) => (r as { status?: string }).status === "verified");
-  const rejected = rows.filter((r) => (r as { status?: string }).status === "rejected");
-  const reversed = rows.filter((r) => (r as { status?: string }).status === "reversed");
-  expect(pending.length, "RESIDENT-SUBMIT-08: pending count").toBe(1);
-  expect(verified.length, "RESIDENT-SUBMIT-08: verified count").toBe(0);
-  expect(rejected.length, "RESIDENT-SUBMIT-08: rejected count").toBe(0);
-  expect(reversed.length, "RESIDENT-SUBMIT-08: reversed count").toBe(0);
+    const totalPayments = await fixture.helpers.countPayments(billId);
+    expect(totalPayments, "RESIDENT-SUBMIT-08: exactly one payment").toBe(1);
+    const rowsRes = await fixture.admin
+      .from("payments")
+      .select("id, status")
+      .eq("bill_id", billId);
+    expect(rowsRes.error, "RESIDENT-SUBMIT-08: rows query").toBeNull();
+    const rows = Array.isArray(rowsRes.data) ? rowsRes.data : [];
+    const pending = rows.filter(
+      (r) => (r as { status?: string }).status === "pending",
+    );
+    const verified = rows.filter(
+      (r) => (r as { status?: string }).status === "verified",
+    );
+    const rejected = rows.filter(
+      (r) => (r as { status?: string }).status === "rejected",
+    );
+    const reversed = rows.filter(
+      (r) => (r as { status?: string }).status === "reversed",
+    );
+    expect(pending.length, "RESIDENT-SUBMIT-08: pending count").toBe(1);
+    expect(verified.length, "RESIDENT-SUBMIT-08: verified count").toBe(0);
+    expect(rejected.length, "RESIDENT-SUBMIT-08: rejected count").toBe(0);
+    expect(reversed.length, "RESIDENT-SUBMIT-08: reversed count").toBe(0);
 
-  const receipts = await fixture.helpers.countReceipts(paymentId);
-  expect(receipts, "RESIDENT-SUBMIT-08: no receipt exists").toBe(0);
+    await assertNoReceiptForResidentPayment(
+      fixture.admin,
+      paymentId,
+      "RESIDENT-SUBMIT-08",
+    );
 
-  // Sequence tables must be untouched by a pending submission.
-  const initialSeq = ctx.residentSubmitInitialReceiptSequences as
-    | ReceiptSequenceSnapshot
-    | null;
-  expect(initialSeq, "RESIDENT-SUBMIT-08: initial sequence snapshot present").not.toBeNull();
-  const afterSeq = await snapshotReceiptSequences(
-    fixture.admin,
-    fixture.societyA,
-    "RESIDENT-SUBMIT-08",
-  );
-  assertReceiptSequencesUnchanged(
-    initialSeq as ReceiptSequenceSnapshot,
-    afterSeq,
-    "RESIDENT-SUBMIT-08",
-  );
+    // Sequences must be untouched.
+    const initialSeq = ctx.residentSubmitInitialReceiptSequences;
+    expect(
+      initialSeq,
+      "RESIDENT-SUBMIT-08: initial sequence snapshot present",
+    ).not.toBeNull();
+    const afterSeq = await snapshotReceiptSequences(
+      fixture.admin,
+      fixture.societyA,
+      "RESIDENT-SUBMIT-08",
+    );
+    assertReceiptSequencesExactlyEqual(
+      initialSeq as ReceiptSequenceSnapshot,
+      afterSeq,
+      "RESIDENT-SUBMIT-08",
+    );
 
-  ctx.residentSubmitPendingSummary = finalSummary;
-  ctx.residentPostSubmitSummary = finalSummary;
-};
-
+    ctx.residentSubmitPendingSummary = finalSummary;
+    ctx.residentPostSubmitSummary = finalSummary;
+  };
 
 // ---------------------------------------------------------------------------
 // Registry

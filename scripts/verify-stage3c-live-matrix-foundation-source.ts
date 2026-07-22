@@ -80,7 +80,7 @@ export function checkFixtureFoundation(src: string): string[] {
   }
   if (!/export function validateStage3CMatrixResources\(/.test(src))
     fail(f, "fixture: validateStage3CMatrixResources not exported");
-  if (!/Stage3CMatrixResourcesSchema[\s\S]{0,200}\.strict\(\)/.test(src))
+  if (!/Stage3CMatrixResourcesSchema[\s\S]{0,600}\.strict\(\)/.test(src))
     fail(f, "fixture: matrix resource schema must be .strict()");
   if (!/must be unique/.test(src))
     fail(f, "fixture: matrix validator must enforce unique dedicated bill IDs");

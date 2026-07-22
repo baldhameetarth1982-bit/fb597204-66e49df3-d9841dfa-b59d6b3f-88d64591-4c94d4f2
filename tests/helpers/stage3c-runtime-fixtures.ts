@@ -395,16 +395,29 @@ export type Stage3CMatrixResources = {
 };
 
 /**
- * Strict validator for the Stage 3C matrix resource bag returned by
- * the shared fixture. Rejects unknown properties, malformed UUIDs,
- * blank values, and duplicate dedicated bill IDs. When the optional
- * `ownership` argument is supplied, cross-flat invariants (otherFlatA
- * must not equal flatA) are enforced as well.
- *
- * Every error message is prefixed with `[stage3c:matrix]` and never
- * contains credentials or protected values — it only ever includes
- * the field name and the reason.
+ * Strict, required ownership contract for matrix validation. Supplies
+ * flatA plus the exact four existing core bill IDs that must NOT
+ * overlap any dedicated matrix bill. Ownership is mandatory: the
+ * fixture runtime must always supply it so the overlap and cross-flat
+ * invariants are enforced.
  */
+export type Stage3CMatrixOwnership = {
+  flatA: string;
+  existingBillIds: readonly [string, string, string, string];
+};
+
+const Stage3CMatrixOwnershipSchema = z
+  .object({
+    flatA: z.string().trim().uuid(),
+    existingBillIds: z
+      .array(z.string().trim().uuid())
+      .length(4, "existingBillIds must contain exactly four UUIDs")
+      .refine((ids) => new Set(ids).size === ids.length, {
+        message: "existingBillIds must be unique",
+      }),
+  })
+  .strict();
+
 const Stage3CMatrixResourcesSchema = z
   .object({
     otherFlatA: z.string().trim().uuid(),
@@ -418,7 +431,7 @@ const Stage3CMatrixResourcesSchema = z
 
 export function validateStage3CMatrixResources(
   raw: unknown,
-  ownership?: { flatA: string; existingBillIds?: readonly string[] },
+  ownership: Stage3CMatrixOwnership,
 ): Stage3CMatrixResources {
   if (raw === null || typeof raw !== "object" || Array.isArray(raw))
     throw new Error("[stage3c:matrix] resource bag must be a plain object");
@@ -428,6 +441,13 @@ export function validateStage3CMatrixResources(
       .map((i) => `${i.path.join(".") || "<root>"}:${i.message}`)
       .join("; ");
     throw new Error(`[stage3c:matrix] invalid matrix resources: ${details}`);
+  }
+  const own = Stage3CMatrixOwnershipSchema.safeParse(ownership);
+  if (!own.success) {
+    const details = own.error.issues
+      .map((i) => `${i.path.join(".") || "<root>"}:${i.message}`)
+      .join("; ");
+    throw new Error(`[stage3c:matrix] invalid ownership: ${details}`);
   }
   const v = parsed.data;
   const dedicatedBillIds = [
@@ -440,27 +460,97 @@ export function validateStage3CMatrixResources(
   const uniqueBills = new Set(dedicatedBillIds);
   if (uniqueBills.size !== dedicatedBillIds.length)
     throw new Error("[stage3c:matrix] dedicated bill IDs must be unique");
-  if (ownership) {
-    if (v.otherFlatA === ownership.flatA)
-      throw new Error("[stage3c:matrix] otherFlatA must not equal flatA");
-    if (ownership.existingBillIds) {
-      for (const id of dedicatedBillIds) {
-        if (ownership.existingBillIds.includes(id))
-          throw new Error(
-            "[stage3c:matrix] dedicated bill overlaps an existing core bill scenario",
-          );
-      }
-    }
+  if (v.otherFlatA === own.data.flatA)
+    throw new Error("[stage3c:matrix] otherFlatA must not equal flatA");
+  const coreSet = new Set(own.data.existingBillIds);
+  for (const id of dedicatedBillIds) {
+    if (coreSet.has(id))
+      throw new Error(
+        "[stage3c:matrix] dedicated bill overlaps an existing core bill scenario",
+      );
   }
   return v;
 }
 
 /**
- * Verify that every dedicated matrix bill starts with zero payments and
- * zero receipts. Uses exact `.in("bill_id", ids)` and count-only queries.
- * Never uses `.limit(1)` as proof of zero. Errors are labeled and never
- * swallowed. The service-role result here is NOT treated as authorization
- * proof — it only asserts fixture initial state.
+ * Strict parser for the `otherFlatA` returned row. Rejects malformed
+ * UUIDs, wrong society/block/flat_number, non-`occupied` status, and
+ * unknown fields. Never trusts the insert-input payload as proof of
+ * the database's actual returned row.
+ */
+const OtherFlatARowSchema = z
+  .object({
+    id: z.string().uuid(),
+    society_id: z.string().uuid(),
+    block_id: z.string().uuid(),
+    flat_number: z.string().min(1),
+    status: z.literal("occupied"),
+  })
+  .strict();
+
+export function parseOtherFlatARow(
+  raw: unknown,
+  expected: { societyId: string; blockId: string; flatNumber: string },
+): { id: string; society_id: string; block_id: string; flat_number: string; status: "occupied" } {
+  const parsed = OtherFlatARowSchema.safeParse(raw);
+  if (!parsed.success) {
+    const details = parsed.error.issues
+      .map((i) => `${i.path.join(".") || "<root>"}:${i.message}`)
+      .join("; ");
+    throw new Error(`[stage3c:otherFlatA] invalid returned row: ${details}`);
+  }
+  const row = parsed.data;
+  if (row.society_id !== expected.societyId)
+    throw new Error("[stage3c:otherFlatA] returned society_id mismatch");
+  if (row.block_id !== expected.blockId)
+    throw new Error("[stage3c:otherFlatA] returned block_id mismatch");
+  if (row.flat_number !== expected.flatNumber)
+    throw new Error("[stage3c:otherFlatA] returned flat_number mismatch");
+  return row;
+}
+
+const MatrixPaymentRowSchema = z
+  .object({ id: z.string().uuid(), bill_id: z.string().uuid() })
+  .strict();
+const MatrixReceiptRowSchema = z
+  .object({ id: z.string().uuid(), payment_id: z.string().uuid() })
+  .strict();
+
+export function parseMatrixPaymentRows(
+  raw: unknown,
+): ReadonlyArray<{ id: string; bill_id: string }> {
+  if (!Array.isArray(raw))
+    throw new Error("[stage3c:matrix:startClean:payments] rows must be an array");
+  return raw.map((r, idx) => {
+    const p = MatrixPaymentRowSchema.safeParse(r);
+    if (!p.success)
+      throw new Error(
+        `[stage3c:matrix:startClean:payments] malformed row at index ${idx}`,
+      );
+    return p.data;
+  });
+}
+
+export function parseMatrixReceiptRows(
+  raw: unknown,
+): ReadonlyArray<{ id: string; payment_id: string }> {
+  if (!Array.isArray(raw))
+    throw new Error("[stage3c:matrix:startClean:receipts] rows must be an array");
+  return raw.map((r, idx) => {
+    const p = MatrixReceiptRowSchema.safeParse(r);
+    if (!p.success)
+      throw new Error(
+        `[stage3c:matrix:startClean:receipts] malformed row at index ${idx}`,
+      );
+    return p.data;
+  });
+}
+
+/**
+ * Verify that every dedicated matrix bill starts with zero payments
+ * and zero receipts. Uses schema-correct traversal:
+ * bills -> payments (by bill_id) -> payment_receipts (by payment_id).
+ * All query errors are fatal — never swallowed, never silently tolerated.
  */
 export async function assertMatrixBillsStartClean(
   admin: SupabaseClient,
@@ -473,31 +563,39 @@ export async function assertMatrixBillsStartClean(
     matrix.idempotencyBillBId,
     matrix.referenceBillId,
   ];
+  if (ids.length !== 5)
+    throw new Error("[stage3c:matrix:startClean] expected exactly 5 dedicated bill IDs");
+  if (new Set(ids).size !== ids.length)
+    throw new Error("[stage3c:matrix:startClean] dedicated bill IDs must be unique");
+  for (const id of ids) {
+    if (!/^[0-9a-fA-F-]{36}$/.test(id))
+      throw new Error("[stage3c:matrix:startClean] dedicated bill ID must be UUID");
+  }
   const pay = await admin
     .from("payments")
-    .select("id", { count: "exact", head: true })
+    .select("id, bill_id")
     .in("bill_id", ids);
   if (pay.error)
     throw new Error(
       `[stage3c:matrix:startClean:payments] ${redactMessage(extractErrorMessage(pay.error))}`,
     );
-  if ((pay.count ?? 0) !== 0)
-    throw new Error(
-      `[stage3c:matrix:startClean:payments] expected 0 payments, got ${pay.count}`,
-    );
-  const rec = await admin
-    .from("payment_receipts")
-    .select("id", { count: "exact", head: true })
-    .in("bill_id", ids);
-  // payment_receipts may not have bill_id — fall back through payments if so.
-  if (rec.error) {
-    // Not fatal: some schemas link receipts only via payment_id. Fall
-    // back to counting via payments (already asserted zero above).
-    return;
+  const paymentRows = parseMatrixPaymentRows(pay.data ?? []);
+  const paymentIds = paymentRows.map((r) => r.id);
+  let receiptCount = 0;
+  if (paymentIds.length > 0) {
+    const rec = await admin
+      .from("payment_receipts")
+      .select("id, payment_id")
+      .in("payment_id", paymentIds);
+    if (rec.error)
+      throw new Error(
+        `[stage3c:matrix:startClean:receipts] ${redactMessage(extractErrorMessage(rec.error))}`,
+      );
+    receiptCount = parseMatrixReceiptRows(rec.data ?? []).length;
   }
-  if ((rec.count ?? 0) !== 0)
+  if (paymentRows.length !== 0 || receiptCount !== 0)
     throw new Error(
-      `[stage3c:matrix:startClean:receipts] expected 0 receipts, got ${rec.count}`,
+      `[stage3c:matrix:startClean] expected 0 payments and 0 receipts, got payments=${paymentRows.length} receipts=${receiptCount}`,
     );
 }
 
@@ -1446,7 +1544,7 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
     });
 
     // ---- Matrix-only extra flat (Society A / blockA, no residency) ---
-    const otherFlatARow = await assertSupabaseSingleResult<{ id: string }>(
+    const otherFlatARawRow = await assertSupabaseSingleResult<unknown>(
       "insert:otherFlatA",
       admin
         .from("flats")
@@ -1456,13 +1554,18 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
           flat_number: "202",
           status: "occupied",
         })
-        .select("id")
+        .select("id, society_id, block_id, flat_number, status")
         .single(),
     );
+    const otherFlatARow = parseOtherFlatARow(otherFlatARawRow, {
+      societyId: societyA,
+      blockId: blockA,
+      flatNumber: "202",
+    });
+    if (otherFlatARow.id === flatA)
+      throw new Error("[stage3c:otherFlatA] must differ from flatA");
     trackUniqueId(tracked.flatIds, otherFlatARow.id, "otherFlatA");
     const otherFlatA = otherFlatARow.id;
-    if (otherFlatA === flatA)
-      throw new Error("[stage3c:otherFlatA] must differ from flatA");
 
     // ---- Five dedicated matrix bills (foundation, no payments yet) ---
     const residentSubmitBillId = await addBill({
@@ -1505,7 +1608,15 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
         idempotencyBillBId,
         referenceBillId,
       },
-      { flatA },
+      {
+        flatA,
+        existingBillIds: [
+          openBillId,
+          openBillId2,
+          cancelledBillId,
+          fullyUnavailableBillId,
+        ],
+      },
     );
 
     await assertMatrixBillsStartClean(admin, matrix);

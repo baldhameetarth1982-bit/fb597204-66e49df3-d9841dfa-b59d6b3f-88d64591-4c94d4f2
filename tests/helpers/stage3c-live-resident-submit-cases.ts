@@ -377,6 +377,7 @@ export const residentSubmit04_serverPinnedMethodAndActorRole: Stage3CResidentSub
     // B. Direct RPC: cash as resident must be denied server-side.
     const preCount = await fixture.helpers.countPayments(billId);
     let threw = false;
+    let unexpectedSuccessId: string | null = null;
     try {
       const { data, error } = await fixture.users.activeResident.client.rpc(
         "submit_offline_payment",
@@ -392,15 +393,18 @@ export const residentSubmit04_serverPinnedMethodAndActorRole: Stage3CResidentSub
         },
       );
       if (error) throw error;
-      // If no error surfaced, treat the returned data as the (unexpected) success signal.
+      // Do not interpolate raw RPC data into the error message.
+      const parsedId = z.string().uuid().safeParse(data);
+      unexpectedSuccessId = parsedId.success ? parsedId.data : null;
       throw new Error(
-        `RESIDENT-SUBMIT-04: cash submission must be denied, got id: ${String(data ?? "")}`,
+        `RESIDENT-SUBMIT-04: cash submission must be denied (no server error surfaced)`,
       );
     } catch (err) {
       threw = true;
       assertCanonicalError(err, STAGE3C_ERRORS.RESIDENT_CASH_NOT_ALLOWED, "RESIDENT-SUBMIT-04");
     }
     expect(threw, "RESIDENT-SUBMIT-04: cash attempt must throw").toBe(true);
+    expect(unexpectedSuccessId, "RESIDENT-SUBMIT-04: no id returned from denied submission").toBeNull();
 
     // No mutation.
     const postCount = await fixture.helpers.countPayments(billId);
@@ -408,6 +412,7 @@ export const residentSubmit04_serverPinnedMethodAndActorRole: Stage3CResidentSub
     const pendingId = requireResidentSubmitPaymentId(ctx);
     expect(await fixture.helpers.countReceipts(pendingId)).toBe(0);
   };
+
 
 // ---------------------------------------------------------------------------
 // Shared denial helper for RESIDENT-SUBMIT-05..07

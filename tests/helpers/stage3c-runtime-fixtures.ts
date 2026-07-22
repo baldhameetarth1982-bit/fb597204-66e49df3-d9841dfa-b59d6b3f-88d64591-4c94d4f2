@@ -494,9 +494,9 @@ export function validateStage3CMatrixResources(
  */
 const OtherFlatARowSchema = z
   .object({
-    id: z.string().uuid(),
-    society_id: z.string().uuid(),
-    block_id: z.string().uuid(),
+    id: CanonicalStage3CUuidSchema,
+    society_id: CanonicalStage3CUuidSchema,
+    block_id: CanonicalStage3CUuidSchema,
     flat_number: z.string().min(1),
     status: z.literal("occupied"),
   })

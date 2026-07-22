@@ -66,6 +66,13 @@ export const STAGE3C_REDACTION_MIGRATION_FILES: readonly Stage3CRedactionMigrati
       "instead of interpolating err.message / String(err).",
   },
   {
+    path: "tests/helpers/stage3c-live-resident-submit-cases.ts",
+    mode: "via-assertCanonicalError",
+    reason:
+      "RESIDENT-SUBMIT-04..07 denial mismatches routed through assertCanonicalError; " +
+      "no raw err / err.message interpolation surfaces.",
+  },
+  {
     path: "tests/helpers/stage3c-live-verify-cases.ts",
     mode: "via-assertCanonicalError",
     reason:

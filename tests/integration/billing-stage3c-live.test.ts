@@ -1,26 +1,26 @@
 /**
- * Stage 3C — Live core matrix (24/93), registry-driven.
+ * Stage 3C — Live matrix (32/93), registry-driven.
  *
- * Every registered test is one entry in `STAGE3C_CORE_LIVE_CASE_HANDLERS`
- * — no unnumbered lifecycle-only tests, no manual `it(...)` per handler. The
- * suite is gated by `ALLOW_SOCIOHUB_LIVE_STAGE3C=true`; otherwise the
+ * Every registered test is one entry in `STAGE3C_MATRIX_LIVE_CASE_HANDLERS`
+ * — 24 core cases (AUTH/PENDING/VERIFY) followed by 8 resident-submit
+ * cases. Gated by `ALLOW_SOCIOHUB_LIVE_STAGE3C=true`; otherwise the
  * describe block is skipped rather than emitting a fake passing test.
  */
 import { describe, it, beforeAll, afterAll } from "vitest";
 import { setupStage3CFixture, type Stage3CFixture } from "../helpers/stage3c-runtime-fixtures";
 import {
-  createStage3CLiveCoreContext,
-  type Stage3CLiveCoreContext,
-} from "../helpers/stage3c-live-core-context";
-import { STAGE3C_CORE_LIVE_CASE_HANDLERS } from "../helpers/stage3c-live-core-registry";
+  createStage3CLiveMatrixContext,
+  type Stage3CLiveMatrixContext,
+} from "../helpers/stage3c-live-matrix-context";
+import { STAGE3C_MATRIX_LIVE_CASE_HANDLERS } from "../helpers/stage3c-live-matrix-registry";
 
 const RUN_LIVE = process.env.ALLOW_SOCIOHUB_LIVE_STAGE3C === "true";
 const gate = RUN_LIVE ? describe : describe.skip;
 
 let fixture: Stage3CFixture;
-const ctx: Stage3CLiveCoreContext = createStage3CLiveCoreContext();
+const ctx: Stage3CLiveMatrixContext = createStage3CLiveMatrixContext();
 
-gate("Stage 3C — live core matrix (24/93)", () => {
+gate("Stage 3C — live matrix (32/93)", () => {
   beforeAll(async () => {
     fixture = await setupStage3CFixture();
     ctx.fixture = fixture;
@@ -30,7 +30,7 @@ gate("Stage 3C — live core matrix (24/93)", () => {
     if (fixture) await fixture.cleanup();
   }, 180_000);
 
-  for (const caseDefinition of STAGE3C_CORE_LIVE_CASE_HANDLERS) {
+  for (const caseDefinition of STAGE3C_MATRIX_LIVE_CASE_HANDLERS) {
     it(`${caseDefinition.id} ${caseDefinition.description}`, async () => {
       await caseDefinition.execute(ctx);
     });

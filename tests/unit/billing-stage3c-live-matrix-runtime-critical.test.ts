@@ -17,7 +17,7 @@ import {
   residentSubmitInputSchema,
 } from "@/lib/offline-payment-contracts";
 
-const U = (s: string) => `00000000-0000-4000-8000-00000000${s.padStart(4, "0")}`;
+const U = (s: string) => `00000000-0000-4000-8000-00000000${s.padStart(4, "0").replace(/[^0-9a-f]/gi, "f")}`;
 
 function matrix(): Stage3CMatrixResources {
   return {

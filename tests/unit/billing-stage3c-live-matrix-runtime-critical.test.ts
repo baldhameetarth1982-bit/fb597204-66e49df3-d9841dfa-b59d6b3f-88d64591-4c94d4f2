@@ -10,7 +10,10 @@ import {
   parseOtherFlatARow,
   parseMatrixPaymentRows,
   parseMatrixReceiptRows,
+  validateMatrixDedicatedBillIds,
+  assertMatrixBillsStartCleanWithReader,
   type Stage3CMatrixResources,
+  type MatrixCleanStateReader,
 } from "../../tests/helpers/stage3c-runtime-fixtures";
 import {
   isValidIsoCalendarDate,

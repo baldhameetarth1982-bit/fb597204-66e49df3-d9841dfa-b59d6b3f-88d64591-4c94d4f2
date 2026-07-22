@@ -724,6 +724,7 @@ describe("checkStage3CRedactionMigration", () => {
       HELPER_D,
       HELPER_E,
       CANON,
+      "tests/helpers/stage3c-live-resident-submit-cases.ts",
       "tests/helpers/stage3c-redaction-migration-manifest.ts",
       "scripts/verify-stage3c-live-core-report.ts",
     ]) {

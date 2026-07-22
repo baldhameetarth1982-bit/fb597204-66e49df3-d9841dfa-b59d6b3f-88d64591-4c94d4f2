@@ -288,50 +288,55 @@ export const residentSubmit03_pendingRowAndNoReceipt: Stage3CResidentSubmitHandl
   const { data, error } = await fixture.admin
     .from("payments")
     .select(
-      "id, bill_id, society_id, submitted_by, amount, method, status, reference_no, idempotency_key, verified_by, verified_at, rejected_by, rejected_at, rejection_reason, reversed_by, reversed_at, reversal_reason",
+      "id, bill_id, society_id, submitted_by, amount, method, status, source, reference_no, idempotency_key, verified_by, verified_at, rejected_by, rejected_at, rejection_reason, reversed_by, reversed_at, reversal_reason",
     )
     .eq("id", paymentId)
     .single();
   expect(error, "RESIDENT-SUBMIT-03: query error").toBeNull();
   expect(data, "RESIDENT-SUBMIT-03: row present").not.toBeNull();
-  const row = data as Record<string, unknown>;
 
+  // Strict Zod parse enforces bank_transfer method, pending status,
+  // resident_submission source, and every reject/reverse/verify field null.
+  const parsedRow = ResidentSubmittedPaymentRowSchema.parse(data);
+  expect(parsedRow.society_id, "RESIDENT-SUBMIT-03: society").toBe(fixture.societyA);
+  expect(parsedRow.bill_id, "RESIDENT-SUBMIT-03: bill").toBe(billId);
+  expect(parsedRow.submitted_by, "RESIDENT-SUBMIT-03: submitter").toBe(
+    fixture.users.activeResident.id,
+  );
+  expect(parsedRow.method, "RESIDENT-SUBMIT-03: server-pinned bank_transfer").toBe(
+    "bank_transfer",
+  );
+  expect(parsedRow.status, "RESIDENT-SUBMIT-03: pending").toBe("pending");
+  expect(parsedRow.source, "RESIDENT-SUBMIT-03: server-pinned source").toBe(
+    "resident_submission",
+  );
+  expect(
+    deriveActorRoleFromSource(parsedRow.source),
+    "RESIDENT-SUBMIT-03: derived actor_role",
+  ).toBe("resident");
+  expect(parsedRow.amount, "RESIDENT-SUBMIT-03: amount").toBe(amount);
+  expect(parsedRow.reference_no, "RESIDENT-SUBMIT-03: reference").toBe(reference);
+  expect(parsedRow.idempotency_key, "RESIDENT-SUBMIT-03: idempotency key").toBe(idempotencyKey);
+
+  // Also keep the legacy parsePaymentAssertionRow contract check for the
+  // fields it validates (society/flat/bill/method/submitted_by/status).
   const assertion = parsePaymentAssertionRow(
     {
-      society_id: row.society_id,
+      society_id: parsedRow.society_id,
       flat_id: fixture.flatA,
-      bill_id: row.bill_id,
-      method: row.method,
-      submitted_by: row.submitted_by,
-      status: row.status,
+      bill_id: parsedRow.bill_id,
+      method: parsedRow.method,
+      submitted_by: parsedRow.submitted_by,
+      status: parsedRow.status,
     },
     "resident-submit-03",
   );
-  expect(assertion.society_id, "RESIDENT-SUBMIT-03: society").toBe(fixture.societyA);
-  expect(assertion.bill_id, "RESIDENT-SUBMIT-03: bill").toBe(billId);
-  expect(assertion.submitted_by, "RESIDENT-SUBMIT-03: submitter").toBe(
-    fixture.users.activeResident.id,
-  );
-  expect(assertion.method, "RESIDENT-SUBMIT-03: server-pinned bank_transfer").toBe(
-    "bank_transfer",
-  );
-  expect(assertion.status, "RESIDENT-SUBMIT-03: pending").toBe("pending");
-
-  expect(Number(row.amount), "RESIDENT-SUBMIT-03: amount").toBe(amount);
-  expect(row.reference_no, "RESIDENT-SUBMIT-03: reference").toBe(reference);
-  expect(row.idempotency_key, "RESIDENT-SUBMIT-03: idempotency key").toBe(idempotencyKey);
-  expect(row.verified_by, "RESIDENT-SUBMIT-03: verified_by null").toBeNull();
-  expect(row.verified_at, "RESIDENT-SUBMIT-03: verified_at null").toBeNull();
-  expect(row.rejected_by, "RESIDENT-SUBMIT-03: rejected_by null").toBeNull();
-  expect(row.rejected_at, "RESIDENT-SUBMIT-03: rejected_at null").toBeNull();
-  expect(row.rejection_reason, "RESIDENT-SUBMIT-03: rejection_reason null").toBeNull();
-  expect(row.reversed_by, "RESIDENT-SUBMIT-03: reversed_by null").toBeNull();
-  expect(row.reversed_at, "RESIDENT-SUBMIT-03: reversed_at null").toBeNull();
-  expect(row.reversal_reason, "RESIDENT-SUBMIT-03: reversal_reason null").toBeNull();
+  expect(assertion.status).toBe("pending");
 
   const receipts = await fixture.helpers.countReceipts(paymentId);
   expect(receipts, "RESIDENT-SUBMIT-03: no receipt for pending payment").toBe(0);
 };
+
 
 // ---------------------------------------------------------------------------
 // RESIDENT-SUBMIT-04 — public schema strictness + resident_cash_not_allowed

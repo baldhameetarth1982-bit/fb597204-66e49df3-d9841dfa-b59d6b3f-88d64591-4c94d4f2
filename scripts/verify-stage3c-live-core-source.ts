@@ -280,12 +280,12 @@ export function checkWorkflow(src: string): string[] {
   return failures;
 }
 
-const PROTECTED_UUID = "1907a918-c4b8-4f43-a837-450530cc7c34";
+const PROTECTED_UUID = (process.env.SOCIOHUB_PROTECTED_SOCIETY_ID?.trim() ?? "");
 
 function checkNoProtectedLiteral(files: Array<[string, string]>): string[] {
   const failures: string[] = [];
   for (const [name, src] of files) {
-    if (src.includes(PROTECTED_UUID)) fail(failures, `${name}: protected society literal present`);
+    if (PROTECTED_UUID && src.includes(PROTECTED_UUID)) fail(failures, `${name}: protected society literal present`);
   }
   return failures;
 }

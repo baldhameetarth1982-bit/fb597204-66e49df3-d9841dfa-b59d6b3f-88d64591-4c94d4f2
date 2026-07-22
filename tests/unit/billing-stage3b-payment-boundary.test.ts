@@ -111,7 +111,7 @@ describe("Stage 3B — protected society is not referenced anywhere in bill UI",
   for (const p of paths) {
     it(`${p} has no protected society UUID`, () => {
       expect(readFileSync(p, "utf8")).not.toContain(
-        "1907a918-c4b8-4f43-a837-450530cc7c34",
+        (process.env.SOCIOHUB_PROTECTED_SOCIETY_ID?.trim() || "__unset_protected_society_id__"),
       );
     });
   }

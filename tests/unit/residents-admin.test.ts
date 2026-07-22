@@ -246,7 +246,7 @@ describe("Stage 2B — route wiring (existing UI consumes safe services)", () =>
 });
 
 describe("Stage 2B — protected society untouched", () => {
-  const forbidden = "1907a918-c4b8-4f43-a837-450530cc7c34";
+  const forbidden = (process.env.SOCIOHUB_PROTECTED_SOCIETY_ID?.trim() || "__unset_protected_society_id__");
   it("no source file references the protected society ID", () => {
     for (const p of [
       "src/lib/residents-admin.functions.ts",

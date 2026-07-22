@@ -69,7 +69,7 @@ Never use the following society for testing, fixtures, seeds, screenshots,
 manual queries, probing, migration experiments or production verification:
 
 - Name: **baldha Meetarth**
-- ID: `1907a918-c4b8-4f43-a837-450530cc7c34`
+- ID: `[REDACTED-PROTECTED-SOCIETY-ID]`
 - Historical trial end: `2026-06-21`
 
 Use isolated synthetic fixtures only.

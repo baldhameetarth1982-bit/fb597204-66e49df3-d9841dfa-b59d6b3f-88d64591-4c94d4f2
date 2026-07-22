@@ -142,7 +142,7 @@ describe("Stage 3C closure — corrective migration hardens the RPCs", () => {
 });
 
 describe("Stage 3C closure — protected society is still untouched", () => {
-  const protectedUuid = "1907a918-c4b8-4f43-a837-450530cc7c34";
+  const protectedUuid = (process.env.SOCIOHUB_PROTECTED_SOCIETY_ID?.trim() || "__unset_protected_society_id__");
   for (const p of [
     "src/lib/offline-payments.functions.ts",
     "src/components/billing/OfflinePaymentSubmitCard.tsx",

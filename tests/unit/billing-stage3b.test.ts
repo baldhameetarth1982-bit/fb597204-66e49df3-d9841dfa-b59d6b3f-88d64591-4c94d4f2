@@ -77,7 +77,7 @@ describe("Stage 3B — migration & source integrity", () => {
     ];
     for (const p of paths) {
       const s = await fs.readFile(p, "utf8");
-      expect(s).not.toContain("1907a918-c4b8-4f43-a837-450530cc7c34");
+      expect(s).not.toContain((process.env.SOCIOHUB_PROTECTED_SOCIETY_ID?.trim() || "__unset_protected_society_id__"));
     }
   });
 

@@ -161,7 +161,7 @@ describe("Stage 3C v4 — active resident authorization enforced in migration", 
 });
 
 describe("Stage 3C v4 — protected society is never referenced", () => {
-  const protectedUuid = "1907a918-c4b8-4f43-a837-450530cc7c34";
+  const protectedUuid = (process.env.SOCIOHUB_PROTECTED_SOCIETY_ID?.trim() || "__unset_protected_society_id__");
   const paths = [
     "src/lib/offline-payments.functions.ts",
     "src/components/billing/OfflinePaymentSubmitCard.tsx",

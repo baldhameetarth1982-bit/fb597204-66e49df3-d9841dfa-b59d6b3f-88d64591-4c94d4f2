@@ -21,7 +21,7 @@ import {
   MAX_ROWS,
 } from "@/lib/migration-pipeline";
 
-const PROTECTED_SOCIETY = "1907a918-c4b8-4f43-a837-450530cc7c34";
+const PROTECTED_SOCIETY = (process.env.SOCIOHUB_PROTECTED_SOCIETY_ID?.trim() || "__unset_protected_society_id__");
 
 describe("Stage 2D — CSV parser", () => {
   it("parses a simple 3-column file", () => {

@@ -22,7 +22,7 @@ import {
   type Stage3CLiveCoreContext,
 } from "./stage3c-live-core-context";
 import { trackUniqueId } from "./stage3c-runtime-fixtures";
-import { STAGE3C_ERRORS, matchesCanonicalError } from "./stage3c-live-errors";
+import { STAGE3C_ERRORS, assertCanonicalError } from "./stage3c-live-errors";
 
 export async function pending01_adminA1RecordsCashPayment(
   ctx: Stage3CLiveCoreContext,
@@ -169,11 +169,9 @@ export async function pending08_overAllocationRejected(
     });
   } catch (err) {
     threw = true;
-    const msg = err instanceof Error ? err.message : String(err);
-    expect(
-      matchesCanonicalError(msg, STAGE3C_ERRORS.AMOUNT_EXCEEDS_AVAILABLE),
-      `PENDING-08: canonical over-allocation "${STAGE3C_ERRORS.AMOUNT_EXCEEDS_AVAILABLE}", got: ${msg}`,
-    ).toBe(true);
+    // Delegate mismatch redaction to the canonical assertion helper —
+    // never interpolate the raw error message here.
+    assertCanonicalError(err, STAGE3C_ERRORS.AMOUNT_EXCEEDS_AVAILABLE, "PENDING-08");
   }
   expect(threw, "PENDING-08: over-allocation must throw").toBe(true);
   const afterCount = await fixture.helpers.countPayments(billId);

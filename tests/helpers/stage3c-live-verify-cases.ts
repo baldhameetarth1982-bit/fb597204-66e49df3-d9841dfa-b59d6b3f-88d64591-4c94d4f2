@@ -30,17 +30,19 @@ import {
 } from "./stage3c-live-core-context";
 import { confirmReceiptSequenceKey, trackUniqueId } from "./stage3c-runtime-fixtures";
 import type { Stage3CFixture } from "./stage3c-runtime-fixtures";
-import { STAGE3C_ERRORS, matchesCanonicalError } from "./stage3c-live-errors";
+import { STAGE3C_ERRORS, assertCanonicalError } from "./stage3c-live-errors";
 
 const RECEIPT_NUMBER_RE = /^RCPT\/(\d{6})\/\d{4}$/;
 
 function expectCanonical(err: unknown, token: string, label: string): void {
   expect(err, `${label}: must receive a real error`).not.toBeNull();
-  const msg = String((err as { message?: unknown } | null)?.message ?? "");
-  expect(
-    matchesCanonicalError(msg, token as (typeof STAGE3C_ERRORS)[keyof typeof STAGE3C_ERRORS]),
-    `${label}: expected canonical "${token}", got: ${msg}`,
-  ).toBe(true);
+  // Delegate to canonical assertion — mismatch output is redacted via
+  // stage3c-error-redaction. Never surface raw Supabase messages here.
+  assertCanonicalError(
+    err,
+    token as (typeof STAGE3C_ERRORS)[keyof typeof STAGE3C_ERRORS],
+    label,
+  );
 }
 
 export async function verify01_submitterCannotSelfVerify(

@@ -57,50 +57,83 @@ function validMatrix(): Stage3CMatrixResources {
   };
 }
 
+function baseOwnership() {
+  return {
+    flatA: U("9999"),
+    existingBillIds: [U("aaa1"), U("aaa2"), U("aaa3"), U("aaa4")] as [
+      string,
+      string,
+      string,
+      string,
+    ],
+  };
+}
+
 describe("Stage 3C foundation — matrix resource validation", () => {
-  it("accepts a valid six-field resource object", () => {
-    expect(validateStage3CMatrixResources(validMatrix())).toEqual(validMatrix());
+  it("accepts a valid six-field resource object with ownership", () => {
+    expect(validateStage3CMatrixResources(validMatrix(), baseOwnership())).toEqual(validMatrix());
   });
   it("rejects malformed UUIDs", () => {
     const bad = { ...validMatrix(), otherFlatA: "not-a-uuid" };
-    expect(() => validateStage3CMatrixResources(bad)).toThrow(/matrix/);
+    expect(() => validateStage3CMatrixResources(bad, baseOwnership())).toThrow(/matrix/);
   });
   it("rejects unknown properties", () => {
     const bad = { ...validMatrix(), sneaky: "x" };
-    expect(() => validateStage3CMatrixResources(bad)).toThrow(/matrix/);
+    expect(() => validateStage3CMatrixResources(bad, baseOwnership())).toThrow(/matrix/);
   });
   it("rejects duplicate dedicated bill IDs", () => {
     const bad = { ...validMatrix(), otherFlatBillId: validMatrix().residentSubmitBillId };
-    expect(() => validateStage3CMatrixResources(bad)).toThrow(/unique/);
+    expect(() => validateStage3CMatrixResources(bad, baseOwnership())).toThrow(/unique/);
   });
   it("rejects missing fields", () => {
     const bad: Record<string, unknown> = { ...validMatrix() };
     delete bad.referenceBillId;
-    expect(() => validateStage3CMatrixResources(bad)).toThrow(/matrix/);
+    expect(() => validateStage3CMatrixResources(bad, baseOwnership())).toThrow(/matrix/);
   });
   it("rejects blank fields", () => {
     const bad = { ...validMatrix(), residentSubmitBillId: "   " };
-    expect(() => validateStage3CMatrixResources(bad)).toThrow(/matrix/);
+    expect(() => validateStage3CMatrixResources(bad, baseOwnership())).toThrow(/matrix/);
   });
-  it("rejects otherFlatA equal to flatA when ownership supplied", () => {
+  it("rejects otherFlatA equal to flatA", () => {
     const v = validMatrix();
     expect(() =>
-      validateStage3CMatrixResources(v, { flatA: v.otherFlatA }),
+      validateStage3CMatrixResources(v, { ...baseOwnership(), flatA: v.otherFlatA }),
     ).toThrow(/otherFlatA must not equal flatA/);
   });
-  it("rejects dedicated/core overlap when supplied", () => {
+  it("rejects dedicated/core overlap", () => {
     const v = validMatrix();
     expect(() =>
       validateStage3CMatrixResources(v, {
         flatA: U("9999"),
-        existingBillIds: [v.residentSubmitBillId],
+        existingBillIds: [v.residentSubmitBillId, U("aaa2"), U("aaa3"), U("aaa4")],
       }),
     ).toThrow(/overlap/);
   });
+  it("rejects ownership with fewer than four existing bill IDs", () => {
+    expect(() =>
+      validateStage3CMatrixResources(validMatrix(), {
+        flatA: U("9999"),
+        existingBillIds: [U("aaa1"), U("aaa2"), U("aaa3")] as unknown as [
+          string,
+          string,
+          string,
+          string,
+        ],
+      }),
+    ).toThrow(/ownership|four/i);
+  });
+  it("rejects ownership with duplicate existingBillIds", () => {
+    expect(() =>
+      validateStage3CMatrixResources(validMatrix(), {
+        flatA: U("9999"),
+        existingBillIds: [U("aaa1"), U("aaa1"), U("aaa2"), U("aaa3")],
+      }),
+    ).toThrow(/ownership|unique/i);
+  });
   it("rejects non-object input", () => {
-    expect(() => validateStage3CMatrixResources(null)).toThrow(/plain object/);
-    expect(() => validateStage3CMatrixResources("x")).toThrow(/plain object/);
-    expect(() => validateStage3CMatrixResources([])).toThrow(/plain object/);
+    expect(() => validateStage3CMatrixResources(null, baseOwnership())).toThrow(/plain object/);
+    expect(() => validateStage3CMatrixResources("x", baseOwnership())).toThrow(/plain object/);
+    expect(() => validateStage3CMatrixResources([], baseOwnership())).toThrow(/plain object/);
   });
 });
 

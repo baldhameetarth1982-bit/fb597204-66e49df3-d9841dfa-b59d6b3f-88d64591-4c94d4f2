@@ -32,6 +32,9 @@ const WORKFLOW = ".github/workflows/stage3c-runtime-verification.yml";
 const PKG = "package.json";
 const LOCK = "bun.lock";
 const SELF = "scripts/verify-stage3c-live-matrix-foundation-source.ts";
+const RESIDENCY_SUMMARY_TEST =
+  "tests/unit/billing-stage3c-live-matrix-residency-summary.test.ts";
+
 
 const EXPECTED_DEP_VERSION = "2.7.7";
 
@@ -156,8 +159,78 @@ export function checkFixtureFoundation(src: string): string[] {
     )
   )
     fail(f, "fixture: setup must pass all four core bill IDs into existingBillIds");
+
+  // ---- Residency absence for otherFlatA ----------------------------------
+  if (!/export type OtherFlatResidencyReader\b/.test(src))
+    fail(f, "fixture: OtherFlatResidencyReader type not exported");
+  if (!/export async function assertNoFixtureResidentsLinkedToOtherFlat\(/.test(src))
+    fail(f, "fixture: assertNoFixtureResidentsLinkedToOtherFlat not exported");
+  if (!/export function createOtherFlatResidencyReader\(/.test(src))
+    fail(f, "fixture: createOtherFlatResidencyReader not exported");
+  if (!/\.select\(\s*"id,\s*flat_id,\s*user_id,\s*is_active,\s*moved_out_at"\s*\)/.test(src))
+    fail(f, "fixture: residency adapter must select id, flat_id, user_id, is_active, moved_out_at");
+  if (!/\.eq\("flat_id",\s*flatId\)/.test(src))
+    fail(f, "fixture: residency adapter must filter by flat_id equality");
+  if (!/\.in\("user_id",\s*userIds\)/.test(src))
+    fail(f, "fixture: residency adapter must filter user_id via .in(userIds)");
+  if (!/\.eq\("is_active",\s*true\)/.test(src))
+    fail(f, "fixture: residency adapter must filter is_active = true");
+  if (!/\.is\("moved_out_at",\s*null\)/.test(src))
+    fail(f, "fixture: residency adapter must filter moved_out_at IS NULL");
+  if (/from\("flat_residents"\)[\s\S]{0,400}\.limit\(1\)/.test(src))
+    fail(f, "fixture: residency adapter must not use .limit(1)");
+  if (/from\("flat_residents"\)[\s\S]{0,400}\.eq\("society_id"/.test(src))
+    fail(f, "fixture: residency adapter must not broaden to society-level query");
+  if (!/assertNoFixtureResidentsLinkedToOtherFlat\(\s*createOtherFlatResidencyReader\(admin\)/.test(src))
+    fail(f, "fixture: setup must invoke assertNoFixtureResidentsLinkedToOtherFlat with the admin-backed reader");
+  if (
+    !/otherFlatId:\s*otherFlatA[\s\S]{0,200}activeResidentId:\s*activeResident\.id[\s\S]{0,200}movedOutResidentId:\s*movedOutResident\.id[\s\S]{0,200}unrelatedResidentId:\s*unrelatedResident\.id/.test(
+      src,
+    )
+  )
+    fail(f, "fixture: residency invocation must pass otherFlatA plus the three canonical residents");
+
+  // ---- Matrix bill expectations + summary contract -----------------------
+  if (!/export type MatrixBillExpectation\b/.test(src))
+    fail(f, "fixture: MatrixBillExpectation type not exported");
+  if (!/export function buildMatrixBillExpectations\(/.test(src))
+    fail(f, "fixture: buildMatrixBillExpectations not exported");
+  for (const total of ["1200", "900", "1000", "800", "1100"]) {
+    if (!new RegExp(`\\b${total}\\b`).test(src))
+      fail(f, `fixture: expectation total "${total}" missing`);
+  }
+  if (!/export const MatrixBillSummarySchema\b/.test(src))
+    fail(f, "fixture: MatrixBillSummarySchema not exported");
+  if (!/MatrixBillSummarySchema[\s\S]{0,800}\.strict\(\)/.test(src))
+    fail(f, "fixture: MatrixBillSummarySchema must be .strict()");
+  if (!/export type MatrixBillSummaryReader\b/.test(src))
+    fail(f, "fixture: MatrixBillSummaryReader type not exported");
+  if (!/export async function assertMatrixBillSummariesStartClean\(/.test(src))
+    fail(f, "fixture: assertMatrixBillSummariesStartClean not exported");
+  if (!/export function createMatrixBillSummaryReader\(/.test(src))
+    fail(f, "fixture: createMatrixBillSummaryReader not exported");
+  if (!/createMatrixBillSummaryReader\(\s*adminA1\.client\s*\)/.test(src))
+    fail(f, "fixture: summary reader must use adminA1.client (authenticated)");
+  if (!/assertMatrixBillSummariesStartClean\(\s*createMatrixBillSummaryReader\(\s*adminA1\.client\s*\),\s*buildMatrixBillExpectations\(matrix,\s*societyA\)/.test(src))
+    fail(f, "fixture: setup must invoke assertMatrixBillSummariesStartClean with all five expectations");
+  for (const field of [
+    "verified_amount",
+    "pending_amount",
+    "rejected_amount",
+    "reversed_amount",
+    "available_to_submit",
+    "remaining_verified_balance",
+    "cancelled",
+    "status",
+  ]) {
+    if (!new RegExp(`\\b${field}\\b`).test(src))
+      fail(f, `fixture: summary schema/assertion must reference "${field}"`);
+  }
+  if (/createMatrixBillSummaryReader\(\s*admin\s*\)/.test(src))
+    fail(f, "fixture: summary reader must not be built from the service-role admin client");
   return f;
 }
+
 
 export function checkMatrixContext(src: string): string[] {
   const f: string[] = [];
@@ -585,6 +658,43 @@ export function checkRuntimeCriticalTestSource(src: string): string[] {
   return f;
 }
 
+export function checkResidencySummaryTestSource(src: string): string[] {
+  const f: string[] = [];
+  const mustImport = [
+    "assertNoFixtureResidentsLinkedToOtherFlat",
+    "createOtherFlatResidencyReader",
+    "buildMatrixBillExpectations",
+    "MatrixBillSummarySchema",
+    "assertMatrixBillSummariesStartClean",
+    "createMatrixBillSummaryReader",
+  ];
+  for (const name of mustImport) {
+    if (!new RegExp(`\\b${name}\\b`).test(src))
+      fail(f, `residency-summary: symbol "${name}" not exercised`);
+  }
+  const evidence: Array<[label: string, rx: RegExp]> = [
+    ["residency reader called once with exact IDs", /toHaveBeenCalledWith\(\s*OTHER_FLAT/],
+    ["residency query error path", /query error/i],
+    ["residency non-array data", /non-array/i],
+    ["residency malformed row", /malformed/i],
+    ["residency duplicate row ID", /duplicate residency row ID/],
+    ["residency safe count in error", /rows=/],
+    ["adapter selects five columns", /"id, flat_id, user_id, is_active, moved_out_at"/],
+    ["adapter is_active filter", /"is_active",\s*true/],
+    ["adapter moved_out_at filter", /"moved_out_at",\s*null/],
+    ["exact five totals", /1200[\s\S]{0,80}900[\s\S]{0,80}1000[\s\S]{0,80}800[\s\S]{0,80}1100/],
+    ["summary reader exact five calls", /toHaveBeenCalledTimes\(5\)/],
+    ["summary cancelled fails", /cancelled/i],
+    ["summary status fails", /status/i],
+    ["summary adapter uses get_bill_payment_summary", /get_bill_payment_summary/],
+  ];
+  for (const [label, rx] of evidence) {
+    if (!rx.test(src))
+      fail(f, `residency-summary: missing evidence for "${label}"`);
+  }
+  return f;
+}
+
 // ---------------------------------------------------------------------------
 // Aggregate.
 // ---------------------------------------------------------------------------
@@ -622,6 +732,13 @@ export function runAllFoundationChecks(): FoundationCheckOutcome {
   } else {
     failures.push(`missing file: ${RUNTIME_CRITICAL_TEST}`);
   }
+
+  if (existsSync(resolve(ROOT, RESIDENCY_SUMMARY_TEST))) {
+    failures.push(...checkResidencySummaryTestSource(read(RESIDENCY_SUMMARY_TEST)));
+  } else {
+    failures.push(`missing file: ${RESIDENCY_SUMMARY_TEST}`);
+  }
+
 
   const tracked = collectTrackedTextFiles(ROOT);
   const scan = scanRepositoryIdentityFromCollection(

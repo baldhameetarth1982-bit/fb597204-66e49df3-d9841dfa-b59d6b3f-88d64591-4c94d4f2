@@ -130,30 +130,29 @@ export function extractRpcId(label: string, data: unknown): string {
 }
 
 /**
- * Redact JWT-shaped tokens, sb_ keys, Authorization/cookie/session headers,
- * service-role/password/access/refresh token labels, and any explicit
- * sensitive values before surfacing a message to test logs.
+ * Thin compatibility wrapper delegating to the canonical Stage 3C
+ * redaction module. All secret-pattern rules live in
+ * `tests/helpers/stage3c-error-redaction.ts` — do NOT re-implement
+ * regex sets here.
+ *
+ * Continues to accept explicit `sensitiveValues` (plus the fixture
+ * `SENSITIVE_VALUES` registry) and to substitute them with the
+ * canonical `[REDACTED_VALUE]` placeholder before delegating.
  */
 export function redactMessage(
   message: string,
   sensitiveValues: readonly string[] = [],
 ): string {
+  if (typeof message !== "string") return "";
   let out = message;
   const explicit = new Set<string>([...SENSITIVE_VALUES, ...sensitiveValues]);
   for (const v of explicit) {
     if (!v || v.length < 4) continue;
     out = out.split(v).join("[REDACTED_VALUE]");
   }
-  out = out
-    .replace(/eyJ[A-Za-z0-9_-]{4,}\.[A-Za-z0-9_-]{4,}\.[A-Za-z0-9_-]{4,}/g, "[REDACTED_JWT]")
-    .replace(/sb_(?:secret|publishable)_[A-Za-z0-9_-]+/g, "[REDACTED_SB_KEY]")
-    .replace(/(authorization\s*[:=]\s*)(?:bearer\s+)?[^\s"',}]+/gi, "$1[REDACTED]")
-    .replace(/bearer\s+[A-Za-z0-9._-]+/gi, "Bearer [REDACTED]")
-    .replace(/(cookie|set-cookie|session|refresh[_-]?token|access[_-]?token)(["'\s:=]+)[^\s"',}]+/gi,
-      "$1$2[REDACTED]")
-    .replace(/service[_-]?role["'\s:=]+[A-Za-z0-9_.\-]+/gi, "service_role=[REDACTED]")
-    .replace(/password["'\s:=]+[^\s"']+/gi, "password=[REDACTED]");
-  return out;
+  return redactStage3CString(out, {
+    protectedSocietyId: process.env.SOCIOHUB_PROTECTED_SOCIETY_ID,
+  });
 }
 
 export async function assertSupabaseResult<T>(

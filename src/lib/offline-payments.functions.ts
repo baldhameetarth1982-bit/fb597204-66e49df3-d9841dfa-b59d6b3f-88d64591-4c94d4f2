@@ -9,6 +9,7 @@ import {
   toBillingRpcClient,
 } from "./billing-config.functions";
 import { residentSubmitInputSchema } from "./offline-payment-contracts";
+import { submitResidentBankTransferWithClient } from "./offline-payment-resident-submit";
 
 /**
  * Stage 3C — Offline payments (Cash / Bank Transfer only).
@@ -231,27 +232,25 @@ const paymentWithOptionalNotes = paymentIdOnly.extend({
 
 
 
-/** Stage 3C v4 — resident Bank Transfer only. Method/actor fixed server-side. */
+/** Stage 3C v4 — resident Bank Transfer only. Method/actor fixed server-side.
+ *  Delegates to the neutral shared core so production and fixture cannot drift. */
 export const submitResidentBankTransfer = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => residentSubmitInput.parse(i))
   .handler(async ({ data, context }) => {
     try {
-      const raw = await callBillingRpc(
+      const { paymentId } = await submitResidentBankTransferWithClient(
         toBillingRpcClient(context),
-        "submit_offline_payment",
-        buildRpcArgs({
-          _bill_id: data.billId,
-          _method: "bank_transfer",
-          _amount: data.amount,
-          _payment_date: data.paymentDate ?? null,
-          _reference_no: data.referenceNo,
-          _notes: data.notes ?? null,
-          _idempotency_key: data.idempotencyKey,
-          _actor_role: "resident",
-        }),
+        {
+          billId: data.billId,
+          amount: data.amount,
+          paymentDate: data.paymentDate ?? null,
+          referenceNo: data.referenceNo,
+          notes: data.notes ?? null,
+          idempotencyKey: data.idempotencyKey,
+        },
       );
-      return { paymentId: extractRpcId(raw) };
+      return { paymentId };
     } catch (e) {
       throw new Error(mapPaymentError((e as Error).message));
     }

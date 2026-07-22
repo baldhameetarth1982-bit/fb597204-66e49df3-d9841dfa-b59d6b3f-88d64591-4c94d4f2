@@ -20,6 +20,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { redactStage3CString } from "./stage3c-error-redaction";
+import { submitResidentBankTransferWithClient } from "@/lib/offline-payment-resident-submit";
 
 // ---------------------------------------------------------------------------
 // Sensitive-value redaction registry
@@ -1141,19 +1142,26 @@ export function buildScenarioHelpers(admin: SupabaseClient): ScenarioHelpers {
       return extractRpcId("submitAdminBank", data);
     },
     async submitResidentBankTransferPayment(input) {
-      const { data, error } = await input.actor.client.rpc("submit_offline_payment", {
-        _bill_id: input.billId,
-        _method: "bank_transfer",
-        _amount: input.amount,
-        _payment_date: input.paymentDate,
-        _reference_no: input.referenceNo,
-        _notes: input.notes ?? null,
-        _idempotency_key: input.idempotencyKey,
-        _actor_role: "resident",
-      });
-      if (error)
-        throw new Error(`[stage3c:submitResidentBank] ${redactMessage(extractErrorMessage(error))}`);
-      return extractRpcId("submitResidentBank", data);
+      try {
+        const { paymentId } = await submitResidentBankTransferWithClient(
+          input.actor.client as unknown as Parameters<
+            typeof submitResidentBankTransferWithClient
+          >[0],
+          {
+            billId: input.billId,
+            amount: input.amount,
+            paymentDate: input.paymentDate,
+            referenceNo: input.referenceNo,
+            notes: input.notes ?? null,
+            idempotencyKey: input.idempotencyKey,
+          },
+        );
+        return paymentId;
+      } catch (e) {
+        throw new Error(
+          `[stage3c:submitResidentBank] ${redactMessage(extractErrorMessage(e))}`,
+        );
+      }
     },
     async verifyPayment(actor, paymentId, notes) {
       const { error } = await actor.client.rpc("verify_offline_payment", {

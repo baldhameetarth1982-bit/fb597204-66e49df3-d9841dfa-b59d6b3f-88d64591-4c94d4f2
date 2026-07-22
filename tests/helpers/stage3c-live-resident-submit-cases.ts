@@ -436,6 +436,7 @@ async function attemptResidentSubmitAndAssertDenied(input: DenialInput): Promise
   const uniqueKey = `resident-submit-${safeSuffix(fixture.prefix)}-${suffix}`;
 
   let threw = false;
+  let unexpectedSuccessId: string | null = null;
   try {
     const { data, error } = await actorClient.rpc("submit_offline_payment", {
       _bill_id: billId,
@@ -448,16 +449,20 @@ async function attemptResidentSubmitAndAssertDenied(input: DenialInput): Promise
       _actor_role: "resident",
     });
     if (error) throw error;
-    throw new Error(`${label}: unexpected success payload: ${String(data ?? "")}`);
+    const parsedId = z.string().uuid().safeParse(data);
+    unexpectedSuccessId = parsedId.success ? parsedId.data : null;
+    throw new Error(`${label}: unexpected success (no server error surfaced)`);
   } catch (err) {
     threw = true;
     assertCanonicalError(err, STAGE3C_ERRORS.NOT_AUTHORIZED, label);
   }
   expect(threw, `${label}: must throw`).toBe(true);
+  expect(unexpectedSuccessId, `${label}: no id returned from denied submission`).toBeNull();
 
   const postBillCount = await fixture.helpers.countPayments(billId);
   expect(postBillCount, `${label}: no new payment on target bill`).toBe(preBillCount);
 }
+
 
 // ---------------------------------------------------------------------------
 // RESIDENT-SUBMIT-05 — same-society other flat

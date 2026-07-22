@@ -79,6 +79,30 @@ const RpcIdSchema = z.string().trim().uuid();
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
+ * Deterministic UTC payment date exposed to every live test case.
+ * Must satisfy the RPC's "not a future date" rule and remain stable
+ * for the complete suite run. Do not call `Date.now()` from cases.
+ */
+export const STAGE3C_TEST_PAYMENT_DATE = "2026-06-15";
+
+/**
+ * Duplicate-safe UUID tracker. Trims + validates the input as a
+ * canonical UUID (via `UUID_RE`) and appends it to `collection` only
+ * if not already present. Rejects blank strings and non-strings with
+ * a labeled error.
+ */
+export function trackUniqueId(collection: string[], id: unknown, label: string): void {
+  if (typeof id !== "string" || id.trim().length === 0)
+    throw new Error(`[stage3c:trackUniqueId:${label}] blank or non-string id`);
+  const trimmed = id.trim();
+  if (!UUID_RE.test(trimmed))
+    throw new Error(`[stage3c:trackUniqueId:${label}] malformed UUID`);
+  if (collection.includes(trimmed)) return;
+  collection.push(trimmed);
+}
+
+
+/**
  * Strict UUID extractor for RPC responses. Accepts a bare UUID string,
  * `{ id }`, or `{ payment_id }`; trims and validates the shape using
  * Zod; throws a labeled error on anything else. Never returns an empty

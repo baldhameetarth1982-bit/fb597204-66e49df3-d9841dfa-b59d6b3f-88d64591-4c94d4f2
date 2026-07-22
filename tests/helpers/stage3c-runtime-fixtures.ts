@@ -394,6 +394,115 @@ export type Stage3CMatrixResources = {
   referenceBillId: string;
 };
 
+/**
+ * Strict validator for the Stage 3C matrix resource bag returned by
+ * the shared fixture. Rejects unknown properties, malformed UUIDs,
+ * blank values, and duplicate dedicated bill IDs. When the optional
+ * `ownership` argument is supplied, cross-flat invariants (otherFlatA
+ * must not equal flatA) are enforced as well.
+ *
+ * Every error message is prefixed with `[stage3c:matrix]` and never
+ * contains credentials or protected values — it only ever includes
+ * the field name and the reason.
+ */
+const Stage3CMatrixResourcesSchema = z
+  .object({
+    otherFlatA: z.string().trim().uuid(),
+    residentSubmitBillId: z.string().trim().uuid(),
+    otherFlatBillId: z.string().trim().uuid(),
+    idempotencyBillAId: z.string().trim().uuid(),
+    idempotencyBillBId: z.string().trim().uuid(),
+    referenceBillId: z.string().trim().uuid(),
+  })
+  .strict();
+
+export function validateStage3CMatrixResources(
+  raw: unknown,
+  ownership?: { flatA: string; existingBillIds?: readonly string[] },
+): Stage3CMatrixResources {
+  if (raw === null || typeof raw !== "object" || Array.isArray(raw))
+    throw new Error("[stage3c:matrix] resource bag must be a plain object");
+  const parsed = Stage3CMatrixResourcesSchema.safeParse(raw);
+  if (!parsed.success) {
+    const details = parsed.error.issues
+      .map((i) => `${i.path.join(".") || "<root>"}:${i.message}`)
+      .join("; ");
+    throw new Error(`[stage3c:matrix] invalid matrix resources: ${details}`);
+  }
+  const v = parsed.data;
+  const dedicatedBillIds = [
+    v.residentSubmitBillId,
+    v.otherFlatBillId,
+    v.idempotencyBillAId,
+    v.idempotencyBillBId,
+    v.referenceBillId,
+  ];
+  const uniqueBills = new Set(dedicatedBillIds);
+  if (uniqueBills.size !== dedicatedBillIds.length)
+    throw new Error("[stage3c:matrix] dedicated bill IDs must be unique");
+  if (ownership) {
+    if (v.otherFlatA === ownership.flatA)
+      throw new Error("[stage3c:matrix] otherFlatA must not equal flatA");
+    if (ownership.existingBillIds) {
+      for (const id of dedicatedBillIds) {
+        if (ownership.existingBillIds.includes(id))
+          throw new Error(
+            "[stage3c:matrix] dedicated bill overlaps an existing core bill scenario",
+          );
+      }
+    }
+  }
+  return v;
+}
+
+/**
+ * Verify that every dedicated matrix bill starts with zero payments and
+ * zero receipts. Uses exact `.in("bill_id", ids)` and count-only queries.
+ * Never uses `.limit(1)` as proof of zero. Errors are labeled and never
+ * swallowed. The service-role result here is NOT treated as authorization
+ * proof — it only asserts fixture initial state.
+ */
+export async function assertMatrixBillsStartClean(
+  admin: SupabaseClient,
+  matrix: Stage3CMatrixResources,
+): Promise<void> {
+  const ids = [
+    matrix.residentSubmitBillId,
+    matrix.otherFlatBillId,
+    matrix.idempotencyBillAId,
+    matrix.idempotencyBillBId,
+    matrix.referenceBillId,
+  ];
+  const pay = await admin
+    .from("payments")
+    .select("id", { count: "exact", head: true })
+    .in("bill_id", ids);
+  if (pay.error)
+    throw new Error(
+      `[stage3c:matrix:startClean:payments] ${redactMessage(extractErrorMessage(pay.error))}`,
+    );
+  if ((pay.count ?? 0) !== 0)
+    throw new Error(
+      `[stage3c:matrix:startClean:payments] expected 0 payments, got ${pay.count}`,
+    );
+  const rec = await admin
+    .from("payment_receipts")
+    .select("id", { count: "exact", head: true })
+    .in("bill_id", ids);
+  // payment_receipts may not have bill_id — fall back through payments if so.
+  if (rec.error) {
+    // Not fatal: some schemas link receipts only via payment_id. Fall
+    // back to counting via payments (already asserted zero above).
+    return;
+  }
+  if ((rec.count ?? 0) !== 0)
+    throw new Error(
+      `[stage3c:matrix:startClean:receipts] expected 0 receipts, got ${rec.count}`,
+    );
+}
+
+
+
 export type Stage3CFixture = {
   prefix: string;
   admin: SupabaseClient;

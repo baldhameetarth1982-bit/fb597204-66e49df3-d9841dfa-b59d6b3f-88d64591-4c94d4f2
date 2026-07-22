@@ -662,7 +662,7 @@ raw Supabase / PostgreSQL error text.
 - `bun run build` — passed (build succeeded, ~47s).
 - `bun scripts/verify-client-bundle-secrets.ts` — OK, no server-only
   indicators in the client bundle.
-- Protected society `baldha Meetarth`
+- Protected society protected society
   (`[REDACTED-PROTECTED-SOCIETY-ID]`) not accessed at any point.
 
 ## Explicitly still remaining inside Stage 1D
@@ -780,7 +780,7 @@ reconciliation was added or removed in this pass.
 
 ### Protected society
 
-`baldha Meetarth` (`[REDACTED-PROTECTED-SOCIETY-ID]`) was **not**
+protected society (`[REDACTED-PROTECTED-SOCIETY-ID]`) was **not**
 queried, seeded, probed, migrated against, or otherwise accessed in this
 pass. The migration is additive DDL only; no rows were read or written.
 
@@ -830,7 +830,7 @@ into `audit_log`, no compensating DELETE.
 2. Premium redesign of `/society/income/categories` and `/society/income/payers`.
 3. Responsive visual verification + full documentation sync.
 
-Protected society `baldha Meetarth` (1907a918-…) was not queried,
+Protected society protected society (1907a918-…) was not queried,
 seeded, probed, or referenced during this slice.
 
 ## Stage 1D — correctness slice: authoritative RPC (no caller-controlled canonical data)
@@ -902,7 +902,7 @@ are clean.
 
 **Runtime PostgreSQL / direct-RPC integration tests remain skipped**
 (no isolated fixture harness available). No production data or the
-protected society `baldha Meetarth` ([REDACTED-PROTECTED-SOCIETY-ID])
+protected society protected society ([REDACTED-PROTECTED-SOCIETY-ID])
 was queried, seeded, probed, or referenced during this slice.
 
 **Remaining Stage 1D slices (unchanged):**
@@ -1003,7 +1003,7 @@ transactional creation, `creation_request_id`, Cash / Bank Transfer-only
 creation, payer safe-list vs. detail privacy split, verify/reject/reverse
 flows, Basic zero-call architecture, RLS + society isolation, historical
 `other_offline` rows readable, Razorpay subscription-only, no platform
-fee. Protected society (`baldha Meetarth`, id `[REDACTED-PROTECTED-SOCIETY-ID]`)
+fee. Protected society (protected society, id `[REDACTED-PROTECTED-SOCIETY-ID]`)
 untouched.
 
 **Stage 1D status: complete.** Next: **Stage 1E — SQL Reporting,
@@ -1096,7 +1096,7 @@ Cash / Bank Transfer-only creation, transactional creation RPC and canonical
 hash, verification state machine (`transition_income_record`), payer safe-list
 vs. detail privacy split, Basic zero-call architecture, RLS + society
 isolation, Razorpay subscription-only, no platform fee, no Stripe/Paddle/UPI/
-cards/wallets/payment links. Protected society `baldha Meetarth`
+cards/wallets/payment links. Protected society protected society
 (`[REDACTED-PROTECTED-SOCIETY-ID]`) untouched.
 
 **Stage 1E status: complete. Stage 1 overall status: complete.**

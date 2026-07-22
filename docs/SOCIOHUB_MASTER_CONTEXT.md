@@ -55,7 +55,7 @@ See `FEATURE_MATRIX.md` for the full catalog and per-feature min-plan.
 - Additive migrations only. No destructive changes to `auth`, `storage`, `realtime`, `supabase_functions`, `vault`.
 - `SUPABASE_SERVICE_ROLE_KEY` server-only. `supabaseAdmin` imported inside handlers with `await import(...)` in client-reachable files.
 - Never edit auto-generated files: `src/routeTree.gen.ts`, `src/integrations/supabase/client.ts`, `client.server.ts`, `auth-middleware.ts`, `auth-attacher.ts`, `types.ts`, `.env` (VITE_SUPABASE_*), `supabase/config.toml`.
-- Real production society data (e.g. `baldha Meetarth`) is off-limits for test writes.
+- Real production society data (e.g. protected society) is off-limits for test writes.
 - Every existing feature is preserved. Discoverability, not removal, is how we clean up sprawl.
 
 ## Stage 2A closure (canonical structure model)

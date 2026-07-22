@@ -127,7 +127,7 @@ A release is not approved when any of these is skipped without a valid, document
 
 Before approval, confirm in writing:
 
-- Protected society `baldha Meetarth` (`1907a918-c4b8-4f43-a837-450530cc7c34`) was not queried, seeded, mutated, probed, or referenced as a fixture during this release cycle.
+- Protected society protected society (`1907a918-c4b8-4f43-a837-450530cc7c34`) was not queried, seeded, mutated, probed, or referenced as a fixture during this release cycle.
 - Synthetic societies were used everywhere real data would be needed.
 
 ## Documentation

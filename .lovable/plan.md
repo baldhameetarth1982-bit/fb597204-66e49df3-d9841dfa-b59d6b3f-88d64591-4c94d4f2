@@ -93,7 +93,7 @@ Audit existing gamification (`achievements`, `user_points`, `leaderboard` route)
 - No re-introduction of platform fees / FeeBreakdown.
 - Razorpay stays subscription-only; maintenance stays Cash + Bank Transfer.
 - No edits to `routeTree.gen.ts`, `client.ts`, `client.server.ts`, `auth-middleware.ts`, `auth-attacher.ts`, `types.ts`, `.env`.
-- No test data written to the real `baldha Meetarth` society.
+- No test data written to the real protected society society.
 - No existing feature key, route, table, or component deleted. Uncategorized features default to Pro in the new catalog and remain reachable.
 
 ---

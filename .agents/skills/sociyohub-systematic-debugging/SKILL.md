@@ -12,7 +12,7 @@ A disciplined loop for finding the earliest incorrect state in SociyoHub before 
 Before proposing a cause:
 
 - Write the exact reproduction steps: route, role (resident, society admin, super admin, guard), plan tier, society context, input values.
-- Confirm the bug is reproducible against synthetic fixtures. Never reproduce against the protected society `baldha Meetarth` (`1907a918-c4b8-4f43-a837-450530cc7c34`).
+- Confirm the bug is reproducible against synthetic fixtures. Never reproduce against the protected society protected society (`1907a918-c4b8-4f43-a837-450530cc7c34`).
 - Capture the observable failure: error message, HTTP status, PostgreSQL error code, UI state, network payload, console log.
 - If it cannot be reproduced, that is the finding — say so and stop.
 

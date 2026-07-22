@@ -74,7 +74,7 @@ Before closing a numbered SociyoHub stage:
 - All required categories above are green with recorded exit codes.
 - Secret scan against the client bundle is green.
 - No new dependency was added silently.
-- Protected society `baldha Meetarth` (`1907a918-c4b8-4f43-a837-450530cc7c34`) was not queried, mutated, seeded or probed.
+- Protected society protected society (`1907a918-c4b8-4f43-a837-450530cc7c34`) was not queried, mutated, seeded or probed.
 - `docs/DEVELOPMENT_HISTORY.md` reflects the stage.
 
 If any of these fails or is missing, the stage is open. State that plainly.

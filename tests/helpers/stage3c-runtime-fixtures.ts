@@ -379,6 +379,21 @@ export type FinancialScenarios = {
   voidReceiptId: string;
 };
 
+export type Stage3CMatrixResources = {
+  /** Extra flat inside Society A / blockA — used to prove same-society, cross-flat denial. */
+  otherFlatA: string;
+  /** Dedicated unpaid bill on flatA for RESIDENT-SUBMIT lifecycle. */
+  residentSubmitBillId: string;
+  /** Dedicated unpaid bill on otherFlatA for RESIDENT-SUBMIT ownership denial. */
+  otherFlatBillId: string;
+  /** Dedicated unpaid bill on flatA for IDEMPOTENCY-01/02/03. */
+  idempotencyBillAId: string;
+  /** Dedicated unpaid bill on flatA for IDEMPOTENCY cross-bill scenarios. */
+  idempotencyBillBId: string;
+  /** Dedicated unpaid bill on flatA for REFERENCE-01/02. */
+  referenceBillId: string;
+};
+
 export type Stage3CFixture = {
   prefix: string;
   admin: SupabaseClient;
@@ -398,6 +413,7 @@ export type Stage3CFixture = {
     unrelatedResident: SyntheticUser;
   };
   scenarios: FinancialScenarios;
+  matrix: Stage3CMatrixResources;
   tracked: TrackedIds;
   helpers: ScenarioHelpers;
   openBillId: string;

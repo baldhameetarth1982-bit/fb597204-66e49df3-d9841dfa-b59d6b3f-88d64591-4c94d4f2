@@ -568,8 +568,6 @@ export function parseMatrixReceiptRows(
  *  - all five unique
  *  - deterministic order: residentSubmit, otherFlat, idempotencyA, idempotencyB, reference
  */
-const CanonicalUuid = z.string().uuid();
-
 export function validateMatrixDedicatedBillIds(
   matrix: Stage3CMatrixResources,
 ): readonly [string, string, string, string, string] {
@@ -583,7 +581,7 @@ export function validateMatrixDedicatedBillIds(
   if (ordered.length !== 5)
     throw new Error("[stage3c:matrix:ids] expected exactly 5 dedicated bill IDs");
   for (let i = 0; i < ordered.length; i++) {
-    const parsed = CanonicalUuid.safeParse(ordered[i]);
+    const parsed = CanonicalStage3CUuidSchema.safeParse(ordered[i]);
     if (!parsed.success)
       throw new Error(
         `[stage3c:matrix:ids] dedicated bill ID at position ${i} is not a canonical UUID`,

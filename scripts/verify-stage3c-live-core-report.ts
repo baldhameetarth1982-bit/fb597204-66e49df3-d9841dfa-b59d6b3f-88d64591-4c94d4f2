@@ -125,7 +125,7 @@ async function main() {
   const outcome = verifyCoreReport(report);
   if (!outcome.ok) {
     console.error("Stage 3C core live report FAILED:");
-    for (const err of outcome.errors) console.error(`  - ${err}`);
+    for (const line of outcome.errors) console.error(`  - ${line}`);
     process.exit(1);
   }
   console.log("Stage 3C core live report verified: 24/24 passed");

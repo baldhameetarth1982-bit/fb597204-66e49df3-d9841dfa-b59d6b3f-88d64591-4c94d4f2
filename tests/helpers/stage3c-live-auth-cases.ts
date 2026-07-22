@@ -22,9 +22,10 @@ import type { Stage3CFixture } from "./stage3c-runtime-fixtures";
 import { requireStage3CEnv } from "./stage3c-runtime-fixtures";
 import {
   STAGE3C_ERRORS,
-  matchesCanonicalError,
+  assertCanonicalError,
   type Stage3CErrorToken,
 } from "./stage3c-live-errors";
+import { safeStage3CErrorMessage } from "./stage3c-error-redaction";
 import {
   STAGE3C_ACTIVE_RPCS,
   type Stage3CRpcContract,
@@ -65,11 +66,10 @@ async function actorReverse(actor: Actor, paymentId: string, reason: string) {
 
 function expectCanonical(err: unknown, token: Stage3CErrorToken, label: string): void {
   expect(err, `${label}: must receive a real error`).not.toBeNull();
-  const message = String((err as { message?: unknown } | null)?.message ?? "");
-  expect(
-    matchesCanonicalError(message, token),
-    `${label}: expected canonical "${token}", got: ${message}`,
-  ).toBe(true);
+  // Delegate to canonical assertion: mismatch output is redacted by
+  // stage3c-live-errors → stage3c-error-redaction. Never format raw
+  // Supabase error messages here.
+  assertCanonicalError(err, token, label);
 }
 
 /**
@@ -82,7 +82,9 @@ async function readPaymentStatus(fixture: Stage3CFixture, paymentId: string): Pr
     .select("status")
     .eq("id", paymentId)
     .single();
-  if (error || !data) throw new Error(`payment status read failed: ${error?.message ?? "no data"}`);
+  if (error || !data) {
+    throw new Error(safeStage3CErrorMessage("auth:readPaymentStatus", error ?? "no data"));
+  }
   return String((data as { status: string }).status);
 }
 

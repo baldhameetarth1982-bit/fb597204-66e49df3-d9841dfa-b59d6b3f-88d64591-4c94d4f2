@@ -700,8 +700,219 @@ export function checkResidencySummaryTestSource(src: string): string[] {
 }
 
 // ---------------------------------------------------------------------------
+// Stage 3C redaction migration validator.
+//
+// Enforces that every Stage 3C helper / script file that contains a real
+// unknown-error surfacing site is listed exactly once in the migration
+// manifest with a valid delegation mode, and vice versa.
+// ---------------------------------------------------------------------------
+
+const CANONICAL_REDACTION_OWNER = "tests/helpers/stage3c-error-redaction.ts";
+const MIGRATION_MANIFEST_PATH =
+  "tests/helpers/stage3c-redaction-migration-manifest.ts";
+const VALID_DELEGATION_MODES: ReadonlySet<string> = new Set([
+  "direct",
+  "via-redactMessage",
+  "via-assertCanonicalError",
+]);
+
+// Real unknown-error surfacing patterns. Kept conservative to avoid
+// flagging synthetic-test source strings and comments.
+const RAW_ERROR_PATTERNS: ReadonlyArray<readonly [label: string, rx: RegExp]> = [
+  ["raw `${error}`", /\$\{\s*error\s*\}/],
+  ["raw `${err}`", /\$\{\s*err\s*\}/],
+  ["raw `${error.message}`", /\$\{\s*error\??\.message\s*\}/],
+  ["raw `${err.message}`", /\$\{\s*err\??\.message\s*\}/],
+  ["String(error)", /\bString\(\s*error\s*\)/],
+  ["String(err)", /\bString\(\s*err\s*\)/],
+  ["error.toString()", /\berror\.toString\(\)/],
+  ["err.toString()", /\berr\.toString\(\)/],
+  ["JSON.stringify(error)", /\bJSON\.stringify\(\s*error\s*\)/],
+  ["JSON.stringify(err)", /\bJSON\.stringify\(\s*err\s*\)/],
+  ["console.error(error)", /\bconsole\.error\(\s*error\s*\)/],
+  ["console.error(err)", /\bconsole\.error\(\s*err\s*\)/],
+  ["console.warn(error)", /\bconsole\.warn\(\s*error\s*\)/],
+  ["console.warn(err)", /\bconsole\.warn\(\s*err\s*\)/],
+];
+
+// Duplicate-regex sentinels: outside the canonical owner these must
+// not appear as raw regex definitions.
+const DUPLICATE_REGEX_SENTINELS: ReadonlyArray<readonly [label: string, rx: RegExp]> = [
+  ["duplicate JWT regex", /\/\\beyJ\[A-Za-z0-9_-\]/],
+  ["duplicate Bearer regex", /\\bbearer\\s\+/i],
+  ["duplicate password regex", /\bpassword\|passphrase\|passwd\|pwd\b/],
+];
+
+function fileHasRawErrorSurface(src: string): boolean {
+  for (const [, rx] of RAW_ERROR_PATTERNS) if (rx.test(src)) return true;
+  return false;
+}
+
+const SAFE_SURFACE_PATTERNS: readonly RegExp[] = [
+  /\bassertCanonicalError\s*\(/,
+  /\bsafeStage3CErrorMessage\s*\(/,
+  /\bthrowStage3CSafeError\s*\(/,
+  /\bredactMessage\s*\(/,
+  /\bredactStage3CString\s*\(/,
+  /\bredactStage3CUnknown\s*\(/,
+];
+
+function fileHasAnyErrorSurface(src: string): boolean {
+  if (fileHasRawErrorSurface(src)) return true;
+  for (const rx of SAFE_SURFACE_PATTERNS) if (rx.test(src)) return true;
+  return false;
+}
+
+function extractManifestEntries(
+  manifestSrc: string,
+): Array<{ path: string; mode: string }> {
+  const out: Array<{ path: string; mode: string }> = [];
+  // Match { path: "...", mode: "...", reason: "..." } blocks — allow
+  // arbitrary whitespace / newlines between fields.
+  const rx =
+    /\{\s*path:\s*"([^"]+)"\s*,\s*mode:\s*"([^"]+)"\s*,\s*reason:/g;
+  let m: RegExpExecArray | null;
+  while ((m = rx.exec(manifestSrc)) !== null) {
+    out.push({ path: m[1], mode: m[2] });
+  }
+  return out;
+}
+
+function hasCanonicalDirectImport(src: string): boolean {
+  if (!/from\s+["'][^"']*stage3c-error-redaction["']/.test(src)) return false;
+  return /\b(redactStage3CString|redactStage3CUnknown|safeStage3CErrorMessage|throwStage3CSafeError)\b/.test(
+    src,
+  );
+}
+
+function hasRedactMessageCall(src: string): boolean {
+  return /\bredactMessage\s*\(/.test(src);
+}
+
+function hasAssertCanonicalErrorCall(src: string): boolean {
+  return /\bassertCanonicalError\s*\(/.test(src);
+}
+
+/**
+ * Pure. Returns failure strings only — no source excerpts, no absolute
+ * paths, no caught-error interpolation.
+ */
+export function checkStage3CRedactionMigration(
+  files: ReadonlyArray<readonly [path: string, source: string]>,
+  manifestSource: string,
+): string[] {
+  const failures: string[] = [];
+  const byPath = new Map<string, string>();
+  for (const [p, s] of files) byPath.set(p, s);
+
+  const entries = extractManifestEntries(manifestSource);
+  if (entries.length === 0) {
+    failures.push("redaction-migration: manifest is empty or unparseable");
+    return failures;
+  }
+
+  // Uniqueness + alphabetical order.
+  const seen = new Set<string>();
+  const paths = entries.map((e) => e.path);
+  for (const p of paths) {
+    if (seen.has(p)) failures.push(`redaction-migration: duplicate manifest path: ${p}`);
+    seen.add(p);
+  }
+  const sorted = [...paths].slice().sort();
+  for (let i = 0; i < paths.length; i++) {
+    if (paths[i] !== sorted[i]) {
+      failures.push("redaction-migration: manifest paths must be alphabetically sorted");
+      break;
+    }
+  }
+
+  for (const entry of entries) {
+    if (entry.path === CANONICAL_REDACTION_OWNER) {
+      failures.push(
+        "redaction-migration: canonical owner must not appear in migration manifest",
+      );
+      continue;
+    }
+    if (!VALID_DELEGATION_MODES.has(entry.mode)) {
+      failures.push(
+        `redaction-migration: unknown delegation mode "${entry.mode}" for ${entry.path}`,
+      );
+      continue;
+    }
+    const src = byPath.get(entry.path);
+    if (src === undefined) {
+      failures.push(`redaction-migration: manifest path not found: ${entry.path}`);
+      continue;
+    }
+    if (!fileHasRawErrorSurface(src)) {
+      // File is listed but no error path found — allowed only if the
+      // file demonstrably owns delegation infrastructure (e.g. exports
+      // redactMessage or assertCanonicalError). Otherwise it's artificial.
+      const ownsWrapper =
+        /export\s+function\s+(redactMessage|assertCanonicalError)\b/.test(src);
+      if (!ownsWrapper) {
+        failures.push(
+          `redaction-migration: manifest file has no error-surfacing path: ${entry.path}`,
+        );
+      }
+    }
+    if (entry.mode === "direct" && !hasCanonicalDirectImport(src)) {
+      failures.push(
+        `redaction-migration: ${entry.path} declared direct but does not import canonical redaction`,
+      );
+    }
+    if (entry.mode === "via-redactMessage" && !hasRedactMessageCall(src)) {
+      failures.push(
+        `redaction-migration: ${entry.path} declared via-redactMessage but does not call redactMessage`,
+      );
+    }
+    if (
+      entry.mode === "via-assertCanonicalError" &&
+      !hasAssertCanonicalErrorCall(src)
+    ) {
+      failures.push(
+        `redaction-migration: ${entry.path} declared via-assertCanonicalError but does not call assertCanonicalError`,
+      );
+    }
+    // Duplicate secret regex forbidden outside canonical owner.
+    for (const [label, rx] of DUPLICATE_REGEX_SENTINELS) {
+      if (rx.test(src))
+        failures.push(`redaction-migration: ${label} outside canonical owner in ${entry.path}`);
+    }
+  }
+
+  // Discovery: any Stage 3C helper / script file that has a raw error
+  // surface but is missing from the manifest → fail.
+  const manifested = new Set(paths);
+  const canonicalExempt = new Set<string>([
+    CANONICAL_REDACTION_OWNER,
+    MIGRATION_MANIFEST_PATH,
+    "scripts/verify-stage3c-live-matrix-foundation-source.ts",
+  ]);
+  for (const [p, s] of files) {
+    if (canonicalExempt.has(p)) continue;
+    if (
+      !p.startsWith("tests/helpers/stage3c-") &&
+      !p.startsWith("scripts/verify-stage3c-")
+    )
+      continue;
+    if (!p.endsWith(".ts")) continue;
+    if (manifested.has(p)) continue;
+    if (fileHasRawErrorSurface(s)) {
+      failures.push(
+        `redaction-migration: unmanifested Stage 3C helper with raw error surface: ${p}`,
+      );
+    }
+  }
+
+  return failures;
+}
+
+// ---------------------------------------------------------------------------
 // Aggregate.
 // ---------------------------------------------------------------------------
+
+
 
 export function runAllFoundationChecks(): FoundationCheckOutcome {
   const failures: string[] = [];
@@ -750,6 +961,17 @@ export function runAllFoundationChecks(): FoundationCheckOutcome {
     process.env.SOCIOHUB_PROTECTED_SOCIETY_ID,
   );
   failures.push(...scan.failures);
+
+  // Redaction migration audit — reuses the already-collected tracked file set.
+  const manifestEntry = tracked.files.find(
+    ([p]) => p === "tests/helpers/stage3c-redaction-migration-manifest.ts",
+  );
+  if (!manifestEntry) {
+    failures.push("redaction-migration: manifest file not found in tracked set");
+  } else {
+    failures.push(...checkStage3CRedactionMigration(tracked.files, manifestEntry[1]));
+  }
+
   return { ok: failures.length === 0, failures };
 }
 

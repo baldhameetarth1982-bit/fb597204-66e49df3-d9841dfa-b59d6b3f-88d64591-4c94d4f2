@@ -123,16 +123,26 @@ export function checkFixtureFoundation(src: string): string[] {
     fail(f, "fixture: line-item IDs must be tracked via trackUniqueId");
   if (!/export async function assertMatrixBillsStartClean\(/.test(src))
     fail(f, "fixture: assertMatrixBillsStartClean not exported");
-  if (!/\.in\("bill_id",\s*ids\)/.test(src))
-    fail(f, "fixture: assertMatrixBillsStartClean must filter payments by bill_id via .in");
+  if (!/export function validateMatrixDedicatedBillIds\(/.test(src))
+    fail(f, "fixture: validateMatrixDedicatedBillIds not exported");
+  if (!/export type MatrixCleanStateReader\b/.test(src))
+    fail(f, "fixture: MatrixCleanStateReader type not exported");
+  if (!/export async function assertMatrixBillsStartCleanWithReader\(/.test(src))
+    fail(f, "fixture: assertMatrixBillsStartCleanWithReader not exported");
+  if (/\[0-9a-fA-F-\]\{36\}/.test(src))
+    fail(f, "fixture: loose 36-character UUID expression must be removed");
+  if (!/\.in\("bill_id",\s*(?:ids|billIds)\)/.test(src))
+    fail(f, "fixture: adapter must filter payments by bill_id via .in");
   if (!/\.in\("payment_id",\s*paymentIds\)/.test(src))
-    fail(f, "fixture: assertMatrixBillsStartClean must filter payment_receipts by payment_id");
+    fail(f, "fixture: adapter must filter payment_receipts by payment_id");
   if (/from\("payment_receipts"\)[\s\S]{0,200}\.in\("bill_id"/.test(src))
     fail(f, "fixture: payment_receipts must not be filtered by bill_id (schema uses payment_id)");
   if (/not fatal/i.test(src))
     fail(f, "fixture: startClean must not contain a 'not fatal' fallback for query errors");
   if (/\.limit\(1\)[^\n]*payments/.test(src))
     fail(f, "fixture: startClean must not use .limit(1) as zero-proof for payments");
+  if (!/assertMatrixBillsStartCleanWithReader\(reader,\s*matrix\)/.test(src))
+    fail(f, "fixture: adapter must delegate to assertMatrixBillsStartCleanWithReader");
   if (!/assertMatrixBillsStartClean\(admin,\s*matrix\)/.test(src))
     fail(f, "fixture: setup must invoke assertMatrixBillsStartClean");
   // Setup must supply all four existing core bill IDs to the validator.

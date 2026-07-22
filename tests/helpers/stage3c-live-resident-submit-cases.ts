@@ -612,9 +612,26 @@ export const residentSubmit08_exactSummaryDelta: Stage3CResidentSubmitHandler = 
   const receipts = await fixture.helpers.countReceipts(paymentId);
   expect(receipts, "RESIDENT-SUBMIT-08: no receipt exists").toBe(0);
 
+  // Sequence tables must be untouched by a pending submission.
+  const initialSeq = ctx.residentSubmitInitialReceiptSequences as
+    | ReceiptSequenceSnapshot
+    | null;
+  expect(initialSeq, "RESIDENT-SUBMIT-08: initial sequence snapshot present").not.toBeNull();
+  const afterSeq = await snapshotReceiptSequences(
+    fixture.admin,
+    fixture.societyA,
+    "RESIDENT-SUBMIT-08",
+  );
+  assertReceiptSequencesUnchanged(
+    initialSeq as ReceiptSequenceSnapshot,
+    afterSeq,
+    "RESIDENT-SUBMIT-08",
+  );
+
   ctx.residentSubmitPendingSummary = finalSummary;
   ctx.residentPostSubmitSummary = finalSummary;
 };
+
 
 // ---------------------------------------------------------------------------
 // Registry

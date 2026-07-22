@@ -524,10 +524,10 @@ export function parseOtherFlatARow(
 }
 
 const MatrixPaymentRowSchema = z
-  .object({ id: z.string().uuid(), bill_id: z.string().uuid() })
+  .object({ id: CanonicalStage3CUuidSchema, bill_id: CanonicalStage3CUuidSchema })
   .strict();
 const MatrixReceiptRowSchema = z
-  .object({ id: z.string().uuid(), payment_id: z.string().uuid() })
+  .object({ id: CanonicalStage3CUuidSchema, payment_id: CanonicalStage3CUuidSchema })
   .strict();
 
 export function parseMatrixPaymentRows(

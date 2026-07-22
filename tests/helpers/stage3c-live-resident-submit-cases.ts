@@ -219,9 +219,17 @@ export const residentSubmit01_initializeDedicatedResidentBill: Stage3CResidentSu
     ctx.residentSubmitInitialSummary = initial;
     ctx.residentBaselineSummary = initial;
 
+    // Snapshot receipt sequences to prove no allocation happens for pending.
+    ctx.residentSubmitInitialReceiptSequences = await snapshotReceiptSequences(
+      fixture.admin,
+      fixture.societyA,
+      "RESIDENT-SUBMIT-01",
+    );
+
     const preCount = await fixture.helpers.countPayments(billId);
     expect(preCount, "RESIDENT-SUBMIT-01: no pre-existing payments on dedicated bill").toBe(0);
   };
+
 
 // ---------------------------------------------------------------------------
 // RESIDENT-SUBMIT-02

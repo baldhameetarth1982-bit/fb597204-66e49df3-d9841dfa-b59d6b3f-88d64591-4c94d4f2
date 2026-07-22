@@ -19,6 +19,7 @@
  */
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { redactStage3CString } from "./stage3c-error-redaction";
 
 // ---------------------------------------------------------------------------
 // Sensitive-value redaction registry

@@ -4,7 +4,10 @@
  * Uses the shared fixture's canonical `submitAdminCashPayment` helper —
  * method and actor role are pinned server-side. Baseline capture,
  * amount selection, and post-summary reads are owned by the numbered
- * cases below; there is no unnumbered lifecycle-only step step.
+ * cases below; there is no unnumbered lifecycle-only step.
+ *
+ * PENDING-05 asserts the exact canonical unchanged `verified_amount`
+ * (a.k.a. balance_paid) — not just `bills.status != 'paid'`.
  */
 import { expect } from "vitest";
 import {
@@ -26,7 +29,6 @@ export async function pending01_adminA1RecordsCashPayment(
 ): Promise<void> {
   const fixture = requireFixture(ctx);
   ctx.billId = fixture.openBillId;
-  // Fetch baseline summary as the first act of PENDING-01.
   const raw = await fixture.helpers.getBillSummary(fixture.users.adminA1, fixture.openBillId);
   const baseline = parseBillSummary(raw, "pending-01");
   if (baseline.available_to_submit <= 0)
@@ -73,11 +75,13 @@ export async function pending03_statusIsPending(ctx: Stage3CLiveCoreContext): Pr
   const paymentId = requirePendingPaymentId(ctx);
   const { data, error } = await fixture.admin
     .from("payments")
-    .select("status")
+    .select("society_id, flat_id, bill_id, method, submitted_by, status")
     .eq("id", paymentId)
     .single();
   expect(error).toBeNull();
-  expect(data!.status, "PENDING-03: status must be pending").toBe("pending");
+  const row = parsePaymentAssertionRow(data, "pending-03");
+  expect(row.status, "PENDING-03: status must be pending").toBe("pending");
+  expect(row.bill_id, "PENDING-03: bill_id").toBe(requireBillId(ctx));
 }
 
 export async function pending04_noReceiptYet(ctx: Stage3CLiveCoreContext): Promise<void> {
@@ -87,16 +91,37 @@ export async function pending04_noReceiptYet(ctx: Stage3CLiveCoreContext): Promi
   expect(count, "PENDING-04: no receipt at submission").toBe(0);
 }
 
+/**
+ * PENDING-05 — Bill balance_paid does not change from a pending payment.
+ *
+ * `verified_amount` on `get_bill_payment_summary` is the canonical
+ * balance-paid figure. The primary assertion is exact numeric equality
+ * with the PENDING-01 baseline; the bill's terminal-status check is a
+ * secondary assertion. The post-pending summary is also captured here
+ * so PENDING-06 / PENDING-07 have a single canonical snapshot.
+ */
 export async function pending05_billNotPaid(ctx: Stage3CLiveCoreContext): Promise<void> {
   const fixture = requireFixture(ctx);
   const billId = requireBillId(ctx);
+  const baseline = requireBaselineSummary(ctx);
+
+  const raw = await fixture.helpers.getBillSummary(fixture.users.adminA1, billId);
+  const after = parseBillSummary(raw, "pending-05");
+  ctx.postPendingSummary = after;
+
+  expect(
+    after.verified_amount,
+    "PENDING-05: verified_amount (balance_paid) must equal baseline exactly",
+  ).toBeCloseTo(baseline.verified_amount, 6);
+
   const { data, error } = await fixture.admin
     .from("bills")
     .select("status")
     .eq("id", billId)
     .single();
   expect(error).toBeNull();
-  expect(data!.status, "PENDING-05: bill must not become paid from a pending payment").not.toBe(
+  const status = String((data as { status: string } | null)?.status ?? "");
+  expect(status, "PENDING-05: bill must not transition to paid on a pending payment").not.toBe(
     "paid",
   );
 }
@@ -104,13 +129,9 @@ export async function pending05_billNotPaid(ctx: Stage3CLiveCoreContext): Promis
 export async function pending06_pendingAmountIncreasesExactly(
   ctx: Stage3CLiveCoreContext,
 ): Promise<void> {
-  const fixture = requireFixture(ctx);
-  const billId = requireBillId(ctx);
   const baseline = requireBaselineSummary(ctx);
+  const after = requirePostPendingSummary(ctx);
   const amount = requirePendingAmount(ctx);
-  const raw = await fixture.helpers.getBillSummary(fixture.users.adminA1, billId);
-  const after = parseBillSummary(raw, "pending-06");
-  ctx.postPendingSummary = after;
   expect(after.pending_amount - baseline.pending_amount, "PENDING-06 delta").toBeCloseTo(
     amount,
     6,

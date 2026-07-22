@@ -3,14 +3,19 @@
  *
  * Separation-of-duties: A1 (submitter) may never verify their own
  * payment. A2 verifies. Balance deltas are asserted against the
- * post-pending summary captured in PENDING-06. Receipt shape is
+ * post-pending summary captured in PENDING-05. Receipt shape is
  * verified against an anchored regex tied to the receipt's UTC month.
- * There is no unnumbered lifecycle-only step — VERIFY-03 owns the post-verify
- * summary fetch and VERIFY-06 owns the receipt lookup.
+ *
+ * VERIFY-09 performs a genuine concurrent verification race against
+ * a resident-submitted Bank Transfer payment (so BOTH A1 and A2 are
+ * eligible verifiers), asserting exactly one success, exactly one
+ * canonical `payment_not_pending` failure, and exactly one receipt.
  */
 import { expect } from "vitest";
 import {
+  assertCanonicalReceiptStatus,
   parseBillSummary,
+  parsePaymentAssertionRow,
   parseReceiptAssertionRow,
   requireBillId,
   requireFixture,
@@ -20,9 +25,11 @@ import {
   requirePostVerifySummary,
   requireVerifiedReceiptCreatedAt,
   requireVerifiedReceiptNumber,
+  type ReceiptAssertionRow,
   type Stage3CLiveCoreContext,
 } from "./stage3c-live-core-context";
-import { trackUniqueId } from "./stage3c-runtime-fixtures";
+import { confirmReceiptSequenceKey, trackUniqueId } from "./stage3c-runtime-fixtures";
+import type { Stage3CFixture } from "./stage3c-runtime-fixtures";
 import { STAGE3C_ERRORS, matchesCanonicalError } from "./stage3c-live-errors";
 
 const RECEIPT_NUMBER_RE = /^RCPT\/(\d{6})\/\d{4}$/;
@@ -54,18 +61,26 @@ export async function verify02_adminA2Verifies(ctx: Stage3CLiveCoreContext): Pro
   await fixture.helpers.verifyPayment(fixture.users.adminA2, paymentId, "core VERIFY-02");
 }
 
+/**
+ * VERIFY-03 — Verified payment transitions to status = verified.
+ * Uses the strict payment-row parser (no `data!` on a raw DB row) and
+ * captures the post-verify summary for VERIFY-04 / VERIFY-05.
+ */
 export async function verify03_statusVerified(ctx: Stage3CLiveCoreContext): Promise<void> {
   const fixture = requireFixture(ctx);
   const paymentId = requirePendingPaymentId(ctx);
+  const billId = requireBillId(ctx);
   const { data, error } = await fixture.admin
     .from("payments")
-    .select("status")
+    .select("society_id, flat_id, bill_id, method, submitted_by, status")
     .eq("id", paymentId)
     .single();
-  expect(error).toBeNull();
-  expect(data!.status, "VERIFY-03").toBe("verified");
-  // Capture post-verify summary for VERIFY-04 / VERIFY-05.
-  const billId = requireBillId(ctx);
+  expect(error, "VERIFY-03: payment row must exist").toBeNull();
+  const row = parsePaymentAssertionRow(data, "verify-03");
+  expect(row.status, "VERIFY-03: status must be verified").toBe("verified");
+  expect(row.bill_id, "VERIFY-03: bill_id ownership preserved").toBe(billId);
+  expect(row.submitted_by, "VERIFY-03: submitter preserved").toBe(fixture.users.adminA1.id);
+
   const raw = await fixture.helpers.getBillSummary(fixture.users.adminA1, billId);
   ctx.postVerifySummary = parseBillSummary(raw, "verify-03");
 }
@@ -88,17 +103,27 @@ export async function verify05_verifiedAmountIncreasesExactly(
   expect(after.verified_amount - before.verified_amount, "VERIFY-05").toBeCloseTo(amount, 6);
 }
 
+/**
+ * VERIFY-06 — Exactly one payment_receipt row is created on verification.
+ * Validates receipt canonical valid status via `assertCanonicalReceiptStatus`
+ * (never a stringly-typed inline literal).
+ */
 export async function verify06_exactlyOneReceipt(ctx: Stage3CLiveCoreContext): Promise<void> {
   const fixture = requireFixture(ctx);
   const paymentId = requirePendingPaymentId(ctx);
   const { data, error } = await fixture.admin
     .from("payment_receipts")
-    .select("id, receipt_number, status, created_at")
+    .select("id, receipt_number, status, created_at, payment_id")
     .eq("payment_id", paymentId);
   expect(error, "VERIFY-06: receipt query must not error").toBeNull();
-  const rows = (data ?? []) as unknown[];
+  const rows = Array.isArray(data) ? data : [];
   expect(rows.length, "VERIFY-06: exactly one receipt").toBe(1);
   const parsed = parseReceiptAssertionRow(rows[0], "verify-06");
+  const paymentIdOnRow = String((rows[0] as { payment_id?: unknown }).payment_id ?? "");
+  expect(paymentIdOnRow, "VERIFY-06: receipt belongs to the verified payment").toBe(paymentId);
+  assertCanonicalReceiptStatus(parsed.status, "verify-06");
+  expect(parsed.receipt_number.length, "VERIFY-06: receipt number non-empty").toBeGreaterThan(0);
+  expect(Number.isFinite(new Date(parsed.created_at).getTime()), "VERIFY-06 created_at").toBe(true);
   ctx.verifiedReceiptId = parsed.id;
   ctx.verifiedReceiptNumber = parsed.receipt_number;
   ctx.verifiedReceiptCreatedAt = parsed.created_at;
@@ -130,11 +155,98 @@ export async function verify08_repeatedVerificationDenied(
   expectCanonical(error, STAGE3C_ERRORS.PAYMENT_NOT_PENDING, "VERIFY-08");
 }
 
+/**
+ * VERIFY-09 — Receipt number remains unique across concurrent verifications.
+ *
+ * Dedicated payment: `scenarios.pendingResidentBankTransferPaymentId`,
+ * submitted by an active resident so BOTH A1 and A2 are eligible
+ * (neither is the submitter). A1 and A2 race via `Promise.allSettled`
+ * and only one may win; the loser must return the canonical
+ * `payment_not_pending` error. Exactly one receipt row must exist.
+ */
 export async function verify09_receiptStillExactlyOne(
   ctx: Stage3CLiveCoreContext,
 ): Promise<void> {
   const fixture = requireFixture(ctx);
-  const paymentId = requirePendingPaymentId(ctx);
-  const count = await fixture.helpers.countReceipts(paymentId);
-  expect(count, "VERIFY-09").toBe(1);
+  const paymentId = fixture.scenarios.pendingResidentBankTransferPaymentId;
+
+  // Pre-state: still pending, zero receipts.
+  const preStatusRes = await fixture.admin
+    .from("payments")
+    .select("society_id, flat_id, bill_id, method, submitted_by, status")
+    .eq("id", paymentId)
+    .single();
+  expect(preStatusRes.error, "VERIFY-09: pre-state read").toBeNull();
+  const preRow = parsePaymentAssertionRow(preStatusRes.data, "verify-09:pre");
+  expect(preRow.status, "VERIFY-09: dedicated payment must start pending").toBe("pending");
+  expect(preRow.submitted_by, "VERIFY-09: submitter is the resident (not an admin)").toBe(
+    fixture.users.activeResident.id,
+  );
+  expect(
+    await fixture.helpers.countReceipts(paymentId),
+    "VERIFY-09: zero receipts before race",
+  ).toBe(0);
+
+  // Real race: both admins fire concurrently.
+  const raceResults = await Promise.allSettled([
+    fixture.users.adminA1.client.rpc("verify_offline_payment", {
+      _payment_id: paymentId,
+      _notes: "VERIFY-09 race adminA1",
+    }),
+    fixture.users.adminA2.client.rpc("verify_offline_payment", {
+      _payment_id: paymentId,
+      _notes: "VERIFY-09 race adminA2",
+    }),
+  ]);
+
+  const errors: unknown[] = raceResults.map((r) => {
+    if (r.status === "rejected") return r.reason;
+    const value = r.value as { error: unknown };
+    return value?.error ?? null;
+  });
+  const successes = errors.filter((e) => e === null || e === undefined);
+  const failures = errors.filter((e) => e !== null && e !== undefined);
+  expect(successes.length, "VERIFY-09: exactly one successful verifier").toBe(1);
+  expect(failures.length, "VERIFY-09: exactly one denied verifier").toBe(1);
+  const failMsg = String((failures[0] as { message?: unknown } | null)?.message ?? failures[0] ?? "");
+  expect(
+    matchesCanonicalError(failMsg, STAGE3C_ERRORS.PAYMENT_NOT_PENDING),
+    `VERIFY-09: race-loser canonical "${STAGE3C_ERRORS.PAYMENT_NOT_PENDING}", got: ${failMsg}`,
+  ).toBe(true);
+
+  // Post-state: verified + exactly one receipt (unique receipt number).
+  const post = await fixture.admin
+    .from("payments")
+    .select("society_id, flat_id, bill_id, method, submitted_by, status")
+    .eq("id", paymentId)
+    .single();
+  expect(post.error, "VERIFY-09: post-state read").toBeNull();
+  const postRow = parsePaymentAssertionRow(post.data, "verify-09:post");
+  expect(postRow.status, "VERIFY-09: payment must be verified").toBe("verified");
+
+  const receipts = await fixture.admin
+    .from("payment_receipts")
+    .select("id, receipt_number, status, created_at, payment_id")
+    .eq("payment_id", paymentId);
+  expect(receipts.error, "VERIFY-09: receipt query").toBeNull();
+  const receiptRows = Array.isArray(receipts.data) ? receipts.data : [];
+  expect(receiptRows.length, "VERIFY-09: exactly one receipt after concurrent race").toBe(1);
+  const receipt: ReceiptAssertionRow = parseReceiptAssertionRow(receiptRows[0], "verify-09");
+  assertCanonicalReceiptStatus(receipt.status, "verify-09");
+
+  const uniqueNumbers = new Set(receiptRows.map((r) => String((r as { receipt_number: string }).receipt_number)));
+  expect(uniqueNumbers.size, "VERIFY-09: receipt numbers are unique").toBe(1);
+
+  trackUniqueId(fixture.tracked.paymentReceiptIds, receipt.id, "VERIFY-09:receiptId");
+  const seq = await confirmReceiptSequenceKey(
+    (fixture as unknown as Stage3CFixture).admin,
+    fixture.societyA,
+    receipt.created_at,
+    "VERIFY-09:sequence",
+  );
+  const seqKey = `${seq.society_id}:${seq.year_month}`;
+  const alreadyTracked = fixture.tracked.receiptSequences.some(
+    (s) => `${s.society_id}:${s.year_month}` === seqKey,
+  );
+  if (!alreadyTracked) fixture.tracked.receiptSequences.push(seq);
 }

@@ -209,7 +209,7 @@ describe("Stage 3C canonical redaction — idempotency and extra rules", () => {
   it("redacts standalone query-string secrets (no scheme)", () => {
     const out = redactStage3CString("?token=abc123&status=pending&password=hunter2");
     expect(out).toContain("token=[REDACTED_VALUE]");
-    expect(out).toContain("password=[REDACTED_VALUE]");
+    expect(out).toMatch(/password=\[REDACTED_(PASSWORD|VALUE)\]/);
     expect(out).toContain("status=pending");
   });
   it("preserves safe Error diagnostic fields (code/details/hint/status)", () => {

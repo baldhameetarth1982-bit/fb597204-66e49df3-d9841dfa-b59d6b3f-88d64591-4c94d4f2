@@ -21,12 +21,15 @@
  * left untouched.
  */
 import { expect } from "vitest";
+import { z } from "zod";
 import {
   parseBillSummary,
   parsePaymentAssertionRow,
 } from "./stage3c-live-core-context";
 import { trackUniqueId } from "./stage3c-runtime-fixtures";
 import { STAGE3C_ERRORS, assertCanonicalError } from "./stage3c-live-errors";
+import { safeStage3CErrorMessage } from "./stage3c-error-redaction";
+
 import { residentSubmitInputSchema } from "@/lib/offline-payment-contracts";
 import {
   requireMatrixFixture,

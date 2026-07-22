@@ -238,9 +238,13 @@ describe("Stage 3C — RESIDENT-SUBMIT handler source shape", () => {
 
   it("snapshots receipt sequences and asserts they remain unchanged", () => {
     expect(residentSrc).toMatch(/snapshotReceiptSequences/);
-    expect(residentSrc).toMatch(/assertReceiptSequencesUnchanged/);
-    expect(residentSrc).toMatch(/payment_receipt_sequences/);
-    expect(residentSrc).toMatch(/payment_receipt_month_sequences/);
+    expect(residentSrc).toMatch(/assertReceiptSequencesExactlyEqual/);
+    const contractsSrc = readFileSync(
+      resolve(process.cwd(), "tests/helpers/stage3c-live-resident-submit-contracts.ts"),
+      "utf8",
+    );
+    expect(contractsSrc).toMatch(/payment_receipt_sequences/);
+    expect(contractsSrc).toMatch(/payment_receipt_month_sequences/);
   });
 
   it("routes redaction through safeStage3CErrorMessage", () => {

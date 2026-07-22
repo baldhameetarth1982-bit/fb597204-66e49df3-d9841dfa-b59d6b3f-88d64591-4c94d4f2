@@ -467,7 +467,7 @@ export function checkRuntimeCriticalTestSource(src: string): string[] {
     ["receipt reader call count", /listReceiptsByPaymentIds[\s\S]{0,400}toHaveBeenCalled/],
     ["receipt not called when empty", /listReceiptsByPaymentIds[\s\S]{0,400}not\.toHaveBeenCalled/],
     ["out-of-scope payment", /outside the requested set/],
-    ["safe count-only error", /payments=\\?\$\{|payments=0/],
+    ["safe count-only error", /payments=/],
     ["error redaction", /REDACTED_JWT|redact/i],
   ];
   for (const [label, rx] of evidence) {

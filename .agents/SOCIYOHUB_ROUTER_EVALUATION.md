@@ -140,7 +140,7 @@ Legend:
 - Failing: 0.
 - Skill ceilings observed: QUICK ≤ CEO only; NORMAL ≤ CEO + 1; HIGH-RISK ≤ CEO + 2; RELEASE ≤ CEO + `sociyohub-release-readiness` + up to 2 others. `sociyohub-verification-gate` is treated as a completion gate that may attach to HIGH-RISK and RELEASE work without breaking the ceiling.
 - Permanent SociyoHub rules referenced by every high-risk routing decision: Firebase→Supabase exchange, strict RLS, multi-tenant isolation, protected society untouched, payment scope limited to Razorpay SaaS + Cash/Bank Transfer + approved offline non-member income.
-- Protected society protected society (`1907a918-c4b8-4f43-a837-450530cc7c34`) was **not** queried, seeded, mutated, probed, or referenced as a fixture during this evaluation.
+- Protected society ([REDACTED-PROTECTED-SOCIETY-ID]) was **not** queried, seeded, mutated, probed, or referenced as a fixture during this evaluation.
 - No application source, database, migration, RLS policy, dependency, or environment variable was modified by this evaluation.
 
 This document evaluates routing decisions only; it does not assert any runtime behaviour of the SociyoHub application.

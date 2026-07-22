@@ -80,7 +80,7 @@ export function checkResidentModule(src: string): string[] {
     fail(f, "resident-module: handler map must use satisfies Record<Stage3CResidentSubmitCaseId, ...>");
   if (/as Record<\s*Stage3CResidentSubmitCaseId/.test(src))
     fail(f, "resident-module: `as Record<Stage3CResidentSubmitCaseId>` cast is forbidden");
-  // Production helper mirror + public schema
+  // Public schema + fixture helper path.
   if (!/from ["']@\/lib\/offline-payment-contracts["']/.test(src))
     fail(f, "resident-module: must import from @/lib/offline-payment-contracts");
   if (!/residentSubmitInputSchema/.test(src))
@@ -93,41 +93,122 @@ export function checkResidentModule(src: string): string[] {
     fail(f, "resident-module: must not submit resident payment via Admin A1");
   if (/fixture\.admin\.rpc\(\s*["']submit_offline_payment/.test(src))
     fail(f, "resident-module: must not use service-role client for resident submission");
+  // Contracts import (single source of truth).
+  if (!/from ["']\.\/stage3c-live-resident-submit-contracts["']/.test(src))
+    fail(f, "resident-module: must import contracts from ./stage3c-live-resident-submit-contracts");
   // Forbidden field probes
   for (const field of ["method", "actorRole", "proofUrl", "status", "societyId", "submittedBy"]) {
     if (!new RegExp(`["']${field}["']`).test(src))
       fail(f, `resident-module: public schema probe missing forbidden field "${field}"`);
   }
-  // Cash denial + not_authorized denials
+  // Denial semantics.
   if (!/RESIDENT_CASH_NOT_ALLOWED/.test(src))
     fail(f, "resident-module: RESIDENT_CASH_NOT_ALLOWED token must be asserted");
-  const notAuthCount = (src.match(/STAGE3C_ERRORS\.NOT_AUTHORIZED/g) ?? []).length;
-  if (notAuthCount < 1)
+  if (!/STAGE3C_ERRORS\.NOT_AUTHORIZED/.test(src))
     fail(f, "resident-module: not_authorized token must be asserted for denial cases");
   if (!/assertCanonicalError/.test(src))
     fail(f, "resident-module: must delegate mismatch redaction to assertCanonicalError");
-  // Final summary delta: 300 amount, pending +300, available -300, remains total 1200
+  // Deterministic amounts + summary.
   if (!/1200\b/.test(src)) fail(f, "resident-module: expected total 1200");
   if (!/\b300\b/.test(src)) fail(f, "resident-module: expected amount 300");
   if (!/\b900\b/.test(src)) fail(f, "resident-module: expected post-delta available 900");
-  // No receipt for pending submission
-  if (!/countReceipts/.test(src))
-    fail(f, "resident-module: must assert receipt count for pending submission");
-  // Server-pinned source (actor_role proof) + strict row schema
+  // Zero-receipt via strict helper.
+  if (!/assertNoReceiptForResidentPayment/.test(src))
+    fail(f, "resident-module: must use assertNoReceiptForResidentPayment for zero-receipt proof");
+  // Server-pinned source proof.
   if (!/ResidentSubmittedPaymentRowSchema/.test(src))
-    fail(f, "resident-module: must define ResidentSubmittedPaymentRowSchema");
+    fail(f, "resident-module: must use ResidentSubmittedPaymentRowSchema");
   if (!/resident_submission/.test(src))
     fail(f, "resident-module: must assert source = resident_submission");
   if (!/deriveActorRoleFromSource/.test(src))
     fail(f, "resident-module: must derive actor_role from source column");
-  // Sequence tables must be snapshotted and asserted unchanged for pending.
+  // Sequences.
   if (!/snapshotReceiptSequences/.test(src))
     fail(f, "resident-module: must snapshot receipt sequences at baseline");
-  if (!/assertReceiptSequencesUnchanged/.test(src))
-    fail(f, "resident-module: must assert receipt sequences unchanged after pending submission");
-  // No unsafe RPC data interpolation into error messages.
+  if (!/assertReceiptSequencesExactlyEqual/.test(src))
+    fail(f, "resident-module: must use assertReceiptSequencesExactlyEqual (exact deterministic compare)");
+  // Bill-state snapshot for denial cases.
+  if (!/snapshotResidentBillState/.test(src))
+    fail(f, "resident-module: must snapshot full bill state around denial RPCs");
+  if (!/assertResidentBillStateUnchanged/.test(src))
+    fail(f, "resident-module: must assert bill state unchanged after denial RPCs");
+  // Denial control flow: no `unexpected success` inside a try block.
+  // Approximate check: the token 'unexpected success' must not appear
+  // between `try {` and the matching `} catch`.
+  const tryBlocks = src.split(/\btry\s*\{/);
+  for (let i = 1; i < tryBlocks.length; i++) {
+    const seg = tryBlocks[i]!;
+    const catchIdx = seg.search(/\}\s*catch\b/);
+    const body = catchIdx >= 0 ? seg.slice(0, catchIdx) : seg;
+    if (/unexpected success/.test(body))
+      fail(
+        f,
+        "resident-module: `unexpected success` error must be thrown OUTSIDE any try/catch block",
+      );
+  }
+  // flat_residents proof for moved-out case.
+  if (!/flat_residents/.test(src))
+    fail(f, "resident-module: RESIDENT-SUBMIT-06 must query flat_residents");
+  // No raw RPC data interpolation.
   if (/\$\{\s*String\(\s*data/.test(src))
     fail(f, "resident-module: must not interpolate raw RPC data into error messages");
+  // Safe redaction usage.
+  if (!/safeStage3CErrorMessage/.test(src))
+    fail(f, "resident-module: must route error text through safeStage3CErrorMessage");
+  return f;
+}
+
+export function checkResidentContracts(src: string): string[] {
+  const f: string[] = [];
+  const required = [
+    "ResidentSubmittedPaymentRowSchema",
+    "snapshotReceiptSequences",
+    "assertReceiptSequencesExactlyEqual",
+    "snapshotResidentBillState",
+    "assertResidentBillStateUnchanged",
+    "assertNoReceiptForResidentPayment",
+    "deriveActorRoleFromSource",
+    "ReceiptSequenceSnapshot",
+  ];
+  for (const name of required) {
+    if (!new RegExp(`\\b${name}\\b`).test(src))
+      fail(f, `resident-contracts: symbol "${name}" missing`);
+  }
+  if (!/CanonicalStage3CUuidSchema/.test(src))
+    fail(f, "resident-contracts: must build row schema on CanonicalStage3CUuidSchema");
+  if (!/Number\.isFinite/.test(src))
+    fail(f, "resident-contracts: must enforce finite-number checks");
+  if (/Array\.isArray\([^)]+\)\s*\?\s*[^:]+\s*:\s*\[\]/.test(src))
+    fail(f, "resident-contracts: fail-closed — no `Array.isArray(x) ? x : []` fallback");
+  return f;
+}
+
+export function checkResidentProdCore(src: string): string[] {
+  const f: string[] = [];
+  if (!/export\s+async\s+function\s+submitResidentBankTransferWithClient\b/.test(src))
+    fail(f, "resident-prod-core: submitResidentBankTransferWithClient must be exported");
+  if (!/_method:\s*["']bank_transfer["']/.test(src))
+    fail(f, "resident-prod-core: must pin _method=bank_transfer");
+  if (!/_actor_role:\s*["']resident["']/.test(src))
+    fail(f, "resident-prod-core: must pin _actor_role=resident");
+  return f;
+}
+
+export function checkProdFnDelegates(src: string): string[] {
+  const f: string[] = [];
+  if (!/from ["']\.\/offline-payment-resident-submit["']/.test(src))
+    fail(f, "prod-fn: must import shared core from ./offline-payment-resident-submit");
+  if (!/submitResidentBankTransferWithClient\s*\(/.test(src))
+    fail(f, "prod-fn: submitResidentBankTransfer handler must call shared core");
+  return f;
+}
+
+export function checkFixtureDelegates(src: string): string[] {
+  const f: string[] = [];
+  if (!/from ["']@\/lib\/offline-payment-resident-submit["']/.test(src))
+    fail(f, "fixtures: must import shared core from @/lib/offline-payment-resident-submit");
+  if (!/submitResidentBankTransferWithClient\s*\(/.test(src))
+    fail(f, "fixtures: submitResidentBankTransferPayment must delegate to shared core");
   return f;
 }
 

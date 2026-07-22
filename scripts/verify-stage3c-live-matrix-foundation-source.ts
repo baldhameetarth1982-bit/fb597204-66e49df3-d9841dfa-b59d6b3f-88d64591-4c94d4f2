@@ -284,8 +284,12 @@ export function checkErrorTokens(src: string): string[] {
   }
   if (!/escapeRegex\(/.test(src))
     fail(f, "errors: token must be regex-escaped before RegExp construction");
-  if (!/redactForAssertion|REDACTED_JWT/.test(src))
-    fail(f, "errors: assertion redaction path missing");
+  if (!/from\s+["']\.\/stage3c-error-redaction["']/.test(src))
+    fail(f, "errors: must delegate to canonical ./stage3c-error-redaction module");
+  if (!/redactStage3CString\(/.test(src))
+    fail(f, "errors: must call redactStage3CString (single-source redaction)");
+  if (/replace\(\s*\/\\?beyJ/.test(src) || /replace\(\s*\/\\?bsb_/.test(src))
+    fail(f, "errors: raw JWT/sb_ regex replace is forbidden — delegate to redactStage3CString");
   return f;
 }
 

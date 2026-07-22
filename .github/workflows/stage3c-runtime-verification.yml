@@ -132,6 +132,9 @@ jobs:
           } >> "$GITHUB_ENV"
           rm -f .supabase.env
 
+      - name: Validate Stage 3C core live source (pre-flight)
+        run: bun scripts/verify-stage3c-live-core-source.ts
+
       - name: Application-boundary unit tests
         run: bunx vitest run tests/unit/billing-stage3c-application-boundary.test.ts --reporter=default
 
@@ -145,24 +148,10 @@ jobs:
           bunx vitest run tests/integration/billing-stage3c-live.test.ts \
             --reporter=default --reporter=json --outputFile=reports/live.json
 
-      - name: Assert live suite executed (no silent skips)
+      - name: Validate Stage 3C core live matrix (24/93)
         if: ${{ steps.live_tests.outcome == 'success' || steps.live_tests.outcome == 'failure' }}
-        run: |
-          node -e '
-            const r = require("./reports/live.json");
-            const flat = [];
-            const walk = (arr) => (arr || []).forEach(t => {
-              if (t.type === "suite") walk(t.tasks);
-              else flat.push(t);
-            });
-            (r.testResults || r.files || []).forEach(f => walk(f.tasks || f.assertionResults));
-            const total = flat.length;
-            const skipped = flat.filter(t => t.mode === "skip" || t.status === "skipped" || t.result?.state === "skip").length;
-            const passed = flat.filter(t => t.result?.state === "pass" || t.status === "passed").length;
-            console.log(JSON.stringify({ total, passed, skipped }));
-            if (total === 0) { console.error("Live suite has zero executed tests"); process.exit(1); }
-            if (skipped > 0) { console.error("Live suite has skipped tests: " + skipped); process.exit(1); }
-          '
+        run: bun scripts/verify-stage3c-live-core-report.ts reports/live.json
+
 
       - name: Full vitest run (excluding live suite to avoid double-execution)
         run: |

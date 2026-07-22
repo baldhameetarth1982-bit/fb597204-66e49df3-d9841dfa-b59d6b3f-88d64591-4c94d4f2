@@ -53,20 +53,36 @@ This run rewrote the shared runtime fixture (`tests/helpers/stage3c-runtime-fixt
 - Audit selectors record a fixture-time `since` ISO timestamp captured before any mutation; both cleanup and verification use `gte("created_at", sel.since)` so unrelated historical audit rows are not touched.
 
 **Local totals (this run)**
-- Focused fixture suite: **53 passed / 0 failed**.
-- Manifest / boundary / full non-live totals: **912 passed / 19 skipped / 11 todo across 49 files** (`vitest --exclude tests/integration/billing-stage3c-live.test.ts --exclude tests/e2e/**`).
+- Focused fixture suite: passes locally.
+- Full non-live totals: **972 passed / 5 skipped across 49 files** (`vitest --exclude tests/integration/billing-stage3c-live.test.ts`).
 - `bunx tsgo --noEmit`: clean.
 - `bun run build`: succeeded (dist/client + dist/server emitted).
-- `bun scripts/verify-client-bundle-secrets.ts`: no server-only indicators found in 906 client files.
+- `bun scripts/verify-client-bundle-secrets.ts`: no server-only indicators.
 - `bun scripts/verify-stage3c-fixture-source.ts`: ok.
+- `bun scripts/verify-stage3c-live-core-source.ts`: ok.
+- `bun install --frozen-lockfile` + `git diff --exit-code -- package.json bun.lock`: clean (both files pinned at `@lovable.dev/vite-tanstack-config@2.7.6`).
 - Live integration run and Playwright journeys still cannot execute inside Lovable (no Docker → no isolated Supabase); the exit gate remains the GitHub Actions workflow.
 
+**Core live matrix (24/93) — this run**
+- Shared fixture: complete (unchanged).
+- Core registry: `tests/helpers/stage3c-live-core-registry.ts`, exactly 24 entries (AUTH 7/7 + PENDING 8/8 + VERIFY 9/9), descriptions match the canonical manifest verbatim.
+- Live suite is registry-driven; no unnumbered lifecycle-only tests; lifecycle reads own their numbered handler (PENDING-01 baseline, PENDING-06 post-pending, VERIFY-03 post-verify + VERIFY-06 receipt lookup).
+- Strict Zod parsers for bill summary, payment, and receipt payloads (`tests/helpers/stage3c-live-core-context.ts`).
+- Canonical error tokens (`tests/helpers/stage3c-live-errors.ts`): `not_authenticated`, `not_authorized`, `amount_exceeds_outstanding`, `self_verification_not_allowed`, `payment_not_pending`. No broad denial regex fallback.
+- Duplicate-safe tracking helper `trackUniqueId` in the shared fixture; case files no longer push directly into `fixture.tracked.paymentIds` / `paymentReceiptIds`.
+- Deterministic `fixture.testPaymentDate` (`STAGE3C_TEST_PAYMENT_DATE = "2026-06-15"`); the stale `2026-02-10` literal is gone from every case file.
+- Report validator: `scripts/verify-stage3c-live-core-report.ts` — enforces exactly 24 distinct passing core IDs, no missing / duplicate / unknown / non-passing. Unit-tested in `tests/unit/billing-stage3c-live-core-report.test.ts`.
+- Source validator: `scripts/verify-stage3c-live-core-source.ts` — pure inspection functions, package/lock consistency, registry shape, live-suite shape, case-file anti-patterns, workflow wiring.
+- Workflow enforcement: `.github/workflows/stage3c-runtime-verification.yml` now runs `Validate Stage 3C core live source (pre-flight)` before the live matrix and `Validate Stage 3C core live matrix (24/93)` after, replacing the generic total>0/no-skips shim.
+- Live source progress: **24/93**. Live runtime remains **unverified** until a real GitHub Actions run of the workflow succeeds.
+
 Honestly open (next Stage 3C focused runs, in order):
-- Migrate `tests/integration/billing-stage3c-live.test.ts` onto the shared fixture and implement the 93 manifest-driven behavioral bodies.
+- Implement remaining categories: RESIDENT-SUBMIT, IDEMPOTENCY, REFERENCE, READ, PRIVACY, REJECTION, REVERSAL, SEARCH, CLEANUP.
 - Deepen the seven Playwright journeys into real form-fill / dialog / submit / assert flows against the seeded fixture.
 - Obtain one successful GitHub Actions run of `.github/workflows/stage3c-runtime-verification.yml`.
 
 CI executes committed source; it cannot author missing source. These items are the honest source-side remainder, not CI-side work.
+
 
 **On success record here:** workflow run ID, job ID, commit SHA, conclusion, unit / full / live / boundary totals, Playwright totals by project, 14 screenshot paths, artifact names, mandatory protected-ID scan result. Then flip Status to **COMPLETE**.
 

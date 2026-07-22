@@ -98,6 +98,89 @@ function summaryField(raw: unknown, field: string, label: string): number {
   throw new Error(`[stage3c:${label}] missing/invalid summary field "${field}"`);
 }
 
+/**
+ * Snapshot the receipt-sequence + monthly-sequence rows for a society.
+ * Verification allocates a receipt number and increments a sequence row;
+ * a pending resident submission must NOT touch either sequence table.
+ */
+const ReceiptSequenceRow = z.object({
+  society_id: z.string().uuid(),
+  year: z.number().int(),
+  next_number: z.number().int(),
+});
+const ReceiptMonthSequenceRow = z.object({
+  society_id: z.string().uuid(),
+  year_month: z.string(),
+  next_number: z.number().int(),
+});
+export type ReceiptSequenceSnapshot = {
+  yearly: Array<z.infer<typeof ReceiptSequenceRow>>;
+  monthly: Array<z.infer<typeof ReceiptMonthSequenceRow>>;
+};
+
+export async function snapshotReceiptSequences(
+  admin: { from: (t: string) => { select: (c: string) => { eq: (col: string, v: string) => Promise<{ data: unknown; error: unknown }> } } },
+  societyId: string,
+  label: string,
+): Promise<ReceiptSequenceSnapshot> {
+  const yr = await admin.from("payment_receipt_sequences").select("society_id, year, next_number").eq("society_id", societyId);
+  if (yr.error) throw new Error(`[stage3c:${label}] receipt-seq: ${safeStage3CErrorMessage(label, yr.error)}`);
+  const mo = await admin.from("payment_receipt_month_sequences").select("society_id, year_month, next_number").eq("society_id", societyId);
+  if (mo.error) throw new Error(`[stage3c:${label}] receipt-month-seq: ${safeStage3CErrorMessage(label, mo.error)}`);
+  return {
+    yearly: z.array(ReceiptSequenceRow).parse(Array.isArray(yr.data) ? yr.data : []),
+    monthly: z.array(ReceiptMonthSequenceRow).parse(Array.isArray(mo.data) ? mo.data : []),
+  };
+}
+
+export function assertReceiptSequencesUnchanged(
+  before: ReceiptSequenceSnapshot,
+  after: ReceiptSequenceSnapshot,
+  label: string,
+): void {
+  const key = (r: { year?: number; year_month?: string }) => String(r.year ?? r.year_month ?? "");
+  const beforeY = new Map(before.yearly.map((r) => [key(r), r.next_number]));
+  const beforeM = new Map(before.monthly.map((r) => [key(r), r.next_number]));
+  for (const r of after.yearly) {
+    expect(beforeY.get(key(r)) ?? r.next_number, `${label}: yearly seq ${key(r)} unchanged`).toBe(r.next_number);
+  }
+  for (const r of after.monthly) {
+    expect(beforeM.get(key(r)) ?? r.next_number, `${label}: monthly seq ${key(r)} unchanged`).toBe(r.next_number);
+  }
+  expect(after.yearly.length, `${label}: yearly seq row count unchanged`).toBe(before.yearly.length);
+  expect(after.monthly.length, `${label}: monthly seq row count unchanged`).toBe(before.monthly.length);
+}
+
+/** Strict Zod schema for the persisted resident-submitted payment row. */
+export const ResidentSubmittedPaymentRowSchema = z.object({
+  id: z.string().uuid(),
+  bill_id: z.string().uuid(),
+  society_id: z.string().uuid(),
+  submitted_by: z.string().uuid(),
+  amount: z.union([z.number(), z.string()]).transform((v) => Number(v)),
+  method: z.literal("bank_transfer"),
+  status: z.literal("pending"),
+  source: z.literal("resident_submission"),
+  reference_no: z.string().min(1),
+  idempotency_key: z.string().min(1),
+  verified_by: z.null(),
+  verified_at: z.null(),
+  rejected_by: z.null(),
+  rejected_at: z.null(),
+  rejection_reason: z.null(),
+  reversed_by: z.null(),
+  reversed_at: z.null(),
+  reversal_reason: z.null(),
+});
+
+/** Derive canonical actor_role from the persisted `source` column. */
+export function deriveActorRoleFromSource(source: string): "resident" | "admin" {
+  if (source === "resident_submission") return "resident";
+  if (source === "admin_entry") return "admin";
+  throw new Error(`[stage3c] unknown payment source: ${source}`);
+}
+
+
 // ---------------------------------------------------------------------------
 // RESIDENT-SUBMIT-01
 // ---------------------------------------------------------------------------

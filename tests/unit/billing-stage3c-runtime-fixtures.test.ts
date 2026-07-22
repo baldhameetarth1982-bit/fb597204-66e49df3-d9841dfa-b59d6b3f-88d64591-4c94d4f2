@@ -118,9 +118,9 @@ describe("Stage 3C — formatCleanupFailures", () => {
       { label: "y", message: "service_role=abc.def password=hunter2" },
     ]);
     expect(msg).toMatch(/\[REDACTED_JWT\]/);
-    expect(msg).toMatch(/\[REDACTED_SB_KEY\]/);
-    expect(msg).toMatch(/service_role=\[REDACTED\]/);
-    expect(msg).toMatch(/password=\[REDACTED\]/);
+    expect(msg).toMatch(/\[REDACTED_API_KEY\]/);
+    expect(msg).toMatch(/service_role=\[REDACTED_SECRET\]/);
+    expect(msg).toMatch(/password=\[REDACTED_PASSWORD\]/);
     expect(msg).not.toMatch(/hunter2/);
   });
 });

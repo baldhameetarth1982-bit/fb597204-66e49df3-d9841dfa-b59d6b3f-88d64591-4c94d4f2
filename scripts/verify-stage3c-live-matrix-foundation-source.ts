@@ -10,8 +10,9 @@
  * `process.env.SOCIOHUB_PROTECTED_SOCIETY_ID`. Its absence must never
  * produce or invent the value.
  */
-import { readFileSync, existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { readFileSync, existsSync, statSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { resolve, isAbsolute, relative, sep } from "node:path";
 
 const ROOT = process.cwd();
 

@@ -642,8 +642,7 @@ require a DOM environment:
 - `git diff --check` clean; `tsgo` clean; `bunx vitest run tests/unit`
   = 328/328 pass; `bun run build` succeeds; secret bundle scan clean.
 - Runtime PostgreSQL / direct-RPC integration coverage remains **not
-  executed** (no isolated fixture harness available). Protected society
-  protected society (1907a918-…) untouched.
+  executed** (no isolated fixture harness available). protected society ([REDACTED-PROTECTED-SOCIETY-ID]) untouched.
 
 ## Stage 1D — Income access boundary correctness
 
@@ -691,7 +690,7 @@ honestly with no fixtures; production build clean; secret scan clean.
   Income dashboard populated / empty / loading / error, filtered record
   list, record detail with reconcile & undo-reconciliation dialogs,
   Category page, Payer page, Basic-locked, and role-denied.
-- Protected society protected society
+- protected society
   (`[REDACTED-PROTECTED-SOCIETY-ID]`) untouched.
 
 **Stage 1 overall status: complete. Next: Stage 2A — Society Structure

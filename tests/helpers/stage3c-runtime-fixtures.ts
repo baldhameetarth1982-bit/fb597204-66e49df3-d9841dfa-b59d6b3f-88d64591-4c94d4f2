@@ -403,7 +403,9 @@ export type Stage3CFixture = {
   openBillId: string;
   openBillId2: string;
   cancelledBillId: string;
+  testPaymentDate: string;
   cleanup: () => Promise<void>;
+
 };
 
 export type PaginationOptions = { limit?: number; offset?: number };
@@ -1441,7 +1443,9 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
       openBillId,
       openBillId2,
       cancelledBillId,
+      testPaymentDate: STAGE3C_TEST_PAYMENT_DATE,
       cleanup: () => strictCleanup(admin, prefix, tracked),
+
     };
   } catch (setupError) {
     let cleanupMessage = "";

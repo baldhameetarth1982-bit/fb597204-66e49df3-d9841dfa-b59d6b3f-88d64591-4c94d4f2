@@ -6,6 +6,12 @@
  * that upcoming manifest cases will populate. Every new field starts
  * as `null` and is validated on retrieval by a labeled guard — no
  * fake defaults, no globalThis, no unknown state bags.
+ *
+ * The `residentSubmit*` fields are the canonical lifecycle slots used
+ * by the RESIDENT-SUBMIT-01..08 handlers implemented in this run. The
+ * older, more general `resident*` fields are retained for the
+ * foundation validator contract; they are unused by the resident-
+ * submit handlers.
  */
 import {
   createStage3CLiveCoreContext,
@@ -17,7 +23,7 @@ import type { Stage3CFixture } from "./stage3c-runtime-fixtures";
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
-  // Resident-submit category
+  // Resident-submit foundation slots (validator contract)
   residentBillId: string | null;
   residentBaselineSummary: BillSummarySnapshot | null;
   residentPostSubmitSummary: BillSummarySnapshot | null;
@@ -25,6 +31,14 @@ export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
   residentAmount: number | null;
   residentReference: string | null;
   residentIdempotencyKey: string | null;
+
+  // Resident-submit lifecycle slots (this run — RESIDENT-SUBMIT-01..08)
+  residentSubmitPaymentId: string | null;
+  residentSubmitAmount: number | null;
+  residentSubmitReference: string | null;
+  residentSubmitIdempotencyKey: string | null;
+  residentSubmitInitialSummary: BillSummarySnapshot | null;
+  residentSubmitPendingSummary: BillSummarySnapshot | null;
 
   // Idempotency category
   idempotencyBillAId: string | null;
@@ -44,12 +58,6 @@ export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
   referencePostOriginalSummary: BillSummarySnapshot | null;
 }
 
-/**
- * Compose the matrix context on top of the canonical core context. Do
- * NOT duplicate core initialization by hand — new lifecycle fields
- * layer on with an explicit spread so future core additions flow
- * through automatically.
- */
 export function createStage3CLiveMatrixContext(): Stage3CLiveMatrixContext {
   return {
     ...createStage3CLiveCoreContext(),
@@ -60,6 +68,13 @@ export function createStage3CLiveMatrixContext(): Stage3CLiveMatrixContext {
     residentAmount: null,
     residentReference: null,
     residentIdempotencyKey: null,
+
+    residentSubmitPaymentId: null,
+    residentSubmitAmount: null,
+    residentSubmitReference: null,
+    residentSubmitIdempotencyKey: null,
+    residentSubmitInitialSummary: null,
+    residentSubmitPendingSummary: null,
 
     idempotencyBillAId: null,
     idempotencyBillBId: null,
@@ -104,6 +119,18 @@ function requireNonBlank(value: string | null, field: string, expectedFrom: stri
   return trimmed;
 }
 
+function requireBoundedNonBlank(
+  value: string | null,
+  field: string,
+  expectedFrom: string,
+  maxLen: number,
+): string {
+  const t = requireNonBlank(value, field, expectedFrom);
+  if (t.length > maxLen)
+    throw new Error(`[stage3c:matrix] "${field}" exceeds ${maxLen} characters`);
+  return t;
+}
+
 function requirePositiveFinite(
   value: number | null,
   field: string,
@@ -140,7 +167,7 @@ export function requireMatrixFixture(ctx: Stage3CLiveMatrixContext): Stage3CFixt
   return ctx.fixture;
 }
 
-// Resident guards
+// Foundation resident guards (retained)
 export const requireResidentBillId = (c: Stage3CLiveMatrixContext) =>
   requireUuid(c.residentBillId, "residentBillId", "RESIDENT-SUBMIT-01");
 export const requireResidentBaselineSummary = (c: Stage3CLiveMatrixContext) =>
@@ -155,6 +182,33 @@ export const requireResidentReference = (c: Stage3CLiveMatrixContext) =>
   requireNonBlank(c.residentReference, "residentReference", "RESIDENT-SUBMIT-01");
 export const requireResidentIdempotencyKey = (c: Stage3CLiveMatrixContext) =>
   requireNonBlank(c.residentIdempotencyKey, "residentIdempotencyKey", "RESIDENT-SUBMIT-01");
+
+// Resident-submit lifecycle guards (this run)
+export const requireResidentSubmitPaymentId = (c: Stage3CLiveMatrixContext) =>
+  requireUuid(c.residentSubmitPaymentId, "residentSubmitPaymentId", "RESIDENT-SUBMIT-02");
+export const requireResidentSubmitAmount = (c: Stage3CLiveMatrixContext) =>
+  requirePositiveFinite(c.residentSubmitAmount, "residentSubmitAmount", "RESIDENT-SUBMIT-01");
+export const requireResidentSubmitReference = (c: Stage3CLiveMatrixContext) =>
+  requireBoundedNonBlank(c.residentSubmitReference, "residentSubmitReference", "RESIDENT-SUBMIT-01", 120);
+export const requireResidentSubmitIdempotencyKey = (c: Stage3CLiveMatrixContext) =>
+  requireBoundedNonBlank(
+    c.residentSubmitIdempotencyKey,
+    "residentSubmitIdempotencyKey",
+    "RESIDENT-SUBMIT-01",
+    120,
+  );
+export const requireResidentSubmitInitialSummary = (c: Stage3CLiveMatrixContext) =>
+  requireSummary(
+    c.residentSubmitInitialSummary,
+    "residentSubmitInitialSummary",
+    "RESIDENT-SUBMIT-01",
+  );
+export const requireResidentSubmitPendingSummary = (c: Stage3CLiveMatrixContext) =>
+  requireSummary(
+    c.residentSubmitPendingSummary,
+    "residentSubmitPendingSummary",
+    "RESIDENT-SUBMIT-08",
+  );
 
 // Idempotency guards
 export const requireIdempotencyBillAId = (c: Stage3CLiveMatrixContext) =>

@@ -4,6 +4,24 @@
 
 **Status:** CLOSURE VERIFICATION IN PROGRESS — awaiting one successful GitHub Actions run of `.github/workflows/stage3c-runtime-verification.yml`.
 
+**Live matrix progress — RESIDENT-SUBMIT slice (this run)**
+- Implemented live source: **32/93** (AUTH 7/7, PENDING 8/8, VERIFY 9/9, RESIDENT-SUBMIT 8/8).
+- New handler module: `tests/helpers/stage3c-live-resident-submit-cases.ts` — exactly 8 handlers, strictly typed `satisfies Record<Stage3CResidentSubmitCaseId, Stage3CResidentSubmitHandler>`.
+- New matrix registry: `tests/helpers/stage3c-live-matrix-registry.ts` — composes 24 core + 8 resident-submit = 32 via `satisfies Record<Stage3CMatrixLiveCaseId, Stage3CMatrixLiveHandler>`. Core registry unchanged at 24.
+- Integration suite `tests/integration/billing-stage3c-live.test.ts` is registry-driven off the matrix handler map; exactly 32 sequential cases; no `test.concurrent`.
+- Resident bank-transfer pending flow implemented via the same code path used by the production `submitResidentBankTransfer` server function: the active resident's authenticated Supabase client calls `submit_offline_payment` with server-pinned `_method='bank_transfer'` and `_actor_role='resident'`. Public input is parsed through `residentSubmitInputSchema` at the boundary (strict rejection of `method`, `actorRole`, `proofUrl`, `status`, `societyId`, `submittedBy`).
+- Resident Cash denied via direct RPC probe → canonical `resident_cash_not_allowed`.
+- Same-society other-flat denied → canonical `not_authorized`; dedicated `otherFlatBillId` summary remains exactly clean (900 / 0 / 0 / 900).
+- Moved-out resident denied → canonical `not_authorized`; the pending payment from RESIDENT-SUBMIT-02 remains the only payment.
+- Cross-society (Society B) resident denied → canonical `not_authorized`; no mutation, no cross-society metadata surfaced.
+- Exact pending summary delta verified: `pending_amount +300`, `available_to_submit -300`; `total_payable`, `verified_amount`, `rejected_amount`, `reversed_amount`, `remaining_verified_balance` unchanged; bill remains unpaid/open, not cancelled. **No receipt generated** for any pending resident submission.
+- Workflow / runtime report expansion remains pending — CI still runs the canonical 24-case runtime; the 8 new cases are locally implemented but not yet CI-verified.
+- New source validator: `scripts/verify-stage3c-live-matrix-32-source.ts` — enforces the 32-case shape, `satisfies Record` completeness, integration-suite registration, docs progress, and the workflow boundary (no false 32/93 claim).
+- New behavioral unit test: `tests/unit/billing-stage3c-live-resident-submit.test.ts`.
+- Next bounded categories: **IDEMPOTENCY-01..04** and **REFERENCE-01..04**.
+
+
+
 **Current CI repair (this run)**
 - **Bun / lockfile alignment.** Workflow pinned Bun `1.1.42`, but the committed text-based `bun.lock` uses `lockfileVersion: 1` which older Bun cannot parse — `bun install --frozen-lockfile` failed with `InvalidLockfileVersion`. Workflow now pins `bun-version: 1.3.3` and `package.json` declares `"packageManager": "bun@1.3.3"` so the version is single-sourced. Verified locally: `bun 1.3.3` parses `bun.lock` and `bun install --frozen-lockfile` reports 0 changes; a follow-up `git diff --exit-code -- package.json bun.lock` step asserts manifest immutability.
 - **Workflow control flow.** Stable step IDs (`setup_bun`, `install`, `docker_preflight`, `supabase_cli`, `supabase_start`, `supabase_env`, `live_tests`, `playwright_install`, `app_start`, `playwright`). Playwright report validator gated with `if: always() && steps.playwright.outcome != 'skipped'`, so it no longer emits a misleading "playwright.json missing" after an upstream setup failure. `supabase stop` guarded with `steps.supabase_cli.outcome == 'success'` and an inner `command -v supabase` check so cleanup cannot fail with exit 127 when CLI setup was skipped. App shutdown checks both `.app.pid` and `kill -0` before signalling.

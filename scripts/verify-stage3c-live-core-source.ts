@@ -138,13 +138,17 @@ export function checkRegistrySource(src: string): string[] {
 
 export function checkLiveSuiteSource(src: string): string[] {
   const failures: string[] = [];
-  if (!src.includes("STAGE3C_CORE_LIVE_CASE_HANDLERS"))
-    fail(failures, "live suite: does not import the core registry");
-  if (!/for \(const caseDefinition of STAGE3C_CORE_LIVE_CASE_HANDLERS\)/.test(src))
+  const importsCore = src.includes("STAGE3C_CORE_LIVE_CASE_HANDLERS");
+  const importsMatrix = src.includes("STAGE3C_MATRIX_LIVE_CASE_HANDLERS");
+  if (!importsCore && !importsMatrix)
+    fail(failures, "live suite: does not import the core or matrix registry");
+  const iteratesCore = /for \(const caseDefinition of STAGE3C_CORE_LIVE_CASE_HANDLERS\)/.test(src);
+  const iteratesMatrix = /for \(const caseDefinition of STAGE3C_MATRIX_LIVE_CASE_HANDLERS\)/.test(src);
+  if (!iteratesCore && !iteratesMatrix)
     fail(failures, "live suite: not registry-driven");
   if (/pre-case/i.test(src))
     fail(failures, "live suite: contains unnumbered pre-case tests");
-  if (/from "\.\.\/helpers\/stage3c-live-(auth|pending|verify)-cases"/.test(src))
+  if (/from "\.\.\/helpers\/stage3c-live-(auth|pending|verify|resident-submit)-cases"/.test(src))
     fail(failures, "live suite: imports handlers directly instead of via registry");
   const vitestImports = src.match(/from "vitest"/g) ?? [];
   if (vitestImports.length !== 1)

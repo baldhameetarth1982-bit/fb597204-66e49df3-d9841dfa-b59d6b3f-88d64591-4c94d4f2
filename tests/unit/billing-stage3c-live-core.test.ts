@@ -93,13 +93,25 @@ describe("Stage 3C — core registry", () => {
 
 describe("Stage 3C — live suite shape", () => {
   it("registry-driven, no unnumbered pre-case tests", () => {
-    expect(liveSuiteSrc).toContain('from "../helpers/stage3c-live-core-registry"');
-    expect(liveSuiteSrc).toContain("STAGE3C_CORE_LIVE_CASE_HANDLERS");
-    expect(liveSuiteSrc).toMatch(/for \(const caseDefinition of STAGE3C_CORE_LIVE_CASE_HANDLERS\)/);
+    // The live suite may consume the core registry directly OR the
+    // matrix registry (which composes the core registry). Either shape
+    // is registry-driven; imports of individual case-file modules are
+    // still forbidden.
+    const importsCore = liveSuiteSrc.includes("STAGE3C_CORE_LIVE_CASE_HANDLERS");
+    const importsMatrix = liveSuiteSrc.includes("STAGE3C_MATRIX_LIVE_CASE_HANDLERS");
+    expect(importsCore || importsMatrix, "core or matrix registry").toBe(true);
+    const iteratesCore = /for \(const caseDefinition of STAGE3C_CORE_LIVE_CASE_HANDLERS\)/.test(
+      liveSuiteSrc,
+    );
+    const iteratesMatrix = /for \(const caseDefinition of STAGE3C_MATRIX_LIVE_CASE_HANDLERS\)/.test(
+      liveSuiteSrc,
+    );
+    expect(iteratesCore || iteratesMatrix, "iterates registry").toBe(true);
     expect(liveSuiteSrc).not.toMatch(/pre-case/);
     expect(liveSuiteSrc).not.toMatch(/from "\.\.\/helpers\/stage3c-live-auth-cases"/);
     expect(liveSuiteSrc).not.toMatch(/from "\.\.\/helpers\/stage3c-live-pending-cases"/);
     expect(liveSuiteSrc).not.toMatch(/from "\.\.\/helpers\/stage3c-live-verify-cases"/);
+    expect(liveSuiteSrc).not.toMatch(/from "\.\.\/helpers\/stage3c-live-resident-submit-cases"/);
     const vitestImports = liveSuiteSrc.match(/from "vitest"/g) ?? [];
     expect(vitestImports.length).toBe(1);
   });

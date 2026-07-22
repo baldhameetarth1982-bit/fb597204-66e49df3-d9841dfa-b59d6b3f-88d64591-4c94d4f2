@@ -79,7 +79,7 @@ export function checkFixtureFoundation(src: string): string[] {
     fail(f, "fixture: validateStage3CMatrixResources not exported");
   // Ownership must be REQUIRED (no `?:`) on validateStage3CMatrixResources.
   if (
-    !/export function validateStage3CMatrixResources\(\s*raw:\s*unknown,\s*ownership:\s*Stage3CMatrixOwnership\s*\)/.test(
+    !/export function validateStage3CMatrixResources\(\s*raw:\s*unknown\s*,\s*ownership:\s*Stage3CMatrixOwnership\s*,?\s*\)/.test(
       src,
     )
   )

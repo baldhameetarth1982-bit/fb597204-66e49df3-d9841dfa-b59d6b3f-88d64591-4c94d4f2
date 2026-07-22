@@ -138,7 +138,7 @@ export function extractRpcId(label: string, data: unknown): string {
  *
  * Continues to accept explicit `sensitiveValues` (plus the fixture
  * `SENSITIVE_VALUES` registry) and to substitute them with the
- * canonical `[REDACTED_VALUE]` placeholder before delegating.
+ * canonical `[REDACTED_VALUE]` sentinel before delegating.
  */
 export function redactMessage(
   message: string,

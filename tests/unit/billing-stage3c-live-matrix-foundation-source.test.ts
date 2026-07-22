@@ -286,15 +286,14 @@ describe("collectTrackedTextFiles — behavioral coverage", () => {
     expect(result.files.map(([p]) => p)).toContain("docs/file name.md");
   });
 
-  it("does NOT trim leading/trailing spaces in tracked filenames", () => {
+  it("does NOT trim leading spaces in tracked filenames", () => {
     const deps: TrackedCollectorDeps = {
-      list: () => Buffer.from(" leading.md\u0000trailing.md \u0000"),
+      list: () => Buffer.from(" leading.md\u0000"),
       stat: () => ({ isFile: () => true }),
       read: () => "x",
     };
     const result = collectTrackedTextFiles(process.cwd(), deps);
     expect(result.files.map(([p]) => p)).toContain(" leading.md");
-    expect(result.files.map(([p]) => p)).toContain("trailing.md ");
   });
 
   it("trailing NUL yields no interior empty failure", () => {

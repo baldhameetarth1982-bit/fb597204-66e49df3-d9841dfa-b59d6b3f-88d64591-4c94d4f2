@@ -1544,7 +1544,7 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
     });
 
     // ---- Matrix-only extra flat (Society A / blockA, no residency) ---
-    const otherFlatARow = await assertSupabaseSingleResult<{ id: string }>(
+    const otherFlatARawRow = await assertSupabaseSingleResult<unknown>(
       "insert:otherFlatA",
       admin
         .from("flats")
@@ -1554,13 +1554,18 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
           flat_number: "202",
           status: "occupied",
         })
-        .select("id")
+        .select("id, society_id, block_id, flat_number, status")
         .single(),
     );
+    const otherFlatARow = parseOtherFlatARow(otherFlatARawRow, {
+      societyId: societyA,
+      blockId: blockA,
+      flatNumber: "202",
+    });
+    if (otherFlatARow.id === flatA)
+      throw new Error("[stage3c:otherFlatA] must differ from flatA");
     trackUniqueId(tracked.flatIds, otherFlatARow.id, "otherFlatA");
     const otherFlatA = otherFlatARow.id;
-    if (otherFlatA === flatA)
-      throw new Error("[stage3c:otherFlatA] must differ from flatA");
 
     // ---- Five dedicated matrix bills (foundation, no payments yet) ---
     const residentSubmitBillId = await addBill({
@@ -1603,7 +1608,15 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
         idempotencyBillBId,
         referenceBillId,
       },
-      { flatA },
+      {
+        flatA,
+        existingBillIds: [
+          openBillId,
+          openBillId2,
+          cancelledBillId,
+          fullyUnavailableBillId,
+        ],
+      },
     );
 
     await assertMatrixBillsStartClean(admin, matrix);

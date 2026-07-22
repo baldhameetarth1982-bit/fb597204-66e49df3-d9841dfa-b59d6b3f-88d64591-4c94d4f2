@@ -26,43 +26,51 @@ const LABEL_RE = /^[a-z0-9]+(?:[-:][a-z0-9]+)*$/;
 // Ordered from most specific to least specific.
 // ---------------------------------------------------------------------------
 
-type RedactionRule = { re: RegExp; replacement: string };
+type RedactionRule = {
+  re: RegExp;
+  replacer: (match: string, ...groups: string[]) => string;
+};
+
+function fn(s: string): (match: string, ...groups: string[]) => string {
+  return (_m: string, ...g: string[]) => {
+    let out = s;
+    for (let i = 0; i < g.length; i++) {
+      const v = g[i];
+      if (typeof v === "string") out = out.split(`$${i + 1}`).join(v);
+    }
+    return out;
+  };
+}
 
 const CANONICAL_RULES: readonly RedactionRule[] = [
-  // Connection strings first (contain credentials + JWT-like fragments).
   {
     re: /\b(?:postgres(?:ql)?|mysql|mongodb(?:\+srv)?|redis|amqp)s?:\/\/[^\s"'<>]+/gi,
-    replacement: "[REDACTED_CONNECTION_STRING]",
+    replacer: fn("[REDACTED_CONNECTION_STRING]"),
   },
-  // Supabase / Postgres HTTPS URL that carries an apikey= or access_token= query param.
   {
     re: /\bhttps?:\/\/[^\s"'<>]*[?&](?:apikey|access_token|token|key)=[^\s"'<>&]+[^\s"'<>]*/gi,
-    replacement: "[REDACTED_CONNECTION_STRING]",
+    replacer: fn("[REDACTED_CONNECTION_STRING]"),
   },
-  // Authorization header incl. optional Bearer.
   {
     re: /\bauthorization\s*[:=]\s*(?:bearer\s+)?[^\s"',}\r\n]+/gi,
-    replacement: "[REDACTED_AUTHORIZATION]",
+    replacer: fn("[REDACTED_AUTHORIZATION]"),
   },
-  // Bare `Bearer <token>`.
-  { re: /\bbearer\s+[A-Za-z0-9._\-]+/gi, replacement: "[REDACTED_BEARER]" },
-  // JWT-shaped token (three base64url segments).
+  { re: /\bbearer\s+[A-Za-z0-9._\-]+/gi, replacer: fn("[REDACTED_BEARER]") },
   {
     re: /\beyJ[A-Za-z0-9_-]{4,}\.[A-Za-z0-9_-]{4,}\.[A-Za-z0-9_-]{4,}\b/g,
-    replacement: "[REDACTED_JWT]",
+    replacer: fn("[REDACTED_JWT]"),
   },
-  // Supabase publishable / secret keys.
-  { re: /\bsb_(?:secret|publishable)_[A-Za-z0-9_-]+/g, replacement: "[REDACTED_API_KEY]" },
-  // Stripe / Razorpay-shaped secrets.
-  { re: /\b(?:sk|rk|pk)_(?:live|test)_[A-Za-z0-9]{8,}/g, replacement: "[REDACTED_API_KEY]" },
-  { re: /\brzp_(?:live|test)_[A-Za-z0-9]{8,}/g, replacement: "[REDACTED_API_KEY]" },
-  // service_role literal.
-  { re: /\bservice[_-]?role["'\s:=]+[A-Za-z0-9_.\-]+/gi, replacement: "service_role=[REDACTED_SECRET]" },
-  // access / refresh / id / session tokens as key=value.
+  { re: /\bsb_(?:secret|publishable)_[A-Za-z0-9_-]+/g, replacer: fn("[REDACTED_API_KEY]") },
+  { re: /\b(?:sk|rk|pk)_(?:live|test)_[A-Za-z0-9]{8,}/g, replacer: fn("[REDACTED_API_KEY]") },
+  { re: /\brzp_(?:live|test)_[A-Za-z0-9]{8,}/g, replacer: fn("[REDACTED_API_KEY]") },
+  {
+    re: /\bservice[_-]?role["'\s:=]+[A-Za-z0-9_.\-]+/gi,
+    replacer: fn("service_role=[REDACTED_SECRET]"),
+  },
   {
     re: /\b(access[_-]?token|refresh[_-]?token|id[_-]?token|session[_-]?token)(["'\s:=]+)[^\s"',}\r\n]+/gi,
-    replacement: (m: string, k: string, sep: string) => {
-      const K = k.toLowerCase();
+    replacer: (_m: string, k: string, sep: string) => {
+      const K = (k ?? "").toLowerCase();
       const tag = K.startsWith("access")
         ? "[REDACTED_ACCESS_TOKEN]"
         : K.startsWith("refresh")
@@ -71,29 +79,21 @@ const CANONICAL_RULES: readonly RedactionRule[] = [
             ? "[REDACTED_ACCESS_TOKEN]"
             : "[REDACTED_SECRET]";
       return `${k}${sep}${tag}`;
-    } as unknown as string,
+    },
   },
-  // Cookie / set-cookie / session values.
   {
     re: /\b(set-cookie|cookie|session)(["'\s:=]+)[^\s"',}\r\n]+/gi,
-    replacement: "$1$2[REDACTED_COOKIE]",
+    replacer: (_m: string, k: string, sep: string) => `${k}${sep}[REDACTED_COOKIE]`,
   },
-  // Password / passphrase key=value.
   {
     re: /\b(?:password|passphrase|passwd|pwd)["'\s:=]+[^\s"',}\r\n]+/gi,
-    replacement: "password=[REDACTED_PASSWORD]",
+    replacer: fn("password=[REDACTED_PASSWORD]"),
   },
-  // Generic api_key=<value>.
   {
     re: /\b(?:api[_-]?key|apikey|x-api-key)["'\s:=]+[^\s"',}\r\n]+/gi,
-    replacement: "api_key=[REDACTED_API_KEY]",
+    replacer: fn("api_key=[REDACTED_API_KEY]"),
   },
-  // Very long opaque token strings (>=64 chars of URL-safe base64) that
-  // haven't already been redacted by more specific rules above.
-  {
-    re: /\b[A-Za-z0-9_-]{64,}\b/g,
-    replacement: "[REDACTED_SECRET]",
-  },
+  { re: /\b[A-Za-z0-9_-]{64,}\b/g, replacer: fn("[REDACTED_SECRET]") },
 ];
 
 const CANONICAL_TOKEN_PLACEHOLDERS: readonly string[] = [
@@ -112,7 +112,6 @@ const CANONICAL_TOKEN_PLACEHOLDERS: readonly string[] = [
 ];
 
 function isPlaceholderRegion(out: string, idx: number, len: number): boolean {
-  // Don't double-redact inside an already-inserted placeholder.
   const start = Math.max(0, idx - 32);
   const end = Math.min(out.length, idx + len + 32);
   const window = out.slice(start, end);
@@ -129,40 +128,20 @@ export function redactStage3CString(
 ): string {
   if (typeof value !== "string") return "";
   let out = value;
-  // Protected society ID first — before any other rule can accidentally
-  // consume it into a broader token match.
   const pid = options.protectedSocietyId?.trim();
   if (pid && pid.length >= 4) {
-    out = out.split(pid).join("[REDACTED_PROTECTED_SOCIETY_ID]");
-    // Also match case-insensitively in case a caller upcased it.
     try {
       out = out.replace(new RegExp(escapeRegex(pid), "gi"), "[REDACTED_PROTECTED_SOCIETY_ID]");
     } catch {
-      /* ignore malformed */
+      out = out.split(pid).join("[REDACTED_PROTECTED_SOCIETY_ID]");
     }
   }
   for (const rule of CANONICAL_RULES) {
-    // Apply with a callback so we can skip regions that were already redacted.
-    out = out.replace(rule.re, (match, ...rest) => {
-      // Locate this match in out — replace() runs left-to-right, so first
-      // occurrence in the current output is this one.
+    out = out.replace(rule.re, (match: string, ...rest: unknown[]) => {
       const idx = out.indexOf(match);
       if (idx >= 0 && isPlaceholderRegion(out, idx, match.length)) return match;
-      if (typeof rule.replacement === "function") {
-        // Function replacements handle their own formatting.
-        return (rule.replacement as unknown as (m: string, ...args: string[]) => string)(
-          match,
-          ...(rest as string[]),
-        );
-      }
-      // rest holds capture groups when the pattern has any; support $1/$2 in
-      // the string replacement.
-      let repl = rule.replacement as string;
-      const captures = rest.slice(0, -2) as string[];
-      for (let i = 0; i < captures.length; i++) {
-        repl = repl.split(`$${i + 1}`).join(captures[i] ?? "");
-      }
-      return repl;
+      const captures = rest.slice(0, -2).map((c) => (typeof c === "string" ? c : ""));
+      return rule.replacer(match, ...captures);
     });
   }
   const cap = options.maxStringLength ?? DEFAULT_MAX_STRING;

@@ -4,7 +4,7 @@
  * Covers: isValidIsoCalendarDate, parseOtherFlatARow, matrix row
  * parsers, and mandatory ownership on validateStage3CMatrixResources.
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   validateStage3CMatrixResources,
   parseOtherFlatARow,
@@ -12,6 +12,7 @@ import {
   parseMatrixReceiptRows,
   validateMatrixDedicatedBillIds,
   assertMatrixBillsStartCleanWithReader,
+  createMatrixCleanStateReader,
   type Stage3CMatrixResources,
   type MatrixCleanStateReader,
 } from "../../tests/helpers/stage3c-runtime-fixtures";

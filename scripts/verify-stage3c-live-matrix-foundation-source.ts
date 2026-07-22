@@ -658,6 +658,43 @@ export function checkRuntimeCriticalTestSource(src: string): string[] {
   return f;
 }
 
+export function checkResidencySummaryTestSource(src: string): string[] {
+  const f: string[] = [];
+  const mustImport = [
+    "assertNoFixtureResidentsLinkedToOtherFlat",
+    "createOtherFlatResidencyReader",
+    "buildMatrixBillExpectations",
+    "MatrixBillSummarySchema",
+    "assertMatrixBillSummariesStartClean",
+    "createMatrixBillSummaryReader",
+  ];
+  for (const name of mustImport) {
+    if (!new RegExp(`\\b${name}\\b`).test(src))
+      fail(f, `residency-summary: symbol "${name}" not exercised`);
+  }
+  const evidence: Array<[label: string, rx: RegExp]> = [
+    ["residency reader called once with exact IDs", /toHaveBeenCalledWith\(\s*OTHER_FLAT/],
+    ["residency query error path", /query error/i],
+    ["residency non-array data", /non-array/i],
+    ["residency malformed row", /malformed/i],
+    ["residency duplicate row ID", /duplicate residency row ID/],
+    ["residency safe count in error", /rows=/],
+    ["adapter selects five columns", /"id, flat_id, user_id, is_active, moved_out_at"/],
+    ["adapter is_active filter", /"is_active",\s*true/],
+    ["adapter moved_out_at filter", /"moved_out_at",\s*null/],
+    ["exact five totals", /1200[\s\S]{0,80}900[\s\S]{0,80}1000[\s\S]{0,80}800[\s\S]{0,80}1100/],
+    ["summary reader exact five calls", /toHaveBeenCalledTimes\(5\)/],
+    ["summary cancelled fails", /cancelled/i],
+    ["summary status fails", /status/i],
+    ["summary adapter uses get_bill_payment_summary", /get_bill_payment_summary/],
+  ];
+  for (const [label, rx] of evidence) {
+    if (!rx.test(src))
+      fail(f, `residency-summary: missing evidence for "${label}"`);
+  }
+  return f;
+}
+
 // ---------------------------------------------------------------------------
 // Aggregate.
 // ---------------------------------------------------------------------------
@@ -695,6 +732,13 @@ export function runAllFoundationChecks(): FoundationCheckOutcome {
   } else {
     failures.push(`missing file: ${RUNTIME_CRITICAL_TEST}`);
   }
+
+  if (existsSync(resolve(ROOT, RESIDENCY_SUMMARY_TEST))) {
+    failures.push(...checkResidencySummaryTestSource(read(RESIDENCY_SUMMARY_TEST)));
+  } else {
+    failures.push(`missing file: ${RESIDENCY_SUMMARY_TEST}`);
+  }
+
 
   const tracked = collectTrackedTextFiles(ROOT);
   const scan = scanRepositoryIdentityFromCollection(

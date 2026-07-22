@@ -29,9 +29,9 @@ export const residentSubmitInputSchema = z
     billId: z.string().uuid(),
     amount: z
       .number()
-      .refine((n) => Number.isFinite(n), { message: "amount must be finite" })
       .positive()
-      .max(RESIDENT_PAYMENT_MAX_AMOUNT),
+      .max(RESIDENT_PAYMENT_MAX_AMOUNT)
+      .refine((n) => Number.isFinite(n), { message: "amount must be finite" }),
     paymentDate: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/)

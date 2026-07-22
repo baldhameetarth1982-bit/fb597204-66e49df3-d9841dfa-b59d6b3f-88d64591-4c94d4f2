@@ -844,7 +844,7 @@ export function checkStage3CRedactionMigration(
       failures.push(`redaction-migration: manifest path not found: ${entry.path}`);
       continue;
     }
-    if (!fileHasRawErrorSurface(src)) {
+    if (!fileHasAnyErrorSurface(src)) {
       // File is listed but no error path found — allowed only if the
       // file demonstrably owns delegation infrastructure (e.g. exports
       // redactMessage or assertCanonicalError). Otherwise it's artificial.

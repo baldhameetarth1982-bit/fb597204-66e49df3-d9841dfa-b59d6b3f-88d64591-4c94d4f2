@@ -135,7 +135,7 @@ must(
   /from\("bill_line_items"\)\s*\.insert/.test(src),
   "no bill_line_items inserts — Stage 3B/3C requires at least one line per bill",
 );
-must(/tracked\.billLineItemIds\.push/.test(src), "bill_line_items ids not tracked");
+must(/tracked\.billLineItemIds\.push|trackUniqueId\(tracked\.billLineItemIds/.test(src), "bill_line_items ids not tracked");
 must(
   /kind:\s*"maintenance"/.test(src),
   "bill_line_items kind must be `maintenance` (schema check enum)",

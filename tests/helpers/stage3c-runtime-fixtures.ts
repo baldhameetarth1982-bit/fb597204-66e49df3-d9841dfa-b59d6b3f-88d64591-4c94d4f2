@@ -709,6 +709,276 @@ export async function assertMatrixBillsStartClean(
 }
 
 
+// ---------------------------------------------------------------------------
+// otherFlatA residency absence — proves no fixture resident is linked
+// to the same-society cross-flat used for ownership denial scenarios.
+// ---------------------------------------------------------------------------
+
+/**
+ * Narrow reader contract for the exact residency query executed by the
+ * fixture. Substitutable so behavioral tests can drive every branch
+ * without a live database.
+ */
+export type OtherFlatResidencyReader = {
+  listActiveResidencies(
+    flatId: string,
+    userIds: readonly string[],
+  ): Promise<{ data: unknown; error: unknown }>;
+};
+
+const OtherFlatResidencyRowSchema = z
+  .object({
+    id: CanonicalStage3CUuidSchema,
+    flat_id: CanonicalStage3CUuidSchema,
+    user_id: CanonicalStage3CUuidSchema,
+    is_active: z.boolean(),
+    moved_out_at: z.union([z.string(), z.null()]),
+  })
+  .strict();
+
+/**
+ * Prove that none of the three canonical fixture residents has an
+ * active, non-moved-out residency row against `otherFlatA`. Structural
+ * fixture verification only — the service-role result proves absence,
+ * not authorization.
+ */
+export async function assertNoFixtureResidentsLinkedToOtherFlat(
+  reader: OtherFlatResidencyReader,
+  input: {
+    otherFlatId: string;
+    activeResidentId: string;
+    movedOutResidentId: string;
+    unrelatedResidentId: string;
+  },
+): Promise<void> {
+  const otherFlatId = CanonicalStage3CUuidSchema.parse(input.otherFlatId);
+  const activeResidentId = CanonicalStage3CUuidSchema.parse(input.activeResidentId);
+  const movedOutResidentId = CanonicalStage3CUuidSchema.parse(input.movedOutResidentId);
+  const unrelatedResidentId = CanonicalStage3CUuidSchema.parse(input.unrelatedResidentId);
+  const users: readonly [string, string, string] = [
+    activeResidentId,
+    movedOutResidentId,
+    unrelatedResidentId,
+  ];
+  if (new Set(users).size !== users.length)
+    throw new Error("[stage3c:otherFlat:residency] resident IDs must be unique");
+  const res = await reader.listActiveResidencies(otherFlatId, users);
+  if (res.error)
+    throw new Error(
+      `[stage3c:otherFlat:residency] ${redactMessage(extractErrorMessage(res.error))}`,
+    );
+  if (!Array.isArray(res.data))
+    throw new Error("[stage3c:otherFlat:residency] reader returned non-array data");
+  const userSet = new Set(users);
+  const idSeen = new Set<string>();
+  const rows = res.data as unknown[];
+  for (const raw of rows) {
+    const parsed = OtherFlatResidencyRowSchema.safeParse(raw);
+    if (!parsed.success)
+      throw new Error("[stage3c:otherFlat:residency] malformed residency row");
+    if (parsed.data.flat_id !== otherFlatId)
+      throw new Error(
+        "[stage3c:otherFlat:residency] returned row references a flat outside the requested set",
+      );
+    if (!userSet.has(parsed.data.user_id))
+      throw new Error(
+        "[stage3c:otherFlat:residency] returned row references a user outside the requested set",
+      );
+    if (idSeen.has(parsed.data.id))
+      throw new Error("[stage3c:otherFlat:residency] duplicate residency row ID returned");
+    idSeen.add(parsed.data.id);
+  }
+  if (rows.length > 0)
+    throw new Error(
+      `[stage3c:otherFlat:residency] expected 0 active residencies, got rows=${rows.length}`,
+    );
+}
+
+/**
+ * Build the Supabase-backed residency reader. The query mirrors the
+ * exact canonical filter — `flat_id` equality + `user_id` inclusion +
+ * `is_active = true` + `moved_out_at IS NULL` — with no `.limit(1)`
+ * and no society-wide broadening.
+ */
+export function createOtherFlatResidencyReader(
+  admin: SupabaseClient,
+): OtherFlatResidencyReader {
+  return {
+    async listActiveResidencies(flatId, userIds) {
+      return await admin
+        .from("flat_residents")
+        .select("id, flat_id, user_id, is_active, moved_out_at")
+        .eq("flat_id", flatId)
+        .in("user_id", userIds)
+        .eq("is_active", true)
+        .is("moved_out_at", null);
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Matrix bill expectations — exact clean-state financial contract.
+// ---------------------------------------------------------------------------
+
+export type MatrixBillExpectation = {
+  readonly billId: string;
+  readonly societyId: string;
+  readonly totalPayable: number;
+};
+
+const MATRIX_BILL_TOTALS: readonly [number, number, number, number, number] = [
+  1200, // residentSubmitBillId
+  900, //  otherFlatBillId
+  1000, // idempotencyBillAId
+  800, //  idempotencyBillBId
+  1100, // referenceBillId
+];
+
+export function buildMatrixBillExpectations(
+  matrix: Stage3CMatrixResources,
+  societyId: string,
+): readonly [
+  MatrixBillExpectation,
+  MatrixBillExpectation,
+  MatrixBillExpectation,
+  MatrixBillExpectation,
+  MatrixBillExpectation,
+] {
+  const soc = CanonicalStage3CUuidSchema.parse(societyId);
+  const ids = validateMatrixDedicatedBillIds(matrix);
+  const out: MatrixBillExpectation[] = [];
+  for (let i = 0; i < 5; i++) {
+    const total = MATRIX_BILL_TOTALS[i];
+    if (!Number.isFinite(total) || total <= 0)
+      throw new Error("[stage3c:matrix:expectations] non-positive total");
+    out.push(Object.freeze({ billId: ids[i], societyId: soc, totalPayable: total }));
+  }
+  return Object.freeze(out) as readonly [
+    MatrixBillExpectation,
+    MatrixBillExpectation,
+    MatrixBillExpectation,
+    MatrixBillExpectation,
+    MatrixBillExpectation,
+  ];
+}
+
+/**
+ * Strict parser for `get_bill_payment_summary` responses. Accepts JSON
+ * numbers or clean numeric strings only; rejects NaN/Infinity, empty
+ * strings, arbitrary objects, missing fields and unknown fields.
+ */
+const SafeMatrixMoneySchema = z.preprocess(
+  (v) => {
+    if (typeof v === "number") return v;
+    if (typeof v === "string") {
+      const t = v.trim();
+      if (t.length === 0) return NaN;
+      return Number(t);
+    }
+    return NaN;
+  },
+  z.number().finite().nonnegative(),
+);
+
+export const MatrixBillSummarySchema = z
+  .object({
+    bill_id: CanonicalStage3CUuidSchema,
+    society_id: CanonicalStage3CUuidSchema,
+    total_payable: SafeMatrixMoneySchema,
+    verified_amount: SafeMatrixMoneySchema,
+    pending_amount: SafeMatrixMoneySchema,
+    rejected_amount: SafeMatrixMoneySchema,
+    reversed_amount: SafeMatrixMoneySchema,
+    remaining_verified_balance: SafeMatrixMoneySchema,
+    available_to_submit: SafeMatrixMoneySchema,
+    status: z.string().min(1),
+    cancelled: z.boolean(),
+  })
+  .strict();
+
+export type MatrixBillSummary = z.infer<typeof MatrixBillSummarySchema>;
+
+export type MatrixBillSummaryReader = {
+  getBillSummary(billId: string): Promise<{ data: unknown; error: unknown }>;
+};
+
+const MATRIX_CLEAN_STATUSES = new Set<string>(["unpaid", "open"]);
+const MATRIX_MONEY_EPSILON = 1e-6;
+function matrixMoneyEqual(a: number, b: number): boolean {
+  return Math.abs(a - b) <= MATRIX_MONEY_EPSILON;
+}
+
+/**
+ * Verify every dedicated matrix bill starts with the exact canonical
+ * clean-state summary: total equals the fixture-inserted amount, every
+ * status bucket sums to zero, remaining/available equal the total, and
+ * the bill is neither cancelled nor in a paid/closed state. Failure
+ * messages carry only the safe expectation index and field name.
+ */
+export async function assertMatrixBillSummariesStartClean(
+  reader: MatrixBillSummaryReader,
+  expectations: readonly MatrixBillExpectation[],
+): Promise<void> {
+  if (expectations.length !== 5)
+    throw new Error("[stage3c:matrix:summary] expected exactly 5 expectations");
+  for (let i = 0; i < expectations.length; i++) {
+    const exp = expectations[i];
+    const res = await reader.getBillSummary(exp.billId);
+    if (res.error)
+      throw new Error(
+        `[stage3c:matrix:summary:${i}] ${redactMessage(extractErrorMessage(res.error))}`,
+      );
+    const parsed = MatrixBillSummarySchema.safeParse(res.data);
+    if (!parsed.success)
+      throw new Error(`[stage3c:matrix:summary:${i}] malformed summary payload`);
+    const s = parsed.data;
+    if (s.bill_id !== exp.billId)
+      throw new Error(`[stage3c:matrix:summary:${i}:bill_id] mismatch`);
+    if (s.society_id !== exp.societyId)
+      throw new Error(`[stage3c:matrix:summary:${i}:society_id] mismatch`);
+    if (!matrixMoneyEqual(s.total_payable, exp.totalPayable))
+      throw new Error(`[stage3c:matrix:summary:${i}:total_payable] mismatch`);
+    if (!matrixMoneyEqual(s.verified_amount, 0))
+      throw new Error(`[stage3c:matrix:summary:${i}:verified_amount] non-zero`);
+    if (!matrixMoneyEqual(s.pending_amount, 0))
+      throw new Error(`[stage3c:matrix:summary:${i}:pending_amount] non-zero`);
+    if (!matrixMoneyEqual(s.rejected_amount, 0))
+      throw new Error(`[stage3c:matrix:summary:${i}:rejected_amount] non-zero`);
+    if (!matrixMoneyEqual(s.reversed_amount, 0))
+      throw new Error(`[stage3c:matrix:summary:${i}:reversed_amount] non-zero`);
+    if (!matrixMoneyEqual(s.available_to_submit, exp.totalPayable))
+      throw new Error(
+        `[stage3c:matrix:summary:${i}:available_to_submit] must equal total_payable`,
+      );
+    if (!matrixMoneyEqual(s.remaining_verified_balance, exp.totalPayable))
+      throw new Error(
+        `[stage3c:matrix:summary:${i}:remaining_verified_balance] must equal total_payable`,
+      );
+    if (s.cancelled)
+      throw new Error(`[stage3c:matrix:summary:${i}:cancelled] must not be cancelled`);
+    if (!MATRIX_CLEAN_STATUSES.has(s.status))
+      throw new Error(
+        `[stage3c:matrix:summary:${i}:status] not in canonical unpaid/open state`,
+      );
+  }
+}
+
+/**
+ * Adapter that invokes `get_bill_payment_summary` through the supplied
+ * authenticated society-admin client. Never uses the service role: the
+ * summary contract is that the society administrator can read it.
+ */
+export function createMatrixBillSummaryReader(
+  societyAdminClient: SupabaseClient,
+): MatrixBillSummaryReader {
+  return {
+    async getBillSummary(billId) {
+      return await societyAdminClient.rpc("get_bill_payment_summary", {
+        _bill_id: billId,
+      });
+    },
+  };
+}
 
 
 

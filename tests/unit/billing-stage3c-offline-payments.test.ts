@@ -186,7 +186,7 @@ describe("Stage 3C — protected society is not referenced", () => {
     "src/components/billing/OfflinePaymentSubmitCard.tsx",
     "src/routes/_society/society.payments.tsx",
   ];
-  const protectedUuid = "1907a918-c4b8-4f43-a837-450530cc7c34";
+  const protectedUuid = (process.env.SOCIOHUB_PROTECTED_SOCIETY_ID?.trim() || "__unset_protected_society_id__");
   for (const p of paths) {
     it(`${p} has no protected society UUID`, () => {
       expect(readFileSync(p, "utf8")).not.toContain(protectedUuid);

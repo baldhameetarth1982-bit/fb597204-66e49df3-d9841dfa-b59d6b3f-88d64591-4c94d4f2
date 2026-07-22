@@ -547,6 +547,98 @@ export function parseMatrixReceiptRows(
 }
 
 /**
+ * Canonical UUID-validated dedicated bill-ID extractor for the matrix.
+ * Enforces:
+ *  - exactly five IDs
+ *  - each is a canonical UUID (Zod .uuid())
+ *  - all five unique
+ *  - deterministic order: residentSubmit, otherFlat, idempotencyA, idempotencyB, reference
+ */
+const CanonicalUuid = z.string().uuid();
+
+export function validateMatrixDedicatedBillIds(
+  matrix: Stage3CMatrixResources,
+): readonly [string, string, string, string, string] {
+  const ordered: readonly [string, string, string, string, string] = [
+    matrix.residentSubmitBillId,
+    matrix.otherFlatBillId,
+    matrix.idempotencyBillAId,
+    matrix.idempotencyBillBId,
+    matrix.referenceBillId,
+  ];
+  if (ordered.length !== 5)
+    throw new Error("[stage3c:matrix:ids] expected exactly 5 dedicated bill IDs");
+  for (let i = 0; i < ordered.length; i++) {
+    const parsed = CanonicalUuid.safeParse(ordered[i]);
+    if (!parsed.success)
+      throw new Error(
+        `[stage3c:matrix:ids] dedicated bill ID at position ${i} is not a canonical UUID`,
+      );
+  }
+  if (new Set(ordered).size !== ordered.length)
+    throw new Error("[stage3c:matrix:ids] dedicated bill IDs must be unique");
+  return ordered;
+}
+
+/**
+ * Minimal typed reader contract used by assertMatrixBillsStartClean.
+ * Kept intentionally narrow so tests can substitute a controlled reader.
+ */
+export type MatrixCleanStateReader = {
+  listPaymentsByBillIds(
+    billIds: readonly string[],
+  ): Promise<{ data: unknown; error: unknown }>;
+  listReceiptsByPaymentIds(
+    paymentIds: readonly string[],
+  ): Promise<{ data: unknown; error: unknown }>;
+};
+
+/**
+ * Reader-driven clean-state assertion. Exported for direct behavioral
+ * testing without a Supabase client. Every failure carries only safe
+ * counts — never raw rows, ids, or provider messages.
+ */
+export async function assertMatrixBillsStartCleanWithReader(
+  reader: MatrixCleanStateReader,
+  matrix: Stage3CMatrixResources,
+): Promise<void> {
+  const ids = validateMatrixDedicatedBillIds(matrix);
+  const idSet = new Set<string>(ids);
+  const pay = await reader.listPaymentsByBillIds(ids);
+  if (pay.error)
+    throw new Error(
+      `[stage3c:matrix:startClean:payments] ${redactMessage(extractErrorMessage(pay.error))}`,
+    );
+  const paymentRows = parseMatrixPaymentRows(pay.data ?? []);
+  for (const r of paymentRows) {
+    if (!idSet.has(r.bill_id))
+      throw new Error(
+        "[stage3c:matrix:startClean:payments] returned payment references a bill outside the requested set",
+      );
+  }
+  const paymentIds = Array.from(new Set(paymentRows.map((r) => r.id)));
+  if (paymentIds.length === 0) {
+    return;
+  }
+  const paymentIdSet = new Set(paymentIds);
+  const rec = await reader.listReceiptsByPaymentIds(paymentIds);
+  if (rec.error)
+    throw new Error(
+      `[stage3c:matrix:startClean:receipts] ${redactMessage(extractErrorMessage(rec.error))}`,
+    );
+  const receiptRows = parseMatrixReceiptRows(rec.data ?? []);
+  for (const r of receiptRows) {
+    if (!paymentIdSet.has(r.payment_id))
+      throw new Error(
+        "[stage3c:matrix:startClean:receipts] returned receipt references a payment outside the requested set",
+      );
+  }
+  throw new Error(
+    `[stage3c:matrix:startClean] expected 0 payments and 0 receipts, got payments=${paymentRows.length} receipts=${receiptRows.length}`,
+  );
+}
+
+/**
  * Verify that every dedicated matrix bill starts with zero payments
  * and zero receipts. Uses schema-correct traversal:
  * bills -> payments (by bill_id) -> payment_receipts (by payment_id).
@@ -556,48 +648,20 @@ export async function assertMatrixBillsStartClean(
   admin: SupabaseClient,
   matrix: Stage3CMatrixResources,
 ): Promise<void> {
-  const ids = [
-    matrix.residentSubmitBillId,
-    matrix.otherFlatBillId,
-    matrix.idempotencyBillAId,
-    matrix.idempotencyBillBId,
-    matrix.referenceBillId,
-  ];
-  if (ids.length !== 5)
-    throw new Error("[stage3c:matrix:startClean] expected exactly 5 dedicated bill IDs");
-  if (new Set(ids).size !== ids.length)
-    throw new Error("[stage3c:matrix:startClean] dedicated bill IDs must be unique");
-  for (const id of ids) {
-    if (!/^[0-9a-fA-F-]{36}$/.test(id))
-      throw new Error("[stage3c:matrix:startClean] dedicated bill ID must be UUID");
-  }
-  const pay = await admin
-    .from("payments")
-    .select("id, bill_id")
-    .in("bill_id", ids);
-  if (pay.error)
-    throw new Error(
-      `[stage3c:matrix:startClean:payments] ${redactMessage(extractErrorMessage(pay.error))}`,
-    );
-  const paymentRows = parseMatrixPaymentRows(pay.data ?? []);
-  const paymentIds = paymentRows.map((r) => r.id);
-  let receiptCount = 0;
-  if (paymentIds.length > 0) {
-    const rec = await admin
-      .from("payment_receipts")
-      .select("id, payment_id")
-      .in("payment_id", paymentIds);
-    if (rec.error)
-      throw new Error(
-        `[stage3c:matrix:startClean:receipts] ${redactMessage(extractErrorMessage(rec.error))}`,
-      );
-    receiptCount = parseMatrixReceiptRows(rec.data ?? []).length;
-  }
-  if (paymentRows.length !== 0 || receiptCount !== 0)
-    throw new Error(
-      `[stage3c:matrix:startClean] expected 0 payments and 0 receipts, got payments=${paymentRows.length} receipts=${receiptCount}`,
-    );
+  const reader: MatrixCleanStateReader = {
+    async listPaymentsByBillIds(billIds) {
+      return await admin.from("payments").select("id, bill_id").in("bill_id", billIds);
+    },
+    async listReceiptsByPaymentIds(paymentIds) {
+      return await admin
+        .from("payment_receipts")
+        .select("id, payment_id")
+        .in("payment_id", paymentIds);
+    },
+  };
+  return await assertMatrixBillsStartCleanWithReader(reader, matrix);
 }
+
 
 
 

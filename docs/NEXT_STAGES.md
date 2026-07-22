@@ -119,7 +119,7 @@ Earlier Stage 3C milestones (v3–v8) landed the underlying primitives. Do not r
 - **Server functions** (`src/lib/billing-generate.functions.ts`, all `requireSupabaseAuth`): `previewBillBatch`, `finalizeBillBatch`, `listBillBatches`, `listBills`, `getBillDetail`, `cancelBill`. Errors flow through `mapBillingError` → shared `mapError` — no raw DB messages ever reach the UI. Preview return is serialization-safe (template preview payload flattened to `template_preview_json`).
 - **UI.** New route `/society/bill-studio/generate` (`src/routes/_society/society.bill-studio.generate.tsx`) lists ready cycles, previews with warnings + previous dues, and finalizes with a client-generated UUID idempotency key. Recent batches are listed with counts and totals. `BillingConfigCard`'s Stage 3B affordance is now an active link to that route and disables when no ready cycles exist.
 - **Tests.** `tests/unit/billing-stage3b.test.ts` (14 cases) covers safe error mapping for every Stage 3B code, "no leaked DB message" guarantee, source integrity (no `as any` in Stage 3B code, idempotency key wired through `crypto.randomUUID()`), migration presence of allocator + unique index + idempotency `UNIQUE (society, cycle, request_id)` + duplicate-guard, and the protected society UUID absence. Stage 3A behavioral test tightened to scope the "no bill inserts" assertion to the preview function body only — Stage 3B's finalize legitimately writes to `bills` and `bill_line_items`. Suite: 660 passed / 19 skipped / 11 todo (1 unrelated pre-existing failure).
-- **Protected society safety.** `1907a918-c4b8-4f43-a837-450530cc7c34` is asserted absent from every new Stage 3B file.
+- **Protected society safety.** `[REDACTED-PROTECTED-SOCIETY-ID]` is asserted absent from every new Stage 3B file.
 
 **Explicitly out of scope in Stage 3B (deferred to 3C/3D):** payments, receipts, gateway integration (Razorpay/UPI/cards/wallets/PayU/Cashfree), platform fee, reconciliation, dues aging beyond a per-flat carry-forward, penalty automation, reminder/email/SMS flows.
 
@@ -140,7 +140,7 @@ Earlier Stage 3C milestones (v3–v8) landed the underlying primitives. Do not r
 - **Typed RPC adapters (no `any`).** `BillingRpcClient` interface + `toBillingRpcClient`, `buildRpcArgs`, `callBillingRpc`, `extractRpcId` helpers replace every `as any`. Verified by a source-contract test.
 - **Capability verification.** `billing.manage` is confirmed to be held by `society_admin` / `super_admin` only, denied to `block_admin` / `resident` / `security`.
 - **Behavioral tests.** `tests/unit/billing-config-stage3a-behavioral.test.ts` (24 cases) covers safe error mapping, adapter helpers, denied-role mapping (`unavailable` → role message), cross-society (`template_not_found` → safe not-found), duplicate charge head, invalid cycle dates, preview payload shape including serial + structured rows, no `as any` in source, `useServerFn(listBillingCycles|configureBillingCycle)` wiring in `BillingConfigCard`, the Stage 3B boundary + "no bills generated" copy, latest preview migration is serial-safe and area/unit-type canonical, no Razorpay/Stripe/Paddle/UPI/platform-fee/`bills`|`payments`|`ledger_entries` writes in Stage 3A sources, and role-capability parity. Total suite: 647 passed / 19 skipped / 11 todo.
-- **Protected society safety.** Every check uses synthetic UUIDs; `1907a918-c4b8-4f43-a837-450530cc7c34` is explicitly asserted absent from Stage 3A sources.
+- **Protected society safety.** Every check uses synthetic UUIDs; `[REDACTED-PROTECTED-SOCIETY-ID]` is explicitly asserted absent from Stage 3A sources.
 
 **Explicitly out of scope in Stage 3A:** real bill generation, payments/receipts/dues/penalties/reminders, Razorpay, UPI, cards, wallets, online gateway, platform fee, reconciliation. Preview + configuration only.
 
@@ -269,7 +269,7 @@ Earlier Stage 3C milestones (v3–v8) landed the underlying primitives. Do not r
 - Stage 2D completion + closure.
 
 Stage 2D remains **IN PROGRESS**. Protected society
-`1907a918-c4b8-4f43-a837-450530cc7c34` is untouched — no fixture, seed,
+`[REDACTED-PROTECTED-SOCIETY-ID]` is untouched — no fixture, seed,
 or runtime reference.
 
 ## Stage 2D — Prior scaffolding notes
@@ -313,7 +313,7 @@ Canonical import pipeline scaffolded end-to-end:
   formula neutralization, MyGate/ADDA/NoBrokerHood preset detection,
   row-schema validation including plate normalization, and deterministic
   checksums. All pass; `bunx tsgo --noEmit` clean.
-- Protected society `1907a918-c4b8-4f43-a837-450530cc7c34` remains
+- Protected society `[REDACTED-PROTECTED-SOCIETY-ID]` remains
   completely untouched — no fixture, seed, or runtime reference.
 - Canonical writes for new structures / units / residents remain the
   responsibility of the existing Stage 2A/2B admin RPCs. The Stage 2D
@@ -495,7 +495,7 @@ backward compatibility only — it must not be a new independent write source.
 - 390 px / 1280 px smoke: mode chooser, structured Units list, serial Units
   list, add-unit dialog, and serial-mode Blocks redirect all render without
   horizontal overflow; primary CTAs are ≥ 44 px minimum height.
-- Protected society `1907a918-c4b8-4f43-a837-450530cc7c34` — **untouched**.
+- Protected society `[REDACTED-PROTECTED-SOCIETY-ID]` — **untouched**.
 
 ## Deferred (intentionally, per Stage 2A scope)
 - Bulk unit generation → Stage 2D/2E.
@@ -582,7 +582,7 @@ assertions). Isolated PostgreSQL fixtures for last-admin race / block
 scope enforcement are deferred to Stage 13 hardening — not run here.
 Build passes; client-bundle secret scan clean. Visual smoke: not
 verified in this run (no preview interaction ran); deferred to Stage 16
-launch audit. Protected society `1907a918-c4b8-4f43-a837-450530cc7c34`
+launch audit. Protected society `[REDACTED-PROTECTED-SOCIETY-ID]`
 untouched.
 
 ## Stage 2C — Completion follow-up (2026-07-17)

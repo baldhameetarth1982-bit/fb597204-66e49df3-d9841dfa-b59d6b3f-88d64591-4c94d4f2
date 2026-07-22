@@ -247,7 +247,7 @@ describe("Stage 3A · source contracts", () => {
   });
 
   it("Protected society ID is absent from Stage 3A sources and tests", () => {
-    const protectedId = "1907a918-c4b8-4f43-a837-450530cc7c34";
+    const protectedId = (process.env.SOCIOHUB_PROTECTED_SOCIETY_ID?.trim() || "__unset_protected_society_id__");
     for (const body of [src, card]) {
       expect(body).not.toContain(protectedId);
     }

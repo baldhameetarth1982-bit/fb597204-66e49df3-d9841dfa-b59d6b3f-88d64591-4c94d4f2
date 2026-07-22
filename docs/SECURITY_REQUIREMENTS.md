@@ -198,7 +198,7 @@ input and server-derived canonical JSON/hash unambiguous.
 - Privacy contacts household check is bound to `flats.society_id`; vehicles/documents require resource-specific `can_access_vehicle`.
 - `user_role_block_scopes` role/block FKs are `ON DELETE RESTRICT` — scope history preserved.
 - 532 unit tests pass; tsgo clean; build green; client-bundle secret scan clean.
-- Protected society `1907a918-c4b8-4f43-a837-450530cc7c34` untouched.
+- Protected society `[REDACTED-PROTECTED-SOCIETY-ID]` untouched.
 
 
 ## Stage 2D — Upload hardening (2026-07-17)

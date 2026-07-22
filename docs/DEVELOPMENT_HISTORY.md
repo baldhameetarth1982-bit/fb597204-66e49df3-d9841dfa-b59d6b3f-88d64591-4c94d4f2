@@ -64,7 +64,7 @@
 ## Tests
 
 - 459 unit tests pass. Stage 2B suite (34 tests, 5 skipped as fixture-only) covers: canonical reuse, safe-list projection, adapter invariants (no `as any`, no `undef(...) as string`, deactivation-only public exports), strict private-detail contract (valid parse, unknown fields rejected, `temporary_error` boundary), SQL rules (no DELETE on family/vehicles/flat_residents; advisory lock; partial active-only unique index; no future `-dup-` rewrite), route wiring assertions (vehicles/residents/detail consume the safe services), and protected-society untouched invariants.
-- Integration tests against Postgres remain `.skip` with an honest reason: no isolated fixture society is available in this sandbox and the protected society (`1907a918-c4b8-4f43-a837-450530cc7c34`) is off-limits.
+- Integration tests against Postgres remain `.skip` with an honest reason: no isolated fixture society is available in this sandbox and the protected society (`[REDACTED-PROTECTED-SOCIETY-ID]`) is off-limits.
 
 Stage 2B is complete. Next: Stage 2C — Teams, Roles and Privacy Controls.
 
@@ -663,7 +663,7 @@ raw Supabase / PostgreSQL error text.
 - `bun scripts/verify-client-bundle-secrets.ts` — OK, no server-only
   indicators in the client bundle.
 - Protected society `baldha Meetarth`
-  (`1907a918-c4b8-4f43-a837-450530cc7c34`) not accessed at any point.
+  (`[REDACTED-PROTECTED-SOCIETY-ID]`) not accessed at any point.
 
 ## Explicitly still remaining inside Stage 1D
 
@@ -780,7 +780,7 @@ reconciliation was added or removed in this pass.
 
 ### Protected society
 
-`baldha Meetarth` (`1907a918-c4b8-4f43-a837-450530cc7c34`) was **not**
+`baldha Meetarth` (`[REDACTED-PROTECTED-SOCIETY-ID]`) was **not**
 queried, seeded, probed, migrated against, or otherwise accessed in this
 pass. The migration is additive DDL only; no rows were read or written.
 
@@ -902,7 +902,7 @@ are clean.
 
 **Runtime PostgreSQL / direct-RPC integration tests remain skipped**
 (no isolated fixture harness available). No production data or the
-protected society `baldha Meetarth` (1907a918-c4b8-4f43-a837-450530cc7c34)
+protected society `baldha Meetarth` ([REDACTED-PROTECTED-SOCIETY-ID])
 was queried, seeded, probed, or referenced during this slice.
 
 **Remaining Stage 1D slices (unchanged):**
@@ -1003,7 +1003,7 @@ transactional creation, `creation_request_id`, Cash / Bank Transfer-only
 creation, payer safe-list vs. detail privacy split, verify/reject/reverse
 flows, Basic zero-call architecture, RLS + society isolation, historical
 `other_offline` rows readable, Razorpay subscription-only, no platform
-fee. Protected society (`baldha Meetarth`, id `1907a918-c4b8-4f43-a837-450530cc7c34`)
+fee. Protected society (`baldha Meetarth`, id `[REDACTED-PROTECTED-SOCIETY-ID]`)
 untouched.
 
 **Stage 1D status: complete.** Next: **Stage 1E — SQL Reporting,
@@ -1097,7 +1097,7 @@ hash, verification state machine (`transition_income_record`), payer safe-list
 vs. detail privacy split, Basic zero-call architecture, RLS + society
 isolation, Razorpay subscription-only, no platform fee, no Stripe/Paddle/UPI/
 cards/wallets/payment links. Protected society `baldha Meetarth`
-(`1907a918-c4b8-4f43-a837-450530cc7c34`) untouched.
+(`[REDACTED-PROTECTED-SOCIETY-ID]`) untouched.
 
 **Stage 1E status: complete. Stage 1 overall status: complete.**
 Next: **Stage 2A — Society Structure Audit and Canonical Setup Model.**
@@ -1166,7 +1166,7 @@ backward compatibility only — it must not be a new independent write source.
 - 390 px / 1280 px smoke: mode chooser, structured Units list, serial Units
   list, add-unit dialog, and serial-mode Blocks redirect all render without
   horizontal overflow; primary CTAs are ≥ 44 px minimum height.
-- Protected society `1907a918-c4b8-4f43-a837-450530cc7c34` — **untouched**.
+- Protected society `[REDACTED-PROTECTED-SOCIETY-ID]` — **untouched**.
 
 ## Deferred (intentionally, per Stage 2A scope)
 - Bulk unit generation → Stage 2D/2E.
@@ -1261,7 +1261,7 @@ role, resident self-service) and for follow-up UI upgrades in Stage 2C.
 - Resident/Guard/Block Admin: unchanged — no new admin-level permission
   was invented. Existing self-service surfaces continue to use the
   established row-owner policies on `family_members` and `vehicles`.
-- Protected society `1907a918-c4b8-4f43-a837-450530cc7c34` — untouched.
+- Protected society `[REDACTED-PROTECTED-SOCIETY-ID]` — untouched.
 
 ## Structured / serial support
 The safe-list projection carries the current `societies.structure_mode`
@@ -1403,7 +1403,7 @@ reconciliation, backfill invariants, privacy fail-closed). Full suite
 Deferred (non-critical): live PostgreSQL integration fixtures for
 concurrent multi-user scope races → Stage 13 hardening. Not simulated
 against production data or the protected society
-`1907a918-c4b8-4f43-a837-450530cc7c34`.
+`[REDACTED-PROTECTED-SOCIETY-ID]`.
 
 **Next:** Stage 2D — Migration and Bulk Import.
 
@@ -1474,7 +1474,7 @@ derivation, and RESTRICT FKs.
 Full test suite: 532 passed / 5 honestly skipped. tsgo clean. Build
 green. `scripts/verify-client-bundle-secrets.ts` reports no server-only
 indicators in the client bundle. Protected society
-`1907a918-c4b8-4f43-a837-450530cc7c34` untouched.
+`[REDACTED-PROTECTED-SOCIETY-ID]` untouched.
 
 **Next:** Stage 2D — Migration and Bulk Import.
 

@@ -121,7 +121,7 @@ describe("Stage 3C v5 — resident submit card contract preserved", () => {
 
 describe("Stage 3C v5 — protected society safety", () => {
   it("protected society UUID is not present in new Stage 3C sources", () => {
-    const protectedId = "1907a918-c4b8-4f43-a837-450530cc7c34";
+    const protectedId = (process.env.SOCIOHUB_PROTECTED_SOCIETY_ID?.trim() || "__unset_protected_society_id__");
     expect(fnSrc).not.toContain(protectedId);
     expect(adminRoute).not.toContain(protectedId);
     expect(submitCard).not.toContain(protectedId);

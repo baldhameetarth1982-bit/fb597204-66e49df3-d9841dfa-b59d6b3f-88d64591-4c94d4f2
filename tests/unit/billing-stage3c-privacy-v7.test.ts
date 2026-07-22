@@ -225,7 +225,7 @@ describe("Stage 3C v7 — no proof_url anywhere in active Stage 3C surfaces", ()
 });
 
 describe("Stage 3C v7 — protected society is not referenced", () => {
-  const protectedId = "1907a918-c4b8-4f43-a837-450530cc7c34";
+  const protectedId = (process.env.SOCIOHUB_PROTECTED_SOCIETY_ID?.trim() || "__unset_protected_society_id__");
   for (const p of [
     "src/lib/offline-payments.functions.ts",
     "src/routes/_society/society.payments.tsx",

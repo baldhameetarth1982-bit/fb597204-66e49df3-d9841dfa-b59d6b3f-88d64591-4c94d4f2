@@ -5,8 +5,13 @@
  * `scripts/verify-stage3c-live-matrix-foundation-source.ts` against
  * (a) the current repository (success case) and
  * (b) synthetic broken inputs (focused failures).
+ *
+ * NOTE: This file must NEVER contain the actual protected society
+ * UUID. All synthetic UUIDs used below come from `randomUUID()` so the
+ * literal never enters version control.
  */
 import { describe, it, expect } from "vitest";
+import { randomUUID } from "node:crypto";
 import {
   runAllFoundationChecks,
   checkDependencyPin,
@@ -18,6 +23,7 @@ import {
   checkLiveSuiteUnchanged,
   checkWorkflowIntegrity,
   checkNoProtectedLiteral,
+  collectTrackedTextFiles,
 } from "../../scripts/verify-stage3c-live-matrix-foundation-source";
 
 describe("Stage 3C matrix foundation source validator", () => {
@@ -31,8 +37,7 @@ describe("Stage 3C matrix foundation source validator", () => {
 
   it("flags dependency mismatch", () => {
     const bad = `"@lovable.dev/vite-tanstack-config": "9.9.9"`;
-    const failures = checkDependencyPin(bad, bad);
-    expect(failures.length).toBeGreaterThan(0);
+    expect(checkDependencyPin(bad, bad).length).toBeGreaterThan(0);
   });
 
   it("flags missing dedicated bill in fixture", () => {
@@ -88,15 +93,17 @@ describe("Stage 3C matrix foundation source validator", () => {
     expect(f.length).toBeGreaterThan(0);
   });
 
-  it("flags a hardcoded protected constant declaration", () => {
+  it("flags a hardcoded PROTECTED_UUID declaration using a synthetic uuid", () => {
+    const synthetic = randomUUID();
     const f = checkNoProtectedLiteral([
-      ["fake.ts", `const PROTECTED_UUID = "1907a918-c4b8-4f43-a837-450530cc7c34";`],
+      ["fake.ts", `const PROTECTED_UUID = "${synthetic}";`],
     ]);
-    expect(f.length).toBeGreaterThan(0);
+    expect(f.length).toBe(1);
+    expect(f[0]).not.toContain(synthetic);
   });
 
-  it("flags the protected value when supplied via env parameter", () => {
-    const secret = "1907a918-c4b8-4f43-a837-450530cc7c34";
+  it("flags the protected value when supplied via env parameter without echoing it", () => {
+    const secret = randomUUID();
     const f = checkNoProtectedLiteral(
       [["fake.ts", `const someId = '${secret}';`]],
       secret,
@@ -106,10 +113,51 @@ describe("Stage 3C matrix foundation source validator", () => {
   });
 
   it("does not compare values when env is absent/blank", () => {
+    const synthetic = randomUUID();
     const f = checkNoProtectedLiteral(
-      [["fake.ts", `const someId = '1907a918-c4b8-4f43-a837-450530cc7c34';`]],
+      [["fake.ts", `const someId = '${synthetic}';`]],
       "",
     );
     expect(f.length).toBe(0);
   });
+
+  it("collapses multiple detections in one file into a single failure", () => {
+    const synthetic = randomUUID();
+    const f = checkNoProtectedLiteral(
+      [
+        [
+          "fake.ts",
+          `const A = "${synthetic}"; const PROTECTED_UUID = "${synthetic}";`,
+        ],
+      ],
+      synthetic,
+    );
+    expect(f.length).toBe(1);
+    expect(f[0]).not.toContain(synthetic);
+  });
+
+  it("rejects unsafe path traversal in the reported filename", () => {
+    const synthetic = randomUUID();
+    const f = checkNoProtectedLiteral(
+      [["../etc/passwd", `const PROTECTED_UUID = "${synthetic}";`]],
+    );
+    expect(f.length).toBe(1);
+    expect(f[0]).toContain("<unsafe-path>");
+  });
+
+  it("collectTrackedTextFiles returns tracked source files, not directories", () => {
+    const files = collectTrackedTextFiles();
+    // Should include at least this test file and a top-level package.json
+    const paths = files.map(([p]) => p);
+    expect(paths).toContain("package.json");
+    expect(
+      paths.some((p) => p.endsWith("billing-stage3c-live-matrix-foundation-source.test.ts")),
+    ).toBe(true);
+    // No unsafe or absolute paths.
+    for (const p of paths) {
+      expect(p.startsWith("/")).toBe(false);
+      expect(p.split("/").includes("..")).toBe(false);
+    }
+  });
 });
+

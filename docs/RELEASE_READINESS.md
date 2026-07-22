@@ -555,7 +555,7 @@ unsafe route casts, complete Turn 17 documentation, and run the exit gate.
 | `bunx vitest run tests/unit` | 0 | **156 / 156 passed** across 10 files. New UI test file: `tests/unit/flat360-ui.test.ts` (7 tests). |
 | `bun run build` | 0 | Production build passes (see build output for exact duration in this run). |
 | `bun scripts/verify-client-bundle-secrets.ts` | 0 | Clean — 0 hits across 887 client-bundle files. |
-| `bunx vitest run tests/integration/flat360.integration.test.ts` | SKIPPED — missing isolated fixture environment | Requires `ALLOW_SOCIYOHUB_TEST_FIXTURES=true` + isolated `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`; will never run against real Society `1907a918-c4b8-4f43-a837-450530cc7c34`. |
+| `bunx vitest run tests/integration/flat360.integration.test.ts` | SKIPPED — missing isolated fixture environment | Requires `ALLOW_SOCIYOHUB_TEST_FIXTURES=true` + isolated `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`; will never run against real Society `[REDACTED-PROTECTED-SOCIETY-ID]`. |
 | Playwright UI harness | SKIPPED — no Playwright config in project | The project does not currently configure Playwright. Visual regression evidence deferred to a dedicated verification turn. |
 | Provider runtime smoke test | SKIPPED — provider credential unavailable to Sub-turn D | Requires a safe dev/test `LOVABLE_API_KEY` scoped to a non-production gateway. No such isolated credential is exposed to this sub-turn; production key is not usable for a smoke test that must not touch real cache/rate-limit state. |
 
@@ -607,7 +607,7 @@ require a DOM environment:
 - No certificate secret, No-Dues token, or payment-proof URL exposed by the route or AI DTO.
 - Razorpay untouched; no payment integration changes; no platform fee; Cash + Bank Transfer preserved.
 - Firebase → Supabase authentication preserved; RLS preserved; No-Dues cryptography untouched.
-- No writes to real society data during audit; Society `1907a918-c4b8-4f43-a837-450530cc7c34` never used as fixture.
+- No writes to real society data during audit; Society `[REDACTED-PROTECTED-SOCIETY-ID]` never used as fixture.
 
 ## Turn 18A closure (Stage 3B foundation)
 
@@ -692,7 +692,7 @@ honestly with no fixtures; production build clean; secret scan clean.
   list, record detail with reconcile & undo-reconciliation dialogs,
   Category page, Payer page, Basic-locked, and role-denied.
 - Protected society `baldha Meetarth`
-  (`1907a918-c4b8-4f43-a837-450530cc7c34`) untouched.
+  (`[REDACTED-PROTECTED-SOCIETY-ID]`) untouched.
 
 **Stage 1 overall status: complete. Next: Stage 2A — Society Structure
 Audit and Canonical Setup Model.**
@@ -761,7 +761,7 @@ Audit and Canonical Setup Model.**
 - Privacy contacts household check is bound to `flats.society_id`; vehicles/documents require resource-specific `can_access_vehicle`.
 - `user_role_block_scopes` role/block FKs are `ON DELETE RESTRICT` — scope history preserved.
 - 532 unit tests pass; tsgo clean; build green; client-bundle secret scan clean.
-- Protected society `1907a918-c4b8-4f43-a837-450530cc7c34` untouched.
+- Protected society `[REDACTED-PROTECTED-SOCIETY-ID]` untouched.
 
 
 ## Stage 2D — Upload hardening (2026-07-17)

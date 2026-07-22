@@ -147,7 +147,7 @@ describe("Stage 2D — deterministic checksums", () => {
 });
 
 describe("Stage 2D — protected society fixture guard", () => {
-  const PROTECTED = "1907a918-c4b8-4f43-a837-450530cc7c34";
+  const PROTECTED = (process.env.SOCIOHUB_PROTECTED_SOCIETY_ID?.trim() || "__unset_protected_society_id__");
   it("no test or pipeline constant references the protected society", () => {
     // The pipeline module and this test file must never bake in that id.
     // (Sanity check — this is a static assertion.)

@@ -10,8 +10,9 @@
  * `process.env.SOCIOHUB_PROTECTED_SOCIETY_ID`. Its absence must never
  * produce or invent the value.
  */
-import { readFileSync, existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { readFileSync, existsSync, statSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { resolve, isAbsolute, relative, sep } from "node:path";
 
 const ROOT = process.cwd();
 
@@ -122,16 +123,26 @@ export function checkFixtureFoundation(src: string): string[] {
     fail(f, "fixture: line-item IDs must be tracked via trackUniqueId");
   if (!/export async function assertMatrixBillsStartClean\(/.test(src))
     fail(f, "fixture: assertMatrixBillsStartClean not exported");
-  if (!/\.in\("bill_id",\s*ids\)/.test(src))
-    fail(f, "fixture: assertMatrixBillsStartClean must filter payments by bill_id via .in");
+  if (!/export function validateMatrixDedicatedBillIds\(/.test(src))
+    fail(f, "fixture: validateMatrixDedicatedBillIds not exported");
+  if (!/export type MatrixCleanStateReader\b/.test(src))
+    fail(f, "fixture: MatrixCleanStateReader type not exported");
+  if (!/export async function assertMatrixBillsStartCleanWithReader\(/.test(src))
+    fail(f, "fixture: assertMatrixBillsStartCleanWithReader not exported");
+  if (/\[0-9a-fA-F-\]\{36\}/.test(src))
+    fail(f, "fixture: loose 36-character UUID expression must be removed");
+  if (!/\.in\("bill_id",\s*(?:ids|billIds)\)/.test(src))
+    fail(f, "fixture: adapter must filter payments by bill_id via .in");
   if (!/\.in\("payment_id",\s*paymentIds\)/.test(src))
-    fail(f, "fixture: assertMatrixBillsStartClean must filter payment_receipts by payment_id");
+    fail(f, "fixture: adapter must filter payment_receipts by payment_id");
   if (/from\("payment_receipts"\)[\s\S]{0,200}\.in\("bill_id"/.test(src))
     fail(f, "fixture: payment_receipts must not be filtered by bill_id (schema uses payment_id)");
   if (/not fatal/i.test(src))
     fail(f, "fixture: startClean must not contain a 'not fatal' fallback for query errors");
   if (/\.limit\(1\)[^\n]*payments/.test(src))
     fail(f, "fixture: startClean must not use .limit(1) as zero-proof for payments");
+  if (!/assertMatrixBillsStartCleanWithReader\(reader,\s*matrix\)/.test(src))
+    fail(f, "fixture: adapter must delegate to assertMatrixBillsStartCleanWithReader");
   if (!/assertMatrixBillsStartClean\(admin,\s*matrix\)/.test(src))
     fail(f, "fixture: setup must invoke assertMatrixBillsStartClean");
   // Setup must supply all four existing core bill IDs to the validator.
@@ -265,25 +276,100 @@ export function checkWorkflowIntegrity(src: string): string[] {
  * - When absent/blank we perform no value comparison but still reject
  *   any committed declaration that hardcodes a protected UUID constant
  *   (e.g. `const PROTECTED_UUID = "..."`).
- * - Failure output NEVER echoes the matched value.
+ * - Failure output NEVER echoes the matched value or the source line —
+ *   only the safe repository-relative path is returned.
+ * - Duplicate detections in one file collapse into one failure.
  */
 const PROTECTED_CONSTANT_DECLARATION =
   /\bconst\s+(PROTECTED_UUID|PROTECTED_SOCIETY_ID|PROTECTED_SOCIETY_UUID)\s*=\s*['"][0-9a-fA-F-]{36}['"]/;
+
+function isSafeRelativePath(p: string): boolean {
+  if (typeof p !== "string" || p.length === 0) return false;
+  if (isAbsolute(p)) return false;
+  if (p.split(/[\\/]/).some((seg) => seg === "..")) return false;
+  return true;
+}
 
 export function checkNoProtectedLiteral(
   files: ReadonlyArray<readonly [string, string]>,
   protectedValue?: string,
 ): string[] {
-  const failures: string[] = [];
+  const detected = new Set<string>();
   const trimmed = typeof protectedValue === "string" ? protectedValue.trim() : "";
   const hasValue = trimmed.length > 0;
-  for (const [name, src] of files) {
-    if (hasValue && src.includes(trimmed))
-      failures.push(`protected society literal detected in ${name}`);
-    if (PROTECTED_CONSTANT_DECLARATION.test(src))
-      failures.push(`hardcoded protected constant declaration in ${name}`);
+  for (const [rawName, src] of files) {
+    const name = isSafeRelativePath(rawName) ? rawName : "<unsafe-path>";
+    let hit = false;
+    if (hasValue && src.includes(trimmed)) hit = true;
+    if (PROTECTED_CONSTANT_DECLARATION.test(src)) hit = true;
+    if (hit) detected.add(name);
   }
-  return failures;
+  return Array.from(detected).map((n) => `protected society literal detected in ${n}`);
+}
+
+const TEXT_EXTENSIONS = new Set([
+  ".ts",
+  ".tsx",
+  ".js",
+  ".jsx",
+  ".mjs",
+  ".cjs",
+  ".sql",
+  ".md",
+  ".json",
+  ".yml",
+  ".yaml",
+  ".toml",
+  ".txt",
+]);
+
+function pathExtension(p: string): string {
+  const i = p.lastIndexOf(".");
+  return i < 0 ? "" : p.slice(i).toLowerCase();
+}
+
+/**
+ * Collect every tracked textual file in the repository via `git ls-files -z`.
+ *
+ * - Splits safely on NUL.
+ * - Filters to normalized safe relative paths whose extension is
+ *   textual.
+ * - Skips paths that fail an isSafeRelativePath check.
+ * - When `git ls-files` fails, returns a single sentinel entry so the
+ *   caller can convert it to a labeled validator failure without
+ *   silently falling back to a smaller list.
+ */
+export function collectTrackedTextFiles(
+  root: string = ROOT,
+): ReadonlyArray<readonly [path: string, source: string]> {
+  let raw: Buffer;
+  try {
+    raw = execFileSync("git", ["ls-files", "-z"], { cwd: root, maxBuffer: 128 * 1024 * 1024 });
+  } catch {
+    return [["<git-ls-files-failed>", ""] as const];
+  }
+  const entries = raw
+    .toString("utf8")
+    .split("\u0000")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+  const out: Array<readonly [string, string]> = [];
+  for (const p of entries) {
+    if (!isSafeRelativePath(p)) continue;
+    if (!TEXT_EXTENSIONS.has(pathExtension(p))) continue;
+    const abs = resolve(root, p);
+    try {
+      const st = statSync(abs);
+      if (!st.isFile()) continue;
+      const src = readFileSync(abs, "utf8");
+      // Normalize to forward-slash relative form.
+      const rel = relative(root, abs).split(sep).join("/");
+      out.push([rel, src] as const);
+    } catch {
+      continue;
+    }
+  }
+  return out;
 }
 
 export function runAllFoundationChecks(): FoundationCheckOutcome {
@@ -313,15 +399,16 @@ export function runAllFoundationChecks(): FoundationCheckOutcome {
   failures.push(...checkRegistryUnchanged(read(REGISTRY)));
   failures.push(...checkLiveSuiteUnchanged(read(LIVE_SUITE)));
   failures.push(...checkWorkflowIntegrity(read(WORKFLOW)));
-  const protectedValue = process.env.SOCIOHUB_PROTECTED_SOCIETY_ID;
-  failures.push(
-    ...checkNoProtectedLiteral(
-      [FIXTURE, MATRIX_CTX, ERRORS, REGISTRY, LIVE_SUITE, CONTRACTS, PROD, WORKFLOW, SELF].map(
-        (rel) => [rel, read(rel)] as [string, string],
-      ),
-      protectedValue,
-    ),
-  );
+
+  const tracked = collectTrackedTextFiles(ROOT);
+  if (tracked.length === 1 && tracked[0][0] === "<git-ls-files-failed>") {
+    failures.push(
+      "protected scan: git ls-files failed — refusing to fall back to a smaller list",
+    );
+  } else {
+    const protectedValue = process.env.SOCIOHUB_PROTECTED_SOCIETY_ID;
+    failures.push(...checkNoProtectedLiteral(tracked, protectedValue));
+  }
   return { ok: failures.length === 0, failures };
 }
 
@@ -339,3 +426,4 @@ async function main() {
 if (import.meta.main) {
   void main();
 }
+

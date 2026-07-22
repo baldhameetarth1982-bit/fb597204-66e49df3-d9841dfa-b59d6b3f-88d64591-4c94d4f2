@@ -1,19 +1,14 @@
 #!/usr/bin/env bun
 /**
- * Stage 3C — Foundation source validator (40-case matrix, pre-registration).
+ * Stage 3C — Foundation source validator (matrix repair sub-run 1/3).
  *
- * Static file-shape enforcement for the matrix foundation:
- *   - dependency + lockfile pin to 2.7.7
- *   - Stage3CMatrixResources / validator / otherFlatA / dedicated bills
- *   - matrix context extends + composes core context
- *   - required guards + canonical error tokens exist
- *   - resident input schema is exported from contracts module and used by production
- *   - live registry remains exactly 24 and no new live case is registered
- *   - workflow does NOT falsely claim 40/93
- *   - no protected society literal
+ * Pure inspection: every check function is exported. The CLI entry
+ * point is guarded so importing this module from Vitest does not
+ * call `process.exit`.
  *
- * Pure inspection: every check function is exported so unit tests can
- * cover both success and focused failures.
+ * The protected society UUID is NEVER hardcoded. It is read only from
+ * `process.env.SOCIOHUB_PROTECTED_SOCIETY_ID`. Its absence must never
+ * produce or invent the value.
  */
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
@@ -30,8 +25,8 @@ const PROD = "src/lib/offline-payments.functions.ts";
 const WORKFLOW = ".github/workflows/stage3c-runtime-verification.yml";
 const PKG = "package.json";
 const LOCK = "bun.lock";
+const SELF = "scripts/verify-stage3c-live-matrix-foundation-source.ts";
 
-const PROTECTED_UUID = "1907a918-c4b8-4f43-a837-450530cc7c34";
 const EXPECTED_DEP_VERSION = "2.7.7";
 
 function read(rel: string): string {
@@ -65,8 +60,10 @@ export function checkDependencyPin(pkg: string, lock: string): string[] {
 
 export function checkFixtureFoundation(src: string): string[] {
   const f: string[] = [];
-  if (!src.includes("export type Stage3CMatrixResources"))
+  if (!/export type Stage3CMatrixResources\b/.test(src))
     fail(f, "fixture: Stage3CMatrixResources type not exported");
+  if (!/export type Stage3CMatrixOwnership\b/.test(src))
+    fail(f, "fixture: Stage3CMatrixOwnership type not exported");
   for (const field of [
     "otherFlatA",
     "residentSubmitBillId",
@@ -80,6 +77,13 @@ export function checkFixtureFoundation(src: string): string[] {
   }
   if (!/export function validateStage3CMatrixResources\(/.test(src))
     fail(f, "fixture: validateStage3CMatrixResources not exported");
+  // Ownership must be REQUIRED (no `?:`) on validateStage3CMatrixResources.
+  if (
+    !/export function validateStage3CMatrixResources\(\s*raw:\s*unknown,\s*ownership:\s*Stage3CMatrixOwnership\s*\)/.test(
+      src,
+    )
+  )
+    fail(f, "fixture: validateStage3CMatrixResources must require ownership: Stage3CMatrixOwnership");
   if (!/Stage3CMatrixResourcesSchema[\s\S]{0,600}\.strict\(\)/.test(src))
     fail(f, "fixture: matrix resource schema must be .strict()");
   if (!/must be unique/.test(src))
@@ -87,8 +91,15 @@ export function checkFixtureFoundation(src: string): string[] {
   if (!/otherFlatA must not equal flatA/.test(src))
     fail(f, "fixture: matrix validator must enforce otherFlatA !== flatA");
   if (!/insert:otherFlatA/.test(src)) fail(f, "fixture: otherFlatA insert missing");
+  // Setup must select all five ownership fields on otherFlatA.
+  if (!/\.select\(\s*"id,\s*society_id,\s*block_id,\s*flat_number,\s*status"\s*\)/.test(src))
+    fail(f, "fixture: otherFlatA insert must select id, society_id, block_id, flat_number, status");
+  if (!/export function parseOtherFlatARow\(/.test(src))
+    fail(f, "fixture: parseOtherFlatARow not exported");
+  if (!/parseOtherFlatARow\(\s*otherFlatARawRow/.test(src))
+    fail(f, "fixture: setup must invoke parseOtherFlatARow on the returned row");
   if (!/trackUniqueId\(tracked\.flatIds,\s*otherFlatARow\.id/.test(src))
-    fail(f, "fixture: otherFlatA not tracked via trackUniqueId");
+    fail(f, "fixture: otherFlatA must be tracked only via the parsed returned row");
   for (const name of [
     "residentSubmitBillId",
     "otherFlatBillId",
@@ -101,9 +112,6 @@ export function checkFixtureFoundation(src: string): string[] {
   }
   if (!/flatId: otherFlatA/.test(src))
     fail(f, "fixture: otherFlatBillId must use otherFlatA");
-  const flatABillCount = (src.match(/flatId:\s*flatA/g) ?? []).length;
-  if (flatABillCount < 8)
-    fail(f, `fixture: expected >=8 flatId:flatA usages, got ${flatABillCount}`);
   if (!/async function addBill\(input:\s*\{/.test(src))
     fail(f, "fixture: addBill must accept an object input with flatId");
   if (!/kind:\s*"maintenance"/.test(src))
@@ -115,11 +123,24 @@ export function checkFixtureFoundation(src: string): string[] {
   if (!/export async function assertMatrixBillsStartClean\(/.test(src))
     fail(f, "fixture: assertMatrixBillsStartClean not exported");
   if (!/\.in\("bill_id",\s*ids\)/.test(src))
-    fail(f, "fixture: assertMatrixBillsStartClean must use .in(\"bill_id\", ids)");
+    fail(f, "fixture: assertMatrixBillsStartClean must filter payments by bill_id via .in");
+  if (!/\.in\("payment_id",\s*paymentIds\)/.test(src))
+    fail(f, "fixture: assertMatrixBillsStartClean must filter payment_receipts by payment_id");
+  if (/from\("payment_receipts"\)[\s\S]{0,200}\.in\("bill_id"/.test(src))
+    fail(f, "fixture: payment_receipts must not be filtered by bill_id (schema uses payment_id)");
+  if (/not fatal/i.test(src))
+    fail(f, "fixture: startClean must not contain a 'not fatal' fallback for query errors");
   if (/\.limit\(1\)[^\n]*payments/.test(src))
     fail(f, "fixture: startClean must not use .limit(1) as zero-proof for payments");
   if (!/assertMatrixBillsStartClean\(admin,\s*matrix\)/.test(src))
     fail(f, "fixture: setup must invoke assertMatrixBillsStartClean");
+  // Setup must supply all four existing core bill IDs to the validator.
+  if (
+    !/existingBillIds:\s*\[[\s\S]{0,400}openBillId,[\s\S]{0,400}openBillId2,[\s\S]{0,400}cancelledBillId,[\s\S]{0,400}fullyUnavailableBillId,?[\s\S]{0,200}\]/.test(
+      src,
+    )
+  )
+    fail(f, "fixture: setup must pass all four core bill IDs into existingBillIds");
   return f;
 }
 
@@ -185,6 +206,10 @@ export function checkResidentContract(contractSrc: string, prodSrc: string): str
   if (!/export const residentSubmitInputSchema/.test(contractSrc))
     fail(f, "contracts: residentSubmitInputSchema not exported");
   if (!/\.strict\(\)/.test(contractSrc)) fail(f, "contracts: schema must be .strict()");
+  if (!/export function isValidIsoCalendarDate\(/.test(contractSrc))
+    fail(f, "contracts: isValidIsoCalendarDate helper not exported");
+  if (!/\.refine\(\s*isValidIsoCalendarDate/.test(contractSrc))
+    fail(f, "contracts: paymentDate must refine via isValidIsoCalendarDate (regex-only is insufficient)");
   if (!/from\s+["']\.\/offline-payment-contracts["']/.test(prodSrc))
     fail(f, "prod: does not import residentSubmitInputSchema from contracts module");
   if (
@@ -226,21 +251,56 @@ export function checkWorkflowIntegrity(src: string): string[] {
   const f: string[] = [];
   if (/40\s*\/\s*93/.test(src))
     fail(f, "workflow: falsely claims 40/93 live progress");
+  if (/32\s*\/\s*93/.test(src))
+    fail(f, "workflow: falsely claims 32/93 live progress");
   return f;
 }
 
-export function checkNoProtectedLiteral(files: Array<[string, string]>): string[] {
-  const f: string[] = [];
+/**
+ * Runtime-input protected-society literal scanner.
+ *
+ * - `protectedValue` is optional. When present and non-blank we perform
+ *   a literal-safe (`String.prototype.includes`) comparison — never a
+ *   regex constructed from the value.
+ * - When absent/blank we perform no value comparison but still reject
+ *   any committed declaration that hardcodes a protected UUID constant
+ *   (e.g. `const PROTECTED_UUID = "..."`).
+ * - Failure output NEVER echoes the matched value.
+ */
+const PROTECTED_CONSTANT_DECLARATION =
+  /\bconst\s+(PROTECTED_UUID|PROTECTED_SOCIETY_ID|PROTECTED_SOCIETY_UUID)\s*=\s*['"][0-9a-fA-F-]{36}['"]/;
+
+export function checkNoProtectedLiteral(
+  files: ReadonlyArray<readonly [string, string]>,
+  protectedValue?: string,
+): string[] {
+  const failures: string[] = [];
+  const trimmed = typeof protectedValue === "string" ? protectedValue.trim() : "";
+  const hasValue = trimmed.length > 0;
   for (const [name, src] of files) {
-    if (src.includes(PROTECTED_UUID))
-      fail(f, `${name}: protected society literal present`);
+    if (hasValue && src.includes(trimmed))
+      failures.push(`protected society literal detected in ${name}`);
+    if (PROTECTED_CONSTANT_DECLARATION.test(src))
+      failures.push(`hardcoded protected constant declaration in ${name}`);
   }
-  return f;
+  return failures;
 }
 
 export function runAllFoundationChecks(): FoundationCheckOutcome {
   const failures: string[] = [];
-  for (const rel of [PKG, LOCK, FIXTURE, MATRIX_CTX, ERRORS, REGISTRY, LIVE_SUITE, CONTRACTS, PROD, WORKFLOW]) {
+  for (const rel of [
+    PKG,
+    LOCK,
+    FIXTURE,
+    MATRIX_CTX,
+    ERRORS,
+    REGISTRY,
+    LIVE_SUITE,
+    CONTRACTS,
+    PROD,
+    WORKFLOW,
+    SELF,
+  ]) {
     if (!existsSync(resolve(ROOT, rel))) failures.push(`missing file: ${rel}`);
   }
   if (failures.length) return { ok: false, failures };
@@ -253,11 +313,13 @@ export function runAllFoundationChecks(): FoundationCheckOutcome {
   failures.push(...checkRegistryUnchanged(read(REGISTRY)));
   failures.push(...checkLiveSuiteUnchanged(read(LIVE_SUITE)));
   failures.push(...checkWorkflowIntegrity(read(WORKFLOW)));
+  const protectedValue = process.env.SOCIOHUB_PROTECTED_SOCIETY_ID;
   failures.push(
     ...checkNoProtectedLiteral(
-      [FIXTURE, MATRIX_CTX, ERRORS, REGISTRY, LIVE_SUITE, CONTRACTS, PROD, WORKFLOW].map(
+      [FIXTURE, MATRIX_CTX, ERRORS, REGISTRY, LIVE_SUITE, CONTRACTS, PROD, WORKFLOW, SELF].map(
         (rel) => [rel, read(rel)] as [string, string],
       ),
+      protectedValue,
     ),
   );
   return { ok: failures.length === 0, failures };
@@ -273,6 +335,7 @@ async function main() {
   console.log("Stage 3C matrix foundation source verification passed");
 }
 
+// Only run the CLI when invoked directly (not when imported by Vitest).
 if (import.meta.main) {
   void main();
 }

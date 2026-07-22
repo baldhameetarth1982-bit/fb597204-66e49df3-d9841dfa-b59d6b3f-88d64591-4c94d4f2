@@ -151,4 +151,4 @@ Every skill below is original, self-contained SociyoHub content. External reposi
 - No new npm, Python, Go or Rust dependency was added by this task.
 - No third-party repository was committed, cloned into the repo, added as a submodule, or executed.
 - No symbolic links were created inside the repository.
-- Protected society protected society (`1907a918-c4b8-4f43-a837-450530cc7c34`) was not queried, seeded, mutated, probed, or used as a fixture.
+- Protected society ([REDACTED-PROTECTED-SOCIETY-ID]) was not queried, seeded, mutated, probed, or used as a fixture.

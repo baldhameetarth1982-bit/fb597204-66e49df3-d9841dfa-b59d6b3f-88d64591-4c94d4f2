@@ -167,22 +167,28 @@ jobs:
       - name: Client bundle secret scan
         run: bun scripts/verify-client-bundle-secrets.ts
 
-      - name: Protected society ID source scan (MANDATORY)
+      - name: Protected society ID source scan (MANDATORY, repo-wide)
         env:
           SOCIOHUB_PROTECTED_SOCIETY_ID: ${{ secrets.SOCIOHUB_PROTECTED_SOCIETY_ID }}
         run: |
+          set -euo pipefail
           if [ -z "$SOCIOHUB_PROTECTED_SOCIETY_ID" ]; then
             echo "Required SOCIOHUB_PROTECTED_SOCIETY_ID secret is missing"
             exit 1
           fi
           echo "::add-mask::$SOCIOHUB_PROTECTED_SOCIETY_ID"
-          if grep -R -F --exclude-dir=node_modules --exclude-dir=.git \
-               --include='*.ts' --include='*.tsx' --include='*.sql' --include='*.yml' --include='*.yaml' \
-               "$SOCIOHUB_PROTECTED_SOCIETY_ID" src tests supabase/migrations .github > /dev/null; then
-            echo "Protected society ID found in committed files"
+          # Repository-wide scan across every tracked textual file. Uses git
+          # ls-files so untracked scratch/build output cannot mask a leak, and
+          # so nothing outside version control is scanned by accident.
+          MATCHES=$(git ls-files -z | xargs -0 grep -l -F "$SOCIOHUB_PROTECTED_SOCIETY_ID" 2>/dev/null || true)
+          if [ -n "$MATCHES" ]; then
+            echo "Protected society ID found in tracked files:"
+            printf '%s\n' "$MATCHES"
             exit 1
           fi
-          echo "Protected ID not present in committed source."
+          echo "Protected ID not present in any tracked file."
+          # Structural / source contract validator (repo-wide, self-safe).
+          bun scripts/verify-stage3c-live-matrix-foundation-source.ts
 
       - name: Install Playwright browsers
         id: playwright_install

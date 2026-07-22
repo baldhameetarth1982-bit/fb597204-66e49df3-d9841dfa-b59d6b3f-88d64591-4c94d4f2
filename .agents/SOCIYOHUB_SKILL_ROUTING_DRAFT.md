@@ -58,7 +58,7 @@ Regardless of routing, the CEO skill must preserve:
 - Strict Supabase RLS on every per-society table; per-command policies + GRANTs; safe `SECURITY DEFINER`.
 - No platform fee; Razorpay only for SaaS subscriptions; maintenance Cash + Bank Transfer; approved offline non-member income; society-owned gateway deferred; no Stripe or Paddle.
 - Equal co-founders: Meetarth Baldha and Divyaraj Vaghela. No invented CEO/CTO, incorporation, trademark, or certification claims.
-- Protected society protected society (`1907a918-c4b8-4f43-a837-450530cc7c34`) is never queried, seeded, mutated, probed, or used as a fixture.
+- Protected society ([REDACTED-PROTECTED-SOCIETY-ID]) is never queried, seeded, mutated, probed, or used as a fixture.
 - Stage naming uses only a Stage number plus A–E; no nested stage names.
 
 ## Explicit non-goals of the CEO skill

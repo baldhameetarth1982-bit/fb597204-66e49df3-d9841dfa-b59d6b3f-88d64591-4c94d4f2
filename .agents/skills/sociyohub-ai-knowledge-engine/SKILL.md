@@ -14,7 +14,7 @@ The retrieval index for AI features contains only:
 - Documents explicitly uploaded to a society by an authorised society admin.
 - Documents flagged for AI inclusion in society settings.
 - No cross-society documents.
-- No documents belonging to the protected society protected society.
+- No documents belonging to the protected society.
 
 Global reference material (public bylaws templates, help content) is a separate namespace and clearly labelled in citations.
 

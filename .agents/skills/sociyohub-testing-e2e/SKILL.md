@@ -33,7 +33,7 @@ Integration tests exercise server functions against a real PostgreSQL instance s
 - Cover input validation edge cases (empty, oversized, malformed).
 - Cover idempotency where the endpoint can retry.
 
-Every integration test asserts that the protected society is not queried, not seeded, not mutated. Use fixture society IDs distinct from `1907a918-c4b8-4f43-a837-450530cc7c34`.
+Every integration test asserts that the protected society is not queried, not seeded, not mutated. Use fixture society IDs distinct from [REDACTED-PROTECTED-SOCIETY-ID].
 
 ## Testing Library — user behaviour
 

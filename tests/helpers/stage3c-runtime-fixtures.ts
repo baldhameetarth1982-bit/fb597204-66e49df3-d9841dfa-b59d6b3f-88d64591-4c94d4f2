@@ -609,33 +609,77 @@ export async function assertMatrixBillsStartCleanWithReader(
     throw new Error(
       `[stage3c:matrix:startClean:payments] ${redactMessage(extractErrorMessage(pay.error))}`,
     );
-  const paymentRows = parseMatrixPaymentRows(pay.data ?? []);
+  if (!Array.isArray(pay.data))
+    throw new Error(
+      "[stage3c:matrix:startClean:payments] reader returned non-array data",
+    );
+  const paymentRows = parseMatrixPaymentRows(pay.data);
   for (const r of paymentRows) {
     if (!idSet.has(r.bill_id))
       throw new Error(
         "[stage3c:matrix:startClean:payments] returned payment references a bill outside the requested set",
       );
   }
-  const paymentIds = Array.from(new Set(paymentRows.map((r) => r.id)));
+  const paymentIds: string[] = [];
+  const paymentIdSeen = new Set<string>();
+  for (const r of paymentRows) {
+    if (paymentIdSeen.has(r.id))
+      throw new Error(
+        "[stage3c:matrix:startClean:payments] duplicate payment ID returned",
+      );
+    paymentIdSeen.add(r.id);
+    paymentIds.push(r.id);
+  }
   if (paymentIds.length === 0) {
     return;
   }
-  const paymentIdSet = new Set(paymentIds);
+  const paymentIdSet = paymentIdSeen;
   const rec = await reader.listReceiptsByPaymentIds(paymentIds);
   if (rec.error)
     throw new Error(
       `[stage3c:matrix:startClean:receipts] ${redactMessage(extractErrorMessage(rec.error))}`,
     );
-  const receiptRows = parseMatrixReceiptRows(rec.data ?? []);
+  if (!Array.isArray(rec.data))
+    throw new Error(
+      "[stage3c:matrix:startClean:receipts] reader returned non-array data",
+    );
+  const receiptRows = parseMatrixReceiptRows(rec.data);
+  const receiptIdSeen = new Set<string>();
   for (const r of receiptRows) {
     if (!paymentIdSet.has(r.payment_id))
       throw new Error(
         "[stage3c:matrix:startClean:receipts] returned receipt references a payment outside the requested set",
       );
+    if (receiptIdSeen.has(r.id))
+      throw new Error(
+        "[stage3c:matrix:startClean:receipts] duplicate receipt ID returned",
+      );
+    receiptIdSeen.add(r.id);
   }
   throw new Error(
     `[stage3c:matrix:startClean] expected 0 payments and 0 receipts, got payments=${paymentRows.length} receipts=${receiptRows.length}`,
   );
+}
+
+/**
+ * Build a MatrixCleanStateReader that queries the real Supabase schema:
+ * payments filtered by bill_id, payment_receipts filtered by payment_id.
+ * Exported so behavioral tests can drive the adapter shape directly.
+ */
+export function createMatrixCleanStateReader(
+  admin: SupabaseClient,
+): MatrixCleanStateReader {
+  return {
+    async listPaymentsByBillIds(billIds) {
+      return await admin.from("payments").select("id, bill_id").in("bill_id", billIds);
+    },
+    async listReceiptsByPaymentIds(paymentIds) {
+      return await admin
+        .from("payment_receipts")
+        .select("id, payment_id")
+        .in("payment_id", paymentIds);
+    },
+  };
 }
 
 /**
@@ -648,19 +692,10 @@ export async function assertMatrixBillsStartClean(
   admin: SupabaseClient,
   matrix: Stage3CMatrixResources,
 ): Promise<void> {
-  const reader: MatrixCleanStateReader = {
-    async listPaymentsByBillIds(billIds) {
-      return await admin.from("payments").select("id, bill_id").in("bill_id", billIds);
-    },
-    async listReceiptsByPaymentIds(paymentIds) {
-      return await admin
-        .from("payment_receipts")
-        .select("id, payment_id")
-        .in("payment_id", paymentIds);
-    },
-  };
+  const reader = createMatrixCleanStateReader(admin);
   return await assertMatrixBillsStartCleanWithReader(reader, matrix);
 }
+
 
 
 

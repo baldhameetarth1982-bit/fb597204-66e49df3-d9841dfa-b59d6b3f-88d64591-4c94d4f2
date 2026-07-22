@@ -328,48 +328,153 @@ function pathExtension(p: string): string {
   return i < 0 ? "" : p.slice(i).toLowerCase();
 }
 
+export type TrackedTextCollectionResult = {
+  files: ReadonlyArray<readonly [path: string, source: string]>;
+  failures: readonly string[];
+};
+
+export type TrackedCollectorDeps = {
+  list: (root: string) => Buffer;
+  stat: (abs: string) => { isFile(): boolean };
+  read: (abs: string) => string;
+};
+
+const defaultDeps: TrackedCollectorDeps = {
+  list: (root) =>
+    execFileSync("git", ["ls-files", "-z"], { cwd: root, maxBuffer: 128 * 1024 * 1024 }),
+  stat: (abs) => statSync(abs),
+  read: (abs) => readFileSync(abs, "utf8"),
+};
+
 /**
- * Collect every tracked textual file in the repository via `git ls-files -z`.
- *
- * - Splits safely on NUL.
- * - Filters to normalized safe relative paths whose extension is
- *   textual.
- * - Skips paths that fail an isSafeRelativePath check.
- * - When `git ls-files` fails, returns a single sentinel entry so the
- *   caller can convert it to a labeled validator failure without
- *   silently falling back to a smaller list.
+ * Collect every tracked textual file via `git ls-files -z`, fail-closed.
+ * Never mutates raw filenames (no .trim()). Every skip that could mask a
+ * real tracked text file is surfaced as a failure.
  */
 export function collectTrackedTextFiles(
   root: string = ROOT,
-): ReadonlyArray<readonly [path: string, source: string]> {
+  deps: TrackedCollectorDeps = defaultDeps,
+): TrackedTextCollectionResult {
   let raw: Buffer;
   try {
-    raw = execFileSync("git", ["ls-files", "-z"], { cwd: root, maxBuffer: 128 * 1024 * 1024 });
+    raw = deps.list(root);
   } catch {
-    return [["<git-ls-files-failed>", ""] as const];
+    return { files: [], failures: ["tracked-collector: git ls-files failed"] };
   }
-  const entries = raw
-    .toString("utf8")
-    .split("\u0000")
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
-  const out: Array<readonly [string, string]> = [];
-  for (const p of entries) {
-    if (!isSafeRelativePath(p)) continue;
-    if (!TEXT_EXTENSIONS.has(pathExtension(p))) continue;
-    const abs = resolve(root, p);
-    try {
-      const st = statSync(abs);
-      if (!st.isFile()) continue;
-      const src = readFileSync(abs, "utf8");
-      // Normalize to forward-slash relative form.
-      const rel = relative(root, abs).split(sep).join("/");
-      out.push([rel, src] as const);
-    } catch {
+  const parts = raw.toString("utf8").split("\u0000");
+  // A properly formed `git ls-files -z` output ends in a trailing NUL, so the
+  // final split entry is a genuinely empty string; strip only that trailing
+  // empty, never .trim() a real entry.
+  if (parts.length > 0 && parts[parts.length - 1] === "") parts.pop();
+
+  const files: Array<readonly [string, string]> = [];
+  const failures: string[] = [];
+  const seen = new Set<string>();
+  for (const p of parts) {
+    if (p === "") {
+      failures.push("tracked-collector: empty tracked path");
       continue;
     }
+    if (!isSafeRelativePath(p)) {
+      failures.push("tracked-collector: unsafe tracked path");
+      continue;
+    }
+    if (!TEXT_EXTENSIONS.has(pathExtension(p))) continue;
+    const abs = resolve(root, p);
+    const rel = relative(root, abs).split(sep).join("/");
+    if (rel.startsWith("..")) {
+      failures.push(`tracked-collector: path escapes root: ${p}`);
+      continue;
+    }
+    if (seen.has(rel)) {
+      failures.push(`tracked-collector: duplicate normalized path: ${rel}`);
+      continue;
+    }
+    seen.add(rel);
+    let st: { isFile(): boolean };
+    try {
+      st = deps.stat(abs);
+    } catch {
+      failures.push(`tracked-collector: stat failed: ${rel}`);
+      continue;
+    }
+    if (!st.isFile()) continue;
+    let src: string;
+    try {
+      src = deps.read(abs);
+    } catch {
+      failures.push(`tracked-collector: read failed: ${rel}`);
+      continue;
+    }
+    files.push([rel, src] as const);
   }
-  return out;
+  return { files, failures };
+}
+
+/**
+ * Structural rejection of the pattern where a specific display name is
+ * attached to a redacted-protected-society placeholder or the phrase
+ * "protected society". The redaction placeholder itself is not a display
+ * name, so quoted content of the form `[REDACTED-...]` is exempted.
+ */
+const PROTECTED_IDENTITY_PATTERNS: RegExp[] = [
+  /protected(?: production)? society\s+[`"'](?!\[REDACTED-)[^`"'\n]{2,80}[`"']/i,
+  /protected(?: production)? society\s+[A-Za-z][A-Za-z .'-]{1,80}\s*\(\s*[`"']?\[REDACTED-PROTECTED-SOCIETY-ID\]/i,
+  /[`"'](?!\[REDACTED-)[^`"'\n]{2,80}[`"']\s*\(\s*[`"']?\[REDACTED-PROTECTED-SOCIETY-ID\]/,
+];
+
+
+const SELF_RELPATH = "scripts/verify-stage3c-live-matrix-foundation-source.ts";
+
+export function checkNoProtectedIdentity(
+  files: ReadonlyArray<readonly [string, string]>,
+): string[] {
+  const detected = new Set<string>();
+  for (const [rawName, src] of files) {
+    const name = isSafeRelativePath(rawName) ? rawName : "<unsafe-path>";
+    // Skip this validator's own source: it contains detection regexes.
+    if (name === SELF_RELPATH) continue;
+    for (const rx of PROTECTED_IDENTITY_PATTERNS) {
+      if (rx.test(src)) {
+        detected.add(name);
+        break;
+      }
+    }
+  }
+  return Array.from(detected).map((n) => `protected society identity detected in ${n}`);
+}
+
+const RUNTIME_CRITICAL_TEST =
+  "tests/unit/billing-stage3c-live-matrix-runtime-critical.test.ts";
+
+export function checkRuntimeCriticalTestSource(src: string): string[] {
+  const f: string[] = [];
+  const mustImport = [
+    "validateMatrixDedicatedBillIds",
+    "assertMatrixBillsStartCleanWithReader",
+    "createMatrixCleanStateReader",
+  ];
+  for (const name of mustImport) {
+    if (!new RegExp(`\\b${name}\\b`).test(src))
+      fail(f, `runtime-critical: symbol "${name}" not exercised`);
+  }
+  const evidence: Array<[label: string, rx: RegExp]> = [
+    ["duplicate payment ID", /duplicate payment ID/i],
+    ["duplicate receipt ID", /duplicate receipt ID/i],
+    ["null payment data", /null[\s\S]{0,40}payment/i],
+    ["null receipt data", /null[\s\S]{0,40}receipt/i],
+    ["payment reader call count", /listPaymentsByBillIds[\s\S]{0,200}toHaveBeenCalledTimes/],
+    ["receipt reader call count", /listReceiptsByPaymentIds[\s\S]{0,400}toHaveBeenCalled/],
+    ["receipt not called when empty", /listReceiptsByPaymentIds[\s\S]{0,400}not\.toHaveBeenCalled/],
+    ["out-of-scope payment", /outside the requested set/],
+    ["safe count-only error", /payments=/],
+    ["error redaction", /REDACTED_JWT|redact/i],
+  ];
+  for (const [label, rx] of evidence) {
+    if (!rx.test(src))
+      fail(f, `runtime-critical: missing evidence for "${label}"`);
+  }
+  return f;
 }
 
 export function runAllFoundationChecks(): FoundationCheckOutcome {
@@ -400,17 +505,26 @@ export function runAllFoundationChecks(): FoundationCheckOutcome {
   failures.push(...checkLiveSuiteUnchanged(read(LIVE_SUITE)));
   failures.push(...checkWorkflowIntegrity(read(WORKFLOW)));
 
-  const tracked = collectTrackedTextFiles(ROOT);
-  if (tracked.length === 1 && tracked[0][0] === "<git-ls-files-failed>") {
-    failures.push(
-      "protected scan: git ls-files failed — refusing to fall back to a smaller list",
-    );
+  if (existsSync(resolve(ROOT, RUNTIME_CRITICAL_TEST))) {
+    failures.push(...checkRuntimeCriticalTestSource(read(RUNTIME_CRITICAL_TEST)));
   } else {
+    failures.push(`missing file: ${RUNTIME_CRITICAL_TEST}`);
+  }
+
+  const tracked = collectTrackedTextFiles(ROOT);
+  failures.push(...tracked.failures);
+  if (tracked.failures.length === 0) {
     const protectedValue = process.env.SOCIOHUB_PROTECTED_SOCIETY_ID;
-    failures.push(...checkNoProtectedLiteral(tracked, protectedValue));
+    failures.push(...checkNoProtectedLiteral(tracked.files, protectedValue));
+    failures.push(...checkNoProtectedIdentity(tracked.files));
+  } else {
+    failures.push(
+      "protected scan: partial tracked-file collection — refusing to claim a complete scan",
+    );
   }
   return { ok: failures.length === 0, failures };
 }
+
 
 async function main() {
   const outcome = runAllFoundationChecks();

@@ -4,7 +4,7 @@
  * Covers: isValidIsoCalendarDate, parseOtherFlatARow, matrix row
  * parsers, and mandatory ownership on validateStage3CMatrixResources.
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   validateStage3CMatrixResources,
   parseOtherFlatARow,
@@ -12,6 +12,7 @@ import {
   parseMatrixReceiptRows,
   validateMatrixDedicatedBillIds,
   assertMatrixBillsStartCleanWithReader,
+  createMatrixCleanStateReader,
   type Stage3CMatrixResources,
   type MatrixCleanStateReader,
 } from "../../tests/helpers/stage3c-runtime-fixtures";
@@ -266,5 +267,159 @@ describe("assertMatrixBillsStartCleanWithReader — behavioral", () => {
     await expect(
       assertMatrixBillsStartCleanWithReader(reader([p], [r]), m),
     ).rejects.toThrow(/receipts.*outside the requested set/);
+});
+
+describe("assertMatrixBillsStartCleanWithReader — exact reader calls", () => {
+  const m = matrix();
+  const ids = validateMatrixDedicatedBillIds(m);
+
+  function makeReader(
+    payments: Array<{ id: string; bill_id: string }>,
+    receipts: Array<{ id: string; payment_id: string }>,
+    opts: { paymentsError?: unknown; receiptsError?: unknown; paymentsData?: unknown; receiptsData?: unknown } = {},
+  ) {
+    const listPaymentsByBillIds = vi.fn(async () => ({
+      data: "paymentsData" in opts ? opts.paymentsData : payments,
+      error: opts.paymentsError ?? null,
+    }));
+    const listReceiptsByPaymentIds = vi.fn(async () => ({
+      data: "receiptsData" in opts ? opts.receiptsData : receipts,
+      error: opts.receiptsError ?? null,
+    }));
+    const reader: MatrixCleanStateReader = {
+      listPaymentsByBillIds,
+      listReceiptsByPaymentIds,
+    };
+    return { reader, listPaymentsByBillIds, listReceiptsByPaymentIds };
+  }
+
+  it("calls payment reader exactly once with exact ordered five bill IDs and never calls receipt reader for empty payments", async () => {
+    const { reader, listPaymentsByBillIds, listReceiptsByPaymentIds } = makeReader([], []);
+    await assertMatrixBillsStartCleanWithReader(reader, m);
+    expect(listPaymentsByBillIds).toHaveBeenCalledTimes(1);
+    expect(listPaymentsByBillIds).toHaveBeenCalledWith(ids);
+    expect(listReceiptsByPaymentIds).not.toHaveBeenCalled();
   });
+
+  it("calls receipt reader exactly once with the exact ordered unique payment IDs", async () => {
+    const p1 = { id: U("p001"), bill_id: m.residentSubmitBillId };
+    const p2 = { id: U("p002"), bill_id: m.otherFlatBillId };
+    const { reader, listReceiptsByPaymentIds } = makeReader([p1, p2], []);
+    await expect(assertMatrixBillsStartCleanWithReader(reader, m)).rejects.toThrow();
+    expect(listReceiptsByPaymentIds).toHaveBeenCalledTimes(1);
+    expect(listReceiptsByPaymentIds).toHaveBeenCalledWith([p1.id, p2.id]);
+  });
+
+  it("throws on null payment data (never treated as empty)", async () => {
+    const { reader } = makeReader([], [], { paymentsData: null });
+    await expect(assertMatrixBillsStartCleanWithReader(reader, m)).rejects.toThrow(/non-array/);
+  });
+
+  it("throws on undefined payment data", async () => {
+    const { reader } = makeReader([], [], { paymentsData: undefined });
+    await expect(assertMatrixBillsStartCleanWithReader(reader, m)).rejects.toThrow(/non-array/);
+  });
+
+  it("throws on null receipt data when payments exist", async () => {
+    const p = { id: U("p001"), bill_id: m.residentSubmitBillId };
+    const { reader } = makeReader([p], [], { receiptsData: null });
+    await expect(assertMatrixBillsStartCleanWithReader(reader, m)).rejects.toThrow(/non-array/);
+  });
+
+  it("throws on duplicate payment ID without echoing the ID", async () => {
+    const p = { id: U("p001"), bill_id: m.residentSubmitBillId };
+    const { reader } = makeReader([p, p], []);
+    await expect(assertMatrixBillsStartCleanWithReader(reader, m)).rejects.toThrow(
+      /duplicate payment ID returned/,
+    );
+    try {
+      await assertMatrixBillsStartCleanWithReader(reader, m);
+    } catch (e) {
+      expect((e as Error).message).not.toContain(p.id);
+    }
+  });
+
+  it("throws on duplicate receipt ID without echoing the ID", async () => {
+    const p = { id: U("p001"), bill_id: m.residentSubmitBillId };
+    const r = { id: U("r001"), payment_id: p.id };
+    const { reader } = makeReader([p], [r, r]);
+    await expect(assertMatrixBillsStartCleanWithReader(reader, m)).rejects.toThrow(
+      /duplicate receipt ID returned/,
+    );
+    try {
+      await assertMatrixBillsStartCleanWithReader(reader, m);
+    } catch (e) {
+      expect((e as Error).message).not.toContain(r.id);
+    }
+  });
+
+  it("redacts JWT-shaped substrings in payment error messages", async () => {
+    const jwt =
+      "eyJhbGciOiJIUzI1NiJ9.eyJmb28iOiJiYXIifQ.abcdef1234567890";
+    const { reader } = makeReader([], [], { paymentsError: { message: `boom ${jwt}` } });
+    try {
+      await assertMatrixBillsStartCleanWithReader(reader, m);
+      throw new Error("should have thrown");
+    } catch (e) {
+      const msg = (e as Error).message;
+      expect(msg).not.toContain(jwt);
+      expect(msg).toMatch(/REDACTED_JWT|redact/i);
+    }
+  });
+
+  it("redacts JWT-shaped substrings in receipt error messages", async () => {
+    const jwt =
+      "eyJhbGciOiJIUzI1NiJ9.eyJmb28iOiJiYXIifQ.abcdef1234567890";
+    const p = { id: U("p001"), bill_id: m.residentSubmitBillId };
+    const { reader } = makeReader([p], [], { receiptsError: { message: `boom ${jwt}` } });
+    try {
+      await assertMatrixBillsStartCleanWithReader(reader, m);
+      throw new Error("should have thrown");
+    } catch (e) {
+      const msg = (e as Error).message;
+      expect(msg).not.toContain(jwt);
+      expect(msg).toMatch(/REDACTED_JWT|redact/i);
+    }
+  });
+
+  it("safe count-only message excludes any raw ID", async () => {
+    const p = { id: U("p001"), bill_id: m.residentSubmitBillId };
+    const r = { id: U("r001"), payment_id: p.id };
+    try {
+      await assertMatrixBillsStartCleanWithReader(makeReader([p], [r]).reader, m);
+      throw new Error("should have thrown");
+    } catch (e) {
+      const msg = (e as Error).message;
+      expect(msg).toContain("payments=1 receipts=1");
+      expect(msg).not.toContain(p.id);
+      expect(msg).not.toContain(r.id);
+      for (const id of ids) expect(msg).not.toContain(id);
+    }
+  });
+});
+
+describe("createMatrixCleanStateReader — adapter shape", () => {
+  it("queries payments by bill_id and payment_receipts by payment_id", async () => {
+    const paymentsIn = vi.fn(async () => ({ data: [], error: null }));
+    const paymentsSelect = vi.fn(() => ({ in: paymentsIn }));
+    const receiptsIn = vi.fn(async () => ({ data: [], error: null }));
+    const receiptsSelect = vi.fn(() => ({ in: receiptsIn }));
+    const from = vi.fn((table: string) => {
+      if (table === "payments") return { select: paymentsSelect };
+      if (table === "payment_receipts") return { select: receiptsSelect };
+      throw new Error(`unexpected table ${table}`);
+    });
+    const admin = { from } as unknown as Parameters<typeof createMatrixCleanStateReader>[0];
+    const reader = createMatrixCleanStateReader(admin);
+    await reader.listPaymentsByBillIds(["b1", "b2"]);
+    await reader.listReceiptsByPaymentIds(["p1"]);
+    expect(from).toHaveBeenNthCalledWith(1, "payments");
+    expect(paymentsSelect).toHaveBeenCalledWith("id, bill_id");
+    expect(paymentsIn).toHaveBeenCalledWith("bill_id", ["b1", "b2"]);
+    expect(from).toHaveBeenNthCalledWith(2, "payment_receipts");
+    expect(receiptsSelect).toHaveBeenCalledWith("id, payment_id");
+    expect(receiptsIn).toHaveBeenCalledWith("payment_id", ["p1"]);
+  });
+});
+
 });

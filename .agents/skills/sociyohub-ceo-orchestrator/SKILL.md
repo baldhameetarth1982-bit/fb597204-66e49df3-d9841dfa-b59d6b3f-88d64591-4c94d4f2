@@ -124,7 +124,7 @@ No specialist may override the Firebase-to-Supabase auth architecture, Supabase 
 
 **Protected real society — never touch.**
 
-- Name: `baldha Meetarth`
+- Name: protected society
 - ID: `1907a918-c4b8-4f43-a837-450530cc7c34`
 
 Never query, seed, modify, probe, manually migrate, test against, or use as a fixture. Use synthetic isolated fixtures only.

@@ -146,18 +146,48 @@ describe("Stage 3C matrix foundation source validator", () => {
   });
 
   it("collectTrackedTextFiles returns tracked source files, not directories", () => {
-    const files = collectTrackedTextFiles();
-    // Should include at least this test file and a top-level package.json
-    const paths = files.map(([p]) => p);
+    const result = collectTrackedTextFiles();
+    expect(result.failures).toEqual([]);
+    const paths = result.files.map(([p]) => p);
     expect(paths).toContain("package.json");
     expect(
       paths.some((p) => p.endsWith("billing-stage3c-live-matrix-foundation-source.test.ts")),
     ).toBe(true);
-    // No unsafe or absolute paths.
     for (const p of paths) {
       expect(p.startsWith("/")).toBe(false);
       expect(p.split("/").includes("..")).toBe(false);
     }
   });
+
+  it("collectTrackedTextFiles fails closed when git ls-files errors", async () => {
+    const { collectTrackedTextFiles: collect } = await import(
+      "../../scripts/verify-stage3c-live-matrix-foundation-source"
+    );
+    const result = collect(process.cwd(), {
+      list: () => {
+        throw new Error("boom");
+      },
+      stat: () => ({ isFile: () => true }),
+      read: () => "",
+    });
+    expect(result.files.length).toBe(0);
+    expect(result.failures.length).toBeGreaterThan(0);
+    expect(result.failures[0]).toMatch(/git ls-files failed/);
+  });
+
+  it("collectTrackedTextFiles surfaces read failures without silently continuing", async () => {
+    const { collectTrackedTextFiles: collect } = await import(
+      "../../scripts/verify-stage3c-live-matrix-foundation-source"
+    );
+    const result = collect(process.cwd(), {
+      list: () => Buffer.from("foo.ts\u0000"),
+      stat: () => ({ isFile: () => true }),
+      read: () => {
+        throw new Error("nope");
+      },
+    });
+    expect(result.failures.some((m) => m.startsWith("tracked-collector: read failed"))).toBe(true);
+  });
 });
+
 

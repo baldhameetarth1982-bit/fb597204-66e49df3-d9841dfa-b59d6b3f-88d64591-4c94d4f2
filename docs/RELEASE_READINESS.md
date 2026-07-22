@@ -11,7 +11,7 @@
    implementation stage.** Earlier stages may prepare safe abstractions and UI
    placeholders but MUST NOT activate or replace payment providers, add
    platform fees, or change Cash + Bank Transfer maintenance behavior.
-3. **Real production data (society "baldha Meetarth" etc.) is never modified
+3. **Real production data (society protected society etc.) is never modified
    for testing. Use ephemeral fixtures and clean them up.**
 
 ## State Vocabulary
@@ -482,7 +482,7 @@ None of them touch payments / Razorpay / Cash-Bank-Transfer / platform fees
 
 ### Confirmations
 - Razorpay untouched; no new gateway added; no platform fee; Cash + Bank Transfer maintenance workflows unchanged.
-- No writes to real society data (`baldha Meetarth` or otherwise) from this turn's tests or scripts.
+- No writes to real society data (protected society or otherwise) from this turn's tests or scripts.
 - Firebase → Supabase auth architecture unchanged.
 - Basic flat-detail functionality preserved; Flat 360 remains Pro; Premium inherits.
 
@@ -642,8 +642,7 @@ require a DOM environment:
 - `git diff --check` clean; `tsgo` clean; `bunx vitest run tests/unit`
   = 328/328 pass; `bun run build` succeeds; secret bundle scan clean.
 - Runtime PostgreSQL / direct-RPC integration coverage remains **not
-  executed** (no isolated fixture harness available). Protected society
-  `baldha Meetarth` (1907a918-…) untouched.
+  executed** (no isolated fixture harness available). protected society ([REDACTED-PROTECTED-SOCIETY-ID]) untouched.
 
 ## Stage 1D — Income access boundary correctness
 
@@ -685,13 +684,13 @@ honestly with no fixtures; production build clean; secret scan clean.
 - 421/421 unit tests pass (adds `income-report-contract.test.ts`).
   Guarded integration suite skipped honestly (no non-protected synthetic
   society fixture is provisioned in this environment; the protected
-  society `baldha Meetarth` must not be used). Production build clean.
+  society protected society must not be used). Production build clean.
   Secret scan clean.
 - Preview inspected at 360 / 390 / 414 / 768 / 1280 CSS widths for the
   Income dashboard populated / empty / loading / error, filtered record
   list, record detail with reconcile & undo-reconciliation dialogs,
   Category page, Payer page, Basic-locked, and role-denied.
-- Protected society `baldha Meetarth`
+- protected society
   (`[REDACTED-PROTECTED-SOCIETY-ID]`) untouched.
 
 **Stage 1 overall status: complete. Next: Stage 2A — Society Structure

@@ -68,7 +68,7 @@ competitor analysis:
 Never use the following society for testing, fixtures, seeds, screenshots,
 manual queries, probing, migration experiments or production verification:
 
-- Name: **baldha Meetarth**
+- Name: **protected society**
 - ID: `[REDACTED-PROTECTED-SOCIETY-ID]`
 - Historical trial end: `2026-06-21`
 

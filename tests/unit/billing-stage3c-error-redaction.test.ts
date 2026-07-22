@@ -171,3 +171,70 @@ describe("Stage 3C canonical redaction — safeStage3CErrorMessage", () => {
     expect(() => throwStage3CSafeError("core-x", "sb_secret_ABCDEFGH")).toThrow(/REDACTED_API_KEY/);
   });
 });
+
+describe("Stage 3C canonical redaction — idempotency and extra rules", () => {
+  it("is idempotent for strings (second pass is a no-op)", () => {
+    const inputs = [
+      "hi eyJabcdefgh.ijklmnop.qrstuvwx tail",
+      "Authorization: Bearer abc.def.ghi",
+      "password=hunter2 access_token: abc refresh_token=xyz",
+      "postgres://u:p@host/db then sb_secret_ABCDEFGH",
+      "https://example.com/x?apikey=abcd1234 tail",
+      "SELECT * FROM users WHERE id = 1",
+      "path /home/alice/secret.txt and /var/log/app.log",
+      "cookie=abc123def; set-cookie: sess=xyz789",
+    ];
+    for (const s of inputs) {
+      const once = redactStage3CString(s);
+      const twice = redactStage3CString(once);
+      expect(twice).toBe(once);
+    }
+  });
+  it("is idempotent for protected-society-ID substitution", () => {
+    const once = redactStage3CString(`row ${PID} bill`, { protectedSocietyId: PID });
+    const twice = redactStage3CString(once, { protectedSocietyId: PID });
+    expect(twice).toBe(once);
+  });
+  it("redacts uppercase SQL statements only", () => {
+    const out = redactStage3CString("SELECT * FROM users; select a payment");
+    expect(out).toContain("[REDACTED_SQL]");
+    expect(out).toContain("select a payment");
+  });
+  it("redacts absolute filesystem paths (Unix + Windows)", () => {
+    const out = redactStage3CString("path /home/alice/x.txt and C:\\Users\\a\\y.log tail");
+    expect(out.match(/\[REDACTED_PATH\]/g)?.length ?? 0).toBeGreaterThanOrEqual(2);
+    expect(out).not.toContain("/home/alice/x.txt");
+    expect(out).not.toContain("Users\\a\\y.log");
+  });
+  it("redacts standalone query-string secrets (no scheme)", () => {
+    const out = redactStage3CString("?token=abc123&status=pending&password=hunter2");
+    expect(out).toContain("token=[REDACTED_VALUE]");
+    expect(out).toContain("password=[REDACTED_VALUE]");
+    expect(out).toContain("status=pending");
+  });
+  it("preserves safe Error diagnostic fields (code/details/hint/status)", () => {
+    const err = Object.assign(new Error("boom"), {
+      code: "P0001",
+      details: "row missing",
+      hint: "check id",
+      status: 400,
+    });
+    const out = redactStage3CUnknown(err);
+    expect(out).toContain("P0001");
+    expect(out).toContain("row missing");
+    expect(out).toContain("check id");
+    expect(out).toContain("400");
+  });
+  it("never surfaces Error.cause", () => {
+    const inner = new Error("inner sb_secret_ABCDEFGH");
+    const outer = new Error("outer");
+    (outer as unknown as { cause: unknown }).cause = inner;
+    const out = redactStage3CUnknown(outer);
+    expect(out).not.toContain("inner");
+    expect(out).not.toContain("sb_secret_ABCDEFGH");
+  });
+  it("serializes NaN/Infinity as [NonFiniteNumber]", () => {
+    const out = redactStage3CUnknown({ message: "n", code: NaN, status: Infinity });
+    expect(out).toContain("[NonFiniteNumber]");
+  });
+});

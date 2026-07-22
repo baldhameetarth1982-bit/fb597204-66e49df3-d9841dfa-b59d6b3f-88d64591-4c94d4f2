@@ -485,3 +485,257 @@ describe("scanRepositoryIdentityFromCollection", () => {
     expect(r.failures.some((f) => f.includes("refusing"))).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Stage 3C redaction migration validator behavioral tests.
+// ---------------------------------------------------------------------------
+
+import { checkStage3CRedactionMigration } from "../../scripts/verify-stage3c-live-matrix-foundation-source";
+
+function manifest(
+  entries: ReadonlyArray<{ path: string; mode: string; reason?: string }>,
+): string {
+  return `export const STAGE3C_REDACTION_MIGRATION_FILES = [\n${entries
+    .map(
+      (e) =>
+        `  { path: "${e.path}", mode: "${e.mode}", reason: "${e.reason ?? "r"}" },`,
+    )
+    .join("\n")}\n];\n`;
+}
+
+const HELPER_A = "tests/helpers/stage3c-live-auth-cases.ts";
+const HELPER_B = "tests/helpers/stage3c-live-verify-cases.ts";
+const HELPER_C = "tests/helpers/stage3c-live-pending-cases.ts";
+const HELPER_D = "tests/helpers/stage3c-runtime-fixtures.ts";
+const HELPER_E = "tests/helpers/stage3c-live-errors.ts";
+const CANON = "tests/helpers/stage3c-error-redaction.ts";
+
+describe("checkStage3CRedactionMigration", () => {
+  it("1. valid direct entry passes", () => {
+    const src = `import { safeStage3CErrorMessage } from "./stage3c-error-redaction";\nthrow new Error(safeStage3CErrorMessage("x", e));`;
+    const out = checkStage3CRedactionMigration(
+      [[HELPER_A, src]],
+      manifest([{ path: HELPER_A, mode: "direct" }]),
+    );
+    expect(out).toEqual([]);
+  });
+
+  it("2. valid via-redactMessage entry passes", () => {
+    const src = `redactMessage(msg);\n\${err.message}`;
+    const out = checkStage3CRedactionMigration(
+      [[HELPER_A, `\${err.message}\nredactMessage(x);`]],
+      manifest([{ path: HELPER_A, mode: "via-redactMessage" }]),
+    );
+    expect(out).toEqual([]);
+  });
+
+  it("3. valid via-assertCanonicalError entry passes", () => {
+    const src = `assertCanonicalError(err, TOKEN, "L");`;
+    const out = checkStage3CRedactionMigration(
+      [[HELPER_A, src]],
+      manifest([{ path: HELPER_A, mode: "via-assertCanonicalError" }]),
+    );
+    expect(out).toEqual([]);
+  });
+
+  it("4. missing manifest path fails", () => {
+    const out = checkStage3CRedactionMigration(
+      [],
+      manifest([{ path: HELPER_A, mode: "direct" }]),
+    );
+    expect(out.some((f) => f.includes("not found"))).toBe(true);
+  });
+
+  it("5. duplicate manifest path fails", () => {
+    const src = `assertCanonicalError(e, T, "l")`;
+    const out = checkStage3CRedactionMigration(
+      [[HELPER_A, src]],
+      manifest([
+        { path: HELPER_A, mode: "via-assertCanonicalError" },
+        { path: HELPER_A, mode: "via-assertCanonicalError" },
+      ]),
+    );
+    expect(out.some((f) => f.includes("duplicate"))).toBe(true);
+  });
+
+  it("6. unsorted manifest fails", () => {
+    const s = `assertCanonicalError(e,T,"l")`;
+    const out = checkStage3CRedactionMigration(
+      [[HELPER_A, s], [HELPER_B, s]],
+      manifest([
+        { path: HELPER_B, mode: "via-assertCanonicalError" },
+        { path: HELPER_A, mode: "via-assertCanonicalError" },
+      ]),
+    );
+    expect(out.some((f) => f.includes("alphabetically"))).toBe(true);
+  });
+
+  it("7. unknown delegation mode fails", () => {
+    const out = checkStage3CRedactionMigration(
+      [[HELPER_A, `throw x`]],
+      manifest([{ path: HELPER_A, mode: "via-bogus" }]),
+    );
+    expect(out.some((f) => f.includes("unknown delegation"))).toBe(true);
+  });
+
+  it("8. direct entry without canonical import fails", () => {
+    const out = checkStage3CRedactionMigration(
+      [[HELPER_A, `throw new Error(\`\${err.message}\`)`]],
+      manifest([{ path: HELPER_A, mode: "direct" }]),
+    );
+    expect(out.some((f) => f.includes("does not import canonical"))).toBe(true);
+  });
+
+  it("9. wrapper entry without wrapper call fails", () => {
+    const out = checkStage3CRedactionMigration(
+      [[HELPER_A, `\${err}`]],
+      manifest([{ path: HELPER_A, mode: "via-assertCanonicalError" }]),
+    );
+    expect(out.some((f) => f.includes("does not call assertCanonicalError"))).toBe(true);
+  });
+
+  it("10. raw `${error}` in unmanifested helper fails", () => {
+    const out = checkStage3CRedactionMigration(
+      [[HELPER_A, `throw new Error(\`\${error}\`)`]],
+      manifest([{ path: HELPER_B, mode: "via-assertCanonicalError", reason: "r" }]),
+    );
+    expect(out.some((f) => f.includes("unmanifested"))).toBe(true);
+  });
+
+  it("11. raw `${error.message}` detected", () => {
+    const out = checkStage3CRedactionMigration(
+      [[HELPER_A, `\`\${error.message}\``]],
+      manifest([]),
+    );
+    expect(out.some((f) => f.includes(HELPER_A))).toBe(true);
+  });
+
+  it("12. String(error) detected", () => {
+    const out = checkStage3CRedactionMigration(
+      [[HELPER_A, `String(error)`]],
+      manifest([]),
+    );
+    expect(out.some((f) => f.includes("unmanifested"))).toBe(true);
+  });
+
+  it("13. err.toString detected", () => {
+    const out = checkStage3CRedactionMigration(
+      [[HELPER_A, `err.toString()`]],
+      manifest([]),
+    );
+    expect(out.some((f) => f.includes("unmanifested"))).toBe(true);
+  });
+
+  it("14. JSON.stringify(error) detected", () => {
+    const out = checkStage3CRedactionMigration(
+      [[HELPER_A, `JSON.stringify(error)`]],
+      manifest([]),
+    );
+    expect(out.some((f) => f.includes("unmanifested"))).toBe(true);
+  });
+
+  it("15. raw console.error(error) detected", () => {
+    const out = checkStage3CRedactionMigration(
+      [[HELPER_A, `console.error(error)`]],
+      manifest([]),
+    );
+    expect(out.some((f) => f.includes("unmanifested"))).toBe(true);
+  });
+
+  it("16. duplicate JWT regex in manifested file fails", () => {
+    const src = `assertCanonicalError(e,T,"l"); const re = /\\beyJ[A-Za-z0-9_-]+/;`;
+    const out = checkStage3CRedactionMigration(
+      [[HELPER_A, src]],
+      manifest([{ path: HELPER_A, mode: "via-assertCanonicalError" }]),
+    );
+    expect(out.some((f) => f.includes("duplicate JWT"))).toBe(true);
+  });
+
+  it("17. duplicate Bearer regex in manifested file fails", () => {
+    const src = `assertCanonicalError(e,T,"l"); const re = /\\bbearer\\s+/i;`;
+    const out = checkStage3CRedactionMigration(
+      [[HELPER_A, src]],
+      manifest([{ path: HELPER_A, mode: "via-assertCanonicalError" }]),
+    );
+    expect(out.some((f) => f.includes("duplicate Bearer"))).toBe(true);
+  });
+
+  it("18. duplicate password regex in manifested file fails", () => {
+    const src = `assertCanonicalError(e,T,"l"); const re = /password|passphrase|passwd|pwd/;`;
+    const out = checkStage3CRedactionMigration(
+      [[HELPER_A, src]],
+      manifest([{ path: HELPER_A, mode: "via-assertCanonicalError" }]),
+    );
+    expect(out.some((f) => f.includes("duplicate password"))).toBe(true);
+  });
+
+  it("19. canonical owner listed in manifest fails", () => {
+    const out = checkStage3CRedactionMigration(
+      [[CANON, `redactStage3CString(x)`]],
+      manifest([{ path: CANON, mode: "direct" }]),
+    );
+    expect(out.some((f) => f.includes("canonical owner"))).toBe(true);
+  });
+
+  it("20. non-helper files are ignored by discovery", () => {
+    const out = checkStage3CRedactionMigration(
+      [["src/app.ts", `\${err.message}`]],
+      manifest([{ path: HELPER_A, mode: "direct" }]),
+    );
+    // Missing HELPER_A file fails, but src/app.ts is not flagged.
+    expect(out.every((f) => !f.includes("src/app.ts"))).toBe(true);
+  });
+
+  it("21. manifest file with only safe surface passes", () => {
+    const src = `assertCanonicalError(e, T, "l");`;
+    const out = checkStage3CRedactionMigration(
+      [[HELPER_A, src]],
+      manifest([{ path: HELPER_A, mode: "via-assertCanonicalError" }]),
+    );
+    expect(out).toEqual([]);
+  });
+
+  it("22. empty manifest fails", () => {
+    const out = checkStage3CRedactionMigration([], "export const X = [];");
+    expect(out.some((f) => f.includes("empty or unparseable"))).toBe(true);
+  });
+
+  it("23. non-error safe strings in unmanifested files do not fail", () => {
+    // A file iterating a string[] with `err` name should NOT be flagged
+    // because our patterns require actual `err`/`error` variable usage
+    // matched to the unknown-error patterns; but a plain `for (const err
+    // of xs)` with `${err}` template does match. We accept that as a
+    // required rename — false-positive safety at file scope is verified
+    // for pure static text.
+    const out = checkStage3CRedactionMigration(
+      [[HELPER_A, `const notes = "safe"; console.log(notes);`]],
+      manifest([]),
+    );
+    expect(out).toEqual([]);
+  });
+
+  it("24. current repository manifest audit passes", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { resolve } = await import("node:path");
+    const root = process.cwd();
+    const files: Array<readonly [string, string]> = [];
+    for (const p of [
+      HELPER_A,
+      HELPER_B,
+      HELPER_C,
+      HELPER_D,
+      HELPER_E,
+      CANON,
+      "tests/helpers/stage3c-redaction-migration-manifest.ts",
+      "scripts/verify-stage3c-live-core-report.ts",
+    ]) {
+      files.push([p, readFileSync(resolve(root, p), "utf8")]);
+    }
+    const manifestSrc = readFileSync(
+      resolve(root, "tests/helpers/stage3c-redaction-migration-manifest.ts"),
+      "utf8",
+    );
+    const out = checkStage3CRedactionMigration(files, manifestSrc);
+    expect(out).toEqual([]);
+  });
+});

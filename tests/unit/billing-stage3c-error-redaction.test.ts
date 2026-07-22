@@ -125,29 +125,31 @@ describe("Stage 3C canonical redaction — unknown input", () => {
     expect(out).toContain("[REDACTED_PASSWORD]");
     expect(out).not.toContain("hunter2");
   });
-  it("stringifies deeply nested objects with secrets", () => {
-    const out = redactStage3CUnknown({ a: { b: { c: "sb_secret_ABCDEFGH" } } });
+  it("stringifies deeply nested objects — only whitelisted keys are surfaced", () => {
+    const err = { message: "sb_secret_ABCDEFGH", nested: { junk: "x" } };
+    const out = redactStage3CUnknown(err);
     expect(out).toContain("[REDACTED_API_KEY]");
+    expect(out).not.toContain("sb_secret_ABCDEFGH");
   });
   it("handles circular references without throwing", () => {
-    const a: Record<string, unknown> = { name: "root" };
+    const a: Record<string, unknown> = { message: "root" };
     a.self = a;
     expect(() => redactStage3CUnknown(a)).not.toThrow();
   });
   it("handles null/undefined", () => {
-    expect(redactStage3CUnknown(null)).toBe("null");
-    expect(redactStage3CUnknown(undefined)).toBe("undefined");
+    expect(redactStage3CUnknown(null)).toContain("null");
+    expect(redactStage3CUnknown(undefined)).toContain("undefined");
   });
   it("handles numbers/booleans", () => {
     expect(redactStage3CUnknown(42)).toContain("42");
     expect(redactStage3CUnknown(true)).toContain("true");
   });
   it("bounds recursion via maxDepth", () => {
-    const deep: Record<string, unknown> = {};
+    const deep: Record<string, unknown> = { message: "top" };
     let cur: Record<string, unknown> = deep;
     for (let i = 0; i < 20; i++) {
-      const next: Record<string, unknown> = {};
-      cur.child = next;
+      const next: Record<string, unknown> = { message: `d${i}` };
+      cur.details = next;
       cur = next;
     }
     expect(() => redactStage3CUnknown(deep, { maxDepth: 3 })).not.toThrow();
@@ -155,13 +157,15 @@ describe("Stage 3C canonical redaction — unknown input", () => {
 });
 
 describe("Stage 3C canonical redaction — safeStage3CErrorMessage", () => {
-  it("prefixes label and redacts", () => {
+  it("prefixes stage3c label and redacts", () => {
     const out = safeStage3CErrorMessage("verify-01", new Error("Authorization: Bearer abc.def.ghi"));
-    expect(out.startsWith("[verify-01]")).toBe(true);
+    expect(out).toContain("[stage3c:verify-01]");
     expect(out).toContain("[REDACTED_AUTHORIZATION]");
   });
-  it("rejects malformed label", () => {
-    expect(() => safeStage3CErrorMessage("BAD LABEL!!", "x")).toThrow();
+  it("normalizes malformed labels rather than throwing", () => {
+    const out = safeStage3CErrorMessage("BAD LABEL!!", "x");
+    expect(out).toContain("[stage3c:");
+    expect(out).not.toContain("BAD LABEL!!");
   });
   it("throwStage3CSafeError raises a redacted Error", () => {
     expect(() => throwStage3CSafeError("core-x", "sb_secret_ABCDEFGH")).toThrow(/REDACTED_API_KEY/);

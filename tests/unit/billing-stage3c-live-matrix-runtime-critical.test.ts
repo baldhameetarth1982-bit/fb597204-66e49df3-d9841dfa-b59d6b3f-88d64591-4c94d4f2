@@ -167,3 +167,104 @@ describe("parseMatrixPaymentRows / parseMatrixReceiptRows", () => {
     expect(() => parseMatrixReceiptRows("x" as unknown)).toThrow(/array/);
   });
 });
+
+describe("validateMatrixDedicatedBillIds — canonical UUID enforcement", () => {
+  it("returns the five bill IDs in deterministic order", () => {
+    const m = matrix();
+    const out = validateMatrixDedicatedBillIds(m);
+    expect(out).toEqual([
+      m.residentSubmitBillId,
+      m.otherFlatBillId,
+      m.idempotencyBillAId,
+      m.idempotencyBillBId,
+      m.referenceBillId,
+    ]);
+  });
+  it("rejects a non-canonical UUID (uppercase / short / 36 loose chars)", () => {
+    const m = matrix();
+    // 36-char loose string that would pass /[0-9a-fA-F-]{36}/ but not Zod .uuid()
+    expect(() =>
+      validateMatrixDedicatedBillIds({ ...m, residentSubmitBillId: "gggggggg-0000-4000-8000-000000000000" }),
+    ).toThrow(/canonical UUID/);
+    expect(() =>
+      validateMatrixDedicatedBillIds({ ...m, otherFlatBillId: "not-a-uuid" }),
+    ).toThrow(/canonical UUID/);
+  });
+  it("rejects duplicates", () => {
+    const m = matrix();
+    expect(() =>
+      validateMatrixDedicatedBillIds({ ...m, referenceBillId: m.residentSubmitBillId }),
+    ).toThrow(/unique/);
+  });
+});
+
+describe("assertMatrixBillsStartCleanWithReader — behavioral", () => {
+  const m = matrix();
+  function reader(
+    payments: Array<{ id: string; bill_id: string }>,
+    receipts: Array<{ id: string; payment_id: string }>,
+    opts: { paymentsError?: unknown; receiptsError?: unknown } = {},
+  ): MatrixCleanStateReader {
+    return {
+      async listPaymentsByBillIds() {
+        return { data: payments, error: opts.paymentsError ?? null };
+      },
+      async listReceiptsByPaymentIds() {
+        return { data: receipts, error: opts.receiptsError ?? null };
+      },
+    };
+  }
+
+  it("passes when payments and receipts are both empty", async () => {
+    await expect(assertMatrixBillsStartCleanWithReader(reader([], []), m)).resolves.toBeUndefined();
+  });
+
+  it("throws with safe counts when a payment exists", async () => {
+    const p = { id: U("p001"), bill_id: m.residentSubmitBillId };
+    await expect(
+      assertMatrixBillsStartCleanWithReader(reader([p], []), m),
+    ).rejects.toThrow(/payments=1 receipts=0/);
+  });
+
+  it("throws with safe counts when payments and receipts exist", async () => {
+    const p = { id: U("p001"), bill_id: m.residentSubmitBillId };
+    const r = { id: U("r001"), payment_id: p.id };
+    await expect(
+      assertMatrixBillsStartCleanWithReader(reader([p], [r]), m),
+    ).rejects.toThrow(/payments=1 receipts=1/);
+  });
+
+  it("fails fatally (never swallowed) when the payments query errors", async () => {
+    await expect(
+      assertMatrixBillsStartCleanWithReader(
+        reader([], [], { paymentsError: { message: "boom" } }),
+        m,
+      ),
+    ).rejects.toThrow(/startClean:payments/);
+  });
+
+  it("fails fatally when the receipts query errors", async () => {
+    const p = { id: U("p001"), bill_id: m.residentSubmitBillId };
+    await expect(
+      assertMatrixBillsStartCleanWithReader(
+        reader([p], [], { receiptsError: { message: "boom" } }),
+        m,
+      ),
+    ).rejects.toThrow(/startClean:receipts/);
+  });
+
+  it("rejects a payment referencing a bill outside the dedicated set", async () => {
+    const p = { id: U("p001"), bill_id: U("dead") };
+    await expect(
+      assertMatrixBillsStartCleanWithReader(reader([p], []), m),
+    ).rejects.toThrow(/outside the requested set/);
+  });
+
+  it("rejects a receipt referencing an unrelated payment", async () => {
+    const p = { id: U("p001"), bill_id: m.residentSubmitBillId };
+    const r = { id: U("r001"), payment_id: U("beef") };
+    await expect(
+      assertMatrixBillsStartCleanWithReader(reader([p], [r]), m),
+    ).rejects.toThrow(/receipts.*outside the requested set/);
+  });
+});

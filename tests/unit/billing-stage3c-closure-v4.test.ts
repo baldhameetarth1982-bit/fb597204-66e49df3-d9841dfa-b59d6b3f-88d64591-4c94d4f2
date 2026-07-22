@@ -53,12 +53,21 @@ describe("Stage 3C v4 — split resident/admin submission server functions", () 
   });
 
   it("resident schema has NO method and NO actorRole fields", () => {
+    // Stage 3C 40-case foundation extracted the schema to the shared
+    // contracts module. Verify it there.
+    const contractSrc = readFileSync(
+      "src/lib/offline-payment-contracts.ts",
+      "utf8",
+    );
     const block =
-      fnSrc.match(/const residentSubmitInput = z\.object\({[\s\S]*?}\)/)?.[0] ??
-      "";
+      contractSrc.match(
+        /export const residentSubmitInputSchema = z[\s\S]*?\.strict\(\);/,
+      )?.[0] ?? "";
     expect(block).not.toMatch(/method:/);
     expect(block).not.toMatch(/actorRole/);
     expect(block).toMatch(/referenceNo: z\.string\(\)\.trim\(\)\.min\(1\)/);
+    // Production file still imports & uses the schema.
+    expect(fnSrc).toMatch(/residentSubmitInputSchema/);
   });
 
   it("admin-record schema has NO actorRole field", () => {

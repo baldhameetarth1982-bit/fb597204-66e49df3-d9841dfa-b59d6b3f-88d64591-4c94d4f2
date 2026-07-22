@@ -8,6 +8,7 @@ import {
   mapError,
   toBillingRpcClient,
 } from "./billing-config.functions";
+import { residentSubmitInputSchema } from "./offline-payment-contracts";
 
 /**
  * Stage 3C — Offline payments (Cash / Bank Transfer only).
@@ -205,14 +206,10 @@ export function mapPaymentError(msg: string): string {
  * `submitResidentBankTransfer`; admins call `recordAdminOfflinePayment`.
  * Both fix `_actor_role` server-side.
  */
-const residentSubmitInput = z.object({
-  billId: z.string().uuid(),
-  amount: z.number().positive().max(10_000_000),
-  paymentDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
-  referenceNo: z.string().trim().min(1).max(120),
-  notes: z.string().trim().max(1000).nullable().optional(),
-  idempotencyKey: z.string().trim().min(6).max(120),
-});
+// Resident submission schema is the canonical exported schema from
+// `./offline-payment-contracts` — single source of truth. Do not
+// redeclare it here.
+const residentSubmitInput = residentSubmitInputSchema;
 
 const adminRecordInput = z.object({
   billId: z.string().uuid(),

@@ -310,6 +310,10 @@ export function runAll32CaseChecks(): Outcome {
   for (const rel of [
     CORE_REGISTRY,
     RESIDENT_CASES,
+    RESIDENT_CONTRACTS,
+    RESIDENT_PROD_CORE,
+    PROD_FN,
+    FIXTURES,
     MATRIX_REGISTRY,
     MATRIX_CONTEXT,
     MANIFEST,
@@ -322,6 +326,10 @@ export function runAll32CaseChecks(): Outcome {
   if (failures.length) return { ok: false, failures };
   failures.push(...checkManifest(read(MANIFEST)));
   failures.push(...checkResidentModule(read(RESIDENT_CASES)));
+  failures.push(...checkResidentContracts(read(RESIDENT_CONTRACTS)));
+  failures.push(...checkResidentProdCore(read(RESIDENT_PROD_CORE)));
+  failures.push(...checkProdFnDelegates(read(PROD_FN)));
+  failures.push(...checkFixtureDelegates(read(FIXTURES)));
   failures.push(...checkMatrixRegistry(read(MATRIX_REGISTRY)));
   failures.push(...checkMatrixContextResidentSlots(read(MATRIX_CONTEXT)));
   failures.push(...checkLiveSuite(read(LIVE_SUITE)));

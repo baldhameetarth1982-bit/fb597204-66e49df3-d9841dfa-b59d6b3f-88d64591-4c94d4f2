@@ -18,14 +18,17 @@ import {
   type MatrixBillSummaryReader,
 } from "../../tests/helpers/stage3c-runtime-fixtures";
 
-const U = (s: string) =>
-  `00000000-0000-4000-8000-00000000${s.padStart(4, "0").replace(/[^0-9a-f]/gi, "f")}`;
+const U = (s: string) => {
+  const hex = s.toLowerCase().replace(/[^0-9a-f]/g, "");
+  return `00000000-0000-4000-8000-00000000${hex.padStart(4, "0").slice(-4)}`;
+};
 
 const OTHER_FLAT = U("f001");
 const ACTIVE = U("a001");
-const MOVED = U("m001");
-const UNREL = U("u001");
+const MOVED = U("b001");
+const UNREL = U("c001");
 const SOC = U("50c1");
+
 
 function matrix(): Stage3CMatrixResources {
   return {

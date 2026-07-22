@@ -28,11 +28,14 @@ import {
   type TrackedCollectorDeps,
 } from "../../scripts/verify-stage3c-live-matrix-foundation-source";
 
-// A short, safe fragment used to *build* forbidden phrase inputs at
-// runtime without ever writing the whole phrase in source.
+// Fragment builders keep the raw file source from matching the validator's
+// structural identity matchers when this test file is itself scanned.
 const P = "prot" + "ected";
 const S = "soc" + "iety";
 const PHRASE = `${P} ${S}`;
+const RED_TAG = "[" + "REDACT" + "ED-PROTECTED-SOCIETY-ID" + "]";
+const BT = String.fromCharCode(96); // backtick
+const QUOTE = (v: string) => BT + v + BT;
 
 // Runtime NUL-list builder for the injected git-ls-files stub.
 function nulList(paths: string[]): Buffer {

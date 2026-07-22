@@ -1251,19 +1251,31 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
     }
 
     // ---- Bills --------------------------------------------------------
-    async function addBill(
-      label: string,
-      amount: number,
-      status: string,
-      extra: Record<string, unknown> = {},
-    ): Promise<string> {
+    /**
+     * Canonical bill helper. Accepts an explicit `flatId` so bills on
+     * flatA and on the matrix-only otherFlatA share one code path.
+     * Every bill gets exactly one canonical maintenance line item and
+     * both PKs are tracked exactly once via `trackUniqueId`.
+     */
+    async function addBill(input: {
+      label: string;
+      amount: number;
+      status: string;
+      flatId: string;
+      extra?: Record<string, unknown>;
+    }): Promise<string> {
+      const { label, amount, status, flatId, extra } = input;
+      if (typeof flatId !== "string" || !UUID_RE.test(flatId))
+        throw new Error(`[stage3c:addBill:${label}] invalid flatId`);
+      if (!Number.isFinite(amount) || amount <= 0)
+        throw new Error(`[stage3c:addBill:${label}] amount must be finite positive`);
       const row = await assertSupabaseSingleResult<{ id: string }>(
         `insert:bill:${label}`,
         admin
           .from("bills")
           .insert({
             society_id: societyA,
-            flat_id: flatA,
+            flat_id: flatId,
             period_label: label,
             period_start: "2026-01-01",
             period_end: "2026-01-31",
@@ -1273,12 +1285,12 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
             status,
             bill_number: `RR/${prefix}/${label}`,
             finalized_at: new Date().toISOString(),
-            ...extra,
+            ...(extra ?? {}),
           })
           .select("id")
           .single(),
       );
-      tracked.billIds.push(row.id);
+      trackUniqueId(tracked.billIds, row.id, `bill:${label}`);
       // One canonical maintenance line item per bill — matches the schema
       // check kind IN ('maintenance','additional').
       const lineItem = await assertSupabaseSingleResult<{ id: string; amount: number }>(
@@ -1295,7 +1307,7 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
           .select("id, amount")
           .single(),
       );
-      tracked.billLineItemIds.push(lineItem.id);
+      trackUniqueId(tracked.billLineItemIds, lineItem.id, `bill_line_item:${label}`);
       if (Number(lineItem.amount) !== amount) {
         throw new Error(
           `[stage3c:bill_line_item:${label}] amount mismatch: got ${lineItem.amount} expected ${amount}`,
@@ -1304,14 +1316,91 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
       return row.id;
     }
 
-    const openBillId = await addBill("open1", 1000, "unpaid");
-    const openBillId2 = await addBill("open2", 750, "unpaid");
-    const fullyUnavailableBillId = await addBill("full", 500, "unpaid");
-    const cancelledBillId = await addBill("canc", 500, "cancelled", {
-      cancelled_at: new Date().toISOString(),
-      cancelled_by: adminA1.id,
-      cancel_reason: "test",
+    const openBillId = await addBill({ label: "open1", amount: 1000, status: "unpaid", flatId: flatA });
+    const openBillId2 = await addBill({ label: "open2", amount: 750, status: "unpaid", flatId: flatA });
+    const fullyUnavailableBillId = await addBill({
+      label: "full",
+      amount: 500,
+      status: "unpaid",
+      flatId: flatA,
     });
+    const cancelledBillId = await addBill({
+      label: "canc",
+      amount: 500,
+      status: "cancelled",
+      flatId: flatA,
+      extra: {
+        cancelled_at: new Date().toISOString(),
+        cancelled_by: adminA1.id,
+        cancel_reason: "test",
+      },
+    });
+
+    // ---- Matrix-only extra flat (Society A / blockA, no residency) ---
+    const otherFlatARow = await assertSupabaseSingleResult<{ id: string }>(
+      "insert:otherFlatA",
+      admin
+        .from("flats")
+        .insert({
+          society_id: societyA,
+          block_id: blockA,
+          flat_number: "202",
+          status: "occupied",
+        })
+        .select("id")
+        .single(),
+    );
+    trackUniqueId(tracked.flatIds, otherFlatARow.id, "otherFlatA");
+    const otherFlatA = otherFlatARow.id;
+    if (otherFlatA === flatA)
+      throw new Error("[stage3c:otherFlatA] must differ from flatA");
+
+    // ---- Five dedicated matrix bills (foundation, no payments yet) ---
+    const residentSubmitBillId = await addBill({
+      label: "res-submit",
+      amount: 1200,
+      status: "unpaid",
+      flatId: flatA,
+    });
+    const otherFlatBillId = await addBill({
+      label: "other-flat",
+      amount: 900,
+      status: "unpaid",
+      flatId: otherFlatA,
+    });
+    const idempotencyBillAId = await addBill({
+      label: "idem-a",
+      amount: 1000,
+      status: "unpaid",
+      flatId: flatA,
+    });
+    const idempotencyBillBId = await addBill({
+      label: "idem-b",
+      amount: 800,
+      status: "unpaid",
+      flatId: flatA,
+    });
+    const referenceBillId = await addBill({
+      label: "ref",
+      amount: 1100,
+      status: "unpaid",
+      flatId: flatA,
+    });
+
+    const matrix: Stage3CMatrixResources = validateStage3CMatrixResources(
+      {
+        otherFlatA,
+        residentSubmitBillId,
+        otherFlatBillId,
+        idempotencyBillAId,
+        idempotencyBillBId,
+        referenceBillId,
+      },
+      { flatA },
+    );
+
+    await assertMatrixBillsStartClean(admin, matrix);
+
 
     // ---- Financial scenarios via canonical RPCs ----------------------
     const helpers = buildScenarioHelpers(admin);

@@ -550,7 +550,7 @@ export function parseMatrixReceiptRows(
  * Verify that every dedicated matrix bill starts with zero payments
  * and zero receipts. Uses schema-correct traversal:
  * bills -> payments (by bill_id) -> payment_receipts (by payment_id).
- * All query errors are fatal — never swallowed, never "not fatal".
+ * All query errors are fatal — never swallowed, never silently tolerated.
  */
 export async function assertMatrixBillsStartClean(
   admin: SupabaseClient,

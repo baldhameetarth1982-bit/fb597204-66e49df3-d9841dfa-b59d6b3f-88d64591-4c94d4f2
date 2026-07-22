@@ -109,8 +109,24 @@ export function checkResidentModule(src: string): string[] {
   // No receipt for pending submission
   if (!/countReceipts/.test(src))
     fail(f, "resident-module: must assert receipt count for pending submission");
+  // Server-pinned source (actor_role proof) + strict row schema
+  if (!/ResidentSubmittedPaymentRowSchema/.test(src))
+    fail(f, "resident-module: must define ResidentSubmittedPaymentRowSchema");
+  if (!/resident_submission/.test(src))
+    fail(f, "resident-module: must assert source = resident_submission");
+  if (!/deriveActorRoleFromSource/.test(src))
+    fail(f, "resident-module: must derive actor_role from source column");
+  // Sequence tables must be snapshotted and asserted unchanged for pending.
+  if (!/snapshotReceiptSequences/.test(src))
+    fail(f, "resident-module: must snapshot receipt sequences at baseline");
+  if (!/assertReceiptSequencesUnchanged/.test(src))
+    fail(f, "resident-module: must assert receipt sequences unchanged after pending submission");
+  // No unsafe RPC data interpolation into error messages.
+  if (/\$\{\s*String\(\s*data/.test(src))
+    fail(f, "resident-module: must not interpolate raw RPC data into error messages");
   return f;
 }
+
 
 export function checkMatrixRegistry(src: string): string[] {
   const f: string[] = [];

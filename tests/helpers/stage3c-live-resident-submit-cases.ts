@@ -21,12 +21,15 @@
  * left untouched.
  */
 import { expect } from "vitest";
+import { z } from "zod";
 import {
   parseBillSummary,
   parsePaymentAssertionRow,
 } from "./stage3c-live-core-context";
 import { trackUniqueId } from "./stage3c-runtime-fixtures";
 import { STAGE3C_ERRORS, assertCanonicalError } from "./stage3c-live-errors";
+import { safeStage3CErrorMessage } from "./stage3c-error-redaction";
+
 import { residentSubmitInputSchema } from "@/lib/offline-payment-contracts";
 import {
   requireMatrixFixture,
@@ -95,6 +98,89 @@ function summaryField(raw: unknown, field: string, label: string): number {
   throw new Error(`[stage3c:${label}] missing/invalid summary field "${field}"`);
 }
 
+/**
+ * Snapshot the receipt-sequence + monthly-sequence rows for a society.
+ * Verification allocates a receipt number and increments a sequence row;
+ * a pending resident submission must NOT touch either sequence table.
+ */
+const ReceiptSequenceRow = z.object({
+  society_id: z.string().uuid(),
+  year: z.number().int(),
+  next_number: z.number().int(),
+});
+const ReceiptMonthSequenceRow = z.object({
+  society_id: z.string().uuid(),
+  year_month: z.string(),
+  next_number: z.number().int(),
+});
+export type ReceiptSequenceSnapshot = {
+  yearly: Array<z.infer<typeof ReceiptSequenceRow>>;
+  monthly: Array<z.infer<typeof ReceiptMonthSequenceRow>>;
+};
+
+export async function snapshotReceiptSequences(
+  admin: { from: (t: string) => { select: (c: string) => { eq: (col: string, v: string) => Promise<{ data: unknown; error: unknown }> } } },
+  societyId: string,
+  label: string,
+): Promise<ReceiptSequenceSnapshot> {
+  const yr = await admin.from("payment_receipt_sequences").select("society_id, year, next_number").eq("society_id", societyId);
+  if (yr.error) throw new Error(`[stage3c:${label}] receipt-seq: ${safeStage3CErrorMessage(label, yr.error)}`);
+  const mo = await admin.from("payment_receipt_month_sequences").select("society_id, year_month, next_number").eq("society_id", societyId);
+  if (mo.error) throw new Error(`[stage3c:${label}] receipt-month-seq: ${safeStage3CErrorMessage(label, mo.error)}`);
+  return {
+    yearly: z.array(ReceiptSequenceRow).parse(Array.isArray(yr.data) ? yr.data : []),
+    monthly: z.array(ReceiptMonthSequenceRow).parse(Array.isArray(mo.data) ? mo.data : []),
+  };
+}
+
+export function assertReceiptSequencesUnchanged(
+  before: ReceiptSequenceSnapshot,
+  after: ReceiptSequenceSnapshot,
+  label: string,
+): void {
+  const key = (r: { year?: number; year_month?: string }) => String(r.year ?? r.year_month ?? "");
+  const beforeY = new Map(before.yearly.map((r) => [key(r), r.next_number]));
+  const beforeM = new Map(before.monthly.map((r) => [key(r), r.next_number]));
+  for (const r of after.yearly) {
+    expect(beforeY.get(key(r)) ?? r.next_number, `${label}: yearly seq ${key(r)} unchanged`).toBe(r.next_number);
+  }
+  for (const r of after.monthly) {
+    expect(beforeM.get(key(r)) ?? r.next_number, `${label}: monthly seq ${key(r)} unchanged`).toBe(r.next_number);
+  }
+  expect(after.yearly.length, `${label}: yearly seq row count unchanged`).toBe(before.yearly.length);
+  expect(after.monthly.length, `${label}: monthly seq row count unchanged`).toBe(before.monthly.length);
+}
+
+/** Strict Zod schema for the persisted resident-submitted payment row. */
+export const ResidentSubmittedPaymentRowSchema = z.object({
+  id: z.string().uuid(),
+  bill_id: z.string().uuid(),
+  society_id: z.string().uuid(),
+  submitted_by: z.string().uuid(),
+  amount: z.union([z.number(), z.string()]).transform((v) => Number(v)),
+  method: z.literal("bank_transfer"),
+  status: z.literal("pending"),
+  source: z.literal("resident_submission"),
+  reference_no: z.string().min(1),
+  idempotency_key: z.string().min(1),
+  verified_by: z.null(),
+  verified_at: z.null(),
+  rejected_by: z.null(),
+  rejected_at: z.null(),
+  rejection_reason: z.null(),
+  reversed_by: z.null(),
+  reversed_at: z.null(),
+  reversal_reason: z.null(),
+});
+
+/** Derive canonical actor_role from the persisted `source` column. */
+export function deriveActorRoleFromSource(source: string): "resident" | "admin" {
+  if (source === "resident_submission") return "resident";
+  if (source === "admin_entry") return "admin";
+  throw new Error(`[stage3c] unknown payment source: ${source}`);
+}
+
+
 // ---------------------------------------------------------------------------
 // RESIDENT-SUBMIT-01
 // ---------------------------------------------------------------------------
@@ -133,9 +219,17 @@ export const residentSubmit01_initializeDedicatedResidentBill: Stage3CResidentSu
     ctx.residentSubmitInitialSummary = initial;
     ctx.residentBaselineSummary = initial;
 
+    // Snapshot receipt sequences to prove no allocation happens for pending.
+    ctx.residentSubmitInitialReceiptSequences = await snapshotReceiptSequences(
+      fixture.admin,
+      fixture.societyA,
+      "RESIDENT-SUBMIT-01",
+    );
+
     const preCount = await fixture.helpers.countPayments(billId);
     expect(preCount, "RESIDENT-SUBMIT-01: no pre-existing payments on dedicated bill").toBe(0);
   };
+
 
 // ---------------------------------------------------------------------------
 // RESIDENT-SUBMIT-02
@@ -194,50 +288,55 @@ export const residentSubmit03_pendingRowAndNoReceipt: Stage3CResidentSubmitHandl
   const { data, error } = await fixture.admin
     .from("payments")
     .select(
-      "id, bill_id, society_id, submitted_by, amount, method, status, reference_no, idempotency_key, verified_by, verified_at, rejected_by, rejected_at, rejection_reason, reversed_by, reversed_at, reversal_reason",
+      "id, bill_id, society_id, submitted_by, amount, method, status, source, reference_no, idempotency_key, verified_by, verified_at, rejected_by, rejected_at, rejection_reason, reversed_by, reversed_at, reversal_reason",
     )
     .eq("id", paymentId)
     .single();
   expect(error, "RESIDENT-SUBMIT-03: query error").toBeNull();
   expect(data, "RESIDENT-SUBMIT-03: row present").not.toBeNull();
-  const row = data as Record<string, unknown>;
 
+  // Strict Zod parse enforces bank_transfer method, pending status,
+  // resident_submission source, and every reject/reverse/verify field null.
+  const parsedRow = ResidentSubmittedPaymentRowSchema.parse(data);
+  expect(parsedRow.society_id, "RESIDENT-SUBMIT-03: society").toBe(fixture.societyA);
+  expect(parsedRow.bill_id, "RESIDENT-SUBMIT-03: bill").toBe(billId);
+  expect(parsedRow.submitted_by, "RESIDENT-SUBMIT-03: submitter").toBe(
+    fixture.users.activeResident.id,
+  );
+  expect(parsedRow.method, "RESIDENT-SUBMIT-03: server-pinned bank_transfer").toBe(
+    "bank_transfer",
+  );
+  expect(parsedRow.status, "RESIDENT-SUBMIT-03: pending").toBe("pending");
+  expect(parsedRow.source, "RESIDENT-SUBMIT-03: server-pinned source").toBe(
+    "resident_submission",
+  );
+  expect(
+    deriveActorRoleFromSource(parsedRow.source),
+    "RESIDENT-SUBMIT-03: derived actor_role",
+  ).toBe("resident");
+  expect(parsedRow.amount, "RESIDENT-SUBMIT-03: amount").toBe(amount);
+  expect(parsedRow.reference_no, "RESIDENT-SUBMIT-03: reference").toBe(reference);
+  expect(parsedRow.idempotency_key, "RESIDENT-SUBMIT-03: idempotency key").toBe(idempotencyKey);
+
+  // Also keep the legacy parsePaymentAssertionRow contract check for the
+  // fields it validates (society/flat/bill/method/submitted_by/status).
   const assertion = parsePaymentAssertionRow(
     {
-      society_id: row.society_id,
+      society_id: parsedRow.society_id,
       flat_id: fixture.flatA,
-      bill_id: row.bill_id,
-      method: row.method,
-      submitted_by: row.submitted_by,
-      status: row.status,
+      bill_id: parsedRow.bill_id,
+      method: parsedRow.method,
+      submitted_by: parsedRow.submitted_by,
+      status: parsedRow.status,
     },
     "resident-submit-03",
   );
-  expect(assertion.society_id, "RESIDENT-SUBMIT-03: society").toBe(fixture.societyA);
-  expect(assertion.bill_id, "RESIDENT-SUBMIT-03: bill").toBe(billId);
-  expect(assertion.submitted_by, "RESIDENT-SUBMIT-03: submitter").toBe(
-    fixture.users.activeResident.id,
-  );
-  expect(assertion.method, "RESIDENT-SUBMIT-03: server-pinned bank_transfer").toBe(
-    "bank_transfer",
-  );
-  expect(assertion.status, "RESIDENT-SUBMIT-03: pending").toBe("pending");
-
-  expect(Number(row.amount), "RESIDENT-SUBMIT-03: amount").toBe(amount);
-  expect(row.reference_no, "RESIDENT-SUBMIT-03: reference").toBe(reference);
-  expect(row.idempotency_key, "RESIDENT-SUBMIT-03: idempotency key").toBe(idempotencyKey);
-  expect(row.verified_by, "RESIDENT-SUBMIT-03: verified_by null").toBeNull();
-  expect(row.verified_at, "RESIDENT-SUBMIT-03: verified_at null").toBeNull();
-  expect(row.rejected_by, "RESIDENT-SUBMIT-03: rejected_by null").toBeNull();
-  expect(row.rejected_at, "RESIDENT-SUBMIT-03: rejected_at null").toBeNull();
-  expect(row.rejection_reason, "RESIDENT-SUBMIT-03: rejection_reason null").toBeNull();
-  expect(row.reversed_by, "RESIDENT-SUBMIT-03: reversed_by null").toBeNull();
-  expect(row.reversed_at, "RESIDENT-SUBMIT-03: reversed_at null").toBeNull();
-  expect(row.reversal_reason, "RESIDENT-SUBMIT-03: reversal_reason null").toBeNull();
+  expect(assertion.status).toBe("pending");
 
   const receipts = await fixture.helpers.countReceipts(paymentId);
   expect(receipts, "RESIDENT-SUBMIT-03: no receipt for pending payment").toBe(0);
 };
+
 
 // ---------------------------------------------------------------------------
 // RESIDENT-SUBMIT-04 — public schema strictness + resident_cash_not_allowed
@@ -278,6 +377,7 @@ export const residentSubmit04_serverPinnedMethodAndActorRole: Stage3CResidentSub
     // B. Direct RPC: cash as resident must be denied server-side.
     const preCount = await fixture.helpers.countPayments(billId);
     let threw = false;
+    let unexpectedSuccessId: string | null = null;
     try {
       const { data, error } = await fixture.users.activeResident.client.rpc(
         "submit_offline_payment",
@@ -293,15 +393,18 @@ export const residentSubmit04_serverPinnedMethodAndActorRole: Stage3CResidentSub
         },
       );
       if (error) throw error;
-      // If no error surfaced, treat the returned data as the (unexpected) success signal.
+      // Do not interpolate raw RPC data into the error message.
+      const parsedId = z.string().uuid().safeParse(data);
+      unexpectedSuccessId = parsedId.success ? parsedId.data : null;
       throw new Error(
-        `RESIDENT-SUBMIT-04: cash submission must be denied, got id: ${String(data ?? "")}`,
+        `RESIDENT-SUBMIT-04: cash submission must be denied (no server error surfaced)`,
       );
     } catch (err) {
       threw = true;
       assertCanonicalError(err, STAGE3C_ERRORS.RESIDENT_CASH_NOT_ALLOWED, "RESIDENT-SUBMIT-04");
     }
     expect(threw, "RESIDENT-SUBMIT-04: cash attempt must throw").toBe(true);
+    expect(unexpectedSuccessId, "RESIDENT-SUBMIT-04: no id returned from denied submission").toBeNull();
 
     // No mutation.
     const postCount = await fixture.helpers.countPayments(billId);
@@ -309,6 +412,7 @@ export const residentSubmit04_serverPinnedMethodAndActorRole: Stage3CResidentSub
     const pendingId = requireResidentSubmitPaymentId(ctx);
     expect(await fixture.helpers.countReceipts(pendingId)).toBe(0);
   };
+
 
 // ---------------------------------------------------------------------------
 // Shared denial helper for RESIDENT-SUBMIT-05..07
@@ -332,6 +436,7 @@ async function attemptResidentSubmitAndAssertDenied(input: DenialInput): Promise
   const uniqueKey = `resident-submit-${safeSuffix(fixture.prefix)}-${suffix}`;
 
   let threw = false;
+  let unexpectedSuccessId: string | null = null;
   try {
     const { data, error } = await actorClient.rpc("submit_offline_payment", {
       _bill_id: billId,
@@ -344,16 +449,20 @@ async function attemptResidentSubmitAndAssertDenied(input: DenialInput): Promise
       _actor_role: "resident",
     });
     if (error) throw error;
-    throw new Error(`${label}: unexpected success payload: ${String(data ?? "")}`);
+    const parsedId = z.string().uuid().safeParse(data);
+    unexpectedSuccessId = parsedId.success ? parsedId.data : null;
+    throw new Error(`${label}: unexpected success (no server error surfaced)`);
   } catch (err) {
     threw = true;
     assertCanonicalError(err, STAGE3C_ERRORS.NOT_AUTHORIZED, label);
   }
   expect(threw, `${label}: must throw`).toBe(true);
+  expect(unexpectedSuccessId, `${label}: no id returned from denied submission`).toBeNull();
 
   const postBillCount = await fixture.helpers.countPayments(billId);
   expect(postBillCount, `${label}: no new payment on target bill`).toBe(preBillCount);
 }
+
 
 // ---------------------------------------------------------------------------
 // RESIDENT-SUBMIT-05 — same-society other flat
@@ -503,9 +612,26 @@ export const residentSubmit08_exactSummaryDelta: Stage3CResidentSubmitHandler = 
   const receipts = await fixture.helpers.countReceipts(paymentId);
   expect(receipts, "RESIDENT-SUBMIT-08: no receipt exists").toBe(0);
 
+  // Sequence tables must be untouched by a pending submission.
+  const initialSeq = ctx.residentSubmitInitialReceiptSequences as
+    | ReceiptSequenceSnapshot
+    | null;
+  expect(initialSeq, "RESIDENT-SUBMIT-08: initial sequence snapshot present").not.toBeNull();
+  const afterSeq = await snapshotReceiptSequences(
+    fixture.admin,
+    fixture.societyA,
+    "RESIDENT-SUBMIT-08",
+  );
+  assertReceiptSequencesUnchanged(
+    initialSeq as ReceiptSequenceSnapshot,
+    afterSeq,
+    "RESIDENT-SUBMIT-08",
+  );
+
   ctx.residentSubmitPendingSummary = finalSummary;
   ctx.residentPostSubmitSummary = finalSummary;
 };
+
 
 // ---------------------------------------------------------------------------
 // Registry

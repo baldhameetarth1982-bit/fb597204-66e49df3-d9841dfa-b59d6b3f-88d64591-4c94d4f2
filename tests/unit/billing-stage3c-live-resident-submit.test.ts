@@ -225,4 +225,26 @@ describe("Stage 3C — RESIDENT-SUBMIT handler source shape", () => {
     expect(residentSrc).not.toMatch(/expect\(\s*true\s*\)/);
     expect(residentSrc).not.toMatch(/\bTODO\b/);
   });
+
+  it("does not interpolate raw RPC data into error messages", () => {
+    expect(residentSrc).not.toMatch(/\$\{\s*String\(\s*data/);
+  });
+
+  it("asserts server-pinned source column (actor_role proof)", () => {
+    expect(residentSrc).toMatch(/ResidentSubmittedPaymentRowSchema/);
+    expect(residentSrc).toMatch(/resident_submission/);
+    expect(residentSrc).toMatch(/deriveActorRoleFromSource/);
+  });
+
+  it("snapshots receipt sequences and asserts they remain unchanged", () => {
+    expect(residentSrc).toMatch(/snapshotReceiptSequences/);
+    expect(residentSrc).toMatch(/assertReceiptSequencesUnchanged/);
+    expect(residentSrc).toMatch(/payment_receipt_sequences/);
+    expect(residentSrc).toMatch(/payment_receipt_month_sequences/);
+  });
+
+  it("routes redaction through safeStage3CErrorMessage", () => {
+    expect(residentSrc).toMatch(/safeStage3CErrorMessage/);
+  });
 });
+

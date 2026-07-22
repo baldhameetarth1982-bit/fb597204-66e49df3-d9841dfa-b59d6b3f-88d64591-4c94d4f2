@@ -808,7 +808,6 @@ export function checkStage3CRedactionMigration(
   const entries = extractManifestEntries(manifestSource);
   if (entries.length === 0) {
     failures.push("redaction-migration: manifest is empty or unparseable");
-    return failures;
   }
 
   // Uniqueness + alphabetical order.

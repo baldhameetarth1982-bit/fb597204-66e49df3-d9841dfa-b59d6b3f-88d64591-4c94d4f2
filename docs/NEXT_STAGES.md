@@ -76,6 +76,17 @@ This run rewrote the shared runtime fixture (`tests/helpers/stage3c-runtime-fixt
 - Workflow enforcement: `.github/workflows/stage3c-runtime-verification.yml` now runs `Validate Stage 3C core live source (pre-flight)` before the live matrix and `Validate Stage 3C core live matrix (24/93)` after, replacing the generic total>0/no-skips shim.
 - Live source progress: **24/93**. Live runtime remains **unverified** until a real GitHub Actions run of the workflow succeeds.
 
+**Foundation Sub-run 2A — residency and summary truth (this run)**
+- Sub-run 1 remains locally accepted (validators, canonical UUID schema, matrix clean-state readers, foundation source scan).
+- Sub-run 2A completed locally:
+  - `otherFlatA` residency absence is proven by a dedicated reader + assertion (`assertNoFixtureResidentsLinkedToOtherFlat` + `createOtherFlatResidencyReader`) executed during shared fixture setup against the three canonical fixture residents. The exact filter is `flat_id = otherFlatA`, `user_id IN [active, movedOut, unrelated]`, `is_active = true`, `moved_out_at IS NULL`; no `.limit(1)` and no society-wide broadening. Any active, non-moved-out row aborts setup with a redacted failure that echoes only a safe row count.
+  - All five dedicated matrix bills (`residentSubmitBillId=1200`, `otherFlatBillId=900`, `idempotencyBillAId=1000`, `idempotencyBillBId=800`, `referenceBillId=1100`) are read through Admin A1's authenticated `get_bill_payment_summary` (`createMatrixBillSummaryReader` + `assertMatrixBillSummariesStartClean`). Every summary is strictly parsed (`MatrixBillSummarySchema`) and must show `verified/pending/rejected/reversed = 0`, `available_to_submit = remaining_verified_balance = total_payable`, `cancelled = false`, and a canonical `unpaid` / `open` status. Failure messages carry only the safe expectation index and field name.
+  - Behavioral coverage: `tests/unit/billing-stage3c-live-matrix-residency-summary.test.ts` — 31 tests exercising the real exported helpers (residency happy path, ordered-ID reader call, unique-ID guard, UUID validation, redacted query-error, non-array/malformed rejection, wrong-flat/wrong-user rejection, single-active-row and duplicate-row failure without leaking IDs, adapter select/eq/in/is filter shape; five-expectation ordered totals, frozen array, duplicate-ID / bad-society rejection, schema strict-numeric parsing + NaN/Infinity/empty-string rejection, per-field mismatch failures, cancelled/paid/closed rejection, `open` acceptance, five-call ordered summary reader, safe redacted failure, adapter RPC name/argument shape).
+  - Source validator (`scripts/verify-stage3c-live-matrix-foundation-source.ts`) now enforces every new residency/summary symbol, the exact adapter filter shape, the five-total contract, Admin A1 as the authenticated summary actor, and the presence + evidence of the residency/summary behavioral test file.
+- Unified Stage 3C error redaction remains pending and is deliberately deferred to the next bounded foundation sub-run.
+- No new manifest handlers were implemented; implemented live source remains **24/93**. GitHub runtime success remains unobserved unless actually observed.
+
+
 Honestly open (next Stage 3C focused runs, in order):
 - Implement remaining categories: RESIDENT-SUBMIT, IDEMPOTENCY, REFERENCE, READ, PRIVACY, REJECTION, REVERSAL, SEARCH, CLEANUP.
 - Deepen the seven Playwright journeys into real form-fill / dialog / submit / assert flows against the seeded fixture.

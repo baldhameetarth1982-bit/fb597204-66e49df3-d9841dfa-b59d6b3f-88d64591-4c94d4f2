@@ -481,6 +481,7 @@ describe("CanonicalStage3CUuidSchema — direct behavior", () => {
 
 describe("Canonical UUID enforcement in matrix consumers", () => {
   const m = matrix();
+  const LOWER_WITH_LETTERS = "aabbccdd-1111-4111-8111-111111111abc";
   const upperOf = (v: string) => v.toUpperCase();
 
   it("validateMatrixDedicatedBillIds rejects duplicates", () => {
@@ -493,24 +494,22 @@ describe("Canonical UUID enforcement in matrix consumers", () => {
     expect(() =>
       validateMatrixDedicatedBillIds({
         ...m,
-        residentSubmitBillId: upperOf(m.residentSubmitBillId),
+        residentSubmitBillId: upperOf(LOWER_WITH_LETTERS),
       }),
     ).toThrow(/canonical UUID/);
   });
 
   it("validateStage3CMatrixResources rejects uppercase ownership flatA", () => {
     expect(() =>
-      validateStage3CMatrixResources(m, { ...OWN, flatA: upperOf(OWN.flatA) }),
+      validateStage3CMatrixResources(m, { ...OWN, flatA: upperOf(LOWER_WITH_LETTERS) }),
     ).toThrow(/ownership/);
   });
 
   it("validateStage3CMatrixResources rejects uppercase existingBillIds entry", () => {
-    const bad = [upperOf(OWN.existingBillIds[0]), ...OWN.existingBillIds.slice(1)] as [
-      string,
-      string,
-      string,
-      string,
-    ];
+    const bad = [
+      upperOf(LOWER_WITH_LETTERS),
+      ...OWN.existingBillIds.slice(1),
+    ] as [string, string, string, string];
     expect(() =>
       validateStage3CMatrixResources(m, { ...OWN, existingBillIds: bad }),
     ).toThrow(/ownership/);

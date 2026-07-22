@@ -2002,6 +2002,26 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
 
     await assertMatrixBillsStartClean(admin, matrix);
 
+    // Prove no fixture resident is linked to otherFlatA.
+    await assertNoFixtureResidentsLinkedToOtherFlat(
+      createOtherFlatResidencyReader(admin),
+      {
+        otherFlatId: otherFlatA,
+        activeResidentId: activeResident.id,
+        movedOutResidentId: movedOutResident.id,
+        unrelatedResidentId: unrelatedResident.id,
+      },
+    );
+
+    // Prove the exact clean financial summary of all five dedicated
+    // matrix bills through Admin A1's authenticated client.
+    await assertMatrixBillSummariesStartClean(
+      createMatrixBillSummaryReader(adminA1.client),
+      buildMatrixBillExpectations(matrix, societyA),
+    );
+
+
+
 
     // ---- Financial scenarios via canonical RPCs ----------------------
     const helpers = buildScenarioHelpers(admin);

@@ -74,7 +74,7 @@ describe("Stage 3C — live suite shape", () => {
     expect(liveSuiteSrc).toContain('from "../helpers/stage3c-live-core-registry"');
     expect(liveSuiteSrc).toContain("STAGE3C_CORE_LIVE_CASE_HANDLERS");
     expect(liveSuiteSrc).toMatch(/for \(const caseDefinition of STAGE3C_CORE_LIVE_CASE_HANDLERS\)/);
-    // No unnumbered pre-case titles.
+    // No unnumbered lifecycle-only test titles.
     expect(liveSuiteSrc).not.toMatch(/pre-case/);
     expect(liveSuiteSrc).not.toMatch(/PENDING baseline captured/);
     expect(liveSuiteSrc).not.toMatch(/post-verify summary \+ receipt captured/);

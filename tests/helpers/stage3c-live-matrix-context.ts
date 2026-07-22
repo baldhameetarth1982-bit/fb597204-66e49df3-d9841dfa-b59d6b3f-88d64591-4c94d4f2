@@ -39,6 +39,8 @@ export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
   residentSubmitIdempotencyKey: string | null;
   residentSubmitInitialSummary: BillSummarySnapshot | null;
   residentSubmitPendingSummary: BillSummarySnapshot | null;
+  residentSubmitInitialReceiptSequences: unknown | null;
+
 
   // Idempotency category
   idempotencyBillAId: string | null;

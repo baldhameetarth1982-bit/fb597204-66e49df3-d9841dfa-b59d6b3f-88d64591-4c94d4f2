@@ -70,7 +70,7 @@ describe("Stage 3C — core registry", () => {
 });
 
 describe("Stage 3C — live suite shape", () => {
-  it("imports and iterates the registry, with no manual per-case it() or pre-case titles", () => {
+  it("imports and iterates the registry, is registry-driven with no unnumbered lifecycle tests", () => {
     expect(liveSuiteSrc).toContain('from "../helpers/stage3c-live-core-registry"');
     expect(liveSuiteSrc).toContain("STAGE3C_CORE_LIVE_CASE_HANDLERS");
     expect(liveSuiteSrc).toMatch(/for \(const caseDefinition of STAGE3C_CORE_LIVE_CASE_HANDLERS\)/);

@@ -88,10 +88,28 @@ describe("Stage 3C matrix foundation source validator", () => {
     expect(f.length).toBeGreaterThan(0);
   });
 
-  it("flags a protected society literal", () => {
+  it("flags a hardcoded protected constant declaration", () => {
     const f = checkNoProtectedLiteral([
-      ["fake.ts", "id = '1907a918-c4b8-4f43-a837-450530cc7c34'"],
+      ["fake.ts", `const PROTECTED_UUID = "1907a918-c4b8-4f43-a837-450530cc7c34";`],
     ]);
+    expect(f.length).toBeGreaterThan(0);
+  });
+
+  it("flags the protected value when supplied via env parameter", () => {
+    const secret = "1907a918-c4b8-4f43-a837-450530cc7c34";
+    const f = checkNoProtectedLiteral(
+      [["fake.ts", `const someId = '${secret}';`]],
+      secret,
+    );
     expect(f.length).toBe(1);
+    expect(f[0]).not.toContain(secret);
+  });
+
+  it("does not compare values when env is absent/blank", () => {
+    const f = checkNoProtectedLiteral(
+      [["fake.ts", `const someId = '1907a918-c4b8-4f43-a837-450530cc7c34';`]],
+      "",
+    );
+    expect(f.length).toBe(0);
   });
 });

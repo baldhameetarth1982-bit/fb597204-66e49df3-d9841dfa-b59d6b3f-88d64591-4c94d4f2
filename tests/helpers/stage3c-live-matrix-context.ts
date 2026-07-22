@@ -77,6 +77,8 @@ export function createStage3CLiveMatrixContext(): Stage3CLiveMatrixContext {
     residentSubmitIdempotencyKey: null,
     residentSubmitInitialSummary: null,
     residentSubmitPendingSummary: null,
+    residentSubmitInitialReceiptSequences: null,
+
 
     idempotencyBillAId: null,
     idempotencyBillBId: null,

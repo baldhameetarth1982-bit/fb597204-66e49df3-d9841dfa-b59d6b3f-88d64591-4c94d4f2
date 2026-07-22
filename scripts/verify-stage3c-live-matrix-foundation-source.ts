@@ -1,14 +1,19 @@
 #!/usr/bin/env bun
 /**
- * Stage 3C — Foundation source validator (matrix repair sub-run 1/3).
+ * Stage 3C — Foundation source validator.
  *
  * Pure inspection: every check function is exported. The CLI entry
  * point is guarded so importing this module from Vitest does not
  * call `process.exit`.
  *
- * The protected society UUID is NEVER hardcoded. It is read only from
+ * The redacted-society UUID is NEVER hardcoded. It is read only from
  * `process.env.SOCIOHUB_PROTECTED_SOCIETY_ID`. Its absence must never
  * produce or invent the value.
+ *
+ * Structural identity detection is built from harmless string fragments
+ * (see `buildIdentityMatchers`) so this file never contains its own
+ * trigger phrase and can therefore safely scan its own source without
+ * a self-exclusion allowlist.
  */
 import { readFileSync, existsSync, statSync } from "node:fs";
 import { execFileSync } from "node:child_process";
@@ -78,7 +83,6 @@ export function checkFixtureFoundation(src: string): string[] {
   }
   if (!/export function validateStage3CMatrixResources\(/.test(src))
     fail(f, "fixture: validateStage3CMatrixResources not exported");
-  // Ownership must be REQUIRED (no `?:`) on validateStage3CMatrixResources.
   if (
     !/export function validateStage3CMatrixResources\(\s*raw:\s*unknown\s*,\s*ownership:\s*Stage3CMatrixOwnership\s*,?\s*\)/.test(
       src,
@@ -92,7 +96,6 @@ export function checkFixtureFoundation(src: string): string[] {
   if (!/otherFlatA must not equal flatA/.test(src))
     fail(f, "fixture: matrix validator must enforce otherFlatA !== flatA");
   if (!/insert:otherFlatA/.test(src)) fail(f, "fixture: otherFlatA insert missing");
-  // Setup must select all five ownership fields on otherFlatA.
   if (!/\.select\(\s*"id,\s*society_id,\s*block_id,\s*flat_number,\s*status"\s*\)/.test(src))
     fail(f, "fixture: otherFlatA insert must select id, society_id, block_id, flat_number, status");
   if (!/export function parseOtherFlatARow\(/.test(src))
@@ -129,6 +132,8 @@ export function checkFixtureFoundation(src: string): string[] {
     fail(f, "fixture: MatrixCleanStateReader type not exported");
   if (!/export async function assertMatrixBillsStartCleanWithReader\(/.test(src))
     fail(f, "fixture: assertMatrixBillsStartCleanWithReader not exported");
+  if (!/export const CanonicalStage3CUuidSchema\b/.test(src))
+    fail(f, "fixture: CanonicalStage3CUuidSchema not exported");
   if (/\[0-9a-fA-F-\]\{36\}/.test(src))
     fail(f, "fixture: loose 36-character UUID expression must be removed");
   if (!/\.in\("bill_id",\s*(?:ids|billIds)\)/.test(src))
@@ -145,7 +150,6 @@ export function checkFixtureFoundation(src: string): string[] {
     fail(f, "fixture: adapter must delegate to assertMatrixBillsStartCleanWithReader");
   if (!/assertMatrixBillsStartClean\(admin,\s*matrix\)/.test(src))
     fail(f, "fixture: setup must invoke assertMatrixBillsStartClean");
-  // Setup must supply all four existing core bill IDs to the validator.
   if (
     !/existingBillIds:\s*\[[\s\S]{0,400}openBillId,[\s\S]{0,400}openBillId2,[\s\S]{0,400}cancelledBillId,[\s\S]{0,400}fullyUnavailableBillId,?[\s\S]{0,200}\]/.test(
       src,
@@ -267,19 +271,10 @@ export function checkWorkflowIntegrity(src: string): string[] {
   return f;
 }
 
-/**
- * Runtime-input protected-society literal scanner.
- *
- * - `protectedValue` is optional. When present and non-blank we perform
- *   a literal-safe (`String.prototype.includes`) comparison — never a
- *   regex constructed from the value.
- * - When absent/blank we perform no value comparison but still reject
- *   any committed declaration that hardcodes a protected UUID constant
- *   (e.g. `const PROTECTED_UUID = "..."`).
- * - Failure output NEVER echoes the matched value or the source line —
- *   only the safe repository-relative path is returned.
- * - Duplicate detections in one file collapse into one failure.
- */
+// ---------------------------------------------------------------------------
+// Protected literal scanner (exact env-value comparison, opt-in).
+// ---------------------------------------------------------------------------
+
 const PROTECTED_CONSTANT_DECLARATION =
   /\bconst\s+(PROTECTED_UUID|PROTECTED_SOCIETY_ID|PROTECTED_SOCIETY_UUID)\s*=\s*['"][0-9a-fA-F-]{36}['"]/;
 
@@ -290,22 +285,55 @@ function isSafeRelativePath(p: string): boolean {
   return true;
 }
 
+export type ProtectedLiteralScanResult = {
+  failures: readonly string[];
+  exactValueCheckExecuted: boolean;
+};
+
+/**
+ * Structured protected-literal scan.
+ *  - When a nonblank `protectedValue` is supplied: trim ONLY that value
+ *    and use `String.prototype.includes`; never build a regex from it.
+ *    `exactValueCheckExecuted` is `true`.
+ *  - When absent/blank: no value comparison; still reject prohibited
+ *    protected-constant declarations. `exactValueCheckExecuted` is `false`.
+ * Failure output never echoes the matched value or source line.
+ */
+export function scanProtectedLiteral(
+  files: ReadonlyArray<readonly [path: string, source: string]>,
+  protectedValue?: string,
+): ProtectedLiteralScanResult {
+  const detected = new Set<string>();
+  const trimmed = typeof protectedValue === "string" ? protectedValue.trim() : "";
+  const exactValueCheckExecuted = trimmed.length > 0;
+  for (const [rawName, src] of files) {
+    const name = isSafeRelativePath(rawName) ? rawName : "<unsafe-path>";
+    let hit = false;
+    if (exactValueCheckExecuted && src.includes(trimmed)) hit = true;
+    if (PROTECTED_CONSTANT_DECLARATION.test(src)) hit = true;
+    if (hit) detected.add(name);
+  }
+  return {
+    failures: Array.from(detected).map((n) => `redacted-society literal detected in ${n}`),
+    exactValueCheckExecuted,
+  };
+}
+
+/**
+ * Backwards-compatible wrapper. Callers who only need failure strings can
+ * continue to use this. The wrapper never claims the exact literal was
+ * scanned when no value was supplied.
+ */
 export function checkNoProtectedLiteral(
   files: ReadonlyArray<readonly [string, string]>,
   protectedValue?: string,
 ): string[] {
-  const detected = new Set<string>();
-  const trimmed = typeof protectedValue === "string" ? protectedValue.trim() : "";
-  const hasValue = trimmed.length > 0;
-  for (const [rawName, src] of files) {
-    const name = isSafeRelativePath(rawName) ? rawName : "<unsafe-path>";
-    let hit = false;
-    if (hasValue && src.includes(trimmed)) hit = true;
-    if (PROTECTED_CONSTANT_DECLARATION.test(src)) hit = true;
-    if (hit) detected.add(name);
-  }
-  return Array.from(detected).map((n) => `protected society literal detected in ${n}`);
+  return Array.from(scanProtectedLiteral(files, protectedValue).failures);
 }
+
+// ---------------------------------------------------------------------------
+// Fail-closed tracked-text collector.
+// ---------------------------------------------------------------------------
 
 const TEXT_EXTENSIONS = new Set([
   ".ts",
@@ -347,9 +375,10 @@ const defaultDeps: TrackedCollectorDeps = {
 };
 
 /**
- * Collect every tracked textual file via `git ls-files -z`, fail-closed.
- * Never mutates raw filenames (no .trim()). Every skip that could mask a
- * real tracked text file is surfaced as a failure.
+ * Fail-closed. Every supported textual tracked path results in either
+ * one successfully collected file or one safe failure. Non-file stat
+ * results on supported extensions surface as failures. Unsupported
+ * extensions are intentionally ignored.
  */
 export function collectTrackedTextFiles(
   root: string = ROOT,
@@ -362,9 +391,6 @@ export function collectTrackedTextFiles(
     return { files: [], failures: ["tracked-collector: git ls-files failed"] };
   }
   const parts = raw.toString("utf8").split("\u0000");
-  // A properly formed `git ls-files -z` output ends in a trailing NUL, so the
-  // final split entry is a genuinely empty string; strip only that trailing
-  // empty, never .trim() a real entry.
   if (parts.length > 0 && parts[parts.length - 1] === "") parts.pop();
 
   const files: Array<readonly [string, string]> = [];
@@ -398,7 +424,10 @@ export function collectTrackedTextFiles(
       failures.push(`tracked-collector: stat failed: ${rel}`);
       continue;
     }
-    if (!st.isFile()) continue;
+    if (!st.isFile()) {
+      failures.push(`tracked-collector: non-file tracked path: ${rel}`);
+      continue;
+    }
     let src: string;
     try {
       src = deps.read(abs);
@@ -411,38 +440,105 @@ export function collectTrackedTextFiles(
   return { files, failures };
 }
 
+// ---------------------------------------------------------------------------
+// Structural identity detection.
+//
+// Matchers are constructed at runtime from harmless fragments (`P`, `S`)
+// so this file itself never contains the trigger phrase — no self-
+// exclusion allowlist is required.
+// ---------------------------------------------------------------------------
+
+function buildIdentityMatchers(): RegExp[] {
+  const P = "prot" + "ected";
+  const S = "soc" + "iety";
+  const phrase = `${P} ${S}`;
+  const prodPhrase = `${P} production ${S}`;
+  const named = `(?:${phrase}|${prodPhrase})`;
+  const redactedTag = "\\[REDACTED-PROTECTED-SOCIETY-ID\\]";
+  const quotedDisplay =
+    "[`\"'](?!\\[REDACTED-)[^`\"'\\n]{2,80}[`\"']";
+  const nameSegment = "[A-Za-z][A-Za-z .'\\-]{1,80}";
+  const fullUuid =
+    "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}";
+  const partialUuid = "[0-9a-fA-F]{6,}(?:-[0-9a-fA-F]+){0,4}\\s*(?:\\.{1,3}|\\u2026)";
+  return [
+    // A: phrase + quoted display name
+    new RegExp(`${named}\\s+${quotedDisplay}`, "i"),
+    // B: phrase + bare name attached to redacted placeholder
+    new RegExp(`${named}\\s+${nameSegment}\\s*\\(\\s*[\`"']?${redactedTag}`, "i"),
+    // C: quoted display name adjacent to redacted placeholder
+    new RegExp(`${quotedDisplay}\\s*\\(\\s*[\`"']?${redactedTag}`),
+    // D: phrase followed by a raw UUID within 40 chars
+    new RegExp(`${named}[^\\n]{0,40}${fullUuid}`, "i"),
+    // E: phrase followed by a partial UUID / ellipsis form
+    new RegExp(`${named}[^\\n]{0,40}${partialUuid}`, "i"),
+    // F1: duplicated phrase (both variants)
+    new RegExp(`${named}\\s+${named}`, "i"),
+    // F2: "real <phrase> <SecondWord>" form
+    new RegExp(`\\breal\\s+${named}\\s+${S}\\b`, "i"),
+    // G: phrase heading followed shortly by a Name: field
+    new RegExp(`${named}[^\\n]*\\n[^\\n]{0,120}\\bName\\s*:\\s*[A-Za-z]`, "i"),
+  ];
+}
+
+const IDENTITY_MATCHERS = buildIdentityMatchers();
+
 /**
- * Structural rejection of the pattern where a specific display name is
- * attached to a redacted-protected-society placeholder or the phrase
- * "protected society". The redaction placeholder itself is not a display
- * name, so quoted content of the form `[REDACTED-...]` is exempted.
+ * Structural rejection of forbidden identity shapes. Never emits the
+ * detected value; only the safe repository-relative path is reported.
+ * Deduplicated by path.
  */
-const PROTECTED_IDENTITY_PATTERNS: RegExp[] = [
-  /protected(?: production)? society\s+[`"'](?!\[REDACTED-)[^`"'\n]{2,80}[`"']/i,
-  /protected(?: production)? society\s+[A-Za-z][A-Za-z .'-]{1,80}\s*\(\s*[`"']?\[REDACTED-PROTECTED-SOCIETY-ID\]/i,
-  /[`"'](?!\[REDACTED-)[^`"'\n]{2,80}[`"']\s*\(\s*[`"']?\[REDACTED-PROTECTED-SOCIETY-ID\]/,
-];
-
-
-const SELF_RELPATH = "scripts/verify-stage3c-live-matrix-foundation-source.ts";
-
 export function checkNoProtectedIdentity(
   files: ReadonlyArray<readonly [string, string]>,
 ): string[] {
   const detected = new Set<string>();
   for (const [rawName, src] of files) {
     const name = isSafeRelativePath(rawName) ? rawName : "<unsafe-path>";
-    // Skip this validator's own source: it contains detection regexes.
-    if (name === SELF_RELPATH) continue;
-    for (const rx of PROTECTED_IDENTITY_PATTERNS) {
+    for (const rx of IDENTITY_MATCHERS) {
       if (rx.test(src)) {
         detected.add(name);
         break;
       }
     }
   }
-  return Array.from(detected).map((n) => `protected society identity detected in ${n}`);
+  return Array.from(detected).map((n) => `redacted-society identity detected in ${n}`);
 }
+
+// ---------------------------------------------------------------------------
+// Pure complete-scan helper.
+// ---------------------------------------------------------------------------
+
+export type RepositoryIdentityScanResult = {
+  failures: readonly string[];
+  collectionFailureCount: number;
+  trackedTextFileCount: number;
+  exactValueCheckExecuted: boolean;
+};
+
+export function scanRepositoryIdentityFromCollection(
+  collection: TrackedTextCollectionResult,
+  protectedValue?: string,
+): RepositoryIdentityScanResult {
+  const failures: string[] = [...collection.failures];
+  const literal = scanProtectedLiteral(collection.files, protectedValue);
+  failures.push(...literal.failures);
+  failures.push(...checkNoProtectedIdentity(collection.files));
+  if (collection.failures.length > 0) {
+    failures.push(
+      "protected scan: partial tracked-file collection — refusing to claim a complete scan",
+    );
+  }
+  return {
+    failures,
+    collectionFailureCount: collection.failures.length,
+    trackedTextFileCount: collection.files.length,
+    exactValueCheckExecuted: literal.exactValueCheckExecuted,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Runtime-critical Vitest source backstop.
+// ---------------------------------------------------------------------------
 
 const RUNTIME_CRITICAL_TEST =
   "tests/unit/billing-stage3c-live-matrix-runtime-critical.test.ts";
@@ -450,6 +546,7 @@ const RUNTIME_CRITICAL_TEST =
 export function checkRuntimeCriticalTestSource(src: string): string[] {
   const f: string[] = [];
   const mustImport = [
+    "CanonicalStage3CUuidSchema",
     "validateMatrixDedicatedBillIds",
     "assertMatrixBillsStartCleanWithReader",
     "createMatrixCleanStateReader",
@@ -459,16 +556,27 @@ export function checkRuntimeCriticalTestSource(src: string): string[] {
       fail(f, `runtime-critical: symbol "${name}" not exercised`);
   }
   const evidence: Array<[label: string, rx: RegExp]> = [
+    ["uppercase UUID", /uppercase/i],
+    ["whitespace UUID", /whitespace/i],
+    ["invalid hyphen placement", /hyphen/i],
+    ["duplicate bill ID", /duplicate[\s\S]{0,60}bill/i],
+    ["payment null data", /null[\s\S]{0,40}payment/i],
+    ["receipt null data", /null[\s\S]{0,40}receipt/i],
     ["duplicate payment ID", /duplicate payment ID/i],
     ["duplicate receipt ID", /duplicate receipt ID/i],
-    ["null payment data", /null[\s\S]{0,40}payment/i],
-    ["null receipt data", /null[\s\S]{0,40}receipt/i],
-    ["payment reader call count", /listPaymentsByBillIds[\s\S]{0,200}toHaveBeenCalledTimes/],
-    ["receipt reader call count", /listReceiptsByPaymentIds[\s\S]{0,400}toHaveBeenCalled/],
-    ["receipt not called when empty", /listReceiptsByPaymentIds[\s\S]{0,400}not\.toHaveBeenCalled/],
+    ["exact payment reader arguments", /listPaymentsByBillIds[\s\S]{0,300}toHaveBeenCalledWith/],
+    ["exact receipt reader arguments", /listReceiptsByPaymentIds[\s\S]{0,300}toHaveBeenCalledWith/],
+    [
+      "receipt not called when no payments",
+      /listReceiptsByPaymentIds[\s\S]{0,400}not\.toHaveBeenCalled/,
+    ],
+    ["payment error redaction", /paymentsError[\s\S]{0,400}REDACTED_JWT|payment[\s\S]{0,200}redact/i],
+    ["receipt error redaction", /receiptsError[\s\S]{0,400}REDACTED_JWT|receipt[\s\S]{0,200}redact/i],
     ["out-of-scope payment", /outside the requested set/],
+    ["out-of-scope receipt", /receipts[\s\S]{0,80}outside the requested set/i],
     ["safe count-only error", /payments=/],
-    ["error redaction", /REDACTED_JWT|redact/i],
+    ["payments adapter table", /"payments"/],
+    ["payment_receipts adapter table", /"payment_receipts"/],
   ];
   for (const [label, rx] of evidence) {
     if (!rx.test(src))
@@ -476,6 +584,10 @@ export function checkRuntimeCriticalTestSource(src: string): string[] {
   }
   return f;
 }
+
+// ---------------------------------------------------------------------------
+// Aggregate.
+// ---------------------------------------------------------------------------
 
 export function runAllFoundationChecks(): FoundationCheckOutcome {
   const failures: string[] = [];
@@ -512,19 +624,13 @@ export function runAllFoundationChecks(): FoundationCheckOutcome {
   }
 
   const tracked = collectTrackedTextFiles(ROOT);
-  failures.push(...tracked.failures);
-  if (tracked.failures.length === 0) {
-    const protectedValue = process.env.SOCIOHUB_PROTECTED_SOCIETY_ID;
-    failures.push(...checkNoProtectedLiteral(tracked.files, protectedValue));
-    failures.push(...checkNoProtectedIdentity(tracked.files));
-  } else {
-    failures.push(
-      "protected scan: partial tracked-file collection — refusing to claim a complete scan",
-    );
-  }
+  const scan = scanRepositoryIdentityFromCollection(
+    tracked,
+    process.env.SOCIOHUB_PROTECTED_SOCIETY_ID,
+  );
+  failures.push(...scan.failures);
   return { ok: failures.length === 0, failures };
 }
-
 
 async function main() {
   const outcome = runAllFoundationChecks();
@@ -536,8 +642,6 @@ async function main() {
   console.log("Stage 3C matrix foundation source verification passed");
 }
 
-// Only run the CLI when invoked directly (not when imported by Vitest).
 if (import.meta.main) {
   void main();
 }
-

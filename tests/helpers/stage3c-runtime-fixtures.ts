@@ -406,11 +406,25 @@ export type Stage3CMatrixOwnership = {
   existingBillIds: readonly [string, string, string, string];
 };
 
+/**
+ * Canonical Stage 3C UUID contract. Single source of truth for every
+ * matrix-scope UUID field. Rejects uppercase, mixed-case, leading /
+ * trailing whitespace, braces, `urn:uuid:` prefix, malformed hyphen
+ * placement, 36-character non-UUID text and blank text. Does NOT trim
+ * before validation — callers must pass canonical values.
+ */
+export const CanonicalStage3CUuidSchema = z
+  .string()
+  .uuid()
+  .refine((value) => value === value.toLowerCase(), {
+    message: "UUID must use canonical lowercase text",
+  });
+
 const Stage3CMatrixOwnershipSchema = z
   .object({
-    flatA: z.string().trim().uuid(),
+    flatA: CanonicalStage3CUuidSchema,
     existingBillIds: z
-      .array(z.string().trim().uuid())
+      .array(CanonicalStage3CUuidSchema)
       .length(4, "existingBillIds must contain exactly four UUIDs")
       .refine((ids) => new Set(ids).size === ids.length, {
         message: "existingBillIds must be unique",
@@ -420,12 +434,12 @@ const Stage3CMatrixOwnershipSchema = z
 
 const Stage3CMatrixResourcesSchema = z
   .object({
-    otherFlatA: z.string().trim().uuid(),
-    residentSubmitBillId: z.string().trim().uuid(),
-    otherFlatBillId: z.string().trim().uuid(),
-    idempotencyBillAId: z.string().trim().uuid(),
-    idempotencyBillBId: z.string().trim().uuid(),
-    referenceBillId: z.string().trim().uuid(),
+    otherFlatA: CanonicalStage3CUuidSchema,
+    residentSubmitBillId: CanonicalStage3CUuidSchema,
+    otherFlatBillId: CanonicalStage3CUuidSchema,
+    idempotencyBillAId: CanonicalStage3CUuidSchema,
+    idempotencyBillBId: CanonicalStage3CUuidSchema,
+    referenceBillId: CanonicalStage3CUuidSchema,
   })
   .strict();
 
@@ -480,9 +494,9 @@ export function validateStage3CMatrixResources(
  */
 const OtherFlatARowSchema = z
   .object({
-    id: z.string().uuid(),
-    society_id: z.string().uuid(),
-    block_id: z.string().uuid(),
+    id: CanonicalStage3CUuidSchema,
+    society_id: CanonicalStage3CUuidSchema,
+    block_id: CanonicalStage3CUuidSchema,
     flat_number: z.string().min(1),
     status: z.literal("occupied"),
   })
@@ -510,10 +524,10 @@ export function parseOtherFlatARow(
 }
 
 const MatrixPaymentRowSchema = z
-  .object({ id: z.string().uuid(), bill_id: z.string().uuid() })
+  .object({ id: CanonicalStage3CUuidSchema, bill_id: CanonicalStage3CUuidSchema })
   .strict();
 const MatrixReceiptRowSchema = z
-  .object({ id: z.string().uuid(), payment_id: z.string().uuid() })
+  .object({ id: CanonicalStage3CUuidSchema, payment_id: CanonicalStage3CUuidSchema })
   .strict();
 
 export function parseMatrixPaymentRows(
@@ -554,8 +568,6 @@ export function parseMatrixReceiptRows(
  *  - all five unique
  *  - deterministic order: residentSubmit, otherFlat, idempotencyA, idempotencyB, reference
  */
-const CanonicalUuid = z.string().uuid();
-
 export function validateMatrixDedicatedBillIds(
   matrix: Stage3CMatrixResources,
 ): readonly [string, string, string, string, string] {
@@ -569,7 +581,7 @@ export function validateMatrixDedicatedBillIds(
   if (ordered.length !== 5)
     throw new Error("[stage3c:matrix:ids] expected exactly 5 dedicated bill IDs");
   for (let i = 0; i < ordered.length; i++) {
-    const parsed = CanonicalUuid.safeParse(ordered[i]);
+    const parsed = CanonicalStage3CUuidSchema.safeParse(ordered[i]);
     if (!parsed.success)
       throw new Error(
         `[stage3c:matrix:ids] dedicated bill ID at position ${i} is not a canonical UUID`,

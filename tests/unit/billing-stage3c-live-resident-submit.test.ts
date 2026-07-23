@@ -84,10 +84,8 @@ describe("Stage 3C — RESIDENT-SUBMIT registry", () => {
     expect(Object.keys(STAGE3C_MATRIX_LIVE_HANDLERS).length).toBe(32);
   });
 
-  it("matrix registry does not register later categories (IDEMPOTENCY/REFERENCE/…)", () => {
+  it("matrix registry does not register uninmplemented later categories (READ/REJECTION/REVERSAL/SEARCH/CLEANUP)", () => {
     for (const id of STAGE3C_MATRIX_LIVE_CASE_IDS) {
-      expect(id.startsWith("IDEMPOTENCY")).toBe(false);
-      expect(id.startsWith("REFERENCE")).toBe(false);
       expect(id.startsWith("READ")).toBe(false);
       expect(id.startsWith("REJECTION")).toBe(false);
       expect(id.startsWith("REVERSAL")).toBe(false);
@@ -96,6 +94,7 @@ describe("Stage 3C — RESIDENT-SUBMIT registry", () => {
     }
   });
 });
+
 
 describe("Stage 3C — RESIDENT-SUBMIT matrix context", () => {
   const ctx: Stage3CLiveMatrixContext = createStage3CLiveMatrixContext();

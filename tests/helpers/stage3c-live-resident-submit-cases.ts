@@ -602,77 +602,54 @@ export const residentSubmit08_exactSummaryDelta: Stage3CResidentSubmitHandler =
     const initial = requireResidentSubmitInitialSummary(ctx);
     const amount = requireResidentSubmitAmount(ctx);
     const paymentId = requireResidentSubmitPaymentId(ctx);
+    const initialSeq = requireResidentSubmitInitialReceiptSequences(ctx);
 
     const raw = await fixture.helpers.getBillSummary(
       fixture.users.adminA1,
       billId,
     );
-    const finalSummary = parseBillSummary(raw, "resident-submit-08");
+    const parsed = ResidentBillSummarySchema.safeParse(raw);
+    if (!parsed.success)
+      throw new Error(
+        "[stage3c:RESIDENT-SUBMIT-08] bill summary payload rejected by strict schema",
+      );
+    const finalSummary: ResidentBillSummary = parsed.data;
+    if (finalSummary.bill_id !== billId)
+      throw new Error(
+        "[stage3c:RESIDENT-SUBMIT-08] summary bill_id identity mismatch",
+      );
+    if (finalSummary.society_id !== fixture.societyA)
+      throw new Error(
+        "[stage3c:RESIDENT-SUBMIT-08] summary society_id identity mismatch",
+      );
 
-    expect(
-      finalSummary.total_payable,
-      "RESIDENT-SUBMIT-08: total unchanged",
-    ).toBeCloseTo(initial.total_payable, 6);
-    expect(
-      finalSummary.pending_amount - initial.pending_amount,
-      "RESIDENT-SUBMIT-08: pending delta = +amount",
-    ).toBeCloseTo(amount, 6);
-    expect(
-      finalSummary.pending_amount,
-      "RESIDENT-SUBMIT-08: pending absolute",
-    ).toBeCloseTo(amount, 6);
-    expect(
-      initial.available_to_submit - finalSummary.available_to_submit,
-      "RESIDENT-SUBMIT-08: available delta = amount",
-    ).toBeCloseTo(amount, 6);
-    expect(
-      finalSummary.available_to_submit,
-      "RESIDENT-SUBMIT-08: available absolute",
-    ).toBeCloseTo(900, 6);
-    expect(
-      finalSummary.verified_amount,
-      "RESIDENT-SUBMIT-08: verified unchanged",
-    ).toBeCloseTo(initial.verified_amount, 6);
-    expect(
-      summaryField(raw, "rejected_amount", "RESIDENT-SUBMIT-08"),
-    ).toBe(0);
-    expect(
-      summaryField(raw, "reversed_amount", "RESIDENT-SUBMIT-08"),
-    ).toBe(0);
-    expect(
-      summaryField(raw, "remaining_verified_balance", "RESIDENT-SUBMIT-08"),
-    ).toBeCloseTo(1200, 6);
-    expect((raw as Record<string, unknown>).cancelled).toBe(false);
-    const status = String((raw as Record<string, unknown>).status ?? "");
-    expect(
-      ["unpaid", "open"],
-      `RESIDENT-SUBMIT-08: unpaid/open, got ${status}`,
-    ).toContain(status);
+    assertResidentPendingDelta(initial, finalSummary, amount, "RESIDENT-SUBMIT-08");
 
-    const totalPayments = await fixture.helpers.countPayments(billId);
-    expect(totalPayments, "RESIDENT-SUBMIT-08: exactly one payment").toBe(1);
+    // Strict payment status counts via parser (no filter fallbacks).
     const rowsRes = await fixture.admin
       .from("payments")
       .select("id, status")
       .eq("bill_id", billId);
-    expect(rowsRes.error, "RESIDENT-SUBMIT-08: rows query").toBeNull();
-    const rows = Array.isArray(rowsRes.data) ? rowsRes.data : [];
-    const pending = rows.filter(
-      (r) => (r as { status?: string }).status === "pending",
+    if (rowsRes.error)
+      throw new Error(
+        safeStage3CErrorMessage("RESIDENT-SUBMIT-08-payments", rowsRes.error),
+      );
+    const statusRows = parseResidentPaymentStatusRows(
+      rowsRes.data,
+      "RESIDENT-SUBMIT-08",
     );
-    const verified = rows.filter(
-      (r) => (r as { status?: string }).status === "verified",
-    );
-    const rejected = rows.filter(
-      (r) => (r as { status?: string }).status === "rejected",
-    );
-    const reversed = rows.filter(
-      (r) => (r as { status?: string }).status === "reversed",
-    );
-    expect(pending.length, "RESIDENT-SUBMIT-08: pending count").toBe(1);
-    expect(verified.length, "RESIDENT-SUBMIT-08: verified count").toBe(0);
-    expect(rejected.length, "RESIDENT-SUBMIT-08: rejected count").toBe(0);
-    expect(reversed.length, "RESIDENT-SUBMIT-08: reversed count").toBe(0);
+    if (statusRows.length !== 1)
+      throw new Error(
+        `[stage3c:RESIDENT-SUBMIT-08] expected exactly 1 payment row, got ${statusRows.length}`,
+      );
+    if (statusRows[0]!.status !== "pending")
+      throw new Error(
+        `[stage3c:RESIDENT-SUBMIT-08] sole payment status must be pending, got ${statusRows[0]!.status}`,
+      );
+    if (statusRows[0]!.id !== paymentId)
+      throw new Error(
+        "[stage3c:RESIDENT-SUBMIT-08] sole payment id must equal residentSubmitPaymentId",
+      );
 
     await assertNoReceiptForResidentPayment(
       fixture.admin,
@@ -680,25 +657,14 @@ export const residentSubmit08_exactSummaryDelta: Stage3CResidentSubmitHandler =
       "RESIDENT-SUBMIT-08",
     );
 
-    // Sequences must be untouched.
-    const initialSeq = ctx.residentSubmitInitialReceiptSequences;
-    expect(
-      initialSeq,
-      "RESIDENT-SUBMIT-08: initial sequence snapshot present",
-    ).not.toBeNull();
     const afterSeq = await snapshotReceiptSequences(
       fixture.admin,
       fixture.societyA,
       "RESIDENT-SUBMIT-08",
     );
-    assertReceiptSequencesExactlyEqual(
-      initialSeq as ReceiptSequenceSnapshot,
-      afterSeq,
-      "RESIDENT-SUBMIT-08",
-    );
+    assertReceiptSequencesExactlyEqual(initialSeq, afterSeq, "RESIDENT-SUBMIT-08");
 
     ctx.residentSubmitPendingSummary = finalSummary;
-    ctx.residentPostSubmitSummary = finalSummary;
   };
 
 // ---------------------------------------------------------------------------

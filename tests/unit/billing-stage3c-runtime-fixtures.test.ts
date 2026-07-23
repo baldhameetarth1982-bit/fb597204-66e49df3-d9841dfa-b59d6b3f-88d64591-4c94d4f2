@@ -434,7 +434,9 @@ describe("Stage 3C — real submission helper dispatch", () => {
 
   it("submitResidentBankTransferPayment: method=bank_transfer, actor=resident, reference required and forwarded", async () => {
     const helpers = buildScenarioHelpers(adminStub);
-    const { actor, calls } = makeMockedActor(() => ({ data: { payment_id: UUID_B }, error: null }));
+    // The shared resident core requires a scalar canonical UUID result
+    // from `submit_offline_payment` — not an object shape.
+    const { actor, calls } = makeMockedActor(() => ({ data: UUID_B, error: null }));
     const id = await helpers.submitResidentBankTransferPayment({
       ...baseArgs,
       actor,
@@ -450,10 +452,11 @@ describe("Stage 3C — real submission helper dispatch", () => {
   });
   it("submitResidentBankTransferPayment: throws on malformed id", async () => {
     const helpers = buildScenarioHelpers(adminStub);
-    const { actor } = makeMockedActor(() => ({ data: { payment_id: "nope" }, error: null }));
+    const { actor } = makeMockedActor(() => ({ data: "nope", error: null }));
+    // The shared core rejects non-canonical UUIDs with a neutral token.
     await expect(
       helpers.submitResidentBankTransferPayment({ ...baseArgs, actor, referenceNo: "R" }),
-    ).rejects.toThrow(/malformed UUID/);
+    ).rejects.toThrow(/operation_failed/);
   });
 });
 

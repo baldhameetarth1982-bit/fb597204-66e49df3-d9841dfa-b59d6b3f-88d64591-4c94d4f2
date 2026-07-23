@@ -84,11 +84,11 @@ describe("Stage 3C v4 — split resident/admin submission server functions", () 
   });
 
   it("resident server fn sends _actor_role: 'resident' (server-fixed)", () => {
-    const block =
-      fnSrc.match(/export const submitResidentBankTransfer[\s\S]{0,1400}/)?.[0] ??
-      "";
-    expect(block).toMatch(/_actor_role: "resident"/);
-    expect(block).toMatch(/_method: "bank_transfer"/);
+    // Wrapper must delegate to the shared core.
+    expect(fnSrc).toMatch(/submitResidentBankTransferWithClient/);
+    // Pins live in the shared core module (single source of truth).
+    expect(residentCoreSrc).toMatch(/_actor_role:\s*"resident"/);
+    expect(residentCoreSrc).toMatch(/_method:\s*"bank_transfer"/);
   });
 
   it("admin server fn sends _actor_role: 'admin' (server-fixed)", () => {

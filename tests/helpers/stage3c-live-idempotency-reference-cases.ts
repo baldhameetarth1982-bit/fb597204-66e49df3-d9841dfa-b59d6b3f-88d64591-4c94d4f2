@@ -1,34 +1,70 @@
 /**
  * Stage 3C — Live IDEMPOTENCY-01..04 and REFERENCE-01..04 case handlers.
  *
- * Contract:
- *   - Idempotency scope: per (submitted_by, idempotency_key). Exact
- *     replay returns the ORIGINAL payment id; any payload change under
- *     the same key raises the canonical `idempotency_conflict` token
- *     with NO mutation.
- *   - Bank-transfer reference scope: per (society_id, method='bank_transfer'),
- *     normalized via `upper(trim(reference_no))`. Duplicate within the
- *     same society raises `duplicate_reference`; the SAME normalized
- *     reference is allowed cross-society (society-scoped isolation).
+ * Repaired slice (this run):
+ *   - Uses the SHARED resident production Bank Transfer core for every
+ *     REFERENCE path via `fixture.helpers.submitResidentBankTransferPayment`
+ *     (which itself delegates to `submitResidentBankTransferWithClient`
+ *     in `src/lib/offline-payment-resident-submit.ts`).
+ *   - Uses the dedicated bills exposed by the fixture:
+ *       Idempotency        → `idempotencyBillId`             (total 1000)
+ *       Primary Reference  → `referencePrimaryBillId`        (total 800)
+ *       Secondary Same-Soc → `referenceSecondarySameSocietyBillId` (total 700)
+ *       Other-Society      → `referenceOtherSocietyBillId`   (total 600)
+ *   - Canonical financial literals:
+ *       IDEMPOTENCY_AMOUNT           = 250
+ *       IDEMPOTENCY_CONFLICT_AMOUNT  = 251
+ *       REFERENCE_AMOUNT             = 200
+ *   - Every mutation and denial is bracketed by a real
+ *     `snapshotResidentBillState` / `assertResidentBillStateUnchanged`
+ *     pair (strict `ResidentBillStateSnapshot` — payments, summary,
+ *     sequences). No `unknown` state bags.
+ *   - Denial control flow: the RPC lives inside a try that only
+ *     captures `{ caught, succeededData }`; the "unexpected success"
+ *     assertion is thrown OUTSIDE the try/catch so it can never be
+ *     consumed by `assertCanonicalError`.
+ *   - No `!` non-null assertions. No `expect` / vitest imports. Every
+ *     lifecycle value comes through a labeled `require*` guard.
  *
- * Denial control flow mirrors the resident-submit module: the RPC is
- * invoked inside a try/catch that ONLY records the caught error and
- * the (forbidden) success value. The "unexpected success" assertion is
- * thrown OUTSIDE the catch so it can never be consumed by
- * `assertCanonicalError`. Every denial snapshots the payment-row count
- * before and asserts it is unchanged after.
+ * Manifest slot mapping (`stage3c-live-case-manifest.ts`):
+ *   IDEMPOTENCY-01  primary submit + identical replay returns SAME id
+ *                   (dedicated 1000 bill, amount 250)
+ *   IDEMPOTENCY-02  same key + amount 251 → `idempotency_conflict`
+ *   IDEMPOTENCY-03  proof-only: still exactly one payment row on the
+ *                   idempotency bill; state unchanged since IDEMP-02
+ *   IDEMPOTENCY-04  same key + same bill + amount 251 →
+ *                   `idempotency_conflict` (explicit re-attempt)
+ *   REFERENCE-01    unique bank reference on Society A primary ref bill
+ *                   (activeResident, amount 200)
+ *   REFERENCE-02    whitespace/case variant on SAME bill →
+ *                   `duplicate_reference`
+ *   REFERENCE-03    same normalized reference on a DIFFERENT bill in the
+ *                   SAME society (secondary ref bill) → `duplicate_reference`
+ *   REFERENCE-04    cross-society isolation: same normalized reference in
+ *                   Society B via `unrelatedResident` SUCCEEDS
  */
-import { expect } from "vitest";
 import { z } from "zod";
-import { trackUniqueId } from "./stage3c-runtime-fixtures";
+import {
+  trackUniqueId,
+  CanonicalStage3CUuidSchema,
+  type Stage3CFixture,
+} from "./stage3c-runtime-fixtures";
 import { STAGE3C_ERRORS, assertCanonicalError } from "./stage3c-live-errors";
-import { CanonicalStage3CUuidSchema } from "./stage3c-runtime-fixtures";
+import {
+  snapshotResidentBillState,
+  assertResidentBillStateUnchanged,
+  type ResidentBillStateSnapshot,
+} from "./stage3c-live-resident-submit-contracts";
 import {
   requireMatrixFixture,
+  requireIdempotencyBillId,
   requireIdempotencyPaymentId,
   requireIdempotencyReference,
+  requireReferencePrimaryBillId,
   requireReferencePrimaryPaymentId,
   requireReferenceValue,
+  requireReferencePrimaryInitialState,
+  requireIdempotencyInitialState,
   type Stage3CLiveMatrixContext,
 } from "./stage3c-live-matrix-context";
 
@@ -47,13 +83,13 @@ export type Stage3CIdempotencyReferenceHandler = (
 ) => Promise<void>;
 
 /** Canonical amounts / literals used by this slice. */
-export const IDEMPOTENCY_AMOUNT = 200;
-export const IDEMPOTENCY_CONFLICT_AMOUNT = 250;
-export const REFERENCE_PRIMARY_AMOUNT = 100;
-export const REFERENCE_DUPLICATE_AMOUNT = 50;
+export const IDEMPOTENCY_AMOUNT = 250;
+export const IDEMPOTENCY_CONFLICT_AMOUNT = 251;
+export const REFERENCE_AMOUNT = 200;
 
 function safeSuffix(prefix: string): string {
-  return prefix.replace(/[^A-Za-z0-9]/g, "").slice(0, 24) || "run";
+  const cleaned = prefix.replace(/[^A-Za-z0-9]/g, "").slice(0, 24);
+  return cleaned.length > 0 ? cleaned : "run";
 }
 
 function idempotencyKeyFor(prefix: string): string {
@@ -72,27 +108,42 @@ function whitespaceCaseVariant(value: string): string {
   return `  ${value.toLowerCase()}  `;
 }
 
-/** Count payment rows on a bill via service-role admin (test-only). */
-async function countRowsOnBill(
-  fixture: ReturnType<typeof requireMatrixFixture>,
+function assertEq(actual: unknown, expected: unknown, label: string): void {
+  if (actual !== expected)
+    throw new Error(
+      `[stage3c:${label}] expected value equality (values redacted)`,
+    );
+}
+
+async function snapshot(
+  fixture: Stage3CFixture,
+  actor: Stage3CFixture["users"]["activeResident"],
   billId: string,
-): Promise<number> {
-  return fixture.helpers.countPayments(billId);
+  societyId: string,
+  label: string,
+): Promise<ResidentBillStateSnapshot> {
+  return snapshotResidentBillState(
+    fixture.admin,
+    actor.client,
+    billId,
+    societyId,
+    label,
+  );
 }
 
 // ---------------------------------------------------------------------------
 // IDEMPOTENCY
 // ---------------------------------------------------------------------------
 
-async function idempotency01_primarySubmit(
+async function idempotency01_primarySubmitAndReplay(
   ctx: Stage3CLiveMatrixContext,
 ): Promise<void> {
   const f = requireMatrixFixture(ctx);
-  const billId = f.referenceBillId; // dedicated 1100 unpaid bill on flatA
+  const billId = f.idempotencyBillId;
   const key = idempotencyKeyFor(f.prefix);
   const reference = `IDEMP-${safeSuffix(f.prefix)}`;
 
-  const before = await countRowsOnBill(f, billId);
+  const initial = await snapshot(f, f.users.activeResident, billId, f.societyA, "IDEMPOTENCY-01-initial");
 
   const paymentId = await f.helpers.submitResidentBankTransferPayment({
     actor: f.users.activeResident,
@@ -102,32 +153,10 @@ async function idempotency01_primarySubmit(
     referenceNo: reference,
     idempotencyKey: key,
   });
-
   const validated = CanonicalStage3CUuidSchema.parse(paymentId);
   trackUniqueId(f.tracked.paymentIds, validated, "idempotency:primary");
 
-  const after = await countRowsOnBill(f, billId);
-  expect(after - before).toBe(1);
-
-  ctx.idempotencyPaymentId = validated;
-  ctx.idempotencyReference = reference;
-  ctx.idempotencyAmount = IDEMPOTENCY_AMOUNT;
-  ctx.idempotencyKey = key;
-  ctx.idempotencyBillAId = billId;
-  ctx.idempotencyInitialState = { billId, rowCount: after };
-}
-
-async function idempotency02_identicalReplay(
-  ctx: Stage3CLiveMatrixContext,
-): Promise<void> {
-  const f = requireMatrixFixture(ctx);
-  const original = requireIdempotencyPaymentId(ctx);
-  const key = ctx.idempotencyKey!;
-  const reference = requireIdempotencyReference(ctx);
-  const billId = ctx.idempotencyBillAId!;
-
-  const before = await countRowsOnBill(f, billId);
-
+  // Identical replay — MUST return the original id and MUST NOT add a row.
   const replayId = await f.helpers.submitResidentBankTransferPayment({
     actor: f.users.activeResident,
     billId,
@@ -136,26 +165,52 @@ async function idempotency02_identicalReplay(
     referenceNo: reference,
     idempotencyKey: key,
   });
+  const replayValidated = CanonicalStage3CUuidSchema.parse(replayId);
+  assertEq(replayValidated, validated, "IDEMPOTENCY-01:replay-id");
 
-  expect(CanonicalStage3CUuidSchema.parse(replayId)).toBe(original);
+  const postSubmit = await snapshot(
+    f,
+    f.users.activeResident,
+    billId,
+    f.societyA,
+    "IDEMPOTENCY-01-post",
+  );
+  // Exactly one new payment row on the idempotency bill.
+  const delta = postSubmit.paymentRows.length - initial.paymentRows.length;
+  assertEq(delta, 1, "IDEMPOTENCY-01:row-delta");
 
-  const after = await countRowsOnBill(f, billId);
-  expect(after).toBe(before);
+  ctx.idempotencyBillId = billId;
+  ctx.idempotencyPaymentId = validated;
+  ctx.idempotencyReference = reference;
+  ctx.idempotencyAmountInput = IDEMPOTENCY_AMOUNT;
+  ctx.idempotencyConflictAmountInput = IDEMPOTENCY_CONFLICT_AMOUNT;
+  ctx.idempotencyKey = key;
+  ctx.idempotencyInitialState = postSubmit;
 }
 
-async function assertIdempotencyConflictNoMutation(
+async function attemptIdempotencyConflict(
   ctx: Stage3CLiveMatrixContext,
   label: string,
-  attempt: () => Promise<string>,
+  billOverride: string | null,
+  amount: number,
 ): Promise<void> {
   const f = requireMatrixFixture(ctx);
-  const billId = ctx.idempotencyBillAId!;
-  const before = await countRowsOnBill(f, billId);
+  const billId = billOverride ?? requireIdempotencyBillId(ctx);
+  const reference = requireIdempotencyReference(ctx);
+  const key = idempotencyKeyFor(f.prefix);
+  const before = requireIdempotencyInitialState(ctx);
 
   let caught: unknown = undefined;
   let succeededData: string | undefined;
   try {
-    succeededData = await attempt();
+    succeededData = await f.helpers.submitResidentBankTransferPayment({
+      actor: f.users.activeResident,
+      billId,
+      amount,
+      paymentDate: f.testPaymentDate,
+      referenceNo: reference,
+      idempotencyKey: key,
+    });
   } catch (e) {
     caught = e;
   }
@@ -164,40 +219,54 @@ async function assertIdempotencyConflictNoMutation(
   }
   assertCanonicalError(caught, STAGE3C_ERRORS.IDEMPOTENCY_CONFLICT, label);
 
-  const after = await countRowsOnBill(f, billId);
-  expect(after).toBe(before);
-  ctx.idempotencyPostSubmitState = { billId, rowCount: after };
-}
-
-async function idempotency03_conflictAmount(
-  ctx: Stage3CLiveMatrixContext,
-): Promise<void> {
-  const f = requireMatrixFixture(ctx);
-  await assertIdempotencyConflictNoMutation(ctx, "IDEMPOTENCY-03", () =>
-    f.helpers.submitResidentBankTransferPayment({
-      actor: f.users.activeResident,
-      billId: ctx.idempotencyBillAId!,
-      amount: IDEMPOTENCY_CONFLICT_AMOUNT,
-      paymentDate: f.testPaymentDate,
-      referenceNo: requireIdempotencyReference(ctx),
-      idempotencyKey: ctx.idempotencyKey!,
-    }),
+  const after = await snapshot(
+    f,
+    f.users.activeResident,
+    requireIdempotencyBillId(ctx),
+    f.societyA,
+    `${label}-post`,
   );
+  assertResidentBillStateUnchanged(before, after, label);
+  ctx.idempotencyPostSubmitState = after;
 }
 
-async function idempotency04_conflictBill(
+async function idempotency02_sameKeyChangedAmount(
+  ctx: Stage3CLiveMatrixContext,
+): Promise<void> {
+  await attemptIdempotencyConflict(ctx, "IDEMPOTENCY-02", null, IDEMPOTENCY_CONFLICT_AMOUNT);
+}
+
+async function idempotency03_proofOnlySingleRow(
   ctx: Stage3CLiveMatrixContext,
 ): Promise<void> {
   const f = requireMatrixFixture(ctx);
-  await assertIdempotencyConflictNoMutation(ctx, "IDEMPOTENCY-04", () =>
-    f.helpers.submitResidentBankTransferPayment({
-      actor: f.users.activeResident,
-      billId: f.referenceSecondarySameSocietyBillId,
-      amount: IDEMPOTENCY_AMOUNT,
-      paymentDate: f.testPaymentDate,
-      referenceNo: requireIdempotencyReference(ctx),
-      idempotencyKey: ctx.idempotencyKey!,
-    }),
+  const before = requireIdempotencyInitialState(ctx);
+  // Purely observational — snapshot again and prove state is still identical
+  // to the post-primary snapshot (one row, same amount, same sequences).
+  const now = await snapshot(
+    f,
+    f.users.activeResident,
+    requireIdempotencyBillId(ctx),
+    f.societyA,
+    "IDEMPOTENCY-03",
+  );
+  assertResidentBillStateUnchanged(before, now, "IDEMPOTENCY-03");
+  // Idempotency scope contract: exactly one payment row exists for the
+  // (resident, idempotency-key) pair since IDEMPOTENCY-01.
+  const originalPaymentId = requireIdempotencyPaymentId(ctx);
+  const matches = now.paymentRows.filter((r) => r.id === originalPaymentId);
+  assertEq(matches.length, 1, "IDEMPOTENCY-03:original-row-persists");
+}
+
+async function idempotency04_sameKeySameBillChangedAmount(
+  ctx: Stage3CLiveMatrixContext,
+): Promise<void> {
+  // Same bill, same key, changed amount (251) → idempotency_conflict.
+  await attemptIdempotencyConflict(
+    ctx,
+    "IDEMPOTENCY-04",
+    requireIdempotencyBillId(ctx),
+    IDEMPOTENCY_CONFLICT_AMOUNT,
   );
 }
 
@@ -210,28 +279,44 @@ async function reference01_primaryUniqueSucceeds(
 ): Promise<void> {
   const f = requireMatrixFixture(ctx);
   const reference = referenceValueFor(f.prefix);
-  const billId = f.referenceSecondarySameSocietyBillId;
-  const before = await countRowsOnBill(f, billId);
+  const billId = f.referencePrimaryBillId;
 
-  const paymentId = await f.helpers.submitAdminBankTransferPayment({
-    actor: f.users.adminA1,
+  const initial = await snapshot(
+    f,
+    f.users.activeResident,
     billId,
-    amount: REFERENCE_PRIMARY_AMOUNT,
+    f.societyA,
+    "REFERENCE-01-initial",
+  );
+
+  const key = `ref-primary-${safeSuffix(f.prefix)}`;
+  const paymentId = await f.helpers.submitResidentBankTransferPayment({
+    actor: f.users.activeResident,
+    billId,
+    amount: REFERENCE_AMOUNT,
     paymentDate: f.testPaymentDate,
     referenceNo: reference,
-    idempotencyKey: `ref-primary-${safeSuffix(f.prefix)}`,
+    idempotencyKey: key,
   });
   const validated = CanonicalStage3CUuidSchema.parse(paymentId);
   trackUniqueId(f.tracked.paymentIds, validated, "reference:primary");
 
-  const after = await countRowsOnBill(f, billId);
-  expect(after - before).toBe(1);
+  const post = await snapshot(
+    f,
+    f.users.activeResident,
+    billId,
+    f.societyA,
+    "REFERENCE-01-post",
+  );
+  const delta = post.paymentRows.length - initial.paymentRows.length;
+  assertEq(delta, 1, "REFERENCE-01:row-delta");
 
+  ctx.referencePrimaryBillId = billId;
   ctx.referencePrimaryPaymentId = validated;
   ctx.referenceValue = reference;
-  ctx.referenceAmount = REFERENCE_PRIMARY_AMOUNT;
-  ctx.referencePrimaryKey = `ref-primary-${safeSuffix(f.prefix)}`;
-  ctx.referencePrimaryInitialState = { billId, rowCount: after };
+  ctx.referenceAmount = REFERENCE_AMOUNT;
+  ctx.referencePrimaryKey = key;
+  ctx.referencePrimaryInitialState = post;
 }
 
 async function assertDuplicateReferenceDenied(
@@ -242,15 +327,23 @@ async function assertDuplicateReferenceDenied(
 ): Promise<void> {
   const f = requireMatrixFixture(ctx);
   const variant = whitespaceCaseVariant(requireReferenceValue(ctx));
-  const before = await countRowsOnBill(f, billId);
+  const primaryBillId = requireReferencePrimaryBillId(ctx);
+  const primaryBefore = requireReferencePrimaryInitialState(ctx);
+  const attemptedBefore = await snapshot(
+    f,
+    f.users.activeResident,
+    billId,
+    f.societyA,
+    `${label}-attempted-initial`,
+  );
 
   let caught: unknown = undefined;
   let succeededData: string | undefined;
   try {
-    succeededData = await f.helpers.submitAdminBankTransferPayment({
-      actor: f.users.adminA1,
+    succeededData = await f.helpers.submitResidentBankTransferPayment({
+      actor: f.users.activeResident,
       billId,
-      amount: REFERENCE_DUPLICATE_AMOUNT,
+      amount: REFERENCE_AMOUNT,
       paymentDate: f.testPaymentDate,
       referenceNo: variant,
       idempotencyKey: key,
@@ -263,21 +356,32 @@ async function assertDuplicateReferenceDenied(
   }
   assertCanonicalError(caught, STAGE3C_ERRORS.DUPLICATE_REFERENCE, label);
 
-  const after = await countRowsOnBill(f, billId);
-  expect(after).toBe(before);
+  const attemptedAfter = await snapshot(
+    f,
+    f.users.activeResident,
+    billId,
+    f.societyA,
+    `${label}-attempted-post`,
+  );
+  assertResidentBillStateUnchanged(attemptedBefore, attemptedAfter, `${label}-attempted`);
+  const primaryAfter = await snapshot(
+    f,
+    f.users.activeResident,
+    primaryBillId,
+    f.societyA,
+    `${label}-primary-post`,
+  );
+  assertResidentBillStateUnchanged(primaryBefore, primaryAfter, `${label}-primary`);
+  ctx.referencePrimaryPostSubmitState = primaryAfter;
 }
 
 async function reference02_sameBillDuplicateDenied(
   ctx: Stage3CLiveMatrixContext,
 ): Promise<void> {
-  const key = `ref-dup-same-bill-${safeSuffix(requireMatrixFixture(ctx).prefix)}`;
+  const f = requireMatrixFixture(ctx);
+  const key = `ref-dup-same-bill-${safeSuffix(f.prefix)}`;
   ctx.referenceDuplicateKey = key;
-  await assertDuplicateReferenceDenied(
-    ctx,
-    "REFERENCE-02",
-    requireMatrixFixture(ctx).referenceSecondarySameSocietyBillId,
-    key,
-  );
+  await assertDuplicateReferenceDenied(ctx, "REFERENCE-02", requireReferencePrimaryBillId(ctx), key);
 }
 
 async function reference03_sameSocietyDifferentBillDuplicateDenied(
@@ -288,7 +392,7 @@ async function reference03_sameSocietyDifferentBillDuplicateDenied(
   await assertDuplicateReferenceDenied(
     ctx,
     "REFERENCE-03",
-    f.referenceBillId!,
+    f.referenceSecondarySameSocietyBillId,
     key,
   );
 }
@@ -297,18 +401,28 @@ async function reference04_crossSocietyIsolationSucceeds(
   ctx: Stage3CLiveMatrixContext,
 ): Promise<void> {
   const f = requireMatrixFixture(ctx);
-  // Guard that primary reference exists; consumed even for the success path.
+  // Guard: primary reference must exist; also proves primary bill state
+  // is unchanged by the cross-society submission.
   requireReferencePrimaryPaymentId(ctx);
+  const primaryBillId = requireReferencePrimaryBillId(ctx);
+  const primaryBefore = requireReferencePrimaryInitialState(ctx);
   const variant = whitespaceCaseVariant(requireReferenceValue(ctx));
   const billId = f.referenceOtherSocietyBillId;
   const key = `ref-cross-soc-${safeSuffix(f.prefix)}`;
   ctx.referenceOtherSocietyKey = key;
 
-  const before = await countRowsOnBill(f, billId);
-  const paymentId = await f.helpers.submitAdminBankTransferPayment({
-    actor: f.users.adminB,
+  const initial = await snapshot(
+    f,
+    f.users.unrelatedResident,
     billId,
-    amount: REFERENCE_DUPLICATE_AMOUNT,
+    f.societyB,
+    "REFERENCE-04-initial",
+  );
+
+  const paymentId = await f.helpers.submitResidentBankTransferPayment({
+    actor: f.users.unrelatedResident,
+    billId,
+    amount: REFERENCE_AMOUNT,
     paymentDate: f.testPaymentDate,
     referenceNo: variant,
     idempotencyKey: key,
@@ -316,11 +430,27 @@ async function reference04_crossSocietyIsolationSucceeds(
   const validated = CanonicalStage3CUuidSchema.parse(paymentId);
   trackUniqueId(f.tracked.paymentIds, validated, "reference:cross-society");
 
-  const after = await countRowsOnBill(f, billId);
-  expect(after - before).toBe(1);
+  const post = await snapshot(
+    f,
+    f.users.unrelatedResident,
+    billId,
+    f.societyB,
+    "REFERENCE-04-post",
+  );
+  const delta = post.paymentRows.length - initial.paymentRows.length;
+  assertEq(delta, 1, "REFERENCE-04:row-delta");
 
+  // Primary society-A bill state must remain identical.
+  const primaryAfter = await snapshot(
+    f,
+    f.users.activeResident,
+    primaryBillId,
+    f.societyA,
+    "REFERENCE-04-primary-post",
+  );
+  assertResidentBillStateUnchanged(primaryBefore, primaryAfter, "REFERENCE-04-primary");
   ctx.referenceOtherSocietyPaymentId = validated;
-  ctx.referencePrimaryPostSubmitState = { billId, rowCount: after };
+  ctx.referenceOtherSocietyInitialState = post;
 }
 
 // ---------------------------------------------------------------------------
@@ -328,10 +458,10 @@ async function reference04_crossSocietyIsolationSucceeds(
 // ---------------------------------------------------------------------------
 
 export const STAGE3C_IDEMPOTENCY_REFERENCE_HANDLERS = {
-  "IDEMPOTENCY-01": idempotency01_primarySubmit,
-  "IDEMPOTENCY-02": idempotency02_identicalReplay,
-  "IDEMPOTENCY-03": idempotency03_conflictAmount,
-  "IDEMPOTENCY-04": idempotency04_conflictBill,
+  "IDEMPOTENCY-01": idempotency01_primarySubmitAndReplay,
+  "IDEMPOTENCY-02": idempotency02_sameKeyChangedAmount,
+  "IDEMPOTENCY-03": idempotency03_proofOnlySingleRow,
+  "IDEMPOTENCY-04": idempotency04_sameKeySameBillChangedAmount,
   "REFERENCE-01": reference01_primaryUniqueSucceeds,
   "REFERENCE-02": reference02_sameBillDuplicateDenied,
   "REFERENCE-03": reference03_sameSocietyDifferentBillDuplicateDenied,

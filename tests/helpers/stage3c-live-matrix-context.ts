@@ -18,7 +18,11 @@ import {
   type BillSummarySnapshot,
   type Stage3CLiveCoreContext,
 } from "./stage3c-live-core-context";
-import type { ReceiptSequenceSnapshot } from "./stage3c-live-resident-submit-contracts";
+import {
+  ReceiptSequenceSnapshotSchema,
+  type ReceiptSequenceSnapshot,
+  type ResidentBillSummary,
+} from "./stage3c-live-resident-submit-contracts";
 import type { Stage3CFixture } from "./stage3c-runtime-fixtures";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -38,8 +42,8 @@ export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
   residentSubmitAmount: number | null;
   residentSubmitReference: string | null;
   residentSubmitIdempotencyKey: string | null;
-  residentSubmitInitialSummary: BillSummarySnapshot | null;
-  residentSubmitPendingSummary: BillSummarySnapshot | null;
+  residentSubmitInitialSummary: ResidentBillSummary | null;
+  residentSubmitPendingSummary: ResidentBillSummary | null;
   residentSubmitInitialReceiptSequences: ReceiptSequenceSnapshot | null;
 
 

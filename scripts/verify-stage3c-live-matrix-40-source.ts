@@ -240,8 +240,13 @@ export function checkDocs(src: string): string[] {
 
 export function checkWorkflow(src: string): string[] {
   const f: string[] = [];
-  if (!/verify-stage3c-live-matrix-40-source/.test(src))
-    fail(f, "workflow: must invoke scripts/verify-stage3c-live-matrix-40-source.ts");
+  // The runtime workflow is frozen to the 24-case core report; it must
+  // NOT claim 32/93 or 40/93 acceptance. The 40-case validator is a
+  // local-only gate and does not run in CI yet.
+  if (/40\s*\/\s*93/.test(src))
+    fail(f, "workflow: must NOT claim 40/93 (runtime workflow is frozen at 24 cases)");
+  if (/32\s*\/\s*93/.test(src))
+    fail(f, "workflow: must NOT claim 32/93 (runtime workflow is frozen at 24 cases)");
   return f;
 }
 

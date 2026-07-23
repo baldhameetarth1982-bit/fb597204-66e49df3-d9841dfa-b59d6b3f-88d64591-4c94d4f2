@@ -182,30 +182,28 @@ export const residentSubmit01_initializeDedicatedResidentBill: Stage3CResidentSu
     );
     const initial = parseBillSummary(rawSummary, "resident-submit-01");
     assertCleanBaseline(initial, "RESIDENT-SUBMIT-01");
-    expect(
-      summaryField(rawSummary, "rejected_amount", "RESIDENT-SUBMIT-01"),
-    ).toBe(0);
-    expect(
-      summaryField(rawSummary, "reversed_amount", "RESIDENT-SUBMIT-01"),
-    ).toBe(0);
-    expect(
-      summaryField(
-        rawSummary,
-        "remaining_verified_balance",
-        "RESIDENT-SUBMIT-01",
-      ),
-    ).toBe(1200);
-    expect(
-      Boolean((rawSummary as Record<string, unknown>).cancelled),
-      "RESIDENT-SUBMIT-01: bill must not be cancelled",
-    ).toBe(false);
-    const status = String((rawSummary as Record<string, unknown>).status ?? "");
-    expect(
-      ["unpaid", "open"],
-      `RESIDENT-SUBMIT-01: canonical unpaid/open, got ${status}`,
-    ).toContain(status);
+    const strictParsed = ResidentBillSummarySchema.safeParse(rawSummary);
+    if (!strictParsed.success)
+      throw new Error(
+        "[stage3c:RESIDENT-SUBMIT-01] bill summary payload rejected by strict schema",
+      );
+    const strictInitial: ResidentBillSummary = strictParsed.data;
+    if (strictInitial.bill_id !== billId)
+      throw new Error(
+        "[stage3c:RESIDENT-SUBMIT-01] summary bill_id identity mismatch",
+      );
+    if (strictInitial.society_id !== fixture.societyA)
+      throw new Error(
+        "[stage3c:RESIDENT-SUBMIT-01] summary society_id identity mismatch",
+      );
+    expect(strictInitial.total_payable).toBe(1200);
+    expect(strictInitial.rejected_amount).toBe(0);
+    expect(strictInitial.reversed_amount).toBe(0);
+    expect(strictInitial.remaining_verified_balance).toBe(1200);
+    expect(strictInitial.cancelled).toBe(false);
+    expect(["unpaid", "open"]).toContain(strictInitial.status);
 
-    ctx.residentSubmitInitialSummary = initial;
+    ctx.residentSubmitInitialSummary = strictInitial;
     ctx.residentBaselineSummary = initial;
 
     ctx.residentSubmitInitialReceiptSequences = await snapshotReceiptSequences(

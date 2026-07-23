@@ -10,6 +10,10 @@ import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 
 const fnSrc = readFileSync("src/lib/offline-payments.functions.ts", "utf8");
+const residentCoreSrc = readFileSync(
+  "src/lib/offline-payment-resident-submit.ts",
+  "utf8",
+);
 const adminRoute = readFileSync(
   "src/routes/_society/society.payments.tsx",
   "utf8",

@@ -497,4 +497,317 @@ describe("Stage 3C — shared core: delegation ownership (source proof)", () => 
   });
 });
 
+// ---------------------------------------------------------------------------
+// Direct reader/state behavioral tests — real exported schemas & functions.
+// ---------------------------------------------------------------------------
+import {
+  ReceiptSequenceSnapshotSchema,
+  snapshotReceiptSequences,
+  assertReceiptSequencesExactlyEqual,
+  ResidentReceiptRowsSchema,
+  ResidentBillSummarySchema,
+  assertResidentBillStateUnchanged,
+  assertCanonicalMovedOutRelationship,
+  parseResidentPaymentStatusRows,
+  type ReceiptSequenceReader,
+  type ResidentBillStateSnapshot,
+} from "../helpers/stage3c-live-resident-submit-contracts";
+import { requireResidentSubmitInitialReceiptSequences } from "../helpers/stage3c-live-matrix-context";
+
+const SOC_A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const SOC_B = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+const BILL_A = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+const PAY_A = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+const PAY_B = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
+const REC_A = "abababab-cdcd-4efe-8faf-babababababa";
+const USER_A = "22222222-3333-4444-8555-666666666666";
+const FLAT_A = "33333333-4444-4555-8666-777777777777";
+
+function makeReader(
+  byTable: Record<string, { data: unknown; error: unknown }>,
+): ReceiptSequenceReader {
+  return {
+    from: (table: string) => ({
+      select: (_columns: string) => ({
+        eq: async (_column: string, _value: string) => {
+          const r = byTable[table];
+          if (!r) return { data: [], error: null };
+          return r;
+        },
+      }),
+    }),
+  };
+}
+
+const goodSummary = {
+  bill_id: BILL_A,
+  society_id: SOC_A,
+  total_payable: 1200,
+  verified_amount: 0,
+  pending_amount: 0,
+  rejected_amount: 0,
+  reversed_amount: 0,
+  available_to_submit: 1200,
+  remaining_verified_balance: 1200,
+  cancelled: false,
+  status: "unpaid" as const,
+};
+
+describe("Stage 3C — direct reader/state behavioral coverage", () => {
+  it("ReceiptSequenceSnapshotSchema rejects missing yearly array", () => {
+    const res = ReceiptSequenceSnapshotSchema.safeParse({ monthly: [] });
+    expect(res.success).toBe(false);
+  });
+
+  it("ReceiptSequenceSnapshotSchema rejects missing monthly array", () => {
+    const res = ReceiptSequenceSnapshotSchema.safeParse({ yearly: [] });
+    expect(res.success).toBe(false);
+  });
+
+  it("snapshotReceiptSequences rejects yearly data belonging to another society", async () => {
+    const reader = makeReader({
+      payment_receipt_sequences: {
+        data: [{ society_id: SOC_B, year: 2026, next_number: 0 }],
+        error: null,
+      },
+      payment_receipt_month_sequences: { data: [], error: null },
+    });
+    await expect(snapshotReceiptSequences(reader, SOC_A, "T")).rejects.toThrow(
+      /wrong society scope/,
+    );
+  });
+
+  it("snapshotReceiptSequences rejects monthly data belonging to another society", async () => {
+    const reader = makeReader({
+      payment_receipt_sequences: { data: [], error: null },
+      payment_receipt_month_sequences: {
+        data: [{ society_id: SOC_B, year_month: "2026-06", next_number: 0 }],
+        error: null,
+      },
+    });
+    await expect(snapshotReceiptSequences(reader, SOC_A, "T")).rejects.toThrow(
+      /wrong society scope/,
+    );
+  });
+
+  it("assertReceiptSequencesExactlyEqual rejects changed yearly key (and message excludes UUID + key)", () => {
+    const before = ReceiptSequenceSnapshotSchema.parse({
+      yearly: [{ society_id: SOC_A, year: 2026, next_number: 0 }],
+      monthly: [],
+    });
+    const after = ReceiptSequenceSnapshotSchema.parse({
+      yearly: [{ society_id: SOC_A, year: 2027, next_number: 0 }],
+      monthly: [],
+    });
+    try {
+      assertReceiptSequencesExactlyEqual(before, after, "T");
+      throw new Error("expected throw");
+    } catch (e) {
+      const msg = (e as Error).message;
+      expect(msg).toMatch(/yearly sequence row \d+ changed/);
+      expect(msg).not.toContain(SOC_A);
+      expect(msg).not.toContain("2026");
+      expect(msg).not.toContain("2027");
+    }
+  });
+
+  it("assertReceiptSequencesExactlyEqual rejects changed monthly key (and message excludes UUID + key)", () => {
+    const before = ReceiptSequenceSnapshotSchema.parse({
+      yearly: [],
+      monthly: [{ society_id: SOC_A, year_month: "2026-06", next_number: 0 }],
+    });
+    const after = ReceiptSequenceSnapshotSchema.parse({
+      yearly: [],
+      monthly: [{ society_id: SOC_A, year_month: "2026-07", next_number: 0 }],
+    });
+    try {
+      assertReceiptSequencesExactlyEqual(before, after, "T");
+      throw new Error("expected throw");
+    } catch (e) {
+      const msg = (e as Error).message;
+      expect(msg).toMatch(/monthly sequence row \d+ changed/);
+      expect(msg).not.toContain(SOC_A);
+      expect(msg).not.toContain("2026-06");
+      expect(msg).not.toContain("2026-07");
+    }
+  });
+
+  it("ResidentReceiptRowsSchema rejects an unknown extra property", () => {
+    const res = ResidentReceiptRowsSchema.safeParse([
+      { id: REC_A, payment_id: PAY_A, extra: "x" },
+    ]);
+    expect(res.success).toBe(false);
+  });
+
+  it("ResidentReceiptRowsSchema rejects duplicate receipt IDs", () => {
+    const res = ResidentReceiptRowsSchema.safeParse([
+      { id: REC_A, payment_id: PAY_A },
+      { id: REC_A, payment_id: PAY_B },
+    ]);
+    expect(res.success).toBe(false);
+  });
+
+  it("ResidentReceiptRowsSchema rejects uppercase UUID", () => {
+    const res = ResidentReceiptRowsSchema.safeParse([
+      { id: REC_A.toUpperCase(), payment_id: PAY_A },
+    ]);
+    expect(res.success).toBe(false);
+  });
+
+  it("ResidentBillSummarySchema rejects missing bill_id", () => {
+    const { bill_id: _b, ...rest } = goodSummary;
+    expect(ResidentBillSummarySchema.safeParse(rest).success).toBe(false);
+  });
+
+  it("ResidentBillSummarySchema rejects missing society_id", () => {
+    const { society_id: _s, ...rest } = goodSummary;
+    expect(ResidentBillSummarySchema.safeParse(rest).success).toBe(false);
+  });
+
+  it("ResidentBillSummarySchema rejects empty numeric string", () => {
+    expect(
+      ResidentBillSummarySchema.safeParse({ ...goodSummary, total_payable: "" }).success,
+    ).toBe(false);
+  });
+
+  it("ResidentBillSummarySchema rejects NaN numeric input", () => {
+    expect(
+      ResidentBillSummarySchema.safeParse({ ...goodSummary, total_payable: Number.NaN }).success,
+    ).toBe(false);
+  });
+
+  it("ResidentBillSummarySchema rejects Infinity numeric input", () => {
+    expect(
+      ResidentBillSummarySchema.safeParse({
+        ...goodSummary,
+        total_payable: Number.POSITIVE_INFINITY,
+      }).success,
+    ).toBe(false);
+  });
+
+  it("assertResidentBillStateUnchanged rejects changed payment amount (message excludes IDs and amounts)", () => {
+    const summary = ResidentBillSummarySchema.parse(goodSummary);
+    const seq = ReceiptSequenceSnapshotSchema.parse({ yearly: [], monthly: [] });
+    const before: ResidentBillStateSnapshot = {
+      summary,
+      paymentRows: parseResidentPaymentStatusRows(
+        [{ id: PAY_A, status: "pending", amount: 300 }],
+        "T",
+      ),
+      sequences: seq,
+    };
+    const after: ResidentBillStateSnapshot = {
+      summary,
+      paymentRows: parseResidentPaymentStatusRows(
+        [{ id: PAY_A, status: "pending", amount: 999 }],
+        "T",
+      ),
+      sequences: seq,
+    };
+    try {
+      assertResidentBillStateUnchanged(before, after, "T");
+      throw new Error("expected throw");
+    } catch (e) {
+      const msg = (e as Error).message;
+      expect(msg).toMatch(/payment row \d+ changed/);
+      expect(msg).not.toContain(PAY_A);
+      expect(msg).not.toContain("300");
+      expect(msg).not.toContain("999");
+    }
+  });
+
+  it("assertCanonicalMovedOutRelationship rejects an active row even when a historical row exists (message excludes user + flat IDs)", () => {
+    const rows = [
+      { id: REC_A, user_id: USER_A, flat_id: FLAT_A, is_active: true, moved_out_at: null },
+      {
+        id: PAY_A,
+        user_id: USER_A,
+        flat_id: FLAT_A,
+        is_active: false,
+        moved_out_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+    try {
+      assertCanonicalMovedOutRelationship(
+        rows,
+        { expectedUserId: USER_A, expectedFlatId: FLAT_A },
+        "T",
+      );
+      throw new Error("expected throw");
+    } catch (e) {
+      const msg = (e as Error).message;
+      expect(msg).toMatch(/still has active residency/);
+      expect(msg).not.toContain(USER_A);
+      expect(msg).not.toContain(FLAT_A);
+    }
+  });
+
+  it("requireResidentSubmitInitialReceiptSequences parses and sorts the snapshot (transforms into a new array)", () => {
+    // Build an unsorted raw snapshot; the schema's transform returns a
+    // deterministically sorted new array.
+    const rawUnsorted = {
+      yearly: [
+        { society_id: SOC_B, year: 2026, next_number: 0 },
+        { society_id: SOC_A, year: 2026, next_number: 0 },
+      ],
+      monthly: [
+        { society_id: SOC_B, year_month: "2026-07", next_number: 0 },
+        { society_id: SOC_A, year_month: "2026-06", next_number: 0 },
+      ],
+    };
+    // Prove strict schema rejects duplicate-key snapshots up-front:
+    expect(
+      ReceiptSequenceSnapshotSchema.safeParse({
+        yearly: [
+          { society_id: SOC_A, year: 2026, next_number: 0 },
+          { society_id: SOC_A, year: 2026, next_number: 1 },
+        ],
+        monthly: [],
+      }).success,
+    ).toBe(false);
+
+    const ctx = createStage3CLiveMatrixContext();
+    ctx.residentSubmitInitialReceiptSequences =
+      rawUnsorted as unknown as import("../helpers/stage3c-live-resident-submit-contracts").ReceiptSequenceSnapshot;
+    const guarded = requireResidentSubmitInitialReceiptSequences(ctx);
+    // Sorted by society_id then year.
+    expect(guarded.yearly.map((r) => r.society_id)).toEqual([SOC_A, SOC_B]);
+    expect(guarded.monthly.map((r) => r.society_id)).toEqual([SOC_A, SOC_B]);
+    // Guard result is not the same mutable array object as unsorted input.
+    expect(guarded.yearly).not.toBe(rawUnsorted.yearly);
+    expect(guarded.monthly).not.toBe(rawUnsorted.monthly);
+  });
+
+  it("parseResidentPaymentStatusRows rejects null", () => {
+    expect(() => parseResidentPaymentStatusRows(null, "T")).toThrow(/absent/);
+  });
+
+  it("parseResidentPaymentStatusRows rejects an object", () => {
+    expect(() => parseResidentPaymentStatusRows({}, "T")).toThrow(/not an array/);
+  });
+
+  it("parseResidentPaymentStatusRows rejects duplicate payment IDs", () => {
+    expect(() =>
+      parseResidentPaymentStatusRows(
+        [
+          { id: PAY_A, status: "pending", amount: 300 },
+          { id: PAY_A, status: "pending", amount: 400 },
+        ],
+        "T",
+      ),
+    ).toThrow(/rejected/);
+  });
+
+  it("parseResidentPaymentStatusRows rejects an unsupported status", () => {
+    expect(() =>
+      parseResidentPaymentStatusRows(
+        [{ id: PAY_A, status: "not-a-status", amount: 300 }],
+        "T",
+      ),
+    ).toThrow(/rejected/);
+  });
+});
+
+
+
 

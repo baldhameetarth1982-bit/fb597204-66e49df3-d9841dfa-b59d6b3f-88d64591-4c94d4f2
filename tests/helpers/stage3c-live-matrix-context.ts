@@ -233,13 +233,13 @@ export const requireResidentSubmitIdempotencyKey = (c: Stage3CLiveMatrixContext)
     120,
   );
 export const requireResidentSubmitInitialSummary = (c: Stage3CLiveMatrixContext) =>
-  requireSummary(
+  requireStrictSummary(
     c.residentSubmitInitialSummary,
     "residentSubmitInitialSummary",
     "RESIDENT-SUBMIT-01",
   );
 export const requireResidentSubmitPendingSummary = (c: Stage3CLiveMatrixContext) =>
-  requireSummary(
+  requireStrictSummary(
     c.residentSubmitPendingSummary,
     "residentSubmitPendingSummary",
     "RESIDENT-SUBMIT-08",

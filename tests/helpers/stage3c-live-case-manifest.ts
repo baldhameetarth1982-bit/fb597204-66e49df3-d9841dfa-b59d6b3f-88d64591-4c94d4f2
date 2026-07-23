@@ -89,10 +89,11 @@ export const STAGE3C_REQUIRED_LIVE_CASES: readonly Stage3CLiveCase[] = [
   { id: "IDEMPOTENCY-04", category: "IDEMPOTENCY", description: "Only one payment row exists after any number of replay attempts" },
 
   // ── REFERENCE ─────────────────────────────────────────────────────────
-  { id: "REFERENCE-01", category: "REFERENCE", description: "Unique bank reference succeeds" },
-  { id: "REFERENCE-02", category: "REFERENCE", description: "Whitespace-only-difference reference is treated as duplicate and denied" },
-  { id: "REFERENCE-03", category: "REFERENCE", description: "Case-only-difference reference is treated as duplicate and denied" },
-  { id: "REFERENCE-04", category: "REFERENCE", description: "Duplicate reference raises the canonical duplicate-reference error" },
+  { id: "REFERENCE-01", category: "REFERENCE", description: "Unique bank reference in Society A succeeds" },
+  { id: "REFERENCE-02", category: "REFERENCE", description: "Same-bill duplicate reference (whitespace/case variant) is denied with duplicate_reference" },
+  { id: "REFERENCE-03", category: "REFERENCE", description: "Same-society different-bill duplicate reference is denied with duplicate_reference" },
+  { id: "REFERENCE-04", category: "REFERENCE", description: "Cross-society isolation: same normalized reference succeeds in a different society" },
+
 
   // ── READ ──────────────────────────────────────────────────────────────
   { id: "READ-01", category: "READ", description: "Active resident sees their own payment history" },

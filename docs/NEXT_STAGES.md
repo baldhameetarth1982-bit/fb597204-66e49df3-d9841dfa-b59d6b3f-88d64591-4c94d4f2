@@ -2,7 +2,26 @@
 
 ## Stage 3C — Offline Payments, Verification and Receipts
 
-**Status:** CLOSURE VERIFICATION IN PROGRESS — awaiting one successful GitHub Actions run of `.github/workflows/stage3c-runtime-verification.yml`.
+**Status:** CLOSURE VERIFICATION IN PROGRESS
+
+**Live matrix progress — IDEMPOTENCY + REFERENCE slice (this run)**
+- Implemented live source: **40/93** (AUTH 7/7, PENDING 8/8, VERIFY 9/9, RESIDENT-SUBMIT 8/8, IDEMPOTENCY 4/4, REFERENCE 4/4).
+- New handler module: `tests/helpers/stage3c-live-idempotency-reference-cases.ts` — exactly 8 handlers, `satisfies Record<Stage3CIdempotencyReferenceCaseId, Stage3CIdempotencyReferenceHandler>`.
+- Matrix registry `tests/helpers/stage3c-live-matrix-registry.ts` now composes 24 core + 8 resident-submit + 8 idempotency/reference = 40 via `satisfies Record<Stage3CMatrixLiveCaseId, Stage3CMatrixLiveHandler>`; core registry unchanged at 24.
+- Matrix context extended with strict nullable IDEMPOTENCY and REFERENCE lifecycle slots (`idempotencyPaymentId`, `idempotencyReference`, `idempotencyInitialState`, `idempotencyPostSubmitState`, `referencePrimaryPaymentId`, `referenceValue`, `referencePrimaryKey`, `referenceDuplicateKey`, `referenceOtherSocietyKey`, `referencePrimaryInitialState`, `referencePrimaryPostSubmitState`) plus category guards.
+- Fixture `tests/helpers/stage3c-runtime-fixtures.ts` gained two dedicated bills tracked/cleaned via the strict prefix: `referenceSecondarySameSocietyBillId` (700, flat A in Society A) for REFERENCE-01/02, and `referenceOtherSocietyBillId` (600, flat in Society B) for REFERENCE-04.
+- Idempotency semantics enforced: exact replay under the same `(submitted_by, idempotency_key)` returns the ORIGINAL payment id (row count unchanged); replay with a changed amount or bill id raises `idempotency_conflict` with zero payment-row mutation.
+- Reference semantics enforced (society-scoped `upper(trim(reference_no))` uniqueness for bank_transfer): unique reference succeeds; whitespace/case-variant duplicate on the SAME bill and on a DIFFERENT bill in the SAME society both raise `duplicate_reference`; the SAME normalized reference in a DIFFERENT society succeeds (cross-society isolation).
+- Denial control flow: RPC invoked inside a try/catch that only records `{ caught, succeededData }`; the "unexpected success" assertion is thrown OUTSIDE the catch so it can never be consumed by `assertCanonicalError`. Every denial re-counts payment rows on the target bill and asserts unchanged.
+- Payment-id tracking is duplicate-safe (`trackUniqueId`); denials never add ids to `tracked.paymentIds`.
+- New source validator: `scripts/verify-stage3c-live-matrix-40-source.ts` — enforces manifest coverage of the 8 new ids, `satisfies Record` completeness on the handler map, matrix registry composing exactly 40 ids, context lifecycle slots + guards for both categories, dedicated fixture bills, and idempotency/reference denial control-flow shape.
+- Focused unit test: `tests/unit/billing-stage3c-live-idempotency-reference.test.ts`.
+- Runtime workflow (`.github/workflows/stage3c-runtime-verification.yml`) gains a new local step validating the 40-case source; live GitHub Actions execution of the 40-case matrix remains **not observed**.
+- 32-case validator retained; relaxed to remain non-regressive (no false forbid on IDEMPOTENCY/REFERENCE, docs check accepts 32/93 or 40/93). The 40-case validator owns forward-boundary verification.
+- Next bounded categories: **READ-01..10** and **PRIVACY-01..16**. Stage 3D remains blocked.
+
+**RESIDENT-SUBMIT reader/state behavioral closure (prior run, unchanged)**
+
 
 **RESIDENT-SUBMIT reader/state behavioral closure (this run)**
 - Focused resident suite `tests/unit/billing-stage3c-live-resident-submit.test.ts` expanded from 62 → **83 direct tests**, all passing. New behavioral tests directly execute real exports (no source-regex substitutes): `ReceiptSequenceSnapshotSchema`, `snapshotReceiptSequences` (cross-society scope rejection), `assertReceiptSequencesExactlyEqual` (safe error labels — no UUID / key leakage), `ResidentReceiptRowsSchema` (unknown property, duplicate id), `ResidentBillSummarySchema` (missing `bill_id` / `society_id`, empty string, NaN, Infinity), `assertResidentBillStateUnchanged` (payment-amount change, no IDs/amounts in message), `assertCanonicalMovedOutRelationship` (active row rejected even alongside historical row, no user/flat ID leakage), `requireResidentSubmitInitialReceiptSequences` (parses + sorts snapshot, returns a fresh array), and `parseResidentPaymentStatusRows` (null / object / duplicate id / unsupported status rejection).

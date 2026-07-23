@@ -121,8 +121,8 @@ describe("Stage 3C 40-case source validator", () => {
     const good = "40/93 IDEMPOTENCY 4/4 REFERENCE 4/4";
     expect(checkDocs(good)).toEqual([]);
     expect(checkDocs(`${good} Stage 3D started`).join("|")).toMatch(/Stage 3D started/);
-    expect(checkWorkflow("nothing here")).not.toEqual([]);
-    expect(checkWorkflow("bun scripts/verify-stage3c-live-matrix-40-source.ts")).toEqual([]);
+    expect(checkWorkflow("nothing here")).toEqual([]);
+    expect(checkWorkflow("Runs live-suite 40/93 acceptance").join("|")).toMatch(/40\/93/);
     expect(checkManifest("").length).toBe(8);
   });
 });

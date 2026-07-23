@@ -359,9 +359,12 @@ export function checkDocs(src: string): string[] {
 
 export function checkWorkflowBoundary(src: string): string[] {
   const f: string[] = [];
-  // The 32-case validator does not enforce workflow-level 32-case claims;
-  // the 40-case validator owns forward-boundary verification.
-  void src;
+  // The runtime workflow still exercises only the 24-case core runtime
+  // report. It must not claim 32/93 or 40/93 acceptance.
+  if (/32\s*\/\s*93/.test(src))
+    fail(f, "workflow: must NOT claim 32/93 without exact 32-case runtime report support");
+  if (/40\s*\/\s*93/.test(src))
+    fail(f, "workflow: must NOT claim 40/93 without exact 40-case runtime report support");
   return f;
 }
 

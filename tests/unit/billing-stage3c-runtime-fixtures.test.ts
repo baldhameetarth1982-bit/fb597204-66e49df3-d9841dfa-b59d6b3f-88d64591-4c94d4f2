@@ -453,9 +453,16 @@ describe("Stage 3C — real submission helper dispatch", () => {
   it("submitResidentBankTransferPayment: throws on malformed id", async () => {
     const helpers = buildScenarioHelpers(adminStub);
     const { actor } = makeMockedActor(() => ({ data: "nope", error: null }));
-    // The shared core rejects non-canonical UUIDs with a neutral token.
+    // The shared resident core rejects non-canonical UUIDs with a
+    // neutral token. Use a schema-valid idempotency key so the RPC
+    // path (and its UUID parser) is actually exercised.
     await expect(
-      helpers.submitResidentBankTransferPayment({ ...baseArgs, actor, referenceNo: "R" }),
+      helpers.submitResidentBankTransferPayment({
+        ...baseArgs,
+        actor,
+        referenceNo: "R",
+        idempotencyKey: "keykey",
+      }),
     ).rejects.toThrow(/operation_failed/);
   });
 });

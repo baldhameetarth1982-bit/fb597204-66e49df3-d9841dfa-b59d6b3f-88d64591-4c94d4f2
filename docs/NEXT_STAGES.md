@@ -18,6 +18,7 @@
 - Workflow / runtime report expansion remains pending — CI still runs the canonical 24-case runtime; the 8 new cases are locally implemented but not yet CI-verified.
 - New source validator: `scripts/verify-stage3c-live-matrix-32-source.ts` — enforces the 32-case shape, `satisfies Record` completeness, integration-suite registration, docs progress, and the workflow boundary (no false 32/93 claim).
 - New behavioral unit test: `tests/unit/billing-stage3c-live-resident-submit.test.ts`.
+- **Shared resident-submit core safety repair (this bounded run):** `src/lib/offline-payment-resident-submit.ts` now parses public input via `residentSubmitInputSchema` before any RPC call, exports a canonical lowercase-UUID `ResidentSubmitPaymentIdSchema` + `parseResidentSubmitPaymentId`, returns `Promise<string>` (never a `{ paymentId, raw }` wrapper), and rethrows provider errors by identity (no `new Error(error.message)` message copying). Production `submitResidentBankTransfer` and fixture `submitResidentBankTransferPayment` both delegate to this single core, so exactly one resident Bank Transfer RPC construction exists. Direct behavioral tests execute the shared core with a mocked RPC client. Remaining resident acceptance work — strict receipt, sequence, bill-state, moved-out and final-row behavioral closure — is still pending. Runtime workflow remains **24 cases**; GitHub Actions success remains **not observed** for the 32-case slice.
 - Next bounded categories: **IDEMPOTENCY-01..04** and **REFERENCE-01..04**.
 
 

@@ -1008,6 +1008,10 @@ export type Stage3CFixture = {
   openBillId: string;
   openBillId2: string;
   cancelledBillId: string;
+  /** Dedicated unpaid bill (total 1000, Society A, flatA) for IDEMPOTENCY-01..04. */
+  idempotencyBillId: string;
+  /** Dedicated unpaid bill (total 800, Society A, flatA) for REFERENCE-01/02. */
+  referencePrimaryBillId: string;
   /** Extra unpaid bill in Society A on flatA (700) for REFERENCE-03. */
   referenceSecondarySameSocietyBillId: string;
   /** Extra unpaid bill in Society B on unrelatedFlat (600) for REFERENCE-04. */

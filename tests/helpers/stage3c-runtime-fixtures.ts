@@ -2234,6 +2234,8 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
       openBillId,
       openBillId2,
       cancelledBillId,
+      idempotencyBillId: matrix.idempotencyBillAId,
+      referencePrimaryBillId: matrix.idempotencyBillBId,
       referenceSecondarySameSocietyBillId,
       referenceOtherSocietyBillId,
       testPaymentDate: STAGE3C_TEST_PAYMENT_DATE,

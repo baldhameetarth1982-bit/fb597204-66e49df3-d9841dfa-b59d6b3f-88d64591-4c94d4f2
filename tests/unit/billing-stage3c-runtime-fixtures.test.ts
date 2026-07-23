@@ -741,7 +741,15 @@ describe("Stage 3C fixtures — source contract", () => {
   it("submit helpers use `_actor_role: admin` / `resident`", () => {
     expect(SRC).not.toMatch(/_actor_role:\s*"society_admin"/);
     expect(SRC).toMatch(/submitAdminCashPayment[\s\S]{0,800}_actor_role:\s*"admin"/);
-    expect(SRC).toMatch(/submitResidentBankTransferPayment[\s\S]{0,800}_actor_role:\s*"resident"/);
+    // The resident helper delegates to the shared neutral core; pins
+    // live there.
+    expect(SRC).toMatch(/submitResidentBankTransferWithClient/);
+    const coreSrc = readFileSync(
+      "src/lib/offline-payment-resident-submit.ts",
+      "utf8",
+    );
+    expect(coreSrc).toMatch(/_actor_role:\s*"resident"/);
+    expect(coreSrc).toMatch(/_method:\s*"bank_transfer"/);
   });
   it("scenario helper input types do not surface actorRole", () => {
     const admInput = SRC.slice(

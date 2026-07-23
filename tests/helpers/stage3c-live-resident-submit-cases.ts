@@ -116,10 +116,12 @@ export {
   deriveActorRoleFromSource,
   snapshotReceiptSequences,
   assertReceiptSequencesExactlyEqual,
-  assertReceiptSequencesUnchanged,
   snapshotResidentBillState,
   assertResidentBillStateUnchanged,
   assertNoReceiptForResidentPayment,
+  assertResidentPendingDelta,
+  assertCanonicalMovedOutRelationship,
+  parseResidentPaymentStatusRows,
 };
 
 // ---------------------------------------------------------------------------

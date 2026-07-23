@@ -947,7 +947,13 @@ export function runAllFoundationChecks(): FoundationCheckOutcome {
   failures.push(...checkFixtureFoundation(read(FIXTURE)));
   failures.push(...checkMatrixContext(read(MATRIX_CTX)));
   failures.push(...checkErrorTokens(read(ERRORS)));
-  failures.push(...checkResidentContract(read(CONTRACTS), read(PROD)));
+  failures.push(
+    ...checkResidentContract(
+      read(CONTRACTS),
+      read(PROD),
+      existsSync(resolve(ROOT, RESIDENT_CORE)) ? read(RESIDENT_CORE) : "",
+    ),
+  );
   failures.push(...checkRegistryUnchanged(read(REGISTRY)));
   failures.push(...checkLiveSuiteUnchanged(read(LIVE_SUITE)));
   failures.push(...checkWorkflowIntegrity(read(WORKFLOW)));

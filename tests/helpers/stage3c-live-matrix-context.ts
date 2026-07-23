@@ -18,7 +18,11 @@ import {
   type BillSummarySnapshot,
   type Stage3CLiveCoreContext,
 } from "./stage3c-live-core-context";
-import type { ReceiptSequenceSnapshot } from "./stage3c-live-resident-submit-contracts";
+import {
+  ReceiptSequenceSnapshotSchema,
+  type ReceiptSequenceSnapshot,
+  type ResidentBillSummary,
+} from "./stage3c-live-resident-submit-contracts";
 import type { Stage3CFixture } from "./stage3c-runtime-fixtures";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -38,8 +42,8 @@ export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
   residentSubmitAmount: number | null;
   residentSubmitReference: string | null;
   residentSubmitIdempotencyKey: string | null;
-  residentSubmitInitialSummary: BillSummarySnapshot | null;
-  residentSubmitPendingSummary: BillSummarySnapshot | null;
+  residentSubmitInitialSummary: ResidentBillSummary | null;
+  residentSubmitPendingSummary: ResidentBillSummary | null;
   residentSubmitInitialReceiptSequences: ReceiptSequenceSnapshot | null;
 
 
@@ -167,6 +171,32 @@ function requireSummary(
   return value;
 }
 
+function requireStrictSummary(
+  value: ResidentBillSummary | null,
+  field: string,
+  expectedFrom: string,
+): ResidentBillSummary {
+  if (value === null) failGuard(field, expectedFrom);
+  return value;
+}
+
+export function requireResidentSubmitInitialReceiptSequences(
+  c: Stage3CLiveMatrixContext,
+): ReceiptSequenceSnapshot {
+  if (c.residentSubmitInitialReceiptSequences === null)
+    throw new Error(
+      "[stage3c:matrix] residentSubmitInitialReceiptSequences not initialised — RESIDENT-SUBMIT-01 must run first",
+    );
+  const parsed = ReceiptSequenceSnapshotSchema.safeParse(
+    c.residentSubmitInitialReceiptSequences,
+  );
+  if (!parsed.success)
+    throw new Error(
+      "[stage3c:matrix] residentSubmitInitialReceiptSequences failed strict schema",
+    );
+  return parsed.data;
+}
+
 export function requireMatrixFixture(ctx: Stage3CLiveMatrixContext): Stage3CFixture {
   if (!ctx.fixture) throw new Error("[stage3c:matrix] fixture not initialised");
   return ctx.fixture;
@@ -203,13 +233,13 @@ export const requireResidentSubmitIdempotencyKey = (c: Stage3CLiveMatrixContext)
     120,
   );
 export const requireResidentSubmitInitialSummary = (c: Stage3CLiveMatrixContext) =>
-  requireSummary(
+  requireStrictSummary(
     c.residentSubmitInitialSummary,
     "residentSubmitInitialSummary",
     "RESIDENT-SUBMIT-01",
   );
 export const requireResidentSubmitPendingSummary = (c: Stage3CLiveMatrixContext) =>
-  requireSummary(
+  requireStrictSummary(
     c.residentSubmitPendingSummary,
     "residentSubmitPendingSummary",
     "RESIDENT-SUBMIT-08",

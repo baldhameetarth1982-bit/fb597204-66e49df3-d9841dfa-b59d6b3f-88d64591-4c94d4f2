@@ -203,11 +203,17 @@ export function checkMatrixContextSlots(src: string): string[] {
 
 export function checkFixtureBills(src: string): string[] {
   const f: string[] = [];
+  if (!/\bidempotencyBillId\b/.test(src))
+    fail(f, "fixtures: `idempotencyBillId` alias not exposed (1000 bill)");
+  if (!/\breferencePrimaryBillId\b/.test(src))
+    fail(f, "fixtures: `referencePrimaryBillId` alias not exposed (800 bill)");
   if (!/referenceSecondarySameSocietyBillId/.test(src))
     fail(f, "fixtures: referenceSecondarySameSocietyBillId not exposed");
   if (!/referenceOtherSocietyBillId/.test(src))
     fail(f, "fixtures: referenceOtherSocietyBillId not exposed");
   // Financial totals must appear as literals so validators/tests can pin them.
+  if (!/\b1000\b/.test(src)) fail(f, "fixtures: 1000 (idempotency bill total) missing");
+  if (!/\b800\b/.test(src)) fail(f, "fixtures: 800 (primary reference bill total) missing");
   if (!/\b700\b/.test(src)) fail(f, "fixtures: 700 (secondary reference bill total) missing");
   if (!/\b600\b/.test(src)) fail(f, "fixtures: 600 (other-society reference bill total) missing");
   return f;

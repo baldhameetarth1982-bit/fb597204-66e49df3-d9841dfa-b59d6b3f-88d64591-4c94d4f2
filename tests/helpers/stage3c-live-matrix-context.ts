@@ -171,6 +171,32 @@ function requireSummary(
   return value;
 }
 
+function requireStrictSummary(
+  value: ResidentBillSummary | null,
+  field: string,
+  expectedFrom: string,
+): ResidentBillSummary {
+  if (value === null) failGuard(field, expectedFrom);
+  return value;
+}
+
+export function requireResidentSubmitInitialReceiptSequences(
+  c: Stage3CLiveMatrixContext,
+): ReceiptSequenceSnapshot {
+  if (c.residentSubmitInitialReceiptSequences === null)
+    throw new Error(
+      "[stage3c:matrix] residentSubmitInitialReceiptSequences not initialised — RESIDENT-SUBMIT-01 must run first",
+    );
+  const parsed = ReceiptSequenceSnapshotSchema.safeParse(
+    c.residentSubmitInitialReceiptSequences,
+  );
+  if (!parsed.success)
+    throw new Error(
+      "[stage3c:matrix] residentSubmitInitialReceiptSequences failed strict schema",
+    );
+  return parsed.data;
+}
+
 export function requireMatrixFixture(ctx: Stage3CLiveMatrixContext): Stage3CFixture {
   if (!ctx.fixture) throw new Error("[stage3c:matrix] fixture not initialised");
   return ctx.fixture;

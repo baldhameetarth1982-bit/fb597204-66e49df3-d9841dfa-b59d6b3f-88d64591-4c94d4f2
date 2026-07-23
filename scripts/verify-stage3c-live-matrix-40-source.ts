@@ -118,7 +118,7 @@ export function checkCasesModule(src: string): string[] {
     fail(f, "cases: admin bank-transfer / recordAdminOfflinePayment helpers are forbidden in this slice");
   if (!/activeResident/.test(src))
     fail(f, "cases: IDEMPOTENCY cases must use activeResident (per-user idempotency scope)");
-  if (!/from ["']vitest["']/.test(src) === false)
+  if (/from ["']vitest["']/.test(src))
     fail(f, "cases: must NOT import from vitest — handlers must throw plain Errors");
   // No non-null assertions (bare `!` after identifiers).
   if (/\b[A-Za-z_][A-Za-z0-9_]*!\./.test(src) || /\b[A-Za-z_][A-Za-z0-9_]*!\s*[,)\];]/.test(src))

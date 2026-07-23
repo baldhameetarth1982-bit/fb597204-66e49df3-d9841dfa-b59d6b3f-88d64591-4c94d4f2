@@ -234,12 +234,21 @@ const paymentWithOptionalNotes = paymentIdOnly.extend({
 
 /** Stage 3C v4 — resident Bank Transfer only. Method/actor fixed server-side.
  *  Delegates to the neutral shared core so production and fixture cannot drift. */
+/** Safe provider-error message extractor. Never leaks object contents. */
+function residentSubmitProviderErrorMessage(e: unknown): string {
+  if (e && typeof e === "object" && "message" in e) {
+    const m = (e as { message: unknown }).message;
+    if (typeof m === "string" && m.length > 0) return m;
+  }
+  return "operation_failed";
+}
+
 export const submitResidentBankTransfer = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => residentSubmitInput.parse(i))
   .handler(async ({ data, context }) => {
     try {
-      const { paymentId } = await submitResidentBankTransferWithClient(
+      const paymentId = await submitResidentBankTransferWithClient(
         toBillingRpcClient(context),
         {
           billId: data.billId,
@@ -252,7 +261,7 @@ export const submitResidentBankTransfer = createServerFn({ method: "POST" })
       );
       return { paymentId };
     } catch (e) {
-      throw new Error(mapPaymentError((e as Error).message));
+      throw new Error(mapPaymentError(residentSubmitProviderErrorMessage(e)));
     }
   });
 

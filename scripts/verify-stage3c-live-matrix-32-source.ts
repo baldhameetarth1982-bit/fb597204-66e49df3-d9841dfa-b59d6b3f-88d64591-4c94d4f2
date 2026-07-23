@@ -178,7 +178,8 @@ export function checkResidentContracts(src: string): string[] {
     fail(f, "resident-contracts: must build row schema on CanonicalStage3CUuidSchema");
   if (!/Number\.isFinite/.test(src))
     fail(f, "resident-contracts: must enforce finite-number checks");
-  if (/Array\.isArray\([^)]+\)\s*\?\s*[^:]+\s*:\s*\[\]/.test(src))
+  const stripped = src.replace(/`[^`]*`/g, "").replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+  if (/Array\.isArray\([^)]+\)\s*\?\s*[^:]+\s*:\s*\[\]/.test(stripped))
     fail(f, "resident-contracts: fail-closed — no `Array.isArray(x) ? x : []` fallback");
   return f;
 }
@@ -191,6 +192,28 @@ export function checkResidentProdCore(src: string): string[] {
     fail(f, "resident-prod-core: must pin _method=bank_transfer");
   if (!/_actor_role:\s*["']resident["']/.test(src))
     fail(f, "resident-prod-core: must pin _actor_role=resident");
+  if (!/from\s+["']\.\/offline-payment-contracts["']/.test(src))
+    fail(f, "resident-prod-core: must import residentSubmitInputSchema from ./offline-payment-contracts");
+  if (!/residentSubmitInputSchema/.test(src))
+    fail(f, "resident-prod-core: must import residentSubmitInputSchema");
+  if (!/residentSubmitInputSchema\.parse\s*\(\s*input\s*\)/.test(src))
+    fail(f, "resident-prod-core: must parse public input via residentSubmitInputSchema.parse(input)");
+  if (!/export\s+const\s+ResidentSubmitPaymentIdSchema\b/.test(src))
+    fail(f, "resident-prod-core: ResidentSubmitPaymentIdSchema must be exported");
+  if (!/toLowerCase\s*\(\s*\)/.test(src))
+    fail(f, "resident-prod-core: canonical payment-ID schema must require lowercase");
+  if (!/export\s+function\s+parseResidentSubmitPaymentId\b/.test(src))
+    fail(f, "resident-prod-core: parseResidentSubmitPaymentId must be exported");
+  if (!/:\s*Promise<string>\s*\{/.test(src))
+    fail(f, "resident-prod-core: submitResidentBankTransferWithClient must return Promise<string>");
+  if (/\braw\s*:/.test(src) && /\{\s*paymentId\s*,\s*raw\s*\}/.test(src))
+    fail(f, "resident-prod-core: must not return `{ paymentId, raw }` wrapper");
+  if (/new\s+Error\(\s*error\.message\s*\)/.test(src))
+    fail(f, "resident-prod-core: must not wrap provider error via new Error(error.message)");
+  if (!/if\s*\(\s*error\s*\)\s*throw\s+error\b/.test(src))
+    fail(f, "resident-prod-core: must rethrow provider error object by identity");
+  if (/\bextractResidentSubmitPaymentId\b/.test(src))
+    fail(f, "resident-prod-core: legacy extractResidentSubmitPaymentId must be removed");
   return f;
 }
 
@@ -200,6 +223,25 @@ export function checkProdFnDelegates(src: string): string[] {
     fail(f, "prod-fn: must import shared core from ./offline-payment-resident-submit");
   if (!/submitResidentBankTransferWithClient\s*\(/.test(src))
     fail(f, "prod-fn: submitResidentBankTransfer handler must call shared core");
+  // Result is a bare string — must be assigned directly, not destructured.
+  if (/const\s*\{\s*paymentId\s*\}\s*=\s*await\s+submitResidentBankTransferWithClient/.test(src))
+    fail(f, "prod-fn: must not destructure `{ paymentId }` from shared core (returns string)");
+  if (!/const\s+paymentId\s*=\s*await\s+submitResidentBankTransferWithClient/.test(src))
+    fail(f, "prod-fn: must assign shared-core result as a bare string paymentId");
+  // Unsafe (e as Error).message cast must be gone from the resident handler only.
+  const residentSlice = (() => {
+    const start = src.indexOf("export const submitResidentBankTransfer");
+    if (start < 0) return "";
+    const rest = src.slice(start);
+    const next = rest.indexOf("export const ", 10);
+    return next < 0 ? rest : rest.slice(0, next);
+  })();
+  if (/\(\s*e\s+as\s+Error\s*\)\.message/.test(residentSlice))
+    fail(f, "prod-fn: must not use `(e as Error).message` — use a bounded safe extractor");
+  if (!/residentSubmitProviderErrorMessage\s*\(/.test(residentSlice))
+    fail(f, "prod-fn: resident handler must use a bounded safe error-message extractor");
+  // The shared-core pinning must not be duplicated here for the resident path.
+  // (The admin-record path still legitimately builds RPC args for admin submissions.)
   return f;
 }
 
@@ -209,6 +251,27 @@ export function checkFixtureDelegates(src: string): string[] {
     fail(f, "fixtures: must import shared core from @/lib/offline-payment-resident-submit");
   if (!/submitResidentBankTransferWithClient\s*\(/.test(src))
     fail(f, "fixtures: submitResidentBankTransferPayment must delegate to shared core");
+  if (/const\s*\{\s*paymentId\s*\}\s*=\s*await\s+submitResidentBankTransferWithClient/.test(src))
+    fail(f, "fixtures: must not destructure `{ paymentId }` from shared core (returns string)");
+  if (!/const\s+paymentId\s*=\s*await\s+submitResidentBankTransferWithClient/.test(src))
+    fail(f, "fixtures: must assign shared-core result as a bare string paymentId");
+  return f;
+}
+
+/** Direct behavioral tests must import and execute shared-core exports. */
+export function checkBehavioralTestExecutesCore(src: string): string[] {
+  const f: string[] = [];
+  const required = [
+    "submitResidentBankTransferWithClient",
+    "ResidentSubmitPaymentIdSchema",
+    "parseResidentSubmitPaymentId",
+  ];
+  for (const name of required) {
+    if (!new RegExp(`\\b${name}\\b`).test(src))
+      fail(f, `behavioral-tests: must import and exercise "${name}"`);
+  }
+  if (!/@\/lib\/offline-payment-resident-submit/.test(src))
+    fail(f, "behavioral-tests: must import from @/lib/offline-payment-resident-submit");
   return f;
 }
 
@@ -336,6 +399,11 @@ export function runAll32CaseChecks(): Outcome {
   failures.push(...checkCoreRegistryUnchanged(read(CORE_REGISTRY)));
   failures.push(...checkDocs(read(DOCS)));
   failures.push(...checkWorkflowBoundary(read(WORKFLOW)));
+  failures.push(
+    ...checkBehavioralTestExecutesCore(
+      read("tests/unit/billing-stage3c-live-resident-submit.test.ts"),
+    ),
+  );
   return { ok: failures.length === 0, failures };
 }
 

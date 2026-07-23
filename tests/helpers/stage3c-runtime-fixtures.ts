@@ -1143,7 +1143,7 @@ export function buildScenarioHelpers(admin: SupabaseClient): ScenarioHelpers {
     },
     async submitResidentBankTransferPayment(input) {
       try {
-        const { paymentId } = await submitResidentBankTransferWithClient(
+        const paymentId = await submitResidentBankTransferWithClient(
           input.actor.client as unknown as Parameters<
             typeof submitResidentBankTransferWithClient
           >[0],

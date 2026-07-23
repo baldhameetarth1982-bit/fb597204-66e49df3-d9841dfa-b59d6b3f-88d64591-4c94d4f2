@@ -29,6 +29,12 @@ import {
   type Stage3CLiveMatrixContext,
 } from "../helpers/stage3c-live-matrix-context";
 import { residentSubmitInputSchema } from "@/lib/offline-payment-contracts";
+import {
+  ResidentSubmitPaymentIdSchema,
+  parseResidentSubmitPaymentId,
+  submitResidentBankTransferWithClient,
+  type ResidentSubmitRpcClient,
+} from "@/lib/offline-payment-resident-submit";
 
 const residentSrc = readFileSync(
   resolve(process.cwd(), "tests/helpers/stage3c-live-resident-submit-cases.ts"),
@@ -250,4 +256,246 @@ describe("Stage 3C — RESIDENT-SUBMIT handler source shape", () => {
     expect(residentSrc).toMatch(/safeStage3CErrorMessage/);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Direct behavioral tests for the shared production core.
+// ---------------------------------------------------------------------------
+
+const CANON_ID = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
+
+function makeClient(
+  impl: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>,
+): { client: ResidentSubmitRpcClient; calls: Array<{ name: string; args: Record<string, unknown> }> } {
+  const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+  const client: ResidentSubmitRpcClient = {
+    rpc: async (name, args) => {
+      calls.push({ name, args });
+      return impl(name, args);
+    },
+  };
+  return { client, calls };
+}
+
+const baseInput = {
+  billId: "11111111-2222-4333-8444-555555555555",
+  amount: 300,
+  paymentDate: "2026-06-15",
+  referenceNo: "RS-abc",
+  notes: "hi",
+  idempotencyKey: "resident-submit-abc-123",
+} as const;
+
+describe("Stage 3C — shared core: RPC construction and pinning", () => {
+  it("calls submit_offline_payment exactly once with pinned method/actor and forwarded fields", async () => {
+    const { client, calls } = makeClient(async () => ({ data: CANON_ID, error: null }));
+    const id = await submitResidentBankTransferWithClient(client, baseInput);
+    expect(id).toBe(CANON_ID);
+    expect(calls.length).toBe(1);
+    expect(calls[0]!.name).toBe("submit_offline_payment");
+    expect(calls[0]!.args).toEqual({
+      _bill_id: baseInput.billId,
+      _method: "bank_transfer",
+      _amount: 300,
+      _payment_date: "2026-06-15",
+      _reference_no: "RS-abc",
+      _notes: "hi",
+      _idempotency_key: baseInput.idempotencyKey,
+      _actor_role: "resident",
+    });
+  });
+
+  it("returns a plain string (no wrapper object, no `raw`)", async () => {
+    const { client } = makeClient(async () => ({ data: CANON_ID, error: null }));
+    const result = await submitResidentBankTransferWithClient(client, baseInput);
+    expect(typeof result).toBe("string");
+    expect(result).toBe(CANON_ID);
+    // Type-level: the value has no `.paymentId` / `.raw` since it is a string.
+    expect((result as unknown as { raw?: unknown }).raw).toBeUndefined();
+    expect((result as unknown as { paymentId?: unknown }).paymentId).toBeUndefined();
+  });
+
+  it("defaults paymentDate and notes to null when omitted", async () => {
+    const { client, calls } = makeClient(async () => ({ data: CANON_ID, error: null }));
+    await submitResidentBankTransferWithClient(client, {
+      billId: baseInput.billId,
+      amount: 300,
+      referenceNo: "RS-abc",
+      idempotencyKey: baseInput.idempotencyKey,
+    });
+    expect(calls[0]!.args._payment_date).toBeNull();
+    expect(calls[0]!.args._notes).toBeNull();
+  });
+});
+
+describe("Stage 3C — shared core: input boundary", () => {
+  for (const forbidden of ["method", "actorRole", "proofUrl", "status", "societyId", "submittedBy", "verifiedAmount", "receiptNumber"] as const) {
+    it(`rejects forbidden field "${forbidden}" BEFORE any RPC call`, async () => {
+      const { client, calls } = makeClient(async () => ({ data: CANON_ID, error: null }));
+      const bad = { ...baseInput, [forbidden]: "x" } as unknown as typeof baseInput;
+      await expect(submitResidentBankTransferWithClient(client, bad)).rejects.toThrow();
+      expect(calls.length).toBe(0);
+    });
+  }
+
+  it("rejects malformed billId before any RPC call", async () => {
+    const { client, calls } = makeClient(async () => ({ data: CANON_ID, error: null }));
+    await expect(
+      submitResidentBankTransferWithClient(client, { ...baseInput, billId: "not-a-uuid" }),
+    ).rejects.toThrow();
+    expect(calls.length).toBe(0);
+  });
+});
+
+describe("Stage 3C — shared core: canonical payment ID schema", () => {
+  it("accepts canonical lowercase UUID", () => {
+    expect(ResidentSubmitPaymentIdSchema.safeParse(CANON_ID).success).toBe(true);
+    expect(parseResidentSubmitPaymentId(CANON_ID)).toBe(CANON_ID);
+  });
+
+  it("rejects uppercase UUID", () => {
+    const upper = CANON_ID.toUpperCase();
+    expect(ResidentSubmitPaymentIdSchema.safeParse(upper).success).toBe(false);
+    expect(() => parseResidentSubmitPaymentId(upper)).toThrow("operation_failed");
+  });
+
+  it("rejects malformed UUID", () => {
+    expect(() => parseResidentSubmitPaymentId("not-a-uuid")).toThrow("operation_failed");
+  });
+
+  it("rejects blank string", () => {
+    expect(() => parseResidentSubmitPaymentId("")).toThrow("operation_failed");
+  });
+
+  it("rejects whitespace-wrapped UUID", () => {
+    expect(() => parseResidentSubmitPaymentId(` ${CANON_ID} `)).toThrow("operation_failed");
+    expect(() => parseResidentSubmitPaymentId(`${CANON_ID}\n`)).toThrow("operation_failed");
+  });
+
+  it("rejects null", () => {
+    expect(() => parseResidentSubmitPaymentId(null)).toThrow("operation_failed");
+  });
+
+  it("rejects undefined", () => {
+    expect(() => parseResidentSubmitPaymentId(undefined)).toThrow("operation_failed");
+  });
+
+  it("rejects array", () => {
+    expect(() => parseResidentSubmitPaymentId([CANON_ID])).toThrow("operation_failed");
+  });
+
+  it("rejects number", () => {
+    expect(() => parseResidentSubmitPaymentId(42)).toThrow("operation_failed");
+  });
+
+  it("rejects undocumented object shape", () => {
+    expect(() => parseResidentSubmitPaymentId({ id: CANON_ID })).toThrow("operation_failed");
+    expect(() => parseResidentSubmitPaymentId({ paymentId: CANON_ID })).toThrow("operation_failed");
+    expect(() => parseResidentSubmitPaymentId({})).toThrow("operation_failed");
+  });
+
+  it("does not include the invalid value in the error message", () => {
+    try {
+      parseResidentSubmitPaymentId("SECRET-VALUE-NOT-ALLOWED");
+      throw new Error("expected throw");
+    } catch (e) {
+      expect((e as Error).message).toBe("operation_failed");
+      expect((e as Error).message).not.toMatch(/SECRET/);
+    }
+  });
+});
+
+describe("Stage 3C — shared core: RPC result handling", () => {
+  it("accepts canonical UUID scalar result", async () => {
+    const { client } = makeClient(async () => ({ data: CANON_ID, error: null }));
+    const id = await submitResidentBankTransferWithClient(client, baseInput);
+    expect(id).toBe(CANON_ID);
+  });
+
+  it("rejects uppercase UUID result via operation_failed", async () => {
+    const { client } = makeClient(async () => ({ data: CANON_ID.toUpperCase(), error: null }));
+    await expect(submitResidentBankTransferWithClient(client, baseInput)).rejects.toThrow(
+      "operation_failed",
+    );
+  });
+
+  it("rejects null RPC result", async () => {
+    const { client } = makeClient(async () => ({ data: null, error: null }));
+    await expect(submitResidentBankTransferWithClient(client, baseInput)).rejects.toThrow(
+      "operation_failed",
+    );
+  });
+
+  it("rejects undefined RPC result", async () => {
+    const { client } = makeClient(async () => ({ data: undefined, error: null }));
+    await expect(submitResidentBankTransferWithClient(client, baseInput)).rejects.toThrow(
+      "operation_failed",
+    );
+  });
+
+  it("rejects object RPC result", async () => {
+    const { client } = makeClient(async () => ({ data: { id: CANON_ID }, error: null }));
+    await expect(submitResidentBankTransferWithClient(client, baseInput)).rejects.toThrow(
+      "operation_failed",
+    );
+  });
+});
+
+describe("Stage 3C — shared core: provider error propagation", () => {
+  it("re-throws the provider error object by identity", async () => {
+    const providerErr = { code: "23514", message: "boom", details: "d" };
+    const { client } = makeClient(async () => ({ data: null, error: providerErr }));
+    let caught: unknown = null;
+    try {
+      await submitResidentBankTransferWithClient(client, baseInput);
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBe(providerErr);
+    // Not wrapped in a new Error, so the .code / .details survive.
+    expect((caught as { code?: string }).code).toBe("23514");
+    expect((caught as { details?: string }).details).toBe("d");
+  });
+
+  it("does not copy the provider message into a new Error", async () => {
+    const providerErr = new Error("provider-only-message");
+    const { client } = makeClient(async () => ({ data: null, error: providerErr }));
+    let caught: unknown = null;
+    try {
+      await submitResidentBankTransferWithClient(client, baseInput);
+    } catch (e) {
+      caught = e;
+    }
+    // Same object identity — not a wrapper `new Error(error.message)`.
+    expect(caught).toBe(providerErr);
+  });
+});
+
+describe("Stage 3C — shared core: delegation ownership (source proof)", () => {
+  it("production server function imports and calls the shared core", () => {
+    const prod = readFileSync(resolve(process.cwd(), "src/lib/offline-payments.functions.ts"), "utf8");
+    expect(prod).toMatch(/from ["']\.\/offline-payment-resident-submit["']/);
+    expect(prod).toMatch(/submitResidentBankTransferWithClient\s*\(/);
+  });
+
+  it("fixture helper imports and calls the shared core", () => {
+    const fx = readFileSync(resolve(process.cwd(), "tests/helpers/stage3c-runtime-fixtures.ts"), "utf8");
+    expect(fx).toMatch(/from ["']@\/lib\/offline-payment-resident-submit["']/);
+    expect(fx).toMatch(/submitResidentBankTransferWithClient\s*\(/);
+  });
+
+  it("exactly one owner of the pinned bank_transfer + resident RPC arguments", () => {
+    const prod = readFileSync(resolve(process.cwd(), "src/lib/offline-payments.functions.ts"), "utf8");
+    const core = readFileSync(resolve(process.cwd(), "src/lib/offline-payment-resident-submit.ts"), "utf8");
+    const fx = readFileSync(resolve(process.cwd(), "tests/helpers/stage3c-runtime-fixtures.ts"), "utf8");
+    // The shared core is the sole location where BOTH pins appear together
+    // for a resident bank-transfer submission.
+    const pinnedTogether = (src: string) =>
+      /_method:\s*["']bank_transfer["']/.test(src) &&
+      /_actor_role:\s*["']resident["']/.test(src);
+    expect(pinnedTogether(core)).toBe(true);
+    expect(pinnedTogether(prod)).toBe(false);
+    expect(pinnedTogether(fx)).toBe(false);
+  });
+});
+
 

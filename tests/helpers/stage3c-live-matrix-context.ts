@@ -119,8 +119,11 @@ export function createStage3CLiveMatrixContext(): Stage3CLiveMatrixContext {
     idempotencyBaselineSummary: null,
     idempotencyPostSummary: null,
 
+    idempotencyBillId: null,
     idempotencyPaymentId: null,
     idempotencyReference: null,
+    idempotencyAmountInput: null,
+    idempotencyConflictAmountInput: null,
     idempotencyInitialState: null,
     idempotencyPostSubmitState: null,
 
@@ -130,6 +133,7 @@ export function createStage3CLiveMatrixContext(): Stage3CLiveMatrixContext {
     referenceBaselinePaymentCount: null,
     referencePostOriginalSummary: null,
 
+    referencePrimaryBillId: null,
     referencePrimaryPaymentId: null,
     referenceOtherSocietyPaymentId: null,
     referenceAmount: null,

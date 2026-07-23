@@ -85,8 +85,8 @@ export const STAGE3C_REQUIRED_LIVE_CASES: readonly Stage3CLiveCase[] = [
   // ── IDEMPOTENCY ───────────────────────────────────────────────────────
   { id: "IDEMPOTENCY-01", category: "IDEMPOTENCY", description: "Identical payload with same idempotency key replays and returns the original id" },
   { id: "IDEMPOTENCY-02", category: "IDEMPOTENCY", description: "Same idempotency key with a changed amount raises the canonical conflict error" },
-  { id: "IDEMPOTENCY-03", category: "IDEMPOTENCY", description: "Same idempotency key with a changed bill id raises the canonical conflict error" },
-  { id: "IDEMPOTENCY-04", category: "IDEMPOTENCY", description: "Only one payment row exists after any number of replay attempts" },
+  { id: "IDEMPOTENCY-03", category: "IDEMPOTENCY", description: "Proof-only: exactly one payment row still exists on the idempotency bill after IDEMPOTENCY-02 denial" },
+  { id: "IDEMPOTENCY-04", category: "IDEMPOTENCY", description: "Same idempotency key with same bill and a changed amount raises the canonical conflict error" },
 
   // ── REFERENCE ─────────────────────────────────────────────────────────
   { id: "REFERENCE-01", category: "REFERENCE", description: "Unique bank reference in Society A succeeds" },

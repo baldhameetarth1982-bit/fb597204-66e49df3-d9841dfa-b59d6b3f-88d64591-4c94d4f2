@@ -59,10 +59,13 @@ export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
   idempotencyPostSummary: BillSummarySnapshot | null;
 
   // Idempotency lifecycle (this run)
+  idempotencyBillId: string | null;
   idempotencyPaymentId: string | null;
   idempotencyReference: string | null;
-  idempotencyInitialState: unknown | null;
-  idempotencyPostSubmitState: unknown | null;
+  idempotencyAmountInput: number | null;
+  idempotencyConflictAmountInput: number | null;
+  idempotencyInitialState: ResidentBillStateSnapshot | null;
+  idempotencyPostSubmitState: ResidentBillStateSnapshot | null;
 
   // Reference category (retained legacy slots)
   referenceBillId: string | null;
@@ -72,6 +75,7 @@ export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
   referencePostOriginalSummary: BillSummarySnapshot | null;
 
   // Reference lifecycle (this run)
+  referencePrimaryBillId: string | null;
   referencePrimaryPaymentId: string | null;
   referenceOtherSocietyPaymentId: string | null;
   referenceAmount: number | null;
@@ -79,10 +83,10 @@ export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
   referencePrimaryKey: string | null;
   referenceDuplicateKey: string | null;
   referenceOtherSocietyKey: string | null;
-  referencePrimaryInitialState: unknown | null;
-  referencePrimaryPostSubmitState: unknown | null;
-  referenceSecondaryInitialState: unknown | null;
-  referenceOtherSocietyInitialState: unknown | null;
+  referencePrimaryInitialState: ResidentBillStateSnapshot | null;
+  referencePrimaryPostSubmitState: ResidentBillStateSnapshot | null;
+  referenceSecondaryInitialState: ResidentBillStateSnapshot | null;
+  referenceOtherSocietyInitialState: ResidentBillStateSnapshot | null;
 }
 
 

@@ -28,6 +28,7 @@ const REGISTRY = "tests/helpers/stage3c-live-core-registry.ts";
 const LIVE_SUITE = "tests/integration/billing-stage3c-live.test.ts";
 const CONTRACTS = "src/lib/offline-payment-contracts.ts";
 const PROD = "src/lib/offline-payments.functions.ts";
+const RESIDENT_CORE = "src/lib/offline-payment-resident-submit.ts";
 const WORKFLOW = ".github/workflows/stage3c-runtime-verification.yml";
 const PKG = "package.json";
 const LOCK = "bun.lock";
@@ -293,7 +294,11 @@ export function checkErrorTokens(src: string): string[] {
   return f;
 }
 
-export function checkResidentContract(contractSrc: string, prodSrc: string): string[] {
+export function checkResidentContract(
+  contractSrc: string,
+  prodSrc: string,
+  coreSrc = "",
+): string[] {
   const f: string[] = [];
   if (!/export const residentSubmitInputSchema/.test(contractSrc))
     fail(f, "contracts: residentSubmitInputSchema not exported");
@@ -310,10 +315,16 @@ export function checkResidentContract(contractSrc: string, prodSrc: string): str
     )
   )
     fail(f, "prod: duplicate inline resident schema still present");
-  if (!/submitResidentBankTransfer[\s\S]{0,800}_method:\s*"bank_transfer"/.test(prodSrc))
-    fail(f, "prod: submitResidentBankTransfer must pin _method: bank_transfer");
-  if (!/submitResidentBankTransfer[\s\S]{0,800}_actor_role:\s*"resident"/.test(prodSrc))
-    fail(f, "prod: submitResidentBankTransfer must pin _actor_role: resident");
+  // Wrapper must delegate to the shared neutral core.
+  if (!/submitResidentBankTransferWithClient/.test(prodSrc))
+    fail(f, "prod: submitResidentBankTransfer must delegate to shared core (submitResidentBankTransferWithClient)");
+  if (!/from\s+["']\.\/offline-payment-resident-submit["']/.test(prodSrc))
+    fail(f, "prod: must import from ./offline-payment-resident-submit");
+  // Method + actor role are pinned in the shared core module.
+  if (!/_method:\s*"bank_transfer"/.test(coreSrc))
+    fail(f, "resident core: must pin _method: bank_transfer");
+  if (!/_actor_role:\s*"resident"/.test(coreSrc))
+    fail(f, "resident core: must pin _actor_role: resident");
   return f;
 }
 
@@ -936,7 +947,13 @@ export function runAllFoundationChecks(): FoundationCheckOutcome {
   failures.push(...checkFixtureFoundation(read(FIXTURE)));
   failures.push(...checkMatrixContext(read(MATRIX_CTX)));
   failures.push(...checkErrorTokens(read(ERRORS)));
-  failures.push(...checkResidentContract(read(CONTRACTS), read(PROD)));
+  failures.push(
+    ...checkResidentContract(
+      read(CONTRACTS),
+      read(PROD),
+      existsSync(resolve(ROOT, RESIDENT_CORE)) ? read(RESIDENT_CORE) : "",
+    ),
+  );
   failures.push(...checkRegistryUnchanged(read(REGISTRY)));
   failures.push(...checkLiveSuiteUnchanged(read(LIVE_SUITE)));
   failures.push(...checkWorkflowIntegrity(read(WORKFLOW)));

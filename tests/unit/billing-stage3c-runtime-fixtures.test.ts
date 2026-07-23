@@ -434,11 +434,14 @@ describe("Stage 3C — real submission helper dispatch", () => {
 
   it("submitResidentBankTransferPayment: method=bank_transfer, actor=resident, reference required and forwarded", async () => {
     const helpers = buildScenarioHelpers(adminStub);
-    const { actor, calls } = makeMockedActor(() => ({ data: { payment_id: UUID_B }, error: null }));
+    // The shared resident core requires a scalar canonical UUID result
+    // from `submit_offline_payment` — not an object shape.
+    const { actor, calls } = makeMockedActor(() => ({ data: UUID_B, error: null }));
     const id = await helpers.submitResidentBankTransferPayment({
       ...baseArgs,
       actor,
       referenceNo: "RES-REF",
+      idempotencyKey: "keykey",
     });
     expect(id).toBe(UUID_B);
     const args = calls[0]?.args as Record<string, unknown>;
@@ -450,10 +453,18 @@ describe("Stage 3C — real submission helper dispatch", () => {
   });
   it("submitResidentBankTransferPayment: throws on malformed id", async () => {
     const helpers = buildScenarioHelpers(adminStub);
-    const { actor } = makeMockedActor(() => ({ data: { payment_id: "nope" }, error: null }));
+    const { actor } = makeMockedActor(() => ({ data: "nope", error: null }));
+    // The shared resident core rejects non-canonical UUIDs with a
+    // neutral token. Use a schema-valid idempotency key so the RPC
+    // path (and its UUID parser) is actually exercised.
     await expect(
-      helpers.submitResidentBankTransferPayment({ ...baseArgs, actor, referenceNo: "R" }),
-    ).rejects.toThrow(/malformed UUID/);
+      helpers.submitResidentBankTransferPayment({
+        ...baseArgs,
+        actor,
+        referenceNo: "R",
+        idempotencyKey: "keykey",
+      }),
+    ).rejects.toThrow(/operation_failed/);
   });
 });
 
@@ -738,7 +749,15 @@ describe("Stage 3C fixtures — source contract", () => {
   it("submit helpers use `_actor_role: admin` / `resident`", () => {
     expect(SRC).not.toMatch(/_actor_role:\s*"society_admin"/);
     expect(SRC).toMatch(/submitAdminCashPayment[\s\S]{0,800}_actor_role:\s*"admin"/);
-    expect(SRC).toMatch(/submitResidentBankTransferPayment[\s\S]{0,800}_actor_role:\s*"resident"/);
+    // The resident helper delegates to the shared neutral core; pins
+    // live there.
+    expect(SRC).toMatch(/submitResidentBankTransferWithClient/);
+    const coreSrc = readFileSync(
+      "src/lib/offline-payment-resident-submit.ts",
+      "utf8",
+    );
+    expect(coreSrc).toMatch(/_actor_role:\s*"resident"/);
+    expect(coreSrc).toMatch(/_method:\s*"bank_transfer"/);
   });
   it("scenario helper input types do not surface actorRole", () => {
     const admInput = SRC.slice(

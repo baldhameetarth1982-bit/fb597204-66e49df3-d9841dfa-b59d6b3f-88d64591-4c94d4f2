@@ -10,6 +10,10 @@ import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 
 const fnSrc = readFileSync("src/lib/offline-payments.functions.ts", "utf8");
+const residentCoreSrc = readFileSync(
+  "src/lib/offline-payment-resident-submit.ts",
+  "utf8",
+);
 const adminRoute = readFileSync(
   "src/routes/_society/society.payments.tsx",
   "utf8",
@@ -38,9 +42,12 @@ describe("Stage 3C v5 — generic submission API is removed", () => {
   it("split resident/admin contracts still exist and fix _actor_role server-side", () => {
     expect(fnSrc).toMatch(/export const submitResidentBankTransfer\b/);
     expect(fnSrc).toMatch(/export const recordAdminOfflinePayment\b/);
-    expect(fnSrc).toMatch(/_actor_role: "resident"/);
+    // Resident wrapper delegates; pins live in the shared core.
+    expect(fnSrc).toMatch(/submitResidentBankTransferWithClient/);
+    expect(residentCoreSrc).toMatch(/_actor_role:\s*"resident"/);
+    expect(residentCoreSrc).toMatch(/_method:\s*"bank_transfer"/);
+    // Admin actor role is still pinned inline in the wrapper.
     expect(fnSrc).toMatch(/_actor_role: "admin"/);
-    expect(fnSrc).toMatch(/_method: "bank_transfer"/); // resident fixed method
   });
 });
 

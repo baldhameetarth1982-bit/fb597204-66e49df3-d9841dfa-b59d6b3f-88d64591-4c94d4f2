@@ -43,7 +43,7 @@ describe("Stage 3C — server functions expose the canonical RPCs", () => {
     expect(fnSrc).toMatch(/export const reverseOfflinePayment\b/);
   });
 
-  it("routes each write through requireSupabaseAuth and callBillingRpc", () => {
+  it("routes each write through requireSupabaseAuth and callBillingRpc (or the shared resident core)", () => {
     for (const name of [
       "submitResidentBankTransfer",
       "recordAdminOfflinePayment",
@@ -54,7 +54,13 @@ describe("Stage 3C — server functions expose the canonical RPCs", () => {
       const block =
         fnSrc.match(new RegExp(`export const ${name}[\\s\\S]{0,900}`))?.[0] ?? "";
       expect(block).toMatch(/requireSupabaseAuth/);
-      expect(block).toMatch(/callBillingRpc/);
+      // The resident wrapper delegates to the neutral shared core; all
+      // other writes call `callBillingRpc` directly.
+      if (name === "submitResidentBankTransfer") {
+        expect(block).toMatch(/submitResidentBankTransferWithClient/);
+      } else {
+        expect(block).toMatch(/callBillingRpc/);
+      }
     }
   });
 

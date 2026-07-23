@@ -96,16 +96,40 @@ export function checkCasesModule(src: string): string[] {
     fail(f, "cases: must use trackUniqueId for duplicate-safe payment id tracking");
   if (!/CanonicalStage3CUuidSchema/.test(src))
     fail(f, "cases: must validate returned payment ids with CanonicalStage3CUuidSchema");
+  if (!/\bidempotencyBillId\b/.test(src))
+    fail(f, "cases: IDEMPOTENCY cases must target the dedicated `idempotencyBillId` (1000)");
+  if (!/\breferencePrimaryBillId\b/.test(src))
+    fail(f, "cases: REFERENCE-01/02 must target the dedicated `referencePrimaryBillId` (800)");
   if (!/referenceSecondarySameSocietyBillId/.test(src))
-    fail(f, "cases: must use the dedicated Society A secondary reference bill");
+    fail(f, "cases: REFERENCE-03 must use the dedicated Society A secondary reference bill");
   if (!/referenceOtherSocietyBillId/.test(src))
-    fail(f, "cases: must use the dedicated Society B other-society reference bill");
-  if (!/countPayments/.test(src))
-    fail(f, "cases: must count payment rows around every mutation and denial");
-  if (!/adminB\b/.test(src))
-    fail(f, "cases: REFERENCE-04 must use adminB for cross-society isolation");
+    fail(f, "cases: REFERENCE-04 must use the dedicated Society B other-society reference bill");
+  if (!/snapshotResidentBillState/.test(src))
+    fail(f, "cases: must snapshot bill state via snapshotResidentBillState");
+  if (!/assertResidentBillStateUnchanged/.test(src))
+    fail(f, "cases: denials must prove state unchanged via assertResidentBillStateUnchanged");
+  if (!/unrelatedResident\b/.test(src))
+    fail(f, "cases: REFERENCE-04 must use unrelatedResident for cross-society isolation");
+  if (/\badminA1\b|\badminB\b/.test(src))
+    fail(f, "cases: REFERENCE paths must use the shared resident production Bank Transfer core (no admin helpers)");
+  if (!/submitResidentBankTransferPayment/.test(src))
+    fail(f, "cases: REFERENCE paths must call submitResidentBankTransferPayment (shared resident core)");
+  if (/submitAdminBankTransferPayment|recordAdminOfflinePayment/.test(src))
+    fail(f, "cases: admin bank-transfer / recordAdminOfflinePayment helpers are forbidden in this slice");
   if (!/activeResident/.test(src))
     fail(f, "cases: IDEMPOTENCY cases must use activeResident (per-user idempotency scope)");
+  if (!/from ["']vitest["']/.test(src) === false)
+    fail(f, "cases: must NOT import from vitest — handlers must throw plain Errors");
+  // No non-null assertions (bare `!` after identifiers).
+  if (/\b[A-Za-z_][A-Za-z0-9_]*!\./.test(src) || /\b[A-Za-z_][A-Za-z0-9_]*!\s*[,)\];]/.test(src))
+    fail(f, "cases: non-null assertions (`x!`) are forbidden — use require* guards");
+  // Canonical amounts (250 primary, 251 conflict, 200 reference).
+  if (!/IDEMPOTENCY_AMOUNT\s*=\s*250\b/.test(src))
+    fail(f, "cases: IDEMPOTENCY_AMOUNT must be exactly 250");
+  if (!/IDEMPOTENCY_CONFLICT_AMOUNT\s*=\s*251\b/.test(src))
+    fail(f, "cases: IDEMPOTENCY_CONFLICT_AMOUNT must be exactly 251");
+  if (!/REFERENCE_AMOUNT\s*=\s*200\b/.test(src))
+    fail(f, "cases: REFERENCE_AMOUNT must be exactly 200");
   return f;
 }
 

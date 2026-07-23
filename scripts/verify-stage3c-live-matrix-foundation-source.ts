@@ -28,6 +28,7 @@ const REGISTRY = "tests/helpers/stage3c-live-core-registry.ts";
 const LIVE_SUITE = "tests/integration/billing-stage3c-live.test.ts";
 const CONTRACTS = "src/lib/offline-payment-contracts.ts";
 const PROD = "src/lib/offline-payments.functions.ts";
+const RESIDENT_CORE = "src/lib/offline-payment-resident-submit.ts";
 const WORKFLOW = ".github/workflows/stage3c-runtime-verification.yml";
 const PKG = "package.json";
 const LOCK = "bun.lock";

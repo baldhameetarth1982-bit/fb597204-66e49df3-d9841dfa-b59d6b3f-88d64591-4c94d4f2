@@ -441,6 +441,7 @@ describe("Stage 3C — real submission helper dispatch", () => {
       ...baseArgs,
       actor,
       referenceNo: "RES-REF",
+      idempotencyKey: "keykey",
     });
     expect(id).toBe(UUID_B);
     const args = calls[0]?.args as Record<string, unknown>;

@@ -350,9 +350,17 @@ describe("Stage 3C foundation — production integration", () => {
       /const residentSubmitInput\s*=\s*z\.object\(\{[\s\S]{0,400}amount:\s*z\.number\(\)\.positive/,
     );
   });
-  it("pins bank_transfer + resident on submitResidentBankTransfer", () => {
-    expect(prodSrc).toMatch(/submitResidentBankTransfer[\s\S]{0,800}_method:\s*"bank_transfer"/);
-    expect(prodSrc).toMatch(/submitResidentBankTransfer[\s\S]{0,800}_actor_role:\s*"resident"/);
+  it("pins bank_transfer + resident on submitResidentBankTransfer (via shared core)", () => {
+    // Wrapper delegates to the shared neutral core.
+    expect(prodSrc).toMatch(/submitResidentBankTransferWithClient/);
+    expect(prodSrc).toMatch(/from\s+["']\.\/offline-payment-resident-submit["']/);
+    // Pins live in the shared core file.
+    const coreSrc = readFileSync(
+      join(process.cwd(), "src/lib/offline-payment-resident-submit.ts"),
+      "utf8",
+    );
+    expect(coreSrc).toMatch(/_method:\s*"bank_transfer"/);
+    expect(coreSrc).toMatch(/_actor_role:\s*"resident"/);
   });
 });
 

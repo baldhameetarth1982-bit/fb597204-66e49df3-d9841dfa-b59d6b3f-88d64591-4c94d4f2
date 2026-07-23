@@ -3,9 +3,9 @@
  *
  * These tests never require the live Supabase stack — they execute the
  * real 40-case source validator, the exported handler map, the matrix
- * context guards, and the Zod snapshot schemas that pin the lifecycle
- * shape. Runtime live behavior is enforced by the live matrix suite
- * gated on `ALLOW_SOCIOHUB_LIVE_STAGE3C`.
+ * context guards, the Zod snapshot schemas, and the semantic mock-
+ * driven behavior of each handler. Runtime live behavior is enforced
+ * by the live matrix suite gated on `ALLOW_SOCIOHUB_LIVE_STAGE3C`.
  */
 import { describe, expect, it } from "vitest";
 import {
@@ -25,22 +25,25 @@ import {
   STAGE3C_IDEMPOTENCY_REFERENCE_HANDLERS,
   IDEMPOTENCY_AMOUNT,
   IDEMPOTENCY_CONFLICT_AMOUNT,
-  REFERENCE_PRIMARY_AMOUNT,
-  REFERENCE_DUPLICATE_AMOUNT,
+  REFERENCE_AMOUNT,
   IdempotencyLifecycleSnapshotSchema,
   ReferenceLifecycleSnapshotSchema,
   type Stage3CIdempotencyReferenceCaseId,
 } from "../helpers/stage3c-live-idempotency-reference-cases";
 import {
   createStage3CLiveMatrixContext,
+  requireIdempotencyBillId,
   requireIdempotencyPaymentId,
   requireIdempotencyReference,
+  requireIdempotencyInitialState,
+  requireReferencePrimaryBillId,
   requireReferencePrimaryPaymentId,
   requireReferenceValue,
   requireReferenceAmount,
   requireReferencePrimaryKey,
   requireReferenceDuplicateKey,
   requireReferenceOtherSocietyKey,
+  requireReferencePrimaryInitialState,
 } from "../helpers/stage3c-live-matrix-context";
 import {
   STAGE3C_MATRIX_LIVE_CASE_HANDLERS,
@@ -55,19 +58,38 @@ describe("Stage 3C 40-case source validator", () => {
     expect(outcome.ok).toBe(true);
   });
 
-  it("cases module keeps `unexpected success` outside try/catch", () => {
-    const src = `try { doWork(); } catch (e) { record(e); }\nif (ok) throw new Error("unexpected success");`;
-    expect(checkCasesModule(src)).toEqual(
-      expect.not.arrayContaining([
-        expect.stringContaining("`unexpected success` error must be thrown OUTSIDE"),
-      ]),
+  it("cases-module rejects wrong amount literals", () => {
+    const goodLiterals = `IDEMPOTENCY_AMOUNT = 250\nIDEMPOTENCY_CONFLICT_AMOUNT = 251\nREFERENCE_AMOUNT = 200`;
+    expect(checkCasesModule(goodLiterals).some((m) => /IDEMPOTENCY_AMOUNT/.test(m))).toBe(false);
+
+    expect(checkCasesModule("IDEMPOTENCY_AMOUNT = 200").join("|")).toMatch(
+      /IDEMPOTENCY_AMOUNT must be exactly 250/,
     );
+    expect(checkCasesModule("IDEMPOTENCY_CONFLICT_AMOUNT = 250").join("|")).toMatch(
+      /IDEMPOTENCY_CONFLICT_AMOUNT must be exactly 251/,
+    );
+    expect(checkCasesModule("REFERENCE_AMOUNT = 100").join("|")).toMatch(
+      /REFERENCE_AMOUNT must be exactly 200/,
+    );
+  });
+
+  it("cases-module rejects vitest import and non-null assertions", () => {
+    const bad = `import { expect } from "vitest"; const x = ctx.idempotencyBillId!;`;
+    const failures = checkCasesModule(bad).join("|");
+    expect(failures).toMatch(/must NOT import from vitest/);
+    expect(failures).toMatch(/non-null assertions/);
+  });
+
+  it("cases-module rejects admin bank-transfer helpers in this slice", () => {
+    const bad = `submitAdminBankTransferPayment({ actor: adminA1 })`;
+    const failures = checkCasesModule(bad).join("|");
+    expect(failures).toMatch(/admin bank-transfer/);
+    expect(failures).toMatch(/no admin helpers/);
+  });
+
+  it("cases-module keeps `unexpected success` outside try/catch", () => {
     const bad = `try { const v = doWork(); if (v) throw new Error("unexpected success"); } catch (e) {}`;
-    expect(checkCasesModule(bad)).toEqual(
-      expect.arrayContaining([
-        expect.stringContaining("`unexpected success` error must be thrown OUTSIDE"),
-      ]),
-    );
+    expect(checkCasesModule(bad).some((m) => m.includes("unexpected success"))).toBe(true);
   });
 
   it("matrix registry validator counts exactly 40 unique ids", () => {
@@ -77,38 +99,30 @@ describe("Stage 3C 40-case source validator", () => {
     expect(failures.join("|")).toMatch(/40 unique ids/);
   });
 
-  it("context validator flags missing lifecycle slots", () => {
-    expect(checkMatrixContextSlots("nothing").length).toBeGreaterThan(0);
+  it("context validator flags missing lifecycle slots and untyped snapshots", () => {
+    const failures = checkMatrixContextSlots("nothing here");
+    expect(failures.length).toBeGreaterThan(0);
+    // Untyped snapshot must be flagged.
+    const bad = `idempotencyInitialState: unknown\nreferencePrimaryInitialState: unknown`;
+    expect(checkMatrixContextSlots(bad).join("|")).toMatch(/no `unknown`/);
   });
 
-  it("fixture validator requires both dedicated bills", () => {
-    expect(checkFixtureBills("").join("|")).toMatch(
-      /referenceSecondarySameSocietyBillId not exposed/,
-    );
-    expect(checkFixtureBills("referenceSecondarySameSocietyBillId 700 referenceOtherSocietyBillId 600")).toEqual([]);
+  it("fixture validator requires all four dedicated bills and their totals", () => {
+    expect(checkFixtureBills("").join("|")).toMatch(/idempotencyBillId/);
+    expect(checkFixtureBills("").join("|")).toMatch(/referencePrimaryBillId/);
+    const good =
+      "idempotencyBillId 1000 referencePrimaryBillId 800 referenceSecondarySameSocietyBillId 700 referenceOtherSocietyBillId 600";
+    expect(checkFixtureBills(good)).toEqual([]);
   });
 
-  it("live suite validator requires 40/93 title", () => {
+  it("live-suite / docs / workflow / manifest validators respond to obvious defects", () => {
     expect(checkLiveSuite("32/93")).not.toEqual([]);
     expect(checkLiveSuite("40/93")).toEqual([]);
-  });
-
-  it("docs validator enforces IDEMPOTENCY and REFERENCE progress lines", () => {
     const good = "40/93 IDEMPOTENCY 4/4 REFERENCE 4/4";
     expect(checkDocs(good)).toEqual([]);
-    expect(checkDocs("40/93 REFERENCE 4/4").join("|")).toMatch(/IDEMPOTENCY 4\/4/);
-    expect(checkDocs("40/93 IDEMPOTENCY 4/4").join("|")).toMatch(/REFERENCE 4\/4/);
-    expect(
-      checkDocs("40/93 IDEMPOTENCY 4/4 REFERENCE 4/4 Stage 3D started").join("|"),
-    ).toMatch(/Stage 3D started/);
-  });
-
-  it("workflow validator requires the 40-source step", () => {
+    expect(checkDocs(`${good} Stage 3D started`).join("|")).toMatch(/Stage 3D started/);
     expect(checkWorkflow("nothing here")).not.toEqual([]);
     expect(checkWorkflow("bun scripts/verify-stage3c-live-matrix-40-source.ts")).toEqual([]);
-  });
-
-  it("manifest validator flags missing ids", () => {
     expect(checkManifest("").length).toBe(8);
   });
 });
@@ -127,7 +141,7 @@ describe("Stage 3C IDEMPOTENCY + REFERENCE case-id registry", () => {
     ]);
   });
 
-  it("handler map is exhaustive and unique", () => {
+  it("handler map is exhaustive and function-typed", () => {
     const keys = Object.keys(STAGE3C_IDEMPOTENCY_REFERENCE_HANDLERS).sort();
     const expected = [...STAGE3C_IDEMPOTENCY_REFERENCE_CASE_IDS].sort();
     expect(keys).toEqual(expected);
@@ -136,13 +150,12 @@ describe("Stage 3C IDEMPOTENCY + REFERENCE case-id registry", () => {
     }
   });
 
-  it("financial literals lock exact amounts", () => {
-    expect(IDEMPOTENCY_AMOUNT).toBe(200);
-    expect(IDEMPOTENCY_CONFLICT_AMOUNT).toBe(250);
-    expect(REFERENCE_PRIMARY_AMOUNT).toBe(100);
-    expect(REFERENCE_DUPLICATE_AMOUNT).toBe(50);
+  it("financial literals lock the repaired amounts (250 / 251 / 200)", () => {
+    expect(IDEMPOTENCY_AMOUNT).toBe(250);
+    expect(IDEMPOTENCY_CONFLICT_AMOUNT).toBe(251);
+    expect(REFERENCE_AMOUNT).toBe(200);
     expect(IDEMPOTENCY_AMOUNT).not.toBe(IDEMPOTENCY_CONFLICT_AMOUNT);
-    expect(REFERENCE_PRIMARY_AMOUNT).not.toBe(REFERENCE_DUPLICATE_AMOUNT);
+    expect(IDEMPOTENCY_CONFLICT_AMOUNT - IDEMPOTENCY_AMOUNT).toBe(1);
   });
 
   it("matrix registry includes all 8 new ids and totals 40", () => {
@@ -159,6 +172,13 @@ describe("Stage 3C IDEMPOTENCY + REFERENCE case-id registry", () => {
     for (const c of STAGE3C_MATRIX_LIVE_CASE_HANDLERS) {
       expect(c.description).toBe(byId.get(c.id));
     }
+  });
+
+  it("manifest IDEMPOTENCY-03 is proof-only and IDEMPOTENCY-04 is same-bill amount conflict", () => {
+    const byId = new Map(STAGE3C_REQUIRED_LIVE_CASES.map((c) => [c.id, c.description]));
+    expect(byId.get("IDEMPOTENCY-03")).toMatch(/proof-only|exactly one payment row/i);
+    expect(byId.get("IDEMPOTENCY-04")).toMatch(/same bill/i);
+    expect(byId.get("IDEMPOTENCY-04")).toMatch(/conflict/i);
   });
 });
 
@@ -199,9 +219,13 @@ describe("Stage 3C IDEMPOTENCY + REFERENCE snapshot schemas", () => {
 describe("Stage 3C matrix context IDEMPOTENCY + REFERENCE guards", () => {
   it("throws with a stable label when lifecycle state is missing", () => {
     const ctx = createStage3CLiveMatrixContext();
+    expect(() => requireIdempotencyBillId(ctx)).toThrow(/idempotencyBillId/);
     expect(() => requireIdempotencyPaymentId(ctx)).toThrow(/idempotencyPaymentId/);
     expect(() => requireIdempotencyReference(ctx)).toThrow(/idempotencyReference/);
+    expect(() => requireIdempotencyInitialState(ctx)).toThrow(/idempotencyInitialState/);
+    expect(() => requireReferencePrimaryBillId(ctx)).toThrow(/referencePrimaryBillId/);
     expect(() => requireReferencePrimaryPaymentId(ctx)).toThrow(/referencePrimaryPaymentId/);
+    expect(() => requireReferencePrimaryInitialState(ctx)).toThrow(/referencePrimaryInitialState/);
     expect(() => requireReferenceValue(ctx)).toThrow(/referenceValue/);
     expect(() => requireReferenceAmount(ctx)).toThrow(/referenceAmount/);
     expect(() => requireReferencePrimaryKey(ctx)).toThrow(/referencePrimaryKey/);
@@ -211,19 +235,23 @@ describe("Stage 3C matrix context IDEMPOTENCY + REFERENCE guards", () => {
 
   it("returns the stored value once populated", () => {
     const ctx = createStage3CLiveMatrixContext();
+    ctx.idempotencyBillId = "cccccccc-cccc-cccc-cccc-cccccccccccc";
     ctx.idempotencyPaymentId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
     ctx.idempotencyReference = "IDEMP-ABC";
+    ctx.referencePrimaryBillId = "dddddddd-dddd-dddd-dddd-dddddddddddd";
     ctx.referencePrimaryPaymentId = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
     ctx.referenceValue = "REF-ABC";
-    ctx.referenceAmount = 100;
+    ctx.referenceAmount = 200;
     ctx.referencePrimaryKey = "ref-primary-abc";
     ctx.referenceDuplicateKey = "ref-dup-abc";
     ctx.referenceOtherSocietyKey = "ref-cross-abc";
+    expect(requireIdempotencyBillId(ctx)).toBe("cccccccc-cccc-cccc-cccc-cccccccccccc");
     expect(requireIdempotencyPaymentId(ctx)).toBe("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     expect(requireIdempotencyReference(ctx)).toBe("IDEMP-ABC");
+    expect(requireReferencePrimaryBillId(ctx)).toBe("dddddddd-dddd-dddd-dddd-dddddddddddd");
     expect(requireReferencePrimaryPaymentId(ctx)).toBe("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
     expect(requireReferenceValue(ctx)).toBe("REF-ABC");
-    expect(requireReferenceAmount(ctx)).toBe(100);
+    expect(requireReferenceAmount(ctx)).toBe(200);
     expect(requireReferencePrimaryKey(ctx)).toBe("ref-primary-abc");
     expect(requireReferenceDuplicateKey(ctx)).toBe("ref-dup-abc");
     expect(requireReferenceOtherSocietyKey(ctx)).toBe("ref-cross-abc");

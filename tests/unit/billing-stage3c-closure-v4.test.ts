@@ -16,6 +16,12 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 const fnSrc = readFileSync("src/lib/offline-payments.functions.ts", "utf8");
+// The resident bank-transfer server function delegates to the neutral
+// shared core module. Method + actor role are pinned there.
+const residentCoreSrc = readFileSync(
+  "src/lib/offline-payment-resident-submit.ts",
+  "utf8",
+);
 const submitCard = readFileSync(
   "src/components/billing/OfflinePaymentSubmitCard.tsx",
   "utf8",

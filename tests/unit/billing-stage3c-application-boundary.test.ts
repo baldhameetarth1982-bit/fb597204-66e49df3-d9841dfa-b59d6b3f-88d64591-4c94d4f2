@@ -37,9 +37,16 @@ describe("Stage 3C application boundary", () => {
 
   it("resident submission pins _method and _actor_role server-side", () => {
     const src = slice("submitResidentBankTransfer");
-    expect(src).toContain(`_method: "bank_transfer"`);
-    expect(src).toContain(`_actor_role: "resident"`);
-    // No client-controlled method or actor role.
+    // The wrapper delegates to the neutral shared core.
+    expect(src).toContain("submitResidentBankTransferWithClient");
+    // Pins live in the shared core module (single source of truth).
+    const coreSrc = readFileSync(
+      resolve(process.cwd(), "src/lib/offline-payment-resident-submit.ts"),
+      "utf8",
+    );
+    expect(coreSrc).toContain(`_method: "bank_transfer"`);
+    expect(coreSrc).toContain(`_actor_role: "resident"`);
+    // No client-controlled method or actor role in the wrapper.
     expect(src).not.toMatch(/_method:\s*data\.method/);
     expect(src).not.toMatch(/_actor_role:\s*data\.actorRole/i);
   });

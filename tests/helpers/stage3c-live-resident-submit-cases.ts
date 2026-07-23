@@ -33,20 +33,25 @@ import { safeStage3CErrorMessage } from "./stage3c-error-redaction";
 import { residentSubmitInputSchema } from "@/lib/offline-payment-contracts";
 import {
   ResidentSubmittedPaymentRowSchema,
+  ResidentBillSummarySchema,
   deriveActorRoleFromSource,
   snapshotReceiptSequences,
   assertReceiptSequencesExactlyEqual,
-  assertReceiptSequencesUnchanged,
   snapshotResidentBillState,
   assertResidentBillStateUnchanged,
   assertNoReceiptForResidentPayment,
+  assertResidentPendingDelta,
+  assertCanonicalMovedOutRelationship,
+  parseResidentPaymentStatusRows,
   type ReceiptSequenceSnapshot,
+  type ResidentBillSummary,
 } from "./stage3c-live-resident-submit-contracts";
 import {
   requireMatrixFixture,
   requireResidentSubmitAmount,
   requireResidentSubmitIdempotencyKey,
   requireResidentSubmitInitialSummary,
+  requireResidentSubmitInitialReceiptSequences,
   requireResidentSubmitPaymentId,
   requireResidentSubmitReference,
   type Stage3CLiveMatrixContext,

@@ -1,15 +1,14 @@
 /**
- * Stage 3C — Live matrix registry (32/93).
+ * Stage 3C — Live matrix registry (40/93).
  *
- * Composes the existing 24-case core registry with the 8 RESIDENT-SUBMIT
- * handlers implemented in this run. Uses true compile-time
- * exhaustiveness (`satisfies Record`) — no `as Record`, no fallback,
- * no optional lookup.
+ * Composes:
+ *   - the existing 24-case core registry (AUTH + PENDING + VERIFY)
+ *   - the 8 RESIDENT-SUBMIT handlers
+ *   - the 8 IDEMPOTENCY-01..04 + REFERENCE-01..04 handlers implemented
+ *     in this run
  *
- * The 24 core handlers accept a `Stage3CLiveCoreContext`; the 8
- * resident-submit handlers accept a `Stage3CLiveMatrixContext`. Since
- * `Stage3CLiveMatrixContext extends Stage3CLiveCoreContext`, every
- * handler is safely invoked with the matrix context.
+ * Uses true compile-time exhaustiveness (`satisfies Record`) — no
+ * `as Record`, no fallback, no optional lookup.
  */
 import {
   STAGE3C_CORE_LIVE_CASE_HANDLERS,
@@ -21,12 +20,18 @@ import {
   STAGE3C_RESIDENT_SUBMIT_HANDLERS,
   type Stage3CResidentSubmitCaseId,
 } from "./stage3c-live-resident-submit-cases";
+import {
+  STAGE3C_IDEMPOTENCY_REFERENCE_CASE_IDS,
+  STAGE3C_IDEMPOTENCY_REFERENCE_HANDLERS,
+  type Stage3CIdempotencyReferenceCaseId,
+} from "./stage3c-live-idempotency-reference-cases";
 import type { Stage3CLiveMatrixContext } from "./stage3c-live-matrix-context";
 import { STAGE3C_REQUIRED_LIVE_CASES } from "./stage3c-live-case-manifest";
 
 export type Stage3CMatrixLiveCaseId =
   | Stage3CCoreLiveCaseId
-  | Stage3CResidentSubmitCaseId;
+  | Stage3CResidentSubmitCaseId
+  | Stage3CIdempotencyReferenceCaseId;
 
 export type Stage3CMatrixLiveHandler = (ctx: Stage3CLiveMatrixContext) => Promise<void>;
 
@@ -39,11 +44,9 @@ export interface Stage3CMatrixLiveCase {
 export const STAGE3C_MATRIX_LIVE_CASE_IDS: readonly Stage3CMatrixLiveCaseId[] = [
   ...STAGE3C_CORE_LIVE_CASE_IDS,
   ...STAGE3C_RESIDENT_SUBMIT_CASE_IDS,
+  ...STAGE3C_IDEMPOTENCY_REFERENCE_CASE_IDS,
 ];
 
-// Build handler map from the core registry (already description-bound)
-// plus the new resident-submit handler map. `satisfies Record` proves
-// completeness at compile time.
 const CORE_BY_ID = new Map(
   STAGE3C_CORE_LIVE_CASE_HANDLERS.map((c) => [c.id, c.execute] as const),
 );
@@ -51,7 +54,6 @@ const CORE_BY_ID = new Map(
 function coreHandler(id: Stage3CCoreLiveCaseId): Stage3CMatrixLiveHandler {
   const fn = CORE_BY_ID.get(id);
   if (!fn) throw new Error(`[stage3c:matrix-registry] core handler missing for ${id}`);
-  // Core handlers accept Stage3CLiveCoreContext; matrix context extends it.
   return (ctx) => fn(ctx);
 }
 
@@ -88,6 +90,14 @@ export const STAGE3C_MATRIX_LIVE_HANDLERS = {
   "RESIDENT-SUBMIT-06": STAGE3C_RESIDENT_SUBMIT_HANDLERS["RESIDENT-SUBMIT-06"],
   "RESIDENT-SUBMIT-07": STAGE3C_RESIDENT_SUBMIT_HANDLERS["RESIDENT-SUBMIT-07"],
   "RESIDENT-SUBMIT-08": STAGE3C_RESIDENT_SUBMIT_HANDLERS["RESIDENT-SUBMIT-08"],
+  "IDEMPOTENCY-01": STAGE3C_IDEMPOTENCY_REFERENCE_HANDLERS["IDEMPOTENCY-01"],
+  "IDEMPOTENCY-02": STAGE3C_IDEMPOTENCY_REFERENCE_HANDLERS["IDEMPOTENCY-02"],
+  "IDEMPOTENCY-03": STAGE3C_IDEMPOTENCY_REFERENCE_HANDLERS["IDEMPOTENCY-03"],
+  "IDEMPOTENCY-04": STAGE3C_IDEMPOTENCY_REFERENCE_HANDLERS["IDEMPOTENCY-04"],
+  "REFERENCE-01": STAGE3C_IDEMPOTENCY_REFERENCE_HANDLERS["REFERENCE-01"],
+  "REFERENCE-02": STAGE3C_IDEMPOTENCY_REFERENCE_HANDLERS["REFERENCE-02"],
+  "REFERENCE-03": STAGE3C_IDEMPOTENCY_REFERENCE_HANDLERS["REFERENCE-03"],
+  "REFERENCE-04": STAGE3C_IDEMPOTENCY_REFERENCE_HANDLERS["REFERENCE-04"],
 } satisfies Record<Stage3CMatrixLiveCaseId, Stage3CMatrixLiveHandler>;
 
 const MANIFEST_BY_ID: ReadonlyMap<string, string> = new Map(

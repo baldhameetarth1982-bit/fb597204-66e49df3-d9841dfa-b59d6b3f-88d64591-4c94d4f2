@@ -1008,10 +1008,15 @@ export type Stage3CFixture = {
   openBillId: string;
   openBillId2: string;
   cancelledBillId: string;
+  /** Extra unpaid bill in Society A on flatA (700) for REFERENCE-03. */
+  referenceSecondarySameSocietyBillId: string;
+  /** Extra unpaid bill in Society B on unrelatedFlat (600) for REFERENCE-04. */
+  referenceOtherSocietyBillId: string;
   testPaymentDate: string;
   cleanup: () => Promise<void>;
 
 };
+
 
 export type PaginationOptions = { limit?: number; offset?: number };
 export type BillSearchOptions = PaginationOptions & { query?: string };
@@ -1988,6 +1993,53 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
       flatId: flatA,
     });
 
+    // Additional dedicated bills for IDEMPOTENCY / REFERENCE slice (not
+    // in the strict 5-bill matrix contract — tracked/cleaned separately).
+    const referenceSecondarySameSocietyBillId = await addBill({
+      label: "ref-2nd",
+      amount: 700,
+      status: "unpaid",
+      flatId: flatA,
+    });
+    const referenceOtherSocietyBillRow = await assertSupabaseSingleResult<{ id: string }>(
+      "insert:bill:ref-societyB",
+      admin
+        .from("bills")
+        .insert({
+          society_id: societyB,
+          flat_id: unrelatedFlat,
+          period_label: "ref-b",
+          period_start: "2026-01-01",
+          period_end: "2026-01-31",
+          amount: 600,
+          total_payable: 600,
+          due_date: "2026-02-15",
+          status: "unpaid",
+          bill_number: `RR/${prefix}/ref-b`,
+          finalized_at: new Date().toISOString(),
+        })
+        .select("id")
+        .single(),
+    );
+    trackUniqueId(tracked.billIds, referenceOtherSocietyBillRow.id, "bill:ref-b");
+    const referenceOtherSocietyBillId = referenceOtherSocietyBillRow.id;
+    const refBLineItem = await assertSupabaseSingleResult<{ id: string }>(
+      "insert:bill_line_item:ref-b",
+      admin
+        .from("bill_line_items")
+        .insert({
+          bill_id: referenceOtherSocietyBillId,
+          society_id: societyB,
+          kind: "maintenance",
+          description: "Maintenance ref-b",
+          amount: 600,
+        })
+        .select("id")
+        .single(),
+    );
+    trackUniqueId(tracked.billLineItemIds, refBLineItem.id, "bill_line_item:ref-b");
+
+
     const matrix: Stage3CMatrixResources = validateStage3CMatrixResources(
       {
         otherFlatA,
@@ -2178,7 +2230,10 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
       openBillId,
       openBillId2,
       cancelledBillId,
+      referenceSecondarySameSocietyBillId,
+      referenceOtherSocietyBillId,
       testPaymentDate: STAGE3C_TEST_PAYMENT_DATE,
+
       cleanup: () => strictCleanup(admin, prefix, tracked),
 
     };

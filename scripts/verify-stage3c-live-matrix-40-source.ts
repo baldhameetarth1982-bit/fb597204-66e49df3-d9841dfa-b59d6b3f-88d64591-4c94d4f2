@@ -157,10 +157,14 @@ export function checkMatrixRegistry(src: string): string[] {
 export function checkMatrixContextSlots(src: string): string[] {
   const f: string[] = [];
   const fields = [
+    "idempotencyBillId",
     "idempotencyPaymentId",
     "idempotencyReference",
+    "idempotencyAmountInput",
+    "idempotencyConflictAmountInput",
     "idempotencyInitialState",
     "idempotencyPostSubmitState",
+    "referencePrimaryBillId",
     "referencePrimaryPaymentId",
     "referenceOtherSocietyPaymentId",
     "referenceAmount",
@@ -176,15 +180,24 @@ export function checkMatrixContextSlots(src: string): string[] {
       fail(f, `matrix-context: field "${name}" missing`);
   }
   const guards = [
+    "requireIdempotencyBillId",
     "requireIdempotencyPaymentId",
     "requireIdempotencyReference",
+    "requireIdempotencyInitialState",
+    "requireReferencePrimaryBillId",
     "requireReferencePrimaryPaymentId",
     "requireReferenceValue",
+    "requireReferencePrimaryInitialState",
   ];
   for (const g of guards) {
     if (!new RegExp(`\\b${g}\\b`).test(src))
       fail(f, `matrix-context: guard "${g}" missing`);
   }
+  // Snapshot fields must use ResidentBillStateSnapshot, not unknown.
+  if (/idempotencyInitialState:\s*unknown/.test(src) || /referencePrimaryInitialState:\s*unknown/.test(src))
+    fail(f, "matrix-context: lifecycle snapshots must be typed as ResidentBillStateSnapshot (no `unknown`)");
+  if (!/ResidentBillStateSnapshot/.test(src))
+    fail(f, "matrix-context: must import/use ResidentBillStateSnapshot for snapshot slots");
   return f;
 }
 

@@ -22,6 +22,7 @@ import {
   ReceiptSequenceSnapshotSchema,
   type ReceiptSequenceSnapshot,
   type ResidentBillSummary,
+  type ResidentBillStateSnapshot,
 } from "./stage3c-live-resident-submit-contracts";
 import type { Stage3CFixture } from "./stage3c-runtime-fixtures";
 

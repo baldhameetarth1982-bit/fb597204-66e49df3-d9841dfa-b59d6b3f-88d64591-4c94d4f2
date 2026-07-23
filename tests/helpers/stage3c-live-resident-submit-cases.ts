@@ -525,42 +525,27 @@ export const residentSubmit06_movedOutResidentDenied: Stage3CResidentSubmitHandl
     const billId = fixture.matrix.residentSubmitBillId;
     const priorPendingId = requireResidentSubmitPaymentId(ctx);
 
-    // Proof of moved-out state: no ACTIVE residency for movedOutResident on flatA.
-    const active = await fixture.admin
-      .from("flat_residents")
-      .select("id, is_active, moved_out_at")
-      .eq("user_id", fixture.users.movedOutResident.id)
-      .eq("flat_id", fixture.flatA)
-      .eq("is_active", true);
-    expect(active.error, "RESIDENT-SUBMIT-06: flat_residents query").toBeNull();
-    const activeRows = Array.isArray(active.data) ? active.data : null;
-    expect(
-      activeRows,
-      "RESIDENT-SUBMIT-06: flat_residents payload must be array",
-    ).not.toBeNull();
-    expect(
-      (activeRows ?? []).length,
-      "RESIDENT-SUBMIT-06: movedOutResident must have zero active residency on flatA",
-    ).toBe(0);
-
-    // Also confirm the historical inactive row exists with moved_out_at set,
-    // so the fixture actually models a moved-out user (not a never-linked one).
+    // Proof of moved-out state via strict schema (all rows for user+flat).
     const historic = await fixture.admin
       .from("flat_residents")
-      .select("id, is_active, moved_out_at")
+      .select("id, user_id, flat_id, is_active, moved_out_at")
       .eq("user_id", fixture.users.movedOutResident.id)
       .eq("flat_id", fixture.flatA);
-    expect(historic.error, "RESIDENT-SUBMIT-06: flat_residents history").toBeNull();
-    const histRows = Array.isArray(historic.data) ? historic.data : [];
-    const inactiveWithDate = histRows.filter(
-      (r) =>
-        (r as { is_active?: boolean }).is_active === false &&
-        typeof (r as { moved_out_at?: unknown }).moved_out_at === "string",
+    if (historic.error)
+      throw new Error(
+        safeStage3CErrorMessage(
+          "RESIDENT-SUBMIT-06-flat_residents",
+          historic.error,
+        ),
+      );
+    assertCanonicalMovedOutRelationship(
+      historic.data,
+      {
+        expectedUserId: fixture.users.movedOutResident.id,
+        expectedFlatId: fixture.flatA,
+      },
+      "RESIDENT-SUBMIT-06",
     );
-    expect(
-      inactiveWithDate.length,
-      "RESIDENT-SUBMIT-06: at least one inactive residency with moved_out_at",
-    ).toBeGreaterThanOrEqual(1);
 
     await attemptResidentSubmitAndAssertDenied({
       label: "RESIDENT-SUBMIT-06",

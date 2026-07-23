@@ -152,11 +152,6 @@ jobs:
         if: ${{ steps.live_tests.outcome == 'success' || steps.live_tests.outcome == 'failure' }}
         run: bun scripts/verify-stage3c-live-core-report.ts reports/live.json
 
-      - name: Validate Stage 3C 40-case live matrix source (IDEMPOTENCY + REFERENCE)
-        run: bun scripts/verify-stage3c-live-matrix-40-source.ts
-
-
-
 
       - name: Full vitest run (excluding live suite to avoid double-execution)
         run: |

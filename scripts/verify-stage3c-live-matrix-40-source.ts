@@ -96,16 +96,40 @@ export function checkCasesModule(src: string): string[] {
     fail(f, "cases: must use trackUniqueId for duplicate-safe payment id tracking");
   if (!/CanonicalStage3CUuidSchema/.test(src))
     fail(f, "cases: must validate returned payment ids with CanonicalStage3CUuidSchema");
+  if (!/\bidempotencyBillId\b/.test(src))
+    fail(f, "cases: IDEMPOTENCY cases must target the dedicated `idempotencyBillId` (1000)");
+  if (!/\breferencePrimaryBillId\b/.test(src))
+    fail(f, "cases: REFERENCE-01/02 must target the dedicated `referencePrimaryBillId` (800)");
   if (!/referenceSecondarySameSocietyBillId/.test(src))
-    fail(f, "cases: must use the dedicated Society A secondary reference bill");
+    fail(f, "cases: REFERENCE-03 must use the dedicated Society A secondary reference bill");
   if (!/referenceOtherSocietyBillId/.test(src))
-    fail(f, "cases: must use the dedicated Society B other-society reference bill");
-  if (!/countPayments/.test(src))
-    fail(f, "cases: must count payment rows around every mutation and denial");
-  if (!/adminB\b/.test(src))
-    fail(f, "cases: REFERENCE-04 must use adminB for cross-society isolation");
+    fail(f, "cases: REFERENCE-04 must use the dedicated Society B other-society reference bill");
+  if (!/snapshotResidentBillState/.test(src))
+    fail(f, "cases: must snapshot bill state via snapshotResidentBillState");
+  if (!/assertResidentBillStateUnchanged/.test(src))
+    fail(f, "cases: denials must prove state unchanged via assertResidentBillStateUnchanged");
+  if (!/unrelatedResident\b/.test(src))
+    fail(f, "cases: REFERENCE-04 must use unrelatedResident for cross-society isolation");
+  if (/\badminA1\b|\badminB\b/.test(src))
+    fail(f, "cases: REFERENCE paths must use the shared resident production Bank Transfer core (no admin helpers)");
+  if (!/submitResidentBankTransferPayment/.test(src))
+    fail(f, "cases: REFERENCE paths must call submitResidentBankTransferPayment (shared resident core)");
+  if (/submitAdminBankTransferPayment|recordAdminOfflinePayment/.test(src))
+    fail(f, "cases: admin bank-transfer / recordAdminOfflinePayment helpers are forbidden in this slice");
   if (!/activeResident/.test(src))
     fail(f, "cases: IDEMPOTENCY cases must use activeResident (per-user idempotency scope)");
+  if (/from ["']vitest["']/.test(src))
+    fail(f, "cases: must NOT import from vitest — handlers must throw plain Errors");
+  // No non-null assertions (bare `!` after identifiers).
+  if (/\b[A-Za-z_][A-Za-z0-9_]*!\./.test(src) || /\b[A-Za-z_][A-Za-z0-9_]*!\s*[,)\];]/.test(src))
+    fail(f, "cases: non-null assertions (`x!`) are forbidden — use require* guards");
+  // Canonical amounts (250 primary, 251 conflict, 200 reference).
+  if (!/IDEMPOTENCY_AMOUNT\s*=\s*250\b/.test(src))
+    fail(f, "cases: IDEMPOTENCY_AMOUNT must be exactly 250");
+  if (!/IDEMPOTENCY_CONFLICT_AMOUNT\s*=\s*251\b/.test(src))
+    fail(f, "cases: IDEMPOTENCY_CONFLICT_AMOUNT must be exactly 251");
+  if (!/REFERENCE_AMOUNT\s*=\s*200\b/.test(src))
+    fail(f, "cases: REFERENCE_AMOUNT must be exactly 200");
   return f;
 }
 
@@ -133,10 +157,14 @@ export function checkMatrixRegistry(src: string): string[] {
 export function checkMatrixContextSlots(src: string): string[] {
   const f: string[] = [];
   const fields = [
+    "idempotencyBillId",
     "idempotencyPaymentId",
     "idempotencyReference",
+    "idempotencyAmountInput",
+    "idempotencyConflictAmountInput",
     "idempotencyInitialState",
     "idempotencyPostSubmitState",
+    "referencePrimaryBillId",
     "referencePrimaryPaymentId",
     "referenceOtherSocietyPaymentId",
     "referenceAmount",
@@ -152,25 +180,40 @@ export function checkMatrixContextSlots(src: string): string[] {
       fail(f, `matrix-context: field "${name}" missing`);
   }
   const guards = [
+    "requireIdempotencyBillId",
     "requireIdempotencyPaymentId",
     "requireIdempotencyReference",
+    "requireIdempotencyInitialState",
+    "requireReferencePrimaryBillId",
     "requireReferencePrimaryPaymentId",
     "requireReferenceValue",
+    "requireReferencePrimaryInitialState",
   ];
   for (const g of guards) {
     if (!new RegExp(`\\b${g}\\b`).test(src))
       fail(f, `matrix-context: guard "${g}" missing`);
   }
+  // Snapshot fields must use ResidentBillStateSnapshot, not unknown.
+  if (/idempotencyInitialState:\s*unknown/.test(src) || /referencePrimaryInitialState:\s*unknown/.test(src))
+    fail(f, "matrix-context: lifecycle snapshots must be typed as ResidentBillStateSnapshot (no `unknown`)");
+  if (!/ResidentBillStateSnapshot/.test(src))
+    fail(f, "matrix-context: must import/use ResidentBillStateSnapshot for snapshot slots");
   return f;
 }
 
 export function checkFixtureBills(src: string): string[] {
   const f: string[] = [];
+  if (!/\bidempotencyBillId\b/.test(src))
+    fail(f, "fixtures: `idempotencyBillId` alias not exposed (1000 bill)");
+  if (!/\breferencePrimaryBillId\b/.test(src))
+    fail(f, "fixtures: `referencePrimaryBillId` alias not exposed (800 bill)");
   if (!/referenceSecondarySameSocietyBillId/.test(src))
     fail(f, "fixtures: referenceSecondarySameSocietyBillId not exposed");
   if (!/referenceOtherSocietyBillId/.test(src))
     fail(f, "fixtures: referenceOtherSocietyBillId not exposed");
   // Financial totals must appear as literals so validators/tests can pin them.
+  if (!/\b1000\b/.test(src)) fail(f, "fixtures: 1000 (idempotency bill total) missing");
+  if (!/\b800\b/.test(src)) fail(f, "fixtures: 800 (primary reference bill total) missing");
   if (!/\b700\b/.test(src)) fail(f, "fixtures: 700 (secondary reference bill total) missing");
   if (!/\b600\b/.test(src)) fail(f, "fixtures: 600 (other-society reference bill total) missing");
   return f;
@@ -197,8 +240,13 @@ export function checkDocs(src: string): string[] {
 
 export function checkWorkflow(src: string): string[] {
   const f: string[] = [];
-  if (!/verify-stage3c-live-matrix-40-source/.test(src))
-    fail(f, "workflow: must invoke scripts/verify-stage3c-live-matrix-40-source.ts");
+  // The runtime workflow is frozen to the 24-case core report; it must
+  // NOT claim 32/93 or 40/93 acceptance. The 40-case validator is a
+  // local-only gate and does not run in CI yet.
+  if (/40\s*\/\s*93/.test(src))
+    fail(f, "workflow: must NOT claim 40/93 (runtime workflow is frozen at 24 cases)");
+  if (/32\s*\/\s*93/.test(src))
+    fail(f, "workflow: must NOT claim 32/93 (runtime workflow is frozen at 24 cases)");
   return f;
 }
 

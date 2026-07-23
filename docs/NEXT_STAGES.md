@@ -4,6 +4,14 @@
 
 **Status:** CLOSURE VERIFICATION IN PROGRESS — awaiting one successful GitHub Actions run of `.github/workflows/stage3c-runtime-verification.yml`.
 
+**RESIDENT-SUBMIT reader/state behavioral closure (this run)**
+- Focused resident suite `tests/unit/billing-stage3c-live-resident-submit.test.ts` expanded from 62 → **83 direct tests**, all passing. New behavioral tests directly execute real exports (no source-regex substitutes): `ReceiptSequenceSnapshotSchema`, `snapshotReceiptSequences` (cross-society scope rejection), `assertReceiptSequencesExactlyEqual` (safe error labels — no UUID / key leakage), `ResidentReceiptRowsSchema` (unknown property, duplicate id), `ResidentBillSummarySchema` (missing `bill_id` / `society_id`, empty string, NaN, Infinity), `assertResidentBillStateUnchanged` (payment-amount change, no IDs/amounts in message), `assertCanonicalMovedOutRelationship` (active row rejected even alongside historical row, no user/flat ID leakage), `requireResidentSubmitInitialReceiptSequences` (parses + sorts snapshot, returns a fresh array), and `parseResidentPaymentStatusRows` (null / object / duplicate id / unsupported status rejection).
+- Shared resident Bank Transfer core delegation confirmed: production wrapper `src/lib/offline-payments.functions.ts` and fixture `tests/helpers/stage3c-runtime-fixtures.ts` both delegate to `submitResidentBankTransferWithClient` in `src/lib/offline-payment-resident-submit.ts`; that shared core is the **exactly one** construction owner of `submit_offline_payment` with `_method="bank_transfer"` + `_actor_role="resident"`. Direct Cash-denial probe and admin Bank Transfer path are excluded from resident duplication counting.
+- Local gates all green: `tsgo` = 0; foundation validator test (69) + script = 0; 32-case validator = 0; fixture / live-core / bundle scans = 0; full unit suite = 1300 passed / 7 skipped; E2E-excluded = 1301 passed / 21 skipped / 11 todo (Playwright files collected = 0, live integration files collected = 0); `bun run build` = 0; `bun --version` = 1.3.3; `git diff -- package.json bun.lock` = clean; `.github/workflows/stage3c-runtime-verification.yml` = valid YAML.
+- Runtime workflow remains **24 cases**. Implemented live source remains **32/93**. GitHub Actions status for the 32-case slice: **not observed** in this run. Next bounded implementation remains **IDEMPOTENCY-01..04 and REFERENCE-01..04**. Stage 3D remains blocked.
+
+
+
 **Live matrix progress — RESIDENT-SUBMIT slice (this run)**
 - Implemented live source: **32/93** (AUTH 7/7, PENDING 8/8, VERIFY 9/9, RESIDENT-SUBMIT 8/8).
 - New handler module: `tests/helpers/stage3c-live-resident-submit-cases.ts` — exactly 8 handlers, strictly typed `satisfies Record<Stage3CResidentSubmitCaseId, Stage3CResidentSubmitHandler>`.

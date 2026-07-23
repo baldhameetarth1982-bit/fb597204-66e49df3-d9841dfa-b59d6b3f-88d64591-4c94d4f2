@@ -206,11 +206,10 @@ describe("Stage 3C — RESIDENT-SUBMIT handler source shape", () => {
     expect(residentSrc).toMatch(/RESIDENT-SUBMIT-07/);
   });
 
-  it("asserts exact final summary delta (pending +300, available -300)", () => {
-    expect(residentSrc).toMatch(/pending delta = \+amount/);
-    expect(residentSrc).toMatch(/available delta = amount/);
-    expect(residentSrc).toMatch(/\b900\b/);
-    expect(residentSrc).toMatch(/\b1200\b/);
+  it("asserts exact final summary delta via assertResidentPendingDelta helper", () => {
+    expect(residentSrc).toMatch(/assertResidentPendingDelta\(\s*initial\s*,\s*finalSummary\s*,\s*amount/);
+    expect(residentSrc).toMatch(/requireResidentSubmitInitialReceiptSequences/);
+    expect(residentSrc).not.toMatch(/as ReceiptSequenceSnapshot/);
   });
 
   it("uses safe error redaction via assertCanonicalError only", () => {

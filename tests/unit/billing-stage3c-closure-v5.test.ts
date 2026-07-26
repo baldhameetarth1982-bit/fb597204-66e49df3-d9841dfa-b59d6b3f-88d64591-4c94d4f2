@@ -72,11 +72,15 @@ describe("Stage 3C v5 — getPaymentDetail is Zod-validated", () => {
   });
   it("returns a typed PaymentDetail (no bare `as any` cast)", () => {
     const block =
-      fnSrc.match(/export const getPaymentDetail[\s\S]{0,1200}/)?.[0] ?? "";
+      fnSrc.match(/export const getPaymentDetail\b[\s\S]{0,1200}/)?.[0] ?? "";
     expect(block).not.toMatch(/as\s+any\b/);
-    // v6: typed via explicit `const detail: PaymentDetail = { ... }` rather
-    // than `... satisfies PaymentDetail` — either form is a real type check.
-    expect(block).toMatch(/const detail:\s*PaymentDetail\s*=/);
+    // Refactored: strict Zod parsing is owned by the shared core
+    // `getPaymentDetailWithClient`, which the server function delegates to
+    // and whose return type is `PaymentDetail | null`.
+    expect(block).toMatch(/getPaymentDetailWithClient\(/);
+    expect(fnSrc).toMatch(
+      /Promise<PaymentDetail \| null>[\s\S]{0,80}parsePaymentDetailResponse\(raw\)/,
+    );
   });
 });
 

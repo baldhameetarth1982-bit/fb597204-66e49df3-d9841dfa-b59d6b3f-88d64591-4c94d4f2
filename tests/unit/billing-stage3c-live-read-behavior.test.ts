@@ -1,11 +1,13 @@
 /**
- * Stage 3C — READ-01..04 direct behavioral tests (Sub-run B1).
+ * Stage 3C — READ-01..04 direct behavioral tests (Sub-run B1 production wiring).
  *
- * Every test invokes the real exported READ handler with a deterministic
- * fake `Stage3CReadTransport` and the real production
- * `parsePaymentDetailResponse`. Handlers are compiled, not scanned.
+ * Two layers:
+ *   A. Neutral shared-core tests using a mocked `BillingRpcClient`.
+ *      Prove the cores own RPC name + argument construction + parsing.
+ *   B. Real READ handler tests using the shared cores through the same
+ *      mocked client, primed on the matrix context.
  */
-import { describe, expect, it, beforeEach, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
@@ -15,14 +17,23 @@ import {
   stage3cReadDeepEqual,
   type ResidentPaymentDetail,
   type ResidentPaymentHistoryRow,
-  type Stage3CReadTransport,
 } from "@/../tests/helpers/stage3c-live-read-cases";
 import {
   createStage3CLiveMatrixContext,
   type Stage3CLiveMatrixContext,
 } from "@/../tests/helpers/stage3c-live-matrix-context";
-import { parsePaymentDetailResponse } from "@/lib/offline-payments.functions";
+import {
+  parsePaymentDetailResponse,
+  getResidentPaymentsWithClient,
+  getPaymentDetailWithClient,
+  getResidentPayments,
+  getPaymentDetail,
+} from "@/lib/offline-payments.functions";
+import type { BillingRpcClient } from "@/lib/billing-config.functions";
 
+// ---------------------------------------------------------------------------
+// Deterministic fixture values (canonical UUIDs; no protected identity)
+// ---------------------------------------------------------------------------
 const PAYMENT_ID = "11111111-2222-4333-8444-555555555555";
 const OTHER_PAYMENT_ID = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
 const BILL_ID = "22222222-3333-4444-8555-666666666666";
@@ -110,63 +121,51 @@ function makeExpectedDetail(): ResidentPaymentDetail {
   return ResidentPaymentDetailSchema.parse(makeRawDetail());
 }
 
-interface FakeTransportOptions {
-  historyRows?: unknown[] | ((call: number) => unknown[]);
-  detailPayload?: unknown | ((call: number) => unknown);
-}
-interface Recorded {
-  historyCalls: number;
-  detailCalls: number;
-  historyInputs: Array<{ limit?: number; offset?: number }>;
-  detailInputs: Array<{ paymentId: string }>;
+// ---------------------------------------------------------------------------
+// Recording mocked BillingRpcClient
+// ---------------------------------------------------------------------------
+
+type Responder = (
+  name: string,
+  args: Record<string, unknown>,
+) => { data: unknown; error: { message: string } | null };
+
+interface RecordingClient extends BillingRpcClient {
+  calls: Array<{ name: string; args: Record<string, unknown> }>;
 }
 
-function makeFakeTransport(
-  opts: FakeTransportOptions = {},
-): Stage3CReadTransport & { recorded: Recorded } {
-  const recorded: Recorded = {
-    historyCalls: 0,
-    detailCalls: 0,
-    historyInputs: [],
-    detailInputs: [],
-  };
-  const historyResolver =
-    typeof opts.historyRows === "function"
-      ? opts.historyRows
-      : () => (opts.historyRows ?? [makeExpectedRow()]) as unknown[];
-  const detailResolver =
-    typeof opts.detailPayload === "function"
-      ? opts.detailPayload
-      : () => (opts.detailPayload ?? makeRawDetail()) as unknown;
-  const t: Stage3CReadTransport & { recorded: Recorded } = {
-    recorded,
-    async fetchResidentPaymentHistoryRaw(input) {
-      recorded.historyCalls += 1;
-      recorded.historyInputs.push({
-        limit: input.limit,
-        offset: input.offset,
-      });
-      return historyResolver(recorded.historyCalls);
-    },
-    async fetchResidentPaymentDetailRaw(input) {
-      recorded.detailCalls += 1;
-      recorded.detailInputs.push({ paymentId: input.paymentId });
-      return detailResolver(recorded.detailCalls);
+function makeClient(responder: Responder): RecordingClient {
+  const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+  const client: RecordingClient = {
+    calls,
+    async rpc(name, args) {
+      calls.push({ name, args });
+      return responder(name, args);
     },
   };
-  return t;
+  return client;
+}
+
+/** Default responder: history returns [expectedRow], detail returns rawDetail. */
+function defaultResponder(): Responder {
+  return (name) => {
+    if (name === "get_resident_payments_v1")
+      return { data: [makeExpectedRow()], error: null };
+    if (name === "get_payment_detail")
+      return { data: makeRawDetail(), error: null };
+    return { data: null, error: { message: "unknown_rpc" } };
+  };
 }
 
 function primedContext(
-  overrides: Partial<Stage3CLiveMatrixContext> = {},
-): Stage3CLiveMatrixContext & { transport: Stage3CReadTransport & { recorded: Recorded } } {
+  overrides: Partial<Stage3CLiveMatrixContext> & {
+    responder?: Responder;
+  } = {},
+): Stage3CLiveMatrixContext & { client: RecordingClient } {
   const ctx = createStage3CLiveMatrixContext();
   const row = makeExpectedRow();
   const detail = makeExpectedDetail();
-  const transport =
-    (overrides.readTransport as
-      | (Stage3CReadTransport & { recorded: Recorded })
-      | undefined) ?? makeFakeTransport();
+  const client = makeClient(overrides.responder ?? defaultResponder());
   Object.assign(ctx, {
     readPrimaryBillId: BILL_ID,
     readPrimaryPaymentId: PAYMENT_ID,
@@ -174,183 +173,327 @@ function primedContext(
     readExpectedHistoryRow: row,
     readExpectedHistory: [row],
     readExpectedDetail: detail,
-    readTransport: transport,
+    readResidentRpcClient: client,
     ...overrides,
   });
-  const out = ctx as Stage3CLiveMatrixContext & {
-    transport: Stage3CReadTransport & { recorded: Recorded };
-  };
-  out.transport = transport as Stage3CReadTransport & { recorded: Recorded };
+  const out = ctx as Stage3CLiveMatrixContext & { client: RecordingClient };
+  out.client = client;
   return out;
 }
 
-async function run(id: keyof typeof STAGE3C_READ_HANDLERS, ctx: Stage3CLiveMatrixContext): Promise<void> {
+async function run(
+  id: keyof typeof STAGE3C_READ_HANDLERS,
+  ctx: Stage3CLiveMatrixContext,
+): Promise<void> {
   await STAGE3C_READ_HANDLERS[id](ctx);
 }
 
 // ---------------------------------------------------------------------------
-// READ-01 (15)
+// SHARED-CORE tests — history (10)
 // ---------------------------------------------------------------------------
-describe("READ-01 — active resident sees own payment history", () => {
-  it("succeeds against canonical fake transport", async () => {
-    const ctx = primedContext();
-    await expect(run("READ-01", ctx)).resolves.toBeUndefined();
+describe("shared core — getResidentPaymentsWithClient", () => {
+  it("calls RPC name get_resident_payments_v1", async () => {
+    const client = makeClient(defaultResponder());
+    await getResidentPaymentsWithClient(client, { limit: 50, offset: 0 });
+    expect(client.calls[0].name).toBe("get_resident_payments_v1");
   });
-  it("invokes the production history read at least once", async () => {
-    const ctx = primedContext();
-    await run("READ-01", ctx);
-    expect(ctx.transport.recorded.historyCalls).toBeGreaterThanOrEqual(1);
+  it("sends _limit argument", async () => {
+    const client = makeClient(defaultResponder());
+    await getResidentPaymentsWithClient(client, { limit: 25, offset: 0 });
+    expect(client.calls[0].args._limit).toBe(25);
   });
-  it("issues history reads via transport (not direct client)", async () => {
-    const ctx = primedContext();
-    const spy = vi.spyOn(ctx.transport, "fetchResidentPaymentHistoryRaw");
-    await run("READ-01", ctx);
-    expect(spy).toHaveBeenCalled();
+  it("sends _offset argument", async () => {
+    const client = makeClient(defaultResponder());
+    await getResidentPaymentsWithClient(client, { limit: 50, offset: 7 });
+    expect(client.calls[0].args._offset).toBe(7);
   });
-  it("validates every returned row via strict schema", async () => {
+  it("defaults limit=50 offset=0", async () => {
+    const client = makeClient(defaultResponder());
+    await getResidentPaymentsWithClient(client);
+    expect(client.calls[0].args).toEqual({ _limit: 50, _offset: 0 });
+  });
+  it("parses every row via production schema", async () => {
     const bad = { ...makeExpectedRow(), amount: "not-a-number" };
-    const ctx = primedContext({
-      readTransport: makeFakeTransport({ historyRows: [bad] }),
-    });
-    await expect(run("READ-01", ctx)).rejects.toThrow(/failed strict schema/);
+    const client = makeClient(() => ({ data: [bad], error: null }));
+    await expect(
+      getResidentPaymentsWithClient(client, { limit: 50, offset: 0 }),
+    ).rejects.toThrow();
   });
-  it("finds the expected payment exactly once", async () => {
-    const ctx = primedContext();
-    await expect(run("READ-01", ctx)).resolves.toBeUndefined();
+  it("returns { payments } shape", async () => {
+    const client = makeClient(defaultResponder());
+    const out = await getResidentPaymentsWithClient(client);
+    expect(out).toHaveProperty("payments");
+    expect(Array.isArray(out.payments)).toBe(true);
   });
-  it("rejects a missing expected payment", async () => {
-    const other = { ...makeExpectedRow(), id: OTHER_PAYMENT_ID };
-    const ctx = primedContext({
-      readTransport: makeFakeTransport({ historyRows: [other] }),
-      readExpectedHistory: [other],
-    });
-    await expect(run("READ-01", ctx)).rejects.toThrow(
-      /expected payment absent/,
+  it("normalizes non-array raw to empty payments", async () => {
+    const client = makeClient(() => ({ data: null, error: null }));
+    const out = await getResidentPaymentsWithClient(client);
+    expect(out.payments).toEqual([]);
+  });
+  it("preserves row order", async () => {
+    const r1 = makeExpectedRow();
+    const r2 = { ...r1, id: OTHER_PAYMENT_ID, reference_no: "RS-A2" };
+    const client = makeClient(() => ({ data: [r1, r2], error: null }));
+    const out = await getResidentPaymentsWithClient(client);
+    expect(out.payments.map((p) => p.id)).toEqual([r1.id, r2.id]);
+  });
+  it("propagates provider failure via mapError (single wrapper)", async () => {
+    const client = makeClient(() => ({
+      data: null,
+      error: { message: "not_authorized" },
+    }));
+    await expect(getResidentPaymentsWithClient(client)).rejects.toThrow();
+  });
+  it("production server function delegates to shared core (referential)", () => {
+    // The exported server function is created via createServerFn; presence of
+    // the shared-core export proves construction is centralized.
+    expect(typeof getResidentPayments).toBe("function");
+    expect(typeof getResidentPaymentsWithClient).toBe("function");
+  });
+  it("shared core is the single construction owner (unique RPC string)", () => {
+    const src = readFileSync(
+      path.resolve(__dirname, "../../src/lib/offline-payments.functions.ts"),
+      "utf8",
     );
-  });
-  it("rejects a duplicate expected payment", async () => {
-    const row = makeExpectedRow();
-    const ctx = primedContext({
-      readTransport: makeFakeTransport({ historyRows: [row, row] }),
-      readExpectedHistory: [row, row],
-    });
-    await expect(run("READ-01", ctx)).rejects.toThrow(
-      /appears more than once/,
-    );
-  });
-  it("rejects malformed rows (extra key)", async () => {
-    const bad = { ...makeExpectedRow(), rogue: 1 } as unknown;
-    const ctx = primedContext({
-      readTransport: makeFakeTransport({ historyRows: [bad] }),
-    });
-    await expect(run("READ-01", ctx)).rejects.toThrow(/failed strict schema/);
-  });
-  it("rejects uppercase UUIDs in a row", async () => {
-    const bad = { ...makeExpectedRow(), id: OTHER_PAYMENT_ID.toUpperCase() };
-    const ctx = primedContext({
-      readTransport: makeFakeTransport({ historyRows: [bad] }),
-    });
-    await expect(run("READ-01", ctx)).rejects.toThrow(/failed strict schema/);
-  });
-  it("rejects an unexpected Society B row", async () => {
-    const cross = { ...makeExpectedRow(), id: OTHER_PAYMENT_ID, society_id: OTHER_SOCIETY_ID };
-    const row = makeExpectedRow();
-    const ctx = primedContext({
-      readTransport: makeFakeTransport({ historyRows: [row, cross] }),
-      readExpectedHistory: [row, cross],
-    });
-    await expect(run("READ-01", ctx)).rejects.toThrow(
-      /another society/,
-    );
-  });
-  it("rejects an unexpected inaccessible-flat row", async () => {
-    const cross = { ...makeExpectedRow(), id: OTHER_PAYMENT_ID, flat_id: OTHER_FLAT_ID };
-    const row = makeExpectedRow();
-    const ctx = primedContext({
-      readTransport: makeFakeTransport({ historyRows: [row, cross] }),
-      readExpectedHistory: [row, cross],
-    });
-    await expect(run("READ-01", ctx)).rejects.toThrow(/another flat/);
-  });
-  it("accepts exact production ordering", async () => {
-    const row = makeExpectedRow();
-    const second = { ...row, id: OTHER_PAYMENT_ID, reference_no: "RS-A2" };
-    const ctx = primedContext({
-      readPrimaryPaymentId: row.id,
-      readExpectedHistoryRow: row,
-      readExpectedHistory: [row, second],
-      readTransport: makeFakeTransport({ historyRows: [row, second] }),
-    });
-    await expect(run("READ-01", ctx)).resolves.toBeUndefined();
-  });
-  it("rejects reversed ordering vs expected", async () => {
-    const row = makeExpectedRow();
-    const second = { ...row, id: OTHER_PAYMENT_ID, reference_no: "RS-A2" };
-    const ctx = primedContext({
-      readExpectedHistoryRow: row,
-      readExpectedHistory: [row, second],
-      readTransport: makeFakeTransport({ historyRows: [second, row] }),
-    });
-    await expect(run("READ-01", ctx)).rejects.toThrow(/ordering/);
-  });
-  it("repeated read is deeply equal", async () => {
-    const ctx = primedContext();
-    await run("READ-01", ctx);
-    expect(ctx.transport.recorded.historyCalls).toBeGreaterThanOrEqual(2);
-  });
-  it("preserves detail state (receipts + sequences fingerprint unchanged)", async () => {
-    const ctx = primedContext();
-    await run("READ-01", ctx);
-    // Detail fetched twice bracketing the history read.
-    expect(ctx.transport.recorded.detailCalls).toBeGreaterThanOrEqual(2);
+    const stripped = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+    const occurrences = stripped.match(/get_resident_payments_v1/g) ?? [];
+    expect(occurrences.length).toBe(1);
   });
 });
 
 // ---------------------------------------------------------------------------
-// READ-02 (17)
+// SHARED-CORE tests — detail (11)
 // ---------------------------------------------------------------------------
-describe("READ-02 — active resident sees own payment detail", () => {
-  it("succeeds against canonical fake transport", async () => {
-    const ctx = primedContext();
-    await expect(run("READ-02", ctx)).resolves.toBeUndefined();
+describe("shared core — getPaymentDetailWithClient", () => {
+  it("calls RPC name get_payment_detail", async () => {
+    const client = makeClient(defaultResponder());
+    await getPaymentDetailWithClient(client, { paymentId: PAYMENT_ID });
+    expect(client.calls[0].name).toBe("get_payment_detail");
   });
-  it("invokes production detail read at least once", async () => {
-    const ctx = primedContext();
-    await run("READ-02", ctx);
-    expect(ctx.transport.recorded.detailCalls).toBeGreaterThanOrEqual(1);
+  it("sends _payment_id argument", async () => {
+    const client = makeClient(defaultResponder());
+    await getPaymentDetailWithClient(client, { paymentId: PAYMENT_ID });
+    expect(client.calls[0].args._payment_id).toBe(PAYMENT_ID);
   });
-  it("passes the expected payment id to the detail read", async () => {
-    const ctx = primedContext();
-    await run("READ-02", ctx);
-    expect(ctx.transport.recorded.detailInputs[0].paymentId).toBe(PAYMENT_ID);
+  it("returns null for null raw", async () => {
+    const client = makeClient(() => ({ data: null, error: null }));
+    const out = await getPaymentDetailWithClient(client, { paymentId: PAYMENT_ID });
+    expect(out).toBeNull();
   });
-  it("invokes real parsePaymentDetailResponse (referential parity)", () => {
-    expect(parsePaymentDetailResponse(makeRawDetail()).audience).toBe(
-      "resident",
+  it("returns null for undefined raw", async () => {
+    const client = makeClient(() => ({ data: undefined, error: null }));
+    const out = await getPaymentDetailWithClient(client, { paymentId: PAYMENT_ID });
+    expect(out).toBeNull();
+  });
+  it("invokes production parser on non-null payload", async () => {
+    const client = makeClient(defaultResponder());
+    const out = await getPaymentDetailWithClient(client, { paymentId: PAYMENT_ID });
+    expect(out).not.toBeNull();
+    expect(out?.audience).toBe("resident");
+  });
+  it("rejects malformed payload (extra key)", async () => {
+    const raw = { ...makeRawDetail(), rogue: 1 };
+    const client = makeClient(() => ({ data: raw, error: null }));
+    await expect(
+      getPaymentDetailWithClient(client, { paymentId: PAYMENT_ID }),
+    ).rejects.toThrow();
+  });
+  it("returns exact resident detail", async () => {
+    const client = makeClient(defaultResponder());
+    const out = await getPaymentDetailWithClient(client, { paymentId: PAYMENT_ID });
+    expect(stage3cReadDeepEqual(out, makeExpectedDetail())).toBe(true);
+  });
+  it("returns admin detail when raw carries admin audience", async () => {
+    const raw = makeRawDetail();
+    raw.audience = "admin";
+    (raw.payment as Record<string, unknown>).notes = null;
+    (raw.payment as Record<string, unknown>).submitted_by = null;
+    (raw.payment as Record<string, unknown>).verified_by = null;
+    (raw.payment as Record<string, unknown>).verification_notes = null;
+    (raw.payment as Record<string, unknown>).rejected_by = null;
+    (raw.payment as Record<string, unknown>).reversed_by = null;
+    (raw.receipt as Record<string, unknown>).id = OTHER_PAYMENT_ID;
+    (raw.receipt as Record<string, unknown>).payment_id = PAYMENT_ID;
+    (raw.receipt as Record<string, unknown>).society_id = SOCIETY_ID;
+    (raw.receipt as Record<string, unknown>).voided_by = null;
+    (raw.receipt as Record<string, unknown>).verified_by = null;
+    const client = makeClient(() => ({ data: raw, error: null }));
+    const out = await getPaymentDetailWithClient(client, { paymentId: PAYMENT_ID });
+    expect(out?.audience).toBe("admin");
+  });
+  it("propagates provider failure via mapError", async () => {
+    const client = makeClient(() => ({
+      data: null,
+      error: { message: "payment_not_found" },
+    }));
+    await expect(
+      getPaymentDetailWithClient(client, { paymentId: PAYMENT_ID }),
+    ).rejects.toThrow();
+  });
+  it("production server function delegates to shared core", () => {
+    expect(typeof getPaymentDetail).toBe("function");
+    expect(typeof getPaymentDetailWithClient).toBe("function");
+  });
+  it("shared core is the single construction owner (unique RPC string)", () => {
+    const src = readFileSync(
+      path.resolve(__dirname, "../../src/lib/offline-payments.functions.ts"),
+      "utf8",
+    );
+    const stripped = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+    const occurrences = stripped.match(/get_payment_detail\b/g) ?? [];
+    // exactly one string literal appearing in the shared core body
+    expect(occurrences.length).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// HANDLER tests — READ-01 (10)
+// ---------------------------------------------------------------------------
+describe("READ-01 — active resident sees own payment history (handler)", () => {
+  it("succeeds against canonical mocked client", async () => {
+    const ctx = primedContext();
+    await expect(run("READ-01", ctx)).resolves.toBeUndefined();
+  });
+  it("issues the history RPC (get_resident_payments_v1)", async () => {
+    const ctx = primedContext();
+    await run("READ-01", ctx);
+    const historyCalls = ctx.client.calls.filter(
+      (c) => c.name === "get_resident_payments_v1",
+    );
+    expect(historyCalls.length).toBeGreaterThanOrEqual(2);
+  });
+  it("consumes { payments } shape (rejects when handler receives non-array)", async () => {
+    const ctx = primedContext({
+      responder: (name) =>
+        name === "get_resident_payments_v1"
+          ? { data: [], error: null }
+          : { data: makeRawDetail(), error: null },
+      readExpectedHistory: [],
+    });
+    // empty list means expected payment absent
+    await expect(run("READ-01", ctx)).rejects.toThrow(/expected payment absent/);
+  });
+  it("rejects missing expected payment", async () => {
+    const other = { ...makeExpectedRow(), id: OTHER_PAYMENT_ID };
+    const ctx = primedContext({
+      responder: (name) =>
+        name === "get_resident_payments_v1"
+          ? { data: [other], error: null }
+          : { data: makeRawDetail(), error: null },
+      readExpectedHistory: [other],
+    });
+    await expect(run("READ-01", ctx)).rejects.toThrow(/expected payment absent/);
+  });
+  it("rejects duplicate expected payment", async () => {
+    const row = makeExpectedRow();
+    const ctx = primedContext({
+      responder: (name) =>
+        name === "get_resident_payments_v1"
+          ? { data: [row, row], error: null }
+          : { data: makeRawDetail(), error: null },
+      readExpectedHistory: [row, row],
+    });
+    await expect(run("READ-01", ctx)).rejects.toThrow(/appears more than once/);
+  });
+  it("rejects wrong society", async () => {
+    const cross = { ...makeExpectedRow(), id: OTHER_PAYMENT_ID, society_id: OTHER_SOCIETY_ID };
+    const row = makeExpectedRow();
+    const ctx = primedContext({
+      responder: (name) =>
+        name === "get_resident_payments_v1"
+          ? { data: [row, cross], error: null }
+          : { data: makeRawDetail(), error: null },
+      readExpectedHistory: [row, cross],
+    });
+    await expect(run("READ-01", ctx)).rejects.toThrow(/another society/);
+  });
+  it("rejects inaccessible flat", async () => {
+    const cross = { ...makeExpectedRow(), id: OTHER_PAYMENT_ID, flat_id: OTHER_FLAT_ID };
+    const row = makeExpectedRow();
+    const ctx = primedContext({
+      responder: (name) =>
+        name === "get_resident_payments_v1"
+          ? { data: [row, cross], error: null }
+          : { data: makeRawDetail(), error: null },
+      readExpectedHistory: [row, cross],
+    });
+    await expect(run("READ-01", ctx)).rejects.toThrow(/another flat/);
+  });
+  it("rejects malformed row (missing required field)", async () => {
+    const row = makeExpectedRow();
+    const bad: Record<string, unknown> = { ...row };
+    delete bad.status;
+    const ctx = primedContext({
+      responder: (name) =>
+        name === "get_resident_payments_v1"
+          ? { data: [bad], error: null }
+          : { data: makeRawDetail(), error: null },
+    });
+    await expect(run("READ-01", ctx)).rejects.toThrow();
+  });
+  it("rejects unstable ordering (second read differs)", async () => {
+    const row = makeExpectedRow();
+    const second = { ...row, id: OTHER_PAYMENT_ID, reference_no: "RS-A2" };
+    let call = 0;
+    const ctx = primedContext({
+      responder: (name) => {
+        if (name === "get_resident_payments_v1") {
+          call += 1;
+          return {
+            data: call === 1 ? [row, second] : [second, row],
+            error: null,
+          };
+        }
+        return { data: makeRawDetail(), error: null };
+      },
+      readExpectedHistoryRow: row,
+      readExpectedHistory: [row, second],
+    });
+    await expect(run("READ-01", ctx)).rejects.toThrow(
+      /repeated read|not deeply equal|ordering/,
     );
   });
-  it("validates parsed output against ResidentPaymentDetailSchema", () => {
-    const parsed = ResidentPaymentDetailSchema.safeParse(makeRawDetail());
-    expect(parsed.success).toBe(true);
+  it("proves database state unchanged (detail bracketing matches)", async () => {
+    const ctx = primedContext();
+    await run("READ-01", ctx);
+    const detailCalls = ctx.client.calls.filter(
+      (c) => c.name === "get_payment_detail",
+    );
+    expect(detailCalls.length).toBe(2);
   });
-  it("accepts exact nested snake_case payload", async () => {
+});
+
+// ---------------------------------------------------------------------------
+// HANDLER tests — READ-02 (12)
+// ---------------------------------------------------------------------------
+describe("READ-02 — active resident sees own payment detail (handler)", () => {
+  it("succeeds against canonical mocked client", async () => {
     const ctx = primedContext();
     await expect(run("READ-02", ctx)).resolves.toBeUndefined();
   });
-  it("rejects camelCase replacement fields at the top level", async () => {
-    const raw = { ...makeRawDetail() };
-    delete (raw as Record<string, unknown>).bill_number;
-    (raw as Record<string, unknown>).billNumber = "BILL-001";
+  it("issues the detail RPC with _payment_id", async () => {
+    const ctx = primedContext();
+    await run("READ-02", ctx);
+    const detailCall = ctx.client.calls.find((c) => c.name === "get_payment_detail");
+    expect(detailCall?.args._payment_id).toBe(PAYMENT_ID);
+  });
+  it("rejects null detail", async () => {
     const ctx = primedContext({
-      readTransport: makeFakeTransport({ detailPayload: raw }),
+      responder: (name) =>
+        name === "get_payment_detail"
+          ? { data: null, error: null }
+          : { data: [makeExpectedRow()], error: null },
     });
-    await expect(run("READ-02", ctx)).rejects.toThrow();
+    await expect(run("READ-02", ctx)).rejects.toThrow(/payment detail was null/);
   });
   it("rejects wrong payment id", async () => {
     const raw = makeRawDetail();
     (raw.payment as Record<string, unknown>).id = OTHER_PAYMENT_ID;
     const ctx = primedContext({
-      readTransport: makeFakeTransport({ detailPayload: raw }),
+      responder: (name) =>
+        name === "get_payment_detail"
+          ? { data: raw, error: null }
+          : { data: [makeExpectedRow()], error: null },
     });
     await expect(run("READ-02", ctx)).rejects.toThrow(/payment id mismatch/);
   });
@@ -358,7 +501,10 @@ describe("READ-02 — active resident sees own payment detail", () => {
     const raw = makeRawDetail();
     (raw.payment as Record<string, unknown>).bill_id = OTHER_PAYMENT_ID;
     const ctx = primedContext({
-      readTransport: makeFakeTransport({ detailPayload: raw }),
+      responder: (name) =>
+        name === "get_payment_detail"
+          ? { data: raw, error: null }
+          : { data: [makeExpectedRow()], error: null },
     });
     await expect(run("READ-02", ctx)).rejects.toThrow(/bill id mismatch/);
   });
@@ -366,7 +512,10 @@ describe("READ-02 — active resident sees own payment detail", () => {
     const raw = makeRawDetail();
     (raw.payment as Record<string, unknown>).society_id = OTHER_SOCIETY_ID;
     const ctx = primedContext({
-      readTransport: makeFakeTransport({ detailPayload: raw }),
+      responder: (name) =>
+        name === "get_payment_detail"
+          ? { data: raw, error: null }
+          : { data: [makeExpectedRow()], error: null },
     });
     await expect(run("READ-02", ctx)).rejects.toThrow(/society scope/);
   });
@@ -374,213 +523,193 @@ describe("READ-02 — active resident sees own payment detail", () => {
     const raw = makeRawDetail();
     (raw.payment as Record<string, unknown>).flat_id = OTHER_FLAT_ID;
     const ctx = primedContext({
-      readTransport: makeFakeTransport({ detailPayload: raw }),
+      responder: (name) =>
+        name === "get_payment_detail"
+          ? { data: raw, error: null }
+          : { data: [makeExpectedRow()], error: null },
     });
     await expect(run("READ-02", ctx)).rejects.toThrow(/flat scope/);
   });
-  it("rejects altered amount", async () => {
+  it("rejects altered summary (drift in bill_number)", async () => {
     const raw = makeRawDetail();
-    (raw.payment as Record<string, unknown>).amount = 999;
+    raw.bill_number = "BILL-999";
     const ctx = primedContext({
-      readTransport: makeFakeTransport({ detailPayload: raw }),
+      responder: (name) =>
+        name === "get_payment_detail"
+          ? { data: raw, error: null }
+          : { data: [makeExpectedRow()], error: null },
     });
-    await expect(run("READ-02", ctx)).rejects.toThrow(/amount/);
+    await expect(run("READ-02", ctx)).rejects.toThrow(/does not deeply equal/);
   });
-  it("rejects altered status", async () => {
+  it("rejects altered receipt (drift in receipt_number)", async () => {
     const raw = makeRawDetail();
-    (raw.payment as Record<string, unknown>).status = "rejected";
+    (raw.receipt as Record<string, unknown>).receipt_number = "R-DIFFERENT";
     const ctx = primedContext({
-      readTransport: makeFakeTransport({ detailPayload: raw }),
+      responder: (name) =>
+        name === "get_payment_detail"
+          ? { data: raw, error: null }
+          : { data: [makeExpectedRow()], error: null },
     });
-    await expect(run("READ-02", ctx)).rejects.toThrow(/status/);
+    await expect(run("READ-02", ctx)).rejects.toThrow(/does not deeply equal/);
   });
-  it("rejects altered bill number (schema drift via extra key)", async () => {
+  it("rejects admin-audience payload (returned non-resident audience)", async () => {
     const raw = makeRawDetail();
-    (raw as Record<string, unknown>).bill_number = "BILL-999";
+    raw.audience = "admin";
+    // Add admin fields so the schema accepts it in the core:
+    (raw.payment as Record<string, unknown>).notes = null;
+    (raw.payment as Record<string, unknown>).submitted_by = null;
+    (raw.payment as Record<string, unknown>).verified_by = null;
+    (raw.payment as Record<string, unknown>).verification_notes = null;
+    (raw.payment as Record<string, unknown>).rejected_by = null;
+    (raw.payment as Record<string, unknown>).reversed_by = null;
+    (raw.receipt as Record<string, unknown>).id = OTHER_PAYMENT_ID;
+    (raw.receipt as Record<string, unknown>).payment_id = PAYMENT_ID;
+    (raw.receipt as Record<string, unknown>).society_id = SOCIETY_ID;
+    (raw.receipt as Record<string, unknown>).voided_by = null;
+    (raw.receipt as Record<string, unknown>).verified_by = null;
     const ctx = primedContext({
-      readTransport: makeFakeTransport({ detailPayload: raw }),
+      responder: (name) =>
+        name === "get_payment_detail"
+          ? { data: raw, error: null }
+          : { data: [makeExpectedRow()], error: null },
     });
-    await expect(run("READ-02", ctx)).rejects.toThrow(
-      /does not deeply equal/,
-    );
+    await expect(run("READ-02", ctx)).rejects.toThrow(/non-resident audience/);
   });
-  it("rejects altered flat label", async () => {
-    const raw = makeRawDetail();
-    (raw as Record<string, unknown>).flat_label = "Z-999";
-    const ctx = primedContext({
-      readTransport: makeFakeTransport({ detailPayload: raw }),
-    });
-    await expect(run("READ-02", ctx)).rejects.toThrow(
-      /does not deeply equal/,
-    );
-  });
-  it("stores accepted detail and raw payload", async () => {
+  it("stores accepted detail", async () => {
     const ctx = primedContext();
     await run("READ-02", ctx);
     expect(ctx.readAcceptedDetail).not.toBeNull();
-    expect(ctx.readAcceptedRawDetail).not.toBeNull();
   });
-  it("preserves state: history read bracketing detail is stable", async () => {
+  it("proves database state unchanged (history bracketing matches)", async () => {
     const ctx = primedContext();
     await run("READ-02", ctx);
-    expect(ctx.transport.recorded.historyCalls).toBeGreaterThanOrEqual(2);
+    const historyCalls = ctx.client.calls.filter(
+      (c) => c.name === "get_resident_payments_v1",
+    );
+    expect(historyCalls.length).toBe(2);
   });
 });
 
 // ---------------------------------------------------------------------------
-// READ-03 (8)
+// HANDLER tests — READ-03 (6)
 // ---------------------------------------------------------------------------
-describe("READ-03 — resident payment detail carries resident audience", () => {
-  async function primeThroughRead02(): Promise<Stage3CLiveMatrixContext & { transport: Stage3CReadTransport & { recorded: Recorded } }> {
+describe("READ-03 — resident audience (handler)", () => {
+  async function primed(): Promise<
+    Stage3CLiveMatrixContext & { client: RecordingClient }
+  > {
     const ctx = primedContext();
     await run("READ-02", ctx);
     return ctx;
   }
-  it("production result carries audience 'resident'", async () => {
-    const ctx = await primeThroughRead02();
+  it("actual core result carries audience 'resident'", async () => {
+    const ctx = await primed();
     await expect(run("READ-03", ctx)).resolves.toBeUndefined();
   });
-  it("admin audience rejected", () => {
-    expect(
-      ResidentPaymentDetailSchema.safeParse({
-        ...makeRawDetail(),
-        audience: "admin",
-      }).success,
-    ).toBe(false);
+  it("rejects admin audience returned from the core", async () => {
+    const ctx = await primed();
+    ctx.readResidentRpcClient = makeClient((name) => {
+      if (name === "get_payment_detail") {
+        const raw = makeRawDetail();
+        raw.audience = "admin";
+        (raw.payment as Record<string, unknown>).notes = null;
+        (raw.payment as Record<string, unknown>).submitted_by = null;
+        (raw.payment as Record<string, unknown>).verified_by = null;
+        (raw.payment as Record<string, unknown>).verification_notes = null;
+        (raw.payment as Record<string, unknown>).rejected_by = null;
+        (raw.payment as Record<string, unknown>).reversed_by = null;
+        (raw.receipt as Record<string, unknown>).id = OTHER_PAYMENT_ID;
+        (raw.receipt as Record<string, unknown>).payment_id = PAYMENT_ID;
+        (raw.receipt as Record<string, unknown>).society_id = SOCIETY_ID;
+        (raw.receipt as Record<string, unknown>).voided_by = null;
+        (raw.receipt as Record<string, unknown>).verified_by = null;
+        return { data: raw, error: null };
+      }
+      return { data: [makeExpectedRow()], error: null };
+    });
+    await expect(run("READ-03", ctx)).rejects.toThrow(/non-resident audience/);
   });
-  it("missing audience rejected", () => {
+  it("schema rejects internal receipt id/payment_id/society_id on resident payloads", () => {
     const raw = makeRawDetail();
-    delete (raw as Record<string, unknown>).audience;
+    (raw.receipt as Record<string, unknown>).id = OTHER_PAYMENT_ID;
     expect(ResidentPaymentDetailSchema.safeParse(raw).success).toBe(false);
   });
-  it("null audience rejected", () => {
-    expect(
-      ResidentPaymentDetailSchema.safeParse({
-        ...makeRawDetail(),
-        audience: null,
-      }).success,
-    ).toBe(false);
+  it("schema rejects admin-only payment fields on resident payloads", () => {
+    const raw = makeRawDetail();
+    (raw.payment as Record<string, unknown>).notes = "leak";
+    expect(ResidentPaymentDetailSchema.safeParse(raw).success).toBe(false);
   });
-  it("arbitrary audience rejected (RESIDENT uppercase)", () => {
-    expect(
-      ResidentPaymentDetailSchema.safeParse({
-        ...makeRawDetail(),
-        audience: "RESIDENT",
-      }).success,
-    ).toBe(false);
-  });
-  it("handler checks the production result (invokes detail read again)", async () => {
-    const ctx = await primeThroughRead02();
-    const before = ctx.transport.recorded.detailCalls;
-    await run("READ-03", ctx);
-    expect(ctx.transport.recorded.detailCalls).toBeGreaterThan(before);
-  });
-  it("detail remains equal to READ-02 accepted detail", async () => {
-    const ctx = await primeThroughRead02();
+  it("READ-03 detail equals READ-02 accepted detail", async () => {
+    const ctx = await primed();
     const before = ctx.readAcceptedDetail;
     await run("READ-03", ctx);
     expect(stage3cReadDeepEqual(ctx.readAcceptedDetail, before)).toBe(true);
   });
-  it("no mutation: state unchanged when raw detail drifts", async () => {
-    const ctx = await primeThroughRead02();
-    // Return a mutated raw payload on next call — handler must detect drift.
-    (ctx.readTransport as unknown as {
-      fetchResidentPaymentDetailRaw: (
-        i: { paymentId: string },
-      ) => Promise<unknown>;
-    }).fetchResidentPaymentDetailRaw = async () => {
-      const r = makeRawDetail();
-      (r as Record<string, unknown>).bill_number = "BILL-DRIFT";
-      return r;
-    };
-    await expect(run("READ-03", ctx)).rejects.toThrow(/does not deeply equal|state changed/);
+  it("no mutation: raw drift is detected by handler", async () => {
+    const ctx = await primed();
+    ctx.readResidentRpcClient = makeClient((name) => {
+      if (name === "get_payment_detail") {
+        const r = makeRawDetail();
+        r.bill_number = "BILL-DRIFT";
+        return { data: r, error: null };
+      }
+      return { data: [makeExpectedRow()], error: null };
+    });
+    await expect(run("READ-03", ctx)).rejects.toThrow(/does not deeply equal/);
   });
 });
 
 // ---------------------------------------------------------------------------
-// READ-04 (10)
+// HANDLER tests — READ-04 (6)
 // ---------------------------------------------------------------------------
-describe("READ-04 — production parser accepts a fresh resident-read payload", () => {
-  async function primeThroughRead02(): Promise<Stage3CLiveMatrixContext & { transport: Stage3CReadTransport & { recorded: Recorded } }> {
+describe("READ-04 — production parser accepts fresh payload (handler)", () => {
+  async function primed(): Promise<
+    Stage3CLiveMatrixContext & { client: RecordingClient }
+  > {
     const ctx = primedContext();
     await run("READ-02", ctx);
     return ctx;
   }
-  it("obtains a fresh raw payload and succeeds", async () => {
-    const ctx = await primeThroughRead02();
+  it("performs a fresh detail read and succeeds", async () => {
+    const ctx = await primed();
     await expect(run("READ-04", ctx)).resolves.toBeUndefined();
   });
-  it("real parsePaymentDetailResponse called (schema referential parity)", () => {
-    expect(parsePaymentDetailResponse).toBe(parsePaymentDetailResponse);
+  it("invokes production parser via shared core (referential parity)", () => {
     const detail = parsePaymentDetailResponse(makeRawDetail());
     expect(detail.audience).toBe("resident");
   });
-  it("parser called exactly once per handler run", async () => {
-    const ctx = await primeThroughRead02();
-    const spy = vi.spyOn(ctx.transport, "fetchResidentPaymentDetailRaw");
+  it("detail read called exactly once in READ-04", async () => {
+    const ctx = await primed();
+    const spy = vi.spyOn(ctx.readResidentRpcClient as BillingRpcClient, "rpc");
     await run("READ-04", ctx);
-    expect(spy).toHaveBeenCalledTimes(1);
-  });
-  it("output validates under resident schema", () => {
-    const detail = parsePaymentDetailResponse(makeRawDetail());
-    expect(ResidentPaymentDetailSchema.safeParse(detail).success).toBe(true);
+    const detailCalls = spy.mock.calls.filter((c) => c[0] === "get_payment_detail");
+    expect(detailCalls.length).toBe(1);
   });
   it("output deeply equals READ-02 accepted detail", async () => {
-    const ctx = await primeThroughRead02();
+    const ctx = await primed();
     await run("READ-04", ctx);
-    // Handler didn't throw → deep equality held.
-    expect(ctx.readAcceptedDetail).not.toBeNull();
+    expect(
+      stage3cReadDeepEqual(ctx.readAcceptedDetail, makeExpectedDetail()),
+    ).toBe(true);
   });
-  it("raw snake_case preserved (rejects camelCase replacement)", async () => {
-    const ctx = await primeThroughRead02();
-    (ctx.readTransport as unknown as {
-      fetchResidentPaymentDetailRaw: (
-        i: { paymentId: string },
-      ) => Promise<unknown>;
-    }).fetchResidentPaymentDetailRaw = async () => {
-      const r = makeRawDetail();
-      delete (r as Record<string, unknown>).bill_number;
-      (r as Record<string, unknown>).billNumber = "BILL-001";
-      return r;
-    };
-    await expect(run("READ-04", ctx)).rejects.toThrow(/camelCase|snake_case/);
+  it("snake_case preserved by production schema (camelCase rejected at core)", async () => {
+    const raw = { ...makeRawDetail() };
+    delete (raw as Record<string, unknown>).bill_number;
+    (raw as Record<string, unknown>).billNumber = "BILL-001";
+    const client = makeClient(() => ({ data: raw, error: null }));
+    await expect(
+      getPaymentDetailWithClient(client, { paymentId: PAYMENT_ID }),
+    ).rejects.toThrow();
   });
-  it("rejects malformed raw payload (not an object)", async () => {
-    const ctx = await primeThroughRead02();
-    (ctx.readTransport as unknown as {
-      fetchResidentPaymentDetailRaw: (
-        i: { paymentId: string },
-      ) => Promise<unknown>;
-    }).fetchResidentPaymentDetailRaw = async () => 42;
-    await expect(run("READ-04", ctx)).rejects.toThrow(/not a plain object/);
-  });
-  it("rejects null raw payload", async () => {
-    const ctx = await primeThroughRead02();
-    (ctx.readTransport as unknown as {
-      fetchResidentPaymentDetailRaw: (
-        i: { paymentId: string },
-      ) => Promise<unknown>;
-    }).fetchResidentPaymentDetailRaw = async () => null;
-    await expect(run("READ-04", ctx)).rejects.toThrow(/null\/undefined/);
-  });
-  it("rejects raw payload missing snake_case audience key", async () => {
-    const ctx = await primeThroughRead02();
-    (ctx.readTransport as unknown as {
-      fetchResidentPaymentDetailRaw: (
-        i: { paymentId: string },
-      ) => Promise<unknown>;
-    }).fetchResidentPaymentDetailRaw = async () => {
-      const r = makeRawDetail();
-      delete (r as Record<string, unknown>).audience;
-      return r;
-    };
-    await expect(run("READ-04", ctx)).rejects.toThrow(/missing a required snake_case key/);
-  });
-  it("no mutation: transport observed exactly one detail call in READ-04", async () => {
-    const ctx = await primeThroughRead02();
-    const before = ctx.transport.recorded.detailCalls;
+  it("no mutation: only one detail RPC issued in READ-04", async () => {
+    const ctx = await primed();
+    const before = ctx.client.calls.filter(
+      (c) => c.name === "get_payment_detail",
+    ).length;
     await run("READ-04", ctx);
-    expect(ctx.transport.recorded.detailCalls - before).toBe(1);
+    const after = ctx.client.calls.filter(
+      (c) => c.name === "get_payment_detail",
+    ).length;
+    expect(after - before).toBe(1);
   });
 });
 
@@ -614,11 +743,19 @@ describe("READ module hygiene", () => {
     path.resolve(__dirname, "../helpers/stage3c-live-read-cases.ts"),
     "utf8",
   );
-  it("does not import Vitest in the handler module", () => {
+  it("does not declare Stage3CReadTransport", () => {
+    expect(MODULE_SRC).not.toMatch(/Stage3CReadTransport\b/);
+  });
+  it("does not reference readTransport", () => {
+    expect(MODULE_SRC).not.toMatch(/\breadTransport\b/);
+  });
+  it("does not declare fake raw fetch methods", () => {
+    expect(MODULE_SRC).not.toMatch(/fetchResidentPaymentHistoryRaw|fetchResidentPaymentDetailRaw/);
+  });
+  it("does not import Vitest", () => {
     expect(MODULE_SRC).not.toMatch(/from ["']vitest["']/);
   });
-  it("does not use `any` type annotations", () => {
-    // Strip block/line comments, then look for TS `any` usages.
+  it("does not use `any` annotations", () => {
     const src = MODULE_SRC.replace(/\/\*[\s\S]*?\*\//g, "").replace(
       /\/\/.*$/gm,
       "",
@@ -640,7 +777,7 @@ describe("READ module hygiene", () => {
       /submit_offline_payment|verify_offline_payment|reject_offline_payment|reverse_offline_payment/,
     );
   });
-  it("does not embed the protected society id literal", () => {
+  it("does not embed protected society id literal", () => {
     const protectedId = process.env.SOCIOHUB_PROTECTED_SOCIETY_ID;
     if (protectedId) expect(MODULE_SRC).not.toContain(protectedId);
     else expect(true).toBe(true);

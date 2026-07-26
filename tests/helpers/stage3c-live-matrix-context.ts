@@ -30,8 +30,8 @@ import { CanonicalStage3CUuidSchema, type Stage3CFixture } from "./stage3c-runti
 import type {
   ResidentPaymentDetail,
   ResidentPaymentHistoryRow,
-  Stage3CReadTransport,
 } from "./stage3c-live-read-cases";
+import type { BillingRpcClient } from "@/lib/billing-config.functions";
 
 export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
   // Resident-submit foundation slots (validator contract)
@@ -105,8 +105,7 @@ export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
   readExpectedHistory: readonly ResidentPaymentHistoryRow[] | null;
   readExpectedDetail: ResidentPaymentDetail | null;
   readAcceptedDetail: ResidentPaymentDetail | null;
-  readAcceptedRawDetail: unknown;
-  readTransport: Stage3CReadTransport | null;
+  readResidentRpcClient: BillingRpcClient | null;
 }
 
 export function createStage3CLiveMatrixContext(): Stage3CLiveMatrixContext {
@@ -176,8 +175,7 @@ export function createStage3CLiveMatrixContext(): Stage3CLiveMatrixContext {
     readExpectedHistory: null,
     readExpectedDetail: null,
     readAcceptedDetail: null,
-    readAcceptedRawDetail: null,
-    readTransport: null,
+    readResidentRpcClient: null,
   };
 }
 
@@ -516,11 +514,12 @@ export const requireReadHistoryBaselineCount = (c: Stage3CLiveMatrixContext) =>
     "READ-01",
   );
 
-export function requireReadTransport(
+export function requireReadResidentRpcClient(
   c: Stage3CLiveMatrixContext,
-): Stage3CReadTransport {
-  if (c.readTransport === null) throwMissing("readTransport", "READ-01");
-  return c.readTransport;
+): BillingRpcClient {
+  if (c.readResidentRpcClient === null)
+    throwMissing("readResidentRpcClient", "READ-01");
+  return c.readResidentRpcClient;
 }
 
 export function requireReadExpectedHistoryRow(
@@ -555,10 +554,3 @@ export function requireReadAcceptedDetail(
   return c.readAcceptedDetail;
 }
 
-export function requireReadAcceptedRawDetail(
-  c: Stage3CLiveMatrixContext,
-): unknown {
-  if (c.readAcceptedRawDetail === null)
-    throwMissing("readAcceptedRawDetail", "READ-03");
-  return c.readAcceptedRawDetail;
-}

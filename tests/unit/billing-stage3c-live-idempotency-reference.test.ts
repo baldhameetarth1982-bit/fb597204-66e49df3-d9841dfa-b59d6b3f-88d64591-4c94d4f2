@@ -34,6 +34,13 @@ import {
   reference04_outsideScopeIsolation,
   assertCleanIdempotencyBaseline,
   assertIdempotencyPostSubmitTotals,
+  assertCleanReferenceBaseline,
+  assertReferencePostSubmitTotals,
+  REFERENCE_BILL_PRIMARY_TOTAL,
+  REFERENCE_BILL_SECONDARY_TOTAL,
+  REFERENCE_BILL_OTHER_SOCIETY_TOTAL,
+  REFERENCE_02_UNEXPECTED_SUCCESS_MESSAGE,
+  REFERENCE_03_UNEXPECTED_SUCCESS_MESSAGE,
   type Stage3CIdempotencyReferenceCaseId,
 } from "../helpers/stage3c-live-idempotency-reference-cases";
 import {

@@ -91,6 +91,11 @@ export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
   referenceOtherSocietyInitialState: ResidentBillStateSnapshot | null;
   referenceOtherSocietyPostSubmitState: ResidentBillStateSnapshot | null;
   referenceInitialSequences: ReceiptSequenceSnapshot | null;
+
+  // READ category (Sub-run A structural slots — behavior lives in Sub-run B)
+  readPrimaryBillId: string | null;
+  readPrimaryPaymentId: string | null;
+  readHistoryBaselineCount: number | null;
 }
 
 export function createStage3CLiveMatrixContext(): Stage3CLiveMatrixContext {
@@ -152,6 +157,10 @@ export function createStage3CLiveMatrixContext(): Stage3CLiveMatrixContext {
     referenceOtherSocietyInitialState: null,
     referenceOtherSocietyPostSubmitState: null,
     referenceInitialSequences: null,
+
+    readPrimaryBillId: null,
+    readPrimaryPaymentId: null,
+    readHistoryBaselineCount: null,
   };
 }
 
@@ -473,4 +482,19 @@ export const requireReferenceInitialSequences = (c: Stage3CLiveMatrixContext) =>
     c.referenceInitialSequences,
     "referenceInitialSequences",
     "REFERENCE-01",
+  );
+
+// ---------------------------------------------------------------------------
+// READ category guards (Sub-run A — structural)
+// ---------------------------------------------------------------------------
+
+export const requireReadPrimaryBillId = (c: Stage3CLiveMatrixContext) =>
+  requireCanonicalUuid(c.readPrimaryBillId, "readPrimaryBillId", "READ-01");
+export const requireReadPrimaryPaymentId = (c: Stage3CLiveMatrixContext) =>
+  requireCanonicalUuid(c.readPrimaryPaymentId, "readPrimaryPaymentId", "READ-02");
+export const requireReadHistoryBaselineCount = (c: Stage3CLiveMatrixContext) =>
+  requireNonNegativeInteger(
+    c.readHistoryBaselineCount,
+    "readHistoryBaselineCount",
+    "READ-01",
   );

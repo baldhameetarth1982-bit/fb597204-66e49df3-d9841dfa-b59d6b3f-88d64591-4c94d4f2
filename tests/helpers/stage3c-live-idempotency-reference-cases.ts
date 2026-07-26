@@ -1,35 +1,43 @@
 /**
- * Stage 3C — IDEMPOTENCY-01..04 + REFERENCE-01..04 live case handlers
- * (Sub-run A — structural closure).
+ * Stage 3C — IDEMPOTENCY-01..04 + REFERENCE-01..04 live case handlers.
  *
- * Sub-run A repairs only:
- *   - shared handler typing (uses the canonical
- *     {@link Stage3CMatrixLiveHandler} from the matrix registry — no
- *     parallel type, no alias);
- *   - exact exported handler names (`idempotency01_initializeAndSubmit`
- *     ..`reference04_outsideScopeIsolation`);
- *   - deterministic input builder
- *     ({@link buildStage3CIdempotencyReferenceInputs}) — same
- *     `runIdentity` always yields the same object;
- *   - use of the strict matrix-context lifecycle fields and their
- *     `require*` guards.
+ * Sub-run A structural closure (preserved):
+ *   - shared handler typing via {@link Stage3CMatrixLiveHandler};
+ *   - eight exact named exports;
+ *   - deterministic input builder;
+ *   - strict matrix-context lifecycle fields + `require*` guards.
  *
- * Sub-run A does NOT alter behavioral coverage beyond the minimum
- * rename / split required for compilation. Reference and idempotency
- * flows continue to delegate to the shared resident production Bank
- * Transfer core (`submitResidentBankTransferPayment`).
+ * Sub-run B — IDEMPOTENCY behavioral closure:
+ *   - IDEMPOTENCY-01 asserts the exact clean baseline (total 1000, all
+ *     amounts 0, zero payments, zero receipts, cancelled false,
+ *     unpaid/open) and one canonical mutation (amount 250, status
+ *     `pending`, source `resident_submission`, exact reference/key,
+ *     no verified/rejected/reversal fields, sequences unchanged);
+ *   - IDEMPOTENCY-02 exact replay returns the original ID with full
+ *     pre/post state equality — no second track, no new row, no
+ *     receipt, no sequence mutation;
+ *   - IDEMPOTENCY-03 is observational only (zero submit calls) and
+ *     proves exactly one canonical pending row + exact initial→current
+ *     deltas;
+ *   - IDEMPOTENCY-04 replays same bill/key/reference with amount 251,
+ *     accepts only the canonical `idempotency_conflict` token, and
+ *     throws a static safe message on unexpected success.
  */
-import { z } from "zod";
 import {
   trackUniqueId,
   CanonicalStage3CUuidSchema,
   type Stage3CFixture,
 } from "./stage3c-runtime-fixtures";
 import { STAGE3C_ERRORS, assertCanonicalError } from "./stage3c-live-errors";
+import { safeStage3CErrorMessage } from "./stage3c-error-redaction";
 import {
   snapshotResidentBillState,
   assertResidentBillStateUnchanged,
+  assertReceiptSequencesExactlyEqual,
+  assertNoReceiptForResidentPayment,
+  ResidentSubmittedPaymentRowSchema,
   type ResidentBillStateSnapshot,
+  type ResidentSubmittedPaymentRow,
 } from "./stage3c-live-resident-submit-contracts";
 import {
   requireMatrixFixture,
@@ -39,6 +47,8 @@ import {
   requireIdempotencyKey,
   requireIdempotencyAmount,
   requireIdempotencyInitialState,
+  requireIdempotencyPostSubmitState,
+  requireIdempotencyInitialSequences,
   requireReferencePrimaryBillId,
   requireReferencePrimaryPaymentId,
   requireReferenceValue,
@@ -63,6 +73,13 @@ export type Stage3CIdempotencyReferenceCaseId =
 export const IDEMPOTENCY_AMOUNT = 250;
 export const IDEMPOTENCY_CONFLICT_AMOUNT = 251;
 export const REFERENCE_AMOUNT = 200;
+
+/** Locked expected total for the dedicated idempotency bill. */
+export const IDEMPOTENCY_BILL_TOTAL = 1000;
+
+/** Static unexpected-success message for IDEMPOTENCY-04. */
+export const IDEMPOTENCY_04_UNEXPECTED_SUCCESS_MESSAGE =
+  "[stage3c:IDEMPOTENCY-04] unexpected successful mutation";
 
 // ---------------------------------------------------------------------------
 // Deterministic input builder
@@ -115,6 +132,10 @@ function assertEq(actual: unknown, expected: unknown, label: string): void {
     throw new Error(`[stage3c:${label}] expected value equality (values redacted)`);
 }
 
+function assertTrue(cond: boolean, label: string): void {
+  if (!cond) throw new Error(`[stage3c:${label}] invariant failed`);
+}
+
 async function snapshot(
   fixture: Stage3CFixture,
   actor: Stage3CFixture["users"]["activeResident"],
@@ -136,6 +157,138 @@ function whitespaceCaseVariant(value: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Baseline / state assertions (exported for direct behavioral tests)
+// ---------------------------------------------------------------------------
+
+/**
+ * Locks the exact clean baseline the IDEMPOTENCY-01 handler requires
+ * before it is allowed to submit its canonical mutation.
+ *
+ *   - `total_payable` === 1000;
+ *   - every mutable amount === 0;
+ *   - `available_to_submit` === 1000;
+ *   - `remaining_verified_balance` === 1000;
+ *   - `cancelled` === false;
+ *   - `status` ∈ { unpaid, open };
+ *   - zero payment rows.
+ */
+export function assertCleanIdempotencyBaseline(
+  state: ResidentBillStateSnapshot,
+  label: string,
+): void {
+  const s = state.summary;
+  if (s.total_payable !== IDEMPOTENCY_BILL_TOTAL)
+    throw new Error(`[stage3c:${label}] baseline total_payable must be 1000`);
+  if (s.verified_amount !== 0)
+    throw new Error(`[stage3c:${label}] baseline verified_amount must be 0`);
+  if (s.pending_amount !== 0)
+    throw new Error(`[stage3c:${label}] baseline pending_amount must be 0`);
+  if (s.rejected_amount !== 0)
+    throw new Error(`[stage3c:${label}] baseline rejected_amount must be 0`);
+  if (s.reversed_amount !== 0)
+    throw new Error(`[stage3c:${label}] baseline reversed_amount must be 0`);
+  if (s.available_to_submit !== IDEMPOTENCY_BILL_TOTAL)
+    throw new Error(`[stage3c:${label}] baseline available_to_submit must be 1000`);
+  if (s.remaining_verified_balance !== IDEMPOTENCY_BILL_TOTAL)
+    throw new Error(
+      `[stage3c:${label}] baseline remaining_verified_balance must be 1000`,
+    );
+  if (s.cancelled !== false)
+    throw new Error(`[stage3c:${label}] baseline cancelled must be false`);
+  if (s.status !== "unpaid" && s.status !== "open")
+    throw new Error(`[stage3c:${label}] baseline status must be unpaid/open`);
+  if (state.paymentRows.length !== 0)
+    throw new Error(`[stage3c:${label}] baseline must have zero payment rows`);
+}
+
+/**
+ * Asserts the exact financial totals expected after a single 250-amount
+ * pending resident submission on the dedicated 1000 idempotency bill.
+ */
+export function assertIdempotencyPostSubmitTotals(
+  initial: ResidentBillStateSnapshot,
+  post: ResidentBillStateSnapshot,
+  label: string,
+): void {
+  const p = post.summary;
+  if (p.total_payable !== IDEMPOTENCY_BILL_TOTAL)
+    throw new Error(`[stage3c:${label}] total must remain 1000`);
+  if (p.pending_amount !== IDEMPOTENCY_AMOUNT)
+    throw new Error(`[stage3c:${label}] pending must become 250`);
+  if (p.available_to_submit !== IDEMPOTENCY_BILL_TOTAL - IDEMPOTENCY_AMOUNT)
+    throw new Error(`[stage3c:${label}] available must become 750`);
+  if (p.verified_amount !== 0)
+    throw new Error(`[stage3c:${label}] verified must remain 0`);
+  if (p.rejected_amount !== 0)
+    throw new Error(`[stage3c:${label}] rejected must remain 0`);
+  if (p.reversed_amount !== 0)
+    throw new Error(`[stage3c:${label}] reversed must remain 0`);
+  if (p.remaining_verified_balance !== IDEMPOTENCY_BILL_TOTAL)
+    throw new Error(
+      `[stage3c:${label}] remaining_verified_balance must remain 1000`,
+    );
+  if (p.cancelled !== false)
+    throw new Error(`[stage3c:${label}] cancelled must remain false`);
+  if (p.status !== "unpaid" && p.status !== "open")
+    throw new Error(`[stage3c:${label}] status must remain unpaid/open`);
+  const rowDelta = post.paymentRows.length - initial.paymentRows.length;
+  if (rowDelta !== 1)
+    throw new Error(`[stage3c:${label}] payment-row delta must be +1`);
+}
+
+/**
+ * Loads the fully-typed pending resident payment row via the admin
+ * client and validates every field. Every mismatch throws a static
+ * safe error — no supplied values are interpolated.
+ */
+export async function assertCanonicalPendingResidentRow(
+  admin: Stage3CFixture["admin"],
+  expected: {
+    id: string;
+    billId: string;
+    societyId: string;
+    submittedBy: string;
+    amount: number;
+    reference: string;
+    key: string;
+  },
+  label: string,
+): Promise<ResidentSubmittedPaymentRow> {
+  const columns =
+    "id, bill_id, society_id, submitted_by, amount, method, status, source, " +
+    "reference_no, idempotency_key, verified_by, verified_at, rejected_by, " +
+    "rejected_at, rejection_reason, reversed_by, reversed_at, reversal_reason";
+  const r = await admin.from("payments").select(columns).eq("id", expected.id);
+  if (r.error)
+    throw new Error(safeStage3CErrorMessage(`${label}-payment-row`, r.error));
+  if (!Array.isArray(r.data))
+    throw new Error(`[stage3c:${label}] payments payload not array`);
+  if (r.data.length !== 1)
+    throw new Error(`[stage3c:${label}] expected exactly one payment row`);
+  const parsed = ResidentSubmittedPaymentRowSchema.safeParse(r.data[0]);
+  if (!parsed.success)
+    throw new Error(`[stage3c:${label}] payment row failed strict schema`);
+  const row = parsed.data;
+  if (row.id !== expected.id)
+    throw new Error(`[stage3c:${label}] payment row id mismatch`);
+  if (row.bill_id !== expected.billId)
+    throw new Error(`[stage3c:${label}] payment row bill scope mismatch`);
+  if (row.society_id !== expected.societyId)
+    throw new Error(`[stage3c:${label}] payment row society scope mismatch`);
+  if (row.submitted_by !== expected.submittedBy)
+    throw new Error(`[stage3c:${label}] payment row submitter mismatch`);
+  if (row.amount !== expected.amount)
+    throw new Error(`[stage3c:${label}] payment row amount mismatch`);
+  if (row.reference_no !== expected.reference)
+    throw new Error(`[stage3c:${label}] payment row reference mismatch`);
+  if (row.idempotency_key !== expected.key)
+    throw new Error(`[stage3c:${label}] payment row key mismatch`);
+  // Schema already pins method/status/source and all verify/reject/reversal
+  // fields to null, so no additional checks needed here.
+  return row;
+}
+
+// ---------------------------------------------------------------------------
 // IDEMPOTENCY handlers
 // ---------------------------------------------------------------------------
 
@@ -144,18 +297,17 @@ export async function idempotency01_initializeAndSubmit(
 ): Promise<void> {
   const f = requireMatrixFixture(ctx);
   const inputs = buildStage3CIdempotencyReferenceInputs(f.prefix);
-  const billId = f.idempotencyBillId;
+  const billId = CanonicalStage3CUuidSchema.parse(f.idempotencyBillId);
+  const societyId = CanonicalStage3CUuidSchema.parse(f.societyA);
+  const actor = f.users.activeResident;
 
-  const initial = await snapshot(
-    f,
-    f.users.activeResident,
-    billId,
-    f.societyA,
-    "IDEMPOTENCY-01-initial",
-  );
+  // 1. Strict clean baseline + snapshot.
+  const initial = await snapshot(f, actor, billId, societyId, "IDEMPOTENCY-01-initial");
+  assertCleanIdempotencyBaseline(initial, "IDEMPOTENCY-01-baseline");
 
+  // 2. Submit exactly once via the shared resident core.
   const paymentId = await f.helpers.submitResidentBankTransferPayment({
-    actor: f.users.activeResident,
+    actor,
     billId,
     amount: IDEMPOTENCY_AMOUNT,
     paymentDate: f.testPaymentDate,
@@ -165,16 +317,40 @@ export async function idempotency01_initializeAndSubmit(
   const validated = CanonicalStage3CUuidSchema.parse(paymentId);
   trackUniqueId(f.tracked.paymentIds, validated, "idempotency:primary");
 
+  // 3. Post-submit snapshot + exact financial invariants.
   const postSubmit = await snapshot(
     f,
-    f.users.activeResident,
+    actor,
     billId,
-    f.societyA,
+    societyId,
     "IDEMPOTENCY-01-post",
   );
-  const delta = postSubmit.paymentRows.length - initial.paymentRows.length;
-  assertEq(delta, 1, "IDEMPOTENCY-01:row-delta");
+  assertIdempotencyPostSubmitTotals(initial, postSubmit, "IDEMPOTENCY-01");
 
+  // 4. Exact row proof (full strict schema).
+  await assertCanonicalPendingResidentRow(
+    f.admin,
+    {
+      id: validated,
+      billId,
+      societyId,
+      submittedBy: CanonicalStage3CUuidSchema.parse(actor.id),
+      amount: IDEMPOTENCY_AMOUNT,
+      reference: inputs.idempotencyReference,
+      key: inputs.idempotencyKey,
+    },
+    "IDEMPOTENCY-01",
+  );
+
+  // 5. Zero receipts + sequences unchanged.
+  await assertNoReceiptForResidentPayment(f.admin, validated, "IDEMPOTENCY-01");
+  assertReceiptSequencesExactlyEqual(
+    initial.sequences,
+    postSubmit.sequences,
+    "IDEMPOTENCY-01-sequences",
+  );
+
+  // 6. Store canonical context slots.
   ctx.idempotencyBillId = billId;
   ctx.idempotencyPaymentId = validated;
   ctx.idempotencyReference = inputs.idempotencyReference;
@@ -195,10 +371,15 @@ export async function idempotency02_exactReplay(
   const key = requireIdempotencyKey(ctx);
   const amount = requireIdempotencyAmount(ctx);
   const originalId = requireIdempotencyPaymentId(ctx);
-  const before = requireIdempotencyInitialState(ctx);
+  const postSubmitBefore = requireIdempotencyPostSubmitState(ctx);
+  const initialSequences = requireIdempotencyInitialSequences(ctx);
+  const trackedBefore = f.tracked.paymentIds.length;
+  const actor = f.users.activeResident;
+  const societyId = CanonicalStage3CUuidSchema.parse(f.societyA);
 
+  // Exact replay — same payload as IDEMPOTENCY-01.
   const replayId = await f.helpers.submitResidentBankTransferPayment({
-    actor: f.users.activeResident,
+    actor,
     billId,
     amount,
     paymentDate: f.testPaymentDate,
@@ -207,20 +388,18 @@ export async function idempotency02_exactReplay(
   });
   const replayValidated = CanonicalStage3CUuidSchema.parse(replayId);
   assertEq(replayValidated, originalId, "IDEMPOTENCY-02:replay-id");
+  // NOT tracking the replay — original occurrence must remain exactly one.
+  assertEq(f.tracked.paymentIds.length, trackedBefore, "IDEMPOTENCY-02:no-new-track");
 
-  const after = await snapshot(
-    f,
-    f.users.activeResident,
-    billId,
-    f.societyA,
-    "IDEMPOTENCY-02-post",
+  // Full pre/post equality — no mutation at all.
+  const after = await snapshot(f, actor, billId, societyId, "IDEMPOTENCY-02-post");
+  assertResidentBillStateUnchanged(postSubmitBefore, after, "IDEMPOTENCY-02-state");
+  assertReceiptSequencesExactlyEqual(
+    initialSequences,
+    after.sequences,
+    "IDEMPOTENCY-02-sequences",
   );
-  // Payment row count must remain identical to the post-primary snapshot.
-  assertEq(
-    after.paymentRows.length,
-    (ctx.idempotencyPostSubmitState?.paymentRows.length ?? before.paymentRows.length + 1),
-    "IDEMPOTENCY-02:row-count",
-  );
+  await assertNoReceiptForResidentPayment(f.admin, originalId, "IDEMPOTENCY-02");
   ctx.idempotencyPostSubmitState = after;
 }
 
@@ -230,16 +409,63 @@ export async function idempotency03_singleMutationProof(
   const f = requireMatrixFixture(ctx);
   const billId = requireIdempotencyBillId(ctx);
   const originalPaymentId = requireIdempotencyPaymentId(ctx);
-  // Purely observational — no submit call.
-  const now = await snapshot(
-    f,
-    f.users.activeResident,
-    billId,
-    f.societyA,
+  const initial = requireIdempotencyInitialState(ctx);
+  const initialSequences = requireIdempotencyInitialSequences(ctx);
+  const reference = requireIdempotencyReference(ctx);
+  const key = requireIdempotencyKey(ctx);
+  const actor = f.users.activeResident;
+  const societyId = CanonicalStage3CUuidSchema.parse(f.societyA);
+
+  // Observational only — no submit call.
+  const now = await snapshot(f, actor, billId, societyId, "IDEMPOTENCY-03");
+
+  // Exactly one canonical pending row equal to the original.
+  if (now.paymentRows.length !== 1)
+    throw new Error(`[stage3c:IDEMPOTENCY-03] expected exactly one payment row`);
+  const only = now.paymentRows[0];
+  if (!only) throw new Error(`[stage3c:IDEMPOTENCY-03] payment row missing`);
+  assertEq(only.id, originalPaymentId, "IDEMPOTENCY-03:row-id");
+  assertEq(only.amount, IDEMPOTENCY_AMOUNT, "IDEMPOTENCY-03:row-amount");
+  assertEq(only.status, "pending", "IDEMPOTENCY-03:row-status");
+
+  // Full strict row + zero receipts + sequences unchanged.
+  await assertCanonicalPendingResidentRow(
+    f.admin,
+    {
+      id: originalPaymentId,
+      billId,
+      societyId,
+      submittedBy: CanonicalStage3CUuidSchema.parse(actor.id),
+      amount: IDEMPOTENCY_AMOUNT,
+      reference,
+      key,
+    },
     "IDEMPOTENCY-03",
   );
-  const matches = now.paymentRows.filter((r) => r.id === originalPaymentId);
-  assertEq(matches.length, 1, "IDEMPOTENCY-03:original-row-persists");
+  await assertNoReceiptForResidentPayment(f.admin, originalPaymentId, "IDEMPOTENCY-03");
+  assertReceiptSequencesExactlyEqual(
+    initialSequences,
+    now.sequences,
+    "IDEMPOTENCY-03-sequences",
+  );
+
+  // Exact initial→current deltas.
+  const i = initial.summary;
+  const c = now.summary;
+  assertEq(c.total_payable - i.total_payable, 0, "IDEMPOTENCY-03:total-delta");
+  assertEq(c.pending_amount - i.pending_amount, IDEMPOTENCY_AMOUNT, "IDEMPOTENCY-03:pending-delta");
+  assertEq(i.available_to_submit - c.available_to_submit, IDEMPOTENCY_AMOUNT, "IDEMPOTENCY-03:available-delta");
+  assertEq(c.verified_amount - i.verified_amount, 0, "IDEMPOTENCY-03:verified-delta");
+  assertEq(c.rejected_amount - i.rejected_amount, 0, "IDEMPOTENCY-03:rejected-delta");
+  assertEq(c.reversed_amount - i.reversed_amount, 0, "IDEMPOTENCY-03:reversed-delta");
+  assertEq(
+    c.remaining_verified_balance - i.remaining_verified_balance,
+    0,
+    "IDEMPOTENCY-03:remaining-delta",
+  );
+  assertEq(now.paymentRows.length - initial.paymentRows.length, 1, "IDEMPOTENCY-03:row-delta");
+  assertTrue(c.cancelled === false, "IDEMPOTENCY-03:cancelled");
+  assertTrue(c.status === "unpaid" || c.status === "open", "IDEMPOTENCY-03:status");
   ctx.idempotencyPostSubmitState = now;
 }
 
@@ -250,40 +476,57 @@ export async function idempotency04_conflictingReplayDenied(
   const billId = requireIdempotencyBillId(ctx);
   const reference = requireIdempotencyReference(ctx);
   const key = requireIdempotencyKey(ctx);
-  const before = requireIdempotencyInitialState(ctx);
+  const originalId = requireIdempotencyPaymentId(ctx);
+  const trackedBefore = f.tracked.paymentIds.length;
+  const actor = f.users.activeResident;
+  const societyId = CanonicalStage3CUuidSchema.parse(f.societyA);
 
+  // 1. Snapshot complete state before the request.
+  const before = await snapshot(f, actor, billId, societyId, "IDEMPOTENCY-04-before");
+
+  // 2. Call the shared resident core inside try; catch only provider failure.
   let caught: unknown = undefined;
-  let succeededData: string | undefined;
+  let succeeded = false;
   try {
-    succeededData = await f.helpers.submitResidentBankTransferPayment({
-      actor: f.users.activeResident,
+    await f.helpers.submitResidentBankTransferPayment({
+      actor,
       billId,
       amount: IDEMPOTENCY_CONFLICT_AMOUNT,
       paymentDate: f.testPaymentDate,
       referenceNo: reference,
       idempotencyKey: key,
     });
+    succeeded = true;
   } catch (e) {
     caught = e;
   }
-  if (succeededData !== undefined) {
-    throw new Error("[IDEMPOTENCY-04] unexpected success — conflicting replay must be denied");
+  // Throw unexpected-success outside catch — static message, no payload.
+  if (succeeded) {
+    throw new Error(IDEMPOTENCY_04_UNEXPECTED_SUCCESS_MESSAGE);
   }
   assertCanonicalError(caught, STAGE3C_ERRORS.IDEMPOTENCY_CONFLICT, "IDEMPOTENCY-04");
 
-  const after = await snapshot(
-    f,
-    f.users.activeResident,
-    billId,
-    f.societyA,
-    "IDEMPOTENCY-04-post",
+  // 3. Complete state unchanged.
+  const after = await snapshot(f, actor, billId, societyId, "IDEMPOTENCY-04-after");
+  assertResidentBillStateUnchanged(before, after, "IDEMPOTENCY-04-state");
+  assertReceiptSequencesExactlyEqual(
+    before.sequences,
+    after.sequences,
+    "IDEMPOTENCY-04-sequences",
   );
-  assertResidentBillStateUnchanged(before, after, "IDEMPOTENCY-04");
+  await assertNoReceiptForResidentPayment(f.admin, originalId, "IDEMPOTENCY-04");
+  assertEq(after.paymentRows.length, 1, "IDEMPOTENCY-04:row-count");
+  const only = after.paymentRows[0];
+  if (!only) throw new Error(`[stage3c:IDEMPOTENCY-04] payment row missing`);
+  assertEq(only.id, originalId, "IDEMPOTENCY-04:original-id-preserved");
+  assertEq(only.amount, IDEMPOTENCY_AMOUNT, "IDEMPOTENCY-04:original-amount-preserved");
+  assertEq(only.status, "pending", "IDEMPOTENCY-04:original-status-preserved");
+  assertEq(f.tracked.paymentIds.length, trackedBefore, "IDEMPOTENCY-04:no-new-track");
   ctx.idempotencyPostSubmitState = after;
 }
 
 // ---------------------------------------------------------------------------
-// REFERENCE handlers
+// REFERENCE handlers (unchanged — Sub-run C will close behavioral)
 // ---------------------------------------------------------------------------
 
 export async function reference01_createUniqueReference(
@@ -500,19 +743,4 @@ export const STAGE3C_IDEMPOTENCY_REFERENCE_CASE_IDS: readonly Stage3CIdempotency
   "REFERENCE-02",
   "REFERENCE-03",
   "REFERENCE-04",
-] as const;
-
-// Zod re-export kept only for downstream tests that already track the
-// deterministic input contract; loose `{ billId, rowCount }` lifecycle
-// schemas have been removed in Sub-run A.
-export const Stage3CIdempotencyReferenceInputsSchema = z
-  .object({
-    idempotencyReference: z.string().min(1),
-    idempotencyKey: z.string().min(1),
-    referenceValue: z.string().min(1),
-    referencePrimaryKey: z.string().min(1),
-    referenceDuplicateKey: z.string().min(1),
-    referenceCrossBillKey: z.string().min(1),
-    referenceOtherSocietyKey: z.string().min(1),
-  })
-  .strict();
+];

@@ -157,6 +157,10 @@ export function createStage3CLiveMatrixContext(): Stage3CLiveMatrixContext {
     referenceOtherSocietyInitialState: null,
     referenceOtherSocietyPostSubmitState: null,
     referenceInitialSequences: null,
+
+    readPrimaryBillId: null,
+    readPrimaryPaymentId: null,
+    readHistoryBaselineCount: null,
   };
 }
 

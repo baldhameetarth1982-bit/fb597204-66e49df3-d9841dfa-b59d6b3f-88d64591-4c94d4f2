@@ -717,7 +717,6 @@ function makeCtx(state: MockState): Stage3CLiveMatrixContext {
 /** Seeds ctx with the canonical post-IDEM-01 state (for IDEM-02..04 tests). */
 async function seedPostIdem01(state: MockState): Promise<Stage3CLiveMatrixContext> {
   const ctx = makeCtx(state);
-  state.submitImpl = async () => PRIMARY_PAYMENT;
   await idempotency01_initializeAndSubmit(ctx);
   // reset submit tracking so replay tests can observe their own single call
   state.submitCalls = [];

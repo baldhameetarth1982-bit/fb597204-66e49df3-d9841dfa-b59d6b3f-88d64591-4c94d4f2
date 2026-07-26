@@ -1009,7 +1009,7 @@ describe("Sub-run B — IDEMPOTENCY-03 single mutation proof", () => {
   it("(38) rejects receipt creation", async () => {
     const s = makeCleanState();
     const ctx = await seedPostIdem01(s);
-    s.receipts.push({ id: "r-1", payment_id: PRIMARY_PAYMENT });
+    s.receipts.push({ id: "30000000-0000-0000-0000-00000000000b", payment_id: PRIMARY_PAYMENT });
     await expect(idempotency03_singleMutationProof(ctx)).rejects.toThrow(/zero receipts/);
   });
   it("(39) rejects sequence mutation", async () => {

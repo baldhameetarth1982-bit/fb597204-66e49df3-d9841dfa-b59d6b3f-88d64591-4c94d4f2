@@ -7,6 +7,7 @@ import {
   extractRpcId,
   mapError,
   toBillingRpcClient,
+  type BillingRpcClient,
 } from "./billing-config.functions";
 import { residentSubmitInputSchema } from "./offline-payment-contracts";
 import { submitResidentBankTransferWithClient } from "./offline-payment-resident-submit";
@@ -586,21 +587,65 @@ export interface PaymentDetailResident {
 
 export type PaymentDetail = PaymentDetailAdmin | PaymentDetailResident;
 
+/**
+ * Stage 3C READ Sub-run B1 — neutral shared cores.
+ *
+ * These functions own the single construction of the resident-payment
+ * read RPCs (`get_resident_payments_v1`, `get_payment_detail`). Both the
+ * public server functions below and the Stage 3C live READ handlers
+ * delegate to them so RPC name/arg/parsing behavior cannot drift.
+ */
+
+export interface ResidentPaymentsCoreInput {
+  readonly limit?: number;
+  readonly offset?: number;
+}
+export interface ResidentPaymentsCoreOutput {
+  readonly payments: ResidentPaymentRow[];
+}
+
+/** Neutral shared core — resident payment history. */
+export async function getResidentPaymentsWithClient(
+  client: BillingRpcClient,
+  input: ResidentPaymentsCoreInput = {},
+): Promise<ResidentPaymentsCoreOutput> {
+  const limit = input.limit ?? 50;
+  const offset = input.offset ?? 0;
+  const raw = await callBillingRpc(
+    client,
+    "get_resident_payments_v1",
+    buildRpcArgs({ _limit: limit, _offset: offset }),
+  );
+  const arr = Array.isArray(raw) ? raw : [];
+  const payments: ResidentPaymentRow[] = arr.map((row) =>
+    residentPaymentSchema.parse(row),
+  );
+  return { payments };
+}
+
+/** Neutral shared core — payment detail (null for null/undefined raw). */
+export async function getPaymentDetailWithClient(
+  client: BillingRpcClient,
+  input: { paymentId: string },
+): Promise<PaymentDetail | null> {
+  const raw = await callBillingRpc(
+    client,
+    "get_payment_detail",
+    buildRpcArgs({ _payment_id: input.paymentId }),
+  );
+  if (raw === null || raw === undefined) return null;
+  return parsePaymentDetailResponse(raw);
+}
+
 /** Stage 3C v7 — explicit-auth payment detail; discriminated by audience. */
 export const getPaymentDetail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => paymentIdOnly.parse(i))
   .handler(async ({ data, context }) => {
     try {
-      const raw = await callBillingRpc(
-        toBillingRpcClient(context),
-        "get_payment_detail",
-        buildRpcArgs({ _payment_id: data.paymentId }),
-      );
-      if (raw === null || raw === undefined) return null;
-      const parsed = paymentDetailSchema.parse(raw);
-      const detail: PaymentDetail = parsed;
-      return detail;
+      return await getPaymentDetailWithClient(toBillingRpcClient(context), {
+        paymentId: data.paymentId,
+      });
     } catch (e) {
       throw new Error(mapPaymentError((e as Error).message));
     }
@@ -644,18 +689,15 @@ export const getResidentPayments = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     try {
-      const raw = await callBillingRpc(
-        toBillingRpcClient(context),
-        "get_resident_payments_v1",
-        buildRpcArgs({ _limit: data.limit, _offset: data.offset }),
-      );
-      const arr = Array.isArray(raw) ? raw : [];
-      const payments: ResidentPaymentRow[] = arr.map((row) => residentPaymentSchema.parse(row));
-      return { payments };
+      return await getResidentPaymentsWithClient(toBillingRpcClient(context), {
+        limit: data.limit,
+        offset: data.offset,
+      });
     } catch (e) {
       throw new Error(mapPaymentError((e as Error).message));
     }
   });
+
 
 export const getPaymentReceipt = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

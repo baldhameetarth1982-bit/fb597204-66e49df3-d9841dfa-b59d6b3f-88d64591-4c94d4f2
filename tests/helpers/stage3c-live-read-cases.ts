@@ -1,35 +1,37 @@
 /**
- * Stage 3C — READ-01..10 live case contracts + READ-01..04 behavior (Sub-run B1).
+ * Stage 3C — READ-01..10 live case contracts + READ-01..04 behavior
+ * (Sub-run B1 production-wiring repair).
  *
- * Grounding sources (production shapes; do not duplicate):
- *   - src/lib/offline-payments.functions.ts
- *       * residentPaymentDetailSchema         → READ-02..04 payload shape
- *       * parsePaymentDetailResponse          → READ-04 parser input
- *       * ResidentPaymentRow (interface)      → READ-01 history row parity
- *       * mapPaymentError                     → denial category grounding
+ * Handlers delegate to the neutral shared cores exported from
+ * `src/lib/offline-payments.functions.ts`:
+ *   - getResidentPaymentsWithClient  → resident history read
+ *   - getPaymentDetailWithClient     → resident detail read
+ * The public server functions delegate to the same cores, so RPC
+ * construction has exactly one owner.
  *
- * Sub-run B1 replaces ONLY the bodies of READ-01..READ-04. READ-05..READ-10
- * remain fail-closed pending a later denial sub-run.
+ * READ-05..10 remain fail-closed pending Sub-run B2.
  */
 import { z } from "zod";
 import {
   residentPaymentDetailSchema,
   parsePaymentDetailResponse,
+  getResidentPaymentsWithClient,
+  getPaymentDetailWithClient,
   type ResidentPaymentRow,
   type PaymentDetail,
 } from "@/lib/offline-payments.functions";
+import type { BillingRpcClient } from "@/lib/billing-config.functions";
 import { CanonicalStage3CUuidSchema } from "./stage3c-runtime-fixtures";
 import type { Stage3CMatrixLiveHandler } from "./stage3c-live-matrix-registry";
 import type { Stage3CLiveMatrixContext } from "./stage3c-live-matrix-context";
 import {
   requireReadPrimaryBillId,
   requireReadPrimaryPaymentId,
-  requireReadTransport,
+  requireReadResidentRpcClient,
   requireReadExpectedHistoryRow,
   requireReadExpectedHistory,
   requireReadExpectedDetail,
   requireReadAcceptedDetail,
-  requireReadAcceptedRawDetail,
 } from "./stage3c-live-matrix-context";
 
 // ---------------------------------------------------------------------------
@@ -143,29 +145,6 @@ export type Stage3CReadDenialEvidence = z.infer<
 >;
 
 // ---------------------------------------------------------------------------
-// Read transport — dispatch abstraction the handler uses to reach the real
-// production reads (`get_resident_payments_v1`, `get_payment_detail`).
-// Production wires this to the resident's Supabase client; tests inject a
-// deterministic fake. Handlers never touch a raw client directly.
-// ---------------------------------------------------------------------------
-
-export interface Stage3CReadHistoryInput {
-  readonly limit?: number;
-  readonly offset?: number;
-}
-export interface Stage3CReadDetailInput {
-  readonly paymentId: string;
-}
-export interface Stage3CReadTransport {
-  fetchResidentPaymentHistoryRaw(
-    input: Stage3CReadHistoryInput,
-  ): Promise<unknown>;
-  fetchResidentPaymentDetailRaw(
-    input: Stage3CReadDetailInput,
-  ): Promise<unknown>;
-}
-
-// ---------------------------------------------------------------------------
 // Static messages
 // ---------------------------------------------------------------------------
 
@@ -194,7 +173,6 @@ function notImplemented(id: Stage3CReadCaseId): never {
 // Behavioral helpers (static errors, no Vitest, no interpolation of secrets)
 // ---------------------------------------------------------------------------
 
-/** Structural deep equality via canonical JSON serialization. */
 function stableStringify(value: unknown): string {
   const seen = new WeakSet<object>();
   const walk = (v: unknown): unknown => {
@@ -256,26 +234,30 @@ export function assertResidentAudience(detail: ResidentPaymentDetail): void {
     throw new Error("[stage3c:READ-03] payment detail audience is not resident");
 }
 
-export function assertReadStateUnchanged(
-  before: unknown,
-  after: unknown,
-): void {
+export function assertReadStateUnchanged(before: unknown, after: unknown): void {
   if (!stage3cReadDeepEqual(before, after))
     throw new Error("[stage3c:READ] state changed during read operation");
 }
 
-/**
- * Parse history rows with the strict schema. Every row must pass; any
- * failure throws a static message.
- */
-function parseHistoryRows(
-  raw: unknown,
+/** Type-narrow a `PaymentDetail` to the resident variant. */
+function narrowResidentDetail(
+  detail: PaymentDetail | null,
+  caseId: Stage3CReadCaseId,
+): ResidentPaymentDetail {
+  if (detail === null)
+    throw new Error(`[stage3c:${caseId}] payment detail was null`);
+  if (detail.audience !== "resident")
+    throw new Error(`[stage3c:${caseId}] returned non-resident audience`);
+  return detail;
+}
+
+/** Coerce production-row array to strict history rows or throw. */
+function assertHistoryRowsStrict(
+  rows: readonly ResidentPaymentRow[],
   caseId: Stage3CReadCaseId,
 ): ResidentPaymentHistoryRow[] {
-  if (!Array.isArray(raw))
-    throw new Error(`[stage3c:${caseId}] history payload is not an array`);
   const out: ResidentPaymentHistoryRow[] = [];
-  for (const row of raw) {
+  for (const row of rows) {
     const parsed = ResidentPaymentHistoryRowSchema.safeParse(row);
     if (!parsed.success)
       throw new Error(`[stage3c:${caseId}] history row failed strict schema`);
@@ -290,14 +272,11 @@ function parseHistoryRows(
 
 /**
  * READ-01 — Active resident sees own payment history.
- *
- * Production entry point: `get_resident_payments_v1` (invoked here via the
- * injected `ctx.readTransport.fetchResidentPaymentHistoryRaw`; production
- * wires the transport to the real Supabase RPC).
+ * Production entry: `getResidentPaymentsWithClient` → `get_resident_payments_v1`.
  */
 export const read01_activeResidentSeesOwnPaymentHistory: Stage3CMatrixLiveHandler =
   async (ctx: Stage3CLiveMatrixContext) => {
-    const transport = requireReadTransport(ctx);
+    const client = requireReadResidentRpcClient(ctx);
     const paymentId = requireReadPrimaryPaymentId(ctx);
     const billId = requireReadPrimaryBillId(ctx);
     const expectedRow = requireReadExpectedHistoryRow(ctx);
@@ -312,16 +291,17 @@ export const read01_activeResidentSeesOwnPaymentHistory: Stage3CMatrixLiveHandle
         "[stage3c:READ-01] expected row does not correspond to primary bill id",
       );
 
-    // Pre-read state fingerprint — production detail should be idempotent
-    // across a history read. Any drift = mutation.
-    const preDetailRaw = await transport.fetchResidentPaymentDetailRaw({
-      paymentId,
+    // Bracket with a detail read so any mutation shows up as drift.
+    const preDetail = await getPaymentDetailWithClient(client, { paymentId });
+
+    const first = await getResidentPaymentsWithClient(client, {
+      limit: 50,
+      offset: 0,
     });
+    if (!first || typeof first !== "object" || !Array.isArray(first.payments))
+      throw new Error("[stage3c:READ-01] history return shape is not { payments }");
+    const parsed = assertHistoryRowsStrict(first.payments, "READ-01");
 
-    const raw = await transport.fetchResidentPaymentHistoryRaw({});
-    const parsed = parseHistoryRows(raw, "READ-01");
-
-    // Prove ordering + exact equality vs expected snapshot.
     assertHistoryOrderingStable(parsed, expectedHistory);
     for (let i = 0; i < expectedHistory.length; i++) {
       if (!stage3cReadDeepEqual(parsed[i], expectedHistory[i]))
@@ -330,7 +310,6 @@ export const read01_activeResidentSeesOwnPaymentHistory: Stage3CMatrixLiveHandle
         );
     }
 
-    // Prove the expected row appears exactly once.
     const matches = parsed.filter((r) => r.id === expectedRow.id);
     if (matches.length === 0)
       throw new Error(
@@ -342,60 +321,50 @@ export const read01_activeResidentSeesOwnPaymentHistory: Stage3CMatrixLiveHandle
       );
     assertExactReadHistoryRow(matches[0], expectedRow);
 
-    // Society scoping — no row from another society may appear.
     for (const row of parsed) {
       if (row.society_id !== expectedRow.society_id)
         throw new Error(
           "[stage3c:READ-01] history contains a payment from another society",
         );
-    }
-    // Flat scoping — every row belongs to the resident's authorised flat.
-    for (const row of parsed) {
       if (row.flat_id !== expectedRow.flat_id)
         throw new Error(
           "[stage3c:READ-01] history contains a payment from another flat",
         );
     }
 
-    // Deterministic repeat — identical read is deeply equal.
-    const rawAgain = await transport.fetchResidentPaymentHistoryRaw({});
-    const parsedAgain = parseHistoryRows(rawAgain, "READ-01");
-    assertReadResultsExactlyEqual(parsed, parsedAgain);
-
-    // Post-read state — detail payload unchanged proves no mutation.
-    const postDetailRaw = await transport.fetchResidentPaymentDetailRaw({
-      paymentId,
+    // Deterministic repeat.
+    const second = await getResidentPaymentsWithClient(client, {
+      limit: 50,
+      offset: 0,
     });
-    assertReadStateUnchanged(preDetailRaw, postDetailRaw);
+    assertReadResultsExactlyEqual(first, second);
+
+    const postDetail = await getPaymentDetailWithClient(client, { paymentId });
+    assertReadStateUnchanged(preDetail, postDetail);
   };
 
 /**
  * READ-02 — Active resident sees own payment detail.
- * Production entry: `get_payment_detail` → `parsePaymentDetailResponse`.
+ * Production entry: `getPaymentDetailWithClient` → `get_payment_detail` →
+ * `parsePaymentDetailResponse` (inside the core).
  */
 export const read02_activeResidentSeesOwnPaymentDetail: Stage3CMatrixLiveHandler =
   async (ctx: Stage3CLiveMatrixContext) => {
-    const transport = requireReadTransport(ctx);
+    const client = requireReadResidentRpcClient(ctx);
     const paymentId = requireReadPrimaryPaymentId(ctx);
     const billId = requireReadPrimaryBillId(ctx);
     const expectedRow = requireReadExpectedHistoryRow(ctx);
     const expectedDetail = requireReadExpectedDetail(ctx);
 
-    const preHistoryRaw = await transport.fetchResidentPaymentHistoryRaw({});
+    // Bracket with a history read to prove no mutation.
+    const preHistory = await getResidentPaymentsWithClient(client, {
+      limit: 50,
+      offset: 0,
+    });
 
-    const raw = await transport.fetchResidentPaymentDetailRaw({ paymentId });
-    if (raw === null || raw === undefined)
-      throw new Error("[stage3c:READ-02] detail payload was null/undefined");
+    const detailAny = await getPaymentDetailWithClient(client, { paymentId });
+    const detail = narrowResidentDetail(detailAny, "READ-02");
 
-    // Real production parser — never a substitute.
-    const parsed: PaymentDetail = parsePaymentDetailResponse(raw);
-    const strict = ResidentPaymentDetailSchema.safeParse(parsed);
-    if (!strict.success)
-      throw new Error("[stage3c:READ-02] parsed detail failed resident schema");
-    const detail = strict.data;
-
-    if (detail.audience !== "resident")
-      throw new Error("[stage3c:READ-02] returned admin-audience payload");
     if (detail.payment.id !== paymentId)
       throw new Error("[stage3c:READ-02] returned payment id mismatch");
     if (detail.payment.bill_id !== billId)
@@ -411,38 +380,32 @@ export const read02_activeResidentSeesOwnPaymentDetail: Stage3CMatrixLiveHandler
 
     assertResidentDetailMatchesExpected(detail, expectedDetail);
 
-    // Store accepted values for READ-03 / READ-04.
     ctx.readAcceptedDetail = detail;
-    ctx.readAcceptedRawDetail = raw;
 
-    const postHistoryRaw = await transport.fetchResidentPaymentHistoryRaw({});
-    assertReadStateUnchanged(preHistoryRaw, postHistoryRaw);
+    const postHistory = await getResidentPaymentsWithClient(client, {
+      limit: 50,
+      offset: 0,
+    });
+    assertReadStateUnchanged(preHistory, postHistory);
   };
 
 /**
  * READ-03 — Resident payment detail carries the resident audience.
- * Re-invokes production detail, asserts audience, and proves the parser
- * rejects any non-`"resident"` audience mutation.
+ * Re-invokes the shared detail core and asserts audience + equality with
+ * the READ-02 accepted detail.
  */
 export const read03_residentPaymentDetailCarriesResidentAudience: Stage3CMatrixLiveHandler =
   async (ctx: Stage3CLiveMatrixContext) => {
-    const transport = requireReadTransport(ctx);
+    const client = requireReadResidentRpcClient(ctx);
     const paymentId = requireReadPrimaryPaymentId(ctx);
     const accepted = requireReadAcceptedDetail(ctx);
 
-    const raw = await transport.fetchResidentPaymentDetailRaw({ paymentId });
-    if (raw === null || raw === undefined)
-      throw new Error("[stage3c:READ-03] detail payload was null/undefined");
-
-    const parsed = parsePaymentDetailResponse(raw);
-    const strict = ResidentPaymentDetailSchema.safeParse(parsed);
-    if (!strict.success)
-      throw new Error("[stage3c:READ-03] parsed detail failed resident schema");
-    const detail = strict.data;
+    const detailAny = await getPaymentDetailWithClient(client, { paymentId });
+    const detail = narrowResidentDetail(detailAny, "READ-03");
 
     assertResidentAudience(detail);
 
-    // Mutating audience post-parse must not yield a valid resident payload.
+    // Post-parse audience mutation must not yield a valid resident payload.
     for (const bad of ["admin", "", null, undefined, "Resident", "RESIDENT"]) {
       const mutated = { ...detail, audience: bad as unknown } as unknown;
       if (ResidentPaymentDetailSchema.safeParse(mutated).success)
@@ -451,82 +414,24 @@ export const read03_residentPaymentDetailCarriesResidentAudience: Stage3CMatrixL
         );
     }
 
-    // Detail must still deeply equal READ-02's accepted detail.
     assertResidentDetailMatchesExpected(detail, accepted);
-
-    // No mutation: fresh raw payload equals accepted raw payload.
-    const acceptedRaw = requireReadAcceptedRawDetail(ctx);
-    assertReadStateUnchanged(acceptedRaw, raw);
   };
 
 /**
- * READ-04 — Production parser accepts the resident-read payload.
- * Fetches a fresh raw payload and pipes it through the real parser.
+ * READ-04 — Shared detail core parses a fresh production-read payload.
+ * Deep-equals the READ-02 accepted detail; snake_case/malformed/null
+ * cases are pinned by direct-core tests in the behavioral suite.
  */
 export const read04_productionParserAcceptsResidentPayload: Stage3CMatrixLiveHandler =
   async (ctx: Stage3CLiveMatrixContext) => {
-    const transport = requireReadTransport(ctx);
+    const client = requireReadResidentRpcClient(ctx);
     const paymentId = requireReadPrimaryPaymentId(ctx);
     const accepted = requireReadAcceptedDetail(ctx);
-    const acceptedRaw = requireReadAcceptedRawDetail(ctx);
 
-    const raw = await transport.fetchResidentPaymentDetailRaw({ paymentId });
-    if (raw === null || raw === undefined)
-      throw new Error("[stage3c:READ-04] detail payload was null/undefined");
+    const detailAny = await getPaymentDetailWithClient(client, { paymentId });
+    const detail = narrowResidentDetail(detailAny, "READ-04");
 
-    // Raw payload must retain production snake_case + nested shape.
-    if (typeof raw !== "object" || Array.isArray(raw))
-      throw new Error("[stage3c:READ-04] raw payload is not a plain object");
-    const rawObj = raw as Record<string, unknown>;
-    for (const camel of [
-      "billNumber",
-      "flatLabel",
-      "audienceType",
-      "paymentDetails",
-    ]) {
-      if (camel in rawObj)
-        throw new Error(
-          "[stage3c:READ-04] raw payload contains a forbidden camelCase key",
-        );
-    }
-    for (const snake of [
-      "audience",
-      "payment",
-      "bill_number",
-      "flat_label",
-      "summary",
-      "receipt",
-    ]) {
-      if (!(snake in rawObj))
-        throw new Error(
-          "[stage3c:READ-04] raw payload is missing a required snake_case key",
-        );
-    }
-    const paymentField = rawObj["payment"];
-    if (
-      paymentField === null ||
-      typeof paymentField !== "object" ||
-      Array.isArray(paymentField)
-    )
-      throw new Error("[stage3c:READ-04] raw payment field is not an object");
-
-    // Snapshot raw before parser call to prove no manual field insertion.
-    const rawFingerprint = stableStringify(raw);
-    const parsed = parsePaymentDetailResponse(raw);
-    if (stableStringify(raw) !== rawFingerprint)
-      throw new Error(
-        "[stage3c:READ-04] raw payload was mutated before/during parser call",
-      );
-
-    const strict = ResidentPaymentDetailSchema.safeParse(parsed);
-    if (!strict.success)
-      throw new Error(
-        "[stage3c:READ-04] parser output failed resident schema validation",
-      );
-    assertResidentDetailMatchesExpected(strict.data, accepted);
-
-    // No mutation: accepted raw payload deep-equal to fresh raw.
-    assertReadStateUnchanged(acceptedRaw, raw);
+    assertResidentDetailMatchesExpected(detail, accepted);
   };
 
 // ---------------------------------------------------------------------------
@@ -580,3 +485,7 @@ export const STAGE3C_READ_HANDLERS = {
   "READ-09": read09_guardDeniedPaymentDetail,
   "READ-10": read10_blockAdminDeniedOutOfScopeDetail,
 } satisfies Record<Stage3CReadCaseId, Stage3CMatrixLiveHandler>;
+
+// Re-export the client type so tests and consumers reference it without
+// depending on the billing config module directly.
+export type { BillingRpcClient };

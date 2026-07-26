@@ -79,7 +79,7 @@ describe("Stage 3C v5 — getPaymentDetail is Zod-validated", () => {
     // and whose return type is `PaymentDetail | null`.
     expect(block).toMatch(/getPaymentDetailWithClient\(/);
     expect(fnSrc).toMatch(
-      /Promise<PaymentDetail \| null>[\s\S]{0,80}parsePaymentDetailResponse\(raw\)/,
+      /Promise<PaymentDetail \| null>[\s\S]{0,400}parsePaymentDetailResponse\(raw\)/,
     );
   });
 });

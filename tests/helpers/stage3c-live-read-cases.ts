@@ -1,34 +1,22 @@
 /**
  * Stage 3C — READ-01..10 live case contracts (Sub-run A, structural only).
  *
- * Purpose:
- *   - lock the exact ten READ case ids and their canonical order;
- *   - declare the minimum typed model required by the manifest
- *     descriptions (resident payment detail, history row, audience,
- *     pagination, denial evidence);
- *   - expose ten named handler exports that satisfy the shared
- *     {@link Stage3CMatrixLiveHandler} contract and fail closed with a
- *     static, safe not-implemented message until behavioral Sub-run B
- *     replaces each body.
+ * Grounding sources (evidence-only; do not duplicate production shapes):
+ *   - src/lib/offline-payments.functions.ts
+ *       * residentPaymentDetailSchema         → READ-02..04 payload shape
+ *       * parsePaymentDetailResponse          → READ-04 parser input
+ *       * ResidentPaymentRow (interface)      → READ-01 history row parity
+ *       * mapPaymentError                     → denial category grounding
  *
- * Non-goals for this sub-run:
- *   - no live RPC calls, no database writes, no production mutation
- *     helpers, no PRIVACY logic, no registry composition changes.
- *
- * Canonical manifest descriptions (source of truth =
- * {@link ../helpers/stage3c-live-case-manifest.ts}):
- *   READ-01 Active resident sees their own payment history
- *   READ-02 Active resident sees their own payment detail
- *   READ-03 Resident payment detail carries audience = resident
- *   READ-04 Production parsePaymentDetailResponse accepts the live resident payload
- *   READ-05 Moved-out resident cannot fetch payment history
- *   READ-06 Moved-out resident cannot fetch payment detail
- *   READ-07 Unrelated resident cannot fetch another society's payment detail
- *   READ-08 Admin B (other society) cannot fetch Society A payment detail
- *   READ-09 Guard cannot fetch payment detail
- *   READ-10 Block Admin cannot fetch payment detail outside their scope
+ * Non-goals for this sub-run: no live RPC calls, no database writes, no
+ * PRIVACY logic. Every handler fails closed with a static message until
+ * behavioral Sub-run B replaces its body.
  */
 import { z } from "zod";
+import {
+  residentPaymentDetailSchema,
+  type ResidentPaymentRow,
+} from "@/lib/offline-payments.functions";
 import { CanonicalStage3CUuidSchema } from "./stage3c-runtime-fixtures";
 import type { Stage3CMatrixLiveHandler } from "./stage3c-live-matrix-registry";
 
@@ -62,87 +50,92 @@ export const STAGE3C_READ_CASE_IDS: readonly Stage3CReadCaseId[] = [
 ] as const;
 
 // ---------------------------------------------------------------------------
-// Typed READ contract model — narrow strict schemas
+// Typed READ contract model — grounded in production shapes
 // ---------------------------------------------------------------------------
 
-/** Audience marker attached to every resident-facing payment payload. */
-export const Stage3CReadAudienceSchema = z.enum(["resident", "admin"]);
-export type Stage3CReadAudience = z.infer<typeof Stage3CReadAudienceSchema>;
-
-/** Canonical payment status literals visible to READ contracts. */
-export const Stage3CReadPaymentStatusSchema = z.enum([
-  "pending",
-  "verified",
-  "rejected",
-  "reversed",
-]);
-export type Stage3CReadPaymentStatus = z.infer<typeof Stage3CReadPaymentStatusSchema>;
-
-/** Canonical payment method literals visible to READ contracts. */
-export const Stage3CReadPaymentMethodSchema = z.enum(["cash", "bank_transfer"]);
-export type Stage3CReadPaymentMethod = z.infer<typeof Stage3CReadPaymentMethodSchema>;
-
-/** One row of the resident payment history projection (READ-01, READ-05). */
-export const ResidentPaymentHistoryRowSchema = z
-  .object({
-    paymentId: CanonicalStage3CUuidSchema,
-    billId: CanonicalStage3CUuidSchema,
-    societyId: CanonicalStage3CUuidSchema,
-    amount: z.number().finite().positive(),
-    status: Stage3CReadPaymentStatusSchema,
-    method: Stage3CReadPaymentMethodSchema,
-    audience: Stage3CReadAudienceSchema,
-  })
-  .strict();
-export type ResidentPaymentHistoryRow = z.infer<typeof ResidentPaymentHistoryRowSchema>;
-
-/** Pagination metadata attached to a history page (READ-01). */
-export const ResidentPaymentHistoryPaginationSchema = z
-  .object({
-    limit: z.number().int().positive(),
-    offset: z.number().int().nonnegative(),
-    total: z.number().int().nonnegative(),
-  })
-  .strict();
-export type ResidentPaymentHistoryPagination = z.infer<
-  typeof ResidentPaymentHistoryPaginationSchema
+/**
+ * Resident audience literal. Grounded in `residentPaymentDetailSchema`
+ * (audience: z.literal("resident")). READ-03 forbids "admin".
+ */
+export const Stage3CReadResidentAudienceSchema = z.literal("resident");
+export type Stage3CReadResidentAudience = z.infer<
+  typeof Stage3CReadResidentAudienceSchema
 >;
 
-/** Full history page projection (READ-01). */
-export const ResidentPaymentHistoryPageSchema = z
-  .object({
-    rows: z.array(ResidentPaymentHistoryRowSchema).readonly(),
-    pagination: ResidentPaymentHistoryPaginationSchema,
-  })
-  .strict();
-export type ResidentPaymentHistoryPage = z.infer<typeof ResidentPaymentHistoryPageSchema>;
+/**
+ * Resident payment detail schema (READ-02..04).
+ * Re-exports the real production schema so tests validate the exact
+ * production parser output shape, not a hand-written substitute.
+ */
+export const ResidentPaymentDetailSchema = residentPaymentDetailSchema;
 
 /**
- * Resident-facing payment detail projection (READ-02..04, denial cases
- * READ-06..10 compare denial vs this success shape). Deliberately narrow
- * — PRIVACY forbidden fields (proof_url, submitted_by, receipt.issued_by,
- * etc.) are enforced in the PRIVACY category, not here.
+ * Resident payment history row (READ-01, READ-05).
+ * Fields mirror `ResidentPaymentRow` exactly (see production file cited
+ * above). A compile-time `satisfies` clause below wires the two together
+ * so any production drift breaks the typecheck instead of silently
+ * accepting stale rows.
  */
-export const ResidentPaymentDetailSchema = z
+export const ResidentPaymentHistoryRowSchema = z
   .object({
-    paymentId: CanonicalStage3CUuidSchema,
-    billId: CanonicalStage3CUuidSchema,
-    societyId: CanonicalStage3CUuidSchema,
-    amount: z.number().finite().positive(),
-    status: Stage3CReadPaymentStatusSchema,
-    method: Stage3CReadPaymentMethodSchema,
-    audience: Stage3CReadAudienceSchema,
+    id: CanonicalStage3CUuidSchema,
+    bill_id: CanonicalStage3CUuidSchema.nullable(),
+    society_id: CanonicalStage3CUuidSchema,
+    flat_id: CanonicalStage3CUuidSchema.nullable(),
+    amount: z.number(),
+    method: z.string(),
+    status: z.string(),
+    reference_no: z.string().nullable(),
+    submitted_at: z.string().nullable(),
+    payment_date: z.string().nullable(),
+    verified_at: z.string().nullable(),
+    rejected_at: z.string().nullable(),
+    rejection_reason: z.string().nullable(),
+    reversed_at: z.string().nullable(),
+    reversal_reason: z.string().nullable(),
+    created_at: z.string(),
   })
   .strict();
-export type ResidentPaymentDetail = z.infer<typeof ResidentPaymentDetailSchema>;
+export type ResidentPaymentHistoryRow = z.infer<
+  typeof ResidentPaymentHistoryRowSchema
+>;
 
-/** Static denial-evidence contract for the six denial READ cases. */
-export const Stage3CReadDenialTokenSchema = z.enum([
+// Compile-time parity guard against `ResidentPaymentRow`. If production
+// adds or renames a field, this line stops compiling.
+type _ResidentPaymentHistoryRowParity = ResidentPaymentHistoryRow extends ResidentPaymentRow
+  ? ResidentPaymentRow extends ResidentPaymentHistoryRow
+    ? true
+    : false
+  : false;
+const _RESIDENT_PAYMENT_HISTORY_ROW_PARITY: _ResidentPaymentHistoryRowParity = true;
+void _RESIDENT_PAYMENT_HISTORY_ROW_PARITY;
+
+/**
+ * Denial category for the six denial READ cases.
+ * Grounded strictly in `mapPaymentError` — the only two safe messages
+ * the production error mapper emits for resident-facing read denial
+ * paths (`unauthenticated`, `not_authorized`). No provider-specific
+ * tokens are invented here.
+ */
+export const Stage3CReadDenialCategorySchema = z.enum([
   "not_authenticated",
-  "unauthenticated",
   "not_authorized",
 ]);
-export type Stage3CReadDenialToken = z.infer<typeof Stage3CReadDenialTokenSchema>;
+export type Stage3CReadDenialCategory = z.infer<
+  typeof Stage3CReadDenialCategorySchema
+>;
+
+/**
+ * Exact production-safe messages `mapPaymentError` returns for each
+ * denial category. Keys and values are copied verbatim from the
+ * production error mapper.
+ */
+export const STAGE3C_READ_DENIAL_MESSAGES: Readonly<
+  Record<Stage3CReadDenialCategory, string>
+> = Object.freeze({
+  not_authenticated: "Please sign in and try again.",
+  not_authorized: "You are not allowed to perform this action.",
+});
 
 export const Stage3CReadDenialEvidenceSchema = z
   .object({
@@ -154,11 +147,13 @@ export const Stage3CReadDenialEvidenceSchema = z
       "READ-09",
       "READ-10",
     ]),
-    token: Stage3CReadDenialTokenSchema,
+    category: Stage3CReadDenialCategorySchema,
     returnedRow: z.null(),
   })
   .strict();
-export type Stage3CReadDenialEvidence = z.infer<typeof Stage3CReadDenialEvidenceSchema>;
+export type Stage3CReadDenialEvidence = z.infer<
+  typeof Stage3CReadDenialEvidenceSchema
+>;
 
 // ---------------------------------------------------------------------------
 // Static not-implemented messages (safe — no context values embedded)

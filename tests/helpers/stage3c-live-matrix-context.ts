@@ -7,11 +7,13 @@
  * as `null` and is validated on retrieval by a labeled guard — no
  * fake defaults, no globalThis, no unknown state bags.
  *
- * The `residentSubmit*` fields are the canonical lifecycle slots used
- * by the RESIDENT-SUBMIT-01..08 handlers implemented in this run. The
- * older, more general `resident*` fields are retained for the
- * foundation validator contract; they are unused by the resident-
- * submit handlers.
+ * IDEMPOTENCY / REFERENCE Sub-run A structural closure:
+ *   - canonical strict lifecycle slots (no `unknown`, no loose
+ *     `{ billId, rowCount }` snapshot bags);
+ *   - dedicated guards for every field consumed by upcoming behavioral
+ *     handlers (`require*`);
+ *   - error messages are static — never interpolate stored UUIDs,
+ *     amounts, references, keys or raw objects.
  */
 import {
   createStage3CLiveCoreContext,
@@ -24,9 +26,7 @@ import {
   type ResidentBillSummary,
   type ResidentBillStateSnapshot,
 } from "./stage3c-live-resident-submit-contracts";
-import type { Stage3CFixture } from "./stage3c-runtime-fixtures";
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { CanonicalStage3CUuidSchema, type Stage3CFixture } from "./stage3c-runtime-fixtures";
 
 export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
   // Resident-submit foundation slots (validator contract)
@@ -38,7 +38,7 @@ export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
   residentReference: string | null;
   residentIdempotencyKey: string | null;
 
-  // Resident-submit lifecycle slots (this run — RESIDENT-SUBMIT-01..08)
+  // Resident-submit lifecycle slots (RESIDENT-SUBMIT-01..08)
   residentSubmitPaymentId: string | null;
   residentSubmitAmount: number | null;
   residentSubmitReference: string | null;
@@ -47,25 +47,24 @@ export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
   residentSubmitPendingSummary: ResidentBillSummary | null;
   residentSubmitInitialReceiptSequences: ReceiptSequenceSnapshot | null;
 
-
   // Idempotency category (retained legacy slots)
   idempotencyBillAId: string | null;
   idempotencyBillBId: string | null;
-  idempotencyKey: string | null;
-  idempotencyAmount: number | null;
   idempotencyOriginalPaymentId: string | null;
   idempotencyBaselinePaymentCount: number | null;
   idempotencyBaselineSummary: BillSummarySnapshot | null;
   idempotencyPostSummary: BillSummarySnapshot | null;
 
-  // Idempotency lifecycle (this run)
+  // Idempotency lifecycle (Sub-run A canonical slots)
   idempotencyBillId: string | null;
   idempotencyPaymentId: string | null;
+  idempotencyAmount: number | null;
   idempotencyReference: string | null;
-  idempotencyAmountInput: number | null;
-  idempotencyConflictAmountInput: number | null;
+  idempotencyKey: string | null;
   idempotencyInitialState: ResidentBillStateSnapshot | null;
   idempotencyPostSubmitState: ResidentBillStateSnapshot | null;
+  idempotencyInitialSequences: ReceiptSequenceSnapshot | null;
+  idempotencyPostSubmitSequences: ReceiptSequenceSnapshot | null;
 
   // Reference category (retained legacy slots)
   referenceBillId: string | null;
@@ -74,21 +73,25 @@ export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
   referenceBaselinePaymentCount: number | null;
   referencePostOriginalSummary: BillSummarySnapshot | null;
 
-  // Reference lifecycle (this run)
+  // Reference lifecycle (Sub-run A canonical slots)
   referencePrimaryBillId: string | null;
+  referenceSecondarySameSocietyBillId: string | null;
+  referenceOtherSocietyBillId: string | null;
   referencePrimaryPaymentId: string | null;
   referenceOtherSocietyPaymentId: string | null;
   referenceAmount: number | null;
   referenceValue: string | null;
   referencePrimaryKey: string | null;
   referenceDuplicateKey: string | null;
+  referenceCrossBillKey: string | null;
   referenceOtherSocietyKey: string | null;
   referencePrimaryInitialState: ResidentBillStateSnapshot | null;
   referencePrimaryPostSubmitState: ResidentBillStateSnapshot | null;
   referenceSecondaryInitialState: ResidentBillStateSnapshot | null;
   referenceOtherSocietyInitialState: ResidentBillStateSnapshot | null;
+  referenceOtherSocietyPostSubmitState: ResidentBillStateSnapshot | null;
+  referenceInitialSequences: ReceiptSequenceSnapshot | null;
 }
-
 
 export function createStage3CLiveMatrixContext(): Stage3CLiveMatrixContext {
   return {
@@ -109,11 +112,8 @@ export function createStage3CLiveMatrixContext(): Stage3CLiveMatrixContext {
     residentSubmitPendingSummary: null,
     residentSubmitInitialReceiptSequences: null,
 
-
     idempotencyBillAId: null,
     idempotencyBillBId: null,
-    idempotencyKey: null,
-    idempotencyAmount: null,
     idempotencyOriginalPaymentId: null,
     idempotencyBaselinePaymentCount: null,
     idempotencyBaselineSummary: null,
@@ -121,11 +121,13 @@ export function createStage3CLiveMatrixContext(): Stage3CLiveMatrixContext {
 
     idempotencyBillId: null,
     idempotencyPaymentId: null,
+    idempotencyAmount: null,
     idempotencyReference: null,
-    idempotencyAmountInput: null,
-    idempotencyConflictAmountInput: null,
+    idempotencyKey: null,
     idempotencyInitialState: null,
     idempotencyPostSubmitState: null,
+    idempotencyInitialSequences: null,
+    idempotencyPostSubmitSequences: null,
 
     referenceBillId: null,
     canonicalReference: null,
@@ -134,57 +136,64 @@ export function createStage3CLiveMatrixContext(): Stage3CLiveMatrixContext {
     referencePostOriginalSummary: null,
 
     referencePrimaryBillId: null,
+    referenceSecondarySameSocietyBillId: null,
+    referenceOtherSocietyBillId: null,
     referencePrimaryPaymentId: null,
     referenceOtherSocietyPaymentId: null,
     referenceAmount: null,
     referenceValue: null,
     referencePrimaryKey: null,
     referenceDuplicateKey: null,
+    referenceCrossBillKey: null,
     referenceOtherSocietyKey: null,
     referencePrimaryInitialState: null,
     referencePrimaryPostSubmitState: null,
     referenceSecondaryInitialState: null,
     referenceOtherSocietyInitialState: null,
+    referenceOtherSocietyPostSubmitState: null,
+    referenceInitialSequences: null,
   };
 }
 
-
 // ---------------------------------------------------------------------------
-// Guards
+// Primitive guard helpers (static error messages — no stored value leaks)
 // ---------------------------------------------------------------------------
 
-function failGuard(field: string, expectedFrom: string): never {
+const MAX_TEXT_LEN = 120;
+
+function throwMissing(field: string, expectedFrom: string): never {
+  // Field name is a compile-time literal — never a stored value.
   throw new Error(
     `[stage3c:matrix] required lifecycle field "${field}" not initialised — ${expectedFrom} must run first`,
   );
 }
 
-function requireUuid(value: string | null, field: string, expectedFrom: string): string {
-  if (value === null) failGuard(field, expectedFrom);
-  const trimmed = value.trim();
-  if (trimmed.length === 0 || !UUID_RE.test(trimmed))
-    throw new Error(`[stage3c:matrix] "${field}" is not a valid UUID`);
-  return trimmed;
+function throwInvalid(field: string, reason: string): never {
+  throw new Error(`[stage3c:matrix] "${field}" invalid: ${reason}`);
 }
 
-function requireNonBlank(value: string | null, field: string, expectedFrom: string): string {
-  if (value === null) failGuard(field, expectedFrom);
-  const trimmed = value.trim();
-  if (trimmed.length === 0)
-    throw new Error(`[stage3c:matrix] "${field}" is blank/whitespace`);
-  return trimmed;
-}
-
-function requireBoundedNonBlank(
+function requireCanonicalUuid(
   value: string | null,
   field: string,
   expectedFrom: string,
-  maxLen: number,
 ): string {
-  const t = requireNonBlank(value, field, expectedFrom);
-  if (t.length > maxLen)
-    throw new Error(`[stage3c:matrix] "${field}" exceeds ${maxLen} characters`);
-  return t;
+  if (value === null) throwMissing(field, expectedFrom);
+  const parsed = CanonicalStage3CUuidSchema.safeParse(value);
+  if (!parsed.success) throwInvalid(field, "not a canonical UUID");
+  return parsed.data;
+}
+
+function requireBoundedNonBlankText(
+  value: string | null,
+  field: string,
+  expectedFrom: string,
+): string {
+  if (value === null) throwMissing(field, expectedFrom);
+  const trimmed = value.trim();
+  if (trimmed.length === 0) throwInvalid(field, "blank/whitespace");
+  if (trimmed.length > MAX_TEXT_LEN)
+    throwInvalid(field, `exceeds ${MAX_TEXT_LEN} characters`);
+  return trimmed;
 }
 
 function requirePositiveFinite(
@@ -192,9 +201,9 @@ function requirePositiveFinite(
   field: string,
   expectedFrom: string,
 ): number {
-  if (value === null) failGuard(field, expectedFrom);
-  if (!Number.isFinite(value) || value <= 0)
-    throw new Error(`[stage3c:matrix] "${field}" must be a positive finite number`);
+  if (value === null) throwMissing(field, expectedFrom);
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0)
+    throwInvalid(field, "must be a positive finite number");
   return value;
 }
 
@@ -203,106 +212,123 @@ function requireNonNegativeInteger(
   field: string,
   expectedFrom: string,
 ): number {
-  if (value === null) failGuard(field, expectedFrom);
+  if (value === null) throwMissing(field, expectedFrom);
   if (!Number.isInteger(value) || value < 0)
-    throw new Error(`[stage3c:matrix] "${field}" must be a non-negative integer`);
+    throwInvalid(field, "must be a non-negative integer");
   return value;
 }
 
-function requireSummary(
+function requireLegacySummary(
   value: BillSummarySnapshot | null,
   field: string,
   expectedFrom: string,
 ): BillSummarySnapshot {
-  if (value === null) failGuard(field, expectedFrom);
+  if (value === null) throwMissing(field, expectedFrom);
   return value;
 }
 
-function requireStrictSummary(
+function requireStrictResidentSummary(
   value: ResidentBillSummary | null,
   field: string,
   expectedFrom: string,
 ): ResidentBillSummary {
-  if (value === null) failGuard(field, expectedFrom);
+  if (value === null) throwMissing(field, expectedFrom);
   return value;
 }
 
-export function requireResidentSubmitInitialReceiptSequences(
-  c: Stage3CLiveMatrixContext,
+function requireResidentBillState(
+  value: ResidentBillStateSnapshot | null,
+  field: string,
+  expectedFrom: string,
+): ResidentBillStateSnapshot {
+  if (value === null) throwMissing(field, expectedFrom);
+  // Structural gate on the strict child schemas — every state snapshot
+  // must at minimum have a valid receipt sequence bag.
+  if (!ReceiptSequenceSnapshotSchema.safeParse(value.sequences).success)
+    throwInvalid(field, "sequences failed strict schema");
+  return value;
+}
+
+function requireReceiptSequenceSnapshot(
+  value: ReceiptSequenceSnapshot | null,
+  field: string,
+  expectedFrom: string,
 ): ReceiptSequenceSnapshot {
-  if (c.residentSubmitInitialReceiptSequences === null)
-    throw new Error(
-      "[stage3c:matrix] residentSubmitInitialReceiptSequences not initialised — RESIDENT-SUBMIT-01 must run first",
-    );
-  const parsed = ReceiptSequenceSnapshotSchema.safeParse(
-    c.residentSubmitInitialReceiptSequences,
-  );
-  if (!parsed.success)
-    throw new Error(
-      "[stage3c:matrix] residentSubmitInitialReceiptSequences failed strict schema",
-    );
+  if (value === null) throwMissing(field, expectedFrom);
+  const parsed = ReceiptSequenceSnapshotSchema.safeParse(value);
+  if (!parsed.success) throwInvalid(field, "failed strict sequence schema");
   return parsed.data;
 }
+
+// ---------------------------------------------------------------------------
+// Resident-submit foundation guards (retained)
+// ---------------------------------------------------------------------------
 
 export function requireMatrixFixture(ctx: Stage3CLiveMatrixContext): Stage3CFixture {
   if (!ctx.fixture) throw new Error("[stage3c:matrix] fixture not initialised");
   return ctx.fixture;
 }
 
-// Foundation resident guards (retained)
 export const requireResidentBillId = (c: Stage3CLiveMatrixContext) =>
-  requireUuid(c.residentBillId, "residentBillId", "RESIDENT-SUBMIT-01");
+  requireCanonicalUuid(c.residentBillId, "residentBillId", "RESIDENT-SUBMIT-01");
 export const requireResidentBaselineSummary = (c: Stage3CLiveMatrixContext) =>
-  requireSummary(c.residentBaselineSummary, "residentBaselineSummary", "RESIDENT-SUBMIT-01");
+  requireLegacySummary(c.residentBaselineSummary, "residentBaselineSummary", "RESIDENT-SUBMIT-01");
 export const requireResidentPostSubmitSummary = (c: Stage3CLiveMatrixContext) =>
-  requireSummary(c.residentPostSubmitSummary, "residentPostSubmitSummary", "RESIDENT-SUBMIT-02");
+  requireLegacySummary(c.residentPostSubmitSummary, "residentPostSubmitSummary", "RESIDENT-SUBMIT-02");
 export const requireResidentPaymentId = (c: Stage3CLiveMatrixContext) =>
-  requireUuid(c.residentPaymentId, "residentPaymentId", "RESIDENT-SUBMIT-02");
+  requireCanonicalUuid(c.residentPaymentId, "residentPaymentId", "RESIDENT-SUBMIT-02");
 export const requireResidentAmount = (c: Stage3CLiveMatrixContext) =>
   requirePositiveFinite(c.residentAmount, "residentAmount", "RESIDENT-SUBMIT-01");
 export const requireResidentReference = (c: Stage3CLiveMatrixContext) =>
-  requireNonBlank(c.residentReference, "residentReference", "RESIDENT-SUBMIT-01");
+  requireBoundedNonBlankText(c.residentReference, "residentReference", "RESIDENT-SUBMIT-01");
 export const requireResidentIdempotencyKey = (c: Stage3CLiveMatrixContext) =>
-  requireNonBlank(c.residentIdempotencyKey, "residentIdempotencyKey", "RESIDENT-SUBMIT-01");
+  requireBoundedNonBlankText(c.residentIdempotencyKey, "residentIdempotencyKey", "RESIDENT-SUBMIT-01");
 
-// Resident-submit lifecycle guards (this run)
 export const requireResidentSubmitPaymentId = (c: Stage3CLiveMatrixContext) =>
-  requireUuid(c.residentSubmitPaymentId, "residentSubmitPaymentId", "RESIDENT-SUBMIT-02");
+  requireCanonicalUuid(c.residentSubmitPaymentId, "residentSubmitPaymentId", "RESIDENT-SUBMIT-02");
 export const requireResidentSubmitAmount = (c: Stage3CLiveMatrixContext) =>
   requirePositiveFinite(c.residentSubmitAmount, "residentSubmitAmount", "RESIDENT-SUBMIT-01");
 export const requireResidentSubmitReference = (c: Stage3CLiveMatrixContext) =>
-  requireBoundedNonBlank(c.residentSubmitReference, "residentSubmitReference", "RESIDENT-SUBMIT-01", 120);
+  requireBoundedNonBlankText(c.residentSubmitReference, "residentSubmitReference", "RESIDENT-SUBMIT-01");
 export const requireResidentSubmitIdempotencyKey = (c: Stage3CLiveMatrixContext) =>
-  requireBoundedNonBlank(
+  requireBoundedNonBlankText(
     c.residentSubmitIdempotencyKey,
     "residentSubmitIdempotencyKey",
     "RESIDENT-SUBMIT-01",
-    120,
   );
 export const requireResidentSubmitInitialSummary = (c: Stage3CLiveMatrixContext) =>
-  requireStrictSummary(
+  requireStrictResidentSummary(
     c.residentSubmitInitialSummary,
     "residentSubmitInitialSummary",
     "RESIDENT-SUBMIT-01",
   );
 export const requireResidentSubmitPendingSummary = (c: Stage3CLiveMatrixContext) =>
-  requireStrictSummary(
+  requireStrictResidentSummary(
     c.residentSubmitPendingSummary,
     "residentSubmitPendingSummary",
     "RESIDENT-SUBMIT-08",
   );
 
-// Idempotency guards
+export function requireResidentSubmitInitialReceiptSequences(
+  c: Stage3CLiveMatrixContext,
+): ReceiptSequenceSnapshot {
+  return requireReceiptSequenceSnapshot(
+    c.residentSubmitInitialReceiptSequences,
+    "residentSubmitInitialReceiptSequences",
+    "RESIDENT-SUBMIT-01",
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Legacy idempotency / reference guards (retained)
+// ---------------------------------------------------------------------------
+
 export const requireIdempotencyBillAId = (c: Stage3CLiveMatrixContext) =>
-  requireUuid(c.idempotencyBillAId, "idempotencyBillAId", "IDEMPOTENCY-01");
+  requireCanonicalUuid(c.idempotencyBillAId, "idempotencyBillAId", "IDEMPOTENCY-01");
 export const requireIdempotencyBillBId = (c: Stage3CLiveMatrixContext) =>
-  requireUuid(c.idempotencyBillBId, "idempotencyBillBId", "IDEMPOTENCY-01");
-export const requireIdempotencyKey = (c: Stage3CLiveMatrixContext) =>
-  requireNonBlank(c.idempotencyKey, "idempotencyKey", "IDEMPOTENCY-01");
-export const requireIdempotencyAmount = (c: Stage3CLiveMatrixContext) =>
-  requirePositiveFinite(c.idempotencyAmount, "idempotencyAmount", "IDEMPOTENCY-01");
+  requireCanonicalUuid(c.idempotencyBillBId, "idempotencyBillBId", "IDEMPOTENCY-01");
 export const requireIdempotencyOriginalPaymentId = (c: Stage3CLiveMatrixContext) =>
-  requireUuid(
+  requireCanonicalUuid(
     c.idempotencyOriginalPaymentId,
     "idempotencyOriginalPaymentId",
     "IDEMPOTENCY-01",
@@ -314,17 +340,16 @@ export const requireIdempotencyBaselinePaymentCount = (c: Stage3CLiveMatrixConte
     "IDEMPOTENCY-01",
   );
 export const requireIdempotencyBaselineSummary = (c: Stage3CLiveMatrixContext) =>
-  requireSummary(c.idempotencyBaselineSummary, "idempotencyBaselineSummary", "IDEMPOTENCY-01");
+  requireLegacySummary(c.idempotencyBaselineSummary, "idempotencyBaselineSummary", "IDEMPOTENCY-01");
 export const requireIdempotencyPostSummary = (c: Stage3CLiveMatrixContext) =>
-  requireSummary(c.idempotencyPostSummary, "idempotencyPostSummary", "IDEMPOTENCY-02");
+  requireLegacySummary(c.idempotencyPostSummary, "idempotencyPostSummary", "IDEMPOTENCY-02");
 
-// Reference guards
 export const requireReferenceBillId = (c: Stage3CLiveMatrixContext) =>
-  requireUuid(c.referenceBillId, "referenceBillId", "REFERENCE-01");
+  requireCanonicalUuid(c.referenceBillId, "referenceBillId", "REFERENCE-01");
 export const requireCanonicalReference = (c: Stage3CLiveMatrixContext) =>
-  requireNonBlank(c.canonicalReference, "canonicalReference", "REFERENCE-01");
+  requireBoundedNonBlankText(c.canonicalReference, "canonicalReference", "REFERENCE-01");
 export const requireReferenceOriginalPaymentId = (c: Stage3CLiveMatrixContext) =>
-  requireUuid(
+  requireCanonicalUuid(
     c.referenceOriginalPaymentId,
     "referenceOriginalPaymentId",
     "REFERENCE-01",
@@ -336,72 +361,116 @@ export const requireReferenceBaselinePaymentCount = (c: Stage3CLiveMatrixContext
     "REFERENCE-01",
   );
 export const requireReferencePostOriginalSummary = (c: Stage3CLiveMatrixContext) =>
-  requireSummary(
+  requireLegacySummary(
     c.referencePostOriginalSummary,
     "referencePostOriginalSummary",
     "REFERENCE-01",
   );
 
 // ---------------------------------------------------------------------------
-// Idempotency lifecycle guards (this run)
+// Sub-run A canonical IDEMPOTENCY guards
 // ---------------------------------------------------------------------------
+
 export const requireIdempotencyBillId = (c: Stage3CLiveMatrixContext) =>
-  requireUuid(c.idempotencyBillId, "idempotencyBillId", "IDEMPOTENCY-01");
+  requireCanonicalUuid(c.idempotencyBillId, "idempotencyBillId", "IDEMPOTENCY-01");
 export const requireIdempotencyPaymentId = (c: Stage3CLiveMatrixContext) =>
-  requireUuid(c.idempotencyPaymentId, "idempotencyPaymentId", "IDEMPOTENCY-01");
+  requireCanonicalUuid(c.idempotencyPaymentId, "idempotencyPaymentId", "IDEMPOTENCY-01");
+export const requireIdempotencyAmount = (c: Stage3CLiveMatrixContext) =>
+  requirePositiveFinite(c.idempotencyAmount, "idempotencyAmount", "IDEMPOTENCY-01");
 export const requireIdempotencyReference = (c: Stage3CLiveMatrixContext) =>
-  requireBoundedNonBlank(c.idempotencyReference, "idempotencyReference", "IDEMPOTENCY-01", 120);
-export const requireIdempotencyAmountInput = (c: Stage3CLiveMatrixContext) =>
-  requirePositiveFinite(c.idempotencyAmountInput, "idempotencyAmountInput", "IDEMPOTENCY-01");
-export const requireIdempotencyConflictAmountInput = (c: Stage3CLiveMatrixContext) =>
-  requirePositiveFinite(
-    c.idempotencyConflictAmountInput,
-    "idempotencyConflictAmountInput",
-    "IDEMPOTENCY-04",
+  requireBoundedNonBlankText(c.idempotencyReference, "idempotencyReference", "IDEMPOTENCY-01");
+export const requireIdempotencyKey = (c: Stage3CLiveMatrixContext) =>
+  requireBoundedNonBlankText(c.idempotencyKey, "idempotencyKey", "IDEMPOTENCY-01");
+export const requireIdempotencyInitialState = (c: Stage3CLiveMatrixContext) =>
+  requireResidentBillState(c.idempotencyInitialState, "idempotencyInitialState", "IDEMPOTENCY-01");
+export const requireIdempotencyPostSubmitState = (c: Stage3CLiveMatrixContext) =>
+  requireResidentBillState(
+    c.idempotencyPostSubmitState,
+    "idempotencyPostSubmitState",
+    "IDEMPOTENCY-01",
   );
-export function requireIdempotencyInitialState(
-  c: Stage3CLiveMatrixContext,
-): ResidentBillStateSnapshot {
-  if (c.idempotencyInitialState === null)
-    failGuard("idempotencyInitialState", "IDEMPOTENCY-01");
-  return c.idempotencyInitialState;
-}
-export function requireIdempotencyPostSubmitState(
-  c: Stage3CLiveMatrixContext,
-): ResidentBillStateSnapshot {
-  if (c.idempotencyPostSubmitState === null)
-    failGuard("idempotencyPostSubmitState", "IDEMPOTENCY-01");
-  return c.idempotencyPostSubmitState;
-}
+export const requireIdempotencyInitialSequences = (c: Stage3CLiveMatrixContext) =>
+  requireReceiptSequenceSnapshot(
+    c.idempotencyInitialSequences,
+    "idempotencyInitialSequences",
+    "IDEMPOTENCY-01",
+  );
 
 // ---------------------------------------------------------------------------
-// Reference lifecycle guards (this run)
+// Sub-run A canonical REFERENCE guards
 // ---------------------------------------------------------------------------
+
 export const requireReferencePrimaryBillId = (c: Stage3CLiveMatrixContext) =>
-  requireUuid(c.referencePrimaryBillId, "referencePrimaryBillId", "REFERENCE-01");
+  requireCanonicalUuid(c.referencePrimaryBillId, "referencePrimaryBillId", "REFERENCE-01");
+export const requireReferenceSecondarySameSocietyBillId = (c: Stage3CLiveMatrixContext) =>
+  requireCanonicalUuid(
+    c.referenceSecondarySameSocietyBillId,
+    "referenceSecondarySameSocietyBillId",
+    "REFERENCE-03",
+  );
+export const requireReferenceOtherSocietyBillId = (c: Stage3CLiveMatrixContext) =>
+  requireCanonicalUuid(
+    c.referenceOtherSocietyBillId,
+    "referenceOtherSocietyBillId",
+    "REFERENCE-04",
+  );
 export const requireReferencePrimaryPaymentId = (c: Stage3CLiveMatrixContext) =>
-  requireUuid(c.referencePrimaryPaymentId, "referencePrimaryPaymentId", "REFERENCE-01");
+  requireCanonicalUuid(c.referencePrimaryPaymentId, "referencePrimaryPaymentId", "REFERENCE-01");
+export const requireReferenceOtherSocietyPaymentId = (c: Stage3CLiveMatrixContext) =>
+  requireCanonicalUuid(
+    c.referenceOtherSocietyPaymentId,
+    "referenceOtherSocietyPaymentId",
+    "REFERENCE-04",
+  );
 export const requireReferenceAmount = (c: Stage3CLiveMatrixContext) =>
   requirePositiveFinite(c.referenceAmount, "referenceAmount", "REFERENCE-01");
 export const requireReferenceValue = (c: Stage3CLiveMatrixContext) =>
-  requireBoundedNonBlank(c.referenceValue, "referenceValue", "REFERENCE-01", 120);
+  requireBoundedNonBlankText(c.referenceValue, "referenceValue", "REFERENCE-01");
 export const requireReferencePrimaryKey = (c: Stage3CLiveMatrixContext) =>
-  requireBoundedNonBlank(c.referencePrimaryKey, "referencePrimaryKey", "REFERENCE-01", 120);
+  requireBoundedNonBlankText(c.referencePrimaryKey, "referencePrimaryKey", "REFERENCE-01");
 export const requireReferenceDuplicateKey = (c: Stage3CLiveMatrixContext) =>
-  requireBoundedNonBlank(c.referenceDuplicateKey, "referenceDuplicateKey", "REFERENCE-02", 120);
+  requireBoundedNonBlankText(c.referenceDuplicateKey, "referenceDuplicateKey", "REFERENCE-02");
+export const requireReferenceCrossBillKey = (c: Stage3CLiveMatrixContext) =>
+  requireBoundedNonBlankText(c.referenceCrossBillKey, "referenceCrossBillKey", "REFERENCE-03");
 export const requireReferenceOtherSocietyKey = (c: Stage3CLiveMatrixContext) =>
-  requireBoundedNonBlank(c.referenceOtherSocietyKey, "referenceOtherSocietyKey", "REFERENCE-04", 120);
-export function requireReferencePrimaryInitialState(
-  c: Stage3CLiveMatrixContext,
-): ResidentBillStateSnapshot {
-  if (c.referencePrimaryInitialState === null)
-    failGuard("referencePrimaryInitialState", "REFERENCE-01");
-  return c.referencePrimaryInitialState;
-}
-export function requireReferencePrimaryPostSubmitState(
-  c: Stage3CLiveMatrixContext,
-): ResidentBillStateSnapshot {
-  if (c.referencePrimaryPostSubmitState === null)
-    failGuard("referencePrimaryPostSubmitState", "REFERENCE-01");
-  return c.referencePrimaryPostSubmitState;
-}
+  requireBoundedNonBlankText(
+    c.referenceOtherSocietyKey,
+    "referenceOtherSocietyKey",
+    "REFERENCE-04",
+  );
+export const requireReferencePrimaryInitialState = (c: Stage3CLiveMatrixContext) =>
+  requireResidentBillState(
+    c.referencePrimaryInitialState,
+    "referencePrimaryInitialState",
+    "REFERENCE-01",
+  );
+export const requireReferencePrimaryPostSubmitState = (c: Stage3CLiveMatrixContext) =>
+  requireResidentBillState(
+    c.referencePrimaryPostSubmitState,
+    "referencePrimaryPostSubmitState",
+    "REFERENCE-01",
+  );
+export const requireReferenceSecondaryInitialState = (c: Stage3CLiveMatrixContext) =>
+  requireResidentBillState(
+    c.referenceSecondaryInitialState,
+    "referenceSecondaryInitialState",
+    "REFERENCE-03",
+  );
+export const requireReferenceOtherSocietyInitialState = (c: Stage3CLiveMatrixContext) =>
+  requireResidentBillState(
+    c.referenceOtherSocietyInitialState,
+    "referenceOtherSocietyInitialState",
+    "REFERENCE-04",
+  );
+export const requireReferenceOtherSocietyPostSubmitState = (c: Stage3CLiveMatrixContext) =>
+  requireResidentBillState(
+    c.referenceOtherSocietyPostSubmitState,
+    "referenceOtherSocietyPostSubmitState",
+    "REFERENCE-04",
+  );
+export const requireReferenceInitialSequences = (c: Stage3CLiveMatrixContext) =>
+  requireReceiptSequenceSnapshot(
+    c.referenceInitialSequences,
+    "referenceInitialSequences",
+    "REFERENCE-01",
+  );

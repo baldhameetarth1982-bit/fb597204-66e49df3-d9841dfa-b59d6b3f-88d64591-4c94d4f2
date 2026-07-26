@@ -34,6 +34,13 @@ import {
   reference04_outsideScopeIsolation,
   assertCleanIdempotencyBaseline,
   assertIdempotencyPostSubmitTotals,
+  assertCleanReferenceBaseline,
+  assertReferencePostSubmitTotals,
+  REFERENCE_BILL_PRIMARY_TOTAL,
+  REFERENCE_BILL_SECONDARY_TOTAL,
+  REFERENCE_BILL_OTHER_SOCIETY_TOTAL,
+  REFERENCE_02_UNEXPECTED_SUCCESS_MESSAGE,
+  REFERENCE_03_UNEXPECTED_SUCCESS_MESSAGE,
   type Stage3CIdempotencyReferenceCaseId,
 } from "../helpers/stage3c-live-idempotency-reference-cases";
 import {
@@ -1254,3 +1261,609 @@ function buildRow(
     reversal_reason: null,
   };
 }
+
+// ===========================================================================
+// Sub-run C — REFERENCE direct behavioral tests
+// ===========================================================================
+
+const REF_VARIANT = `  ${BUILDER_INPUTS.referenceValue.toLowerCase()}  `;
+
+/** Seeds ctx by running REFERENCE-01 and resets submit tracking. */
+async function seedPostRef01(state: MockState): Promise<Stage3CLiveMatrixContext> {
+  const ctx = makeCtx(state);
+  await reference01_createUniqueReference(ctx);
+  state.submitCalls = [];
+  return ctx;
+}
+
+function duplicateThrower(state: MockState): void {
+  state.submitImpl = async () => {
+    throw new Error("duplicate_reference");
+  };
+}
+
+/** Seeds ctx by running REFERENCE-01 then REFERENCE-03 (duplicate denied)
+ *  so REFERENCE-04 prerequisites (secondary initial state) are populated. */
+async function seedPostRef03(state: MockState): Promise<Stage3CLiveMatrixContext> {
+  const ctx = makeCtx(state);
+  await reference01_createUniqueReference(ctx);
+  duplicateThrower(state);
+  await reference03_duplicateCanonicalScopeDenied(ctx);
+  state.submitCalls = [];
+  return ctx;
+}
+
+// ---------------------------------------------------------------------------
+// REFERENCE-01 — 18 tests
+// ---------------------------------------------------------------------------
+
+describe("Sub-run C — REFERENCE-01 create unique reference", () => {
+  it("(56) calls resident submit helper exactly once", async () => {
+    const s = makeCleanState();
+    await reference01_createUniqueReference(makeCtx(s));
+    expect(s.submitCalls.length).toBe(1);
+  });
+  it("(57) uses the active resident", async () => {
+    const s = makeCleanState();
+    await reference01_createUniqueReference(makeCtx(s));
+    expect((s.submitCalls[0] as { actor: { id: string } }).actor.id).toBe(RES_ID);
+  });
+  it("(58) uses the dedicated Society A primary reference bill", async () => {
+    const s = makeCleanState();
+    await reference01_createUniqueReference(makeCtx(s));
+    expect((s.submitCalls[0] as { billId: string }).billId).toBe(REF_BILL);
+  });
+  it("(59) uses amount 200", async () => {
+    const s = makeCleanState();
+    await reference01_createUniqueReference(makeCtx(s));
+    expect((s.submitCalls[0] as { amount: number }).amount).toBe(200);
+  });
+  it("(60) uses the deterministic payment date", async () => {
+    const s = makeCleanState();
+    await reference01_createUniqueReference(makeCtx(s));
+    expect((s.submitCalls[0] as { paymentDate: string }).paymentDate).toBe(DETERMINISTIC_DATE);
+  });
+  it("(61) uses the exact builder reference value", async () => {
+    const s = makeCleanState();
+    await reference01_createUniqueReference(makeCtx(s));
+    expect((s.submitCalls[0] as { referenceNo: string }).referenceNo).toBe(
+      BUILDER_INPUTS.referenceValue,
+    );
+  });
+  it("(62) uses the exact primary idempotency key", async () => {
+    const s = makeCleanState();
+    await reference01_createUniqueReference(makeCtx(s));
+    expect((s.submitCalls[0] as { idempotencyKey: string }).idempotencyKey).toBe(
+      BUILDER_INPUTS.referencePrimaryKey,
+    );
+  });
+  it("(63) rejects a dirty baseline (nonzero pending)", async () => {
+    const s = makeCleanState();
+    s.payments.push(buildRow(OTHER_PAYMENT, REF_BILL, 10, "pending"));
+    await expect(reference01_createUniqueReference(makeCtx(s))).rejects.toThrow(/baseline/);
+  });
+  it("(64) rejects an existing payment row on the target bill", async () => {
+    const s = makeCleanState();
+    s.payments.push(buildRow(OTHER_PAYMENT, REF_BILL, 0.01, "pending"));
+    await expect(reference01_createUniqueReference(makeCtx(s))).rejects.toThrow(/baseline/);
+  });
+  it("(65) rejects a pre-existing receipt for the new payment", async () => {
+    const s = makeCleanState();
+    s.receipts.push({ id: "30000000-0000-0000-0000-00000000000a", payment_id: PRIMARY_PAYMENT });
+    await expect(reference01_createUniqueReference(makeCtx(s))).rejects.toThrow(/zero receipts/);
+  });
+  it("(66) rejects sequence mutation during the submit call", async () => {
+    const s = makeCleanState();
+    const orig = s.submitImpl;
+    s.submitImpl = async (i) => {
+      const y = s.yearly.find((r) => r.society_id === SOCIETY_A);
+      if (y) y.next_number += 1;
+      return orig(i);
+    };
+    await expect(reference01_createUniqueReference(makeCtx(s))).rejects.toThrow(/sequence/);
+  });
+  it("(67) rejects a malformed returned payment ID", async () => {
+    const s = makeCleanState();
+    s.submitImpl = async () => "not-a-uuid";
+    await expect(reference01_createUniqueReference(makeCtx(s))).rejects.toThrow();
+  });
+  it("(68) tracks the valid payment exactly once", async () => {
+    const s = makeCleanState();
+    await reference01_createUniqueReference(makeCtx(s));
+    expect(s.trackedPaymentIds).toEqual([PRIMARY_PAYMENT]);
+  });
+  it("(69) stores strict initial state (800 total, 0 pending)", async () => {
+    const s = makeCleanState();
+    const ctx = makeCtx(s);
+    await reference01_createUniqueReference(ctx);
+    const init = requireReferencePrimaryInitialState(ctx);
+    expect(init.summary.total_payable).toBe(REFERENCE_BILL_PRIMARY_TOTAL);
+    expect(init.summary.pending_amount).toBe(0);
+    expect(init.paymentRows.length).toBe(0);
+  });
+  it("(70) stores strict post-submit state (pending 200, available 600)", async () => {
+    const s = makeCleanState();
+    const ctx = makeCtx(s);
+    await reference01_createUniqueReference(ctx);
+    const post = requireReferencePrimaryPostSubmitState(ctx);
+    expect(post.summary.pending_amount).toBe(200);
+    expect(post.summary.available_to_submit).toBe(600);
+    expect(post.paymentRows.length).toBe(1);
+  });
+  it("(71) populates all seven canonical context slots on success", async () => {
+    const s = makeCleanState();
+    const ctx = makeCtx(s);
+    await reference01_createUniqueReference(ctx);
+    expect(requireReferencePrimaryBillId(ctx)).toBe(REF_BILL);
+    expect(requireReferenceSecondarySameSocietyBillId(ctx)).toBe(REF_BILL_2);
+    expect(requireReferenceOtherSocietyBillId(ctx)).toBe(REF_BILL_3);
+    expect(requireReferencePrimaryPaymentId(ctx)).toBe(PRIMARY_PAYMENT);
+    expect(requireReferenceValue(ctx)).toBe(BUILDER_INPUTS.referenceValue);
+    expect(requireReferenceAmount(ctx)).toBe(200);
+    expect(requireReferencePrimaryKey(ctx)).toBe(BUILDER_INPUTS.referencePrimaryKey);
+  });
+  it("(72) records all three duplicate/cross keys for downstream cases", async () => {
+    const s = makeCleanState();
+    const ctx = makeCtx(s);
+    await reference01_createUniqueReference(ctx);
+    expect(requireReferenceDuplicateKey(ctx)).toBe(BUILDER_INPUTS.referenceDuplicateKey);
+    expect(requireReferenceCrossBillKey(ctx)).toBe(BUILDER_INPUTS.referenceCrossBillKey);
+    expect(requireReferenceOtherSocietyKey(ctx)).toBe(BUILDER_INPUTS.referenceOtherSocietyKey);
+  });
+  it("(73) asserts +200 pending / -200 available deltas", async () => {
+    const s = makeCleanState();
+    const ctx = makeCtx(s);
+    await reference01_createUniqueReference(ctx);
+    const init = requireReferencePrimaryInitialState(ctx);
+    const post = requireReferencePrimaryPostSubmitState(ctx);
+    expect(post.summary.pending_amount - init.summary.pending_amount).toBe(200);
+    expect(init.summary.available_to_submit - post.summary.available_to_submit).toBe(200);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// REFERENCE-02 — 13 tests
+// ---------------------------------------------------------------------------
+
+describe("Sub-run C — REFERENCE-02 duplicate on same bill denied", () => {
+  it("(74) calls the resident core exactly once", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef01(s);
+    duplicateThrower(s);
+    await reference02_duplicateSameBillDenied(ctx);
+    expect(s.submitCalls.length).toBe(1);
+  });
+  it("(75) submits the whitespace/case variant of the reference", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef01(s);
+    duplicateThrower(s);
+    await reference02_duplicateSameBillDenied(ctx);
+    expect((s.submitCalls[0] as { referenceNo: string }).referenceNo).toBe(REF_VARIANT);
+  });
+  it("(76) submits the duplicate idempotency key", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef01(s);
+    duplicateThrower(s);
+    await reference02_duplicateSameBillDenied(ctx);
+    expect((s.submitCalls[0] as { idempotencyKey: string }).idempotencyKey).toBe(
+      BUILDER_INPUTS.referenceDuplicateKey,
+    );
+  });
+  it("(77) targets the primary reference bill", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef01(s);
+    duplicateThrower(s);
+    await reference02_duplicateSameBillDenied(ctx);
+    expect((s.submitCalls[0] as { billId: string }).billId).toBe(REF_BILL);
+  });
+  it("(78) accepts the canonical duplicate_reference token", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef01(s);
+    duplicateThrower(s);
+    await expect(reference02_duplicateSameBillDenied(ctx)).resolves.toBeUndefined();
+  });
+  it("(79) rejects a wrong error token", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef01(s);
+    s.submitImpl = async () => {
+      throw new Error("some_other_error");
+    };
+    await expect(reference02_duplicateSameBillDenied(ctx)).rejects.toThrow(/duplicate_reference/);
+  });
+  it("(80) unexpected success throws the exact static message", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef01(s);
+    s.submitImpl = async () => OTHER_PAYMENT;
+    await expect(reference02_duplicateSameBillDenied(ctx)).rejects.toThrow(
+      REFERENCE_02_UNEXPECTED_SUCCESS_MESSAGE,
+    );
+  });
+  it("(81) unexpected-success message excludes the success payload", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef01(s);
+    s.submitImpl = async () => OTHER_PAYMENT;
+    try {
+      await reference02_duplicateSameBillDenied(ctx);
+      throw new Error("should have thrown");
+    } catch (e) {
+      const msg = (e as Error).message;
+      expect(msg).not.toContain(OTHER_PAYMENT);
+      expect(msg).toBe(REFERENCE_02_UNEXPECTED_SUCCESS_MESSAGE);
+    }
+  });
+  it("(82) primary payment row remains exactly one", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef01(s);
+    duplicateThrower(s);
+    await reference02_duplicateSameBillDenied(ctx);
+    expect(s.payments.filter((r) => r.bill_id === REF_BILL).length).toBe(1);
+  });
+  it("(83) tracked payment count does not change", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef01(s);
+    duplicateThrower(s);
+    const before = s.trackedPaymentIds.length;
+    await reference02_duplicateSameBillDenied(ctx);
+    expect(s.trackedPaymentIds.length).toBe(before);
+  });
+  it("(84) no receipt appears for the original payment", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef01(s);
+    duplicateThrower(s);
+    await reference02_duplicateSameBillDenied(ctx);
+    expect(s.receipts.length).toBe(0);
+  });
+  it("(85) sequences remain unchanged", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef01(s);
+    duplicateThrower(s);
+    const before = JSON.stringify(s.yearly) + JSON.stringify(s.monthly);
+    await reference02_duplicateSameBillDenied(ctx);
+    const after = JSON.stringify(s.yearly) + JSON.stringify(s.monthly);
+    expect(after).toBe(before);
+  });
+  it("(86) rejects sequence mutation during the attempt", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef01(s);
+    s.submitImpl = async () => {
+      const y = s.yearly.find((r) => r.society_id === SOCIETY_A);
+      if (y) y.next_number += 1;
+      throw new Error("duplicate_reference");
+    };
+    await expect(reference02_duplicateSameBillDenied(ctx)).rejects.toThrow(/sequence/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// REFERENCE-03 — 13 tests
+// ---------------------------------------------------------------------------
+
+describe("Sub-run C — REFERENCE-03 duplicate cross-bill same-society denied", () => {
+  it("(87) calls the resident core exactly once", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef01(s);
+    duplicateThrower(s);
+    await reference03_duplicateCanonicalScopeDenied(ctx);
+    expect(s.submitCalls.length).toBe(1);
+  });
+  it("(88) targets the secondary same-society bill", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef01(s);
+    duplicateThrower(s);
+    await reference03_duplicateCanonicalScopeDenied(ctx);
+    expect((s.submitCalls[0] as { billId: string }).billId).toBe(REF_BILL_2);
+  });
+  it("(89) uses the cross-bill idempotency key", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef01(s);
+    duplicateThrower(s);
+    await reference03_duplicateCanonicalScopeDenied(ctx);
+    expect((s.submitCalls[0] as { idempotencyKey: string }).idempotencyKey).toBe(
+      BUILDER_INPUTS.referenceCrossBillKey,
+    );
+  });
+  it("(90) submits the whitespace/case variant of the reference", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef01(s);
+    duplicateThrower(s);
+    await reference03_duplicateCanonicalScopeDenied(ctx);
+    expect((s.submitCalls[0] as { referenceNo: string }).referenceNo).toBe(REF_VARIANT);
+  });
+  it("(91) rejects a dirty secondary baseline", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef01(s);
+    duplicateThrower(s);
+    s.payments.push(buildRow(OTHER_PAYMENT, REF_BILL_2, 5, "pending"));
+    await expect(reference03_duplicateCanonicalScopeDenied(ctx)).rejects.toThrow(/baseline/);
+  });
+  it("(92) stores the strict secondary initial state", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef01(s);
+    duplicateThrower(s);
+    await reference03_duplicateCanonicalScopeDenied(ctx);
+    const sec = requireReferenceSecondaryInitialState(ctx);
+    expect(sec.summary.total_payable).toBe(REFERENCE_BILL_SECONDARY_TOTAL);
+    expect(sec.summary.pending_amount).toBe(0);
+  });
+  it("(93) accepts the canonical duplicate_reference token", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef01(s);
+    duplicateThrower(s);
+    await expect(reference03_duplicateCanonicalScopeDenied(ctx)).resolves.toBeUndefined();
+  });
+  it("(94) rejects a wrong error token", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef01(s);
+    s.submitImpl = async () => {
+      throw new Error("something_else");
+    };
+    await expect(reference03_duplicateCanonicalScopeDenied(ctx)).rejects.toThrow(/duplicate_reference/);
+  });
+  it("(95) unexpected success throws the exact static message", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef01(s);
+    s.submitImpl = async () => OTHER_PAYMENT;
+    await expect(reference03_duplicateCanonicalScopeDenied(ctx)).rejects.toThrow(
+      REFERENCE_03_UNEXPECTED_SUCCESS_MESSAGE,
+    );
+  });
+  it("(96) unexpected-success message excludes the success payload", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef01(s);
+    s.submitImpl = async () => OTHER_PAYMENT;
+    try {
+      await reference03_duplicateCanonicalScopeDenied(ctx);
+      throw new Error("should have thrown");
+    } catch (e) {
+      const msg = (e as Error).message;
+      expect(msg).not.toContain(OTHER_PAYMENT);
+      expect(msg).toBe(REFERENCE_03_UNEXPECTED_SUCCESS_MESSAGE);
+    }
+  });
+  it("(97) primary payment row remains exactly one and unchanged", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef01(s);
+    duplicateThrower(s);
+    await reference03_duplicateCanonicalScopeDenied(ctx);
+    const primaryRows = s.payments.filter((r) => r.bill_id === REF_BILL);
+    expect(primaryRows.length).toBe(1);
+    expect(primaryRows[0]?.id).toBe(PRIMARY_PAYMENT);
+    expect(primaryRows[0]?.amount).toBe(200);
+  });
+  it("(98) no new payment row appears on the secondary bill", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef01(s);
+    duplicateThrower(s);
+    await reference03_duplicateCanonicalScopeDenied(ctx);
+    expect(s.payments.filter((r) => r.bill_id === REF_BILL_2).length).toBe(0);
+  });
+  it("(99) tracked payment count does not change", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef01(s);
+    duplicateThrower(s);
+    const before = s.trackedPaymentIds.length;
+    await reference03_duplicateCanonicalScopeDenied(ctx);
+    expect(s.trackedPaymentIds.length).toBe(before);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// REFERENCE-04 — 15 tests
+// ---------------------------------------------------------------------------
+
+function seedOtherSocietySuccess(state: MockState): void {
+  state.submitImpl = async (input: unknown) => {
+    const i = input as {
+      actor: { id: string };
+      billId: string;
+      amount: number;
+      referenceNo: string;
+      idempotencyKey: string;
+    };
+    const existing = state.payments.find((r) => r.idempotency_key === i.idempotencyKey);
+    if (existing) return existing.id;
+    const billMeta = state.bills[i.billId];
+    if (!billMeta) throw new Error("bill_not_found");
+    state.payments.push({
+      id: OTHER_PAYMENT,
+      bill_id: i.billId,
+      society_id: billMeta.societyId,
+      submitted_by: i.actor.id,
+      amount: i.amount,
+      method: "bank_transfer",
+      status: "pending",
+      source: "resident_submission",
+      reference_no: i.referenceNo,
+      idempotency_key: i.idempotencyKey,
+      verified_by: null,
+      verified_at: null,
+      rejected_by: null,
+      rejected_at: null,
+      rejection_reason: null,
+      reversed_by: null,
+      reversed_at: null,
+      reversal_reason: null,
+    });
+    return OTHER_PAYMENT;
+  };
+}
+
+describe("Sub-run C — REFERENCE-04 outside-scope isolation", () => {
+  it("(100) calls the resident core exactly once", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef03(s);
+    seedOtherSocietySuccess(s);
+    await reference04_outsideScopeIsolation(ctx);
+    expect(s.submitCalls.length).toBe(1);
+  });
+  it("(101) uses the unrelated Society B resident", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef03(s);
+    seedOtherSocietySuccess(s);
+    await reference04_outsideScopeIsolation(ctx);
+    expect((s.submitCalls[0] as { actor: { id: string } }).actor.id).toBe(OTHER_RES);
+  });
+  it("(102) targets the Society B other bill", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef03(s);
+    seedOtherSocietySuccess(s);
+    await reference04_outsideScopeIsolation(ctx);
+    expect((s.submitCalls[0] as { billId: string }).billId).toBe(REF_BILL_3);
+  });
+  it("(103) uses amount 200 and the whitespace variant reference", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef03(s);
+    seedOtherSocietySuccess(s);
+    await reference04_outsideScopeIsolation(ctx);
+    const call = s.submitCalls[0] as { amount: number; referenceNo: string };
+    expect(call.amount).toBe(200);
+    expect(call.referenceNo).toBe(REF_VARIANT);
+  });
+  it("(104) uses the dedicated other-society idempotency key", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef03(s);
+    seedOtherSocietySuccess(s);
+    await reference04_outsideScopeIsolation(ctx);
+    expect((s.submitCalls[0] as { idempotencyKey: string }).idempotencyKey).toBe(
+      BUILDER_INPUTS.referenceOtherSocietyKey,
+    );
+  });
+  it("(105) rejects a payment id equal to the primary payment id", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef03(s);
+    s.submitImpl = async () => PRIMARY_PAYMENT;
+    await expect(reference04_outsideScopeIsolation(ctx)).rejects.toThrow(/must differ/);
+  });
+  it("(106) rejects a dirty Society B baseline", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef03(s);
+    seedOtherSocietySuccess(s);
+    s.payments.push(buildRow(PRIMARY_PAYMENT, REF_BILL_3, 5, "pending"));
+    // fix society scope for pushed row
+    s.payments[s.payments.length - 1]!.society_id = SOCIETY_B;
+    await expect(reference04_outsideScopeIsolation(ctx)).rejects.toThrow(/baseline/);
+  });
+  it("(107) tracks the cross-society payment id", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef03(s);
+    seedOtherSocietySuccess(s);
+    const before = s.trackedPaymentIds.length;
+    await reference04_outsideScopeIsolation(ctx);
+    expect(s.trackedPaymentIds.length).toBe(before + 1);
+    expect(s.trackedPaymentIds.includes(OTHER_PAYMENT)).toBe(true);
+  });
+  it("(108) stores strict initial state (Society B, total 600)", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef03(s);
+    seedOtherSocietySuccess(s);
+    await reference04_outsideScopeIsolation(ctx);
+    const init = requireReferenceOtherSocietyInitialState(ctx);
+    expect(init.summary.society_id).toBe(SOCIETY_B);
+    expect(init.summary.total_payable).toBe(REFERENCE_BILL_OTHER_SOCIETY_TOTAL);
+    expect(init.paymentRows.length).toBe(0);
+  });
+  it("(109) stores strict post-submit state (pending 200, available 400)", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef03(s);
+    seedOtherSocietySuccess(s);
+    await reference04_outsideScopeIsolation(ctx);
+    const post = requireReferenceOtherSocietyPostSubmitState(ctx);
+    expect(post.summary.pending_amount).toBe(200);
+    expect(post.summary.available_to_submit).toBe(400);
+    expect(post.paymentRows.length).toBe(1);
+  });
+  it("(110) stores the canonical other-society payment id", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef03(s);
+    seedOtherSocietySuccess(s);
+    await reference04_outsideScopeIsolation(ctx);
+    expect(requireReferenceOtherSocietyPaymentId(ctx)).toBe(OTHER_PAYMENT);
+  });
+  it("(111) Society A primary bill remains exactly unchanged", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef03(s);
+    seedOtherSocietySuccess(s);
+    const primaryBefore = JSON.stringify(
+      s.payments.filter((r) => r.bill_id === REF_BILL),
+    );
+    await reference04_outsideScopeIsolation(ctx);
+    const primaryAfter = JSON.stringify(
+      s.payments.filter((r) => r.bill_id === REF_BILL),
+    );
+    expect(primaryAfter).toBe(primaryBefore);
+  });
+  it("(112) Society A secondary bill remains exactly unchanged (0 rows)", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef03(s);
+    seedOtherSocietySuccess(s);
+    await reference04_outsideScopeIsolation(ctx);
+    expect(s.payments.filter((r) => r.bill_id === REF_BILL_2).length).toBe(0);
+  });
+  it("(113) no receipt created for the cross-society payment", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef03(s);
+    seedOtherSocietySuccess(s);
+    await reference04_outsideScopeIsolation(ctx);
+    expect(s.receipts.length).toBe(0);
+  });
+  it("(114) Society B sequences remain unchanged", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostRef03(s);
+    seedOtherSocietySuccess(s);
+    const before = JSON.stringify(s.yearly.filter((r) => r.society_id === SOCIETY_B)) +
+      JSON.stringify(s.monthly.filter((r) => r.society_id === SOCIETY_B));
+    await reference04_outsideScopeIsolation(ctx);
+    const after = JSON.stringify(s.yearly.filter((r) => r.society_id === SOCIETY_B)) +
+      JSON.stringify(s.monthly.filter((r) => r.society_id === SOCIETY_B));
+    expect(after).toBe(before);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Exported REFERENCE assertion helpers — direct unit tests
+// ---------------------------------------------------------------------------
+
+describe("Sub-run C — exported REFERENCE assertion helpers", () => {
+  function makeBillState(billId: string, societyId: string, s: MockState) {
+    const summary = summaryForBill(s, billId);
+    return {
+      summary: summary as unknown as import("../helpers/stage3c-live-resident-submit-contracts").ResidentBillSummary,
+      paymentRows: [] as unknown as readonly import("../helpers/stage3c-live-resident-submit-contracts").ResidentPaymentStatusRow[],
+      sequences: { yearly: [], monthly: [] } as unknown as import("../helpers/stage3c-live-resident-submit-contracts").ReceiptSequenceSnapshot,
+    };
+  }
+  it("(115) assertCleanReferenceBaseline accepts clean 800 state", () => {
+    const s = makeCleanState();
+    expect(() =>
+      assertCleanReferenceBaseline(makeBillState(REF_BILL, SOCIETY_A, s), 800, "t"),
+    ).not.toThrow();
+  });
+  it("(116) assertCleanReferenceBaseline rejects nonzero pending", () => {
+    const s = makeCleanState();
+    s.payments.push(buildRow(OTHER_PAYMENT, REF_BILL, 1, "pending"));
+    expect(() =>
+      assertCleanReferenceBaseline(makeBillState(REF_BILL, SOCIETY_A, s), 800, "t"),
+    ).toThrow(/pending_amount/);
+  });
+  it("(117) assertCleanReferenceBaseline rejects total mismatch", () => {
+    const s = makeCleanState();
+    expect(() =>
+      assertCleanReferenceBaseline(makeBillState(REF_BILL, SOCIETY_A, s), 999, "t"),
+    ).toThrow(/total_payable mismatch/);
+  });
+  it("(118) assertReferencePostSubmitTotals accepts canonical +200 delta", () => {
+    const s = makeCleanState();
+    const initial = makeBillState(REF_BILL, SOCIETY_A, s);
+    s.payments.push(buildRow(PRIMARY_PAYMENT, REF_BILL, 200, "pending"));
+    const post = {
+      summary: summaryForBill(s, REF_BILL) as unknown as import("../helpers/stage3c-live-resident-submit-contracts").ResidentBillSummary,
+      paymentRows: [
+        { id: PRIMARY_PAYMENT, status: "pending", amount: 200 } as unknown as import("../helpers/stage3c-live-resident-submit-contracts").ResidentPaymentStatusRow,
+      ],
+      sequences: initial.sequences,
+    };
+    expect(() =>
+      assertReferencePostSubmitTotals(initial, post, 800, "t"),
+    ).not.toThrow();
+  });
+});

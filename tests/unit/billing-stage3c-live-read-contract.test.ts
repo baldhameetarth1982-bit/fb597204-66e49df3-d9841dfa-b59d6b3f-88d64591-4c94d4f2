@@ -206,10 +206,18 @@ describe("READ contract — handler map", () => {
 // 3) Fail-closed behavior with static messages
 // ---------------------------------------------------------------------------
 
-describe("READ contract — fail-closed handlers", () => {
+describe("READ contract — fail-closed handlers (Sub-run B2 pending)", () => {
   const ctx = createStage3CLiveMatrixContext();
 
-  it.each([...EXPECTED_ORDER])(
+  // Sub-run B1 replaced only READ-01..READ-04 with success behavior; the
+  // remaining six denial cases stay strictly fail-closed until Sub-run B2.
+  const FAIL_CLOSED_ORDER = EXPECTED_ORDER.filter(
+    (id) => !(["READ-01", "READ-02", "READ-03", "READ-04"] as const).includes(
+      id as never,
+    ),
+  );
+
+  it.each([...FAIL_CLOSED_ORDER])(
     "%s currently throws the exact not-implemented message",
     async (id) => {
       const fn = STAGE3C_READ_HANDLERS[id as Stage3CReadCaseId];

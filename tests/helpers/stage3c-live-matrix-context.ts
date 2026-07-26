@@ -483,3 +483,18 @@ export const requireReferenceInitialSequences = (c: Stage3CLiveMatrixContext) =>
     "referenceInitialSequences",
     "REFERENCE-01",
   );
+
+// ---------------------------------------------------------------------------
+// READ category guards (Sub-run A — structural)
+// ---------------------------------------------------------------------------
+
+export const requireReadPrimaryBillId = (c: Stage3CLiveMatrixContext) =>
+  requireCanonicalUuid(c.readPrimaryBillId, "readPrimaryBillId", "READ-01");
+export const requireReadPrimaryPaymentId = (c: Stage3CLiveMatrixContext) =>
+  requireCanonicalUuid(c.readPrimaryPaymentId, "readPrimaryPaymentId", "READ-02");
+export const requireReadHistoryBaselineCount = (c: Stage3CLiveMatrixContext) =>
+  requireNonNegativeInteger(
+    c.readHistoryBaselineCount,
+    "readHistoryBaselineCount",
+    "READ-01",
+  );

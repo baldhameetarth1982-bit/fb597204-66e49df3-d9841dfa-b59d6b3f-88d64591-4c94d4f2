@@ -1,12 +1,15 @@
 /**
- * Stage 3C — IDEMPOTENCY + REFERENCE Sub-run A focused contract tests.
+ * Stage 3C — IDEMPOTENCY + REFERENCE Sub-run A contract tests +
+ * IDEMPOTENCY Sub-run B direct behavioral tests.
  *
- * Sub-run A is a structural closure only. These tests execute the real
- * exported handler map, the deterministic input builder, the matrix-
- * context lifecycle fields and their `require*` guards. Behavioral
- * closure (row-level financial invariants, sequence deltas, cross-
- * society isolation) lands in Sub-run B against the live Supabase
- * stack.
+ * Sub-run A tests are preserved verbatim (builder determinism, exact
+ * exports, handler-map shape, matrix-context field/guard surface).
+ *
+ * Sub-run B behavioral tests execute the four IDEMPOTENCY handlers
+ * against a lightweight in-memory mock of `Stage3CFixture` whose
+ * `admin`, `actor.client` and `helpers.submitResidentBankTransferPayment`
+ * surfaces match the exact call shape the shared resident core uses.
+ * Every test observes real handler code — no source-regex substitutes.
  */
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
@@ -18,6 +21,8 @@ import {
   IDEMPOTENCY_AMOUNT,
   IDEMPOTENCY_CONFLICT_AMOUNT,
   REFERENCE_AMOUNT,
+  IDEMPOTENCY_BILL_TOTAL,
+  IDEMPOTENCY_04_UNEXPECTED_SUCCESS_MESSAGE,
   buildStage3CIdempotencyReferenceInputs,
   idempotency01_initializeAndSubmit,
   idempotency02_exactReplay,
@@ -27,6 +32,8 @@ import {
   reference02_duplicateSameBillDenied,
   reference03_duplicateCanonicalScopeDenied,
   reference04_outsideScopeIsolation,
+  assertCleanIdempotencyBaseline,
+  assertIdempotencyPostSubmitTotals,
   type Stage3CIdempotencyReferenceCaseId,
 } from "../helpers/stage3c-live-idempotency-reference-cases";
 import {
@@ -87,9 +94,9 @@ const NAMED_EXPORTS = {
   "REFERENCE-04": reference04_outsideScopeIsolation,
 } as const;
 
-// ---------------------------------------------------------------------------
-// Deterministic input builder
-// ---------------------------------------------------------------------------
+// ===========================================================================
+// Sub-run A — deterministic input builder (preserved)
+// ===========================================================================
 
 describe("Sub-run A — deterministic input builder", () => {
   it("exports exactly the seven required fields", () => {
@@ -182,11 +189,14 @@ describe("Sub-run A — deterministic input builder", () => {
   it("locks REFERENCE_AMOUNT to 200", () => {
     expect(REFERENCE_AMOUNT).toBe(200);
   });
+  it("locks IDEMPOTENCY_BILL_TOTAL to 1000", () => {
+    expect(IDEMPOTENCY_BILL_TOTAL).toBe(1000);
+  });
 });
 
-// ---------------------------------------------------------------------------
-// Exact named exports + shared handler typing
-// ---------------------------------------------------------------------------
+// ===========================================================================
+// Sub-run A — exact named exports + handler map (preserved)
+// ===========================================================================
 
 describe("Sub-run A — exact named exports and handler map", () => {
   it("exports the eight exact named handler functions", () => {
@@ -221,9 +231,6 @@ describe("Sub-run A — exact named exports and handler map", () => {
   });
 
   it("uses the shared `Stage3CMatrixLiveHandler` type (no parallel type present)", () => {
-    // The parallel handler type from earlier runs must be absent from the
-    // sources. `satisfies Record<..., Stage3CMatrixLiveHandler>` must be
-    // in force.
     expect(CASES_SRC).not.toMatch(/Stage3CIdempotencyReferenceHandler\b/);
     expect(CASES_SRC).toMatch(
       /satisfies Record<\s*Stage3CIdempotencyReferenceCaseId\s*,\s*Stage3CMatrixLiveHandler\s*>/,
@@ -235,7 +242,6 @@ describe("Sub-run A — exact named exports and handler map", () => {
   });
 
   it("the cases module contains NO non-null assertions", () => {
-    // Common non-null assertion shapes: `x!.`, `x!,`, `x!)`, `x!;`, `x!]`.
     expect(CASES_SRC).not.toMatch(/\b[A-Za-z_][A-Za-z0-9_]*!\./);
     expect(CASES_SRC).not.toMatch(/\b[A-Za-z_][A-Za-z0-9_]*!\s*[,)\];]/);
   });
@@ -246,9 +252,9 @@ describe("Sub-run A — exact named exports and handler map", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Strict matrix context — fields, guards, error surface
-// ---------------------------------------------------------------------------
+// ===========================================================================
+// Sub-run A — strict matrix context (preserved)
+// ===========================================================================
 
 const VALID_UUID = "cccccccc-cccc-cccc-cccc-cccccccccccc";
 const OTHER_UUID = "dddddddd-dddd-dddd-dddd-dddddddddddd";
@@ -331,7 +337,6 @@ describe("Sub-run A — strict matrix context", () => {
 
   it("rejects a loose object as a resident bill state snapshot", () => {
     const c = freshCtx();
-    // Missing `sequences` — fails the strict schema gate.
     (c as unknown as { idempotencyInitialState: unknown }).idempotencyInitialState = {
       summary: {},
       paymentRows: [],
@@ -370,7 +375,6 @@ describe("Sub-run A — strict matrix context", () => {
   it("guard error for a bad key excludes the supplied key text", () => {
     const c = freshCtx();
     c.referencePrimaryKey = "supersecret-supplied-key-value";
-    // Bounded guard — supply an overlong value.
     c.referencePrimaryKey = "supersecret-supplied-key-value".padEnd(500, "x");
     try {
       requireReferencePrimaryKey(c);
@@ -450,3 +454,803 @@ describe("Sub-run A — strict matrix context", () => {
     expect(requireReferenceOtherSocietyKey(c)).toBe("ref-other-society-abc");
   });
 });
+
+// ===========================================================================
+// Sub-run B — IDEMPOTENCY direct behavioral tests
+// ===========================================================================
+
+// Canonical lowercase UUIDs (safe for CanonicalStage3CUuidSchema).
+const SOCIETY_A = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+const SOCIETY_B = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
+const IDEM_BILL = "1cccccc0-cccc-cccc-cccc-cccccccccccc";
+const REF_BILL = "1dddddd0-dddd-dddd-dddd-dddddddddddd";
+const REF_BILL_2 = "1eeeeee0-eeee-eeee-eeee-eeeeeeeeeeee";
+const REF_BILL_3 = "1fffff00-ffff-ffff-ffff-ffffffffffff";
+const RES_ID = "10000000-0000-0000-0000-000000000001";
+const OTHER_RES = "10000000-0000-0000-0000-000000000002";
+const PRIMARY_PAYMENT = "20000000-0000-0000-0000-00000000000a";
+const OTHER_PAYMENT = "20000000-0000-0000-0000-00000000000b";
+const RUN_PREFIX = "runB";
+const DETERMINISTIC_DATE = "2026-01-15";
+
+const BUILDER_INPUTS = buildStage3CIdempotencyReferenceInputs(RUN_PREFIX);
+
+type PaymentFullRow = {
+  id: string;
+  bill_id: string;
+  society_id: string;
+  submitted_by: string;
+  amount: number;
+  method: "bank_transfer";
+  status: "pending" | "verified" | "rejected" | "reversed";
+  source: "resident_submission" | "admin_entry";
+  reference_no: string;
+  idempotency_key: string;
+  verified_by: null;
+  verified_at: null;
+  rejected_by: null;
+  rejected_at: null;
+  rejection_reason: null;
+  reversed_by: null;
+  reversed_at: null;
+  reversal_reason: null;
+};
+
+interface BillMeta {
+  societyId: string;
+  total: number;
+}
+
+interface MockState {
+  bills: Record<string, BillMeta>;
+  payments: PaymentFullRow[];
+  receipts: { id: string; payment_id: string }[];
+  yearly: { society_id: string; year: number; next_number: number }[];
+  monthly: { society_id: string; year_month: string; next_number: number }[];
+  submitCalls: unknown[];
+  submitImpl: (input: unknown) => Promise<string>;
+  trackedPaymentIds: string[];
+}
+
+function makeCleanState(): MockState {
+  const state: MockState = {
+    bills: {
+      [IDEM_BILL]: { societyId: SOCIETY_A, total: IDEMPOTENCY_BILL_TOTAL },
+      [REF_BILL]: { societyId: SOCIETY_A, total: 800 },
+      [REF_BILL_2]: { societyId: SOCIETY_A, total: 700 },
+      [REF_BILL_3]: { societyId: SOCIETY_B, total: 600 },
+    },
+    payments: [],
+    receipts: [],
+    yearly: [
+      { society_id: SOCIETY_A, year: 2026, next_number: 1 },
+      { society_id: SOCIETY_B, year: 2026, next_number: 1 },
+    ],
+    monthly: [
+      { society_id: SOCIETY_A, year_month: "2026-01", next_number: 1 },
+      { society_id: SOCIETY_B, year_month: "2026-01", next_number: 1 },
+    ],
+    submitCalls: [],
+    submitImpl: async () => PRIMARY_PAYMENT,
+    trackedPaymentIds: [],
+  };
+  // Default: insert a canonical row on submit (upsert by idempotency key).
+  state.submitImpl = async (input: unknown) => {
+    const i = input as {
+      actor: { id: string };
+      billId: string;
+      amount: number;
+      referenceNo: string;
+      idempotencyKey: string;
+    };
+    const existing = state.payments.find((r) => r.idempotency_key === i.idempotencyKey);
+    if (existing) return existing.id;
+    const billMeta = state.bills[i.billId];
+    if (!billMeta) throw new Error("bill_not_found");
+    state.payments.push({
+      id: PRIMARY_PAYMENT,
+      bill_id: i.billId,
+      society_id: billMeta.societyId,
+      submitted_by: i.actor.id,
+      amount: i.amount,
+      method: "bank_transfer",
+      status: "pending",
+      source: "resident_submission",
+      reference_no: i.referenceNo,
+      idempotency_key: i.idempotencyKey,
+      verified_by: null,
+      verified_at: null,
+      rejected_by: null,
+      rejected_at: null,
+      rejection_reason: null,
+      reversed_by: null,
+      reversed_at: null,
+      reversal_reason: null,
+    });
+    return PRIMARY_PAYMENT;
+  };
+  return state;
+}
+
+function summaryForBill(state: MockState, billId: string): Record<string, unknown> | null {
+  const meta = state.bills[billId];
+  if (!meta) return null;
+  const rows = state.payments.filter((p) => p.bill_id === billId);
+  const sum = (s: PaymentFullRow["status"]) =>
+    rows.filter((r) => r.status === s).reduce((a, r) => a + r.amount, 0);
+  const verified = sum("verified");
+  const pending = sum("pending");
+  const rejected = sum("rejected");
+  const reversed = sum("reversed");
+  const available = meta.total - verified - pending;
+  const remaining = meta.total - verified;
+  const cancelled = false;
+  const status = verified === 0 && pending === 0 ? "unpaid" : "open";
+  return {
+    bill_id: billId,
+    society_id: meta.societyId,
+    total_payable: meta.total,
+    verified_amount: verified,
+    pending_amount: pending,
+    rejected_amount: rejected,
+    reversed_amount: reversed,
+    available_to_submit: available,
+    remaining_verified_balance: remaining,
+    cancelled,
+    status,
+  };
+}
+
+function makeAdmin(state: MockState) {
+  return {
+    from(table: string) {
+      return {
+        select(cols: string) {
+          return {
+            async eq(col: string, val: string) {
+              if (table === "payments") {
+                const filtered = state.payments.filter(
+                  (r) => (col === "id" && r.id === val) || (col === "bill_id" && r.bill_id === val),
+                );
+                if (cols.includes("bill_id") || cols.includes("submitted_by")) {
+                  // Full-column query for assertCanonicalPendingResidentRow
+                  return { data: filtered, error: null };
+                }
+                return {
+                  data: filtered.map((r) => ({ id: r.id, status: r.status, amount: r.amount })),
+                  error: null,
+                };
+              }
+              if (table === "payment_receipts") {
+                return {
+                  data: state.receipts.filter((r) => r.payment_id === val),
+                  error: null,
+                };
+              }
+              if (table === "payment_receipt_sequences") {
+                return {
+                  data: state.yearly.filter((r) => r.society_id === val),
+                  error: null,
+                };
+              }
+              if (table === "payment_receipt_month_sequences") {
+                return {
+                  data: state.monthly.filter((r) => r.society_id === val),
+                  error: null,
+                };
+              }
+              return { data: [], error: null };
+            },
+          };
+        },
+      };
+    },
+  };
+}
+
+function makeClient(state: MockState) {
+  return {
+    async rpc(name: string, args: Record<string, unknown>) {
+      if (name === "get_bill_payment_summary") {
+        const billId = String(args._bill_id);
+        const summary = summaryForBill(state, billId);
+        if (!summary) return { data: null, error: { message: "bill not found" } };
+        return { data: summary, error: null };
+      }
+      return { data: null, error: { message: "unknown rpc" } };
+    },
+  };
+}
+
+function makeFixture(state: MockState): Stage3CFixtureShape {
+  const admin = makeAdmin(state);
+  const actorClient = makeClient(state);
+  const unrelatedClient = makeClient(state);
+  const activeResident = { id: RES_ID, email: "a@x", password: "x", client: actorClient };
+  const unrelatedResident = { id: OTHER_RES, email: "b@x", password: "x", client: unrelatedClient };
+  return {
+    prefix: RUN_PREFIX,
+    admin,
+    societyA: SOCIETY_A,
+    societyB: SOCIETY_B,
+    idempotencyBillId: IDEM_BILL,
+    referencePrimaryBillId: REF_BILL,
+    referenceSecondarySameSocietyBillId: REF_BILL_2,
+    referenceOtherSocietyBillId: REF_BILL_3,
+    testPaymentDate: DETERMINISTIC_DATE,
+    users: { activeResident, unrelatedResident },
+    tracked: { paymentIds: state.trackedPaymentIds },
+    helpers: {
+      async submitResidentBankTransferPayment(input: unknown) {
+        state.submitCalls.push(input);
+        return state.submitImpl(input);
+      },
+    },
+  };
+}
+
+// Minimal shape — cast to Stage3CFixture inside handlers via `as unknown as`.
+type Stage3CFixtureShape = {
+  prefix: string;
+  admin: ReturnType<typeof makeAdmin>;
+  societyA: string;
+  societyB: string;
+  idempotencyBillId: string;
+  referencePrimaryBillId: string;
+  referenceSecondarySameSocietyBillId: string;
+  referenceOtherSocietyBillId: string;
+  testPaymentDate: string;
+  users: {
+    activeResident: { id: string; email: string; password: string; client: ReturnType<typeof makeClient> };
+    unrelatedResident: { id: string; email: string; password: string; client: ReturnType<typeof makeClient> };
+  };
+  tracked: { paymentIds: string[] };
+  helpers: { submitResidentBankTransferPayment: (input: unknown) => Promise<string> };
+};
+
+function makeCtx(state: MockState): Stage3CLiveMatrixContext {
+  const c = createStage3CLiveMatrixContext();
+  (c as unknown as { fixture: unknown }).fixture = makeFixture(state);
+  return c;
+}
+
+/** Seeds ctx with the canonical post-IDEM-01 state (for IDEM-02..04 tests). */
+async function seedPostIdem01(state: MockState): Promise<Stage3CLiveMatrixContext> {
+  const ctx = makeCtx(state);
+  await idempotency01_initializeAndSubmit(ctx);
+  // reset submit tracking so replay tests can observe their own single call
+  state.submitCalls = [];
+  return ctx;
+}
+
+// ---------------------------------------------------------------------------
+// IDEMPOTENCY-01 — 17 tests
+// ---------------------------------------------------------------------------
+
+describe("Sub-run B — IDEMPOTENCY-01 initialize and submit", () => {
+  it("(1) calls resident submit helper exactly once", async () => {
+    const s = makeCleanState();
+    await idempotency01_initializeAndSubmit(makeCtx(s));
+    expect(s.submitCalls.length).toBe(1);
+  });
+  it("(2) uses the active resident", async () => {
+    const s = makeCleanState();
+    await idempotency01_initializeAndSubmit(makeCtx(s));
+    const call = s.submitCalls[0] as { actor: { id: string } };
+    expect(call.actor.id).toBe(RES_ID);
+  });
+  it("(3) uses the dedicated idempotency bill", async () => {
+    const s = makeCleanState();
+    await idempotency01_initializeAndSubmit(makeCtx(s));
+    expect((s.submitCalls[0] as { billId: string }).billId).toBe(IDEM_BILL);
+  });
+  it("(4) uses amount 250", async () => {
+    const s = makeCleanState();
+    await idempotency01_initializeAndSubmit(makeCtx(s));
+    expect((s.submitCalls[0] as { amount: number }).amount).toBe(250);
+  });
+  it("(5) uses the deterministic payment date", async () => {
+    const s = makeCleanState();
+    await idempotency01_initializeAndSubmit(makeCtx(s));
+    expect((s.submitCalls[0] as { paymentDate: string }).paymentDate).toBe(DETERMINISTIC_DATE);
+  });
+  it("(6) uses the exact builder reference", async () => {
+    const s = makeCleanState();
+    await idempotency01_initializeAndSubmit(makeCtx(s));
+    expect((s.submitCalls[0] as { referenceNo: string }).referenceNo).toBe(
+      BUILDER_INPUTS.idempotencyReference,
+    );
+  });
+  it("(7) uses the exact builder key", async () => {
+    const s = makeCleanState();
+    await idempotency01_initializeAndSubmit(makeCtx(s));
+    expect((s.submitCalls[0] as { idempotencyKey: string }).idempotencyKey).toBe(
+      BUILDER_INPUTS.idempotencyKey,
+    );
+  });
+  it("(8) rejects a dirty baseline (nonzero pending)", async () => {
+    const s = makeCleanState();
+    s.payments.push(buildRow(OTHER_PAYMENT, IDEM_BILL, 50, "pending"));
+    await expect(idempotency01_initializeAndSubmit(makeCtx(s))).rejects.toThrow(/baseline/);
+  });
+  it("(9) rejects an existing payment row on the target bill", async () => {
+    const s = makeCleanState();
+    s.payments.push(buildRow(OTHER_PAYMENT, IDEM_BILL, 0.01, "pending"));
+    await expect(idempotency01_initializeAndSubmit(makeCtx(s))).rejects.toThrow(/baseline/);
+  });
+  it("(10) rejects an existing receipt for the new payment", async () => {
+    const s = makeCleanState();
+    s.receipts.push({ id: "30000000-0000-0000-0000-00000000000a", payment_id: PRIMARY_PAYMENT });
+    await expect(idempotency01_initializeAndSubmit(makeCtx(s))).rejects.toThrow(/zero receipts/);
+  });
+  it("(11) rejects sequence mutation between snapshots", async () => {
+    const s = makeCleanState();
+    let calls = 0;
+    const orig = s.submitImpl;
+    s.submitImpl = async (i) => {
+      const y = s.yearly.find((r) => r.society_id === SOCIETY_A);
+      if (y) y.next_number += 1;
+      calls++;
+      return orig(i);
+    };
+    await expect(idempotency01_initializeAndSubmit(makeCtx(s))).rejects.toThrow(/sequence/);
+    expect(calls).toBe(1);
+  });
+  it("(12) rejects a malformed returned payment ID", async () => {
+    const s = makeCleanState();
+    s.submitImpl = async () => "not-a-uuid";
+    await expect(idempotency01_initializeAndSubmit(makeCtx(s))).rejects.toThrow();
+  });
+  it("(13) tracks the valid payment exactly once", async () => {
+    const s = makeCleanState();
+    await idempotency01_initializeAndSubmit(makeCtx(s));
+    expect(s.trackedPaymentIds).toEqual([PRIMARY_PAYMENT]);
+  });
+  it("(14) stores the strict initial state", async () => {
+    const s = makeCleanState();
+    const ctx = makeCtx(s);
+    await idempotency01_initializeAndSubmit(ctx);
+    const init = requireIdempotencyInitialState(ctx);
+    expect(init.paymentRows.length).toBe(0);
+    expect(init.summary.total_payable).toBe(1000);
+  });
+  it("(15) stores the strict post-submit state", async () => {
+    const s = makeCleanState();
+    const ctx = makeCtx(s);
+    await idempotency01_initializeAndSubmit(ctx);
+    const post = requireIdempotencyPostSubmitState(ctx);
+    expect(post.paymentRows.length).toBe(1);
+    expect(post.summary.pending_amount).toBe(250);
+  });
+  it("(16) asserts pending delta +250", async () => {
+    const s = makeCleanState();
+    const ctx = makeCtx(s);
+    await idempotency01_initializeAndSubmit(ctx);
+    const post = requireIdempotencyPostSubmitState(ctx);
+    const init = requireIdempotencyInitialState(ctx);
+    expect(post.summary.pending_amount - init.summary.pending_amount).toBe(250);
+  });
+  it("(17) asserts available delta -250", async () => {
+    const s = makeCleanState();
+    const ctx = makeCtx(s);
+    await idempotency01_initializeAndSubmit(ctx);
+    const post = requireIdempotencyPostSubmitState(ctx);
+    const init = requireIdempotencyInitialState(ctx);
+    expect(init.summary.available_to_submit - post.summary.available_to_submit).toBe(250);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// IDEMPOTENCY-02 — 11 tests
+// ---------------------------------------------------------------------------
+
+describe("Sub-run B — IDEMPOTENCY-02 exact replay", () => {
+  it("(18) calls resident submit helper exactly once", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostIdem01(s);
+    await idempotency02_exactReplay(ctx);
+    expect(s.submitCalls.length).toBe(1);
+  });
+  it("(19) sends the exact same payload as IDEMPOTENCY-01", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostIdem01(s);
+    await idempotency02_exactReplay(ctx);
+    const call = s.submitCalls[0] as {
+      billId: string;
+      amount: number;
+      paymentDate: string;
+      referenceNo: string;
+      idempotencyKey: string;
+    };
+    expect(call).toMatchObject({
+      billId: IDEM_BILL,
+      amount: 250,
+      paymentDate: DETERMINISTIC_DATE,
+      referenceNo: BUILDER_INPUTS.idempotencyReference,
+      idempotencyKey: BUILDER_INPUTS.idempotencyKey,
+    });
+  });
+  it("(20) requires the original payment ID from context", async () => {
+    const s = makeCleanState();
+    const ctx = makeCtx(s); // NOT seeded
+    await expect(idempotency02_exactReplay(ctx)).rejects.toThrow(/idempotencyBillId/);
+  });
+  it("(21) accepts a replay that returns the same ID", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostIdem01(s);
+    s.submitImpl = async () => PRIMARY_PAYMENT;
+    await expect(idempotency02_exactReplay(ctx)).resolves.toBeUndefined();
+  });
+  it("(22) rejects a replay that returns a different ID", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostIdem01(s);
+    s.submitImpl = async () => OTHER_PAYMENT;
+    await expect(idempotency02_exactReplay(ctx)).rejects.toThrow(/replay-id/);
+  });
+  it("(23) does not track the replay", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostIdem01(s);
+    const before = s.trackedPaymentIds.length;
+    await idempotency02_exactReplay(ctx);
+    expect(s.trackedPaymentIds.length).toBe(before);
+  });
+  it("(24) rejects a second payment row appearing during replay", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostIdem01(s);
+    s.submitImpl = async () => {
+      s.payments.push(buildRow(OTHER_PAYMENT, IDEM_BILL, 250, "pending"));
+      return PRIMARY_PAYMENT;
+    };
+    await expect(idempotency02_exactReplay(ctx)).rejects.toThrow();
+  });
+  it("(25) rejects a changed payment amount during replay", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostIdem01(s);
+    s.submitImpl = async () => {
+      const p = s.payments.find((r) => r.id === PRIMARY_PAYMENT);
+      if (p) p.amount = 999;
+      return PRIMARY_PAYMENT;
+    };
+    await expect(idempotency02_exactReplay(ctx)).rejects.toThrow();
+  });
+  it("(26) rejects a changed summary during replay", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostIdem01(s);
+    s.submitImpl = async () => {
+      s.bills[IDEM_BILL] = { societyId: SOCIETY_A, total: 999 };
+      return PRIMARY_PAYMENT;
+    };
+    await expect(idempotency02_exactReplay(ctx)).rejects.toThrow();
+  });
+  it("(27) rejects receipt creation during replay", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostIdem01(s);
+    s.submitImpl = async () => {
+      s.receipts.push({ id: "rcpt-1", payment_id: PRIMARY_PAYMENT });
+      return PRIMARY_PAYMENT;
+    };
+    await expect(idempotency02_exactReplay(ctx)).rejects.toThrow();
+  });
+  it("(28) rejects sequence mutation during replay", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostIdem01(s);
+    s.submitImpl = async () => {
+      const y = s.yearly.find((r) => r.society_id === SOCIETY_A);
+      if (y) y.next_number += 1;
+      return PRIMARY_PAYMENT;
+    };
+    await expect(idempotency02_exactReplay(ctx)).rejects.toThrow(/sequence/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// IDEMPOTENCY-03 — 12 tests
+// ---------------------------------------------------------------------------
+
+describe("Sub-run B — IDEMPOTENCY-03 single mutation proof", () => {
+  it("(29) performs zero submit calls", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostIdem01(s);
+    await idempotency03_singleMutationProof(ctx);
+    expect(s.submitCalls.length).toBe(0);
+  });
+  it("(30) accepts exactly one canonical pending row", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostIdem01(s);
+    await expect(idempotency03_singleMutationProof(ctx)).resolves.toBeUndefined();
+  });
+  it("(31) rejects zero rows", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostIdem01(s);
+    s.payments = [];
+    await expect(idempotency03_singleMutationProof(ctx)).rejects.toThrow(/exactly one payment row/);
+  });
+  it("(32) rejects two rows", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostIdem01(s);
+    s.payments.push(buildRow(OTHER_PAYMENT, IDEM_BILL, 100, "pending"));
+    await expect(idempotency03_singleMutationProof(ctx)).rejects.toThrow(/exactly one payment row/);
+  });
+  it("(33) rejects an altered payment ID", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostIdem01(s);
+    const p = s.payments[0];
+    if (p) p.id = OTHER_PAYMENT;
+    await expect(idempotency03_singleMutationProof(ctx)).rejects.toThrow();
+  });
+  it("(34) rejects an altered amount", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostIdem01(s);
+    const p = s.payments[0];
+    if (p) p.amount = 999;
+    await expect(idempotency03_singleMutationProof(ctx)).rejects.toThrow();
+  });
+  it("(35) rejects an altered source", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostIdem01(s);
+    const p = s.payments[0];
+    if (p) p.source = "admin_entry";
+    await expect(idempotency03_singleMutationProof(ctx)).rejects.toThrow();
+  });
+  it("(36) rejects an altered reference", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostIdem01(s);
+    const p = s.payments[0];
+    if (p) p.reference_no = "DIFFERENT";
+    await expect(idempotency03_singleMutationProof(ctx)).rejects.toThrow(/reference/);
+  });
+  it("(37) rejects an altered idempotency key", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostIdem01(s);
+    const p = s.payments[0];
+    if (p) p.idempotency_key = "different-key";
+    await expect(idempotency03_singleMutationProof(ctx)).rejects.toThrow(/key/);
+  });
+  it("(38) rejects receipt creation", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostIdem01(s);
+    s.receipts.push({ id: "30000000-0000-0000-0000-00000000000b", payment_id: PRIMARY_PAYMENT });
+    await expect(idempotency03_singleMutationProof(ctx)).rejects.toThrow(/zero receipts/);
+  });
+  it("(39) rejects sequence mutation", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostIdem01(s);
+    const y = s.yearly.find((r) => r.society_id === SOCIETY_A);
+    if (y) y.next_number += 1;
+    await expect(idempotency03_singleMutationProof(ctx)).rejects.toThrow(/sequence/);
+  });
+  it("(40) proves exact initial-to-current deltas", async () => {
+    const s = makeCleanState();
+    const ctx = await seedPostIdem01(s);
+    await idempotency03_singleMutationProof(ctx);
+    const post = requireIdempotencyPostSubmitState(ctx);
+    const init = requireIdempotencyInitialState(ctx);
+    expect(post.summary.pending_amount - init.summary.pending_amount).toBe(250);
+    expect(init.summary.available_to_submit - post.summary.available_to_submit).toBe(250);
+    expect(post.paymentRows.length - init.paymentRows.length).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// IDEMPOTENCY-04 — 15 tests
+// ---------------------------------------------------------------------------
+
+describe("Sub-run B — IDEMPOTENCY-04 conflicting replay denied", () => {
+  async function seedWithConflict(): Promise<{ ctx: Stage3CLiveMatrixContext; state: MockState }> {
+    const state = makeCleanState();
+    const ctx = await seedPostIdem01(state);
+    state.submitImpl = async () => {
+      throw new Error("idempotency_conflict: conflicting payload");
+    };
+    return { ctx, state };
+  }
+
+  it("(41) sends amount 251 to the resident core", async () => {
+    const { ctx, state } = await seedWithConflict();
+    await expect(idempotency04_conflictingReplayDenied(ctx)).resolves.toBeUndefined();
+    expect((state.submitCalls[0] as { amount: number }).amount).toBe(251);
+  });
+  it("(42) sends the same bill", async () => {
+    const { ctx, state } = await seedWithConflict();
+    await idempotency04_conflictingReplayDenied(ctx);
+    expect((state.submitCalls[0] as { billId: string }).billId).toBe(IDEM_BILL);
+  });
+  it("(43) sends the same idempotency key", async () => {
+    const { ctx, state } = await seedWithConflict();
+    await idempotency04_conflictingReplayDenied(ctx);
+    expect((state.submitCalls[0] as { idempotencyKey: string }).idempotencyKey).toBe(
+      BUILDER_INPUTS.idempotencyKey,
+    );
+  });
+  it("(44) sends the same reference", async () => {
+    const { ctx, state } = await seedWithConflict();
+    await idempotency04_conflictingReplayDenied(ctx);
+    expect((state.submitCalls[0] as { referenceNo: string }).referenceNo).toBe(
+      BUILDER_INPUTS.idempotencyReference,
+    );
+  });
+  it("(45) accepts the canonical idempotency_conflict token", async () => {
+    const { ctx } = await seedWithConflict();
+    await expect(idempotency04_conflictingReplayDenied(ctx)).resolves.toBeUndefined();
+  });
+  it("(46) rejects a wrong error token", async () => {
+    const state = makeCleanState();
+    const ctx = await seedPostIdem01(state);
+    state.submitImpl = async () => {
+      throw new Error("some other unrelated error");
+    };
+    await expect(idempotency04_conflictingReplayDenied(ctx)).rejects.toThrow(/idempotency_conflict/);
+  });
+  it("(47) full state remains unchanged after denial", async () => {
+    const { ctx, state } = await seedWithConflict();
+    const beforeRows = state.payments.length;
+    await idempotency04_conflictingReplayDenied(ctx);
+    expect(state.payments.length).toBe(beforeRows);
+  });
+  it("(48) no new payment is tracked", async () => {
+    const { ctx, state } = await seedWithConflict();
+    const before = state.trackedPaymentIds.length;
+    await idempotency04_conflictingReplayDenied(ctx);
+    expect(state.trackedPaymentIds.length).toBe(before);
+  });
+  it("(49) unexpected success throws the exact static message", async () => {
+    const state = makeCleanState();
+    const ctx = await seedPostIdem01(state);
+    state.submitImpl = async () => OTHER_PAYMENT; // provider "accepted"
+    await expect(idempotency04_conflictingReplayDenied(ctx)).rejects.toThrow(
+      IDEMPOTENCY_04_UNEXPECTED_SUCCESS_MESSAGE,
+    );
+  });
+  it("(50) unexpected-success message excludes the success payload", async () => {
+    const state = makeCleanState();
+    const ctx = await seedPostIdem01(state);
+    state.submitImpl = async () => OTHER_PAYMENT;
+    try {
+      await idempotency04_conflictingReplayDenied(ctx);
+      throw new Error("should have thrown");
+    } catch (e) {
+      const msg = (e as Error).message;
+      expect(msg).not.toContain(OTHER_PAYMENT);
+      expect(msg).toBe(IDEMPOTENCY_04_UNEXPECTED_SUCCESS_MESSAGE);
+    }
+  });
+  it("(51) safe error excludes IDs", async () => {
+    const state = makeCleanState();
+    const ctx = await seedPostIdem01(state);
+    state.submitImpl = async () => {
+      throw new Error(`idempotency_conflict at bill ${IDEM_BILL} for user ${RES_ID}`);
+    };
+    try {
+      await idempotency04_conflictingReplayDenied(ctx);
+    } catch (e) {
+      // Assertion path itself must not leak IDs in its own thrown text.
+      const msg = (e as Error).message;
+      expect(msg).not.toContain(IDEM_BILL);
+      expect(msg).not.toContain(RES_ID);
+    }
+  });
+  it("(52) safe error excludes reference and key on assertion failure", async () => {
+    const state = makeCleanState();
+    const ctx = await seedPostIdem01(state);
+    state.submitImpl = async () => {
+      throw new Error("nothing_conflict");
+    };
+    try {
+      await idempotency04_conflictingReplayDenied(ctx);
+    } catch (e) {
+      const msg = (e as Error).message;
+      expect(msg).not.toContain(BUILDER_INPUTS.idempotencyReference);
+      expect(msg).not.toContain(BUILDER_INPUTS.idempotencyKey);
+    }
+  });
+  it("(53) safe error excludes amounts on assertion failure", async () => {
+    const state = makeCleanState();
+    const ctx = await seedPostIdem01(state);
+    state.submitImpl = async () => {
+      throw new Error("wrong_token");
+    };
+    try {
+      await idempotency04_conflictingReplayDenied(ctx);
+    } catch (e) {
+      const msg = (e as Error).message;
+      expect(msg).not.toContain("251");
+    }
+  });
+  it("(54) receipt remains absent after denial", async () => {
+    const { ctx, state } = await seedWithConflict();
+    await idempotency04_conflictingReplayDenied(ctx);
+    expect(state.receipts.length).toBe(0);
+  });
+  it("(55) sequences remain unchanged after denial", async () => {
+    const { ctx, state } = await seedWithConflict();
+    const before = JSON.stringify(state.yearly) + JSON.stringify(state.monthly);
+    await idempotency04_conflictingReplayDenied(ctx);
+    const after = JSON.stringify(state.yearly) + JSON.stringify(state.monthly);
+    expect(after).toBe(before);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Exported baseline helpers — direct unit tests
+// ---------------------------------------------------------------------------
+
+describe("Sub-run B — exported IDEMPOTENCY assertion helpers", () => {
+  it("assertCleanIdempotencyBaseline accepts a canonical 1000-clean state", () => {
+    const s = makeCleanState();
+    const summary = summaryForBill(s, IDEM_BILL);
+    expect(() =>
+      assertCleanIdempotencyBaseline(
+        {
+          summary: summary as unknown as import("../helpers/stage3c-live-resident-submit-contracts").ResidentBillSummary,
+          paymentRows: [],
+          sequences: { yearly: [], monthly: [] } as unknown as import("../helpers/stage3c-live-resident-submit-contracts").ReceiptSequenceSnapshot,
+        },
+        "test",
+      ),
+    ).not.toThrow();
+  });
+  it("assertCleanIdempotencyBaseline rejects nonzero pending", () => {
+    const s = makeCleanState();
+    s.payments.push(buildRow(OTHER_PAYMENT, IDEM_BILL, 1, "pending"));
+    const summary = summaryForBill(s, IDEM_BILL);
+    expect(() =>
+      assertCleanIdempotencyBaseline(
+        {
+          summary: summary as unknown as import("../helpers/stage3c-live-resident-submit-contracts").ResidentBillSummary,
+          paymentRows: [],
+          sequences: { yearly: [], monthly: [] } as unknown as import("../helpers/stage3c-live-resident-submit-contracts").ReceiptSequenceSnapshot,
+        },
+        "test",
+      ),
+    ).toThrow(/pending_amount/);
+  });
+  it("assertIdempotencyPostSubmitTotals accepts canonical post totals", () => {
+    const s = makeCleanState();
+    const initial = {
+      summary: summaryForBill(s, IDEM_BILL) as unknown as import("../helpers/stage3c-live-resident-submit-contracts").ResidentBillSummary,
+      paymentRows: [],
+      sequences: { yearly: [], monthly: [] } as unknown as import("../helpers/stage3c-live-resident-submit-contracts").ReceiptSequenceSnapshot,
+    };
+    s.payments.push(buildRow(PRIMARY_PAYMENT, IDEM_BILL, 250, "pending"));
+    const post = {
+      summary: summaryForBill(s, IDEM_BILL) as unknown as import("../helpers/stage3c-live-resident-submit-contracts").ResidentBillSummary,
+      paymentRows: [
+        { id: PRIMARY_PAYMENT, status: "pending", amount: 250 } as unknown as import("../helpers/stage3c-live-resident-submit-contracts").ResidentPaymentStatusRow,
+      ],
+      sequences: initial.sequences,
+    };
+    expect(() => assertIdempotencyPostSubmitTotals(initial, post, "t")).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Local test builders
+// ---------------------------------------------------------------------------
+
+function buildRow(
+  id: string,
+  billId: string,
+  amount: number,
+  status: PaymentFullRow["status"],
+): PaymentFullRow {
+  return {
+    id,
+    bill_id: billId,
+    society_id: SOCIETY_A,
+    submitted_by: RES_ID,
+    amount,
+    method: "bank_transfer",
+    status,
+    source: "resident_submission",
+    reference_no: BUILDER_INPUTS.idempotencyReference,
+    idempotency_key: BUILDER_INPUTS.idempotencyKey,
+    verified_by: null,
+    verified_at: null,
+    rejected_by: null,
+    rejected_at: null,
+    rejection_reason: null,
+    reversed_by: null,
+    reversed_at: null,
+    reversal_reason: null,
+  };
+}

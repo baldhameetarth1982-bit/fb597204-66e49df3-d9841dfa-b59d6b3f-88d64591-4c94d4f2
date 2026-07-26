@@ -27,6 +27,11 @@ import {
   type ResidentBillStateSnapshot,
 } from "./stage3c-live-resident-submit-contracts";
 import { CanonicalStage3CUuidSchema, type Stage3CFixture } from "./stage3c-runtime-fixtures";
+import type {
+  ResidentPaymentDetail,
+  ResidentPaymentHistoryRow,
+  Stage3CReadTransport,
+} from "./stage3c-live-read-cases";
 
 export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
   // Resident-submit foundation slots (validator contract)
@@ -92,10 +97,16 @@ export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
   referenceOtherSocietyPostSubmitState: ResidentBillStateSnapshot | null;
   referenceInitialSequences: ReceiptSequenceSnapshot | null;
 
-  // READ category (Sub-run A structural slots — behavior lives in Sub-run B)
+  // READ category (Sub-run B1 — READ-01..04 success behavior)
   readPrimaryBillId: string | null;
   readPrimaryPaymentId: string | null;
   readHistoryBaselineCount: number | null;
+  readExpectedHistoryRow: ResidentPaymentHistoryRow | null;
+  readExpectedHistory: readonly ResidentPaymentHistoryRow[] | null;
+  readExpectedDetail: ResidentPaymentDetail | null;
+  readAcceptedDetail: ResidentPaymentDetail | null;
+  readAcceptedRawDetail: unknown;
+  readTransport: Stage3CReadTransport | null;
 }
 
 export function createStage3CLiveMatrixContext(): Stage3CLiveMatrixContext {
@@ -161,6 +172,12 @@ export function createStage3CLiveMatrixContext(): Stage3CLiveMatrixContext {
     readPrimaryBillId: null,
     readPrimaryPaymentId: null,
     readHistoryBaselineCount: null,
+    readExpectedHistoryRow: null,
+    readExpectedHistory: null,
+    readExpectedDetail: null,
+    readAcceptedDetail: null,
+    readAcceptedRawDetail: null,
+    readTransport: null,
   };
 }
 
@@ -485,7 +502,7 @@ export const requireReferenceInitialSequences = (c: Stage3CLiveMatrixContext) =>
   );
 
 // ---------------------------------------------------------------------------
-// READ category guards (Sub-run A — structural)
+// READ category guards (Sub-run B1 — success behavior for READ-01..04)
 // ---------------------------------------------------------------------------
 
 export const requireReadPrimaryBillId = (c: Stage3CLiveMatrixContext) =>
@@ -498,3 +515,50 @@ export const requireReadHistoryBaselineCount = (c: Stage3CLiveMatrixContext) =>
     "readHistoryBaselineCount",
     "READ-01",
   );
+
+export function requireReadTransport(
+  c: Stage3CLiveMatrixContext,
+): Stage3CReadTransport {
+  if (c.readTransport === null) throwMissing("readTransport", "READ-01");
+  return c.readTransport;
+}
+
+export function requireReadExpectedHistoryRow(
+  c: Stage3CLiveMatrixContext,
+): ResidentPaymentHistoryRow {
+  if (c.readExpectedHistoryRow === null)
+    throwMissing("readExpectedHistoryRow", "READ-01");
+  return c.readExpectedHistoryRow;
+}
+
+export function requireReadExpectedHistory(
+  c: Stage3CLiveMatrixContext,
+): readonly ResidentPaymentHistoryRow[] {
+  if (c.readExpectedHistory === null)
+    throwMissing("readExpectedHistory", "READ-01");
+  return c.readExpectedHistory;
+}
+
+export function requireReadExpectedDetail(
+  c: Stage3CLiveMatrixContext,
+): ResidentPaymentDetail {
+  if (c.readExpectedDetail === null)
+    throwMissing("readExpectedDetail", "READ-02");
+  return c.readExpectedDetail;
+}
+
+export function requireReadAcceptedDetail(
+  c: Stage3CLiveMatrixContext,
+): ResidentPaymentDetail {
+  if (c.readAcceptedDetail === null)
+    throwMissing("readAcceptedDetail", "READ-03");
+  return c.readAcceptedDetail;
+}
+
+export function requireReadAcceptedRawDetail(
+  c: Stage3CLiveMatrixContext,
+): unknown {
+  if (c.readAcceptedRawDetail === null)
+    throwMissing("readAcceptedRawDetail", "READ-03");
+  return c.readAcceptedRawDetail;
+}

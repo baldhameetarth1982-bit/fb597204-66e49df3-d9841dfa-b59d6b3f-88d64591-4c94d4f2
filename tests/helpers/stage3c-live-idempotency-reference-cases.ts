@@ -532,26 +532,125 @@ export async function idempotency04_conflictingReplayDenied(
 }
 
 // ---------------------------------------------------------------------------
-// REFERENCE handlers (unchanged — Sub-run C will close behavioral)
+// REFERENCE behavioral closure (Sub-run C)
 // ---------------------------------------------------------------------------
+
+/** Expected total for the dedicated Society A primary reference bill. */
+export const REFERENCE_BILL_PRIMARY_TOTAL = 800;
+/** Expected total for the dedicated Society A secondary reference bill. */
+export const REFERENCE_BILL_SECONDARY_TOTAL = 700;
+/** Expected total for the dedicated Society B other-society reference bill. */
+export const REFERENCE_BILL_OTHER_SOCIETY_TOTAL = 600;
+
+/** Static unexpected-success messages — no payload / IDs interpolated. */
+export const REFERENCE_02_UNEXPECTED_SUCCESS_MESSAGE =
+  "[stage3c:REFERENCE-02] unexpected successful mutation";
+export const REFERENCE_03_UNEXPECTED_SUCCESS_MESSAGE =
+  "[stage3c:REFERENCE-03] unexpected successful mutation";
+
+/**
+ * Strict clean-baseline check for a REFERENCE bill. Locks every summary
+ * field, requires zero payment rows, and refuses any nonzero mutable
+ * amount. Static labels only — never interpolates a value.
+ */
+export function assertCleanReferenceBaseline(
+  state: ResidentBillStateSnapshot,
+  expectedTotal: number,
+  label: string,
+): void {
+  const s = state.summary;
+  if (s.total_payable !== expectedTotal)
+    throw new Error(`[stage3c:${label}] baseline total_payable mismatch`);
+  if (s.verified_amount !== 0)
+    throw new Error(`[stage3c:${label}] baseline verified_amount must be 0`);
+  if (s.pending_amount !== 0)
+    throw new Error(`[stage3c:${label}] baseline pending_amount must be 0`);
+  if (s.rejected_amount !== 0)
+    throw new Error(`[stage3c:${label}] baseline rejected_amount must be 0`);
+  if (s.reversed_amount !== 0)
+    throw new Error(`[stage3c:${label}] baseline reversed_amount must be 0`);
+  if (s.available_to_submit !== expectedTotal)
+    throw new Error(`[stage3c:${label}] baseline available_to_submit mismatch`);
+  if (s.remaining_verified_balance !== expectedTotal)
+    throw new Error(
+      `[stage3c:${label}] baseline remaining_verified_balance mismatch`,
+    );
+  if (s.cancelled !== false)
+    throw new Error(`[stage3c:${label}] baseline cancelled must be false`);
+  if (s.status !== "unpaid" && s.status !== "open")
+    throw new Error(`[stage3c:${label}] baseline status must be unpaid/open`);
+  if (state.paymentRows.length !== 0)
+    throw new Error(`[stage3c:${label}] baseline must have zero payment rows`);
+}
+
+/**
+ * Locks the exact financial invariants after a single 200-amount pending
+ * REFERENCE submission on a bill with the given total.
+ */
+export function assertReferencePostSubmitTotals(
+  initial: ResidentBillStateSnapshot,
+  post: ResidentBillStateSnapshot,
+  expectedTotal: number,
+  label: string,
+): void {
+  const p = post.summary;
+  if (p.total_payable !== expectedTotal)
+    throw new Error(`[stage3c:${label}] total must remain unchanged`);
+  if (p.pending_amount !== REFERENCE_AMOUNT)
+    throw new Error(`[stage3c:${label}] pending must become 200`);
+  if (p.available_to_submit !== expectedTotal - REFERENCE_AMOUNT)
+    throw new Error(`[stage3c:${label}] available must decrease by 200`);
+  if (p.verified_amount !== 0)
+    throw new Error(`[stage3c:${label}] verified must remain 0`);
+  if (p.rejected_amount !== 0)
+    throw new Error(`[stage3c:${label}] rejected must remain 0`);
+  if (p.reversed_amount !== 0)
+    throw new Error(`[stage3c:${label}] reversed must remain 0`);
+  if (p.remaining_verified_balance !== expectedTotal)
+    throw new Error(
+      `[stage3c:${label}] remaining_verified_balance must remain unchanged`,
+    );
+  if (p.cancelled !== false)
+    throw new Error(`[stage3c:${label}] cancelled must remain false`);
+  if (p.status !== "unpaid" && p.status !== "open")
+    throw new Error(`[stage3c:${label}] status must remain unpaid/open`);
+  const rowDelta = post.paymentRows.length - initial.paymentRows.length;
+  if (rowDelta !== 1)
+    throw new Error(`[stage3c:${label}] payment-row delta must be +1`);
+}
 
 export async function reference01_createUniqueReference(
   ctx: Stage3CLiveMatrixContext,
 ): Promise<void> {
   const f = requireMatrixFixture(ctx);
   const inputs = buildStage3CIdempotencyReferenceInputs(f.prefix);
-  const billId = f.referencePrimaryBillId;
+  const billId = CanonicalStage3CUuidSchema.parse(f.referencePrimaryBillId);
+  const societyId = CanonicalStage3CUuidSchema.parse(f.societyA);
+  const actor = f.users.activeResident;
 
-  const initial = await snapshot(
-    f,
-    f.users.activeResident,
-    billId,
-    f.societyA,
-    "REFERENCE-01-initial",
+  // 1. Persist canonical context IDs first so guards succeed for any
+  //    downstream case even if this handler throws mid-way.
+  ctx.referencePrimaryBillId = billId;
+  ctx.referenceSecondarySameSocietyBillId = CanonicalStage3CUuidSchema.parse(
+    f.referenceSecondarySameSocietyBillId,
   );
+  ctx.referenceOtherSocietyBillId = CanonicalStage3CUuidSchema.parse(
+    f.referenceOtherSocietyBillId,
+  );
+  ctx.referenceValue = inputs.referenceValue;
+  ctx.referenceAmount = REFERENCE_AMOUNT;
+  ctx.referencePrimaryKey = inputs.referencePrimaryKey;
+  ctx.referenceDuplicateKey = inputs.referenceDuplicateKey;
+  ctx.referenceCrossBillKey = inputs.referenceCrossBillKey;
+  ctx.referenceOtherSocietyKey = inputs.referenceOtherSocietyKey;
 
+  // 2. Strict clean baseline + snapshot.
+  const initial = await snapshot(f, actor, billId, societyId, "REFERENCE-01-initial");
+  assertCleanReferenceBaseline(initial, REFERENCE_BILL_PRIMARY_TOTAL, "REFERENCE-01-baseline");
+
+  // 3. Submit exactly once via the shared resident core.
   const paymentId = await f.helpers.submitResidentBankTransferPayment({
-    actor: f.users.activeResident,
+    actor,
     billId,
     amount: REFERENCE_AMOUNT,
     paymentDate: f.testPaymentDate,
@@ -561,99 +660,152 @@ export async function reference01_createUniqueReference(
   const validated = CanonicalStage3CUuidSchema.parse(paymentId);
   trackUniqueId(f.tracked.paymentIds, validated, "reference:primary");
 
-  const post = await snapshot(
-    f,
-    f.users.activeResident,
-    billId,
-    f.societyA,
-    "REFERENCE-01-post",
+  // 4. Post-submit snapshot + exact financial invariants.
+  const post = await snapshot(f, actor, billId, societyId, "REFERENCE-01-post");
+  assertReferencePostSubmitTotals(
+    initial,
+    post,
+    REFERENCE_BILL_PRIMARY_TOTAL,
+    "REFERENCE-01",
   );
-  const delta = post.paymentRows.length - initial.paymentRows.length;
-  assertEq(delta, 1, "REFERENCE-01:row-delta");
 
-  ctx.referencePrimaryBillId = billId;
-  ctx.referenceSecondarySameSocietyBillId = f.referenceSecondarySameSocietyBillId;
-  ctx.referenceOtherSocietyBillId = f.referenceOtherSocietyBillId;
+  // 5. Exact row proof (full strict schema).
+  await assertCanonicalPendingResidentRow(
+    f.admin,
+    {
+      id: validated,
+      billId,
+      societyId,
+      submittedBy: CanonicalStage3CUuidSchema.parse(actor.id),
+      amount: REFERENCE_AMOUNT,
+      reference: inputs.referenceValue,
+      key: inputs.referencePrimaryKey,
+    },
+    "REFERENCE-01",
+  );
+
+  // 6. Zero receipts + sequences unchanged.
+  await assertNoReceiptForResidentPayment(f.admin, validated, "REFERENCE-01");
+  assertReceiptSequencesExactlyEqual(
+    initial.sequences,
+    post.sequences,
+    "REFERENCE-01-sequences",
+  );
+
+  // 7. Store canonical context slots.
   ctx.referencePrimaryPaymentId = validated;
-  ctx.referenceValue = inputs.referenceValue;
-  ctx.referenceAmount = REFERENCE_AMOUNT;
-  ctx.referencePrimaryKey = inputs.referencePrimaryKey;
-  ctx.referenceDuplicateKey = inputs.referenceDuplicateKey;
-  ctx.referenceCrossBillKey = inputs.referenceCrossBillKey;
-  ctx.referenceOtherSocietyKey = inputs.referenceOtherSocietyKey;
   ctx.referencePrimaryInitialState = initial;
   ctx.referencePrimaryPostSubmitState = post;
   ctx.referenceInitialSequences = initial.sequences;
 }
 
-async function assertDuplicateReferenceDenied(
+/**
+ * Shared duplicate-denial helper — Society A only. Snapshots the
+ * attempted bill and the primary bill before + after, proves the shared
+ * resident core throws the canonical `duplicate_reference` token, and
+ * throws a fixed static message on unexpected success.
+ */
+async function attemptDuplicateReferenceOnSocietyA(
   ctx: Stage3CLiveMatrixContext,
-  label: string,
-  billId: string,
-  key: string,
+  label: "REFERENCE-02" | "REFERENCE-03",
+  attemptedBillId: string,
+  idempotencyKey: string,
+  unexpectedSuccessMessage: string,
 ): Promise<void> {
   const f = requireMatrixFixture(ctx);
-  const variant = whitespaceCaseVariant(requireReferenceValue(ctx));
+  const societyId = CanonicalStage3CUuidSchema.parse(f.societyA);
+  const actor = f.users.activeResident;
+  const referenceValue = requireReferenceValue(ctx);
+  const variant = whitespaceCaseVariant(referenceValue);
   const primaryBillId = requireReferencePrimaryBillId(ctx);
-  const primaryBefore = requireReferencePrimaryInitialState(ctx);
+  const primaryPaymentId = requireReferencePrimaryPaymentId(ctx);
+  const primaryBefore = requireReferencePrimaryPostSubmitState(ctx);
+  const initialSequences = requireReferenceInitialSequences(ctx);
+  const trackedBefore = f.tracked.paymentIds.length;
+
   const attemptedBefore = await snapshot(
     f,
-    f.users.activeResident,
-    billId,
-    f.societyA,
-    `${label}-attempted-initial`,
+    actor,
+    attemptedBillId,
+    societyId,
+    `${label}-attempted-before`,
   );
 
   let caught: unknown = undefined;
-  let succeededData: string | undefined;
+  let succeeded = false;
   try {
-    succeededData = await f.helpers.submitResidentBankTransferPayment({
-      actor: f.users.activeResident,
-      billId,
+    await f.helpers.submitResidentBankTransferPayment({
+      actor,
+      billId: attemptedBillId,
       amount: REFERENCE_AMOUNT,
       paymentDate: f.testPaymentDate,
       referenceNo: variant,
-      idempotencyKey: key,
+      idempotencyKey,
     });
+    succeeded = true;
   } catch (e) {
     caught = e;
   }
-  if (succeededData !== undefined) {
-    throw new Error(`[${label}] unexpected success — duplicate reference must be denied`);
-  }
+  // Unexpected-success outside catch — static message, no payload leaked.
+  if (succeeded) throw new Error(unexpectedSuccessMessage);
   assertCanonicalError(caught, STAGE3C_ERRORS.DUPLICATE_REFERENCE, label);
 
+  // Attempted bill state exactly unchanged.
   const attemptedAfter = await snapshot(
     f,
-    f.users.activeResident,
-    billId,
-    f.societyA,
-    `${label}-attempted-post`,
+    actor,
+    attemptedBillId,
+    societyId,
+    `${label}-attempted-after`,
   );
-  assertResidentBillStateUnchanged(attemptedBefore, attemptedAfter, `${label}-attempted`);
+  assertResidentBillStateUnchanged(
+    attemptedBefore,
+    attemptedAfter,
+    `${label}-attempted`,
+  );
+
+  // Primary bill state exactly unchanged; original pending row preserved.
   const primaryAfter = await snapshot(
     f,
-    f.users.activeResident,
+    actor,
     primaryBillId,
-    f.societyA,
-    `${label}-primary-post`,
+    societyId,
+    `${label}-primary-after`,
   );
   assertResidentBillStateUnchanged(primaryBefore, primaryAfter, `${label}-primary`);
+  if (primaryAfter.paymentRows.length !== 1)
+    throw new Error(`[stage3c:${label}] primary payment row count must remain one`);
+  const only = primaryAfter.paymentRows[0];
+  if (!only) throw new Error(`[stage3c:${label}] primary payment row missing`);
+  if (
+    only.id !== primaryPaymentId ||
+    only.amount !== REFERENCE_AMOUNT ||
+    only.status !== "pending"
+  )
+    throw new Error(`[stage3c:${label}] primary payment row changed`);
+
+  // Receipt + sequence + tracking invariance.
+  await assertNoReceiptForResidentPayment(f.admin, primaryPaymentId, label);
+  assertReceiptSequencesExactlyEqual(
+    initialSequences,
+    attemptedAfter.sequences,
+    `${label}-sequences`,
+  );
+  if (f.tracked.paymentIds.length !== trackedBefore)
+    throw new Error(`[stage3c:${label}] tracked payment count changed`);
+
   ctx.referencePrimaryPostSubmitState = primaryAfter;
-  if (label === "REFERENCE-03") ctx.referenceSecondaryInitialState = attemptedAfter;
 }
 
 export async function reference02_duplicateSameBillDenied(
   ctx: Stage3CLiveMatrixContext,
 ): Promise<void> {
-  const f = requireMatrixFixture(ctx);
-  const inputs = buildStage3CIdempotencyReferenceInputs(f.prefix);
-  ctx.referenceDuplicateKey = inputs.referenceDuplicateKey;
-  await assertDuplicateReferenceDenied(
+  await attemptDuplicateReferenceOnSocietyA(
     ctx,
     "REFERENCE-02",
     requireReferencePrimaryBillId(ctx),
-    inputs.referenceDuplicateKey,
+    requireReferenceDuplicateKey(ctx),
+    REFERENCE_02_UNEXPECTED_SUCCESS_MESSAGE,
   );
 }
 
@@ -661,13 +813,31 @@ export async function reference03_duplicateCanonicalScopeDenied(
   ctx: Stage3CLiveMatrixContext,
 ): Promise<void> {
   const f = requireMatrixFixture(ctx);
-  const inputs = buildStage3CIdempotencyReferenceInputs(f.prefix);
-  ctx.referenceCrossBillKey = inputs.referenceCrossBillKey;
-  await assertDuplicateReferenceDenied(
+  const societyId = CanonicalStage3CUuidSchema.parse(f.societyA);
+  const secondaryBillId = requireReferenceSecondarySameSocietyBillId(ctx);
+  const actor = f.users.activeResident;
+
+  // Prove the secondary bill starts clean before attempting the duplicate.
+  const secondaryInitial = await snapshot(
+    f,
+    actor,
+    secondaryBillId,
+    societyId,
+    "REFERENCE-03-secondary-initial",
+  );
+  assertCleanReferenceBaseline(
+    secondaryInitial,
+    REFERENCE_BILL_SECONDARY_TOTAL,
+    "REFERENCE-03-secondary-baseline",
+  );
+  ctx.referenceSecondaryInitialState = secondaryInitial;
+
+  await attemptDuplicateReferenceOnSocietyA(
     ctx,
     "REFERENCE-03",
-    f.referenceSecondarySameSocietyBillId,
-    inputs.referenceCrossBillKey,
+    secondaryBillId,
+    requireReferenceCrossBillKey(ctx),
+    REFERENCE_03_UNEXPECTED_SUCCESS_MESSAGE,
   );
 }
 
@@ -675,55 +845,116 @@ export async function reference04_outsideScopeIsolation(
   ctx: Stage3CLiveMatrixContext,
 ): Promise<void> {
   const f = requireMatrixFixture(ctx);
-  requireReferencePrimaryPaymentId(ctx);
+  const societyA = CanonicalStage3CUuidSchema.parse(f.societyA);
+  const societyB = CanonicalStage3CUuidSchema.parse(f.societyB);
+  const primaryPaymentId = requireReferencePrimaryPaymentId(ctx);
   const primaryBillId = requireReferencePrimaryBillId(ctx);
-  const primaryBefore = requireReferencePrimaryInitialState(ctx);
-  const variant = whitespaceCaseVariant(requireReferenceValue(ctx));
-  const inputs = buildStage3CIdempotencyReferenceInputs(f.prefix);
-  const billId = f.referenceOtherSocietyBillId;
-  ctx.referenceOtherSocietyKey = inputs.referenceOtherSocietyKey;
+  const primaryBefore = requireReferencePrimaryPostSubmitState(ctx);
+  const secondaryBillId = requireReferenceSecondarySameSocietyBillId(ctx);
+  const secondaryBefore = requireReferenceSecondaryInitialState(ctx);
+  const otherBillId = CanonicalStage3CUuidSchema.parse(f.referenceOtherSocietyBillId);
+  const referenceValue = requireReferenceValue(ctx);
+  const variant = whitespaceCaseVariant(referenceValue);
+  const otherKey = requireReferenceOtherSocietyKey(ctx);
+  const actor = f.users.unrelatedResident;
 
+  // 1. Clean Society B baseline.
   const initial = await snapshot(
     f,
-    f.users.unrelatedResident,
-    billId,
-    f.societyB,
+    actor,
+    otherBillId,
+    societyB,
     "REFERENCE-04-initial",
   );
+  assertCleanReferenceBaseline(
+    initial,
+    REFERENCE_BILL_OTHER_SOCIETY_TOTAL,
+    "REFERENCE-04-baseline",
+  );
 
+  // 2. Submit via the shared resident core as the unrelated resident.
   const paymentId = await f.helpers.submitResidentBankTransferPayment({
-    actor: f.users.unrelatedResident,
-    billId,
+    actor,
+    billId: otherBillId,
     amount: REFERENCE_AMOUNT,
     paymentDate: f.testPaymentDate,
     referenceNo: variant,
-    idempotencyKey: inputs.referenceOtherSocietyKey,
+    idempotencyKey: otherKey,
   });
   const validated = CanonicalStage3CUuidSchema.parse(paymentId);
+  if (validated === primaryPaymentId)
+    throw new Error(
+      `[stage3c:REFERENCE-04] cross-society payment id must differ from primary`,
+    );
   trackUniqueId(f.tracked.paymentIds, validated, "reference:cross-society");
 
+  // 3. Post-submit financial invariants on Society B.
   const post = await snapshot(
     f,
-    f.users.unrelatedResident,
-    billId,
-    f.societyB,
+    actor,
+    otherBillId,
+    societyB,
     "REFERENCE-04-post",
   );
-  const delta = post.paymentRows.length - initial.paymentRows.length;
-  assertEq(delta, 1, "REFERENCE-04:row-delta");
+  assertReferencePostSubmitTotals(
+    initial,
+    post,
+    REFERENCE_BILL_OTHER_SOCIETY_TOTAL,
+    "REFERENCE-04",
+  );
 
+  // 4. Row proof + zero receipts + sequences unchanged inside Society B.
+  await assertCanonicalPendingResidentRow(
+    f.admin,
+    {
+      id: validated,
+      billId: otherBillId,
+      societyId: societyB,
+      submittedBy: CanonicalStage3CUuidSchema.parse(actor.id),
+      amount: REFERENCE_AMOUNT,
+      reference: variant,
+      key: otherKey,
+    },
+    "REFERENCE-04",
+  );
+  await assertNoReceiptForResidentPayment(f.admin, validated, "REFERENCE-04");
+  assertReceiptSequencesExactlyEqual(
+    initial.sequences,
+    post.sequences,
+    "REFERENCE-04-sequences",
+  );
+
+  // 5. Society A primary + secondary bills exactly unchanged.
   const primaryAfter = await snapshot(
     f,
     f.users.activeResident,
     primaryBillId,
-    f.societyA,
-    "REFERENCE-04-primary-post",
+    societyA,
+    "REFERENCE-04-primary-after",
   );
-  assertResidentBillStateUnchanged(primaryBefore, primaryAfter, "REFERENCE-04-primary");
+  assertResidentBillStateUnchanged(
+    primaryBefore,
+    primaryAfter,
+    "REFERENCE-04-primary",
+  );
+  const secondaryAfter = await snapshot(
+    f,
+    f.users.activeResident,
+    secondaryBillId,
+    societyA,
+    "REFERENCE-04-secondary-after",
+  );
+  assertResidentBillStateUnchanged(
+    secondaryBefore,
+    secondaryAfter,
+    "REFERENCE-04-secondary",
+  );
+
   ctx.referenceOtherSocietyPaymentId = validated;
   ctx.referenceOtherSocietyInitialState = initial;
   ctx.referenceOtherSocietyPostSubmitState = post;
 }
+
 
 // ---------------------------------------------------------------------------
 // Registry — canonical shared handler typing (`Stage3CMatrixLiveHandler`)

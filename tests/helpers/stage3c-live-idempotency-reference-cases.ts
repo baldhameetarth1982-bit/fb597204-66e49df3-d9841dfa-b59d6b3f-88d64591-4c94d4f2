@@ -51,8 +51,14 @@ import {
   requireIdempotencyInitialSequences,
   requireReferencePrimaryBillId,
   requireReferencePrimaryPaymentId,
+  requireReferencePrimaryPostSubmitState,
+  requireReferenceSecondarySameSocietyBillId,
+  requireReferenceSecondaryInitialState,
   requireReferenceValue,
-  requireReferencePrimaryInitialState,
+  requireReferenceDuplicateKey,
+  requireReferenceCrossBillKey,
+  requireReferenceOtherSocietyKey,
+  requireReferenceInitialSequences,
   type Stage3CLiveMatrixContext,
 } from "./stage3c-live-matrix-context";
 // Type-only import — erased at runtime, so no circular value cycle

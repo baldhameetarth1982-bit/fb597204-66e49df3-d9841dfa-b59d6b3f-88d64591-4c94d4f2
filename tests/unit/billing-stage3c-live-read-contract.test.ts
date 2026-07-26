@@ -202,8 +202,9 @@ describe("READ contract — fail-closed handlers", () => {
       const msg = stage3cReadNotImplementedMessage(id as Stage3CReadCaseId);
       // No UUID
       expect(/[0-9a-f]{8}-[0-9a-f]{4}/i.test(msg)).toBe(false);
-      // No digits (would indicate an amount or count leak)
-      expect(/\d/.test(msg)).toBe(false);
+      // No digits outside the case-id tag would indicate an amount/count leak.
+      const withoutTag = msg.replace(/\[stage3c:READ-\d{2}\]/, "");
+      expect(/\d/.test(withoutTag)).toBe(false);
       // No reference/idempotency/actor/provider mentions
       for (const forbidden of [
         "reference",

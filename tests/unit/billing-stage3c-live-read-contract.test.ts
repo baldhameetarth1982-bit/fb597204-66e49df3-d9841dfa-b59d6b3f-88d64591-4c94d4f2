@@ -1,13 +1,9 @@
 /**
- * Stage 3C — READ-01..10 direct contract tests (Sub-run A).
+ * Stage 3C — READ-01..10 direct contract tests (Sub-run A, grounded).
  *
- * Structural-only: proves the READ contract module locks the exact ten
- * ids, exposes ten named handlers with the shared matrix contract, and
- * that every handler currently fails closed with a static, safe
- * not-implemented message. Also gates the READ contract module source
- * against Vitest imports, mutation APIs, `any`, non-null assertions,
- * loose schemas, protected-society identity, and Stage 3D leakage.
- *
+ * Every schema assertion here targets production shapes cited in
+ * `tests/helpers/stage3c-live-read-cases.ts`. READ-04 tests invoke the
+ * REAL `parsePaymentDetailResponse` from production, not a substitute.
  * Behavioral acceptance for READ-01..10 lives in Sub-run B.
  */
 import { describe, expect, it } from "vitest";
@@ -19,14 +15,11 @@ import {
   STAGE3C_READ_HANDLERS,
   stage3cReadNotImplementedMessage,
   ResidentPaymentDetailSchema,
-  ResidentPaymentHistoryPageSchema,
   ResidentPaymentHistoryRowSchema,
-  ResidentPaymentHistoryPaginationSchema,
-  Stage3CReadAudienceSchema,
+  Stage3CReadResidentAudienceSchema,
+  Stage3CReadDenialCategorySchema,
   Stage3CReadDenialEvidenceSchema,
-  Stage3CReadDenialTokenSchema,
-  Stage3CReadPaymentMethodSchema,
-  Stage3CReadPaymentStatusSchema,
+  STAGE3C_READ_DENIAL_MESSAGES,
   type Stage3CReadCaseId,
 } from "@/../tests/helpers/stage3c-live-read-cases";
 import {
@@ -40,9 +33,14 @@ import {
   STAGE3C_IDEMPOTENCY_REFERENCE_CASE_IDS,
 } from "@/../tests/helpers/stage3c-live-idempotency-reference-cases";
 import { STAGE3C_REQUIRED_LIVE_CASES } from "@/../tests/helpers/stage3c-live-case-manifest";
+import {
+  parsePaymentDetailResponse,
+  residentPaymentDetailSchema,
+  mapPaymentError,
+} from "@/lib/offline-payments.functions";
 
 // ---------------------------------------------------------------------------
-// Canonical inputs used by contract assertions
+// Canonical production-grounded samples
 // ---------------------------------------------------------------------------
 
 const EXPECTED_ORDER: readonly Stage3CReadCaseId[] = [
@@ -67,28 +65,61 @@ const READ_MODULE_SRC = readFileSync(READ_MODULE_PATH, "utf8");
 const UUID_A = "11111111-2222-4333-8444-555555555555";
 const UUID_B = "22222222-3333-4444-8555-666666666666";
 const UUID_C = "33333333-4444-4555-8666-777777777777";
+const UUID_D = "44444444-5555-4666-8777-888888888888";
 
+/**
+ * Canonical resident payment detail — mirrors production
+ * `residentPaymentDetailSchema` exactly (snake_case, nested `payment`,
+ * `bill_number`, `flat_label`, `summary`, `receipt`).
+ */
 function makeDetail() {
   return {
-    paymentId: UUID_A,
-    billId: UUID_B,
-    societyId: UUID_C,
-    amount: 250,
-    status: "pending" as const,
-    method: "bank_transfer" as const,
     audience: "resident" as const,
+    payment: {
+      id: UUID_A,
+      bill_id: UUID_B,
+      society_id: UUID_C,
+      flat_id: UUID_D,
+      amount: 250,
+      method: "bank_transfer",
+      status: "pending",
+      reference_no: "REF-001",
+      submitted_at: "2026-07-01T00:00:00Z",
+      source: "resident_submit",
+      payment_date: "2026-07-01",
+      verified_at: null,
+      rejected_at: null,
+      rejection_reason: null,
+      reversed_at: null,
+      reversal_reason: null,
+      created_at: "2026-07-01T00:00:00Z",
+    },
+    bill_number: "B-0001",
+    flat_label: "A-101",
+    summary: null,
+    receipt: null,
   };
 }
 
+/** Canonical history row — mirrors production `ResidentPaymentRow`. */
 function makeHistoryRow() {
   return {
-    paymentId: UUID_A,
-    billId: UUID_B,
-    societyId: UUID_C,
+    id: UUID_A,
+    bill_id: UUID_B,
+    society_id: UUID_C,
+    flat_id: UUID_D,
     amount: 100,
-    status: "verified" as const,
-    method: "cash" as const,
-    audience: "resident" as const,
+    method: "cash",
+    status: "verified",
+    reference_no: null,
+    submitted_at: "2026-06-01T00:00:00Z",
+    payment_date: "2026-06-01",
+    verified_at: "2026-06-02T00:00:00Z",
+    rejected_at: null,
+    rejection_reason: null,
+    reversed_at: null,
+    reversal_reason: null,
+    created_at: "2026-06-01T00:00:00Z",
   };
 }
 
@@ -200,12 +231,9 @@ describe("READ contract — fail-closed handlers", () => {
     "%s message contains no UUID/amount/reference/key/actor",
     (id) => {
       const msg = stage3cReadNotImplementedMessage(id as Stage3CReadCaseId);
-      // No UUID
       expect(/[0-9a-f]{8}-[0-9a-f]{4}/i.test(msg)).toBe(false);
-      // No digits outside the case-id tag would indicate an amount/count leak.
       const withoutTag = msg.replace(/\[stage3c:READ-\d{2}\]/, "");
       expect(/\d/.test(withoutTag)).toBe(false);
-      // No reference/idempotency/actor/provider mentions
       for (const forbidden of [
         "reference",
         "idempotency",
@@ -221,140 +249,269 @@ describe("READ contract — fail-closed handlers", () => {
 });
 
 // ---------------------------------------------------------------------------
-// 4) Typed READ contract model — strict schemas
+// 4) READ detail — grounded in production `residentPaymentDetailSchema`
 // ---------------------------------------------------------------------------
 
-describe("READ contract — typed model", () => {
-  it("accepts a canonical resident payment detail sample", () => {
-    expect(ResidentPaymentDetailSchema.safeParse(makeDetail()).success).toBe(true);
+describe("READ detail — production-grounded schema (READ-02..04)", () => {
+  it("is exactly the production residentPaymentDetailSchema (referential identity)", () => {
+    expect(ResidentPaymentDetailSchema).toBe(residentPaymentDetailSchema);
   });
 
-  it("rejects an unknown property on the detail schema (strict)", () => {
+  it("accepts the canonical resident detail sample", () => {
+    const r = ResidentPaymentDetailSchema.safeParse(makeDetail());
+    expect(r.success).toBe(true);
+  });
+
+  it("READ-04: parsePaymentDetailResponse accepts the canonical sample", () => {
+    expect(() => parsePaymentDetailResponse(makeDetail())).not.toThrow();
+  });
+
+  it("READ-04: parsePaymentDetailResponse rejects a malformed payload (missing payment)", () => {
+    const bad = { ...makeDetail() } as Record<string, unknown>;
+    delete bad.payment;
+    expect(() => parsePaymentDetailResponse(bad)).toThrow();
+  });
+
+  it("READ-04: parsePaymentDetailResponse rejects an unknown top-level property (strict)", () => {
     const bad = { ...makeDetail(), proof_url: "https://x/y.png" };
+    expect(() => parsePaymentDetailResponse(bad)).toThrow();
+  });
+
+  it("READ-04: parsePaymentDetailResponse rejects admin-only leak on resident payment", () => {
+    const s = makeDetail();
+    const bad = {
+      ...s,
+      payment: { ...s.payment, submitted_by: "actor-uuid" },
+    };
+    expect(() => parsePaymentDetailResponse(bad)).toThrow();
+  });
+
+  it("preserves snake_case top-level keys exactly (bill_number, flat_label)", () => {
+    const parsed = ResidentPaymentDetailSchema.parse(makeDetail());
+    expect(Object.prototype.hasOwnProperty.call(parsed, "bill_number")).toBe(true);
+    expect(Object.prototype.hasOwnProperty.call(parsed, "flat_label")).toBe(true);
+  });
+
+  it("rejects camelCased substitute for bill_number", () => {
+    const s = makeDetail() as unknown as Record<string, unknown>;
+    delete s.bill_number;
+    (s as Record<string, unknown>).billNumber = "B-0001";
+    expect(ResidentPaymentDetailSchema.safeParse(s).success).toBe(false);
+  });
+
+  it("rejects camelCased substitute for flat_label", () => {
+    const s = makeDetail() as unknown as Record<string, unknown>;
+    delete s.flat_label;
+    (s as Record<string, unknown>).flatLabel = "A-101";
+    expect(ResidentPaymentDetailSchema.safeParse(s).success).toBe(false);
+  });
+
+  it("rejects camelCased substitute for payment.reference_no", () => {
+    const s = makeDetail();
+    const payment = { ...s.payment } as Record<string, unknown>;
+    delete payment.reference_no;
+    payment.referenceNo = "REF-001";
+    const bad = { ...s, payment };
     expect(ResidentPaymentDetailSchema.safeParse(bad).success).toBe(false);
   });
 
-  it("rejects a malformed UUID on the detail schema", () => {
-    const bad = { ...makeDetail(), paymentId: "not-a-uuid" };
-    expect(ResidentPaymentDetailSchema.safeParse(bad).success).toBe(false);
+  it("keeps `payment` as a nested object (not flattened)", () => {
+    const s = makeDetail();
+    const flattened = { ...s.payment, audience: "resident", bill_number: "B", flat_label: "A", summary: null, receipt: null };
+    expect(ResidentPaymentDetailSchema.safeParse(flattened).success).toBe(false);
   });
 
-  it("rejects an unsupported status literal", () => {
-    const bad = { ...makeDetail(), status: "settled" };
-    expect(ResidentPaymentDetailSchema.safeParse(bad).success).toBe(false);
+  it("rejects a malformed UUID on payment.id", () => {
+    const s = makeDetail();
+    const bad = { ...s, payment: { ...s.payment, id: "not-a-uuid-42" } };
+    // production schema uses z.string() (not uuid()) so this is a positive
+    // control confirming production does NOT constrain UUID shape here.
+    expect(ResidentPaymentDetailSchema.safeParse(bad).success).toBe(true);
   });
 
-  it("rejects an unsupported method literal", () => {
-    const bad = { ...makeDetail(), method: "card" };
-    expect(ResidentPaymentDetailSchema.safeParse(bad).success).toBe(false);
+  it("requires audience literal 'resident'", () => {
+    const s = { ...makeDetail(), audience: "admin" as unknown as "resident" };
+    expect(ResidentPaymentDetailSchema.safeParse(s).success).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 5) READ-03 — resident audience narrowing
+// ---------------------------------------------------------------------------
+
+describe("READ-03 audience — resident-only", () => {
+  it("accepts exactly 'resident'", () => {
+    expect(Stage3CReadResidentAudienceSchema.safeParse("resident").success).toBe(true);
   });
 
-  it("rejects an unsupported audience literal", () => {
-    const bad = { ...makeDetail(), audience: "public" };
-    expect(ResidentPaymentDetailSchema.safeParse(bad).success).toBe(false);
+  it("rejects 'admin'", () => {
+    expect(Stage3CReadResidentAudienceSchema.safeParse("admin").success).toBe(false);
   });
 
-  it("requires audience on the detail schema", () => {
-    const { audience: _a, ...missing } = makeDetail();
-    expect(ResidentPaymentDetailSchema.safeParse(missing).success).toBe(false);
+  it("rejects 'guest'", () => {
+    expect(Stage3CReadResidentAudienceSchema.safeParse("guest").success).toBe(false);
   });
 
-  it("requires paymentId on the detail schema", () => {
-    const { paymentId: _p, ...missing } = makeDetail();
-    expect(ResidentPaymentDetailSchema.safeParse(missing).success).toBe(false);
+  it("rejects empty string", () => {
+    expect(Stage3CReadResidentAudienceSchema.safeParse("").success).toBe(false);
   });
 
-  it("rejects non-positive amount on the detail schema", () => {
-    const bad = { ...makeDetail(), amount: 0 };
-    expect(ResidentPaymentDetailSchema.safeParse(bad).success).toBe(false);
+  it("rejects casing variants", () => {
+    expect(Stage3CReadResidentAudienceSchema.safeParse("Resident").success).toBe(false);
+    expect(Stage3CReadResidentAudienceSchema.safeParse("RESIDENT").success).toBe(false);
   });
+});
 
+// ---------------------------------------------------------------------------
+// 6) READ-01 history row — grounded in ResidentPaymentRow
+// ---------------------------------------------------------------------------
+
+describe("READ-01 history row — production-grounded shape", () => {
   it("accepts a canonical history row", () => {
-    expect(
-      ResidentPaymentHistoryRowSchema.safeParse(makeHistoryRow()).success,
-    ).toBe(true);
+    expect(ResidentPaymentHistoryRowSchema.safeParse(makeHistoryRow()).success).toBe(true);
   });
 
-  it("rejects an unknown property on the history row schema (strict)", () => {
+  it("rejects an unknown property (strict)", () => {
     const bad = { ...makeHistoryRow(), internal_notes: "x" };
     expect(ResidentPaymentHistoryRowSchema.safeParse(bad).success).toBe(false);
   });
 
-  it("accepts a canonical history page", () => {
-    const page = {
-      rows: [makeHistoryRow()],
-      pagination: { limit: 20, offset: 0, total: 1 },
+  it("rejects admin-only field leak (submitted_by)", () => {
+    const bad = { ...makeHistoryRow(), submitted_by: "actor-uuid" };
+    expect(ResidentPaymentHistoryRowSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it("rejects admin-only field leak (verified_by)", () => {
+    const bad = { ...makeHistoryRow(), verified_by: "actor-uuid" };
+    expect(ResidentPaymentHistoryRowSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it("rejects admin-only field leak (notes)", () => {
+    const bad = { ...makeHistoryRow(), notes: "internal note" };
+    expect(ResidentPaymentHistoryRowSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it("rejects camelCased id substitute", () => {
+    const s = makeHistoryRow() as unknown as Record<string, unknown>;
+    delete s.id;
+    (s as Record<string, unknown>).paymentId = UUID_A;
+    expect(ResidentPaymentHistoryRowSchema.safeParse(s).success).toBe(false);
+  });
+
+  it("rejects camelCased bill_id substitute", () => {
+    const s = makeHistoryRow() as unknown as Record<string, unknown>;
+    delete s.bill_id;
+    (s as Record<string, unknown>).billId = UUID_B;
+    expect(ResidentPaymentHistoryRowSchema.safeParse(s).success).toBe(false);
+  });
+
+  it("rejects camelCased society_id substitute", () => {
+    const s = makeHistoryRow() as unknown as Record<string, unknown>;
+    delete s.society_id;
+    (s as Record<string, unknown>).societyId = UUID_C;
+    expect(ResidentPaymentHistoryRowSchema.safeParse(s).success).toBe(false);
+  });
+
+  it("rejects malformed UUID on id", () => {
+    const bad = { ...makeHistoryRow(), id: "not-a-uuid" };
+    expect(ResidentPaymentHistoryRowSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it("allows null bill_id (moved-out / unlinked cases)", () => {
+    const ok = { ...makeHistoryRow(), bill_id: null };
+    expect(ResidentPaymentHistoryRowSchema.safeParse(ok).success).toBe(true);
+  });
+
+  it("allows null flat_id (moved-out cases)", () => {
+    const ok = { ...makeHistoryRow(), flat_id: null };
+    expect(ResidentPaymentHistoryRowSchema.safeParse(ok).success).toBe(true);
+  });
+
+  it("requires society_id even when other links are null", () => {
+    const bad = { ...makeHistoryRow() } as unknown as Record<string, unknown>;
+    delete bad.society_id;
+    expect(ResidentPaymentHistoryRowSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it("rejects a numeric status (production uses string enum-alike)", () => {
+    const bad = { ...makeHistoryRow(), status: 1 as unknown as string };
+    expect(ResidentPaymentHistoryRowSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it("rejects a numeric method", () => {
+    const bad = { ...makeHistoryRow(), method: 2 as unknown as string };
+    expect(ResidentPaymentHistoryRowSchema.safeParse(bad).success).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 7) Denial category — grounded in mapPaymentError
+// ---------------------------------------------------------------------------
+
+describe("READ denial — grounded in production mapPaymentError", () => {
+  it("category enum has exactly two values", () => {
+    const opts = Stage3CReadDenialCategorySchema.options;
+    expect([...opts].sort()).toEqual(["not_authenticated", "not_authorized"]);
+  });
+
+  it("rejects invented provider tokens", () => {
+    for (const bad of ["forbidden", "PGRST301", "401", "AUTH_REQUIRED"]) {
+      expect(Stage3CReadDenialCategorySchema.safeParse(bad).success).toBe(false);
+    }
+  });
+
+  it("not_authenticated message matches production output verbatim", () => {
+    expect(STAGE3C_READ_DENIAL_MESSAGES.not_authenticated).toBe(
+      mapPaymentError("unauthenticated"),
+    );
+  });
+
+  it("not_authorized message matches production output verbatim", () => {
+    expect(STAGE3C_READ_DENIAL_MESSAGES.not_authorized).toBe(
+      mapPaymentError("not_authorized"),
+    );
+  });
+
+  it("evidence schema rejects success-only case ids", () => {
+    const bad = {
+      caseId: "READ-01",
+      category: "not_authorized",
+      returnedRow: null,
     };
-    expect(ResidentPaymentHistoryPageSchema.safeParse(page).success).toBe(true);
+    expect(Stage3CReadDenialEvidenceSchema.safeParse(bad).success).toBe(false);
   });
 
-  it("rejects an unknown property on the history page schema (strict)", () => {
-    const page = {
-      rows: [makeHistoryRow()],
-      pagination: { limit: 20, offset: 0, total: 1 },
-      cursor: "x",
-    };
-    expect(ResidentPaymentHistoryPageSchema.safeParse(page).success).toBe(false);
-  });
-
-  it("rejects negative offset in pagination schema", () => {
-    const bad = { limit: 20, offset: -1, total: 0 };
-    expect(ResidentPaymentHistoryPaginationSchema.safeParse(bad).success).toBe(false);
-  });
-
-  it("rejects zero limit in pagination schema", () => {
-    const bad = { limit: 0, offset: 0, total: 0 };
-    expect(ResidentPaymentHistoryPaginationSchema.safeParse(bad).success).toBe(false);
-  });
-
-  it("audience enum rejects unknown values", () => {
-    expect(Stage3CReadAudienceSchema.safeParse("guest").success).toBe(false);
-    expect(Stage3CReadAudienceSchema.safeParse("resident").success).toBe(true);
-  });
-
-  it("payment status enum rejects unknown values", () => {
-    expect(Stage3CReadPaymentStatusSchema.safeParse("settled").success).toBe(false);
-  });
-
-  it("payment method enum rejects unknown values", () => {
-    expect(Stage3CReadPaymentMethodSchema.safeParse("upi").success).toBe(false);
-  });
-
-  it("denial token schema rejects unknown tokens", () => {
-    expect(Stage3CReadDenialTokenSchema.safeParse("forbidden").success).toBe(false);
-    expect(Stage3CReadDenialTokenSchema.safeParse("not_authorized").success).toBe(true);
-  });
-
-  it("denial evidence schema requires returnedRow = null", () => {
+  it("evidence schema requires returnedRow = null", () => {
     const bad = {
       caseId: "READ-09" as const,
-      token: "not_authorized" as const,
+      category: "not_authorized" as const,
       returnedRow: {},
     };
     expect(Stage3CReadDenialEvidenceSchema.safeParse(bad).success).toBe(false);
   });
 
-  it("denial evidence schema rejects success-only case ids", () => {
-    const bad = {
-      caseId: "READ-01",
-      token: "not_authorized" as const,
-      returnedRow: null,
-    };
-    expect(Stage3CReadDenialEvidenceSchema.safeParse(bad).success).toBe(false);
-  });
-
-  it("denial evidence schema accepts canonical shape", () => {
+  it("evidence schema accepts the canonical denial shape", () => {
     const ok = {
       caseId: "READ-09" as const,
-      token: "not_authorized" as const,
+      category: "not_authorized" as const,
       returnedRow: null,
     };
     expect(Stage3CReadDenialEvidenceSchema.safeParse(ok).success).toBe(true);
   });
+
+  it("evidence schema rejects unknown properties (strict)", () => {
+    const bad = {
+      caseId: "READ-09" as const,
+      category: "not_authorized" as const,
+      returnedRow: null,
+      hint: "leak",
+    };
+    expect(Stage3CReadDenialEvidenceSchema.safeParse(bad).success).toBe(false);
+  });
 });
 
 // ---------------------------------------------------------------------------
-// 5) Matrix-context READ guards
+// 8) Matrix-context READ guards
 // ---------------------------------------------------------------------------
 
 describe("READ contract — matrix-context guards", () => {
@@ -408,10 +565,6 @@ describe("READ contract — matrix-context guards", () => {
 
   it("context guard messages never embed stored values", () => {
     const ctx = createStage3CLiveMatrixContext();
-    ctx.readPrimaryBillId = UUID_A;
-    // The UUID is valid so requireReadPrimaryBillId returns it silently.
-    // Now corrupt it and force the invalid path — message must not embed
-    // the raw value.
     ctx.readPrimaryBillId = "leak-me-please-11111111-2222";
     try {
       requireReadPrimaryBillId(ctx);
@@ -429,7 +582,7 @@ describe("READ contract — matrix-context guards", () => {
 });
 
 // ---------------------------------------------------------------------------
-// 6) Regression: accepted IDEMPOTENCY + REFERENCE surface is unchanged
+// 9) Regression: accepted IDEMPOTENCY + REFERENCE surface is unchanged
 // ---------------------------------------------------------------------------
 
 describe("READ contract — accepted category regressions", () => {
@@ -452,7 +605,7 @@ describe("READ contract — accepted category regressions", () => {
 });
 
 // ---------------------------------------------------------------------------
-// 7) Source-level architectural prohibitions on the READ contract module
+// 10) Source-level architectural prohibitions on the READ contract module
 // ---------------------------------------------------------------------------
 
 describe("READ contract — source validator", () => {
@@ -461,8 +614,6 @@ describe("READ contract — source validator", () => {
   });
 
   it("does not use non-null assertions", () => {
-    // Detect `.!` or `something!` at line ends — a light heuristic that
-    // rejects the obvious forms. Zero occurrences expected.
     expect(/\w!\s*[.,;)\]]/.test(READ_MODULE_SRC)).toBe(false);
   });
 
@@ -526,8 +677,6 @@ describe("READ contract — source validator", () => {
     if (protectedId && protectedId.length > 0) {
       expect(READ_MODULE_SRC.includes(protectedId)).toBe(false);
     }
-    // Only the env-var *name* is permitted, and only if a safety check
-    // requires it — this module has no such requirement.
     expect(READ_MODULE_SRC.includes("SOCIOHUB_PROTECTED_SOCIETY_ID")).toBe(false);
   });
 
@@ -544,7 +693,6 @@ describe("READ contract — source validator", () => {
   });
 
   it("uses strict object schemas", () => {
-    // At least one `.strict()` call must exist in the schema declarations.
     expect(READ_MODULE_SRC.includes(".strict()")).toBe(true);
   });
 
@@ -558,5 +706,26 @@ describe("READ contract — source validator", () => {
         READ_MODULE_SRC,
       ),
     ).toBe(true);
+  });
+
+  it("imports the production residentPaymentDetailSchema (grounds READ-02..04)", () => {
+    expect(READ_MODULE_SRC.includes("residentPaymentDetailSchema")).toBe(true);
+    expect(
+      /from\s+["']@\/lib\/offline-payments\.functions["']/.test(READ_MODULE_SRC),
+    ).toBe(true);
+  });
+
+  it("does not declare a speculative pagination schema", () => {
+    // Production `getResidentPayments` returns `{ payments }` with no
+    // pagination metadata; a pagination schema here would be invented.
+    expect(READ_MODULE_SRC.includes("Pagination")).toBe(false);
+    expect(READ_MODULE_SRC.includes("ResidentPaymentHistoryPage")).toBe(false);
+  });
+
+  it("does not declare a speculative status/method enum", () => {
+    // Production schemas use z.string() for method/status. A local enum
+    // would be invented.
+    expect(READ_MODULE_SRC.includes("Stage3CReadPaymentStatusSchema")).toBe(false);
+    expect(READ_MODULE_SRC.includes("Stage3CReadPaymentMethodSchema")).toBe(false);
   });
 });

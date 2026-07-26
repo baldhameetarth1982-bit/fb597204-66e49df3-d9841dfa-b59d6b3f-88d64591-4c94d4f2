@@ -91,6 +91,11 @@ export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
   referenceOtherSocietyInitialState: ResidentBillStateSnapshot | null;
   referenceOtherSocietyPostSubmitState: ResidentBillStateSnapshot | null;
   referenceInitialSequences: ReceiptSequenceSnapshot | null;
+
+  // READ category (Sub-run A structural slots — behavior lives in Sub-run B)
+  readPrimaryBillId: string | null;
+  readPrimaryPaymentId: string | null;
+  readHistoryBaselineCount: number | null;
 }
 
 export function createStage3CLiveMatrixContext(): Stage3CLiveMatrixContext {

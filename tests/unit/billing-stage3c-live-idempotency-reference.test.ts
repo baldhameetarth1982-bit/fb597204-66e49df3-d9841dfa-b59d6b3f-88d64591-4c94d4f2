@@ -1282,6 +1282,17 @@ function duplicateThrower(state: MockState): void {
   };
 }
 
+/** Seeds ctx by running REFERENCE-01 then REFERENCE-03 (duplicate denied)
+ *  so REFERENCE-04 prerequisites (secondary initial state) are populated. */
+async function seedPostRef03(state: MockState): Promise<Stage3CLiveMatrixContext> {
+  const ctx = makeCtx(state);
+  await reference01_createUniqueReference(ctx);
+  duplicateThrower(state);
+  await reference03_duplicateCanonicalScopeDenied(ctx);
+  state.submitCalls = [];
+  return ctx;
+}
+
 // ---------------------------------------------------------------------------
 // REFERENCE-01 — 18 tests
 // ---------------------------------------------------------------------------
@@ -1680,28 +1691,28 @@ function seedOtherSocietySuccess(state: MockState): void {
 describe("Sub-run C — REFERENCE-04 outside-scope isolation", () => {
   it("(100) calls the resident core exactly once", async () => {
     const s = makeCleanState();
-    const ctx = await seedPostRef01(s);
+    const ctx = await seedPostRef03(s);
     seedOtherSocietySuccess(s);
     await reference04_outsideScopeIsolation(ctx);
     expect(s.submitCalls.length).toBe(1);
   });
   it("(101) uses the unrelated Society B resident", async () => {
     const s = makeCleanState();
-    const ctx = await seedPostRef01(s);
+    const ctx = await seedPostRef03(s);
     seedOtherSocietySuccess(s);
     await reference04_outsideScopeIsolation(ctx);
     expect((s.submitCalls[0] as { actor: { id: string } }).actor.id).toBe(OTHER_RES);
   });
   it("(102) targets the Society B other bill", async () => {
     const s = makeCleanState();
-    const ctx = await seedPostRef01(s);
+    const ctx = await seedPostRef03(s);
     seedOtherSocietySuccess(s);
     await reference04_outsideScopeIsolation(ctx);
     expect((s.submitCalls[0] as { billId: string }).billId).toBe(REF_BILL_3);
   });
   it("(103) uses amount 200 and the whitespace variant reference", async () => {
     const s = makeCleanState();
-    const ctx = await seedPostRef01(s);
+    const ctx = await seedPostRef03(s);
     seedOtherSocietySuccess(s);
     await reference04_outsideScopeIsolation(ctx);
     const call = s.submitCalls[0] as { amount: number; referenceNo: string };
@@ -1710,7 +1721,7 @@ describe("Sub-run C — REFERENCE-04 outside-scope isolation", () => {
   });
   it("(104) uses the dedicated other-society idempotency key", async () => {
     const s = makeCleanState();
-    const ctx = await seedPostRef01(s);
+    const ctx = await seedPostRef03(s);
     seedOtherSocietySuccess(s);
     await reference04_outsideScopeIsolation(ctx);
     expect((s.submitCalls[0] as { idempotencyKey: string }).idempotencyKey).toBe(
@@ -1719,13 +1730,13 @@ describe("Sub-run C — REFERENCE-04 outside-scope isolation", () => {
   });
   it("(105) rejects a payment id equal to the primary payment id", async () => {
     const s = makeCleanState();
-    const ctx = await seedPostRef01(s);
+    const ctx = await seedPostRef03(s);
     s.submitImpl = async () => PRIMARY_PAYMENT;
     await expect(reference04_outsideScopeIsolation(ctx)).rejects.toThrow(/must differ/);
   });
   it("(106) rejects a dirty Society B baseline", async () => {
     const s = makeCleanState();
-    const ctx = await seedPostRef01(s);
+    const ctx = await seedPostRef03(s);
     seedOtherSocietySuccess(s);
     s.payments.push(buildRow(PRIMARY_PAYMENT, REF_BILL_3, 5, "pending"));
     // fix society scope for pushed row
@@ -1734,7 +1745,7 @@ describe("Sub-run C — REFERENCE-04 outside-scope isolation", () => {
   });
   it("(107) tracks the cross-society payment id", async () => {
     const s = makeCleanState();
-    const ctx = await seedPostRef01(s);
+    const ctx = await seedPostRef03(s);
     seedOtherSocietySuccess(s);
     const before = s.trackedPaymentIds.length;
     await reference04_outsideScopeIsolation(ctx);
@@ -1743,7 +1754,7 @@ describe("Sub-run C — REFERENCE-04 outside-scope isolation", () => {
   });
   it("(108) stores strict initial state (Society B, total 600)", async () => {
     const s = makeCleanState();
-    const ctx = await seedPostRef01(s);
+    const ctx = await seedPostRef03(s);
     seedOtherSocietySuccess(s);
     await reference04_outsideScopeIsolation(ctx);
     const init = requireReferenceOtherSocietyInitialState(ctx);
@@ -1753,7 +1764,7 @@ describe("Sub-run C — REFERENCE-04 outside-scope isolation", () => {
   });
   it("(109) stores strict post-submit state (pending 200, available 400)", async () => {
     const s = makeCleanState();
-    const ctx = await seedPostRef01(s);
+    const ctx = await seedPostRef03(s);
     seedOtherSocietySuccess(s);
     await reference04_outsideScopeIsolation(ctx);
     const post = requireReferenceOtherSocietyPostSubmitState(ctx);
@@ -1763,14 +1774,14 @@ describe("Sub-run C — REFERENCE-04 outside-scope isolation", () => {
   });
   it("(110) stores the canonical other-society payment id", async () => {
     const s = makeCleanState();
-    const ctx = await seedPostRef01(s);
+    const ctx = await seedPostRef03(s);
     seedOtherSocietySuccess(s);
     await reference04_outsideScopeIsolation(ctx);
     expect(requireReferenceOtherSocietyPaymentId(ctx)).toBe(OTHER_PAYMENT);
   });
   it("(111) Society A primary bill remains exactly unchanged", async () => {
     const s = makeCleanState();
-    const ctx = await seedPostRef01(s);
+    const ctx = await seedPostRef03(s);
     seedOtherSocietySuccess(s);
     const primaryBefore = JSON.stringify(
       s.payments.filter((r) => r.bill_id === REF_BILL),
@@ -1783,21 +1794,21 @@ describe("Sub-run C — REFERENCE-04 outside-scope isolation", () => {
   });
   it("(112) Society A secondary bill remains exactly unchanged (0 rows)", async () => {
     const s = makeCleanState();
-    const ctx = await seedPostRef01(s);
+    const ctx = await seedPostRef03(s);
     seedOtherSocietySuccess(s);
     await reference04_outsideScopeIsolation(ctx);
     expect(s.payments.filter((r) => r.bill_id === REF_BILL_2).length).toBe(0);
   });
   it("(113) no receipt created for the cross-society payment", async () => {
     const s = makeCleanState();
-    const ctx = await seedPostRef01(s);
+    const ctx = await seedPostRef03(s);
     seedOtherSocietySuccess(s);
     await reference04_outsideScopeIsolation(ctx);
     expect(s.receipts.length).toBe(0);
   });
   it("(114) Society B sequences remain unchanged", async () => {
     const s = makeCleanState();
-    const ctx = await seedPostRef01(s);
+    const ctx = await seedPostRef03(s);
     seedOtherSocietySuccess(s);
     const before = JSON.stringify(s.yearly.filter((r) => r.society_id === SOCIETY_B)) +
       JSON.stringify(s.monthly.filter((r) => r.society_id === SOCIETY_B));

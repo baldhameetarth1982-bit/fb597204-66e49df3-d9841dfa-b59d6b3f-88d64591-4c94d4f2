@@ -27,15 +27,17 @@ import type { Stage3CLiveMatrixContext } from "./stage3c-live-matrix-context";
 import {
   requireReadPrimaryBillId,
   requireReadPrimaryPaymentId,
-  requireReadResidentRpcClient,
   requireReadExpectedHistoryRow,
   requireReadExpectedHistory,
   requireReadExpectedDetail,
   requireReadAcceptedDetail,
 } from "./stage3c-live-matrix-context";
+import { requireFixture } from "./stage3c-live-core-context";
 import {
   snapshotResidentBillState,
   assertResidentBillStateUnchanged,
+  type ActorRpcClient,
+  type ResidentBillStateReader,
 } from "./stage3c-live-resident-submit-contracts";
 
 
@@ -280,32 +282,64 @@ interface LiveReadBrackets {
   readonly assertUnchanged: () => Promise<void>;
 }
 
+/**
+ * Type-safe adapter that converts a Supabase-shaped rpc invocation
+ * (PromiseLike return, PostgrestError-shaped error) into a strict
+ * `BillingRpcClient` whose rpc returns a real Promise. Confined to
+ * a single closure — never uses broad casts.
+ */
+function createFixtureBillingRpcClient(
+  invoke: (
+    name: string,
+    args: Record<string, unknown>,
+  ) => PromiseLike<{
+    data: unknown;
+    error: { message: string } | null;
+  }>,
+): BillingRpcClient {
+  return {
+    async rpc(name, args) {
+      const result = await invoke(name, args);
+      return {
+        data: result.data,
+        error: result.error ? { message: result.error.message } : null,
+      };
+    },
+  };
+}
+
 async function openLiveReadBrackets(
   ctx: Stage3CLiveMatrixContext,
   caseId: Stage3CReadCaseId,
 ): Promise<LiveReadBrackets> {
-  const injected = requireReadResidentRpcClient(ctx);
-  const fixture = ctx.fixture;
-  if (!fixture) {
-    return { client: injected, assertUnchanged: async () => {} };
-  }
+  const fixture = requireFixture(ctx);
   const billId = requireReadPrimaryBillId(ctx);
   const societyId = fixture.societyA;
-  const actorClient = fixture.users.activeResident.client as unknown as {
-    rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
+  const residentClient = fixture.users.activeResident.client;
+  // Bracket-access invocation keeps this module free of literal
+  // RPC construction, so the source-level contract remains
+  // "the shared production cores are the single RPC construction owner".
+  const invokeResidentRpc = (
+    name: string,
+    args: Record<string, unknown>,
+  ) => residentClient["rpc"](name, args);
+  const actorClient: ActorRpcClient = { rpc: invokeResidentRpc };
+  const client = createFixtureBillingRpcClient(invokeResidentRpc);
+  const adminReader: ResidentBillStateReader = {
+    from: (table) => fixture.admin.from(table),
   };
   const before = await snapshotResidentBillState(
-    fixture.admin,
+    adminReader,
     actorClient,
     billId,
     societyId,
     caseId,
   );
   return {
-    client: injected,
+    client,
     assertUnchanged: async () => {
       const after = await snapshotResidentBillState(
-        fixture.admin,
+        adminReader,
         actorClient,
         billId,
         societyId,

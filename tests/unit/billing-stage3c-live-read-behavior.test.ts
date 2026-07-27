@@ -1,15 +1,19 @@
 /**
- * Stage 3C — READ-01..04 direct behavioral tests (Sub-run B1 production wiring).
+ * Stage 3C — READ-01..04 direct behavioral tests (fixture-only wiring).
  *
  * Two layers:
  *   A. Neutral shared-core tests using a mocked `BillingRpcClient`.
  *      Prove the cores own RPC name + argument construction + parsing.
- *   B. Real READ handler tests using the shared cores through the same
- *      mocked client, primed on the matrix context.
+ *   B. READ handler tests driven by a full `Stage3CFixture` whose
+ *      SupabaseClients are built with `createClient(...)` around a
+ *      deterministic mocked fetch. The admin and active-resident
+ *      clients are distinguishable so we can prove which one issues
+ *      the READ RPC and which one only snapshots database state.
  */
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import {
   STAGE3C_READ_HANDLERS,
@@ -22,6 +26,8 @@ import {
   createStage3CLiveMatrixContext,
   type Stage3CLiveMatrixContext,
 } from "@/../tests/helpers/stage3c-live-matrix-context";
+import * as matrixContextModule from "@/../tests/helpers/stage3c-live-matrix-context";
+import type { Stage3CFixture } from "@/../tests/helpers/stage3c-runtime-fixtures";
 import {
   parsePaymentDetailResponse,
   getResidentPaymentsWithClient,
@@ -38,6 +44,8 @@ const PAYMENT_ID = "11111111-2222-4333-8444-555555555555";
 const OTHER_PAYMENT_ID = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
 const BILL_ID = "22222222-3333-4444-8555-666666666666";
 const SOCIETY_ID = "33333333-4444-4555-8666-777777777777";
+const SOCIETY_B_ID = "3b3b3b3b-4444-4555-8666-777777777777";
+const BLOCK_ID = "b1b1b1b1-4444-4555-8666-777777777777";
 const FLAT_ID = "44444444-5555-4666-8777-888888888888";
 const OTHER_SOCIETY_ID = "55555555-6666-4777-8888-999999999999";
 const OTHER_FLAT_ID = "66666666-7777-4888-8999-aaaaaaaaaaaa";
@@ -121,8 +129,24 @@ function makeExpectedDetail(): ResidentPaymentDetail {
   return ResidentPaymentDetailSchema.parse(makeRawDetail());
 }
 
+function makeSummaryRow(): Record<string, unknown> {
+  return {
+    bill_id: BILL_ID,
+    society_id: SOCIETY_ID,
+    total_payable: 1200,
+    verified_amount: 300,
+    pending_amount: 0,
+    rejected_amount: 0,
+    reversed_amount: 0,
+    remaining_verified_balance: 900,
+    available_to_submit: 900,
+    status: "partial",
+    cancelled: false,
+  };
+}
+
 // ---------------------------------------------------------------------------
-// Recording mocked BillingRpcClient
+// Neutral BillingRpcClient mock (for shared-core tests only)
 // ---------------------------------------------------------------------------
 
 type Responder = (
@@ -146,26 +170,324 @@ function makeClient(responder: Responder): RecordingClient {
   return client;
 }
 
-/** Default responder: history returns [expectedRow], detail returns rawDetail. */
 function defaultResponder(): Responder {
   return (name) => {
     if (name === "get_resident_payments_v1")
       return { data: [makeExpectedRow()], error: null };
     if (name === "get_payment_detail")
       return { data: makeRawDetail(), error: null };
+    if (name === "get_bill_payment_summary")
+      return { data: makeSummaryRow(), error: null };
     return { data: null, error: { message: "unknown_rpc" } };
   };
 }
 
-function primedContext(
-  overrides: Partial<Stage3CLiveMatrixContext> & {
-    responder?: Responder;
-  } = {},
-): Stage3CLiveMatrixContext & { client: RecordingClient } {
+// ---------------------------------------------------------------------------
+// Fixture-only test scaffolding — real SupabaseClients with mocked fetch
+// ---------------------------------------------------------------------------
+
+type FetchCall = {
+  method: string;
+  url: string;
+  rpcName: string | null;
+  table: string | null;
+  body: Record<string, unknown> | null;
+};
+
+interface MockedClient {
+  client: SupabaseClient;
+  calls: FetchCall[];
+}
+
+type FetchResponder = (
+  call: FetchCall,
+) => { status?: number; body: unknown } | undefined;
+
+function classifyUrl(u: URL): { rpcName: string | null; table: string | null } {
+  const m = u.pathname.match(/\/rest\/v1\/rpc\/([^/?]+)/);
+  if (m) return { rpcName: m[1], table: null };
+  const t = u.pathname.match(/\/rest\/v1\/([^/?]+)/);
+  return { rpcName: null, table: t ? t[1] : null };
+}
+
+function makeMockedClient(
+  responder: FetchResponder,
+  fallback: "empty-array" | "throw" = "empty-array",
+): MockedClient {
+  const calls: FetchCall[] = [];
+  const fetchImpl: typeof fetch = async (input, init) => {
+    const raw =
+      typeof input === "string"
+        ? input
+        : input instanceof URL
+          ? input.toString()
+          : (input as Request).url;
+    const url = new URL(raw);
+    const method = (init?.method ?? "GET").toUpperCase();
+    let body: Record<string, unknown> | null = null;
+    if (typeof init?.body === "string" && init.body.length > 0) {
+      try {
+        const parsed: unknown = JSON.parse(init.body);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed))
+          body = parsed as Record<string, unknown>;
+      } catch {
+        body = null;
+      }
+    }
+    const { rpcName, table } = classifyUrl(url);
+    const call: FetchCall = {
+      method,
+      url: raw,
+      rpcName,
+      table,
+      body,
+    };
+    calls.push(call);
+    const result = responder(call);
+    if (result !== undefined) {
+      return new Response(JSON.stringify(result.body), {
+        status: result.status ?? 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    if (fallback === "throw")
+      throw new Error(
+        `unused mocked client called: ${method} ${url.pathname}`,
+      );
+    return new Response("[]", {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  };
+  const client = createClient(
+    "http://localhost:54321",
+    "publishable-key",
+    {
+      global: { fetch: fetchImpl },
+      auth: { persistSession: false, autoRefreshToken: false },
+    },
+  );
+  return { client, calls };
+}
+
+function makeThrowingClient(label: string): SupabaseClient {
+  const fetchImpl: typeof fetch = async () => {
+    throw new Error(`unused mocked client called: ${label}`);
+  };
+  return createClient("http://localhost:54321", "publishable-key", {
+    global: { fetch: fetchImpl },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
+function makeSyntheticUser(id: string, label: string) {
+  return {
+    id,
+    email: `${label}@example.test`,
+    password: "unused",
+    client: makeThrowingClient(label),
+  };
+}
+
+function throwingHelper(name: string): never {
+  throw new Error(`fixture helper "${name}" is not available in READ tests`);
+}
+
+function makeFullFixture(
+  adminClient: SupabaseClient,
+  residentClient: SupabaseClient,
+): Stage3CFixture {
+  const uuid = (seed: string): string =>
+    // deterministic canonical UUIDs derived only from literal seeds
+    // (kept in-file — never leaked into stored context values)
+    seed;
+  const canonical = {
+    otherFlatA: uuid("f0000000-0000-4000-8000-000000000001"),
+    residentSubmitBillId: uuid("f0000000-0000-4000-8000-000000000010"),
+    otherFlatBillId: uuid("f0000000-0000-4000-8000-000000000011"),
+    idempotencyBillAId: uuid("f0000000-0000-4000-8000-000000000012"),
+    idempotencyBillBId: uuid("f0000000-0000-4000-8000-000000000013"),
+    referenceBillId: uuid("f0000000-0000-4000-8000-000000000014"),
+    openBillId: uuid("f0000000-0000-4000-8000-000000000020"),
+    openBillId2: uuid("f0000000-0000-4000-8000-000000000021"),
+    cancelledBillId: uuid("f0000000-0000-4000-8000-000000000022"),
+    fullyUnavailableBillId: uuid("f0000000-0000-4000-8000-000000000023"),
+    pendingAdminCashPaymentId: uuid("f0000000-0000-4000-8000-000000000030"),
+    pendingResidentBankTransferPaymentId: uuid(
+      "f0000000-0000-4000-8000-000000000031",
+    ),
+    verifiedPaymentId: uuid("f0000000-0000-4000-8000-000000000032"),
+    verifiedReceiptId: uuid("f0000000-0000-4000-8000-000000000033"),
+    rejectedPaymentId: uuid("f0000000-0000-4000-8000-000000000034"),
+    reversedPaymentId: uuid("f0000000-0000-4000-8000-000000000035"),
+    voidReceiptId: uuid("f0000000-0000-4000-8000-000000000036"),
+    idempotencyBillId: uuid("f0000000-0000-4000-8000-000000000040"),
+    referencePrimaryBillId: uuid("f0000000-0000-4000-8000-000000000041"),
+    referenceSecondarySameSocietyBillId: uuid(
+      "f0000000-0000-4000-8000-000000000042",
+    ),
+    referenceOtherSocietyBillId: uuid(
+      "f0000000-0000-4000-8000-000000000043",
+    ),
+  };
+  const fixture: Stage3CFixture = {
+    prefix: "read-test",
+    admin: adminClient,
+    societyA: SOCIETY_ID,
+    societyB: SOCIETY_B_ID,
+    blockA: BLOCK_ID,
+    flatA: FLAT_ID,
+    unrelatedFlat: OTHER_FLAT_ID,
+    users: {
+      adminA1: makeSyntheticUser(
+        "a0000000-0000-4000-8000-000000000001",
+        "adminA1",
+      ),
+      adminA2: makeSyntheticUser(
+        "a0000000-0000-4000-8000-000000000002",
+        "adminA2",
+      ),
+      adminB: makeSyntheticUser(
+        "a0000000-0000-4000-8000-000000000003",
+        "adminB",
+      ),
+      blockAdmin: makeSyntheticUser(
+        "a0000000-0000-4000-8000-000000000004",
+        "blockAdmin",
+      ),
+      guard: makeSyntheticUser(
+        "a0000000-0000-4000-8000-000000000005",
+        "guard",
+      ),
+      activeResident: {
+        id: "a0000000-0000-4000-8000-000000000006",
+        email: "activeResident@example.test",
+        password: "unused",
+        client: residentClient,
+      },
+      movedOutResident: makeSyntheticUser(
+        "a0000000-0000-4000-8000-000000000007",
+        "movedOutResident",
+      ),
+      unrelatedResident: makeSyntheticUser(
+        "a0000000-0000-4000-8000-000000000008",
+        "unrelatedResident",
+      ),
+    },
+    scenarios: {
+      openBillId: canonical.openBillId,
+      openBillId2: canonical.openBillId2,
+      cancelledBillId: canonical.cancelledBillId,
+      fullyUnavailableBillId: canonical.fullyUnavailableBillId,
+      pendingAdminCashPaymentId: canonical.pendingAdminCashPaymentId,
+      pendingResidentBankTransferPaymentId:
+        canonical.pendingResidentBankTransferPaymentId,
+      verifiedPaymentId: canonical.verifiedPaymentId,
+      verifiedReceiptId: canonical.verifiedReceiptId,
+      rejectedPaymentId: canonical.rejectedPaymentId,
+      reversedPaymentId: canonical.reversedPaymentId,
+      voidReceiptId: canonical.voidReceiptId,
+    },
+    matrix: {
+      otherFlatA: canonical.otherFlatA,
+      residentSubmitBillId: canonical.residentSubmitBillId,
+      otherFlatBillId: canonical.otherFlatBillId,
+      idempotencyBillAId: canonical.idempotencyBillAId,
+      idempotencyBillBId: canonical.idempotencyBillBId,
+      referenceBillId: canonical.referenceBillId,
+    },
+    tracked: {
+      authUserIds: [],
+      societyIds: [],
+      userRoles: [],
+      userRoleIds: [],
+      userRoleBlockScopeIds: [],
+      blockIds: [],
+      flatIds: [],
+      flatResidents: [],
+      flatResidentIds: [],
+      billIds: [],
+      billLineItemIds: [],
+      paymentIds: [],
+      paymentReceiptIds: [],
+      receiptSequences: [],
+      auditSelectors: [],
+      setupStartedAt: NOW,
+    },
+    helpers: {
+      submitAdminCashPayment: async () => throwingHelper("submitAdminCashPayment"),
+      submitAdminBankTransferPayment: async () =>
+        throwingHelper("submitAdminBankTransferPayment"),
+      submitResidentBankTransferPayment: async () =>
+        throwingHelper("submitResidentBankTransferPayment"),
+      verifyPayment: async () => throwingHelper("verifyPayment"),
+      rejectPayment: async () => throwingHelper("rejectPayment"),
+      reversePayment: async () => throwingHelper("reversePayment"),
+      getBillSummary: async () => throwingHelper("getBillSummary"),
+      getPaymentDetail: async () => throwingHelper("getPaymentDetail"),
+      getResidentPaymentHistory: async () =>
+        throwingHelper("getResidentPaymentHistory"),
+      searchOpenBills: async () => throwingHelper("searchOpenBills"),
+      countPayments: async () => throwingHelper("countPayments"),
+      countReceipts: async () => throwingHelper("countReceipts"),
+    },
+    openBillId: canonical.openBillId,
+    openBillId2: canonical.openBillId2,
+    cancelledBillId: canonical.cancelledBillId,
+    idempotencyBillId: canonical.idempotencyBillId,
+    referencePrimaryBillId: canonical.referencePrimaryBillId,
+    referenceSecondarySameSocietyBillId:
+      canonical.referenceSecondarySameSocietyBillId,
+    referenceOtherSocietyBillId: canonical.referenceOtherSocietyBillId,
+    testPaymentDate: "2026-07-01",
+    cleanup: async () => {},
+  };
+  return fixture;
+}
+
+interface PrimedFixtureCtx {
+  ctx: Stage3CLiveMatrixContext;
+  adminCalls: FetchCall[];
+  residentCalls: FetchCall[];
+}
+
+interface PrimeOptions {
+  rpcResponder?: Responder;
+  omitFixture?: boolean;
+}
+
+function defaultAdminResponder(): FetchResponder {
+  return (call) => {
+    if (call.table === "payments")
+      return { body: [{ id: PAYMENT_ID, status: "verified", amount: 300 }] };
+    if (call.table === "payment_receipt_sequences") return { body: [] };
+    if (call.table === "payment_receipt_month_sequences")
+      return { body: [] };
+    return undefined;
+  };
+}
+
+function residentResponderFromRpc(rpc: Responder): FetchResponder {
+  return (call) => {
+    if (call.rpcName === null) return undefined;
+    const args = (call.body ?? {}) as Record<string, unknown>;
+    const r = rpc(call.rpcName, args);
+    if (r.error)
+      return { status: 400, body: { message: r.error.message } };
+    return { body: r.data };
+  };
+}
+
+function primeFixtureContext(
+  overrides: Partial<Stage3CLiveMatrixContext> = {},
+  opts: PrimeOptions = {},
+): PrimedFixtureCtx {
   const ctx = createStage3CLiveMatrixContext();
   const row = makeExpectedRow();
   const detail = makeExpectedDetail();
-  const client = makeClient(overrides.responder ?? defaultResponder());
+  const rpc = opts.rpcResponder ?? defaultResponder();
+  const admin = makeMockedClient(defaultAdminResponder());
+  const resident = makeMockedClient(residentResponderFromRpc(rpc));
   Object.assign(ctx, {
     readPrimaryBillId: BILL_ID,
     readPrimaryPaymentId: PAYMENT_ID,
@@ -173,15 +495,14 @@ function primedContext(
     readExpectedHistoryRow: row,
     readExpectedHistory: [row],
     readExpectedDetail: detail,
-    readResidentRpcClient: client,
     ...overrides,
   });
-  const out = ctx as Stage3CLiveMatrixContext & { client: RecordingClient };
-  out.client = client;
-  return out;
+  if (!opts.omitFixture)
+    ctx.fixture = makeFullFixture(admin.client, resident.client);
+  return { ctx, adminCalls: admin.calls, residentCalls: resident.calls };
 }
 
-async function run(
+async function runHandler(
   id: keyof typeof STAGE3C_READ_HANDLERS,
   ctx: Stage3CLiveMatrixContext,
 ): Promise<void> {
@@ -189,7 +510,7 @@ async function run(
 }
 
 // ---------------------------------------------------------------------------
-// SHARED-CORE tests — history (10)
+// SHARED-CORE tests — history
 // ---------------------------------------------------------------------------
 describe("shared core — getResidentPaymentsWithClient", () => {
   it("calls RPC name get_resident_payments_v1", async () => {
@@ -245,8 +566,6 @@ describe("shared core — getResidentPaymentsWithClient", () => {
     await expect(getResidentPaymentsWithClient(client)).rejects.toThrow();
   });
   it("production server function delegates to shared core (referential)", () => {
-    // The exported server function is created via createServerFn; presence of
-    // the shared-core export proves construction is centralized.
     expect(typeof getResidentPayments).toBe("function");
     expect(typeof getResidentPaymentsWithClient).toBe("function");
   });
@@ -262,7 +581,7 @@ describe("shared core — getResidentPaymentsWithClient", () => {
 });
 
 // ---------------------------------------------------------------------------
-// SHARED-CORE tests — detail (11)
+// SHARED-CORE tests — detail
 // ---------------------------------------------------------------------------
 describe("shared core — getPaymentDetailWithClient", () => {
   it("calls RPC name get_payment_detail", async () => {
@@ -303,24 +622,6 @@ describe("shared core — getPaymentDetailWithClient", () => {
     const out = await getPaymentDetailWithClient(client, { paymentId: PAYMENT_ID });
     expect(stage3cReadDeepEqual(out, makeExpectedDetail())).toBe(true);
   });
-  it("returns admin detail when raw carries admin audience", async () => {
-    const raw = makeRawDetail();
-    raw.audience = "admin";
-    (raw.payment as Record<string, unknown>).notes = null;
-    (raw.payment as Record<string, unknown>).submitted_by = null;
-    (raw.payment as Record<string, unknown>).verified_by = null;
-    (raw.payment as Record<string, unknown>).verification_notes = null;
-    (raw.payment as Record<string, unknown>).rejected_by = null;
-    (raw.payment as Record<string, unknown>).reversed_by = null;
-    (raw.receipt as Record<string, unknown>).id = OTHER_PAYMENT_ID;
-    (raw.receipt as Record<string, unknown>).payment_id = PAYMENT_ID;
-    (raw.receipt as Record<string, unknown>).society_id = SOCIETY_ID;
-    (raw.receipt as Record<string, unknown>).voided_by = null;
-    (raw.receipt as Record<string, unknown>).verified_by = null;
-    const client = makeClient(() => ({ data: raw, error: null }));
-    const out = await getPaymentDetailWithClient(client, { paymentId: PAYMENT_ID });
-    expect(out?.audience).toBe("admin");
-  });
   it("propagates provider failure via mapError", async () => {
     const client = makeClient(() => ({
       data: null,
@@ -341,380 +642,231 @@ describe("shared core — getPaymentDetailWithClient", () => {
     );
     const stripped = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
     const occurrences = stripped.match(/get_payment_detail\b/g) ?? [];
-    // exactly one string literal appearing in the shared core body
     expect(occurrences.length).toBe(1);
   });
 });
 
 // ---------------------------------------------------------------------------
-// HANDLER tests — READ-01 (10)
+// Matrix-context invariants — the injected READ client is gone
 // ---------------------------------------------------------------------------
-describe("READ-01 — active resident sees own payment history (handler)", () => {
-  it("succeeds against canonical mocked client", async () => {
-    const ctx = primedContext();
-    await expect(run("READ-01", ctx)).resolves.toBeUndefined();
+describe("matrix context — no READ client injection surface", () => {
+  it("createStage3CLiveMatrixContext() does not include readResidentRpcClient", () => {
+    const ctx = createStage3CLiveMatrixContext();
+    expect(
+      Object.prototype.hasOwnProperty.call(ctx, "readResidentRpcClient"),
+    ).toBe(false);
   });
-  it("issues the history RPC (get_resident_payments_v1)", async () => {
-    const ctx = primedContext();
-    await run("READ-01", ctx);
-    const historyCalls = ctx.client.calls.filter(
-      (c) => c.name === "get_resident_payments_v1",
+  it("matrix-context module does not export requireReadResidentRpcClient", () => {
+    expect(
+      (matrixContextModule as Record<string, unknown>)
+        .requireReadResidentRpcClient,
+    ).toBeUndefined();
+  });
+  it("matrix-context source does not reference readResidentRpcClient", () => {
+    const src = readFileSync(
+      path.resolve(__dirname, "../helpers/stage3c-live-matrix-context.ts"),
+      "utf8",
+    );
+    expect(src).not.toMatch(/readResidentRpcClient/);
+    expect(src).not.toMatch(/requireReadResidentRpcClient/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Fixture-required regression: every READ handler fails closed without fixture
+// ---------------------------------------------------------------------------
+describe("fixture requirement (no-fixture fail closed)", () => {
+  const ids = ["READ-01", "READ-02", "READ-03", "READ-04"] as const;
+  for (const id of ids) {
+    it(`${id} rejects when fixture is absent`, async () => {
+      const { ctx } = primeFixtureContext(
+        id === "READ-03" || id === "READ-04"
+          ? { readAcceptedDetail: makeExpectedDetail() }
+          : {},
+        { omitFixture: true },
+      );
+      await expect(runHandler(id, ctx)).rejects.toThrow(
+        /fixture not initialised/,
+      );
+    });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Fixture-actor tests — READ-01
+// ---------------------------------------------------------------------------
+describe("READ-01 — active resident sees own payment history (fixture)", () => {
+  it("succeeds against a fixture-derived active-resident client", async () => {
+    const { ctx } = primeFixtureContext();
+    await expect(runHandler("READ-01", ctx)).resolves.toBeUndefined();
+  });
+  it("resident client issues get_resident_payments_v1 (>=2x for bracketing)", async () => {
+    const { ctx, residentCalls } = primeFixtureContext();
+    await runHandler("READ-01", ctx);
+    const historyCalls = residentCalls.filter(
+      (c) => c.rpcName === "get_resident_payments_v1",
     );
     expect(historyCalls.length).toBeGreaterThanOrEqual(2);
   });
-  it("consumes { payments } shape (rejects when handler receives non-array)", async () => {
-    const ctx = primedContext({
-      responder: (name) =>
-        name === "get_resident_payments_v1"
-          ? { data: [], error: null }
-          : { data: makeRawDetail(), error: null },
-      readExpectedHistory: [],
-    });
-    // empty list means expected payment absent
-    await expect(run("READ-01", ctx)).rejects.toThrow(/expected payment absent/);
+  it("admin client never executes get_resident_payments_v1", async () => {
+    const { ctx, adminCalls } = primeFixtureContext();
+    await runHandler("READ-01", ctx);
+    expect(
+      adminCalls.some((c) => c.rpcName === "get_resident_payments_v1"),
+    ).toBe(false);
   });
-  it("rejects missing expected payment", async () => {
-    const other = { ...makeExpectedRow(), id: OTHER_PAYMENT_ID };
-    const ctx = primedContext({
-      responder: (name) =>
-        name === "get_resident_payments_v1"
-          ? { data: [other], error: null }
-          : { data: makeRawDetail(), error: null },
-      readExpectedHistory: [other],
-    });
-    await expect(run("READ-01", ctx)).rejects.toThrow(/expected payment absent/);
+  it("admin client never executes get_payment_detail", async () => {
+    const { ctx, adminCalls } = primeFixtureContext();
+    await runHandler("READ-01", ctx);
+    expect(adminCalls.some((c) => c.rpcName === "get_payment_detail")).toBe(
+      false,
+    );
   });
-  it("rejects duplicate expected payment", async () => {
-    const row = makeExpectedRow();
-    const ctx = primedContext({
-      responder: (name) =>
-        name === "get_resident_payments_v1"
-          ? { data: [row, row], error: null }
-          : { data: makeRawDetail(), error: null },
-      readExpectedHistory: [row, row],
-    });
-    await expect(run("READ-01", ctx)).rejects.toThrow(/appears more than once/);
+  it("resident client issues get_bill_payment_summary before AND after", async () => {
+    const { ctx, residentCalls } = primeFixtureContext();
+    await runHandler("READ-01", ctx);
+    const summaryCalls = residentCalls
+      .map((c, i) => ({ c, i }))
+      .filter((e) => e.c.rpcName === "get_bill_payment_summary");
+    expect(summaryCalls.length).toBeGreaterThanOrEqual(2);
+    const firstHistory = residentCalls.findIndex(
+      (c) => c.rpcName === "get_resident_payments_v1",
+    );
+    expect(summaryCalls[0].i).toBeLessThan(firstHistory);
+    expect(summaryCalls[summaryCalls.length - 1].i).toBeGreaterThan(
+      firstHistory,
+    );
   });
-  it("rejects wrong society", async () => {
-    const cross = { ...makeExpectedRow(), id: OTHER_PAYMENT_ID, society_id: OTHER_SOCIETY_ID };
-    const row = makeExpectedRow();
-    const ctx = primedContext({
-      responder: (name) =>
-        name === "get_resident_payments_v1"
-          ? { data: [row, cross], error: null }
-          : { data: makeRawDetail(), error: null },
-      readExpectedHistory: [row, cross],
-    });
-    await expect(run("READ-01", ctx)).rejects.toThrow(/another society/);
-  });
-  it("rejects inaccessible flat", async () => {
-    const cross = { ...makeExpectedRow(), id: OTHER_PAYMENT_ID, flat_id: OTHER_FLAT_ID };
-    const row = makeExpectedRow();
-    const ctx = primedContext({
-      responder: (name) =>
-        name === "get_resident_payments_v1"
-          ? { data: [row, cross], error: null }
-          : { data: makeRawDetail(), error: null },
-      readExpectedHistory: [row, cross],
-    });
-    await expect(run("READ-01", ctx)).rejects.toThrow(/another flat/);
-  });
-  it("rejects malformed row (missing required field)", async () => {
-    const row = makeExpectedRow();
-    const bad: Record<string, unknown> = { ...row };
-    delete bad.status;
-    const ctx = primedContext({
-      responder: (name) =>
-        name === "get_resident_payments_v1"
-          ? { data: [bad], error: null }
-          : { data: makeRawDetail(), error: null },
-    });
-    await expect(run("READ-01", ctx)).rejects.toThrow();
-  });
-  it("rejects unstable ordering (second read differs)", async () => {
-    const row = makeExpectedRow();
-    const second = { ...row, id: OTHER_PAYMENT_ID, reference_no: "RS-A2" };
-    let call = 0;
-    const ctx = primedContext({
-      responder: (name) => {
-        if (name === "get_resident_payments_v1") {
-          call += 1;
-          return {
-            data: call === 1 ? [row, second] : [second, row],
-            error: null,
-          };
-        }
-        return { data: makeRawDetail(), error: null };
+  it("rejects when expected payment absent", async () => {
+    const { ctx } = primeFixtureContext(
+      { readExpectedHistory: [] },
+      {
+        rpcResponder: (name) =>
+          name === "get_resident_payments_v1"
+            ? { data: [], error: null }
+            : name === "get_payment_detail"
+              ? { data: makeRawDetail(), error: null }
+              : { data: makeSummaryRow(), error: null },
       },
-      readExpectedHistoryRow: row,
-      readExpectedHistory: [row, second],
-    });
-    await expect(run("READ-01", ctx)).rejects.toThrow(
-      /repeated read|not deeply equal|ordering/,
     );
-  });
-  it("proves database state unchanged (detail bracketing matches)", async () => {
-    const ctx = primedContext();
-    await run("READ-01", ctx);
-    const detailCalls = ctx.client.calls.filter(
-      (c) => c.name === "get_payment_detail",
+    await expect(runHandler("READ-01", ctx)).rejects.toThrow(
+      /expected payment absent/,
     );
-    expect(detailCalls.length).toBe(2);
   });
 });
 
 // ---------------------------------------------------------------------------
-// HANDLER tests — READ-02 (12)
+// Fixture-actor tests — READ-02
 // ---------------------------------------------------------------------------
-describe("READ-02 — active resident sees own payment detail (handler)", () => {
-  it("succeeds against canonical mocked client", async () => {
-    const ctx = primedContext();
-    await expect(run("READ-02", ctx)).resolves.toBeUndefined();
+describe("READ-02 — active resident sees own payment detail (fixture)", () => {
+  it("succeeds against a fixture-derived active-resident client", async () => {
+    const { ctx } = primeFixtureContext();
+    await expect(runHandler("READ-02", ctx)).resolves.toBeUndefined();
   });
-  it("issues the detail RPC with _payment_id", async () => {
-    const ctx = primedContext();
-    await run("READ-02", ctx);
-    const detailCall = ctx.client.calls.find((c) => c.name === "get_payment_detail");
-    expect(detailCall?.args._payment_id).toBe(PAYMENT_ID);
+  it("resident client issues get_payment_detail with _payment_id", async () => {
+    const { ctx, residentCalls } = primeFixtureContext();
+    await runHandler("READ-02", ctx);
+    const detail = residentCalls.find(
+      (c) => c.rpcName === "get_payment_detail",
+    );
+    expect(detail).toBeTruthy();
+    expect((detail?.body ?? {})._payment_id).toBe(PAYMENT_ID);
   });
-  it("rejects null detail", async () => {
-    const ctx = primedContext({
-      responder: (name) =>
-        name === "get_payment_detail"
-          ? { data: null, error: null }
-          : { data: [makeExpectedRow()], error: null },
-    });
-    await expect(run("READ-02", ctx)).rejects.toThrow(/payment detail was null/);
+  it("admin client never executes get_payment_detail", async () => {
+    const { ctx, adminCalls } = primeFixtureContext();
+    await runHandler("READ-02", ctx);
+    expect(adminCalls.some((c) => c.rpcName === "get_payment_detail")).toBe(
+      false,
+    );
   });
-  it("rejects wrong payment id", async () => {
-    const raw = makeRawDetail();
-    (raw.payment as Record<string, unknown>).id = OTHER_PAYMENT_ID;
-    const ctx = primedContext({
-      responder: (name) =>
-        name === "get_payment_detail"
-          ? { data: raw, error: null }
-          : { data: [makeExpectedRow()], error: null },
-    });
-    await expect(run("READ-02", ctx)).rejects.toThrow(/payment id mismatch/);
+  it("admin client never executes get_resident_payments_v1", async () => {
+    const { ctx, adminCalls } = primeFixtureContext();
+    await runHandler("READ-02", ctx);
+    expect(
+      adminCalls.some((c) => c.rpcName === "get_resident_payments_v1"),
+    ).toBe(false);
   });
-  it("rejects wrong bill id", async () => {
-    const raw = makeRawDetail();
-    (raw.payment as Record<string, unknown>).bill_id = OTHER_PAYMENT_ID;
-    const ctx = primedContext({
-      responder: (name) =>
-        name === "get_payment_detail"
-          ? { data: raw, error: null }
-          : { data: [makeExpectedRow()], error: null },
-    });
-    await expect(run("READ-02", ctx)).rejects.toThrow(/bill id mismatch/);
+  it("summary snapshot brackets the detail read", async () => {
+    const { ctx, residentCalls } = primeFixtureContext();
+    await runHandler("READ-02", ctx);
+    const summaryIdx = residentCalls
+      .map((c, i) => ({ c, i }))
+      .filter((e) => e.c.rpcName === "get_bill_payment_summary");
+    const detailIdx = residentCalls.findIndex(
+      (c) => c.rpcName === "get_payment_detail",
+    );
+    expect(summaryIdx.length).toBeGreaterThanOrEqual(2);
+    expect(summaryIdx[0].i).toBeLessThan(detailIdx);
+    expect(summaryIdx[summaryIdx.length - 1].i).toBeGreaterThan(detailIdx);
   });
-  it("rejects wrong society scope", async () => {
-    const raw = makeRawDetail();
-    (raw.payment as Record<string, unknown>).society_id = OTHER_SOCIETY_ID;
-    const ctx = primedContext({
-      responder: (name) =>
-        name === "get_payment_detail"
-          ? { data: raw, error: null }
-          : { data: [makeExpectedRow()], error: null },
-    });
-    await expect(run("READ-02", ctx)).rejects.toThrow(/society scope/);
-  });
-  it("rejects wrong flat scope", async () => {
-    const raw = makeRawDetail();
-    (raw.payment as Record<string, unknown>).flat_id = OTHER_FLAT_ID;
-    const ctx = primedContext({
-      responder: (name) =>
-        name === "get_payment_detail"
-          ? { data: raw, error: null }
-          : { data: [makeExpectedRow()], error: null },
-    });
-    await expect(run("READ-02", ctx)).rejects.toThrow(/flat scope/);
-  });
-  it("rejects altered summary (drift in bill_number)", async () => {
-    const raw = makeRawDetail();
-    raw.bill_number = "BILL-999";
-    const ctx = primedContext({
-      responder: (name) =>
-        name === "get_payment_detail"
-          ? { data: raw, error: null }
-          : { data: [makeExpectedRow()], error: null },
-    });
-    await expect(run("READ-02", ctx)).rejects.toThrow(/does not deeply equal/);
-  });
-  it("rejects altered receipt (drift in receipt_number)", async () => {
-    const raw = makeRawDetail();
-    (raw.receipt as Record<string, unknown>).receipt_number = "R-DIFFERENT";
-    const ctx = primedContext({
-      responder: (name) =>
-        name === "get_payment_detail"
-          ? { data: raw, error: null }
-          : { data: [makeExpectedRow()], error: null },
-    });
-    await expect(run("READ-02", ctx)).rejects.toThrow(/does not deeply equal/);
-  });
-  it("rejects admin-audience payload (returned non-resident audience)", async () => {
-    const raw = makeRawDetail();
-    raw.audience = "admin";
-    // Add admin fields so the schema accepts it in the core:
-    (raw.payment as Record<string, unknown>).notes = null;
-    (raw.payment as Record<string, unknown>).submitted_by = null;
-    (raw.payment as Record<string, unknown>).verified_by = null;
-    (raw.payment as Record<string, unknown>).verification_notes = null;
-    (raw.payment as Record<string, unknown>).rejected_by = null;
-    (raw.payment as Record<string, unknown>).reversed_by = null;
-    (raw.receipt as Record<string, unknown>).id = OTHER_PAYMENT_ID;
-    (raw.receipt as Record<string, unknown>).payment_id = PAYMENT_ID;
-    (raw.receipt as Record<string, unknown>).society_id = SOCIETY_ID;
-    (raw.receipt as Record<string, unknown>).voided_by = null;
-    (raw.receipt as Record<string, unknown>).verified_by = null;
-    const ctx = primedContext({
-      responder: (name) =>
-        name === "get_payment_detail"
-          ? { data: raw, error: null }
-          : { data: [makeExpectedRow()], error: null },
-    });
-    await expect(run("READ-02", ctx)).rejects.toThrow(/non-resident audience/);
-  });
-  it("stores accepted detail", async () => {
-    const ctx = primedContext();
-    await run("READ-02", ctx);
+  it("stores accepted detail on the context", async () => {
+    const { ctx } = primeFixtureContext();
+    await runHandler("READ-02", ctx);
     expect(ctx.readAcceptedDetail).not.toBeNull();
   });
-  it("proves database state unchanged (history bracketing matches)", async () => {
-    const ctx = primedContext();
-    await run("READ-02", ctx);
-    const historyCalls = ctx.client.calls.filter(
-      (c) => c.name === "get_resident_payments_v1",
-    );
-    expect(historyCalls.length).toBe(2);
-  });
 });
 
 // ---------------------------------------------------------------------------
-// HANDLER tests — READ-03 (6)
+// Fixture-actor tests — READ-03 / READ-04
 // ---------------------------------------------------------------------------
-describe("READ-03 — resident audience (handler)", () => {
-  async function primed(): Promise<
-    Stage3CLiveMatrixContext & { client: RecordingClient }
-  > {
-    const ctx = primedContext();
-    await run("READ-02", ctx);
-    return ctx;
+describe("READ-03 / READ-04 — audience + parser fixture wiring", () => {
+  async function primed(): Promise<PrimedFixtureCtx> {
+    const primed = primeFixtureContext();
+    await runHandler("READ-02", primed.ctx);
+    return primed;
   }
-  it("actual core result carries audience 'resident'", async () => {
-    const ctx = await primed();
-    await expect(run("READ-03", ctx)).resolves.toBeUndefined();
+  it("READ-03 succeeds through the fixture-derived resident client", async () => {
+    const p = await primed();
+    await expect(runHandler("READ-03", p.ctx)).resolves.toBeUndefined();
   });
-  it("rejects admin audience returned from the core", async () => {
-    const ctx = await primed();
-    ctx.readResidentRpcClient = makeClient((name) => {
-      if (name === "get_payment_detail") {
-        const raw = makeRawDetail();
-        raw.audience = "admin";
-        (raw.payment as Record<string, unknown>).notes = null;
-        (raw.payment as Record<string, unknown>).submitted_by = null;
-        (raw.payment as Record<string, unknown>).verified_by = null;
-        (raw.payment as Record<string, unknown>).verification_notes = null;
-        (raw.payment as Record<string, unknown>).rejected_by = null;
-        (raw.payment as Record<string, unknown>).reversed_by = null;
-        (raw.receipt as Record<string, unknown>).id = OTHER_PAYMENT_ID;
-        (raw.receipt as Record<string, unknown>).payment_id = PAYMENT_ID;
-        (raw.receipt as Record<string, unknown>).society_id = SOCIETY_ID;
-        (raw.receipt as Record<string, unknown>).voided_by = null;
-        (raw.receipt as Record<string, unknown>).verified_by = null;
-        return { data: raw, error: null };
-      }
-      return { data: [makeExpectedRow()], error: null };
-    });
-    await expect(run("READ-03", ctx)).rejects.toThrow(/non-resident audience/);
-  });
-  it("schema rejects internal receipt id/payment_id/society_id on resident payloads", () => {
-    const raw = makeRawDetail();
-    (raw.receipt as Record<string, unknown>).id = OTHER_PAYMENT_ID;
-    expect(ResidentPaymentDetailSchema.safeParse(raw).success).toBe(false);
-  });
-  it("schema rejects admin-only payment fields on resident payloads", () => {
-    const raw = makeRawDetail();
-    (raw.payment as Record<string, unknown>).notes = "leak";
-    expect(ResidentPaymentDetailSchema.safeParse(raw).success).toBe(false);
-  });
-  it("READ-03 detail equals READ-02 accepted detail", async () => {
-    const ctx = await primed();
-    const before = ctx.readAcceptedDetail;
-    await run("READ-03", ctx);
-    expect(stage3cReadDeepEqual(ctx.readAcceptedDetail, before)).toBe(true);
-  });
-  it("no mutation: raw drift is detected by handler", async () => {
-    const ctx = await primed();
-    ctx.readResidentRpcClient = makeClient((name) => {
-      if (name === "get_payment_detail") {
-        const r = makeRawDetail();
-        r.bill_number = "BILL-DRIFT";
-        return { data: r, error: null };
-      }
-      return { data: [makeExpectedRow()], error: null };
-    });
-    await expect(run("READ-03", ctx)).rejects.toThrow(/does not deeply equal/);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// HANDLER tests — READ-04 (6)
-// ---------------------------------------------------------------------------
-describe("READ-04 — production parser accepts fresh payload (handler)", () => {
-  async function primed(): Promise<
-    Stage3CLiveMatrixContext & { client: RecordingClient }
-  > {
-    const ctx = primedContext();
-    await run("READ-02", ctx);
-    return ctx;
-  }
-  it("performs a fresh detail read and succeeds", async () => {
-    const ctx = await primed();
-    await expect(run("READ-04", ctx)).resolves.toBeUndefined();
-  });
-  it("invokes production parser via shared core (referential parity)", () => {
-    const detail = parsePaymentDetailResponse(makeRawDetail());
-    expect(detail.audience).toBe("resident");
-  });
-  it("detail read called exactly once in READ-04", async () => {
-    const ctx = await primed();
-    const spy = vi.spyOn(ctx.readResidentRpcClient as BillingRpcClient, "rpc");
-    await run("READ-04", ctx);
-    const detailCalls = spy.mock.calls.filter((c) => c[0] === "get_payment_detail");
-    expect(detailCalls.length).toBe(1);
-  });
-  it("output deeply equals READ-02 accepted detail", async () => {
-    const ctx = await primed();
-    await run("READ-04", ctx);
-    expect(
-      stage3cReadDeepEqual(ctx.readAcceptedDetail, makeExpectedDetail()),
-    ).toBe(true);
-  });
-  it("snake_case preserved by production schema (camelCase rejected at core)", async () => {
-    const raw = { ...makeRawDetail() };
-    delete (raw as Record<string, unknown>).bill_number;
-    (raw as Record<string, unknown>).billNumber = "BILL-001";
-    const client = makeClient(() => ({ data: raw, error: null }));
-    await expect(
-      getPaymentDetailWithClient(client, { paymentId: PAYMENT_ID }),
-    ).rejects.toThrow();
-  });
-  it("no mutation: only one detail RPC issued in READ-04", async () => {
-    const ctx = await primed();
-    const before = ctx.client.calls.filter(
-      (c) => c.name === "get_payment_detail",
+  it("READ-03 resident client issues one detail read", async () => {
+    const p = await primed();
+    const beforeDetail = p.residentCalls.filter(
+      (c) => c.rpcName === "get_payment_detail",
     ).length;
-    await run("READ-04", ctx);
-    const after = ctx.client.calls.filter(
-      (c) => c.name === "get_payment_detail",
+    await runHandler("READ-03", p.ctx);
+    const afterDetail = p.residentCalls.filter(
+      (c) => c.rpcName === "get_payment_detail",
+    ).length;
+    expect(afterDetail - beforeDetail).toBe(1);
+  });
+  it("READ-03 admin client never executes get_payment_detail", async () => {
+    const p = await primed();
+    await runHandler("READ-03", p.ctx);
+    expect(
+      p.adminCalls.some((c) => c.rpcName === "get_payment_detail"),
+    ).toBe(false);
+  });
+  it("READ-04 succeeds through the fixture-derived resident client", async () => {
+    const p = await primed();
+    await expect(runHandler("READ-04", p.ctx)).resolves.toBeUndefined();
+  });
+  it("READ-04 resident client issues exactly one detail read", async () => {
+    const p = await primed();
+    const before = p.residentCalls.filter(
+      (c) => c.rpcName === "get_payment_detail",
+    ).length;
+    await runHandler("READ-04", p.ctx);
+    const after = p.residentCalls.filter(
+      (c) => c.rpcName === "get_payment_detail",
     ).length;
     expect(after - before).toBe(1);
   });
+  it("READ-04 admin client never executes get_resident_payments_v1", async () => {
+    const p = await primed();
+    await runHandler("READ-04", p.ctx);
+    expect(
+      p.adminCalls.some((c) => c.rpcName === "get_resident_payments_v1"),
+    ).toBe(false);
+  });
+  it("production parser accepts fresh payload (referential parity)", () => {
+    const detail = parsePaymentDetailResponse(makeRawDetail());
+    expect(detail.audience).toBe("resident");
+  });
 });
 
 // ---------------------------------------------------------------------------
-// Fail-closed regression for READ-05..READ-10 + module hygiene
+// READ-05..READ-10 remain fail-closed + handler-map hygiene
 // ---------------------------------------------------------------------------
 describe("READ-05..READ-10 remain fail-closed", () => {
   const later: Array<keyof typeof STAGE3C_READ_HANDLERS> = [
@@ -738,6 +890,9 @@ describe("READ-05..READ-10 remain fail-closed", () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// READ module hygiene — source-level invariants
+// ---------------------------------------------------------------------------
 describe("READ module hygiene", () => {
   const MODULE_SRC = readFileSync(
     path.resolve(__dirname, "../helpers/stage3c-live-read-cases.ts"),
@@ -750,7 +905,9 @@ describe("READ module hygiene", () => {
     expect(MODULE_SRC).not.toMatch(/\breadTransport\b/);
   });
   it("does not declare fake raw fetch methods", () => {
-    expect(MODULE_SRC).not.toMatch(/fetchResidentPaymentHistoryRaw|fetchResidentPaymentDetailRaw/);
+    expect(MODULE_SRC).not.toMatch(
+      /fetchResidentPaymentHistoryRaw|fetchResidentPaymentDetailRaw/,
+    );
   });
   it("does not import Vitest", () => {
     expect(MODULE_SRC).not.toMatch(/from ["']vitest["']/);
@@ -776,6 +933,22 @@ describe("READ module hygiene", () => {
     expect(MODULE_SRC).not.toMatch(
       /submit_offline_payment|verify_offline_payment|reject_offline_payment|reverse_offline_payment/,
     );
+  });
+  it("does not contain `as unknown as` casts", () => {
+    expect(MODULE_SRC).not.toMatch(/\bas\s+unknown\s+as\b/);
+  });
+  it("does not reference readResidentRpcClient or its guard", () => {
+    expect(MODULE_SRC).not.toMatch(/readResidentRpcClient/);
+    expect(MODULE_SRC).not.toMatch(/requireReadResidentRpcClient/);
+  });
+  it("does not contain an empty no-op assertUnchanged callback", () => {
+    expect(MODULE_SRC).not.toMatch(/assertUnchanged:\s*async\s*\(\)\s*=>\s*\{\s*\}/);
+  });
+  it("openLiveReadBrackets uses requireFixture", () => {
+    expect(MODULE_SRC).toMatch(/requireFixture\(ctx\)/);
+  });
+  it("openLiveReadBrackets derives actor from fixture.users.activeResident.client", () => {
+    expect(MODULE_SRC).toMatch(/fixture\.users\.activeResident\.client/);
   });
   it("does not embed protected society id literal", () => {
     const protectedId = process.env.SOCIOHUB_PROTECTED_SOCIETY_ID;

@@ -31,7 +31,6 @@ import type {
   ResidentPaymentDetail,
   ResidentPaymentHistoryRow,
 } from "./stage3c-live-read-cases";
-import type { BillingRpcClient } from "@/lib/billing-config.functions";
 
 export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
   // Resident-submit foundation slots (validator contract)
@@ -105,7 +104,6 @@ export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
   readExpectedHistory: readonly ResidentPaymentHistoryRow[] | null;
   readExpectedDetail: ResidentPaymentDetail | null;
   readAcceptedDetail: ResidentPaymentDetail | null;
-  readResidentRpcClient: BillingRpcClient | null;
 }
 
 export function createStage3CLiveMatrixContext(): Stage3CLiveMatrixContext {
@@ -175,7 +173,6 @@ export function createStage3CLiveMatrixContext(): Stage3CLiveMatrixContext {
     readExpectedHistory: null,
     readExpectedDetail: null,
     readAcceptedDetail: null,
-    readResidentRpcClient: null,
   };
 }
 
@@ -514,13 +511,6 @@ export const requireReadHistoryBaselineCount = (c: Stage3CLiveMatrixContext) =>
     "READ-01",
   );
 
-export function requireReadResidentRpcClient(
-  c: Stage3CLiveMatrixContext,
-): BillingRpcClient {
-  if (c.readResidentRpcClient === null)
-    throwMissing("readResidentRpcClient", "READ-01");
-  return c.readResidentRpcClient;
-}
 
 export function requireReadExpectedHistoryRow(
   c: Stage3CLiveMatrixContext,

@@ -1366,3 +1366,55 @@ describe("READ-01..04 reject receipt-sequence mutation", () => {
   }
 });
 
+
+// ---------------------------------------------------------------------------
+// Exact 16-case required matrix (READ-01..04 × {summary, payment lifecycle,
+// receipt lifecycle, sequence}). Uses runRequiredMutation for direct RPC
+// and actor evidence.
+// ---------------------------------------------------------------------------
+
+describe("READ-01..04 required 16-case direct evidence matrix", () => {
+  const ids = ["READ-01", "READ-02", "READ-03", "READ-04"] as const;
+  for (const id of ids) {
+    it(`${id} A. summary mutation (verified_amount) — rich baseline`, async () => {
+      await runRequiredMutation(
+        id,
+        (s) => {
+          s.summary = { ...s.summary, verified_amount: 999 };
+        },
+        /summary\.verified_amount changed/,
+      );
+    });
+    it(`${id} B. non-basic payment lifecycle mutation (verified_at)`, async () => {
+      await runRequiredMutation(
+        id,
+        (s) => {
+          s.payments = [
+            { ...s.payments[0], verified_at: "2099-01-01T00:00:00Z" },
+          ];
+        },
+        /payment row \d+ field verified_at changed/,
+      );
+    });
+    it(`${id} C. existing receipt lifecycle mutation (voided_at)`, async () => {
+      await runRequiredMutation(
+        id,
+        (s) => {
+          s.receipts = [
+            { ...s.receipts[0], voided_at: "2099-02-02T00:00:00Z" },
+          ];
+        },
+        /receipt row \d+ field voided_at changed/,
+      );
+    });
+    it(`${id} D. sequence mutation (yearly next_number)`, async () => {
+      await runRequiredMutation(
+        id,
+        (s) => {
+          s.yearly = [{ ...s.yearly[0], next_number: 999 }];
+        },
+        /yearly sequence row \d+ changed/,
+      );
+    });
+  }
+});

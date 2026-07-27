@@ -272,8 +272,51 @@ function assertHistoryRowsStrict(
 }
 
 // ---------------------------------------------------------------------------
-// READ-01..READ-04 — behavioral implementations
+// Live-state bracketing helper — fixture-derived when available.
 // ---------------------------------------------------------------------------
+
+interface LiveReadBrackets {
+  readonly client: BillingRpcClient;
+  readonly assertUnchanged: () => Promise<void>;
+}
+
+async function openLiveReadBrackets(
+  ctx: Stage3CLiveMatrixContext,
+  caseId: Stage3CReadCaseId,
+): Promise<LiveReadBrackets> {
+  const injected = requireReadResidentRpcClient(ctx);
+  const fixture = ctx.fixture;
+  if (!fixture) {
+    return { client: injected, assertUnchanged: async () => {} };
+  }
+  const billId = requireReadPrimaryBillId(ctx);
+  const societyId = fixture.societyA;
+  const actorClient = fixture.users.activeResident.client as unknown as {
+    rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
+  };
+  const before = await snapshotResidentBillState(
+    fixture.admin,
+    actorClient,
+    billId,
+    societyId,
+    caseId,
+  );
+  return {
+    client: injected,
+    assertUnchanged: async () => {
+      const after = await snapshotResidentBillState(
+        fixture.admin,
+        actorClient,
+        billId,
+        societyId,
+        caseId,
+      );
+      assertResidentBillStateUnchanged(before, after, caseId);
+    },
+  };
+}
+
+
 
 /**
  * READ-01 — Active resident sees own payment history.

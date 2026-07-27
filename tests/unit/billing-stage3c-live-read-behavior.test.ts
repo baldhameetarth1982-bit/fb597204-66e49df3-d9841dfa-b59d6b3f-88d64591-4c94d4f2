@@ -459,7 +459,26 @@ interface PrimeOptions {
 function defaultAdminResponder(): FetchResponder {
   return (call) => {
     if (call.table === "payments")
-      return { body: [{ id: PAYMENT_ID, status: "verified", amount: 300 }] };
+      return {
+        body: [
+          {
+            id: PAYMENT_ID,
+            bill_id: BILL_ID,
+            society_id: SOCIETY_ID,
+            flat_id: FLAT_ID,
+            amount: 300,
+            method: "bank_transfer",
+            status: "verified",
+            source: "resident_submission",
+            reference_no: "RS-A1",
+            payment_date: "2026-07-01",
+            submitted_at: NOW,
+            created_at: NOW,
+            verified_at: NOW,
+          },
+        ],
+      };
+    if (call.table === "payment_receipts") return { body: [] };
     if (call.table === "payment_receipt_sequences") return { body: [] };
     if (call.table === "payment_receipt_month_sequences")
       return { body: [] };

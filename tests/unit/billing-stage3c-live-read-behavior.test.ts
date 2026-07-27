@@ -1474,8 +1474,10 @@ function primeDenialContext(caseId: DenialCase): {
   observerCalls: FetchCall[];
 } {
   const ctx = createStage3CLiveMatrixContext();
-  // observer (adminA1) — stable snapshot
+  // observer (adminA1) — stable snapshot + RPC responder for bill summary
   const observer = makeMockedClient((call) => {
+    if (call.rpcName === "get_bill_payment_summary")
+      return { body: makeSummaryRow() };
     if (call.table === "payments") return { body: [fullPaymentAdminRow()] };
     if (call.table === "payment_receipts") return { body: [] };
     if (call.table === "payment_receipt_sequences") return { body: [] };
@@ -1494,6 +1496,13 @@ function primeDenialContext(caseId: DenialCase): {
   const OTHER_BLOCK_PAYMENT_ID = "b2222222-0000-4000-8000-000000000004";
 
   const fixture = makeFullFixture(observer.client, observer.client);
+  // bind adminA1 observer client so openLiveReadBrackets can snapshot state
+  fixture.users.adminA1 = {
+    id: fixture.users.adminA1.id,
+    email: fixture.users.adminA1.email,
+    password: "unused",
+    client: observer.client,
+  };
   // rebind the denied actor slot to the denied client
   const actorKey = DENIAL_ACTOR[caseId];
   fixture.users[actorKey] = {

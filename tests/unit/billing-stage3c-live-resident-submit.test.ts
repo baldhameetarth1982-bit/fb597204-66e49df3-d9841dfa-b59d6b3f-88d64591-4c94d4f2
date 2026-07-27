@@ -78,22 +78,22 @@ describe("Stage 3C — RESIDENT-SUBMIT registry", () => {
     }
   });
 
-  it("core registry remains at 24, matrix registry is 40", () => {
+  it("core registry remains at 24, matrix registry is 50", () => {
     expect(STAGE3C_CORE_LIVE_CASE_IDS.length).toBe(24);
-    expect(STAGE3C_MATRIX_LIVE_CASE_IDS.length).toBe(40);
-    expect(Object.keys(STAGE3C_MATRIX_LIVE_HANDLERS).length).toBe(40);
+    expect(STAGE3C_MATRIX_LIVE_CASE_IDS.length).toBe(50);
+    expect(Object.keys(STAGE3C_MATRIX_LIVE_HANDLERS).length).toBe(50);
   });
 
 
-  it("matrix registry does not register uninmplemented later categories (READ/REJECTION/REVERSAL/SEARCH/CLEANUP)", () => {
+  it("matrix registry does not register uninmplemented later categories (REJECTION/REVERSAL/SEARCH/CLEANUP)", () => {
     for (const id of STAGE3C_MATRIX_LIVE_CASE_IDS) {
-      expect(id.startsWith("READ")).toBe(false);
       expect(id.startsWith("REJECTION")).toBe(false);
       expect(id.startsWith("REVERSAL")).toBe(false);
       expect(id.startsWith("SEARCH")).toBe(false);
       expect(id.startsWith("CLEANUP")).toBe(false);
     }
   });
+
 });
 
 

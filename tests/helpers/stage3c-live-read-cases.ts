@@ -400,7 +400,8 @@ export const read01_activeResidentSeesOwnPaymentHistory: Stage3CMatrixLiveHandle
  */
 export const read02_activeResidentSeesOwnPaymentDetail: Stage3CMatrixLiveHandler =
   async (ctx: Stage3CLiveMatrixContext) => {
-    const client = requireReadResidentRpcClient(ctx);
+    const brackets = await openLiveReadBrackets(ctx, "READ-02");
+    const client = brackets.client;
     const paymentId = requireReadPrimaryPaymentId(ctx);
     const billId = requireReadPrimaryBillId(ctx);
     const expectedRow = requireReadExpectedHistoryRow(ctx);

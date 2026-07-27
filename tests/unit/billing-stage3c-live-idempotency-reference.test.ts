@@ -529,7 +529,7 @@ interface BillMeta {
 interface MockState {
   bills: Record<string, BillMeta>;
   payments: PaymentFullRow[];
-  receipts: { id: string; payment_id: string }[];
+  receipts: ReceiptFullRow[];
   yearly: { society_id: string; year: number; next_number: number }[];
   monthly: { society_id: string; year_month: string; next_number: number }[];
   submitCalls: unknown[];

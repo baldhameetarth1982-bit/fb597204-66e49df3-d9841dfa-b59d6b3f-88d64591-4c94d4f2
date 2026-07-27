@@ -1190,6 +1190,7 @@ describe("Sub-run B — exported IDEMPOTENCY assertion helpers", () => {
         {
           summary: summary as unknown as import("../helpers/stage3c-live-resident-submit-contracts").ResidentBillSummary,
           paymentRows: [],
+          receiptRows: [],
           sequences: { yearly: [], monthly: [] } as unknown as import("../helpers/stage3c-live-resident-submit-contracts").ReceiptSequenceSnapshot,
         },
         "test",
@@ -1205,6 +1206,7 @@ describe("Sub-run B — exported IDEMPOTENCY assertion helpers", () => {
         {
           summary: summary as unknown as import("../helpers/stage3c-live-resident-submit-contracts").ResidentBillSummary,
           paymentRows: [],
+          receiptRows: [],
           sequences: { yearly: [], monthly: [] } as unknown as import("../helpers/stage3c-live-resident-submit-contracts").ReceiptSequenceSnapshot,
         },
         "test",
@@ -1216,14 +1218,16 @@ describe("Sub-run B — exported IDEMPOTENCY assertion helpers", () => {
     const initial = {
       summary: summaryForBill(s, IDEM_BILL) as unknown as import("../helpers/stage3c-live-resident-submit-contracts").ResidentBillSummary,
       paymentRows: [],
+      receiptRows: [],
       sequences: { yearly: [], monthly: [] } as unknown as import("../helpers/stage3c-live-resident-submit-contracts").ReceiptSequenceSnapshot,
     };
     s.payments.push(buildRow(PRIMARY_PAYMENT, IDEM_BILL, 250, "pending"));
     const post = {
       summary: summaryForBill(s, IDEM_BILL) as unknown as import("../helpers/stage3c-live-resident-submit-contracts").ResidentBillSummary,
       paymentRows: [
-        { id: PRIMARY_PAYMENT, status: "pending", amount: 250 } as unknown as import("../helpers/stage3c-live-resident-submit-contracts").ResidentPaymentStatusRow,
+        { id: PRIMARY_PAYMENT, status: "pending", amount: 250 } as unknown as import("../helpers/stage3c-live-resident-submit-contracts").ResidentBillPaymentLifecycleRow,
       ],
+      receiptRows: [],
       sequences: initial.sequences,
     };
     expect(() => assertIdempotencyPostSubmitTotals(initial, post, "t")).not.toThrow();

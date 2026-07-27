@@ -716,7 +716,7 @@ describe("Stage 3C — direct reader/state behavioral coverage", () => {
       throw new Error("expected throw");
     } catch (e) {
       const msg = (e as Error).message;
-      expect(msg).toMatch(/payment row \d+ changed/);
+      expect(msg).toMatch(/payment row \d+ field \w+ changed/);
       expect(msg).not.toContain(PAY_A);
       expect(msg).not.toContain("300");
       expect(msg).not.toContain("999");

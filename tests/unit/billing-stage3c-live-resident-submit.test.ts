@@ -1100,7 +1100,6 @@ describe("Stage 3C — snapshotResidentBillState receipt/payment fetches", () =>
   });
 });
 
-});
 
 
 

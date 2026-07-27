@@ -1456,7 +1456,7 @@ describe("Sub-run C — REFERENCE-01 create unique reference", () => {
   });
   it("(65) rejects a pre-existing receipt for the new payment", async () => {
     const s = makeCleanState();
-    s.receipts.push({ id: "30000000-0000-0000-0000-00000000000a", payment_id: PRIMARY_PAYMENT });
+    s.receipts.push(buildReceipt("30000000-0000-0000-0000-00000000000a", PRIMARY_PAYMENT));
     await expect(reference01_createUniqueReference(makeCtx(s))).rejects.toThrow(/zero receipts/);
   });
   it("(66) rejects sequence mutation during the submit call", async () => {

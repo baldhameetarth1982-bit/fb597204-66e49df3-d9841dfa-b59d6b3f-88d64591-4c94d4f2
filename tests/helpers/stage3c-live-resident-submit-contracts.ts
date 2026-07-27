@@ -857,7 +857,7 @@ function requireRowAt<T>(
   label: string,
   what: string,
 ): T {
-  const row = rows[index];
+  const row = rows.at(index);
   if (row === undefined)
     throw new Error(`[stage3c:${label}] ${what} row ${index} absent`);
   return row;
@@ -887,7 +887,9 @@ export function assertResidentBillStateUnchanged(
     const ai = requireRowAt(aPay, i, label, "payment");
     for (const field of RESIDENT_BILL_PAYMENT_LIFECYCLE_FIELDS) {
       if (bi[field] !== ai[field])
-        throw new Error(`[stage3c:${label}] payment row ${i} changed`);
+        throw new Error(
+          `[stage3c:${label}] payment row ${i} field ${String(field)} changed`,
+        );
     }
   }
 
@@ -900,7 +902,9 @@ export function assertResidentBillStateUnchanged(
     const ai = requireRowAt(aRec, i, label, "receipt");
     for (const field of RESIDENT_BILL_RECEIPT_LIFECYCLE_FIELDS) {
       if (bi[field] !== ai[field])
-        throw new Error(`[stage3c:${label}] receipt row ${i} changed`);
+        throw new Error(
+          `[stage3c:${label}] receipt row ${i} field ${String(field)} changed`,
+        );
     }
   }
 

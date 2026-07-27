@@ -27,15 +27,17 @@ import type { Stage3CLiveMatrixContext } from "./stage3c-live-matrix-context";
 import {
   requireReadPrimaryBillId,
   requireReadPrimaryPaymentId,
-  requireReadResidentRpcClient,
   requireReadExpectedHistoryRow,
   requireReadExpectedHistory,
   requireReadExpectedDetail,
   requireReadAcceptedDetail,
 } from "./stage3c-live-matrix-context";
+import { requireFixture } from "./stage3c-live-core-context";
 import {
   snapshotResidentBillState,
   assertResidentBillStateUnchanged,
+  type ActorRpcClient,
+  type ResidentBillStateReader,
 } from "./stage3c-live-resident-submit-contracts";
 
 

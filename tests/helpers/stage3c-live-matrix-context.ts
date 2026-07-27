@@ -31,7 +31,6 @@ import type {
   ResidentPaymentDetail,
   ResidentPaymentHistoryRow,
 } from "./stage3c-live-read-cases";
-import type { BillingRpcClient } from "@/lib/billing-config.functions";
 
 export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
   // Resident-submit foundation slots (validator contract)

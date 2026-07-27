@@ -461,7 +461,7 @@ function defaultAdminResponder(): FetchResponder {
     if (call.table === "payments")
       return { body: [{ id: PAYMENT_ID, status: "verified", amount: 300 }] };
     if (call.table === "payment_receipt_sequences") return { body: [] };
-    if (call.table === "payment_receipt_monthly_sequences")
+    if (call.table === "payment_receipt_month_sequences")
       return { body: [] };
     return undefined;
   };

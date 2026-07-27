@@ -140,7 +140,7 @@ function makeSummaryRow(): Record<string, unknown> {
     reversed_amount: 0,
     remaining_verified_balance: 900,
     available_to_submit: 900,
-    status: "partially_paid",
+    status: "partial",
     cancelled: false,
   };
 }

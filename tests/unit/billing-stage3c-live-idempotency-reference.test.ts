@@ -479,6 +479,8 @@ const PRIMARY_PAYMENT = "20000000-0000-0000-0000-00000000000a";
 const OTHER_PAYMENT = "20000000-0000-0000-0000-00000000000b";
 const RUN_PREFIX = "runB";
 const DETERMINISTIC_DATE = "2026-01-15";
+const DETERMINISTIC_TS = "2026-01-15T00:00:00.000Z";
+const FLAT_ID = "30000000-0000-0000-0000-000000000001";
 
 const BUILDER_INPUTS = buildStage3CIdempotencyReferenceInputs(RUN_PREFIX);
 
@@ -486,6 +488,7 @@ type PaymentFullRow = {
   id: string;
   bill_id: string;
   society_id: string;
+  flat_id: string;
   submitted_by: string;
   amount: number;
   method: "bank_transfer";
@@ -493,14 +496,29 @@ type PaymentFullRow = {
   source: "resident_submission" | "admin_entry";
   reference_no: string;
   idempotency_key: string;
+  created_at: string;
+  updated_at: string;
+  paid_at: string;
+  user_id: null;
+  submitted_at: null;
+  payment_date: null;
+  notes: null;
   verified_by: null;
   verified_at: null;
+  verification_notes: null;
   rejected_by: null;
   rejected_at: null;
   rejection_reason: null;
   reversed_by: null;
   reversed_at: null;
   reversal_reason: null;
+  platform_fee_paise: null;
+  platform_share_paise: null;
+  society_share_paise: null;
+  proof_url: null;
+  razorpay_order_id: null;
+  razorpay_payment_id: null;
+  razorpay_signature: null;
 };
 
 interface BillMeta {
@@ -508,10 +526,52 @@ interface BillMeta {
   total: number;
 }
 
+type ReceiptFullRow = {
+  id: string;
+  payment_id: string;
+  society_id: string;
+  receipt_number: string;
+  status: string;
+  issued_at: string;
+  created_at: string;
+  issued_by: null;
+  voided_at: null;
+  voided_by: null;
+  void_reason: null;
+  amount_snapshot: null;
+  method_snapshot: null;
+  reference_snapshot: null;
+  bill_number_snapshot: null;
+  verified_by: null;
+  verified_at: null;
+};
+
+function buildReceipt(id: string, paymentId: string, societyId: string = SOCIETY_A): ReceiptFullRow {
+  return {
+    id,
+    payment_id: paymentId,
+    society_id: societyId,
+    receipt_number: "R-0001",
+    status: "issued",
+    issued_at: DETERMINISTIC_TS,
+    created_at: DETERMINISTIC_TS,
+    issued_by: null,
+    voided_at: null,
+    voided_by: null,
+    void_reason: null,
+    amount_snapshot: null,
+    method_snapshot: null,
+    reference_snapshot: null,
+    bill_number_snapshot: null,
+    verified_by: null,
+    verified_at: null,
+  };
+}
+
 interface MockState {
   bills: Record<string, BillMeta>;
   payments: PaymentFullRow[];
-  receipts: { id: string; payment_id: string }[];
+  receipts: ReceiptFullRow[];
   yearly: { society_id: string; year: number; next_number: number }[];
   monthly: { society_id: string; year_month: string; next_number: number }[];
   submitCalls: unknown[];
@@ -558,6 +618,7 @@ function makeCleanState(): MockState {
       id: PRIMARY_PAYMENT,
       bill_id: i.billId,
       society_id: billMeta.societyId,
+      flat_id: "aaaaaaaa-1111-4222-8333-444444444444",
       submitted_by: i.actor.id,
       amount: i.amount,
       method: "bank_transfer",
@@ -565,14 +626,29 @@ function makeCleanState(): MockState {
       source: "resident_submission",
       reference_no: i.referenceNo,
       idempotency_key: i.idempotencyKey,
+      created_at: `${DETERMINISTIC_DATE}T00:00:00Z`,
+      updated_at: `${DETERMINISTIC_DATE}T00:00:00Z`,
+      paid_at: `${DETERMINISTIC_DATE}T00:00:00Z`,
+      user_id: null,
+      submitted_at: null,
+      payment_date: null,
+      notes: null,
       verified_by: null,
       verified_at: null,
+      verification_notes: null,
       rejected_by: null,
       rejected_at: null,
       rejection_reason: null,
       reversed_by: null,
       reversed_at: null,
       reversal_reason: null,
+      platform_fee_paise: null,
+      platform_share_paise: null,
+      society_share_paise: null,
+      proof_url: null,
+      razorpay_order_id: null,
+      razorpay_payment_id: null,
+      razorpay_signature: null,
     });
     return PRIMARY_PAYMENT;
   };
@@ -608,6 +684,13 @@ function summaryForBill(state: MockState, billId: string): Record<string, unknow
   };
 }
 
+function projectCols(row: Record<string, unknown>, cols: string): Record<string, unknown> {
+  const keys = cols.split(",").map((c) => c.trim()).filter((c) => c.length > 0);
+  const out: Record<string, unknown> = {};
+  for (const k of keys) out[k] = row[k] ?? null;
+  return out;
+}
+
 function makeAdmin(state: MockState) {
   return {
     from(table: string) {
@@ -619,30 +702,34 @@ function makeAdmin(state: MockState) {
                 const filtered = state.payments.filter(
                   (r) => (col === "id" && r.id === val) || (col === "bill_id" && r.bill_id === val),
                 );
-                if (cols.includes("bill_id") || cols.includes("submitted_by")) {
-                  // Full-column query for assertCanonicalPendingResidentRow
-                  return { data: filtered, error: null };
-                }
+                // Project only the requested columns so `.strict()` schemas
+                // don't reject on unrelated columns from the mock row.
                 return {
-                  data: filtered.map((r) => ({ id: r.id, status: r.status, amount: r.amount })),
+                  data: filtered.map((r) => projectCols(r as unknown as Record<string, unknown>, cols)),
                   error: null,
                 };
               }
               if (table === "payment_receipts") {
                 return {
-                  data: state.receipts.filter((r) => r.payment_id === val),
+                  data: state.receipts
+                    .filter((r) => r.payment_id === val)
+                    .map((r) => projectCols(r as unknown as Record<string, unknown>, cols)),
                   error: null,
                 };
               }
               if (table === "payment_receipt_sequences") {
                 return {
-                  data: state.yearly.filter((r) => r.society_id === val),
+                  data: state.yearly
+                    .filter((r) => r.society_id === val)
+                    .map((r) => projectCols(r as unknown as Record<string, unknown>, cols)),
                   error: null,
                 };
               }
               if (table === "payment_receipt_month_sequences") {
                 return {
-                  data: state.monthly.filter((r) => r.society_id === val),
+                  data: state.monthly
+                    .filter((r) => r.society_id === val)
+                    .map((r) => projectCols(r as unknown as Record<string, unknown>, cols)),
                   error: null,
                 };
               }
@@ -787,7 +874,7 @@ describe("Sub-run B — IDEMPOTENCY-01 initialize and submit", () => {
   });
   it("(10) rejects an existing receipt for the new payment", async () => {
     const s = makeCleanState();
-    s.receipts.push({ id: "30000000-0000-0000-0000-00000000000a", payment_id: PRIMARY_PAYMENT });
+    s.receipts.push(buildReceipt("30000000-0000-0000-0000-00000000000a", PRIMARY_PAYMENT));
     await expect(idempotency01_initializeAndSubmit(makeCtx(s))).rejects.toThrow(/zero receipts/);
   });
   it("(11) rejects sequence mutation between snapshots", async () => {
@@ -933,7 +1020,7 @@ describe("Sub-run B — IDEMPOTENCY-02 exact replay", () => {
     const s = makeCleanState();
     const ctx = await seedPostIdem01(s);
     s.submitImpl = async () => {
-      s.receipts.push({ id: "rcpt-1", payment_id: PRIMARY_PAYMENT });
+      s.receipts.push(buildReceipt("30000000-0000-0000-0000-00000000000c", PRIMARY_PAYMENT));
       return PRIMARY_PAYMENT;
     };
     await expect(idempotency02_exactReplay(ctx)).rejects.toThrow();
@@ -1016,7 +1103,7 @@ describe("Sub-run B — IDEMPOTENCY-03 single mutation proof", () => {
   it("(38) rejects receipt creation", async () => {
     const s = makeCleanState();
     const ctx = await seedPostIdem01(s);
-    s.receipts.push({ id: "30000000-0000-0000-0000-00000000000b", payment_id: PRIMARY_PAYMENT });
+    s.receipts.push(buildReceipt("30000000-0000-0000-0000-00000000000b", PRIMARY_PAYMENT));
     await expect(idempotency03_singleMutationProof(ctx)).rejects.toThrow(/zero receipts/);
   });
   it("(39) rejects sequence mutation", async () => {
@@ -1248,6 +1335,7 @@ function buildRow(
     id,
     bill_id: billId,
     society_id: SOCIETY_A,
+    flat_id: FLAT_ID,
     submitted_by: RES_ID,
     amount,
     method: "bank_transfer",
@@ -1255,14 +1343,29 @@ function buildRow(
     source: "resident_submission",
     reference_no: BUILDER_INPUTS.idempotencyReference,
     idempotency_key: BUILDER_INPUTS.idempotencyKey,
+    created_at: DETERMINISTIC_TS,
+    updated_at: DETERMINISTIC_TS,
+    paid_at: DETERMINISTIC_TS,
+    user_id: null,
+    submitted_at: null,
+    payment_date: null,
+    notes: null,
     verified_by: null,
     verified_at: null,
+    verification_notes: null,
     rejected_by: null,
     rejected_at: null,
     rejection_reason: null,
     reversed_by: null,
     reversed_at: null,
     reversal_reason: null,
+    platform_fee_paise: null,
+    platform_share_paise: null,
+    society_share_paise: null,
+    proof_url: null,
+    razorpay_order_id: null,
+    razorpay_payment_id: null,
+    razorpay_signature: null,
   };
 }
 
@@ -1353,7 +1456,7 @@ describe("Sub-run C — REFERENCE-01 create unique reference", () => {
   });
   it("(65) rejects a pre-existing receipt for the new payment", async () => {
     const s = makeCleanState();
-    s.receipts.push({ id: "30000000-0000-0000-0000-00000000000a", payment_id: PRIMARY_PAYMENT });
+    s.receipts.push(buildReceipt("30000000-0000-0000-0000-00000000000a", PRIMARY_PAYMENT));
     await expect(reference01_createUniqueReference(makeCtx(s))).rejects.toThrow(/zero receipts/);
   });
   it("(66) rejects sequence mutation during the submit call", async () => {
@@ -1672,6 +1775,7 @@ function seedOtherSocietySuccess(state: MockState): void {
       id: OTHER_PAYMENT,
       bill_id: i.billId,
       society_id: billMeta.societyId,
+      flat_id: FLAT_ID,
       submitted_by: i.actor.id,
       amount: i.amount,
       method: "bank_transfer",
@@ -1679,14 +1783,29 @@ function seedOtherSocietySuccess(state: MockState): void {
       source: "resident_submission",
       reference_no: i.referenceNo,
       idempotency_key: i.idempotencyKey,
+      created_at: DETERMINISTIC_TS,
+      updated_at: DETERMINISTIC_TS,
+      paid_at: DETERMINISTIC_TS,
+      user_id: null,
+      submitted_at: null,
+      payment_date: null,
+      notes: null,
       verified_by: null,
       verified_at: null,
+      verification_notes: null,
       rejected_by: null,
       rejected_at: null,
       rejection_reason: null,
       reversed_by: null,
       reversed_at: null,
       reversal_reason: null,
+      platform_fee_paise: null,
+      platform_share_paise: null,
+      society_share_paise: null,
+      proof_url: null,
+      razorpay_order_id: null,
+      razorpay_payment_id: null,
+      razorpay_signature: null,
     });
     return OTHER_PAYMENT;
   };

@@ -459,25 +459,7 @@ interface PrimeOptions {
 function defaultAdminResponder(): FetchResponder {
   return (call) => {
     if (call.table === "payments")
-      return {
-        body: [
-          {
-            id: PAYMENT_ID,
-            bill_id: BILL_ID,
-            society_id: SOCIETY_ID,
-            flat_id: FLAT_ID,
-            amount: 300,
-            method: "bank_transfer",
-            status: "verified",
-            source: "resident_submission",
-            reference_no: "RS-A1",
-            payment_date: "2026-07-01",
-            submitted_at: NOW,
-            created_at: NOW,
-            verified_at: NOW,
-          },
-        ],
-      };
+      return { body: [fullPaymentAdminRow()] };
     if (call.table === "payment_receipts") return { body: [] };
     if (call.table === "payment_receipt_sequences") return { body: [] };
     if (call.table === "payment_receipt_month_sequences")
@@ -987,6 +969,7 @@ type AdminMutState = {
 
 function fullPaymentAdminRow(): Record<string, unknown> {
   return {
+    // Required
     id: PAYMENT_ID,
     bill_id: BILL_ID,
     society_id: SOCIETY_ID,
@@ -994,12 +977,34 @@ function fullPaymentAdminRow(): Record<string, unknown> {
     amount: 300,
     method: "bank_transfer",
     status: "verified",
+    created_at: NOW,
+    updated_at: NOW,
+    paid_at: NOW,
+    // Nullable — present as null
+    user_id: null,
+    submitted_by: null,
+    submitted_at: NOW,
     source: "resident_submission",
     reference_no: "RS-A1",
+    idempotency_key: null,
     payment_date: "2026-07-01",
-    submitted_at: NOW,
-    created_at: NOW,
+    notes: null,
+    verified_by: null,
     verified_at: NOW,
+    verification_notes: null,
+    rejected_by: null,
+    rejected_at: null,
+    rejection_reason: null,
+    reversed_by: null,
+    reversed_at: null,
+    reversal_reason: null,
+    platform_fee_paise: null,
+    platform_share_paise: null,
+    society_share_paise: null,
+    proof_url: null,
+    razorpay_order_id: null,
+    razorpay_payment_id: null,
+    razorpay_signature: null,
   };
 }
 
@@ -1099,7 +1104,20 @@ describe("READ-01..04 reject receipt insertion after production read", () => {
             id: "abababab-cdcd-4efe-8faf-babababababa",
             payment_id: PAYMENT_ID,
             society_id: SOCIETY_ID,
+            receipt_number: "RCPT-MUT-001",
             status: "issued",
+            issued_at: NOW,
+            created_at: NOW,
+            issued_by: null,
+            voided_at: null,
+            voided_by: null,
+            void_reason: null,
+            amount_snapshot: null,
+            method_snapshot: null,
+            reference_snapshot: null,
+            bill_number_snapshot: null,
+            verified_by: null,
+            verified_at: null,
           },
         ];
       });

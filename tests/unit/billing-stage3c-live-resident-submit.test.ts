@@ -688,14 +688,12 @@ describe("Stage 3C — direct reader/state behavioral coverage", () => {
   it("assertResidentBillStateUnchanged rejects changed payment amount (message excludes IDs and amounts)", () => {
     const summary = ResidentBillSummarySchema.parse(goodSummary);
     const seq = ReceiptSequenceSnapshotSchema.parse({ yearly: [], monthly: [] });
-    const beforeRow = {
+    const beforeRow = fullLifecycleRow({
       id: PAY_A,
       bill_id: BILL_A,
       society_id: SOC_A,
       amount: 300,
-      method: "bank_transfer",
-      status: "pending" as const,
-    };
+    });
     const afterRow = { ...beforeRow, amount: 999 };
     const before: ResidentBillStateSnapshot = {
       summary,
@@ -836,26 +834,73 @@ const CANON_RECEIPT_2 = "55555555-6666-4777-8888-999999999999";
 
 function fullLifecycleRow(overrides: Partial<Record<string, unknown>> = {}): Record<string, unknown> {
   return {
+    // Required
     id: CANON_ID_1,
     bill_id: CANON_BILL,
     society_id: CANON_SOCIETY,
+    flat_id: CANON_ID_2,
     amount: 300,
     method: "bank_transfer",
     status: "pending",
+    created_at: "2026-07-01T00:00:00Z",
+    updated_at: "2026-07-01T00:00:00Z",
+    paid_at: "2026-07-01T00:00:00Z",
+    // Nullable — present as null
+    user_id: null,
+    submitted_by: null,
+    submitted_at: null,
+    source: null,
+    reference_no: null,
+    idempotency_key: null,
+    payment_date: null,
+    notes: null,
+    verified_by: null,
+    verified_at: null,
+    verification_notes: null,
+    rejected_by: null,
+    rejected_at: null,
+    rejection_reason: null,
+    reversed_by: null,
+    reversed_at: null,
+    reversal_reason: null,
+    platform_fee_paise: null,
+    platform_share_paise: null,
+    society_share_paise: null,
+    proof_url: null,
+    razorpay_order_id: null,
+    razorpay_payment_id: null,
+    razorpay_signature: null,
     ...overrides,
   };
 }
 
 function fullReceiptRow(overrides: Partial<Record<string, unknown>> = {}): Record<string, unknown> {
   return {
+    // Required
     id: CANON_RECEIPT_1,
     payment_id: CANON_ID_1,
+    society_id: CANON_SOCIETY,
+    receipt_number: "RCPT-0001",
+    status: "issued",
+    issued_at: "2026-07-01T00:00:00Z",
+    created_at: "2026-07-01T00:00:00Z",
+    // Nullable — present as null
+    issued_by: null,
+    voided_at: null,
+    voided_by: null,
+    void_reason: null,
+    amount_snapshot: null,
+    method_snapshot: null,
+    reference_snapshot: null,
+    bill_number_snapshot: null,
+    verified_by: null,
+    verified_at: null,
     ...overrides,
   };
 }
 
 describe("Stage 3C — payment lifecycle schema", () => {
-  it("accepts a minimal-required row (nullish fields absent)", () => {
+  it("accepts a full-shape row (all required + all nullables as null)", () => {
     expect(ResidentBillPaymentLifecycleRowSchema.safeParse(fullLifecycleRow()).success).toBe(true);
   });
   it("rejects missing bill_id", () => {
@@ -876,6 +921,26 @@ describe("Stage 3C — payment lifecycle schema", () => {
   it("rejects missing method", () => {
     const r = fullLifecycleRow();
     delete r.method;
+    expect(ResidentBillPaymentLifecycleRowSchema.safeParse(r).success).toBe(false);
+  });
+  it("rejects missing flat_id (required)", () => {
+    const r = fullLifecycleRow();
+    delete r.flat_id;
+    expect(ResidentBillPaymentLifecycleRowSchema.safeParse(r).success).toBe(false);
+  });
+  it("rejects missing paid_at (required)", () => {
+    const r = fullLifecycleRow();
+    delete r.paid_at;
+    expect(ResidentBillPaymentLifecycleRowSchema.safeParse(r).success).toBe(false);
+  });
+  it("rejects missing updated_at (required)", () => {
+    const r = fullLifecycleRow();
+    delete r.updated_at;
+    expect(ResidentBillPaymentLifecycleRowSchema.safeParse(r).success).toBe(false);
+  });
+  it("rejects missing created_at (required)", () => {
+    const r = fullLifecycleRow();
+    delete r.created_at;
     expect(ResidentBillPaymentLifecycleRowSchema.safeParse(r).success).toBe(false);
   });
   it("rejects an unsupported status", () => {
@@ -900,6 +965,21 @@ describe("Stage 3C — payment lifecycle schema", () => {
       ).success,
     ).toBe(true);
   });
+  it("rejects nullable field when omitted (undefined not accepted)", () => {
+    const r = fullLifecycleRow();
+    delete r.verified_at;
+    expect(ResidentBillPaymentLifecycleRowSchema.safeParse(r).success).toBe(false);
+  });
+  it("rejects nullable proof_url when omitted", () => {
+    const r = fullLifecycleRow();
+    delete r.proof_url;
+    expect(ResidentBillPaymentLifecycleRowSchema.safeParse(r).success).toBe(false);
+  });
+  it("rejects nullable razorpay_signature when omitted", () => {
+    const r = fullLifecycleRow();
+    delete r.razorpay_signature;
+    expect(ResidentBillPaymentLifecycleRowSchema.safeParse(r).success).toBe(false);
+  });
   it("rejects non-canonical bill_id UUID", () => {
     expect(
       ResidentBillPaymentLifecycleRowSchema.safeParse(fullLifecycleRow({ bill_id: "not-a-uuid" })).success,
@@ -918,13 +998,13 @@ describe("Stage 3C — payment lifecycle schema", () => {
   it("parseResidentBillPaymentLifecycleRows rejects non-array", () => {
     expect(() => parseResidentBillPaymentLifecycleRows({}, "T")).toThrow(/not array/);
   });
-  it("canonical field list has 25 entries", () => {
-    expect(RESIDENT_BILL_PAYMENT_LIFECYCLE_FIELDS.length).toBe(25);
+  it("canonical field list has 34 entries (exact DB parity)", () => {
+    expect(RESIDENT_BILL_PAYMENT_LIFECYCLE_FIELDS.length).toBe(34);
   });
 });
 
 describe("Stage 3C — receipt lifecycle schema", () => {
-  it("accepts a minimal row", () => {
+  it("accepts a full-shape row", () => {
     expect(ResidentBillReceiptLifecycleRowSchema.safeParse(fullReceiptRow()).success).toBe(true);
   });
   it("rejects missing id", () => {
@@ -935,6 +1015,31 @@ describe("Stage 3C — receipt lifecycle schema", () => {
   it("rejects missing payment_id", () => {
     const r = fullReceiptRow();
     delete r.payment_id;
+    expect(ResidentBillReceiptLifecycleRowSchema.safeParse(r).success).toBe(false);
+  });
+  it("rejects missing society_id (now required)", () => {
+    const r = fullReceiptRow();
+    delete r.society_id;
+    expect(ResidentBillReceiptLifecycleRowSchema.safeParse(r).success).toBe(false);
+  });
+  it("rejects missing receipt_number (required)", () => {
+    const r = fullReceiptRow();
+    delete r.receipt_number;
+    expect(ResidentBillReceiptLifecycleRowSchema.safeParse(r).success).toBe(false);
+  });
+  it("rejects missing status (required)", () => {
+    const r = fullReceiptRow();
+    delete r.status;
+    expect(ResidentBillReceiptLifecycleRowSchema.safeParse(r).success).toBe(false);
+  });
+  it("rejects missing issued_at (required)", () => {
+    const r = fullReceiptRow();
+    delete r.issued_at;
+    expect(ResidentBillReceiptLifecycleRowSchema.safeParse(r).success).toBe(false);
+  });
+  it("rejects missing created_at (required)", () => {
+    const r = fullReceiptRow();
+    delete r.created_at;
     expect(ResidentBillReceiptLifecycleRowSchema.safeParse(r).success).toBe(false);
   });
   it("rejects unknown extra key", () => {
@@ -949,6 +1054,16 @@ describe("Stage 3C — receipt lifecycle schema", () => {
       ).success,
     ).toBe(true);
   });
+  it("rejects nullable issued_by when omitted", () => {
+    const r = fullReceiptRow();
+    delete r.issued_by;
+    expect(ResidentBillReceiptLifecycleRowSchema.safeParse(r).success).toBe(false);
+  });
+  it("rejects nullable voided_by when omitted", () => {
+    const r = fullReceiptRow();
+    delete r.voided_by;
+    expect(ResidentBillReceiptLifecycleRowSchema.safeParse(r).success).toBe(false);
+  });
   it("rows schema rejects duplicate receipt ids", () => {
     const res = ResidentBillReceiptLifecycleRowsSchema.safeParse([
       fullReceiptRow(),
@@ -962,8 +1077,8 @@ describe("Stage 3C — receipt lifecycle schema", () => {
   it("parseResidentBillReceiptLifecycleRows rejects non-array", () => {
     expect(() => parseResidentBillReceiptLifecycleRows({}, "T")).toThrow(/not array/);
   });
-  it("canonical field list has 14 entries", () => {
-    expect(RESIDENT_BILL_RECEIPT_LIFECYCLE_FIELDS.length).toBe(14);
+  it("canonical field list has 17 entries (exact DB parity)", () => {
+    expect(RESIDENT_BILL_RECEIPT_LIFECYCLE_FIELDS.length).toBe(17);
   });
 });
 

@@ -10,8 +10,13 @@
  * before/after value.
  */
 import { z } from "zod";
+import type { Database } from "@/integrations/supabase/types";
 import { CanonicalStage3CUuidSchema } from "./stage3c-runtime-fixtures";
 import { safeStage3CErrorMessage } from "./stage3c-error-redaction";
+
+type PaymentDatabaseRow = Database["public"]["Tables"]["payments"]["Row"];
+type PaymentReceiptDatabaseRow =
+  Database["public"]["Tables"]["payment_receipts"]["Row"];
 
 // ---------------------------------------------------------------------------
 // Numeric primitives
@@ -505,53 +510,77 @@ export function deriveActorRoleFromSource(
  */
 export const ResidentBillPaymentLifecycleRowSchema = z
   .object({
+    // Required, non-null columns per generated payments.Row
     id: CanonicalStage3CUuidSchema,
     bill_id: CanonicalStage3CUuidSchema,
     society_id: CanonicalStage3CUuidSchema,
-    flat_id: CanonicalStage3CUuidSchema.nullish(),
-    user_id: CanonicalStage3CUuidSchema.nullish(),
-    submitted_by: CanonicalStage3CUuidSchema.nullish(),
+    flat_id: CanonicalStage3CUuidSchema,
     amount: NumericLike.pipe(PositiveFiniteNumber),
     method: z.string().min(1),
     status: ResidentPaymentStatusSchema,
-    source: z.string().nullish(),
-    reference_no: z.string().nullish(),
-    idempotency_key: z.string().nullish(),
-    payment_date: z.string().nullish(),
-    submitted_at: z.string().nullish(),
-    created_at: z.string().nullish(),
-    notes: z.string().nullish(),
-    verified_by: CanonicalStage3CUuidSchema.nullish(),
-    verified_at: z.string().nullish(),
-    verification_notes: z.string().nullish(),
-    rejected_by: CanonicalStage3CUuidSchema.nullish(),
-    rejected_at: z.string().nullish(),
-    rejection_reason: z.string().nullish(),
-    reversed_by: CanonicalStage3CUuidSchema.nullish(),
-    reversed_at: z.string().nullish(),
-    reversal_reason: z.string().nullish(),
+    created_at: z.string(),
+    updated_at: z.string(),
+    paid_at: z.string(),
+    // Nullable columns — MUST be present (as null), not omitted
+    user_id: CanonicalStage3CUuidSchema.nullable(),
+    submitted_by: CanonicalStage3CUuidSchema.nullable(),
+    submitted_at: z.string().nullable(),
+    source: z.string().nullable(),
+    reference_no: z.string().nullable(),
+    idempotency_key: z.string().nullable(),
+    payment_date: z.string().nullable(),
+    notes: z.string().nullable(),
+    verified_by: CanonicalStage3CUuidSchema.nullable(),
+    verified_at: z.string().nullable(),
+    verification_notes: z.string().nullable(),
+    rejected_by: CanonicalStage3CUuidSchema.nullable(),
+    rejected_at: z.string().nullable(),
+    rejection_reason: z.string().nullable(),
+    reversed_by: CanonicalStage3CUuidSchema.nullable(),
+    reversed_at: z.string().nullable(),
+    reversal_reason: z.string().nullable(),
+    platform_fee_paise: z.number().nullable(),
+    platform_share_paise: z.number().nullable(),
+    society_share_paise: z.number().nullable(),
+    proof_url: z.string().nullable(),
+    razorpay_order_id: z.string().nullable(),
+    razorpay_payment_id: z.string().nullable(),
+    razorpay_signature: z.string().nullable(),
   })
   .strict();
 export type ResidentBillPaymentLifecycleRow = z.infer<
   typeof ResidentBillPaymentLifecycleRowSchema
 >;
 
+// Compile-time key-parity guard: schema keys === generated Row keys.
+// Direction A: schema row must satisfy Row (widened numeric via NumericLike
+// output is number, which matches). Cast is safe because both types have
+// identical key sets by construction below.
+type _PaymentKeyParityAB = keyof ResidentBillPaymentLifecycleRow extends keyof PaymentDatabaseRow ? true : false;
+type _PaymentKeyParityBA = keyof PaymentDatabaseRow extends keyof ResidentBillPaymentLifecycleRow ? true : false;
+const _paymentKeyParityAB: _PaymentKeyParityAB = true;
+const _paymentKeyParityBA: _PaymentKeyParityBA = true;
+void _paymentKeyParityAB;
+void _paymentKeyParityBA;
+
 export const RESIDENT_BILL_PAYMENT_LIFECYCLE_FIELDS: readonly (keyof ResidentBillPaymentLifecycleRow)[] = [
   "id",
   "bill_id",
   "society_id",
   "flat_id",
-  "user_id",
-  "submitted_by",
   "amount",
   "method",
   "status",
+  "created_at",
+  "updated_at",
+  "paid_at",
+  "user_id",
+  "submitted_by",
+  "submitted_at",
   "source",
   "reference_no",
   "idempotency_key",
   "payment_date",
-  "submitted_at",
-  "created_at",
   "notes",
   "verified_by",
   "verified_at",
@@ -562,6 +591,13 @@ export const RESIDENT_BILL_PAYMENT_LIFECYCLE_FIELDS: readonly (keyof ResidentBil
   "reversed_by",
   "reversed_at",
   "reversal_reason",
+  "platform_fee_paise",
+  "platform_share_paise",
+  "society_share_paise",
+  "proof_url",
+  "razorpay_order_id",
+  "razorpay_payment_id",
+  "razorpay_signature",
 ] as const;
 
 export const ResidentBillPaymentLifecycleRowsSchema = z
@@ -611,25 +647,38 @@ export function parseResidentBillPaymentLifecycleRows(
  */
 export const ResidentBillReceiptLifecycleRowSchema = z
   .object({
+    // Required, non-null columns per generated payment_receipts.Row
     id: CanonicalStage3CUuidSchema,
     payment_id: CanonicalStage3CUuidSchema,
-    society_id: CanonicalStage3CUuidSchema.nullish(),
-    receipt_number: z.string().nullish(),
-    status: z.string().nullish(),
-    issued_at: z.string().nullish(),
-    voided_at: z.string().nullish(),
-    void_reason: z.string().nullish(),
-    amount_snapshot: z.number().nullish(),
-    method_snapshot: z.string().nullish(),
-    reference_snapshot: z.string().nullish(),
-    bill_number_snapshot: z.string().nullish(),
-    verified_by: CanonicalStage3CUuidSchema.nullish(),
-    verified_at: z.string().nullish(),
+    society_id: CanonicalStage3CUuidSchema,
+    receipt_number: z.string(),
+    status: z.string(),
+    issued_at: z.string(),
+    created_at: z.string(),
+    // Nullable columns — MUST be present (as null)
+    issued_by: CanonicalStage3CUuidSchema.nullable(),
+    voided_at: z.string().nullable(),
+    voided_by: CanonicalStage3CUuidSchema.nullable(),
+    void_reason: z.string().nullable(),
+    amount_snapshot: z.number().nullable(),
+    method_snapshot: z.string().nullable(),
+    reference_snapshot: z.string().nullable(),
+    bill_number_snapshot: z.string().nullable(),
+    verified_by: CanonicalStage3CUuidSchema.nullable(),
+    verified_at: z.string().nullable(),
   })
   .strict();
 export type ResidentBillReceiptLifecycleRow = z.infer<
   typeof ResidentBillReceiptLifecycleRowSchema
 >;
+
+// Compile-time key-parity guard: schema keys === generated Row keys.
+type _ReceiptKeyParityAB = keyof ResidentBillReceiptLifecycleRow extends keyof PaymentReceiptDatabaseRow ? true : false;
+type _ReceiptKeyParityBA = keyof PaymentReceiptDatabaseRow extends keyof ResidentBillReceiptLifecycleRow ? true : false;
+const _receiptKeyParityAB: _ReceiptKeyParityAB = true;
+const _receiptKeyParityBA: _ReceiptKeyParityBA = true;
+void _receiptKeyParityAB;
+void _receiptKeyParityBA;
 
 export const RESIDENT_BILL_RECEIPT_LIFECYCLE_FIELDS: readonly (keyof ResidentBillReceiptLifecycleRow)[] = [
   "id",
@@ -638,7 +687,10 @@ export const RESIDENT_BILL_RECEIPT_LIFECYCLE_FIELDS: readonly (keyof ResidentBil
   "receipt_number",
   "status",
   "issued_at",
+  "created_at",
+  "issued_by",
   "voided_at",
+  "voided_by",
   "void_reason",
   "amount_snapshot",
   "method_snapshot",
@@ -705,10 +757,10 @@ export type ResidentBillStateSnapshot = {
 };
 
 const PAYMENT_LIFECYCLE_SELECT =
-  "id, bill_id, society_id, flat_id, user_id, submitted_by, amount, method, status, source, reference_no, idempotency_key, payment_date, submitted_at, created_at, notes, verified_by, verified_at, verification_notes, rejected_by, rejected_at, rejection_reason, reversed_by, reversed_at, reversal_reason";
+  "id, bill_id, society_id, flat_id, amount, method, status, created_at, updated_at, paid_at, user_id, submitted_by, submitted_at, source, reference_no, idempotency_key, payment_date, notes, verified_by, verified_at, verification_notes, rejected_by, rejected_at, rejection_reason, reversed_by, reversed_at, reversal_reason, platform_fee_paise, platform_share_paise, society_share_paise, proof_url, razorpay_order_id, razorpay_payment_id, razorpay_signature";
 
 const RECEIPT_LIFECYCLE_SELECT =
-  "id, payment_id, society_id, receipt_number, status, issued_at, voided_at, void_reason, amount_snapshot, method_snapshot, reference_snapshot, bill_number_snapshot, verified_by, verified_at";
+  "id, payment_id, society_id, receipt_number, status, issued_at, created_at, issued_by, voided_at, voided_by, void_reason, amount_snapshot, method_snapshot, reference_snapshot, bill_number_snapshot, verified_by, verified_at";
 
 export async function snapshotResidentBillState(
   admin: ResidentBillStateReader,
@@ -750,6 +802,8 @@ export async function snapshotResidentBillState(
       throw new Error(`[stage3c:${label}] payment row bill scope mismatch`);
     if (row.society_id !== societyId)
       throw new Error(`[stage3c:${label}] payment row society scope mismatch`);
+    if (row.flat_id === null || row.flat_id === undefined)
+      throw new Error(`[stage3c:${label}] payment row flat_id absent`);
   }
 
   const collectedReceipts: ResidentBillReceiptLifecycleRow[] = [];
@@ -765,7 +819,7 @@ export async function snapshotResidentBillState(
     for (const rec of rows) {
       if (rec.payment_id !== row.id)
         throw new Error(`[stage3c:${label}] receipt payment scope mismatch`);
-      if (rec.society_id != null && rec.society_id !== societyId)
+      if (rec.society_id !== societyId)
         throw new Error(`[stage3c:${label}] receipt society scope mismatch`);
       if (seenReceiptIds.has(rec.id))
         throw new Error(`[stage3c:${label}] duplicate receipt id across payments`);
@@ -781,53 +835,44 @@ export async function snapshotResidentBillState(
   return { summary, paymentRows, receiptRows, sequences };
 }
 
-function lifecycleFieldEqual(a: unknown, b: unknown): boolean {
-  const na = a === undefined ? null : a;
-  const nb = b === undefined ? null : b;
-  return na === nb;
-}
-
 export function assertResidentBillStateUnchanged(
   before: ResidentBillStateSnapshot,
   after: ResidentBillStateSnapshot,
   label: string,
 ): void {
-  const b = ResidentBillSummarySchema.parse(before.summary);
-  const a = ResidentBillSummarySchema.parse(after.summary);
-  for (const key of Object.keys(b) as Array<keyof ResidentBillSummary>) {
-    if (b[key] !== a[key])
-      throw new Error(
-        `[stage3c:${label}] summary.${String(key)} changed`,
-      );
+  // Re-parse all four components strictly to reject any structural drift.
+  const bSum = ResidentBillSummarySchema.parse(before.summary);
+  const aSum = ResidentBillSummarySchema.parse(after.summary);
+  for (const key of Object.keys(bSum) as Array<keyof ResidentBillSummary>) {
+    if (bSum[key] !== aSum[key])
+      throw new Error(`[stage3c:${label}] summary.${String(key)} changed`);
   }
-  if (before.paymentRows.length !== after.paymentRows.length)
+  const bPay = ResidentBillPaymentLifecycleRowsSchema.parse(before.paymentRows);
+  const aPay = ResidentBillPaymentLifecycleRowsSchema.parse(after.paymentRows);
+  if (bPay.length !== aPay.length)
     throw new Error(`[stage3c:${label}] payment row count changed`);
-  for (let i = 0; i < before.paymentRows.length; i++) {
-    const bi = before.paymentRows[i]!;
-    const ai = after.paymentRows[i]!;
+  for (let i = 0; i < bPay.length; i++) {
+    const bi = bPay[i]!;
+    const ai = aPay[i]!;
     for (const f of RESIDENT_BILL_PAYMENT_LIFECYCLE_FIELDS) {
       if (
-        !lifecycleFieldEqual(
-          (bi as Record<string, unknown>)[f],
-          (ai as Record<string, unknown>)[f],
-        )
+        (bi as Record<string, unknown>)[f] !==
+        (ai as Record<string, unknown>)[f]
       )
         throw new Error(`[stage3c:${label}] payment row ${i} changed`);
     }
   }
-  const beforeReceipts = before.receiptRows ?? [];
-  const afterReceipts = after.receiptRows ?? [];
-  if (beforeReceipts.length !== afterReceipts.length)
+  const bRec = ResidentBillReceiptLifecycleRowsSchema.parse(before.receiptRows);
+  const aRec = ResidentBillReceiptLifecycleRowsSchema.parse(after.receiptRows);
+  if (bRec.length !== aRec.length)
     throw new Error(`[stage3c:${label}] receipt row count changed`);
-  for (let i = 0; i < beforeReceipts.length; i++) {
-    const bi = beforeReceipts[i]!;
-    const ai = afterReceipts[i]!;
+  for (let i = 0; i < bRec.length; i++) {
+    const bi = bRec[i]!;
+    const ai = aRec[i]!;
     for (const f of RESIDENT_BILL_RECEIPT_LIFECYCLE_FIELDS) {
       if (
-        !lifecycleFieldEqual(
-          (bi as Record<string, unknown>)[f],
-          (ai as Record<string, unknown>)[f],
-        )
+        (bi as Record<string, unknown>)[f] !==
+        (ai as Record<string, unknown>)[f]
       )
         throw new Error(`[stage3c:${label}] receipt row ${i} changed`);
     }

@@ -1122,7 +1122,7 @@ describe("READ-01..04 reject receipt insertion after production read", () => {
         ];
       });
       await expect(runHandler(id, ctx)).rejects.toThrow(
-        /receipt row count changed|receipt row \d+ changed/,
+        /receipt row count changed|receipt row \d+ field \w+ changed/,
       );
     });
   }

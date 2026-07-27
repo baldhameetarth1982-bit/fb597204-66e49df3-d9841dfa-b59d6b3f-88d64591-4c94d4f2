@@ -1292,7 +1292,7 @@ describe("Stage 3C — payment lifecycle exhaustive per-field parity (34 columns
           { summary, paymentRows: after, receiptRows: [], sequences: seq },
           "T",
         ),
-      ).toThrow(/payment row \d+ changed/);
+      ).toThrow(/payment row \d+ field \w+ changed/);
     });
   }
 });
@@ -1353,7 +1353,7 @@ describe("Stage 3C — receipt lifecycle exhaustive per-field parity (17 columns
           { summary, paymentRows: baselinePayments, receiptRows: after, sequences: seq },
           "T",
         ),
-      ).toThrow(/receipt row \d+ changed/);
+      ).toThrow(/receipt row \d+ field \w+ changed/);
     });
   }
 });

@@ -679,12 +679,18 @@ export type ResidentBillReceiptLifecycleRow = z.infer<
 >;
 
 // Compile-time key-parity guard: schema keys === generated Row keys.
-type _ReceiptKeyParityAB = keyof ResidentBillReceiptLifecycleRow extends keyof PaymentReceiptDatabaseRow ? true : false;
-type _ReceiptKeyParityBA = keyof PaymentReceiptDatabaseRow extends keyof ResidentBillReceiptLifecycleRow ? true : false;
-const _receiptKeyParityAB: _ReceiptKeyParityAB = true;
-const _receiptKeyParityBA: _ReceiptKeyParityBA = true;
-void _receiptKeyParityAB;
-void _receiptKeyParityBA;
+type ReceiptSnapshotColumnsMissingFromDatabase = Exclude<
+  keyof ResidentBillReceiptLifecycleRow,
+  keyof PaymentReceiptDatabaseRow
+>;
+type ReceiptColumnsMissingFromSnapshot = Exclude<
+  keyof PaymentReceiptDatabaseRow,
+  keyof ResidentBillReceiptLifecycleRow
+>;
+export type _ReceiptSchemaParity = [
+  AssertNever<ReceiptSnapshotColumnsMissingFromDatabase>,
+  AssertNever<ReceiptColumnsMissingFromSnapshot>,
+];
 
 export const RESIDENT_BILL_RECEIPT_LIFECYCLE_FIELDS: readonly (keyof ResidentBillReceiptLifecycleRow)[] = [
   "id",

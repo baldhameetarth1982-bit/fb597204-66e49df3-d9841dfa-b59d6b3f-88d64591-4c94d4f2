@@ -324,7 +324,8 @@ async function openLiveReadBrackets(
  */
 export const read01_activeResidentSeesOwnPaymentHistory: Stage3CMatrixLiveHandler =
   async (ctx: Stage3CLiveMatrixContext) => {
-    const client = requireReadResidentRpcClient(ctx);
+    const brackets = await openLiveReadBrackets(ctx, "READ-01");
+    const client = brackets.client;
     const paymentId = requireReadPrimaryPaymentId(ctx);
     const billId = requireReadPrimaryBillId(ctx);
     const expectedRow = requireReadExpectedHistoryRow(ctx);

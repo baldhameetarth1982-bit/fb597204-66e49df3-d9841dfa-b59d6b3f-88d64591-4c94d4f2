@@ -511,13 +511,6 @@ export const requireReadHistoryBaselineCount = (c: Stage3CLiveMatrixContext) =>
     "READ-01",
   );
 
-export function requireReadResidentRpcClient(
-  c: Stage3CLiveMatrixContext,
-): BillingRpcClient {
-  if (c.readResidentRpcClient === null)
-    throwMissing("readResidentRpcClient", "READ-01");
-  return c.readResidentRpcClient;
-}
 
 export function requireReadExpectedHistoryRow(
   c: Stage3CLiveMatrixContext,

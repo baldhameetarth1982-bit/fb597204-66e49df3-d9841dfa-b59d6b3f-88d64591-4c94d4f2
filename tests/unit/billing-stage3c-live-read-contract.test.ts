@@ -206,55 +206,22 @@ describe("READ contract — handler map", () => {
 // 3) Fail-closed behavior with static messages
 // ---------------------------------------------------------------------------
 
-describe("READ contract — fail-closed handlers (Sub-run B2 pending)", () => {
-  const ctx = createStage3CLiveMatrixContext();
+describe("READ contract — all handlers are implemented async functions", () => {
+  it.each([...EXPECTED_ORDER])("%s is an async function", (id) => {
+    const fn = STAGE3C_READ_HANDLERS[id as Stage3CReadCaseId];
+    expect(typeof fn).toBe("function");
+    expect(fn.constructor.name).toBe("AsyncFunction");
+  });
 
-  // Sub-run B1 replaced only READ-01..READ-04 with success behavior; the
-  // remaining six denial cases stay strictly fail-closed until Sub-run B2.
-  const FAIL_CLOSED_ORDER = EXPECTED_ORDER.filter(
-    (id) => !(["READ-01", "READ-02", "READ-03", "READ-04"] as const).includes(
-      id as never,
-    ),
-  );
-
-  it.each([...FAIL_CLOSED_ORDER])(
-    "%s currently throws the exact not-implemented message",
-    async (id) => {
-      const fn = STAGE3C_READ_HANDLERS[id as Stage3CReadCaseId];
-      await expect(fn(ctx)).rejects.toThrow(
-        stage3cReadNotImplementedMessage(id as Stage3CReadCaseId),
-      );
-    },
-  );
-
-  it("not-implemented message is a stable static literal per id", () => {
+  it("stage3cReadNotImplementedMessage remains a stable static literal (legacy helper)", () => {
     for (const id of EXPECTED_ORDER) {
       expect(stage3cReadNotImplementedMessage(id)).toBe(
         `[stage3c:${id}] behavior not implemented`,
       );
     }
   });
-
-  it.each([...EXPECTED_ORDER])(
-    "%s message contains no UUID/amount/reference/key/actor",
-    (id) => {
-      const msg = stage3cReadNotImplementedMessage(id as Stage3CReadCaseId);
-      expect(/[0-9a-f]{8}-[0-9a-f]{4}/i.test(msg)).toBe(false);
-      const withoutTag = msg.replace(/\[stage3c:READ-\d{2}\]/, "");
-      expect(/\d/.test(withoutTag)).toBe(false);
-      for (const forbidden of [
-        "reference",
-        "idempotency",
-        "actor",
-        "provider",
-        "PGRST",
-        "society_",
-      ]) {
-        expect(msg.toLowerCase().includes(forbidden.toLowerCase())).toBe(false);
-      }
-    },
-  );
 });
+
 
 // ---------------------------------------------------------------------------
 // 4) READ detail — grounded in production `residentPaymentDetailSchema`

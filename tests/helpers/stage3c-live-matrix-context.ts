@@ -30,7 +30,9 @@ import { CanonicalStage3CUuidSchema, type Stage3CFixture } from "./stage3c-runti
 import type {
   ResidentPaymentDetail,
   ResidentPaymentHistoryRow,
+  Stage3CReadDenialEvidence,
 } from "./stage3c-live-read-cases";
+
 
 export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
   // Resident-submit foundation slots (validator contract)
@@ -97,6 +99,7 @@ export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
   referenceInitialSequences: ReceiptSequenceSnapshot | null;
 
   // READ category (Sub-run B1 — READ-01..04 success behavior)
+  // READ category (Sub-run B1 — READ-01..04 success behavior; Sub-run B2 — READ-05..10 denial)
   readPrimaryBillId: string | null;
   readPrimaryPaymentId: string | null;
   readHistoryBaselineCount: number | null;
@@ -104,7 +107,20 @@ export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
   readExpectedHistory: readonly ResidentPaymentHistoryRow[] | null;
   readExpectedDetail: ResidentPaymentDetail | null;
   readAcceptedDetail: ResidentPaymentDetail | null;
+  // READ-10 out-of-scope resources (block admin denial target)
+  readOtherBlockBillId: string | null;
+  readOtherBlockPaymentId: string | null;
+  // READ-05..10 evidence — one denial-evidence per denial case, set by handler.
+  readDenialEvidence: {
+    "READ-05": Stage3CReadDenialEvidence | null;
+    "READ-06": Stage3CReadDenialEvidence | null;
+    "READ-07": Stage3CReadDenialEvidence | null;
+    "READ-08": Stage3CReadDenialEvidence | null;
+    "READ-09": Stage3CReadDenialEvidence | null;
+    "READ-10": Stage3CReadDenialEvidence | null;
+  };
 }
+
 
 export function createStage3CLiveMatrixContext(): Stage3CLiveMatrixContext {
   return {
@@ -173,8 +189,19 @@ export function createStage3CLiveMatrixContext(): Stage3CLiveMatrixContext {
     readExpectedHistory: null,
     readExpectedDetail: null,
     readAcceptedDetail: null,
+    readOtherBlockBillId: null,
+    readOtherBlockPaymentId: null,
+    readDenialEvidence: {
+      "READ-05": null,
+      "READ-06": null,
+      "READ-07": null,
+      "READ-08": null,
+      "READ-09": null,
+      "READ-10": null,
+    },
   };
 }
+
 
 // ---------------------------------------------------------------------------
 // Primitive guard helpers (static error messages — no stored value leaks)
@@ -543,4 +570,11 @@ export function requireReadAcceptedDetail(
     throwMissing("readAcceptedDetail", "READ-03");
   return c.readAcceptedDetail;
 }
+
+// READ-10 out-of-scope resources
+export const requireReadOtherBlockBillId = (c: Stage3CLiveMatrixContext) =>
+  requireCanonicalUuid(c.readOtherBlockBillId, "readOtherBlockBillId", "READ-10");
+export const requireReadOtherBlockPaymentId = (c: Stage3CLiveMatrixContext) =>
+  requireCanonicalUuid(c.readOtherBlockPaymentId, "readOtherBlockPaymentId", "READ-10");
+
 

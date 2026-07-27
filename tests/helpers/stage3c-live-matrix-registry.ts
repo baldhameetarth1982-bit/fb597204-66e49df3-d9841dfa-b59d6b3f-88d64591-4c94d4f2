@@ -1,15 +1,16 @@
 /**
- * Stage 3C — Live matrix registry (40/93).
+ * Stage 3C — Live matrix registry (50/93).
  *
  * Composes:
  *   - the existing 24-case core registry (AUTH + PENDING + VERIFY)
  *   - the 8 RESIDENT-SUBMIT handlers
- *   - the 8 IDEMPOTENCY-01..04 + REFERENCE-01..04 handlers implemented
- *     in this run
+ *   - the 8 IDEMPOTENCY-01..04 + REFERENCE-01..04 handlers
+ *   - the 10 READ-01..10 handlers (READ-01..04 success, READ-05..10 denial)
  *
  * Uses true compile-time exhaustiveness (`satisfies Record`) — no
  * `as Record`, no fallback, no optional lookup.
  */
+
 import {
   STAGE3C_CORE_LIVE_CASE_HANDLERS,
   STAGE3C_CORE_LIVE_CASE_IDS,
@@ -25,13 +26,19 @@ import {
   STAGE3C_IDEMPOTENCY_REFERENCE_HANDLERS,
   type Stage3CIdempotencyReferenceCaseId,
 } from "./stage3c-live-idempotency-reference-cases";
+import {
+  STAGE3C_READ_CASE_IDS,
+  STAGE3C_READ_HANDLERS,
+  type Stage3CReadCaseId,
+} from "./stage3c-live-read-cases";
 import type { Stage3CLiveMatrixContext } from "./stage3c-live-matrix-context";
 import { STAGE3C_REQUIRED_LIVE_CASES } from "./stage3c-live-case-manifest";
 
 export type Stage3CMatrixLiveCaseId =
   | Stage3CCoreLiveCaseId
   | Stage3CResidentSubmitCaseId
-  | Stage3CIdempotencyReferenceCaseId;
+  | Stage3CIdempotencyReferenceCaseId
+  | Stage3CReadCaseId;
 
 export type Stage3CMatrixLiveHandler = (ctx: Stage3CLiveMatrixContext) => Promise<void>;
 
@@ -45,7 +52,9 @@ export const STAGE3C_MATRIX_LIVE_CASE_IDS: readonly Stage3CMatrixLiveCaseId[] = 
   ...STAGE3C_CORE_LIVE_CASE_IDS,
   ...STAGE3C_RESIDENT_SUBMIT_CASE_IDS,
   ...STAGE3C_IDEMPOTENCY_REFERENCE_CASE_IDS,
+  ...STAGE3C_READ_CASE_IDS,
 ];
+
 
 const CORE_BY_ID = new Map(
   STAGE3C_CORE_LIVE_CASE_HANDLERS.map((c) => [c.id, c.execute] as const),
@@ -98,7 +107,18 @@ export const STAGE3C_MATRIX_LIVE_HANDLERS = {
   "REFERENCE-02": STAGE3C_IDEMPOTENCY_REFERENCE_HANDLERS["REFERENCE-02"],
   "REFERENCE-03": STAGE3C_IDEMPOTENCY_REFERENCE_HANDLERS["REFERENCE-03"],
   "REFERENCE-04": STAGE3C_IDEMPOTENCY_REFERENCE_HANDLERS["REFERENCE-04"],
+  "READ-01": STAGE3C_READ_HANDLERS["READ-01"],
+  "READ-02": STAGE3C_READ_HANDLERS["READ-02"],
+  "READ-03": STAGE3C_READ_HANDLERS["READ-03"],
+  "READ-04": STAGE3C_READ_HANDLERS["READ-04"],
+  "READ-05": STAGE3C_READ_HANDLERS["READ-05"],
+  "READ-06": STAGE3C_READ_HANDLERS["READ-06"],
+  "READ-07": STAGE3C_READ_HANDLERS["READ-07"],
+  "READ-08": STAGE3C_READ_HANDLERS["READ-08"],
+  "READ-09": STAGE3C_READ_HANDLERS["READ-09"],
+  "READ-10": STAGE3C_READ_HANDLERS["READ-10"],
 } satisfies Record<Stage3CMatrixLiveCaseId, Stage3CMatrixLiveHandler>;
+
 
 const MANIFEST_BY_ID: ReadonlyMap<string, string> = new Map(
   STAGE3C_REQUIRED_LIVE_CASES.map((c) => [c.id, c.description]),

@@ -604,6 +604,29 @@ export interface ResidentPaymentsCoreOutput {
   readonly payments: ResidentPaymentRow[];
 }
 
+/**
+ * Internal — invoke a resident-facing read RPC directly (bypassing the
+ * generic billing `callBillingRpc` error mapping) so canonical
+ * authorization codes (`not_authorized`, `unauthenticated`) survive to
+ * the outer server-function wrapper's `mapPaymentError` call. Any other
+ * provider failure is collapsed to `operation_failed` to avoid leaking
+ * raw DB text.
+ */
+async function callPaymentReadRpc(
+  client: BillingRpcClient,
+  name: string,
+  args: Record<string, unknown>,
+): Promise<unknown> {
+  const { data, error } = await client.rpc(name, args);
+  if (error) {
+    const raw = (error.message || "").toLowerCase();
+    if (raw.includes("not_authorized")) throw new Error("not_authorized");
+    if (raw.includes("unauthenticated")) throw new Error("unauthenticated");
+    throw new Error("operation_failed");
+  }
+  return data;
+}
+
 /** Neutral shared core — resident payment history. */
 export async function getResidentPaymentsWithClient(
   client: BillingRpcClient,
@@ -611,7 +634,7 @@ export async function getResidentPaymentsWithClient(
 ): Promise<ResidentPaymentsCoreOutput> {
   const limit = input.limit ?? 50;
   const offset = input.offset ?? 0;
-  const raw = await callBillingRpc(
+  const raw = await callPaymentReadRpc(
     client,
     "get_resident_payments_v1",
     buildRpcArgs({ _limit: limit, _offset: offset }),
@@ -628,7 +651,7 @@ export async function getPaymentDetailWithClient(
   client: BillingRpcClient,
   input: { paymentId: string },
 ): Promise<PaymentDetail | null> {
-  const raw = await callBillingRpc(
+  const raw = await callPaymentReadRpc(
     client,
     "get_payment_detail",
     buildRpcArgs({ _payment_id: input.paymentId }),

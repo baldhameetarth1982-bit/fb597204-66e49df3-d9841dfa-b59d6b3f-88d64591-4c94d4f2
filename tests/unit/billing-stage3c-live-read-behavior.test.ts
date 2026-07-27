@@ -387,6 +387,11 @@ function makeFullFixture(
       rejectedPaymentId: canonical.rejectedPaymentId,
       reversedPaymentId: canonical.reversedPaymentId,
       voidReceiptId: canonical.voidReceiptId,
+      secondBlockA: "b2222222-0000-4000-8000-000000000001",
+      secondBlockFlatA: "b2222222-0000-4000-8000-000000000002",
+      secondBlockBillId: "b2222222-0000-4000-8000-000000000003",
+      secondBlockVerifiedPaymentId: "b2222222-0000-4000-8000-000000000004",
+      secondBlockReceiptId: "b2222222-0000-4000-8000-000000000005",
     },
     matrix: {
       otherFlatA: canonical.otherFlatA,
@@ -1417,4 +1422,249 @@ describe("READ-01..04 required 16-case direct evidence matrix", () => {
       );
     });
   }
+});
+
+// ---------------------------------------------------------------------------
+// READ-05..10 direct behavioral denial tests.
+//
+// Each case runs the real handler against a fixture whose denied-actor
+// client returns a canonical `not_authorized` provider error. The
+// handler must:
+//   - route the read through the shared production core
+//     (`getResidentPaymentsWithClient` for READ-05,
+//      `getPaymentDetailWithClient` for READ-06..10),
+//   - observe a thrown canonical `not_authorized` code,
+//   - never return payload data,
+//   - record `readDenialEvidence[CASE]` with category `not_authorized`
+//     and `returnedRow: null`,
+//   - leave the observed bill state unchanged.
+// ---------------------------------------------------------------------------
+
+type DenialCase =
+  | "READ-05"
+  | "READ-06"
+  | "READ-07"
+  | "READ-08"
+  | "READ-09"
+  | "READ-10";
+
+const DENIAL_ACTOR: Record<DenialCase, keyof Stage3CFixture["users"]> = {
+  "READ-05": "movedOutResident",
+  "READ-06": "movedOutResident",
+  "READ-07": "unrelatedResident",
+  "READ-08": "adminB",
+  "READ-09": "guard",
+  "READ-10": "blockAdmin",
+};
+
+function makeDeniedClient(
+  responder: FetchResponder,
+): { client: SupabaseClient; calls: FetchCall[] } {
+  return makeMockedClient(responder);
+}
+
+/**
+ * Build a fixture whose observer (adminA1) sees a stable payments/
+ * receipts snapshot and whose denied actor is a real SupabaseClient
+ * that responds `not_authorized` to any RPC.
+ */
+function primeDenialContext(caseId: DenialCase): {
+  ctx: Stage3CLiveMatrixContext;
+  deniedCalls: FetchCall[];
+  observerCalls: FetchCall[];
+} {
+  const ctx = createStage3CLiveMatrixContext();
+  // observer (adminA1) — stable snapshot + RPC responder for bill summary
+  const observer = makeMockedClient((call) => {
+    if (call.rpcName === "get_bill_payment_summary") {
+      const bid = String((call.body ?? {})._bill_id ?? BILL_ID);
+      return { body: { ...makeSummaryRow(), bill_id: bid } };
+    }
+    if (call.table === "payments") {
+      const u = new URL(call.url);
+      const bidExpr = u.searchParams.get("bill_id") ?? "";
+      const bid = bidExpr.startsWith("eq.")
+        ? bidExpr.slice(3)
+        : BILL_ID;
+      return { body: [{ ...fullPaymentAdminRow(), bill_id: bid }] };
+    }
+    if (call.table === "payment_receipts") return { body: [] };
+    if (call.table === "payment_receipt_sequences") return { body: [] };
+    if (call.table === "payment_receipt_month_sequences")
+      return { body: [] };
+    return undefined;
+  });
+  // denied actor — always 403 not_authorized on RPC
+  const denied = makeDeniedClient((call) => {
+    if (call.rpcName !== null)
+      return { status: 403, body: { message: "not_authorized" } };
+    return undefined;
+  });
+
+  const OTHER_BLOCK_BILL_ID = "b2222222-0000-4000-8000-000000000003";
+  const OTHER_BLOCK_PAYMENT_ID = "b2222222-0000-4000-8000-000000000004";
+
+  const fixture = makeFullFixture(observer.client, observer.client);
+  // bind adminA1 observer client so openLiveReadBrackets can snapshot state
+  fixture.users.adminA1 = {
+    id: fixture.users.adminA1.id,
+    email: fixture.users.adminA1.email,
+    password: "unused",
+    client: observer.client,
+  };
+  // rebind the denied actor slot to the denied client
+  const actorKey = DENIAL_ACTOR[caseId];
+  fixture.users[actorKey] = {
+    id: fixture.users[actorKey].id,
+    email: fixture.users[actorKey].email,
+    password: "unused",
+    client: denied.client,
+  };
+  Object.assign(ctx, {
+    readPrimaryBillId: BILL_ID,
+    readPrimaryPaymentId: PAYMENT_ID,
+    readOtherBlockBillId: OTHER_BLOCK_BILL_ID,
+    readOtherBlockPaymentId: OTHER_BLOCK_PAYMENT_ID,
+  });
+  ctx.fixture = fixture;
+  return { ctx, deniedCalls: denied.calls, observerCalls: observer.calls };
+}
+
+describe("READ-05..10 direct denial behavioral tests", () => {
+  const ids: DenialCase[] = [
+    "READ-05",
+    "READ-06",
+    "READ-07",
+    "READ-08",
+    "READ-09",
+    "READ-10",
+  ];
+  for (const id of ids) {
+    it(`${id} resolves (does not throw) on denial`, async () => {
+      const { ctx } = primeDenialContext(id);
+      await expect(STAGE3C_READ_HANDLERS[id](ctx)).resolves.toBeUndefined();
+    });
+    it(`${id} records denial evidence with category not_authorized`, async () => {
+      const { ctx } = primeDenialContext(id);
+      await STAGE3C_READ_HANDLERS[id](ctx);
+      const evidence = ctx.readDenialEvidence[id];
+      expect(evidence).not.toBeNull();
+      expect(evidence?.category).toBe("not_authorized");
+      expect(evidence?.returnedRow).toBeNull();
+    });
+    it(`${id} denied actor issues the expected READ RPC`, async () => {
+      const { ctx, deniedCalls } = primeDenialContext(id);
+      await STAGE3C_READ_HANDLERS[id](ctx);
+      const expectedRpc =
+        id === "READ-05" ? "get_resident_payments_v1" : "get_payment_detail";
+      expect(deniedCalls.some((c) => c.rpcName === expectedRpc)).toBe(true);
+    });
+    it(`${id} denied actor never issues the wrong READ RPC`, async () => {
+      const { ctx, deniedCalls } = primeDenialContext(id);
+      await STAGE3C_READ_HANDLERS[id](ctx);
+      const forbiddenRpc =
+        id === "READ-05" ? "get_payment_detail" : "get_resident_payments_v1";
+      expect(deniedCalls.some((c) => c.rpcName === forbiddenRpc)).toBe(false);
+    });
+    it(`${id} denied actor never issues a mutation RPC`, async () => {
+      const { ctx, deniedCalls } = primeDenialContext(id);
+      await STAGE3C_READ_HANDLERS[id](ctx);
+      const forbidden = [
+        "submit_offline_payment",
+        "verify_offline_payment",
+        "reject_offline_payment",
+        "reverse_offline_payment",
+      ];
+      for (const name of forbidden) {
+        expect(deniedCalls.some((c) => c.rpcName === name)).toBe(false);
+      }
+    });
+    it(`${id} observer (adminA1) issues bill snapshot brackets`, async () => {
+      const { ctx, observerCalls } = primeDenialContext(id);
+      await STAGE3C_READ_HANDLERS[id](ctx);
+      const snapshots = observerCalls.filter(
+        (c) => c.table === "payments" || c.table === "payment_receipts",
+      );
+      expect(snapshots.length).toBeGreaterThanOrEqual(4);
+    });
+    it(`${id} throws when observed bill state drifts between snapshots`, async () => {
+      const ctx = createStage3CLiveMatrixContext();
+      let paymentsCall = 0;
+      const observer = makeMockedClient((call) => {
+        if (call.rpcName === "get_bill_payment_summary") {
+          const bid = String((call.body ?? {})._bill_id ?? BILL_ID);
+          return { body: { ...makeSummaryRow(), bill_id: bid } };
+        }
+        if (call.table === "payments") {
+          const u = new URL(call.url);
+          const bidExpr = u.searchParams.get("bill_id") ?? "";
+          const bid = bidExpr.startsWith("eq.") ? bidExpr.slice(3) : BILL_ID;
+          paymentsCall += 1;
+          if (paymentsCall === 1)
+            return { body: [{ ...fullPaymentAdminRow(), bill_id: bid }] };
+          return {
+            body: [{ ...fullPaymentAdminRow(), bill_id: bid, amount: 999 }],
+          };
+        }
+        if (call.table === "payment_receipts") return { body: [] };
+        if (call.table === "payment_receipt_sequences") return { body: [] };
+        if (call.table === "payment_receipt_month_sequences")
+          return { body: [] };
+        return undefined;
+      });
+      const denied = makeDeniedClient((call) => {
+        if (call.rpcName !== null)
+          return { status: 403, body: { message: "not_authorized" } };
+        return undefined;
+      });
+      const fixture = makeFullFixture(observer.client, observer.client);
+      fixture.users.adminA1 = {
+        id: fixture.users.adminA1.id,
+        email: fixture.users.adminA1.email,
+        password: "unused",
+        client: observer.client,
+      };
+      const actorKey = DENIAL_ACTOR[id];
+      fixture.users[actorKey] = {
+        id: fixture.users[actorKey].id,
+        email: fixture.users[actorKey].email,
+        password: "unused",
+        client: denied.client,
+      };
+      Object.assign(ctx, {
+        readPrimaryBillId: BILL_ID,
+        readPrimaryPaymentId: PAYMENT_ID,
+        readOtherBlockBillId: "b2222222-0000-4000-8000-000000000003",
+        readOtherBlockPaymentId: "b2222222-0000-4000-8000-000000000004",
+      });
+      ctx.fixture = fixture;
+      await expect(STAGE3C_READ_HANDLERS[id](ctx)).rejects.toThrow();
+    });
+  }
+
+  it("shared cores throw `not_authorized` verbatim for the denied client", async () => {
+    const denied = makeDeniedClient((call) => {
+      if (call.rpcName !== null)
+        return { status: 403, body: { message: "not_authorized" } };
+      return undefined;
+    });
+    const client: BillingRpcClient = {
+      async rpc(name, args) {
+        const { data, error } = await (denied.client as SupabaseClient).rpc(
+          name,
+          args,
+        );
+        return {
+          data,
+          error: error ? { message: (error as { message: string }).message } : null,
+        };
+      },
+    };
+    await expect(
+      getPaymentDetailWithClient(client, { paymentId: PAYMENT_ID }),
+    ).rejects.toThrowError("not_authorized");
+    await expect(
+      getResidentPaymentsWithClient(client, { limit: 50, offset: 0 }),
+    ).rejects.toThrowError("not_authorized");
+  });
 });

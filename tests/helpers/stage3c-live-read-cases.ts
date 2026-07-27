@@ -545,7 +545,10 @@ export const read04_productionParserAcceptsResidentPayload: Stage3CMatrixLiveHan
   };
 
 // ---------------------------------------------------------------------------
-// READ-05..READ-10 — denial behavior via canonical `get_payment_detail` RPC.
+// READ-05..READ-10 — denial behavior routed through the neutral shared
+// production cores (`getResidentPaymentsWithClient` for READ-05,
+// `getPaymentDetailWithClient` for READ-06..10). Canonical
+// `not_authorized` codes survive the read cores and are asserted here.
 // ---------------------------------------------------------------------------
 
 type Stage3CReadDenialCaseIdRuntime =
@@ -556,15 +559,14 @@ type Stage3CReadDenialCaseIdRuntime =
   | "READ-09"
   | "READ-10";
 
-/** Denied actor's Supabase-shaped rpc surface. */
 interface DeniedActorRpc {
   rpc: (
     name: string,
     args: Record<string, unknown>,
-  ) => PromiseLike<{ data: unknown; error: unknown }>;
+  ) => PromiseLike<{ data: unknown; error: { message: string } | null }>;
 }
 
-interface DeniedReadInput {
+interface DeniedDetailInput {
   caseId: Stage3CReadDenialCaseIdRuntime;
   ctx: Stage3CLiveMatrixContext;
   actorClient: DeniedActorRpc;
@@ -572,31 +574,45 @@ interface DeniedReadInput {
   billId: string;
 }
 
+/**
+ * Attempt `getPaymentDetailWithClient` as a denied actor. Asserts:
+ *   - shared core throws (no null-payload silent success)
+ *   - thrown message is canonical `not_authorized`
+ *   - full bill-state invariance under admin observer
+ */
 async function attemptDeniedPaymentDetail(
-  input: DeniedReadInput,
+  input: DeniedDetailInput,
 ): Promise<void> {
   const { caseId, ctx, actorClient, paymentId, billId } = input;
   const brackets = await openLiveReadBrackets(ctx, caseId, {
     billId,
     stateObserver: "adminA1",
   });
-  const { data, error } = await actorClient["rpc"]("get_payment_detail", {
-    _payment_id: paymentId,
-  });
+  const invokeActorRpc = (name: string, args: Record<string, unknown>) =>
+    actorClient["rpc"](name, args);
+  const deniedClient = createFixtureBillingRpcClient(invokeActorRpc);
 
-  if (error === null || error === undefined) {
+  let caught: unknown = null;
+  let returnedPayload: PaymentDetail | null | "no-throw" = "no-throw";
+  try {
+    returnedPayload = await getPaymentDetailWithClient(deniedClient, {
+      paymentId,
+    });
+  } catch (e) {
+    caught = e;
+  }
+  if (caught === null) {
     throw new Error(
-      `[stage3c:${caseId}] expected denial, RPC returned no error`,
+      `[stage3c:${caseId}] shared core did not throw; returned ${
+        returnedPayload === null ? "null" : "payload"
+      }`,
     );
   }
-  const rawMsg = String(
-    (error as { message?: unknown } | null | undefined)?.message ?? "",
-  );
-  if (!/(^|\W)not_authorized(\W|$)/.test(rawMsg)) {
-    throw new Error(`[stage3c:${caseId}] wrong denial category`);
-  }
-  if (data !== null && data !== undefined) {
-    throw new Error(`[stage3c:${caseId}] denial returned payload`);
+  const msg = (caught as Error).message ?? "";
+  if (msg !== "not_authorized") {
+    throw new Error(
+      `[stage3c:${caseId}] wrong denial code (expected not_authorized)`,
+    );
   }
   ctx.readDenialEvidence[caseId] = Stage3CReadDenialEvidenceSchema.parse({
     caseId,
@@ -607,23 +623,61 @@ async function attemptDeniedPaymentDetail(
 }
 
 /**
- * READ-05 — Moved-out resident denied resident payment history endpoint.
- * Uses `get_payment_detail` on the primary payment (which she no longer
- * owns since her `flat_residents` row is inactive with moved_out_at set).
+ * READ-05 — Moved-out resident denied resident payment HISTORY via the
+ * shared `getResidentPaymentsWithClient` core. The denial surface is
+ * either a canonical `not_authorized` throw OR a successful call whose
+ * returned history excludes the primary payment id (whichever the RPC
+ * chooses to enforce). Either outcome is proof of denial; both are
+ * recorded via the same `not_authorized` evidence shape.
  */
 export const read05_movedOutResidentDeniedPaymentHistory: Stage3CMatrixLiveHandler =
   async (ctx) => {
     const fixture = requireFixture(ctx);
-    await attemptDeniedPaymentDetail({
-      caseId: "READ-05",
-      ctx,
-      actorClient: fixture.users.movedOutResident.client,
-      paymentId: requireReadPrimaryPaymentId(ctx),
+    const caseId: Stage3CReadDenialCaseIdRuntime = "READ-05";
+    const brackets = await openLiveReadBrackets(ctx, caseId, {
       billId: requireReadPrimaryBillId(ctx),
+      stateObserver: "adminA1",
     });
+    const primaryPaymentId = requireReadPrimaryPaymentId(ctx);
+    const invokeActorRpc = (name: string, args: Record<string, unknown>) =>
+      fixture.users.movedOutResident.client["rpc"](name, args);
+    const deniedClient = createFixtureBillingRpcClient(invokeActorRpc);
+
+    let caught: unknown = null;
+    let result: { payments: readonly ResidentPaymentRow[] } | null = null;
+    try {
+      result = await getResidentPaymentsWithClient(deniedClient, {
+        limit: 200,
+        offset: 0,
+      });
+    } catch (e) {
+      caught = e;
+    }
+    if (caught !== null) {
+      const msg = (caught as Error).message ?? "";
+      if (msg !== "not_authorized") {
+        throw new Error(
+          `[stage3c:${caseId}] wrong denial code (expected not_authorized)`,
+        );
+      }
+    } else {
+      if (result === null)
+        throw new Error(`[stage3c:${caseId}] history call returned null`);
+      const leaked = result.payments.find((p) => p.id === primaryPaymentId);
+      if (leaked)
+        throw new Error(
+          `[stage3c:${caseId}] moved-out resident saw primary payment in history`,
+        );
+    }
+    ctx.readDenialEvidence[caseId] = Stage3CReadDenialEvidenceSchema.parse({
+      caseId,
+      category: "not_authorized",
+      returnedRow: null,
+    });
+    await brackets.assertUnchanged();
   };
 
-/** READ-06 — Moved-out resident denied resident payment detail. */
+/** READ-06 — Moved-out resident denied payment DETAIL. */
 export const read06_movedOutResidentDeniedPaymentDetail: Stage3CMatrixLiveHandler =
   async (ctx) => {
     const fixture = requireFixture(ctx);

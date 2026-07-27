@@ -1596,9 +1596,15 @@ describe("READ-05..10 direct denial behavioral tests", () => {
           return { body: { ...makeSummaryRow(), bill_id: bid } };
         }
         if (call.table === "payments") {
+          const u = new URL(call.url);
+          const bidExpr = u.searchParams.get("bill_id") ?? "";
+          const bid = bidExpr.startsWith("eq.") ? bidExpr.slice(3) : BILL_ID;
           paymentsCall += 1;
-          if (paymentsCall === 1) return { body: [fullPaymentAdminRow()] };
-          return { body: [{ ...fullPaymentAdminRow(), amount: 999 }] };
+          if (paymentsCall === 1)
+            return { body: [{ ...fullPaymentAdminRow(), bill_id: bid }] };
+          return {
+            body: [{ ...fullPaymentAdminRow(), bill_id: bid, amount: 999 }],
+          };
         }
         if (call.table === "payment_receipts") return { body: [] };
         if (call.table === "payment_receipt_sequences") return { body: [] };

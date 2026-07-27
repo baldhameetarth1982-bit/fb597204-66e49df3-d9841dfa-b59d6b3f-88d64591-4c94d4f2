@@ -438,6 +438,7 @@ export const read02_activeResidentSeesOwnPaymentDetail: Stage3CMatrixLiveHandler
       offset: 0,
     });
     assertReadStateUnchanged(preHistory, postHistory);
+    await brackets.assertUnchanged();
   };
 
 /**

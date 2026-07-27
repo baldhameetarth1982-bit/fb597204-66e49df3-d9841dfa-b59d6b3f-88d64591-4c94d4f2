@@ -104,7 +104,6 @@ export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
   readExpectedHistory: readonly ResidentPaymentHistoryRow[] | null;
   readExpectedDetail: ResidentPaymentDetail | null;
   readAcceptedDetail: ResidentPaymentDetail | null;
-  readResidentRpcClient: BillingRpcClient | null;
 }
 
 export function createStage3CLiveMatrixContext(): Stage3CLiveMatrixContext {

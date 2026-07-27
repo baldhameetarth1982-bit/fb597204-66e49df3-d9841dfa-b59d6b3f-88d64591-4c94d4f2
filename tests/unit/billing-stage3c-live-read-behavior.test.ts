@@ -1586,8 +1586,10 @@ describe("READ-05..10 direct denial behavioral tests", () => {
       const ctx = createStage3CLiveMatrixContext();
       let paymentsCall = 0;
       const observer = makeMockedClient((call) => {
-        if (call.rpcName === "get_bill_payment_summary")
-          return { body: makeSummaryRow() };
+        if (call.rpcName === "get_bill_payment_summary") {
+          const bid = String((call.body ?? {})._bill_id ?? BILL_ID);
+          return { body: { ...makeSummaryRow(), bill_id: bid } };
+        }
         if (call.table === "payments") {
           paymentsCall += 1;
           if (paymentsCall === 1) return { body: [fullPaymentAdminRow()] };

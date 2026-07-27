@@ -478,7 +478,8 @@ export const read03_residentPaymentDetailCarriesResidentAudience: Stage3CMatrixL
  */
 export const read04_productionParserAcceptsResidentPayload: Stage3CMatrixLiveHandler =
   async (ctx: Stage3CLiveMatrixContext) => {
-    const client = requireReadResidentRpcClient(ctx);
+    const brackets = await openLiveReadBrackets(ctx, "READ-04");
+    const client = brackets.client;
     const paymentId = requireReadPrimaryPaymentId(ctx);
     const accepted = requireReadAcceptedDetail(ctx);
 
@@ -486,6 +487,7 @@ export const read04_productionParserAcceptsResidentPayload: Stage3CMatrixLiveHan
     const detail = narrowResidentDetail(detailAny, "READ-04");
 
     assertResidentDetailMatchesExpected(detail, accepted);
+    await brackets.assertUnchanged();
   };
 
 // ---------------------------------------------------------------------------

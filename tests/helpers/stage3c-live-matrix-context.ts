@@ -173,7 +173,6 @@ export function createStage3CLiveMatrixContext(): Stage3CLiveMatrixContext {
     readExpectedHistory: null,
     readExpectedDetail: null,
     readAcceptedDetail: null,
-    readResidentRpcClient: null,
   };
 }
 

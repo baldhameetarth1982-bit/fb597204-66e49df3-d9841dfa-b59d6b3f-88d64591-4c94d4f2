@@ -847,48 +847,59 @@ export async function snapshotResidentBillState(
   return { summary, paymentRows, receiptRows, sequences };
 }
 
+function requireRowAt<T>(
+  rows: readonly T[],
+  index: number,
+  label: string,
+  what: string,
+): T {
+  const row = rows[index];
+  if (row === undefined)
+    throw new Error(`[stage3c:${label}] ${what} row ${index} absent`);
+  return row;
+}
+
 export function assertResidentBillStateUnchanged(
   before: ResidentBillStateSnapshot,
   after: ResidentBillStateSnapshot,
   label: string,
 ): void {
-  // Re-parse all four components strictly to reject any structural drift.
+  // Re-parse every component strictly. No casts, no non-null assertions,
+  // no undefined-to-null normalization: schemas own null handling.
   const bSum = ResidentBillSummarySchema.parse(before.summary);
   const aSum = ResidentBillSummarySchema.parse(after.summary);
-  for (const key of Object.keys(bSum) as Array<keyof ResidentBillSummary>) {
+  const summaryKeys = Object.keys(bSum) as ReadonlyArray<keyof ResidentBillSummary>;
+  for (const key of summaryKeys) {
     if (bSum[key] !== aSum[key])
       throw new Error(`[stage3c:${label}] summary.${String(key)} changed`);
   }
+
   const bPay = ResidentBillPaymentLifecycleRowsSchema.parse(before.paymentRows);
   const aPay = ResidentBillPaymentLifecycleRowsSchema.parse(after.paymentRows);
   if (bPay.length !== aPay.length)
     throw new Error(`[stage3c:${label}] payment row count changed`);
   for (let i = 0; i < bPay.length; i++) {
-    const bi = bPay[i]!;
-    const ai = aPay[i]!;
-    for (const f of RESIDENT_BILL_PAYMENT_LIFECYCLE_FIELDS) {
-      if (
-        (bi as Record<string, unknown>)[f] !==
-        (ai as Record<string, unknown>)[f]
-      )
+    const bi = requireRowAt(bPay, i, label, "payment");
+    const ai = requireRowAt(aPay, i, label, "payment");
+    for (const field of RESIDENT_BILL_PAYMENT_LIFECYCLE_FIELDS) {
+      if (bi[field] !== ai[field])
         throw new Error(`[stage3c:${label}] payment row ${i} changed`);
     }
   }
+
   const bRec = ResidentBillReceiptLifecycleRowsSchema.parse(before.receiptRows);
   const aRec = ResidentBillReceiptLifecycleRowsSchema.parse(after.receiptRows);
   if (bRec.length !== aRec.length)
     throw new Error(`[stage3c:${label}] receipt row count changed`);
   for (let i = 0; i < bRec.length; i++) {
-    const bi = bRec[i]!;
-    const ai = aRec[i]!;
-    for (const f of RESIDENT_BILL_RECEIPT_LIFECYCLE_FIELDS) {
-      if (
-        (bi as Record<string, unknown>)[f] !==
-        (ai as Record<string, unknown>)[f]
-      )
+    const bi = requireRowAt(bRec, i, label, "receipt");
+    const ai = requireRowAt(aRec, i, label, "receipt");
+    for (const field of RESIDENT_BILL_RECEIPT_LIFECYCLE_FIELDS) {
+      if (bi[field] !== ai[field])
         throw new Error(`[stage3c:${label}] receipt row ${i} changed`);
     }
   }
+
   assertReceiptSequencesExactlyEqual(before.sequences, after.sequences, label);
 }
 

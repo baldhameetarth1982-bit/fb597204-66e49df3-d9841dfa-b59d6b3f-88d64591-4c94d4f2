@@ -805,16 +805,300 @@ describe("Stage 3C — direct reader/state behavioral coverage", () => {
         "T",
       ),
     ).toThrow(/rejected/);
-  });
+});
 
-  it("parseResidentPaymentStatusRows rejects an unsupported status", () => {
-    expect(() =>
-      parseResidentPaymentStatusRows(
-        [{ id: PAY_A, status: "not-a-status", amount: 300 }],
+// ---------------------------------------------------------------------------
+// Full payment/receipt lifecycle schema + snapshot mutation-detection tests
+// ---------------------------------------------------------------------------
+import {
+  ResidentBillPaymentLifecycleRowSchema,
+  ResidentBillPaymentLifecycleRowsSchema,
+  parseResidentBillPaymentLifecycleRows,
+  ResidentBillReceiptLifecycleRowSchema,
+  ResidentBillReceiptLifecycleRowsSchema,
+  parseResidentBillReceiptLifecycleRows,
+  RESIDENT_BILL_PAYMENT_LIFECYCLE_FIELDS,
+  RESIDENT_BILL_RECEIPT_LIFECYCLE_FIELDS,
+  snapshotResidentBillState,
+  type ResidentBillPaymentLifecycleRow,
+  type ResidentBillReceiptLifecycleRow,
+  type ResidentBillStateReader,
+  type ActorRpcClient,
+} from "../helpers/stage3c-live-resident-submit-contracts";
+
+const CANON_ID_1 = "11111111-2222-4333-8444-555555555555";
+const CANON_ID_2 = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
+const CANON_BILL = "22222222-3333-4444-8555-666666666666";
+const CANON_SOCIETY = "33333333-4444-4555-8666-777777777777";
+const CANON_RECEIPT_1 = "44444444-5555-4666-8777-888888888888";
+const CANON_RECEIPT_2 = "55555555-6666-4777-8888-999999999999";
+
+function fullLifecycleRow(overrides: Partial<Record<string, unknown>> = {}): Record<string, unknown> {
+  return {
+    id: CANON_ID_1,
+    bill_id: CANON_BILL,
+    society_id: CANON_SOCIETY,
+    amount: 300,
+    method: "bank_transfer",
+    status: "pending",
+    ...overrides,
+  };
+}
+
+function fullReceiptRow(overrides: Partial<Record<string, unknown>> = {}): Record<string, unknown> {
+  return {
+    id: CANON_RECEIPT_1,
+    payment_id: CANON_ID_1,
+    ...overrides,
+  };
+}
+
+describe("Stage 3C — payment lifecycle schema", () => {
+  it("accepts a minimal-required row (nullish fields absent)", () => {
+    expect(ResidentBillPaymentLifecycleRowSchema.safeParse(fullLifecycleRow()).success).toBe(true);
+  });
+  it("rejects missing bill_id", () => {
+    const r = fullLifecycleRow();
+    delete r.bill_id;
+    expect(ResidentBillPaymentLifecycleRowSchema.safeParse(r).success).toBe(false);
+  });
+  it("rejects missing society_id", () => {
+    const r = fullLifecycleRow();
+    delete r.society_id;
+    expect(ResidentBillPaymentLifecycleRowSchema.safeParse(r).success).toBe(false);
+  });
+  it("rejects missing amount", () => {
+    const r = fullLifecycleRow();
+    delete r.amount;
+    expect(ResidentBillPaymentLifecycleRowSchema.safeParse(r).success).toBe(false);
+  });
+  it("rejects missing method", () => {
+    const r = fullLifecycleRow();
+    delete r.method;
+    expect(ResidentBillPaymentLifecycleRowSchema.safeParse(r).success).toBe(false);
+  });
+  it("rejects an unsupported status", () => {
+    expect(
+      ResidentBillPaymentLifecycleRowSchema.safeParse(fullLifecycleRow({ status: "unknown" })).success,
+    ).toBe(false);
+  });
+  it("rejects negative amount", () => {
+    expect(
+      ResidentBillPaymentLifecycleRowSchema.safeParse(fullLifecycleRow({ amount: -1 })).success,
+    ).toBe(false);
+  });
+  it("rejects unknown extra key", () => {
+    expect(
+      ResidentBillPaymentLifecycleRowSchema.safeParse(fullLifecycleRow({ rogue: "x" })).success,
+    ).toBe(false);
+  });
+  it("accepts nullable verified_at/verified_by as null", () => {
+    expect(
+      ResidentBillPaymentLifecycleRowSchema.safeParse(
+        fullLifecycleRow({ verified_at: null, verified_by: null }),
+      ).success,
+    ).toBe(true);
+  });
+  it("rejects non-canonical bill_id UUID", () => {
+    expect(
+      ResidentBillPaymentLifecycleRowSchema.safeParse(fullLifecycleRow({ bill_id: "not-a-uuid" })).success,
+    ).toBe(false);
+  });
+  it("rows schema rejects duplicate payment ids", () => {
+    const res = ResidentBillPaymentLifecycleRowsSchema.safeParse([
+      fullLifecycleRow(),
+      fullLifecycleRow(),
+    ]);
+    expect(res.success).toBe(false);
+  });
+  it("parseResidentBillPaymentLifecycleRows rejects null", () => {
+    expect(() => parseResidentBillPaymentLifecycleRows(null, "T")).toThrow(/absent/);
+  });
+  it("parseResidentBillPaymentLifecycleRows rejects non-array", () => {
+    expect(() => parseResidentBillPaymentLifecycleRows({}, "T")).toThrow(/not array/);
+  });
+  it("canonical field list has 25 entries", () => {
+    expect(RESIDENT_BILL_PAYMENT_LIFECYCLE_FIELDS.length).toBe(25);
+  });
+});
+
+describe("Stage 3C — receipt lifecycle schema", () => {
+  it("accepts a minimal row", () => {
+    expect(ResidentBillReceiptLifecycleRowSchema.safeParse(fullReceiptRow()).success).toBe(true);
+  });
+  it("rejects missing id", () => {
+    const r = fullReceiptRow();
+    delete r.id;
+    expect(ResidentBillReceiptLifecycleRowSchema.safeParse(r).success).toBe(false);
+  });
+  it("rejects missing payment_id", () => {
+    const r = fullReceiptRow();
+    delete r.payment_id;
+    expect(ResidentBillReceiptLifecycleRowSchema.safeParse(r).success).toBe(false);
+  });
+  it("rejects unknown extra key", () => {
+    expect(
+      ResidentBillReceiptLifecycleRowSchema.safeParse(fullReceiptRow({ rogue: 1 })).success,
+    ).toBe(false);
+  });
+  it("accepts nullable voided_at/void_reason", () => {
+    expect(
+      ResidentBillReceiptLifecycleRowSchema.safeParse(
+        fullReceiptRow({ voided_at: null, void_reason: null }),
+      ).success,
+    ).toBe(true);
+  });
+  it("rows schema rejects duplicate receipt ids", () => {
+    const res = ResidentBillReceiptLifecycleRowsSchema.safeParse([
+      fullReceiptRow(),
+      fullReceiptRow(),
+    ]);
+    expect(res.success).toBe(false);
+  });
+  it("parseResidentBillReceiptLifecycleRows rejects null", () => {
+    expect(() => parseResidentBillReceiptLifecycleRows(null, "T")).toThrow(/absent/);
+  });
+  it("parseResidentBillReceiptLifecycleRows rejects non-array", () => {
+    expect(() => parseResidentBillReceiptLifecycleRows({}, "T")).toThrow(/not array/);
+  });
+  it("canonical field list has 14 entries", () => {
+    expect(RESIDENT_BILL_RECEIPT_LIFECYCLE_FIELDS.length).toBe(14);
+  });
+});
+
+describe("Stage 3C — snapshotResidentBillState receipt/payment fetches", () => {
+  const seq = { yearly: [], monthly: [] };
+  const summary = {
+    bill_id: CANON_BILL,
+    society_id: CANON_SOCIETY,
+    total_payable: 1000,
+    verified_amount: 0,
+    pending_amount: 0,
+    rejected_amount: 0,
+    reversed_amount: 0,
+    available_to_submit: 1000,
+    remaining_verified_balance: 1000,
+    cancelled: false,
+    status: "unpaid" as const,
+  };
+  function makeSnapReader(overrides: {
+    payments?: unknown;
+    receipts?: unknown;
+  } = {}): ResidentBillStateReader {
+    return {
+      from: (table: string) => ({
+        select: (_c: string) => ({
+          eq: async (_col: string, _val: string) => {
+            if (table === "payments")
+              return { data: overrides.payments ?? [], error: null };
+            if (table === "payment_receipts")
+              return { data: overrides.receipts ?? [], error: null };
+            if (table === "payment_receipt_sequences")
+              return { data: seq.yearly, error: null };
+            if (table === "payment_receipt_month_sequences")
+              return { data: seq.monthly, error: null };
+            return { data: [], error: null };
+          },
+        }),
+      }),
+    };
+  }
+  const actor: ActorRpcClient = {
+    async rpc() {
+      return { data: summary, error: null };
+    },
+  };
+  it("returns receiptRows field on the snapshot", async () => {
+    const snap = await snapshotResidentBillState(
+      makeSnapReader(),
+      actor,
+      CANON_BILL,
+      CANON_SOCIETY,
+      "T",
+    );
+    expect(Array.isArray(snap.receiptRows)).toBe(true);
+    expect(snap.receiptRows.length).toBe(0);
+  });
+  it("fetches and returns a real receipt row scoped to a payment", async () => {
+    const payment = fullLifecycleRow();
+    const receipt = fullReceiptRow();
+    const snap = await snapshotResidentBillState(
+      makeSnapReader({ payments: [payment], receipts: [receipt] }),
+      actor,
+      CANON_BILL,
+      CANON_SOCIETY,
+      "T",
+    );
+    expect(snap.paymentRows.length).toBe(1);
+    expect(snap.receiptRows.length).toBe(1);
+    expect(snap.receiptRows[0].id).toBe(CANON_RECEIPT_1);
+  });
+  it("rejects a receipt row whose payment_id does not match", async () => {
+    const payment = fullLifecycleRow();
+    const receipt = fullReceiptRow({ payment_id: CANON_ID_2 });
+    await expect(
+      snapshotResidentBillState(
+        makeSnapReader({ payments: [payment], receipts: [receipt] }),
+        actor,
+        CANON_BILL,
+        CANON_SOCIETY,
         "T",
       ),
-    ).toThrow(/rejected/);
+    ).rejects.toThrow(/payment scope mismatch/);
   });
+  it("rejects a receipt with wrong society scope", async () => {
+    const payment = fullLifecycleRow();
+    const receipt = fullReceiptRow({ society_id: CANON_ID_2 });
+    await expect(
+      snapshotResidentBillState(
+        makeSnapReader({ payments: [payment], receipts: [receipt] }),
+        actor,
+        CANON_BILL,
+        CANON_SOCIETY,
+        "T",
+      ),
+    ).rejects.toThrow(/receipt society scope mismatch/);
+  });
+  it("rejects duplicate receipt ids across payments", async () => {
+    const p1 = fullLifecycleRow({ id: CANON_ID_1 });
+    const p2 = fullLifecycleRow({ id: CANON_ID_2 });
+    // Both payments queried; mock returns same receipt row both times.
+    const r = fullReceiptRow({ payment_id: CANON_ID_1 });
+    let call = 0;
+    const reader: ResidentBillStateReader = {
+      from: (table: string) => ({
+        select: (_c: string) => ({
+          eq: async (_col: string, val: string) => {
+            if (table === "payments") return { data: [p1, p2], error: null };
+            if (table === "payment_receipts") {
+              call++;
+              // return a receipt whose payment_id matches the requested payment
+              return { data: [{ ...r, payment_id: val }], error: null };
+            }
+            return { data: [], error: null };
+          },
+        }),
+      }),
+    };
+    await expect(
+      snapshotResidentBillState(reader, actor, CANON_BILL, CANON_SOCIETY, "T"),
+    ).rejects.toThrow(/duplicate receipt id/);
+    expect(call).toBeGreaterThan(0);
+  });
+  it("rejects a payment row whose bill_id does not match", async () => {
+    const payment = fullLifecycleRow({ bill_id: CANON_ID_2 });
+    await expect(
+      snapshotResidentBillState(
+        makeSnapReader({ payments: [payment] }),
+        actor,
+        CANON_BILL,
+        CANON_SOCIETY,
+        "T",
+      ),
+    ).rejects.toThrow(/payment row bill scope mismatch/);
+  });
+});
+
 });
 
 

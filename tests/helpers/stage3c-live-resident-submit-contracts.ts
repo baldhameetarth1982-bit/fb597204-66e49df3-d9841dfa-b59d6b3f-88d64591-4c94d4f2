@@ -505,8 +505,12 @@ export function deriveActorRoleFromSource(
  * (verify/reject/reverse, timestamp change, notes edit) is detected by
  * `assertResidentBillStateUnchanged`.
  *
- * DB-nullable columns are `.nullish()` so partial mock rows still parse;
- * the strict object rejects any unknown key so schema drift is caught.
+ * Nullability contract:
+ *   - Every database-nullable column is a REQUIRED key on the schema.
+ *   - Its value must be either the canonical typed value OR explicit
+ *     `null` — `.nullable()` (never `.nullish()`).
+ *   - Omitted nullable keys FAIL CLOSED: `undefined` is not accepted.
+ *   - The strict object rejects any unknown key so schema drift is caught.
  */
 export const ResidentBillPaymentLifecycleRowSchema = z
   .object({

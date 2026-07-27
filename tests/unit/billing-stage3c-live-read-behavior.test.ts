@@ -1064,17 +1064,8 @@ function primeWithMutation(
   return { ctx };
 }
 
-describe("READ-01..04 reject summary mutation after production read", () => {
-  const ids = ["READ-01", "READ-02", "READ-03", "READ-04"] as const;
-  for (const id of ids) {
-    it(`${id} rejects mutated verified_amount in summary`, async () => {
-      const { ctx } = primeWithMutation(id, (s) => {
-        s.summary = { ...s.summary, verified_amount: 999 };
-      });
-      await expect(runHandler(id, ctx)).rejects.toThrow();
-    });
-  }
-});
+// Old empty-baseline summary describe removed — required 16-case matrix
+// below uses the rich baseline via `runRequiredMutation`.
 
 describe("READ-01..04 reject payment lifecycle mutation after production read", () => {
   const ids = ["READ-01", "READ-02", "READ-03", "READ-04"] as const;

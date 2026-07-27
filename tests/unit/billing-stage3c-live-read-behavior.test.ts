@@ -1160,12 +1160,32 @@ type RichMutState = {
   monthly: Record<string, unknown>[];
 };
 
+type RichMutationEvidence = {
+  targetRpc: "get_resident_payments_v1" | "get_payment_detail";
+  targetRpcObserved: boolean;
+  mutationApplied: boolean;
+  mutationAppliedByRpc: string | null;
+};
+
+interface PrimedRich {
+  ctx: Stage3CLiveMatrixContext;
+  adminCalls: FetchCall[];
+  residentCalls: FetchCall[];
+  evidence: RichMutationEvidence;
+}
+
 function primeRich(
   handlerId: keyof typeof STAGE3C_READ_HANDLERS,
   mutation: (s: RichMutState) => void,
-): { ctx: Stage3CLiveMatrixContext } {
-  const triggerRpc =
+): PrimedRich {
+  const targetRpc: RichMutationEvidence["targetRpc"] =
     handlerId === "READ-01" ? "get_resident_payments_v1" : "get_payment_detail";
+  const evidence: RichMutationEvidence = {
+    targetRpc,
+    targetRpcObserved: false,
+    mutationApplied: false,
+    mutationAppliedByRpc: null,
+  };
   const state: RichMutState = {
     payments: [fullPaymentAdminRow()],
     receipts: [fullReceiptAdminRow()],
@@ -1173,7 +1193,6 @@ function primeRich(
     yearly: [{ society_id: SOCIETY_ID, year: YEAR, next_number: 1 }],
     monthly: [{ society_id: SOCIETY_ID, year_month: YEAR_MONTH, next_number: 1 }],
   };
-  let triggered = false;
   const adminResp: FetchResponder = (call) => {
     if (call.table === "payments") return { body: state.payments };
     if (call.table === "payment_receipts") return { body: state.receipts };
@@ -1193,9 +1212,11 @@ function primeRich(
   };
   const wrapped: Responder = (name, args) => {
     const r = rpcFn(name, args);
-    if (!triggered && name === triggerRpc) {
-      triggered = true;
+    if (!evidence.targetRpcObserved && name === targetRpc) {
+      evidence.targetRpcObserved = true;
+      evidence.mutationAppliedByRpc = name;
       mutation(state);
+      evidence.mutationApplied = true;
     }
     return r;
   };
@@ -1214,8 +1235,40 @@ function primeRich(
     readAcceptedDetail: detail,
   });
   ctx.fixture = makeFullFixture(admin.client, resident.client);
-  return { ctx };
+  return { ctx, adminCalls: admin.calls, residentCalls: resident.calls, evidence };
 }
+
+async function runRequiredMutation(
+  id: "READ-01" | "READ-02" | "READ-03" | "READ-04",
+  mutation: (s: RichMutState) => void,
+  expected: RegExp,
+): Promise<void> {
+  const p = primeRich(id, mutation);
+  let caught: unknown = null;
+  try {
+    await runHandler(id, p.ctx);
+  } catch (e) {
+    caught = e;
+  }
+  expect(caught).not.toBeNull();
+  expect((caught as Error).message).toMatch(expected);
+  // Direct RPC + actor evidence.
+  expect(p.evidence.targetRpcObserved).toBe(true);
+  expect(p.evidence.mutationApplied).toBe(true);
+  expect(p.evidence.mutationAppliedByRpc).toBe(p.evidence.targetRpc);
+  // Resident issued the expected READ RPC at least once.
+  expect(
+    p.residentCalls.some((c) => c.rpcName === p.evidence.targetRpc),
+  ).toBe(true);
+  // Admin issued neither resident READ RPC.
+  expect(
+    p.adminCalls.some((c) => c.rpcName === "get_resident_payments_v1"),
+  ).toBe(false);
+  expect(p.adminCalls.some((c) => c.rpcName === "get_payment_detail")).toBe(
+    false,
+  );
+}
+
 
 describe("READ-01..04 rich baseline succeeds unchanged", () => {
   const ids = ["READ-01", "READ-02", "READ-03", "READ-04"] as const;

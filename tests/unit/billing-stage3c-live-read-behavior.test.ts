@@ -1582,13 +1582,12 @@ describe("READ-05..10 direct denial behavioral tests", () => {
       const ctx = createStage3CLiveMatrixContext();
       let paymentsCall = 0;
       const observer = makeMockedClient((call) => {
+        if (call.rpcName === "get_bill_payment_summary")
+          return { body: makeSummaryRow() };
         if (call.table === "payments") {
           paymentsCall += 1;
-          // Return a mutated row on the second call.
           if (paymentsCall === 1) return { body: [fullPaymentAdminRow()] };
-          return {
-            body: [{ ...fullPaymentAdminRow(), amount: 999 }],
-          };
+          return { body: [{ ...fullPaymentAdminRow(), amount: 999 }] };
         }
         if (call.table === "payment_receipts") return { body: [] };
         if (call.table === "payment_receipt_sequences") return { body: [] };
@@ -1602,6 +1601,12 @@ describe("READ-05..10 direct denial behavioral tests", () => {
         return undefined;
       });
       const fixture = makeFullFixture(observer.client, observer.client);
+      fixture.users.adminA1 = {
+        id: fixture.users.adminA1.id,
+        email: fixture.users.adminA1.email,
+        password: "unused",
+        client: observer.client,
+      };
       const actorKey = DENIAL_ACTOR[id];
       fixture.users[actorKey] = {
         id: fixture.users[actorKey].id,

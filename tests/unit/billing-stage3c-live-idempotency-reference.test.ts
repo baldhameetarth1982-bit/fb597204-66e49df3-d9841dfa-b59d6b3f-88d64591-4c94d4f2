@@ -1020,7 +1020,7 @@ describe("Sub-run B — IDEMPOTENCY-02 exact replay", () => {
     const s = makeCleanState();
     const ctx = await seedPostIdem01(s);
     s.submitImpl = async () => {
-      s.receipts.push({ id: "rcpt-1", payment_id: PRIMARY_PAYMENT });
+      s.receipts.push(buildReceipt("30000000-0000-0000-0000-00000000000c", PRIMARY_PAYMENT));
       return PRIMARY_PAYMENT;
     };
     await expect(idempotency02_exactReplay(ctx)).rejects.toThrow();

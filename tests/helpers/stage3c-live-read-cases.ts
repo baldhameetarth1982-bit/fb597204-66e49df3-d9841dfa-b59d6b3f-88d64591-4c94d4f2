@@ -317,7 +317,7 @@ async function openLiveReadBrackets(
   const societyId = fixture.societyA;
   const residentClient = fixture.users.activeResident.client;
   // Bracket-access invocation keeps this module free of literal
-  // `.rpc(` construction, so the source-level contract remains
+  // RPC construction, so the source-level contract remains
   // "the shared production cores are the single RPC construction owner".
   const invokeResidentRpc = (
     name: string,

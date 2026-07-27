@@ -688,20 +688,29 @@ describe("Stage 3C — direct reader/state behavioral coverage", () => {
   it("assertResidentBillStateUnchanged rejects changed payment amount (message excludes IDs and amounts)", () => {
     const summary = ResidentBillSummarySchema.parse(goodSummary);
     const seq = ReceiptSequenceSnapshotSchema.parse({ yearly: [], monthly: [] });
+    const beforeRow = {
+      id: PAY_A,
+      bill_id: BILL_A,
+      society_id: SOC_A,
+      amount: 300,
+      method: "bank_transfer",
+      status: "pending" as const,
+    };
+    const afterRow = { ...beforeRow, amount: 999 };
     const before: ResidentBillStateSnapshot = {
       summary,
-      paymentRows: parseResidentPaymentStatusRows(
-        [{ id: PAY_A, status: "pending", amount: 300 }],
-        "T",
-      ),
+      paymentRows: [
+        beforeRow as unknown as import("../helpers/stage3c-live-resident-submit-contracts").ResidentBillPaymentLifecycleRow,
+      ],
+      receiptRows: [],
       sequences: seq,
     };
     const after: ResidentBillStateSnapshot = {
       summary,
-      paymentRows: parseResidentPaymentStatusRows(
-        [{ id: PAY_A, status: "pending", amount: 999 }],
-        "T",
-      ),
+      paymentRows: [
+        afterRow as unknown as import("../helpers/stage3c-live-resident-submit-contracts").ResidentBillPaymentLifecycleRow,
+      ],
+      receiptRows: [],
       sequences: seq,
     };
     try {

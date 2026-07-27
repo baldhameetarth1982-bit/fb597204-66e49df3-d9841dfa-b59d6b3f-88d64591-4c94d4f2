@@ -459,7 +459,26 @@ interface PrimeOptions {
 function defaultAdminResponder(): FetchResponder {
   return (call) => {
     if (call.table === "payments")
-      return { body: [{ id: PAYMENT_ID, status: "verified", amount: 300 }] };
+      return {
+        body: [
+          {
+            id: PAYMENT_ID,
+            bill_id: BILL_ID,
+            society_id: SOCIETY_ID,
+            flat_id: FLAT_ID,
+            amount: 300,
+            method: "bank_transfer",
+            status: "verified",
+            source: "resident_submission",
+            reference_no: "RS-A1",
+            payment_date: "2026-07-01",
+            submitted_at: NOW,
+            created_at: NOW,
+            verified_at: NOW,
+          },
+        ],
+      };
+    if (call.table === "payment_receipts") return { body: [] };
     if (call.table === "payment_receipt_sequences") return { body: [] };
     if (call.table === "payment_receipt_month_sequences")
       return { body: [] };
@@ -955,4 +974,138 @@ describe("READ module hygiene", () => {
     if (protectedId) expect(MODULE_SRC).not.toContain(protectedId);
     else expect(true).toBe(true);
   });
+});
+
+// ---------------------------------------------------------------------------
+// READ-01..04 state-mutation rejection tests (post-snapshot drift detection)
+// ---------------------------------------------------------------------------
+type AdminMutState = {
+  payments: Record<string, unknown>[];
+  receipts: Record<string, unknown>[];
+  summary: Record<string, unknown>;
+};
+
+function fullPaymentAdminRow(): Record<string, unknown> {
+  return {
+    id: PAYMENT_ID,
+    bill_id: BILL_ID,
+    society_id: SOCIETY_ID,
+    flat_id: FLAT_ID,
+    amount: 300,
+    method: "bank_transfer",
+    status: "verified",
+    source: "resident_submission",
+    reference_no: "RS-A1",
+    payment_date: "2026-07-01",
+    submitted_at: NOW,
+    created_at: NOW,
+    verified_at: NOW,
+  };
+}
+
+function primeWithMutation(
+  handlerId: keyof typeof STAGE3C_READ_HANDLERS,
+  mutation: (s: AdminMutState) => void,
+  overrides: Partial<Stage3CLiveMatrixContext> = {},
+): { ctx: Stage3CLiveMatrixContext } {
+  const triggerRpc =
+    handlerId === "READ-01" ? "get_resident_payments_v1" : "get_payment_detail";
+  const state: AdminMutState = {
+    payments: [fullPaymentAdminRow()],
+    receipts: [],
+    summary: makeSummaryRow(),
+  };
+  let triggered = false;
+  const adminResp: FetchResponder = (call) => {
+    if (call.table === "payments") return { body: state.payments };
+    if (call.table === "payment_receipts") return { body: state.receipts };
+    if (call.table === "payment_receipt_sequences") return { body: [] };
+    if (call.table === "payment_receipt_month_sequences") return { body: [] };
+    return undefined;
+  };
+  const rpcFn: Responder = (name) => {
+    if (name === "get_resident_payments_v1")
+      return { data: [makeExpectedRow()], error: null };
+    if (name === "get_payment_detail")
+      return { data: makeRawDetail(), error: null };
+    if (name === "get_bill_payment_summary")
+      return { data: state.summary, error: null };
+    return { data: null, error: { message: "unknown_rpc" } };
+  };
+  const wrapped: Responder = (name, args) => {
+    const r = rpcFn(name, args);
+    if (!triggered && name === triggerRpc) {
+      triggered = true;
+      mutation(state);
+    }
+    return r;
+  };
+  const admin = makeMockedClient(adminResp);
+  const resident = makeMockedClient(residentResponderFromRpc(wrapped));
+  const ctx = createStage3CLiveMatrixContext();
+  const row = makeExpectedRow();
+  const detail = makeExpectedDetail();
+  Object.assign(ctx, {
+    readPrimaryBillId: BILL_ID,
+    readPrimaryPaymentId: PAYMENT_ID,
+    readHistoryBaselineCount: 0,
+    readExpectedHistoryRow: row,
+    readExpectedHistory: [row],
+    readExpectedDetail: detail,
+    readAcceptedDetail: detail,
+    ...overrides,
+  });
+  ctx.fixture = makeFullFixture(admin.client, resident.client);
+  return { ctx };
+}
+
+describe("READ-01..04 reject summary mutation after production read", () => {
+  const ids = ["READ-01", "READ-02", "READ-03", "READ-04"] as const;
+  for (const id of ids) {
+    it(`${id} rejects mutated verified_amount in summary`, async () => {
+      const { ctx } = primeWithMutation(id, (s) => {
+        s.summary = { ...s.summary, verified_amount: 999 };
+      });
+      await expect(runHandler(id, ctx)).rejects.toThrow();
+    });
+  }
+});
+
+describe("READ-01..04 reject payment lifecycle mutation after production read", () => {
+  const ids = ["READ-01", "READ-02", "READ-03", "READ-04"] as const;
+  for (const id of ids) {
+    it(`${id} rejects a changed payment amount`, async () => {
+      const { ctx } = primeWithMutation(id, (s) => {
+        s.payments = [{ ...s.payments[0], amount: 999 }];
+      });
+      await expect(runHandler(id, ctx)).rejects.toThrow();
+    });
+    it(`${id} rejects deletion of the payment row`, async () => {
+      const { ctx } = primeWithMutation(id, (s) => {
+        s.payments = [];
+      });
+      await expect(runHandler(id, ctx)).rejects.toThrow();
+    });
+  }
+});
+
+describe("READ-01..04 reject receipt insertion after production read", () => {
+  const ids = ["READ-01", "READ-02", "READ-03", "READ-04"] as const;
+  for (const id of ids) {
+    it(`${id} rejects a new receipt appearing between pre and post snapshots`, async () => {
+      const { ctx } = primeWithMutation(id, (s) => {
+        s.receipts = [
+          {
+            id: "abababab-cdcd-4efe-8faf-babababababa",
+            payment_id: PAYMENT_ID,
+            society_id: SOCIETY_ID,
+            status: "issued",
+          },
+        ];
+      });
+      await expect(runHandler(id, ctx)).rejects.toThrow(
+        /receipt row count changed|receipt row \d+ changed/,
+      );
+    });
+  }
 });

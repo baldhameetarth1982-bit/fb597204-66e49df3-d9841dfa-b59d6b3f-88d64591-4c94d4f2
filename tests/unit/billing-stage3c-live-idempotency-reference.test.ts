@@ -874,7 +874,7 @@ describe("Sub-run B — IDEMPOTENCY-01 initialize and submit", () => {
   });
   it("(10) rejects an existing receipt for the new payment", async () => {
     const s = makeCleanState();
-    s.receipts.push({ id: "30000000-0000-0000-0000-00000000000a", payment_id: PRIMARY_PAYMENT });
+    s.receipts.push(buildReceipt("30000000-0000-0000-0000-00000000000a", PRIMARY_PAYMENT));
     await expect(idempotency01_initializeAndSubmit(makeCtx(s))).rejects.toThrow(/zero receipts/);
   });
   it("(11) rejects sequence mutation between snapshots", async () => {

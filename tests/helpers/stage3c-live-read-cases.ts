@@ -282,32 +282,61 @@ interface LiveReadBrackets {
   readonly assertUnchanged: () => Promise<void>;
 }
 
+/**
+ * Type-safe adapter that converts a Supabase-shaped rpc invocation
+ * (PromiseLike return, PostgrestError-shaped error) into a strict
+ * `BillingRpcClient` whose rpc returns a real Promise. Confined to
+ * a single closure — never uses `as any` or `as unknown as`.
+ */
+function createFixtureBillingRpcClient(
+  invoke: (
+    name: string,
+    args: Record<string, unknown>,
+  ) => PromiseLike<{
+    data: unknown;
+    error: { message: string } | null;
+  }>,
+): BillingRpcClient {
+  return {
+    async rpc(name, args) {
+      const result = await invoke(name, args);
+      return {
+        data: result.data,
+        error: result.error ? { message: result.error.message } : null,
+      };
+    },
+  };
+}
+
 async function openLiveReadBrackets(
   ctx: Stage3CLiveMatrixContext,
   caseId: Stage3CReadCaseId,
 ): Promise<LiveReadBrackets> {
-  const injected = requireReadResidentRpcClient(ctx);
-  const fixture = ctx.fixture;
-  if (!fixture) {
-    return { client: injected, assertUnchanged: async () => {} };
-  }
+  const fixture = requireFixture(ctx);
   const billId = requireReadPrimaryBillId(ctx);
   const societyId = fixture.societyA;
-  const actorClient = fixture.users.activeResident.client as unknown as {
-    rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
+  const residentClient = fixture.users.activeResident.client;
+  const actorClient: ActorRpcClient = {
+    rpc: (name, args) => residentClient.rpc(name, args),
+  };
+  const client = createFixtureBillingRpcClient((name, args) =>
+    residentClient.rpc(name, args),
+  );
+  const adminReader: ResidentBillStateReader = {
+    from: (table) => fixture.admin.from(table),
   };
   const before = await snapshotResidentBillState(
-    fixture.admin,
+    adminReader,
     actorClient,
     billId,
     societyId,
     caseId,
   );
   return {
-    client: injected,
+    client,
     assertUnchanged: async () => {
       const after = await snapshotResidentBillState(
-        fixture.admin,
+        adminReader,
         actorClient,
         billId,
         societyId,

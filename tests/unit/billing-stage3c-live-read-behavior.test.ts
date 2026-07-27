@@ -1476,8 +1476,12 @@ function primeDenialContext(caseId: DenialCase): {
   const ctx = createStage3CLiveMatrixContext();
   // observer (adminA1) — stable snapshot + RPC responder for bill summary
   const observer = makeMockedClient((call) => {
-    if (call.rpcName === "get_bill_payment_summary")
-      return { body: makeSummaryRow() };
+    if (call.rpcName === "get_bill_payment_summary") {
+      const bid = String(
+        (call.body ?? {})._bill_id ?? BILL_ID,
+      );
+      return { body: { ...makeSummaryRow(), bill_id: bid } };
+    }
     if (call.table === "payments") return { body: [fullPaymentAdminRow()] };
     if (call.table === "payment_receipts") return { body: [] };
     if (call.table === "payment_receipt_sequences") return { body: [] };

@@ -526,6 +526,48 @@ interface BillMeta {
   total: number;
 }
 
+type ReceiptFullRow = {
+  id: string;
+  payment_id: string;
+  society_id: string;
+  receipt_number: string;
+  status: string;
+  issued_at: string;
+  created_at: string;
+  issued_by: null;
+  voided_at: null;
+  voided_by: null;
+  void_reason: null;
+  amount_snapshot: null;
+  method_snapshot: null;
+  reference_snapshot: null;
+  bill_number_snapshot: null;
+  verified_by: null;
+  verified_at: null;
+};
+
+function buildReceipt(id: string, paymentId: string, societyId: string = SOCIETY_A): ReceiptFullRow {
+  return {
+    id,
+    payment_id: paymentId,
+    society_id: societyId,
+    receipt_number: "R-0001",
+    status: "issued",
+    issued_at: DETERMINISTIC_TS,
+    created_at: DETERMINISTIC_TS,
+    issued_by: null,
+    voided_at: null,
+    voided_by: null,
+    void_reason: null,
+    amount_snapshot: null,
+    method_snapshot: null,
+    reference_snapshot: null,
+    bill_number_snapshot: null,
+    verified_by: null,
+    verified_at: null,
+  };
+}
+
 interface MockState {
   bills: Record<string, BillMeta>;
   payments: PaymentFullRow[];

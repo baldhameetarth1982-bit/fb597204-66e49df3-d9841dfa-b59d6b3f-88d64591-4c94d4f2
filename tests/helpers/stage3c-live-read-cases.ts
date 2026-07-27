@@ -1,16 +1,18 @@
 /**
- * Stage 3C — READ-01..10 live case contracts + READ-01..04 behavior
- * (Sub-run B1 production-wiring repair).
+ * Stage 3C — READ-01..10 live case contracts + READ-01..10 behavior.
  *
  * Handlers delegate to the neutral shared cores exported from
  * `src/lib/offline-payments.functions.ts`:
  *   - getResidentPaymentsWithClient  → resident history read
  *   - getPaymentDetailWithClient     → resident detail read
- * The public server functions delegate to the same cores, so RPC
- * construction has exactly one owner.
  *
- * READ-05..10 remain fail-closed pending Sub-run B2.
+ * Denial cases (READ-05..10) call `get_payment_detail` directly through
+ * the denied actor's Supabase client via bracket-access `rpc` and
+ * assert a canonical `not_authorized` error, `data === null`, and full
+ * bill-state invariance (observed via `adminA1` who has society-wide
+ * read authority).
  */
+
 import { z } from "zod";
 import {
   residentPaymentDetailSchema,
@@ -21,7 +23,7 @@ import {
   type PaymentDetail,
 } from "@/lib/offline-payments.functions";
 import type { BillingRpcClient } from "@/lib/billing-config.functions";
-import { CanonicalStage3CUuidSchema } from "./stage3c-runtime-fixtures";
+import { CanonicalStage3CUuidSchema, type Stage3CFixture } from "./stage3c-runtime-fixtures";
 import type { Stage3CMatrixLiveHandler } from "./stage3c-live-matrix-registry";
 import type { Stage3CLiveMatrixContext } from "./stage3c-live-matrix-context";
 import {
@@ -31,7 +33,10 @@ import {
   requireReadExpectedHistory,
   requireReadExpectedDetail,
   requireReadAcceptedDetail,
+  requireReadOtherBlockPaymentId,
+  requireReadOtherBlockBillId,
 } from "./stage3c-live-matrix-context";
+
 import { requireFixture } from "./stage3c-live-core-context";
 import {
   snapshotResidentBillState,
@@ -308,23 +313,37 @@ function createFixtureBillingRpcClient(
   };
 }
 
+interface OpenLiveReadBracketsOptions {
+  /** Override the bill whose state is snapshotted. Defaults to READ primary. */
+  billId?: string;
+  /**
+   * Actor whose Supabase client observes the bill state. Defaults to
+   * `activeResident` (safe for READ-01..04 on the primary flat bill).
+   * Denial cases pass `adminA1` because `activeResident` may be denied
+   * on out-of-scope bills (e.g. READ-10 second-block bill).
+   */
+  stateObserver?: "activeResident" | "adminA1";
+}
+
 async function openLiveReadBrackets(
   ctx: Stage3CLiveMatrixContext,
   caseId: Stage3CReadCaseId,
+  opts?: OpenLiveReadBracketsOptions,
 ): Promise<LiveReadBrackets> {
   const fixture = requireFixture(ctx);
-  const billId = requireReadPrimaryBillId(ctx);
+  const billId = opts?.billId ?? requireReadPrimaryBillId(ctx);
   const societyId = fixture.societyA;
-  const residentClient = fixture.users.activeResident.client;
-  // Bracket-access invocation keeps this module free of literal
-  // RPC construction, so the source-level contract remains
-  // "the shared production cores are the single RPC construction owner".
-  const invokeResidentRpc = (
+  const observer =
+    opts?.stateObserver === "adminA1"
+      ? fixture.users.adminA1
+      : fixture.users.activeResident;
+  const observerClient = observer.client;
+  const invokeObserverRpc = (
     name: string,
     args: Record<string, unknown>,
-  ) => residentClient["rpc"](name, args);
-  const actorClient: ActorRpcClient = { rpc: invokeResidentRpc };
-  const client = createFixtureBillingRpcClient(invokeResidentRpc);
+  ) => observerClient["rpc"](name, args);
+  const actorClient: ActorRpcClient = { rpc: invokeObserverRpc };
+  const client = createFixtureBillingRpcClient(invokeObserverRpc);
   const adminReader: ResidentBillStateReader = {
     from: (table) => fixture.admin.from(table),
   };
@@ -349,6 +368,7 @@ async function openLiveReadBrackets(
     },
   };
 }
+
 
 
 
@@ -525,39 +545,201 @@ export const read04_productionParserAcceptsResidentPayload: Stage3CMatrixLiveHan
   };
 
 // ---------------------------------------------------------------------------
-// READ-05..READ-10 — remain fail-closed (denial Sub-run B2)
+// READ-05..READ-10 — denial behavior via canonical `get_payment_detail` RPC.
 // ---------------------------------------------------------------------------
 
+type Stage3CReadDenialCaseIdRuntime =
+  | "READ-05"
+  | "READ-06"
+  | "READ-07"
+  | "READ-08"
+  | "READ-09"
+  | "READ-10";
+
+/** Denied actor's Supabase-shaped rpc surface. */
+interface DeniedActorRpc {
+  rpc: (
+    name: string,
+    args: Record<string, unknown>,
+  ) => PromiseLike<{ data: unknown; error: unknown }>;
+}
+
+interface DeniedReadInput {
+  caseId: Stage3CReadDenialCaseIdRuntime;
+  ctx: Stage3CLiveMatrixContext;
+  actorClient: DeniedActorRpc;
+  paymentId: string;
+  billId: string;
+}
+
+async function attemptDeniedPaymentDetail(
+  input: DeniedReadInput,
+): Promise<void> {
+  const { caseId, ctx, actorClient, paymentId, billId } = input;
+  const brackets = await openLiveReadBrackets(ctx, caseId, {
+    billId,
+    stateObserver: "adminA1",
+  });
+  const { data, error } = await actorClient["rpc"]("get_payment_detail", {
+    _payment_id: paymentId,
+  });
+
+  if (error === null || error === undefined) {
+    throw new Error(
+      `[stage3c:${caseId}] expected denial, RPC returned no error`,
+    );
+  }
+  const rawMsg = String(
+    (error as { message?: unknown } | null | undefined)?.message ?? "",
+  );
+  if (!/(^|\W)not_authorized(\W|$)/.test(rawMsg)) {
+    throw new Error(`[stage3c:${caseId}] wrong denial category`);
+  }
+  if (data !== null && data !== undefined) {
+    throw new Error(`[stage3c:${caseId}] denial returned payload`);
+  }
+  ctx.readDenialEvidence[caseId] = Stage3CReadDenialEvidenceSchema.parse({
+    caseId,
+    category: "not_authorized",
+    returnedRow: null,
+  });
+  await brackets.assertUnchanged();
+}
+
+/**
+ * READ-05 — Moved-out resident denied resident payment history endpoint.
+ * Uses `get_payment_detail` on the primary payment (which she no longer
+ * owns since her `flat_residents` row is inactive with moved_out_at set).
+ */
 export const read05_movedOutResidentDeniedPaymentHistory: Stage3CMatrixLiveHandler =
-  async (_ctx) => {
-    notImplemented("READ-05");
+  async (ctx) => {
+    const fixture = requireFixture(ctx);
+    await attemptDeniedPaymentDetail({
+      caseId: "READ-05",
+      ctx,
+      actorClient: fixture.users.movedOutResident.client,
+      paymentId: requireReadPrimaryPaymentId(ctx),
+      billId: requireReadPrimaryBillId(ctx),
+    });
   };
 
+/** READ-06 — Moved-out resident denied resident payment detail. */
 export const read06_movedOutResidentDeniedPaymentDetail: Stage3CMatrixLiveHandler =
-  async (_ctx) => {
-    notImplemented("READ-06");
+  async (ctx) => {
+    const fixture = requireFixture(ctx);
+    await attemptDeniedPaymentDetail({
+      caseId: "READ-06",
+      ctx,
+      actorClient: fixture.users.movedOutResident.client,
+      paymentId: requireReadPrimaryPaymentId(ctx),
+      billId: requireReadPrimaryBillId(ctx),
+    });
   };
 
+/** READ-07 — Unrelated (cross-society) resident denied detail. */
 export const read07_unrelatedResidentDeniedCrossSocietyDetail: Stage3CMatrixLiveHandler =
-  async (_ctx) => {
-    notImplemented("READ-07");
+  async (ctx) => {
+    const fixture = requireFixture(ctx);
+    await attemptDeniedPaymentDetail({
+      caseId: "READ-07",
+      ctx,
+      actorClient: fixture.users.unrelatedResident.client,
+      paymentId: requireReadPrimaryPaymentId(ctx),
+      billId: requireReadPrimaryBillId(ctx),
+    });
   };
 
+/** READ-08 — Society B admin denied Society A payment detail. */
 export const read08_otherSocietyAdminDeniedSocietyADetail: Stage3CMatrixLiveHandler =
-  async (_ctx) => {
-    notImplemented("READ-08");
+  async (ctx) => {
+    const fixture = requireFixture(ctx);
+    await attemptDeniedPaymentDetail({
+      caseId: "READ-08",
+      ctx,
+      actorClient: fixture.users.adminB.client,
+      paymentId: requireReadPrimaryPaymentId(ctx),
+      billId: requireReadPrimaryBillId(ctx),
+    });
   };
 
+/** READ-09 — Security guard denied payment detail (no billing role). */
 export const read09_guardDeniedPaymentDetail: Stage3CMatrixLiveHandler = async (
-  _ctx,
+  ctx,
 ) => {
-  notImplemented("READ-09");
+  const fixture = requireFixture(ctx);
+  await attemptDeniedPaymentDetail({
+    caseId: "READ-09",
+    ctx,
+    actorClient: fixture.users.guard.client,
+    paymentId: requireReadPrimaryPaymentId(ctx),
+    billId: requireReadPrimaryBillId(ctx),
+  });
 };
 
+/**
+ * READ-10 — Block Admin (scoped to Society A / blockA) denied detail
+ * on a payment in Society A / secondBlockA (different block).
+ */
 export const read10_blockAdminDeniedOutOfScopeDetail: Stage3CMatrixLiveHandler =
-  async (_ctx) => {
-    notImplemented("READ-10");
+  async (ctx) => {
+    const fixture = requireFixture(ctx);
+    await attemptDeniedPaymentDetail({
+      caseId: "READ-10",
+      ctx,
+      actorClient: fixture.users.blockAdmin.client,
+      paymentId: requireReadOtherBlockPaymentId(ctx),
+      billId: requireReadOtherBlockBillId(ctx),
+    });
   };
+
+// ---------------------------------------------------------------------------
+// primeStage3CReadContext — populates READ lifecycle from fixture via real
+// production reads. Called from the live integration test `beforeAll`.
+// ---------------------------------------------------------------------------
+
+export async function primeStage3CReadContext(
+  ctx: Stage3CLiveMatrixContext,
+  fixture: Stage3CFixture,
+): Promise<void> {
+  // Primary READ target: resident-owned pending bank-transfer payment.
+  const billId = fixture.openBillId2;
+  const paymentId = fixture.scenarios.pendingResidentBankTransferPaymentId;
+  ctx.readPrimaryBillId = billId;
+  ctx.readPrimaryPaymentId = paymentId;
+
+  // READ-10 out-of-scope target.
+  ctx.readOtherBlockBillId = fixture.scenarios.secondBlockBillId;
+  ctx.readOtherBlockPaymentId = fixture.scenarios.secondBlockVerifiedPaymentId;
+
+  // Fetch expected history + detail through the production cores using
+  // the active resident's authenticated Supabase client (bracket-access
+  // rpc keeps this module the sole non-production caller).
+  const invokeResidentRpc = (name: string, args: Record<string, unknown>) =>
+    fixture.users.activeResident.client["rpc"](name, args);
+  const client = createFixtureBillingRpcClient(invokeResidentRpc);
+
+  const history = await getResidentPaymentsWithClient(client, {
+    limit: 50,
+    offset: 0,
+  });
+  if (!history || !Array.isArray(history.payments))
+    throw new Error("[stage3c:primeRead] history payload malformed");
+  const parsedHistory = assertHistoryRowsStrict(history.payments, "READ-01");
+  ctx.readExpectedHistory = parsedHistory;
+  ctx.readHistoryBaselineCount = parsedHistory.length;
+  const expectedRow = parsedHistory.find((r) => r.id === paymentId);
+  if (!expectedRow)
+    throw new Error("[stage3c:primeRead] primary payment row missing from history");
+  ctx.readExpectedHistoryRow = expectedRow;
+
+  const detail = await getPaymentDetailWithClient(client, { paymentId });
+  if (detail === null)
+    throw new Error("[stage3c:primeRead] detail null");
+  if (detail.audience !== "resident")
+    throw new Error("[stage3c:primeRead] non-resident audience");
+  ctx.readExpectedDetail = detail;
+}
+
 
 // ---------------------------------------------------------------------------
 // Handler map

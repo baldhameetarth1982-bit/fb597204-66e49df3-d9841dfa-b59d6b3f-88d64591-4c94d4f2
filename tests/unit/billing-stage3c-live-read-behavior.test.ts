@@ -867,9 +867,9 @@ describe("READ-03 / READ-04 — audience + parser fixture wiring", () => {
 });
 
 // ---------------------------------------------------------------------------
-// READ-05..READ-10 remain fail-closed + handler-map hygiene
+// READ-05..READ-10 are now implemented denial handlers; verify shape only.
 // ---------------------------------------------------------------------------
-describe("READ-05..READ-10 remain fail-closed", () => {
+describe("READ-05..READ-10 are implemented async handlers", () => {
   const later: Array<keyof typeof STAGE3C_READ_HANDLERS> = [
     "READ-05",
     "READ-06",
@@ -879,17 +879,17 @@ describe("READ-05..READ-10 remain fail-closed", () => {
     "READ-10",
   ];
   for (const id of later) {
-    it(`${id} throws '${id}] behavior not implemented'`, async () => {
-      const ctx = createStage3CLiveMatrixContext();
-      await expect(STAGE3C_READ_HANDLERS[id](ctx)).rejects.toThrow(
-        new RegExp(`${id}\\] behavior not implemented`),
-      );
+    it(`${id} is an async function`, () => {
+      const fn = STAGE3C_READ_HANDLERS[id];
+      expect(typeof fn).toBe("function");
+      expect(fn.constructor.name).toBe("AsyncFunction");
     });
   }
   it("handler map has exactly ten entries", () => {
     expect(Object.keys(STAGE3C_READ_HANDLERS).length).toBe(10);
   });
 });
+
 
 // ---------------------------------------------------------------------------
 // READ module hygiene — source-level invariants

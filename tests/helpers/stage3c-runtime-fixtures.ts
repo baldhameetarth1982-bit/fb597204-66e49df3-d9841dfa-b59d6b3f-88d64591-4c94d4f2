@@ -378,7 +378,18 @@ export type FinancialScenarios = {
   rejectedPaymentId: string;
   reversedPaymentId: string;
   voidReceiptId: string;
+  /** READ-10 second-block-in-Society-A resource: block id. */
+  secondBlockA: string;
+  /** READ-10 second-block-in-Society-A resource: flat id. */
+  secondBlockFlatA: string;
+  /** READ-10 second-block-in-Society-A resource: unpaid bill id. */
+  secondBlockBillId: string;
+  /** READ-10 second-block-in-Society-A resource: verified admin payment id. */
+  secondBlockVerifiedPaymentId: string;
+  /** READ-10 second-block-in-Society-A resource: issued receipt id. */
+  secondBlockReceiptId: string;
 };
+
 
 export type Stage3CMatrixResources = {
   /** Extra flat inside Society A / blockA — used to prove same-society, cross-flat denial. */
@@ -2195,6 +2206,77 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
     tracked.receiptSequences.push(voidSeq);
     await helpers.reversePayment(adminA2, reversedPaymentId, "fixture reverse");
 
+    // ---- READ-10 second-block chain (Society A, different block) -----
+    // Adds a fully separate block+flat+bill+verified-admin-payment+receipt
+    // in Society A so READ-10 can prove `blockAdmin` (scoped to `blockA`)
+    // is denied when reading a payment/detail in that other block.
+    const secondBk = await assertSupabaseSingleResult<{ id: string }>(
+      "insert:secondBlockA",
+      admin
+        .from("blocks")
+        .insert({ society_id: societyA, name: "B", structure_kind: "block" })
+        .select("id")
+        .single(),
+    );
+    tracked.blockIds.push(secondBk.id);
+    const secondBlockA = secondBk.id;
+
+    const secondFl = await assertSupabaseSingleResult<{ id: string }>(
+      "insert:secondBlockFlatA",
+      admin
+        .from("flats")
+        .insert({
+          society_id: societyA,
+          block_id: secondBlockA,
+          flat_number: "301",
+          status: "occupied",
+        })
+        .select("id")
+        .single(),
+    );
+    tracked.flatIds.push(secondFl.id);
+    const secondBlockFlatA = secondFl.id;
+
+    const secondBlockBillId = await addBill({
+      label: "sb-bill",
+      amount: 400,
+      status: "unpaid",
+      flatId: secondBlockFlatA,
+    });
+    const secondBlockVerifiedPaymentId = await helpers.submitAdminBankTransferPayment({
+      actor: adminA1,
+      billId: secondBlockBillId,
+      amount: 400,
+      paymentDate: "2026-02-01",
+      referenceNo: `${prefix}-REF-SB`,
+      idempotencyKey: `${prefix}-adm-sb`,
+    });
+    tracked.paymentIds.push(secondBlockVerifiedPaymentId);
+    await helpers.verifyPayment(
+      adminA2,
+      secondBlockVerifiedPaymentId,
+      "fixture sb verify",
+    );
+    const secondBlockReceiptRow = await assertSupabaseSingleResult<{
+      id: string;
+      created_at: string;
+    }>(
+      "select:secondBlockReceipt",
+      admin
+        .from("payment_receipts")
+        .select("id, created_at")
+        .eq("payment_id", secondBlockVerifiedPaymentId)
+        .single(),
+    );
+    tracked.paymentReceiptIds.push(secondBlockReceiptRow.id);
+    const secondBlockSeq = await confirmReceiptSequenceKey(
+      admin,
+      societyA,
+      secondBlockReceiptRow.created_at,
+      "select:secondBlockReceiptSequence",
+    );
+    tracked.receiptSequences.push(secondBlockSeq);
+
     const scenarios: FinancialScenarios = {
       openBillId,
       openBillId2,
@@ -2207,6 +2289,11 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
       rejectedPaymentId,
       reversedPaymentId,
       voidReceiptId: voidReceiptRow.id,
+      secondBlockA,
+      secondBlockFlatA,
+      secondBlockBillId,
+      secondBlockVerifiedPaymentId,
+      secondBlockReceiptId: secondBlockReceiptRow.id,
     };
 
     return {
@@ -2243,6 +2330,7 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
       cleanup: () => strictCleanup(admin, prefix, tracked),
 
     };
+
   } catch (setupError) {
     let cleanupMessage = "";
     try {

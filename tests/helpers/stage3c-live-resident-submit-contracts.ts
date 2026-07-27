@@ -553,15 +553,21 @@ export type ResidentBillPaymentLifecycleRow = z.infer<
 >;
 
 // Compile-time key-parity guard: schema keys === generated Row keys.
-// Direction A: schema row must satisfy Row (widened numeric via NumericLike
-// output is number, which matches). Cast is safe because both types have
-// identical key sets by construction below.
-type _PaymentKeyParityAB = keyof ResidentBillPaymentLifecycleRow extends keyof PaymentDatabaseRow ? true : false;
-type _PaymentKeyParityBA = keyof PaymentDatabaseRow extends keyof ResidentBillPaymentLifecycleRow ? true : false;
-const _paymentKeyParityAB: _PaymentKeyParityAB = true;
-const _paymentKeyParityBA: _PaymentKeyParityBA = true;
-void _paymentKeyParityAB;
-void _paymentKeyParityBA;
+// Fail-closed via Exclude<>: any missing/extra key becomes a non-`never`
+// type and blows `AssertNever`.
+type AssertNever<T extends never> = T;
+type PaymentSnapshotColumnsMissingFromDatabase = Exclude<
+  keyof ResidentBillPaymentLifecycleRow,
+  keyof PaymentDatabaseRow
+>;
+type PaymentColumnsMissingFromSnapshot = Exclude<
+  keyof PaymentDatabaseRow,
+  keyof ResidentBillPaymentLifecycleRow
+>;
+export type _PaymentSchemaParity = [
+  AssertNever<PaymentSnapshotColumnsMissingFromDatabase>,
+  AssertNever<PaymentColumnsMissingFromSnapshot>,
+];
 
 export const RESIDENT_BILL_PAYMENT_LIFECYCLE_FIELDS: readonly (keyof ResidentBillPaymentLifecycleRow)[] = [
   "id",
@@ -673,12 +679,18 @@ export type ResidentBillReceiptLifecycleRow = z.infer<
 >;
 
 // Compile-time key-parity guard: schema keys === generated Row keys.
-type _ReceiptKeyParityAB = keyof ResidentBillReceiptLifecycleRow extends keyof PaymentReceiptDatabaseRow ? true : false;
-type _ReceiptKeyParityBA = keyof PaymentReceiptDatabaseRow extends keyof ResidentBillReceiptLifecycleRow ? true : false;
-const _receiptKeyParityAB: _ReceiptKeyParityAB = true;
-const _receiptKeyParityBA: _ReceiptKeyParityBA = true;
-void _receiptKeyParityAB;
-void _receiptKeyParityBA;
+type ReceiptSnapshotColumnsMissingFromDatabase = Exclude<
+  keyof ResidentBillReceiptLifecycleRow,
+  keyof PaymentReceiptDatabaseRow
+>;
+type ReceiptColumnsMissingFromSnapshot = Exclude<
+  keyof PaymentReceiptDatabaseRow,
+  keyof ResidentBillReceiptLifecycleRow
+>;
+export type _ReceiptSchemaParity = [
+  AssertNever<ReceiptSnapshotColumnsMissingFromDatabase>,
+  AssertNever<ReceiptColumnsMissingFromSnapshot>,
+];
 
 export const RESIDENT_BILL_RECEIPT_LIFECYCLE_FIELDS: readonly (keyof ResidentBillReceiptLifecycleRow)[] = [
   "id",
@@ -835,48 +847,59 @@ export async function snapshotResidentBillState(
   return { summary, paymentRows, receiptRows, sequences };
 }
 
+function requireRowAt<T>(
+  rows: readonly T[],
+  index: number,
+  label: string,
+  what: string,
+): T {
+  const row = rows[index];
+  if (row === undefined)
+    throw new Error(`[stage3c:${label}] ${what} row ${index} absent`);
+  return row;
+}
+
 export function assertResidentBillStateUnchanged(
   before: ResidentBillStateSnapshot,
   after: ResidentBillStateSnapshot,
   label: string,
 ): void {
-  // Re-parse all four components strictly to reject any structural drift.
+  // Re-parse every component strictly. No casts, no non-null assertions,
+  // no undefined-to-null normalization: schemas own null handling.
   const bSum = ResidentBillSummarySchema.parse(before.summary);
   const aSum = ResidentBillSummarySchema.parse(after.summary);
-  for (const key of Object.keys(bSum) as Array<keyof ResidentBillSummary>) {
+  const summaryKeys = Object.keys(bSum) as ReadonlyArray<keyof ResidentBillSummary>;
+  for (const key of summaryKeys) {
     if (bSum[key] !== aSum[key])
       throw new Error(`[stage3c:${label}] summary.${String(key)} changed`);
   }
+
   const bPay = ResidentBillPaymentLifecycleRowsSchema.parse(before.paymentRows);
   const aPay = ResidentBillPaymentLifecycleRowsSchema.parse(after.paymentRows);
   if (bPay.length !== aPay.length)
     throw new Error(`[stage3c:${label}] payment row count changed`);
   for (let i = 0; i < bPay.length; i++) {
-    const bi = bPay[i]!;
-    const ai = aPay[i]!;
-    for (const f of RESIDENT_BILL_PAYMENT_LIFECYCLE_FIELDS) {
-      if (
-        (bi as Record<string, unknown>)[f] !==
-        (ai as Record<string, unknown>)[f]
-      )
+    const bi = requireRowAt(bPay, i, label, "payment");
+    const ai = requireRowAt(aPay, i, label, "payment");
+    for (const field of RESIDENT_BILL_PAYMENT_LIFECYCLE_FIELDS) {
+      if (bi[field] !== ai[field])
         throw new Error(`[stage3c:${label}] payment row ${i} changed`);
     }
   }
+
   const bRec = ResidentBillReceiptLifecycleRowsSchema.parse(before.receiptRows);
   const aRec = ResidentBillReceiptLifecycleRowsSchema.parse(after.receiptRows);
   if (bRec.length !== aRec.length)
     throw new Error(`[stage3c:${label}] receipt row count changed`);
   for (let i = 0; i < bRec.length; i++) {
-    const bi = bRec[i]!;
-    const ai = aRec[i]!;
-    for (const f of RESIDENT_BILL_RECEIPT_LIFECYCLE_FIELDS) {
-      if (
-        (bi as Record<string, unknown>)[f] !==
-        (ai as Record<string, unknown>)[f]
-      )
+    const bi = requireRowAt(bRec, i, label, "receipt");
+    const ai = requireRowAt(aRec, i, label, "receipt");
+    for (const field of RESIDENT_BILL_RECEIPT_LIFECYCLE_FIELDS) {
+      if (bi[field] !== ai[field])
         throw new Error(`[stage3c:${label}] receipt row ${i} changed`);
     }
   }
+
   assertReceiptSequencesExactlyEqual(before.sequences, after.sequences, label);
 }
 

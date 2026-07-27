@@ -390,6 +390,7 @@ export const read01_activeResidentSeesOwnPaymentHistory: Stage3CMatrixLiveHandle
 
     const postDetail = await getPaymentDetailWithClient(client, { paymentId });
     assertReadStateUnchanged(preDetail, postDetail);
+    await brackets.assertUnchanged();
   };
 
 /**

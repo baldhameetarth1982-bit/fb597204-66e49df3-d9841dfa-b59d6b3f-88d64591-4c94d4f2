@@ -1127,3 +1127,198 @@ describe("READ-01..04 reject receipt insertion after production read", () => {
     });
   }
 });
+
+// ---------------------------------------------------------------------------
+// Rich baseline: verified payment + issued receipt + yearly/monthly
+// sequence rows. Enables mutation-rejection coverage for the remaining
+// two categories (existing receipt lifecycle + sequences) plus the
+// non-basic payment-lifecycle drift (verified_at / reference_no).
+// ---------------------------------------------------------------------------
+
+const RECEIPT_ID = "abababab-cdcd-4efe-8faf-babababababa";
+const YEAR = 2026;
+const YEAR_MONTH = "2026-07";
+
+function fullReceiptAdminRow(): Record<string, unknown> {
+  return {
+    id: RECEIPT_ID,
+    payment_id: PAYMENT_ID,
+    society_id: SOCIETY_ID,
+    receipt_number: "RCPT-0001",
+    status: "issued",
+    issued_at: NOW,
+    created_at: NOW,
+    issued_by: null,
+    voided_at: null,
+    voided_by: null,
+    void_reason: null,
+    amount_snapshot: 300,
+    method_snapshot: "bank_transfer",
+    reference_snapshot: "RS-A1",
+    bill_number_snapshot: "BILL-001",
+    verified_by: null,
+    verified_at: NOW,
+  };
+}
+
+type RichMutState = {
+  payments: Record<string, unknown>[];
+  receipts: Record<string, unknown>[];
+  summary: Record<string, unknown>;
+  yearly: Record<string, unknown>[];
+  monthly: Record<string, unknown>[];
+};
+
+function primeRich(
+  handlerId: keyof typeof STAGE3C_READ_HANDLERS,
+  mutation: (s: RichMutState) => void,
+): { ctx: Stage3CLiveMatrixContext } {
+  const triggerRpc =
+    handlerId === "READ-01" ? "get_resident_payments_v1" : "get_payment_detail";
+  const state: RichMutState = {
+    payments: [fullPaymentAdminRow()],
+    receipts: [fullReceiptAdminRow()],
+    summary: makeSummaryRow(),
+    yearly: [{ society_id: SOCIETY_ID, year: YEAR, next_number: 1 }],
+    monthly: [{ society_id: SOCIETY_ID, year_month: YEAR_MONTH, next_number: 1 }],
+  };
+  let triggered = false;
+  const adminResp: FetchResponder = (call) => {
+    if (call.table === "payments") return { body: state.payments };
+    if (call.table === "payment_receipts") return { body: state.receipts };
+    if (call.table === "payment_receipt_sequences") return { body: state.yearly };
+    if (call.table === "payment_receipt_month_sequences")
+      return { body: state.monthly };
+    return undefined;
+  };
+  const rpcFn: Responder = (name) => {
+    if (name === "get_resident_payments_v1")
+      return { data: [makeExpectedRow()], error: null };
+    if (name === "get_payment_detail")
+      return { data: makeRawDetail(), error: null };
+    if (name === "get_bill_payment_summary")
+      return { data: state.summary, error: null };
+    return { data: null, error: { message: "unknown_rpc" } };
+  };
+  const wrapped: Responder = (name, args) => {
+    const r = rpcFn(name, args);
+    if (!triggered && name === triggerRpc) {
+      triggered = true;
+      mutation(state);
+    }
+    return r;
+  };
+  const admin = makeMockedClient(adminResp);
+  const resident = makeMockedClient(residentResponderFromRpc(wrapped));
+  const ctx = createStage3CLiveMatrixContext();
+  const row = makeExpectedRow();
+  const detail = makeExpectedDetail();
+  Object.assign(ctx, {
+    readPrimaryBillId: BILL_ID,
+    readPrimaryPaymentId: PAYMENT_ID,
+    readHistoryBaselineCount: 0,
+    readExpectedHistoryRow: row,
+    readExpectedHistory: [row],
+    readExpectedDetail: detail,
+    readAcceptedDetail: detail,
+  });
+  ctx.fixture = makeFullFixture(admin.client, resident.client);
+  return { ctx };
+}
+
+describe("READ-01..04 rich baseline succeeds unchanged", () => {
+  const ids = ["READ-01", "READ-02", "READ-03", "READ-04"] as const;
+  for (const id of ids) {
+    it(`${id} succeeds against verified payment + issued receipt + sequences`, async () => {
+      const { ctx } = primeRich(id, () => {});
+      await expect(runHandler(id, ctx)).resolves.toBeUndefined();
+    });
+  }
+});
+
+describe("READ-01..04 reject non-basic payment lifecycle mutation", () => {
+  const ids = ["READ-01", "READ-02", "READ-03", "READ-04"] as const;
+  for (const id of ids) {
+    it(`${id} rejects changed verified_at`, async () => {
+      const { ctx } = primeRich(id, (s) => {
+        s.payments = [{ ...s.payments[0], verified_at: "2099-01-01T00:00:00Z" }];
+      });
+      await expect(runHandler(id, ctx)).rejects.toThrow();
+    });
+    it(`${id} rejects changed reference_no`, async () => {
+      const { ctx } = primeRich(id, (s) => {
+        s.payments = [{ ...s.payments[0], reference_no: "RS-MUT" }];
+      });
+      await expect(runHandler(id, ctx)).rejects.toThrow();
+    });
+  }
+});
+
+describe("READ-01..04 reject existing receipt lifecycle mutation", () => {
+  const ids = ["READ-01", "READ-02", "READ-03", "READ-04"] as const;
+  for (const id of ids) {
+    it(`${id} rejects a voided_at appearing on the existing receipt`, async () => {
+      const { ctx } = primeRich(id, (s) => {
+        s.receipts = [{ ...s.receipts[0], voided_at: "2099-02-02T00:00:00Z" }];
+      });
+      await expect(runHandler(id, ctx)).rejects.toThrow();
+    });
+    it(`${id} rejects a status change on the existing receipt`, async () => {
+      const { ctx } = primeRich(id, (s) => {
+        s.receipts = [{ ...s.receipts[0], status: "voided" }];
+      });
+      await expect(runHandler(id, ctx)).rejects.toThrow();
+    });
+    it(`${id} rejects a receipt_number change on the existing receipt`, async () => {
+      const { ctx } = primeRich(id, (s) => {
+        s.receipts = [{ ...s.receipts[0], receipt_number: "RCPT-MUT" }];
+      });
+      await expect(runHandler(id, ctx)).rejects.toThrow();
+    });
+  }
+});
+
+describe("READ-01..04 reject receipt-sequence mutation", () => {
+  const ids = ["READ-01", "READ-02", "READ-03", "READ-04"] as const;
+  for (const id of ids) {
+    it(`${id} rejects a bumped yearly sequence next_number`, async () => {
+      const { ctx } = primeRich(id, (s) => {
+        s.yearly = [{ ...s.yearly[0], next_number: 999 }];
+      });
+      await expect(runHandler(id, ctx)).rejects.toThrow(
+        /yearly sequence row \d+ changed|yearly sequence row count changed/,
+      );
+    });
+    it(`${id} rejects a bumped monthly sequence next_number`, async () => {
+      const { ctx } = primeRich(id, (s) => {
+        s.monthly = [{ ...s.monthly[0], next_number: 999 }];
+      });
+      await expect(runHandler(id, ctx)).rejects.toThrow(
+        /monthly sequence row \d+ changed|monthly sequence row count changed/,
+      );
+    });
+    it(`${id} rejects an inserted yearly sequence row`, async () => {
+      const { ctx } = primeRich(id, (s) => {
+        s.yearly = [
+          ...s.yearly,
+          { society_id: SOCIETY_ID, year: YEAR + 1, next_number: 1 },
+        ];
+      });
+      await expect(runHandler(id, ctx)).rejects.toThrow(
+        /yearly sequence row count changed/,
+      );
+    });
+    it(`${id} rejects an inserted monthly sequence row`, async () => {
+      const { ctx } = primeRich(id, (s) => {
+        s.monthly = [
+          ...s.monthly,
+          { society_id: SOCIETY_ID, year_month: "2026-08", next_number: 1 },
+        ];
+      });
+      await expect(runHandler(id, ctx)).rejects.toThrow(
+        /monthly sequence row count changed/,
+      );
+    });
+  }
+});
+

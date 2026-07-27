@@ -33,6 +33,11 @@ import {
   requireReadExpectedDetail,
   requireReadAcceptedDetail,
 } from "./stage3c-live-matrix-context";
+import {
+  snapshotResidentBillState,
+  assertResidentBillStateUnchanged,
+} from "./stage3c-live-resident-submit-contracts";
+
 
 // ---------------------------------------------------------------------------
 // Canonical case-id union + ordered list

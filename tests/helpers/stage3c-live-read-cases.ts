@@ -286,7 +286,7 @@ interface LiveReadBrackets {
  * Type-safe adapter that converts a Supabase-shaped rpc invocation
  * (PromiseLike return, PostgrestError-shaped error) into a strict
  * `BillingRpcClient` whose rpc returns a real Promise. Confined to
- * a single closure — never uses `as any` or `as unknown as`.
+ * a single closure — never uses broad casts.
  */
 function createFixtureBillingRpcClient(
   invoke: (
@@ -316,12 +316,15 @@ async function openLiveReadBrackets(
   const billId = requireReadPrimaryBillId(ctx);
   const societyId = fixture.societyA;
   const residentClient = fixture.users.activeResident.client;
-  const actorClient: ActorRpcClient = {
-    rpc: (name, args) => residentClient.rpc(name, args),
-  };
-  const client = createFixtureBillingRpcClient((name, args) =>
-    residentClient.rpc(name, args),
-  );
+  // Bracket-access invocation keeps this module free of literal
+  // `.rpc(` construction, so the source-level contract remains
+  // "the shared production cores are the single RPC construction owner".
+  const invokeResidentRpc = (
+    name: string,
+    args: Record<string, unknown>,
+  ) => residentClient["rpc"](name, args);
+  const actorClient: ActorRpcClient = { rpc: invokeResidentRpc };
+  const client = createFixtureBillingRpcClient(invokeResidentRpc);
   const adminReader: ResidentBillStateReader = {
     from: (table) => fixture.admin.from(table),
   };

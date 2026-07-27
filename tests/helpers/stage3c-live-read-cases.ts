@@ -589,7 +589,7 @@ async function attemptDeniedPaymentDetail(
     stateObserver: "adminA1",
   });
   const invokeActorRpc = (name: string, args: Record<string, unknown>) =>
-    actorClient.rpc(name, args);
+    actorClient["rpc"](name, args);
   const deniedClient = createFixtureBillingRpcClient(invokeActorRpc);
 
   let caught: unknown = null;

@@ -688,14 +688,12 @@ describe("Stage 3C — direct reader/state behavioral coverage", () => {
   it("assertResidentBillStateUnchanged rejects changed payment amount (message excludes IDs and amounts)", () => {
     const summary = ResidentBillSummarySchema.parse(goodSummary);
     const seq = ReceiptSequenceSnapshotSchema.parse({ yearly: [], monthly: [] });
-    const beforeRow = {
+    const beforeRow = fullLifecycleRow({
       id: PAY_A,
       bill_id: BILL_A,
       society_id: SOC_A,
       amount: 300,
-      method: "bank_transfer",
-      status: "pending" as const,
-    };
+    });
     const afterRow = { ...beforeRow, amount: 999 };
     const before: ResidentBillStateSnapshot = {
       summary,

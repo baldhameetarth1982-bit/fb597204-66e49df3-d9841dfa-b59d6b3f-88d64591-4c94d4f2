@@ -1215,7 +1215,172 @@ describe("Stage 3C — snapshotResidentBillState receipt/payment fetches", () =>
   });
 });
 
+// ---------------------------------------------------------------------------
+// Exhaustive per-field parity: every one of the 34 payment columns and 17
+// receipt columns must be present. Deleting each key in turn must fail the
+// row schema; changing each key's value must fail
+// assertResidentBillStateUnchanged (via payment or receipt drift path).
+// ---------------------------------------------------------------------------
 
+const PAYMENT_MUTATION_VALUES: Record<string, unknown> = {
+  id: CANON_ID_2,
+  bill_id: CANON_ID_2,
+  society_id: CANON_ID_2,
+  flat_id: CANON_BILL,
+  amount: 999,
+  method: "cash",
+  status: "verified",
+  created_at: "2027-01-01T00:00:00Z",
+  updated_at: "2027-01-01T00:00:00Z",
+  paid_at: "2027-01-01T00:00:00Z",
+  user_id: CANON_ID_2,
+  submitted_by: CANON_ID_2,
+  submitted_at: "2027-01-01T00:00:00Z",
+  source: "admin_entry",
+  reference_no: "MUT-REF",
+  idempotency_key: "MUT-IDEM",
+  payment_date: "2027-01-02",
+  notes: "mutated",
+  verified_by: CANON_ID_2,
+  verified_at: "2027-01-03T00:00:00Z",
+  verification_notes: "vn",
+  rejected_by: CANON_ID_2,
+  rejected_at: "2027-01-04T00:00:00Z",
+  rejection_reason: "rr",
+  reversed_by: CANON_ID_2,
+  reversed_at: "2027-01-05T00:00:00Z",
+  reversal_reason: "xr",
+  platform_fee_paise: 42,
+  platform_share_paise: 7,
+  society_share_paise: 8,
+  proof_url: "https://x.example/mut",
+  razorpay_order_id: "rzp_ord_mut",
+  razorpay_payment_id: "rzp_pay_mut",
+  razorpay_signature: "sig_mut",
+};
 
+describe("Stage 3C — payment lifecycle exhaustive per-field parity (34 columns)", () => {
+  const seq = ReceiptSequenceSnapshotSchema.parse({ yearly: [], monthly: [] });
+  const summary = ResidentBillSummarySchema.parse({
+    bill_id: CANON_BILL,
+    society_id: CANON_SOCIETY,
+    total_payable: 1000,
+    verified_amount: 0,
+    pending_amount: 0,
+    rejected_amount: 0,
+    reversed_amount: 0,
+    available_to_submit: 1000,
+    remaining_verified_balance: 1000,
+    cancelled: false,
+    status: "unpaid" as const,
+  });
 
+  for (const field of RESIDENT_BILL_PAYMENT_LIFECYCLE_FIELDS) {
+    it(`schema rejects deletion of payment column "${String(field)}"`, () => {
+      const row = fullLifecycleRow();
+      delete row[field as string];
+      expect(ResidentBillPaymentLifecycleRowSchema.safeParse(row).success).toBe(false);
+    });
+
+    it(`assertResidentBillStateUnchanged detects drift on payment column "${String(field)}"`, () => {
+      const before = ResidentBillPaymentLifecycleRowsSchema.parse([fullLifecycleRow()]);
+      const mutated = { ...fullLifecycleRow(), [field]: PAYMENT_MUTATION_VALUES[field as string] };
+      const after = ResidentBillPaymentLifecycleRowsSchema.parse([mutated]);
+      expect(() =>
+        assertResidentBillStateUnchanged(
+          { summary, paymentRows: before, receiptRows: [], sequences: seq },
+          { summary, paymentRows: after, receiptRows: [], sequences: seq },
+          "T",
+        ),
+      ).toThrow(/payment row \d+ changed/);
+    });
+  }
+});
+
+const RECEIPT_MUTATION_VALUES: Record<string, unknown> = {
+  id: CANON_RECEIPT_2,
+  payment_id: CANON_ID_2,
+  society_id: CANON_ID_2,
+  receipt_number: "RCPT-MUT",
+  status: "voided",
+  issued_at: "2027-02-01T00:00:00Z",
+  created_at: "2027-02-01T00:00:00Z",
+  issued_by: CANON_ID_2,
+  voided_at: "2027-02-02T00:00:00Z",
+  voided_by: CANON_ID_2,
+  void_reason: "mutation",
+  amount_snapshot: 999,
+  method_snapshot: "cash",
+  reference_snapshot: "ref-mut",
+  bill_number_snapshot: "BN-MUT",
+  verified_by: CANON_ID_2,
+  verified_at: "2027-02-03T00:00:00Z",
+};
+
+describe("Stage 3C — receipt lifecycle exhaustive per-field parity (17 columns)", () => {
+  const seq = ReceiptSequenceSnapshotSchema.parse({ yearly: [], monthly: [] });
+  const summary = ResidentBillSummarySchema.parse({
+    bill_id: CANON_BILL,
+    society_id: CANON_SOCIETY,
+    total_payable: 1000,
+    verified_amount: 0,
+    pending_amount: 0,
+    rejected_amount: 0,
+    reversed_amount: 0,
+    available_to_submit: 1000,
+    remaining_verified_balance: 1000,
+    cancelled: false,
+    status: "unpaid" as const,
+  });
+  const baselinePayments = ResidentBillPaymentLifecycleRowsSchema.parse([
+    fullLifecycleRow(),
+  ]);
+
+  for (const field of RESIDENT_BILL_RECEIPT_LIFECYCLE_FIELDS) {
+    it(`schema rejects deletion of receipt column "${String(field)}"`, () => {
+      const row = fullReceiptRow();
+      delete row[field as string];
+      expect(ResidentBillReceiptLifecycleRowSchema.safeParse(row).success).toBe(false);
+    });
+
+    it(`assertResidentBillStateUnchanged detects drift on receipt column "${String(field)}"`, () => {
+      const before = ResidentBillReceiptLifecycleRowsSchema.parse([fullReceiptRow()]);
+      const mutated = { ...fullReceiptRow(), [field]: RECEIPT_MUTATION_VALUES[field as string] };
+      const after = ResidentBillReceiptLifecycleRowsSchema.parse([mutated]);
+      expect(() =>
+        assertResidentBillStateUnchanged(
+          { summary, paymentRows: baselinePayments, receiptRows: before, sequences: seq },
+          { summary, paymentRows: baselinePayments, receiptRows: after, sequences: seq },
+          "T",
+        ),
+      ).toThrow(/receipt row \d+ changed/);
+    });
+  }
+});
+
+describe("Stage 3C — assertResidentBillStateUnchanged has no non-null / cast escape hatches", () => {
+  const src = readFileSync(
+    resolve(process.cwd(), "tests/helpers/stage3c-live-resident-submit-contracts.ts"),
+    "utf8",
+  );
+  const fnStart = src.indexOf("export function assertResidentBillStateUnchanged");
+  const rest = src.slice(fnStart);
+  const fnEnd = rest.indexOf("\n}\n");
+  const body = rest.slice(0, fnEnd);
+
+  it("locates the function body", () => {
+    expect(fnStart).toBeGreaterThan(-1);
+    expect(fnEnd).toBeGreaterThan(0);
+  });
+  it("does not use non-null assertions inside the function body", () => {
+    expect(body).not.toMatch(/\]\s*!\s*[;,)]/);
+    expect(body).not.toMatch(/\w!\./);
+  });
+  it("does not cast rows to Record<string, unknown> inside the function body", () => {
+    expect(body).not.toMatch(/as\s+Record<\s*string\s*,\s*unknown\s*>/);
+  });
+  it("does not normalize undefined to null inside the function body", () => {
+    expect(body).not.toMatch(/\?\?\s*null/);
+  });
+});
 

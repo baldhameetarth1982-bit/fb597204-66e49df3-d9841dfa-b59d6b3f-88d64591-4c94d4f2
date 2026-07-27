@@ -805,6 +805,7 @@ describe("Stage 3C — direct reader/state behavioral coverage", () => {
         "T",
       ),
     ).toThrow(/rejected/);
+  });
 });
 
 // ---------------------------------------------------------------------------

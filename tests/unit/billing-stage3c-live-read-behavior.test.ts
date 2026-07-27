@@ -387,6 +387,11 @@ function makeFullFixture(
       rejectedPaymentId: canonical.rejectedPaymentId,
       reversedPaymentId: canonical.reversedPaymentId,
       voidReceiptId: canonical.voidReceiptId,
+      secondBlockA: "b2222222-0000-4000-8000-000000000001",
+      secondBlockFlatA: "b2222222-0000-4000-8000-000000000002",
+      secondBlockBillId: "b2222222-0000-4000-8000-000000000003",
+      secondBlockVerifiedPaymentId: "b2222222-0000-4000-8000-000000000004",
+      secondBlockReceiptId: "b2222222-0000-4000-8000-000000000005",
     },
     matrix: {
       otherFlatA: canonical.otherFlatA,

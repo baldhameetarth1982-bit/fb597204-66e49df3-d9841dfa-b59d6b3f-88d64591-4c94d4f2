@@ -486,6 +486,7 @@ type PaymentFullRow = {
   id: string;
   bill_id: string;
   society_id: string;
+  flat_id: string;
   submitted_by: string;
   amount: number;
   method: "bank_transfer";
@@ -493,14 +494,29 @@ type PaymentFullRow = {
   source: "resident_submission" | "admin_entry";
   reference_no: string;
   idempotency_key: string;
+  created_at: string;
+  updated_at: string;
+  paid_at: string;
+  user_id: null;
+  submitted_at: null;
+  payment_date: null;
+  notes: null;
   verified_by: null;
   verified_at: null;
+  verification_notes: null;
   rejected_by: null;
   rejected_at: null;
   rejection_reason: null;
   reversed_by: null;
   reversed_at: null;
   reversal_reason: null;
+  platform_fee_paise: null;
+  platform_share_paise: null;
+  society_share_paise: null;
+  proof_url: null;
+  razorpay_order_id: null;
+  razorpay_payment_id: null;
+  razorpay_signature: null;
 };
 
 interface BillMeta {
@@ -558,6 +574,7 @@ function makeCleanState(): MockState {
       id: PRIMARY_PAYMENT,
       bill_id: i.billId,
       society_id: billMeta.societyId,
+      flat_id: "aaaaaaaa-1111-4222-8333-444444444444",
       submitted_by: i.actor.id,
       amount: i.amount,
       method: "bank_transfer",
@@ -565,14 +582,29 @@ function makeCleanState(): MockState {
       source: "resident_submission",
       reference_no: i.referenceNo,
       idempotency_key: i.idempotencyKey,
+      created_at: `${DETERMINISTIC_DATE}T00:00:00Z`,
+      updated_at: `${DETERMINISTIC_DATE}T00:00:00Z`,
+      paid_at: `${DETERMINISTIC_DATE}T00:00:00Z`,
+      user_id: null,
+      submitted_at: null,
+      payment_date: null,
+      notes: null,
       verified_by: null,
       verified_at: null,
+      verification_notes: null,
       rejected_by: null,
       rejected_at: null,
       rejection_reason: null,
       reversed_by: null,
       reversed_at: null,
       reversal_reason: null,
+      platform_fee_paise: null,
+      platform_share_paise: null,
+      society_share_paise: null,
+      proof_url: null,
+      razorpay_order_id: null,
+      razorpay_payment_id: null,
+      razorpay_signature: null,
     });
     return PRIMARY_PAYMENT;
   };
@@ -608,6 +640,13 @@ function summaryForBill(state: MockState, billId: string): Record<string, unknow
   };
 }
 
+function projectCols(row: Record<string, unknown>, cols: string): Record<string, unknown> {
+  const keys = cols.split(",").map((c) => c.trim()).filter((c) => c.length > 0);
+  const out: Record<string, unknown> = {};
+  for (const k of keys) out[k] = row[k] ?? null;
+  return out;
+}
+
 function makeAdmin(state: MockState) {
   return {
     from(table: string) {
@@ -619,30 +658,34 @@ function makeAdmin(state: MockState) {
                 const filtered = state.payments.filter(
                   (r) => (col === "id" && r.id === val) || (col === "bill_id" && r.bill_id === val),
                 );
-                if (cols.includes("bill_id") || cols.includes("submitted_by")) {
-                  // Full-column query for assertCanonicalPendingResidentRow
-                  return { data: filtered, error: null };
-                }
+                // Project only the requested columns so `.strict()` schemas
+                // don't reject on unrelated columns from the mock row.
                 return {
-                  data: filtered.map((r) => ({ id: r.id, status: r.status, amount: r.amount })),
+                  data: filtered.map((r) => projectCols(r as unknown as Record<string, unknown>, cols)),
                   error: null,
                 };
               }
               if (table === "payment_receipts") {
                 return {
-                  data: state.receipts.filter((r) => r.payment_id === val),
+                  data: state.receipts
+                    .filter((r) => r.payment_id === val)
+                    .map((r) => projectCols(r as unknown as Record<string, unknown>, cols)),
                   error: null,
                 };
               }
               if (table === "payment_receipt_sequences") {
                 return {
-                  data: state.yearly.filter((r) => r.society_id === val),
+                  data: state.yearly
+                    .filter((r) => r.society_id === val)
+                    .map((r) => projectCols(r as unknown as Record<string, unknown>, cols)),
                   error: null,
                 };
               }
               if (table === "payment_receipt_month_sequences") {
                 return {
-                  data: state.monthly.filter((r) => r.society_id === val),
+                  data: state.monthly
+                    .filter((r) => r.society_id === val)
+                    .map((r) => projectCols(r as unknown as Record<string, unknown>, cols)),
                   error: null,
                 };
               }

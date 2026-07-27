@@ -1832,7 +1832,8 @@ describe("Sub-run C — exported REFERENCE assertion helpers", () => {
     const summary = summaryForBill(s, billId);
     return {
       summary: summary as unknown as import("../helpers/stage3c-live-resident-submit-contracts").ResidentBillSummary,
-      paymentRows: [] as unknown as readonly import("../helpers/stage3c-live-resident-submit-contracts").ResidentPaymentStatusRow[],
+      paymentRows: [] as unknown as readonly import("../helpers/stage3c-live-resident-submit-contracts").ResidentBillPaymentLifecycleRow[],
+      receiptRows: [] as unknown as readonly import("../helpers/stage3c-live-resident-submit-contracts").ResidentBillReceiptLifecycleRow[],
       sequences: { yearly: [], monthly: [] } as unknown as import("../helpers/stage3c-live-resident-submit-contracts").ReceiptSequenceSnapshot,
     };
   }
@@ -1862,8 +1863,9 @@ describe("Sub-run C — exported REFERENCE assertion helpers", () => {
     const post = {
       summary: summaryForBill(s, REF_BILL) as unknown as import("../helpers/stage3c-live-resident-submit-contracts").ResidentBillSummary,
       paymentRows: [
-        { id: PRIMARY_PAYMENT, status: "pending", amount: 200 } as unknown as import("../helpers/stage3c-live-resident-submit-contracts").ResidentPaymentStatusRow,
+        { id: PRIMARY_PAYMENT, status: "pending", amount: 200 } as unknown as import("../helpers/stage3c-live-resident-submit-contracts").ResidentBillPaymentLifecycleRow,
       ],
+      receiptRows: [],
       sequences: initial.sequences,
     };
     expect(() =>

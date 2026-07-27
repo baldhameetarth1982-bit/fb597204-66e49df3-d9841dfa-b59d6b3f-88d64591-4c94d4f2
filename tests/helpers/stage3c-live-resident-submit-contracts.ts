@@ -553,15 +553,21 @@ export type ResidentBillPaymentLifecycleRow = z.infer<
 >;
 
 // Compile-time key-parity guard: schema keys === generated Row keys.
-// Direction A: schema row must satisfy Row (widened numeric via NumericLike
-// output is number, which matches). Cast is safe because both types have
-// identical key sets by construction below.
-type _PaymentKeyParityAB = keyof ResidentBillPaymentLifecycleRow extends keyof PaymentDatabaseRow ? true : false;
-type _PaymentKeyParityBA = keyof PaymentDatabaseRow extends keyof ResidentBillPaymentLifecycleRow ? true : false;
-const _paymentKeyParityAB: _PaymentKeyParityAB = true;
-const _paymentKeyParityBA: _PaymentKeyParityBA = true;
-void _paymentKeyParityAB;
-void _paymentKeyParityBA;
+// Fail-closed via Exclude<>: any missing/extra key becomes a non-`never`
+// type and blows `AssertNever`.
+type AssertNever<T extends never> = T;
+type PaymentSnapshotColumnsMissingFromDatabase = Exclude<
+  keyof ResidentBillPaymentLifecycleRow,
+  keyof PaymentDatabaseRow
+>;
+type PaymentColumnsMissingFromSnapshot = Exclude<
+  keyof PaymentDatabaseRow,
+  keyof ResidentBillPaymentLifecycleRow
+>;
+export type _PaymentSchemaParity = [
+  AssertNever<PaymentSnapshotColumnsMissingFromDatabase>,
+  AssertNever<PaymentColumnsMissingFromSnapshot>,
+];
 
 export const RESIDENT_BILL_PAYMENT_LIFECYCLE_FIELDS: readonly (keyof ResidentBillPaymentLifecycleRow)[] = [
   "id",

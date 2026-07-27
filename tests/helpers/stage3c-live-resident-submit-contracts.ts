@@ -505,8 +505,12 @@ export function deriveActorRoleFromSource(
  * (verify/reject/reverse, timestamp change, notes edit) is detected by
  * `assertResidentBillStateUnchanged`.
  *
- * DB-nullable columns are `.nullish()` so partial mock rows still parse;
- * the strict object rejects any unknown key so schema drift is caught.
+ * Nullability contract:
+ *   - Every database-nullable column is a REQUIRED key on the schema.
+ *   - Its value must be either the canonical typed value OR explicit
+ *     `null` — `.nullable()` (never `.nullish()`).
+ *   - Omitted nullable keys FAIL CLOSED: `undefined` is not accepted.
+ *   - The strict object rejects any unknown key so schema drift is caught.
  */
 export const ResidentBillPaymentLifecycleRowSchema = z
   .object({
@@ -853,7 +857,7 @@ function requireRowAt<T>(
   label: string,
   what: string,
 ): T {
-  const row = rows[index];
+  const row = rows.at(index);
   if (row === undefined)
     throw new Error(`[stage3c:${label}] ${what} row ${index} absent`);
   return row;
@@ -883,7 +887,9 @@ export function assertResidentBillStateUnchanged(
     const ai = requireRowAt(aPay, i, label, "payment");
     for (const field of RESIDENT_BILL_PAYMENT_LIFECYCLE_FIELDS) {
       if (bi[field] !== ai[field])
-        throw new Error(`[stage3c:${label}] payment row ${i} changed`);
+        throw new Error(
+          `[stage3c:${label}] payment row ${i} field ${String(field)} changed`,
+        );
     }
   }
 
@@ -896,7 +902,9 @@ export function assertResidentBillStateUnchanged(
     const ai = requireRowAt(aRec, i, label, "receipt");
     for (const field of RESIDENT_BILL_RECEIPT_LIFECYCLE_FIELDS) {
       if (bi[field] !== ai[field])
-        throw new Error(`[stage3c:${label}] receipt row ${i} changed`);
+        throw new Error(
+          `[stage3c:${label}] receipt row ${i} field ${String(field)} changed`,
+        );
     }
   }
 

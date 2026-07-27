@@ -716,7 +716,7 @@ describe("Stage 3C — direct reader/state behavioral coverage", () => {
       throw new Error("expected throw");
     } catch (e) {
       const msg = (e as Error).message;
-      expect(msg).toMatch(/payment row \d+ changed/);
+      expect(msg).toMatch(/payment row \d+ field \w+ changed/);
       expect(msg).not.toContain(PAY_A);
       expect(msg).not.toContain("300");
       expect(msg).not.toContain("999");
@@ -1292,7 +1292,7 @@ describe("Stage 3C — payment lifecycle exhaustive per-field parity (34 columns
           { summary, paymentRows: after, receiptRows: [], sequences: seq },
           "T",
         ),
-      ).toThrow(/payment row \d+ changed/);
+      ).toThrow(/payment row \d+ field \w+ changed/);
     });
   }
 });
@@ -1353,7 +1353,7 @@ describe("Stage 3C — receipt lifecycle exhaustive per-field parity (17 columns
           { summary, paymentRows: baselinePayments, receiptRows: after, sequences: seq },
           "T",
         ),
-      ).toThrow(/receipt row \d+ changed/);
+      ).toThrow(/receipt row \d+ field \w+ changed/);
     });
   }
 });
@@ -1384,3 +1384,418 @@ describe("Stage 3C — assertResidentBillStateUnchanged has no non-null / cast e
   });
 });
 
+
+// ---------------------------------------------------------------------------
+// Nullability partitions — exact required vs nullable field lists
+// ---------------------------------------------------------------------------
+
+const PAYMENT_REQUIRED_FIELDS = [
+  "amount",
+  "bill_id",
+  "created_at",
+  "flat_id",
+  "id",
+  "method",
+  "paid_at",
+  "society_id",
+  "status",
+  "updated_at",
+] as const;
+
+const PAYMENT_NULLABLE_FIELDS = [
+  "idempotency_key",
+  "notes",
+  "payment_date",
+  "platform_fee_paise",
+  "platform_share_paise",
+  "proof_url",
+  "razorpay_order_id",
+  "razorpay_payment_id",
+  "razorpay_signature",
+  "reference_no",
+  "rejected_at",
+  "rejected_by",
+  "rejection_reason",
+  "reversal_reason",
+  "reversed_at",
+  "reversed_by",
+  "society_share_paise",
+  "source",
+  "submitted_at",
+  "submitted_by",
+  "user_id",
+  "verification_notes",
+  "verified_at",
+  "verified_by",
+] as const;
+
+const RECEIPT_REQUIRED_FIELDS = [
+  "created_at",
+  "id",
+  "issued_at",
+  "payment_id",
+  "receipt_number",
+  "society_id",
+  "status",
+] as const;
+
+const RECEIPT_NULLABLE_FIELDS = [
+  "amount_snapshot",
+  "bill_number_snapshot",
+  "issued_by",
+  "method_snapshot",
+  "reference_snapshot",
+  "verified_at",
+  "verified_by",
+  "void_reason",
+  "voided_at",
+  "voided_by",
+] as const;
+
+describe("Stage 3C — nullability partitions (payment)", () => {
+  it("required field array has exactly 10 unique fields", () => {
+    expect(PAYMENT_REQUIRED_FIELDS.length).toBe(10);
+    expect(new Set(PAYMENT_REQUIRED_FIELDS).size).toBe(10);
+  });
+  it("nullable field array has exactly 24 unique fields", () => {
+    expect(PAYMENT_NULLABLE_FIELDS.length).toBe(24);
+    expect(new Set(PAYMENT_NULLABLE_FIELDS).size).toBe(24);
+  });
+  it("combined arrays exactly equal canonical 34-field list (as sorted set)", () => {
+    const combined = [...PAYMENT_REQUIRED_FIELDS, ...PAYMENT_NULLABLE_FIELDS];
+    expect(combined.length).toBe(34);
+    expect(new Set(combined).size).toBe(34);
+    const canonical = [...RESIDENT_BILL_PAYMENT_LIFECYCLE_FIELDS].sort();
+    expect([...combined].sort()).toEqual(canonical);
+  });
+
+  for (const field of PAYMENT_REQUIRED_FIELDS) {
+    it(`removing required payment field "${field}" fails closed`, () => {
+      const row = fullLifecycleRow();
+      delete row[field];
+      expect(ResidentBillPaymentLifecycleRowSchema.safeParse(row).success).toBe(false);
+    });
+  }
+
+  for (const field of PAYMENT_NULLABLE_FIELDS) {
+    it(`removing nullable payment field "${field}" fails closed`, () => {
+      const row = fullLifecycleRow();
+      delete row[field];
+      expect(ResidentBillPaymentLifecycleRowSchema.safeParse(row).success).toBe(false);
+    });
+    it(`explicit null accepted for nullable payment field "${field}"`, () => {
+      const row = fullLifecycleRow({ [field]: null });
+      expect(ResidentBillPaymentLifecycleRowSchema.safeParse(row).success).toBe(true);
+    });
+  }
+});
+
+describe("Stage 3C — nullability partitions (receipt)", () => {
+  it("required field array has exactly 7 unique fields", () => {
+    expect(RECEIPT_REQUIRED_FIELDS.length).toBe(7);
+    expect(new Set(RECEIPT_REQUIRED_FIELDS).size).toBe(7);
+  });
+  it("nullable field array has exactly 10 unique fields", () => {
+    expect(RECEIPT_NULLABLE_FIELDS.length).toBe(10);
+    expect(new Set(RECEIPT_NULLABLE_FIELDS).size).toBe(10);
+  });
+  it("combined arrays exactly equal canonical 17-field list (as sorted set)", () => {
+    const combined = [...RECEIPT_REQUIRED_FIELDS, ...RECEIPT_NULLABLE_FIELDS];
+    expect(combined.length).toBe(17);
+    expect(new Set(combined).size).toBe(17);
+    const canonical = [...RESIDENT_BILL_RECEIPT_LIFECYCLE_FIELDS].sort();
+    expect([...combined].sort()).toEqual(canonical);
+  });
+
+  for (const field of RECEIPT_REQUIRED_FIELDS) {
+    it(`removing required receipt field "${field}" fails closed`, () => {
+      const row = fullReceiptRow();
+      delete row[field];
+      expect(ResidentBillReceiptLifecycleRowSchema.safeParse(row).success).toBe(false);
+    });
+  }
+
+  for (const field of RECEIPT_NULLABLE_FIELDS) {
+    it(`removing nullable receipt field "${field}" fails closed`, () => {
+      const row = fullReceiptRow();
+      delete row[field];
+      expect(ResidentBillReceiptLifecycleRowSchema.safeParse(row).success).toBe(false);
+    });
+    it(`explicit null accepted for nullable receipt field "${field}"`, () => {
+      const row = fullReceiptRow({ [field]: null });
+      expect(ResidentBillReceiptLifecycleRowSchema.safeParse(row).success).toBe(true);
+    });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// SELECT constant uniqueness — payment/receipt column projection lists
+// ---------------------------------------------------------------------------
+
+describe("Stage 3C — SELECT column lists (parity + uniqueness)", () => {
+  const contractsSrc = readFileSync(
+    resolve(process.cwd(), "tests/helpers/stage3c-live-resident-submit-contracts.ts"),
+    "utf8",
+  );
+
+  function extractSelect(name: string): string[] {
+    const re = new RegExp(`${name}\\s*=\\s*"([^"]+)"`);
+    const m = contractsSrc.match(re);
+    if (!m) throw new Error(`${name} not found`);
+    return m[1].split(",").map((s) => s.trim()).filter((s) => s.length > 0);
+  }
+
+  const paymentList = extractSelect("PAYMENT_LIFECYCLE_SELECT");
+  const receiptList = extractSelect("RECEIPT_LIFECYCLE_SELECT");
+
+  it("PAYMENT_LIFECYCLE_SELECT has exactly 34 entries", () => {
+    expect(paymentList.length).toBe(34);
+  });
+  it("PAYMENT_LIFECYCLE_SELECT has exactly 34 unique entries", () => {
+    expect(new Set(paymentList).size).toBe(34);
+  });
+  it("PAYMENT_LIFECYCLE_SELECT sorted equals canonical payment field list sorted", () => {
+    expect([...paymentList].sort()).toEqual(
+      [...RESIDENT_BILL_PAYMENT_LIFECYCLE_FIELDS].sort(),
+    );
+  });
+  for (const field of RESIDENT_BILL_PAYMENT_LIFECYCLE_FIELDS) {
+    it(`PAYMENT_LIFECYCLE_SELECT contains "${String(field)}" exactly once`, () => {
+      const occurrences = paymentList.filter((c) => c === field);
+      expect(occurrences.length).toBe(1);
+    });
+  }
+
+  it("RECEIPT_LIFECYCLE_SELECT has exactly 17 entries", () => {
+    expect(receiptList.length).toBe(17);
+  });
+  it("RECEIPT_LIFECYCLE_SELECT has exactly 17 unique entries", () => {
+    expect(new Set(receiptList).size).toBe(17);
+  });
+  it("RECEIPT_LIFECYCLE_SELECT sorted equals canonical receipt field list sorted", () => {
+    expect([...receiptList].sort()).toEqual(
+      [...RESIDENT_BILL_RECEIPT_LIFECYCLE_FIELDS].sort(),
+    );
+  });
+  for (const field of RESIDENT_BILL_RECEIPT_LIFECYCLE_FIELDS) {
+    it(`RECEIPT_LIFECYCLE_SELECT contains "${String(field)}" exactly once`, () => {
+      const occurrences = receiptList.filter((c) => c === field);
+      expect(occurrences.length).toBe(1);
+    });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Complete-snapshot mutation coverage (insertion/deletion/sequence/etc.)
+// ---------------------------------------------------------------------------
+
+describe("Stage 3C — assertResidentBillStateUnchanged complete-snapshot coverage", () => {
+  const seq0 = ReceiptSequenceSnapshotSchema.parse({ yearly: [], monthly: [] });
+  const summary = ResidentBillSummarySchema.parse({
+    bill_id: CANON_BILL,
+    society_id: CANON_SOCIETY,
+    total_payable: 1000,
+    verified_amount: 0,
+    pending_amount: 0,
+    rejected_amount: 0,
+    reversed_amount: 0,
+    available_to_submit: 1000,
+    remaining_verified_balance: 1000,
+    cancelled: false,
+    status: "unpaid" as const,
+  });
+
+  it("rejects payment row insertion (before empty, after 1 row)", () => {
+    const after = ResidentBillPaymentLifecycleRowsSchema.parse([fullLifecycleRow()]);
+    expect(() =>
+      assertResidentBillStateUnchanged(
+        { summary, paymentRows: [], receiptRows: [], sequences: seq0 },
+        { summary, paymentRows: after, receiptRows: [], sequences: seq0 },
+        "T",
+      ),
+    ).toThrow(/payment row count changed/);
+  });
+
+  it("rejects payment row deletion (before 1 row, after empty)", () => {
+    const before = ResidentBillPaymentLifecycleRowsSchema.parse([fullLifecycleRow()]);
+    expect(() =>
+      assertResidentBillStateUnchanged(
+        { summary, paymentRows: before, receiptRows: [], sequences: seq0 },
+        { summary, paymentRows: [], receiptRows: [], sequences: seq0 },
+        "T",
+      ),
+    ).toThrow(/payment row count changed/);
+  });
+
+  it("rejects receipt row insertion (before empty, after 1 row)", () => {
+    const payments = ResidentBillPaymentLifecycleRowsSchema.parse([fullLifecycleRow()]);
+    const receipts = ResidentBillReceiptLifecycleRowsSchema.parse([fullReceiptRow()]);
+    expect(() =>
+      assertResidentBillStateUnchanged(
+        { summary, paymentRows: payments, receiptRows: [], sequences: seq0 },
+        { summary, paymentRows: payments, receiptRows: receipts, sequences: seq0 },
+        "T",
+      ),
+    ).toThrow(/receipt row count changed/);
+  });
+
+  it("rejects receipt row deletion (before 1 row, after empty)", () => {
+    const payments = ResidentBillPaymentLifecycleRowsSchema.parse([fullLifecycleRow()]);
+    const receipts = ResidentBillReceiptLifecycleRowsSchema.parse([fullReceiptRow()]);
+    expect(() =>
+      assertResidentBillStateUnchanged(
+        { summary, paymentRows: payments, receiptRows: receipts, sequences: seq0 },
+        { summary, paymentRows: payments, receiptRows: [], sequences: seq0 },
+        "T",
+      ),
+    ).toThrow(/receipt row count changed/);
+  });
+
+  it("rejects yearly sequence next_number mutation", () => {
+    const before = ReceiptSequenceSnapshotSchema.parse({
+      yearly: [{ society_id: CANON_SOCIETY, year: 2026, next_number: 1 }],
+      monthly: [],
+    });
+    const after = ReceiptSequenceSnapshotSchema.parse({
+      yearly: [{ society_id: CANON_SOCIETY, year: 2026, next_number: 2 }],
+      monthly: [],
+    });
+    expect(() =>
+      assertResidentBillStateUnchanged(
+        { summary, paymentRows: [], receiptRows: [], sequences: before },
+        { summary, paymentRows: [], receiptRows: [], sequences: after },
+        "T",
+      ),
+    ).toThrow(/yearly sequence row \d+ changed/);
+  });
+
+  it("rejects monthly sequence next_number mutation", () => {
+    const before = ReceiptSequenceSnapshotSchema.parse({
+      yearly: [],
+      monthly: [{ society_id: CANON_SOCIETY, year_month: "2026-07", next_number: 1 }],
+    });
+    const after = ReceiptSequenceSnapshotSchema.parse({
+      yearly: [],
+      monthly: [{ society_id: CANON_SOCIETY, year_month: "2026-07", next_number: 2 }],
+    });
+    expect(() =>
+      assertResidentBillStateUnchanged(
+        { summary, paymentRows: [], receiptRows: [], sequences: before },
+        { summary, paymentRows: [], receiptRows: [], sequences: after },
+        "T",
+      ),
+    ).toThrow(/monthly sequence row \d+ changed/);
+  });
+
+  it("rejects a deliberately malformed runtime snapshot missing receiptRows", () => {
+    const payments = ResidentBillPaymentLifecycleRowsSchema.parse([fullLifecycleRow()]);
+    const broken = {
+      summary,
+      paymentRows: payments,
+      // receiptRows intentionally omitted
+      sequences: seq0,
+    } as unknown as import("../helpers/stage3c-live-resident-submit-contracts").ResidentBillStateSnapshot;
+    expect(() =>
+      assertResidentBillStateUnchanged(
+        { summary, paymentRows: payments, receiptRows: [], sequences: seq0 },
+        broken,
+        "T",
+      ),
+    ).toThrow();
+  });
+
+  it("rejects a nullable field omitted on one side vs explicit null on the other", () => {
+    // Before: explicit null (valid). After: field omitted (invalid → parse fails).
+    const before = ResidentBillPaymentLifecycleRowsSchema.parse([
+      fullLifecycleRow({ verified_at: null }),
+    ]);
+    const afterRow = fullLifecycleRow({ verified_at: null });
+    delete afterRow.verified_at;
+    expect(() =>
+      assertResidentBillStateUnchanged(
+        { summary, paymentRows: before, receiptRows: [], sequences: seq0 },
+        {
+          summary,
+          paymentRows: [afterRow] as unknown as import(
+            "../helpers/stage3c-live-resident-submit-contracts"
+          ).ResidentBillPaymentLifecycleRow[],
+          receiptRows: [],
+          sequences: seq0,
+        },
+        "T",
+      ),
+    ).toThrow();
+  });
+
+  it("receipt query provider failure surfaces via safeStage3CErrorMessage", async () => {
+    const providerErr = { code: "PGRST42", message: "sql: SELECT secret FROM x WHERE y=$1" };
+    const reader: import(
+      "../helpers/stage3c-live-resident-submit-contracts"
+    ).ResidentBillStateReader = {
+      from: (table: string) => ({
+        select: (_c: string) => ({
+          eq: async (_col: string, _val: string) => {
+            if (table === "payments") return { data: [fullLifecycleRow()], error: null };
+            if (table === "payment_receipts")
+              return { data: null, error: providerErr };
+            return { data: [], error: null };
+          },
+        }),
+      }),
+    };
+    const actor: import(
+      "../helpers/stage3c-live-resident-submit-contracts"
+    ).ActorRpcClient = {
+      async rpc() {
+        return {
+          data: {
+            bill_id: CANON_BILL,
+            society_id: CANON_SOCIETY,
+            total_payable: 1000,
+            verified_amount: 0,
+            pending_amount: 0,
+            rejected_amount: 0,
+            reversed_amount: 0,
+            available_to_submit: 1000,
+            remaining_verified_balance: 1000,
+            cancelled: false,
+            status: "unpaid",
+          },
+          error: null,
+        };
+      },
+    };
+    try {
+      await snapshotResidentBillState(reader, actor, CANON_BILL, CANON_SOCIETY, "T");
+      throw new Error("expected throw");
+    } catch (e) {
+      const msg = (e as Error).message;
+      // safeStage3CErrorMessage must not include raw SQL fragments.
+      expect(msg).not.toMatch(/SELECT/i);
+      expect(msg).not.toContain("secret");
+    }
+  });
+
+  it("assertion error excludes fixture UUIDs and altered values (payment field drift)", () => {
+    const before = ResidentBillPaymentLifecycleRowsSchema.parse([
+      fullLifecycleRow({ verified_at: "2026-07-01T00:00:00Z" }),
+    ]);
+    const after = ResidentBillPaymentLifecycleRowsSchema.parse([
+      fullLifecycleRow({ verified_at: "2099-12-31T00:00:00Z" }),
+    ]);
+    try {
+      assertResidentBillStateUnchanged(
+        { summary, paymentRows: before, receiptRows: [], sequences: seq0 },
+        { summary, paymentRows: after, receiptRows: [], sequences: seq0 },
+        "T",
+      );
+      throw new Error("expected throw");
+    } catch (e) {
+      const msg = (e as Error).message;
+      expect(msg).toMatch(/payment row \d+ field verified_at changed/);
+      expect(msg).not.toContain(CANON_ID_1);
+      expect(msg).not.toContain(CANON_BILL);
+      expect(msg).not.toContain("2099-12-31");
+    }
+  });
+});

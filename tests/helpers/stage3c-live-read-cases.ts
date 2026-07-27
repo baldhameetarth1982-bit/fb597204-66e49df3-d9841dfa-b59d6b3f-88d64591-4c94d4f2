@@ -33,6 +33,11 @@ import {
   requireReadExpectedDetail,
   requireReadAcceptedDetail,
 } from "./stage3c-live-matrix-context";
+import {
+  snapshotResidentBillState,
+  assertResidentBillStateUnchanged,
+} from "./stage3c-live-resident-submit-contracts";
+
 
 // ---------------------------------------------------------------------------
 // Canonical case-id union + ordered list
@@ -267,8 +272,51 @@ function assertHistoryRowsStrict(
 }
 
 // ---------------------------------------------------------------------------
-// READ-01..READ-04 — behavioral implementations
+// Live-state bracketing helper — fixture-derived when available.
 // ---------------------------------------------------------------------------
+
+interface LiveReadBrackets {
+  readonly client: BillingRpcClient;
+  readonly assertUnchanged: () => Promise<void>;
+}
+
+async function openLiveReadBrackets(
+  ctx: Stage3CLiveMatrixContext,
+  caseId: Stage3CReadCaseId,
+): Promise<LiveReadBrackets> {
+  const injected = requireReadResidentRpcClient(ctx);
+  const fixture = ctx.fixture;
+  if (!fixture) {
+    return { client: injected, assertUnchanged: async () => {} };
+  }
+  const billId = requireReadPrimaryBillId(ctx);
+  const societyId = fixture.societyA;
+  const actorClient = fixture.users.activeResident.client as unknown as {
+    rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
+  };
+  const before = await snapshotResidentBillState(
+    fixture.admin,
+    actorClient,
+    billId,
+    societyId,
+    caseId,
+  );
+  return {
+    client: injected,
+    assertUnchanged: async () => {
+      const after = await snapshotResidentBillState(
+        fixture.admin,
+        actorClient,
+        billId,
+        societyId,
+        caseId,
+      );
+      assertResidentBillStateUnchanged(before, after, caseId);
+    },
+  };
+}
+
+
 
 /**
  * READ-01 — Active resident sees own payment history.
@@ -276,7 +324,8 @@ function assertHistoryRowsStrict(
  */
 export const read01_activeResidentSeesOwnPaymentHistory: Stage3CMatrixLiveHandler =
   async (ctx: Stage3CLiveMatrixContext) => {
-    const client = requireReadResidentRpcClient(ctx);
+    const brackets = await openLiveReadBrackets(ctx, "READ-01");
+    const client = brackets.client;
     const paymentId = requireReadPrimaryPaymentId(ctx);
     const billId = requireReadPrimaryBillId(ctx);
     const expectedRow = requireReadExpectedHistoryRow(ctx);
@@ -341,6 +390,7 @@ export const read01_activeResidentSeesOwnPaymentHistory: Stage3CMatrixLiveHandle
 
     const postDetail = await getPaymentDetailWithClient(client, { paymentId });
     assertReadStateUnchanged(preDetail, postDetail);
+    await brackets.assertUnchanged();
   };
 
 /**
@@ -350,7 +400,8 @@ export const read01_activeResidentSeesOwnPaymentHistory: Stage3CMatrixLiveHandle
  */
 export const read02_activeResidentSeesOwnPaymentDetail: Stage3CMatrixLiveHandler =
   async (ctx: Stage3CLiveMatrixContext) => {
-    const client = requireReadResidentRpcClient(ctx);
+    const brackets = await openLiveReadBrackets(ctx, "READ-02");
+    const client = brackets.client;
     const paymentId = requireReadPrimaryPaymentId(ctx);
     const billId = requireReadPrimaryBillId(ctx);
     const expectedRow = requireReadExpectedHistoryRow(ctx);
@@ -387,6 +438,7 @@ export const read02_activeResidentSeesOwnPaymentDetail: Stage3CMatrixLiveHandler
       offset: 0,
     });
     assertReadStateUnchanged(preHistory, postHistory);
+    await brackets.assertUnchanged();
   };
 
 /**
@@ -396,7 +448,8 @@ export const read02_activeResidentSeesOwnPaymentDetail: Stage3CMatrixLiveHandler
  */
 export const read03_residentPaymentDetailCarriesResidentAudience: Stage3CMatrixLiveHandler =
   async (ctx: Stage3CLiveMatrixContext) => {
-    const client = requireReadResidentRpcClient(ctx);
+    const brackets = await openLiveReadBrackets(ctx, "READ-03");
+    const client = brackets.client;
     const paymentId = requireReadPrimaryPaymentId(ctx);
     const accepted = requireReadAcceptedDetail(ctx);
 
@@ -415,6 +468,7 @@ export const read03_residentPaymentDetailCarriesResidentAudience: Stage3CMatrixL
     }
 
     assertResidentDetailMatchesExpected(detail, accepted);
+    await brackets.assertUnchanged();
   };
 
 /**
@@ -424,7 +478,8 @@ export const read03_residentPaymentDetailCarriesResidentAudience: Stage3CMatrixL
  */
 export const read04_productionParserAcceptsResidentPayload: Stage3CMatrixLiveHandler =
   async (ctx: Stage3CLiveMatrixContext) => {
-    const client = requireReadResidentRpcClient(ctx);
+    const brackets = await openLiveReadBrackets(ctx, "READ-04");
+    const client = brackets.client;
     const paymentId = requireReadPrimaryPaymentId(ctx);
     const accepted = requireReadAcceptedDetail(ctx);
 
@@ -432,6 +487,7 @@ export const read04_productionParserAcceptsResidentPayload: Stage3CMatrixLiveHan
     const detail = narrowResidentDetail(detailAny, "READ-04");
 
     assertResidentDetailMatchesExpected(detail, accepted);
+    await brackets.assertUnchanged();
   };
 
 // ---------------------------------------------------------------------------

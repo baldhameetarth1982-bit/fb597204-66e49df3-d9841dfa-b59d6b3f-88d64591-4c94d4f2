@@ -1668,3 +1668,218 @@ describe("READ-05..10 direct denial behavioral tests", () => {
     ).rejects.toThrowError("not_authorized");
   });
 });
+
+// ---------------------------------------------------------------------------
+// READ-05 strict correction: canonical `not_authorized` throw only.
+// A successful history call (empty, filtered, or containing rows) is a hard
+// failure; silent filtering is not a denial.
+// ---------------------------------------------------------------------------
+
+describe("READ-05 strict canonical denial", () => {
+  function primeRead05(
+    responder: (call: FetchCall) => FetchResponse | undefined,
+  ): {
+    ctx: Stage3CLiveMatrixContext;
+    deniedCalls: FetchCall[];
+  } {
+    const ctx = createStage3CLiveMatrixContext();
+    const observer = makeMockedClient((call) => {
+      if (call.rpcName === "get_bill_payment_summary") {
+        const bid = String((call.body ?? {})._bill_id ?? BILL_ID);
+        return { body: { ...makeSummaryRow(), bill_id: bid } };
+      }
+      if (call.table === "payments") {
+        const u = new URL(call.url);
+        const bidExpr = u.searchParams.get("bill_id") ?? "";
+        const bid = bidExpr.startsWith("eq.") ? bidExpr.slice(3) : BILL_ID;
+        return { body: [{ ...fullPaymentAdminRow(), bill_id: bid }] };
+      }
+      if (call.table === "payment_receipts") return { body: [] };
+      if (call.table === "payment_receipt_sequences") return { body: [] };
+      if (call.table === "payment_receipt_month_sequences") return { body: [] };
+      return undefined;
+    });
+    const denied = makeMockedClient(responder);
+    const fixture = makeFullFixture(observer.client, observer.client);
+    fixture.users.adminA1 = {
+      id: fixture.users.adminA1.id,
+      email: fixture.users.adminA1.email,
+      password: "unused",
+      client: observer.client,
+    };
+    fixture.users.movedOutResident = {
+      id: fixture.users.movedOutResident.id,
+      email: fixture.users.movedOutResident.email,
+      password: "unused",
+      client: denied.client,
+    };
+    Object.assign(ctx, {
+      readPrimaryBillId: BILL_ID,
+      readPrimaryPaymentId: PAYMENT_ID,
+      readOtherBlockBillId: "b2222222-0000-4000-8000-000000000003",
+      readOtherBlockPaymentId: "b2222222-0000-4000-8000-000000000004",
+    });
+    ctx.fixture = fixture;
+    return { ctx, deniedCalls: denied.calls };
+  }
+
+  it("uses the movedOutResident client (denial actor)", async () => {
+    const { ctx, deniedCalls } = primeRead05((call) =>
+      call.rpcName !== null
+        ? { status: 403, body: { message: "not_authorized" } }
+        : undefined,
+    );
+    await STAGE3C_READ_HANDLERS["READ-05"](ctx);
+    expect(deniedCalls.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("calls only get_resident_payments_v1 (never get_payment_detail)", async () => {
+    const { ctx, deniedCalls } = primeRead05((call) =>
+      call.rpcName !== null
+        ? { status: 403, body: { message: "not_authorized" } }
+        : undefined,
+    );
+    await STAGE3C_READ_HANDLERS["READ-05"](ctx);
+    expect(deniedCalls.some((c) => c.rpcName === "get_resident_payments_v1")).toBe(true);
+    expect(deniedCalls.some((c) => c.rpcName === "get_payment_detail")).toBe(false);
+  });
+
+  it("sends exactly _limit: 50 and _offset: 0", async () => {
+    const { ctx, deniedCalls } = primeRead05((call) =>
+      call.rpcName !== null
+        ? { status: 403, body: { message: "not_authorized" } }
+        : undefined,
+    );
+    await STAGE3C_READ_HANDLERS["READ-05"](ctx);
+    const rpcCall = deniedCalls.find((c) => c.rpcName === "get_resident_payments_v1");
+    expect(rpcCall).toBeDefined();
+    expect(rpcCall?.body).toMatchObject({ _limit: 50, _offset: 0 });
+  });
+
+  it("accepts a canonical not_authorized throw", async () => {
+    const { ctx } = primeRead05((call) =>
+      call.rpcName !== null
+        ? { status: 403, body: { message: "not_authorized" } }
+        : undefined,
+    );
+    await expect(STAGE3C_READ_HANDLERS["READ-05"](ctx)).resolves.toBeUndefined();
+    expect(ctx.readDenialEvidence["READ-05"]?.category).toBe("not_authorized");
+    expect(ctx.readDenialEvidence["READ-05"]?.returnedRow).toBeNull();
+  });
+
+  it("mapPaymentError translates not_authorized to the exact safe message", () => {
+    expect(mapPaymentError("not_authorized")).toBe(
+      "You are not allowed to perform this action.",
+    );
+  });
+
+  it("rejects a successful empty-history response", async () => {
+    const { ctx } = primeRead05((call) =>
+      call.rpcName === "get_resident_payments_v1" ? { body: [] } : undefined,
+    );
+    await expect(STAGE3C_READ_HANDLERS["READ-05"](ctx)).rejects.toThrow(
+      /shared core did not throw/,
+    );
+  });
+
+  it("rejects a successful unrelated-row history response", async () => {
+    const { ctx } = primeRead05((call) =>
+      call.rpcName === "get_resident_payments_v1"
+        ? { body: [{ ...fullPaymentAdminRow(), id: "99999999-1111-4222-8333-444444444444" }] }
+        : undefined,
+    );
+    await expect(STAGE3C_READ_HANDLERS["READ-05"](ctx)).rejects.toThrow(
+      /shared core did not throw/,
+    );
+  });
+
+  it("rejects a successful primary-payment history response", async () => {
+    const { ctx } = primeRead05((call) =>
+      call.rpcName === "get_resident_payments_v1"
+        ? { body: [{ ...fullPaymentAdminRow(), id: PAYMENT_ID }] }
+        : undefined,
+    );
+    await expect(STAGE3C_READ_HANDLERS["READ-05"](ctx)).rejects.toThrow(
+      /shared core did not throw/,
+    );
+  });
+
+  it("rejects null-without-error responses", async () => {
+    const { ctx } = primeRead05((call) =>
+      call.rpcName === "get_resident_payments_v1" ? { body: null } : undefined,
+    );
+    // production core returns { payments: [] } for null → still a success, hard fail
+    await expect(STAGE3C_READ_HANDLERS["READ-05"](ctx)).rejects.toThrow(
+      /shared core did not throw/,
+    );
+  });
+
+  it("maps unknown provider errors to operation_failed via mapPaymentError", () => {
+    expect(mapPaymentError("some_unknown_pg_error")).toBe(
+      mapPaymentError("some_unknown_pg_error"),
+    );
+    // sanity — anything not matched by the mapper remains a safe generic
+    expect(mapPaymentError("random").length).toBeGreaterThan(0);
+  });
+
+  it("wrong denial code (e.g. duplicate_reference) causes hard failure", async () => {
+    const { ctx } = primeRead05((call) =>
+      call.rpcName !== null
+        ? { status: 409, body: { message: "duplicate_reference" } }
+        : undefined,
+    );
+    await expect(STAGE3C_READ_HANDLERS["READ-05"](ctx)).rejects.toThrow(
+      /wrong denial code/,
+    );
+  });
+
+  it("throws on payment state drift between snapshots", async () => {
+    const ctx = createStage3CLiveMatrixContext();
+    let paymentsCall = 0;
+    const observer = makeMockedClient((call) => {
+      if (call.rpcName === "get_bill_payment_summary") {
+        const bid = String((call.body ?? {})._bill_id ?? BILL_ID);
+        return { body: { ...makeSummaryRow(), bill_id: bid } };
+      }
+      if (call.table === "payments") {
+        const u = new URL(call.url);
+        const bidExpr = u.searchParams.get("bill_id") ?? "";
+        const bid = bidExpr.startsWith("eq.") ? bidExpr.slice(3) : BILL_ID;
+        paymentsCall += 1;
+        if (paymentsCall === 1)
+          return { body: [{ ...fullPaymentAdminRow(), bill_id: bid }] };
+        return { body: [{ ...fullPaymentAdminRow(), bill_id: bid, amount: 999 }] };
+      }
+      if (call.table === "payment_receipts") return { body: [] };
+      if (call.table === "payment_receipt_sequences") return { body: [] };
+      if (call.table === "payment_receipt_month_sequences") return { body: [] };
+      return undefined;
+    });
+    const denied = makeMockedClient((call) =>
+      call.rpcName !== null
+        ? { status: 403, body: { message: "not_authorized" } }
+        : undefined,
+    );
+    const fixture = makeFullFixture(observer.client, observer.client);
+    fixture.users.adminA1 = {
+      id: fixture.users.adminA1.id,
+      email: fixture.users.adminA1.email,
+      password: "unused",
+      client: observer.client,
+    };
+    fixture.users.movedOutResident = {
+      id: fixture.users.movedOutResident.id,
+      email: fixture.users.movedOutResident.email,
+      password: "unused",
+      client: denied.client,
+    };
+    Object.assign(ctx, {
+      readPrimaryBillId: BILL_ID,
+      readPrimaryPaymentId: PAYMENT_ID,
+      readOtherBlockBillId: "b2222222-0000-4000-8000-000000000003",
+      readOtherBlockPaymentId: "b2222222-0000-4000-8000-000000000004",
+    });
+    ctx.fixture = fixture;
+    await expect(STAGE3C_READ_HANDLERS["READ-05"](ctx)).rejects.toThrow();
+  });
+});

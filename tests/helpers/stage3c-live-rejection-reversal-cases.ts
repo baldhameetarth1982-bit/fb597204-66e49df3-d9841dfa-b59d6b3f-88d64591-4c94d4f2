@@ -1075,12 +1075,18 @@ export const reversal09_verifyAfterReverseDenied: Stage3CMatrixLiveHandler = asy
   const yearlyBeforeDenial = state.yearlySeqAfter;
   const monthlyBeforeDenial = state.monthlySeqAfter;
 
-  const { error } = await fixture.users.adminA2.client.rpc("verify_offline_payment", {
-    _payment_id: state.paymentId,
-    _notes: null,
-  });
-  if (error === null) fail("REVERSAL-09", "verify after reverse did not error");
-  if (error.message !== STAGE3C_TERMINAL_VERIFY_ERROR)
+  let caught: unknown = null;
+  try {
+    await verifyOfflinePaymentWithClient(
+      toRejRevBillingRpcClient(fixture.users.adminA2),
+      { paymentId: state.paymentId, notes: null },
+    );
+  } catch (e) {
+    caught = e;
+  }
+  if (caught === null) fail("REVERSAL-09", "verify after reverse did not error");
+  if (!(caught instanceof Error)) fail("REVERSAL-09", "verify threw non-error");
+  if (caught.message !== STAGE3C_TERMINAL_VERIFY_ERROR)
     fail("REVERSAL-09", "wrong terminal-state error");
 
   const [paymentAgain, receiptAgain, summaryAgain, yearlyAgain, monthlyAgain, countAgain] =

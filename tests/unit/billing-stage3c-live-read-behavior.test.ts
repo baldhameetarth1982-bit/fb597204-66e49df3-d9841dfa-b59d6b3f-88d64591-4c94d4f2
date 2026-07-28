@@ -1677,7 +1677,7 @@ describe("READ-05..10 direct denial behavioral tests", () => {
 
 describe("READ-05 strict canonical denial", () => {
   function primeRead05(
-    responder: (call: FetchCall) => FetchResponse | undefined,
+    responder: FetchResponder,
   ): {
     ctx: Stage3CLiveMatrixContext;
     deniedCalls: FetchCall[];

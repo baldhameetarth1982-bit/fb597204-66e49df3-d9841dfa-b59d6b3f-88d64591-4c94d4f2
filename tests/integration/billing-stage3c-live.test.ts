@@ -1,12 +1,12 @@
 /**
- * Stage 3C — Live matrix (50/93), registry-driven.
+ * Stage 3C — Live matrix (66/93), registry-driven.
  *
  * Every registered test is one entry in `STAGE3C_MATRIX_LIVE_CASE_HANDLERS`
  * — 24 core cases (AUTH/PENDING/VERIFY) followed by 8 resident-submit
  * cases, 4 IDEMPOTENCY + 4 REFERENCE cases, then 10 READ cases
- * (READ-01..04 success + READ-05..10 denial). Gated by
- * `ALLOW_SOCIOHUB_LIVE_STAGE3C=true`; otherwise the describe block is
- * skipped rather than emitting a fake passing test.
+ * (READ-01..04 success + READ-05..10 denial), then 16 PRIVACY cases.
+ * Gated by `ALLOW_SOCIOHUB_LIVE_STAGE3C=true`; otherwise the describe
+ * block is skipped rather than emitting a fake passing test.
  */
 
 import { describe, it, beforeAll, afterAll } from "vitest";

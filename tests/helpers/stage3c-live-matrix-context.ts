@@ -603,4 +603,26 @@ export const requireReadOtherBlockBillId = (c: Stage3CLiveMatrixContext) =>
 export const requireReadOtherBlockPaymentId = (c: Stage3CLiveMatrixContext) =>
   requireCanonicalUuid(c.readOtherBlockPaymentId, "readOtherBlockPaymentId", "READ-10");
 
+// PRIVACY receipt-bearing detail guards
+export function requirePrivacyReceiptDetail(
+  c: Stage3CLiveMatrixContext,
+): ResidentPaymentDetail {
+  if (c.privacyReceiptDetail === null)
+    throwMissing("privacyReceiptDetail", "primeStage3CReadContext");
+  return c.privacyReceiptDetail;
+}
+export const requirePrivacyReceiptPaymentId = (c: Stage3CLiveMatrixContext) =>
+  requireCanonicalUuid(
+    c.privacyReceiptPaymentId,
+    "privacyReceiptPaymentId",
+    "primeStage3CReadContext",
+  );
+export const requirePrivacyReceiptBillId = (c: Stage3CLiveMatrixContext) =>
+  requireCanonicalUuid(
+    c.privacyReceiptBillId,
+    "privacyReceiptBillId",
+    "primeStage3CReadContext",
+  );
+
+
 

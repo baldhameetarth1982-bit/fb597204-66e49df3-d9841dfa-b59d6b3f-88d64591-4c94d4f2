@@ -106,23 +106,34 @@ export const STAGE3C_FORBIDDEN_RECEIPT_KEYS: ReadonlySet<string> = Object.freeze
   ]),
 );
 
-/** Payer-snapshot / raw-uuid columns that never belong on a resident payload. */
+/**
+ * Payer-snapshot / raw-uuid columns that must NEVER surface on a
+ * resident payload. Grounded in the current `payments` and
+ * `payment_receipts` generated Row shapes:
+ *   - `payments.user_id`, `payments.submitted_by`, `payments.verified_by`,
+ *     `payments.rejected_by`, `payments.reversed_by` — real columns.
+ *   - `payment_receipts.issued_by`, `payment_receipts.voided_by`,
+ *     `payment_receipts.verified_by` — real columns.
+ *   - `payer_user_id` — defensive against future admin projections
+ *     that might alias `payments.user_id`.
+ * Speculative names (`payer_snapshot_id`, `payer_uuid`, `resident_id`)
+ * do not exist anywhere in current source and have been removed.
+ */
 export const STAGE3C_FORBIDDEN_PAYER_KEYS: ReadonlySet<string> = Object.freeze(
   new Set<string>([
-    "payer_snapshot_id",
-    "payer_user_id",
-    "payer_uuid",
-    "resident_id",
+    // Real column on `payments` — must never reach a resident payload.
     "user_id",
+    // Defensive alias against future admin projections.
+    "payer_user_id",
   ]),
 );
 
 /**
  * Union used by the recursive scan (PRIVACY-13). Case-sensitive.
  * Deliberately excludes single-word ambiguous keys like `id`, `society_id`,
- * `payment_id`, `year`, `user_id` — those are only forbidden at specific
- * container levels (see PRIVACY-08, PRIVACY-12) and appear legitimately
- * elsewhere in the resident payload (e.g. payment.id, payment.society_id).
+ * `payment_id`, `year` — those are only forbidden at specific container
+ * levels (see PRIVACY-08) and appear legitimately elsewhere in the
+ * resident payload (e.g. payment.id, payment.society_id).
  */
 export const STAGE3C_FORBIDDEN_KEYS_ALL: ReadonlySet<string> = Object.freeze(
   new Set<string>([
@@ -133,11 +144,10 @@ export const STAGE3C_FORBIDDEN_KEYS_ALL: ReadonlySet<string> = Object.freeze(
     "sequence_key",
     "next_number",
     "year_month",
-    "payer_snapshot_id",
     "payer_user_id",
-    "payer_uuid",
   ]),
 );
+
 
 // ---------------------------------------------------------------------------
 // Structural helpers (no dependency injection, static messages)
@@ -211,6 +221,19 @@ function requirePrivacyDetail(ctx: Stage3CLiveMatrixContext): ResidentPaymentDet
   return requireReadAcceptedDetail(ctx);
 }
 
+/**
+ * Prefer the receipt-bearing privacy detail when primed (a real verified
+ * resident-viewable payment with a valid issued receipt); fall back to
+ * the accepted READ detail. Fails closed when neither is initialised.
+ */
+function requirePrivacyDetailPreferReceipt(
+  ctx: Stage3CLiveMatrixContext,
+): ResidentPaymentDetail {
+  if (ctx.privacyReceiptDetail !== null) return ctx.privacyReceiptDetail;
+  return requireReadAcceptedDetail(ctx);
+}
+
+
 // ---------------------------------------------------------------------------
 // PRIVACY-01..07 — resident payment forbidden fields
 // ---------------------------------------------------------------------------
@@ -256,7 +279,7 @@ function forbiddenReceiptHandler(
   key: string,
 ): Stage3CMatrixLiveHandler {
   return async (ctx) => {
-    const detail = requirePrivacyDetail(ctx);
+    const detail = requirePrivacyDetailPreferReceipt(ctx);
     withFrozenClone(detail, (d) => {
       if (d.receipt !== null) {
         assertNoForbiddenKey(caseId, d.receipt, "receipt", key);
@@ -278,7 +301,7 @@ export const privacy10_omitReceiptVoidedBy = forbiddenReceiptHandler(
 /** PRIVACY-11 — resident receipt (and surrounding payload) omits receipt
  *  sequence internals such as sequence ids/keys/next_number/year rows. */
 export const privacy11_omitReceiptSequenceInternals: Stage3CMatrixLiveHandler = async (ctx) => {
-  const detail = requirePrivacyDetail(ctx);
+  const detail = requirePrivacyDetailPreferReceipt(ctx);
   withFrozenClone(detail, (d) => {
     const forbidden: ReadonlySet<string> = new Set([
       "sequence_id",
@@ -363,7 +386,7 @@ export const privacy14_parserRejectsInjectedProofUrl: Stage3CMatrixLiveHandler =
 export const privacy15_parserRejectsInjectedReceiptIssuedBy: Stage3CMatrixLiveHandler = async (
   ctx,
 ) => {
-  const detail = requirePrivacyDetail(ctx);
+  const detail = requirePrivacyDetailPreferReceipt(ctx);
   if (detail.receipt === null) {
     // No receipt to mutate — inject one carrying the forbidden key.
     injectAndExpectRejection("PRIVACY-15", detail, (c) => {
@@ -380,7 +403,7 @@ export const privacy15_parserRejectsInjectedReceiptIssuedBy: Stage3CMatrixLiveHa
 export const privacy16_parserRejectsInjectedReceiptVoidedBy: Stage3CMatrixLiveHandler = async (
   ctx,
 ) => {
-  const detail = requirePrivacyDetail(ctx);
+  const detail = requirePrivacyDetailPreferReceipt(ctx);
   if (detail.receipt === null) {
     injectAndExpectRejection("PRIVACY-16", detail, (c) => {
       c["receipt"] = { voided_by: "injected" };

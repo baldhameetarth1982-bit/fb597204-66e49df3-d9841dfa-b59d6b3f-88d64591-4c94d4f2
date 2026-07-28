@@ -32,6 +32,11 @@ import type {
   ResidentPaymentHistoryRow,
   Stage3CReadDenialEvidence,
 } from "./stage3c-live-read-cases";
+import type {
+  Stage3CRejectionState,
+  Stage3CReversalState,
+} from "./stage3c-live-rejection-reversal-cases";
+
 
 
 export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
@@ -119,7 +124,20 @@ export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
     "READ-09": Stage3CReadDenialEvidence | null;
     "READ-10": Stage3CReadDenialEvidence | null;
   };
+
+  // PRIVACY receipt-bearing detail (verified payment with issued receipt),
+  // primed at fixture setup via primeStage3CReadContext.
+  privacyReceiptPaymentId: string | null;
+  privacyReceiptBillId: string | null;
+  privacyReceiptDetail: ResidentPaymentDetail | null;
+
+  // REJECTION lifecycle state — lazily populated by REJECTION-01 handler.
+  rejectionState: Stage3CRejectionState | null;
+
+  // REVERSAL lifecycle state — lazily populated by REVERSAL-01 handler.
+  reversalState: Stage3CReversalState | null;
 }
+
 
 
 export function createStage3CLiveMatrixContext(): Stage3CLiveMatrixContext {
@@ -199,8 +217,16 @@ export function createStage3CLiveMatrixContext(): Stage3CLiveMatrixContext {
       "READ-09": null,
       "READ-10": null,
     },
+
+    privacyReceiptPaymentId: null,
+    privacyReceiptBillId: null,
+    privacyReceiptDetail: null,
+
+    rejectionState: null,
+    reversalState: null,
   };
 }
+
 
 
 // ---------------------------------------------------------------------------
@@ -576,5 +602,27 @@ export const requireReadOtherBlockBillId = (c: Stage3CLiveMatrixContext) =>
   requireCanonicalUuid(c.readOtherBlockBillId, "readOtherBlockBillId", "READ-10");
 export const requireReadOtherBlockPaymentId = (c: Stage3CLiveMatrixContext) =>
   requireCanonicalUuid(c.readOtherBlockPaymentId, "readOtherBlockPaymentId", "READ-10");
+
+// PRIVACY receipt-bearing detail guards
+export function requirePrivacyReceiptDetail(
+  c: Stage3CLiveMatrixContext,
+): ResidentPaymentDetail {
+  if (c.privacyReceiptDetail === null)
+    throwMissing("privacyReceiptDetail", "primeStage3CReadContext");
+  return c.privacyReceiptDetail;
+}
+export const requirePrivacyReceiptPaymentId = (c: Stage3CLiveMatrixContext) =>
+  requireCanonicalUuid(
+    c.privacyReceiptPaymentId,
+    "privacyReceiptPaymentId",
+    "primeStage3CReadContext",
+  );
+export const requirePrivacyReceiptBillId = (c: Stage3CLiveMatrixContext) =>
+  requireCanonicalUuid(
+    c.privacyReceiptBillId,
+    "privacyReceiptBillId",
+    "primeStage3CReadContext",
+  );
+
 
 

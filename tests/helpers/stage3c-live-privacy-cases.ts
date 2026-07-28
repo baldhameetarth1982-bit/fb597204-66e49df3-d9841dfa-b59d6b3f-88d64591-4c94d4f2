@@ -1,20 +1,23 @@
 /**
  * Stage 3C — PRIVACY-01..16 live case handlers.
  *
- * Read-only, mutation-free. Every handler inspects the resident detail
- * payload accepted by READ-02/READ-04 (production `parsePaymentDetailResponse`
- * already ran against the live RPC output) and proves that internal /
- * admin-only fields are absent, at any depth.
+ * Read-only, mutation-free. Every handler inspects a production-parsed
+ * resident payment detail and proves that internal / admin-only fields
+ * are absent, at any depth.
  *
- * The handlers never invoke Supabase RPCs, never write, and never mutate
- * the accepted context payload — every recursive walk operates on a
- * deep-frozen structural clone.
- *
- * Canonical forbidden-key sets are derived from real production shapes:
- *   - src/lib/offline-payments.functions.ts residentDetailPaymentSchema (.strict)
- *   - src/lib/offline-payments.functions.ts residentReceiptSchema      (.strict)
- * plus admin-only extras present on adminDetailPaymentSchema /
- * adminReceiptSchema that must never surface in the resident branch.
+ * Checkpoint A repairs:
+ *   1. Forbidden-key collections are genuinely immutable (opaque wrapper
+ *      exposing only read APIs — no `add`, `delete`, `clear`).
+ *   2. Receipt-bearing privacy cases (PRIVACY-08..11, 15..16) fail closed
+ *      via `requirePrivacyReceiptDetail` — no fallback to the ordinary
+ *      READ payload and no fabricated empty receipt.
+ *   3. PRIVACY-13 scans BOTH the ordinary resident detail AND the real
+ *      receipt-bearing resident detail recursively.
+ *   4. PRIVACY-14..16 clone a complete valid production-parsed payload
+ *      and inject exactly one forbidden field — never a stub receipt.
+ *   5. PRIVACY-12 is grounded in real generated `payments` columns; no
+ *      speculative names.
+ *   6. Every error message is static — never leaks stored values.
  */
 
 import {
@@ -24,7 +27,10 @@ import {
 } from "@/lib/offline-payments.functions";
 import type { Stage3CMatrixLiveHandler } from "./stage3c-live-matrix-registry";
 import type { Stage3CLiveMatrixContext } from "./stage3c-live-matrix-context";
-import { requireReadAcceptedDetail } from "./stage3c-live-matrix-context";
+import {
+  requireReadAcceptedDetail,
+  requirePrivacyReceiptDetail,
+} from "./stage3c-live-matrix-context";
 import type { ResidentPaymentDetail } from "./stage3c-live-read-cases";
 
 // ---------------------------------------------------------------------------
@@ -32,125 +38,98 @@ import type { ResidentPaymentDetail } from "./stage3c-live-read-cases";
 // ---------------------------------------------------------------------------
 
 export type Stage3CPrivacyCaseId =
-  | "PRIVACY-01"
-  | "PRIVACY-02"
-  | "PRIVACY-03"
-  | "PRIVACY-04"
-  | "PRIVACY-05"
-  | "PRIVACY-06"
-  | "PRIVACY-07"
-  | "PRIVACY-08"
-  | "PRIVACY-09"
-  | "PRIVACY-10"
-  | "PRIVACY-11"
-  | "PRIVACY-12"
-  | "PRIVACY-13"
-  | "PRIVACY-14"
-  | "PRIVACY-15"
-  | "PRIVACY-16";
+  | "PRIVACY-01" | "PRIVACY-02" | "PRIVACY-03" | "PRIVACY-04"
+  | "PRIVACY-05" | "PRIVACY-06" | "PRIVACY-07" | "PRIVACY-08"
+  | "PRIVACY-09" | "PRIVACY-10" | "PRIVACY-11" | "PRIVACY-12"
+  | "PRIVACY-13" | "PRIVACY-14" | "PRIVACY-15" | "PRIVACY-16";
 
-export const STAGE3C_PRIVACY_CASE_IDS: readonly Stage3CPrivacyCaseId[] = [
-  "PRIVACY-01",
-  "PRIVACY-02",
-  "PRIVACY-03",
-  "PRIVACY-04",
-  "PRIVACY-05",
-  "PRIVACY-06",
-  "PRIVACY-07",
-  "PRIVACY-08",
-  "PRIVACY-09",
-  "PRIVACY-10",
-  "PRIVACY-11",
-  "PRIVACY-12",
-  "PRIVACY-13",
-  "PRIVACY-14",
-  "PRIVACY-15",
-  "PRIVACY-16",
-] as const;
+export const STAGE3C_PRIVACY_CASE_IDS: readonly Stage3CPrivacyCaseId[] = Object.freeze([
+  "PRIVACY-01", "PRIVACY-02", "PRIVACY-03", "PRIVACY-04",
+  "PRIVACY-05", "PRIVACY-06", "PRIVACY-07", "PRIVACY-08",
+  "PRIVACY-09", "PRIVACY-10", "PRIVACY-11", "PRIVACY-12",
+  "PRIVACY-13", "PRIVACY-14", "PRIVACY-15", "PRIVACY-16",
+] as const);
 
 // ---------------------------------------------------------------------------
-// Canonical forbidden-key sets — grounded in production schemas
+// Truly immutable forbidden-key wrapper.
+//
+// The underlying `Set` is captured in a closure and never exported. The
+// wrapper object is `Object.freeze`d and exposes ONLY read operations:
+// `has`, `size`, `values`, and `[Symbol.iterator]`. There is no `add`,
+// `delete` or `clear`, and consumers receive a frozen readonly array
+// for `values`, not the internal Set reference.
 // ---------------------------------------------------------------------------
 
-/** Fields present on `adminDetailPaymentSchema` that must be absent on
- *  the resident branch (`residentDetailPaymentSchema` is `.strict()`). */
-export const STAGE3C_FORBIDDEN_PAYMENT_KEYS: ReadonlySet<string> = Object.freeze(
-  new Set<string>([
-    "proof_url",
-    "idempotency_key",
-    "submitted_by",
-    "verified_by",
-    "rejected_by",
-    "reversed_by",
-    "notes",
-    "verification_notes",
-  ]),
-);
+export interface ImmutableStringSet extends Iterable<string> {
+  has(value: string): boolean;
+  readonly size: number;
+  readonly values: readonly string[];
+}
 
-/** Fields present on `adminReceiptSchema` that must be absent on
- *  `residentReceiptSchema` (`.strict()`). */
-export const STAGE3C_FORBIDDEN_RECEIPT_KEYS: ReadonlySet<string> = Object.freeze(
-  new Set<string>([
-    "id",
-    "payment_id",
-    "society_id",
-    "issued_by",
-    "voided_by",
-    "verified_by",
-    // Sequence internals — never on a resident payload:
-    "sequence_id",
-    "sequence_key",
-    "next_number",
-    "year",
-    "year_month",
-  ]),
-);
+function immutableStringSet(input: readonly string[]): ImmutableStringSet {
+  const frozen = Object.freeze([...new Set(input)]) as readonly string[];
+  const set = new Set<string>(frozen);
+  const wrapper: ImmutableStringSet = {
+    has: (v: string) => set.has(v),
+    get size() { return set.size; },
+    values: frozen,
+    [Symbol.iterator]: () => frozen[Symbol.iterator](),
+  };
+  return Object.freeze(wrapper);
+}
 
-/**
- * Payer-snapshot / raw-uuid columns that must NEVER surface on a
- * resident payload. Grounded in the current `payments` and
- * `payment_receipts` generated Row shapes:
- *   - `payments.user_id`, `payments.submitted_by`, `payments.verified_by`,
- *     `payments.rejected_by`, `payments.reversed_by` — real columns.
- *   - `payment_receipts.issued_by`, `payment_receipts.voided_by`,
- *     `payment_receipts.verified_by` — real columns.
- *   - `payer_user_id` — defensive against future admin projections
- *     that might alias `payments.user_id`.
- * Speculative names (`payer_snapshot_id`, `payer_uuid`, `resident_id`)
- * do not exist anywhere in current source and have been removed.
- */
-export const STAGE3C_FORBIDDEN_PAYER_KEYS: ReadonlySet<string> = Object.freeze(
-  new Set<string>([
-    // Real column on `payments` — must never reach a resident payload.
-    "user_id",
-    // Defensive alias against future admin projections.
-    "payer_user_id",
-  ]),
-);
+/** Fields from `adminDetailPaymentSchema` that must be absent from the
+ *  strict resident payment schema. */
+export const STAGE3C_FORBIDDEN_PAYMENT_KEYS: ImmutableStringSet = immutableStringSet([
+  "proof_url",
+  "idempotency_key",
+  "submitted_by",
+  "verified_by",
+  "rejected_by",
+  "reversed_by",
+  "notes",
+  "verification_notes",
+]);
 
-/**
- * Union used by the recursive scan (PRIVACY-13). Case-sensitive.
- * Deliberately excludes single-word ambiguous keys like `id`, `society_id`,
- * `payment_id`, `year` — those are only forbidden at specific container
- * levels (see PRIVACY-08) and appear legitimately elsewhere in the
- * resident payload (e.g. payment.id, payment.society_id).
- */
-export const STAGE3C_FORBIDDEN_KEYS_ALL: ReadonlySet<string> = Object.freeze(
-  new Set<string>([
-    ...STAGE3C_FORBIDDEN_PAYMENT_KEYS,
-    "issued_by",
-    "voided_by",
-    "sequence_id",
-    "sequence_key",
-    "next_number",
-    "year_month",
-    "payer_user_id",
-  ]),
-);
+/** Fields from `adminReceiptSchema` that must be absent from the strict
+ *  resident receipt schema — including any receipt-level sequence
+ *  internals (`sequence_id`, `sequence_key`, `next_number`, `year`,
+ *  `year_month`). */
+export const STAGE3C_FORBIDDEN_RECEIPT_KEYS: ImmutableStringSet = immutableStringSet([
+  "id",
+  "payment_id",
+  "society_id",
+  "issued_by",
+  "voided_by",
+  "verified_by",
+  "sequence_id",
+  "sequence_key",
+  "next_number",
+  "year",
+  "year_month",
+]);
 
+/** Payer / actor UUID columns that exist on the real `payments` row
+ *  (see generated `Database["public"]["Tables"]["payments"]["Row"]`)
+ *  and must NEVER surface on a resident payload. No speculative names. */
+export const STAGE3C_FORBIDDEN_PAYER_KEYS: ImmutableStringSet = immutableStringSet([
+  "user_id",
+]);
+
+/** Union used by the recursive scan (PRIVACY-13). */
+export const STAGE3C_FORBIDDEN_KEYS_ALL: ImmutableStringSet = immutableStringSet([
+  ...STAGE3C_FORBIDDEN_PAYMENT_KEYS.values,
+  "issued_by",
+  "voided_by",
+  "sequence_id",
+  "sequence_key",
+  "next_number",
+  "year_month",
+  "user_id",
+]);
 
 // ---------------------------------------------------------------------------
-// Structural helpers (no dependency injection, static messages)
+// Structural helpers
 // ---------------------------------------------------------------------------
 
 function deepClone<T>(v: T): T {
@@ -175,13 +154,13 @@ function assertNoForbiddenKey(
 }
 
 /**
- * Recursive scan for forbidden keys at any depth. Never prints stored
- * values — only the field name (a compile-time canonical constant) and
- * its structural path.
+ * Recursive scan for forbidden keys at any depth. Handles cycles via
+ * `WeakSet`. Never prints stored values — only the field name (a
+ * compile-time canonical constant) and the structural path.
  */
 export function findForbiddenKeyPath(
   root: unknown,
-  forbidden: ReadonlySet<string>,
+  forbidden: ImmutableStringSet,
 ): { key: string; path: string } | null {
   const seen = new WeakSet<object>();
 
@@ -198,9 +177,7 @@ export function findForbiddenKeyPath(
     }
     const obj = v as Record<string, unknown>;
     for (const k of Object.keys(obj)) {
-      if (forbidden.has(k)) {
-        return { key: k, path: `${path}.${k}` };
-      }
+      if (forbidden.has(k)) return { key: k, path: `${path}.${k}` };
     }
     for (const k of Object.keys(obj)) {
       const hit = walk(obj[k], `${path}.${k}`);
@@ -212,38 +189,23 @@ export function findForbiddenKeyPath(
   return walk(root, "$");
 }
 
-function withFrozenClone<T>(detail: ResidentPaymentDetail, fn: (d: ResidentPaymentDetail) => T): T {
-  const clone = deepClone(detail);
-  return fn(clone);
+function withFrozenClone<T>(
+  detail: ResidentPaymentDetail,
+  fn: (d: ResidentPaymentDetail) => T,
+): T {
+  return fn(deepClone(detail));
 }
-
-function requirePrivacyDetail(ctx: Stage3CLiveMatrixContext): ResidentPaymentDetail {
-  return requireReadAcceptedDetail(ctx);
-}
-
-/**
- * Prefer the receipt-bearing privacy detail when primed (a real verified
- * resident-viewable payment with a valid issued receipt); fall back to
- * the accepted READ detail. Fails closed when neither is initialised.
- */
-function requirePrivacyDetailPreferReceipt(
-  ctx: Stage3CLiveMatrixContext,
-): ResidentPaymentDetail {
-  if (ctx.privacyReceiptDetail !== null) return ctx.privacyReceiptDetail;
-  return requireReadAcceptedDetail(ctx);
-}
-
 
 // ---------------------------------------------------------------------------
-// PRIVACY-01..07 — resident payment forbidden fields
+// PRIVACY-01..07 — resident payment forbidden fields (READ payload)
 // ---------------------------------------------------------------------------
 
 function forbiddenPaymentHandler(
   caseId: Stage3CPrivacyCaseId,
   key: string,
 ): Stage3CMatrixLiveHandler {
-  return async (ctx) => {
-    const detail = requirePrivacyDetail(ctx);
+  return async (ctx: Stage3CLiveMatrixContext) => {
+    const detail = requireReadAcceptedDetail(ctx);
     withFrozenClone(detail, (d) => {
       assertNoForbiddenKey(caseId, d.payment, "payment", key);
     });
@@ -251,59 +213,67 @@ function forbiddenPaymentHandler(
 }
 
 export const privacy01_omitProofUrl = forbiddenPaymentHandler("PRIVACY-01", "proof_url");
-export const privacy02_omitIdempotencyKey = forbiddenPaymentHandler(
-  "PRIVACY-02",
-  "idempotency_key",
-);
+export const privacy02_omitIdempotencyKey = forbiddenPaymentHandler("PRIVACY-02", "idempotency_key");
 export const privacy03_omitSubmittedBy = forbiddenPaymentHandler("PRIVACY-03", "submitted_by");
 export const privacy04_omitVerifiedBy = forbiddenPaymentHandler("PRIVACY-04", "verified_by");
 export const privacy05_omitRejectedBy = forbiddenPaymentHandler("PRIVACY-05", "rejected_by");
 export const privacy06_omitReversedBy = forbiddenPaymentHandler("PRIVACY-06", "reversed_by");
 
-/** PRIVACY-07 — resident payment omits ALL admin actor/notes fields at once. */
 export const privacy07_omitAdminActorFields: Stage3CMatrixLiveHandler = async (ctx) => {
-  const detail = requirePrivacyDetail(ctx);
+  const detail = requireReadAcceptedDetail(ctx);
   withFrozenClone(detail, (d) => {
-    for (const key of ["notes", "verification_notes", "submitted_by", "verified_by", "rejected_by", "reversed_by"]) {
+    for (const key of [
+      "notes",
+      "verification_notes",
+      "submitted_by",
+      "verified_by",
+      "rejected_by",
+      "reversed_by",
+    ]) {
       assertNoForbiddenKey("PRIVACY-07", d.payment, "payment", key);
     }
   });
 };
 
 // ---------------------------------------------------------------------------
-// PRIVACY-08..12 — resident receipt forbidden fields
+// PRIVACY-08..11 — resident RECEIPT forbidden fields.
+// Fail closed: require the real receipt-bearing detail (no fallback).
 // ---------------------------------------------------------------------------
 
 function forbiddenReceiptHandler(
   caseId: Stage3CPrivacyCaseId,
   key: string,
 ): Stage3CMatrixLiveHandler {
-  return async (ctx) => {
-    const detail = requirePrivacyDetailPreferReceipt(ctx);
+  return async (ctx: Stage3CLiveMatrixContext) => {
+    const detail = requirePrivacyReceiptDetail(ctx);
+    if (detail.receipt === null) {
+      throw new Error(
+        `[stage3c:${caseId}] privacyReceiptDetail.receipt must be a real issued receipt`,
+      );
+    }
     withFrozenClone(detail, (d) => {
-      if (d.receipt !== null) {
-        assertNoForbiddenKey(caseId, d.receipt, "receipt", key);
+      if (d.receipt === null) {
+        throw new Error(`[stage3c:${caseId}] receipt disappeared after clone`);
       }
+      assertNoForbiddenKey(caseId, d.receipt, "receipt", key);
     });
   };
 }
 
 export const privacy08_omitReceiptId = forbiddenReceiptHandler("PRIVACY-08", "id");
-export const privacy09_omitReceiptIssuedBy = forbiddenReceiptHandler(
-  "PRIVACY-09",
-  "issued_by",
-);
-export const privacy10_omitReceiptVoidedBy = forbiddenReceiptHandler(
-  "PRIVACY-10",
-  "voided_by",
-);
+export const privacy09_omitReceiptIssuedBy = forbiddenReceiptHandler("PRIVACY-09", "issued_by");
+export const privacy10_omitReceiptVoidedBy = forbiddenReceiptHandler("PRIVACY-10", "voided_by");
 
-/** PRIVACY-11 — resident receipt (and surrounding payload) omits receipt
- *  sequence internals such as sequence ids/keys/next_number/year rows. */
+/** PRIVACY-11 — resident receipt payload contains no sequence internals. */
 export const privacy11_omitReceiptSequenceInternals: Stage3CMatrixLiveHandler = async (ctx) => {
-  const detail = requirePrivacyDetailPreferReceipt(ctx);
+  const detail = requirePrivacyReceiptDetail(ctx);
+  if (detail.receipt === null) {
+    throw new Error(
+      `[stage3c:PRIVACY-11] privacyReceiptDetail.receipt must be a real issued receipt`,
+    );
+  }
   withFrozenClone(detail, (d) => {
-    const forbidden: ReadonlySet<string> = new Set([
+    const forbidden = immutableStringSet([
       "sequence_id",
       "sequence_key",
       "next_number",
@@ -319,9 +289,12 @@ export const privacy11_omitReceiptSequenceInternals: Stage3CMatrixLiveHandler = 
   });
 };
 
-/** PRIVACY-12 — resident payload omits raw payer_snapshot / user-id keys. */
+// ---------------------------------------------------------------------------
+// PRIVACY-12 — raw payer identity keys (ordinary READ payload).
+// ---------------------------------------------------------------------------
+
 export const privacy12_omitPayerSnapshotIds: Stage3CMatrixLiveHandler = async (ctx) => {
-  const detail = requirePrivacyDetail(ctx);
+  const detail = requireReadAcceptedDetail(ctx);
   withFrozenClone(detail, (d) => {
     const hit = findForbiddenKeyPath(d, STAGE3C_FORBIDDEN_PAYER_KEYS);
     if (hit !== null) {
@@ -333,23 +306,30 @@ export const privacy12_omitPayerSnapshotIds: Stage3CMatrixLiveHandler = async (c
 };
 
 // ---------------------------------------------------------------------------
-// PRIVACY-13 — recursive scan against the combined forbidden-key set
+// PRIVACY-13 — recursive scan of BOTH resident payloads.
 // ---------------------------------------------------------------------------
 
 export const privacy13_recursiveScanNoForbiddenKeys: Stage3CMatrixLiveHandler = async (ctx) => {
-  const detail = requirePrivacyDetail(ctx);
-  withFrozenClone(detail, (d) => {
-    const hit = findForbiddenKeyPath(d, STAGE3C_FORBIDDEN_KEYS_ALL);
-    if (hit !== null) {
-      throw new Error(
-        `[stage3c:PRIVACY-13] resident payload contains forbidden key "${hit.key}" at ${hit.path}`,
-      );
-    }
-  });
+  const ordinary = requireReadAcceptedDetail(ctx);
+  const receipt = requirePrivacyReceiptDetail(ctx);
+  for (const [label, payload] of [
+    ["read", ordinary],
+    ["receipt", receipt],
+  ] as const) {
+    withFrozenClone(payload, (d) => {
+      const hit = findForbiddenKeyPath(d, STAGE3C_FORBIDDEN_KEYS_ALL);
+      if (hit !== null) {
+        throw new Error(
+          `[stage3c:PRIVACY-13] ${label} payload contains forbidden key "${hit.key}" at ${hit.path}`,
+        );
+      }
+    });
+  }
 };
 
 // ---------------------------------------------------------------------------
-// PRIVACY-14..16 — production parser injection rejection
+// PRIVACY-14..16 — production parser rejects a single injected field on
+// an otherwise complete valid cloned payload.
 // ---------------------------------------------------------------------------
 
 function injectAndExpectRejection(
@@ -375,24 +355,26 @@ function injectAndExpectRejection(
   }
 }
 
+/** PRIVACY-14 — clone the ordinary READ payload, add `payment.proof_url`,
+ *  prove the strict resident parser rejects it. Every other payment
+ *  field remains intact. */
 export const privacy14_parserRejectsInjectedProofUrl: Stage3CMatrixLiveHandler = async (ctx) => {
-  const detail = requirePrivacyDetail(ctx);
+  const detail = requireReadAcceptedDetail(ctx);
   injectAndExpectRejection("PRIVACY-14", detail, (c) => {
     const payment = { ...(c["payment"] as Record<string, unknown>), proof_url: "injected" };
     c["payment"] = payment;
   });
 };
 
-export const privacy15_parserRejectsInjectedReceiptIssuedBy: Stage3CMatrixLiveHandler = async (
-  ctx,
-) => {
-  const detail = requirePrivacyDetailPreferReceipt(ctx);
+/** PRIVACY-15 — clone the REAL receipt-bearing payload, add
+ *  `receipt.issued_by` to the complete receipt (never replace the
+ *  receipt with a stub), prove the strict resident parser rejects it. */
+export const privacy15_parserRejectsInjectedReceiptIssuedBy: Stage3CMatrixLiveHandler = async (ctx) => {
+  const detail = requirePrivacyReceiptDetail(ctx);
   if (detail.receipt === null) {
-    // No receipt to mutate — inject one carrying the forbidden key.
-    injectAndExpectRejection("PRIVACY-15", detail, (c) => {
-      c["receipt"] = { issued_by: "injected" };
-    });
-    return;
+    throw new Error(
+      `[stage3c:PRIVACY-15] privacyReceiptDetail.receipt must be a real issued receipt`,
+    );
   }
   injectAndExpectRejection("PRIVACY-15", detail, (c) => {
     const receipt = { ...(c["receipt"] as Record<string, unknown>), issued_by: "injected" };
@@ -400,15 +382,14 @@ export const privacy15_parserRejectsInjectedReceiptIssuedBy: Stage3CMatrixLiveHa
   });
 };
 
-export const privacy16_parserRejectsInjectedReceiptVoidedBy: Stage3CMatrixLiveHandler = async (
-  ctx,
-) => {
-  const detail = requirePrivacyDetailPreferReceipt(ctx);
+/** PRIVACY-16 — clone the REAL receipt-bearing payload, add
+ *  `receipt.voided_by` to the complete receipt. */
+export const privacy16_parserRejectsInjectedReceiptVoidedBy: Stage3CMatrixLiveHandler = async (ctx) => {
+  const detail = requirePrivacyReceiptDetail(ctx);
   if (detail.receipt === null) {
-    injectAndExpectRejection("PRIVACY-16", detail, (c) => {
-      c["receipt"] = { voided_by: "injected" };
-    });
-    return;
+    throw new Error(
+      `[stage3c:PRIVACY-16] privacyReceiptDetail.receipt must be a real issued receipt`,
+    );
   }
   injectAndExpectRejection("PRIVACY-16", detail, (c) => {
     const receipt = { ...(c["receipt"] as Record<string, unknown>), voided_by: "injected" };
@@ -417,7 +398,7 @@ export const privacy16_parserRejectsInjectedReceiptVoidedBy: Stage3CMatrixLiveHa
 };
 
 // ---------------------------------------------------------------------------
-// Compile-time exhaustive handler map (no `as Record`, no fallback)
+// Exhaustive handler map
 // ---------------------------------------------------------------------------
 
 export const STAGE3C_PRIVACY_HANDLERS = {
@@ -439,5 +420,5 @@ export const STAGE3C_PRIVACY_HANDLERS = {
   "PRIVACY-16": privacy16_parserRejectsInjectedReceiptVoidedBy,
 } satisfies Record<Stage3CPrivacyCaseId, Stage3CMatrixLiveHandler>;
 
-// Anchor imports used only for referential intent (guards against dead-import lint).
+// Anchor imports used only for referential intent.
 void residentPaymentDetailSchema;

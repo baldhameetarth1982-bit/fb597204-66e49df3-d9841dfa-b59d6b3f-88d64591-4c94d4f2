@@ -24,7 +24,7 @@ const gate = RUN_LIVE ? describe : describe.skip;
 let fixture: Stage3CFixture;
 const ctx: Stage3CLiveMatrixContext = createStage3CLiveMatrixContext();
 
-gate("Stage 3C — live matrix (50/93)", () => {
+gate("Stage 3C — live matrix (66/93)", () => {
   beforeAll(async () => {
     fixture = await setupStage3CFixture();
     ctx.fixture = fixture;

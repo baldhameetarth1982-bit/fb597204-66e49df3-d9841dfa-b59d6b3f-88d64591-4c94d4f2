@@ -85,14 +85,13 @@ describe("Stage 3C — RESIDENT-SUBMIT registry", () => {
   });
 
 
-  it("matrix registry does not register uninmplemented later categories (REJECTION/REVERSAL/SEARCH/CLEANUP)", () => {
+  it("matrix registry does not register uninmplemented later categories (SEARCH/CLEANUP)", () => {
     for (const id of STAGE3C_MATRIX_LIVE_CASE_IDS) {
-      expect(id.startsWith("REJECTION")).toBe(false);
-      expect(id.startsWith("REVERSAL")).toBe(false);
       expect(id.startsWith("SEARCH")).toBe(false);
       expect(id.startsWith("CLEANUP")).toBe(false);
     }
   });
+
 
 });
 

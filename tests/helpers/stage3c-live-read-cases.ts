@@ -624,11 +624,10 @@ async function attemptDeniedPaymentDetail(
 
 /**
  * READ-05 — Moved-out resident denied resident payment HISTORY via the
- * shared `getResidentPaymentsWithClient` core. The denial surface is
- * either a canonical `not_authorized` throw OR a successful call whose
- * returned history excludes the primary payment id (whichever the RPC
- * chooses to enforce). Either outcome is proof of denial; both are
- * recorded via the same `not_authorized` evidence shape.
+ * shared `getResidentPaymentsWithClient` core. Requires the core to
+ * throw canonical `not_authorized` verbatim. A successful history call
+ * (empty array, unrelated rows, or the primary payment) is a hard
+ * failure — silent filtering is not a denial.
  */
 export const read05_movedOutResidentDeniedPaymentHistory: Stage3CMatrixLiveHandler =
   async (ctx) => {
@@ -638,36 +637,33 @@ export const read05_movedOutResidentDeniedPaymentHistory: Stage3CMatrixLiveHandl
       billId: requireReadPrimaryBillId(ctx),
       stateObserver: "adminA1",
     });
-    const primaryPaymentId = requireReadPrimaryPaymentId(ctx);
     const invokeActorRpc = (name: string, args: Record<string, unknown>) =>
       fixture.users.movedOutResident.client["rpc"](name, args);
     const deniedClient = createFixtureBillingRpcClient(invokeActorRpc);
 
     let caught: unknown = null;
-    let result: { payments: readonly ResidentPaymentRow[] } | null = null;
+    let returned: { payments: readonly ResidentPaymentRow[] } | null | "no-throw" =
+      "no-throw";
     try {
-      result = await getResidentPaymentsWithClient(deniedClient, {
-        limit: 200,
+      returned = await getResidentPaymentsWithClient(deniedClient, {
+        limit: 50,
         offset: 0,
       });
     } catch (e) {
       caught = e;
     }
-    if (caught !== null) {
-      const msg = (caught as Error).message ?? "";
-      if (msg !== "not_authorized") {
-        throw new Error(
-          `[stage3c:${caseId}] wrong denial code (expected not_authorized)`,
-        );
-      }
-    } else {
-      if (result === null)
-        throw new Error(`[stage3c:${caseId}] history call returned null`);
-      const leaked = result.payments.find((p) => p.id === primaryPaymentId);
-      if (leaked)
-        throw new Error(
-          `[stage3c:${caseId}] moved-out resident saw primary payment in history`,
-        );
+    if (caught === null) {
+      throw new Error(
+        `[stage3c:${caseId}] shared core did not throw; returned ${
+          returned === null ? "null" : "history payload"
+        }`,
+      );
+    }
+    const msg = (caught as Error).message ?? "";
+    if (msg !== "not_authorized") {
+      throw new Error(
+        `[stage3c:${caseId}] wrong denial code (expected not_authorized)`,
+      );
     }
     ctx.readDenialEvidence[caseId] = Stage3CReadDenialEvidenceSchema.parse({
       caseId,

@@ -117,12 +117,25 @@ export const STAGE3C_FORBIDDEN_PAYER_KEYS: ReadonlySet<string> = Object.freeze(
   ]),
 );
 
-/** Union used by the recursive scan (PRIVACY-13). Case-sensitive. */
+/**
+ * Union used by the recursive scan (PRIVACY-13). Case-sensitive.
+ * Deliberately excludes single-word ambiguous keys like `id`, `society_id`,
+ * `payment_id`, `year`, `user_id` — those are only forbidden at specific
+ * container levels (see PRIVACY-08, PRIVACY-12) and appear legitimately
+ * elsewhere in the resident payload (e.g. payment.id, payment.society_id).
+ */
 export const STAGE3C_FORBIDDEN_KEYS_ALL: ReadonlySet<string> = Object.freeze(
   new Set<string>([
     ...STAGE3C_FORBIDDEN_PAYMENT_KEYS,
-    ...STAGE3C_FORBIDDEN_RECEIPT_KEYS,
-    ...STAGE3C_FORBIDDEN_PAYER_KEYS,
+    "issued_by",
+    "voided_by",
+    "sequence_id",
+    "sequence_key",
+    "next_number",
+    "year_month",
+    "payer_snapshot_id",
+    "payer_user_id",
+    "payer_uuid",
   ]),
 );
 

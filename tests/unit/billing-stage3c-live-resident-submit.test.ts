@@ -78,11 +78,12 @@ describe("Stage 3C — RESIDENT-SUBMIT registry", () => {
     }
   });
 
-  it("core registry remains at 24, matrix registry is 50", () => {
+  it("core registry remains at 24, matrix registry is 80", () => {
     expect(STAGE3C_CORE_LIVE_CASE_IDS.length).toBe(24);
-    expect(STAGE3C_MATRIX_LIVE_CASE_IDS.length).toBe(66);
-    expect(Object.keys(STAGE3C_MATRIX_LIVE_HANDLERS).length).toBe(66);
+    expect(STAGE3C_MATRIX_LIVE_CASE_IDS.length).toBe(80);
+    expect(Object.keys(STAGE3C_MATRIX_LIVE_HANDLERS).length).toBe(80);
   });
+
 
 
   it("matrix registry does not register uninmplemented later categories (SEARCH/CLEANUP)", () => {

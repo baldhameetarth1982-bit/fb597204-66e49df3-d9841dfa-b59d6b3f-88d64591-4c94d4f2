@@ -24,10 +24,8 @@ import {
 } from "@/lib/offline-payments.functions";
 import type { Stage3CMatrixLiveHandler } from "./stage3c-live-matrix-registry";
 import type { Stage3CLiveMatrixContext } from "./stage3c-live-matrix-context";
-import {
-  requireReadAcceptedDetail,
-  type ResidentPaymentDetail,
-} from "./stage3c-live-read-cases";
+import { requireReadAcceptedDetail } from "./stage3c-live-matrix-context";
+import type { ResidentPaymentDetail } from "./stage3c-live-read-cases";
 
 // ---------------------------------------------------------------------------
 // Canonical case-id union + ordered list

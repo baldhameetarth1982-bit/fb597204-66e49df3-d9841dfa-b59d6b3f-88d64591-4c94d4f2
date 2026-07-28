@@ -1,11 +1,12 @@
 /**
- * Stage 3C — Live matrix registry (50/93).
+ * Stage 3C — Live matrix registry (66/93).
  *
  * Composes:
  *   - the existing 24-case core registry (AUTH + PENDING + VERIFY)
  *   - the 8 RESIDENT-SUBMIT handlers
  *   - the 8 IDEMPOTENCY-01..04 + REFERENCE-01..04 handlers
  *   - the 10 READ-01..10 handlers (READ-01..04 success, READ-05..10 denial)
+ *   - the 16 PRIVACY-01..16 handlers
  *
  * Uses true compile-time exhaustiveness (`satisfies Record`) — no
  * `as Record`, no fallback, no optional lookup.
@@ -31,6 +32,11 @@ import {
   STAGE3C_READ_HANDLERS,
   type Stage3CReadCaseId,
 } from "./stage3c-live-read-cases";
+import {
+  STAGE3C_PRIVACY_CASE_IDS,
+  STAGE3C_PRIVACY_HANDLERS,
+  type Stage3CPrivacyCaseId,
+} from "./stage3c-live-privacy-cases";
 import type { Stage3CLiveMatrixContext } from "./stage3c-live-matrix-context";
 import { STAGE3C_REQUIRED_LIVE_CASES } from "./stage3c-live-case-manifest";
 
@@ -38,7 +44,8 @@ export type Stage3CMatrixLiveCaseId =
   | Stage3CCoreLiveCaseId
   | Stage3CResidentSubmitCaseId
   | Stage3CIdempotencyReferenceCaseId
-  | Stage3CReadCaseId;
+  | Stage3CReadCaseId
+  | Stage3CPrivacyCaseId;
 
 export type Stage3CMatrixLiveHandler = (ctx: Stage3CLiveMatrixContext) => Promise<void>;
 
@@ -53,7 +60,9 @@ export const STAGE3C_MATRIX_LIVE_CASE_IDS: readonly Stage3CMatrixLiveCaseId[] = 
   ...STAGE3C_RESIDENT_SUBMIT_CASE_IDS,
   ...STAGE3C_IDEMPOTENCY_REFERENCE_CASE_IDS,
   ...STAGE3C_READ_CASE_IDS,
+  ...STAGE3C_PRIVACY_CASE_IDS,
 ];
+
 
 
 const CORE_BY_ID = new Map(
@@ -117,6 +126,22 @@ export const STAGE3C_MATRIX_LIVE_HANDLERS = {
   "READ-08": STAGE3C_READ_HANDLERS["READ-08"],
   "READ-09": STAGE3C_READ_HANDLERS["READ-09"],
   "READ-10": STAGE3C_READ_HANDLERS["READ-10"],
+  "PRIVACY-01": STAGE3C_PRIVACY_HANDLERS["PRIVACY-01"],
+  "PRIVACY-02": STAGE3C_PRIVACY_HANDLERS["PRIVACY-02"],
+  "PRIVACY-03": STAGE3C_PRIVACY_HANDLERS["PRIVACY-03"],
+  "PRIVACY-04": STAGE3C_PRIVACY_HANDLERS["PRIVACY-04"],
+  "PRIVACY-05": STAGE3C_PRIVACY_HANDLERS["PRIVACY-05"],
+  "PRIVACY-06": STAGE3C_PRIVACY_HANDLERS["PRIVACY-06"],
+  "PRIVACY-07": STAGE3C_PRIVACY_HANDLERS["PRIVACY-07"],
+  "PRIVACY-08": STAGE3C_PRIVACY_HANDLERS["PRIVACY-08"],
+  "PRIVACY-09": STAGE3C_PRIVACY_HANDLERS["PRIVACY-09"],
+  "PRIVACY-10": STAGE3C_PRIVACY_HANDLERS["PRIVACY-10"],
+  "PRIVACY-11": STAGE3C_PRIVACY_HANDLERS["PRIVACY-11"],
+  "PRIVACY-12": STAGE3C_PRIVACY_HANDLERS["PRIVACY-12"],
+  "PRIVACY-13": STAGE3C_PRIVACY_HANDLERS["PRIVACY-13"],
+  "PRIVACY-14": STAGE3C_PRIVACY_HANDLERS["PRIVACY-14"],
+  "PRIVACY-15": STAGE3C_PRIVACY_HANDLERS["PRIVACY-15"],
+  "PRIVACY-16": STAGE3C_PRIVACY_HANDLERS["PRIVACY-16"],
 } satisfies Record<Stage3CMatrixLiveCaseId, Stage3CMatrixLiveHandler>;
 
 

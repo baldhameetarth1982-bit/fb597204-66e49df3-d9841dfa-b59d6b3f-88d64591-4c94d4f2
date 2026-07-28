@@ -279,7 +279,7 @@ function forbiddenReceiptHandler(
   key: string,
 ): Stage3CMatrixLiveHandler {
   return async (ctx) => {
-    const detail = requirePrivacyDetail(ctx);
+    const detail = requirePrivacyDetailPreferReceipt(ctx);
     withFrozenClone(detail, (d) => {
       if (d.receipt !== null) {
         assertNoForbiddenKey(caseId, d.receipt, "receipt", key);
@@ -301,7 +301,7 @@ export const privacy10_omitReceiptVoidedBy = forbiddenReceiptHandler(
 /** PRIVACY-11 — resident receipt (and surrounding payload) omits receipt
  *  sequence internals such as sequence ids/keys/next_number/year rows. */
 export const privacy11_omitReceiptSequenceInternals: Stage3CMatrixLiveHandler = async (ctx) => {
-  const detail = requirePrivacyDetail(ctx);
+  const detail = requirePrivacyDetailPreferReceipt(ctx);
   withFrozenClone(detail, (d) => {
     const forbidden: ReadonlySet<string> = new Set([
       "sequence_id",
@@ -386,7 +386,7 @@ export const privacy14_parserRejectsInjectedProofUrl: Stage3CMatrixLiveHandler =
 export const privacy15_parserRejectsInjectedReceiptIssuedBy: Stage3CMatrixLiveHandler = async (
   ctx,
 ) => {
-  const detail = requirePrivacyDetail(ctx);
+  const detail = requirePrivacyDetailPreferReceipt(ctx);
   if (detail.receipt === null) {
     // No receipt to mutate — inject one carrying the forbidden key.
     injectAndExpectRejection("PRIVACY-15", detail, (c) => {
@@ -403,7 +403,7 @@ export const privacy15_parserRejectsInjectedReceiptIssuedBy: Stage3CMatrixLiveHa
 export const privacy16_parserRejectsInjectedReceiptVoidedBy: Stage3CMatrixLiveHandler = async (
   ctx,
 ) => {
-  const detail = requirePrivacyDetail(ctx);
+  const detail = requirePrivacyDetailPreferReceipt(ctx);
   if (detail.receipt === null) {
     injectAndExpectRejection("PRIVACY-16", detail, (c) => {
       c["receipt"] = { voided_by: "injected" };

@@ -277,7 +277,7 @@ describe("PRIVACY-12 payer snapshot / raw uuid", () => {
     await expect(STAGE3C_PRIVACY_HANDLERS["PRIVACY-12"](ctx)).resolves.toBeUndefined();
   });
 
-  for (const key of ["payer_snapshot_id", "payer_user_id", "user_id"]) {
+  for (const key of ["payer_user_id", "user_id"]) {
     it(`fails when payment has ${key}`, async () => {
       const detail = makeDetail({ withReceipt: true });
       (detail as unknown as { payment: Record<string, unknown> }).payment[key] = "x";

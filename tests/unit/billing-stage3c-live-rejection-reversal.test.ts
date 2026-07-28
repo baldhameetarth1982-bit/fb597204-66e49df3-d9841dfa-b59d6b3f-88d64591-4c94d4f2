@@ -34,9 +34,19 @@ import {
   assertMonthlySequenceMonotonicAndUnrelatedRowsUnchanged,
   readReceiptOrNull,
   readReceiptCount,
+  readUnrelatedPayment,
+  normalizeRejectionReversalSnapshot,
+  assertRejectionReversalSnapshotEqual,
+  toRejRevBillingRpcClient,
+  type Stage3CRejRevSnapshot,
   type Stage3CYearlyReceiptSequenceRow,
   type Stage3CMonthlyReceiptSequenceRow,
 } from "../helpers/stage3c-live-rejection-reversal-cases";
+import {
+  VERIFY_OFFLINE_PAYMENT_CANONICAL_ERRORS,
+  verifyOfflinePaymentWithClient,
+} from "@/lib/offline-payments.functions";
+import type { BillingRpcClient } from "@/lib/billing-config.functions";
 import type { Stage3CFixture } from "../helpers/stage3c-runtime-fixtures";
 
 // ---------------------------------------------------------------------------
@@ -444,5 +454,475 @@ describe("readReceiptCount — fail-closed on any provider anomaly", () => {
       "TEST",
     );
     expect(n).toBe(3);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Production verify core — Checkpoint B Run A
+// ---------------------------------------------------------------------------
+
+function makeVerifyClient(scripted: {
+  data?: unknown;
+  error?: { message: string } | null;
+  onCall?: (name: string, args: Record<string, unknown>) => void;
+}): BillingRpcClient {
+  return {
+    async rpc(name: string, args: Record<string, unknown>) {
+      scripted.onCall?.(name, args);
+      return { data: scripted.data ?? null, error: scripted.error ?? null };
+    },
+  };
+}
+
+describe("verifyOfflinePaymentWithClient — production shared core", () => {
+  it("invokes exactly verify_offline_payment with { _payment_id, _notes }", async () => {
+    const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+    const client = makeVerifyClient({
+      data: { payment_id: "p-1", receipt_number: "RCPT/202601/0001", receipt_id: "r-1" },
+      onCall: (name, args) => calls.push({ name, args }),
+    });
+    const r = await verifyOfflinePaymentWithClient(client, { paymentId: "p-1", notes: "n" });
+    expect(calls.length).toBe(1);
+    expect(calls[0].name).toBe("verify_offline_payment");
+    expect(calls[0].args).toEqual({ _payment_id: "p-1", _notes: "n" });
+    expect(r).toEqual({
+      paymentId: "p-1",
+      receiptNumber: "RCPT/202601/0001",
+      receiptId: "r-1",
+    });
+  });
+
+  it("passes null when notes is omitted", async () => {
+    const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+    const client = makeVerifyClient({
+      data: { payment_id: "p-1", receipt_number: null, receipt_id: null },
+      onCall: (name, args) => calls.push({ name, args }),
+    });
+    await verifyOfflinePaymentWithClient(client, { paymentId: "p-1" });
+    expect(calls[0].args).toEqual({ _payment_id: "p-1", _notes: null });
+  });
+
+  it("preserves canonical `payment_not_pending` token (case-insensitive)", async () => {
+    const client = makeVerifyClient({ error: { message: "payment_not_pending" } });
+    await expect(verifyOfflinePaymentWithClient(client, { paymentId: "p" })).rejects.toThrow(
+      /^payment_not_pending$/,
+    );
+    const upper = makeVerifyClient({ error: { message: "ERROR: PAYMENT_NOT_PENDING (22023)" } });
+    await expect(verifyOfflinePaymentWithClient(upper, { paymentId: "p" })).rejects.toThrow(
+      /^payment_not_pending$/,
+    );
+  });
+
+  it("preserves every canonical error token via VERIFY_OFFLINE_PAYMENT_CANONICAL_ERRORS", async () => {
+    for (const tok of VERIFY_OFFLINE_PAYMENT_CANONICAL_ERRORS) {
+      const client = makeVerifyClient({ error: { message: tok } });
+      await expect(
+        verifyOfflinePaymentWithClient(client, { paymentId: "p" }),
+      ).rejects.toThrow(new RegExp(`^${tok}$`));
+    }
+  });
+
+  it("collapses unknown provider failure to `operation_failed` — never leaks raw text", async () => {
+    const client = makeVerifyClient({
+      error: { message: "unexpected: connection reset by peer at 10.0.0.1" },
+    });
+    let caught: Error | null = null;
+    try {
+      await verifyOfflinePaymentWithClient(client, { paymentId: "p" });
+    } catch (e) {
+      caught = e as Error;
+    }
+    expect(caught).not.toBeNull();
+    expect(caught!.message).toBe("operation_failed");
+    expect(caught!.message).not.toMatch(/connection reset|10\.0\.0\.1/);
+  });
+
+  it("rejects malformed successful payload via Zod parse", async () => {
+    const client = makeVerifyClient({ data: { receipt_number: 123 } });
+    await expect(verifyOfflinePaymentWithClient(client, { paymentId: "p" })).rejects.toThrow();
+  });
+
+  it("tolerates null/undefined success payload (defaults through)", async () => {
+    const client = makeVerifyClient({ data: null });
+    const r = await verifyOfflinePaymentWithClient(client, { paymentId: "px" });
+    expect(r).toEqual({ paymentId: "px", receiptNumber: null, receiptId: null });
+  });
+
+  it("VERIFY_OFFLINE_PAYMENT_CANONICAL_ERRORS is frozen and includes the terminal token", () => {
+    expect(Object.isFrozen(VERIFY_OFFLINE_PAYMENT_CANONICAL_ERRORS)).toBe(true);
+    expect(VERIFY_OFFLINE_PAYMENT_CANONICAL_ERRORS).toContain(STAGE3C_TERMINAL_VERIFY_ERROR);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// toRejRevBillingRpcClient adapter
+// ---------------------------------------------------------------------------
+
+describe("toRejRevBillingRpcClient — narrow fixture adapter", () => {
+  it("forwards name/args verbatim and collapses PostgrestError to { message }", async () => {
+    let seenName: string | null = null;
+    let seenArgs: unknown = null;
+    const actor = {
+      client: {
+        async rpc(name: never, args: never) {
+          seenName = name as string;
+          seenArgs = args;
+          return {
+            data: { ok: true },
+            error: { message: "boom", code: "42501", details: "leak", hint: "leak" },
+          };
+        },
+      },
+    };
+    const client = toRejRevBillingRpcClient(actor);
+    const r = await client.rpc("verify_offline_payment", { _payment_id: "p", _notes: null });
+    expect(seenName).toBe("verify_offline_payment");
+    expect(seenArgs).toEqual({ _payment_id: "p", _notes: null });
+    expect(r.data).toEqual({ ok: true });
+    expect(r.error).toEqual({ message: "boom" });
+    expect(r.error).not.toHaveProperty("code");
+    expect(r.error).not.toHaveProperty("details");
+    expect(r.error).not.toHaveProperty("hint");
+  });
+
+  it("returns error: null when the upstream error is null", async () => {
+    const actor = {
+      client: {
+        async rpc(_n: never, _a: never) {
+          return { data: null, error: null };
+        },
+      },
+    };
+    const r = await toRejRevBillingRpcClient(actor).rpc("x", {});
+    expect(r.error).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Canonical complete snapshot — drift detection across every component
+// ---------------------------------------------------------------------------
+
+const SOC = "11111111-1111-1111-1111-111111111111";
+const PMT = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+const BILL = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
+
+function baseSnapshot(): Stage3CRejRevSnapshot {
+  return {
+    payment: {
+      id: PMT,
+      status: "pending",
+      amount: 100,
+      rejected_by: null,
+      rejected_at: null,
+      rejection_reason: null,
+      reversed_by: null,
+      reversed_at: null,
+      reversal_reason: null,
+      verified_by: null,
+      verified_at: null,
+      submitted_by: null,
+      bill_id: BILL,
+      society_id: SOC,
+    },
+    receipt: null,
+    receiptCount: 0,
+    summary: {
+      bill_id: BILL,
+      total_payable: 1000,
+      verified_amount: 0,
+      pending_amount: 100,
+      rejected_amount: 0,
+      reversed_amount: 0,
+      remaining_verified_balance: 1000,
+      available_to_submit: 900,
+    },
+    yearlySeq: [{ society_id: SOC, year: 2026, next_number: 5 }],
+    monthlySeq: [{ society_id: SOC, year_month: 202601, next_number: 3 }],
+    unrelatedPayment: {
+      id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+      status: "verified",
+      amount: 50,
+      rejected_by: null,
+      rejected_at: null,
+      rejection_reason: null,
+      reversed_by: null,
+      reversed_at: null,
+      reversal_reason: null,
+      verified_by: null,
+      verified_at: "2026-01-01",
+      submitted_by: null,
+      bill_id: BILL,
+      society_id: SOC,
+    },
+  };
+}
+
+describe("canonical snapshot — normalize is a pure copy", () => {
+  it("returns identical content and does not mutate input", () => {
+    const s = baseSnapshot();
+    const before = JSON.stringify(s);
+    const n = normalizeRejectionReversalSnapshot(s);
+    expect(JSON.stringify(s)).toBe(before);
+    expect(JSON.stringify(n)).toBe(before);
+  });
+
+  it("sorts sequences deterministically", () => {
+    const s = baseSnapshot();
+    const t = {
+      ...s,
+      yearlySeq: [
+        { society_id: SOC, year: 2027, next_number: 1 },
+        { society_id: SOC, year: 2026, next_number: 5 },
+      ],
+    };
+    const n = normalizeRejectionReversalSnapshot(t);
+    expect(n.yearlySeq.map((r) => r.year)).toEqual([2026, 2027]);
+  });
+});
+
+describe("assertRejectionReversalSnapshotEqual — drift detection", () => {
+  it("passes when snapshots are exactly equal", () => {
+    expect(() =>
+      assertRejectionReversalSnapshotEqual("T", baseSnapshot(), baseSnapshot()),
+    ).not.toThrow();
+  });
+
+  it("detects payment field change", () => {
+    const a = baseSnapshot();
+    const b = baseSnapshot();
+    (b.payment as { amount: number }).amount = 101;
+    expect(() => assertRejectionReversalSnapshotEqual("T", a, b)).toThrow(/payment drifted/);
+  });
+
+  it("detects receipt appearance", () => {
+    const a = baseSnapshot();
+    const b = baseSnapshot();
+    (b as { receipt: unknown }).receipt = {
+      id: "rid",
+      payment_id: PMT,
+      receipt_number: "RCPT/202601/0001",
+      status: "valid",
+      voided_at: null,
+      voided_by: null,
+      void_reason: null,
+      issued_by: null,
+    };
+    expect(() => assertRejectionReversalSnapshotEqual("T", a, b)).toThrow(/receipt drifted/);
+  });
+
+  it("detects receipt count change", () => {
+    const a = baseSnapshot();
+    const b = { ...baseSnapshot(), receiptCount: 1 };
+    expect(() => assertRejectionReversalSnapshotEqual("T", a, b)).toThrow(/receipt count drifted/);
+  });
+
+  it("detects bill summary drift", () => {
+    const a = baseSnapshot();
+    const b = baseSnapshot();
+    (b.summary as { verified_amount: number }).verified_amount = 100;
+    expect(() => assertRejectionReversalSnapshotEqual("T", a, b)).toThrow(/bill summary drifted/);
+  });
+
+  it("detects yearly sequence next_number change", () => {
+    const a = baseSnapshot();
+    const b = {
+      ...baseSnapshot(),
+      yearlySeq: [{ society_id: SOC, year: 2026, next_number: 6 }],
+    };
+    expect(() => assertRejectionReversalSnapshotEqual("T", a, b)).toThrow(/yearly sequence/);
+  });
+
+  it("detects monthly sequence next_number change", () => {
+    const a = baseSnapshot();
+    const b = {
+      ...baseSnapshot(),
+      monthlySeq: [{ society_id: SOC, year_month: 202601, next_number: 4 }],
+    };
+    expect(() => assertRejectionReversalSnapshotEqual("T", a, b)).toThrow(/monthly sequence/);
+  });
+
+  it("detects added yearly sequence row", () => {
+    const a = baseSnapshot();
+    const b = {
+      ...baseSnapshot(),
+      yearlySeq: [
+        { society_id: SOC, year: 2026, next_number: 5 },
+        { society_id: SOC, year: 2027, next_number: 1 },
+      ],
+    };
+    expect(() => assertRejectionReversalSnapshotEqual("T", a, b)).toThrow(/yearly sequence/);
+  });
+
+  it("detects removed monthly sequence row", () => {
+    const a = baseSnapshot();
+    const b = { ...baseSnapshot(), monthlySeq: [] };
+    expect(() => assertRejectionReversalSnapshotEqual("T", a, b)).toThrow(/monthly sequence/);
+  });
+
+  it("detects unrelated payment drift", () => {
+    const a = baseSnapshot();
+    const b = baseSnapshot();
+    (b.unrelatedPayment as { amount: number }).amount = 999;
+    expect(() =>
+      assertRejectionReversalSnapshotEqual("T", a, b),
+    ).toThrow(/unrelated payment drifted/);
+  });
+
+  it("detects unrelated payment appearance", () => {
+    const a = { ...baseSnapshot(), unrelatedPayment: null };
+    const b = baseSnapshot();
+    expect(() =>
+      assertRejectionReversalSnapshotEqual("T", a, b),
+    ).toThrow(/unrelated payment drifted/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// readUnrelatedPayment — fail-closed reader
+// ---------------------------------------------------------------------------
+
+function fixtureWith(admin: unknown): Stage3CFixture {
+  return { admin } as unknown as Stage3CFixture;
+}
+
+function payReadStub(row: { data: unknown; error: unknown }): unknown {
+  return {
+    from(_n: string) {
+      return {
+        select(_c: string) {
+          return {
+            eq(_col: string, _v: string) {
+              return {
+                async single() {
+                  return row;
+                },
+              };
+            },
+          };
+        },
+      };
+    },
+  };
+}
+
+describe("readUnrelatedPayment — fail-closed", () => {
+  it("throws on provider error", async () => {
+    const admin = payReadStub({ data: null, error: { message: "boom" } });
+    await expect(readUnrelatedPayment(fixtureWith(admin), "p", "T")).rejects.toThrow(
+      /unrelated payment query failed/,
+    );
+  });
+  it("throws when data is null with no error (missing row)", async () => {
+    const admin = payReadStub({ data: null, error: null });
+    await expect(readUnrelatedPayment(fixtureWith(admin), "p", "T")).rejects.toThrow(
+      /unrelated payment row missing/,
+    );
+  });
+  it("throws when row is malformed", async () => {
+    const admin = payReadStub({ data: { id: 1 }, error: null });
+    await expect(readUnrelatedPayment(fixtureWith(admin), "p", "T")).rejects.toThrow();
+  });
+  it("returns parsed row on success", async () => {
+    const admin = payReadStub({
+      data: {
+        id: PMT,
+        status: "pending",
+        amount: 10,
+        rejected_by: null,
+        rejected_at: null,
+        rejection_reason: null,
+        reversed_by: null,
+        reversed_at: null,
+        reversal_reason: null,
+        verified_by: null,
+        verified_at: null,
+        submitted_by: null,
+        bill_id: BILL,
+        society_id: SOC,
+      },
+      error: null,
+    });
+    const r = await readUnrelatedPayment(fixtureWith(admin), "p", "T");
+    expect(r.id).toBe(PMT);
+    expect(r.amount).toBe(10);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Static safe errors — never contain UUIDs, amounts, or provider text
+// ---------------------------------------------------------------------------
+
+describe("static safe errors — no leakage in observer/snapshot messages", () => {
+  const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+  it("readReceiptOrNull query-failed error is static", async () => {
+    const admin = {
+      from() {
+        return {
+          select() {
+            return {
+              eq() {
+                return {
+                  async maybeSingle() {
+                    return {
+                      data: null,
+                      error: { message: `raw ${SOC} boom` },
+                    };
+                  },
+                };
+              },
+            };
+          },
+        };
+      },
+    };
+    let caught: Error | null = null;
+    try {
+      await readReceiptOrNull(fixtureWith(admin), PMT, "TCASE");
+    } catch (e) {
+      caught = e as Error;
+    }
+    expect(caught).not.toBeNull();
+    expect(caught!.message).not.toMatch(UUID_RE);
+    expect(caught!.message).not.toMatch(/raw/);
+    expect(caught!.message).toMatch(/receipt query failed/);
+  });
+
+  it("readReceiptCount errors do not embed provider text", async () => {
+    const admin = {
+      from() {
+        return {
+          select() {
+            return {
+              async eq() {
+                return { count: null, error: { message: `Postgres error ${PMT}` } };
+              },
+            };
+          },
+        };
+      },
+    };
+    let caught: Error | null = null;
+    try {
+      await readReceiptCount(fixtureWith(admin), PMT, "TCASE");
+    } catch (e) {
+      caught = e as Error;
+    }
+    expect(caught!.message).not.toMatch(UUID_RE);
+    expect(caught!.message).not.toMatch(/Postgres/);
+  });
+
+  it("snapshot drift errors do not include stored values", () => {
+    const a = baseSnapshot();
+    const b = baseSnapshot();
+    (b.payment as { amount: number }).amount = 99999;
+    let caught: Error | null = null;
+    try {
+      assertRejectionReversalSnapshotEqual("REVERSAL-09", a, b);
+    } catch (e) {
+      caught = e as Error;
+    }
+    expect(caught).not.toBeNull();
+    expect(caught!.message).not.toMatch(/99999/);
+    expect(caught!.message).not.toMatch(UUID_RE);
   });
 });

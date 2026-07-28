@@ -43,8 +43,10 @@
 import { z } from "zod";
 import {
   getPaymentDetailWithClient,
+  verifyOfflinePaymentWithClient,
   type PaymentDetail,
 } from "@/lib/offline-payments.functions";
+import type { BillingRpcClient } from "@/lib/billing-config.functions";
 import type { Stage3CMatrixLiveHandler } from "./stage3c-live-matrix-registry";
 import type { Stage3CLiveMatrixContext } from "./stage3c-live-matrix-context";
 import type { Stage3CFixture } from "./stage3c-runtime-fixtures";
@@ -452,8 +454,157 @@ export async function readMonthlyReceiptSequences(
 }
 
 // ---------------------------------------------------------------------------
+// Unrelated-payment reader (fail-closed) — surfaced so the canonical
+// snapshot can detect cross-row drift where a sibling payment mutates
+// while the target row is being observed.
+// ---------------------------------------------------------------------------
+
+export async function readUnrelatedPayment(
+  fixture: Stage3CFixture,
+  paymentId: string,
+  caseId: string,
+): Promise<Stage3CRejRevPaymentRow> {
+  const { data, error } = await fixture.admin
+    .from("payments")
+    .select(
+      "id,status,amount,rejected_by,rejected_at,rejection_reason,reversed_by,reversed_at,reversal_reason,verified_by,verified_at,submitted_by,bill_id,society_id",
+    )
+    .eq("id", paymentId)
+    .single();
+  if (error !== null) fail(caseId, "unrelated payment query failed");
+  if (data === null) fail(caseId, "unrelated payment row missing");
+  return PaymentRowSchema.parse(data);
+}
+
+// ---------------------------------------------------------------------------
+// Fixture actor → BillingRpcClient adapter
+// ---------------------------------------------------------------------------
+
+/**
+ * Convert a fixture actor's Supabase client into the neutral
+ * {@link BillingRpcClient} the production verify core expects. The
+ * adapter narrows generics to `never` in exactly one place and only
+ * surfaces `{ data, error: { message } | null }` — never a full
+ * PostgrestError object.
+ */
+export function toRejRevBillingRpcClient(actor: {
+  client: {
+    rpc: (name: never, args: never) => Promise<{ data: unknown; error: { message: string } | null }>;
+  };
+}): BillingRpcClient {
+  return {
+    async rpc(name: string, args: Record<string, unknown>) {
+      const r = await actor.client.rpc(name as never, args as never);
+      return {
+        data: r.data,
+        error: r.error ? { message: r.error.message } : null,
+      };
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Canonical complete Stage 3C REJECTION/REVERSAL snapshot
+//
+// One immutable, drift-detecting bundle. Every write handler compares
+// pre-snapshot and post-denial-snapshot with a single equality helper
+// that flags drift in any component. No aggregate-sum shortcuts, no
+// silently omitted fields, no JSON.stringify against ad-hoc shapes.
+// ---------------------------------------------------------------------------
+
+export interface Stage3CRejRevSnapshot {
+  readonly payment: Stage3CRejRevPaymentRow;
+  readonly receipt: Stage3CRejRevReceiptRow | null;
+  readonly receiptCount: number;
+  readonly summary: Stage3CRejRevBillSummary;
+  readonly yearlySeq: readonly Stage3CYearlyReceiptSequenceRow[];
+  readonly monthlySeq: readonly Stage3CMonthlyReceiptSequenceRow[];
+  readonly unrelatedPayment: Stage3CRejRevPaymentRow | null;
+}
+
+export interface CaptureRejRevSnapshotArgs {
+  readonly fixture: Stage3CFixture;
+  readonly caseId: string;
+  readonly paymentId: string;
+  readonly billId: string;
+  readonly societyId: string;
+  readonly unrelatedPaymentId?: string | null;
+}
+
+export async function captureRejectionReversalSnapshot(
+  a: CaptureRejRevSnapshotArgs,
+): Promise<Stage3CRejRevSnapshot> {
+  const [payment, receipt, receiptCount, summary, yearlySeq, monthlySeq] = await Promise.all([
+    readPayment(a.fixture, a.paymentId, a.caseId),
+    readReceiptOrNull(a.fixture, a.paymentId, a.caseId),
+    readReceiptCount(a.fixture, a.paymentId, a.caseId),
+    readBillSummary(a.fixture, a.billId, a.caseId),
+    readYearlyReceiptSequences(a.fixture, a.societyId, a.caseId),
+    readMonthlyReceiptSequences(a.fixture, a.societyId, a.caseId),
+  ]);
+  const unrelatedPayment =
+    a.unrelatedPaymentId !== undefined && a.unrelatedPaymentId !== null
+      ? await readUnrelatedPayment(a.fixture, a.unrelatedPaymentId, a.caseId)
+      : null;
+  return normalizeRejectionReversalSnapshot({
+    payment,
+    receipt,
+    receiptCount,
+    summary,
+    yearlySeq,
+    monthlySeq,
+    unrelatedPayment,
+  });
+}
+
+/**
+ * Deterministic normalization: only re-orders the two sequence lists via
+ * their identity keys. Every numeric value is preserved exactly. No
+ * field is discarded to make equality easier.
+ */
+export function normalizeRejectionReversalSnapshot(
+  s: Stage3CRejRevSnapshot,
+): Stage3CRejRevSnapshot {
+  return {
+    payment: s.payment,
+    receipt: s.receipt,
+    receiptCount: s.receiptCount,
+    summary: s.summary,
+    yearlySeq: normalizeYearlyReceiptSequences(s.yearlySeq),
+    monthlySeq: normalizeMonthlyReceiptSequences(s.monthlySeq),
+    unrelatedPayment: s.unrelatedPayment,
+  };
+}
+
+/**
+ * Detects drift in every component of the canonical snapshot. Any single
+ * component that differs — even an unrelated sequence row or the
+ * unrelated payment — is a failure.
+ */
+export function assertRejectionReversalSnapshotEqual(
+  caseId: string,
+  before: Stage3CRejRevSnapshot,
+  after: Stage3CRejRevSnapshot,
+): void {
+  if (JSON.stringify(before.payment) !== JSON.stringify(after.payment))
+    fail(caseId, "canonical snapshot: payment drifted");
+  if (JSON.stringify(before.receipt) !== JSON.stringify(after.receipt))
+    fail(caseId, "canonical snapshot: receipt drifted");
+  if (before.receiptCount !== after.receiptCount)
+    fail(caseId, "canonical snapshot: receipt count drifted");
+  if (JSON.stringify(before.summary) !== JSON.stringify(after.summary))
+    fail(caseId, "canonical snapshot: bill summary drifted");
+  assertYearlySequenceSnapshotUnchanged(caseId, before.yearlySeq, after.yearlySeq);
+  assertMonthlySequenceSnapshotUnchanged(caseId, before.monthlySeq, after.monthlySeq);
+  if (JSON.stringify(before.unrelatedPayment) !== JSON.stringify(after.unrelatedPayment))
+    fail(caseId, "canonical snapshot: unrelated payment drifted");
+}
+
+// ---------------------------------------------------------------------------
 // Context state slots (populated by ensureRejectionChain / ensureReversalChain)
 // ---------------------------------------------------------------------------
+
+
 
 export interface Stage3CRejectionState {
   billId: string;
@@ -710,12 +861,19 @@ export const rejection05_verifyAfterRejectDenied: Stage3CMatrixLiveHandler = asy
   if (before === null || summaryBefore === null || yearlyBefore === null || monthlyBefore === null)
     fail("REJECTION-05", "REJECTION-01 must run first");
 
-  const { error } = await fixture.users.adminA2.client.rpc("verify_offline_payment", {
-    _payment_id: state.paymentId,
-    _notes: null,
-  });
-  if (error === null) fail("REJECTION-05", "verify after reject did not error");
-  if (error.message !== STAGE3C_TERMINAL_VERIFY_ERROR)
+  // Invoke the production shared verify core — same path as the app.
+  let caught: unknown = null;
+  try {
+    await verifyOfflinePaymentWithClient(
+      toRejRevBillingRpcClient(fixture.users.adminA2),
+      { paymentId: state.paymentId, notes: null },
+    );
+  } catch (e) {
+    caught = e;
+  }
+  if (caught === null) fail("REJECTION-05", "verify after reject did not error");
+  if (!(caught instanceof Error)) fail("REJECTION-05", "verify threw non-error");
+  if (caught.message !== STAGE3C_TERMINAL_VERIFY_ERROR)
     fail("REJECTION-05", "wrong terminal-state error");
 
   const [paymentAgain, summaryAgain, yearlyAgain, monthlyAgain, receiptCountAgain] =
@@ -917,12 +1075,18 @@ export const reversal09_verifyAfterReverseDenied: Stage3CMatrixLiveHandler = asy
   const yearlyBeforeDenial = state.yearlySeqAfter;
   const monthlyBeforeDenial = state.monthlySeqAfter;
 
-  const { error } = await fixture.users.adminA2.client.rpc("verify_offline_payment", {
-    _payment_id: state.paymentId,
-    _notes: null,
-  });
-  if (error === null) fail("REVERSAL-09", "verify after reverse did not error");
-  if (error.message !== STAGE3C_TERMINAL_VERIFY_ERROR)
+  let caught: unknown = null;
+  try {
+    await verifyOfflinePaymentWithClient(
+      toRejRevBillingRpcClient(fixture.users.adminA2),
+      { paymentId: state.paymentId, notes: null },
+    );
+  } catch (e) {
+    caught = e;
+  }
+  if (caught === null) fail("REVERSAL-09", "verify after reverse did not error");
+  if (!(caught instanceof Error)) fail("REVERSAL-09", "verify threw non-error");
+  if (caught.message !== STAGE3C_TERMINAL_VERIFY_ERROR)
     fail("REVERSAL-09", "wrong terminal-state error");
 
   const [paymentAgain, receiptAgain, summaryAgain, yearlyAgain, monthlyAgain, countAgain] =

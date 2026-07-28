@@ -298,22 +298,94 @@ const verifyPaymentResultSchema = z.object({
   receipt_id: z.string().nullable().optional(),
 });
 
+/**
+ * Stage 3C Checkpoint B Run A — shared production verification core.
+ *
+ * Single construction of the `verify_offline_payment` RPC used by both
+ * the `verifyOfflinePayment` server function AND the Stage 3C live
+ * REJECTION-05 / REVERSAL-09 matrix handlers, so production and tests
+ * cannot drift. Canonical SQL error tokens (e.g. `payment_not_pending`)
+ * are preserved verbatim so the outer server-function wrapper's
+ * {@link mapPaymentError} can translate them into user-facing text.
+ * Unknown provider failures are collapsed to `operation_failed` — raw
+ * database/provider messages are NEVER re-thrown.
+ */
+export interface VerifyOfflinePaymentInput {
+  readonly paymentId: string;
+  readonly notes?: string | null;
+}
+
+export interface VerifyOfflinePaymentResult {
+  readonly paymentId: string;
+  readonly receiptNumber: string | null;
+  readonly receiptId: string | null;
+}
+
+/**
+ * Canonical error tokens raised by `verify_offline_payment` (grounded in
+ * the effective PL/pgSQL body at implementation time). Exposed so tests
+ * and callers share a single source of truth — never re-declared.
+ */
+export const VERIFY_OFFLINE_PAYMENT_CANONICAL_ERRORS = Object.freeze([
+  "unauthenticated",
+  "payment_not_found",
+  "not_authorized",
+  "payment_not_pending",
+  "self_verification_not_allowed",
+  "bill_not_found",
+  "bill_cancelled",
+  "amount_exceeds_outstanding",
+] as const);
+
+export type VerifyOfflinePaymentCanonicalError =
+  (typeof VERIFY_OFFLINE_PAYMENT_CANONICAL_ERRORS)[number];
+
+async function callVerifyRpc(
+  client: BillingRpcClient,
+  args: Record<string, unknown>,
+): Promise<unknown> {
+  const { data, error } = await client.rpc("verify_offline_payment", args);
+  if (error) {
+    const raw = (error.message || "").toLowerCase();
+    for (const tok of VERIFY_OFFLINE_PAYMENT_CANONICAL_ERRORS) {
+      if (raw.includes(tok)) throw new Error(tok);
+    }
+    throw new Error("operation_failed");
+  }
+  return data;
+}
+
+/**
+ * Neutral shared production core. Invokes `verify_offline_payment` once,
+ * parses the response through the canonical Zod schema, and returns a
+ * strongly typed result. Malformed successful payloads fail closed via
+ * Zod parse (never silently coerced).
+ */
+export async function verifyOfflinePaymentWithClient(
+  client: BillingRpcClient,
+  input: VerifyOfflinePaymentInput,
+): Promise<VerifyOfflinePaymentResult> {
+  const raw = await callVerifyRpc(
+    client,
+    buildRpcArgs({ _payment_id: input.paymentId, _notes: input.notes ?? null }),
+  );
+  const parsed = verifyPaymentResultSchema.parse(raw ?? {});
+  return {
+    paymentId: parsed.payment_id ?? input.paymentId,
+    receiptNumber: parsed.receipt_number ?? null,
+    receiptId: parsed.receipt_id ?? null,
+  };
+}
+
 export const verifyOfflinePayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => paymentWithOptionalNotes.parse(i))
   .handler(async ({ data, context }) => {
     try {
-      const raw = await callBillingRpc(
-        toBillingRpcClient(context),
-        "verify_offline_payment",
-        buildRpcArgs({ _payment_id: data.paymentId, _notes: data.notes ?? null }),
-      );
-      const parsed = verifyPaymentResultSchema.parse(raw ?? {});
-      return {
-        paymentId: parsed.payment_id ?? data.paymentId,
-        receiptNumber: parsed.receipt_number ?? null,
-        receiptId: parsed.receipt_id ?? null,
-      };
+      return await verifyOfflinePaymentWithClient(toBillingRpcClient(context), {
+        paymentId: data.paymentId,
+        notes: data.notes ?? null,
+      });
     } catch (e) {
       throw new Error(mapPaymentError((e as Error).message));
     }

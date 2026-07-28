@@ -43,8 +43,10 @@
 import { z } from "zod";
 import {
   getPaymentDetailWithClient,
+  verifyOfflinePaymentWithClient,
   type PaymentDetail,
 } from "@/lib/offline-payments.functions";
+import type { BillingRpcClient } from "@/lib/billing-config.functions";
 import type { Stage3CMatrixLiveHandler } from "./stage3c-live-matrix-registry";
 import type { Stage3CLiveMatrixContext } from "./stage3c-live-matrix-context";
 import type { Stage3CFixture } from "./stage3c-runtime-fixtures";

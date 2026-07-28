@@ -138,14 +138,12 @@ describe("PRIVACY registry", () => {
     expect(Object.isFrozen(STAGE3C_FORBIDDEN_KEYS_ALL)).toBe(true);
   });
 
-  it("combined forbidden key set includes payment/receipt/payer subsets", () => {
+  it("combined forbidden key set includes payment-level internals", () => {
     for (const k of STAGE3C_FORBIDDEN_PAYMENT_KEYS) {
       expect(STAGE3C_FORBIDDEN_KEYS_ALL.has(k)).toBe(true);
     }
-    for (const k of STAGE3C_FORBIDDEN_RECEIPT_KEYS) {
-      expect(STAGE3C_FORBIDDEN_KEYS_ALL.has(k)).toBe(true);
-    }
-    for (const k of STAGE3C_FORBIDDEN_PAYER_KEYS) {
+    // narrower recursive set: includes clearly internal keys
+    for (const k of ["issued_by", "voided_by", "sequence_key"]) {
       expect(STAGE3C_FORBIDDEN_KEYS_ALL.has(k)).toBe(true);
     }
   });

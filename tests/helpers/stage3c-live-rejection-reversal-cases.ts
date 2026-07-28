@@ -861,12 +861,19 @@ export const rejection05_verifyAfterRejectDenied: Stage3CMatrixLiveHandler = asy
   if (before === null || summaryBefore === null || yearlyBefore === null || monthlyBefore === null)
     fail("REJECTION-05", "REJECTION-01 must run first");
 
-  const { error } = await fixture.users.adminA2.client.rpc("verify_offline_payment", {
-    _payment_id: state.paymentId,
-    _notes: null,
-  });
-  if (error === null) fail("REJECTION-05", "verify after reject did not error");
-  if (error.message !== STAGE3C_TERMINAL_VERIFY_ERROR)
+  // Invoke the production shared verify core — same path as the app.
+  let caught: unknown = null;
+  try {
+    await verifyOfflinePaymentWithClient(
+      toRejRevBillingRpcClient(fixture.users.adminA2),
+      { paymentId: state.paymentId, notes: null },
+    );
+  } catch (e) {
+    caught = e;
+  }
+  if (caught === null) fail("REJECTION-05", "verify after reject did not error");
+  if (!(caught instanceof Error)) fail("REJECTION-05", "verify threw non-error");
+  if (caught.message !== STAGE3C_TERMINAL_VERIFY_ERROR)
     fail("REJECTION-05", "wrong terminal-state error");
 
   const [paymentAgain, summaryAgain, yearlyAgain, monthlyAgain, receiptCountAgain] =

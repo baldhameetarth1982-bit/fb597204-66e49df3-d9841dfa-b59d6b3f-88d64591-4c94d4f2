@@ -1,5 +1,5 @@
 /**
- * Stage 3C — Live matrix registry (66/93).
+ * Stage 3C — Live matrix registry (80/93).
  *
  * Composes:
  *   - the existing 24-case core registry (AUTH + PENDING + VERIFY)
@@ -7,6 +7,8 @@
  *   - the 8 IDEMPOTENCY-01..04 + REFERENCE-01..04 handlers
  *   - the 10 READ-01..10 handlers (READ-01..04 success, READ-05..10 denial)
  *   - the 16 PRIVACY-01..16 handlers
+ *   - the 5 REJECTION-01..05 handlers
+ *   - the 9 REVERSAL-01..09 handlers
  *
  * Uses true compile-time exhaustiveness (`satisfies Record`) — no
  * `as Record`, no fallback, no optional lookup.
@@ -37,6 +39,14 @@ import {
   STAGE3C_PRIVACY_HANDLERS,
   type Stage3CPrivacyCaseId,
 } from "./stage3c-live-privacy-cases";
+import {
+  STAGE3C_REJECTION_CASE_IDS,
+  STAGE3C_REJECTION_HANDLERS,
+  STAGE3C_REVERSAL_CASE_IDS,
+  STAGE3C_REVERSAL_HANDLERS,
+  type Stage3CRejectionCaseId,
+  type Stage3CReversalCaseId,
+} from "./stage3c-live-rejection-reversal-cases";
 import type { Stage3CLiveMatrixContext } from "./stage3c-live-matrix-context";
 import { STAGE3C_REQUIRED_LIVE_CASES } from "./stage3c-live-case-manifest";
 
@@ -45,7 +55,9 @@ export type Stage3CMatrixLiveCaseId =
   | Stage3CResidentSubmitCaseId
   | Stage3CIdempotencyReferenceCaseId
   | Stage3CReadCaseId
-  | Stage3CPrivacyCaseId;
+  | Stage3CPrivacyCaseId
+  | Stage3CRejectionCaseId
+  | Stage3CReversalCaseId;
 
 export type Stage3CMatrixLiveHandler = (ctx: Stage3CLiveMatrixContext) => Promise<void>;
 
@@ -61,7 +73,10 @@ export const STAGE3C_MATRIX_LIVE_CASE_IDS: readonly Stage3CMatrixLiveCaseId[] = 
   ...STAGE3C_IDEMPOTENCY_REFERENCE_CASE_IDS,
   ...STAGE3C_READ_CASE_IDS,
   ...STAGE3C_PRIVACY_CASE_IDS,
+  ...STAGE3C_REJECTION_CASE_IDS,
+  ...STAGE3C_REVERSAL_CASE_IDS,
 ];
+
 
 
 

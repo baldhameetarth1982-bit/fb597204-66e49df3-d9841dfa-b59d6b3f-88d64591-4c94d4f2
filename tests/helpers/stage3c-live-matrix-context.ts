@@ -32,6 +32,11 @@ import type {
   ResidentPaymentHistoryRow,
   Stage3CReadDenialEvidence,
 } from "./stage3c-live-read-cases";
+import type {
+  Stage3CRejectionState,
+  Stage3CReversalState,
+} from "./stage3c-live-rejection-reversal-cases";
+
 
 
 export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {

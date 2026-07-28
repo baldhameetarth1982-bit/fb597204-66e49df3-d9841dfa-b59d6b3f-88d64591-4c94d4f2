@@ -124,7 +124,20 @@ export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
     "READ-09": Stage3CReadDenialEvidence | null;
     "READ-10": Stage3CReadDenialEvidence | null;
   };
+
+  // PRIVACY receipt-bearing detail (verified payment with issued receipt),
+  // primed at fixture setup via primeStage3CReadContext.
+  privacyReceiptPaymentId: string | null;
+  privacyReceiptBillId: string | null;
+  privacyReceiptDetail: ResidentPaymentDetail | null;
+
+  // REJECTION lifecycle state — lazily populated by REJECTION-01 handler.
+  rejectionState: Stage3CRejectionState | null;
+
+  // REVERSAL lifecycle state — lazily populated by REVERSAL-01 handler.
+  reversalState: Stage3CReversalState | null;
 }
+
 
 
 export function createStage3CLiveMatrixContext(): Stage3CLiveMatrixContext {

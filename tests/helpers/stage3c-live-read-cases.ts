@@ -788,7 +788,28 @@ export async function primeStage3CReadContext(
   if (detail.audience !== "resident")
     throw new Error("[stage3c:primeRead] non-resident audience");
   ctx.readExpectedDetail = detail;
+
+  // Prime PRIVACY receipt-bearing detail from the fixture's verified
+  // payment (which has an issued valid receipt on flatA — same flat as
+  // activeResident, so resident-audience read is authorized).
+  const receiptPaymentId = fixture.scenarios.verifiedPaymentId;
+  const receiptBillId = fixture.scenarios.fullyUnavailableBillId;
+  const receiptDetail = await getPaymentDetailWithClient(client, {
+    paymentId: receiptPaymentId,
+  });
+  if (receiptDetail === null)
+    throw new Error("[stage3c:primeRead] receipt-bearing detail null");
+  if (receiptDetail.audience !== "resident")
+    throw new Error("[stage3c:primeRead] receipt detail non-resident audience");
+  if (receiptDetail.payment.status !== "verified")
+    throw new Error("[stage3c:primeRead] receipt detail payment not verified");
+  if (receiptDetail.receipt === null)
+    throw new Error("[stage3c:primeRead] receipt detail missing receipt");
+  ctx.privacyReceiptPaymentId = receiptPaymentId;
+  ctx.privacyReceiptBillId = receiptBillId;
+  ctx.privacyReceiptDetail = receiptDetail;
 }
+
 
 
 // ---------------------------------------------------------------------------

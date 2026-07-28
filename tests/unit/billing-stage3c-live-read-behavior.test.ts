@@ -34,6 +34,7 @@ import {
   getPaymentDetailWithClient,
   getResidentPayments,
   getPaymentDetail,
+  mapPaymentError,
 } from "@/lib/offline-payments.functions";
 import type { BillingRpcClient } from "@/lib/billing-config.functions";
 

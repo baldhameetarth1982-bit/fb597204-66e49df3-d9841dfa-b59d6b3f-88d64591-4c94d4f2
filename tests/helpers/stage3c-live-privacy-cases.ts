@@ -221,6 +221,19 @@ function requirePrivacyDetail(ctx: Stage3CLiveMatrixContext): ResidentPaymentDet
   return requireReadAcceptedDetail(ctx);
 }
 
+/**
+ * Prefer the receipt-bearing privacy detail when primed (a real verified
+ * resident-viewable payment with a valid issued receipt); fall back to
+ * the accepted READ detail. Fails closed when neither is initialised.
+ */
+function requirePrivacyDetailPreferReceipt(
+  ctx: Stage3CLiveMatrixContext,
+): ResidentPaymentDetail {
+  if (ctx.privacyReceiptDetail !== null) return ctx.privacyReceiptDetail;
+  return requireReadAcceptedDetail(ctx);
+}
+
+
 // ---------------------------------------------------------------------------
 // PRIVACY-01..07 — resident payment forbidden fields
 // ---------------------------------------------------------------------------

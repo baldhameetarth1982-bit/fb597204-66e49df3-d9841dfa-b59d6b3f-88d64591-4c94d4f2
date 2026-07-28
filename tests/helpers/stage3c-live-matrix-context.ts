@@ -217,8 +217,16 @@ export function createStage3CLiveMatrixContext(): Stage3CLiveMatrixContext {
       "READ-09": null,
       "READ-10": null,
     },
+
+    privacyReceiptPaymentId: null,
+    privacyReceiptBillId: null,
+    privacyReceiptDetail: null,
+
+    rejectionState: null,
+    reversalState: null,
   };
 }
+
 
 
 // ---------------------------------------------------------------------------

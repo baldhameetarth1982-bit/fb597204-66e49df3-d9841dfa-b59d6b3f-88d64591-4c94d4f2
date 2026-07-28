@@ -34,9 +34,19 @@ import {
   assertMonthlySequenceMonotonicAndUnrelatedRowsUnchanged,
   readReceiptOrNull,
   readReceiptCount,
+  readUnrelatedPayment,
+  normalizeRejectionReversalSnapshot,
+  assertRejectionReversalSnapshotEqual,
+  toRejRevBillingRpcClient,
+  type Stage3CRejRevSnapshot,
   type Stage3CYearlyReceiptSequenceRow,
   type Stage3CMonthlyReceiptSequenceRow,
 } from "../helpers/stage3c-live-rejection-reversal-cases";
+import {
+  VERIFY_OFFLINE_PAYMENT_CANONICAL_ERRORS,
+  verifyOfflinePaymentWithClient,
+} from "@/lib/offline-payments.functions";
+import type { BillingRpcClient } from "@/lib/billing-config.functions";
 import type { Stage3CFixture } from "../helpers/stage3c-runtime-fixtures";
 
 // ---------------------------------------------------------------------------

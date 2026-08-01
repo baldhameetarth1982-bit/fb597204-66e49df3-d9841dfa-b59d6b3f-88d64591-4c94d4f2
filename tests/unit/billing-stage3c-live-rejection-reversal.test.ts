@@ -495,7 +495,7 @@ describe("verifyOfflinePaymentWithClient — production shared core", () => {
   it("passes null when notes is omitted", async () => {
     const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
     const client = makeVerifyClient({
-      data: { payment_id: "55555555-5555-4555-8555-555555555555", receipt_number: "RCPT/202601/0002", receipt_id: "r-2" },
+      data: { payment_id: "55555555-5555-4555-8555-555555555555", receipt_number: "RCPT/202601/0002", receipt_id: "66666666-6666-4666-8666-666666666662" },
       onCall: (name, args) => calls.push({ name, args }),
     });
     await verifyOfflinePaymentWithClient(client, { paymentId: "55555555-5555-4555-8555-555555555555" });

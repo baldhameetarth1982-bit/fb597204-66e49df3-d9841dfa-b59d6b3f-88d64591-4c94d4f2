@@ -537,16 +537,88 @@ describe("verifyOfflinePaymentWithClient — production shared core", () => {
     expect(caught!.message).not.toMatch(/connection reset|10\.0\.0\.1/);
   });
 
-  it("rejects malformed successful payload via Zod parse", async () => {
+  it("fails closed on a malformed successful payload", async () => {
     const client = makeVerifyClient({ data: { receipt_number: 123 } });
-    await expect(verifyOfflinePaymentWithClient(client, { paymentId: "p" })).rejects.toThrow();
+    await expect(verifyOfflinePaymentWithClient(client, { paymentId: "p" })).rejects.toThrow(
+      /^operation_failed$/,
+    );
   });
 
-  it("tolerates null/undefined success payload (defaults through)", async () => {
+  it("fails closed on a null success payload — never defaults from input", async () => {
     const client = makeVerifyClient({ data: null });
-    const r = await verifyOfflinePaymentWithClient(client, { paymentId: "px" });
-    expect(r).toEqual({ paymentId: "px", receiptNumber: null, receiptId: null });
+    await expect(verifyOfflinePaymentWithClient(client, { paymentId: "px" })).rejects.toThrow(
+      /^operation_failed$/,
+    );
   });
+
+  it("fails closed on an empty-object success payload", async () => {
+    const client = makeVerifyClient({ data: {} });
+    await expect(verifyOfflinePaymentWithClient(client, { paymentId: "px" })).rejects.toThrow(
+      /^operation_failed$/,
+    );
+  });
+
+  it.each([
+    ["missing payment_id", { receipt_number: "R", receipt_id: "r" }],
+    ["missing receipt_number", { payment_id: "p", receipt_id: "r" }],
+    ["missing receipt_id", { payment_id: "p", receipt_number: "R" }],
+    ["null payment_id", { payment_id: null, receipt_number: "R", receipt_id: "r" }],
+    ["null receipt_number", { payment_id: "p", receipt_number: null, receipt_id: "r" }],
+    ["null receipt_id", { payment_id: "p", receipt_number: "R", receipt_id: null }],
+    ["empty payment_id", { payment_id: "", receipt_number: "R", receipt_id: "r" }],
+    ["blank receipt_number", { payment_id: "p", receipt_number: "   ", receipt_id: "r" }],
+    ["empty receipt_id", { payment_id: "p", receipt_number: "R", receipt_id: "" }],
+    ["array payload", [{ payment_id: "p", receipt_number: "R", receipt_id: "r" }]],
+    ["string payload", "ok"],
+    ["number payload", 7],
+    [
+      "unknown extra key",
+      { payment_id: "p", receipt_number: "R", receipt_id: "r", proof_url: "https://x" },
+    ],
+  ])("fails closed on %s", async (_label, payload) => {
+    const client = makeVerifyClient({ data: payload as unknown });
+    await expect(verifyOfflinePaymentWithClient(client, { paymentId: "p" })).rejects.toThrow(
+      /^operation_failed$/,
+    );
+  });
+
+  it("returns the exact server-provided identifiers on a complete payload", async () => {
+    const client = makeVerifyClient({
+      data: { payment_id: "server-p", receipt_number: "RCPT/202602/0007", receipt_id: "server-r" },
+    });
+    const r = await verifyOfflinePaymentWithClient(client, { paymentId: "client-p" });
+    expect(r.paymentId).toBe("server-p");
+    expect(r.receiptNumber).toBe("RCPT/202602/0007");
+    expect(r.receiptId).toBe("server-r");
+  });
+
+  it.each([
+    ["not_authenticated must not read as unauthenticated", "not_authenticated"],
+    ["substring-only token is not a match", "xxpayment_not_pendingxx"],
+    ["glued token is not a match", "notauthorized"],
+  ])("%s", async (_label, message) => {
+    const client = makeVerifyClient({ error: { message } });
+    await expect(verifyOfflinePaymentWithClient(client, { paymentId: "p" })).rejects.toThrow(
+      /^operation_failed$/,
+    );
+  });
+
+  it("matches a canonical token surrounded by punctuation", async () => {
+    const client = makeVerifyClient({ error: { message: 'ERROR:  "not_authorized" (42501)' } });
+    await expect(verifyOfflinePaymentWithClient(client, { paymentId: "p" })).rejects.toThrow(
+      /^not_authorized$/,
+    );
+  });
+
+  it("collapses an empty or non-string provider message to operation_failed", async () => {
+    for (const message of ["", "   "]) {
+      const client = makeVerifyClient({ error: { message } });
+      await expect(verifyOfflinePaymentWithClient(client, { paymentId: "p" })).rejects.toThrow(
+        /^operation_failed$/,
+      );
+    }
+  });
+
 
   it("VERIFY_OFFLINE_PAYMENT_CANONICAL_ERRORS is frozen and includes the terminal token", () => {
     expect(Object.isFrozen(VERIFY_OFFLINE_PAYMENT_CANONICAL_ERRORS)).toBe(true);

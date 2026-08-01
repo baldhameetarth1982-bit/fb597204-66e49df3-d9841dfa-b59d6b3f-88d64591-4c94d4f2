@@ -628,6 +628,7 @@ export function toRejRevBillingRpcClient(actor: {
 
 export interface Stage3CRejRevSnapshot {
   readonly payment: Stage3CRejRevPaymentRow;
+  readonly bill: Stage3CRejRevBillRow;
   readonly receipt: Stage3CRejRevReceiptRow | null;
   readonly receiptCount: number;
   readonly summary: Stage3CRejRevBillSummary;
@@ -648,8 +649,9 @@ export interface CaptureRejRevSnapshotArgs {
 export async function captureRejectionReversalSnapshot(
   a: CaptureRejRevSnapshotArgs,
 ): Promise<Stage3CRejRevSnapshot> {
-  const [payment, receipt, receiptCount, summary, yearlySeq, monthlySeq] = await Promise.all([
+  const [payment, bill, receipt, receiptCount, summary, yearlySeq, monthlySeq] = await Promise.all([
     readPayment(a.fixture, a.paymentId, a.caseId),
+    readBillRow(a.fixture, a.billId, a.caseId),
     readReceiptOrNull(a.fixture, a.paymentId, a.caseId),
     readReceiptCount(a.fixture, a.paymentId, a.caseId),
     readBillSummary(a.fixture, a.billId, a.caseId),
@@ -662,6 +664,7 @@ export async function captureRejectionReversalSnapshot(
       : null;
   return normalizeRejectionReversalSnapshot({
     payment,
+    bill,
     receipt,
     receiptCount,
     summary,
@@ -674,26 +677,28 @@ export async function captureRejectionReversalSnapshot(
 /**
  * Deterministic normalization: only re-orders the two sequence lists via
  * their identity keys. Every numeric value is preserved exactly. No
- * field is discarded to make equality easier.
+ * field is discarded to make equality easier. The returned graph is
+ * deep-frozen at runtime so it cannot be mutated after capture.
  */
 export function normalizeRejectionReversalSnapshot(
   s: Stage3CRejRevSnapshot,
 ): Stage3CRejRevSnapshot {
-  return {
+  return deepFreeze({
     payment: s.payment,
+    bill: s.bill,
     receipt: s.receipt,
     receiptCount: s.receiptCount,
     summary: s.summary,
     yearlySeq: normalizeYearlyReceiptSequences(s.yearlySeq),
     monthlySeq: normalizeMonthlyReceiptSequences(s.monthlySeq),
     unrelatedPayment: s.unrelatedPayment,
-  };
+  });
 }
 
 /**
  * Detects drift in every component of the canonical snapshot. Any single
- * component that differs — even an unrelated sequence row or the
- * unrelated payment — is a failure.
+ * component that differs — even an unrelated sequence row, the bill row
+ * or the unrelated payment — is a failure.
  */
 export function assertRejectionReversalSnapshotEqual(
   caseId: string,
@@ -702,6 +707,8 @@ export function assertRejectionReversalSnapshotEqual(
 ): void {
   if (JSON.stringify(before.payment) !== JSON.stringify(after.payment))
     fail(caseId, "canonical snapshot: payment drifted");
+  if (JSON.stringify(before.bill) !== JSON.stringify(after.bill))
+    fail(caseId, "canonical snapshot: bill row drifted");
   if (JSON.stringify(before.receipt) !== JSON.stringify(after.receipt))
     fail(caseId, "canonical snapshot: receipt drifted");
   if (before.receiptCount !== after.receiptCount)
@@ -713,6 +720,165 @@ export function assertRejectionReversalSnapshotEqual(
   if (JSON.stringify(before.unrelatedPayment) !== JSON.stringify(after.unrelatedPayment))
     fail(caseId, "canonical snapshot: unrelated payment drifted");
 }
+
+// ---------------------------------------------------------------------------
+// Authorization denial harness
+//
+// One reusable harness proving that every non-authorized actor is denied
+// on every lifecycle mutation, with a canonical snapshot as the single
+// proof that nothing changed.
+// ---------------------------------------------------------------------------
+
+export type Stage3CDenialActorId =
+  | "otherSocietyAdmin"
+  | "resident"
+  | "guard"
+  | "outOfScopeBlockAdmin"
+  | "unauthenticated";
+
+export const STAGE3C_DENIAL_ACTOR_IDS: readonly Stage3CDenialActorId[] = Object.freeze([
+  "otherSocietyAdmin",
+  "resident",
+  "guard",
+  "outOfScopeBlockAdmin",
+  "unauthenticated",
+] as const);
+
+export type Stage3CLifecycleOperation = "verify" | "reject" | "reverse";
+
+export const STAGE3C_LIFECYCLE_OPERATIONS: readonly Stage3CLifecycleOperation[] = Object.freeze([
+  "verify",
+  "reject",
+  "reverse",
+] as const);
+
+/**
+ * Denial tokens a non-authorized actor may legitimately receive. Any
+ * other message — including a leaked provider string — is a failure, and
+ * a successful call is always a failure.
+ *
+ * `payment_not_found` is allowed because RLS-scoped RPCs must not
+ * disclose the existence of a row outside the caller's tenant.
+ */
+export const STAGE3C_DENIAL_ALLOWED_ERRORS: readonly string[] = Object.freeze([
+  STAGE3C_LIFECYCLE_CANONICAL_ERRORS.unauthenticated,
+  STAGE3C_LIFECYCLE_CANONICAL_ERRORS.not_authorized,
+  STAGE3C_LIFECYCLE_CANONICAL_ERRORS.payment_not_found,
+] as const);
+
+export function isAllowedDenialError(message: unknown): boolean {
+  if (typeof message !== "string" || message.length === 0) return false;
+  const m = message.trim().toLowerCase();
+  return STAGE3C_DENIAL_ALLOWED_ERRORS.some(
+    (t) => new RegExp(`(^|[^\\w])${t}(\\W|$)`).test(m),
+  );
+}
+
+export interface Stage3CDenialActor {
+  readonly id: Stage3CDenialActorId;
+  readonly client: BillingRpcClient;
+}
+
+function rpcClientFromSupabase(client: {
+  rpc: (name: never, args: never) => Promise<{ data: unknown; error: { message: string } | null }>;
+}): BillingRpcClient {
+  return toRejRevBillingRpcClient({ client });
+}
+
+/**
+ * Build the canonical denial actor set. The unauthenticated actor is a
+ * session-less publishable-key client built from the same disposable
+ * fixture environment — never a hand-made stub that could "pass" by
+ * throwing locally.
+ */
+export function buildStage3CDenialActors(
+  fixture: Stage3CFixture,
+  anonClient: {
+    rpc: (name: never, args: never) => Promise<{ data: unknown; error: { message: string } | null }>;
+  },
+): readonly Stage3CDenialActor[] {
+  return Object.freeze([
+    { id: "otherSocietyAdmin", client: rpcClientFromSupabase(fixture.users.adminB.client) },
+    { id: "resident", client: rpcClientFromSupabase(fixture.users.activeResident.client) },
+    { id: "guard", client: rpcClientFromSupabase(fixture.users.guard.client) },
+    {
+      id: "outOfScopeBlockAdmin",
+      client: rpcClientFromSupabase(fixture.users.blockAdmin.client),
+    },
+    { id: "unauthenticated", client: rpcClientFromSupabase(anonClient) },
+  ] as const);
+}
+
+async function invokeLifecycleOperation(
+  actor: Stage3CDenialActor,
+  operation: Stage3CLifecycleOperation,
+  paymentId: string,
+  reason: string,
+): Promise<{ ok: boolean; message: string }> {
+  try {
+    if (operation === "verify") {
+      await verifyOfflinePaymentWithClient(actor.client, { paymentId, notes: null });
+      return { ok: true, message: "" };
+    }
+    const fn = operation === "reject" ? "reject_offline_payment" : "reverse_offline_payment";
+    const { error } = await actor.client.rpc(fn, { _payment_id: paymentId, _reason: reason });
+    if (error) return { ok: false, message: error.message };
+    return { ok: true, message: "" };
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : "" };
+  }
+}
+
+export interface RunDenialMatrixArgs {
+  readonly fixture: Stage3CFixture;
+  readonly caseId: string;
+  readonly paymentId: string;
+  readonly billId: string;
+  readonly societyId: string;
+  readonly unrelatedPaymentId?: string | null;
+  readonly actors: readonly Stage3CDenialActor[];
+  readonly operations?: readonly Stage3CLifecycleOperation[];
+  readonly reason?: string;
+}
+
+/**
+ * Run every (actor × operation) pair and prove each one is denied with a
+ * canonical token, then prove — via the canonical snapshot alone — that
+ * no observable state changed across the whole matrix.
+ */
+export async function runStage3CDenialMatrix(a: RunDenialMatrixArgs): Promise<void> {
+  const ops = a.operations ?? STAGE3C_LIFECYCLE_OPERATIONS;
+  if (a.actors.length === 0) fail(a.caseId, "denial matrix has no actors");
+  if (ops.length === 0) fail(a.caseId, "denial matrix has no operations");
+
+  const snapshotArgs: CaptureRejRevSnapshotArgs = {
+    fixture: a.fixture,
+    caseId: a.caseId,
+    paymentId: a.paymentId,
+    billId: a.billId,
+    societyId: a.societyId,
+    unrelatedPaymentId: a.unrelatedPaymentId ?? null,
+  };
+  const before = await captureRejectionReversalSnapshot(snapshotArgs);
+
+  for (const actor of a.actors) {
+    for (const op of ops) {
+      const r = await invokeLifecycleOperation(
+        actor,
+        op,
+        a.paymentId,
+        a.reason ?? "stage3c denial harness — deterministic reason",
+      );
+      if (r.ok) fail(a.caseId, `denial matrix: ${actor.id} was allowed to ${op}`);
+      if (!isAllowedDenialError(r.message))
+        fail(a.caseId, `denial matrix: ${actor.id} ${op} produced a non-canonical error`);
+    }
+  }
+
+  const after = await captureRejectionReversalSnapshot(snapshotArgs);
+  assertRejectionReversalSnapshotEqual(a.caseId, before, after);
+}
+
 
 // ---------------------------------------------------------------------------
 // Context state slots (populated by ensureRejectionChain / ensureReversalChain)

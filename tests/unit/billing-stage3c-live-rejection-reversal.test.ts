@@ -584,12 +584,12 @@ describe("verifyOfflinePaymentWithClient — production shared core", () => {
 
   it("returns the exact server-provided identifiers on a complete payload", async () => {
     const client = makeVerifyClient({
-      data: { payment_id: "server-p", receipt_number: "RCPT/202602/0007", receipt_id: "server-r" },
+      data: { payment_id: "33333333-3333-4333-8333-333333333333", receipt_number: "RCPT/202602/0007", receipt_id: "44444444-4444-4444-4444-444444444444" },
     });
     const r = await verifyOfflinePaymentWithClient(client, { paymentId: "client-p" });
-    expect(r.paymentId).toBe("server-p");
+    expect(r.paymentId).toBe("33333333-3333-4333-8333-333333333333");
     expect(r.receiptNumber).toBe("RCPT/202602/0007");
-    expect(r.receiptId).toBe("server-r");
+    expect(r.receiptId).toBe("44444444-4444-4444-4444-444444444444");
   });
 
   it.each([
@@ -1409,7 +1409,7 @@ describe("Run B — runStage3CDenialMatrix", () => {
 
   it("fails when an actor is allowed to mutate", async () => {
     const base = scriptedFixtureForHarness(() => ({
-      data: { payment_id: PMT, receipt_number: "R", receipt_id: "r" },
+      data: { payment_id: PMT, receipt_number: "RCPT/202606/0001", receipt_id: SOC },
       error: null,
     }));
     const fixture = snapshotFixture(base, makeReads());

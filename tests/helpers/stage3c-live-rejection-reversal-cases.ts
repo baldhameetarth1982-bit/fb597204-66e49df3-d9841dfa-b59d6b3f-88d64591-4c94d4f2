@@ -182,6 +182,43 @@ const ReceiptRowSchema = z
   .strict();
 export type Stage3CRejRevReceiptRow = z.infer<typeof ReceiptRowSchema>;
 
+/**
+ * Complete observable bill row. Checkpoint B Run B requires the bill
+ * itself — not only the derived summary — inside the canonical snapshot,
+ * so a denied lifecycle call cannot mutate bill state undetected.
+ */
+const BillRowSchema = z
+  .object({
+    id: z.string(),
+    society_id: z.string(),
+    flat_id: z.string(),
+    status: z.string(),
+    bill_number: z.string().nullable(),
+    amount: z.coerce.number(),
+    adjustments: z.coerce.number(),
+    penalties: z.coerce.number(),
+    tax_amount: z.coerce.number(),
+    previous_balance: z.coerce.number(),
+    total_payable: z.coerce.number().nullable(),
+    current_charges: z.coerce.number().nullable(),
+    paid_at: z.string().nullable(),
+    finalized_at: z.string().nullable(),
+    cancelled_at: z.string().nullable(),
+    cancelled_by: z.string().nullable(),
+    cancel_reason: z.string().nullable(),
+    replaced_by_bill_id: z.string().nullable(),
+    due_date: z.string(),
+    period_start: z.string(),
+    period_end: z.string(),
+    period_label: z.string(),
+  })
+  .strict();
+export type Stage3CRejRevBillRow = z.infer<typeof BillRowSchema>;
+
+const BILL_ROW_COLUMNS =
+  "id,society_id,flat_id,status,bill_number,amount,adjustments,penalties,tax_amount,previous_balance,total_payable,current_charges,paid_at,finalized_at,cancelled_at,cancelled_by,cancel_reason,replaced_by_bill_id,due_date,period_start,period_end,period_label";
+
+
 const BillSummarySchema = z
   .object({
     bill_id: z.string(),

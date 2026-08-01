@@ -478,28 +478,28 @@ describe("verifyOfflinePaymentWithClient — production shared core", () => {
   it("invokes exactly verify_offline_payment with { _payment_id, _notes }", async () => {
     const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
     const client = makeVerifyClient({
-      data: { payment_id: "p-1", receipt_number: "RCPT/202601/0001", receipt_id: "r-1" },
+      data: { payment_id: "55555555-5555-4555-8555-555555555555", receipt_number: "RCPT/202601/0001", receipt_id: "66666666-6666-4666-8666-666666666666" },
       onCall: (name, args) => calls.push({ name, args }),
     });
-    const r = await verifyOfflinePaymentWithClient(client, { paymentId: "p-1", notes: "n" });
+    const r = await verifyOfflinePaymentWithClient(client, { paymentId: "55555555-5555-4555-8555-555555555555", notes: "n" });
     expect(calls.length).toBe(1);
     expect(calls[0].name).toBe("verify_offline_payment");
-    expect(calls[0].args).toEqual({ _payment_id: "p-1", _notes: "n" });
+    expect(calls[0].args).toEqual({ _payment_id: "55555555-5555-4555-8555-555555555555", _notes: "n" });
     expect(r).toEqual({
-      paymentId: "p-1",
+      paymentId: "55555555-5555-4555-8555-555555555555",
       receiptNumber: "RCPT/202601/0001",
-      receiptId: "r-1",
+      receiptId: "66666666-6666-4666-8666-666666666666",
     });
   });
 
   it("passes null when notes is omitted", async () => {
     const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
     const client = makeVerifyClient({
-      data: { payment_id: "p-1", receipt_number: "RCPT/202601/0002", receipt_id: "r-2" },
+      data: { payment_id: "55555555-5555-4555-8555-555555555555", receipt_number: "RCPT/202601/0002", receipt_id: "r-2" },
       onCall: (name, args) => calls.push({ name, args }),
     });
-    await verifyOfflinePaymentWithClient(client, { paymentId: "p-1" });
-    expect(calls[0].args).toEqual({ _payment_id: "p-1", _notes: null });
+    await verifyOfflinePaymentWithClient(client, { paymentId: "55555555-5555-4555-8555-555555555555" });
+    expect(calls[0].args).toEqual({ _payment_id: "55555555-5555-4555-8555-555555555555", _notes: null });
   });
 
   it("preserves canonical `payment_not_pending` token (case-insensitive)", async () => {

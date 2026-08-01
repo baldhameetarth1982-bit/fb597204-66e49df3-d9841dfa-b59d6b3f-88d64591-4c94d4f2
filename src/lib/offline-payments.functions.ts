@@ -292,11 +292,24 @@ export const recordAdminOfflinePayment = createServerFn({ method: "POST" })
     }
   });
 
-const verifyPaymentResultSchema = z.object({
-  payment_id: z.string().optional(),
-  receipt_number: z.string().nullable().optional(),
-  receipt_id: z.string().nullable().optional(),
-});
+/**
+ * Stage 3C Checkpoint B Run B — STRICT success contract.
+ *
+ * `verify_offline_payment` returns exactly
+ * `jsonb_build_object('payment_id', ..., 'receipt_number', ..., 'receipt_id', ...)`.
+ * All three keys are mandatory and non-empty on success; unknown keys are
+ * rejected. A null / empty / malformed payload fails closed instead of
+ * being silently defaulted from caller-supplied input.
+ */
+const NonEmptyString = z.string().trim().min(1);
+const verifyPaymentResultSchema = z
+  .object({
+    payment_id: NonEmptyString,
+    receipt_number: NonEmptyString,
+    receipt_id: NonEmptyString,
+  })
+  .strict();
+
 
 /**
  * Stage 3C Checkpoint B Run A — shared production verification core.
@@ -317,8 +330,8 @@ export interface VerifyOfflinePaymentInput {
 
 export interface VerifyOfflinePaymentResult {
   readonly paymentId: string;
-  readonly receiptNumber: string | null;
-  readonly receiptId: string | null;
+  readonly receiptNumber: string;
+  readonly receiptId: string;
 }
 
 /**
@@ -340,15 +353,36 @@ export const VERIFY_OFFLINE_PAYMENT_CANONICAL_ERRORS = Object.freeze([
 export type VerifyOfflinePaymentCanonicalError =
   (typeof VERIFY_OFFLINE_PAYMENT_CANONICAL_ERRORS)[number];
 
+function escapeRegexToken(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Exact token match — NEVER a substring `includes()` test.
+ *
+ * The token must appear as a whole word: bounded on both sides by a
+ * non-word character or a string edge, and never preceded by `_` (so
+ * `not_authenticated` can never be read as `unauthenticated`, and
+ * `xx_not_authorized_yy` can never be read as `not_authorized`).
+ */
+export function matchesVerifyCanonicalError(
+  message: string,
+  token: VerifyOfflinePaymentCanonicalError,
+): boolean {
+  if (typeof message !== "string" || message.length === 0) return false;
+  const re = new RegExp(`(^|[^\\w])${escapeRegexToken(token)}(\\W|$)`, "i");
+  return re.test(message);
+}
+
 async function callVerifyRpc(
   client: BillingRpcClient,
   args: Record<string, unknown>,
 ): Promise<unknown> {
   const { data, error } = await client.rpc("verify_offline_payment", args);
   if (error) {
-    const raw = (error.message || "").toLowerCase();
+    const raw = typeof error.message === "string" ? error.message : "";
     for (const tok of VERIFY_OFFLINE_PAYMENT_CANONICAL_ERRORS) {
-      if (raw.includes(tok)) throw new Error(tok);
+      if (matchesVerifyCanonicalError(raw, tok)) throw new Error(tok);
     }
     throw new Error("operation_failed");
   }
@@ -356,10 +390,12 @@ async function callVerifyRpc(
 }
 
 /**
- * Neutral shared production core. Invokes `verify_offline_payment` once,
- * parses the response through the canonical Zod schema, and returns a
- * strongly typed result. Malformed successful payloads fail closed via
- * Zod parse (never silently coerced).
+ * Neutral shared production core. Invokes `verify_offline_payment` once
+ * and parses the response through the STRICT canonical Zod schema.
+ *
+ * Fails closed (`operation_failed`) on a null, non-object, empty,
+ * unknown-key or otherwise malformed success payload. Never substitutes
+ * caller-supplied input for a missing server-returned identifier.
  */
 export async function verifyOfflinePaymentWithClient(
   client: BillingRpcClient,
@@ -369,13 +405,15 @@ export async function verifyOfflinePaymentWithClient(
     client,
     buildRpcArgs({ _payment_id: input.paymentId, _notes: input.notes ?? null }),
   );
-  const parsed = verifyPaymentResultSchema.parse(raw ?? {});
+  const parsed = verifyPaymentResultSchema.safeParse(raw);
+  if (!parsed.success) throw new Error("operation_failed");
   return {
-    paymentId: parsed.payment_id ?? input.paymentId,
-    receiptNumber: parsed.receipt_number ?? null,
-    receiptId: parsed.receipt_id ?? null,
+    paymentId: parsed.data.payment_id,
+    receiptNumber: parsed.data.receipt_number,
+    receiptId: parsed.data.receipt_id,
   };
 }
+
 
 export const verifyOfflinePayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

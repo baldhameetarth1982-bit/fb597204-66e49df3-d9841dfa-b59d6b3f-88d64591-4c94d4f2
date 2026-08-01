@@ -41,6 +41,7 @@
  */
 
 import { z } from "zod";
+import { createClient } from "@supabase/supabase-js";
 import {
   getPaymentDetailWithClient,
   verifyOfflinePaymentWithClient,
@@ -49,8 +50,9 @@ import {
 import type { BillingRpcClient } from "@/lib/billing-config.functions";
 import type { Stage3CMatrixLiveHandler } from "./stage3c-live-matrix-registry";
 import type { Stage3CLiveMatrixContext } from "./stage3c-live-matrix-context";
-import type { Stage3CFixture } from "./stage3c-runtime-fixtures";
+import { requireStage3CEnv, type Stage3CFixture } from "./stage3c-runtime-fixtures";
 import { requireFixture } from "./stage3c-live-core-context";
+
 import {
   findForbiddenKeyPath,
   STAGE3C_FORBIDDEN_KEYS_ALL,
@@ -181,6 +183,43 @@ const ReceiptRowSchema = z
   })
   .strict();
 export type Stage3CRejRevReceiptRow = z.infer<typeof ReceiptRowSchema>;
+
+/**
+ * Complete observable bill row. Checkpoint B Run B requires the bill
+ * itself — not only the derived summary — inside the canonical snapshot,
+ * so a denied lifecycle call cannot mutate bill state undetected.
+ */
+const BillRowSchema = z
+  .object({
+    id: z.string(),
+    society_id: z.string(),
+    flat_id: z.string(),
+    status: z.string(),
+    bill_number: z.string().nullable(),
+    amount: z.coerce.number(),
+    adjustments: z.coerce.number(),
+    penalties: z.coerce.number(),
+    tax_amount: z.coerce.number(),
+    previous_balance: z.coerce.number(),
+    total_payable: z.coerce.number().nullable(),
+    current_charges: z.coerce.number().nullable(),
+    paid_at: z.string().nullable(),
+    finalized_at: z.string().nullable(),
+    cancelled_at: z.string().nullable(),
+    cancelled_by: z.string().nullable(),
+    cancel_reason: z.string().nullable(),
+    replaced_by_bill_id: z.string().nullable(),
+    due_date: z.string(),
+    period_start: z.string(),
+    period_end: z.string(),
+    period_label: z.string(),
+  })
+  .strict();
+export type Stage3CRejRevBillRow = z.infer<typeof BillRowSchema>;
+
+const BILL_ROW_COLUMNS =
+  "id,society_id,flat_id,status,bill_number,amount,adjustments,penalties,tax_amount,previous_balance,total_payable,current_charges,paid_at,finalized_at,cancelled_at,cancelled_by,cancel_reason,replaced_by_bill_id,due_date,period_start,period_end,period_label";
+
 
 const BillSummarySchema = z
   .object({
@@ -398,6 +437,43 @@ export async function readReceiptCount(
   return count;
 }
 
+/**
+ * Fail-closed complete bill row read. Any provider error, missing row or
+ * malformed column set throws a static safe error.
+ */
+export async function readBillRow(
+  fixture: Stage3CFixture,
+  billId: string,
+  caseId: string,
+): Promise<Stage3CRejRevBillRow> {
+  const { data, error } = await fixture.admin
+    .from("bills")
+    .select(BILL_ROW_COLUMNS)
+    .eq("id", billId)
+    .maybeSingle();
+  if (error !== null) fail(caseId, "bill row query failed");
+  if (data === null) fail(caseId, "bill row missing");
+  const parsed = BillRowSchema.safeParse(data);
+  if (!parsed.success) fail(caseId, "bill row malformed");
+  return parsed.data;
+}
+
+/**
+ * Recursive runtime freeze. The canonical snapshot is handed to case
+ * handlers as a genuinely immutable object graph so no handler can
+ * accidentally (or deliberately) mutate the proof it later compares
+ * against.
+ */
+export function deepFreeze<T>(value: T): T {
+  if (value === null || typeof value !== "object") return value;
+  if (Object.isFrozen(value)) return value;
+  Object.freeze(value);
+  for (const v of Object.values(value as Record<string, unknown>)) deepFreeze(v);
+  return value;
+}
+
+
+
 async function readBillSummary(
   fixture: Stage3CFixture,
   billId: string,
@@ -411,6 +487,33 @@ async function readBillSummary(
   const parsed = BillSummarySchema.safeParse(data);
   if (!parsed.success) fail(caseId, "bill summary payload malformed");
   return parsed.data;
+}
+
+/**
+ * Reject a sequence list that cannot be a truthful observation:
+ *  - a duplicated identity key (two rows claiming the same counter)
+ *  - a non-integer / non-finite / negative `next_number`
+ * Both conditions make later drift comparison meaningless, so they fail
+ * closed at read time rather than silently degrading the proof.
+ */
+export function assertSequenceRowsWellFormed(
+  caseId: string,
+  label: "yearly" | "monthly",
+  keys: readonly string[],
+  values: readonly number[],
+): void {
+  if (keys.length !== values.length) fail(caseId, `${label} sequence key/value length mismatch`);
+  const seen = new Set<string>();
+  for (let i = 0; i < keys.length; i += 1) {
+    const k = keys[i] as string;
+    if (seen.has(k)) fail(caseId, `${label} sequence duplicate identity`);
+    seen.add(k);
+    const v = values[i] as number;
+    if (typeof v !== "number" || !Number.isFinite(v))
+      fail(caseId, `${label} sequence next_number not finite`);
+    if (!Number.isInteger(v)) fail(caseId, `${label} sequence next_number non-integer`);
+    if (v < 0) fail(caseId, `${label} sequence next_number negative`);
+  }
 }
 
 export async function readYearlyReceiptSequences(
@@ -430,6 +533,12 @@ export async function readYearlyReceiptSequences(
     if (!p.success) fail(caseId, "yearly sequence row malformed");
     parsed.push(p.data);
   }
+  assertSequenceRowsWellFormed(
+    caseId,
+    "yearly",
+    parsed.map(yearlyIdentityKey),
+    parsed.map((r) => r.next_number),
+  );
   return normalizeYearlyReceiptSequences(parsed);
 }
 
@@ -450,8 +559,15 @@ export async function readMonthlyReceiptSequences(
     if (!p.success) fail(caseId, "monthly sequence row malformed");
     parsed.push(p.data);
   }
+  assertSequenceRowsWellFormed(
+    caseId,
+    "monthly",
+    parsed.map(monthlyIdentityKey),
+    parsed.map((r) => r.next_number),
+  );
   return normalizeMonthlyReceiptSequences(parsed);
 }
+
 
 // ---------------------------------------------------------------------------
 // Unrelated-payment reader (fail-closed) — surfaced so the canonical
@@ -514,6 +630,7 @@ export function toRejRevBillingRpcClient(actor: {
 
 export interface Stage3CRejRevSnapshot {
   readonly payment: Stage3CRejRevPaymentRow;
+  readonly bill: Stage3CRejRevBillRow;
   readonly receipt: Stage3CRejRevReceiptRow | null;
   readonly receiptCount: number;
   readonly summary: Stage3CRejRevBillSummary;
@@ -534,8 +651,9 @@ export interface CaptureRejRevSnapshotArgs {
 export async function captureRejectionReversalSnapshot(
   a: CaptureRejRevSnapshotArgs,
 ): Promise<Stage3CRejRevSnapshot> {
-  const [payment, receipt, receiptCount, summary, yearlySeq, monthlySeq] = await Promise.all([
+  const [payment, bill, receipt, receiptCount, summary, yearlySeq, monthlySeq] = await Promise.all([
     readPayment(a.fixture, a.paymentId, a.caseId),
+    readBillRow(a.fixture, a.billId, a.caseId),
     readReceiptOrNull(a.fixture, a.paymentId, a.caseId),
     readReceiptCount(a.fixture, a.paymentId, a.caseId),
     readBillSummary(a.fixture, a.billId, a.caseId),
@@ -548,6 +666,7 @@ export async function captureRejectionReversalSnapshot(
       : null;
   return normalizeRejectionReversalSnapshot({
     payment,
+    bill,
     receipt,
     receiptCount,
     summary,
@@ -560,26 +679,28 @@ export async function captureRejectionReversalSnapshot(
 /**
  * Deterministic normalization: only re-orders the two sequence lists via
  * their identity keys. Every numeric value is preserved exactly. No
- * field is discarded to make equality easier.
+ * field is discarded to make equality easier. The returned graph is
+ * deep-frozen at runtime so it cannot be mutated after capture.
  */
 export function normalizeRejectionReversalSnapshot(
   s: Stage3CRejRevSnapshot,
 ): Stage3CRejRevSnapshot {
-  return {
+  return deepFreeze({
     payment: s.payment,
+    bill: s.bill,
     receipt: s.receipt,
     receiptCount: s.receiptCount,
     summary: s.summary,
     yearlySeq: normalizeYearlyReceiptSequences(s.yearlySeq),
     monthlySeq: normalizeMonthlyReceiptSequences(s.monthlySeq),
     unrelatedPayment: s.unrelatedPayment,
-  };
+  });
 }
 
 /**
  * Detects drift in every component of the canonical snapshot. Any single
- * component that differs — even an unrelated sequence row or the
- * unrelated payment — is a failure.
+ * component that differs — even an unrelated sequence row, the bill row
+ * or the unrelated payment — is a failure.
  */
 export function assertRejectionReversalSnapshotEqual(
   caseId: string,
@@ -588,6 +709,8 @@ export function assertRejectionReversalSnapshotEqual(
 ): void {
   if (JSON.stringify(before.payment) !== JSON.stringify(after.payment))
     fail(caseId, "canonical snapshot: payment drifted");
+  if (JSON.stringify(before.bill) !== JSON.stringify(after.bill))
+    fail(caseId, "canonical snapshot: bill row drifted");
   if (JSON.stringify(before.receipt) !== JSON.stringify(after.receipt))
     fail(caseId, "canonical snapshot: receipt drifted");
   if (before.receiptCount !== after.receiptCount)
@@ -599,6 +722,187 @@ export function assertRejectionReversalSnapshotEqual(
   if (JSON.stringify(before.unrelatedPayment) !== JSON.stringify(after.unrelatedPayment))
     fail(caseId, "canonical snapshot: unrelated payment drifted");
 }
+
+// ---------------------------------------------------------------------------
+// Authorization denial harness
+//
+// One reusable harness proving that every non-authorized actor is denied
+// on every lifecycle mutation, with a canonical snapshot as the single
+// proof that nothing changed.
+// ---------------------------------------------------------------------------
+
+export type Stage3CDenialActorId =
+  | "otherSocietyAdmin"
+  | "resident"
+  | "guard"
+  | "outOfScopeBlockAdmin"
+  | "unauthenticated";
+
+export const STAGE3C_DENIAL_ACTOR_IDS: readonly Stage3CDenialActorId[] = Object.freeze([
+  "otherSocietyAdmin",
+  "resident",
+  "guard",
+  "outOfScopeBlockAdmin",
+  "unauthenticated",
+] as const);
+
+export type Stage3CLifecycleOperation = "verify" | "reject" | "reverse";
+
+export const STAGE3C_LIFECYCLE_OPERATIONS: readonly Stage3CLifecycleOperation[] = Object.freeze([
+  "verify",
+  "reject",
+  "reverse",
+] as const);
+
+/**
+ * Denial tokens a non-authorized actor may legitimately receive. Any
+ * other message — including a leaked provider string — is a failure, and
+ * a successful call is always a failure.
+ *
+ * `payment_not_found` is allowed because RLS-scoped RPCs must not
+ * disclose the existence of a row outside the caller's tenant.
+ */
+export const STAGE3C_DENIAL_ALLOWED_ERRORS: readonly string[] = Object.freeze([
+  STAGE3C_LIFECYCLE_CANONICAL_ERRORS.unauthenticated,
+  STAGE3C_LIFECYCLE_CANONICAL_ERRORS.not_authorized,
+  STAGE3C_LIFECYCLE_CANONICAL_ERRORS.payment_not_found,
+] as const);
+
+export function isAllowedDenialError(message: unknown): boolean {
+  if (typeof message !== "string" || message.length === 0) return false;
+  const m = message.trim().toLowerCase();
+  return STAGE3C_DENIAL_ALLOWED_ERRORS.some(
+    (t) => new RegExp(`(^|[^\\w])${t}(\\W|$)`).test(m),
+  );
+}
+
+export interface Stage3CDenialActor {
+  readonly id: Stage3CDenialActorId;
+  readonly client: BillingRpcClient;
+}
+
+function rpcClientFromSupabase(client: {
+  rpc: (name: never, args: never) => Promise<{ data: unknown; error: { message: string } | null }>;
+}): BillingRpcClient {
+  return toRejRevBillingRpcClient({ client });
+}
+
+/**
+ * Build the canonical denial actor set. The unauthenticated actor is a
+ * session-less publishable-key client built from the same disposable
+ * fixture environment — never a hand-made stub that could "pass" by
+ * throwing locally.
+ */
+/**
+ * Session-less publishable-key client for the unauthenticated actor.
+ * Built from the same validated disposable fixture environment (host
+ * allow-list enforced by {@link requireStage3CEnv}) so the denial proof
+ * is a real anonymous PostgREST round-trip, not a local stub.
+ */
+export function createStage3CAnonRpcClient(): {
+  rpc: (name: never, args: never) => Promise<{ data: unknown; error: { message: string } | null }>;
+} {
+  const env = requireStage3CEnv();
+  const client = createClient(env.url, env.publishableKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  return {
+    async rpc(name: never, args: never) {
+      const r = await client.rpc(name, args);
+      return { data: r.data, error: r.error ? { message: r.error.message } : null };
+    },
+  };
+}
+
+export function buildStage3CDenialActors(
+
+  fixture: Stage3CFixture,
+  anonClient: {
+    rpc: (name: never, args: never) => Promise<{ data: unknown; error: { message: string } | null }>;
+  },
+): readonly Stage3CDenialActor[] {
+  return Object.freeze([
+    { id: "otherSocietyAdmin", client: rpcClientFromSupabase(fixture.users.adminB.client) },
+    { id: "resident", client: rpcClientFromSupabase(fixture.users.activeResident.client) },
+    { id: "guard", client: rpcClientFromSupabase(fixture.users.guard.client) },
+    {
+      id: "outOfScopeBlockAdmin",
+      client: rpcClientFromSupabase(fixture.users.blockAdmin.client),
+    },
+    { id: "unauthenticated", client: rpcClientFromSupabase(anonClient) },
+  ] as const);
+}
+
+async function invokeLifecycleOperation(
+  actor: Stage3CDenialActor,
+  operation: Stage3CLifecycleOperation,
+  paymentId: string,
+  reason: string,
+): Promise<{ ok: boolean; message: string }> {
+  try {
+    if (operation === "verify") {
+      await verifyOfflinePaymentWithClient(actor.client, { paymentId, notes: null });
+      return { ok: true, message: "" };
+    }
+    const fn = operation === "reject" ? "reject_offline_payment" : "reverse_offline_payment";
+    const { error } = await actor.client.rpc(fn, { _payment_id: paymentId, _reason: reason });
+    if (error) return { ok: false, message: error.message };
+    return { ok: true, message: "" };
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : "" };
+  }
+}
+
+export interface RunDenialMatrixArgs {
+  readonly fixture: Stage3CFixture;
+  readonly caseId: string;
+  readonly paymentId: string;
+  readonly billId: string;
+  readonly societyId: string;
+  readonly unrelatedPaymentId?: string | null;
+  readonly actors: readonly Stage3CDenialActor[];
+  readonly operations?: readonly Stage3CLifecycleOperation[];
+  readonly reason?: string;
+}
+
+/**
+ * Run every (actor × operation) pair and prove each one is denied with a
+ * canonical token, then prove — via the canonical snapshot alone — that
+ * no observable state changed across the whole matrix.
+ */
+export async function runStage3CDenialMatrix(a: RunDenialMatrixArgs): Promise<void> {
+  const ops = a.operations ?? STAGE3C_LIFECYCLE_OPERATIONS;
+  if (a.actors.length === 0) fail(a.caseId, "denial matrix has no actors");
+  if (ops.length === 0) fail(a.caseId, "denial matrix has no operations");
+
+  const snapshotArgs: CaptureRejRevSnapshotArgs = {
+    fixture: a.fixture,
+    caseId: a.caseId,
+    paymentId: a.paymentId,
+    billId: a.billId,
+    societyId: a.societyId,
+    unrelatedPaymentId: a.unrelatedPaymentId ?? null,
+  };
+  const before = await captureRejectionReversalSnapshot(snapshotArgs);
+
+  for (const actor of a.actors) {
+    for (const op of ops) {
+      const r = await invokeLifecycleOperation(
+        actor,
+        op,
+        a.paymentId,
+        a.reason ?? "stage3c denial harness — deterministic reason",
+      );
+      if (r.ok) fail(a.caseId, `denial matrix: ${actor.id} was allowed to ${op}`);
+      if (!isAllowedDenialError(r.message))
+        fail(a.caseId, `denial matrix: ${actor.id} ${op} produced a non-canonical error`);
+    }
+  }
+
+  const after = await captureRejectionReversalSnapshot(snapshotArgs);
+  assertRejectionReversalSnapshotEqual(a.caseId, before, after);
+}
+
 
 // ---------------------------------------------------------------------------
 // Context state slots (populated by ensureRejectionChain / ensureReversalChain)
@@ -854,12 +1158,21 @@ export const rejection04_exactReservationRelease: Stage3CMatrixLiveHandler = asy
 export const rejection05_verifyAfterRejectDenied: Stage3CMatrixLiveHandler = async (ctx) => {
   const fixture = requireFixture(ctx);
   const state = await ensureRejectionChain(ctx, fixture);
-  const before = state.paymentAfter;
-  const summaryBefore = state.summaryAfter;
-  const yearlyBefore = state.yearlySeqAfter;
-  const monthlyBefore = state.monthlySeqAfter;
-  if (before === null || summaryBefore === null || yearlyBefore === null || monthlyBefore === null)
-    fail("REJECTION-05", "REJECTION-01 must run first");
+  if (state.paymentAfter === null) fail("REJECTION-05", "REJECTION-01 must run first");
+
+  const snapshotArgs: CaptureRejRevSnapshotArgs = {
+    fixture,
+    caseId: "REJECTION-05",
+    paymentId: state.paymentId,
+    billId: state.billId,
+    societyId: fixture.societyA,
+    unrelatedPaymentId: fixture.scenarios.pendingAdminCashPaymentId,
+  };
+  // The canonical snapshot is the single proof of no-change.
+  const before = await captureRejectionReversalSnapshot(snapshotArgs);
+  if (before.payment.status !== STAGE3C_PAYMENT_STATUS.rejected)
+    fail("REJECTION-05", "pre-denial payment is not rejected");
+  if (before.receiptCount !== 0) fail("REJECTION-05", "rejected payment has a receipt");
 
   // Invoke the production shared verify core — same path as the app.
   let caught: unknown = null;
@@ -876,24 +1189,21 @@ export const rejection05_verifyAfterRejectDenied: Stage3CMatrixLiveHandler = asy
   if (caught.message !== STAGE3C_TERMINAL_VERIFY_ERROR)
     fail("REJECTION-05", "wrong terminal-state error");
 
-  const [paymentAgain, summaryAgain, yearlyAgain, monthlyAgain, receiptCountAgain] =
-    await Promise.all([
-      readPayment(fixture, state.paymentId, "REJECTION-05"),
-      readBillSummary(fixture, state.billId, "REJECTION-05"),
-      readYearlyReceiptSequences(fixture, fixture.societyA, "REJECTION-05"),
-      readMonthlyReceiptSequences(fixture, fixture.societyA, "REJECTION-05"),
-      readReceiptCount(fixture, state.paymentId, "REJECTION-05"),
-    ]);
-  if (paymentAgain.status !== STAGE3C_PAYMENT_STATUS.rejected)
-    fail("REJECTION-05", "payment left rejected state");
-  if (receiptCountAgain !== 0) fail("REJECTION-05", "receipt count no longer zero");
-  if (JSON.stringify(paymentAgain) !== JSON.stringify(before))
-    fail("REJECTION-05", "payment row drift after denial");
-  if (JSON.stringify(summaryAgain) !== JSON.stringify(summaryBefore))
-    fail("REJECTION-05", "summary drift after denial");
-  assertYearlySequenceSnapshotUnchanged("REJECTION-05", yearlyBefore, yearlyAgain);
-  assertMonthlySequenceSnapshotUnchanged("REJECTION-05", monthlyBefore, monthlyAgain);
+  const after = await captureRejectionReversalSnapshot(snapshotArgs);
+  assertRejectionReversalSnapshotEqual("REJECTION-05", before, after);
+
+  // Full authorization matrix against the same terminal payment.
+  await runStage3CDenialMatrix({
+    fixture,
+    caseId: "REJECTION-05",
+    paymentId: state.paymentId,
+    billId: state.billId,
+    societyId: fixture.societyA,
+    unrelatedPaymentId: fixture.scenarios.pendingAdminCashPaymentId,
+    actors: buildStage3CDenialActors(fixture, createStage3CAnonRpcClient()),
+  });
 };
+
 
 // ---------------------------------------------------------------------------
 // REVERSAL handlers
@@ -1059,21 +1369,28 @@ export const reversal08_availableIncreasesAndSequencesIntact: Stage3CMatrixLiveH
 export const reversal09_verifyAfterReverseDenied: Stage3CMatrixLiveHandler = async (ctx) => {
   const fixture = requireFixture(ctx);
   const state = ctx.reversalState;
-  if (
-    state === null ||
-    state.paymentAfter === null ||
-    state.summaryAfter === null ||
-    state.receiptAfter === null ||
-    state.yearlySeqAfter === null ||
-    state.monthlySeqAfter === null
-  )
+  if (state === null || state.paymentAfter === null || state.receiptAfter === null)
     fail("REVERSAL-09", "REVERSAL-01 must run first");
 
-  const paymentBeforeDenial = state.paymentAfter;
-  const receiptBeforeDenial = state.receiptAfter;
-  const summaryBeforeDenial = state.summaryAfter;
-  const yearlyBeforeDenial = state.yearlySeqAfter;
-  const monthlyBeforeDenial = state.monthlySeqAfter;
+  const snapshotArgs: CaptureRejRevSnapshotArgs = {
+    fixture,
+    caseId: "REVERSAL-09",
+    paymentId: state.paymentId,
+    billId: state.billId,
+    societyId: fixture.societyA,
+    unrelatedPaymentId: fixture.scenarios.pendingAdminCashPaymentId,
+  };
+  const before = await captureRejectionReversalSnapshot(snapshotArgs);
+  if (before.payment.status !== STAGE3C_PAYMENT_STATUS.reversed)
+    fail("REVERSAL-09", "pre-denial payment is not reversed");
+  if (before.receipt === null) fail("REVERSAL-09", "reversed payment lost its receipt");
+  if (before.receipt.status !== STAGE3C_RECEIPT_STATUS.void)
+    fail("REVERSAL-09", "pre-denial receipt is not void");
+  if (before.receipt.id !== state.receiptBefore.id)
+    fail("REVERSAL-09", "receipt id changed before denial");
+  if (before.receipt.receipt_number !== state.receiptBefore.receipt_number)
+    fail("REVERSAL-09", "receipt_number changed before denial");
+  if (before.receiptCount !== 1) fail("REVERSAL-09", "receipt count is not exactly 1");
 
   let caught: unknown = null;
   try {
@@ -1089,34 +1406,20 @@ export const reversal09_verifyAfterReverseDenied: Stage3CMatrixLiveHandler = asy
   if (caught.message !== STAGE3C_TERMINAL_VERIFY_ERROR)
     fail("REVERSAL-09", "wrong terminal-state error");
 
-  const [paymentAgain, receiptAgain, summaryAgain, yearlyAgain, monthlyAgain, countAgain] =
-    await Promise.all([
-      readPayment(fixture, state.paymentId, "REVERSAL-09"),
-      readReceiptOrNull(fixture, state.paymentId, "REVERSAL-09"),
-      readBillSummary(fixture, state.billId, "REVERSAL-09"),
-      readYearlyReceiptSequences(fixture, fixture.societyA, "REVERSAL-09"),
-      readMonthlyReceiptSequences(fixture, fixture.societyA, "REVERSAL-09"),
-      readReceiptCount(fixture, state.paymentId, "REVERSAL-09"),
-    ]);
-  if (paymentAgain.status !== STAGE3C_PAYMENT_STATUS.reversed)
-    fail("REVERSAL-09", "payment left reversed state");
-  if (receiptAgain === null) fail("REVERSAL-09", "receipt disappeared");
-  if (receiptAgain.id !== state.receiptBefore.id)
-    fail("REVERSAL-09", "receipt id changed after denied verify");
-  if (receiptAgain.receipt_number !== state.receiptBefore.receipt_number)
-    fail("REVERSAL-09", "receipt_number changed after denied verify");
-  if (receiptAgain.status !== STAGE3C_RECEIPT_STATUS.void)
-    fail("REVERSAL-09", "receipt no longer void");
-  if (countAgain !== 1) fail("REVERSAL-09", "receipt count changed");
-  if (JSON.stringify(paymentAgain) !== JSON.stringify(paymentBeforeDenial))
-    fail("REVERSAL-09", "payment row drift after denial");
-  if (JSON.stringify(receiptAgain) !== JSON.stringify(receiptBeforeDenial))
-    fail("REVERSAL-09", "receipt row drift after denial");
-  if (JSON.stringify(summaryAgain) !== JSON.stringify(summaryBeforeDenial))
-    fail("REVERSAL-09", "summary drift after denial");
-  assertYearlySequenceSnapshotUnchanged("REVERSAL-09", yearlyBeforeDenial, yearlyAgain);
-  assertMonthlySequenceSnapshotUnchanged("REVERSAL-09", monthlyBeforeDenial, monthlyAgain);
+  const after = await captureRejectionReversalSnapshot(snapshotArgs);
+  assertRejectionReversalSnapshotEqual("REVERSAL-09", before, after);
+
+  await runStage3CDenialMatrix({
+    fixture,
+    caseId: "REVERSAL-09",
+    paymentId: state.paymentId,
+    billId: state.billId,
+    societyId: fixture.societyA,
+    unrelatedPaymentId: fixture.scenarios.pendingAdminCashPaymentId,
+    actors: buildStage3CDenialActors(fixture, createStage3CAnonRpcClient()),
+  });
 };
+
 
 // ---------------------------------------------------------------------------
 // Handler maps

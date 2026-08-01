@@ -495,7 +495,7 @@ describe("verifyOfflinePaymentWithClient — production shared core", () => {
   it("passes null when notes is omitted", async () => {
     const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
     const client = makeVerifyClient({
-      data: { payment_id: "p-1", receipt_number: null, receipt_id: null },
+      data: { payment_id: "p-1", receipt_number: "RCPT/202601/0002", receipt_id: "r-2" },
       onCall: (name, args) => calls.push({ name, args }),
     });
     await verifyOfflinePaymentWithClient(client, { paymentId: "p-1" });
@@ -537,16 +537,88 @@ describe("verifyOfflinePaymentWithClient — production shared core", () => {
     expect(caught!.message).not.toMatch(/connection reset|10\.0\.0\.1/);
   });
 
-  it("rejects malformed successful payload via Zod parse", async () => {
+  it("fails closed on a malformed successful payload", async () => {
     const client = makeVerifyClient({ data: { receipt_number: 123 } });
-    await expect(verifyOfflinePaymentWithClient(client, { paymentId: "p" })).rejects.toThrow();
+    await expect(verifyOfflinePaymentWithClient(client, { paymentId: "p" })).rejects.toThrow(
+      /^operation_failed$/,
+    );
   });
 
-  it("tolerates null/undefined success payload (defaults through)", async () => {
+  it("fails closed on a null success payload — never defaults from input", async () => {
     const client = makeVerifyClient({ data: null });
-    const r = await verifyOfflinePaymentWithClient(client, { paymentId: "px" });
-    expect(r).toEqual({ paymentId: "px", receiptNumber: null, receiptId: null });
+    await expect(verifyOfflinePaymentWithClient(client, { paymentId: "px" })).rejects.toThrow(
+      /^operation_failed$/,
+    );
   });
+
+  it("fails closed on an empty-object success payload", async () => {
+    const client = makeVerifyClient({ data: {} });
+    await expect(verifyOfflinePaymentWithClient(client, { paymentId: "px" })).rejects.toThrow(
+      /^operation_failed$/,
+    );
+  });
+
+  it.each([
+    ["missing payment_id", { receipt_number: "R", receipt_id: "r" }],
+    ["missing receipt_number", { payment_id: "p", receipt_id: "r" }],
+    ["missing receipt_id", { payment_id: "p", receipt_number: "R" }],
+    ["null payment_id", { payment_id: null, receipt_number: "R", receipt_id: "r" }],
+    ["null receipt_number", { payment_id: "p", receipt_number: null, receipt_id: "r" }],
+    ["null receipt_id", { payment_id: "p", receipt_number: "R", receipt_id: null }],
+    ["empty payment_id", { payment_id: "", receipt_number: "R", receipt_id: "r" }],
+    ["blank receipt_number", { payment_id: "p", receipt_number: "   ", receipt_id: "r" }],
+    ["empty receipt_id", { payment_id: "p", receipt_number: "R", receipt_id: "" }],
+    ["array payload", [{ payment_id: "p", receipt_number: "R", receipt_id: "r" }]],
+    ["string payload", "ok"],
+    ["number payload", 7],
+    [
+      "unknown extra key",
+      { payment_id: "p", receipt_number: "R", receipt_id: "r", proof_url: "https://x" },
+    ],
+  ])("fails closed on %s", async (_label, payload) => {
+    const client = makeVerifyClient({ data: payload as unknown });
+    await expect(verifyOfflinePaymentWithClient(client, { paymentId: "p" })).rejects.toThrow(
+      /^operation_failed$/,
+    );
+  });
+
+  it("returns the exact server-provided identifiers on a complete payload", async () => {
+    const client = makeVerifyClient({
+      data: { payment_id: "server-p", receipt_number: "RCPT/202602/0007", receipt_id: "server-r" },
+    });
+    const r = await verifyOfflinePaymentWithClient(client, { paymentId: "client-p" });
+    expect(r.paymentId).toBe("server-p");
+    expect(r.receiptNumber).toBe("RCPT/202602/0007");
+    expect(r.receiptId).toBe("server-r");
+  });
+
+  it.each([
+    ["not_authenticated must not read as unauthenticated", "not_authenticated"],
+    ["substring-only token is not a match", "xxpayment_not_pendingxx"],
+    ["glued token is not a match", "notauthorized"],
+  ])("%s", async (_label, message) => {
+    const client = makeVerifyClient({ error: { message } });
+    await expect(verifyOfflinePaymentWithClient(client, { paymentId: "p" })).rejects.toThrow(
+      /^operation_failed$/,
+    );
+  });
+
+  it("matches a canonical token surrounded by punctuation", async () => {
+    const client = makeVerifyClient({ error: { message: 'ERROR:  "not_authorized" (42501)' } });
+    await expect(verifyOfflinePaymentWithClient(client, { paymentId: "p" })).rejects.toThrow(
+      /^not_authorized$/,
+    );
+  });
+
+  it("collapses an empty or non-string provider message to operation_failed", async () => {
+    for (const message of ["", "   "]) {
+      const client = makeVerifyClient({ error: { message } });
+      await expect(verifyOfflinePaymentWithClient(client, { paymentId: "p" })).rejects.toThrow(
+        /^operation_failed$/,
+      );
+    }
+  });
+
 
   it("VERIFY_OFFLINE_PAYMENT_CANONICAL_ERRORS is frozen and includes the terminal token", () => {
     expect(Object.isFrozen(VERIFY_OFFLINE_PAYMENT_CANONICAL_ERRORS)).toBe(true);
@@ -624,7 +696,32 @@ function baseSnapshot(): Stage3CRejRevSnapshot {
       bill_id: BILL,
       society_id: SOC,
     },
+    bill: {
+      id: BILL,
+      society_id: SOC,
+      flat_id: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+      status: "unpaid",
+      bill_number: "BILL/2026/0001",
+      amount: 1000,
+      adjustments: 0,
+      penalties: 0,
+      tax_amount: 0,
+      previous_balance: 0,
+      total_payable: 1000,
+      current_charges: 1000,
+      paid_at: null,
+      finalized_at: "2026-01-01T00:00:00.000Z",
+      cancelled_at: null,
+      cancelled_by: null,
+      cancel_reason: null,
+      replaced_by_bill_id: null,
+      due_date: "2026-01-10",
+      period_start: "2026-01-01",
+      period_end: "2026-01-31",
+      period_label: "Jan 2026",
+    },
     receipt: null,
+
     receiptCount: 0,
     summary: {
       bill_id: BILL,
@@ -924,5 +1021,465 @@ describe("static safe errors — no leakage in observer/snapshot messages", () =
     expect(caught).not.toBeNull();
     expect(caught!.message).not.toMatch(/99999/);
     expect(caught!.message).not.toMatch(UUID_RE);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Checkpoint B Run B — bill row, deep freeze, sequence well-formedness,
+// and the reusable authorization denial harness.
+// ---------------------------------------------------------------------------
+
+import {
+  deepFreeze,
+  assertSequenceRowsWellFormed,
+  isAllowedDenialError,
+  buildStage3CDenialActors,
+  STAGE3C_DENIAL_ACTOR_IDS,
+  STAGE3C_DENIAL_ALLOWED_ERRORS,
+  STAGE3C_LIFECYCLE_OPERATIONS,
+  runStage3CDenialMatrix,
+  readBillRow,
+} from "../helpers/stage3c-live-rejection-reversal-cases";
+import { matchesVerifyCanonicalError } from "@/lib/offline-payments.functions";
+
+describe("Run B — matchesVerifyCanonicalError exactness", () => {
+  it("matches a bare token", () => {
+    expect(matchesVerifyCanonicalError("payment_not_pending", "payment_not_pending")).toBe(true);
+  });
+  it("matches a wrapped token", () => {
+    expect(
+      matchesVerifyCanonicalError("ERROR: payment_not_pending (22023)", "payment_not_pending"),
+    ).toBe(true);
+  });
+  it("is case-insensitive", () => {
+    expect(matchesVerifyCanonicalError("NOT_AUTHORIZED", "not_authorized")).toBe(true);
+  });
+  it("rejects a glued substring", () => {
+    expect(matchesVerifyCanonicalError("xxnot_authorizedyy", "not_authorized")).toBe(false);
+  });
+  it("does not read not_authenticated as unauthenticated", () => {
+    expect(matchesVerifyCanonicalError("not_authenticated", "unauthenticated")).toBe(false);
+  });
+  it("rejects an empty message", () => {
+    expect(matchesVerifyCanonicalError("", "not_authorized")).toBe(false);
+  });
+  it("rejects a non-string message", () => {
+    expect(matchesVerifyCanonicalError(undefined as unknown as string, "not_authorized")).toBe(
+      false,
+    );
+  });
+});
+
+describe("Run B — deepFreeze", () => {
+  it("returns primitives unchanged", () => {
+    expect(deepFreeze(5)).toBe(5);
+    expect(deepFreeze(null)).toBe(null);
+    expect(deepFreeze("x")).toBe("x");
+  });
+  it("freezes nested objects and arrays", () => {
+    const v = deepFreeze({ a: { b: [{ c: 1 }] } });
+    expect(Object.isFrozen(v)).toBe(true);
+    expect(Object.isFrozen(v.a)).toBe(true);
+    expect(Object.isFrozen(v.a.b)).toBe(true);
+    expect(Object.isFrozen(v.a.b[0])).toBe(true);
+  });
+  it("tolerates cyclic graphs", () => {
+    const a: Record<string, unknown> = {};
+    a.self = a;
+    expect(() => deepFreeze(a)).not.toThrow();
+    expect(Object.isFrozen(a)).toBe(true);
+  });
+});
+
+describe("Run B — normalized snapshots are deeply immutable", () => {
+  it("freezes the snapshot root and every component", () => {
+    const n = normalizeRejectionReversalSnapshot(baseSnapshot());
+    expect(Object.isFrozen(n)).toBe(true);
+    expect(Object.isFrozen(n.payment)).toBe(true);
+    expect(Object.isFrozen(n.bill)).toBe(true);
+    expect(Object.isFrozen(n.summary)).toBe(true);
+    expect(Object.isFrozen(n.yearlySeq)).toBe(true);
+    expect(Object.isFrozen(n.monthlySeq)).toBe(true);
+  });
+  it("silently ignores or rejects mutation attempts", () => {
+    const n = normalizeRejectionReversalSnapshot(baseSnapshot());
+    try {
+      (n.payment as { amount: number }).amount = 1;
+    } catch {
+      /* strict mode throws — also acceptable */
+    }
+    expect(n.payment.amount).toBe(100);
+  });
+});
+
+describe("Run B — bill row participates in drift detection", () => {
+  it("flags a changed bill status", () => {
+    const a = baseSnapshot();
+    const b = baseSnapshot();
+    (b.bill as { status: string }).status = "paid";
+    expect(() => assertRejectionReversalSnapshotEqual("REVERSAL-09", a, b)).toThrow(
+      /bill row drifted/,
+    );
+  });
+  it("flags a changed bill total_payable", () => {
+    const a = baseSnapshot();
+    const b = baseSnapshot();
+    (b.bill as { total_payable: number | null }).total_payable = 1;
+    expect(() => assertRejectionReversalSnapshotEqual("REVERSAL-09", a, b)).toThrow(
+      /bill row drifted/,
+    );
+  });
+  it("does not leak bill values in the drift error", () => {
+    const a = baseSnapshot();
+    const b = baseSnapshot();
+    (b.bill as { bill_number: string | null }).bill_number = "SECRET/9999";
+    let caught: Error | null = null;
+    try {
+      assertRejectionReversalSnapshotEqual("REVERSAL-09", a, b);
+    } catch (e) {
+      caught = e as Error;
+    }
+    expect(caught).not.toBeNull();
+    expect(caught!.message).not.toMatch(/SECRET/);
+  });
+  it("passes when identical", () => {
+    expect(() =>
+      assertRejectionReversalSnapshotEqual("REVERSAL-09", baseSnapshot(), baseSnapshot()),
+    ).not.toThrow();
+  });
+});
+
+describe("Run B — readBillRow fails closed", () => {
+  function billFixture(result: { data: unknown; error: { message: string } | null }) {
+    return {
+      admin: {
+        from() {
+          return {
+            select() {
+              return {
+                eq() {
+                  return { async maybeSingle() { return result; } };
+                },
+              };
+            },
+          };
+        },
+      },
+    } as unknown as Stage3CFixture;
+  }
+
+  it("throws a static error on a provider failure", async () => {
+    await expect(
+      readBillRow(billFixture({ data: null, error: { message: `boom ${PMT}` } }), BILL, "TCASE"),
+    ).rejects.toThrow(/bill row query failed/);
+  });
+  it("throws when the row is missing", async () => {
+    await expect(
+      readBillRow(billFixture({ data: null, error: null }), BILL, "TCASE"),
+    ).rejects.toThrow(/bill row missing/);
+  });
+  it("throws when the row is malformed", async () => {
+    await expect(
+      readBillRow(billFixture({ data: { id: BILL }, error: null }), BILL, "TCASE"),
+    ).rejects.toThrow(/bill row malformed/);
+  });
+  it("never leaks provider text or UUIDs", async () => {
+    let caught: Error | null = null;
+    try {
+      await readBillRow(
+        billFixture({ data: null, error: { message: `Postgres ${PMT}` } }),
+        BILL,
+        "TCASE",
+      );
+    } catch (e) {
+      caught = e as Error;
+    }
+    expect(caught!.message).not.toMatch(
+      /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
+    );
+
+    expect(caught!.message).not.toMatch(/Postgres/);
+  });
+});
+
+describe("Run B — sequence well-formedness", () => {
+  it("accepts a clean list", () => {
+    expect(() => assertSequenceRowsWellFormed("T", "yearly", ["a", "b"], [1, 2])).not.toThrow();
+  });
+  it("rejects a duplicate identity", () => {
+    expect(() => assertSequenceRowsWellFormed("T", "yearly", ["a", "a"], [1, 2])).toThrow(
+      /duplicate identity/,
+    );
+  });
+  it("rejects a non-integer counter", () => {
+    expect(() => assertSequenceRowsWellFormed("T", "monthly", ["a"], [1.5])).toThrow(
+      /non-integer/,
+    );
+  });
+  it("rejects a negative counter", () => {
+    expect(() => assertSequenceRowsWellFormed("T", "monthly", ["a"], [-1])).toThrow(/negative/);
+  });
+  it("rejects a non-finite counter", () => {
+    expect(() => assertSequenceRowsWellFormed("T", "yearly", ["a"], [Number.NaN])).toThrow(
+      /not finite/,
+    );
+  });
+  it("rejects a key/value length mismatch", () => {
+    expect(() => assertSequenceRowsWellFormed("T", "yearly", ["a", "b"], [1])).toThrow(
+      /length mismatch/,
+    );
+  });
+  it("labels the failing list", () => {
+    expect(() => assertSequenceRowsWellFormed("T", "monthly", ["a", "a"], [1, 1])).toThrow(
+      /monthly/,
+    );
+  });
+});
+
+describe("Run B — denial harness contract", () => {
+  it("declares exactly the five required actors", () => {
+    expect([...STAGE3C_DENIAL_ACTOR_IDS]).toEqual([
+      "otherSocietyAdmin",
+      "resident",
+      "guard",
+      "outOfScopeBlockAdmin",
+      "unauthenticated",
+    ]);
+    expect(Object.isFrozen(STAGE3C_DENIAL_ACTOR_IDS)).toBe(true);
+  });
+  it("declares exactly the three lifecycle mutations", () => {
+    expect([...STAGE3C_LIFECYCLE_OPERATIONS]).toEqual(["verify", "reject", "reverse"]);
+    expect(Object.isFrozen(STAGE3C_LIFECYCLE_OPERATIONS)).toBe(true);
+  });
+  it("allows only canonical denial tokens", () => {
+    expect([...STAGE3C_DENIAL_ALLOWED_ERRORS]).toEqual([
+      "unauthenticated",
+      "not_authorized",
+      "payment_not_found",
+    ]);
+  });
+  it.each([
+    ["not_authorized", true],
+    ["unauthenticated", true],
+    ["payment_not_found", true],
+    ["ERROR: not_authorized (42501)", true],
+    ["payment_not_pending", false],
+    ["operation_failed", false],
+    ["connection reset by peer", false],
+    ["", false],
+  ])("isAllowedDenialError(%s) === %s", (msg, expected) => {
+    expect(isAllowedDenialError(msg)).toBe(expected);
+  });
+  it("rejects non-string denial messages", () => {
+    expect(isAllowedDenialError(undefined)).toBe(false);
+    expect(isAllowedDenialError(42)).toBe(false);
+  });
+});
+
+// A scripted actor client set for the harness. Each actor returns a
+// canonical denial unless the scenario overrides it.
+function scriptedFixtureForHarness(
+  onRpc: (name: string, args: Record<string, unknown>) => { data: unknown; error: { message: string } | null },
+) {
+  const client = { async rpc(name: never, args: never) { return onRpc(name as unknown as string, args as unknown as Record<string, unknown>); } };
+  return {
+    users: {
+      adminB: { client },
+      activeResident: { client },
+      guard: { client },
+      blockAdmin: { client },
+    },
+  } as unknown as Stage3CFixture;
+}
+
+describe("Run B — runStage3CDenialMatrix", () => {
+  const denied = () => ({ data: null, error: { message: "not_authorized" } });
+
+  function snapshotFixture(
+    fixture: Stage3CFixture,
+    reads: () => { payment: unknown; bill: unknown; receipt: unknown; count: number; summary: unknown },
+  ): Stage3CFixture {
+    const admin = {
+      from(table: string) {
+        return {
+          select(_cols: string, opts?: { count?: string; head?: boolean }) {
+            const r = reads();
+            const rows =
+              table === "payment_receipt_sequences" || table === "payment_receipt_month_sequences";
+            return {
+              eq() {
+                if (opts?.head) return Promise.resolve({ count: r.count, error: null });
+                if (rows) return Promise.resolve({ data: [], error: null });
+                return {
+                  async single() {
+                    return { data: r.payment, error: null };
+                  },
+                  async maybeSingle() {
+                    return { data: table === "bills" ? r.bill : r.receipt, error: null };
+                  },
+                  then: undefined,
+                };
+              },
+            };
+          },
+        };
+      },
+    };
+    const users = {
+      ...(fixture as unknown as { users: Record<string, unknown> }).users,
+      adminA1: {
+        client: {
+          async rpc() {
+            return { data: reads().summary, error: null };
+          },
+        },
+      },
+    };
+    return { ...(fixture as object), admin, users } as unknown as Stage3CFixture;
+  }
+
+  function makeReads() {
+    const s = baseSnapshot();
+    return () => ({
+      payment: s.payment,
+      bill: s.bill,
+      receipt: null,
+      count: 0,
+      summary: s.summary,
+    });
+  }
+
+  it("passes when every actor is denied and nothing drifts", async () => {
+    const base = scriptedFixtureForHarness(denied);
+    const fixture = snapshotFixture(base, makeReads());
+    await expect(
+      runStage3CDenialMatrix({
+        fixture,
+        caseId: "TCASE",
+        paymentId: PMT,
+        billId: BILL,
+        societyId: SOC,
+        actors: buildStage3CDenialActors(fixture, {
+          async rpc() {
+            return { data: null, error: { message: "unauthenticated" } };
+          },
+        } as never),
+      }),
+    ).resolves.toBeUndefined();
+  });
+
+  it("fails when an actor is allowed to mutate", async () => {
+    const base = scriptedFixtureForHarness(() => ({
+      data: { payment_id: PMT, receipt_number: "R", receipt_id: "r" },
+      error: null,
+    }));
+    const fixture = snapshotFixture(base, makeReads());
+    await expect(
+      runStage3CDenialMatrix({
+        fixture,
+        caseId: "TCASE",
+        paymentId: PMT,
+        billId: BILL,
+        societyId: SOC,
+        actors: buildStage3CDenialActors(fixture, {
+          async rpc() {
+            return { data: null, error: { message: "unauthenticated" } };
+          },
+        } as never),
+      }),
+    ).rejects.toThrow(/was allowed to/);
+  });
+
+  it("fails on a non-canonical denial error", async () => {
+    const base = scriptedFixtureForHarness(() => ({
+      data: null,
+      error: { message: "connection reset by peer" },
+    }));
+    const fixture = snapshotFixture(base, makeReads());
+    await expect(
+      runStage3CDenialMatrix({
+        fixture,
+        caseId: "TCASE",
+        paymentId: PMT,
+        billId: BILL,
+        societyId: SOC,
+        actors: buildStage3CDenialActors(fixture, {
+          async rpc() {
+            return { data: null, error: { message: "unauthenticated" } };
+          },
+        } as never),
+      }),
+    ).rejects.toThrow(/non-canonical error/);
+  });
+
+  it("fails closed when no actors are supplied", async () => {
+    const fixture = snapshotFixture(scriptedFixtureForHarness(denied), makeReads());
+    await expect(
+      runStage3CDenialMatrix({
+        fixture,
+        caseId: "TCASE",
+        paymentId: PMT,
+        billId: BILL,
+        societyId: SOC,
+        actors: [],
+      }),
+    ).rejects.toThrow(/no actors/);
+  });
+
+  it("fails closed when no operations are supplied", async () => {
+    const fixture = snapshotFixture(scriptedFixtureForHarness(denied), makeReads());
+    await expect(
+      runStage3CDenialMatrix({
+        fixture,
+        caseId: "TCASE",
+        paymentId: PMT,
+        billId: BILL,
+        societyId: SOC,
+        operations: [],
+        actors: buildStage3CDenialActors(fixture, {
+          async rpc() {
+            return { data: null, error: { message: "unauthenticated" } };
+          },
+        } as never),
+      }),
+    ).rejects.toThrow(/no operations/);
+  });
+
+  it("builds one client per canonical actor id", () => {
+    const fixture = scriptedFixtureForHarness(denied);
+    const actors = buildStage3CDenialActors(fixture, {
+      async rpc() {
+        return { data: null, error: { message: "unauthenticated" } };
+      },
+    } as never);
+    expect(actors.map((a) => a.id)).toEqual([...STAGE3C_DENIAL_ACTOR_IDS]);
+    for (const a of actors) expect(typeof a.client.rpc).toBe("function");
+  });
+
+  it("invokes exactly the canonical lifecycle RPC names", async () => {
+    const seen: string[] = [];
+    const base = scriptedFixtureForHarness((name) => {
+      seen.push(name);
+      return { data: null, error: { message: "not_authorized" } };
+    });
+    const fixture = snapshotFixture(base, makeReads());
+    await runStage3CDenialMatrix({
+      fixture,
+      caseId: "TCASE",
+      paymentId: PMT,
+      billId: BILL,
+      societyId: SOC,
+      actors: buildStage3CDenialActors(fixture, {
+        async rpc(name: never) {
+          seen.push(name as unknown as string);
+          return { data: null, error: { message: "unauthenticated" } };
+        },
+      } as never),
+    });
+    expect(new Set(seen)).toEqual(
+      new Set(["verify_offline_payment", "reject_offline_payment", "reverse_offline_payment"]),
+    );
+    // 5 actors × 3 operations
+    expect(seen.length).toBe(15);
   });
 });

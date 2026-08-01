@@ -487,6 +487,33 @@ async function readBillSummary(
   return parsed.data;
 }
 
+/**
+ * Reject a sequence list that cannot be a truthful observation:
+ *  - a duplicated identity key (two rows claiming the same counter)
+ *  - a non-integer / non-finite / negative `next_number`
+ * Both conditions make later drift comparison meaningless, so they fail
+ * closed at read time rather than silently degrading the proof.
+ */
+export function assertSequenceRowsWellFormed(
+  caseId: string,
+  label: "yearly" | "monthly",
+  keys: readonly string[],
+  values: readonly number[],
+): void {
+  if (keys.length !== values.length) fail(caseId, `${label} sequence key/value length mismatch`);
+  const seen = new Set<string>();
+  for (let i = 0; i < keys.length; i += 1) {
+    const k = keys[i] as string;
+    if (seen.has(k)) fail(caseId, `${label} sequence duplicate identity`);
+    seen.add(k);
+    const v = values[i] as number;
+    if (typeof v !== "number" || !Number.isFinite(v))
+      fail(caseId, `${label} sequence next_number not finite`);
+    if (!Number.isInteger(v)) fail(caseId, `${label} sequence next_number non-integer`);
+    if (v < 0) fail(caseId, `${label} sequence next_number negative`);
+  }
+}
+
 export async function readYearlyReceiptSequences(
   fixture: Stage3CFixture,
   societyId: string,
@@ -504,6 +531,12 @@ export async function readYearlyReceiptSequences(
     if (!p.success) fail(caseId, "yearly sequence row malformed");
     parsed.push(p.data);
   }
+  assertSequenceRowsWellFormed(
+    caseId,
+    "yearly",
+    parsed.map(yearlyIdentityKey),
+    parsed.map((r) => r.next_number),
+  );
   return normalizeYearlyReceiptSequences(parsed);
 }
 
@@ -524,8 +557,15 @@ export async function readMonthlyReceiptSequences(
     if (!p.success) fail(caseId, "monthly sequence row malformed");
     parsed.push(p.data);
   }
+  assertSequenceRowsWellFormed(
+    caseId,
+    "monthly",
+    parsed.map(monthlyIdentityKey),
+    parsed.map((r) => r.next_number),
+  );
   return normalizeMonthlyReceiptSequences(parsed);
 }
+
 
 // ---------------------------------------------------------------------------
 // Unrelated-payment reader (fail-closed) — surfaced so the canonical

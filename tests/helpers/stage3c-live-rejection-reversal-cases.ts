@@ -1345,21 +1345,28 @@ export const reversal08_availableIncreasesAndSequencesIntact: Stage3CMatrixLiveH
 export const reversal09_verifyAfterReverseDenied: Stage3CMatrixLiveHandler = async (ctx) => {
   const fixture = requireFixture(ctx);
   const state = ctx.reversalState;
-  if (
-    state === null ||
-    state.paymentAfter === null ||
-    state.summaryAfter === null ||
-    state.receiptAfter === null ||
-    state.yearlySeqAfter === null ||
-    state.monthlySeqAfter === null
-  )
+  if (state === null || state.paymentAfter === null || state.receiptAfter === null)
     fail("REVERSAL-09", "REVERSAL-01 must run first");
 
-  const paymentBeforeDenial = state.paymentAfter;
-  const receiptBeforeDenial = state.receiptAfter;
-  const summaryBeforeDenial = state.summaryAfter;
-  const yearlyBeforeDenial = state.yearlySeqAfter;
-  const monthlyBeforeDenial = state.monthlySeqAfter;
+  const snapshotArgs: CaptureRejRevSnapshotArgs = {
+    fixture,
+    caseId: "REVERSAL-09",
+    paymentId: state.paymentId,
+    billId: state.billId,
+    societyId: fixture.societyA,
+    unrelatedPaymentId: fixture.scenarios.pendingAdminCashPaymentId,
+  };
+  const before = await captureRejectionReversalSnapshot(snapshotArgs);
+  if (before.payment.status !== STAGE3C_PAYMENT_STATUS.reversed)
+    fail("REVERSAL-09", "pre-denial payment is not reversed");
+  if (before.receipt === null) fail("REVERSAL-09", "reversed payment lost its receipt");
+  if (before.receipt.status !== STAGE3C_RECEIPT_STATUS.void)
+    fail("REVERSAL-09", "pre-denial receipt is not void");
+  if (before.receipt.id !== state.receiptBefore.id)
+    fail("REVERSAL-09", "receipt id changed before denial");
+  if (before.receipt.receipt_number !== state.receiptBefore.receipt_number)
+    fail("REVERSAL-09", "receipt_number changed before denial");
+  if (before.receiptCount !== 1) fail("REVERSAL-09", "receipt count is not exactly 1");
 
   let caught: unknown = null;
   try {
@@ -1375,34 +1382,20 @@ export const reversal09_verifyAfterReverseDenied: Stage3CMatrixLiveHandler = asy
   if (caught.message !== STAGE3C_TERMINAL_VERIFY_ERROR)
     fail("REVERSAL-09", "wrong terminal-state error");
 
-  const [paymentAgain, receiptAgain, summaryAgain, yearlyAgain, monthlyAgain, countAgain] =
-    await Promise.all([
-      readPayment(fixture, state.paymentId, "REVERSAL-09"),
-      readReceiptOrNull(fixture, state.paymentId, "REVERSAL-09"),
-      readBillSummary(fixture, state.billId, "REVERSAL-09"),
-      readYearlyReceiptSequences(fixture, fixture.societyA, "REVERSAL-09"),
-      readMonthlyReceiptSequences(fixture, fixture.societyA, "REVERSAL-09"),
-      readReceiptCount(fixture, state.paymentId, "REVERSAL-09"),
-    ]);
-  if (paymentAgain.status !== STAGE3C_PAYMENT_STATUS.reversed)
-    fail("REVERSAL-09", "payment left reversed state");
-  if (receiptAgain === null) fail("REVERSAL-09", "receipt disappeared");
-  if (receiptAgain.id !== state.receiptBefore.id)
-    fail("REVERSAL-09", "receipt id changed after denied verify");
-  if (receiptAgain.receipt_number !== state.receiptBefore.receipt_number)
-    fail("REVERSAL-09", "receipt_number changed after denied verify");
-  if (receiptAgain.status !== STAGE3C_RECEIPT_STATUS.void)
-    fail("REVERSAL-09", "receipt no longer void");
-  if (countAgain !== 1) fail("REVERSAL-09", "receipt count changed");
-  if (JSON.stringify(paymentAgain) !== JSON.stringify(paymentBeforeDenial))
-    fail("REVERSAL-09", "payment row drift after denial");
-  if (JSON.stringify(receiptAgain) !== JSON.stringify(receiptBeforeDenial))
-    fail("REVERSAL-09", "receipt row drift after denial");
-  if (JSON.stringify(summaryAgain) !== JSON.stringify(summaryBeforeDenial))
-    fail("REVERSAL-09", "summary drift after denial");
-  assertYearlySequenceSnapshotUnchanged("REVERSAL-09", yearlyBeforeDenial, yearlyAgain);
-  assertMonthlySequenceSnapshotUnchanged("REVERSAL-09", monthlyBeforeDenial, monthlyAgain);
+  const after = await captureRejectionReversalSnapshot(snapshotArgs);
+  assertRejectionReversalSnapshotEqual("REVERSAL-09", before, after);
+
+  await runStage3CDenialMatrix({
+    fixture,
+    caseId: "REVERSAL-09",
+    paymentId: state.paymentId,
+    billId: state.billId,
+    societyId: fixture.societyA,
+    unrelatedPaymentId: fixture.scenarios.pendingAdminCashPaymentId,
+    actors: buildStage3CDenialActors(fixture, createStage3CAnonRpcClient()),
+  });
 };
+
 
 // ---------------------------------------------------------------------------
 // Handler maps

@@ -1194,7 +1194,10 @@ describe("Run B — readBillRow fails closed", () => {
     } catch (e) {
       caught = e as Error;
     }
-    expect(caught!.message).not.toMatch(UUID_RE);
+    expect(caught!.message).not.toMatch(
+      /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
+    );
+
     expect(caught!.message).not.toMatch(/Postgres/);
   });
 });

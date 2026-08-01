@@ -435,6 +435,43 @@ export async function readReceiptCount(
   return count;
 }
 
+/**
+ * Fail-closed complete bill row read. Any provider error, missing row or
+ * malformed column set throws a static safe error.
+ */
+export async function readBillRow(
+  fixture: Stage3CFixture,
+  billId: string,
+  caseId: string,
+): Promise<Stage3CRejRevBillRow> {
+  const { data, error } = await fixture.admin
+    .from("bills")
+    .select(BILL_ROW_COLUMNS)
+    .eq("id", billId)
+    .maybeSingle();
+  if (error !== null) fail(caseId, "bill row query failed");
+  if (data === null) fail(caseId, "bill row missing");
+  const parsed = BillRowSchema.safeParse(data);
+  if (!parsed.success) fail(caseId, "bill row malformed");
+  return parsed.data;
+}
+
+/**
+ * Recursive runtime freeze. The canonical snapshot is handed to case
+ * handlers as a genuinely immutable object graph so no handler can
+ * accidentally (or deliberately) mutate the proof it later compares
+ * against.
+ */
+export function deepFreeze<T>(value: T): T {
+  if (value === null || typeof value !== "object") return value;
+  if (Object.isFrozen(value)) return value;
+  Object.freeze(value);
+  for (const v of Object.values(value as Record<string, unknown>)) deepFreeze(v);
+  return value;
+}
+
+
+
 async function readBillSummary(
   fixture: Stage3CFixture,
   billId: string,

@@ -793,7 +793,29 @@ function rpcClientFromSupabase(client: {
  * fixture environment — never a hand-made stub that could "pass" by
  * throwing locally.
  */
+/**
+ * Session-less publishable-key client for the unauthenticated actor.
+ * Built from the same validated disposable fixture environment (host
+ * allow-list enforced by {@link requireStage3CEnv}) so the denial proof
+ * is a real anonymous PostgREST round-trip, not a local stub.
+ */
+export function createStage3CAnonRpcClient(): {
+  rpc: (name: never, args: never) => Promise<{ data: unknown; error: { message: string } | null }>;
+} {
+  const env = requireStage3CEnv();
+  const client = createClient(env.url, env.publishableKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  return {
+    async rpc(name: never, args: never) {
+      const r = await client.rpc(name, args);
+      return { data: r.data, error: r.error ? { message: r.error.message } : null };
+    },
+  };
+}
+
 export function buildStage3CDenialActors(
+
   fixture: Stage3CFixture,
   anonClient: {
     rpc: (name: never, args: never) => Promise<{ data: unknown; error: { message: string } | null }>;

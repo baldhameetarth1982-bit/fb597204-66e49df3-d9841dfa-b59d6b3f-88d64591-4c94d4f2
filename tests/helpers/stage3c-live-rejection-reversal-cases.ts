@@ -1134,12 +1134,21 @@ export const rejection04_exactReservationRelease: Stage3CMatrixLiveHandler = asy
 export const rejection05_verifyAfterRejectDenied: Stage3CMatrixLiveHandler = async (ctx) => {
   const fixture = requireFixture(ctx);
   const state = await ensureRejectionChain(ctx, fixture);
-  const before = state.paymentAfter;
-  const summaryBefore = state.summaryAfter;
-  const yearlyBefore = state.yearlySeqAfter;
-  const monthlyBefore = state.monthlySeqAfter;
-  if (before === null || summaryBefore === null || yearlyBefore === null || monthlyBefore === null)
-    fail("REJECTION-05", "REJECTION-01 must run first");
+  if (state.paymentAfter === null) fail("REJECTION-05", "REJECTION-01 must run first");
+
+  const snapshotArgs: CaptureRejRevSnapshotArgs = {
+    fixture,
+    caseId: "REJECTION-05",
+    paymentId: state.paymentId,
+    billId: state.billId,
+    societyId: fixture.societyA,
+    unrelatedPaymentId: fixture.scenarios.pendingAdminCashPaymentId,
+  };
+  // The canonical snapshot is the single proof of no-change.
+  const before = await captureRejectionReversalSnapshot(snapshotArgs);
+  if (before.payment.status !== STAGE3C_PAYMENT_STATUS.rejected)
+    fail("REJECTION-05", "pre-denial payment is not rejected");
+  if (before.receiptCount !== 0) fail("REJECTION-05", "rejected payment has a receipt");
 
   // Invoke the production shared verify core — same path as the app.
   let caught: unknown = null;
@@ -1156,24 +1165,21 @@ export const rejection05_verifyAfterRejectDenied: Stage3CMatrixLiveHandler = asy
   if (caught.message !== STAGE3C_TERMINAL_VERIFY_ERROR)
     fail("REJECTION-05", "wrong terminal-state error");
 
-  const [paymentAgain, summaryAgain, yearlyAgain, monthlyAgain, receiptCountAgain] =
-    await Promise.all([
-      readPayment(fixture, state.paymentId, "REJECTION-05"),
-      readBillSummary(fixture, state.billId, "REJECTION-05"),
-      readYearlyReceiptSequences(fixture, fixture.societyA, "REJECTION-05"),
-      readMonthlyReceiptSequences(fixture, fixture.societyA, "REJECTION-05"),
-      readReceiptCount(fixture, state.paymentId, "REJECTION-05"),
-    ]);
-  if (paymentAgain.status !== STAGE3C_PAYMENT_STATUS.rejected)
-    fail("REJECTION-05", "payment left rejected state");
-  if (receiptCountAgain !== 0) fail("REJECTION-05", "receipt count no longer zero");
-  if (JSON.stringify(paymentAgain) !== JSON.stringify(before))
-    fail("REJECTION-05", "payment row drift after denial");
-  if (JSON.stringify(summaryAgain) !== JSON.stringify(summaryBefore))
-    fail("REJECTION-05", "summary drift after denial");
-  assertYearlySequenceSnapshotUnchanged("REJECTION-05", yearlyBefore, yearlyAgain);
-  assertMonthlySequenceSnapshotUnchanged("REJECTION-05", monthlyBefore, monthlyAgain);
+  const after = await captureRejectionReversalSnapshot(snapshotArgs);
+  assertRejectionReversalSnapshotEqual("REJECTION-05", before, after);
+
+  // Full authorization matrix against the same terminal payment.
+  await runStage3CDenialMatrix({
+    fixture,
+    caseId: "REJECTION-05",
+    paymentId: state.paymentId,
+    billId: state.billId,
+    societyId: fixture.societyA,
+    unrelatedPaymentId: fixture.scenarios.pendingAdminCashPaymentId,
+    actors: buildStage3CDenialActors(fixture, createStage3CAnonRpcClient()),
+  });
 };
+
 
 // ---------------------------------------------------------------------------
 // REVERSAL handlers

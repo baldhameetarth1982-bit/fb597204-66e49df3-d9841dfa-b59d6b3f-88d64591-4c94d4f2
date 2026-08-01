@@ -292,11 +292,24 @@ export const recordAdminOfflinePayment = createServerFn({ method: "POST" })
     }
   });
 
-const verifyPaymentResultSchema = z.object({
-  payment_id: z.string().optional(),
-  receipt_number: z.string().nullable().optional(),
-  receipt_id: z.string().nullable().optional(),
-});
+/**
+ * Stage 3C Checkpoint B Run B — STRICT success contract.
+ *
+ * `verify_offline_payment` returns exactly
+ * `jsonb_build_object('payment_id', ..., 'receipt_number', ..., 'receipt_id', ...)`.
+ * All three keys are mandatory and non-empty on success; unknown keys are
+ * rejected. A null / empty / malformed payload fails closed instead of
+ * being silently defaulted from caller-supplied input.
+ */
+const NonEmptyString = z.string().trim().min(1);
+const verifyPaymentResultSchema = z
+  .object({
+    payment_id: NonEmptyString,
+    receipt_number: NonEmptyString,
+    receipt_id: NonEmptyString,
+  })
+  .strict();
+
 
 /**
  * Stage 3C Checkpoint B Run A — shared production verification core.

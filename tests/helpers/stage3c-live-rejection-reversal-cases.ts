@@ -459,10 +459,9 @@ export async function readBillRow(
 }
 
 /**
- * Recursive runtime freeze. The canonical snapshot is handed to case
- * handlers as a genuinely immutable object graph so no handler can
- * accidentally (or deliberately) mutate the proof it later compares
- * against.
+ * Recursive runtime freeze. Applied ONLY to a detached clone (see
+ * {@link detachedClone}) so that no object owned by the fixture, the
+ * matrix context or a caller is ever frozen as a side effect.
  */
 export function deepFreeze<T>(value: T): T {
   if (value === null || typeof value !== "object") return value;
@@ -471,6 +470,53 @@ export function deepFreeze<T>(value: T): T {
   for (const v of Object.values(value as Record<string, unknown>)) deepFreeze(v);
   return value;
 }
+
+/**
+ * Stage 3C Checkpoint B Run C — cycle-aware structural clone.
+ *
+ * The canonical snapshot is plain data: `null`, `boolean`, `number`,
+ * `string`, arrays and plain objects (PostgREST JSON). We clone it
+ * explicitly rather than via `JSON.parse(JSON.stringify(...))` because
+ * JSON serialization silently rewrites `undefined`, drops functions and
+ * would hide an unsupported value instead of failing.
+ *
+ * Any value outside the supported plain-data contract (function,
+ * symbol, bigint, Date, Map, Set, class instance, ...) throws — a
+ * snapshot containing one could not be compared truthfully anyway.
+ *
+ * Cycles are handled through a seen-map so a self-referential graph
+ * terminates instead of overflowing the stack.
+ */
+export function detachedClone<T>(value: T, seen = new WeakMap<object, unknown>()): T {
+  if (value === null) return value;
+  const t = typeof value;
+  if (t === "boolean" || t === "number" || t === "string") return value;
+  if (t === "undefined") return value;
+  if (t !== "object") {
+    throw new Error(`[stage3c:detachedClone] unsupported value type: ${t}`);
+  }
+  const obj = value as unknown as object;
+  const hit = seen.get(obj);
+  if (hit !== undefined) return hit as T;
+
+  if (Array.isArray(obj)) {
+    const out: unknown[] = [];
+    seen.set(obj, out);
+    for (const item of obj) out.push(detachedClone(item, seen));
+    return out as unknown as T;
+  }
+  const proto = Object.getPrototypeOf(obj);
+  if (proto !== Object.prototype && proto !== null) {
+    throw new Error("[stage3c:detachedClone] unsupported non-plain object");
+  }
+  const out: Record<string, unknown> = {};
+  seen.set(obj, out);
+  for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+    out[k] = detachedClone(v, seen);
+  }
+  return out as unknown as T;
+}
+
 
 
 
@@ -685,17 +731,28 @@ export async function captureRejectionReversalSnapshot(
 export function normalizeRejectionReversalSnapshot(
   s: Stage3CRejRevSnapshot,
 ): Stage3CRejRevSnapshot {
-  return deepFreeze({
+  // Run C Part 2 — detach FIRST. Every component below is a clone, so
+  // freezing can never reach an object still owned by the fixture, the
+  // matrix context, or the caller's own snapshot argument.
+  const clone = detachedClone({
     payment: s.payment,
     bill: s.bill,
     receipt: s.receipt,
     receiptCount: s.receiptCount,
     summary: s.summary,
-    yearlySeq: normalizeYearlyReceiptSequences(s.yearlySeq),
-    monthlySeq: normalizeMonthlyReceiptSequences(s.monthlySeq),
+    yearlySeq: s.yearlySeq,
+    monthlySeq: s.monthlySeq,
     unrelatedPayment: s.unrelatedPayment,
   });
+  // Deterministic ordering is applied to the detached arrays only.
+  const normalized: Stage3CRejRevSnapshot = {
+    ...clone,
+    yearlySeq: normalizeYearlyReceiptSequences(clone.yearlySeq),
+    monthlySeq: normalizeMonthlyReceiptSequences(clone.monthlySeq),
+  };
+  return deepFreeze(normalized);
 }
+
 
 /**
  * Detects drift in every component of the canonical snapshot. Any single
@@ -755,30 +812,121 @@ export const STAGE3C_LIFECYCLE_OPERATIONS: readonly Stage3CLifecycleOperation[] 
 ] as const);
 
 /**
- * Denial tokens a non-authorized actor may legitimately receive. Any
- * other message — including a leaked provider string — is a failure, and
- * a successful call is always a failure.
- *
- * `payment_not_found` is allowed because RLS-scoped RPCs must not
- * disclose the existence of a row outside the caller's tenant.
+ * Stage 3C Checkpoint B Run C — collapse token for any provider message
+ * that carries no single unambiguous canonical token. Mirrors the
+ * production verify core so a raw PostgREST string is never asserted on
+ * and never leaked into a failure message.
  */
-export const STAGE3C_DENIAL_ALLOWED_ERRORS: readonly string[] = Object.freeze([
-  STAGE3C_LIFECYCLE_CANONICAL_ERRORS.unauthenticated,
-  STAGE3C_LIFECYCLE_CANONICAL_ERRORS.not_authorized,
-  STAGE3C_LIFECYCLE_CANONICAL_ERRORS.payment_not_found,
-] as const);
+export const STAGE3C_OPAQUE_DENIAL_ERROR = "operation_failed" as const;
 
-export function isAllowedDenialError(message: unknown): boolean {
-  if (typeof message !== "string" || message.length === 0) return false;
+const STAGE3C_LIFECYCLE_TOKEN_LIST: readonly string[] = Object.freeze(
+  Object.values(STAGE3C_LIFECYCLE_CANONICAL_ERRORS),
+);
+
+function matchesLifecycleToken(message: string, token: string): boolean {
+  return new RegExp(`(^|[^\\w])${token}(\\W|$)`).test(message);
+}
+
+/**
+ * Classify a raw lifecycle error message to EXACTLY ONE canonical token.
+ *
+ * A message matching zero tokens — or two or more DISTINCT tokens — is
+ * ambiguous and collapses to {@link STAGE3C_OPAQUE_DENIAL_ERROR}. This
+ * is the same unambiguity rule enforced by the production verify core.
+ */
+export function classifyLifecycleError(message: unknown): string {
+  if (typeof message !== "string" || message.length === 0)
+    return STAGE3C_OPAQUE_DENIAL_ERROR;
   const m = message.trim().toLowerCase();
-  return STAGE3C_DENIAL_ALLOWED_ERRORS.some(
-    (t) => new RegExp(`(^|[^\\w])${t}(\\W|$)`).test(m),
-  );
+  const distinct = [
+    ...new Set(STAGE3C_LIFECYCLE_TOKEN_LIST.filter((t) => matchesLifecycleToken(m, t))),
+  ];
+  return distinct.length === 1 ? distinct[0]! : STAGE3C_OPAQUE_DENIAL_ERROR;
 }
 
 export interface Stage3CDenialActor {
   readonly id: Stage3CDenialActorId;
   readonly client: BillingRpcClient;
+}
+
+/**
+ * Stage 3C Checkpoint B Run C — EXACT, EXHAUSTIVE actor × operation
+ * expectation matrix. One entry per (actor, operation) pair; each entry
+ * is the single canonical token that pair must produce.
+ *
+ * Grounding (effective SQL, all three RPCs are SECURITY DEFINER):
+ *
+ *  - `unauthenticated`: `REVOKE ALL ... FROM PUBLIC` +
+ *    `GRANT EXECUTE ... TO authenticated` means the `anon` role holds NO
+ *    EXECUTE privilege. The call is refused by PostgreSQL/PostgREST
+ *    BEFORE the function body runs, so the in-body `unauthenticated`
+ *    RAISE is never reached. The provider string (42501 permission
+ *    denied, or a PGRST202 schema-cache miss) carries no canonical
+ *    token, so it classifies to `operation_failed`. Deterministic.
+ *
+ *  - every authenticated non-authorized actor: because the functions are
+ *    SECURITY DEFINER, the `SELECT ... FOR UPDATE` on `public.payments`
+ *    bypasses RLS and ALWAYS finds the row. `payment_not_found` is
+ *    therefore unreachable for an existing payment, and the next check —
+ *    `billing.manage` / `super_admin` — raises exactly `not_authorized`.
+ *    The status check (`invalid_transition` / `payment_not_pending`)
+ *    sits AFTER the authorization check and is never reached.
+ *
+ * No entry lists more than one token: RLS visibility introduces no
+ * nondeterminism here precisely because the reads are definer-scoped.
+ */
+export const STAGE3C_DENIAL_ERROR_MATRIX: Readonly<
+  Record<Stage3CDenialActorId, Readonly<Record<Stage3CLifecycleOperation, string>>>
+> = Object.freeze({
+  otherSocietyAdmin: Object.freeze({
+    verify: STAGE3C_LIFECYCLE_CANONICAL_ERRORS.not_authorized,
+    reject: STAGE3C_LIFECYCLE_CANONICAL_ERRORS.not_authorized,
+    reverse: STAGE3C_LIFECYCLE_CANONICAL_ERRORS.not_authorized,
+  }),
+  resident: Object.freeze({
+    verify: STAGE3C_LIFECYCLE_CANONICAL_ERRORS.not_authorized,
+    reject: STAGE3C_LIFECYCLE_CANONICAL_ERRORS.not_authorized,
+    reverse: STAGE3C_LIFECYCLE_CANONICAL_ERRORS.not_authorized,
+  }),
+  guard: Object.freeze({
+    verify: STAGE3C_LIFECYCLE_CANONICAL_ERRORS.not_authorized,
+    reject: STAGE3C_LIFECYCLE_CANONICAL_ERRORS.not_authorized,
+    reverse: STAGE3C_LIFECYCLE_CANONICAL_ERRORS.not_authorized,
+  }),
+  outOfScopeBlockAdmin: Object.freeze({
+    verify: STAGE3C_LIFECYCLE_CANONICAL_ERRORS.not_authorized,
+    reject: STAGE3C_LIFECYCLE_CANONICAL_ERRORS.not_authorized,
+    reverse: STAGE3C_LIFECYCLE_CANONICAL_ERRORS.not_authorized,
+  }),
+  unauthenticated: Object.freeze({
+    verify: STAGE3C_OPAQUE_DENIAL_ERROR,
+    reject: STAGE3C_OPAQUE_DENIAL_ERROR,
+    reverse: STAGE3C_OPAQUE_DENIAL_ERROR,
+  }),
+});
+
+/**
+ * Compile-time + runtime completeness guard: every declared actor must
+ * have an entry for every declared operation.
+ */
+export function assertDenialMatrixExhaustive(caseId: string): void {
+  for (const actorId of STAGE3C_DENIAL_ACTOR_IDS) {
+    const row = STAGE3C_DENIAL_ERROR_MATRIX[actorId];
+    if (row === undefined) fail(caseId, `denial matrix missing actor: ${actorId}`);
+    for (const op of STAGE3C_LIFECYCLE_OPERATIONS) {
+      if (typeof row[op] !== "string" || row[op].length === 0)
+        fail(caseId, `denial matrix missing ${actorId}/${op}`);
+    }
+  }
+}
+
+export function expectedDenialError(
+  actorId: Stage3CDenialActorId,
+  operation: Stage3CLifecycleOperation,
+): string {
+  const row = STAGE3C_DENIAL_ERROR_MATRIX[actorId];
+  if (row === undefined) throw new Error("[stage3c:denial] unknown actor");
+  return row[operation];
 }
 
 function rpcClientFromSupabase(client: {
@@ -787,12 +935,6 @@ function rpcClientFromSupabase(client: {
   return toRejRevBillingRpcClient({ client });
 }
 
-/**
- * Build the canonical denial actor set. The unauthenticated actor is a
- * session-less publishable-key client built from the same disposable
- * fixture environment — never a hand-made stub that could "pass" by
- * throwing locally.
- */
 /**
  * Session-less publishable-key client for the unauthenticated actor.
  * Built from the same validated disposable fixture environment (host
@@ -814,8 +956,13 @@ export function createStage3CAnonRpcClient(): {
   };
 }
 
+/**
+ * Build the canonical denial actor set. The unauthenticated actor is a
+ * session-less publishable-key client built from the same disposable
+ * fixture environment — never a hand-made stub that could "pass" by
+ * throwing locally.
+ */
 export function buildStage3CDenialActors(
-
   fixture: Stage3CFixture,
   anonClient: {
     rpc: (name: never, args: never) => Promise<{ data: unknown; error: { message: string } | null }>;
@@ -833,23 +980,33 @@ export function buildStage3CDenialActors(
   ] as const);
 }
 
-async function invokeLifecycleOperation(
+/**
+ * Invoke one lifecycle operation and return the CLASSIFIED canonical
+ * token. Verify goes through the production core (which already
+ * classifies); reject/reverse are raw RPCs whose provider message is
+ * classified here. A successful call reports `ok: true` and is always a
+ * denial-matrix failure.
+ */
+export async function invokeLifecycleOperation(
   actor: Stage3CDenialActor,
   operation: Stage3CLifecycleOperation,
   paymentId: string,
   reason: string,
-): Promise<{ ok: boolean; message: string }> {
+): Promise<{ ok: boolean; token: string }> {
   try {
     if (operation === "verify") {
       await verifyOfflinePaymentWithClient(actor.client, { paymentId, notes: null });
-      return { ok: true, message: "" };
+      return { ok: true, token: "" };
     }
     const fn = operation === "reject" ? "reject_offline_payment" : "reverse_offline_payment";
     const { error } = await actor.client.rpc(fn, { _payment_id: paymentId, _reason: reason });
-    if (error) return { ok: false, message: error.message };
-    return { ok: true, message: "" };
+    if (error) return { ok: false, token: classifyLifecycleError(error.message) };
+    return { ok: true, token: "" };
   } catch (e) {
-    return { ok: false, message: e instanceof Error ? e.message : "" };
+    return {
+      ok: false,
+      token: classifyLifecycleError(e instanceof Error ? e.message : ""),
+    };
   }
 }
 
@@ -865,15 +1022,30 @@ export interface RunDenialMatrixArgs {
   readonly reason?: string;
 }
 
+export interface Stage3CDenialAttempt {
+  readonly actorId: Stage3CDenialActorId;
+  readonly operation: Stage3CLifecycleOperation;
+  readonly expected: string;
+  readonly actual: string;
+}
+
 /**
- * Run every (actor × operation) pair and prove each one is denied with a
- * canonical token, then prove — via the canonical snapshot alone — that
- * no observable state changed across the whole matrix.
+ * Run every (actor × operation) pair and prove each one is denied with
+ * the EXACT canonical token from {@link STAGE3C_DENIAL_ERROR_MATRIX}.
+ *
+ * Run C Part 3 — a canonical snapshot is captured immediately BEFORE and
+ * immediately AFTER *every individual pair*, not once around the whole
+ * matrix. A matrix-level before/after comparison could be satisfied by a
+ * write that is later restored by another actor in the same loop; a
+ * per-pair comparison cannot.
  */
-export async function runStage3CDenialMatrix(a: RunDenialMatrixArgs): Promise<void> {
+export async function runStage3CDenialMatrix(
+  a: RunDenialMatrixArgs,
+): Promise<readonly Stage3CDenialAttempt[]> {
   const ops = a.operations ?? STAGE3C_LIFECYCLE_OPERATIONS;
   if (a.actors.length === 0) fail(a.caseId, "denial matrix has no actors");
   if (ops.length === 0) fail(a.caseId, "denial matrix has no operations");
+  assertDenialMatrixExhaustive(a.caseId);
 
   const snapshotArgs: CaptureRejRevSnapshotArgs = {
     fixture: a.fixture,
@@ -883,25 +1055,165 @@ export async function runStage3CDenialMatrix(a: RunDenialMatrixArgs): Promise<vo
     societyId: a.societyId,
     unrelatedPaymentId: a.unrelatedPaymentId ?? null,
   };
-  const before = await captureRejectionReversalSnapshot(snapshotArgs);
+
+  const attempts: Stage3CDenialAttempt[] = [];
+  const matrixBefore = await captureRejectionReversalSnapshot(snapshotArgs);
 
   for (const actor of a.actors) {
     for (const op of ops) {
+      const label = `${a.caseId}:${actor.id}/${op}`;
+      const before = await captureRejectionReversalSnapshot({
+        ...snapshotArgs,
+        caseId: label,
+      });
       const r = await invokeLifecycleOperation(
         actor,
         op,
         a.paymentId,
         a.reason ?? "stage3c denial harness — deterministic reason",
       );
+      const after = await captureRejectionReversalSnapshot({
+        ...snapshotArgs,
+        caseId: label,
+      });
+
       if (r.ok) fail(a.caseId, `denial matrix: ${actor.id} was allowed to ${op}`);
-      if (!isAllowedDenialError(r.message))
-        fail(a.caseId, `denial matrix: ${actor.id} ${op} produced a non-canonical error`);
+      const expected = expectedDenialError(actor.id, op);
+      if (r.token !== expected)
+        fail(
+          a.caseId,
+          `denial matrix: ${actor.id}/${op} expected "${expected}", got "${r.token}"`,
+        );
+      // Per-pair proof: nothing observable changed for THIS attempt.
+      assertRejectionReversalSnapshotEqual(label, before, after);
+      attempts.push(Object.freeze({ actorId: actor.id, operation: op, expected, actual: r.token }));
     }
   }
 
-  const after = await captureRejectionReversalSnapshot(snapshotArgs);
-  assertRejectionReversalSnapshotEqual(a.caseId, before, after);
+  // Whole-matrix proof, in addition to the per-pair proofs above.
+  const matrixAfter = await captureRejectionReversalSnapshot(snapshotArgs);
+  assertRejectionReversalSnapshotEqual(a.caseId, matrixBefore, matrixAfter);
+
+  const expectedCount = a.actors.length * ops.length;
+  if (attempts.length !== expectedCount)
+    fail(a.caseId, `denial matrix ran ${attempts.length}/${expectedCount} pairs`);
+  return Object.freeze(attempts);
 }
+
+// ---------------------------------------------------------------------------
+// Run C Part 5 — input and state denial cases
+//
+// Beyond actor authorization, an AUTHORIZED admin must still be denied
+// on malformed input and on an invalid starting status, and each denial
+// must leave all nine snapshot components untouched.
+// ---------------------------------------------------------------------------
+
+export type Stage3CInputDenialId =
+  | "nonexistentPayment"
+  | "blankReason"
+  | "whitespaceReason"
+  | "invalidStartingStatus";
+
+export interface RunInputDenialArgs {
+  readonly fixture: Stage3CFixture;
+  readonly caseId: string;
+  /** Real payment in a status that is INVALID for `operation`. */
+  readonly paymentId: string;
+  readonly billId: string;
+  readonly societyId: string;
+  readonly unrelatedPaymentId?: string | null;
+  /** Authorized admin actor — proves the denial is about input/state. */
+  readonly admin: Stage3CDenialActor;
+  readonly operation: Stage3CLifecycleOperation;
+  /** Syntactically valid UUID that is NOT a payment row. */
+  readonly absentPaymentId: string;
+  /** Canonical token for the invalid-starting-status attempt. */
+  readonly invalidStatusToken: string;
+}
+
+/**
+ * Prove input/state denials for an authorized admin. Every attempt is
+ * bracketed by its own canonical snapshot, so all nine components
+ * (payment, bill, receipt, receiptCount, summary, yearlySeq, monthlySeq,
+ * unrelatedPayment, and the receipt identity carried inside `receipt`)
+ * are proven unchanged for that specific attempt.
+ */
+export async function runStage3CInputStateDenials(
+  a: RunInputDenialArgs,
+): Promise<readonly Stage3CInputDenialId[]> {
+  const snapshotArgs: CaptureRejRevSnapshotArgs = {
+    fixture: a.fixture,
+    caseId: a.caseId,
+    paymentId: a.paymentId,
+    billId: a.billId,
+    societyId: a.societyId,
+    unrelatedPaymentId: a.unrelatedPaymentId ?? null,
+  };
+
+  const attempts: Array<{
+    id: Stage3CInputDenialId;
+    paymentId: string;
+    reason: string;
+    expected: string;
+    /** Reject/reverse only — verify takes no reason. */
+    skipForVerify: boolean;
+  }> = [
+    {
+      id: "nonexistentPayment",
+      paymentId: a.absentPaymentId,
+      reason: "stage3c input denial — absent payment",
+      expected: STAGE3C_LIFECYCLE_CANONICAL_ERRORS.payment_not_found,
+      skipForVerify: false,
+    },
+    {
+      id: "blankReason",
+      paymentId: a.paymentId,
+      reason: "",
+      expected: STAGE3C_LIFECYCLE_CANONICAL_ERRORS.reason_required,
+      skipForVerify: true,
+    },
+    {
+      id: "whitespaceReason",
+      paymentId: a.paymentId,
+      reason: "   \t  ",
+      expected: STAGE3C_LIFECYCLE_CANONICAL_ERRORS.reason_required,
+      skipForVerify: true,
+    },
+    {
+      id: "invalidStartingStatus",
+      paymentId: a.paymentId,
+      reason: "stage3c input denial — invalid starting status",
+      expected: a.invalidStatusToken,
+      skipForVerify: false,
+    },
+  ];
+
+  const executed: Stage3CInputDenialId[] = [];
+  for (const attempt of attempts) {
+    if (a.operation === "verify" && attempt.skipForVerify) continue;
+    const label = `${a.caseId}:${a.operation}/${attempt.id}`;
+    const before = await captureRejectionReversalSnapshot({ ...snapshotArgs, caseId: label });
+    const r = await invokeLifecycleOperation(
+      a.admin,
+      a.operation,
+      attempt.paymentId,
+      attempt.reason,
+    );
+    const after = await captureRejectionReversalSnapshot({ ...snapshotArgs, caseId: label });
+
+    if (r.ok) fail(a.caseId, `input denial ${attempt.id}: ${a.operation} was allowed`);
+    if (r.token !== attempt.expected)
+      fail(
+        a.caseId,
+        `input denial ${attempt.id}: expected "${attempt.expected}", got "${r.token}"`,
+      );
+    assertRejectionReversalSnapshotEqual(label, before, after);
+    executed.push(attempt.id);
+  }
+  if (executed.length === 0) fail(a.caseId, "input denial matrix ran no attempts");
+  return Object.freeze(executed);
+}
+
 
 
 // ---------------------------------------------------------------------------

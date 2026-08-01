@@ -293,22 +293,106 @@ export const recordAdminOfflinePayment = createServerFn({ method: "POST" })
   });
 
 /**
- * Stage 3C Checkpoint B Run B — STRICT success contract.
+ * Stage 3C Checkpoint B Run C — GROUNDED receipt-number contract.
+ *
+ * Grounded in the effective allocator
+ * `public._allocate_receipt_number_monthly(uuid, timestamptz)`:
+ *
+ *   RETURN 'RCPT/' || ym::text || '/' || LPAD((n - 1)::text, 4, '0');
+ *
+ * where `ym = year * 100 + month`. Therefore the canonical shape is
+ * exactly three `/`-separated segments:
+ *
+ *   1. the literal prefix `RCPT`
+ *   2. a 6-digit `YYYYMM` segment (year >= 1000, month 01..12)
+ *   3. a zero-padded decimal sequence of at least 4 digits
+ *      (LPAD pads to 4; a society past 9999 receipts in one month
+ *      naturally widens the segment, so wider is valid, narrower is not)
+ *
+ * The sequence is `n - 1` where `n` is the post-increment value, so the
+ * first receipt of a month is `0001`; `0000` is unreachable and rejected.
+ *
+ * NOTE: receipt numbers are NOT lexicographically comparable across
+ * months, and the sequence segment width can change at the 9999 boundary.
+ * Ordering comparisons MUST go through {@link parseReceiptNumber} and use
+ * the numeric `yearMonth` / `sequence` fields — never raw string compare.
+ */
+export const RECEIPT_NUMBER_PREFIX = "RCPT";
+const RECEIPT_NUMBER_PATTERN = /^RCPT\/(\d{6})\/(\d{4,})$/;
+
+export interface ParsedReceiptNumber {
+  readonly raw: string;
+  /** `year * 100 + month`, exactly as the allocator computes it. */
+  readonly yearMonth: number;
+  readonly year: number;
+  /** 1..12 */
+  readonly month: number;
+  /** Allocator sequence, >= 1. */
+  readonly sequence: number;
+}
+
+/**
+ * Parse a receipt number produced by the effective monthly allocator.
+ * Returns `null` for ANY value that the allocator could not have emitted:
+ * malformed prefix, wrong segment count, non-6-digit year/month, an
+ * impossible month, fewer than 4 sequence digits, a `0000` sequence,
+ * whitespace padding, or a non-string input.
+ */
+export function parseReceiptNumber(value: unknown): ParsedReceiptNumber | null {
+  if (typeof value !== "string") return null;
+  const m = RECEIPT_NUMBER_PATTERN.exec(value);
+  if (!m) return null;
+  const ym = Number(m[1]);
+  const year = Math.floor(ym / 100);
+  const month = ym % 100;
+  if (!Number.isInteger(year) || year < 1000) return null;
+  if (month < 1 || month > 12) return null;
+  const sequence = Number(m[2]);
+  if (!Number.isSafeInteger(sequence) || sequence < 1) return null;
+  return Object.freeze({ raw: value, yearMonth: ym, year, month, sequence });
+}
+
+/**
+ * Strict allocator-grounded receipt-number Zod schema. Shared by the
+ * production verification core and every Stage 3C proof so the format
+ * is never re-invented from test literals.
+ */
+export const receiptNumberSchema = z
+  .string()
+  .refine((s) => parseReceiptNumber(s) !== null, {
+    message: "invalid_receipt_number",
+  });
+
+/**
+ * Strict UUID contract. `payments.id` and `payment_receipts.id` are
+ * `uuid` columns, so the server can only ever return a canonical
+ * lowercase-or-uppercase 8-4-4-4-12 hex string. Whitespace-padded or
+ * otherwise malformed values are rejected rather than trimmed.
+ */
+const CANONICAL_UUID_PATTERN =
+  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+export const strictUuidSchema = z
+  .string()
+  .regex(CANONICAL_UUID_PATTERN, { message: "invalid_uuid" });
+
+/**
+ * Stage 3C Checkpoint B Run C — STRICT success contract.
  *
  * `verify_offline_payment` returns exactly
  * `jsonb_build_object('payment_id', ..., 'receipt_number', ..., 'receipt_id', ...)`.
- * All three keys are mandatory and non-empty on success; unknown keys are
- * rejected. A null / empty / malformed payload fails closed instead of
+ * All three keys are mandatory, unknown keys are rejected, UUIDs must be
+ * canonical, and the receipt number must satisfy the real allocator
+ * format. A null / empty / malformed payload fails closed instead of
  * being silently defaulted from caller-supplied input.
  */
-const NonEmptyString = z.string().trim().min(1);
 const verifyPaymentResultSchema = z
   .object({
-    payment_id: NonEmptyString,
-    receipt_number: NonEmptyString,
-    receipt_id: NonEmptyString,
+    payment_id: strictUuidSchema,
+    receipt_number: receiptNumberSchema,
+    receipt_id: strictUuidSchema,
   })
   .strict();
+
 
 
 /**
@@ -374,6 +458,32 @@ export function matchesVerifyCanonicalError(
   return re.test(message);
 }
 
+/**
+ * Stage 3C Checkpoint B Run C — unambiguous canonical classification.
+ *
+ * A provider message is only mapped to a canonical token when EXACTLY
+ * ONE distinct canonical token matches. Rules:
+ *
+ *  - zero matches                  -> null (caller uses `operation_failed`)
+ *  - exactly one distinct match    -> that token
+ *  - two or more distinct matches  -> null (ambiguous; fail closed)
+ *
+ * This prevents array-order from silently deciding the meaning of a
+ * message such as `payment_not_pending and not_authorized`. A single
+ * token repeated several times in one message is still one distinct
+ * match and remains unambiguous.
+ */
+export function classifyVerifyCanonicalError(
+  message: unknown,
+): VerifyOfflinePaymentCanonicalError | null {
+  if (typeof message !== "string" || message.length === 0) return null;
+  const matched = VERIFY_OFFLINE_PAYMENT_CANONICAL_ERRORS.filter((tok) =>
+    matchesVerifyCanonicalError(message, tok),
+  );
+  const distinct = [...new Set<VerifyOfflinePaymentCanonicalError>(matched)];
+  return distinct.length === 1 ? distinct[0]! : null;
+}
+
 async function callVerifyRpc(
   client: BillingRpcClient,
   args: Record<string, unknown>,
@@ -381,13 +491,11 @@ async function callVerifyRpc(
   const { data, error } = await client.rpc("verify_offline_payment", args);
   if (error) {
     const raw = typeof error.message === "string" ? error.message : "";
-    for (const tok of VERIFY_OFFLINE_PAYMENT_CANONICAL_ERRORS) {
-      if (matchesVerifyCanonicalError(raw, tok)) throw new Error(tok);
-    }
-    throw new Error("operation_failed");
+    throw new Error(classifyVerifyCanonicalError(raw) ?? "operation_failed");
   }
   return data;
 }
+
 
 /**
  * Neutral shared production core. Invokes `verify_offline_payment` once

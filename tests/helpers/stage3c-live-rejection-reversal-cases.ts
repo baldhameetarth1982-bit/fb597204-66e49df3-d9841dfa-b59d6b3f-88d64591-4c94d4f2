@@ -41,6 +41,7 @@
  */
 
 import { z } from "zod";
+import { createClient } from "@supabase/supabase-js";
 import {
   getPaymentDetailWithClient,
   verifyOfflinePaymentWithClient,
@@ -49,8 +50,9 @@ import {
 import type { BillingRpcClient } from "@/lib/billing-config.functions";
 import type { Stage3CMatrixLiveHandler } from "./stage3c-live-matrix-registry";
 import type { Stage3CLiveMatrixContext } from "./stage3c-live-matrix-context";
-import type { Stage3CFixture } from "./stage3c-runtime-fixtures";
+import { requireStage3CEnv, type Stage3CFixture } from "./stage3c-runtime-fixtures";
 import { requireFixture } from "./stage3c-live-core-context";
+
 import {
   findForbiddenKeyPath,
   STAGE3C_FORBIDDEN_KEYS_ALL,

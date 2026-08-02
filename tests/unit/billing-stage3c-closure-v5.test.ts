@@ -91,7 +91,14 @@ describe("Stage 3C v5 — searchOpenBillsForPayment is safe", () => {
       fnSrc.match(/export const searchOpenBillsForPayment[\s\S]{0,1600}/)?.[0] ??
       "";
     expect(block).toMatch(/requireSupabaseAuth/);
-    expect(block).toMatch(/"search_society_open_bills"/);
+    // The RPC name now lives in the single shared production core the
+    // server function delegates to.
+    expect(block).toMatch(/searchSocietyOpenBillsWithClient/);
+    const core =
+      fnSrc.match(
+        /export async function searchSocietyOpenBillsWithClient[\s\S]{0,2000}/,
+      )?.[0] ?? "";
+    expect(core).toMatch(/"search_society_open_bills"/);
   });
 
   it("migration creates the RPC with SECURITY DEFINER and manage_billing gate", () => {
@@ -101,7 +108,7 @@ describe("Stage 3C v5 — searchOpenBillsForPayment is safe", () => {
     );
     const fnBlock =
       sql.match(
-        /CREATE OR REPLACE FUNCTION public\.search_society_open_bills[\s\S]*?\$\$;/,
+        /CREATE OR REPLACE FUNCTION public\.search_society_open_bills[\s\S]*?AS (\$[A-Za-z_]*\$)[\s\S]*?\1/,
       )?.[0] ?? "";
     expect(fnBlock).toMatch(/SECURITY DEFINER/);
     expect(fnBlock).toMatch(/search_path\s*=\s*public/);

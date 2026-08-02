@@ -135,6 +135,12 @@ jobs:
       - name: Validate Stage 3C core live source (pre-flight)
         run: bun scripts/verify-stage3c-live-core-source.ts
 
+      - name: Validate Stage 3C complete 93-case live source (pre-flight)
+        run: bun scripts/verify-stage3c-live-matrix-93-source.ts
+
+      - name: Stage 3C CLEANUP behavioral suite
+        run: bunx vitest run tests/unit/billing-stage3c-live-cleanup.test.ts --reporter=default
+
       - name: Application-boundary unit tests
         run: bunx vitest run tests/unit/billing-stage3c-application-boundary.test.ts --reporter=default
 
@@ -151,6 +157,12 @@ jobs:
       - name: Validate Stage 3C core live matrix (24/93)
         if: ${{ steps.live_tests.outcome == 'success' || steps.live_tests.outcome == 'failure' }}
         run: bun scripts/verify-stage3c-live-core-report.ts reports/live.json
+
+      # AUTHORITATIVE BOUNDARY: the complete 93-case lifecycle must have run,
+      # in registry order, with the three post-teardown CLEANUP proofs passing.
+      - name: Validate Stage 3C complete live matrix (93/93)
+        if: ${{ steps.live_tests.outcome == 'success' || steps.live_tests.outcome == 'failure' }}
+        run: bun scripts/verify-stage3c-live-matrix-93-report.ts reports/live.json
 
 
       - name: Full vitest run (excluding live suite to avoid double-execution)

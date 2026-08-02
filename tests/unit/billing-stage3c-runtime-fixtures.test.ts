@@ -707,8 +707,16 @@ describe("Stage 3C fixtures — source contract", () => {
     expect(SRC).not.toMatch(/admin\.from\("user_roles"\)\.delete\(\)\.in\("society_id"/);
     expect(SRC).not.toMatch(/admin\.from\("flat_residents"\)\.delete\(\)\.in\("flat_id"/);
   });
-  it("no legacy yearly sequence deletion", () => {
-    expect(SRC).not.toMatch(/payment_receipt_sequences(?!_)/);
+  it("yearly sequence deletion is derived from confirmed monthly identities, by exact composite key", () => {
+    // The yearly table (`payment_receipt_sequences`) is a real allocator
+    // identity, so teardown MUST clear it — but only for the exact
+    // (society, year) pairs derived from confirmed monthly identities.
+    expect(SRC).toMatch(
+      /from\("payment_receipt_sequences"\)\s*\.delete\(\)\s*\.eq\("society_id"[\s\S]{0,120}\.eq\("year"/,
+    );
+    expect(SRC).toMatch(/stage3CYearlySequenceIdentities\(/);
+    // Never a broad society-wide wipe of the allocator tables.
+    expect(SRC).not.toMatch(/from\("payment_receipt_sequences"\)\s*\.delete\(\)\s*\.in\(/);
   });
   it("monthly sequence deletion uses exact composite key", () => {
     expect(SRC).toMatch(

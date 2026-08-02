@@ -45,12 +45,17 @@ import { createClient } from "@supabase/supabase-js";
 import {
   getPaymentDetailWithClient,
   verifyOfflinePaymentWithClient,
+  parseReceiptNumber,
   type PaymentDetail,
 } from "@/lib/offline-payments.functions";
 import type { BillingRpcClient } from "@/lib/billing-config.functions";
 import type { Stage3CMatrixLiveHandler } from "./stage3c-live-matrix-registry";
 import type { Stage3CLiveMatrixContext } from "./stage3c-live-matrix-context";
-import { requireStage3CEnv, type Stage3CFixture } from "./stage3c-runtime-fixtures";
+import {
+  requireStage3CEnv,
+  trackUniqueId,
+  type Stage3CFixture,
+} from "./stage3c-runtime-fixtures";
 import { requireFixture } from "./stage3c-live-core-context";
 
 import {

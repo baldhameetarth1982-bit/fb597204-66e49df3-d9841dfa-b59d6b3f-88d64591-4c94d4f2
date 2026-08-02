@@ -78,20 +78,26 @@ describe("Stage 3C — RESIDENT-SUBMIT registry", () => {
     }
   });
 
-  it("core registry remains at 24, matrix registry is 90", () => {
+  it("core registry remains at 24, matrix registry is complete at 93", () => {
     expect(STAGE3C_CORE_LIVE_CASE_IDS.length).toBe(24);
-    expect(STAGE3C_MATRIX_LIVE_CASE_IDS.length).toBe(90);
-    expect(Object.keys(STAGE3C_MATRIX_LIVE_HANDLERS).length).toBe(90);
+    expect(STAGE3C_MATRIX_LIVE_CASE_IDS.length).toBe(93);
+    expect(Object.keys(STAGE3C_MATRIX_LIVE_HANDLERS).length).toBe(93);
   });
 
 
 
-  it("registers all 10 SEARCH cases and no CLEANUP case yet", () => {
+  it("registers all 10 SEARCH cases followed by exactly 3 CLEANUP cases", () => {
     const search = STAGE3C_MATRIX_LIVE_CASE_IDS.filter((id) => id.startsWith("SEARCH"));
     expect(search.length).toBe(10);
-    for (const id of STAGE3C_MATRIX_LIVE_CASE_IDS) {
-      expect(id.startsWith("CLEANUP")).toBe(false);
-    }
+    const cleanup = STAGE3C_MATRIX_LIVE_CASE_IDS.filter((id) => id.startsWith("CLEANUP"));
+    expect([...cleanup]).toEqual(["CLEANUP-01", "CLEANUP-02", "CLEANUP-03"]);
+    // CLEANUP observes post-teardown state, so it must be registered last.
+    expect(STAGE3C_MATRIX_LIVE_CASE_IDS.slice(-3)).toEqual([
+      "CLEANUP-01",
+      "CLEANUP-02",
+      "CLEANUP-03",
+    ]);
+    expect(STAGE3C_MATRIX_LIVE_CASE_IDS[79]).toBe("SEARCH-10");
   });
 
 

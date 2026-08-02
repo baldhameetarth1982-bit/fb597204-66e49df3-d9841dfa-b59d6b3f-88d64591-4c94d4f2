@@ -702,6 +702,10 @@ export const search08_limitCapsRows: Stage3CMatrixLiveHandler = async (ctx) => {
   // Ordering must be repeatable across identical calls.
   const repeat = await searchFlatPage(fixture);
   assertIdSequenceEqual("SEARCH-08", searchRowIds(repeat), fullIds, "repeat");
+
+  // Out-of-range pagination is REFUSED, never silently clamped, and the
+  // inclusive boundaries are accepted.
+  await proveSearchInputBounds(fixture, "SEARCH-08");
 };
 
 export const search09_offsetShiftsPage: Stage3CMatrixLiveHandler = async (ctx) => {

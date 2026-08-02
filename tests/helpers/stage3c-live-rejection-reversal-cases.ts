@@ -1362,7 +1362,96 @@ export interface Stage3CReversalState {
   yearlySeqAfter: readonly Stage3CYearlyReceiptSequenceRow[] | null;
   monthlySeqAfter: readonly Stage3CMonthlyReceiptSequenceRow[] | null;
   residentDetailAfter: PaymentDetail | null;
+  /** Checkpoint B Part 6 — receipt-number non-reuse evidence. */
+  nonReuse: Stage3CReceiptNonReuseEvidence | null;
 }
+
+// ---------------------------------------------------------------------------
+// Checkpoint B Part 6 — receipt-number non-reuse
+//
+// Effective allocator (inspected): verify_offline_payment calls
+// `public._allocate_receipt_number_monthly(society_id, now())`, which
+// increments EXACTLY ONE row of `public.payment_receipt_month_sequences`
+// with identity `(society_id, year_month)` and returns
+// `'RCPT/' || year_month || '/' || LPAD(n - 1, 4, '0')`.
+//
+// `public.payment_receipt_sequences` (the yearly table) is NOT used by
+// verification at all and must therefore remain byte-for-byte unchanged.
+// ---------------------------------------------------------------------------
+
+export interface Stage3CReceiptNonReuseEvidence {
+  readonly voidedReceiptId: string;
+  readonly voidedReceiptNumber: string;
+  readonly voidedReceiptStatus: string;
+  readonly laterPaymentId: string;
+  readonly laterReceiptId: string;
+  readonly laterReceiptNumber: string;
+  readonly laterReceiptStatus: string;
+  readonly voidedTuple: readonly [number, number];
+  readonly laterTuple: readonly [number, number];
+  readonly monthlyIdentityIncremented: string;
+  readonly monthlyDelta: number;
+}
+
+/**
+ * Numeric allocator-tuple comparison. Raw receipt numbers are NEVER
+ * compared lexicographically: `RCPT/202612/10000` sorts before
+ * `RCPT/202612/9999` as a string but is strictly later numerically.
+ */
+export function receiptTupleStrictlyGreater(
+  later: readonly [number, number],
+  earlier: readonly [number, number],
+): boolean {
+  if (later[0] !== earlier[0]) return later[0] > earlier[0];
+  return later[1] > earlier[1];
+}
+
+export function receiptTupleOf(caseId: string, receiptNumber: string): readonly [number, number] {
+  const parsed = parseReceiptNumber(receiptNumber);
+  if (parsed === null) fail(caseId, "receipt number does not match the allocator format");
+  return Object.freeze([parsed.yearMonth, parsed.sequence] as const);
+}
+
+/**
+ * Exactly-one-identity monthly sequence delta. Returns the incremented
+ * identity key. Fails when zero or more than one identity moved, when
+ * any identity disappears, duplicates or decrements, or when the
+ * increment is not exactly `expectedDelta`.
+ */
+export function assertMonthlySequenceExactDelta(
+  caseId: string,
+  before: readonly Stage3CMonthlyReceiptSequenceRow[],
+  after: readonly Stage3CMonthlyReceiptSequenceRow[],
+  expectedDelta: number,
+): string {
+  const bMap = new Map(before.map((r) => [monthlyIdentityKey(r), r.next_number]));
+  const aMap = new Map(after.map((r) => [monthlyIdentityKey(r), r.next_number]));
+  if (bMap.size !== before.length) fail(caseId, "monthly sequence duplicate identity before");
+  if (aMap.size !== after.length) fail(caseId, "monthly sequence duplicate identity after");
+  for (const k of bMap.keys()) {
+    if (!aMap.has(k)) fail(caseId, "monthly sequence identity removed");
+  }
+  const moved: string[] = [];
+  for (const [k, av] of aMap) {
+    const bv = bMap.get(k);
+    if (bv === undefined) {
+      // A brand-new identity is itself the allocation for a new month.
+      moved.push(k);
+      continue;
+    }
+    if (av < bv) fail(caseId, "monthly sequence next_number decreased");
+    if (av !== bv) moved.push(k);
+  }
+  if (moved.length === 0) fail(caseId, "monthly sequence did not increment");
+  if (moved.length > 1) fail(caseId, "more than one monthly sequence identity changed");
+  const key = moved[0] as string;
+  const bv = bMap.get(key);
+  const av = aMap.get(key) as number;
+  if (bv !== undefined && av - bv !== expectedDelta)
+    fail(caseId, "monthly sequence delta is not exactly one allocation");
+  return key;
+}
+
 
 // ---------------------------------------------------------------------------
 // Deterministic chain reasons

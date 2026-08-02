@@ -40,6 +40,7 @@ import {
 import {
   buildStage3CDenialActors,
   createStage3CAnonRpcClient,
+  type Stage3CDenialActor,
   type Stage3CDenialActorId,
 } from "./stage3c-live-rejection-reversal-cases";
 import { requireFixture } from "./stage3c-live-core-context";
@@ -520,8 +521,15 @@ export async function runSearchWithClient(
 export async function runStage3CSearchDenialMatrix(
   fixture: Stage3CFixture,
   caseId: string,
+  actorsOverride?: readonly Stage3CDenialActor[] | null,
 ): Promise<void> {
-  const actors = buildStage3CDenialActors(fixture, createStage3CAnonRpcClient());
+  // The live workflow passes nothing and gets the real actor set, whose
+  // unauthenticated member is a genuine anonymous PostgREST client built
+  // from the disposable fixture environment. An override exists solely so
+  // the behavioral suite can drive the SAME matrix logic without live
+  // credentials; it never weakens the expectations below.
+  const actors =
+    actorsOverride ?? buildStage3CDenialActors(fixture, createStage3CAnonRpcClient());
   if (actors.length !== Object.keys(STAGE3C_SEARCH_DENIAL_MATRIX).length)
     searchFail(caseId, "denial actor set does not cover the expectation matrix");
   for (const actor of actors) {
@@ -776,7 +784,7 @@ export const search10_crossSocietyIsolation: Stage3CMatrixLiveHandler = async (c
   // The full authorization matrix: every unauthorized actor — including
   // a genuinely anonymous PostgREST caller — is denied with its exact
   // canonical token and never receives rows.
-  await runStage3CSearchDenialMatrix(fixture, "SEARCH-10");
+  await runStage3CSearchDenialMatrix(fixture, "SEARCH-10", ctx.searchDenialActors);
 };
 
 // ---------------------------------------------------------------------------

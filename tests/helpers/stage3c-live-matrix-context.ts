@@ -38,6 +38,7 @@ import type {
   Stage3CReadDenialEvidence,
 } from "./stage3c-live-read-cases";
 import type {
+  Stage3CDenialActor,
   Stage3CRejectionState,
   Stage3CReversalState,
 } from "./stage3c-live-rejection-reversal-cases";
@@ -150,6 +151,11 @@ export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
   // workflow after primary teardown returns, so a CLEANUP case can never
   // pass by running before teardown. `cleanupObserver` is an independent
   // disposable client, never the fixture's own admin client.
+  // SEARCH-10 denial-actor override. `null` in the live workflow, which
+  // then builds the real actor set (including a genuine anonymous
+  // PostgREST client). Only the behavioral suite supplies a value.
+  searchDenialActors: readonly Stage3CDenialActor[] | null;
+
   cleanupEvidence: Stage3CCleanupEvidence | null;
   cleanupObserver: Stage3CCleanupObserver | null;
   teardownCompletedAt: string | null;
@@ -241,6 +247,7 @@ export function createStage3CLiveMatrixContext(): Stage3CLiveMatrixContext {
 
     rejectionState: null,
     reversalState: null,
+    searchDenialActors: null,
     cleanupEvidence: null,
     cleanupObserver: null,
     teardownCompletedAt: null,

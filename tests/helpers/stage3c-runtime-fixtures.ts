@@ -2054,6 +2054,65 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
     );
     trackUniqueId(tracked.billLineItemIds, refBLineItem.id, "bill_line_item:ref-b");
 
+    // ---- SEARCH-01..10 dedicated resources ---------------------------
+    // A dedicated flat plus five dedicated bills so no SEARCH assertion
+    // depends on a bill any other matrix group mutates. The flat number
+    // is unique inside Society A (flatA = 101, otherFlatA = 202,
+    // secondBlockFlatA is created later in its own block).
+    const searchFlatRow = await assertSupabaseSingleResult<{ id: string }>(
+      "insert:searchFlatA",
+      admin
+        .from("flats")
+        .insert({
+          society_id: societyA,
+          block_id: blockA,
+          flat_number: STAGE3C_SEARCH_FLAT_NUMBER,
+          status: "occupied",
+        })
+        .select("id")
+        .single(),
+    );
+    trackUniqueId(tracked.flatIds, searchFlatRow.id, "searchFlatA");
+    const searchFlatA = searchFlatRow.id;
+
+    const searchAvailableBillId = await addBill({
+      label: STAGE3C_SEARCH_LABELS.available,
+      amount: STAGE3C_SEARCH_TOTALS.available,
+      status: "unpaid",
+      flatId: searchFlatA,
+    });
+    const searchPendingBillId = await addBill({
+      label: STAGE3C_SEARCH_LABELS.pending,
+      amount: STAGE3C_SEARCH_TOTALS.pending,
+      status: "unpaid",
+      flatId: searchFlatA,
+    });
+    const searchVerifiedBillId = await addBill({
+      label: STAGE3C_SEARCH_LABELS.verified,
+      amount: STAGE3C_SEARCH_TOTALS.verified,
+      status: "unpaid",
+      flatId: searchFlatA,
+    });
+    const searchCancelledBillId = await addBill({
+      label: STAGE3C_SEARCH_LABELS.cancelled,
+      amount: STAGE3C_SEARCH_TOTALS.cancelled,
+      status: "cancelled",
+      flatId: searchFlatA,
+      extra: {
+        cancelled_at: new Date().toISOString(),
+        cancelled_by: adminA1.id,
+        cancel_reason: "stage3c search cancelled bill",
+      },
+    });
+    const searchNoHeadroomBillId = await addBill({
+      label: STAGE3C_SEARCH_LABELS.noHeadroom,
+      amount: STAGE3C_SEARCH_TOTALS.noHeadroom,
+      status: "unpaid",
+      flatId: searchFlatA,
+    });
+
+
+
 
     const matrix: Stage3CMatrixResources = validateStage3CMatrixResources(
       {

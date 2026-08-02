@@ -48,14 +48,14 @@ const ID = {
   societyA: "11111111-1111-4111-8111-111111111111",
   societyB: "22222222-2222-4222-8222-222222222222",
   flat: "33333333-3333-4333-8333-333333333333",
-  available: "aaaaaaa1-1111-4111-8111-111111111111",
-  pending: "aaaaaaa2-2222-4222-8222-222222222222",
-  verified: "aaaaaaa3-3333-4333-8333-333333333333",
-  cancelled: "aaaaaaa4-4444-4444-8444-444444444444",
-  noHeadroom: "aaaaaaa5-5555-4555-8555-555555555555",
-  openBill: "bbbbbbb1-1111-4111-8111-111111111111",
-  openBill2: "bbbbbbb2-2222-4222-8222-222222222222",
-  societyBBill: "ccccccc1-1111-4111-8111-111111111111",
+  available: "a1a1a1a1-1111-4111-8111-111111111111",
+  pending: "a2a2a2a2-2222-4222-8222-222222222222",
+  verified: "a3a3a3a3-3333-4333-8333-333333333333",
+  cancelled: "a4a4a4a4-4444-4444-8444-444444444444",
+  noHeadroom: "a5a5a5a5-5555-4555-8555-555555555555",
+  openBill: "b1b1b1b1-1111-4111-8111-111111111111",
+  openBill2: "b2b2b2b2-2222-4222-8222-222222222222",
+  societyBBill: "c1c1c1c1-1111-4111-8111-111111111111",
 } as const;
 
 interface EngineBill {
@@ -108,7 +108,7 @@ function engineBills(): EngineBill[] {
     {
       bill_id: ID.openBill,
       society_id: ID.societyA,
-      flat_id: "other-flat",
+      flat_id: "44444444-4444-4444-8444-444444444444",
       flat_label: "101",
       bill_number: "RCPT/BILL/open1",
       period_label: "open1",
@@ -122,7 +122,7 @@ function engineBills(): EngineBill[] {
     {
       bill_id: ID.openBill2,
       society_id: ID.societyA,
-      flat_id: "other-flat",
+      flat_id: "44444444-4444-4444-8444-444444444444",
       flat_label: "102",
       bill_number: "RCPT/BILL/open2",
       period_label: "open2",
@@ -136,7 +136,7 @@ function engineBills(): EngineBill[] {
     {
       bill_id: ID.societyBBill,
       society_id: ID.societyB,
-      flat_id: "b-flat",
+      flat_id: "55555555-5555-4555-8555-555555555555",
       flat_label: "B-1",
       bill_number: "RCPT/BILL/bsoc",
       period_label: "bsoc",
@@ -157,6 +157,7 @@ function toRow(b: EngineBill): OpenBillForPayment {
     period_label: b.period_label,
     flat_id: b.flat_id,
     flat_label: b.flat_label,
+    block_name: null,
     society_id: b.society_id,
     due_date: b.due_date,
     status: b.status,
@@ -506,7 +507,7 @@ describe("Stage 3C SEARCH-01..03 — figures", () => {
     );
     const { fixture } = makeFixture({ bills });
     // label still matches; now break the flat id instead
-    const broken = bills.map((b) => (b.bill_id === ID.available ? { ...b, flat_id: "zzz" } : b));
+    const broken = bills.map((b) => (b.bill_id === ID.available ? { ...b, flat_id: "66666666-6666-4666-8666-666666666666" } : b));
     const f2 = makeFixture({ bills: broken }).fixture;
     await expect(runCase("SEARCH-01", fixture)).resolves.toBeUndefined();
     await expect(runCase("SEARCH-01", f2)).rejects.toThrow(/flat_id mismatch/);

@@ -661,6 +661,10 @@ export const search06_matchesBillNumberSubstring: Stage3CMatrixLiveHandler = asy
   });
   if (findSearchRow(partial, fixture.search.availableBillId) === null)
     searchFail("SEARCH-06", "substring bill-number query missed the bill");
+
+  // Substring matching must be LITERAL: a user-typed LIKE metacharacter
+  // is data, never a pattern.
+  await proveSearchWildcardsAreLiteral(fixture, "SEARCH-06");
 };
 
 export const search07_matchesFlatNumberSubstring: Stage3CMatrixLiveHandler = async (ctx) => {

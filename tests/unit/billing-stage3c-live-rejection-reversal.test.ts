@@ -47,7 +47,6 @@ import {
   verifyOfflinePaymentWithClient,
 } from "@/lib/offline-payments.functions";
 import type { BillingRpcClient } from "@/lib/billing-config.functions";
-import type { Stage3CFixture } from "../helpers/stage3c-runtime-fixtures";
 
 // ---------------------------------------------------------------------------
 // Canonical constants

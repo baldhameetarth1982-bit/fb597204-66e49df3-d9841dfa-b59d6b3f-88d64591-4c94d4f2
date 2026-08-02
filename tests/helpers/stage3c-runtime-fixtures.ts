@@ -304,6 +304,8 @@ export type FixtureAuditSelector = {
 
 export type TrackedIds = {
   authUserIds: string[];
+  /** Synthetic auth emails, index-aligned with {@link TrackedIds.authUserIds}. */
+  authUserEmails: string[];
   societyIds: string[];
   userRoles: UserRoleKey[];
   userRoleIds: string[];
@@ -325,6 +327,7 @@ export type TrackedIds = {
 function makeTracker(): TrackedIds {
   return {
     authUserIds: [],
+    authUserEmails: [],
     societyIds: [],
     userRoles: [],
     userRoleIds: [],
@@ -1183,6 +1186,7 @@ async function mkUser(
   const user = (created as { user: { id: string } | null } | null)?.user;
   if (!user) throw new Error(`[stage3c:auth:createUser:${slug}] missing user`);
   tracked.authUserIds.push(user.id);
+  tracked.authUserEmails.push(email);
   const client = createClient(env.url, env.publishableKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
@@ -1664,6 +1668,26 @@ async function strictCleanup(
         .delete()
         .eq("society_id", seq.society_id)
         .eq("year_month", seq.year_month),
+      fails,
+    );
+  }
+
+  // Exact composite-key YEARLY sequence deletion, derived from the same
+  // confirmed monthly identities (`payment_receipt_sequences` is keyed by
+  // society + calendar year).
+  for (const seq of stage3CYearlySequenceIdentities(
+    dedupeSeq(tracked.receiptSequences).map((s) => ({
+      society_id: s.society_id,
+      period: s.year_month,
+    })),
+  )) {
+    await collectCleanupResult(
+      `delete:payment_receipt_sequences:${seq.period}`,
+      admin
+        .from("payment_receipt_sequences")
+        .delete()
+        .eq("society_id", seq.society_id)
+        .eq("year", seq.period),
       fails,
     );
   }
@@ -2597,25 +2621,88 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
   }
 }
 
+
 // ---------------------------------------------------------------------------
-// CLEANUP-01..03 — post-teardown evidence and independent observation
+// CLEANUP-01..03 — complete post-teardown evidence, observation and lifecycle
 // ---------------------------------------------------------------------------
 
+/** Canonical isolated-run prefix shape produced by `makePrefix()`. */
+export const STAGE3C_PREFIX_RE = /^s3c-\d{10,}-[0-9a-z]{1,8}$/;
+
+/** A composite receipt-sequence identity (`period` = year_month or year). */
+export type Stage3CSequenceIdentity = {
+  readonly society_id: string;
+  readonly period: number;
+};
+
+/** Audit obligation captured as an exact (society, since) selector. */
+export type Stage3CAuditIdentity = {
+  readonly society_id: string;
+  readonly since: string;
+};
+
 /**
- * An IMMUTABLE copy of everything the fixture created, captured while
- * the fixture is still alive and consumed only AFTER teardown.
+ * How each `TrackedIds` group participates in post-teardown proof.
  *
- * Post-teardown absence proofs must not read the live tracker: the
- * teardown path is allowed to mutate it, so a tracker that had been
- * emptied would make every absence assertion vacuously true. This
- * snapshot is detached (fresh arrays) and deeply frozen, so the
- * evidence CLEANUP-01..03 checks is exactly the evidence that existed
- * before teardown ran.
+ * `evidence`  — copied into {@link Stage3CCleanupEvidence} and proven absent.
+ * `derived`   — not copied verbatim; a derived identity set is proven instead.
+ * `metadata`  — not an object obligation (timestamps, alignment data).
  */
+export type Stage3CTrackerCoverage = "evidence" | "derived" | "metadata";
+
+/**
+ * COMPILE-TIME EXHAUSTIVENESS. Adding a key to `TrackedIds` without
+ * classifying it here is a type error, so cleanup can never silently
+ * fall behind the fixture.
+ */
+export const STAGE3C_TRACKER_COVERAGE = Object.freeze({
+  authUserIds: "evidence",
+  authUserEmails: "evidence",
+  societyIds: "evidence",
+  userRoles: "derived",
+  userRoleIds: "evidence",
+  userRoleBlockScopeIds: "evidence",
+  blockIds: "evidence",
+  flatIds: "evidence",
+  flatResidents: "derived",
+  flatResidentIds: "evidence",
+  billIds: "evidence",
+  billLineItemIds: "evidence",
+  paymentIds: "evidence",
+  paymentReceiptIds: "evidence",
+  receiptSequences: "evidence",
+  auditSelectors: "evidence",
+  setupStartedAt: "metadata",
+}) satisfies Record<keyof TrackedIds, Stage3CTrackerCoverage>;
+
+/** Evidence groups whose expected counts must be recorded. */
+export const STAGE3C_EVIDENCE_ID_GROUPS = Object.freeze([
+  "authUserIds",
+  "authUserEmails",
+  "societyIds",
+  "blockIds",
+  "flatIds",
+  "flatResidentIds",
+  "userRoleIds",
+  "userRoleBlockScopeIds",
+  "billIds",
+  "billLineItemIds",
+  "paymentIds",
+  "paymentReceiptIds",
+  "monthlyReceiptSequences",
+  "yearlyReceiptSequences",
+  "auditSelectors",
+  "storagePaths",
+] as const);
+
+export type Stage3CEvidenceGroup = (typeof STAGE3C_EVIDENCE_ID_GROUPS)[number];
+
 export type Stage3CCleanupEvidence = {
   readonly prefix: string;
   readonly capturedAt: string;
+  readonly setupStartedAt: string;
   readonly authUserIds: readonly string[];
+  readonly authUserEmails: readonly string[];
   readonly societyIds: readonly string[];
   readonly blockIds: readonly string[];
   readonly flatIds: readonly string[];
@@ -2626,150 +2713,584 @@ export type Stage3CCleanupEvidence = {
   readonly billLineItemIds: readonly string[];
   readonly paymentIds: readonly string[];
   readonly paymentReceiptIds: readonly string[];
+  readonly monthlyReceiptSequences: readonly Stage3CSequenceIdentity[];
+  readonly yearlyReceiptSequences: readonly Stage3CSequenceIdentity[];
+  readonly auditSelectors: readonly Stage3CAuditIdentity[];
+  /** Storage object paths — the current fixture creates none (expected 0). */
+  readonly storagePaths: readonly string[];
+  readonly expectedCounts: Readonly<Record<Stage3CEvidenceGroup, number>>;
 };
 
-/** One (table, primary-key column, tracked ids) absence obligation. */
-export type Stage3CCleanupTableTarget = {
-  readonly table: string;
-  readonly column: string;
-  readonly ids: readonly string[];
-};
+// --- capture -------------------------------------------------------------
 
-function frozenIdCopy(ids: readonly string[], label: string): readonly string[] {
+function cleanupEvidenceFail(label: string, reason: string): never {
+  throw new Error(`[stage3c:cleanup-evidence:${label}] ${reason}`);
+}
+
+function frozenUuidCopy(
+  ids: readonly unknown[] | undefined,
+  label: string,
+): readonly string[] {
+  if (!Array.isArray(ids)) cleanupEvidenceFail(label, "tracker group is missing");
   const out: string[] = [];
+  const seen = new Set<string>();
   for (const id of ids) {
-    if (typeof id !== "string" || !UUID_RE.test(id.trim().toLowerCase()))
-      throw new Error(`[stage3c:cleanup-evidence:${label}] malformed tracked id`);
+    if (typeof id !== "string" || !UUID_RE.test(id.trim()))
+      cleanupEvidenceFail(label, "malformed tracked id");
+    if (seen.has(id)) cleanupEvidenceFail(label, "duplicate tracked id");
+    seen.add(id);
     out.push(id);
   }
   return Object.freeze(out);
 }
 
+function frozenEmailCopy(
+  emails: readonly unknown[] | undefined,
+  label: string,
+): readonly string[] {
+  if (!Array.isArray(emails)) cleanupEvidenceFail(label, "tracker group is missing");
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const e of emails) {
+    if (typeof e !== "string" || !e.includes("@") || e.trim() === "")
+      cleanupEvidenceFail(label, "malformed tracked email");
+    const key = e.toLowerCase();
+    if (seen.has(key)) cleanupEvidenceFail(label, "duplicate tracked email");
+    seen.add(key);
+    out.push(e);
+  }
+  return Object.freeze(out);
+}
+
+function isSequencePeriod(v: unknown): v is number {
+  return typeof v === "number" && Number.isInteger(v) && v > 0;
+}
+
+function frozenMonthlySequences(
+  rows: readonly unknown[] | undefined,
+  label: string,
+): readonly Stage3CSequenceIdentity[] {
+  if (!Array.isArray(rows)) cleanupEvidenceFail(label, "tracker group is missing");
+  const out: Stage3CSequenceIdentity[] = [];
+  const seen = new Set<string>();
+  for (const raw of rows) {
+    const r = raw as { society_id?: unknown; year_month?: unknown };
+    if (typeof r?.society_id !== "string" || !UUID_RE.test(r.society_id))
+      cleanupEvidenceFail(label, "malformed sequence society identity");
+    if (!isSequencePeriod(r.year_month) || String(r.year_month).length !== 6)
+      cleanupEvidenceFail(label, "malformed monthly sequence period");
+    const key = `${r.society_id}|${r.year_month}`;
+    if (seen.has(key)) continue; // the same identity is legitimately re-confirmed
+    seen.add(key);
+    out.push(Object.freeze({ society_id: r.society_id, period: r.year_month }));
+  }
+  return Object.freeze(out);
+}
+
+/** Derive the distinct yearly identities implied by monthly identities. */
+export function stage3CYearlySequenceIdentities(
+  monthly: readonly Stage3CSequenceIdentity[],
+): readonly Stage3CSequenceIdentity[] {
+  const seen = new Set<string>();
+  const out: Stage3CSequenceIdentity[] = [];
+  for (const m of monthly) {
+    const year = Math.floor(m.period / 100);
+    if (!isSequencePeriod(year) || String(year).length !== 4)
+      cleanupEvidenceFail("yearlyReceiptSequences", "malformed derived year");
+    const key = `${m.society_id}|${year}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(Object.freeze({ society_id: m.society_id, period: year }));
+  }
+  return Object.freeze(out);
+}
+
+function frozenAuditSelectors(
+  rows: readonly unknown[] | undefined,
+  label: string,
+): readonly Stage3CAuditIdentity[] {
+  if (!Array.isArray(rows)) cleanupEvidenceFail(label, "tracker group is missing");
+  const out: Stage3CAuditIdentity[] = [];
+  const seen = new Set<string>();
+  for (const raw of rows) {
+    const r = raw as { society_id?: unknown; since?: unknown };
+    if (typeof r?.society_id !== "string" || !UUID_RE.test(r.society_id))
+      cleanupEvidenceFail(label, "malformed audit society identity");
+    if (typeof r.since !== "string" || Number.isNaN(Date.parse(r.since)))
+      cleanupEvidenceFail(label, "malformed audit boundary");
+    const key = `${r.society_id}|${r.since}`;
+    if (seen.has(key)) cleanupEvidenceFail(label, "duplicate audit selector");
+    seen.add(key);
+    out.push(Object.freeze({ society_id: r.society_id, since: r.since }));
+  }
+  return Object.freeze(out);
+}
+
+function assertNoProtectedSociety(ids: readonly string[]): void {
+  const protectedId = process.env.SOCIOHUB_PROTECTED_SOCIETY_ID;
+  if (!protectedId) return;
+  for (const id of ids) {
+    if (id.toLowerCase() === protectedId.toLowerCase())
+      cleanupEvidenceFail("protected", "evidence references the protected society");
+  }
+}
+
 /**
- * Capture the immutable cleanup evidence. MUST be called before
- * `fixture.cleanup()`.
+ * Capture the complete IMMUTABLE cleanup evidence. MUST be called while
+ * the fixture is still alive — i.e. strictly before primary teardown.
  */
 export function captureStage3CCleanupEvidence(
   fixture: Stage3CFixture,
 ): Stage3CCleanupEvidence {
-  const t = fixture.tracked;
-  if (typeof fixture.prefix !== "string" || fixture.prefix.trim() === "")
-    throw new Error("[stage3c:cleanup-evidence:prefix] fixture prefix is blank");
-  return Object.freeze({
-    prefix: fixture.prefix,
-    capturedAt: new Date().toISOString(),
-    authUserIds: frozenIdCopy(t.authUserIds, "authUserIds"),
-    societyIds: frozenIdCopy(t.societyIds, "societyIds"),
-    blockIds: frozenIdCopy(t.blockIds, "blockIds"),
-    flatIds: frozenIdCopy(t.flatIds, "flatIds"),
-    flatResidentIds: frozenIdCopy(t.flatResidentIds, "flatResidentIds"),
-    userRoleIds: frozenIdCopy(t.userRoleIds, "userRoleIds"),
-    userRoleBlockScopeIds: frozenIdCopy(
+  const t = fixture?.tracked as TrackedIds | undefined;
+  if (!t) cleanupEvidenceFail("tracker", "fixture carries no tracker");
+  if (typeof fixture.prefix !== "string" || !STAGE3C_PREFIX_RE.test(fixture.prefix))
+    cleanupEvidenceFail("prefix", "fixture prefix is not an isolated Stage 3C prefix");
+
+  const authUserIds = frozenUuidCopy(t.authUserIds, "authUserIds");
+  const authUserEmails = frozenEmailCopy(t.authUserEmails, "authUserEmails");
+  if (authUserIds.length === 0)
+    cleanupEvidenceFail("authUserIds", "no synthetic auth users were captured");
+  if (authUserIds.length !== authUserEmails.length)
+    cleanupEvidenceFail("authUserEmails", "auth id and email counts are misaligned");
+  for (const email of authUserEmails) {
+    if (!email.toLowerCase().startsWith(`${fixture.prefix.toLowerCase()}-`))
+      cleanupEvidenceFail("authUserEmails", "tracked email does not carry the fixture prefix");
+  }
+
+  const societyIds = frozenUuidCopy(t.societyIds, "societyIds");
+  assertNoProtectedSociety(societyIds);
+
+  const monthlyReceiptSequences = frozenMonthlySequences(
+    t.receiptSequences,
+    "monthlyReceiptSequences",
+  );
+  const yearlyReceiptSequences = stage3CYearlySequenceIdentities(monthlyReceiptSequences);
+
+  const groups = {
+    authUserIds,
+    authUserEmails,
+    societyIds,
+    blockIds: frozenUuidCopy(t.blockIds, "blockIds"),
+    flatIds: frozenUuidCopy(t.flatIds, "flatIds"),
+    flatResidentIds: frozenUuidCopy(t.flatResidentIds, "flatResidentIds"),
+    userRoleIds: frozenUuidCopy(t.userRoleIds, "userRoleIds"),
+    userRoleBlockScopeIds: frozenUuidCopy(
       t.userRoleBlockScopeIds,
       "userRoleBlockScopeIds",
     ),
-    billIds: frozenIdCopy(t.billIds, "billIds"),
-    billLineItemIds: frozenIdCopy(t.billLineItemIds, "billLineItemIds"),
-    paymentIds: frozenIdCopy(t.paymentIds, "paymentIds"),
-    paymentReceiptIds: frozenIdCopy(t.paymentReceiptIds, "paymentReceiptIds"),
+    billIds: frozenUuidCopy(t.billIds, "billIds"),
+    billLineItemIds: frozenUuidCopy(t.billLineItemIds, "billLineItemIds"),
+    paymentIds: frozenUuidCopy(t.paymentIds, "paymentIds"),
+    paymentReceiptIds: frozenUuidCopy(t.paymentReceiptIds, "paymentReceiptIds"),
+    monthlyReceiptSequences,
+    yearlyReceiptSequences,
+    auditSelectors: frozenAuditSelectors(t.auditSelectors, "auditSelectors"),
+    /** The current fixture never uploads storage objects. */
+    storagePaths: Object.freeze([] as string[]),
+  } as const;
+
+  const expectedCounts: Record<Stage3CEvidenceGroup, number> = {} as Record<
+    Stage3CEvidenceGroup,
+    number
+  >;
+  for (const key of STAGE3C_EVIDENCE_ID_GROUPS) {
+    expectedCounts[key] = groups[key].length;
+  }
+
+  if (typeof t.setupStartedAt !== "string" || Number.isNaN(Date.parse(t.setupStartedAt)))
+    cleanupEvidenceFail("setupStartedAt", "tracker has no valid setup boundary");
+
+  return Object.freeze({
+    prefix: fixture.prefix,
+    capturedAt: new Date().toISOString(),
+    setupStartedAt: t.setupStartedAt,
+    ...groups,
+    expectedCounts: Object.freeze(expectedCounts),
   });
 }
 
+// --- database absence targets --------------------------------------------
+
+export type Stage3CCleanupTargetKind = "ids" | "monthly_sequence" | "yearly_sequence";
+
+export const STAGE3C_CLEANUP_TARGET_KINDS: readonly Stage3CCleanupTargetKind[] =
+  Object.freeze(["ids", "monthly_sequence", "yearly_sequence"] as const);
+
+export type Stage3CCleanupTableTarget =
+  | {
+      readonly kind: "ids";
+      readonly label: string;
+      readonly table: string;
+      readonly column: string;
+      readonly ids: readonly string[];
+      readonly expected: number;
+    }
+  | {
+      readonly kind: "monthly_sequence" | "yearly_sequence";
+      readonly label: string;
+      readonly table: string;
+      readonly periodColumn: string;
+      readonly keys: readonly Stage3CSequenceIdentity[];
+      readonly expected: number;
+    };
+
 /**
- * The exhaustive ordered list of database absence obligations derived
- * from the evidence. Children are listed before parents so a failure
- * report reads bottom-up from the most dependent row.
+ * The exhaustive ordered list of database absence obligations. Children
+ * precede parents so a failure report reads bottom-up from the most
+ * dependent row.
  */
 export function stage3CCleanupTableTargets(
   evidence: Stage3CCleanupEvidence,
 ): readonly Stage3CCleanupTableTarget[] {
+  const ids = (
+    label: string,
+    table: string,
+    column: string,
+    group: Stage3CEvidenceGroup,
+    value: readonly string[],
+  ): Stage3CCleanupTableTarget =>
+    Object.freeze({
+      kind: "ids" as const,
+      label,
+      table,
+      column,
+      ids: value,
+      expected: evidence.expectedCounts[group],
+    });
+
   return Object.freeze([
-    { table: "payment_receipts", column: "id", ids: evidence.paymentReceiptIds },
-    { table: "payments", column: "id", ids: evidence.paymentIds },
-    { table: "bill_line_items", column: "id", ids: evidence.billLineItemIds },
-    { table: "bills", column: "id", ids: evidence.billIds },
-    {
-      table: "user_role_block_scopes",
-      column: "id",
-      ids: evidence.userRoleBlockScopeIds,
-    },
-    { table: "flat_residents", column: "id", ids: evidence.flatResidentIds },
-    { table: "flats", column: "id", ids: evidence.flatIds },
-    { table: "blocks", column: "id", ids: evidence.blockIds },
-    { table: "user_roles", column: "id", ids: evidence.userRoleIds },
-    { table: "societies", column: "id", ids: evidence.societyIds },
+    ids("payment_receipts", "payment_receipts", "id", "paymentReceiptIds", evidence.paymentReceiptIds),
+    ids("payments", "payments", "id", "paymentIds", evidence.paymentIds),
+    ids("bill_line_items", "bill_line_items", "id", "billLineItemIds", evidence.billLineItemIds),
+    ids("bills", "bills", "id", "billIds", evidence.billIds),
+    ids(
+      "user_role_block_scopes",
+      "user_role_block_scopes",
+      "id",
+      "userRoleBlockScopeIds",
+      evidence.userRoleBlockScopeIds,
+    ),
+    ids("flat_residents", "flat_residents", "id", "flatResidentIds", evidence.flatResidentIds),
+    ids("flats", "flats", "id", "flatIds", evidence.flatIds),
+    ids("blocks", "blocks", "id", "blockIds", evidence.blockIds),
+    ids("user_roles", "user_roles", "id", "userRoleIds", evidence.userRoleIds),
+    Object.freeze({
+      kind: "monthly_sequence" as const,
+      label: "payment_receipt_month_sequences",
+      table: "payment_receipt_month_sequences",
+      periodColumn: "year_month",
+      keys: evidence.monthlyReceiptSequences,
+      expected: evidence.expectedCounts.monthlyReceiptSequences,
+    }),
+    Object.freeze({
+      kind: "yearly_sequence" as const,
+      label: "payment_receipt_sequences",
+      table: "payment_receipt_sequences",
+      periodColumn: "year",
+      keys: evidence.yearlyReceiptSequences,
+      expected: evidence.expectedCounts.yearlyReceiptSequences,
+    }),
+    ids("societies", "societies", "id", "societyIds", evidence.societyIds),
   ] as const);
 }
 
+// --- prefix residue targets ----------------------------------------------
+
+/** Escape LIKE metacharacters. Escape char first, then `%`, then `_`. */
+export function escapeStage3CLikeLiteral(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+}
+
 /**
- * An independent, disposable observer. Deliberately NOT `fixture.admin`:
- * the absence proof must not depend on the same client instance that
- * performed the deletions, so a stale or mis-scoped fixture client can
- * never make teardown look successful.
+ * Build a residue pattern. The ONLY unescaped wildcards are the ones this
+ * function intentionally adds.
  */
-export type Stage3CCleanupObserver = {
-  readonly remainingIn: (
-    target: Stage3CCleanupTableTarget,
-  ) => Promise<{ remaining: readonly string[]; error: unknown }>;
-  readonly remainingAuthUserIds: (
-    ids: readonly string[],
-  ) => Promise<{ remaining: readonly string[]; error: unknown }>;
-  readonly prefixSocietyCount: (prefix: string) => Promise<{ count: number; error: unknown }>;
-  readonly prefixAuthUserCount: (prefix: string) => Promise<{ count: number; error: unknown }>;
+export function stage3CPrefixPattern(
+  prefix: string,
+  mode: "leading" | "contains",
+): string {
+  const escaped = escapeStage3CLikeLiteral(prefix);
+  return mode === "leading" ? `${escaped}-%` : `%${escaped}%`;
+}
+
+export type Stage3CPrefixTarget = {
+  readonly label: string;
+  readonly table: string;
+  readonly column: string;
+  readonly mode: "leading" | "contains";
 };
+
+/**
+ * Every prefix-bearing field the fixture writes. Derived from the actual
+ * fixture writes: society names, block/flat labels, bill numbers, period
+ * labels and notes, payment references / idempotency keys / notes, and
+ * receipt snapshots.
+ */
+export const STAGE3C_PREFIX_TARGETS: readonly Stage3CPrefixTarget[] = Object.freeze([
+  { label: "society-name", table: "societies", column: "name", mode: "leading" },
+  { label: "block-name", table: "blocks", column: "name", mode: "contains" },
+  { label: "flat-number", table: "flats", column: "flat_number", mode: "contains" },
+  { label: "bill-number", table: "bills", column: "bill_number", mode: "contains" },
+  { label: "bill-period-label", table: "bills", column: "period_label", mode: "contains" },
+  { label: "bill-notes", table: "bills", column: "notes", mode: "contains" },
+  { label: "payment-reference", table: "payments", column: "reference_no", mode: "contains" },
+  {
+    label: "payment-idempotency-key",
+    table: "payments",
+    column: "idempotency_key",
+    mode: "contains",
+  },
+  { label: "payment-notes", table: "payments", column: "notes", mode: "contains" },
+  {
+    label: "payment-verification-notes",
+    table: "payments",
+    column: "verification_notes",
+    mode: "contains",
+  },
+  {
+    label: "receipt-bill-number-snapshot",
+    table: "payment_receipts",
+    column: "bill_number_snapshot",
+    mode: "contains",
+  },
+  {
+    label: "receipt-reference-snapshot",
+    table: "payment_receipts",
+    column: "reference_snapshot",
+    mode: "contains",
+  },
+  {
+    label: "receipt-number",
+    table: "payment_receipts",
+    column: "receipt_number",
+    mode: "contains",
+  },
+] as const);
+
+// --- independent observer -------------------------------------------------
+
+export type Stage3CObservedIds = { readonly remaining: readonly string[]; readonly error: unknown };
+export type Stage3CObservedCount = { readonly count: number; readonly error: unknown };
+export type Stage3CObservedAuth = {
+  readonly remainingIds: readonly string[];
+  readonly remainingEmails: readonly string[];
+  readonly error: unknown;
+};
+
+export type Stage3CCleanupObserver = {
+  readonly remainingIn: (target: Stage3CCleanupTableTarget) => Promise<Stage3CObservedIds>;
+  readonly remainingAuth: (
+    ids: readonly string[],
+    emails: readonly string[],
+  ) => Promise<Stage3CObservedAuth>;
+  readonly prefixResidueCount: (
+    target: Stage3CPrefixTarget,
+    prefix: string,
+  ) => Promise<Stage3CObservedCount>;
+  readonly prefixAuthCount: (prefix: string) => Promise<Stage3CObservedCount>;
+};
+
+export const STAGE3C_AUTH_PAGE_SIZE = 200;
+export const STAGE3C_AUTH_PAGE_CAP = 25;
+
+type AuthLister = (args: { page: number; perPage: number }) => Promise<{
+  data: unknown;
+  error: unknown;
+}>;
+
+/**
+ * Fail-closed paginated auth listing. NEVER infers absence from an error:
+ * a provider error, an authorization error, a malformed payload, or a
+ * truncated pagination scan all surface as `error`.
+ */
+export async function listStage3CAuthResidue(
+  lister: AuthLister,
+  match: (email: string, id: string) => boolean,
+): Promise<{ users: { id: string; email: string }[]; error: unknown }> {
+  const users: { id: string; email: string }[] = [];
+  let page = 1;
+  for (; page <= STAGE3C_AUTH_PAGE_CAP; page += 1) {
+    const res = await lister({ page, perPage: STAGE3C_AUTH_PAGE_SIZE });
+    if (res.error) return { users: [], error: res.error };
+    const list = (res.data as { users?: unknown } | null)?.users;
+    if (!Array.isArray(list))
+      return { users: [], error: new Error("malformed auth listing payload") };
+    for (const raw of list) {
+      const u = raw as { id?: unknown; email?: unknown };
+      if (typeof u?.id !== "string")
+        return { users: [], error: new Error("malformed auth user entry") };
+      const email = typeof u.email === "string" ? u.email : "";
+      if (match(email.toLowerCase(), u.id)) users.push({ id: u.id, email });
+    }
+    if (list.length < STAGE3C_AUTH_PAGE_SIZE) return { users, error: null };
+  }
+  return {
+    users: [],
+    error: new Error("auth listing pagination cap reached with a full final page"),
+  };
+}
 
 export function createStage3CCleanupObserver(): Stage3CCleanupObserver {
   const env = requireStage3CEnv();
   const observer = createClient(env.url, env.serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+  return buildStage3CCleanupObserver(observer);
+}
+
+/** Observer factory over an arbitrary client — exported for behavioral tests. */
+export function buildStage3CCleanupObserver(
+  observer: SupabaseClient,
+): Stage3CCleanupObserver {
   return Object.freeze({
     async remainingIn(target) {
-      const r = await fetchRemainingTrackedIds(
-        observer,
-        target.table,
-        target.column,
-        [...target.ids],
-      );
-      return { remaining: Object.freeze(r.remaining), error: r.error };
-    },
-    async remainingAuthUserIds(ids) {
+      if (target.kind === "ids") {
+        if (target.ids.length === 0) return { remaining: Object.freeze([]), error: null };
+        const r = await fetchRemainingTrackedIds(observer, target.table, target.column, [
+          ...target.ids,
+        ]);
+        return { remaining: Object.freeze(r.remaining), error: r.error };
+      }
       const remaining: string[] = [];
-      for (const id of ids) {
-        const { data, error } = await observer.auth.admin.getUserById(id);
-        // A deleted user yields an error / null user; anything else means
-        // the account still exists.
-        if (!error && data && data.user) remaining.push(id);
+      for (const key of target.keys) {
+        const { data, error } = await observer
+          .from(target.table)
+          .select(`society_id, ${target.periodColumn}`)
+          .eq("society_id", key.society_id)
+          .eq(target.periodColumn, key.period);
+        if (error) return { remaining: Object.freeze([]), error };
+        if (!Array.isArray(data))
+          return {
+            remaining: Object.freeze([]),
+            error: new Error("malformed sequence response"),
+          };
+        if (data.length > 0) remaining.push(`${target.label}:${remaining.length + 1}`);
       }
       return { remaining: Object.freeze(remaining), error: null };
     },
-    async prefixSocietyCount(prefix) {
+    async remainingAuth(ids, emails) {
+      const idSet = new Set(ids);
+      const emailSet = new Set(emails.map((e) => e.toLowerCase()));
+      const { users, error } = await listStage3CAuthResidue(
+        (args) => observer.auth.admin.listUsers(args) as Promise<{ data: unknown; error: unknown }>,
+        (email, id) => idSet.has(id) || emailSet.has(email),
+      );
+      if (error)
+        return { remainingIds: Object.freeze([]), remainingEmails: Object.freeze([]), error };
+      const remainingIds = users.filter((u) => idSet.has(u.id)).map((u) => u.id);
+      const remainingEmails = users
+        .filter((u) => emailSet.has(u.email.toLowerCase()))
+        .map((u) => u.email);
+      return {
+        remainingIds: Object.freeze(remainingIds),
+        remainingEmails: Object.freeze(remainingEmails),
+        error: null,
+      };
+    },
+    async prefixResidueCount(target, prefix) {
       const { data, error } = await observer
-        .from("societies")
-        .select("id")
-        .like("name", `${prefix}-%`);
+        .from(target.table)
+        .select(target.column)
+        .like(target.column, stage3CPrefixPattern(prefix, target.mode));
       if (error) return { count: 0, error };
-      return { count: (data ?? []).length, error: null };
+      if (!Array.isArray(data))
+        return { count: 0, error: new Error("malformed residue response") };
+      return { count: data.length, error: null };
     },
-    async prefixAuthUserCount(prefix) {
+    async prefixAuthCount(prefix) {
       const needle = `${prefix.toLowerCase()}-`;
-      let page = 1;
-      let count = 0;
-      // Bounded scan; the fixture never creates more than a few users.
-      for (; page <= 20; page += 1) {
-        const { data, error } = await observer.auth.admin.listUsers({
-          page,
-          perPage: 200,
-        });
-        if (error) return { count: 0, error };
-        const users = data?.users ?? [];
-        for (const u of users) {
-          const email = (u.email ?? "").toLowerCase();
-          if (email.startsWith(needle)) count += 1;
-        }
-        if (users.length < 200) break;
-      }
-      return { count, error: null };
+      const { users, error } = await listStage3CAuthResidue(
+        (args) => observer.auth.admin.listUsers(args) as Promise<{ data: unknown; error: unknown }>,
+        (email) => email.startsWith(needle),
+      );
+      if (error) return { count: 0, error };
+      return { count: users.length, error: null };
     },
+  });
+}
+
+// --- teardown lifecycle controller ---------------------------------------
+
+export type Stage3CTeardownFailureCategory =
+  | "none"
+  | "primary_failed"
+  | "primary_aborted"
+  | "emergency_failed";
+
+export type Stage3CTeardownOutcome = {
+  readonly primaryAttempted: boolean;
+  readonly primaryCompleted: boolean;
+  readonly primarySucceeded: boolean;
+  readonly emergencyAttempted: boolean;
+  readonly emergencyCompleted: boolean;
+  readonly failureCategory: Stage3CTeardownFailureCategory;
+};
+
+export type Stage3CTeardownController = {
+  readonly runPrimary: () => Promise<Stage3CTeardownOutcome>;
+  readonly runEmergency: () => Promise<Stage3CTeardownOutcome>;
+  readonly outcome: () => Stage3CTeardownOutcome;
+};
+
+/**
+ * One explicit teardown lifecycle. Primary teardown runs at most once and
+ * a failure is never converted into success by a later emergency pass.
+ * Raw provider text never escapes: only a static failure category does.
+ */
+export function createStage3CTeardownController(deps: {
+  primary: () => Promise<void>;
+  emergency?: () => Promise<void>;
+  guard?: () => void;
+}): Stage3CTeardownController {
+  let primaryAttempted = false;
+  let primaryCompleted = false;
+  let primarySucceeded = false;
+  let emergencyAttempted = false;
+  let emergencyCompleted = false;
+  let failureCategory: Stage3CTeardownFailureCategory = "none";
+
+  const snapshot = (): Stage3CTeardownOutcome =>
+    Object.freeze({
+      primaryAttempted,
+      primaryCompleted,
+      primarySucceeded,
+      emergencyAttempted,
+      emergencyCompleted,
+      failureCategory,
+    });
+
+  return Object.freeze({
+    async runPrimary() {
+      if (primaryAttempted) return snapshot();
+      primaryAttempted = true;
+      try {
+        deps.guard?.();
+        await deps.primary();
+        primaryCompleted = true;
+        primarySucceeded = true;
+      } catch {
+        primaryCompleted = true;
+        primarySucceeded = false;
+        failureCategory = "primary_failed";
+      }
+      return snapshot();
+    },
+    async runEmergency() {
+      if (primarySucceeded) return snapshot();
+      if (!deps.emergency) return snapshot();
+      emergencyAttempted = true;
+      try {
+        deps.guard?.();
+        await deps.emergency();
+        emergencyCompleted = true;
+      } catch {
+        emergencyCompleted = false;
+        failureCategory = "emergency_failed";
+      }
+      // Emergency success NEVER converts a primary failure into success.
+      return snapshot();
+    },
+    outcome: snapshot,
   });
 }

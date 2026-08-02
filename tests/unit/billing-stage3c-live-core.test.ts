@@ -106,7 +106,20 @@ describe("Stage 3C — live suite shape", () => {
     const iteratesMatrix = /for \(const caseDefinition of STAGE3C_MATRIX_LIVE_CASE_HANDLERS\)/.test(
       liveSuiteSrc,
     );
-    expect(iteratesCore || iteratesMatrix, "iterates registry").toBe(true);
+    // The 93-case suite iterates two PHASE PARTITIONS instead of the raw
+    // registry (product cases run live, CLEANUP cases run post-teardown).
+    // Both partitions must still be derived from the matrix registry.
+    const iteratesProduct = /for \(const caseDefinition of STAGE3C_PRODUCT_CASES\)/.test(
+      liveSuiteSrc,
+    );
+    const iteratesCleanup = /for \(const caseDefinition of STAGE3C_CLEANUP_CASES\)/.test(
+      liveSuiteSrc,
+    );
+    const partitionsDerived =
+      /STAGE3C_PRODUCT_CASES = STAGE3C_MATRIX_LIVE_CASE_HANDLERS\.filter/.test(liveSuiteSrc) &&
+      /STAGE3C_CLEANUP_CASES = STAGE3C_MATRIX_LIVE_CASE_HANDLERS\.filter/.test(liveSuiteSrc);
+    const iteratesPartitions = iteratesProduct && iteratesCleanup && partitionsDerived;
+    expect(iteratesCore || iteratesMatrix || iteratesPartitions, "iterates registry").toBe(true);
     expect(liveSuiteSrc).not.toMatch(/pre-case/);
     expect(liveSuiteSrc).not.toMatch(/from "\.\.\/helpers\/stage3c-live-auth-cases"/);
     expect(liveSuiteSrc).not.toMatch(/from "\.\.\/helpers\/stage3c-live-pending-cases"/);

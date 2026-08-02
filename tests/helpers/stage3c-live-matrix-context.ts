@@ -31,6 +31,7 @@ import {
   type Stage3CCleanupEvidence,
   type Stage3CCleanupObserver,
   type Stage3CFixture,
+  type Stage3CTeardownOutcome,
 } from "./stage3c-runtime-fixtures";
 import type {
   ResidentPaymentDetail,
@@ -159,6 +160,8 @@ export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
   cleanupEvidence: Stage3CCleanupEvidence | null;
   cleanupObserver: Stage3CCleanupObserver | null;
   teardownCompletedAt: string | null;
+  /** Recorded outcome of the single primary teardown pass. */
+  teardownOutcome: Stage3CTeardownOutcome | null;
 }
 
 
@@ -251,6 +254,7 @@ export function createStage3CLiveMatrixContext(): Stage3CLiveMatrixContext {
     cleanupEvidence: null,
     cleanupObserver: null,
     teardownCompletedAt: null,
+    teardownOutcome: null,
   };
 }
 

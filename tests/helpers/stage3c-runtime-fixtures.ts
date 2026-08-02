@@ -2397,6 +2397,130 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
     );
     tracked.receiptSequences.push(secondBlockSeq);
 
+    // ---- SEARCH-01..10 financial state -------------------------------
+    // One pending payment on the pending bill; one verified payment on
+    // the verified bill; a pending + verified split that removes all
+    // headroom from the no-headroom bill. The available bill stays
+    // untouched so its figures are exactly (total, 0, 0, total, total).
+    const searchPendingPaymentId = await helpers.submitAdminCashPayment({
+      actor: adminA1,
+      billId: searchPendingBillId,
+      amount: STAGE3C_SEARCH_AMOUNTS.pendingOnPendingBill,
+      paymentDate: STAGE3C_TEST_PAYMENT_DATE,
+      idempotencyKey: `${prefix}-srch-pend`,
+      notes: "fixture search pending",
+    });
+    trackUniqueId(tracked.paymentIds, searchPendingPaymentId, "search:pending");
+
+    const searchVerifiedPaymentId = await helpers.submitAdminBankTransferPayment({
+      actor: adminA1,
+      billId: searchVerifiedBillId,
+      amount: STAGE3C_SEARCH_AMOUNTS.verifiedOnVerifiedBill,
+      paymentDate: STAGE3C_TEST_PAYMENT_DATE,
+      referenceNo: `${prefix}-REF-SRCH-VER`,
+      idempotencyKey: `${prefix}-srch-ver`,
+    });
+    trackUniqueId(tracked.paymentIds, searchVerifiedPaymentId, "search:verified");
+    await helpers.verifyPayment(adminA2, searchVerifiedPaymentId, "fixture search verify");
+    const searchVerifiedReceiptRow = await assertSupabaseSingleResult<{
+      id: string;
+      created_at: string;
+    }>(
+      "select:searchVerifiedReceipt",
+      admin
+        .from("payment_receipts")
+        .select("id, created_at")
+        .eq("payment_id", searchVerifiedPaymentId)
+        .single(),
+    );
+    trackUniqueId(
+      tracked.paymentReceiptIds,
+      searchVerifiedReceiptRow.id,
+      "search:verifiedReceipt",
+    );
+    tracked.receiptSequences.push(
+      await confirmReceiptSequenceKey(
+        admin,
+        societyA,
+        searchVerifiedReceiptRow.created_at,
+        "select:searchVerifiedReceiptSequence",
+      ),
+    );
+
+    const searchNoHeadroomVerifiedPaymentId = await helpers.submitAdminBankTransferPayment({
+      actor: adminA1,
+      billId: searchNoHeadroomBillId,
+      amount: STAGE3C_SEARCH_AMOUNTS.verifiedOnNoHeadroomBill,
+      paymentDate: STAGE3C_TEST_PAYMENT_DATE,
+      referenceNo: `${prefix}-REF-SRCH-NH`,
+      idempotencyKey: `${prefix}-srch-nh-ver`,
+    });
+    trackUniqueId(
+      tracked.paymentIds,
+      searchNoHeadroomVerifiedPaymentId,
+      "search:noHeadroomVerified",
+    );
+    await helpers.verifyPayment(
+      adminA2,
+      searchNoHeadroomVerifiedPaymentId,
+      "fixture search no-headroom verify",
+    );
+    const searchNoHeadroomReceiptRow = await assertSupabaseSingleResult<{
+      id: string;
+      created_at: string;
+    }>(
+      "select:searchNoHeadroomReceipt",
+      admin
+        .from("payment_receipts")
+        .select("id, created_at")
+        .eq("payment_id", searchNoHeadroomVerifiedPaymentId)
+        .single(),
+    );
+    trackUniqueId(
+      tracked.paymentReceiptIds,
+      searchNoHeadroomReceiptRow.id,
+      "search:noHeadroomReceipt",
+    );
+    tracked.receiptSequences.push(
+      await confirmReceiptSequenceKey(
+        admin,
+        societyA,
+        searchNoHeadroomReceiptRow.created_at,
+        "select:searchNoHeadroomReceiptSequence",
+      ),
+    );
+
+    const searchNoHeadroomPendingPaymentId = await helpers.submitAdminCashPayment({
+      actor: adminA1,
+      billId: searchNoHeadroomBillId,
+      amount: STAGE3C_SEARCH_AMOUNTS.pendingOnNoHeadroomBill,
+      paymentDate: STAGE3C_TEST_PAYMENT_DATE,
+      idempotencyKey: `${prefix}-srch-nh-pend`,
+      notes: "fixture search no-headroom pending",
+    });
+    trackUniqueId(
+      tracked.paymentIds,
+      searchNoHeadroomPendingPaymentId,
+      "search:noHeadroomPending",
+    );
+
+    const search: Stage3CSearchResources = {
+      flatId: searchFlatA,
+      flatNumber: STAGE3C_SEARCH_FLAT_NUMBER,
+      availableBillId: searchAvailableBillId,
+      availableBillNumber: `RR/${prefix}/${STAGE3C_SEARCH_LABELS.available}`,
+      pendingBillId: searchPendingBillId,
+      pendingBillNumber: `RR/${prefix}/${STAGE3C_SEARCH_LABELS.pending}`,
+      pendingPaymentId: searchPendingPaymentId,
+      verifiedBillId: searchVerifiedBillId,
+      verifiedBillNumber: `RR/${prefix}/${STAGE3C_SEARCH_LABELS.verified}`,
+      verifiedPaymentId: searchVerifiedPaymentId,
+      cancelledBillId: searchCancelledBillId,
+      noHeadroomBillId: searchNoHeadroomBillId,
+    };
+
+
+
     const scenarios: FinancialScenarios = {
       openBillId,
       openBillId2,

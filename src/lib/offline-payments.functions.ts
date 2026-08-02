@@ -978,24 +978,134 @@ export const getBillPaymentSummary = createServerFn({ method: "POST" })
 
 /* --------------------- Admin: bill search for entry ------------------- */
 
-const openBillSchema = z.object({
-  bill_id: z.string(),
-  bill_number: z.string().nullable(),
-  society_id: z.string(),
-  flat_id: z.string().nullable(),
-  flat_label: z.string().nullable(),
-  block_name: z.string().nullable(),
-  period_label: z.string().nullable(),
-  due_date: z.string().nullable(),
-  status: z.string(),
-  total_payable: z.coerce.number(),
-  verified_amount: z.coerce.number(),
-  pending_amount: z.coerce.number(),
-  remaining_verified_balance: z.coerce.number(),
-  available_to_submit: z.coerce.number(),
-});
+/**
+ * Canonical money field contract for search rows. Every monetary column
+ * returned by `search_society_open_bills` is `numeric` and is emitted by
+ * PostgREST either as a JS number or as a decimal string. Coercion is
+ * therefore allowed, but the coerced value must be a finite, non-negative
+ * number — NaN, Infinity and negative balances are structural violations
+ * of the SQL body (every balance is wrapped in `GREATEST(..., 0)`).
+ */
+const searchMoney = z.coerce
+  .number()
+  .refine((v) => Number.isFinite(v), { message: "non_finite" })
+  .refine((v) => v >= 0, { message: "negative" });
+
+const openBillSchema = z
+  .object({
+    bill_id: z.string().uuid(),
+    bill_number: z.string().nullable(),
+    society_id: z.string().uuid(),
+    flat_id: z.string().uuid().nullable(),
+    flat_label: z.string().nullable(),
+    block_name: z.string().nullable(),
+    period_label: z.string().nullable(),
+    due_date: z.string().nullable(),
+    status: z.string().min(1),
+    total_payable: searchMoney,
+    verified_amount: searchMoney,
+    pending_amount: searchMoney,
+    remaining_verified_balance: searchMoney,
+    available_to_submit: searchMoney,
+  })
+  .strict();
 
 export type OpenBillForPayment = z.infer<typeof openBillSchema>;
+
+/**
+ * Canonical error tokens the search core may raise. `not_authenticated`
+ * and `not_authorized` are raised verbatim by the SQL body; every other
+ * failure (provider error, malformed payload, structural violation) is
+ * collapsed to `operation_failed` so raw DB text can never leak.
+ */
+export const SEARCH_OPEN_BILLS_CANONICAL_ERRORS = Object.freeze({
+  not_authenticated: "not_authenticated",
+  not_authorized: "not_authorized",
+  operation_failed: "operation_failed",
+} as const);
+
+export type SearchOpenBillsCanonicalError =
+  (typeof SEARCH_OPEN_BILLS_CANONICAL_ERRORS)[keyof typeof SEARCH_OPEN_BILLS_CANONICAL_ERRORS];
+
+/** Canonical input contract for the search core (shared by fn + tests). */
+export const searchOpenBillsInputSchema = z
+  .object({
+    societyId: z.string().uuid(),
+    query: z.string().trim().max(120).default(""),
+    limit: z.number().int().min(1).max(50).default(20),
+    offset: z.number().int().min(0).default(0),
+  })
+  .strict();
+
+export type SearchOpenBillsInput = z.input<typeof searchOpenBillsInputSchema>;
+export interface SearchOpenBillsOutput {
+  readonly bills: OpenBillForPayment[];
+}
+
+/**
+ * Structural acceptance of a decoded search payload. Fails closed on:
+ *   - a non-array payload (including `null` / `undefined` / an object);
+ *   - any row failing the strict row schema;
+ *   - duplicate `bill_id` values (the SQL body groups by bill);
+ *   - a row belonging to a society other than the requested one;
+ *   - a row with no headroom (`available_to_submit <= 0`), which the SQL
+ *     `WHERE` clause already excludes.
+ *
+ * Every rejection raises the single opaque `operation_failed` token — no
+ * row content, id or provider text is ever interpolated.
+ */
+export function acceptSearchOpenBillsPayload(
+  societyId: string,
+  raw: unknown,
+): OpenBillForPayment[] {
+  if (!Array.isArray(raw)) throw new Error(SEARCH_OPEN_BILLS_CANONICAL_ERRORS.operation_failed);
+  const bills: OpenBillForPayment[] = [];
+  const seen = new Set<string>();
+  for (const row of raw) {
+    const parsed = openBillSchema.safeParse(row);
+    if (!parsed.success) throw new Error(SEARCH_OPEN_BILLS_CANONICAL_ERRORS.operation_failed);
+    const bill = parsed.data;
+    if (bill.society_id !== societyId)
+      throw new Error(SEARCH_OPEN_BILLS_CANONICAL_ERRORS.operation_failed);
+    if (seen.has(bill.bill_id))
+      throw new Error(SEARCH_OPEN_BILLS_CANONICAL_ERRORS.operation_failed);
+    if (!(bill.available_to_submit > 0))
+      throw new Error(SEARCH_OPEN_BILLS_CANONICAL_ERRORS.operation_failed);
+    seen.add(bill.bill_id);
+    bills.push(bill);
+  }
+  return bills;
+}
+
+/**
+ * Neutral shared core — admin open-bill search.
+ *
+ * Owns the single construction of the `search_society_open_bills` RPC
+ * call (name, argument names, pagination defaults, payload acceptance).
+ * Both the public server function below and the Stage 3C live SEARCH
+ * handlers delegate here so behavior cannot drift between production and
+ * the acceptance matrix.
+ */
+export async function searchSocietyOpenBillsWithClient(
+  client: BillingRpcClient,
+  input: SearchOpenBillsInput,
+): Promise<SearchOpenBillsOutput> {
+  const parsedInput = searchOpenBillsInputSchema.safeParse(input);
+  if (!parsedInput.success)
+    throw new Error(SEARCH_OPEN_BILLS_CANONICAL_ERRORS.operation_failed);
+  const { societyId, query, limit, offset } = parsedInput.data;
+  const raw = await callPaymentReadRpc(
+    client,
+    "search_society_open_bills",
+    buildRpcArgs({
+      _society_id: societyId,
+      _query: query,
+      _limit: limit,
+      _offset: offset,
+    }),
+  );
+  return { bills: acceptSearchOpenBillsPayload(societyId, raw) };
+}
 
 /**
  * Stage 3C v6 — Admin bill search for offline payment entry. Server-side
@@ -1006,33 +1116,13 @@ export type OpenBillForPayment = z.infer<typeof openBillSchema>;
  */
 export const searchOpenBillsForPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) =>
-    z
-      .object({
-        societyId: z.string().uuid(),
-        query: z.string().trim().max(120).default(""),
-        limit: z.number().int().min(1).max(50).default(20),
-        offset: z.number().int().min(0).default(0),
-      })
-      .parse(i),
-  )
+  .inputValidator((i) => searchOpenBillsInputSchema.parse(i))
   .handler(async ({ data, context }) => {
     try {
-      const raw = await callBillingRpc(
-        toBillingRpcClient(context),
-        "search_society_open_bills",
-        buildRpcArgs({
-          _society_id: data.societyId,
-          _query: data.query,
-          _limit: data.limit,
-          _offset: data.offset,
-        }),
-      );
-      const arr = Array.isArray(raw) ? raw : [];
-      const bills: OpenBillForPayment[] = arr.map((r) => openBillSchema.parse(r));
-      return { bills };
+      return await searchSocietyOpenBillsWithClient(toBillingRpcClient(context), data);
     } catch (e) {
       throw new Error(mapPaymentError((e as Error).message));
     }
   });
+
 

@@ -406,6 +406,67 @@ export type Stage3CMatrixResources = {
   referenceBillId: string;
 };
 
+// ---------------------------------------------------------------------------
+// SEARCH-01..10 dedicated resource contract
+// ---------------------------------------------------------------------------
+
+/** Unique flat number inside Society A owned exclusively by SEARCH cases. */
+export const STAGE3C_SEARCH_FLAT_NUMBER = "303";
+
+/** Period labels — also the trailing segment of each `bill_number`. */
+export const STAGE3C_SEARCH_LABELS = Object.freeze({
+  available: "srch-avail",
+  pending: "srch-pend",
+  verified: "srch-ver",
+  cancelled: "srch-canc",
+  noHeadroom: "srch-nohead",
+} as const);
+
+/** Bill totals — distinct per bill so no assertion is ambiguous. */
+export const STAGE3C_SEARCH_TOTALS = Object.freeze({
+  available: 1500,
+  pending: 1400,
+  verified: 1300,
+  cancelled: 1200,
+  noHeadroom: 1100,
+} as const);
+
+/**
+ * Payment amounts applied at fixture time. The no-headroom bill is
+ * driven to exactly zero headroom by a pending + verified split that
+ * still leaves `verified < total`, so the bill is excluded by the
+ * headroom predicate and NOT merely by a `paid` status.
+ */
+export const STAGE3C_SEARCH_AMOUNTS = Object.freeze({
+  pendingOnPendingBill: 400,
+  verifiedOnVerifiedBill: 300,
+  pendingOnNoHeadroomBill: 600,
+  verifiedOnNoHeadroomBill: 500,
+} as const);
+
+export type Stage3CSearchResources = {
+  /** Dedicated Society A flat (flat_number 303) owned by SEARCH cases. */
+  flatId: string;
+  flatNumber: string;
+  /** Unpaid bill with no payments — full headroom. */
+  availableBillId: string;
+  availableBillNumber: string;
+  /** Unpaid bill carrying exactly one pending payment. */
+  pendingBillId: string;
+  pendingBillNumber: string;
+  pendingPaymentId: string;
+  /** Unpaid bill carrying exactly one verified payment. */
+  verifiedBillId: string;
+  verifiedBillNumber: string;
+  verifiedPaymentId: string;
+  /** Cancelled bill — must never appear in results. */
+  cancelledBillId: string;
+  /** Unpaid bill with zero remaining headroom — must never appear. */
+  noHeadroomBillId: string;
+};
+
+
+
 /**
  * Strict, required ownership contract for matrix validation. Supplies
  * flatA plus the exact four existing core bill IDs that must NOT
@@ -1014,6 +1075,9 @@ export type Stage3CFixture = {
   };
   scenarios: FinancialScenarios;
   matrix: Stage3CMatrixResources;
+  /** SEARCH-01..10 dedicated flat + bills + payment state. */
+  search: Stage3CSearchResources;
+
   tracked: TrackedIds;
   helpers: ScenarioHelpers;
   openBillId: string;
@@ -2054,6 +2118,65 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
     );
     trackUniqueId(tracked.billLineItemIds, refBLineItem.id, "bill_line_item:ref-b");
 
+    // ---- SEARCH-01..10 dedicated resources ---------------------------
+    // A dedicated flat plus five dedicated bills so no SEARCH assertion
+    // depends on a bill any other matrix group mutates. The flat number
+    // is unique inside Society A (flatA = 101, otherFlatA = 202,
+    // secondBlockFlatA is created later in its own block).
+    const searchFlatRow = await assertSupabaseSingleResult<{ id: string }>(
+      "insert:searchFlatA",
+      admin
+        .from("flats")
+        .insert({
+          society_id: societyA,
+          block_id: blockA,
+          flat_number: STAGE3C_SEARCH_FLAT_NUMBER,
+          status: "occupied",
+        })
+        .select("id")
+        .single(),
+    );
+    trackUniqueId(tracked.flatIds, searchFlatRow.id, "searchFlatA");
+    const searchFlatA = searchFlatRow.id;
+
+    const searchAvailableBillId = await addBill({
+      label: STAGE3C_SEARCH_LABELS.available,
+      amount: STAGE3C_SEARCH_TOTALS.available,
+      status: "unpaid",
+      flatId: searchFlatA,
+    });
+    const searchPendingBillId = await addBill({
+      label: STAGE3C_SEARCH_LABELS.pending,
+      amount: STAGE3C_SEARCH_TOTALS.pending,
+      status: "unpaid",
+      flatId: searchFlatA,
+    });
+    const searchVerifiedBillId = await addBill({
+      label: STAGE3C_SEARCH_LABELS.verified,
+      amount: STAGE3C_SEARCH_TOTALS.verified,
+      status: "unpaid",
+      flatId: searchFlatA,
+    });
+    const searchCancelledBillId = await addBill({
+      label: STAGE3C_SEARCH_LABELS.cancelled,
+      amount: STAGE3C_SEARCH_TOTALS.cancelled,
+      status: "cancelled",
+      flatId: searchFlatA,
+      extra: {
+        cancelled_at: new Date().toISOString(),
+        cancelled_by: adminA1.id,
+        cancel_reason: "stage3c search cancelled bill",
+      },
+    });
+    const searchNoHeadroomBillId = await addBill({
+      label: STAGE3C_SEARCH_LABELS.noHeadroom,
+      amount: STAGE3C_SEARCH_TOTALS.noHeadroom,
+      status: "unpaid",
+      flatId: searchFlatA,
+    });
+
+
+
 
     const matrix: Stage3CMatrixResources = validateStage3CMatrixResources(
       {
@@ -2277,6 +2400,130 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
     );
     tracked.receiptSequences.push(secondBlockSeq);
 
+    // ---- SEARCH-01..10 financial state -------------------------------
+    // One pending payment on the pending bill; one verified payment on
+    // the verified bill; a pending + verified split that removes all
+    // headroom from the no-headroom bill. The available bill stays
+    // untouched so its figures are exactly (total, 0, 0, total, total).
+    const searchPendingPaymentId = await helpers.submitAdminCashPayment({
+      actor: adminA1,
+      billId: searchPendingBillId,
+      amount: STAGE3C_SEARCH_AMOUNTS.pendingOnPendingBill,
+      paymentDate: STAGE3C_TEST_PAYMENT_DATE,
+      idempotencyKey: `${prefix}-srch-pend`,
+      notes: "fixture search pending",
+    });
+    trackUniqueId(tracked.paymentIds, searchPendingPaymentId, "search:pending");
+
+    const searchVerifiedPaymentId = await helpers.submitAdminBankTransferPayment({
+      actor: adminA1,
+      billId: searchVerifiedBillId,
+      amount: STAGE3C_SEARCH_AMOUNTS.verifiedOnVerifiedBill,
+      paymentDate: STAGE3C_TEST_PAYMENT_DATE,
+      referenceNo: `${prefix}-REF-SRCH-VER`,
+      idempotencyKey: `${prefix}-srch-ver`,
+    });
+    trackUniqueId(tracked.paymentIds, searchVerifiedPaymentId, "search:verified");
+    await helpers.verifyPayment(adminA2, searchVerifiedPaymentId, "fixture search verify");
+    const searchVerifiedReceiptRow = await assertSupabaseSingleResult<{
+      id: string;
+      created_at: string;
+    }>(
+      "select:searchVerifiedReceipt",
+      admin
+        .from("payment_receipts")
+        .select("id, created_at")
+        .eq("payment_id", searchVerifiedPaymentId)
+        .single(),
+    );
+    trackUniqueId(
+      tracked.paymentReceiptIds,
+      searchVerifiedReceiptRow.id,
+      "search:verifiedReceipt",
+    );
+    tracked.receiptSequences.push(
+      await confirmReceiptSequenceKey(
+        admin,
+        societyA,
+        searchVerifiedReceiptRow.created_at,
+        "select:searchVerifiedReceiptSequence",
+      ),
+    );
+
+    const searchNoHeadroomVerifiedPaymentId = await helpers.submitAdminBankTransferPayment({
+      actor: adminA1,
+      billId: searchNoHeadroomBillId,
+      amount: STAGE3C_SEARCH_AMOUNTS.verifiedOnNoHeadroomBill,
+      paymentDate: STAGE3C_TEST_PAYMENT_DATE,
+      referenceNo: `${prefix}-REF-SRCH-NH`,
+      idempotencyKey: `${prefix}-srch-nh-ver`,
+    });
+    trackUniqueId(
+      tracked.paymentIds,
+      searchNoHeadroomVerifiedPaymentId,
+      "search:noHeadroomVerified",
+    );
+    await helpers.verifyPayment(
+      adminA2,
+      searchNoHeadroomVerifiedPaymentId,
+      "fixture search no-headroom verify",
+    );
+    const searchNoHeadroomReceiptRow = await assertSupabaseSingleResult<{
+      id: string;
+      created_at: string;
+    }>(
+      "select:searchNoHeadroomReceipt",
+      admin
+        .from("payment_receipts")
+        .select("id, created_at")
+        .eq("payment_id", searchNoHeadroomVerifiedPaymentId)
+        .single(),
+    );
+    trackUniqueId(
+      tracked.paymentReceiptIds,
+      searchNoHeadroomReceiptRow.id,
+      "search:noHeadroomReceipt",
+    );
+    tracked.receiptSequences.push(
+      await confirmReceiptSequenceKey(
+        admin,
+        societyA,
+        searchNoHeadroomReceiptRow.created_at,
+        "select:searchNoHeadroomReceiptSequence",
+      ),
+    );
+
+    const searchNoHeadroomPendingPaymentId = await helpers.submitAdminCashPayment({
+      actor: adminA1,
+      billId: searchNoHeadroomBillId,
+      amount: STAGE3C_SEARCH_AMOUNTS.pendingOnNoHeadroomBill,
+      paymentDate: STAGE3C_TEST_PAYMENT_DATE,
+      idempotencyKey: `${prefix}-srch-nh-pend`,
+      notes: "fixture search no-headroom pending",
+    });
+    trackUniqueId(
+      tracked.paymentIds,
+      searchNoHeadroomPendingPaymentId,
+      "search:noHeadroomPending",
+    );
+
+    const search: Stage3CSearchResources = {
+      flatId: searchFlatA,
+      flatNumber: STAGE3C_SEARCH_FLAT_NUMBER,
+      availableBillId: searchAvailableBillId,
+      availableBillNumber: `RR/${prefix}/${STAGE3C_SEARCH_LABELS.available}`,
+      pendingBillId: searchPendingBillId,
+      pendingBillNumber: `RR/${prefix}/${STAGE3C_SEARCH_LABELS.pending}`,
+      pendingPaymentId: searchPendingPaymentId,
+      verifiedBillId: searchVerifiedBillId,
+      verifiedBillNumber: `RR/${prefix}/${STAGE3C_SEARCH_LABELS.verified}`,
+      verifiedPaymentId: searchVerifiedPaymentId,
+      cancelledBillId: searchCancelledBillId,
+      noHeadroomBillId: searchNoHeadroomBillId,
+    };
+
+
+
     const scenarios: FinancialScenarios = {
       openBillId,
       openBillId2,
@@ -2316,6 +2563,8 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
       },
       scenarios,
       matrix,
+      search,
+
       tracked,
       helpers,
       openBillId,

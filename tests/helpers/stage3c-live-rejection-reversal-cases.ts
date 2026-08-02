@@ -1423,6 +1423,13 @@ export function receiptTupleOf(caseId: string, receiptNumber: string): readonly 
  * any identity disappears, duplicates or decrements, or when the
  * increment is not exactly `expectedDelta`.
  */
+/**
+ * Implicit pre-allocation `next_number` for a monthly sequence identity
+ * that does not yet exist. Grounded in the allocator's
+ * `INSERT ... VALUES (society, ym, 1)` seed.
+ */
+export const MONTHLY_SEQUENCE_IMPLICIT_BASELINE = 1;
+
 export function assertMonthlySequenceExactDelta(
   caseId: string,
   before: readonly Stage3CMonthlyReceiptSequenceRow[],
@@ -1441,6 +1448,12 @@ export function assertMonthlySequenceExactDelta(
     const bv = bMap.get(k);
     if (bv === undefined) {
       // A brand-new identity is itself the allocation for a new month.
+      // Grounded in `public._allocate_receipt_number_monthly`: the row is
+      // INSERTed with next_number = 1 and immediately UPDATEd to n + 1, so
+      // the first persisted value after exactly one allocation is 2 — i.e.
+      // the implicit pre-allocation baseline for an absent identity is 1.
+      if (av !== MONTHLY_SEQUENCE_IMPLICIT_BASELINE + expectedDelta)
+        fail(caseId, "new monthly sequence identity has an incorrect starting number");
       moved.push(k);
       continue;
     }
@@ -1456,6 +1469,7 @@ export function assertMonthlySequenceExactDelta(
     fail(caseId, "monthly sequence delta is not exactly one allocation");
   return key;
 }
+
 
 
 // ---------------------------------------------------------------------------
@@ -1886,7 +1900,15 @@ export const rejection05_verifyAfterRejectDenied: Stage3CMatrixLiveHandler = asy
 
   // Input/state denials for an AUTHORIZED admin — proves the denial is
   // about input and lifecycle state, not authorization.
-  const targets = buildRejRevDenialStateTargets(fixture, state.paymentId, state.paymentId, state.billId);
+  // The reversed target is the fixture's REAL reversed payment — never
+  // the rejected payment from this chain.
+  const targets = buildRejRevDenialStateTargets(
+    fixture,
+    state.paymentId,
+    state.paymentId,
+    state.billId,
+    fixture.scenarios.reversedPaymentId,
+  );
   await runStage3CInputStateDenials({
     fixture,
     caseId: "REJECTION-05",
@@ -1918,18 +1940,25 @@ export function buildRejRevDenialStateTargets(
   rejectedPaymentId: string,
   snapshotPaymentId: string,
   snapshotBillId: string,
-  reversedPaymentId?: string,
+  reversedPaymentId: string,
 ): Stage3CDenialStateTargets {
+  // A reversed target must be a genuinely reversed payment. Falling back
+  // to the rejected id would make `rejectReversedPayment` /
+  // `reverseAlreadyReversed` / `verifyReversedPayment` prove nothing about
+  // the reversed lifecycle state.
+  if (reversedPaymentId === rejectedPaymentId)
+    fail("denial-targets", "reversed target must differ from the rejected target");
   return Object.freeze({
     pendingPaymentId: fixture.scenarios.pendingAdminCashPaymentId,
     verifiedPaymentId: fixture.scenarios.verifiedPaymentId,
     rejectedPaymentId,
-    reversedPaymentId: reversedPaymentId ?? rejectedPaymentId,
+    reversedPaymentId,
     absentPaymentId: crypto.randomUUID(),
     snapshotBillId,
     snapshotPaymentId,
   });
 }
+
 
 
 
@@ -2159,7 +2188,8 @@ export const reversal09_verifyAfterReverseDenied: Stage3CMatrixLiveHandler = asy
   });
 
   // Input/state denials for an AUTHORIZED admin against the reversed chain.
-  const rejectedPaymentId = ctx.rejectionState?.paymentAfter?.id ?? state.paymentId;
+  const rejectedPaymentId =
+    ctx.rejectionState?.paymentAfter?.id ?? fixture.scenarios.rejectedPaymentId;
   const targets = buildRejRevDenialStateTargets(
     fixture,
     rejectedPaymentId,

@@ -548,6 +548,7 @@ export const search01_listsAvailableOpenBill: Stage3CMatrixLiveHandler = async (
   const fixture = requireFixture(ctx);
   const rows = await searchFlatPage(fixture);
   assertSocietyScoped("SEARCH-01", rows, fixture.societyA);
+  assertSearchResultFrozen("SEARCH-01", rows);
   const row = requireSearchRow("SEARCH-01", rows, fixture.search.availableBillId, "available");
   if (row.flat_id !== fixture.search.flatId) searchFail("SEARCH-01", "flat_id mismatch");
   if (row.flat_label !== fixture.search.flatNumber)
@@ -556,7 +557,12 @@ export const search01_listsAvailableOpenBill: Stage3CMatrixLiveHandler = async (
     searchFail("SEARCH-01", "bill_number mismatch");
   if (row.status === "paid" || row.status === "cancelled")
     searchFail("SEARCH-01", "a closed bill was returned as open");
-  assertSearchFigures("SEARCH-01", row, expectedSearchFigures().available);
+  await assertSearchRowFullyGrounded(
+    fixture,
+    "SEARCH-01",
+    row,
+    expectedSearchFigures().available,
+  );
 };
 
 export const search02_pendingAmountsReflected: Stage3CMatrixLiveHandler = async (ctx) => {

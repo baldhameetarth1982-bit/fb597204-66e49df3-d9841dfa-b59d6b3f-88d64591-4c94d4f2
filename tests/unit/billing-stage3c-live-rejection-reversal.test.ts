@@ -47,7 +47,6 @@ import {
   verifyOfflinePaymentWithClient,
 } from "@/lib/offline-payments.functions";
 import type { BillingRpcClient } from "@/lib/billing-config.functions";
-import type { Stage3CFixture } from "../helpers/stage3c-runtime-fixtures";
 
 // ---------------------------------------------------------------------------
 // Canonical constants
@@ -1670,5 +1669,191 @@ describe("Run C — deepFreeze", () => {
   it("passes primitives through unchanged", () => {
     expect(deepFreeze(5)).toBe(5);
     expect(deepFreeze(null)).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Checkpoint B final — receipt non-reuse + cleanup registration
+// ---------------------------------------------------------------------------
+
+import {
+  receiptTupleStrictlyGreater,
+  receiptTupleOf,
+  assertMonthlySequenceExactDelta,
+  registerCheckpointBPayment,
+  registerCheckpointBReceipt,
+  assertCheckpointBTracked,
+  buildRejRevDenialStateTargets,
+  authorizedAdminDenialActor,
+} from "../helpers/stage3c-live-rejection-reversal-cases";
+import type { Stage3CFixture } from "../helpers/stage3c-runtime-fixtures";
+
+const CB_SOC = "11111111-1111-4111-8111-111111111111";
+const CB_P1 = "22222222-2222-4222-8222-222222222222";
+const CB_P2 = "33333333-3333-4333-8333-333333333333";
+const CB_R1 = "44444444-4444-4444-8444-444444444444";
+
+function cbMonthly(ym: number, next: number) {
+  return { society_id: CB_SOC, year_month: ym, next_number: next };
+}
+
+describe("Checkpoint B — allocator tuple ordering", () => {
+  it("parses a real allocator receipt number", () => {
+    expect(receiptTupleOf("T", "RCPT/202612/0007")).toEqual([202612, 7]);
+  });
+  it("rejects a malformed receipt number", () => {
+    expect(() => receiptTupleOf("T", "RCPT/2026/7")).toThrow(/allocator format/);
+  });
+  it("orders by month first", () => {
+    expect(receiptTupleStrictlyGreater([202701, 1], [202612, 9999])).toBe(true);
+  });
+  it("orders numerically past the 9999 boundary (not lexicographically)", () => {
+    const later = receiptTupleOf("T", "RCPT/202612/10000");
+    const earlier = receiptTupleOf("T", "RCPT/202612/9999");
+    expect("RCPT/202612/10000" < "RCPT/202612/9999").toBe(true); // string compare lies
+    expect(receiptTupleStrictlyGreater(later, earlier)).toBe(true);
+  });
+  it("rejects equal tuples", () => {
+    expect(receiptTupleStrictlyGreater([202612, 5], [202612, 5])).toBe(false);
+  });
+  it("rejects an earlier tuple", () => {
+    expect(receiptTupleStrictlyGreater([202612, 4], [202612, 5])).toBe(false);
+  });
+});
+
+describe("Checkpoint B — exact cbMonthly( sequence delta", () => {
+  it("accepts exactly one identity incrementing by one", () => {
+    const key = assertMonthlySequenceExactDelta(
+      "T",
+      [cbMonthly(202612, 3), cbMonthly(202611, 9)],
+      [cbMonthly(202612, 4), cbMonthly(202611, 9)],
+      1,
+    );
+    expect(key).toBe(`${CB_SOC}::202612`);
+  });
+  it("accepts a brand-new month identity as the allocation", () => {
+    const key = assertMonthlySequenceExactDelta("T", [cbMonthly(202612, 3)], [cbMonthly(202612, 3), cbMonthly(202701, 2)], 1);
+    expect(key).toBe(`${CB_SOC}::202701`);
+  });
+  it("fails when nothing moved", () => {
+    expect(() => assertMonthlySequenceExactDelta("T", [cbMonthly(202612, 3)], [cbMonthly(202612, 3)], 1)).toThrow(
+      /did not increment/,
+    );
+  });
+  it("fails when two identities moved", () => {
+    expect(() =>
+      assertMonthlySequenceExactDelta(
+        "T",
+        [cbMonthly(202612, 3), cbMonthly(202611, 1)],
+        [cbMonthly(202612, 4), cbMonthly(202611, 2)],
+        1,
+      ),
+    ).toThrow(/more than one/);
+  });
+  it("fails on a decrement", () => {
+    expect(() => assertMonthlySequenceExactDelta("T", [cbMonthly(202612, 3)], [cbMonthly(202612, 2)], 1)).toThrow(
+      /decreased/,
+    );
+  });
+  it("fails when an identity disappears", () => {
+    expect(() =>
+      assertMonthlySequenceExactDelta("T", [cbMonthly(202612, 3), cbMonthly(202611, 1)], [cbMonthly(202612, 4)], 1),
+    ).toThrow(/identity removed/);
+  });
+  it("fails on a duplicate identity before", () => {
+    expect(() =>
+      assertMonthlySequenceExactDelta("T", [cbMonthly(202612, 3), cbMonthly(202612, 3)], [cbMonthly(202612, 4)], 1),
+    ).toThrow(/duplicate identity before/);
+  });
+  it("fails on a duplicate identity after", () => {
+    expect(() =>
+      assertMonthlySequenceExactDelta("T", [cbMonthly(202612, 3)], [cbMonthly(202612, 4), cbMonthly(202612, 4)], 1),
+    ).toThrow(/duplicate identity after/);
+  });
+  it("fails when the delta is larger than one allocation", () => {
+    expect(() => assertMonthlySequenceExactDelta("T", [cbMonthly(202612, 3)], [cbMonthly(202612, 5)], 1)).toThrow(
+      /not exactly one allocation/,
+    );
+  });
+});
+
+describe("Checkpoint B — cleanup registration", () => {
+  function cbFakeFixture() {
+    return {
+      tracked: { paymentIds: [] as string[], paymentReceiptIds: [] as string[] },
+    } as unknown as Stage3CFixture;
+  }
+  it("registers a payment exactly once even when repeated", () => {
+    const f = cbFakeFixture();
+    registerCheckpointBPayment(f, CB_P1, "x");
+    registerCheckpointBPayment(f, CB_P1, "x");
+    expect(f.tracked.paymentIds).toEqual([CB_P1]);
+  });
+  it("registers a receipt exactly once even when repeated", () => {
+    const f = cbFakeFixture();
+    registerCheckpointBReceipt(f, CB_R1, "x");
+    registerCheckpointBReceipt(f, CB_R1, "x");
+    expect(f.tracked.paymentReceiptIds).toEqual([CB_R1]);
+  });
+  it("rejects a malformed id", () => {
+    expect(() => registerCheckpointBPayment(cbFakeFixture(), "nope", "x")).toThrow(/malformed UUID/);
+  });
+  it("passes when every id is tracked", () => {
+    const f = cbFakeFixture();
+    registerCheckpointBPayment(f, CB_P1, "a");
+    registerCheckpointBReceipt(f, CB_R1, "a");
+    expect(() => assertCheckpointBTracked("T", f, [CB_P1], [CB_R1])).not.toThrow();
+  });
+  it("fails when a payment is not tracked", () => {
+    expect(() => assertCheckpointBTracked("T", cbFakeFixture(), [CB_P1], [])).toThrow(
+      /payment is not registered/,
+    );
+  });
+  it("fails when a receipt is not tracked", () => {
+    expect(() => assertCheckpointBTracked("T", cbFakeFixture(), [], [CB_R1])).toThrow(
+      /receipt is not registered/,
+    );
+  });
+  it("fails on a duplicated tracker entry", () => {
+    const f = cbFakeFixture();
+    f.tracked.paymentIds.push(CB_P1, CB_P1);
+    expect(() => assertCheckpointBTracked("T", f, [CB_P1], [])).toThrow(/more than once/);
+  });
+  it("never leaks ids in its messages", () => {
+    try {
+      assertCheckpointBTracked("T", cbFakeFixture(), [CB_P1], []);
+    } catch (e) {
+      expect((e as Error).message).not.toContain(CB_P1);
+    }
+  });
+});
+
+describe("Checkpoint B — denial state targets", () => {
+  const f = {
+    scenarios: { pendingAdminCashPaymentId: CB_P1, verifiedPaymentId: CB_P2 },
+    users: { adminA2: { client: { rpc: async () => ({ data: null, error: null }) } } },
+  } as unknown as Stage3CFixture;
+
+  it("maps every lifecycle state to a distinct concern", () => {
+    const t = buildRejRevDenialStateTargets(f, CB_P2, CB_P1, CB_R1);
+    expect(t.pendingPaymentId).toBe(CB_P1);
+    expect(t.verifiedPaymentId).toBe(CB_P2);
+    expect(t.rejectedPaymentId).toBe(CB_P2);
+    expect(t.snapshotPaymentId).toBe(CB_P1);
+    expect(t.snapshotBillId).toBe(CB_R1);
+  });
+  it("produces a fresh absent uuid each call", () => {
+    const a = buildRejRevDenialStateTargets(f, CB_P2, CB_P1, CB_R1).absentPaymentId;
+    const b = buildRejRevDenialStateTargets(f, CB_P2, CB_P1, CB_R1).absentPaymentId;
+    expect(a).not.toBe(b);
+  });
+  it("honors an explicit reversed payment id", () => {
+    expect(buildRejRevDenialStateTargets(f, CB_P2, CB_P1, CB_R1, CB_P1).reversedPaymentId).toBe(CB_P1);
+  });
+  it("is frozen", () => {
+    expect(Object.isFrozen(buildRejRevDenialStateTargets(f, CB_P2, CB_P1, CB_R1))).toBe(true);
+  });
+  it("builds an authorized admin actor", () => {
+    expect(authorizedAdminDenialActor(f).id).toBe("authorizedAdmin");
   });
 });

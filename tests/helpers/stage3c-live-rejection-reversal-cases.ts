@@ -45,12 +45,17 @@ import { createClient } from "@supabase/supabase-js";
 import {
   getPaymentDetailWithClient,
   verifyOfflinePaymentWithClient,
+  parseReceiptNumber,
   type PaymentDetail,
 } from "@/lib/offline-payments.functions";
 import type { BillingRpcClient } from "@/lib/billing-config.functions";
 import type { Stage3CMatrixLiveHandler } from "./stage3c-live-matrix-registry";
 import type { Stage3CLiveMatrixContext } from "./stage3c-live-matrix-context";
-import { requireStage3CEnv, type Stage3CFixture } from "./stage3c-runtime-fixtures";
+import {
+  requireStage3CEnv,
+  trackUniqueId,
+  type Stage3CFixture,
+} from "./stage3c-runtime-fixtures";
 import { requireFixture } from "./stage3c-live-core-context";
 
 import {
@@ -1101,118 +1106,226 @@ export async function runStage3CDenialMatrix(
 }
 
 // ---------------------------------------------------------------------------
-// Run C Part 5 — input and state denial cases
+// Checkpoint B Final — input and state denial cases
 //
-// Beyond actor authorization, an AUTHORIZED admin must still be denied
-// on malformed input and on an invalid starting status, and each denial
-// must leave all nine snapshot components untouched.
+// Grounded in the effective SQL check ORDER (inspected bodies above):
+//
+//   reject_offline_payment / reverse_offline_payment
+//     1. uid IS NULL            -> unauthenticated
+//     2. trim(_reason) = ''     -> reason_required     (BEFORE row lookup)
+//     3. row not found          -> payment_not_found
+//     4. !billing.manage        -> not_authorized
+//     5. wrong starting status  -> invalid_transition
+//
+//   verify_offline_payment
+//     1. uid IS NULL            -> unauthenticated
+//     2. row not found          -> payment_not_found
+//     3. !billing.manage        -> not_authorized
+//     4. status <> 'pending'    -> payment_not_pending
+//
+// Because `reason_required` precedes BOTH the row lookup and the status
+// check, a blank-reason attempt can never be masked by an invalid
+// starting status, and vice versa. Every attempt below therefore names
+// the exact payment state that makes its intended token the FIRST
+// reachable RAISE in the effective body.
 // ---------------------------------------------------------------------------
 
 export type Stage3CInputDenialId =
-  | "nonexistentPayment"
-  | "blankReason"
-  | "whitespaceReason"
-  | "invalidStartingStatus";
+  // reject
+  | "rejectNonexistentPayment"
+  | "rejectBlankReason"
+  | "rejectWhitespaceReason"
+  | "rejectTrimmedEmptyReason"
+  | "rejectAlreadyRejected"
+  | "rejectVerifiedPayment"
+  | "rejectReversedPayment"
+  // reverse
+  | "reverseNonexistentPayment"
+  | "reverseBlankReason"
+  | "reverseWhitespaceReason"
+  | "reverseTrimmedEmptyReason"
+  | "reversePendingPayment"
+  | "reverseRejectedPayment"
+  | "reverseAlreadyReversed"
+  // verify
+  | "verifyNonexistentPayment"
+  | "verifyRejectedPayment"
+  | "verifyReversedPayment";
+
+/**
+ * One grounded denial attempt.
+ *
+ * `targetPaymentId` is the payment the operation is invoked against.
+ * `snapshotPaymentId` / `snapshotBillId` name the baseline whose complete
+ * canonical snapshot must be identical before and after — for the
+ * nonexistent-payment attempts the target is not a row, so the baseline
+ * is the case's own real payment.
+ */
+export interface Stage3CInputStateAttempt {
+  readonly id: Stage3CInputDenialId;
+  readonly operation: Stage3CLifecycleOperation;
+  readonly targetPaymentId: string;
+  readonly snapshotPaymentId: string;
+  readonly snapshotBillId: string;
+  readonly reason: string;
+  readonly expected: string;
+}
+
+export interface Stage3CInputStateEvidence {
+  readonly id: Stage3CInputDenialId;
+  readonly operation: Stage3CLifecycleOperation;
+  readonly expected: string;
+  readonly actual: string;
+}
+
+/** Payment ids covering every state the denial harness needs. */
+export interface Stage3CDenialStateTargets {
+  /** Real payment currently in status='pending'. */
+  readonly pendingPaymentId: string;
+  /** Real payment currently in status='verified'. */
+  readonly verifiedPaymentId: string;
+  /** Real payment currently in status='rejected'. */
+  readonly rejectedPaymentId: string;
+  /** Real payment currently in status='reversed'. */
+  readonly reversedPaymentId: string;
+  /** Syntactically valid UUID that is NOT a payment row. */
+  readonly absentPaymentId: string;
+  /** Bill used as the snapshot baseline for these attempts. */
+  readonly snapshotBillId: string;
+  /** Payment used as the snapshot baseline (must be a real row). */
+  readonly snapshotPaymentId: string;
+}
+
+const DENIAL_REASON = "stage3c input denial — deterministic reason";
+/** Non-empty but trims to empty — proves `length(trim(_reason))=0`. */
+const TRIMS_TO_EMPTY_REASON = "\n\t \r\n ";
+
+function attempt(
+  id: Stage3CInputDenialId,
+  operation: Stage3CLifecycleOperation,
+  targetPaymentId: string,
+  reason: string,
+  expected: string,
+  t: Stage3CDenialStateTargets,
+): Stage3CInputStateAttempt {
+  return Object.freeze({
+    id,
+    operation,
+    targetPaymentId,
+    snapshotPaymentId: t.snapshotPaymentId,
+    snapshotBillId: t.snapshotBillId,
+    reason,
+    expected,
+  });
+}
+
+export function buildRejectionInputStateAttempts(
+  t: Stage3CDenialStateTargets,
+): readonly Stage3CInputStateAttempt[] {
+  const E = STAGE3C_LIFECYCLE_CANONICAL_ERRORS;
+  return Object.freeze([
+    attempt("rejectNonexistentPayment", "reject", t.absentPaymentId, DENIAL_REASON, E.payment_not_found, t),
+    attempt("rejectBlankReason", "reject", t.pendingPaymentId, "", E.reason_required, t),
+    attempt("rejectWhitespaceReason", "reject", t.pendingPaymentId, "   \t  ", E.reason_required, t),
+    attempt("rejectTrimmedEmptyReason", "reject", t.pendingPaymentId, TRIMS_TO_EMPTY_REASON, E.reason_required, t),
+    attempt("rejectAlreadyRejected", "reject", t.rejectedPaymentId, DENIAL_REASON, E.invalid_transition, t),
+    attempt("rejectVerifiedPayment", "reject", t.verifiedPaymentId, DENIAL_REASON, E.invalid_transition, t),
+    attempt("rejectReversedPayment", "reject", t.reversedPaymentId, DENIAL_REASON, E.invalid_transition, t),
+  ] as const);
+}
+
+export function buildReversalInputStateAttempts(
+  t: Stage3CDenialStateTargets,
+): readonly Stage3CInputStateAttempt[] {
+  const E = STAGE3C_LIFECYCLE_CANONICAL_ERRORS;
+  return Object.freeze([
+    attempt("reverseNonexistentPayment", "reverse", t.absentPaymentId, DENIAL_REASON, E.payment_not_found, t),
+    attempt("reverseBlankReason", "reverse", t.verifiedPaymentId, "", E.reason_required, t),
+    attempt("reverseWhitespaceReason", "reverse", t.verifiedPaymentId, "   \t  ", E.reason_required, t),
+    attempt("reverseTrimmedEmptyReason", "reverse", t.verifiedPaymentId, TRIMS_TO_EMPTY_REASON, E.reason_required, t),
+    attempt("reversePendingPayment", "reverse", t.pendingPaymentId, DENIAL_REASON, E.invalid_transition, t),
+    attempt("reverseRejectedPayment", "reverse", t.rejectedPaymentId, DENIAL_REASON, E.invalid_transition, t),
+    attempt("reverseAlreadyReversed", "reverse", t.reversedPaymentId, DENIAL_REASON, E.invalid_transition, t),
+  ] as const);
+}
+
+export function buildVerificationInputStateAttempts(
+  t: Stage3CDenialStateTargets,
+): readonly Stage3CInputStateAttempt[] {
+  const E = STAGE3C_LIFECYCLE_CANONICAL_ERRORS;
+  return Object.freeze([
+    attempt("verifyNonexistentPayment", "verify", t.absentPaymentId, DENIAL_REASON, E.payment_not_found, t),
+    attempt("verifyRejectedPayment", "verify", t.rejectedPaymentId, DENIAL_REASON, E.payment_not_pending, t),
+    attempt("verifyReversedPayment", "verify", t.reversedPaymentId, DENIAL_REASON, E.payment_not_pending, t),
+  ] as const);
+}
 
 export interface RunInputDenialArgs {
   readonly fixture: Stage3CFixture;
   readonly caseId: string;
-  /** Real payment in a status that is INVALID for `operation`. */
-  readonly paymentId: string;
-  readonly billId: string;
   readonly societyId: string;
   readonly unrelatedPaymentId?: string | null;
   /** Authorized admin actor — proves the denial is about input/state. */
   readonly admin: Stage3CDenialActor;
-  readonly operation: Stage3CLifecycleOperation;
-  /** Syntactically valid UUID that is NOT a payment row. */
-  readonly absentPaymentId: string;
-  /** Canonical token for the invalid-starting-status attempt. */
-  readonly invalidStatusToken: string;
+  readonly attempts: readonly Stage3CInputStateAttempt[];
 }
 
 /**
- * Prove input/state denials for an authorized admin. Every attempt is
- * bracketed by its own canonical snapshot, so all nine components
- * (payment, bill, receipt, receiptCount, summary, yearlySeq, monthlySeq,
- * unrelatedPayment, and the receipt identity carried inside `receipt`)
- * are proven unchanged for that specific attempt.
+ * Prove input/state denials for an AUTHORIZED admin.
+ *
+ * Every individual attempt: capture the complete canonical snapshot,
+ * invoke exactly one production lifecycle operation, require exactly one
+ * classified canonical token, re-capture the snapshot and require exact
+ * equality across all components. Returns typed evidence.
  */
 export async function runStage3CInputStateDenials(
   a: RunInputDenialArgs,
-): Promise<readonly Stage3CInputDenialId[]> {
-  const snapshotArgs: CaptureRejRevSnapshotArgs = {
-    fixture: a.fixture,
-    caseId: a.caseId,
-    paymentId: a.paymentId,
-    billId: a.billId,
-    societyId: a.societyId,
-    unrelatedPaymentId: a.unrelatedPaymentId ?? null,
-  };
+): Promise<readonly Stage3CInputStateEvidence[]> {
+  if (a.attempts.length === 0) fail(a.caseId, "input denial matrix ran no attempts");
+  const seen = new Set<Stage3CInputDenialId>();
+  const evidence: Stage3CInputStateEvidence[] = [];
 
-  const attempts: Array<{
-    id: Stage3CInputDenialId;
-    paymentId: string;
-    reason: string;
-    expected: string;
-    /** Reject/reverse only — verify takes no reason. */
-    skipForVerify: boolean;
-  }> = [
-    {
-      id: "nonexistentPayment",
-      paymentId: a.absentPaymentId,
-      reason: "stage3c input denial — absent payment",
-      expected: STAGE3C_LIFECYCLE_CANONICAL_ERRORS.payment_not_found,
-      skipForVerify: false,
-    },
-    {
-      id: "blankReason",
-      paymentId: a.paymentId,
-      reason: "",
-      expected: STAGE3C_LIFECYCLE_CANONICAL_ERRORS.reason_required,
-      skipForVerify: true,
-    },
-    {
-      id: "whitespaceReason",
-      paymentId: a.paymentId,
-      reason: "   \t  ",
-      expected: STAGE3C_LIFECYCLE_CANONICAL_ERRORS.reason_required,
-      skipForVerify: true,
-    },
-    {
-      id: "invalidStartingStatus",
-      paymentId: a.paymentId,
-      reason: "stage3c input denial — invalid starting status",
-      expected: a.invalidStatusToken,
-      skipForVerify: false,
-    },
-  ];
+  for (const at of a.attempts) {
+    if (seen.has(at.id)) fail(a.caseId, `duplicate input denial attempt: ${at.id}`);
+    seen.add(at.id);
+    const label = `${a.caseId}:${at.operation}/${at.id}`;
+    const snapshotArgs: CaptureRejRevSnapshotArgs = {
+      fixture: a.fixture,
+      caseId: label,
+      paymentId: at.snapshotPaymentId,
+      billId: at.snapshotBillId,
+      societyId: a.societyId,
+      unrelatedPaymentId: a.unrelatedPaymentId ?? null,
+    };
+    const before = await captureRejectionReversalSnapshot(snapshotArgs);
+    const r = await invokeLifecycleOperation(a.admin, at.operation, at.targetPaymentId, at.reason);
+    const after = await captureRejectionReversalSnapshot(snapshotArgs);
 
-  const executed: Stage3CInputDenialId[] = [];
-  for (const attempt of attempts) {
-    if (a.operation === "verify" && attempt.skipForVerify) continue;
-    const label = `${a.caseId}:${a.operation}/${attempt.id}`;
-    const before = await captureRejectionReversalSnapshot({ ...snapshotArgs, caseId: label });
-    const r = await invokeLifecycleOperation(
-      a.admin,
-      a.operation,
-      attempt.paymentId,
-      attempt.reason,
-    );
-    const after = await captureRejectionReversalSnapshot({ ...snapshotArgs, caseId: label });
-
-    if (r.ok) fail(a.caseId, `input denial ${attempt.id}: ${a.operation} was allowed`);
-    if (r.token !== attempt.expected)
-      fail(
-        a.caseId,
-        `input denial ${attempt.id}: expected "${attempt.expected}", got "${r.token}"`,
-      );
+    if (r.ok) fail(a.caseId, `input denial ${at.id}: ${at.operation} was allowed`);
+    if (r.token !== at.expected)
+      fail(a.caseId, `input denial ${at.id}: expected "${at.expected}", got "${r.token}"`);
     assertRejectionReversalSnapshotEqual(label, before, after);
-    executed.push(attempt.id);
+    evidence.push(Object.freeze({ id: at.id, operation: at.operation, expected: at.expected, actual: r.token }));
   }
-  if (executed.length === 0) fail(a.caseId, "input denial matrix ran no attempts");
-  return Object.freeze(executed);
+  return Object.freeze(evidence);
 }
+
+/**
+ * Assert that a completed denial run covers exactly the required ids.
+ * A missing id is a hard failure — coverage cannot silently shrink.
+ */
+export function assertInputStateCoverage(
+  caseId: string,
+  evidence: readonly Stage3CInputStateEvidence[],
+  required: readonly Stage3CInputDenialId[],
+): void {
+  const got = new Set(evidence.map((e) => e.id));
+  for (const id of required) {
+    if (!got.has(id)) fail(caseId, `input denial coverage missing: ${id}`);
+  }
+  if (got.size !== evidence.length) fail(caseId, "input denial evidence contains duplicates");
+}
+
 
 
 
@@ -1254,7 +1367,96 @@ export interface Stage3CReversalState {
   yearlySeqAfter: readonly Stage3CYearlyReceiptSequenceRow[] | null;
   monthlySeqAfter: readonly Stage3CMonthlyReceiptSequenceRow[] | null;
   residentDetailAfter: PaymentDetail | null;
+  /** Checkpoint B Part 6 — receipt-number non-reuse evidence. */
+  nonReuse: Stage3CReceiptNonReuseEvidence | null;
 }
+
+// ---------------------------------------------------------------------------
+// Checkpoint B Part 6 — receipt-number non-reuse
+//
+// Effective allocator (inspected): verify_offline_payment calls
+// `public._allocate_receipt_number_monthly(society_id, now())`, which
+// increments EXACTLY ONE row of `public.payment_receipt_month_sequences`
+// with identity `(society_id, year_month)` and returns
+// `'RCPT/' || year_month || '/' || LPAD(n - 1, 4, '0')`.
+//
+// `public.payment_receipt_sequences` (the yearly table) is NOT used by
+// verification at all and must therefore remain byte-for-byte unchanged.
+// ---------------------------------------------------------------------------
+
+export interface Stage3CReceiptNonReuseEvidence {
+  readonly voidedReceiptId: string;
+  readonly voidedReceiptNumber: string;
+  readonly voidedReceiptStatus: string;
+  readonly laterPaymentId: string;
+  readonly laterReceiptId: string;
+  readonly laterReceiptNumber: string;
+  readonly laterReceiptStatus: string;
+  readonly voidedTuple: readonly [number, number];
+  readonly laterTuple: readonly [number, number];
+  readonly monthlyIdentityIncremented: string;
+  readonly monthlyDelta: number;
+}
+
+/**
+ * Numeric allocator-tuple comparison. Raw receipt numbers are NEVER
+ * compared lexicographically: `RCPT/202612/10000` sorts before
+ * `RCPT/202612/9999` as a string but is strictly later numerically.
+ */
+export function receiptTupleStrictlyGreater(
+  later: readonly [number, number],
+  earlier: readonly [number, number],
+): boolean {
+  if (later[0] !== earlier[0]) return later[0] > earlier[0];
+  return later[1] > earlier[1];
+}
+
+export function receiptTupleOf(caseId: string, receiptNumber: string): readonly [number, number] {
+  const parsed = parseReceiptNumber(receiptNumber);
+  if (parsed === null) fail(caseId, "receipt number does not match the allocator format");
+  return Object.freeze([parsed.yearMonth, parsed.sequence] as const);
+}
+
+/**
+ * Exactly-one-identity monthly sequence delta. Returns the incremented
+ * identity key. Fails when zero or more than one identity moved, when
+ * any identity disappears, duplicates or decrements, or when the
+ * increment is not exactly `expectedDelta`.
+ */
+export function assertMonthlySequenceExactDelta(
+  caseId: string,
+  before: readonly Stage3CMonthlyReceiptSequenceRow[],
+  after: readonly Stage3CMonthlyReceiptSequenceRow[],
+  expectedDelta: number,
+): string {
+  const bMap = new Map(before.map((r) => [monthlyIdentityKey(r), r.next_number]));
+  const aMap = new Map(after.map((r) => [monthlyIdentityKey(r), r.next_number]));
+  if (bMap.size !== before.length) fail(caseId, "monthly sequence duplicate identity before");
+  if (aMap.size !== after.length) fail(caseId, "monthly sequence duplicate identity after");
+  for (const k of bMap.keys()) {
+    if (!aMap.has(k)) fail(caseId, "monthly sequence identity removed");
+  }
+  const moved: string[] = [];
+  for (const [k, av] of aMap) {
+    const bv = bMap.get(k);
+    if (bv === undefined) {
+      // A brand-new identity is itself the allocation for a new month.
+      moved.push(k);
+      continue;
+    }
+    if (av < bv) fail(caseId, "monthly sequence next_number decreased");
+    if (av !== bv) moved.push(k);
+  }
+  if (moved.length === 0) fail(caseId, "monthly sequence did not increment");
+  if (moved.length > 1) fail(caseId, "more than one monthly sequence identity changed");
+  const key = moved[0] as string;
+  const bv = bMap.get(key);
+  const av = aMap.get(key) as number;
+  if (bv !== undefined && av - bv !== expectedDelta)
+    fail(caseId, "monthly sequence delta is not exactly one allocation");
+  return key;
+}
+
 
 // ---------------------------------------------------------------------------
 // Deterministic chain reasons
@@ -1262,6 +1464,51 @@ export interface Stage3CReversalState {
 
 const REJECTION_REASON = "stage3c rejection matrix — deterministic reason";
 const REVERSAL_REASON = "stage3c reversal matrix — deterministic reason";
+
+/**
+ * Checkpoint B Part 7 — cleanup registration.
+ *
+ * Uses the EXISTING fixture tracker (`fixture.tracked`) and its existing
+ * duplicate-safe `trackUniqueId` contract; no second tracker is created.
+ * Registration is idempotent per logical object: registering the same id
+ * twice leaves exactly one entry, so a retried chain cannot corrupt
+ * teardown. IDs never appear in any error message.
+ */
+export function registerCheckpointBPayment(
+  fixture: Stage3CFixture,
+  paymentId: string,
+  label: string,
+): void {
+  trackUniqueId(fixture.tracked.paymentIds, paymentId, `checkpointB:payment:${label}`);
+}
+
+export function registerCheckpointBReceipt(
+  fixture: Stage3CFixture,
+  receiptId: string,
+  label: string,
+): void {
+  trackUniqueId(fixture.tracked.paymentReceiptIds, receiptId, `checkpointB:receipt:${label}`);
+}
+
+/** Assert every supplied id is present in the tracker exactly once. */
+export function assertCheckpointBTracked(
+  caseId: string,
+  fixture: Stage3CFixture,
+  paymentIds: readonly string[],
+  receiptIds: readonly string[],
+): void {
+  const countIn = (list: readonly string[], id: string) => list.filter((v) => v === id).length;
+  for (const id of paymentIds) {
+    const n = countIn(fixture.tracked.paymentIds, id);
+    if (n === 0) fail(caseId, "checkpoint B payment is not registered for cleanup");
+    if (n > 1) fail(caseId, "checkpoint B payment registered more than once");
+  }
+  for (const id of receiptIds) {
+    const n = countIn(fixture.tracked.paymentReceiptIds, id);
+    if (n === 0) fail(caseId, "checkpoint B receipt is not registered for cleanup");
+    if (n > 1) fail(caseId, "checkpoint B receipt registered more than once");
+  }
+}
 
 async function ensureRejectionChain(
   ctx: Stage3CLiveMatrixContext,
@@ -1282,6 +1529,9 @@ async function ensureRejectionChain(
     idempotencyKey: `${fixture.prefix}-rej-live`,
     notes: null,
   });
+  // Registered IMMEDIATELY after creation, before any further RPC.
+  registerCheckpointBPayment(fixture, paymentId, "rejection");
+
 
   const [paymentBefore, summaryBefore, yearlySeqBefore, monthlySeqBefore] = await Promise.all([
     readPayment(fixture, paymentId, "REJECTION-01"),
@@ -1334,6 +1584,8 @@ async function ensureReversalChain(
     idempotencyKey: `${fixture.prefix}-rev-live`,
     notes: null,
   });
+  // Registered IMMEDIATELY after creation, before any further RPC.
+  registerCheckpointBPayment(fixture, paymentId, "reversal");
   await fixture.helpers.verifyPayment(
     fixture.users.adminA2,
     paymentId,
@@ -1344,6 +1596,7 @@ async function ensureReversalChain(
     fail("REVERSAL-01", "post-verify payment is not verified");
   const receiptBefore = await readReceiptOrNull(fixture, paymentId, "REVERSAL-01");
   if (receiptBefore === null) fail("REVERSAL-01", "verified payment missing its receipt");
+  registerCheckpointBReceipt(fixture, receiptBefore.id, "reversal");
   if (receiptBefore.status !== STAGE3C_RECEIPT_STATUS.valid)
     fail("REVERSAL-01", "pre-reversal receipt is not valid");
   const [summaryBefore, yearlySeqBefore, monthlySeqBefore] = await Promise.all([
@@ -1368,10 +1621,126 @@ async function ensureReversalChain(
     yearlySeqAfter: null,
     monthlySeqAfter: null,
     residentDetailAfter: null,
+    nonReuse: null,
   };
   ctx.reversalState = state;
   return state;
 }
+
+/**
+ * Checkpoint B Part 6 — real receipt-number non-reuse proof.
+ *
+ * Creates ONE additional isolated synthetic payment, registers it for
+ * cleanup immediately, verifies it through the production verify core,
+ * then proves the voided receipt is intact and the later receipt carries
+ * a strictly greater allocator tuple, with an exact monthly sequence
+ * delta and a byte-identical yearly sequence table.
+ */
+export async function proveReceiptNumberNonReuse(
+  fixture: Stage3CFixture,
+  caseId: string,
+  voidedReceipt: Stage3CRejRevReceiptRow,
+): Promise<Stage3CReceiptNonReuseEvidence> {
+  // 1. Voided receipt + sequence baselines.
+  const [voidedNow, yearlyBefore, monthlyBefore] = await Promise.all([
+    readReceiptOrNull(fixture, voidedReceipt.payment_id, caseId),
+    readYearlyReceiptSequences(fixture, fixture.societyA, caseId),
+    readMonthlyReceiptSequences(fixture, fixture.societyA, caseId),
+  ]);
+  if (voidedNow === null) fail(caseId, "voided receipt disappeared");
+  if (voidedNow.id !== voidedReceipt.id) fail(caseId, "voided receipt id changed");
+  if (voidedNow.receipt_number !== voidedReceipt.receipt_number)
+    fail(caseId, "voided receipt number changed");
+  if (voidedNow.status !== STAGE3C_RECEIPT_STATUS.void)
+    fail(caseId, "voided receipt is no longer void");
+
+  // 2. Later isolated payment on a headroom-safe amount.
+  const billId = fixture.openBillId;
+  const summary = await readBillSummary(fixture, billId, caseId);
+  const headroom = summary.available_to_submit;
+  if (headroom <= 0) fail(caseId, "no headroom for the non-reuse payment");
+  const amount = Math.min(5, headroom);
+  const laterPaymentId = await fixture.helpers.submitAdminBankTransferPayment({
+    actor: fixture.users.adminA1,
+    billId,
+    amount,
+    paymentDate: "2026-02-04",
+    referenceNo: `${fixture.prefix}-REF-NONREUSE`,
+    idempotencyKey: `${fixture.prefix}-nonreuse`,
+    notes: null,
+  });
+  registerCheckpointBPayment(fixture, laterPaymentId, "nonReuse");
+
+  // 3. Verify through the production shared core.
+  await verifyOfflinePaymentWithClient(toRejRevBillingRpcClient(fixture.users.adminA2), {
+    paymentId: laterPaymentId,
+    notes: null,
+  });
+
+  const laterReceipt = await readReceiptOrNull(fixture, laterPaymentId, caseId);
+  if (laterReceipt === null) fail(caseId, "later payment has no receipt");
+  registerCheckpointBReceipt(fixture, laterReceipt.id, "nonReuse");
+  if (laterReceipt.status !== STAGE3C_RECEIPT_STATUS.valid)
+    fail(caseId, "later receipt is not valid");
+
+  // 4. Exactly one receipt per payment — no duplicates anywhere.
+  const [voidedCount, laterCount] = await Promise.all([
+    readReceiptCount(fixture, voidedReceipt.payment_id, caseId),
+    readReceiptCount(fixture, laterPaymentId, caseId),
+  ]);
+  if (voidedCount !== 1) fail(caseId, "voided payment does not have exactly one receipt");
+  if (laterCount !== 1) fail(caseId, "later payment does not have exactly one receipt");
+
+  // 5. Identity and number non-reuse.
+  if (laterReceipt.id === voidedNow.id) fail(caseId, "later receipt reused the voided receipt id");
+  if (laterReceipt.receipt_number === voidedNow.receipt_number)
+    fail(caseId, "later receipt reused the voided receipt number");
+
+  // 6. Numeric allocator-tuple ordering — never a string compare.
+  const voidedTuple = receiptTupleOf(caseId, voidedNow.receipt_number);
+  const laterTuple = receiptTupleOf(caseId, laterReceipt.receipt_number);
+  if (!receiptTupleStrictlyGreater(laterTuple, voidedTuple))
+    fail(caseId, "later receipt tuple is not strictly greater than the voided tuple");
+
+  // 7. Exact allocator behavior: exactly one monthly identity +1, and
+  //    the yearly table (unused by the allocator) byte-identical.
+  const [yearlyAfter, monthlyAfter] = await Promise.all([
+    readYearlyReceiptSequences(fixture, fixture.societyA, caseId),
+    readMonthlyReceiptSequences(fixture, fixture.societyA, caseId),
+  ]);
+  assertYearlySequenceSnapshotUnchanged(caseId, yearlyBefore, yearlyAfter);
+  const monthlyIdentityIncremented = assertMonthlySequenceExactDelta(
+    caseId,
+    monthlyBefore,
+    monthlyAfter,
+    1,
+  );
+
+  // 8. Post-check: the voided receipt is still exactly as it was.
+  const voidedFinal = await readReceiptOrNull(fixture, voidedReceipt.payment_id, caseId);
+  if (voidedFinal === null) fail(caseId, "voided receipt deleted by a later allocation");
+  if (voidedFinal.id !== voidedNow.id) fail(caseId, "voided receipt id mutated");
+  if (voidedFinal.receipt_number !== voidedNow.receipt_number)
+    fail(caseId, "voided receipt number mutated");
+  if (voidedFinal.status !== STAGE3C_RECEIPT_STATUS.void)
+    fail(caseId, "voided receipt status mutated");
+
+  return Object.freeze({
+    voidedReceiptId: voidedFinal.id,
+    voidedReceiptNumber: voidedFinal.receipt_number,
+    voidedReceiptStatus: voidedFinal.status,
+    laterPaymentId,
+    laterReceiptId: laterReceipt.id,
+    laterReceiptNumber: laterReceipt.receipt_number,
+    laterReceiptStatus: laterReceipt.status,
+    voidedTuple,
+    laterTuple,
+    monthlyIdentityIncremented,
+    monthlyDelta: 1,
+  });
+}
+
+
 
 // ---------------------------------------------------------------------------
 // REJECTION handlers
@@ -1514,7 +1883,54 @@ export const rejection05_verifyAfterRejectDenied: Stage3CMatrixLiveHandler = asy
     unrelatedPaymentId: fixture.scenarios.pendingAdminCashPaymentId,
     actors: buildStage3CDenialActors(fixture, createStage3CAnonRpcClient()),
   });
+
+  // Input/state denials for an AUTHORIZED admin — proves the denial is
+  // about input and lifecycle state, not authorization.
+  const targets = buildRejRevDenialStateTargets(fixture, state.paymentId, state.paymentId, state.billId);
+  await runStage3CInputStateDenials({
+    fixture,
+    caseId: "REJECTION-05",
+    societyId: fixture.societyA,
+    unrelatedPaymentId: fixture.scenarios.pendingAdminCashPaymentId,
+    admin: authorizedAdminDenialActor(fixture),
+    attempts: [
+      ...buildRejectionInputStateAttempts(targets),
+      ...buildVerificationInputStateAttempts(targets),
+    ],
+  });
+
+  // Cleanup registration proof for the rejection chain.
+  assertCheckpointBTracked("REJECTION-05", fixture, [state.paymentId], []);
 };
+
+/** Authorized admin actor used by the input/state denial harness. */
+export function authorizedAdminDenialActor(fixture: Stage3CFixture): Stage3CDenialActor {
+  return { id: "authorizedAdmin", client: toRejRevBillingRpcClient(fixture.users.adminA2) };
+}
+
+/**
+ * Build the denial state targets from real fixture payments covering
+ * every lifecycle state the harness needs. The absent id is a fresh
+ * random UUID that no fixture object can own.
+ */
+export function buildRejRevDenialStateTargets(
+  fixture: Stage3CFixture,
+  rejectedPaymentId: string,
+  snapshotPaymentId: string,
+  snapshotBillId: string,
+  reversedPaymentId?: string,
+): Stage3CDenialStateTargets {
+  return Object.freeze({
+    pendingPaymentId: fixture.scenarios.pendingAdminCashPaymentId,
+    verifiedPaymentId: fixture.scenarios.verifiedPaymentId,
+    rejectedPaymentId,
+    reversedPaymentId: reversedPaymentId ?? rejectedPaymentId,
+    absentPaymentId: crypto.randomUUID(),
+    snapshotBillId,
+    snapshotPaymentId,
+  });
+}
+
 
 
 // ---------------------------------------------------------------------------
@@ -1672,7 +2088,18 @@ export const reversal08_availableIncreasesAndSequencesIntact: Stage3CMatrixLiveH
     state.monthlySeqBefore,
     state.monthlySeqAfter,
   );
+
+  // Receipt-number NON-REUSE: a later verified payment must receive a
+  // strictly greater allocator tuple, and the voided number is dead.
+  if (state.receiptAfter === null) fail("REVERSAL-08", "voided receipt missing");
+  const fixture = requireFixture(ctx);
+  state.nonReuse = await proveReceiptNumberNonReuse(
+    fixture,
+    "REVERSAL-08",
+    state.receiptAfter,
+  );
 };
+
 
 /**
  * REVERSAL-09 — verify after reverse → EXACTLY `payment_not_pending`.
@@ -1730,7 +2157,38 @@ export const reversal09_verifyAfterReverseDenied: Stage3CMatrixLiveHandler = asy
     unrelatedPaymentId: fixture.scenarios.pendingAdminCashPaymentId,
     actors: buildStage3CDenialActors(fixture, createStage3CAnonRpcClient()),
   });
+
+  // Input/state denials for an AUTHORIZED admin against the reversed chain.
+  const rejectedPaymentId = ctx.rejectionState?.paymentAfter?.id ?? state.paymentId;
+  const targets = buildRejRevDenialStateTargets(
+    fixture,
+    rejectedPaymentId,
+    state.paymentId,
+    state.billId,
+    state.paymentId,
+  );
+  await runStage3CInputStateDenials({
+    fixture,
+    caseId: "REVERSAL-09",
+    societyId: fixture.societyA,
+    unrelatedPaymentId: fixture.scenarios.pendingAdminCashPaymentId,
+    admin: authorizedAdminDenialActor(fixture),
+    attempts: buildReversalInputStateAttempts(targets),
+  });
+
+  // Cleanup registration proof for the reversal chain (payment + receipt
+  // + the extra non-reuse objects created by REVERSAL-08).
+  const nonReuse = state.nonReuse;
+  assertCheckpointBTracked(
+    "REVERSAL-09",
+    fixture,
+    nonReuse ? [state.paymentId, nonReuse.laterPaymentId] : [state.paymentId],
+    nonReuse
+      ? [state.receiptBefore.id, nonReuse.laterReceiptId]
+      : [state.receiptBefore.id],
+  );
 };
+
 
 
 // ---------------------------------------------------------------------------

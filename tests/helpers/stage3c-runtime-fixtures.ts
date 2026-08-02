@@ -2563,6 +2563,8 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
       },
       scenarios,
       matrix,
+      search,
+
       tracked,
       helpers,
       openBillId,

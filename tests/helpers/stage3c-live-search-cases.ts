@@ -20,15 +20,28 @@
 import {
   searchSocietyOpenBillsWithClient,
   SEARCH_OPEN_BILLS_CANONICAL_ERRORS,
+  SEARCH_OPEN_BILLS_INPUT_BOUNDS,
+  SEARCH_OPEN_BILL_ALLOWED_STATUSES,
+  buildSearchLikePattern,
+  escapeSearchLikeLiteral,
   type OpenBillForPayment,
+  type SearchOpenBillsCanonicalError,
 } from "@/lib/offline-payments.functions";
 import type { BillingRpcClient } from "@/lib/billing-config.functions";
 import {
   STAGE3C_SEARCH_AMOUNTS,
   STAGE3C_SEARCH_TOTALS,
+  MatrixBillSummarySchema,
+  createMatrixBillSummaryReader,
+  type MatrixBillSummary,
   type Stage3CFixture,
   type SyntheticUser,
 } from "./stage3c-runtime-fixtures";
+import {
+  buildStage3CDenialActors,
+  createStage3CAnonRpcClient,
+  type Stage3CDenialActorId,
+} from "./stage3c-live-rejection-reversal-cases";
 import { requireFixture } from "./stage3c-live-core-context";
 import type { Stage3CMatrixLiveHandler } from "./stage3c-live-matrix-registry";
 

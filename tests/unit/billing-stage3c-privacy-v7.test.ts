@@ -33,11 +33,15 @@ function allMigrations(): string {
 
 const latestGetPaymentDetail = (() => {
   const sql = allMigrations();
-  // grab the LAST definition; that's the current effective body.
-  const re = /CREATE OR REPLACE FUNCTION public\.get_payment_detail[\s\S]*?\$\$;/g;
+  // Grab the LAST definition; that's the current effective body. The body
+  // may be dollar-quoted with `$$` OR a named tag such as `$function$`, so
+  // the terminator is captured from the opening tag instead of assumed.
+  const re =
+    /CREATE OR REPLACE FUNCTION public\.get_payment_detail[\s\S]*?AS (\$[A-Za-z_]*\$)[\s\S]*?\1/g;
   const matches = sql.match(re) ?? [];
   return matches[matches.length - 1] ?? "";
 })();
+
 
 describe("Stage 3C v7 — get_payment_detail body is safely shaped", () => {
   it("has a latest definition", () => {

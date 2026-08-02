@@ -426,7 +426,9 @@ function RecordOfflinePaymentSection({
       const { bills } = await search({
         data: { societyId, query, limit: 20, offset: 0 },
       });
-      setResults(bills);
+      // The search core returns a deeply frozen, readonly result; copy
+      // into a mutable array for local component state.
+      setResults([...bills]);
     } catch (e) {
       toast.error((e as Error).message);
     } finally {

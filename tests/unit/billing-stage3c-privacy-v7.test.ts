@@ -39,7 +39,13 @@ const latestGetPaymentDetail = (() => {
   const re =
     /CREATE OR REPLACE FUNCTION public\.get_payment_detail[\s\S]*?AS (\$[A-Za-z_]*\$)[\s\S]*?\1/g;
   const matches = sql.match(re) ?? [];
-  return matches[matches.length - 1] ?? "";
+  const body = matches[matches.length - 1] ?? "";
+  // Strip `--` line comments: prose describing what the body does NOT do
+  // must never be mistaken for the body doing it.
+  return body
+    .split("\n")
+    .map((line) => line.replace(/--.*$/, ""))
+    .join("\n");
 })();
 
 

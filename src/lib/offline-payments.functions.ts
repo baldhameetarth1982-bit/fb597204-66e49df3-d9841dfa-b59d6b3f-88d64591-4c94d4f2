@@ -979,17 +979,141 @@ export const getBillPaymentSummary = createServerFn({ method: "POST" })
 /* --------------------- Admin: bill search for entry ------------------- */
 
 /**
- * Canonical money field contract for search rows. Every monetary column
- * returned by `search_society_open_bills` is `numeric` and is emitted by
- * PostgREST either as a JS number or as a decimal string. Coercion is
- * therefore allowed, but the coerced value must be a finite, non-negative
- * number — NaN, Infinity and negative balances are structural violations
- * of the SQL body (every balance is wrapped in `GREATEST(..., 0)`).
+ * Canonical error tokens the search core may raise.
+ *
+ * `not_authenticated`, `not_authorized` and `invalid_search_input` are
+ * raised verbatim by the effective SQL body of
+ * `public.search_society_open_bills`; every other failure (provider
+ * error, malformed payload, structural violation) collapses to
+ * `operation_failed` so raw DB/provider text can never leak.
  */
-const searchMoney = z.coerce
-  .number()
-  .refine((v) => Number.isFinite(v), { message: "non_finite" })
-  .refine((v) => v >= 0, { message: "negative" });
+export const SEARCH_OPEN_BILLS_CANONICAL_ERRORS = Object.freeze({
+  not_authenticated: "not_authenticated",
+  not_authorized: "not_authorized",
+  invalid_search_input: "invalid_search_input",
+  operation_failed: "operation_failed",
+} as const);
+
+export type SearchOpenBillsCanonicalError =
+  (typeof SEARCH_OPEN_BILLS_CANONICAL_ERRORS)[keyof typeof SEARCH_OPEN_BILLS_CANONICAL_ERRORS];
+
+/**
+ * The exact input bounds enforced by the SQL body. TypeScript and SQL
+ * MUST agree: a value TypeScript rejects must not be silently clamped
+ * and accepted by a direct RPC call, and vice versa.
+ */
+export const SEARCH_OPEN_BILLS_INPUT_BOUNDS = Object.freeze({
+  queryMaxLength: 120,
+  limitMin: 1,
+  limitMax: 50,
+  limitDefault: 20,
+  offsetMin: 0,
+  offsetDefault: 0,
+} as const);
+
+/**
+ * Bill statuses a search row may legitimately carry. The SQL `WHERE`
+ * clause excludes `paid` and `cancelled`; the remaining canonical
+ * `bills.status` vocabulary is the accepted set. Anything else is a
+ * structural violation of the contract.
+ */
+export const SEARCH_OPEN_BILL_ALLOWED_STATUSES: readonly string[] = Object.freeze([
+  "unpaid",
+  "partially_paid",
+  "overdue",
+]);
+
+/* --------------------------- literal wildcards ------------------------ */
+
+/**
+ * Mirror of the SQL escaping performed inside
+ * `search_society_open_bills`. The escape character is escaped FIRST,
+ * then the two LIKE metacharacters:
+ *
+ *   replace(q, '\', '\\') -> replace(_, '%', '\%') -> replace(_, '_', '\_')
+ *
+ * Exported so the SQL contract can be validated directly instead of
+ * inferring wildcard behavior from an in-memory `.includes()` engine.
+ */
+export function escapeSearchLikeLiteral(raw: string): string {
+  return raw.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+}
+
+/**
+ * The exact `qlike` value the SQL body computes for a raw query, or
+ * `null` when the trimmed query is empty (no text predicate at all).
+ */
+export function buildSearchLikePattern(raw: string): string | null {
+  const q = raw.trim();
+  if (q === "") return null;
+  return `%${escapeSearchLikeLiteral(q)}%`;
+}
+
+/* ----------------------------- strict money --------------------------- */
+
+/**
+ * PostgREST emits `numeric` either as a JS number or as a decimal
+ * string. Nothing else is a legitimate representation, so unrestricted
+ * `z.coerce.number()` (which happily turns `null`, `""`, `[]`, `true`
+ * and `"0x10"` into numbers) is not acceptable here.
+ */
+const SEARCH_DECIMAL_PATTERN = /^[+-]?(?:\d+(?:\.\d+)?|\.\d+)$/;
+
+/** Money is stored at 2 decimal places; normalize to avoid FP drift. */
+export function normalizeSearchMoney(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+/**
+ * Strict monetary acceptance. Returns the normalized finite
+ * non-negative number, or `null` when the raw value is not an actual
+ * PostgREST numeric representation.
+ */
+export function parseSearchMoney(raw: unknown): number | null {
+  let n: number;
+  if (typeof raw === "number") {
+    n = raw;
+  } else if (typeof raw === "string") {
+    if (!SEARCH_DECIMAL_PATTERN.test(raw)) return null;
+    n = Number(raw);
+  } else {
+    return null;
+  }
+  if (!Number.isFinite(n)) return null;
+  const normalized = normalizeSearchMoney(n);
+  if (normalized < 0) return null;
+  return normalized;
+}
+
+const searchMoney = z
+  .unknown()
+  .transform((v, ctx) => {
+    const parsed = parseSearchMoney(v);
+    if (parsed === null) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "invalid_money" });
+      return z.NEVER;
+    }
+    return parsed;
+  });
+
+/* ------------------------------ row shape ----------------------------- */
+
+/** Strict `YYYY-MM-DD` acceptance — the value must be a real calendar date. */
+export function isCanonicalSearchDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [y, m, d] = value.split("-").map((p) => Number(p));
+  if (y === undefined || m === undefined || d === undefined) return false;
+  if (m < 1 || m > 12 || d < 1 || d > 31) return false;
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return (
+    dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d
+  );
+}
+
+const searchDate = z
+  .string()
+  .refine(isCanonicalSearchDate, { message: "invalid_date" })
+  .nullable();
 
 const openBillSchema = z
   .object({
@@ -1000,8 +1124,10 @@ const openBillSchema = z
     flat_label: z.string().nullable(),
     block_name: z.string().nullable(),
     period_label: z.string().nullable(),
-    due_date: z.string().nullable(),
-    status: z.string().min(1),
+    due_date: searchDate,
+    status: z.string().refine((s) => SEARCH_OPEN_BILL_ALLOWED_STATUSES.includes(s), {
+      message: "invalid_status",
+    }),
     total_payable: searchMoney,
     verified_amount: searchMoney,
     pending_amount: searchMoney,
@@ -1013,51 +1139,143 @@ const openBillSchema = z
 export type OpenBillForPayment = z.infer<typeof openBillSchema>;
 
 /**
- * Canonical error tokens the search core may raise. `not_authenticated`
- * and `not_authorized` are raised verbatim by the SQL body; every other
- * failure (provider error, malformed payload, structural violation) is
- * collapsed to `operation_failed` so raw DB text can never leak.
+ * The exact arithmetic the SQL body performs. A row whose reported
+ * balances disagree with these equations is a structural violation and
+ * must never reach a caller.
  */
-export const SEARCH_OPEN_BILLS_CANONICAL_ERRORS = Object.freeze({
-  not_authenticated: "not_authenticated",
-  not_authorized: "not_authorized",
-  operation_failed: "operation_failed",
-} as const);
+export function searchRowEquationsHold(row: OpenBillForPayment): boolean {
+  const expectedRemaining = normalizeSearchMoney(
+    Math.max(row.total_payable - row.verified_amount, 0),
+  );
+  const expectedAvailable = normalizeSearchMoney(
+    Math.max(row.total_payable - row.verified_amount - row.pending_amount, 0),
+  );
+  if (row.remaining_verified_balance !== expectedRemaining) return false;
+  if (row.available_to_submit !== expectedAvailable) return false;
+  // A verified amount above the bill total is financially impossible.
+  if (row.verified_amount > row.total_payable) return false;
+  // A search row must carry real headroom; the SQL WHERE clause already
+  // filters `available_to_submit <= 0`.
+  if (!(row.available_to_submit > 0)) return false;
+  return true;
+}
 
-export type SearchOpenBillsCanonicalError =
-  (typeof SEARCH_OPEN_BILLS_CANONICAL_ERRORS)[keyof typeof SEARCH_OPEN_BILLS_CANONICAL_ERRORS];
+/* --------------------------- input contract --------------------------- */
 
 /** Canonical input contract for the search core (shared by fn + tests). */
 export const searchOpenBillsInputSchema = z
   .object({
     societyId: z.string().uuid(),
-    query: z.string().trim().max(120).default(""),
-    limit: z.number().int().min(1).max(50).default(20),
-    offset: z.number().int().min(0).default(0),
+    query: z.string().trim().max(SEARCH_OPEN_BILLS_INPUT_BOUNDS.queryMaxLength).default(""),
+    limit: z
+      .number()
+      .int()
+      .min(SEARCH_OPEN_BILLS_INPUT_BOUNDS.limitMin)
+      .max(SEARCH_OPEN_BILLS_INPUT_BOUNDS.limitMax)
+      .default(SEARCH_OPEN_BILLS_INPUT_BOUNDS.limitDefault),
+    offset: z
+      .number()
+      .int()
+      .min(SEARCH_OPEN_BILLS_INPUT_BOUNDS.offsetMin)
+      .default(SEARCH_OPEN_BILLS_INPUT_BOUNDS.offsetDefault),
   })
   .strict();
 
 export type SearchOpenBillsInput = z.input<typeof searchOpenBillsInputSchema>;
+export type SearchOpenBillsParsedInput = z.output<typeof searchOpenBillsInputSchema>;
+
 export interface SearchOpenBillsOutput {
-  readonly bills: OpenBillForPayment[];
+  readonly bills: readonly OpenBillForPayment[];
+}
+
+/**
+ * Parse-or-throw with the canonical static token. Never interpolates
+ * the offending value, the society id or a Zod issue path.
+ */
+export function parseSearchOpenBillsInput(input: unknown): SearchOpenBillsParsedInput {
+  const parsed = searchOpenBillsInputSchema.safeParse(input);
+  if (!parsed.success)
+    throw new Error(SEARCH_OPEN_BILLS_CANONICAL_ERRORS.invalid_search_input);
+  return parsed.data;
+}
+
+/* --------------------------- error mapping ---------------------------- */
+
+/**
+ * Bounded canonical tokens the SQL body may raise, matched EXACTLY on a
+ * token boundary — never by loose `.includes()`.
+ */
+const SEARCH_BOUNDED_TOKENS: readonly SearchOpenBillsCanonicalError[] = Object.freeze([
+  SEARCH_OPEN_BILLS_CANONICAL_ERRORS.not_authenticated,
+  SEARCH_OPEN_BILLS_CANONICAL_ERRORS.not_authorized,
+  SEARCH_OPEN_BILLS_CANONICAL_ERRORS.invalid_search_input,
+]);
+
+/**
+ * Classify a raw provider message into exactly one canonical token.
+ *
+ * Fails closed:
+ *   - a non-string / empty / malformed message -> `operation_failed`
+ *   - an unrecognized message                  -> `operation_failed`
+ *   - MORE THAN ONE distinct canonical token   -> `operation_failed`
+ *
+ * Only a message carrying exactly one recognized bounded token maps to
+ * that token. Raw provider text is never propagated.
+ */
+export function classifySearchCanonicalError(raw: unknown): SearchOpenBillsCanonicalError {
+  const message = typeof raw === "string" ? raw : "";
+  if (message.trim().length === 0)
+    return SEARCH_OPEN_BILLS_CANONICAL_ERRORS.operation_failed;
+  const lower = message.toLowerCase();
+  const matched = new Set<SearchOpenBillsCanonicalError>();
+  for (const token of SEARCH_BOUNDED_TOKENS) {
+    // Token boundary: not preceded/followed by another identifier char.
+    const pattern = new RegExp(`(?<![a-z0-9_])${token}(?![a-z0-9_])`);
+    if (pattern.test(lower)) matched.add(token);
+  }
+  if (matched.size !== 1) return SEARCH_OPEN_BILLS_CANONICAL_ERRORS.operation_failed;
+  const [only] = [...matched];
+  return only ?? SEARCH_OPEN_BILLS_CANONICAL_ERRORS.operation_failed;
+}
+
+/** Extract a provider error message without trusting its shape. */
+function searchProviderMessage(error: unknown): string {
+  if (typeof error === "string") return error;
+  if (error && typeof error === "object" && "message" in error) {
+    const m = (error as { message?: unknown }).message;
+    if (typeof m === "string") return m;
+  }
+  return "";
+}
+
+/* ------------------------- payload acceptance ------------------------- */
+
+/** Freeze the output object, the array, and every row. */
+function freezeSearchOutput(bills: OpenBillForPayment[]): SearchOpenBillsOutput {
+  for (const bill of bills) Object.freeze(bill);
+  Object.freeze(bills);
+  return Object.freeze({ bills });
 }
 
 /**
  * Structural acceptance of a decoded search payload. Fails closed on:
  *   - a non-array payload (including `null` / `undefined` / an object);
- *   - any row failing the strict row schema;
+ *   - any row failing the strict row schema (unknown key, bad UUID,
+ *     bad date, non-canonical status, non-numeric money);
  *   - duplicate `bill_id` values (the SQL body groups by bill);
  *   - a row belonging to a society other than the requested one;
- *   - a row with no headroom (`available_to_submit <= 0`), which the SQL
- *     `WHERE` clause already excludes.
+ *   - any row whose balance arithmetic disagrees with the SQL body,
+ *     including a row with no headroom.
  *
  * Every rejection raises the single opaque `operation_failed` token — no
- * row content, id or provider text is ever interpolated.
+ * row content, id or provider text is ever interpolated. Returned rows
+ * are detached from the provider payload (Zod produces fresh objects)
+ * and deeply frozen.
  */
 export function acceptSearchOpenBillsPayload(
   societyId: string,
   raw: unknown,
-): OpenBillForPayment[] {
+): SearchOpenBillsOutput {
   if (!Array.isArray(raw)) throw new Error(SEARCH_OPEN_BILLS_CANONICAL_ERRORS.operation_failed);
   const bills: OpenBillForPayment[] = [];
   const seen = new Set<string>();
@@ -1069,12 +1287,12 @@ export function acceptSearchOpenBillsPayload(
       throw new Error(SEARCH_OPEN_BILLS_CANONICAL_ERRORS.operation_failed);
     if (seen.has(bill.bill_id))
       throw new Error(SEARCH_OPEN_BILLS_CANONICAL_ERRORS.operation_failed);
-    if (!(bill.available_to_submit > 0))
+    if (!searchRowEquationsHold(bill))
       throw new Error(SEARCH_OPEN_BILLS_CANONICAL_ERRORS.operation_failed);
     seen.add(bill.bill_id);
     bills.push(bill);
   }
-  return bills;
+  return freezeSearchOutput(bills);
 }
 
 /**
@@ -1090,21 +1308,25 @@ export async function searchSocietyOpenBillsWithClient(
   client: BillingRpcClient,
   input: SearchOpenBillsInput,
 ): Promise<SearchOpenBillsOutput> {
-  const parsedInput = searchOpenBillsInputSchema.safeParse(input);
-  if (!parsedInput.success)
-    throw new Error(SEARCH_OPEN_BILLS_CANONICAL_ERRORS.operation_failed);
-  const { societyId, query, limit, offset } = parsedInput.data;
-  const raw = await callPaymentReadRpc(
-    client,
-    "search_society_open_bills",
-    buildRpcArgs({
-      _society_id: societyId,
-      _query: query,
-      _limit: limit,
-      _offset: offset,
-    }),
-  );
-  return { bills: acceptSearchOpenBillsPayload(societyId, raw) };
+  const { societyId, query, limit, offset } = parseSearchOpenBillsInput(input);
+  let result: { data: unknown; error: { message: string } | null };
+  try {
+    result = await client.rpc(
+      "search_society_open_bills",
+      buildRpcArgs({
+        _society_id: societyId,
+        _query: query,
+        _limit: limit,
+        _offset: offset,
+      }),
+    );
+  } catch (e) {
+    throw new Error(classifySearchCanonicalError(searchProviderMessage(e)));
+  }
+  if (result.error) {
+    throw new Error(classifySearchCanonicalError(searchProviderMessage(result.error)));
+  }
+  return acceptSearchOpenBillsPayload(societyId, result.data);
 }
 
 /**
@@ -1116,7 +1338,7 @@ export async function searchSocietyOpenBillsWithClient(
  */
 export const searchOpenBillsForPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => searchOpenBillsInputSchema.parse(i))
+  .inputValidator((i) => parseSearchOpenBillsInput(i))
   .handler(async ({ data, context }) => {
     try {
       return await searchSocietyOpenBillsWithClient(toBillingRpcClient(context), data);
@@ -1124,5 +1346,6 @@ export const searchOpenBillsForPayment = createServerFn({ method: "POST" })
       throw new Error(mapPaymentError((e as Error).message));
     }
   });
+
 
 

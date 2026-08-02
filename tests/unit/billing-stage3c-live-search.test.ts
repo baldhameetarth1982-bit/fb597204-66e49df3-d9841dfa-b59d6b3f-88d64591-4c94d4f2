@@ -38,7 +38,11 @@ import {
   assertMonthlySequenceExactDelta,
   MONTHLY_SEQUENCE_IMPLICIT_BASELINE,
 } from "../helpers/stage3c-live-rejection-reversal-cases";
-import type { OpenBillForPayment } from "@/lib/offline-payments.functions";
+import {
+  buildSearchLikePattern,
+  SEARCH_OPEN_BILLS_CANONICAL_ERRORS,
+  type OpenBillForPayment,
+} from "@/lib/offline-payments.functions";
 
 // ---------------------------------------------------------------------------
 // Synthetic ids + engine
@@ -169,6 +173,26 @@ function toRow(b: EngineBill): OpenBillForPayment {
   } as OpenBillForPayment;
 }
 
+/**
+ * Faithful `ILIKE ... ESCAPE '\\'` evaluator. Mirrors PostgreSQL: `%`
+ * and `_` are wildcards UNLESS preceded by the escape character, which
+ * is exactly what makes user-typed metacharacters literal.
+ */
+function likeMatches(subject: string, pattern: string): boolean {
+  let re = "";
+  for (let i = 0; i < pattern.length; i += 1) {
+    const ch = pattern[i];
+    if (ch === "\\") {
+      const next = pattern[i + 1] ?? "";
+      re += next.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      i += 1;
+    } else if (ch === "%") re += "[\\s\\S]*";
+    else if (ch === "_") re += "[\\s\\S]";
+    else re += (ch ?? "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+  return new RegExp(`^${re}$`, "i").test(subject);
+}
+
 interface EngineOptions {
   /** Societies this actor may search. */
   allowed: readonly string[];
@@ -181,13 +205,35 @@ function makeEngineClient(opts: EngineOptions) {
   const client = {
     rpc(name: string, args: Record<string, unknown>) {
       calls.push({ name, args });
+      if (name === "get_bill_payment_summary") {
+        const billId = String(args["_bill_id"] ?? "");
+        const b = data.find((x) => x.bill_id === billId);
+        if (!b) return Promise.resolve({ data: null, error: { message: "bill_not_found" } });
+        return Promise.resolve({
+          data: {
+            bill_id: b.bill_id,
+            society_id: b.society_id,
+            total_payable: b.total,
+            verified_amount: b.verified,
+            pending_amount: b.pending,
+            rejected_amount: 0,
+            reversed_amount: 0,
+            remaining_verified_balance: b.total - b.verified,
+            available_to_submit: b.total - b.verified - b.pending,
+            status: b.status,
+            cancelled: b.cancelled,
+          },
+          error: null,
+        });
+      }
       if (name !== "search_society_open_bills")
         return Promise.resolve({ data: null, error: { message: "unexpected_rpc" } });
       const societyId = String(args["_society_id"] ?? args["society_id"] ?? "");
       if (!opts.allowed.includes(societyId))
         return Promise.resolve({ data: null, error: { message: "not_authorized" } });
       const rawQuery = args["_query"] ?? args["query"];
-      const q = typeof rawQuery === "string" && rawQuery.length > 0 ? rawQuery.toLowerCase() : null;
+      const pattern =
+        typeof rawQuery === "string" ? buildSearchLikePattern(rawQuery) : null;
       const limit = Math.max(1, Number(args["_limit"] ?? args["limit"] ?? 20));
       const offset = Math.max(0, Number(args["_offset"] ?? args["offset"] ?? 0));
       const rows = data
@@ -196,10 +242,10 @@ function makeEngineClient(opts: EngineOptions) {
         .filter((b) => b.total - b.verified - b.pending > 0)
         .filter(
           (b) =>
-            q === null ||
-            b.flat_label.toLowerCase().includes(q) ||
-            b.bill_number.toLowerCase().includes(q) ||
-            b.period_label.toLowerCase().includes(q),
+            pattern === null ||
+            likeMatches(b.flat_label, pattern) ||
+            likeMatches(b.bill_number, pattern) ||
+            likeMatches(b.period_label, pattern),
         )
         .sort(
           (a, b) =>
@@ -271,7 +317,28 @@ function makeFixture(overrides?: { bills?: EngineBill[] }) {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function ctxOf(fixture: unknown): any {
-  return { fixture };
+  return { fixture, searchDenialActors: syntheticSearchDenialActors() };
+}
+
+/**
+ * Synthetic stand-ins for the five canonical denial actors. Each returns
+ * the exact provider message its real counterpart produces, so the real
+ * matrix logic and the real classifier are what is under test.
+ */
+function syntheticSearchDenialActors() {
+  const denied = (message: string) => ({
+    rpc: () => Promise.resolve({ data: null, error: { message } }),
+  });
+  return [
+    { id: "otherSocietyAdmin", client: denied("not_authorized") },
+    { id: "resident", client: denied("not_authorized") },
+    { id: "guard", client: denied("not_authorized") },
+    { id: "outOfScopeBlockAdmin", client: denied("not_authorized") },
+    {
+      id: "unauthenticated",
+      client: denied("permission denied for function search_society_open_bills"),
+    },
+  ] as never;
 }
 
 async function runCase(id: keyof typeof STAGE3C_SEARCH_HANDLERS, fixture: unknown) {

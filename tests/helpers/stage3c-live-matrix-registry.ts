@@ -1,5 +1,5 @@
 /**
- * Stage 3C — Live matrix registry (90/93).
+ * Stage 3C — Live matrix registry (93/93).
  *
  * Composes:
  *   - the existing 24-case core registry (AUTH + PENDING + VERIFY)
@@ -10,6 +10,7 @@
  *   - the 5 REJECTION-01..05 handlers
  *   - the 9 REVERSAL-01..09 handlers
  *   - the 10 SEARCH-01..10 handlers
+ *   - the 3 CLEANUP-01..03 post-teardown handlers
  *
  * Uses true compile-time exhaustiveness (`satisfies Record`) — no
  * `as Record`, no fallback, no optional lookup.
@@ -53,6 +54,11 @@ import {
   STAGE3C_SEARCH_HANDLERS,
   type Stage3CSearchCaseId,
 } from "./stage3c-live-search-cases";
+import {
+  STAGE3C_CLEANUP_CASE_IDS,
+  STAGE3C_CLEANUP_HANDLERS,
+  type Stage3CCleanupCaseId,
+} from "./stage3c-live-cleanup-cases";
 import type { Stage3CLiveMatrixContext } from "./stage3c-live-matrix-context";
 import { STAGE3C_REQUIRED_LIVE_CASES } from "./stage3c-live-case-manifest";
 
@@ -64,7 +70,8 @@ export type Stage3CMatrixLiveCaseId =
   | Stage3CPrivacyCaseId
   | Stage3CRejectionCaseId
   | Stage3CReversalCaseId
-  | Stage3CSearchCaseId;
+  | Stage3CSearchCaseId
+  | Stage3CCleanupCaseId;
 
 export type Stage3CMatrixLiveHandler = (ctx: Stage3CLiveMatrixContext) => Promise<void>;
 
@@ -83,6 +90,8 @@ export const STAGE3C_MATRIX_LIVE_CASE_IDS: readonly Stage3CMatrixLiveCaseId[] = 
   ...STAGE3C_REJECTION_CASE_IDS,
   ...STAGE3C_REVERSAL_CASE_IDS,
   ...STAGE3C_SEARCH_CASE_IDS,
+  // CLEANUP runs last: these three cases observe state AFTER primary teardown.
+  ...STAGE3C_CLEANUP_CASE_IDS,
 ];
 
 
@@ -189,6 +198,9 @@ export const STAGE3C_MATRIX_LIVE_HANDLERS = {
   "SEARCH-08": STAGE3C_SEARCH_HANDLERS["SEARCH-08"],
   "SEARCH-09": STAGE3C_SEARCH_HANDLERS["SEARCH-09"],
   "SEARCH-10": STAGE3C_SEARCH_HANDLERS["SEARCH-10"],
+  "CLEANUP-01": STAGE3C_CLEANUP_HANDLERS["CLEANUP-01"],
+  "CLEANUP-02": STAGE3C_CLEANUP_HANDLERS["CLEANUP-02"],
+  "CLEANUP-03": STAGE3C_CLEANUP_HANDLERS["CLEANUP-03"],
 } satisfies Record<Stage3CMatrixLiveCaseId, Stage3CMatrixLiveHandler>;
 
 

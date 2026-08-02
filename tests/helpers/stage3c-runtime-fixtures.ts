@@ -2596,3 +2596,180 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
     throw new Error(`[stage3c:setup] ${setupMsg}`);
   }
 }
+
+// ---------------------------------------------------------------------------
+// CLEANUP-01..03 — post-teardown evidence and independent observation
+// ---------------------------------------------------------------------------
+
+/**
+ * An IMMUTABLE copy of everything the fixture created, captured while
+ * the fixture is still alive and consumed only AFTER teardown.
+ *
+ * Post-teardown absence proofs must not read the live tracker: the
+ * teardown path is allowed to mutate it, so a tracker that had been
+ * emptied would make every absence assertion vacuously true. This
+ * snapshot is detached (fresh arrays) and deeply frozen, so the
+ * evidence CLEANUP-01..03 checks is exactly the evidence that existed
+ * before teardown ran.
+ */
+export type Stage3CCleanupEvidence = {
+  readonly prefix: string;
+  readonly capturedAt: string;
+  readonly authUserIds: readonly string[];
+  readonly societyIds: readonly string[];
+  readonly blockIds: readonly string[];
+  readonly flatIds: readonly string[];
+  readonly flatResidentIds: readonly string[];
+  readonly userRoleIds: readonly string[];
+  readonly userRoleBlockScopeIds: readonly string[];
+  readonly billIds: readonly string[];
+  readonly billLineItemIds: readonly string[];
+  readonly paymentIds: readonly string[];
+  readonly paymentReceiptIds: readonly string[];
+};
+
+/** One (table, primary-key column, tracked ids) absence obligation. */
+export type Stage3CCleanupTableTarget = {
+  readonly table: string;
+  readonly column: string;
+  readonly ids: readonly string[];
+};
+
+function frozenIdCopy(ids: readonly string[], label: string): readonly string[] {
+  const out: string[] = [];
+  for (const id of ids) {
+    if (typeof id !== "string" || !UUID_RE.test(id.trim().toLowerCase()))
+      throw new Error(`[stage3c:cleanup-evidence:${label}] malformed tracked id`);
+    out.push(id);
+  }
+  return Object.freeze(out);
+}
+
+/**
+ * Capture the immutable cleanup evidence. MUST be called before
+ * `fixture.cleanup()`.
+ */
+export function captureStage3CCleanupEvidence(
+  fixture: Stage3CFixture,
+): Stage3CCleanupEvidence {
+  const t = fixture.tracked;
+  if (typeof fixture.prefix !== "string" || fixture.prefix.trim() === "")
+    throw new Error("[stage3c:cleanup-evidence:prefix] fixture prefix is blank");
+  return Object.freeze({
+    prefix: fixture.prefix,
+    capturedAt: new Date().toISOString(),
+    authUserIds: frozenIdCopy(t.authUserIds, "authUserIds"),
+    societyIds: frozenIdCopy(t.societyIds, "societyIds"),
+    blockIds: frozenIdCopy(t.blockIds, "blockIds"),
+    flatIds: frozenIdCopy(t.flatIds, "flatIds"),
+    flatResidentIds: frozenIdCopy(t.flatResidentIds, "flatResidentIds"),
+    userRoleIds: frozenIdCopy(t.userRoleIds, "userRoleIds"),
+    userRoleBlockScopeIds: frozenIdCopy(
+      t.userRoleBlockScopeIds,
+      "userRoleBlockScopeIds",
+    ),
+    billIds: frozenIdCopy(t.billIds, "billIds"),
+    billLineItemIds: frozenIdCopy(t.billLineItemIds, "billLineItemIds"),
+    paymentIds: frozenIdCopy(t.paymentIds, "paymentIds"),
+    paymentReceiptIds: frozenIdCopy(t.paymentReceiptIds, "paymentReceiptIds"),
+  });
+}
+
+/**
+ * The exhaustive ordered list of database absence obligations derived
+ * from the evidence. Children are listed before parents so a failure
+ * report reads bottom-up from the most dependent row.
+ */
+export function stage3CCleanupTableTargets(
+  evidence: Stage3CCleanupEvidence,
+): readonly Stage3CCleanupTableTarget[] {
+  return Object.freeze([
+    { table: "payment_receipts", column: "id", ids: evidence.paymentReceiptIds },
+    { table: "payments", column: "id", ids: evidence.paymentIds },
+    { table: "bill_line_items", column: "id", ids: evidence.billLineItemIds },
+    { table: "bills", column: "id", ids: evidence.billIds },
+    {
+      table: "user_role_block_scopes",
+      column: "id",
+      ids: evidence.userRoleBlockScopeIds,
+    },
+    { table: "flat_residents", column: "id", ids: evidence.flatResidentIds },
+    { table: "flats", column: "id", ids: evidence.flatIds },
+    { table: "blocks", column: "id", ids: evidence.blockIds },
+    { table: "user_roles", column: "id", ids: evidence.userRoleIds },
+    { table: "societies", column: "id", ids: evidence.societyIds },
+  ] as const);
+}
+
+/**
+ * An independent, disposable observer. Deliberately NOT `fixture.admin`:
+ * the absence proof must not depend on the same client instance that
+ * performed the deletions, so a stale or mis-scoped fixture client can
+ * never make teardown look successful.
+ */
+export type Stage3CCleanupObserver = {
+  readonly remainingIn: (
+    target: Stage3CCleanupTableTarget,
+  ) => Promise<{ remaining: readonly string[]; error: unknown }>;
+  readonly remainingAuthUserIds: (
+    ids: readonly string[],
+  ) => Promise<{ remaining: readonly string[]; error: unknown }>;
+  readonly prefixSocietyCount: (prefix: string) => Promise<{ count: number; error: unknown }>;
+  readonly prefixAuthUserCount: (prefix: string) => Promise<{ count: number; error: unknown }>;
+};
+
+export function createStage3CCleanupObserver(): Stage3CCleanupObserver {
+  const env = requireStage3CEnv();
+  const observer = createClient(env.url, env.serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  return Object.freeze({
+    async remainingIn(target) {
+      const r = await fetchRemainingTrackedIds(
+        observer,
+        target.table,
+        target.column,
+        [...target.ids],
+      );
+      return { remaining: Object.freeze(r.remaining), error: r.error };
+    },
+    async remainingAuthUserIds(ids) {
+      const remaining: string[] = [];
+      for (const id of ids) {
+        const { data, error } = await observer.auth.admin.getUserById(id);
+        // A deleted user yields an error / null user; anything else means
+        // the account still exists.
+        if (!error && data && data.user) remaining.push(id);
+      }
+      return { remaining: Object.freeze(remaining), error: null };
+    },
+    async prefixSocietyCount(prefix) {
+      const { data, error } = await observer
+        .from("societies")
+        .select("id")
+        .like("name", `${prefix}-%`);
+      if (error) return { count: 0, error };
+      return { count: (data ?? []).length, error: null };
+    },
+    async prefixAuthUserCount(prefix) {
+      const needle = `${prefix.toLowerCase()}-`;
+      let page = 1;
+      let count = 0;
+      // Bounded scan; the fixture never creates more than a few users.
+      for (; page <= 20; page += 1) {
+        const { data, error } = await observer.auth.admin.listUsers({
+          page,
+          perPage: 200,
+        });
+        if (error) return { count: 0, error };
+        const users = data?.users ?? [];
+        for (const u of users) {
+          const email = (u.email ?? "").toLowerCase();
+          if (email.startsWith(needle)) count += 1;
+        }
+        if (users.length < 200) break;
+      }
+      return { count, error: null };
+    },
+  });
+}

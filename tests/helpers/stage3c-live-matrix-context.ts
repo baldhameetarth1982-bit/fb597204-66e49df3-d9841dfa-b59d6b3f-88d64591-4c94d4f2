@@ -26,13 +26,19 @@ import {
   type ResidentBillSummary,
   type ResidentBillStateSnapshot,
 } from "./stage3c-live-resident-submit-contracts";
-import { CanonicalStage3CUuidSchema, type Stage3CFixture } from "./stage3c-runtime-fixtures";
+import {
+  CanonicalStage3CUuidSchema,
+  type Stage3CCleanupEvidence,
+  type Stage3CCleanupObserver,
+  type Stage3CFixture,
+} from "./stage3c-runtime-fixtures";
 import type {
   ResidentPaymentDetail,
   ResidentPaymentHistoryRow,
   Stage3CReadDenialEvidence,
 } from "./stage3c-live-read-cases";
 import type {
+  Stage3CDenialActor,
   Stage3CRejectionState,
   Stage3CReversalState,
 } from "./stage3c-live-rejection-reversal-cases";
@@ -136,6 +142,23 @@ export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
 
   // REVERSAL lifecycle state — lazily populated by REVERSAL-01 handler.
   reversalState: Stage3CReversalState | null;
+
+  // CLEANUP-01..03 post-teardown slots.
+  //
+  // `cleanupEvidence` is captured while the fixture is still alive and is
+  // deliberately the ONLY source CLEANUP reads: the live tracker may be
+  // mutated by teardown. `teardownCompletedAt` is set by the runtime
+  // workflow after primary teardown returns, so a CLEANUP case can never
+  // pass by running before teardown. `cleanupObserver` is an independent
+  // disposable client, never the fixture's own admin client.
+  // SEARCH-10 denial-actor override. `null` in the live workflow, which
+  // then builds the real actor set (including a genuine anonymous
+  // PostgREST client). Only the behavioral suite supplies a value.
+  searchDenialActors: readonly Stage3CDenialActor[] | null;
+
+  cleanupEvidence: Stage3CCleanupEvidence | null;
+  cleanupObserver: Stage3CCleanupObserver | null;
+  teardownCompletedAt: string | null;
 }
 
 
@@ -224,6 +247,10 @@ export function createStage3CLiveMatrixContext(): Stage3CLiveMatrixContext {
 
     rejectionState: null,
     reversalState: null,
+    searchDenialActors: null,
+    cleanupEvidence: null,
+    cleanupObserver: null,
+    teardownCompletedAt: null,
   };
 }
 

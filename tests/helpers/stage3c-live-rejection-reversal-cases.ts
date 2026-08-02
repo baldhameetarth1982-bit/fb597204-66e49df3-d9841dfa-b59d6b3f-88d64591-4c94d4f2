@@ -2188,7 +2188,8 @@ export const reversal09_verifyAfterReverseDenied: Stage3CMatrixLiveHandler = asy
   });
 
   // Input/state denials for an AUTHORIZED admin against the reversed chain.
-  const rejectedPaymentId = ctx.rejectionState?.paymentAfter?.id ?? state.paymentId;
+  const rejectedPaymentId =
+    ctx.rejectionState?.paymentAfter?.id ?? fixture.scenarios.rejectedPaymentId;
   const targets = buildRejRevDenialStateTargets(
     fixture,
     rejectedPaymentId,

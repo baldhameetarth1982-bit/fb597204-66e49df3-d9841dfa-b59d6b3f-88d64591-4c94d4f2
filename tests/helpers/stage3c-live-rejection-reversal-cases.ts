@@ -1900,7 +1900,15 @@ export const rejection05_verifyAfterRejectDenied: Stage3CMatrixLiveHandler = asy
 
   // Input/state denials for an AUTHORIZED admin — proves the denial is
   // about input and lifecycle state, not authorization.
-  const targets = buildRejRevDenialStateTargets(fixture, state.paymentId, state.paymentId, state.billId);
+  // The reversed target is the fixture's REAL reversed payment — never
+  // the rejected payment from this chain.
+  const targets = buildRejRevDenialStateTargets(
+    fixture,
+    state.paymentId,
+    state.paymentId,
+    state.billId,
+    fixture.scenarios.reversedPaymentId,
+  );
   await runStage3CInputStateDenials({
     fixture,
     caseId: "REJECTION-05",

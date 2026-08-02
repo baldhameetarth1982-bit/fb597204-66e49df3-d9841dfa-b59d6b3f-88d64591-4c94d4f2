@@ -97,7 +97,8 @@ describe("Stage 3C — RESIDENT-SUBMIT registry", () => {
       "CLEANUP-02",
       "CLEANUP-03",
     ]);
-    expect(STAGE3C_MATRIX_LIVE_CASE_IDS[79]).toBe("SEARCH-10");
+    // CLEANUP-01..03 are registered immediately after SEARCH-10.
+    expect(STAGE3C_MATRIX_LIVE_CASE_IDS[89]).toBe("SEARCH-10");
   });
 
 

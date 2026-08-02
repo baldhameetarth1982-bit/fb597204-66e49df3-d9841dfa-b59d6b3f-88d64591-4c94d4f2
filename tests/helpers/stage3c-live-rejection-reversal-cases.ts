@@ -1536,6 +1536,8 @@ async function ensureReversalChain(
     idempotencyKey: `${fixture.prefix}-rev-live`,
     notes: null,
   });
+  // Registered IMMEDIATELY after creation, before any further RPC.
+  registerCheckpointBPayment(fixture, paymentId, "reversal");
   await fixture.helpers.verifyPayment(
     fixture.users.adminA2,
     paymentId,
@@ -1546,6 +1548,7 @@ async function ensureReversalChain(
     fail("REVERSAL-01", "post-verify payment is not verified");
   const receiptBefore = await readReceiptOrNull(fixture, paymentId, "REVERSAL-01");
   if (receiptBefore === null) fail("REVERSAL-01", "verified payment missing its receipt");
+  registerCheckpointBReceipt(fixture, receiptBefore.id, "reversal");
   if (receiptBefore.status !== STAGE3C_RECEIPT_STATUS.valid)
     fail("REVERSAL-01", "pre-reversal receipt is not valid");
   const [summaryBefore, yearlySeqBefore, monthlySeqBefore] = await Promise.all([
@@ -1570,6 +1573,7 @@ async function ensureReversalChain(
     yearlySeqAfter: null,
     monthlySeqAfter: null,
     residentDetailAfter: null,
+    nonReuse: null,
   };
   ctx.reversalState = state;
   return state;

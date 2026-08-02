@@ -569,7 +569,7 @@ export const search02_pendingAmountsReflected: Stage3CMatrixLiveHandler = async 
   const fixture = requireFixture(ctx);
   const rows = await searchFlatPage(fixture);
   const row = requireSearchRow("SEARCH-02", rows, fixture.search.pendingBillId, "pending");
-  assertSearchFigures("SEARCH-02", row, expectedSearchFigures().pending);
+  await assertSearchRowFullyGrounded(fixture, "SEARCH-02", row, expectedSearchFigures().pending);
   // A pending payment reserves headroom but never counts as paid.
   if (row.remaining_verified_balance !== row.total_payable)
     searchFail("SEARCH-02", "a pending payment must not reduce the verified balance");

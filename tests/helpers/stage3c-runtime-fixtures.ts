@@ -406,6 +406,67 @@ export type Stage3CMatrixResources = {
   referenceBillId: string;
 };
 
+// ---------------------------------------------------------------------------
+// SEARCH-01..10 dedicated resource contract
+// ---------------------------------------------------------------------------
+
+/** Unique flat number inside Society A owned exclusively by SEARCH cases. */
+export const STAGE3C_SEARCH_FLAT_NUMBER = "303";
+
+/** Period labels — also the trailing segment of each `bill_number`. */
+export const STAGE3C_SEARCH_LABELS = Object.freeze({
+  available: "srch-avail",
+  pending: "srch-pend",
+  verified: "srch-ver",
+  cancelled: "srch-canc",
+  noHeadroom: "srch-nohead",
+} as const);
+
+/** Bill totals — distinct per bill so no assertion is ambiguous. */
+export const STAGE3C_SEARCH_TOTALS = Object.freeze({
+  available: 1500,
+  pending: 1400,
+  verified: 1300,
+  cancelled: 1200,
+  noHeadroom: 1100,
+} as const);
+
+/**
+ * Payment amounts applied at fixture time. The no-headroom bill is
+ * driven to exactly zero headroom by a pending + verified split that
+ * still leaves `verified < total`, so the bill is excluded by the
+ * headroom predicate and NOT merely by a `paid` status.
+ */
+export const STAGE3C_SEARCH_AMOUNTS = Object.freeze({
+  pendingOnPendingBill: 400,
+  verifiedOnVerifiedBill: 300,
+  pendingOnNoHeadroomBill: 600,
+  verifiedOnNoHeadroomBill: 500,
+} as const);
+
+export type Stage3CSearchResources = {
+  /** Dedicated Society A flat (flat_number 303) owned by SEARCH cases. */
+  flatId: string;
+  flatNumber: string;
+  /** Unpaid bill with no payments — full headroom. */
+  availableBillId: string;
+  availableBillNumber: string;
+  /** Unpaid bill carrying exactly one pending payment. */
+  pendingBillId: string;
+  pendingBillNumber: string;
+  pendingPaymentId: string;
+  /** Unpaid bill carrying exactly one verified payment. */
+  verifiedBillId: string;
+  verifiedBillNumber: string;
+  verifiedPaymentId: string;
+  /** Cancelled bill — must never appear in results. */
+  cancelledBillId: string;
+  /** Unpaid bill with zero remaining headroom — must never appear. */
+  noHeadroomBillId: string;
+};
+
+
+
 /**
  * Strict, required ownership contract for matrix validation. Supplies
  * flatA plus the exact four existing core bill IDs that must NOT

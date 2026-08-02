@@ -581,7 +581,7 @@ export const search03_verifiedAmountsReflected: Stage3CMatrixLiveHandler = async
   const fixture = requireFixture(ctx);
   const rows = await searchFlatPage(fixture);
   const row = requireSearchRow("SEARCH-03", rows, fixture.search.verifiedBillId, "verified");
-  assertSearchFigures("SEARCH-03", row, expectedSearchFigures().verified);
+  await assertSearchRowFullyGrounded(fixture, "SEARCH-03", row, expectedSearchFigures().verified);
   // With no pending payments, headroom equals the verified balance.
   if (row.available_to_submit !== row.remaining_verified_balance)
     searchFail("SEARCH-03", "headroom must equal the verified balance with no pending rows");

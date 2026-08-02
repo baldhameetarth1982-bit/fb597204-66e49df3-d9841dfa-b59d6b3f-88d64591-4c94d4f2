@@ -1,5 +1,5 @@
 /**
- * Stage 3C — Live matrix registry (80/93).
+ * Stage 3C — Live matrix registry (90/93).
  *
  * Composes:
  *   - the existing 24-case core registry (AUTH + PENDING + VERIFY)
@@ -9,6 +9,7 @@
  *   - the 16 PRIVACY-01..16 handlers
  *   - the 5 REJECTION-01..05 handlers
  *   - the 9 REVERSAL-01..09 handlers
+ *   - the 10 SEARCH-01..10 handlers
  *
  * Uses true compile-time exhaustiveness (`satisfies Record`) — no
  * `as Record`, no fallback, no optional lookup.
@@ -47,6 +48,11 @@ import {
   type Stage3CRejectionCaseId,
   type Stage3CReversalCaseId,
 } from "./stage3c-live-rejection-reversal-cases";
+import {
+  STAGE3C_SEARCH_CASE_IDS,
+  STAGE3C_SEARCH_HANDLERS,
+  type Stage3CSearchCaseId,
+} from "./stage3c-live-search-cases";
 import type { Stage3CLiveMatrixContext } from "./stage3c-live-matrix-context";
 import { STAGE3C_REQUIRED_LIVE_CASES } from "./stage3c-live-case-manifest";
 
@@ -57,7 +63,8 @@ export type Stage3CMatrixLiveCaseId =
   | Stage3CReadCaseId
   | Stage3CPrivacyCaseId
   | Stage3CRejectionCaseId
-  | Stage3CReversalCaseId;
+  | Stage3CReversalCaseId
+  | Stage3CSearchCaseId;
 
 export type Stage3CMatrixLiveHandler = (ctx: Stage3CLiveMatrixContext) => Promise<void>;
 
@@ -75,6 +82,7 @@ export const STAGE3C_MATRIX_LIVE_CASE_IDS: readonly Stage3CMatrixLiveCaseId[] = 
   ...STAGE3C_PRIVACY_CASE_IDS,
   ...STAGE3C_REJECTION_CASE_IDS,
   ...STAGE3C_REVERSAL_CASE_IDS,
+  ...STAGE3C_SEARCH_CASE_IDS,
 ];
 
 
@@ -171,6 +179,16 @@ export const STAGE3C_MATRIX_LIVE_HANDLERS = {
   "REVERSAL-07": STAGE3C_REVERSAL_HANDLERS["REVERSAL-07"],
   "REVERSAL-08": STAGE3C_REVERSAL_HANDLERS["REVERSAL-08"],
   "REVERSAL-09": STAGE3C_REVERSAL_HANDLERS["REVERSAL-09"],
+  "SEARCH-01": STAGE3C_SEARCH_HANDLERS["SEARCH-01"],
+  "SEARCH-02": STAGE3C_SEARCH_HANDLERS["SEARCH-02"],
+  "SEARCH-03": STAGE3C_SEARCH_HANDLERS["SEARCH-03"],
+  "SEARCH-04": STAGE3C_SEARCH_HANDLERS["SEARCH-04"],
+  "SEARCH-05": STAGE3C_SEARCH_HANDLERS["SEARCH-05"],
+  "SEARCH-06": STAGE3C_SEARCH_HANDLERS["SEARCH-06"],
+  "SEARCH-07": STAGE3C_SEARCH_HANDLERS["SEARCH-07"],
+  "SEARCH-08": STAGE3C_SEARCH_HANDLERS["SEARCH-08"],
+  "SEARCH-09": STAGE3C_SEARCH_HANDLERS["SEARCH-09"],
+  "SEARCH-10": STAGE3C_SEARCH_HANDLERS["SEARCH-10"],
 } satisfies Record<Stage3CMatrixLiveCaseId, Stage3CMatrixLiveHandler>;
 
 

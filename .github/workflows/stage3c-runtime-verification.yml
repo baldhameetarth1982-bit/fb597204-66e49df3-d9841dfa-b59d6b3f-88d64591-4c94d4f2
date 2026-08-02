@@ -132,6 +132,26 @@ jobs:
           } >> "$GITHUB_ENV"
           rm -f .supabase.env
 
+      # FAIL-CLOSED GATE: every preceding step in the disposable-database
+      # chain is conditional, so an infrastructure failure must abort here
+      # instead of silently skipping the live run and the report gates.
+      - name: Assert disposable live environment is ready
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.supabase_cli.outcome }}" != "success" ]; then
+            echo "Supabase CLI setup did not succeed — refusing to continue."; exit 1
+          fi
+          if [ "${{ steps.supabase_start.outcome }}" != "success" ]; then
+            echo "Disposable Supabase did not start — refusing to continue."; exit 1
+          fi
+          if [ "${{ steps.supabase_env.outcome }}" != "success" ]; then
+            echo "Live environment was not exported — refusing to continue."; exit 1
+          fi
+          test "${ALLOW_SOCIOHUB_LIVE_STAGE3C}" = "true"
+
+      - name: Self-check the independent canonical 93-case contract
+        run: bun scripts/stage3c-canonical-case-contract.ts
+
       - name: Validate Stage 3C core live source (pre-flight)
         run: bun scripts/verify-stage3c-live-core-source.ts
 
@@ -141,34 +161,64 @@ jobs:
       - name: Stage 3C CLEANUP behavioral suite
         run: bunx vitest run tests/unit/billing-stage3c-live-cleanup.test.ts --reporter=default
 
+      - name: Stage 3C cleanup-lifecycle behavioral suite
+        run: bunx vitest run tests/unit/billing-stage3c-live-lifecycle.test.ts --reporter=default
+
+      - name: Stage 3C validator behavioral suite (canonical/source/report)
+        run: bunx vitest run tests/unit/billing-stage3c-live-matrix-93.test.ts --reporter=default
+
       - name: Application-boundary unit tests
         run: bunx vitest run tests/unit/billing-stage3c-application-boundary.test.ts --reporter=default
 
       - name: Unit tests
         run: bunx vitest run tests/unit --reporter=default --reporter=json --outputFile=reports/unit.json
 
+      - name: Record the commit the live matrix will execute
+        run: |
+          set -euo pipefail
+          printf '{"commit":"%s"}\n' "${GITHUB_SHA}" > reports/live.meta.json
+          cat reports/live.meta.json
+
       - name: Stage 3C live integration (must not skip)
         id: live_tests
-        if: ${{ steps.supabase_env.outcome == 'success' }}
         run: |
           bunx vitest run tests/integration/billing-stage3c-live.test.ts \
             --reporter=default --reporter=json --outputFile=reports/live.json
 
+      # The report gates run unconditionally. A skipped, crashed or missing
+      # live run must FAIL the job, never quietly pass it.
+      - name: Assert the live matrix actually executed
+        if: always()
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.live_tests.outcome }}" = "skipped" ]; then
+            echo "Live matrix was skipped — this gate fails closed."; exit 1
+          fi
+          test -s reports/live.json
+
       - name: Validate Stage 3C core live matrix (24/93)
-        if: ${{ steps.live_tests.outcome == 'success' || steps.live_tests.outcome == 'failure' }}
+        if: always()
         run: bun scripts/verify-stage3c-live-core-report.ts reports/live.json
 
       # AUTHORITATIVE BOUNDARY: the complete 93-case lifecycle must have run,
-      # in registry order, with the three post-teardown CLEANUP proofs passing.
+      # in registry order, with the three post-teardown CLEANUP proofs passing,
+      # and the report must be bound to the executed commit.
       - name: Validate Stage 3C complete live matrix (93/93)
-        if: ${{ steps.live_tests.outcome == 'success' || steps.live_tests.outcome == 'failure' }}
-        run: bun scripts/verify-stage3c-live-matrix-93-report.ts reports/live.json
+        if: always()
+        run: |
+          bun scripts/verify-stage3c-live-matrix-93-report.ts reports/live.json \
+            --expected-sha="${GITHUB_SHA}" --meta=reports/live.meta.json
+
 
 
       - name: Full vitest run (excluding live suite to avoid double-execution)
         run: |
-          bunx vitest run --exclude 'tests/integration/billing-stage3c-live.test.ts' \
+          bunx vitest run \
+            --exclude '**/node_modules/**' \
+            --exclude 'tests/e2e/**' \
+            --exclude 'tests/integration/billing-stage3c-live.test.ts' \
             --reporter=default --reporter=json --outputFile=reports/full.json
+
 
       - name: Typecheck
         run: bunx tsgo --noEmit

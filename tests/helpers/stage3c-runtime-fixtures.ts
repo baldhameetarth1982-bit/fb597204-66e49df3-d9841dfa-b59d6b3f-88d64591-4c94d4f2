@@ -103,6 +103,39 @@ export function trackUniqueId(collection: string[], id: unknown, label: string):
   collection.push(trimmed);
 }
 
+/**
+ * Track a receipt-sequence identity EXACTLY ONCE.
+ *
+ * Two receipts allocated in the same society and the same calendar month
+ * legitimately share one allocator row, so the raw tracker would collect
+ * the same composite key several times. A duplicated identity would make
+ * teardown issue redundant deletes and would make evidence counts lie
+ * about how many allocator rows exist, so the identity is deduplicated at
+ * the point of tracking rather than papered over later.
+ */
+export function trackReceiptSequenceIdentity(
+  collection: Array<{ society_id: string; year_month: number }>,
+  key: { society_id: string; year_month: number },
+  label: string,
+): void {
+  if (typeof key?.society_id !== "string" || !UUID_RE.test(key.society_id))
+    throw new Error(`[stage3c:trackReceiptSequence:${label}] malformed society identity`);
+  if (
+    !Number.isInteger(key.year_month) ||
+    key.year_month <= 0 ||
+    String(key.year_month).length !== 6
+  )
+    throw new Error(`[stage3c:trackReceiptSequence:${label}] malformed monthly period`);
+  const exists = collection.some(
+    (existing) =>
+      existing.society_id === key.society_id && existing.year_month === key.year_month,
+  );
+  if (exists) return;
+  collection.push({ society_id: key.society_id, year_month: key.year_month });
+}
+
+
+
 
 /**
  * Strict UUID extractor for RPC responses. Accepts a bare UUID string,
@@ -2305,7 +2338,7 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
       verifiedReceiptRow.created_at,
       "select:receiptSequence",
     );
-    tracked.receiptSequences.push(verifiedSeq);
+    trackReceiptSequenceIdentity(tracked.receiptSequences, verifiedSeq, "verifiedReceipt");
 
     // (5) Rejected payment on openBillId
     const rejectedPaymentId = await helpers.submitAdminCashPayment({
@@ -2350,7 +2383,7 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
       voidReceiptRow.created_at,
       "select:voidReceiptSequence",
     );
-    tracked.receiptSequences.push(voidSeq);
+    trackReceiptSequenceIdentity(tracked.receiptSequences, voidSeq, "voidReceipt");
     await helpers.reversePayment(adminA2, reversedPaymentId, "fixture reverse");
 
     // ---- READ-10 second-block chain (Society A, different block) -----
@@ -2422,7 +2455,7 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
       secondBlockReceiptRow.created_at,
       "select:secondBlockReceiptSequence",
     );
-    tracked.receiptSequences.push(secondBlockSeq);
+    trackReceiptSequenceIdentity(tracked.receiptSequences, secondBlockSeq, "secondBlockReceipt");
 
     // ---- SEARCH-01..10 financial state -------------------------------
     // One pending payment on the pending bill; one verified payment on
@@ -2465,13 +2498,15 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
       searchVerifiedReceiptRow.id,
       "search:verifiedReceipt",
     );
-    tracked.receiptSequences.push(
+    trackReceiptSequenceIdentity(
+      tracked.receiptSequences,
       await confirmReceiptSequenceKey(
         admin,
         societyA,
         searchVerifiedReceiptRow.created_at,
         "select:searchVerifiedReceiptSequence",
       ),
+      "searchReceipt",
     );
 
     const searchNoHeadroomVerifiedPaymentId = await helpers.submitAdminBankTransferPayment({
@@ -2508,13 +2543,15 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
       searchNoHeadroomReceiptRow.id,
       "search:noHeadroomReceipt",
     );
-    tracked.receiptSequences.push(
+    trackReceiptSequenceIdentity(
+      tracked.receiptSequences,
       await confirmReceiptSequenceKey(
         admin,
         societyA,
         searchNoHeadroomReceiptRow.created_at,
         "select:searchNoHeadroomReceiptSequence",
       ),
+      "searchReceipt",
     );
 
     const searchNoHeadroomPendingPaymentId = await helpers.submitAdminCashPayment({

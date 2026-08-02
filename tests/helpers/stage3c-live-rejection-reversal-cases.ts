@@ -2157,7 +2157,38 @@ export const reversal09_verifyAfterReverseDenied: Stage3CMatrixLiveHandler = asy
     unrelatedPaymentId: fixture.scenarios.pendingAdminCashPaymentId,
     actors: buildStage3CDenialActors(fixture, createStage3CAnonRpcClient()),
   });
+
+  // Input/state denials for an AUTHORIZED admin against the reversed chain.
+  const rejectedPaymentId = ctx.rejectionState?.paymentAfter?.id ?? state.paymentId;
+  const targets = buildRejRevDenialStateTargets(
+    fixture,
+    rejectedPaymentId,
+    state.paymentId,
+    state.billId,
+    state.paymentId,
+  );
+  await runStage3CInputStateDenials({
+    fixture,
+    caseId: "REVERSAL-09",
+    societyId: fixture.societyA,
+    unrelatedPaymentId: fixture.scenarios.pendingAdminCashPaymentId,
+    admin: authorizedAdminDenialActor(fixture),
+    attempts: buildReversalInputStateAttempts(targets),
+  });
+
+  // Cleanup registration proof for the reversal chain (payment + receipt
+  // + the extra non-reuse objects created by REVERSAL-08).
+  const nonReuse = state.nonReuse;
+  assertCheckpointBTracked(
+    "REVERSAL-09",
+    fixture,
+    nonReuse ? [state.paymentId, nonReuse.laterPaymentId] : [state.paymentId],
+    nonReuse
+      ? [state.receiptBefore.id, nonReuse.laterReceiptId]
+      : [state.receiptBefore.id],
+  );
 };
+
 
 
 // ---------------------------------------------------------------------------

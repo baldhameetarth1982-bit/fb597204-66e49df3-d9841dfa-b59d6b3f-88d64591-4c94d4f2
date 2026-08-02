@@ -1932,18 +1932,25 @@ export function buildRejRevDenialStateTargets(
   rejectedPaymentId: string,
   snapshotPaymentId: string,
   snapshotBillId: string,
-  reversedPaymentId?: string,
+  reversedPaymentId: string,
 ): Stage3CDenialStateTargets {
+  // A reversed target must be a genuinely reversed payment. Falling back
+  // to the rejected id would make `rejectReversedPayment` /
+  // `reverseAlreadyReversed` / `verifyReversedPayment` prove nothing about
+  // the reversed lifecycle state.
+  if (reversedPaymentId === rejectedPaymentId)
+    fail("denial-targets", "reversed target must differ from the rejected target");
   return Object.freeze({
     pendingPaymentId: fixture.scenarios.pendingAdminCashPaymentId,
     verifiedPaymentId: fixture.scenarios.verifiedPaymentId,
     rejectedPaymentId,
-    reversedPaymentId: reversedPaymentId ?? rejectedPaymentId,
+    reversedPaymentId,
     absentPaymentId: crypto.randomUUID(),
     snapshotBillId,
     snapshotPaymentId,
   });
 }
+
 
 
 

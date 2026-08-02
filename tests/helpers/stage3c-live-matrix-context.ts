@@ -26,7 +26,12 @@ import {
   type ResidentBillSummary,
   type ResidentBillStateSnapshot,
 } from "./stage3c-live-resident-submit-contracts";
-import { CanonicalStage3CUuidSchema, type Stage3CFixture } from "./stage3c-runtime-fixtures";
+import {
+  CanonicalStage3CUuidSchema,
+  type Stage3CCleanupEvidence,
+  type Stage3CCleanupObserver,
+  type Stage3CFixture,
+} from "./stage3c-runtime-fixtures";
 import type {
   ResidentPaymentDetail,
   ResidentPaymentHistoryRow,
@@ -236,6 +241,9 @@ export function createStage3CLiveMatrixContext(): Stage3CLiveMatrixContext {
 
     rejectionState: null,
     reversalState: null,
+    cleanupEvidence: null,
+    cleanupObserver: null,
+    teardownCompletedAt: null,
   };
 }
 

@@ -1075,6 +1075,9 @@ export type Stage3CFixture = {
   };
   scenarios: FinancialScenarios;
   matrix: Stage3CMatrixResources;
+  /** SEARCH-01..10 dedicated flat + bills + payment state. */
+  search: Stage3CSearchResources;
+
   tracked: TrackedIds;
   helpers: ScenarioHelpers;
   openBillId: string;

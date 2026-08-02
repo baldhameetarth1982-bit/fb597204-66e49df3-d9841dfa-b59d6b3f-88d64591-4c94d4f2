@@ -1423,6 +1423,13 @@ export function receiptTupleOf(caseId: string, receiptNumber: string): readonly 
  * any identity disappears, duplicates or decrements, or when the
  * increment is not exactly `expectedDelta`.
  */
+/**
+ * Implicit pre-allocation `next_number` for a monthly sequence identity
+ * that does not yet exist. Grounded in the allocator's
+ * `INSERT ... VALUES (society, ym, 1)` seed.
+ */
+export const MONTHLY_SEQUENCE_IMPLICIT_BASELINE = 1;
+
 export function assertMonthlySequenceExactDelta(
   caseId: string,
   before: readonly Stage3CMonthlyReceiptSequenceRow[],

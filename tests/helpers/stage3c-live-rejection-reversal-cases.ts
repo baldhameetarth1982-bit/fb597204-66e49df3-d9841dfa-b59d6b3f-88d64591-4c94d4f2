@@ -1441,6 +1441,12 @@ export function assertMonthlySequenceExactDelta(
     const bv = bMap.get(k);
     if (bv === undefined) {
       // A brand-new identity is itself the allocation for a new month.
+      // Grounded in `public._allocate_receipt_number_monthly`: the row is
+      // INSERTed with next_number = 1 and immediately UPDATEd to n + 1, so
+      // the first persisted value after exactly one allocation is 2 — i.e.
+      // the implicit pre-allocation baseline for an absent identity is 1.
+      if (av !== MONTHLY_SEQUENCE_IMPLICIT_BASELINE + expectedDelta)
+        fail(caseId, "new monthly sequence identity has an incorrect starting number");
       moved.push(k);
       continue;
     }
@@ -1456,6 +1462,7 @@ export function assertMonthlySequenceExactDelta(
     fail(caseId, "monthly sequence delta is not exactly one allocation");
   return key;
 }
+
 
 
 // ---------------------------------------------------------------------------

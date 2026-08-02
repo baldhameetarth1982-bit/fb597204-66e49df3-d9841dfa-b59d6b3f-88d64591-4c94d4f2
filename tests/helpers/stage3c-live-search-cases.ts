@@ -772,11 +772,17 @@ export const search10_crossSocietyIsolation: Stage3CMatrixLiveHandler = async (c
   for (const billId of societyABillIds) {
     assertSearchRowAbsent("SEARCH-10", ownRows, billId, "Society A");
   }
+
+  // The full authorization matrix: every unauthorized actor — including
+  // a genuinely anonymous PostgREST caller — is denied with its exact
+  // canonical token and never receives rows.
+  await runStage3CSearchDenialMatrix(fixture, "SEARCH-10");
 };
 
 // ---------------------------------------------------------------------------
 // Handler map
 // ---------------------------------------------------------------------------
+
 
 export const STAGE3C_SEARCH_HANDLERS = {
   "SEARCH-01": search01_listsAvailableOpenBill,

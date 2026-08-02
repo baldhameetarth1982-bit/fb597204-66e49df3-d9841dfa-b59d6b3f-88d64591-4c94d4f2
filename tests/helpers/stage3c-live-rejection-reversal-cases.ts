@@ -1465,6 +1465,51 @@ export function assertMonthlySequenceExactDelta(
 const REJECTION_REASON = "stage3c rejection matrix — deterministic reason";
 const REVERSAL_REASON = "stage3c reversal matrix — deterministic reason";
 
+/**
+ * Checkpoint B Part 7 — cleanup registration.
+ *
+ * Uses the EXISTING fixture tracker (`fixture.tracked`) and its existing
+ * duplicate-safe `trackUniqueId` contract; no second tracker is created.
+ * Registration is idempotent per logical object: registering the same id
+ * twice leaves exactly one entry, so a retried chain cannot corrupt
+ * teardown. IDs never appear in any error message.
+ */
+export function registerCheckpointBPayment(
+  fixture: Stage3CFixture,
+  paymentId: string,
+  label: string,
+): void {
+  trackUniqueId(fixture.tracked.paymentIds, paymentId, `checkpointB:payment:${label}`);
+}
+
+export function registerCheckpointBReceipt(
+  fixture: Stage3CFixture,
+  receiptId: string,
+  label: string,
+): void {
+  trackUniqueId(fixture.tracked.paymentReceiptIds, receiptId, `checkpointB:receipt:${label}`);
+}
+
+/** Assert every supplied id is present in the tracker exactly once. */
+export function assertCheckpointBTracked(
+  caseId: string,
+  fixture: Stage3CFixture,
+  paymentIds: readonly string[],
+  receiptIds: readonly string[],
+): void {
+  const countIn = (list: readonly string[], id: string) => list.filter((v) => v === id).length;
+  for (const id of paymentIds) {
+    const n = countIn(fixture.tracked.paymentIds, id);
+    if (n === 0) fail(caseId, "checkpoint B payment is not registered for cleanup");
+    if (n > 1) fail(caseId, "checkpoint B payment registered more than once");
+  }
+  for (const id of receiptIds) {
+    const n = countIn(fixture.tracked.paymentReceiptIds, id);
+    if (n === 0) fail(caseId, "checkpoint B receipt is not registered for cleanup");
+    if (n > 1) fail(caseId, "checkpoint B receipt registered more than once");
+  }
+}
+
 async function ensureRejectionChain(
   ctx: Stage3CLiveMatrixContext,
   fixture: Stage3CFixture,
@@ -1484,6 +1529,9 @@ async function ensureRejectionChain(
     idempotencyKey: `${fixture.prefix}-rej-live`,
     notes: null,
   });
+  // Registered IMMEDIATELY after creation, before any further RPC.
+  registerCheckpointBPayment(fixture, paymentId, "rejection");
+
 
   const [paymentBefore, summaryBefore, yearlySeqBefore, monthlySeqBefore] = await Promise.all([
     readPayment(fixture, paymentId, "REJECTION-01"),

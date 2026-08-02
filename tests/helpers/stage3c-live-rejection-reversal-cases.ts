@@ -2088,7 +2088,18 @@ export const reversal08_availableIncreasesAndSequencesIntact: Stage3CMatrixLiveH
     state.monthlySeqBefore,
     state.monthlySeqAfter,
   );
+
+  // Receipt-number NON-REUSE: a later verified payment must receive a
+  // strictly greater allocator tuple, and the voided number is dead.
+  if (state.receiptAfter === null) fail("REVERSAL-08", "voided receipt missing");
+  const fixture = requireFixture(ctx);
+  state.nonReuse = await proveReceiptNumberNonReuse(
+    fixture,
+    "REVERSAL-08",
+    state.receiptAfter,
+  );
 };
+
 
 /**
  * REVERSAL-09 — verify after reverse → EXACTLY `payment_not_pending`.

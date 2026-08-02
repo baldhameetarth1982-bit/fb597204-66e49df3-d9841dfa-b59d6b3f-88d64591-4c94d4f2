@@ -2338,7 +2338,7 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
       verifiedReceiptRow.created_at,
       "select:receiptSequence",
     );
-    tracked.receiptSequences.push(verifiedSeq);
+    trackReceiptSequenceIdentity(tracked.receiptSequences, verifiedSeq, "verifiedReceipt");
 
     // (5) Rejected payment on openBillId
     const rejectedPaymentId = await helpers.submitAdminCashPayment({
@@ -2383,7 +2383,7 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
       voidReceiptRow.created_at,
       "select:voidReceiptSequence",
     );
-    tracked.receiptSequences.push(voidSeq);
+    trackReceiptSequenceIdentity(tracked.receiptSequences, voidSeq, "voidReceipt");
     await helpers.reversePayment(adminA2, reversedPaymentId, "fixture reverse");
 
     // ---- READ-10 second-block chain (Society A, different block) -----
@@ -2455,7 +2455,7 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
       secondBlockReceiptRow.created_at,
       "select:secondBlockReceiptSequence",
     );
-    tracked.receiptSequences.push(secondBlockSeq);
+    trackReceiptSequenceIdentity(tracked.receiptSequences, secondBlockSeq, "secondBlockReceipt");
 
     // ---- SEARCH-01..10 financial state -------------------------------
     // One pending payment on the pending bill; one verified payment on
@@ -2498,13 +2498,15 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
       searchVerifiedReceiptRow.id,
       "search:verifiedReceipt",
     );
-    tracked.receiptSequences.push(
+    trackReceiptSequenceIdentity(
+      tracked.receiptSequences,
       await confirmReceiptSequenceKey(
         admin,
         societyA,
         searchVerifiedReceiptRow.created_at,
         "select:searchVerifiedReceiptSequence",
       ),
+      "searchReceipt",
     );
 
     const searchNoHeadroomVerifiedPaymentId = await helpers.submitAdminBankTransferPayment({
@@ -2541,13 +2543,15 @@ export async function setupStage3CFixture(): Promise<Stage3CFixture> {
       searchNoHeadroomReceiptRow.id,
       "search:noHeadroomReceipt",
     );
-    tracked.receiptSequences.push(
+    trackReceiptSequenceIdentity(
+      tracked.receiptSequences,
       await confirmReceiptSequenceKey(
         admin,
         societyA,
         searchNoHeadroomReceiptRow.created_at,
         "select:searchNoHeadroomReceiptSequence",
       ),
+      "searchReceipt",
     );
 
     const searchNoHeadroomPendingPaymentId = await helpers.submitAdminCashPayment({

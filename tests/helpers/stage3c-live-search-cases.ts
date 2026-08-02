@@ -784,7 +784,7 @@ export const search10_crossSocietyIsolation: Stage3CMatrixLiveHandler = async (c
 // ---------------------------------------------------------------------------
 
 
-export const STAGE3C_SEARCH_HANDLERS = {
+export const STAGE3C_SEARCH_HANDLERS = Object.freeze({
   "SEARCH-01": search01_listsAvailableOpenBill,
   "SEARCH-02": search02_pendingAmountsReflected,
   "SEARCH-03": search03_verifiedAmountsReflected,
@@ -795,4 +795,4 @@ export const STAGE3C_SEARCH_HANDLERS = {
   "SEARCH-08": search08_limitCapsRows,
   "SEARCH-09": search09_offsetShiftsPage,
   "SEARCH-10": search10_crossSocietyIsolation,
-} satisfies Record<Stage3CSearchCaseId, Stage3CMatrixLiveHandler>;
+}) satisfies Record<Stage3CSearchCaseId, Stage3CMatrixLiveHandler>;

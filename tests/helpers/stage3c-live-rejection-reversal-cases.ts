@@ -1883,7 +1883,54 @@ export const rejection05_verifyAfterRejectDenied: Stage3CMatrixLiveHandler = asy
     unrelatedPaymentId: fixture.scenarios.pendingAdminCashPaymentId,
     actors: buildStage3CDenialActors(fixture, createStage3CAnonRpcClient()),
   });
+
+  // Input/state denials for an AUTHORIZED admin — proves the denial is
+  // about input and lifecycle state, not authorization.
+  const targets = buildRejRevDenialStateTargets(fixture, state.paymentId, state.paymentId, state.billId);
+  await runStage3CInputStateDenials({
+    fixture,
+    caseId: "REJECTION-05",
+    societyId: fixture.societyA,
+    unrelatedPaymentId: fixture.scenarios.pendingAdminCashPaymentId,
+    admin: authorizedAdminDenialActor(fixture),
+    attempts: [
+      ...buildRejectionInputStateAttempts(targets),
+      ...buildVerificationInputStateAttempts(targets),
+    ],
+  });
+
+  // Cleanup registration proof for the rejection chain.
+  assertCheckpointBTracked("REJECTION-05", fixture, [state.paymentId], []);
 };
+
+/** Authorized admin actor used by the input/state denial harness. */
+export function authorizedAdminDenialActor(fixture: Stage3CFixture): Stage3CDenialActor {
+  return { id: "authorizedAdmin", client: toRejRevBillingRpcClient(fixture.users.adminA2) };
+}
+
+/**
+ * Build the denial state targets from real fixture payments covering
+ * every lifecycle state the harness needs. The absent id is a fresh
+ * random UUID that no fixture object can own.
+ */
+export function buildRejRevDenialStateTargets(
+  fixture: Stage3CFixture,
+  rejectedPaymentId: string,
+  snapshotPaymentId: string,
+  snapshotBillId: string,
+  reversedPaymentId?: string,
+): Stage3CDenialStateTargets {
+  return Object.freeze({
+    pendingPaymentId: fixture.scenarios.pendingAdminCashPaymentId,
+    verifiedPaymentId: fixture.scenarios.verifiedPaymentId,
+    rejectedPaymentId,
+    reversedPaymentId: reversedPaymentId ?? rejectedPaymentId,
+    absentPaymentId: crypto.randomUUID(),
+    snapshotBillId,
+    snapshotPaymentId,
+  });
+}
+
 
 
 // ---------------------------------------------------------------------------

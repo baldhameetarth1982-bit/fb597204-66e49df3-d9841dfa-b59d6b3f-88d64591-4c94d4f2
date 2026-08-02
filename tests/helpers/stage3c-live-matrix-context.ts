@@ -136,6 +136,18 @@ export interface Stage3CLiveMatrixContext extends Stage3CLiveCoreContext {
 
   // REVERSAL lifecycle state — lazily populated by REVERSAL-01 handler.
   reversalState: Stage3CReversalState | null;
+
+  // CLEANUP-01..03 post-teardown slots.
+  //
+  // `cleanupEvidence` is captured while the fixture is still alive and is
+  // deliberately the ONLY source CLEANUP reads: the live tracker may be
+  // mutated by teardown. `teardownCompletedAt` is set by the runtime
+  // workflow after primary teardown returns, so a CLEANUP case can never
+  // pass by running before teardown. `cleanupObserver` is an independent
+  // disposable client, never the fixture's own admin client.
+  cleanupEvidence: Stage3CCleanupEvidence | null;
+  cleanupObserver: Stage3CCleanupObserver | null;
+  teardownCompletedAt: string | null;
 }
 
 

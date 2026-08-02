@@ -103,6 +103,39 @@ export function trackUniqueId(collection: string[], id: unknown, label: string):
   collection.push(trimmed);
 }
 
+/**
+ * Track a receipt-sequence identity EXACTLY ONCE.
+ *
+ * Two receipts allocated in the same society and the same calendar month
+ * legitimately share one allocator row, so the raw tracker would collect
+ * the same composite key several times. A duplicated identity would make
+ * teardown issue redundant deletes and would make evidence counts lie
+ * about how many allocator rows exist, so the identity is deduplicated at
+ * the point of tracking rather than papered over later.
+ */
+export function trackReceiptSequenceIdentity(
+  collection: Array<{ society_id: string; year_month: number }>,
+  key: { society_id: string; year_month: number },
+  label: string,
+): void {
+  if (typeof key?.society_id !== "string" || !UUID_RE.test(key.society_id))
+    throw new Error(`[stage3c:trackReceiptSequence:${label}] malformed society identity`);
+  if (
+    !Number.isInteger(key.year_month) ||
+    key.year_month <= 0 ||
+    String(key.year_month).length !== 6
+  )
+    throw new Error(`[stage3c:trackReceiptSequence:${label}] malformed monthly period`);
+  const exists = collection.some(
+    (existing) =>
+      existing.society_id === key.society_id && existing.year_month === key.year_month,
+  );
+  if (exists) return;
+  collection.push({ society_id: key.society_id, year_month: key.year_month });
+}
+
+
+
 
 /**
  * Strict UUID extractor for RPC responses. Accepts a bare UUID string,

@@ -48,7 +48,7 @@ export type Stage3CSearchCaseId =
   | "SEARCH-09"
   | "SEARCH-10";
 
-export const STAGE3C_SEARCH_CASE_IDS: readonly Stage3CSearchCaseId[] = [
+export const STAGE3C_SEARCH_CASE_IDS: readonly Stage3CSearchCaseId[] = Object.freeze([
   "SEARCH-01",
   "SEARCH-02",
   "SEARCH-03",
@@ -59,7 +59,7 @@ export const STAGE3C_SEARCH_CASE_IDS: readonly Stage3CSearchCaseId[] = [
   "SEARCH-08",
   "SEARCH-09",
   "SEARCH-10",
-] as const;
+] as const);
 
 // ---------------------------------------------------------------------------
 // Local failure helper — static text only

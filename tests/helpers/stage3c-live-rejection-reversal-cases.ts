@@ -1627,6 +1627,121 @@ async function ensureReversalChain(
   return state;
 }
 
+/**
+ * Checkpoint B Part 6 — real receipt-number non-reuse proof.
+ *
+ * Creates ONE additional isolated synthetic payment, registers it for
+ * cleanup immediately, verifies it through the production verify core,
+ * then proves the voided receipt is intact and the later receipt carries
+ * a strictly greater allocator tuple, with an exact monthly sequence
+ * delta and a byte-identical yearly sequence table.
+ */
+export async function proveReceiptNumberNonReuse(
+  fixture: Stage3CFixture,
+  caseId: string,
+  voidedReceipt: Stage3CRejRevReceiptRow,
+): Promise<Stage3CReceiptNonReuseEvidence> {
+  // 1. Voided receipt + sequence baselines.
+  const [voidedNow, yearlyBefore, monthlyBefore] = await Promise.all([
+    readReceiptOrNull(fixture, voidedReceipt.payment_id, caseId),
+    readYearlyReceiptSequences(fixture, fixture.societyA, caseId),
+    readMonthlyReceiptSequences(fixture, fixture.societyA, caseId),
+  ]);
+  if (voidedNow === null) fail(caseId, "voided receipt disappeared");
+  if (voidedNow.id !== voidedReceipt.id) fail(caseId, "voided receipt id changed");
+  if (voidedNow.receipt_number !== voidedReceipt.receipt_number)
+    fail(caseId, "voided receipt number changed");
+  if (voidedNow.status !== STAGE3C_RECEIPT_STATUS.void)
+    fail(caseId, "voided receipt is no longer void");
+
+  // 2. Later isolated payment on a headroom-safe amount.
+  const billId = fixture.openBillId;
+  const summary = await readBillSummary(fixture, billId, caseId);
+  const headroom = summary.available_to_submit;
+  if (headroom <= 0) fail(caseId, "no headroom for the non-reuse payment");
+  const amount = Math.min(5, headroom);
+  const laterPaymentId = await fixture.helpers.submitAdminBankTransferPayment({
+    actor: fixture.users.adminA1,
+    billId,
+    amount,
+    paymentDate: "2026-02-04",
+    referenceNo: `${fixture.prefix}-REF-NONREUSE`,
+    idempotencyKey: `${fixture.prefix}-nonreuse`,
+    notes: null,
+  });
+  registerCheckpointBPayment(fixture, laterPaymentId, "nonReuse");
+
+  // 3. Verify through the production shared core.
+  await verifyOfflinePaymentWithClient(toRejRevBillingRpcClient(fixture.users.adminA2), {
+    paymentId: laterPaymentId,
+    notes: null,
+  });
+
+  const laterReceipt = await readReceiptOrNull(fixture, laterPaymentId, caseId);
+  if (laterReceipt === null) fail(caseId, "later payment has no receipt");
+  registerCheckpointBReceipt(fixture, laterReceipt.id, "nonReuse");
+  if (laterReceipt.status !== STAGE3C_RECEIPT_STATUS.valid)
+    fail(caseId, "later receipt is not valid");
+
+  // 4. Exactly one receipt per payment — no duplicates anywhere.
+  const [voidedCount, laterCount] = await Promise.all([
+    readReceiptCount(fixture, voidedReceipt.payment_id, caseId),
+    readReceiptCount(fixture, laterPaymentId, caseId),
+  ]);
+  if (voidedCount !== 1) fail(caseId, "voided payment does not have exactly one receipt");
+  if (laterCount !== 1) fail(caseId, "later payment does not have exactly one receipt");
+
+  // 5. Identity and number non-reuse.
+  if (laterReceipt.id === voidedNow.id) fail(caseId, "later receipt reused the voided receipt id");
+  if (laterReceipt.receipt_number === voidedNow.receipt_number)
+    fail(caseId, "later receipt reused the voided receipt number");
+
+  // 6. Numeric allocator-tuple ordering — never a string compare.
+  const voidedTuple = receiptTupleOf(caseId, voidedNow.receipt_number);
+  const laterTuple = receiptTupleOf(caseId, laterReceipt.receipt_number);
+  if (!receiptTupleStrictlyGreater(laterTuple, voidedTuple))
+    fail(caseId, "later receipt tuple is not strictly greater than the voided tuple");
+
+  // 7. Exact allocator behavior: exactly one monthly identity +1, and
+  //    the yearly table (unused by the allocator) byte-identical.
+  const [yearlyAfter, monthlyAfter] = await Promise.all([
+    readYearlyReceiptSequences(fixture, fixture.societyA, caseId),
+    readMonthlyReceiptSequences(fixture, fixture.societyA, caseId),
+  ]);
+  assertYearlySequenceSnapshotUnchanged(caseId, yearlyBefore, yearlyAfter);
+  const monthlyIdentityIncremented = assertMonthlySequenceExactDelta(
+    caseId,
+    monthlyBefore,
+    monthlyAfter,
+    1,
+  );
+
+  // 8. Post-check: the voided receipt is still exactly as it was.
+  const voidedFinal = await readReceiptOrNull(fixture, voidedReceipt.payment_id, caseId);
+  if (voidedFinal === null) fail(caseId, "voided receipt deleted by a later allocation");
+  if (voidedFinal.id !== voidedNow.id) fail(caseId, "voided receipt id mutated");
+  if (voidedFinal.receipt_number !== voidedNow.receipt_number)
+    fail(caseId, "voided receipt number mutated");
+  if (voidedFinal.status !== STAGE3C_RECEIPT_STATUS.void)
+    fail(caseId, "voided receipt status mutated");
+
+  return Object.freeze({
+    voidedReceiptId: voidedFinal.id,
+    voidedReceiptNumber: voidedFinal.receipt_number,
+    voidedReceiptStatus: voidedFinal.status,
+    laterPaymentId,
+    laterReceiptId: laterReceipt.id,
+    laterReceiptNumber: laterReceipt.receipt_number,
+    laterReceiptStatus: laterReceipt.status,
+    voidedTuple,
+    laterTuple,
+    monthlyIdentityIncremented,
+    monthlyDelta: 1,
+  });
+}
+
+
+
 // ---------------------------------------------------------------------------
 // REJECTION handlers
 // ---------------------------------------------------------------------------

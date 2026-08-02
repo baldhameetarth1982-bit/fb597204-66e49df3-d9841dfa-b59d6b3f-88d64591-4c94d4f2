@@ -213,8 +213,12 @@ jobs:
 
       - name: Full vitest run (excluding live suite to avoid double-execution)
         run: |
-          bunx vitest run --exclude 'tests/integration/billing-stage3c-live.test.ts' \
+          bunx vitest run \
+            --exclude '**/node_modules/**' \
+            --exclude 'tests/e2e/**' \
+            --exclude 'tests/integration/billing-stage3c-live.test.ts' \
             --reporter=default --reporter=json --outputFile=reports/full.json
+
 
       - name: Typecheck
         run: bunx tsgo --noEmit

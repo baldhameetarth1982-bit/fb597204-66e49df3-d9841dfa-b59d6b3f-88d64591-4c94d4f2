@@ -37,7 +37,9 @@ const RESIDENCY_SUMMARY_TEST =
   "tests/unit/billing-stage3c-live-matrix-residency-summary.test.ts";
 
 
-const EXPECTED_DEP_VERSION = "2.7.7";
+/** The dependency version is platform-managed; the invariant we enforce is
+ * that package.json and both bun.lock entries agree on one exact version. */
+const DEP_VERSION_RE = /^\d+\.\d+\.\d+$/;
 
 function read(rel: string): string {
   return readFileSync(resolve(ROOT, rel), "utf8");

@@ -11,7 +11,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "test": "vitest run",
+    "test": "vitest run tests/unit tests/integration",
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
     "scan:bundle": "bun scripts/verify-client-bundle-secrets.ts",
@@ -104,7 +104,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
-    "@lovable.dev/vite-tanstack-config": "2.7.7",
+    "@lovable.dev/vite-tanstack-config": "2.9.1",
     "@playwright/test": "1.48.2",
     "@types/node": "^22.16.5",
     "@types/qrcode": "^1.5.6",

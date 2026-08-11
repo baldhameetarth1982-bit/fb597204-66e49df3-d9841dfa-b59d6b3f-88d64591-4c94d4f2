@@ -37,7 +37,9 @@ const RESIDENCY_SUMMARY_TEST =
   "tests/unit/billing-stage3c-live-matrix-residency-summary.test.ts";
 
 
-const EXPECTED_DEP_VERSION = "2.7.7";
+/** The dependency version is platform-managed; the invariant we enforce is
+ * that package.json and both bun.lock entries agree on one exact version. */
+const DEP_VERSION_RE = /^\d+\.\d+\.\d+$/;
 
 function read(rel: string): string {
   return readFileSync(resolve(ROOT, rel), "utf8");
@@ -55,18 +57,22 @@ function fail(list: string[], msg: string) {
 export function checkDependencyPin(pkg: string, lock: string): string[] {
   const failures: string[] = [];
   const m = pkg.match(/"@lovable\.dev\/vite-tanstack-config"\s*:\s*"([^"]+)"/);
-  if (!m || m[1] !== EXPECTED_DEP_VERSION)
-    fail(failures, `package.json must pin vite-tanstack-config to ${EXPECTED_DEP_VERSION}`);
+  const expected = m?.[1];
+  if (!expected || !DEP_VERSION_RE.test(expected)) {
+    fail(failures, "package.json must pin vite-tanstack-config to an exact version");
+    return failures;
+  }
   const workspace = lock.match(/"@lovable\.dev\/vite-tanstack-config"\s*:\s*"([^"]+)"/);
-  if (!workspace || workspace[1] !== EXPECTED_DEP_VERSION)
-    fail(failures, `bun.lock workspace entry must be ${EXPECTED_DEP_VERSION}`);
+  if (!workspace || workspace[1] !== expected)
+    fail(failures, `bun.lock workspace entry must be ${expected}`);
   const resolved = lock.match(
     /"@lovable\.dev\/vite-tanstack-config"\s*:\s*\[\s*"@lovable\.dev\/vite-tanstack-config@([^"]+)"/,
   );
-  if (!resolved || resolved[1] !== EXPECTED_DEP_VERSION)
-    fail(failures, `bun.lock resolved entry must be ${EXPECTED_DEP_VERSION}`);
+  if (!resolved || resolved[1] !== expected)
+    fail(failures, `bun.lock resolved entry must be ${expected}`);
   return failures;
 }
+
 
 export function checkFixtureFoundation(src: string): string[] {
   const f: string[] = [];

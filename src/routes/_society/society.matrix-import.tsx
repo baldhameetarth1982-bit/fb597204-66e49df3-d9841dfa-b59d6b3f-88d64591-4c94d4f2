@@ -276,7 +276,7 @@ function MatrixImportPage() {
 
           {cells.length > 0 && (
             <div className="flex justify-end">
-              <Button onClick={commit} disabled={busy} className="rounded-xl">
+              <Button onClick={() => void commit()} disabled={busy} className="rounded-xl">
                 {busy ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-1.5" />}
                 Commit {cells.length} period{cells.length === 1 ? "" : "s"}
               </Button>

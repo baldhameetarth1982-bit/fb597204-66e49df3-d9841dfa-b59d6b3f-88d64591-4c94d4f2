@@ -98,7 +98,7 @@ function MatrixImportPage() {
       .from("flats")
       .select("id, flat_number, blocks!flats_block_id_fkey(name)")
       .eq("society_id", societyId);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error("Could not load your houses. Please try again."); return; }
 
     const flatKey = (b: string, u: string) => `${b.toLowerCase().trim()}/${u.toLowerCase().trim()}`;
     const flatMap = new Map<string, string>();
@@ -127,11 +127,17 @@ function MatrixImportPage() {
         const s = String(v ?? "").replace(/[,₹\s]/g, "").trim();
         if (!s) continue;
         const n = Number(s);
-        if (!isFinite(n) || n < 0 || n > 1_000_000) {
-          newIssues.push({ row: rowNum, msg: `${MONTHS[m]}: invalid amount "${v}"` });
+        if (!Number.isFinite(n) || n < 0 || n > 1_000_000 || Math.round(n * 100) !== n * 100) {
+          newIssues.push({ row: rowNum, msg: `${MONTHS[m]}: invalid amount "${String(v)}"` });
           continue;
         }
-        newCells.push({ flatId: fid, block, unit, month: m, amount: n });
+        const key = `${fid}/${m}`;
+        if (seen.has(key)) {
+          newIssues.push({ row: rowNum, msg: `${MONTHS[m]}: duplicate entry for ${block}-${unit} (ignored)` });
+          continue;
+        }
+        seen.add(key);
+        newCells.push({ flatId: fid, block, unit, month: m, amount: n, row: rowNum });
       }
     });
 
@@ -140,14 +146,18 @@ function MatrixImportPage() {
     if (newCells.length === 0 && newIssues.length === 0) {
       toast.warning("No amounts found in file");
     }
+    } finally {
+      setParsing(false);
+    }
   }
 
   async function commit() {
-    if (!cells.length) return;
+    if (!cells.length || busy) return;
     setBusy(true);
+    setResult(null);
     let ok = 0;
-    let failed = 0;
-    // Serialize to avoid hammering RPC
+    const failures: Failure[] = [];
+    // Serialize: each period write is independently idempotent server-side.
     for (const c of cells) {
       try {
         const periodStart = `${year}-${String(c.month + 1).padStart(2, "0")}-01`;
@@ -156,13 +166,18 @@ function MatrixImportPage() {
         });
         ok++;
       } catch (e) {
-        failed++;
+        failures.push({
+          row: c.row,
+          unit: `${c.block}-${c.unit}`,
+          month: `${MONTHS[c.month]} ${year}`,
+          reason: safeReason(e),
+        });
       }
     }
-    setResult({ ok, failed });
+    setResult({ ok, failures });
     setBusy(false);
-    if (failed === 0) toast.success(`Imported ${ok} period${ok === 1 ? "" : "s"}`);
-    else toast.warning(`Imported ${ok}, ${failed} failed`);
+    if (failures.length === 0) toast.success(`Imported ${ok} period${ok === 1 ? "" : "s"}`);
+    else toast.warning(`Imported ${ok}, ${failures.length} failed — see details below`);
   }
 
   return (

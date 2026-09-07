@@ -366,7 +366,9 @@ export const getResidentBills = createServerFn({ method: "POST" })
     if (linkErr) throw new Error(mapBillingError("operation_failed"));
     const flatIds = ((links ?? []) as Array<{ flat_id: string | null }>)
       .map((r) => r.flat_id).filter((v): v is string => !!v);
-    if (flatIds.length === 0) return { bills: [] };
+    // `hasLinkedFlat` lets the resident UI distinguish "no flat linked yet"
+    // (actionable: claim a flat) from "linked, but no bills yet".
+    if (flatIds.length === 0) return { bills: [], hasLinkedFlat: false };
 
     const { data: rows, error } = await context.supabase
       .from("bills")
@@ -377,7 +379,7 @@ export const getResidentBills = createServerFn({ method: "POST" })
       .order("due_date", { ascending: false, nullsFirst: false })
       .range(data.offset ?? 0, (data.offset ?? 0) + (data.limit ?? 24) - 1);
     if (error) throw new Error(mapBillingError("operation_failed"));
-    return { bills: rows ?? [] };
+    return { bills: rows ?? [], hasLinkedFlat: true };
   });
 
 /**

@@ -153,14 +153,16 @@ function MatrixImportPage() {
     }
   }
 
-  async function commit() {
-    if (!cells.length || busy) return;
+  async function commit(subset?: Cell[]) {
+    const batch = subset ?? cells;
+    if (!batch.length || busy) return;
     setBusy(true);
+    const carriedOk = subset ? (result?.ok ?? 0) : 0;
     setResult(null);
-    let ok = 0;
+    let ok = carriedOk;
     const failures: Failure[] = [];
     // Serialize: each period write is independently idempotent server-side.
-    for (const c of cells) {
+    for (const c of batch) {
       try {
         const periodStart = `${year}-${String(c.month + 1).padStart(2, "0")}-01`;
         await ensure({

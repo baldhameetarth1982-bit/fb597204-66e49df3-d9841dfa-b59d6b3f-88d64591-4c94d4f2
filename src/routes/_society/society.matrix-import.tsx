@@ -21,8 +21,21 @@ export const Route = createFileRoute("/_society/society/matrix-import")({
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-type Cell = { flatId: string; block: string; unit: string; month: number; amount: number };
+type Cell = { flatId: string; block: string; unit: string; month: number; amount: number; row: number };
 type Issue = { row: number; msg: string };
+type Failure = { row: number; unit: string; month: string; reason: string };
+
+const MAX_FILE_BYTES = 5 * 1024 * 1024;
+
+/** Map any thrown error to a safe, admin-readable category. Never surfaces raw DB text. */
+function safeReason(e: unknown): string {
+  const msg = String((e as { message?: string } | null)?.message ?? "").toLowerCase();
+  if (msg.includes("not authenticated") || msg.includes("401") || msg.includes("unauthorized")) return "Session expired — sign in again";
+  if (msg.includes("not authorized") || msg.includes("permission") || msg.includes("denied")) return "Not allowed for this house";
+  if (msg.includes("flat not found")) return "House no longer exists";
+  if (msg.includes("network") || msg.includes("fetch")) return "Network problem";
+  return "Could not be saved";
+}
 
 function pick(o: Record<string, unknown>, keys: string[]) {
   for (const k of keys) {
@@ -57,15 +70,29 @@ function MatrixImportPage() {
   }
 
   async function onFile(file: File) {
-    if (!societyId) return;
+    if (!societyId || busy) return;
     setResult(null);
     setCells([]);
     setIssues([]);
 
-    const buf = await file.arrayBuffer();
-    const wb = XLSX.read(buf);
-    const sheet = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
+    if (file.size === 0) { toast.error("That file is empty"); return; }
+    if (file.size > MAX_FILE_BYTES) { toast.error("File is too large (max 5 MB)"); return; }
+
+    setParsing(true);
+    try {
+    let rows: Record<string, unknown>[];
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf);
+      const sheetName = wb.SheetNames[0];
+      const sheet = sheetName ? wb.Sheets[sheetName] : undefined;
+      if (!sheet) { toast.error("No readable sheet found in this file"); return; }
+      rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
+    } catch {
+      toast.error("That file could not be read as a spreadsheet");
+      return;
+    }
+
 
     const { data: flats, error } = await supabase
       .from("flats")

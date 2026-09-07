@@ -51,7 +51,8 @@ function MatrixImportPage() {
   const [cells, setCells] = useState<Cell[]>([]);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<{ ok: number; failed: number } | null>(null);
+  const [parsing, setParsing] = useState(false);
+  const [result, setResult] = useState<{ ok: number; failures: Failure[] } | null>(null);
   const ensure = useServerFn(ensureMaintenancePeriod);
 
   const summary = useMemo(() => {
@@ -108,6 +109,7 @@ function MatrixImportPage() {
 
     const newIssues: Issue[] = [];
     const newCells: Cell[] = [];
+    const seen = new Set<string>();
 
     rows.forEach((raw, i) => {
       const block = pick(raw, ["Block", "block", "Tower", "tower"]);

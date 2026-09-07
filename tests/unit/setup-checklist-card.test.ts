@@ -25,10 +25,14 @@ describe("Stage 2E — buildChecklistItems (server-derived checklist)", () => {
     });
     const importItem = items.find((i) => i.key === "import")!;
     expect(importItem.optional).toBe(true);
-    // Required-only completeness: import excluded.
+    // Required-only completeness: import and the review-only items (team,
+    // privacy) are optional, because no server signal proves a human review.
     const requiredDone = items.filter((i) => !i.optional).every((i) => i.done);
-    // structure/units/residents done, but team/privacy remain review items.
-    expect(requiredDone).toBe(false);
+    expect(requiredDone).toBe(true);
+    expect(items.find((i) => i.key === "team")!.optional).toBe(true);
+    expect(items.find((i) => i.key === "privacy")!.optional).toBe(true);
+    // The privacy review lives on the Team & roles screen (no /society/settings route).
+    expect(items.find((i) => i.key === "privacy")!.to).toBe("/society/team");
   });
 
   it("shows missing units as incomplete", () => {

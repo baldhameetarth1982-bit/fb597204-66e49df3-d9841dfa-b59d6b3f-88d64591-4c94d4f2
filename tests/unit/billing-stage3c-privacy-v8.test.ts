@@ -27,9 +27,13 @@ function latestGetPaymentDetailBody(): string {
     .readdirSync(migrationsDir)
     .filter((f) => f.endsWith(".sql"))
     .sort();
+  // Only a migration that DEFINES the function counts. Later migrations that
+  // merely REVOKE/GRANT on it must not shadow the definition.
   for (let i = files.length - 1; i >= 0; i--) {
     const body = fs.readFileSync(path.join(migrationsDir, files[i]), "utf8");
-    if (body.includes("FUNCTION public.get_payment_detail")) return stripSqlComments(body);
+    if (/CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.get_payment_detail/i.test(body)) {
+      return stripSqlComments(body);
+    }
   }
   throw new Error("No migration defines public.get_payment_detail");
 }

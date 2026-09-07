@@ -10,6 +10,7 @@ import { Loader2, IndianRupee, CheckCircle2, Clock, XCircle } from "lucide-react
 import {
   submitResidentBankTransfer,
   getPaymentReceipt,
+  getResidentPayments,
 } from "@/lib/offline-payments.functions";
 
 /**
@@ -35,6 +36,7 @@ function randomKey(billId: string) {
 export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cancelled }: Props) {
   const submit = useServerFn(submitResidentBankTransfer);
   const fetchReceipt = useServerFn(getPaymentReceipt);
+  const listPayments = useServerFn(getResidentPayments);
   // Residents can only submit Bank Transfer. Cash entry is admin-only.
   const method: Method = "bank_transfer";
   const setMethod = (_: Method) => {};
@@ -48,11 +50,42 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
   const [paymentId, setPaymentId] = useState<string | null>(null);
   const [receiptNumber, setReceiptNumber] = useState<string | null>(null);
   const [receiptStatus, setReceiptStatus] = useState<"valid" | "void" | null>(null);
+  const [loadingExisting, setLoadingExisting] = useState(true);
+  const [rejected, setRejected] = useState<{ rejection_reason: string | null } | null>(null);
 
   const disabled = useMemo(
     () => cancelled || billStatus === "paid",
     [cancelled, billStatus],
   );
+
+  // A submission lives on the server, not in this component's state. Without
+  // this, a refresh (or a later rejection) made the resident's submission
+  // look as if it had never happened.
+  useEffect(() => {
+    let stopped = false;
+    (async () => {
+      try {
+        const res = await listPayments({ data: { limit: 200, offset: 0 } });
+        const mine = (res?.payments ?? [])
+          .filter((p) => p.bill_id === billId)
+          .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+        const latest = mine[0];
+        if (stopped || !latest) return;
+        if (latest.status === "rejected") {
+          setRejected({ rejection_reason: latest.rejection_reason });
+        } else {
+          setPaymentId(latest.id);
+        }
+      } catch {
+        // Non-fatal: the resident can still submit; the server rejects duplicates.
+      } finally {
+        if (!stopped) setLoadingExisting(false);
+      }
+    })();
+    return () => {
+      stopped = true;
+    };
+  }, [billId, listPayments]);
 
   useEffect(() => {
     if (!paymentId) return;
@@ -106,6 +139,38 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
     }
   }
 
+  if (loadingExisting) {
+    return (
+      <Card className="rounded-2xl">
+        <CardContent className="p-5 flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span>Checking your payment status…</span>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (rejected) {
+    return (
+      <Card className="rounded-2xl">
+        <CardContent className="p-5 space-y-3">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <XCircle className="h-4 w-4 text-destructive" />
+            <span>Payment not accepted</span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {rejected.rejection_reason
+              ? `Your society office did not accept this submission: ${rejected.rejection_reason}`
+              : "Your society office did not accept this submission."}
+          </p>
+          <Button size="sm" variant="outline" onClick={() => setRejected(null)}>
+            Submit again
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (paymentId) {
     return (
       <Card className="rounded-2xl">
@@ -139,6 +204,7 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
       </Card>
     );
   }
+
 
   return (
     <Card className="rounded-2xl">

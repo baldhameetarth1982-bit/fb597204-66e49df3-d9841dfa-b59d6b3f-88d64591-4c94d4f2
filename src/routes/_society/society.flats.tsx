@@ -139,7 +139,10 @@ function FlatsPage() {
     );
   }
 
-  if (!loading && overview && !overview.configured) {
+  // Legacy societies created before structure_mode existed have
+  // `configured === false` but real units. Never hide existing units behind
+  // the setup prompt — only show it when there is nothing to list.
+  if (!loading && overview && !overview.configured && overview.total_units === 0) {
     return (
       <PageShell>
         <PageHeader title="Units" description="Every unit across your society." />

@@ -12,7 +12,6 @@ import { PageHeader, PageShell } from "@/components/shared/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { ensureMaintenancePeriod } from "@/lib/maintenance.functions";
 
 export const Route = createFileRoute("/_society/society/matrix-import")({
@@ -22,8 +21,21 @@ export const Route = createFileRoute("/_society/society/matrix-import")({
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-type Cell = { flatId: string; block: string; unit: string; month: number; amount: number };
+type Cell = { flatId: string; block: string; unit: string; month: number; amount: number; row: number };
 type Issue = { row: number; msg: string };
+type Failure = { row: number; unit: string; month: string; reason: string };
+
+const MAX_FILE_BYTES = 5 * 1024 * 1024;
+
+/** Map any thrown error to a safe, admin-readable category. Never surfaces raw DB text. */
+function safeReason(e: unknown): string {
+  const msg = String((e as { message?: string } | null)?.message ?? "").toLowerCase();
+  if (msg.includes("not authenticated") || msg.includes("401") || msg.includes("unauthorized")) return "Session expired — sign in again";
+  if (msg.includes("not authorized") || msg.includes("permission") || msg.includes("denied")) return "Not allowed for this house";
+  if (msg.includes("flat not found")) return "House no longer exists";
+  if (msg.includes("network") || msg.includes("fetch")) return "Network problem";
+  return "Could not be saved";
+}
 
 function pick(o: Record<string, unknown>, keys: string[]) {
   for (const k of keys) {
@@ -39,7 +51,8 @@ function MatrixImportPage() {
   const [cells, setCells] = useState<Cell[]>([]);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<{ ok: number; failed: number } | null>(null);
+  const [parsing, setParsing] = useState(false);
+  const [result, setResult] = useState<{ ok: number; failures: Failure[] } | null>(null);
   const ensure = useServerFn(ensureMaintenancePeriod);
 
   const summary = useMemo(() => {
@@ -58,21 +71,35 @@ function MatrixImportPage() {
   }
 
   async function onFile(file: File) {
-    if (!societyId) return;
+    if (!societyId || busy) return;
     setResult(null);
     setCells([]);
     setIssues([]);
 
-    const buf = await file.arrayBuffer();
-    const wb = XLSX.read(buf);
-    const sheet = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
+    if (file.size === 0) { toast.error("That file is empty"); return; }
+    if (file.size > MAX_FILE_BYTES) { toast.error("File is too large (max 5 MB)"); return; }
+
+    setParsing(true);
+    try {
+    let rows: Record<string, unknown>[];
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf);
+      const sheetName = wb.SheetNames[0];
+      const sheet = sheetName ? wb.Sheets[sheetName] : undefined;
+      if (!sheet) { toast.error("No readable sheet found in this file"); return; }
+      rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
+    } catch {
+      toast.error("That file could not be read as a spreadsheet");
+      return;
+    }
+
 
     const { data: flats, error } = await supabase
       .from("flats")
       .select("id, flat_number, blocks!flats_block_id_fkey(name)")
       .eq("society_id", societyId);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error("Could not load your houses. Please try again."); return; }
 
     const flatKey = (b: string, u: string) => `${b.toLowerCase().trim()}/${u.toLowerCase().trim()}`;
     const flatMap = new Map<string, string>();
@@ -82,6 +109,7 @@ function MatrixImportPage() {
 
     const newIssues: Issue[] = [];
     const newCells: Cell[] = [];
+    const seen = new Set<string>();
 
     rows.forEach((raw, i) => {
       const block = pick(raw, ["Block", "block", "Tower", "tower"]);
@@ -101,11 +129,17 @@ function MatrixImportPage() {
         const s = String(v ?? "").replace(/[,₹\s]/g, "").trim();
         if (!s) continue;
         const n = Number(s);
-        if (!isFinite(n) || n < 0 || n > 1_000_000) {
-          newIssues.push({ row: rowNum, msg: `${MONTHS[m]}: invalid amount "${v}"` });
+        if (!Number.isFinite(n) || n < 0 || n > 1_000_000 || Math.round(n * 100) !== n * 100) {
+          newIssues.push({ row: rowNum, msg: `${MONTHS[m]}: invalid amount "${String(v)}"` });
           continue;
         }
-        newCells.push({ flatId: fid, block, unit, month: m, amount: n });
+        const key = `${fid}/${m}`;
+        if (seen.has(key)) {
+          newIssues.push({ row: rowNum, msg: `${MONTHS[m]}: duplicate entry for ${block}-${unit} (ignored)` });
+          continue;
+        }
+        seen.add(key);
+        newCells.push({ flatId: fid, block, unit, month: m, amount: n, row: rowNum });
       }
     });
 
@@ -114,14 +148,18 @@ function MatrixImportPage() {
     if (newCells.length === 0 && newIssues.length === 0) {
       toast.warning("No amounts found in file");
     }
+    } finally {
+      setParsing(false);
+    }
   }
 
   async function commit() {
-    if (!cells.length) return;
+    if (!cells.length || busy) return;
     setBusy(true);
+    setResult(null);
     let ok = 0;
-    let failed = 0;
-    // Serialize to avoid hammering RPC
+    const failures: Failure[] = [];
+    // Serialize: each period write is independently idempotent server-side.
     for (const c of cells) {
       try {
         const periodStart = `${year}-${String(c.month + 1).padStart(2, "0")}-01`;
@@ -130,13 +168,18 @@ function MatrixImportPage() {
         });
         ok++;
       } catch (e) {
-        failed++;
+        failures.push({
+          row: c.row,
+          unit: `${c.block}-${c.unit}`,
+          month: `${MONTHS[c.month]} ${year}`,
+          reason: safeReason(e),
+        });
       }
     }
-    setResult({ ok, failed });
+    setResult({ ok, failures });
     setBusy(false);
-    if (failed === 0) toast.success(`Imported ${ok} period${ok === 1 ? "" : "s"}`);
-    else toast.warning(`Imported ${ok}, ${failed} failed`);
+    if (failures.length === 0) toast.success(`Imported ${ok} period${ok === 1 ? "" : "s"}`);
+    else toast.warning(`Imported ${ok}, ${failures.length} failed — see details below`);
   }
 
   return (
@@ -166,10 +209,16 @@ function MatrixImportPage() {
             <label className="inline-flex">
               <input
                 type="file" accept=".xlsx,.xls,.csv" className="hidden"
-                onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
+                disabled={busy || parsing}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  e.target.value = "";
+                  if (f) void onFile(f);
+                }}
               />
-              <span className="inline-flex items-center px-3 h-9 rounded-xl border bg-primary text-primary-foreground text-sm cursor-pointer hover:opacity-90">
-                <Upload className="h-4 w-4 mr-1.5" /> Choose Excel
+              <span className={`inline-flex items-center px-3 h-9 rounded-xl border bg-primary text-primary-foreground text-sm hover:opacity-90 ${busy || parsing ? "opacity-60 pointer-events-none" : "cursor-pointer"}`}>
+                {parsing ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Upload className="h-4 w-4 mr-1.5" />}
+                {parsing ? "Reading file…" : "Choose Excel"}
               </span>
             </label>
           </div>
@@ -232,8 +281,27 @@ function MatrixImportPage() {
           )}
 
           {result && (
-            <div className={`rounded-xl p-3 text-sm ${result.failed === 0 ? "bg-emerald-500/10 text-emerald-700" : "bg-amber-500/10 text-amber-700"}`}>
-              Imported {result.ok} · {result.failed} failed
+            <div className={`rounded-xl p-3 text-sm space-y-2 ${result.failures.length === 0 ? "bg-emerald-500/10 text-emerald-700" : "bg-amber-500/10 text-amber-700"}`}>
+              <div className="font-medium">
+                {result.failures.length === 0
+                  ? `All ${result.ok} amounts saved`
+                  : `Partly imported — ${result.ok} saved, ${result.failures.length} not saved`}
+              </div>
+              {result.failures.length > 0 && (
+                <>
+                  <div className="max-h-40 overflow-auto space-y-1 text-xs">
+                    {result.failures.slice(0, 30).map((f, i) => (
+                      <div key={i}>Row {f.row} · {f.unit} · {f.month} — {f.reason}</div>
+                    ))}
+                    {result.failures.length > 30 && (
+                      <div>…and {result.failures.length - 30} more</div>
+                    )}
+                  </div>
+                  <Button size="sm" variant="outline" className="rounded-xl" disabled={busy} onClick={() => void commit()}>
+                    Retry all
+                  </Button>
+                </>
+              )}
             </div>
           )}
         </CardContent>

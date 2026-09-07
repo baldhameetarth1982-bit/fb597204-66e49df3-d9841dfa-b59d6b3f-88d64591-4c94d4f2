@@ -122,16 +122,18 @@ function ResidentNoDues() {
   );
 }
 
+/**
+ * `no_dues_certificates` is not readable by `authenticated` (all reads go
+ * through server functions using supabaseAdmin), so the certificate id is
+ * resolved via the authorized `getNoDuesRequestDetail` server function.
+ */
 function CertificateDownload({ requestId, dl }: { requestId: string; dl: any }) {
-  const { data: certId } = useQuery({
+  const detail = useServerFn(getNoDuesRequestDetail);
+  const { data: certId, isLoading } = useQuery({
     queryKey: ["cert-for-req", requestId],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("no_dues_certificates")
-        .select("id")
-        .eq("request_id", requestId)
-        .maybeSingle();
-      return data?.id ?? null;
+      const res = await detail({ data: { requestId } });
+      return (res?.certificate?.id as string | undefined) ?? null;
     },
   });
   const handle = async () => {
@@ -144,8 +146,14 @@ function CertificateDownload({ requestId, dl }: { requestId: string; dl: any }) 
     }
   };
   return (
-    <Button size="sm" variant="outline" className="mt-2" onClick={handle} disabled={!certId}>
-      Download Certificate
+    <Button
+      size="sm"
+      variant="outline"
+      className="mt-2"
+      onClick={handle}
+      disabled={isLoading || !certId}
+    >
+      {isLoading ? "Preparing…" : certId ? "Download Certificate" : "Certificate unavailable"}
     </Button>
   );
 }

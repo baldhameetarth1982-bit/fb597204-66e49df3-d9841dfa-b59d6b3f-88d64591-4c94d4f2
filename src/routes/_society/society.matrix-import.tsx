@@ -23,7 +23,7 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 
 type Cell = { flatId: string; block: string; unit: string; month: number; amount: number; row: number };
 type Issue = { row: number; msg: string };
-type Failure = { row: number; unit: string; month: string; reason: string };
+type Failure = { row: number; unit: string; month: string; reason: string; cell: Cell };
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 
@@ -175,6 +175,7 @@ function MatrixImportPage() {
           unit: `${c.block}-${c.unit}`,
           month: `${MONTHS[c.month]} ${year}`,
           reason: safeReason(e),
+          cell: c,
         });
       }
     }

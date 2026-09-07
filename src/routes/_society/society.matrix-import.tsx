@@ -23,7 +23,7 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 
 type Cell = { flatId: string; block: string; unit: string; month: number; amount: number; row: number };
 type Issue = { row: number; msg: string };
-type Failure = { row: number; unit: string; month: string; reason: string };
+type Failure = { row: number; unit: string; month: string; reason: string; cell: Cell };
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 
@@ -153,14 +153,16 @@ function MatrixImportPage() {
     }
   }
 
-  async function commit() {
-    if (!cells.length || busy) return;
+  async function commit(subset?: Cell[]) {
+    const batch = subset ?? cells;
+    if (!batch.length || busy) return;
     setBusy(true);
+    const carriedOk = subset ? (result?.ok ?? 0) : 0;
     setResult(null);
-    let ok = 0;
+    let ok = carriedOk;
     const failures: Failure[] = [];
     // Serialize: each period write is independently idempotent server-side.
-    for (const c of cells) {
+    for (const c of batch) {
       try {
         const periodStart = `${year}-${String(c.month + 1).padStart(2, "0")}-01`;
         await ensure({
@@ -173,6 +175,7 @@ function MatrixImportPage() {
           unit: `${c.block}-${c.unit}`,
           month: `${MONTHS[c.month]} ${year}`,
           reason: safeReason(e),
+          cell: c,
         });
       }
     }
@@ -273,7 +276,7 @@ function MatrixImportPage() {
 
           {cells.length > 0 && (
             <div className="flex justify-end">
-              <Button onClick={commit} disabled={busy} className="rounded-xl">
+              <Button onClick={() => void commit()} disabled={busy} className="rounded-xl">
                 {busy ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-1.5" />}
                 Commit {cells.length} period{cells.length === 1 ? "" : "s"}
               </Button>
@@ -297,8 +300,11 @@ function MatrixImportPage() {
                       <div>…and {result.failures.length - 30} more</div>
                     )}
                   </div>
-                  <Button size="sm" variant="outline" className="rounded-xl" disabled={busy} onClick={() => void commit()}>
-                    Retry all
+                  <Button
+                    size="sm" variant="outline" className="rounded-xl" disabled={busy}
+                    onClick={() => void commit(result.failures.map((f) => f.cell))}
+                  >
+                    Retry failed
                   </Button>
                 </>
               )}

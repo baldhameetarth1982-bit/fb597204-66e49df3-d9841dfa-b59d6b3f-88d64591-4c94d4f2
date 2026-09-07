@@ -106,6 +106,38 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
     }
   }
 
+  if (loadingExisting) {
+    return (
+      <Card className="rounded-2xl">
+        <CardContent className="p-5 flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span>Checking your payment status…</span>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (rejected) {
+    return (
+      <Card className="rounded-2xl">
+        <CardContent className="p-5 space-y-3">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <XCircle className="h-4 w-4 text-destructive" />
+            <span>Payment not accepted</span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {rejected.rejection_reason
+              ? `Your society office did not accept this submission: ${rejected.rejection_reason}`
+              : "Your society office did not accept this submission."}
+          </p>
+          <Button size="sm" variant="outline" onClick={() => setRejected(null)}>
+            Submit again
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (paymentId) {
     return (
       <Card className="rounded-2xl">
@@ -139,6 +171,7 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
       </Card>
     );
   }
+
 
   return (
     <Card className="rounded-2xl">

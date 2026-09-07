@@ -67,6 +67,7 @@ export type FlatRow = {
   society_name: string | null;
   society_plan_id: string | null;
   society_plan_status: string | null;
+  society_trial_ends_at: string | null;
 };
 
 export type OccupantRow = {
@@ -199,7 +200,11 @@ export async function loadFlat360Snapshot(input: {
       : "block_admin";
 
   /* 3. Plan (server-derived, never client) ------------------------- */
-  const plan: PlanKey = normalizePlan(flatRow.society_plan_id, flatRow.society_plan_status);
+  const plan: PlanKey = normalizePlan(
+    flatRow.society_plan_id,
+    flatRow.society_plan_status,
+    flatRow.society_trial_ends_at,
+  );
   const advanced = canViewAdvanced(plan);
   const viewer: Flat360Viewer = { role, plan, canViewAdvanced: advanced };
 
@@ -557,7 +562,7 @@ export function buildRealDeps(supabase: unknown): Flat360Deps {
       const chain = db
         .from("flats")
         .select(
-          "id, society_id, flat_number, floor, block_id, tenancy_type, blocks(name), societies(name, plan_id, plan_status)",
+          "id, society_id, flat_number, floor, block_id, tenancy_type, blocks(name), societies(name, plan_id, plan_status, trial_ends_at)",
         );
       const eq = (chain as unknown as { eq: (c: string, v: string) => unknown }).eq(
         "id",
@@ -575,7 +580,12 @@ export function buildRealDeps(supabase: unknown): Flat360Deps {
         block_id: string | null;
         tenancy_type: string | null;
         blocks: { name: string | null } | null;
-        societies: { name: string | null; plan_id: string | null; plan_status: string | null } | null;
+        societies: {
+          name: string | null;
+          plan_id: string | null;
+          plan_status: string | null;
+          trial_ends_at: string | null;
+        } | null;
       };
       return {
         id: row.id,
@@ -588,6 +598,7 @@ export function buildRealDeps(supabase: unknown): Flat360Deps {
         society_name: row.societies?.name ?? null,
         society_plan_id: row.societies?.plan_id ?? null,
         society_plan_status: row.societies?.plan_status ?? null,
+        society_trial_ends_at: row.societies?.trial_ends_at ?? null,
       };
     },
     async fetchOccupants(flatId) {

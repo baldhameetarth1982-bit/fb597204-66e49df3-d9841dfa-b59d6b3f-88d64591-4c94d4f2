@@ -68,7 +68,7 @@ function BillsScreen() {
           }));
           cacheSet(cacheKey, rows);
           if (!cancelled) {
-            setNoFlat(rows.length === 0 && !profile.society_id ? true : false);
+            setNoFlat(res.hasLinkedFlat === false);
             setVisibleBills(rows);
           }
         } catch {

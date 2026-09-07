@@ -50,10 +50,13 @@ export function buildChecklistItems(data: ChecklistServerData): ChecklistItem[] 
       hint: `${data.flats} unit${data.flats === 1 ? "" : "s"} configured.` },
     { key: "admin", label: "Society admin active", done: true,
       to: "/society/team", hint: "You are signed in as an active admin." },
-    { key: "team", label: "Team & roles reviewed", done: false,
+    // Review steps have no server-derived completion signal, so they are
+    // listed as optional rather than reported as permanently incomplete.
+    { key: "team", label: "Team & roles reviewed", done: false, optional: true,
       to: "/society/team", hint: "Review scopes for block admins and helpers." },
     { key: "privacy", label: "Privacy & finance visibility reviewed", done: false,
-      to: "/society/settings", hint: "Confirm what residents can see." },
+      optional: true, to: "/society/team",
+      hint: "Privacy & finance visibility live on the Team & roles screen." },
     { key: "residents", label: "Residents onboarded", done: data.has_residents,
       to: "/society/residents",
       hint: `${data.active_residents} active resident${data.active_residents === 1 ? "" : "s"}.` },

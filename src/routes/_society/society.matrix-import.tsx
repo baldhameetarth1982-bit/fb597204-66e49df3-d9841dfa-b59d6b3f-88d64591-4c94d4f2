@@ -281,8 +281,27 @@ function MatrixImportPage() {
           )}
 
           {result && (
-            <div className={`rounded-xl p-3 text-sm ${result.failed === 0 ? "bg-emerald-500/10 text-emerald-700" : "bg-amber-500/10 text-amber-700"}`}>
-              Imported {result.ok} · {result.failed} failed
+            <div className={`rounded-xl p-3 text-sm space-y-2 ${result.failures.length === 0 ? "bg-emerald-500/10 text-emerald-700" : "bg-amber-500/10 text-amber-700"}`}>
+              <div className="font-medium">
+                {result.failures.length === 0
+                  ? `All ${result.ok} amounts saved`
+                  : `Partly imported — ${result.ok} saved, ${result.failures.length} not saved`}
+              </div>
+              {result.failures.length > 0 && (
+                <>
+                  <div className="max-h-40 overflow-auto space-y-1 text-xs">
+                    {result.failures.slice(0, 30).map((f, i) => (
+                      <div key={i}>Row {f.row} · {f.unit} · {f.month} — {f.reason}</div>
+                    ))}
+                    {result.failures.length > 30 && (
+                      <div>…and {result.failures.length - 30} more</div>
+                    )}
+                  </div>
+                  <Button size="sm" variant="outline" className="rounded-xl" disabled={busy} onClick={() => void commit()}>
+                    Retry all
+                  </Button>
+                </>
+              )}
             </div>
           )}
         </CardContent>

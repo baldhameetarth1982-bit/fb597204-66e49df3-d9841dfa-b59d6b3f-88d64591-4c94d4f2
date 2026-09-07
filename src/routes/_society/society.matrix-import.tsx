@@ -300,8 +300,11 @@ function MatrixImportPage() {
                       <div>…and {result.failures.length - 30} more</div>
                     )}
                   </div>
-                  <Button size="sm" variant="outline" className="rounded-xl" disabled={busy} onClick={() => void commit()}>
-                    Retry all
+                  <Button
+                    size="sm" variant="outline" className="rounded-xl" disabled={busy}
+                    onClick={() => void commit(result.failures.map((f) => f.cell))}
+                  >
+                    Retry failed
                   </Button>
                 </>
               )}

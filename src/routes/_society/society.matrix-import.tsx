@@ -209,10 +209,16 @@ function MatrixImportPage() {
             <label className="inline-flex">
               <input
                 type="file" accept=".xlsx,.xls,.csv" className="hidden"
-                onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
+                disabled={busy || parsing}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  e.target.value = "";
+                  if (f) void onFile(f);
+                }}
               />
-              <span className="inline-flex items-center px-3 h-9 rounded-xl border bg-primary text-primary-foreground text-sm cursor-pointer hover:opacity-90">
-                <Upload className="h-4 w-4 mr-1.5" /> Choose Excel
+              <span className={`inline-flex items-center px-3 h-9 rounded-xl border bg-primary text-primary-foreground text-sm hover:opacity-90 ${busy || parsing ? "opacity-60 pointer-events-none" : "cursor-pointer"}`}>
+                {parsing ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Upload className="h-4 w-4 mr-1.5" />}
+                {parsing ? "Reading file…" : "Choose Excel"}
               </span>
             </label>
           </div>

@@ -1,3 +1,9 @@
+# Stage 3C — Disposable live-runtime runner (2026-09-14)
+
+- Added a local runner that mirrors the canonical CI lifecycle: local-only preflight, migration reset, guarded 93-case execution, commit-bound report validation, preserved diagnostics, and guaranteed teardown.
+- Strengthened source-contract tests so environment enablement, migration reset, report validation, and teardown cannot silently disappear from CI or the local runner.
+- Source/CI readiness: **READY**. Observed live runtime closure: **NOT VERIFIED**. Stage 3C remains **BLOCKED**; Stage 3D remains unauthorized until real disposable evidence proves 93 passed with no failures, skips, setup failures, or teardown failures.
+
 # Stage 3A — Bill Studio & Billing Configuration (STARTED 2026-07-17)
 
 - Additive migration: `billing_charge_heads`, `billing_templates`, `billing_template_lines`, `billing_cycle_configs` with admin-only RLS via `current_user_has_society_permission(_, _, NULL)` and SECURITY DEFINER RPCs (`save_charge_head`, `save_billing_template`, `save_billing_template_line`, `archive_billing_template_line`, `configure_billing_cycle`, `preview_billing_template`).

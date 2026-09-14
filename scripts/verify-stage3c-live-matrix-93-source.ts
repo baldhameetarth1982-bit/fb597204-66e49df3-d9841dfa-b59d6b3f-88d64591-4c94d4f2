@@ -78,6 +78,7 @@ const LIVE_SUITE = "tests/integration/billing-stage3c-live.test.ts";
 const CLEANUP_UNIT_TEST = "tests/unit/billing-stage3c-live-cleanup.test.ts";
 const LIFECYCLE_UNIT_TEST = "tests/unit/billing-stage3c-live-lifecycle.test.ts";
 const WORKFLOW = ".github/workflows/stage3c-runtime-verification.yml";
+const LOCAL_RUNNER = "scripts/run-stage3c-live-local.sh";
 
 export const EXPECTED_TOTAL = STAGE3C_CANONICAL_TOTAL;
 export const EXPECTED_PRODUCT = STAGE3C_CANONICAL_PRODUCT_TOTAL;
@@ -386,6 +387,31 @@ export function checkWorkflow(src: string): string[] {
     fail(f, "workflow: report validation must run even when the live run fails");
   if (/continue-on-error:\s*true/.test(src))
     fail(f, "workflow: `continue-on-error: true` would make the gate fail open");
+  if (!/supabase db reset --no-seed/.test(src))
+    fail(f, "workflow: must reset the disposable database with repository migrations");
+  if (!/ALLOW_SOCIOHUB_LIVE_STAGE3C=true/.test(src))
+    fail(f, "workflow: must explicitly enable the guarded live suite");
+  if (!/supabase stop --no-backup/.test(src))
+    fail(f, "workflow: must always tear down the disposable database");
+  return f;
+}
+
+export function checkLocalRunner(src: string): string[] {
+  const f: string[] = [];
+  if (!/trap finish EXIT INT TERM/.test(src))
+    fail(f, "local-runner: must guarantee teardown with an EXIT trap");
+  if (!/supabase db reset --no-seed/.test(src))
+    fail(f, "local-runner: must reset the disposable database with repository migrations");
+  if (!/export ALLOW_SOCIOHUB_LIVE_STAGE3C=true/.test(src))
+    fail(f, "local-runner: must explicitly enable the guarded live suite");
+  if (!/http:\/\/127\.0\.0\.1:\*\|http:\/\/localhost:\*/.test(src))
+    fail(f, "local-runner: must reject non-local database URLs");
+  if (!/verify-stage3c-live-matrix-93-report\.ts/.test(src))
+    fail(f, "local-runner: must validate the complete 93-case report");
+  if (!/supabase stop --no-backup/.test(src))
+    fail(f, "local-runner: must stop disposable services");
+  if (/\becho\s+.*(?:SERVICE_ROLE_KEY|ANON_KEY)/.test(src))
+    fail(f, "local-runner: must not print credentials");
   return f;
 }
 
@@ -410,6 +436,7 @@ export function runAll93CaseChecks(): Outcome {
     CLEANUP_UNIT_TEST,
     LIFECYCLE_UNIT_TEST,
     WORKFLOW,
+    LOCAL_RUNNER,
   ];
   for (const rel of files) {
     if (!existsSync(resolve(ROOT, rel))) failures.push(`missing file: ${rel}`);
@@ -431,6 +458,7 @@ export function runAll93CaseChecks(): Outcome {
   failures.push(...checkCleanupUnitTest(read(CLEANUP_UNIT_TEST)));
   failures.push(...checkLifecycleUnitTest(read(LIFECYCLE_UNIT_TEST)));
   failures.push(...checkWorkflow(read(WORKFLOW)));
+  failures.push(...checkLocalRunner(read(LOCAL_RUNNER)));
   return { ok: failures.length === 0, failures };
 }
 

@@ -14,6 +14,13 @@
 3. **Real production data (society protected society etc.) is never modified
    for testing. Use ephemeral fixtures and clean them up.**
 
+## Stage 3C Runtime Closure
+
+- Source/CI readiness: **READY**.
+- Observed live runtime closure: **NOT VERIFIED**.
+- Stage 3C: **BLOCKED** until a disposable run proves 93 passed, 0 failed, 0 skipped, 0 setup failures and 0 teardown failures.
+- Stage 3D is not authorized by source-only or local static evidence.
+
 ## State Vocabulary
 
 - `not_started` — no code exists

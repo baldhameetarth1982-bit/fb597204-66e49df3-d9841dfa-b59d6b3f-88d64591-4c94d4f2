@@ -14,6 +14,7 @@
     "test": "vitest run tests/unit tests/integration",
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
+    "test:stage3c:live:local": "bash scripts/run-stage3c-live-local.sh",
     "scan:bundle": "bun scripts/verify-client-bundle-secrets.ts",
     "typecheck": "tsgo --noEmit"
   },

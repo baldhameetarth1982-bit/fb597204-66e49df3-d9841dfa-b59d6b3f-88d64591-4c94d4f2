@@ -263,10 +263,11 @@ Mandatory before completion:
 - Due dates, opening balances, late fees and waivers.
 - Reminder schedules and defaulter workflow.
 
-## 3C — Cash and Bank Transfer payments  **Status: COMPLETE (v5 closure 2026-07-18)**
+## 3C — Cash and Bank Transfer payments  **Status: BLOCKED — live runtime closure not verified**
 - Partial, full and overpayment handling.
 - Verification, receipt, reversal and reconciliation.
 - Resident ledger and safe payment evidence.
+- Source/CI readiness: **READY**. Closure requires a disposable-runtime report proving 93 passed, 0 failed, 0 skipped, 0 setup failures and 0 teardown failures.
 
 
 ## 3D — Ledger, expenses, transparency and reports

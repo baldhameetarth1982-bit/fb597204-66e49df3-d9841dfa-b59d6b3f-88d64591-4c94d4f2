@@ -27,6 +27,7 @@ import {
   checkLifecycleModule,
   checkLifecycleUnitTest,
   checkLiveSuite,
+  checkLocalRunner,
   checkRegistryCardinality,
   checkRegistrySource,
   checkWorkflow,
@@ -176,6 +177,19 @@ describe("Stage 3C 93-case source validator", () => {
     expect(f).toMatch(/canonical contract/);
     expect(f).toMatch(/even when the live run fails/);
     expect(f).toMatch(/bound to the executed commit/);
+  });
+
+  it("requires the local runner to stay isolated, validated and recoverable", () => {
+    const empty = checkLocalRunner("").join();
+    expect(empty).toMatch(/EXIT trap/);
+    expect(empty).toMatch(/reset the disposable database/);
+    expect(empty).toMatch(/explicitly enable/);
+    expect(empty).toMatch(/reject non-local/);
+    expect(empty).toMatch(/complete 93-case report/);
+    expect(empty).toMatch(/stop disposable services/);
+
+    const unsafe = 'echo "$SERVICE_ROLE_KEY"';
+    expect(checkLocalRunner(unsafe).join()).toMatch(/must not print credentials/);
   });
 
   it("requires the lifecycle behavioral suite to prove its properties", () => {

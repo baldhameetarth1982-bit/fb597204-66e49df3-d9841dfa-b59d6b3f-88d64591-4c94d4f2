@@ -169,11 +169,18 @@ mustNot(
   );
 }
 
-// ---- Legacy sequence table forbidden -------------------------------------
-mustNot(
-  /payment_receipt_sequences(?!_)/,
-  "cleanup must not touch the legacy payment_receipt_sequences table",
+// ---- Yearly sequence table: exact composite deletion only ----------------
+must(
+  /from\("payment_receipt_sequences"\)\s*\.delete\(\)\s*\.eq\("society_id"[\s\S]{0,120}\.eq\("year"/.test(
+    src,
+  ),
+  "yearly sequence cleanup must delete by exact (society_id, year)",
 );
+mustNot(
+  /from\("payment_receipt_sequences"\)\s*\.delete\(\)\s*\.in\("society_id"/,
+  "yearly sequence cleanup must not delete by society_id blast radius",
+);
+
 
 // ---- Exact composite sequence deletion -----------------------------------
 must(

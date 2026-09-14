@@ -144,8 +144,18 @@ export function checkLiveSuiteSource(src: string): string[] {
     fail(failures, "live suite: does not import the core or matrix registry");
   const iteratesCore = /for \(const caseDefinition of STAGE3C_CORE_LIVE_CASE_HANDLERS\)/.test(src);
   const iteratesMatrix = /for \(const caseDefinition of STAGE3C_MATRIX_LIVE_CASE_HANDLERS\)/.test(src);
-  if (!iteratesCore && !iteratesMatrix)
+  // The 93-case lifecycle splits the matrix registry into two derived phase
+  // arrays (product 1..90, cleanup 91..93) and iterates those. That is still
+  // registry-driven: the derivation itself is enforced by the 93-case source
+  // validator, which requires both arrays to be filters of the matrix registry.
+  const iteratesMatrixPhases =
+    /STAGE3C_PRODUCT_CASES = STAGE3C_MATRIX_LIVE_CASE_HANDLERS\.filter/.test(src) &&
+    /STAGE3C_CLEANUP_CASES = STAGE3C_MATRIX_LIVE_CASE_HANDLERS\.filter/.test(src) &&
+    /for \(const caseDefinition of STAGE3C_PRODUCT_CASES\)/.test(src) &&
+    /for \(const caseDefinition of STAGE3C_CLEANUP_CASES\)/.test(src);
+  if (!iteratesCore && !iteratesMatrix && !iteratesMatrixPhases)
     fail(failures, "live suite: not registry-driven");
+
   if (/pre-case/i.test(src))
     fail(failures, "live suite: contains unnumbered pre-case tests");
   if (/from "\.\.\/helpers\/stage3c-live-(auth|pending|verify|resident-submit)-cases"/.test(src))

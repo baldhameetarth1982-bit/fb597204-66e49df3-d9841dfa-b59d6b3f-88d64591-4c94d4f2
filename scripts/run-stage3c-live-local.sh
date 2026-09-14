@@ -17,8 +17,8 @@ finish() {
 
   rm -f "$ENV_FILE"
   if [ "$services_started" = true ]; then
-    if ! supabase stop --no-backup >"${DIAGNOSTICS_DIR}/supabase-stop.log" 2>&1; then
-      teardown_status=$?
+    supabase stop --no-backup >"${DIAGNOSTICS_DIR}/supabase-stop.log" 2>&1 || teardown_status=$?
+    if [ "$teardown_status" -ne 0 ]; then
       printf '%s\n' "Stage 3C teardown failed; see ${DIAGNOSTICS_DIR}/supabase-stop.log." >&2
     fi
   fi

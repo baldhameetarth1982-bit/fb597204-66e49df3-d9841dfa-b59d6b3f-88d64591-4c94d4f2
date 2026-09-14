@@ -2,7 +2,13 @@
 
 ## Stage 3C — Offline Payments, Verification and Receipts
 
-**Status:** CLOSURE VERIFICATION IN PROGRESS
+**Status:** BLOCKED — observed live runtime closure is not verified
+
+**Current closure boundary (2026-09-14)**
+- Source/CI readiness: **READY**.
+- Observed live runtime closure: **NOT VERIFIED**.
+- The canonical disposable workflow and local runner apply repository migrations, execute the 93-case suite, validate the report, and tear down local services.
+- Stage 3C remains blocked until real evidence shows **93 passed, 0 failed, 0 skipped, 0 setup failures, 0 teardown failures**. Stage 3D must not start before explicit closure approval.
 
 **Live matrix progress — IDEMPOTENCY + REFERENCE repair slice (this run)**
 - Implemented live source: **40/93** (AUTH 7/7, PENDING 8/8, VERIFY 9/9, RESIDENT-SUBMIT 8/8, IDEMPOTENCY 4/4, REFERENCE 4/4) — accepted-locally after repair; runtime workflow still executes only 24 cases and the 32-case slice remains **not observed** in CI.

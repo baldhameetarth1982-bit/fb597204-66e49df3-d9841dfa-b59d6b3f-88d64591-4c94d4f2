@@ -59,7 +59,7 @@ fi
 # Apply every checked-in migration to a clean disposable database. Production
 # and shared credentials are never read or accepted by this runner.
 reset_status=0
-bash scripts/verify-fresh-migrations.sh >"${DIAGNOSTICS_DIR}/supabase-reset.log" 2>&1 || reset_status=$?
+supabase db reset --no-seed >"${DIAGNOSTICS_DIR}/supabase-reset.log" 2>&1 || reset_status=$?
 if [ "$reset_status" -ne 0 ]; then
   printf '%s\n' "Disposable migration reset failed; see ${DIAGNOSTICS_DIR}/supabase-reset.log." >&2
   exit "$reset_status"

@@ -103,7 +103,7 @@ jobs:
 
       - name: Reset database (apply all migrations)
         if: ${{ steps.supabase_start.outcome == 'success' }}
-        run: bun run test:migrations:fresh
+        run: supabase db reset --no-seed
 
       - name: Export local Supabase env
         id: supabase_env

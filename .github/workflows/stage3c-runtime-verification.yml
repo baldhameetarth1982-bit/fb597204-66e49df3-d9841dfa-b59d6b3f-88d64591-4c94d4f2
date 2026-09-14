@@ -380,8 +380,10 @@ jobs:
       - name: Stop local Supabase
         if: ${{ always() && steps.supabase_cli.outcome == 'success' }}
         run: |
+          set -euo pipefail
           if command -v supabase >/dev/null 2>&1; then
-            supabase stop --no-backup || true
+            supabase stop --no-backup
           else
-            echo "Supabase CLI was not installed; nothing to stop."
+            echo "Supabase CLI was expected but is unavailable during teardown."
+            exit 1
           fi

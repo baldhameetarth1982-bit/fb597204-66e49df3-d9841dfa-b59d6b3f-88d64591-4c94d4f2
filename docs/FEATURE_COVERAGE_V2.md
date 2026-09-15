@@ -3,6 +3,11 @@
 Single source of truth for feature status across the SociyoHub V2 roadmap.
 Read together with `SOCIYOHUB_MASTER_ROADMAP_V2.md`.
 
+Current roadmap numbering places ledger, expenses, transparency and reports in
+Stage 3D, while Smart QR remains deferred to Stage 10. Stage 3D is not authorized
+until Stage 3C's canonical disposable run proves 93 passed, 0 failed, 0 skipped,
+0 setup failures and 0 teardown failures.
+
 Legend for **Current implementation**:
 - `done` — implemented and verified
 - `partial` — implemented but incomplete

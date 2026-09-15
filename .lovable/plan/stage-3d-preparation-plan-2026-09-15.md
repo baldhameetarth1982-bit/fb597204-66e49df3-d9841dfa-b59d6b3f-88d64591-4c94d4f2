@@ -29,50 +29,12 @@ The obsolete `NEXT_STAGES.md` section that labels Smart QR as Stage 3D is not au
 
 ## First implementation slice after Stage 3C closes
 
-1. Audit and define the canonical accounting model shared by expenses, income, and verified maintenance payments.
-2. Establish server-authoritative, society-scoped journal posting with balanced debit/credit enforcement and idempotent source references.
-3. Safely integrate existing expense/vendor records without deleting or rewriting verified financial history.
-4. Add focused database, authorization, tenant-isolation, balance, replay, and reversal tests before expanding UI work.    ## First implementation slice after Stage 3C closes
-  1. Audit the existing accounting/financial schema and code paths before changing anything.
-     Identify the canonical existing models for:
-     - income
-     - verified maintenance payments
-     - expenses
-     - vendors
-     - ledger/journal data
-     - cash/bank records
-     - audit history
-  2. Define ONE canonical accounting model shared by expenses, income, and verified
-     maintenance payments.
-     Do not create a competing ledger if an existing canonical model already exists.
-     Reuse/migrate existing structures safely where possible.
-  3. Establish server-authoritative, society-scoped journal posting with:
-     - balanced debit/credit enforcement
-     - atomic posting
-     - idempotent source references
-     - immutable verified history
-     - controlled reversal
-     - audit history
-     - strict RLS/authorization
-     - cross-society isolation
-  4. Before production UI expansion, add focused database and server tests proving:
-     - balanced entries
-     - unbalanced entries rejected
-     - zero/invalid amounts rejected
-     - duplicate/replay source references rejected or safely deduplicated
-     - reversal preserves historical integrity
-     - unauthorized roles rejected
-     - cross-society access rejected
-     - plan entitlement enforced
-     - verified financial history cannot be destructively rewritten
-     - actor/society authority cannot be supplied by an untrusted client
-     - audit records are created for financial transitions
-  5. Safely integrate existing expense/vendor records without deleting,
-     rewriting, or silently reclassifying verified financial history.
-  6. STOP after this slice.
-  Do not build the full expense UI, reports, cash book, bank book, or transparency
-  screens until the canonical accounting model and its security/integrity tests
-  are proven.
+1. Audit the existing accounting/financial schema and code paths before changing anything. Identify the canonical models for income, verified maintenance payments, expenses, vendors, ledger/journal data, cash/bank records, and audit history.
+2. Define one canonical accounting model shared by expenses, income, and verified maintenance payments. Reuse existing structures safely rather than creating a competing ledger.
+3. Establish server-authoritative, society-scoped journal posting with balanced debit/credit enforcement, atomic posting, idempotent source references, immutable verified history, controlled reversal, audit history, strict authorization, and cross-society isolation.
+4. Before expanding production UI, add focused database and server tests for balanced and rejected-unbalanced entries, invalid amounts, replay protection, reversal integrity, authorization, cross-society isolation, plan entitlement, immutable history, server-derived actor/society authority, and audit records.
+5. Safely integrate existing expense/vendor records without deleting, rewriting, or silently reclassifying verified financial history.
+6. Stop after this slice. Do not build the full expense UI, reports, cash book, bank book, or transparency screens until the accounting foundation and its security/integrity tests are proven.
 
 ## Later Stage 3D slices
 
@@ -82,7 +44,7 @@ The obsolete `NEXT_STAGES.md` section that labels Smart QR as Stage 3D is not au
 4. Resident summary/detailed transparency settings, enforced by the backend rather than UI visibility alone.
 5. Mobile/accessibility and failure-state verification for affected screens.
 
-## Technical constraints
+## Technical and security constraints
 
 - Derive society and actor authority on the server; never trust client-provided society, role, ownership, or permission data.
 - Keep RLS and role/plan checks server-enforced for every accounting read and mutation.
@@ -104,7 +66,9 @@ The obsolete `NEXT_STAGES.md` section that labels Smart QR as Stage 3D is not au
 - Client-bundle secret scan and diff validation
 - Relevant mobile and accessibility checks for changed screens
 
-## Blocker and next action
+Stage 3D is not authorized unless the Stage 3C gate below has already passed.
+
+## Stage 3C blocker and authorization rule
 
 **Blocker:** Stage 3C lacks the required canonical live-runtime evidence.
 

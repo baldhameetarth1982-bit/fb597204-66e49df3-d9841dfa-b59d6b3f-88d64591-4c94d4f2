@@ -20,6 +20,7 @@
 - Observed live runtime closure: **NOT VERIFIED**.
 - Stage 3C: **BLOCKED** until a disposable run proves 93 passed, 0 failed, 0 skipped, 0 setup failures and 0 teardown failures.
 - Stage 3D is not authorized by source-only or local static evidence.
+- When authorized, Stage 3D means **Ledger, expenses, transparency and reports**; Smart QR remains Stage 10.
 
 ## State Vocabulary
 

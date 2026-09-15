@@ -3,6 +3,7 @@
 - Added a local runner that mirrors the canonical CI lifecycle: local-only preflight, migration reset, guarded 93-case execution, commit-bound report validation, preserved diagnostics, and guaranteed teardown.
 - Strengthened source-contract tests so environment enablement, migration reset, report validation, and teardown cannot silently disappear from CI or the local runner.
 - Source/CI readiness: **READY**. Observed live runtime closure: **NOT VERIFIED**. Stage 3C remains **BLOCKED**; Stage 3D remains unauthorized until real disposable evidence proves 93 passed with no failures, skips, setup failures, or teardown failures.
+- Current authoritative numbering defines Stage 3D as **Ledger, expenses, transparency and reports** and Smart QR as **Stage 10**; older conflicting labels in historical records are superseded.
 
 # Stage 3A — Bill Studio & Billing Configuration (STARTED 2026-07-17)
 

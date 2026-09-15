@@ -1,5 +1,9 @@
 # Next Stages
 
+> **Current numbering:** `SOCIYOHUB_MASTER_ROADMAP_V2.md` is authoritative.
+> Stage 3D is **Ledger, expenses, transparency and reports**. Smart QR is
+> **Stage 10**. Any conflicting numbering retained below is superseded history.
+
 ## Stage 3C — Offline Payments, Verification and Receipts
 
 **Status:** BLOCKED — observed live runtime closure is not verified
@@ -416,14 +420,18 @@ Iterate every route in the "Not touched in Stage 3A" section of `UI_REFERENCE_MA
 ## Stage 3B — Non-Member Payments, AI Income Categorization, Reconciliation
 All Pro. Feature keys: `non_member_payments`, `ai_income_categorization`, `reconciliation`.
 
-## Stage 3C — AI Secretary / Society Knowledge Base
-Pro. Document upload, indexing, source-cited answers from society-uploaded docs only. Feature key: `ai_secretary`.
+## Superseded stage-numbering history
 
-## Stage 3D — Universal Smart QR, low-risk migration, privacy/transparency controls
-All Pro. Feature keys: `smart_qr_collections`, `migration`, `privacy_controls`.
+The following older mapping is retained only as historical context and must not
+be used for implementation planning:
 
-## Stage 3E — Premium enhancements
-Advanced AI limits, deeper automation, advanced forecasting, custom branding, higher usage caps, priority support. Premium differentiation lives here — **not** by removing Pro workflows.
+- AI Secretary / Society Knowledge Base was formerly labelled Stage 3C.
+- Universal Smart QR, low-risk migration and privacy/transparency controls were
+  formerly grouped as Stage 3D.
+- Premium enhancements were formerly labelled Stage 3E.
+
+The current authoritative roadmap supersedes that numbering. **Current Stage 3D
+is Ledger, expenses, transparency and reports. Smart QR is Stage 10.**
 
 ---
 

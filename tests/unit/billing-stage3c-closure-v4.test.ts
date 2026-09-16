@@ -167,11 +167,14 @@ describe("Stage 3C v4 — active resident authorization enforced in migration", 
   }
 
   it("get_payment_detail is granted only to authenticated", () => {
-    expect(activeAuthMigration).toMatch(
-      /REVOKE ALL ON FUNCTION public\.get_payment_detail\(uuid\) FROM PUBLIC/,
+    const grantSource = migrationSources.find((text) =>
+      /GRANT EXECUTE ON FUNCTION public\.get_payment_detail\(uuid\) TO authenticated/.test(
+        text,
+      ),
     );
-    expect(activeAuthMigration).toMatch(
-      /GRANT EXECUTE ON FUNCTION public\.get_payment_detail\(uuid\) TO authenticated/,
+    expect(grantSource).toBeDefined();
+    expect(grantSource).toMatch(
+      /REVOKE ALL ON FUNCTION public\.get_payment_detail\(uuid\) FROM PUBLIC/,
     );
   });
 });

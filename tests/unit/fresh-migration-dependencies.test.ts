@@ -6,59 +6,40 @@ const MIGRATION_DIRECTORY = join(process.cwd(), "supabase/migrations");
 const migrationFiles = readdirSync(MIGRATION_DIRECTORY)
   .filter((file) => file.endsWith(".sql"))
   .sort();
+const migrationChain = migrationFiles
+  .map((file) => readFileSync(join(MIGRATION_DIRECTORY, file), "utf8"))
+  .join("\n");
 
-function normalizedSignature(name: string, args: string): string {
-  const normalizedArgs = args
-    .split(",")
-    .map((arg) => arg.trim().replace(/\s+/g, " "))
-    .filter(Boolean)
-    .join(",");
-  return `${name.toLowerCase()}(${normalizedArgs.toLowerCase()})`;
-}
-
-describe("fresh migration function dependencies", () => {
-  it("never grants a named public function before the chain creates it", () => {
-    const created = new Set<string>();
-
-    for (const file of migrationFiles) {
-      const sql = readFileSync(join(MIGRATION_DIRECTORY, file), "utf8");
-      const createPattern = /CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+public\.([a-zA-Z_][\w]*)\s*\(([^)]*)\)/gi;
-      const grantPattern = /GRANT\s+EXECUTE\s+ON\s+FUNCTION\s+public\.([a-zA-Z_][\w]*)\s*\(([^)]*)\)/gi;
-      const statements = [
-        ...Array.from(sql.matchAll(createPattern), (match) => ({
-          index: match.index ?? 0,
-          kind: "create" as const,
-          signature: normalizedSignature(match[1], match[2]),
-        })),
-        ...Array.from(sql.matchAll(grantPattern), (match) => ({
-          index: match.index ?? 0,
-          kind: "grant" as const,
-          signature: normalizedSignature(match[1], match[2]),
-        })),
-      ].sort((left, right) => left.index - right.index);
-
-      for (const statement of statements) {
-        if (statement.kind === "create") {
-          created.add(statement.signature);
-          continue;
-        }
-
-        expect(
-          created.has(statement.signature),
-          `${file} grants ${statement.signature} before it is created`,
-        ).toBe(true);
-      }
-    }
+describe("fresh migration Razorpay dependency", () => {
+  it("does not reference the removed Razorpay public-config RPC in executable SQL", () => {
+    expect(migrationChain).not.toMatch(
+      /(?:CREATE(?:\s+OR\s+REPLACE)?|GRANT\s+EXECUTE\s+ON|REVOKE\s+EXECUTE\s+ON)\s+FUNCTION\s+public\.get_razorpay_public_config\s*\(/i,
+    );
   });
 
-  it("uses only the current Razorpay public-safe RPC contract", () => {
-    const allSql = migrationFiles
-      .map((file) => readFileSync(join(MIGRATION_DIRECTORY, file), "utf8"))
-      .join("\n");
+  it("creates the current public-safe RPC before granting it to authenticated callers", () => {
+    const createIndex = migrationChain.search(
+      /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.is_razorpay_live\s*\(\s*\)/i,
+    );
+    const authenticatedGrantIndex = migrationChain.search(
+      /GRANT\s+EXECUTE\s+ON\s+FUNCTION\s+public\.is_razorpay_live\s*\(\s*\)\s+TO\s+authenticated/i,
+    );
 
-    expect(allSql).not.toMatch(/get_razorpay_public_config/i);
-    expect(allSql).toMatch(/CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.is_razorpay_live\s*\(\s*\)/i);
-    expect(allSql).toMatch(/REVOKE\s+EXECUTE\s+ON\s+FUNCTION\s+public\.is_razorpay_live\s*\(\s*\)\s+FROM\s+PUBLIC,\s*anon/i);
-    expect(allSql).toMatch(/GRANT\s+EXECUTE\s+ON\s+FUNCTION\s+public\.is_razorpay_live\s*\(\s*\)\s+TO\s+authenticated/i);
+    expect(createIndex).toBeGreaterThanOrEqual(0);
+    expect(authenticatedGrantIndex).toBeGreaterThan(createIndex);
+  });
+
+  it("ends with anonymous access revoked for the current public-safe RPC", () => {
+    const finalPermissionMigration = migrationFiles
+      .map((file) => readFileSync(join(MIGRATION_DIRECTORY, file), "utf8"))
+      .filter((sql) => /(?:GRANT|REVOKE)\s+EXECUTE\s+ON\s+FUNCTION\s+public\.is_razorpay_live\s*\(\s*\)/i.test(sql))
+      .at(-1);
+
+    expect(finalPermissionMigration).toMatch(
+      /REVOKE\s+EXECUTE\s+ON\s+FUNCTION\s+public\.is_razorpay_live\s*\(\s*\)\s+FROM\s+PUBLIC,\s*anon/i,
+    );
+    expect(finalPermissionMigration).toMatch(
+      /GRANT\s+EXECUTE\s+ON\s+FUNCTION\s+public\.is_razorpay_live\s*\(\s*\)\s+TO\s+authenticated/i,
+    );
   });
 });

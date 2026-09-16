@@ -1,0 +1,2 @@
+REVOKE ALL ON FUNCTION public.submit_offline_payment(uuid,text,numeric,date,text,text,text,text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.submit_offline_payment(uuid,text,numeric,date,text,text,text,text) TO authenticated;

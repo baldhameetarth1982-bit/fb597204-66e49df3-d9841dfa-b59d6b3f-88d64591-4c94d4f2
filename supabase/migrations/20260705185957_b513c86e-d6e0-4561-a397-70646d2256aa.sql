@@ -22,7 +22,9 @@ GRANT EXECUTE ON FUNCTION public.get_current_auth_context() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_society_business_profile(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_society_payout_admin(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.society_payout_active(uuid) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.get_razorpay_public_config() TO authenticated;
+-- Razorpay's current public-safe contract is public.is_razorpay_live().
+-- Do not grant the removed get_razorpay_public_config() RPC: it has no
+-- authoritative CREATE in the migration chain and would break a clean reset.
 GRANT EXECUTE ON FUNCTION public.list_society_flats_public(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.search_societies_by_name(text) TO authenticated;
 

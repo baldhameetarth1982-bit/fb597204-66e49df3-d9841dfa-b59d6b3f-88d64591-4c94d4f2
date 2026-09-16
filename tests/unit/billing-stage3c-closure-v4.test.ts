@@ -35,22 +35,36 @@ function readLatestMigration(pattern: RegExp): string {
   return readFileSync(join(dir, files[files.length - 1]!), "utf8");
 }
 
-const activeAuthMigration = (() => {
+// Migration sources, newest first. Each RPC is validated against its own
+// latest effective definition, because corrective migrations may replace a
+// single function without restating the others.
+const migrationSources = (() => {
   const dir = "supabase/migrations";
-  const files = readdirSync(dir);
-  // Pick the most recent migration that touches submit_offline_payment AND active-resident check.
-  const relevant = files
+  return readdirSync(dir)
     .sort()
     .reverse()
-    .map((f) => ({ f, text: readFileSync(join(dir, f), "utf8") }))
-    .find(
-      ({ text }) =>
-        /submit_offline_payment/.test(text) &&
-        /moved_out_at IS NULL/.test(text) &&
-        /is_active = true/.test(text),
-    );
-  return relevant?.text ?? "";
+    .map((f) => readFileSync(join(dir, f), "utf8"));
 })();
+
+function latestDefinitionOf(rpc: string): string {
+  const pattern = new RegExp(
+    `FUNCTION public\\.${rpc}\\b[\\s\\S]*?\\$function\\$;`,
+    "i",
+  );
+  for (const text of migrationSources) {
+    const match = pattern.exec(text);
+    if (match) return match[0];
+  }
+  return "";
+}
+
+const activeAuthMigration =
+  migrationSources.find(
+    (text) =>
+      /submit_offline_payment/.test(text) &&
+      /moved_out_at IS NULL/.test(text) &&
+      /is_active = true/.test(text),
+  ) ?? "";
 
 describe("Stage 3C v4 — split resident/admin submission server functions", () => {
   it("exports submitResidentBankTransfer and recordAdminOfflinePayment", () => {

@@ -32,6 +32,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Verify checked-out repository, ref, and commit
+        run: |
+          set -euo pipefail
+          actual_sha="$(git rev-parse HEAD)"
+          echo "Repository: ${GITHUB_REPOSITORY}"
+          echo "Selected ref: ${GITHUB_REF}"
+          echo "Event commit: ${GITHUB_SHA}"
+          echo "Checked-out commit: ${actual_sha}"
+          if [ "${actual_sha}" != "${GITHUB_SHA}" ]; then
+            echo "Checked-out commit does not match the workflow event commit."
+            exit 1
+          fi
+
       - name: Setup Bun
         id: setup_bun
         uses: oven-sh/setup-bun@v2
@@ -69,6 +82,18 @@ jobs:
         run: |
           set -euo pipefail
           git diff --exit-code -- package.json bun.lock
+
+      - name: Validate checked-out Razorpay migration chain
+        run: bunx vitest run tests/unit/fresh-migration-dependencies.test.ts --reporter=default
+
+      - name: Self-check the independent canonical 93-case contract
+        run: bun scripts/stage3c-canonical-case-contract.ts
+
+      - name: Validate Stage 3C core live source (pre-flight)
+        run: bun scripts/verify-stage3c-live-core-source.ts
+
+      - name: Validate Stage 3C complete 93-case live source (pre-flight)
+        run: bun scripts/verify-stage3c-live-matrix-93-source.ts
 
       - name: Create report directories
         run: mkdir -p reports test-results playwright-report diagnostics
@@ -148,15 +173,6 @@ jobs:
             echo "Live environment was not exported — refusing to continue."; exit 1
           fi
           test "${ALLOW_SOCIOHUB_LIVE_STAGE3C}" = "true"
-
-      - name: Self-check the independent canonical 93-case contract
-        run: bun scripts/stage3c-canonical-case-contract.ts
-
-      - name: Validate Stage 3C core live source (pre-flight)
-        run: bun scripts/verify-stage3c-live-core-source.ts
-
-      - name: Validate Stage 3C complete 93-case live source (pre-flight)
-        run: bun scripts/verify-stage3c-live-matrix-93-source.ts
 
       - name: Stage 3C CLEANUP behavioral suite
         run: bunx vitest run tests/unit/billing-stage3c-live-cleanup.test.ts --reporter=default

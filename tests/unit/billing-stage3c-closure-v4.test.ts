@@ -158,11 +158,7 @@ describe("Stage 3C v4 — active resident authorization enforced in migration", 
       // Each RPC body should contain both predicates in proximity to
       // flat_residents. We check that both conditions appear inside the
       // function body (defined below).
-      const bodyMatch = new RegExp(
-        `FUNCTION public\\.${rpc}\\b[\\s\\S]*?\\$function\\$;`,
-        "i",
-      ).exec(activeAuthMigration);
-      const body = bodyMatch?.[0] ?? "";
+      const body = latestDefinitionOf(rpc);
       expect(body).not.toBe("");
       expect(body).toMatch(/flat_residents/);
       expect(body).toMatch(/is_active\s*=\s*true/);

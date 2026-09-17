@@ -759,7 +759,8 @@ scan clean. Protected society untouched.
 - Added a society-scoped chart of accounts, balanced immutable journals, vendors, controlled expenses, cash/bank books, receivables ageing, and server-authoritative overview/report RPCs.
 - Verified maintenance payments and verified society income post atomically from their existing lifecycle transitions; reversals create compensating entries. Unsupported payment methods fail closed.
 - Existing Accounts, Expenses, Ledger, and Reports routes now use authenticated server RPC adapters. Direct financial CRUD, browser-side authoritative totals, expense deletion, and manual legacy-ledger mutation were removed from these routes.
-- Legacy `ledger_entries` is preserved read-only and excluded from canonical reports. `preview_finance_backfill` is dry-run only; no historical data was changed.
-- Evidence: focused Stage 3D/security tests 39/39; full non-live suite 2,537 passed, 114 skipped, 11 todo; typecheck, build, bundle-secret scan, Stage 3C source validators, migration static checks, and SQL linter review passed for the new surface.
+- Legacy `ledger_entries` is preserved read-only and excluded from canonical reports. Backfill now has separate preview and explicit, audited execution RPCs; no protected or historical production data was changed.
+- Hardening added source/society validation at the journal boundary, race-safe expense idempotency, fail-closed account seeding, corrected society-admin scope (block admins are no longer treated as society-wide admins), and vendor selection on the existing expense screen.
+- Evidence: focused accounting/audit/Stage 3C preservation tests 42/42; full non-live suite 2,540 passed, 114 skipped, 11 todo; typecheck, configured production build, Stage 3C source validators, and migration static checks passed.
 - Remaining before Stage 3D closure: disposable fresh/upgraded migration runtime, isolated synthetic posting/reversal/backfill tests, and visual QA. Therefore Stage 3D remains `implemented_unverified`, not complete.
 - Stage 3C remains independently BLOCKED until exact external evidence is **93 passed, 0 failed, 0 skipped, 0 setup failures, 0 teardown failures**.

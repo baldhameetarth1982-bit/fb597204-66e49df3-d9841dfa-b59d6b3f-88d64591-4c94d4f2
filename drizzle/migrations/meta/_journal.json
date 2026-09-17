@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1789687230093,
+      "tag": "0000_harden_stage3d_accounting_and_admin_scope",
+      "breakpoints": true
+    }
+  ]
+}

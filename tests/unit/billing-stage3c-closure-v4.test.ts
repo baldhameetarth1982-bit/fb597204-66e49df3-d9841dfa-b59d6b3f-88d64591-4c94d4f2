@@ -27,44 +27,75 @@ const submitCard = readFileSync(
   "utf8",
 );
 
-function readLatestMigration(pattern: RegExp): string {
-  const dir = "supabase/migrations";
-  const files = readdirSync(dir).filter((f) => pattern.test(f));
-  if (!files.length) return "";
-  files.sort();
-  return readFileSync(join(dir, files[files.length - 1]!), "utf8");
-}
-
-// Migration sources, newest first. Each RPC is validated against its own
-// latest effective definition, because corrective migrations may replace a
-// single function without restating the others.
+// Migration sources in deterministic lexical/version order. Each RPC is
+// validated against its own latest effective definition and permission
+// statements because corrective migrations may replace only one function.
 const migrationSources = (() => {
   const dir = "supabase/migrations";
   return readdirSync(dir)
+    .filter((file) => file.endsWith(".sql"))
     .sort()
-    .reverse()
-    .map((f) => readFileSync(join(dir, f), "utf8"));
+    .map((file) => ({ file, sql: readFileSync(join(dir, file), "utf8") }));
 })();
 
-function latestDefinitionOf(rpc: string): string {
-  const pattern = new RegExp(
-    `FUNCTION public\\.${rpc}\\b[\\s\\S]*?\\$function\\$;`,
-    "i",
-  );
-  for (const text of migrationSources) {
-    const match = pattern.exec(text);
-    if (match) return match[0];
-  }
-  return "";
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-const activeAuthMigration =
-  migrationSources.find(
-    (text) =>
-      /submit_offline_payment/.test(text) &&
-      /moved_out_at IS NULL/.test(text) &&
-      /is_active = true/.test(text),
-  ) ?? "";
+function latestDefinitionOf(rpc: string) {
+  const escapedRpc = escapeRegExp(rpc);
+  const pattern = new RegExp(
+    `CREATE\\s+OR\\s+REPLACE\\s+FUNCTION\\s+public\\.${escapedRpc}\\s*\\([\\s\\S]*?\\bAS\\s+(\\$[A-Za-z_]*\\$)[\\s\\S]*?\\1\\s*;`,
+    "gi",
+  );
+  for (const migration of [...migrationSources].reverse()) {
+    const definition = [...migration.sql.matchAll(pattern)].at(-1)?.[0];
+    if (definition) return { ...migration, definition };
+  }
+  throw new Error(`No CREATE OR REPLACE FUNCTION found for public.${rpc}`);
+}
+
+function latestPermissionSource(
+  rpc: string,
+  signature: string,
+  permission: "authenticated grant" | "public revoke" | "anon revoke",
+) {
+  const functionPattern = `public\\.${escapeRegExp(rpc)}\\s*\\(${signature}\\)`;
+  const patterns = {
+    "authenticated grant": new RegExp(
+      `GRANT\\s+EXECUTE\\s+ON\\s+FUNCTION\\s+${functionPattern}\\s+TO\\s+authenticated`,
+      "i",
+    ),
+    "public revoke": new RegExp(
+      `REVOKE\\s+(?:ALL|EXECUTE)\\s+ON\\s+FUNCTION\\s+${functionPattern}\\s+FROM\\s+(?:PUBLIC(?:\\s*,\\s*anon)?|anon\\s*,\\s*PUBLIC)`,
+      "i",
+    ),
+    "anon revoke": new RegExp(
+      `REVOKE\\s+(?:ALL|EXECUTE)\\s+ON\\s+FUNCTION\\s+${functionPattern}\\s+FROM\\s+(?:anon|PUBLIC\\s*,\\s*anon|anon\\s*,\\s*PUBLIC)`,
+      "i",
+    ),
+  } as const;
+  const source = [...migrationSources]
+    .reverse()
+    .find(({ sql }) => patterns[permission].test(sql));
+  if (!source) throw new Error(`No ${permission} found for public.${rpc}`);
+  return source;
+}
+
+const residentScopedRpcs = [
+  { name: "get_bill_payment_summary", signature: "uuid" },
+  {
+    name: "get_resident_payments_v1",
+    signature: "(?:int|integer)\\s*,\\s*(?:int|integer)",
+  },
+  { name: "get_payment_receipt_lifecycle", signature: "uuid" },
+  {
+    name: "submit_offline_payment",
+    signature:
+      "uuid\\s*,\\s*text\\s*,\\s*numeric\\s*,\\s*date\\s*,\\s*text\\s*,\\s*text\\s*,\\s*text\\s*,\\s*text",
+  },
+  { name: "get_payment_detail", signature: "uuid" },
+] as const;
 
 describe("Stage 3C v4 — split resident/admin submission server functions", () => {
   it("exports submitResidentBankTransfer and recordAdminOfflinePayment", () => {
@@ -141,42 +172,24 @@ describe("Stage 3C v4 — server payment detail RPC", () => {
 });
 
 describe("Stage 3C v4 — active resident authorization enforced in migration", () => {
-  it("finds a migration that scopes flat_residents to active rows", () => {
-    expect(activeAuthMigration).not.toBe("");
-  });
-
-  const rpcs = [
-    "get_bill_payment_summary",
-    "get_resident_payments_v1",
-    "get_payment_receipt_lifecycle",
-    "submit_offline_payment",
-    "get_payment_detail",
-  ];
-
-  for (const rpc of rpcs) {
-    it(`${rpc} filters flat_residents by is_active AND moved_out_at IS NULL`, () => {
+  for (const rpc of residentScopedRpcs) {
+    it(`${rpc.name} filters flat_residents by is_active AND moved_out_at IS NULL`, () => {
       // Each RPC body should contain both predicates in proximity to
       // flat_residents. We check that both conditions appear inside the
       // function body (defined below).
-      const body = latestDefinitionOf(rpc);
-      expect(body).not.toBe("");
+      const { definition: body, file } = latestDefinitionOf(rpc.name);
+      expect(file).toMatch(/^\d+_.+\.sql$/);
       expect(body).toMatch(/flat_residents/);
       expect(body).toMatch(/is_active\s*=\s*true/);
       expect(body).toMatch(/moved_out_at\s+IS\s+NULL/);
     });
-  }
 
-  it("get_payment_detail is granted only to authenticated", () => {
-    const grantSource = migrationSources.find((text) =>
-      /GRANT EXECUTE ON FUNCTION public\.get_payment_detail\(uuid\) TO authenticated/.test(
-        text,
-      ),
-    );
-    expect(grantSource).toBeDefined();
-    expect(grantSource).toMatch(
-      /REVOKE ALL ON FUNCTION public\.get_payment_detail\(uuid\) FROM PUBLIC/,
-    );
-  });
+    it(`${rpc.name} has authenticated execution and no public or anonymous execution`, () => {
+      expect(latestPermissionSource(rpc.name, rpc.signature, "authenticated grant").file).toMatch(/^\d+_.+\.sql$/);
+      expect(latestPermissionSource(rpc.name, rpc.signature, "public revoke").file).toMatch(/^\d+_.+\.sql$/);
+      expect(latestPermissionSource(rpc.name, rpc.signature, "anon revoke").file).toMatch(/^\d+_.+\.sql$/);
+    });
+  }
 });
 
 describe("Stage 3C v4 — protected society is never referenced", () => {
@@ -192,5 +205,3 @@ describe("Stage 3C v4 — protected society is never referenced", () => {
   }
 });
 
-// Suppress unused-var lint from the helper import.
-void readLatestMigration;

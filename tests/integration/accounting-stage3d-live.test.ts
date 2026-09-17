@@ -197,7 +197,7 @@ live("Stage 3D canonical accounting behavior", () => {
       _society_id: f.societyA, _from: "2026-01-01", _to: "2026-12-31",
     });
     const legacy = await f.admin.from("ledger_entries").insert({
-      society_id: f.societyA, entry_type: "income", category: "other", amount: 999999,
+      society_id: f.societyA, kind: "credit", category: "other", amount: 999999,
       description: "Synthetic legacy exclusion proof", entry_date: f.testPaymentDate,
       created_by: f.users.adminA1.id,
     });

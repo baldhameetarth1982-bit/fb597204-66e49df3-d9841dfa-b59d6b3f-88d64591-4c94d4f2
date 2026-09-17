@@ -762,5 +762,5 @@ scan clean. Protected society untouched.
 - Legacy `ledger_entries` is preserved read-only and excluded from canonical reports. Backfill now has separate preview and explicit, audited execution RPCs; no protected or historical production data was changed.
 - Hardening added source/society validation at the journal boundary, race-safe expense idempotency, fail-closed account seeding, corrected society-admin scope (block admins are no longer treated as society-wide admins), and vendor selection on the existing expense screen.
 - Evidence: focused accounting/audit/Stage 3C preservation tests 42/42; full non-live suite 2,540 passed, 114 skipped, 11 todo; typecheck, configured production build, Stage 3C source validators, and migration static checks passed.
-- Remaining before Stage 3D closure: disposable fresh/upgraded migration runtime, isolated synthetic posting/reversal/backfill tests, and visual QA. Therefore Stage 3D remains `implemented_unverified`, not complete.
+- Remaining before Stage 3D closure: execute the now-checked-in eight-case synthetic posting/reversal/backfill suite on a fresh disposable database and complete visual QA. Therefore Stage 3D remains `implemented_unverified`, not complete.
 - Stage 3C remains independently BLOCKED until exact external evidence is **93 passed, 0 failed, 0 skipped, 0 setup failures, 0 teardown failures**.

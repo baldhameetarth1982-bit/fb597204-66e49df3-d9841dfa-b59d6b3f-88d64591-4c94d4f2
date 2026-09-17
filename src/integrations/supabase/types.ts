@@ -942,10 +942,19 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          journal_entry_id: string | null
           note: string | null
+          payment_method: string | null
+          request_id: string | null
+          reversal_journal_entry_id: string | null
+          reversal_reason: string | null
+          reversed_at: string | null
+          reversed_by: string | null
           society_id: string
           spent_on: string
+          status: string
           updated_at: string
+          vendor_id: string | null
         }
         Insert: {
           amount: number
@@ -953,10 +962,19 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          journal_entry_id?: string | null
           note?: string | null
+          payment_method?: string | null
+          request_id?: string | null
+          reversal_journal_entry_id?: string | null
+          reversal_reason?: string | null
+          reversed_at?: string | null
+          reversed_by?: string | null
           society_id: string
           spent_on?: string
+          status?: string
           updated_at?: string
+          vendor_id?: string | null
         }
         Update: {
           amount?: number
@@ -964,17 +982,47 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          journal_entry_id?: string | null
           note?: string | null
+          payment_method?: string | null
+          request_id?: string | null
+          reversal_journal_entry_id?: string | null
+          reversal_reason?: string | null
+          reversed_at?: string | null
+          reversed_by?: string | null
           society_id?: string
           spent_on?: string
+          status?: string
           updated_at?: string
+          vendor_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "expenses_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "finance_journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_reversal_journal_entry_id_fkey"
+            columns: ["reversal_journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "finance_journal_entries"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "expenses_society_id_fkey"
             columns: ["society_id"]
             isOneToOne: false
             referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "finance_vendors"
             referencedColumns: ["id"]
           },
         ]
@@ -1081,6 +1129,236 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      finance_accounts: {
+        Row: {
+          account_type: string
+          code: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          is_system: boolean
+          name: string
+          normal_balance: string
+          society_id: string
+          system_key: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_type: string
+          code: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          name: string
+          normal_balance: string
+          society_id: string
+          system_key?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_type?: string
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          name?: string
+          normal_balance?: string
+          society_id?: string
+          system_key?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_accounts_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_journal_entries: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          posted_at: string | null
+          reference: string | null
+          reversal_of: string | null
+          society_id: string
+          source_action: string
+          source_id: string
+          source_type: string
+          status: string
+          transaction_date: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description: string
+          id?: string
+          posted_at?: string | null
+          reference?: string | null
+          reversal_of?: string | null
+          society_id: string
+          source_action?: string
+          source_id: string
+          source_type: string
+          status?: string
+          transaction_date: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string
+          id?: string
+          posted_at?: string | null
+          reference?: string | null
+          reversal_of?: string | null
+          society_id?: string
+          source_action?: string
+          source_id?: string
+          source_type?: string
+          status?: string
+          transaction_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_journal_entries_reversal_of_fkey"
+            columns: ["reversal_of"]
+            isOneToOne: true
+            referencedRelation: "finance_journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_journal_entries_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_journal_lines: {
+        Row: {
+          account_id: string
+          created_at: string
+          credit: number
+          debit: number
+          description: string | null
+          id: string
+          journal_entry_id: string
+          line_number: number
+          society_id: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          credit?: number
+          debit?: number
+          description?: string | null
+          id?: string
+          journal_entry_id: string
+          line_number: number
+          society_id: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          credit?: number
+          debit?: number
+          description?: string | null
+          id?: string
+          journal_entry_id?: string
+          line_number?: number
+          society_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_journal_lines_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "finance_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_journal_lines_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "finance_journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_journal_lines_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_vendors: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by: string
+          deactivated_at: string | null
+          deactivated_by: string | null
+          email: string | null
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          phone: string | null
+          society_id: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by: string
+          deactivated_at?: string | null
+          deactivated_by?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          phone?: string | null
+          society_id: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by?: string
+          deactivated_at?: string | null
+          deactivated_by?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          society_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_vendors_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       flat_residents: {
         Row: {
@@ -2273,6 +2551,7 @@ export type Database = {
           flat_id: string
           id: string
           idempotency_key: string | null
+          journal_entry_id: string | null
           method: string
           notes: string | null
           paid_at: string
@@ -2287,6 +2566,7 @@ export type Database = {
           rejected_at: string | null
           rejected_by: string | null
           rejection_reason: string | null
+          reversal_journal_entry_id: string | null
           reversal_reason: string | null
           reversed_at: string | null
           reversed_by: string | null
@@ -2309,6 +2589,7 @@ export type Database = {
           flat_id: string
           id?: string
           idempotency_key?: string | null
+          journal_entry_id?: string | null
           method?: string
           notes?: string | null
           paid_at?: string
@@ -2323,6 +2604,7 @@ export type Database = {
           rejected_at?: string | null
           rejected_by?: string | null
           rejection_reason?: string | null
+          reversal_journal_entry_id?: string | null
           reversal_reason?: string | null
           reversed_at?: string | null
           reversed_by?: string | null
@@ -2345,6 +2627,7 @@ export type Database = {
           flat_id?: string
           id?: string
           idempotency_key?: string | null
+          journal_entry_id?: string | null
           method?: string
           notes?: string | null
           paid_at?: string
@@ -2359,6 +2642,7 @@ export type Database = {
           rejected_at?: string | null
           rejected_by?: string | null
           rejection_reason?: string | null
+          reversal_journal_entry_id?: string | null
           reversal_reason?: string | null
           reversed_at?: string | null
           reversed_by?: string | null
@@ -2380,6 +2664,20 @@ export type Database = {
             columns: ["bill_id"]
             isOneToOne: false
             referencedRelation: "bills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "finance_journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_reversal_journal_entry_id_fkey"
+            columns: ["reversal_journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "finance_journal_entries"
             referencedColumns: ["id"]
           },
         ]
@@ -3159,6 +3457,7 @@ export type Database = {
           creation_request_id: string | null
           description: string | null
           id: string
+          journal_entry_id: string | null
           non_member_payer_id: string | null
           payer_kind: string
           payment_date: string
@@ -3174,6 +3473,7 @@ export type Database = {
           rejected_by: string | null
           rejection_reason: string | null
           resident_user_id: string | null
+          reversal_journal_entry_id: string | null
           reversal_reason: string | null
           reversed_at: string | null
           reversed_by: string | null
@@ -3193,6 +3493,7 @@ export type Database = {
           creation_request_id?: string | null
           description?: string | null
           id?: string
+          journal_entry_id?: string | null
           non_member_payer_id?: string | null
           payer_kind: string
           payment_date?: string
@@ -3208,6 +3509,7 @@ export type Database = {
           rejected_by?: string | null
           rejection_reason?: string | null
           resident_user_id?: string | null
+          reversal_journal_entry_id?: string | null
           reversal_reason?: string | null
           reversed_at?: string | null
           reversed_by?: string | null
@@ -3227,6 +3529,7 @@ export type Database = {
           creation_request_id?: string | null
           description?: string | null
           id?: string
+          journal_entry_id?: string | null
           non_member_payer_id?: string | null
           payer_kind?: string
           payment_date?: string
@@ -3242,6 +3545,7 @@ export type Database = {
           rejected_by?: string | null
           rejection_reason?: string | null
           resident_user_id?: string | null
+          reversal_journal_entry_id?: string | null
           reversal_reason?: string | null
           reversed_at?: string | null
           reversed_by?: string | null
@@ -3261,10 +3565,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "society_income_records_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "finance_journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "society_income_records_non_member_payer_id_fkey"
             columns: ["non_member_payer_id"]
             isOneToOne: false
             referencedRelation: "non_member_payers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "society_income_records_reversal_journal_entry_id_fkey"
+            columns: ["reversal_journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "finance_journal_entries"
             referencedColumns: ["id"]
           },
           {
@@ -3823,6 +4141,29 @@ export type Database = {
         Args: { _society_id: string }
         Returns: undefined
       }
+      _finance_plan_enabled: { Args: { _society_id: string }; Returns: boolean }
+      _finance_post_entry: {
+        Args: {
+          _actor_id: string
+          _amount: number
+          _credit_system_key: string
+          _debit_system_key: string
+          _description: string
+          _reference: string
+          _reversal_of?: string
+          _society_id: string
+          _source_action: string
+          _source_id: string
+          _source_type: string
+          _transaction_date: string
+        }
+        Returns: string
+      }
+      _finance_require_admin: { Args: { _society_id: string }; Returns: string }
+      _finance_seed_accounts: {
+        Args: { _actor_id: string; _society_id: string }
+        Returns: undefined
+      }
       _migration_link_or_conflict: {
         Args: {
           _canonical_entity_id: string
@@ -4083,6 +4424,19 @@ export type Database = {
         Args: { _mode: string; _society_id: string }
         Returns: Json
       }
+      create_finance_expense: {
+        Args: {
+          _amount: number
+          _category: string
+          _description: string
+          _expense_date: string
+          _payment_method: string
+          _request_id: string
+          _society_id: string
+          _vendor_id: string
+        }
+        Returns: Json
+      }
       create_non_member_income_record: {
         Args: {
           _amount: number
@@ -4207,6 +4561,10 @@ export type Database = {
         Returns: boolean
       }
       current_user_is_super_admin: { Args: never; Returns: boolean }
+      deactivate_finance_vendor: {
+        Args: { _vendor_id: string }
+        Returns: undefined
+      }
       deactivate_flat_resident: {
         Args: { _flat_resident_id: string; _reason?: string }
         Returns: undefined
@@ -4311,6 +4669,10 @@ export type Database = {
           society_id: string
         }[]
       }
+      get_finance_overview: {
+        Args: { _from: string; _society_id: string; _to: string }
+        Returns: Json
+      }
       get_partner_summary_for_current_user: {
         Args: never
         Returns: {
@@ -4339,6 +4701,14 @@ export type Database = {
         Returns: {
           configured: boolean
           key_id: string
+        }[]
+      }
+      get_receivables_ageing: {
+        Args: { _as_of?: string; _society_id: string }
+        Returns: {
+          amount: number
+          bill_count: number
+          bucket: string
         }[]
       }
       get_resident_directory_overview: {
@@ -4470,6 +4840,36 @@ export type Database = {
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       is_super_admin_internal: { Args: { _actor_id: string }; Returns: boolean }
       join_society_with_code: { Args: { _code: string }; Returns: string }
+      list_finance_book: {
+        Args: {
+          _book: string
+          _from: string
+          _limit?: number
+          _offset?: number
+          _society_id: string
+          _to: string
+        }
+        Returns: {
+          credit: number
+          debit: number
+          description: string
+          entry_id: string
+          reference: string
+          running_balance: number
+          source_type: string
+          status: string
+          transaction_date: string
+        }[]
+      }
+      list_finance_workspace: {
+        Args: {
+          _limit?: number
+          _offset?: number
+          _resource: string
+          _society_id: string
+        }
+        Returns: Json
+      }
       list_non_member_payers_page: {
         Args: {
           _active?: string
@@ -4670,6 +5070,7 @@ export type Database = {
         }
         Returns: Json
       }
+      preview_finance_backfill: { Args: { _society_id: string }; Returns: Json }
       recheck_no_dues_request_internal: {
         Args: { _actor_id: string; _request_id: string }
         Returns: {
@@ -4709,6 +5110,10 @@ export type Database = {
       reupload_own_kyc: {
         Args: { _aadhaar_last4: string; _aadhaar_url: string }
         Returns: undefined
+      }
+      reverse_finance_expense: {
+        Args: { _expense_id: string; _reason: string }
+        Returns: Json
       }
       reverse_offline_payment: {
         Args: { _payment_id: string; _reason: string }
@@ -4806,6 +5211,7 @@ export type Database = {
           verified_amount: number
         }[]
       }
+      seed_finance_accounts: { Args: { _society_id: string }; Returns: Json }
       set_society_block_active: {
         Args: { _active: boolean; _block_id: string }
         Returns: Json
@@ -4940,6 +5346,18 @@ export type Database = {
           _unit_type?: string
         }
         Returns: Json
+      }
+      upsert_finance_vendor: {
+        Args: {
+          _category: string
+          _email: string
+          _name: string
+          _notes: string
+          _phone: string
+          _society_id: string
+          _vendor_id: string
+        }
+        Returns: string
       }
       user_can_admin_migrations: {
         Args: { _society_id: string; _user_id: string }

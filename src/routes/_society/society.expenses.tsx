@@ -1,10 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { FeatureGate } from "@/components/subscription/FeatureGate";
+import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Wallet, Loader2, Plus, Trash2, TrendingDown } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useSocietyId } from "@/hooks/useSocietyId";
+import { Loader2, Plus, RotateCcw, TrendingDown, Wallet } from "lucide-react";
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { AccountsCenterTabs } from "@/components/nav/AccountsCenterTabs";
 import { MobileHero } from "@/components/shared/MobileHero";
 import { StatPill, StatPillRow } from "@/components/shared/StatPill";
@@ -14,146 +13,24 @@ import { EmptyState } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select,SelectContent,SelectItem,SelectTrigger,SelectValue } from "@/components/ui/select";
+import { AlertDialog,AlertDialogAction,AlertDialogCancel,AlertDialogContent,AlertDialogDescription,AlertDialogFooter,AlertDialogHeader,AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useSocietyId } from "@/hooks/useSocietyId";
+import { createFinanceExpense, expenseRowSchema, listFinanceWorkspace, reverseFinanceExpense } from "@/lib/finance-stage3d.functions";
+import type { z } from "zod";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_society/society/expenses")({
-  head: () => ({ meta: [{ title: "Expenses — SociyoHub" }] }),
-  component: () => (<FeatureGate feature="expenses"><ExpensesPage /></FeatureGate>),
-});
+export const Route=createFileRoute("/_society/society/expenses")({head:()=>({meta:[{title:"Expenses — SociyoHub"}]}),component:()=> <FeatureGate feature="expenses"><ExpensesPage/></FeatureGate>});
+const INR=new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:2});
+const categories=["cleaning","security","electricity","water","repair","salary","other"] as const;
+type Expense=z.infer<typeof expenseRowSchema>;
 
-const INR = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
-
-const CATEGORIES = [
-  { value: "cleaning", label: "Cleaning" },
-  { value: "security", label: "Security" },
-  { value: "electricity", label: "Electricity" },
-  { value: "water", label: "Water" },
-  { value: "repair", label: "Repair" },
-  { value: "salary", label: "Salary" },
-  { value: "other", label: "Other" },
-];
-
-function ExpensesPage() {
-  const { societyId } = useSocietyId();
-  const qc = useQueryClient();
-  const [category, setCategory] = useState("cleaning");
-  const [amount, setAmount] = useState("");
-  const [note, setNote] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  const { data: expenses, isLoading } = useQuery({
-    queryKey: ["expenses", societyId],
-    enabled: !!societyId,
-    queryFn: async () => {
-      const { data } = await supabase.from("expenses").select("*")
-        .eq("society_id", societyId!)
-        .order("spent_on", { ascending: false }).limit(100);
-      return data ?? [];
-    },
-  });
-
-  const stats = useMemo(() => {
-    const rows = (expenses ?? []) as any[];
-    const total = rows.reduce((s, e) => s + Number(e.amount ?? 0), 0);
-    const now = new Date();
-    const mStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthTotal = rows.filter((e) => new Date(e.spent_on) >= mStart).reduce((s, e) => s + Number(e.amount ?? 0), 0);
-    return { total, monthTotal, count: rows.length };
-  }, [expenses]);
-
-  async function add() {
-    const n = Number(amount);
-    if (!societyId || !n || n <= 0) return toast.error("Enter a valid amount");
-    setSaving(true);
-    const { error } = await supabase.from("expenses").insert({
-      society_id: societyId, category, amount: n, note: note || null,
-    });
-    setSaving(false);
-    if (error) return toast.error(error.message);
-    setAmount(""); setNote("");
-    toast.success("Expense added");
-    qc.invalidateQueries({ queryKey: ["expenses", societyId] });
-    qc.invalidateQueries({ queryKey: ["society-finance", societyId] });
-  }
-
-  async function remove(id: string) {
-    const { error } = await supabase.from("expenses").delete().eq("id", id);
-    if (error) return toast.error(error.message);
-    qc.invalidateQueries({ queryKey: ["expenses", societyId] });
-    qc.invalidateQueries({ queryKey: ["society-finance", societyId] });
-  }
-
-  return (
-    <div className="pb-[calc(96px+env(safe-area-inset-bottom))]">
-      <MobileHero
-        eyebrow="Accounts Center"
-        title="Expenses"
-        subtitle="Track spend to see real surplus and deficit."
-        icon={Wallet}
-        variant="teal"
-        stats={
-          <StatPillRow>
-            <StatPill label="Total spend" value={INR.format(stats.total)} icon={TrendingDown} />
-            <StatPill label="This month" value={INR.format(stats.monthTotal)} />
-            <StatPill label="Entries" value={stats.count} />
-          </StatPillRow>
-        }
-      />
-
-      <div className="px-4 pt-4 space-y-4 max-w-5xl mx-auto md:px-8">
-        <AccountsCenterTabs />
-
-        <SectionCard title="Record an expense" description="Add a spend against your society">
-          <div className="grid sm:grid-cols-4 gap-3">
-            <div>
-              <Label className="text-xs">Category</Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-xs">Amount (₹)</Label>
-              <Input type="number" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} />
-            </div>
-            <div className="sm:col-span-2">
-              <Label className="text-xs">Note</Label>
-              <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional" />
-            </div>
-            <Button onClick={add} disabled={saving} className="sm:col-span-4 rounded-xl">
-              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />} Add expense
-            </Button>
-          </div>
-        </SectionCard>
-
-        <SectionCard title="Recent expenses" description={`${(expenses ?? []).length} entries`} bodyClassName="p-0">
-          {isLoading ? (
-            <div className="p-10 grid place-items-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
-          ) : (expenses ?? []).length === 0 ? (
-            <div className="p-6"><EmptyState icon={Wallet} title="No expenses yet" description="Add your first spend above." /></div>
-          ) : (
-            <ListCardGroup>
-              {(expenses as any[]).map((e) => (
-                <ListCard
-                  key={e.id}
-                  leading={<span className="h-10 w-10 rounded-xl bg-rose-500/10 text-rose-600 grid place-items-center"><TrendingDown className="h-4 w-4" /></span>}
-                  title={<span className="capitalize">{e.category}</span>}
-                  subtitle={`${new Date(e.spent_on).toLocaleDateString()}${e.note ? ` · ${e.note}` : ""}`}
-                  trailing={
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm font-semibold tabular-nums text-rose-600">{INR.format(Number(e.amount))}</span>
-                      <Button onClick={() => remove(e.id)} variant="ghost" size="icon" className="h-8 w-8">
-                        <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                      </Button>
-                    </div>
-                  }
-                />
-              ))}
-            </ListCardGroup>
-          )}
-        </SectionCard>
-      </div>
-    </div>
-  );
+function ExpensesPage(){
+ const {societyId}=useSocietyId(); const qc=useQueryClient(); const list=useServerFn(listFinanceWorkspace); const create=useServerFn(createFinanceExpense); const reverse=useServerFn(reverseFinanceExpense);
+ const [category,setCategory]=useState<(typeof categories)[number]>("cleaning"),[amount,setAmount]=useState(""),[description,setDescription]=useState(""),[method,setMethod]=useState<"cash"|"bank_transfer">("bank_transfer"),[busy,setBusy]=useState(false),[confirm,setConfirm]=useState<Expense|null>(null),[reason,setReason]=useState("");
+ const q=useQuery({queryKey:["finance-expenses",societyId],enabled:!!societyId,queryFn:()=>list({data:{societyId:societyId!,resource:"expenses",limit:100,offset:0}}),retry:false});
+ const rows=(q.data?.rows??[]) as Expense[]; const total=useMemo(()=>rows.filter(x=>x.status==="posted").reduce((s,x)=>s+x.amount,0),[rows]);
+ async function add(){const value=Number(amount);if(!societyId||!Number.isFinite(value)||value<=0)return toast.error("Enter a valid amount");setBusy(true);try{await create({data:{societyId,category,amount:value,expenseDate:new Date().toISOString().slice(0,10),paymentMethod:method,description,requestId:crypto.randomUUID()}});setAmount("");setDescription("");await qc.invalidateQueries({queryKey:["finance-expenses",societyId]});toast.success("Expense posted to the journal");}catch(e){toast.error((e as Error).message)}finally{setBusy(false)}}
+ async function runReverse(){if(!confirm)return;setBusy(true);try{await reverse({data:{expenseId:confirm.id,reason}});setConfirm(null);setReason("");await qc.invalidateQueries({queryKey:["finance-expenses",societyId]});toast.success("Compensating reversal posted");}catch(e){toast.error((e as Error).message)}finally{setBusy(false)}}
+ return <div className="pb-[calc(96px+env(safe-area-inset-bottom))]"><MobileHero eyebrow="Accounts Center" title="Expenses" subtitle="Post controlled expenses; reverse mistakes without deleting history." icon={Wallet} variant="teal" stats={<StatPillRow><StatPill label="Posted spend" value={INR.format(total)} icon={TrendingDown}/><StatPill label="Records" value={rows.length}/><StatPill label="Reversed" value={rows.filter(x=>x.status==="reversed").length}/></StatPillRow>}/><div className="px-4 pt-4 space-y-4 max-w-5xl mx-auto md:px-8"><AccountsCenterTabs/><SectionCard title="Post expense" description="Creates one balanced journal entry atomically"><div className="grid sm:grid-cols-2 gap-3"><div><Label>Category</Label><Select value={category} onValueChange={v=>setCategory(v as typeof category)}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{categories.map(c=><SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>)}</SelectContent></Select></div><div><Label>Payment method</Label><Select value={method} onValueChange={v=>setMethod(v as typeof method)}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="cash">Cash</SelectItem><SelectItem value="bank_transfer">Bank transfer</SelectItem></SelectContent></Select></div><div><Label>Amount (₹)</Label><Input type="number" min="0.01" step="0.01" value={amount} onChange={e=>setAmount(e.target.value)}/></div><div><Label>Description</Label><Input maxLength={500} value={description} onChange={e=>setDescription(e.target.value)}/></div><Button className="sm:col-span-2" disabled={busy} onClick={add}>{busy?<Loader2 className="animate-spin mr-2"/>:<Plus className="mr-2"/>}Post expense</Button></div></SectionCard><SectionCard title="Expense history" bodyClassName="p-0">{q.isLoading?<div className="p-10 grid place-items-center"><Loader2 className="animate-spin"/></div>:q.error?<p className="p-5 text-sm text-destructive">{(q.error as Error).message}</p>:!rows.length?<div className="p-6"><EmptyState icon={Wallet} title="No expenses" description="Post the first expense above."/></div>:<ListCardGroup>{rows.map(e=><ListCard key={e.id} title={<span className="capitalize">{e.category}</span>} subtitle={`${e.expense_date} · ${e.payment_method?.replace("_"," ")}${e.description?` · ${e.description}`:""}`} meta={e.status} trailing={<div className="flex items-center gap-2"><span className="font-semibold text-rose-600">{INR.format(e.amount)}</span>{e.status==="posted"&&<Button variant="outline" size="sm" onClick={()=>setConfirm(e)}><RotateCcw className="h-4 w-4 mr-1"/>Reverse</Button>}</div>}/>)}</ListCardGroup>}</SectionCard></div><AlertDialog open={!!confirm} onOpenChange={o=>!o&&setConfirm(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Reverse this expense?</AlertDialogTitle><AlertDialogDescription>This preserves the original and posts an equal compensating journal entry.</AlertDialogDescription></AlertDialogHeader><Label>Reason</Label><Input value={reason} onChange={e=>setReason(e.target.value)} minLength={5} maxLength={500}/><AlertDialogFooter><AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel><AlertDialogAction disabled={busy||reason.trim().length<5} onClick={runReverse}>Post reversal</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></div>;
 }

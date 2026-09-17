@@ -753,3 +753,13 @@ scan clean. Protected society untouched.
 **Next:** Stage 2D — Migration and Bulk Import.
 
 
+
+## Stage 3D — Financial Foundation (IMPLEMENTED, RUNTIME VERIFICATION PENDING 2026-09-17)
+
+- Added a society-scoped chart of accounts, balanced immutable journals, vendors, controlled expenses, cash/bank books, receivables ageing, and server-authoritative overview/report RPCs.
+- Verified maintenance payments and verified society income post atomically from their existing lifecycle transitions; reversals create compensating entries. Unsupported payment methods fail closed.
+- Existing Accounts, Expenses, Ledger, and Reports routes now use authenticated server RPC adapters. Direct financial CRUD, browser-side authoritative totals, expense deletion, and manual legacy-ledger mutation were removed from these routes.
+- Legacy `ledger_entries` is preserved read-only and excluded from canonical reports. `preview_finance_backfill` is dry-run only; no historical data was changed.
+- Evidence: focused Stage 3D/security tests 39/39; full non-live suite 2,537 passed, 114 skipped, 11 todo; typecheck, build, bundle-secret scan, Stage 3C source validators, migration static checks, and SQL linter review passed for the new surface.
+- Remaining before Stage 3D closure: disposable fresh/upgraded migration runtime, isolated synthetic posting/reversal/backfill tests, and visual QA. Therefore Stage 3D remains `implemented_unverified`, not complete.
+- Stage 3C remains independently BLOCKED until exact external evidence is **93 passed, 0 failed, 0 skipped, 0 setup failures, 0 teardown failures**.

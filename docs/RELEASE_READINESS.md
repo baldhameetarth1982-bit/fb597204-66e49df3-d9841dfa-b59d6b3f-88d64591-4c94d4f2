@@ -19,8 +19,8 @@
 - Source/CI readiness: **READY**.
 - Observed live runtime closure: **NOT VERIFIED**.
 - Stage 3C: **BLOCKED** until a disposable run proves 93 passed, 0 failed, 0 skipped, 0 setup failures and 0 teardown failures.
-- Stage 3D is not authorized by source-only or local static evidence.
-- When authorized, Stage 3D means **Ledger, expenses, transparency and reports**; Smart QR remains Stage 10.
+- Stage 3D implementation is **implemented_unverified**: its canonical journal, controlled expenses, reports, and existing-route integration are present, but disposable migration/runtime and visual evidence remain outstanding.
+- Stage 3D means **Ledger, expenses, transparency and reports**; Smart QR remains Stage 10. This does not close or weaken the independent Stage 3C runtime gate.
 
 ## State Vocabulary
 

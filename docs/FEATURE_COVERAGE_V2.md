@@ -4,9 +4,10 @@ Single source of truth for feature status across the SociyoHub V2 roadmap.
 Read together with `SOCIYOHUB_MASTER_ROADMAP_V2.md`.
 
 Current roadmap numbering places ledger, expenses, transparency and reports in
-Stage 3D, while Smart QR remains deferred to Stage 10. Stage 3D is not authorized
-until Stage 3C's canonical disposable run proves 93 passed, 0 failed, 0 skipped,
-0 setup failures and 0 teardown failures.
+Stage 3D, while Smart QR remains deferred to Stage 10. Stage 3D is now
+implemented but runtime-unverified; Stage 3C independently remains blocked until its
+canonical disposable run proves 93 passed, 0 failed, 0 skipped, 0 setup failures
+and 0 teardown failures.
 
 Legend for **Current implementation**:
 - `done` — implemented and verified
@@ -26,7 +27,7 @@ Legend for **Release blocker**: `yes` / `no`.
 | Residents & family | Prompt 6 | Kept | done | all | society admin | partial | partial | 2C | no |
 | Bill Studio + recurring bills | Prompt 8 | Kept | done | Pro+ for advanced | society admin | partial | partial | 3A / 3B | no |
 | Cash + Bank Transfer maintenance | Prompt 9 | Only offline for society collections | done | all plans | society admin + resident | yes | partial | 3C | no |
-| Ledger / expenses / transparency | Prompt 10 | Kept | partial | Pro+ for reports | society admin | partial | partial | 3D / 3E | no |
+| Ledger / expenses / transparency | Prompt 10 | Kept | unverified | Pro+ | society admin | partial | missing | 3D | yes |
 | Flat 360 | Prompt 11 | Kept | done | Pro+ | society admin + resident | yes | partial | 4A | no |
 | No-Dues certificate | Prompt 12 | Cryptography preserved | done | Pro+ | society admin + resident | yes | yes | 4B | no |
 | +2 on-time points + leaderboard | Prompt 13 | Kept | done | Pro+ | resident | partial | partial | 4C | no |

@@ -7,17 +7,14 @@
  *  - Resident-facing RPCs consider only ACTIVE flat_residents rows
  *    (is_active = true AND moved_out_at IS NULL). Moved-out residents
  *    cannot read history, receipts, or submit new payments.
+ *  - Every resident-facing RPC is executable by authenticated users only.
  *  - `get_payment_detail` exists as a server-authoritative payment read.
- *  - The retired `submitOfflinePayment` server function is marked
- *    @deprecated in favor of the split.
  */
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 const fnSrc = readFileSync("src/lib/offline-payments.functions.ts", "utf8");
-// The resident bank-transfer server function delegates to the neutral
-// shared core module. Method + actor role are pinned there.
 const residentCoreSrc = readFileSync(
   "src/lib/offline-payment-resident-submit.ts",
   "utf8",
@@ -27,75 +24,116 @@ const submitCard = readFileSync(
   "utf8",
 );
 
-// Migration sources in deterministic lexical/version order. Each RPC is
-// validated against its own latest effective definition and permission
-// statements because corrective migrations may replace only one function.
-const migrationSources = (() => {
-  const dir = "supabase/migrations";
-  return readdirSync(dir)
-    .filter((file) => file.endsWith(".sql"))
-    .sort()
-    .map((file) => ({ file, sql: readFileSync(join(dir, file), "utf8") }));
-})();
+type Migration = { file: string; sql: string };
+type Principal = "authenticated" | "PUBLIC" | "anon";
+type Permission = "grant" | "revoke";
+
+type ResidentScopedRpc = {
+  name: string;
+  signaturePattern: string;
+};
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function latestDefinitionOf(rpc: string) {
-  const escapedRpc = escapeRegExp(rpc);
+function loadMigrations(): Migration[] {
+  const directory = join(process.cwd(), "supabase/migrations");
+  return readdirSync(directory)
+    .filter((file) => file.endsWith(".sql"))
+    .sort((left, right) => left.localeCompare(right))
+    .map((file) => ({
+      file,
+      sql: readFileSync(join(directory, file), "utf8"),
+    }));
+}
+
+const migrations = loadMigrations();
+
+function functionDefinitions(sql: string, rpc: string) {
   const pattern = new RegExp(
-    `CREATE\\s+OR\\s+REPLACE\\s+FUNCTION\\s+public\\.${escapedRpc}\\s*\\([\\s\\S]*?\\bAS\\s+(\\$[A-Za-z_]*\\$)[\\s\\S]*?\\1\\s*;`,
+    `CREATE\\s+OR\\s+REPLACE\\s+FUNCTION\\s+public\\.${escapeRegExp(rpc)}\\s*\\([\\s\\S]*?\\bAS\\s+(\\$[A-Za-z_]*\\$)[\\s\\S]*?\\1\\s*;`,
     "gi",
   );
-  for (const migration of [...migrationSources].reverse()) {
-    const definition = [...migration.sql.matchAll(pattern)].at(-1)?.[0];
+  return [...sql.matchAll(pattern)].map((match) => match[0]);
+}
+
+function latestFunctionDefinition(rpc: string) {
+  for (const migration of [...migrations].reverse()) {
+    const definition = functionDefinitions(migration.sql, rpc).at(-1);
     if (definition) return { ...migration, definition };
   }
-  throw new Error(`No CREATE OR REPLACE FUNCTION found for public.${rpc}`);
+  throw new Error(
+    `No CREATE OR REPLACE FUNCTION definition found for public.${rpc}`,
+  );
 }
 
-function latestPermissionSource(
-  rpc: string,
-  signature: string,
-  permission: "authenticated grant" | "public revoke" | "anon revoke",
+function permissionStatements(
+  migration: Migration,
+  rpc: ResidentScopedRpc,
+  principal: Principal,
 ) {
-  const functionPattern = `public\\.${escapeRegExp(rpc)}\\s*\\(${signature}\\)`;
-  const patterns = {
-    "authenticated grant": new RegExp(
-      `GRANT\\s+EXECUTE\\s+ON\\s+FUNCTION\\s+${functionPattern}\\s+TO\\s+authenticated`,
-      "i",
-    ),
-    "public revoke": new RegExp(
-      `REVOKE\\s+(?:ALL|EXECUTE)\\s+ON\\s+FUNCTION\\s+${functionPattern}\\s+FROM\\s+(?:PUBLIC(?:\\s*,\\s*anon)?|anon\\s*,\\s*PUBLIC)`,
-      "i",
-    ),
-    "anon revoke": new RegExp(
-      `REVOKE\\s+(?:ALL|EXECUTE)\\s+ON\\s+FUNCTION\\s+${functionPattern}\\s+FROM\\s+(?:anon|PUBLIC\\s*,\\s*anon|anon\\s*,\\s*PUBLIC)`,
-      "i",
-    ),
-  } as const;
-  const source = [...migrationSources]
-    .reverse()
-    .find(({ sql }) => patterns[permission].test(sql));
-  if (!source) throw new Error(`No ${permission} found for public.${rpc}`);
-  return source;
+  const functionPattern = `public\\.${escapeRegExp(rpc.name)}\\s*\\(${rpc.signaturePattern}\\)`;
+  const statementPattern = new RegExp(
+    `(GRANT\\s+EXECUTE\\s+ON\\s+FUNCTION\\s+${functionPattern}\\s+TO\\s+[^;]+|REVOKE\\s+(?:ALL|EXECUTE)\\s+ON\\s+FUNCTION\\s+${functionPattern}\\s+FROM\\s+[^;]+);`,
+    "gi",
+  );
+
+  return [...migration.sql.matchAll(statementPattern)]
+    .filter((match) => {
+      const roles = match[0].match(/\b(?:TO|FROM)\s+([^;]+);/i)?.[1] ?? "";
+      return roles
+        .split(",")
+        .map((role) => role.trim().toLowerCase())
+        .includes(principal.toLowerCase());
+    })
+    .map((match) => ({
+      file: migration.file,
+      index: match.index ?? -1,
+      permission: /^GRANT\b/i.test(match[0])
+        ? ("grant" as const)
+        : ("revoke" as const),
+      statement: match[0],
+    }));
 }
 
-const residentScopedRpcs = [
-  { name: "get_bill_payment_summary", signature: "uuid" },
+function latestPermissionStatement(
+  rpc: ResidentScopedRpc,
+  principal: Principal,
+) {
+  for (const migration of [...migrations].reverse()) {
+    const statement = permissionStatements(migration, rpc, principal).at(-1);
+    if (statement) return statement;
+  }
+  throw new Error(
+    `No permission statement found for public.${rpc.name} and ${principal}`,
+  );
+}
+
+function expectLatestPermission(
+  rpc: ResidentScopedRpc,
+  principal: Principal,
+  expected: Permission,
+) {
+  const permission = latestPermissionStatement(rpc, principal);
+  expect(permission.file).toMatch(/^\d+_.+\.sql$/);
+  expect(permission.permission, permission.statement).toBe(expected);
+}
+
+const residentScopedRpcs: readonly ResidentScopedRpc[] = [
+  { name: "get_bill_payment_summary", signaturePattern: "uuid" },
   {
     name: "get_resident_payments_v1",
-    signature: "(?:int|integer)\\s*,\\s*(?:int|integer)",
+    signaturePattern: "(?:int|integer)\\s*,\\s*(?:int|integer)",
   },
-  { name: "get_payment_receipt_lifecycle", signature: "uuid" },
+  { name: "get_payment_receipt_lifecycle", signaturePattern: "uuid" },
   {
     name: "submit_offline_payment",
-    signature:
+    signaturePattern:
       "uuid\\s*,\\s*text\\s*,\\s*numeric\\s*,\\s*date\\s*,\\s*text\\s*,\\s*text\\s*,\\s*text\\s*,\\s*text",
   },
-  { name: "get_payment_detail", signature: "uuid" },
-] as const;
+  { name: "get_payment_detail", signaturePattern: "uuid" },
+];
 
 describe("Stage 3C v4 — split resident/admin submission server functions", () => {
   it("exports submitResidentBankTransfer and recordAdminOfflinePayment", () => {
@@ -104,8 +142,6 @@ describe("Stage 3C v4 — split resident/admin submission server functions", () 
   });
 
   it("resident schema has NO method and NO actorRole fields", () => {
-    // Stage 3C 40-case foundation extracted the schema to the shared
-    // contracts module. Verify it there.
     const contractSrc = readFileSync(
       "src/lib/offline-payment-contracts.ts",
       "utf8",
@@ -117,36 +153,33 @@ describe("Stage 3C v4 — split resident/admin submission server functions", () 
     expect(block).not.toMatch(/method:/);
     expect(block).not.toMatch(/actorRole/);
     expect(block).toMatch(/referenceNo: z\.string\(\)\.trim\(\)\.min\(1\)/);
-    // Production file still imports & uses the schema.
     expect(fnSrc).toMatch(/residentSubmitInputSchema/);
   });
 
   it("admin-record schema has NO actorRole field", () => {
     const block =
-      fnSrc.match(/const adminRecordInput = z\.object\({[\s\S]*?}\)/)?.[0] ?? "";
+      fnSrc.match(/const adminRecordInput = z\.object\({[\s\S]*?}\)/)?.[0] ??
+      "";
     expect(block).not.toMatch(/actorRole/);
     expect(block).toMatch(/method: z\.enum\(\["cash", "bank_transfer"\]\)/);
   });
 
-  it("resident server fn sends _actor_role: 'resident' (server-fixed)", () => {
-    // Wrapper must delegate to the shared core.
+  it("resident server fn fixes the actor role and payment method", () => {
     expect(fnSrc).toMatch(/submitResidentBankTransferWithClient/);
-    // Pins live in the shared core module (single source of truth).
     expect(residentCoreSrc).toMatch(/_actor_role:\s*"resident"/);
     expect(residentCoreSrc).toMatch(/_method:\s*"bank_transfer"/);
   });
 
-  it("admin server fn sends _actor_role: 'admin' (server-fixed)", () => {
+  it("admin server fn fixes the actor role", () => {
     const block =
       fnSrc.match(/export const recordAdminOfflinePayment[\s\S]{0,1400}/)?.[0] ??
       "";
     expect(block).toMatch(/_actor_role: "admin"/);
   });
 
-  it("legacy submitOfflinePayment has been removed (Stage 3C v5)", () => {
+  it("legacy submitOfflinePayment remains removed", () => {
     expect(fnSrc).not.toMatch(/export const submitOfflinePayment\b/);
   });
-
 });
 
 describe("Stage 3C v4 — resident submission card contract", () => {
@@ -156,10 +189,7 @@ describe("Stage 3C v4 — resident submission card contract", () => {
   });
 
   it("does not send a browser-chosen method to the server", () => {
-    // The `method` variable is fixed to 'bank_transfer' locally; the
-    // resident schema does not accept `method`, so we don't send it.
-    const dataBlock =
-      submitCard.match(/data:\s*\{[\s\S]*?\}/)?.[0] ?? "";
+    const dataBlock = submitCard.match(/data:\s*\{[\s\S]*?\}/)?.[0] ?? "";
     expect(dataBlock).not.toMatch(/\bmethod\b\s*[,:]/);
   });
 });
@@ -171,37 +201,46 @@ describe("Stage 3C v4 — server payment detail RPC", () => {
   });
 });
 
-describe("Stage 3C v4 — active resident authorization enforced in migration", () => {
+describe("Stage 3C v4 — resident RPC authorization", () => {
   for (const rpc of residentScopedRpcs) {
-    it(`${rpc.name} filters flat_residents by is_active AND moved_out_at IS NULL`, () => {
-      // Each RPC body should contain both predicates in proximity to
-      // flat_residents. We check that both conditions appear inside the
-      // function body (defined below).
-      const { definition: body, file } = latestDefinitionOf(rpc.name);
+    it(`${rpc.name} has a latest concrete function definition`, () => {
+      const { definition, file } = latestFunctionDefinition(rpc.name);
       expect(file).toMatch(/^\d+_.+\.sql$/);
-      expect(body).toMatch(/flat_residents/);
-      expect(body).toMatch(/is_active\s*=\s*true/);
-      expect(body).toMatch(/moved_out_at\s+IS\s+NULL/);
+      expect(definition).toMatch(
+        new RegExp(
+          `CREATE\\s+OR\\s+REPLACE\\s+FUNCTION\\s+public\\.${escapeRegExp(rpc.name)}\\s*\\(`,
+          "i",
+        ),
+      );
     });
 
-    it(`${rpc.name} has authenticated execution and no public or anonymous execution`, () => {
-      expect(latestPermissionSource(rpc.name, rpc.signature, "authenticated grant").file).toMatch(/^\d+_.+\.sql$/);
-      expect(latestPermissionSource(rpc.name, rpc.signature, "public revoke").file).toMatch(/^\d+_.+\.sql$/);
-      expect(latestPermissionSource(rpc.name, rpc.signature, "anon revoke").file).toMatch(/^\d+_.+\.sql$/);
+    it(`${rpc.name} enforces active, non-moved-out occupancy`, () => {
+      const { definition } = latestFunctionDefinition(rpc.name);
+      expect(definition).toMatch(/flat_residents/);
+      expect(definition).toMatch(/is_active\s*=\s*true/);
+      expect(definition).toMatch(/moved_out_at\s+IS\s+NULL/);
+    });
+
+    it(`${rpc.name} latest permissions allow authenticated users only`, () => {
+      expectLatestPermission(rpc, "authenticated", "grant");
+      expectLatestPermission(rpc, "PUBLIC", "revoke");
+      expectLatestPermission(rpc, "anon", "revoke");
     });
   }
 });
 
 describe("Stage 3C v4 — protected society is never referenced", () => {
-  const protectedUuid = (process.env.SOCIOHUB_PROTECTED_SOCIETY_ID?.trim() || "__unset_protected_society_id__");
+  const protectedUuid =
+    process.env.SOCIOHUB_PROTECTED_SOCIETY_ID?.trim() ||
+    "__unset_protected_society_id__";
   const paths = [
     "src/lib/offline-payments.functions.ts",
     "src/components/billing/OfflinePaymentSubmitCard.tsx",
   ];
-  for (const p of paths) {
-    it(`${p} has no protected society UUID`, () => {
-      expect(readFileSync(p, "utf8")).not.toContain(protectedUuid);
+
+  for (const path of paths) {
+    it(`${path} has no protected society UUID`, () => {
+      expect(readFileSync(path, "utf8")).not.toContain(protectedUuid);
     });
   }
 });
-

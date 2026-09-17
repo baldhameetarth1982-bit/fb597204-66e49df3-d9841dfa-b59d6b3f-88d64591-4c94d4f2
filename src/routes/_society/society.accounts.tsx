@@ -48,6 +48,7 @@ function AccountsPage() {
   const rows = (bookQ.data?.rows ?? []) as BookRow[];
   const o = overview.data;
   const error = overview.error || bookQ.error;
+  const canInitialize = !!error && /account_(?:unavailable|seed_conflict)/i.test((error as Error).message);
   const loading = overview.isLoading || bookQ.isLoading;
   const balance = useMemo(() => rows.length ? rows[0].running_balance : 0, [rows]);
 
@@ -65,7 +66,7 @@ function AccountsPage() {
       <SectionCard title="Reporting period" description="Canonical journal only">
         <div className="grid grid-cols-2 gap-3"><div><Label>From</Label><Input type="date" value={from} onChange={e=>setFrom(e.target.value)}/></div><div><Label>To</Label><Input type="date" value={to} onChange={e=>setTo(e.target.value)}/></div></div>
       </SectionCard>
-      {error ? <SectionCard title="Finance unavailable"><p className="text-sm text-destructive">{(error as Error).message}</p><Button className="mt-3" onClick={initialize}>Initialize accounts</Button></SectionCard> : <>
+      {error ? <SectionCard title="Finance unavailable"><p className="text-sm text-destructive">{(error as Error).message}</p>{canInitialize&&<Button className="mt-3" onClick={initialize}>Initialize accounts</Button>}</SectionCard> : <>
         <div className="grid grid-cols-2 gap-3"><SectionCard icon={Wallet} title="Cash balance"><p className="text-2xl font-bold">{INR.format(o?.cash_balance ?? 0)}</p></SectionCard><SectionCard icon={Landmark} title="Bank balance"><p className="text-2xl font-bold">{INR.format(o?.bank_balance ?? 0)}</p></SectionCard></div>
         <SectionCard title={book === "cash" ? "Cash book" : "Bank book"} description={`Running balance ${INR.format(balance)}`} action={<div className="flex gap-1"><Button size="sm" variant={book==="cash"?"default":"outline"} onClick={()=>setBook("cash")}>Cash</Button><Button size="sm" variant={book==="bank"?"default":"outline"} onClick={()=>setBook("bank")}>Bank</Button></div>} bodyClassName="p-0">
           {loading ? <div className="p-10 grid place-items-center"><Loader2 className="animate-spin"/></div> : rows.length===0 ? <div className="p-6"><EmptyState icon={Wallet} title="No posted transactions" description="Verified collections and posted expenses will appear here."/></div> : <ListCardGroup>{rows.map(r=><ListCard key={r.entry_id} title={r.description} subtitle={`${r.transaction_date} · ${r.source_type}`} trailing={<span className="font-semibold tabular-nums">{INR.format(r.debit-r.credit)}</span>}/>)}</ListCardGroup>}

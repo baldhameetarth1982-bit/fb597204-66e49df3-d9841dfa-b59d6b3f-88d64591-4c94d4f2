@@ -50,4 +50,31 @@ describe("Stage 3D canonical accounting foundation", () => {
     for (const rpc of ["get_finance_overview", "list_finance_book", "get_receivables_ageing", "create_finance_expense", "reverse_finance_expense"])
       expect(adapter).toContain(`"${rpc}"`);
   });
+
+  it("removes block administrators from society-wide admin authorization", () => {
+    const latest = chain.slice(chain.lastIndexOf("CREATE OR REPLACE FUNCTION public.is_society_admin_for"));
+    const definition = latest.slice(0, latest.indexOf("$$;", latest.indexOf("AS $$")) + 3);
+    expect(definition).toContain("role = 'society_admin'::public.app_role");
+    expect(definition).not.toContain("block_admin");
+    expect(definition).toContain("is_active");
+  });
+
+  it("validates journal sources and keeps posting helpers private", () => {
+    const correction = readFileSync(join(migrationsDir, "20260917013000_harden_stage3d_accounting_and_admin_scope.sql"), "utf8");
+    expect(correction).toMatch(/cross_society_finance_reference/);
+    expect(correction).toMatch(/_source_type = 'payment'/);
+    expect(correction).toMatch(/_source_type = 'income'/);
+    expect(correction).toMatch(/_source_type = 'expense'/);
+    expect(correction).toMatch(/REVOKE ALL ON FUNCTION public\._finance_post_entry\([^;]+FROM PUBLIC, anon, authenticated/i);
+  });
+
+  it("handles concurrent expense retries and exposes explicit backfill execution", () => {
+    const correction = readFileSync(join(migrationsDir, "20260917013000_harden_stage3d_accounting_and_admin_scope.sql"), "utf8");
+    expect(correction).toMatch(/EXCEPTION WHEN unique_violation/);
+    expect(correction).toMatch(/idempotency_conflict/);
+    expect(correction).toMatch(/CREATE OR REPLACE FUNCTION public\.execute_finance_backfill/);
+    expect(correction).toMatch(/pg_advisory_xact_lock/);
+    expect(correction).toMatch(/finance\.backfill_executed/);
+    expect(correction).not.toMatch(/ledger_entries[\s\S]*INSERT INTO public\.finance_journal_entries/i);
+  });
 });

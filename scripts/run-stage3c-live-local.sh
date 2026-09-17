@@ -117,6 +117,15 @@ for preflight in \
 done
 
 
+# Stage 3D uses the same disposable-only environment and synthetic society
+# factory. It runs first so accounting failures cannot be hidden by Stage 3C.
+stage3d_status=0
+bunx vitest run tests/integration/accounting-stage3d-live.test.ts \
+  --reporter=default --reporter=json --outputFile="${REPORT_DIR}/stage3d-live.json" || stage3d_status=$?
+if [ "$stage3d_status" -ne 0 ]; then
+  exit "$stage3d_status"
+fi
+
 commit_sha="$(git rev-parse HEAD)"
 printf '{"commit":"%s"}\n' "$commit_sha" >"$LIVE_META"
 

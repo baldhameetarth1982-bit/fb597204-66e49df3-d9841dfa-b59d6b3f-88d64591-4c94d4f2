@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1789689041854,
+      "tag": "0000_harden_stage3d_behavioral_invariants",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789689188731,
+      "tag": "0001_preserve_stage3c_when_stage3d_not_entitled",
+      "breakpoints": true
+    }
+  ]
+}

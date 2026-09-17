@@ -1183,6 +1183,38 @@ export type Database = {
           },
         ]
       }
+      finance_backfill_requests: {
+        Row: {
+          created_at: string
+          request_id: string
+          requested_by: string
+          result: Json
+          society_id: string
+        }
+        Insert: {
+          created_at?: string
+          request_id: string
+          requested_by: string
+          result: Json
+          society_id: string
+        }
+        Update: {
+          created_at?: string
+          request_id?: string
+          requested_by?: string
+          result?: Json
+          society_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_backfill_requests_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       finance_journal_entries: {
         Row: {
           created_at: string

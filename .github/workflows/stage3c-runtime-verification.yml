@@ -195,6 +195,30 @@ jobs:
           printf '{"commit":"%s"}\n' "${GITHUB_SHA}" > reports/live.meta.json
           cat reports/live.meta.json
 
+      - name: Stage 3D live accounting behavior (must not skip)
+        id: stage3d_live_tests
+        run: |
+          bunx vitest run tests/integration/accounting-stage3d-live.test.ts \
+            --reporter=default --reporter=json --outputFile=reports/stage3d-live.json
+
+      - name: Assert Stage 3D live suite actually executed
+        if: always()
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.stage3d_live_tests.outcome }}" = "skipped" ]; then
+            echo "Stage 3D live suite was skipped — this gate fails closed."; exit 1
+          fi
+          test -s reports/stage3d-live.json
+          node - <<'NODE'
+          const fs = require("fs");
+          const r = JSON.parse(fs.readFileSync("reports/stage3d-live.json", "utf8"));
+          if (r.numFailedTests !== 0 || r.numPendingTests !== 0 || r.numPassedTests !== 8) {
+            console.error("Expected Stage 3D exact result: 8 passed, 0 failed, 0 skipped.");
+            console.error(JSON.stringify({passed:r.numPassedTests, failed:r.numFailedTests, skipped:r.numPendingTests}));
+            process.exit(1);
+          }
+          NODE
+
       - name: Stage 3C live integration (must not skip)
         id: live_tests
         run: |
@@ -233,6 +257,7 @@ jobs:
             --exclude '**/node_modules/**' \
             --exclude 'tests/e2e/**' \
             --exclude 'tests/integration/billing-stage3c-live.test.ts' \
+            --exclude 'tests/integration/accounting-stage3d-live.test.ts' \
             --reporter=default --reporter=json --outputFile=reports/full.json
 
 

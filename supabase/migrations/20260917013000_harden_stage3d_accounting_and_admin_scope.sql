@@ -278,14 +278,14 @@ BEGIN
 
   FOR v_row IN SELECT * FROM public.payments WHERE society_id=_society_id AND status='verified' AND journal_entry_id IS NULL AND method IN ('cash','bank_transfer') ORDER BY created_at,id FOR UPDATE LOOP
     v_account:=CASE WHEN v_row.method='cash' THEN 'cash' ELSE 'bank' END;
-    v_journal:=public._finance_post_entry(_society_id,COALESCE(v_row.verified_by,v_uid),COALESCE(v_row.payment_date,v_row.paid_at::date,CURRENT_DATE),'Maintenance payment',v_row.reference_no,'payment',v_row.id,'post',v_account,'maintenance_income',v_row.amount,NULL);
+    v_journal:=public._finance_post_entry(_society_id,COALESCE(v_row.verified_by,v_uid),COALESCE(v_row.payment_date,v_row.paid_at::date,v_row.verified_at::date,CURRENT_DATE),'Maintenance payment',v_row.reference_no,'payment',v_row.id,'post',v_account,'maintenance_income',v_row.amount,NULL);
     UPDATE public.payments SET journal_entry_id=v_journal WHERE id=v_row.id AND journal_entry_id IS NULL;
     v_payment_count:=v_payment_count+1;
   END LOOP;
 
   FOR v_row IN SELECT * FROM public.society_income_records WHERE society_id=_society_id AND verification_status='verified' AND journal_entry_id IS NULL AND payment_method IN ('cash','bank_transfer') ORDER BY created_at,id FOR UPDATE LOOP
     v_account:=CASE WHEN v_row.payment_method='cash' THEN 'cash' ELSE 'bank' END;
-    v_journal:=public._finance_post_entry(_society_id,COALESCE(v_row.verified_by,v_uid),COALESCE(v_row.payment_date::date,CURRENT_DATE),'Society income',v_row.reference_number,'income',v_row.id,'post',v_account,'other_income',v_row.amount,NULL);
+    v_journal:=public._finance_post_entry(_society_id,COALESCE(v_row.verified_by,v_uid),COALESCE(v_row.payment_date::date,v_row.verified_at::date,CURRENT_DATE),'Society income',v_row.reference_number,'income',v_row.id,'post',v_account,'other_income',v_row.amount,NULL);
     UPDATE public.society_income_records SET journal_entry_id=v_journal WHERE id=v_row.id AND journal_entry_id IS NULL;
     v_income_count:=v_income_count+1;
   END LOOP;

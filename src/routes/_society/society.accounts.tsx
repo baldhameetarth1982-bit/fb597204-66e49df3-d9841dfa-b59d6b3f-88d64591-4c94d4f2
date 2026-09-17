@@ -36,14 +36,16 @@ function AccountsPage() {
   const [from, setFrom] = useState(yearStart);
   const [to, setTo] = useState(today);
   const [book, setBook] = useState<"cash" | "bank">("cash");
+  const [offset, setOffset] = useState(0);
+  const pageSize = 50;
 
   const overview = useQuery({
     queryKey: ["finance-overview", societyId, from, to], enabled: !!societyId,
     queryFn: () => overviewFn({ data: { societyId: societyId!, from, to } }), retry: false,
   });
   const bookQ = useQuery({
-    queryKey: ["finance-book", societyId, book, from, to], enabled: !!societyId,
-    queryFn: () => bookFn({ data: { societyId: societyId!, book, from, to, limit: 50, offset: 0 } }), retry: false,
+    queryKey: ["finance-book", societyId, book, from, to, offset], enabled: !!societyId,
+    queryFn: () => bookFn({ data: { societyId: societyId!, book, from, to, limit: pageSize, offset } }), retry: false,
   });
   const rows = (bookQ.data?.rows ?? []) as BookRow[];
   const o = overview.data;
@@ -68,8 +70,9 @@ function AccountsPage() {
       </SectionCard>
       {error ? <SectionCard title="Finance unavailable"><p className="text-sm text-destructive">{(error as Error).message}</p>{canInitialize&&<Button className="mt-3" onClick={initialize}>Initialize accounts</Button>}</SectionCard> : <>
         <div className="grid grid-cols-2 gap-3"><SectionCard icon={Wallet} title="Cash balance"><p className="text-2xl font-bold">{INR.format(o?.cash_balance ?? 0)}</p></SectionCard><SectionCard icon={Landmark} title="Bank balance"><p className="text-2xl font-bold">{INR.format(o?.bank_balance ?? 0)}</p></SectionCard></div>
-        <SectionCard title={book === "cash" ? "Cash book" : "Bank book"} description={`Running balance ${INR.format(balance)}`} action={<div className="flex gap-1"><Button size="sm" variant={book==="cash"?"default":"outline"} onClick={()=>setBook("cash")}>Cash</Button><Button size="sm" variant={book==="bank"?"default":"outline"} onClick={()=>setBook("bank")}>Bank</Button></div>} bodyClassName="p-0">
+         <SectionCard title={book === "cash" ? "Cash book" : "Bank book"} description={`Running balance ${INR.format(balance)}`} action={<div className="flex gap-1"><Button size="sm" variant={book==="cash"?"default":"outline"} onClick={()=>{setBook("cash");setOffset(0)}}>Cash</Button><Button size="sm" variant={book==="bank"?"default":"outline"} onClick={()=>{setBook("bank");setOffset(0)}}>Bank</Button></div>} bodyClassName="p-0">
           {loading ? <div className="p-10 grid place-items-center"><Loader2 className="animate-spin"/></div> : rows.length===0 ? <div className="p-6"><EmptyState icon={Wallet} title="No posted transactions" description="Verified collections and posted expenses will appear here."/></div> : <ListCardGroup>{rows.map(r=><ListCard key={r.entry_id} title={r.description} subtitle={`${r.transaction_date} · ${r.source_type}`} trailing={<span className="font-semibold tabular-nums">{INR.format(r.debit-r.credit)}</span>}/>)}</ListCardGroup>}
+           {!loading && (offset > 0 || rows.length === pageSize) && <div className="flex items-center justify-between border-t p-3"><Button size="sm" variant="outline" disabled={offset===0} onClick={()=>setOffset(value=>Math.max(0,value-pageSize))}>Previous</Button><span className="text-xs text-muted-foreground">Page {Math.floor(offset/pageSize)+1}</span><Button size="sm" variant="outline" disabled={rows.length<pageSize} onClick={()=>setOffset(value=>value+pageSize)}>Next</Button></div>}
         </SectionCard>
       </>}
     </div>

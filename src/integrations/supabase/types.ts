@@ -4587,6 +4587,10 @@ export type Database = {
         }
         Returns: string
       }
+      execute_finance_backfill: {
+        Args: { _request_id: string; _society_id: string }
+        Returns: Json
+      }
       finalize_bill_batch: {
         Args: {
           _cycle_config_id: string

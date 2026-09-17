@@ -51,6 +51,17 @@ const expenseInput = z.object({ societyId: uuid, vendorId: uuid.nullable().optio
 const reverseInput = z.object({ expenseId: uuid, reason: z.string().trim().min(5).max(500) });
 const vendorInput = z.object({ societyId: uuid, vendorId: uuid.nullable().optional(), name: z.string().trim().min(2).max(120), category: z.string().trim().max(80).optional(), phone: z.string().trim().max(24).optional(), email: z.string().trim().email().max(254).optional().or(z.literal("")), notes: z.string().trim().max(500).optional() });
 
+interface FinanceRpcClient {
+  rpc: (name: string, args: Record<string, unknown>) => Promise<{
+    data: unknown;
+    error: { message: string } | null;
+  }>;
+}
+
+interface FinanceContext {
+  supabase: unknown;
+}
+
 function safeFinanceError(error: unknown): Error {
   const message = error instanceof Error ? error.message : String(error ?? "");
   const normalized = message.toLowerCase();
@@ -65,8 +76,9 @@ function safeFinanceError(error: unknown): Error {
   return new Error("The finance request could not be completed.");
 }
 
-async function rpc(context: any, name: string, args: Record<string, unknown>) {
-  const { data, error } = await (context.supabase as any).rpc(name, args);
+async function rpc(context: FinanceContext, name: string, args: Record<string, unknown>) {
+  const client = context.supabase as FinanceRpcClient;
+  const { data, error } = await client.rpc(name, args);
   if (error) throw safeFinanceError(error.message);
   return data;
 }
@@ -96,3 +108,5 @@ export const upsertFinanceVendor = createServerFn({ method: "POST" }).middleware
 export const deactivateFinanceVendor = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({ vendorId: uuid })).handler(async ({ data, context }) => { await rpc(context, "deactivate_finance_vendor", { _vendor_id: data.vendorId }); return { ok: true as const }; });
 
 export const previewFinanceBackfill = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({ societyId: uuid })).handler(async ({ data, context }) => z.object({ verified_payments_unposted: z.coerce.number().int(), verified_income_unposted: z.coerce.number().int(), legacy_ledger_unconverted: z.coerce.number().int() }).parse(await rpc(context, "preview_finance_backfill", { _society_id: data.societyId })));
+
+export const executeFinanceBackfill = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({ societyId: uuid, requestId: uuid })).handler(async ({ data, context }) => z.object({ status: z.literal("success"), payments_posted: z.coerce.number().int().nonnegative(), income_posted: z.coerce.number().int().nonnegative() }).parse(await rpc(context, "execute_finance_backfill", { _society_id: data.societyId, _request_id: data.requestId })));

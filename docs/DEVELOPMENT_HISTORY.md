@@ -3,7 +3,8 @@
 - Added society-scoped accounts, balanced immutable journal entries/lines, vendors, controlled expense posting/reversal, cash and bank books, ageing, reporting, and dry-run backfill preview.
 - Integrated existing finance routes through strict authenticated RPC adapters; removed direct financial CRUD and browser-authoritative aggregation from those routes.
 - Hardened internal function grants, Pro/Premium access, legacy ledger read-only behavior, and unsupported payment methods.
-- Verified 2,537 non-live tests, typecheck, build, bundle scan, and Stage 3C source contracts. Fresh disposable migration/runtime and visual verification remain unavailable, so Stage 3D is not closed. Stage 3C remains BLOCKED on exact 93/0/0/0/0 evidence.
+- Hardened the journal source/society boundary, expense idempotency, account seeding, explicit audited backfill execution, and society-admin scope; block admins are no longer treated as society-wide administrators. Added vendor selection to the existing expense screen.
+- Verified 2,540 non-live tests, 42 focused accounting/audit/Stage 3C preservation tests, typecheck, configured production build, and Stage 3C source contracts. Fresh disposable migration/runtime and visual verification remain unavailable, so Stage 3D is not closed. Stage 3C remains BLOCKED on exact 93/0/0/0/0 evidence.
 
 # Stage 3C — Disposable live-runtime runner (2026-09-14)
 

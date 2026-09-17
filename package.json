@@ -17,7 +17,8 @@
     "test:migrations:fresh": "bash scripts/verify-fresh-migrations.sh",
     "test:stage3c:live:local": "bash scripts/run-stage3c-live-local.sh",
     "scan:bundle": "bun scripts/verify-client-bundle-secrets.ts",
-    "typecheck": "tsgo --noEmit"
+    "typecheck": "tsgo --noEmit",
+    "test:stage3d:live": "vitest run tests/integration/accounting-stage3d-live.test.ts"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^2.0.48",

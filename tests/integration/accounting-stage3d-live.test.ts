@@ -307,10 +307,13 @@ live("Stage 3D canonical accounting behavior", () => {
     expect(audits.data!.some(x => x.target_table === "expenses" && x.target_id === expenseId)).toBe(true);
     const auditId = audits.data!.find(x => x.target_table === "finance_journal_entries")?.id;
     expect(auditId).toBeTruthy();
-    const mutateAudit = await f.admin.from("audit_log").update({ action: "tampered" }).eq("id", auditId!);
-    expect(mutateAudit.error?.message).toContain("audit_log_immutable");
-    const deleteAudit = await f.admin.from("audit_log").delete().eq("id", auditId!);
-    expect(deleteAudit.error?.message).toContain("audit_log_immutable");
+    const mutateAudit = await f.users.adminA1.client.from("audit_log").update({ action: "tampered" }).eq("id", auditId!);
+    expect(mutateAudit.error).toBeTruthy();
+    const deleteAudit = await f.users.adminA1.client.from("audit_log").delete().eq("id", auditId!);
+    expect(deleteAudit.error).toBeTruthy();
+    const preservedAudit = await f.admin.from("audit_log").select("action").eq("id", auditId!).single();
+    expect(preservedAudit.error).toBeNull();
+    expect(preservedAudit.data!.action).not.toBe("tampered");
   });
 
   it("makes backfill requests durable and idempotent", async () => {

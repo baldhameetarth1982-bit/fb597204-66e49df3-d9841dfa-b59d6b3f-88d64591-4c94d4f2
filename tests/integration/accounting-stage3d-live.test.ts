@@ -240,6 +240,8 @@ live("Stage 3D canonical accounting behavior", () => {
     expect(detailed.transactions.length).toBeGreaterThan(0);
     expect(detailed.transactions[0]).not.toHaveProperty("id");
     expect(detailed.transactions[0]).not.toHaveProperty("reference");
+    expect(detailed.transactions.some((entry: any) => entry.source_type === "expense" && asNumber(entry.amount) < 0)).toBe(true);
+    expect(detailed.transactions.some((entry: any) => entry.source_type === "expense_reversal" && asNumber(entry.amount) > 0)).toBe(true);
 
     const crossTenant = await f.users.activeResident.client.rpc("get_resident_finance_transparency", { _society_id: f.societyB, ...period });
     expect(crossTenant.error).toBeTruthy();

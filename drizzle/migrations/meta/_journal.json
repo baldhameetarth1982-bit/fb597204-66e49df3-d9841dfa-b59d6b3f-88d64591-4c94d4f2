@@ -64,6 +64,13 @@
       "when": 1789762015265,
       "tag": "0008_finalize_stage3d_resident_authorization_and_audit_integrity",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789762198532,
+      "tag": "0009_allow_service_role_audit_fixture_cleanup",
+      "breakpoints": true
     }
   ]
 }

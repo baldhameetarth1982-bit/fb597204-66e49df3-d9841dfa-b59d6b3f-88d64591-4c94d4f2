@@ -5,6 +5,8 @@ import { join } from "node:path";
 const migrationsDir = join(process.cwd(), "supabase/migrations");
 const chain = readdirSync(migrationsDir).filter(f => f.endsWith(".sql")).sort().map(f => readFileSync(join(migrationsDir, f), "utf8")).join("\n");
 const route = (name: string) => readFileSync(join(process.cwd(), `src/routes/_society/${name}`), "utf8");
+const finalClosure = readFileSync(join(process.cwd(), "drizzle/migrations/0008_finalize_stage3d_resident_authorization_and_audit_integrity.sql"), "utf8");
+const auditCleanupBoundary = readFileSync(join(process.cwd(), "drizzle/migrations/0009_allow_service_role_audit_fixture_cleanup.sql"), "utf8");
 
 describe("Stage 3D canonical accounting foundation", () => {
   it("creates society-scoped accounts and immutable balanced journals", () => {
@@ -68,9 +70,11 @@ describe("Stage 3D canonical accounting foundation", () => {
     expect(hardening).toContain("f.society_id = _society_id");
     expect(hardening).toContain("p.society_id = b.society_id");
     expect(hardening).toContain("b.finalized_at::date");
-    const signedMovements = readFileSync(join(process.cwd(), "drizzle/migrations/0007_correct_resident_finance_signed_movements.sql"), "utf8");
-    expect(signedMovements).toMatch(/sum\(credit - debit\) FILTER \(WHERE account_type = 'expense'\)/);
-    expect(signedMovements).toContain("expense is negative, and compensating reversals have the opposite sign");
+    expect(finalClosure).toMatch(/sum\(credit - debit\) FILTER \(WHERE account_type = 'expense'\)/);
+    expect(finalClosure).toMatch(/sum\(debit - credit\) FILTER \(WHERE account_type = 'expense'\)/);
+    expect(finalClosure).toContain("fr.moved_out_at IS NULL");
+    expect(finalClosure.indexOf("IF NOT v_is_admin AND NOT v_is_active_resident")).toBeLessThan(finalClosure.indexOf("_finance_plan_enabled(_society_id)"));
+    expect(finalClosure).toContain("expense movement is negative, and reversals compensate the original movement");
   });
 
   it("ends with a strict society-admin helper that excludes block administrators", () => {
@@ -106,7 +110,7 @@ describe("Stage 3D canonical accounting foundation", () => {
     expect(correction).toMatch(/REVOKE ALL ON FUNCTION public\._finance_post_entry\([^;]+FROM PUBLIC, anon, authenticated/i);
   });
 
-  it("handles concurrent expense retries and exposes explicit backfill execution", () => {
+  it("defines race-safe expense retry handling and explicit backfill execution", () => {
     const correction = readFileSync(join(migrationsDir, "20260917013000_harden_stage3d_accounting_and_admin_scope.sql"), "utf8");
     expect(correction).toMatch(/EXCEPTION WHEN unique_violation/);
     expect(correction).toMatch(/idempotency_conflict/);
@@ -114,5 +118,14 @@ describe("Stage 3D canonical accounting foundation", () => {
     expect(correction).toMatch(/pg_advisory_xact_lock/);
     expect(correction).toMatch(/finance\.backfill_executed/);
     expect(correction).not.toMatch(/ledger_entries[\s\S]*INSERT INTO public\.finance_journal_entries/i);
+  });
+
+  it("makes canonical audit history immutable", () => {
+    expect(finalClosure).toMatch(/CREATE TRIGGER audit_log_immutable/);
+    expect(finalClosure).toMatch(/BEFORE UPDATE OR DELETE ON public\.audit_log/);
+    expect(finalClosure).toContain("audit_log_immutable");
+    expect(finalClosure).toMatch(/REVOKE ALL ON FUNCTION public\._protect_audit_log_history\(\) FROM PUBLIC, anon, authenticated/);
+    expect(auditCleanupBoundary).toContain("auth.role() = 'service_role'");
+    expect(auditCleanupBoundary).toContain("controlled synthetic fixture cleanup");
   });
 });

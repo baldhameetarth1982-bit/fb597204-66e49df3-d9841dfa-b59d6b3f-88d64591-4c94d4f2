@@ -301,10 +301,19 @@ live("Stage 3D canonical accounting behavior", () => {
     const mutateLine = await f.admin.from("finance_journal_lines").update({ debit: 999 }).eq("journal_entry_id", paymentJournalId);
     expect(mutateLine.error?.message).toContain("posted_history_immutable");
 
-    const audits = await f.admin.from("audit_log").select("action,target_table,target_id,metadata").eq("society_id", f.societyA).in("target_id", [paymentJournalId, expenseId, expenseReversalId, incomeJournalId]);
+    const audits = await f.admin.from("audit_log").select("id,action,target_table,target_id,metadata").eq("society_id", f.societyA).in("target_id", [paymentJournalId, expenseId, expenseReversalId, incomeJournalId]);
     expect(audits.error).toBeNull();
     expect(audits.data!.some(x => x.target_table === "finance_journal_entries" && x.target_id === paymentJournalId)).toBe(true);
     expect(audits.data!.some(x => x.target_table === "expenses" && x.target_id === expenseId)).toBe(true);
+    const auditId = audits.data!.find(x => x.target_table === "finance_journal_entries")?.id;
+    expect(auditId).toBeTruthy();
+    const mutateAudit = await f.users.adminA1.client.from("audit_log").update({ action: "tampered" }).eq("id", auditId!);
+    expect(mutateAudit.error).toBeTruthy();
+    const deleteAudit = await f.users.adminA1.client.from("audit_log").delete().eq("id", auditId!);
+    expect(deleteAudit.error).toBeTruthy();
+    const preservedAudit = await f.admin.from("audit_log").select("action").eq("id", auditId!).single();
+    expect(preservedAudit.error).toBeNull();
+    expect(preservedAudit.data!.action).not.toBe("tampered");
   });
 
   it("makes backfill requests durable and idempotent", async () => {

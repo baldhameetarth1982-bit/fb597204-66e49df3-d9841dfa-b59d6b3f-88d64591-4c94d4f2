@@ -74,6 +74,16 @@ describe("audit-log contract recovery", () => {
     expect(repair).toMatch(/noncanonical audit_log writer remains/);
     expect(repair).toMatch(/entity_type\|entity_id\|meta/);
   });
+
+  it("has an additive terminal migration that rejects audit updates and deletes", () => {
+    const terminal = readFileSync(
+      join(process.cwd(), "drizzle/migrations/0008_finalize_stage3d_resident_authorization_and_audit_integrity.sql"),
+      "utf8",
+    );
+    expect(terminal).toMatch(/CREATE TRIGGER audit_log_immutable/);
+    expect(terminal).toMatch(/BEFORE UPDATE OR DELETE ON public\.audit_log/);
+    expect(terminal).toMatch(/RAISE EXCEPTION 'audit_log_immutable'/);
+  });
 });
 
 describe("submit_offline_payment recovery", () => {

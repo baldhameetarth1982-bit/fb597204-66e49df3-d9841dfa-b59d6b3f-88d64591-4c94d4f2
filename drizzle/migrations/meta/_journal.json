@@ -36,6 +36,13 @@
       "when": 1789690940556,
       "tag": "0004_close_resident_finance_plan_oracle",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789691028130,
+      "tag": "0005_harden_finance_visibility_and_ageing_scope",
+      "breakpoints": true
     }
   ]
 }

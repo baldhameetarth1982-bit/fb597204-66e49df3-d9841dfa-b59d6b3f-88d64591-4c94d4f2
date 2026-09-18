@@ -125,6 +125,23 @@ bunx vitest run tests/integration/accounting-stage3d-live.test.ts \
 if [ "$stage3d_status" -ne 0 ]; then
   exit "$stage3d_status"
 fi
+if [ ! -s "${REPORT_DIR}/stage3d-live.json" ]; then
+  printf '%s\n' "Stage 3D live report is missing or empty." >&2
+  exit 1
+fi
+node - "${REPORT_DIR}/stage3d-live.json" <<'NODE'
+const fs = require("fs");
+const report = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+if (report.numFailedTests !== 0 || report.numPendingTests !== 0 || report.numPassedTests !== 9) {
+  console.error("Expected Stage 3D exact result: 9 passed, 0 failed, 0 skipped.");
+  console.error(JSON.stringify({
+    passed: report.numPassedTests,
+    failed: report.numFailedTests,
+    skipped: report.numPendingTests,
+  }));
+  process.exit(1);
+}
+NODE
 
 commit_sha="$(git rev-parse HEAD)"
 printf '{"commit":"%s"}\n' "$commit_sha" >"$LIVE_META"

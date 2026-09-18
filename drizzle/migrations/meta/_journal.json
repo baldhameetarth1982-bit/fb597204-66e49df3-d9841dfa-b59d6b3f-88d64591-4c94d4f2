@@ -50,6 +50,13 @@
       "when": 1789692510048,
       "tag": "0006_close_stage3d_signs_and_admin_scope",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789692543283,
+      "tag": "0007_correct_resident_finance_signed_movements",
+      "breakpoints": true
     }
   ]
 }

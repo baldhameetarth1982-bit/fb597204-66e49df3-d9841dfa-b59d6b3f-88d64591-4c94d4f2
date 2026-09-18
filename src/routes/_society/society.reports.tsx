@@ -16,7 +16,14 @@ import { useSocietyId } from "@/hooks/useSocietyId";
 import { getFinanceOverview, getReceivablesAgeing } from "@/lib/finance-stage3d.functions";
 
 export const Route = createFileRoute("/_society/society/reports")({
-  head: () => ({ meta: [{ title: "Reports — SociyoHub" }] }),
+  head: () => ({ meta: [
+    { title: "Financial Reports — SociyoHub" },
+    { name: "description", content: "Review canonical society financial totals and receivables ageing." },
+    { property: "og:title", content: "Financial Reports — SociyoHub" },
+    { property: "og:description", content: "Canonical society financial totals and receivables ageing." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: () => <FeatureGate feature="advanced_reports"><ReportsPage /></FeatureGate>,
 });
 

@@ -21,7 +21,14 @@ import { createFinanceExpense, deactivateFinanceVendor, expenseRowSchema, listFi
 import type { z } from "zod";
 import { toast } from "sonner";
 
-export const Route=createFileRoute("/_society/society/expenses")({head:()=>({meta:[{title:"Expenses — SociyoHub"}]}),component:()=> <FeatureGate feature="expenses"><ExpensesPage/></FeatureGate>});
+export const Route=createFileRoute("/_society/society/expenses")({head:()=>({meta:[
+ {title:"Expenses — SociyoHub"},
+ {name:"description",content:"Post and reverse society expenses with immutable financial history."},
+ {property:"og:title",content:"Expenses — SociyoHub"},
+ {property:"og:description",content:"Controlled society expenses with immutable financial history."},
+ {property:"og:type",content:"website"},
+ {name:"twitter:card",content:"summary"},
+]}),component:()=> <FeatureGate feature="expenses"><ExpensesPage/></FeatureGate>});
 const INR=new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:2});
 const categories=["cleaning","security","electricity","water","repair","salary","other"] as const;
 type Expense=z.infer<typeof expenseRowSchema>;

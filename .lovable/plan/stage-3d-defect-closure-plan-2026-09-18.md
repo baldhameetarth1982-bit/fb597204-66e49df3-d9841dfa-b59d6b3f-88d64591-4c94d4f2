@@ -32,4 +32,17 @@
 
 - Never access or identify the protected production society; use synthetic fixtures only.
 - Do not begin Stage 3E or touch online payments, Razorpay, UPI/cards/wallets, Smart QR, AI, reconciliation, exports, or period-close work.
-- Use additive migrations only; do not weaken authentication, tenant isolation, RLS, grants, plan checks, canonical posting, or audit guarantees.
+- Use additive migrations only; do not weaken authentication, tenant isolation, RLS, grants, plan checks, canonical posting, or audit guarantees.    **Do not modify Stage 3C behavior or its 93-case matrix.** The exact gate remains **93 passed / 0 failed / 0 skipped / 0 setup failures / 0 teardown failures**.
+- **Do not weaken tests** to accommodate implementation problems. If a behavioral test exposes a defect, fix the implementation.
+- For payment-state tests, verify the **canonical DB state**, not merely what the UI displays.
+- For concurrency/idempotency, prove that concurrent/replayed requests produce **one canonical financial effect**, not merely one successful HTTP/RPC response.
+- Resident authorization must be derived server-side from `auth.uid()` + canonical active membership/relationship. **No client-provided society/resident ID may become an authorization boundary.**
+- Financial failures must remain **fail-closed**. Never turn RPC errors, missing rows, authorization failures, or unavailable data into legitimate-looking ₹0/empty success.
+- Any audit event for a security-sensitive financial transition must use the canonical `audit_log` schema and must not silently disappear on a successful state-changing operation.
+- Keep financial history immutable; corrections/reversals must remain traceable.
+- **Do not touch** `src/lib/utils.ts` merely because of the stale line-8 diagnostic.
+- Do not use the protected society even for verification.
+- Do not begin Stage 3E, even if Stage 3D appears ready. We will explicitly advance stages with the next prompt.
+- If runtime/visual infrastructure is unavailable, report **implemented_unverified/blocked** honestly rather than manufacturing evidence.
+
+One important point: **the metadata improvement is fine only if it is genuinely part of the affected finance routes and does not become scope creep.** Do not spend a prompt polishing unrelated SEO/metadata work here.

@@ -271,7 +271,7 @@ Mandatory before completion:
 
 
 ## 3D — Ledger, expenses, transparency and reports
-- Status: **IMPLEMENTED_UNVERIFIED**; closure awaits the nine-case disposable runtime suite and authenticated visual/accessibility verification.
+- Status: **IMPLEMENTED_UNVERIFIED**; closure awaits the eleven-case disposable runtime suite and authenticated visual/accessibility verification.
 - Expenses, vendors, cash book, bank book and journal.
 - Balanced accounting rules.
 - Income/expense, ageing and period reports.

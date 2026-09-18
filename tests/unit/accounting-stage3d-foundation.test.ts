@@ -41,14 +41,41 @@ describe("Stage 3D canonical accounting foundation", () => {
       expect(source).not.toMatch(/\.from\(["'](?:payments|bills|expenses|ledger_entries)["']\)/);
       expect(source).not.toMatch(/\.delete\(\)/);
     }
+    for (const file of ["app.trust.tsx", "app.ledger.tsx"]) {
+      const source = readFileSync(join(process.cwd(), `src/routes/_resident/${file}`), "utf8");
+      expect(source).not.toMatch(/\.from\(["']ledger_entries["']\)/);
+    }
   });
 
   it("uses only the canonical server RPC boundary", () => {
     const adapter = readFileSync(join(process.cwd(), "src/lib/finance-stage3d.functions.ts"), "utf8");
     expect(adapter).toMatch(/requireSupabaseAuth/);
     expect(adapter).toMatch(/\.strict\(\)/);
-    for (const rpc of ["get_finance_overview", "list_finance_book", "get_receivables_ageing", "create_finance_expense", "reverse_finance_expense"])
+    for (const rpc of ["get_finance_overview", "get_resident_finance_transparency", "list_finance_book", "get_receivables_ageing", "create_finance_expense", "reverse_finance_expense"])
       expect(adapter).toContain(`"${rpc}"`);
+  });
+
+  it("serves resident transparency from a plan-gated, privacy-tiered journal projection", () => {
+    const migration = readFileSync(join(migrationsDir, "20260918001600_secure_resident_finance_transparency.sql"), "utf8");
+    expect(migration).toMatch(/resolve_financial_visibility\(_society_id\)/);
+    expect(migration).toMatch(/_finance_plan_enabled\(_society_id\)/);
+    expect(migration).toMatch(/finance_journal_entries/);
+    expect(migration).not.toMatch(/ledger_entries/);
+    expect(migration).toMatch(/v_visibility IN \('admin', 'detailed'\).*transactions\.rows/);
+    expect(migration).toMatch(/REVOKE ALL ON FUNCTION public\.get_resident_finance_transparency[^;]+FROM PUBLIC, anon/i);
+    const hardening = readFileSync(join(migrationsDir, "20260918004000_harden_finance_visibility_and_ageing_scope.sql"), "utf8");
+    expect(hardening).toContain("fr.is_active = true");
+    expect(hardening).toContain("f.society_id = _society_id");
+    expect(hardening).toContain("p.society_id = b.society_id");
+    expect(hardening).toContain("b.finalized_at::date");
+  });
+
+  it("does not render finance hero failures as genuine zero values", () => {
+    for (const file of ["society.accounts.tsx", "society.reports.tsx"]) {
+      const source = route(file);
+      expect(source).not.toMatch(/INR\.format\(o\?\.[a-z_]+\s*\?\?\s*0\)/);
+      expect(source).toContain("Retry");
+    }
   });
 
   it("removes block administrators from society-wide admin authorization", () => {

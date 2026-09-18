@@ -44,8 +44,26 @@ export const bookRowSchema = z.object({
 
 export const ageingRowSchema = z.object({ bucket: z.string(), amount: z.coerce.number(), bill_count: z.coerce.number().int() }).strict();
 
+export const residentFinanceTransparencySchema = z.object({
+  visibility: z.enum(["admin", "summary", "detailed"]),
+  from: date,
+  to: date,
+  income: z.coerce.number(),
+  expense: z.coerce.number(),
+  net_movement: z.coerce.number(),
+  categories: z.array(z.object({ category: z.string(), amount: z.coerce.number() }).strict()),
+  transactions: z.array(z.object({
+    transaction_date: date,
+    description: z.string(),
+    source_type: z.string(),
+    kind: z.enum(["income", "expense"]),
+    amount: z.coerce.number(),
+  }).strict()),
+}).strict();
+
 const workspaceInput = z.object({ societyId: uuid, resource: z.enum(["accounts", "vendors", "expenses", "journal"]), ...pagination });
 const overviewInput = z.object({ societyId: uuid, from: date, to: date });
+const residentTransparencyInput = overviewInput.extend({ limit: z.number().int().min(1).max(50).default(20) });
 const bookInput = z.object({ societyId: uuid, book: z.enum(["cash", "bank"]), from: date, to: date, ...pagination });
 const expenseInput = z.object({ societyId: uuid, vendorId: uuid.nullable().optional(), category: z.enum(["cleaning", "security", "electricity", "repair", "water", "salary", "other"]), amount: z.number().positive().max(100_000_000), expenseDate: date, paymentMethod: z.enum(["cash", "bank_transfer"]), description: z.string().trim().max(500).optional(), requestId: uuid });
 const reverseInput = z.object({ expenseId: uuid, reason: z.string().trim().min(5).max(500) });
@@ -85,6 +103,10 @@ async function rpc(context: FinanceContext, name: string, args: Record<string, u
 
 export const getFinanceOverview = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(overviewInput).handler(async ({ data, context }) => {
   return financeOverviewSchema.parse(await rpc(context, "get_finance_overview", { _society_id: data.societyId, _from: data.from, _to: data.to }));
+});
+
+export const getResidentFinanceTransparency = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(residentTransparencyInput).handler(async ({ data, context }) => {
+  return residentFinanceTransparencySchema.parse(await rpc(context, "get_resident_finance_transparency", { _society_id: data.societyId, _from: data.from, _to: data.to, _limit: data.limit }));
 });
 
 export const listFinanceWorkspace = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(workspaceInput).handler(async ({ data, context }) => {

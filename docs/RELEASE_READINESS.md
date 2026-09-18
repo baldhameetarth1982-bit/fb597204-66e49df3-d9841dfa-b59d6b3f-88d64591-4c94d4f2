@@ -19,7 +19,7 @@
 - Source/CI readiness: **READY**.
 - Observed live runtime closure: **NOT VERIFIED**.
 - Stage 3C: **BLOCKED** until a disposable run proves 93 passed, 0 failed, 0 skipped, 0 setup failures and 0 teardown failures.
-- Stage 3D implementation remains **implemented_unverified**: exact replay, source-matched reversals, fail-closed income methods, durable backfill requests, and cumulative balances are implemented. An eight-case disposable behavioral suite and fail-closed CI/local wiring now exist, but the sandbox has no Docker/Supabase CLI, so fresh migration/runtime and visual evidence remain outstanding.
+- Stage 3D implementation remains **implemented_unverified**: exact replay, source-matched reversals, fail-closed income methods, durable backfill requests, cumulative balances, and plan/privacy-gated resident transparency from canonical journals are implemented. A nine-case disposable behavioral suite and fail-closed CI/local wiring now exist, but this sandbox has no Docker/Supabase CLI or authenticated browser fixture, so fresh migration/runtime and visual evidence remain outstanding.
 - Stage 3D means **Ledger, expenses, transparency and reports**; Smart QR remains Stage 10. This does not close or weaken the independent Stage 3C runtime gate.
 
 ## State Vocabulary

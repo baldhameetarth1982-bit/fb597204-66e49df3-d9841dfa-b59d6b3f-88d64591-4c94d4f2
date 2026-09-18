@@ -221,6 +221,37 @@ live("Stage 3D canonical accounting behavior", () => {
     expect(ageing.reduce((sum: number, row: any) => sum + asNumber(row.amount), 0)).toBeGreaterThan(0);
   });
 
+  it("enforces resident transparency tiers and society isolation from the canonical journal", async () => {
+    const period = { _from: "2026-01-01", _to: "2026-12-31", _limit: 20 };
+    const locked = await f.users.activeResident.client.rpc("get_resident_finance_transparency", { _society_id: f.societyA, ...period });
+    expect(locked.error?.message).toContain("not_authorized");
+
+    const setting = await f.admin.from("society_settings").upsert({ society_id: f.societyA, privacy_finances: "resident_summary" }, { onConflict: "society_id" });
+    if (setting.error) throw setting.error;
+    const summary = await rpc(f.users.activeResident.client, "get_resident_finance_transparency", { _society_id: f.societyA, ...period });
+    expect(summary.visibility).toBe("summary");
+    expect(summary.transactions).toEqual([]);
+    expect(asNumber(summary.income)).toBeGreaterThan(0);
+
+    const movedOut = await f.users.movedOutResident.client.rpc("get_resident_finance_transparency", { _society_id: f.societyA, ...period });
+    expect(movedOut.error?.message).toContain("not_authorized");
+
+    const detailedSetting = await f.admin.from("society_settings").update({ privacy_finances: "resident_detailed" }).eq("society_id", f.societyA);
+    if (detailedSetting.error) throw detailedSetting.error;
+    const detailed = await rpc(f.users.activeResident.client, "get_resident_finance_transparency", { _society_id: f.societyA, ...period });
+    expect(detailed.visibility).toBe("detailed");
+    expect(detailed.transactions.length).toBeGreaterThan(0);
+    expect(detailed.transactions[0]).not.toHaveProperty("id");
+    expect(detailed.transactions[0]).not.toHaveProperty("reference");
+    expect(detailed.transactions.some((entry: any) => entry.source_type === "expense" && asNumber(entry.amount) < 0)).toBe(true);
+    expect(detailed.transactions.some((entry: any) => entry.source_type === "expense_reversal" && asNumber(entry.amount) > 0)).toBe(true);
+
+    const crossTenant = await f.users.activeResident.client.rpc("get_resident_finance_transparency", { _society_id: f.societyB, ...period });
+    expect(crossTenant.error).toBeTruthy();
+    const blockAdmin = await f.users.blockAdmin.client.rpc("get_resident_finance_transparency", { _society_id: f.societyA, ...period });
+    expect(blockAdmin.error).toBeTruthy();
+  });
+
   it("keeps posted journals immutable and emits canonical audit rows", async () => {
     const mutateEntry = await f.admin.from("finance_journal_entries").update({ description: "Tampered" }).eq("id", paymentJournalId);
     expect(mutateEntry.error?.message).toContain("posted_history_immutable");

@@ -212,8 +212,8 @@ jobs:
           node - <<'NODE'
           const fs = require("fs");
           const r = JSON.parse(fs.readFileSync("reports/stage3d-live.json", "utf8"));
-          if (r.numFailedTests !== 0 || r.numPendingTests !== 0 || r.numPassedTests !== 8) {
-            console.error("Expected Stage 3D exact result: 8 passed, 0 failed, 0 skipped.");
+          if (r.numFailedTests !== 0 || r.numPendingTests !== 0 || r.numPassedTests !== 9) {
+            console.error("Expected Stage 3D exact result: 9 passed, 0 failed, 0 skipped.");
             console.error(JSON.stringify({passed:r.numPassedTests, failed:r.numFailedTests, skipped:r.numPendingTests}));
             process.exit(1);
           }

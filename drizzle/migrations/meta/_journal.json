@@ -15,6 +15,34 @@
       "when": 1789689188731,
       "tag": "0001_preserve_stage3c_when_stage3d_not_entitled",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789690609954,
+      "tag": "0002_secure_resident_finance_transparency",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789690861737,
+      "tag": "0003_correct_resident_finance_reversal_signs",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789690940556,
+      "tag": "0004_close_resident_finance_plan_oracle",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789691028130,
+      "tag": "0005_harden_finance_visibility_and_ageing_scope",
+      "breakpoints": true
     }
   ]
 }

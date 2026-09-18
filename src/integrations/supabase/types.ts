@@ -4759,6 +4759,15 @@ export type Database = {
           vacant_units: number
         }[]
       }
+      get_resident_finance_transparency: {
+        Args: {
+          _from: string
+          _limit?: number
+          _society_id: string
+          _to: string
+        }
+        Returns: Json
+      }
       get_resident_payments_v1: {
         Args: { _limit: number; _offset: number }
         Returns: Json[]

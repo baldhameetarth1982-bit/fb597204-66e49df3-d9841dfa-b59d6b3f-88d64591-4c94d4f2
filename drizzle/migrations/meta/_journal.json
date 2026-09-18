@@ -15,6 +15,13 @@
       "when": 1789689188731,
       "tag": "0001_preserve_stage3c_when_stage3d_not_entitled",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789690609954,
+      "tag": "0002_secure_resident_finance_transparency",
+      "breakpoints": true
     }
   ]
 }

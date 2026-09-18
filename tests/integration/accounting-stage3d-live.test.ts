@@ -233,6 +233,9 @@ live("Stage 3D canonical accounting behavior", () => {
     expect(summary.transactions).toEqual([]);
     expect(asNumber(summary.income)).toBeGreaterThan(0);
 
+    const movedOut = await f.users.movedOutResident.client.rpc("get_resident_finance_transparency", { _society_id: f.societyA, ...period });
+    expect(movedOut.error?.message).toContain("not_authorized");
+
     const detailedSetting = await f.admin.from("society_settings").update({ privacy_finances: "resident_detailed" }).eq("society_id", f.societyA);
     if (detailedSetting.error) throw detailedSetting.error;
     const detailed = await rpc(f.users.activeResident.client, "get_resident_finance_transparency", { _society_id: f.societyA, ...period });

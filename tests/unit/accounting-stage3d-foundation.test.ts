@@ -63,6 +63,11 @@ describe("Stage 3D canonical accounting foundation", () => {
     expect(migration).not.toMatch(/ledger_entries/);
     expect(migration).toMatch(/v_visibility IN \('admin', 'detailed'\).*transactions\.rows/);
     expect(migration).toMatch(/REVOKE ALL ON FUNCTION public\.get_resident_finance_transparency[^;]+FROM PUBLIC, anon/i);
+    const hardening = readFileSync(join(migrationsDir, "20260918004000_harden_finance_visibility_and_ageing_scope.sql"), "utf8");
+    expect(hardening).toContain("fr.is_active = true");
+    expect(hardening).toContain("f.society_id = _society_id");
+    expect(hardening).toContain("p.society_id = b.society_id");
+    expect(hardening).toContain("b.finalized_at::date");
   });
 
   it("does not render finance hero failures as genuine zero values", () => {

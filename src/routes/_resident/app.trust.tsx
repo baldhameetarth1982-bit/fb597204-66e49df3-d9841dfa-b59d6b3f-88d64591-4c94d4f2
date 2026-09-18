@@ -9,7 +9,14 @@ import { useSocietyId } from "@/hooks/useSocietyId";
 import { getResidentFinanceTransparency } from "@/lib/finance-stage3d.functions";
 
 export const Route = createFileRoute("/_resident/app/trust")({
-  head: () => ({ meta: [{ title: "Financial Trust — SociyoHub" }] }),
+  head: () => ({ meta: [
+    { title: "Financial Trust — SociyoHub" },
+    { name: "description", content: "View privacy-controlled society income, expenses, and recent canonical transactions." },
+    { property: "og:title", content: "Financial Trust — SociyoHub" },
+    { property: "og:description", content: "Privacy-controlled society finances sourced from the canonical journal." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: TrustScreen,
 });
 

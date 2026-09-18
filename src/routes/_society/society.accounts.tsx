@@ -19,7 +19,14 @@ import type { z } from "zod";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_society/society/accounts")({
-  head: () => ({ meta: [{ title: "Accounts Center — SociyoHub" }] }),
+  head: () => ({ meta: [
+    { title: "Accounts Center — SociyoHub" },
+    { name: "description", content: "Review canonical society balances, cash book, and bank book." },
+    { property: "og:title", content: "Accounts Center — SociyoHub" },
+    { property: "og:description", content: "Canonical society balances, cash book, and bank book." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: () => <FeatureGate feature="accounts_center"><AccountsPage /></FeatureGate>,
 });
 

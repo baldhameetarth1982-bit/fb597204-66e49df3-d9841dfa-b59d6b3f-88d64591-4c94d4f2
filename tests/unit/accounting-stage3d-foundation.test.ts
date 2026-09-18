@@ -68,6 +68,17 @@ describe("Stage 3D canonical accounting foundation", () => {
     expect(hardening).toContain("f.society_id = _society_id");
     expect(hardening).toContain("p.society_id = b.society_id");
     expect(hardening).toContain("b.finalized_at::date");
+    const signedMovements = readFileSync(join(process.cwd(), "drizzle/migrations/0007_correct_resident_finance_signed_movements.sql"), "utf8");
+    expect(signedMovements).toMatch(/sum\(credit - debit\) FILTER \(WHERE account_type = 'expense'\)/);
+    expect(signedMovements).toContain("expense is negative, and compensating reversals have the opposite sign");
+  });
+
+  it("ends with a strict society-admin helper that excludes block administrators", () => {
+    const closure = readFileSync(join(process.cwd(), "drizzle/migrations/0006_close_stage3d_signs_and_admin_scope.sql"), "utf8");
+    const definition = closure.slice(0, closure.indexOf("$$;", closure.indexOf("AS $$")) + 3);
+    expect(definition).toContain("role = 'society_admin'::public.app_role");
+    expect(definition).not.toContain("block_admin");
+    expect(closure).toContain("Block administrators are intentionally excluded");
   });
 
   it("does not render finance hero failures as genuine zero values", () => {

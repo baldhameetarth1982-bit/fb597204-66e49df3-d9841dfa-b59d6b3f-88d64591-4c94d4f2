@@ -132,8 +132,8 @@ fi
 node - "${REPORT_DIR}/stage3d-live.json" <<'NODE'
 const fs = require("fs");
 const report = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
-if (report.numFailedTests !== 0 || report.numPendingTests !== 0 || report.numPassedTests !== 9) {
-  console.error("Expected Stage 3D exact result: 9 passed, 0 failed, 0 skipped.");
+if (report.numFailedTests !== 0 || report.numPendingTests !== 0 || report.numPassedTests !== 11) {
+  console.error("Expected Stage 3D exact result: 11 passed, 0 failed, 0 skipped.");
   console.error(JSON.stringify({
     passed: report.numPassedTests,
     failed: report.numFailedTests,

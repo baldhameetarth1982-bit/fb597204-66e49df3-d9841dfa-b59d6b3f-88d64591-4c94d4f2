@@ -15,7 +15,14 @@ import { useSocietyId } from "@/hooks/useSocietyId";
 import { journalRowSchema, listFinanceWorkspace } from "@/lib/finance-stage3d.functions";
 import type { z } from "zod";
 
-export const Route = createFileRoute("/_society/society/ledger")({ head:()=>({meta:[{title:"Journal — SociyoHub"}]}), component:()=> <FeatureGate feature="ledger"><JournalPage/></FeatureGate> });
+export const Route = createFileRoute("/_society/society/ledger")({ head:()=>({meta:[
+  {title:"General Journal — SociyoHub"},
+  {name:"description",content:"Review immutable, balanced society journal entries."},
+  {property:"og:title",content:"General Journal — SociyoHub"},
+  {property:"og:description",content:"Immutable, balanced society journal entries."},
+  {property:"og:type",content:"website"},
+  {name:"twitter:card",content:"summary"},
+]}), component:()=> <FeatureGate feature="ledger"><JournalPage/></FeatureGate> });
 const INR = new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:2});
 type JournalRow=z.infer<typeof journalRowSchema>;
 

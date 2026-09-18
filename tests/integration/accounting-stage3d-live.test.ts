@@ -4,7 +4,8 @@
  * The surrounding runner owns teardown by destroying the whole local stack.
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { setupStage3CFixture, type Stage3CFixture } from "../helpers/stage3c-runtime-fixtures";
+import { createClient } from "@supabase/supabase-js";
+import { requireStage3CEnv, setupStage3CFixture, type Stage3CFixture } from "../helpers/stage3c-runtime-fixtures";
 
 const enabled = process.env.ALLOW_SOCIOHUB_LIVE_STAGE3C === "true";
 const live = enabled ? describe : describe.skip;
@@ -250,6 +251,48 @@ live("Stage 3D canonical accounting behavior", () => {
     expect(crossTenant.error).toBeTruthy();
     const blockAdmin = await f.users.blockAdmin.client.rpc("get_resident_finance_transparency", { _society_id: f.societyA, ...period });
     expect(blockAdmin.error).toBeTruthy();
+  });
+
+  it("denies anonymous callers and checks authorization before plan entitlement", async () => {
+    const env = requireStage3CEnv();
+    const anonymous = createClient(env.url, env.publishableKey, { auth: { persistSession: false } });
+    const period = { _society_id: f.societyA, _from: "2026-01-01", _to: "2026-12-31", _limit: 20 };
+    const anonymousResult = await anonymous.rpc("get_resident_finance_transparency", period);
+    expect(anonymousResult.error).toBeTruthy();
+
+    const disabled = await f.admin.from("societies").update({ plan_status: "inactive" }).eq("id", f.societyA);
+    if (disabled.error) throw disabled.error;
+    try {
+      const unrelated = await f.users.unrelatedResident.client.rpc("get_resident_finance_transparency", period);
+      expect(unrelated.error?.message).toContain("not_authorized");
+      const authorized = await f.users.activeResident.client.rpc("get_resident_finance_transparency", period);
+      expect(authorized.error?.message).toContain("plan_required");
+    } finally {
+      const restored = await f.admin.from("societies").update({ plan_status: "active" }).eq("id", f.societyA);
+      if (restored.error) throw restored.error;
+    }
+  });
+
+  it("posts only verified payment activity and compensates reversed payments", async () => {
+    const sourceIds = [
+      f.scenarios.pendingAdminCashPaymentId,
+      f.scenarios.rejectedPaymentId,
+      f.scenarios.verifiedPaymentId,
+      f.scenarios.reversedPaymentId,
+    ];
+    const entries = await f.admin
+      .from("finance_journal_entries")
+      .select("source_id,source_type,source_action,reversal_of")
+      .eq("society_id", f.societyA)
+      .in("source_id", sourceIds);
+    expect(entries.error).toBeNull();
+    expect(entries.data?.some(row => row.source_id === f.scenarios.pendingAdminCashPaymentId)).toBe(false);
+    expect(entries.data?.some(row => row.source_id === f.scenarios.rejectedPaymentId)).toBe(false);
+    expect(entries.data?.filter(row => row.source_id === f.scenarios.verifiedPaymentId)).toHaveLength(1);
+    const reversed = entries.data?.filter(row => row.source_id === f.scenarios.reversedPaymentId) ?? [];
+    expect(reversed).toHaveLength(2);
+    expect(reversed.some(row => row.source_type === "payment" && row.source_action === "post" && row.reversal_of === null)).toBe(true);
+    expect(reversed.some(row => row.source_type === "payment_reversal" && row.source_action === "reverse" && row.reversal_of !== null)).toBe(true);
   });
 
   it("keeps posted journals immutable and emits canonical audit rows", async () => {

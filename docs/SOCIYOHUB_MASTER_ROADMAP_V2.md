@@ -271,12 +271,14 @@ Mandatory before completion:
 
 
 ## 3D — Ledger, expenses, transparency and reports
+- Status: **IMPLEMENTED_UNVERIFIED**; closure awaits the nine-case disposable runtime suite and authenticated visual/accessibility verification.
 - Expenses, vendors, cash book, bank book and journal.
 - Balanced accounting rules.
 - Income/expense, ageing and period reports.
 - Resident summary/detailed transparency settings.
 
 ## 3E — Accounting correctness and closure
+- Status: **NOT_STARTED**; Stage 3D evidence gate has not closed.
 - Period close/reopen controls.
 - Reconciliation tests, large-society performance and exports.
 - Full financial security and UI closure.

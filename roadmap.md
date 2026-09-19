@@ -16,11 +16,11 @@
 - [x] Preserve the Stage 3C 93-case source contract and independent workflow opt-in.
 - [x] Apply the terminal audit lock through the managed database migration path (`0011`) without rewriting history.
 - [x] Restrict direct audit-log append access to the canonical server-side role through managed migration `0012`.
-- [ ] Reconcile the managed production migration track with the CLI fresh-reset `supabase/migrations/` replay track; production has managed `0011`/`0012`, while `supabase db reset --no-seed` does not yet replay that final audit contract.
+- [x] Reconcile the managed production migration track with the CLI fresh-reset `supabase/migrations/` replay track through one forward-only equivalent security migration.
 - [x] Remove immutable audit history from fixture cleanup obligations and reject direct or obvious indirect audit-cleanup bypasses.
 - [x] Split Stage 3C and Stage 3D CI into independent disposable database jobs.
 - [x] Bind exact Stage 3D runtime reports to the expected full commit SHA.
 - [x] Require callers to supply the expected SHA; remove stale generated reports and run fixture safety checks in both local and CI preflights.
-- [ ] Add the smallest forward-only fresh-reset migration that converges the final Stage 3D authorization and audit-security state.
-- [ ] Add positive cross-track security assertions and rerun the complete Prompt #45 verification order.
+- [x] Add the smallest forward-only fresh-reset migration that converges the final Stage 3D authorization and audit-security state.
+- [x] Add positive cross-track security assertions and rerun all locally available Prompt #45 verification gates.
 - [ ] Record only observed fresh-reset/runtime evidence and keep Stage 3E unstarted.

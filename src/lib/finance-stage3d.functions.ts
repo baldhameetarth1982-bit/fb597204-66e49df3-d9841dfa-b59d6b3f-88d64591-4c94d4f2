@@ -87,6 +87,8 @@ function safeFinanceError(error: unknown): Error {
   if (normalized.includes("not_authorized") || normalized.includes("permission denied")) return new Error("You are not allowed to view or manage these finances.");
   if (normalized.includes("invalid_amount")) return new Error("Enter a valid amount with at most two decimal places.");
   if (normalized.includes("invalid_date") || normalized.includes("invalid_period")) return new Error("Choose a valid date range.");
+  if (normalized.includes("account_seed_conflict")) return new Error("The existing chart of accounts needs support before it can be used.");
+  if (normalized.includes("account_unavailable")) return new Error("Accounts are not initialized yet.");
   if (normalized.includes("idempotency_conflict")) return new Error("This request conflicts with an earlier expense. Refresh and try again.");
   if (normalized.includes("invalid_transition")) return new Error("This record cannot be changed from its current state.");
   if (normalized.includes("reason_required")) return new Error("Enter a reversal reason of at least five characters.");

@@ -83,12 +83,14 @@ describe("audit-log contract recovery", () => {
     expect(terminal).toMatch(/CREATE TRIGGER audit_log_immutable/);
     expect(terminal).toMatch(/BEFORE UPDATE OR DELETE ON public\.audit_log/);
     expect(terminal).toMatch(/RAISE EXCEPTION 'audit_log_immutable'/);
-    const cleanupBoundary = readFileSync(
-      join(process.cwd(), "drizzle/migrations/0009_allow_service_role_audit_fixture_cleanup.sql"),
+    const finalLockdown = readFileSync(
+      join(process.cwd(), "drizzle/migrations/0010_restore_universal_audit_log_immutability.sql"),
       "utf8",
     );
-    expect(cleanupBoundary).toContain("auth.role() = 'service_role'");
-    expect(cleanupBoundary).toMatch(/REVOKE ALL ON FUNCTION public\._protect_audit_log_history\(\) FROM PUBLIC, anon, authenticated/);
+    expect(finalLockdown).not.toContain("auth.role()");
+    expect(finalLockdown).toMatch(/REVOKE ALL ON FUNCTION public\._protect_audit_log_history\(\) FROM PUBLIC, anon, authenticated, service_role/);
+    expect(finalLockdown).toMatch(/REVOKE UPDATE, DELETE ON TABLE public\.audit_log FROM PUBLIC, anon, authenticated, service_role/);
+    expect(finalLockdown).toMatch(/GRANT SELECT, INSERT ON TABLE public\.audit_log TO service_role/);
   });
 });
 

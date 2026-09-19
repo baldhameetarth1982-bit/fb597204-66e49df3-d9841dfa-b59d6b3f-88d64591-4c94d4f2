@@ -78,6 +78,13 @@
       "when": 1789781283922,
       "tag": "0010_restore_universal_audit_log_immutability",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1789783630421,
+      "tag": "0011_restore_universal_audit_log_immutability",
+      "breakpoints": true
     }
   ]
 }

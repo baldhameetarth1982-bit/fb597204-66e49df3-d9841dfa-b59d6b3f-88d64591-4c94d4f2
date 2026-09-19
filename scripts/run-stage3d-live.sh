@@ -29,13 +29,18 @@ fi
 mkdir -p reports
 report="reports/stage3d-live.json"
 meta="reports/stage3d-live.meta.json"
-expected_sha="${EXPECTED_COMMIT_SHA:-$(git rev-parse HEAD)}"
+actual_sha="$(git rev-parse HEAD)"
+expected_sha="${EXPECTED_COMMIT_SHA:-$actual_sha}"
 if ! printf '%s' "$expected_sha" | grep -Eq '^[0-9a-fA-F]{40}$'; then
   printf '%s\n' "Stage 3D requires a canonical full expected commit SHA." >&2
   exit 1
 fi
+if [ "${actual_sha,,}" != "${expected_sha,,}" ]; then
+  printf '%s\n' "Stage 3D checked-out commit does not match the expected commit." >&2
+  exit 1
+fi
 rm -f "$report" "$meta"
-printf '{"commit":"%s"}\n' "$expected_sha" > "$meta"
+printf '{"commit":"%s"}\n' "$actual_sha" > "$meta"
 live_status=0
 bunx vitest run tests/integration/accounting-stage3d-live.test.ts \
   --reporter=default --reporter=json --outputFile="$report" || live_status=$?

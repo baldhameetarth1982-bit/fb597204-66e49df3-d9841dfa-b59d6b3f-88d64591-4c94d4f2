@@ -29,6 +29,19 @@ fi
 mkdir -p reports
 report="reports/stage3d-live.json"
 rm -f "$report"
+live_status=0
 bunx vitest run tests/integration/accounting-stage3d-live.test.ts \
-  --reporter=default --reporter=json --outputFile="$report"
-bun scripts/verify-stage3d-live-report.ts "$report"
+  --reporter=default --reporter=json --outputFile="$report" || live_status=$?
+
+report_status=0
+if [ ! -s "$report" ]; then
+  printf '%s\n' "Stage 3D live report is missing or empty." >&2
+  report_status=1
+else
+  bun scripts/verify-stage3d-live-report.ts "$report" || report_status=$?
+fi
+
+if [ "$live_status" -ne 0 ]; then
+  exit "$live_status"
+fi
+exit "$report_status"

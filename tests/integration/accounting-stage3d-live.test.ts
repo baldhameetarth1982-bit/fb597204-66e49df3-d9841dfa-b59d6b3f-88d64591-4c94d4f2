@@ -5,8 +5,12 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createClient } from "@supabase/supabase-js";
-import { requireStage3DEnv, setupStage3CFixture, type Stage3CFixture } from "../helpers/stage3c-runtime-fixtures";
-import { requireStage3RuntimeEnv, type Stage3RuntimeEnv } from "../helpers/stage3-runtime-env";
+import {
+  requireStage3DEnv,
+  setupStage3CFixture,
+  type Stage3CFixture,
+} from "../helpers/stage3c-runtime-fixtures";
+import type { Stage3RuntimeEnv } from "../helpers/stage3-runtime-env";
 
 const enabled = process.env.ALLOW_SOCIOHUB_LIVE_STAGE3D === "true";
 const live = enabled ? describe : describe.skip;
@@ -32,7 +36,7 @@ live("Stage 3D canonical accounting behavior", () => {
   let env: Stage3RuntimeEnv;
 
   beforeAll(async () => {
-    env = requireStage3RuntimeEnv("ALLOW_SOCIOHUB_LIVE_STAGE3D", "Stage 3D");
+    env = requireStage3DEnv();
     f = await setupStage3CFixture(env);
     const { error } = await f.admin
       .from("societies")
@@ -307,21 +311,19 @@ live("Stage 3D canonical accounting behavior", () => {
     expect(audits.error).toBeNull();
     expect(audits.data!.some(x => x.target_table === "finance_journal_entries" && x.target_id === paymentJournalId)).toBe(true);
     expect(audits.data!.some(x => x.target_table === "expenses" && x.target_id === expenseId)).toBe(true);
-    const auditId = audits.data!.find(x => x.target_table === "finance_journal_entries")?.id;
-    expect(auditId).toBeTruthy();
-    if (!auditId) throw new Error("Expected a canonical audit row for immutability verification.");
-    const mutateAudit = await f.users.adminA1.client.from("audit_log").update({ action: "tampered" }).eq("id", auditId);
+    const originalAudit = audits.data?.find(x => x.target_table === "finance_journal_entries");
+    if (!originalAudit?.id) throw new Error("Expected a canonical audit row for immutability verification.");
+    const mutateAudit = await f.users.adminA1.client.from("audit_log").update({ action: "tampered" }).eq("id", originalAudit.id);
     expect(mutateAudit.error).toBeTruthy();
-    const deleteAudit = await f.users.adminA1.client.from("audit_log").delete().eq("id", auditId);
+    const deleteAudit = await f.users.adminA1.client.from("audit_log").delete().eq("id", originalAudit.id);
     expect(deleteAudit.error).toBeTruthy();
-    const privilegedMutation = await f.admin.from("audit_log").update({ action: "privileged_tamper" }).eq("id", auditId);
+    const privilegedMutation = await f.admin.from("audit_log").update({ action: "privileged_tamper" }).eq("id", originalAudit.id);
     expect(privilegedMutation.error).toBeTruthy();
-    const privilegedDelete = await f.admin.from("audit_log").delete().eq("id", auditId);
+    const privilegedDelete = await f.admin.from("audit_log").delete().eq("id", originalAudit.id);
     expect(privilegedDelete.error).toBeTruthy();
-    const preservedAudit = await f.admin.from("audit_log").select("action").eq("id", auditId).single();
+    const preservedAudit = await f.admin.from("audit_log").select("id,action,target_table,target_id,metadata").eq("id", originalAudit.id).single();
     expect(preservedAudit.error).toBeNull();
-    expect(preservedAudit.data!.action).not.toBe("tampered");
-    expect(preservedAudit.data!.action).not.toBe("privileged_tamper");
+    expect(preservedAudit.data).toEqual(originalAudit);
   });
 
   it("makes backfill requests durable and idempotent", async () => {

@@ -6,7 +6,7 @@ const migrationsDir = join(process.cwd(), "supabase/migrations");
 const chain = readdirSync(migrationsDir).filter(f => f.endsWith(".sql")).sort().map(f => readFileSync(join(migrationsDir, f), "utf8")).join("\n");
 const route = (name: string) => readFileSync(join(process.cwd(), `src/routes/_society/${name}`), "utf8");
 const finalClosure = readFileSync(join(process.cwd(), "drizzle/migrations/0008_finalize_stage3d_resident_authorization_and_audit_integrity.sql"), "utf8");
-const auditCleanupBoundary = readFileSync(join(process.cwd(), "drizzle/migrations/0009_allow_service_role_audit_fixture_cleanup.sql"), "utf8");
+const auditLockdown = readFileSync(join(process.cwd(), "drizzle/migrations/0010_restore_universal_audit_log_immutability.sql"), "utf8");
 
 describe("Stage 3D canonical accounting foundation", () => {
   it("creates society-scoped accounts and immutable balanced journals", () => {
@@ -125,7 +125,9 @@ describe("Stage 3D canonical accounting foundation", () => {
     expect(finalClosure).toMatch(/BEFORE UPDATE OR DELETE ON public\.audit_log/);
     expect(finalClosure).toContain("audit_log_immutable");
     expect(finalClosure).toMatch(/REVOKE ALL ON FUNCTION public\._protect_audit_log_history\(\) FROM PUBLIC, anon, authenticated/);
-    expect(auditCleanupBoundary).toContain("auth.role() = 'service_role'");
-    expect(auditCleanupBoundary).toContain("controlled synthetic fixture cleanup");
+    expect(auditLockdown).not.toContain("auth.role()");
+    expect(auditLockdown).toMatch(/REVOKE UPDATE, DELETE ON TABLE public\.audit_log FROM PUBLIC, anon, authenticated, service_role/);
+    expect(auditLockdown).toMatch(/GRANT SELECT, INSERT ON TABLE public\.audit_log TO service_role/);
+    expect(auditLockdown).toContain("including requests made with service-role privileges");
   });
 });

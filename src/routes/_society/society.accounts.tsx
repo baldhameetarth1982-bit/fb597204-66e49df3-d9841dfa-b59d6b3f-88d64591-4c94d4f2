@@ -57,7 +57,7 @@ function AccountsPage() {
   const rows = (bookQ.data?.rows ?? []) as BookRow[];
   const o = overview.data;
   const error = overview.error || bookQ.error;
-  const canInitialize = !!error && /account_(?:unavailable|seed_conflict)/i.test((error as Error).message);
+  const canInitialize = !!error && (error as Error).message === "Accounts are not initialized yet.";
   const loading = overview.isLoading || bookQ.isLoading;
   const balance = useMemo(() => rows.length ? rows[0].running_balance : null, [rows]);
   const heroValue = (value: number | undefined) => overview.isSuccess && value !== undefined ? INR.format(value) : "—";

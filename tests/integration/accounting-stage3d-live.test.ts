@@ -1,13 +1,13 @@
 /**
  * Stage 3D behavioral verification against disposable local Supabase only.
- * Reuses Stage 3C's fail-closed environment gate and synthetic tenant factory.
+ * Reuses Stage 3C's synthetic tenant factory behind an independent Stage 3D gate.
  * The surrounding runner owns teardown by destroying the whole local stack.
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createClient } from "@supabase/supabase-js";
 import { requireStage3CEnv, setupStage3CFixture, type Stage3CFixture } from "../helpers/stage3c-runtime-fixtures";
 
-const enabled = process.env.ALLOW_SOCIOHUB_LIVE_STAGE3C === "true";
+const enabled = process.env.ALLOW_SOCIOHUB_LIVE_STAGE3D === "true";
 const live = enabled ? describe : describe.skip;
 const requestId = () => crypto.randomUUID();
 const asNumber = (value: unknown) => Number(value ?? 0);
@@ -307,19 +307,26 @@ live("Stage 3D canonical accounting behavior", () => {
     expect(audits.data!.some(x => x.target_table === "expenses" && x.target_id === expenseId)).toBe(true);
     const auditId = audits.data!.find(x => x.target_table === "finance_journal_entries")?.id;
     expect(auditId).toBeTruthy();
-    const mutateAudit = await f.users.adminA1.client.from("audit_log").update({ action: "tampered" }).eq("id", auditId!);
+    if (!auditId) throw new Error("Expected a canonical audit row for immutability verification.");
+    const mutateAudit = await f.users.adminA1.client.from("audit_log").update({ action: "tampered" }).eq("id", auditId);
     expect(mutateAudit.error).toBeTruthy();
-    const deleteAudit = await f.users.adminA1.client.from("audit_log").delete().eq("id", auditId!);
+    const deleteAudit = await f.users.adminA1.client.from("audit_log").delete().eq("id", auditId);
     expect(deleteAudit.error).toBeTruthy();
-    const preservedAudit = await f.admin.from("audit_log").select("action").eq("id", auditId!).single();
+    const privilegedMutation = await f.admin.from("audit_log").update({ action: "privileged_tamper" }).eq("id", auditId);
+    expect(privilegedMutation.error).toBeTruthy();
+    const privilegedDelete = await f.admin.from("audit_log").delete().eq("id", auditId);
+    expect(privilegedDelete.error).toBeTruthy();
+    const preservedAudit = await f.admin.from("audit_log").select("action").eq("id", auditId).single();
     expect(preservedAudit.error).toBeNull();
     expect(preservedAudit.data!.action).not.toBe("tampered");
   });
 
   it("makes backfill requests durable and idempotent", async () => {
     const rid = requestId();
-    const first = await rpc(f.users.adminA1.client, "execute_finance_backfill", { _society_id: f.societyA, _request_id: rid });
-    const replay = await rpc(f.users.adminA1.client, "execute_finance_backfill", { _society_id: f.societyA, _request_id: rid });
+    const [first, replay] = await Promise.all([
+      rpc(f.users.adminA1.client, "execute_finance_backfill", { _society_id: f.societyA, _request_id: rid }),
+      rpc(f.users.adminA1.client, "execute_finance_backfill", { _society_id: f.societyA, _request_id: rid }),
+    ]);
     expect(replay).toEqual(first);
     const stored = await f.admin.from("finance_backfill_requests").select("requested_by,result").eq("society_id", f.societyA).eq("request_id", rid).single();
     expect(stored.error).toBeNull();

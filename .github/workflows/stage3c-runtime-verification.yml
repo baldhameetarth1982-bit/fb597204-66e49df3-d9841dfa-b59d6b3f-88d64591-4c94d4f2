@@ -5,6 +5,8 @@ on:
   pull_request:
     paths:
       - "src/lib/offline-payments.functions.ts"
+      - "src/lib/finance-stage3d.functions.ts"
+      - "drizzle/migrations/**"
       - "src/components/billing/OfflinePaymentSubmitCard.tsx"
       - "src/routes/_society/society.payments.tsx"
       - "supabase/migrations/**"
@@ -16,6 +18,8 @@ on:
     branches: [main]
     paths:
       - "src/lib/offline-payments.functions.ts"
+      - "src/lib/finance-stage3d.functions.ts"
+      - "drizzle/migrations/**"
       - "supabase/migrations/**"
       - "tests/**"
       - ".github/workflows/stage3c-runtime-verification.yml"
@@ -152,6 +156,7 @@ jobs:
             echo "SOCIOHUB_TEST_SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}"
             echo "SOCIOHUB_TEST_SUPABASE_PUBLISHABLE_KEY=${ANON_KEY}"
             echo "ALLOW_SOCIOHUB_LIVE_STAGE3C=true"
+            echo "ALLOW_SOCIOHUB_LIVE_STAGE3D=true"
             echo "VITE_SUPABASE_URL=${API_URL}"
             echo "VITE_SUPABASE_PUBLISHABLE_KEY=${ANON_KEY}"
           } >> "$GITHUB_ENV"
@@ -173,6 +178,7 @@ jobs:
             echo "Live environment was not exported — refusing to continue."; exit 1
           fi
           test "${ALLOW_SOCIOHUB_LIVE_STAGE3C}" = "true"
+          test "${ALLOW_SOCIOHUB_LIVE_STAGE3D}" = "true"
 
       - name: Stage 3C CLEANUP behavioral suite
         run: bunx vitest run tests/unit/billing-stage3c-live-cleanup.test.ts --reporter=default
@@ -197,9 +203,7 @@ jobs:
 
       - name: Stage 3D live accounting behavior (must not skip)
         id: stage3d_live_tests
-        run: |
-          bunx vitest run tests/integration/accounting-stage3d-live.test.ts \
-            --reporter=default --reporter=json --outputFile=reports/stage3d-live.json
+        run: bun run test:stage3d:live
 
       - name: Assert Stage 3D live suite actually executed
         if: always()
@@ -209,15 +213,7 @@ jobs:
             echo "Stage 3D live suite was skipped — this gate fails closed."; exit 1
           fi
           test -s reports/stage3d-live.json
-          node - <<'NODE'
-          const fs = require("fs");
-          const r = JSON.parse(fs.readFileSync("reports/stage3d-live.json", "utf8"));
-          if (r.numFailedTests !== 0 || r.numPendingTests !== 0 || r.numPassedTests !== 11) {
-            console.error("Expected Stage 3D exact result: 11 passed, 0 failed, 0 skipped.");
-            console.error(JSON.stringify({passed:r.numPassedTests, failed:r.numFailedTests, skipped:r.numPendingTests}));
-            process.exit(1);
-          }
-          NODE
+          bun scripts/verify-stage3d-live-report.ts reports/stage3d-live.json
 
       - name: Stage 3C live integration (must not skip)
         id: live_tests

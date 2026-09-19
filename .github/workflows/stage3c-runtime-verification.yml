@@ -218,9 +218,8 @@ jobs:
 
       - name: Stage 3C live integration (must not skip)
         id: live_tests
-        env:
-          ALLOW_SOCIOHUB_LIVE_STAGE3C: "true"
         run: |
+          export ALLOW_SOCIOHUB_LIVE_STAGE3C=true
           bunx vitest run tests/integration/billing-stage3c-live.test.ts \
             --reporter=default --reporter=json --outputFile=reports/live.json
 

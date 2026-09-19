@@ -9,6 +9,10 @@ import { join } from "node:path";
 
 const FILE = "tests/helpers/stage3c-runtime-fixtures.ts";
 const src = readFileSync(join(process.cwd(), FILE), "utf8");
+const runtimeEnv = readFileSync(
+  join(process.cwd(), "tests/helpers/stage3-runtime-env.ts"),
+  "utf8",
+);
 
 const problems: string[] = [];
 
@@ -321,12 +325,12 @@ must(
 
 // ---- Isolated Supabase host safety ---------------------------------------
 must(
-  /isStage3CHostAllowed\(url\)/.test(src),
-  "requireStage3CEnv must gate on isStage3CHostAllowed(url)",
+  /requireStage3RuntimeEnv\(\s*"ALLOW_SOCIOHUB_LIVE_STAGE3C",\s*"Stage 3C"/.test(src),
+  "requireStage3CEnv must delegate to the neutral runtime guard with the Stage 3C gate",
 );
 must(
-  /"localhost"[\s\S]{0,120}"127\.0\.0\.1"/.test(src),
-  "STAGE3C_ALLOWED_HOSTS must include localhost + 127.0.0.1",
+  /"localhost"[\s\S]{0,120}"127\.0\.0\.1"/.test(runtimeEnv),
+  "neutral runtime allowlist must include localhost + 127.0.0.1",
 );
 // Only allowlist doc-mentions of `.supabase.co` are tolerated. Actual
 // URLs (http(s)://…supabase.co) MUST NOT appear.
@@ -334,6 +338,9 @@ mustNot(
   /https?:\/\/[^\s"'`]*\.supabase\.co/,
   "hosted supabase.co URL must not appear in fixture source",
 );
+if (/https?:\/\/[^\s"'`]*\.supabase\.co/.test(runtimeEnv)) {
+  problems.push("hosted supabase.co URL must not appear in neutral runtime guard source");
+}
 
 // ---- listUsers fail-closed ----------------------------------------------
 must(

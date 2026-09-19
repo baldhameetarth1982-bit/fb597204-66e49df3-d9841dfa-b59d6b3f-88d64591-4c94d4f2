@@ -12,3 +12,6 @@
 - [x] Separate the Stage 3D live opt-in and exact 11-case gate from Stage 3C.
 - [x] Re-run locally available Stage 3D and Stage 3C-preservation validations.
 - [x] Record current evidence honestly; keep Stage 3E unstarted.
+- [x] Remove Stage 3D's hidden Stage 3C opt-in through a neutral disposable-runtime guard.
+- [x] Preserve the Stage 3C 93-case source contract and independent workflow opt-in.
+- [ ] Add the terminal audit-lock migration to the canonical `supabase/migrations/` track through the managed migration path; blocked because direct edits are prohibited and no safe unapplied duplicate may be invented.

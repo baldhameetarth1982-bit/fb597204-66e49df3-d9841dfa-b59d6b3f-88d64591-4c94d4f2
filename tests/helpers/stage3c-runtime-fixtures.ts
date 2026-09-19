@@ -7,9 +7,9 @@
  *
  * The module is transport-agnostic: it constructs an authoritative Supabase
  * service-role client against the isolated (local `supabase start`) stack
- * whose URL and keys are injected by the GitHub Actions workflow. It never
- * touches the shared production project and refuses to run when the caller
- * has not opted in via `ALLOW_SOCIOHUB_LIVE_STAGE3C=true`.
+ * whose URL and keys are injected by the GitHub Actions workflow. Its default
+ * entry point requires `ALLOW_SOCIOHUB_LIVE_STAGE3C=true`; Stage 3D may supply
+ * an environment already validated by its separate gate.
  *
  * This module intentionally does NOT contain any protected-society literal.
  *
@@ -21,6 +21,12 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { redactStage3CString } from "./stage3c-error-redaction";
 import { submitResidentBankTransferWithClient } from "@/lib/offline-payment-resident-submit";
+import {
+  isStage3DisposableHostAllowed,
+  requireStage3RuntimeEnv,
+  STAGE3_DISPOSABLE_HOSTS,
+  type Stage3RuntimeEnv,
+} from "./stage3-runtime-env";
 
 // ---------------------------------------------------------------------------
 // Sensitive-value redaction registry
@@ -257,11 +263,7 @@ export function formatCleanupFailures(fails: CleanupFailure[]): string {
 // Environment gating
 // ---------------------------------------------------------------------------
 
-export type Stage3CEnv = {
-  url: string;
-  serviceRoleKey: string;
-  publishableKey: string;
-};
+export type Stage3CEnv = Stage3RuntimeEnv;
 
 /**
  * Canonical disposable/local hostnames allowed for the Stage 3C
@@ -269,53 +271,17 @@ export type Stage3CEnv = {
  * projects, custom public HTTPS hosts, or arbitrary URLs — is rejected
  * before any credential is used. No general bypass env var exists.
  */
-export const STAGE3C_ALLOWED_HOSTS: readonly string[] = Object.freeze([
-  "localhost",
-  "127.0.0.1",
-  "::1",
-  "host.docker.internal",
-  "kong",
-  "supabase_kong",
-  "supabase-kong",
-]);
+export const STAGE3C_ALLOWED_HOSTS = STAGE3_DISPOSABLE_HOSTS;
 
 export function isStage3CHostAllowed(url: string): boolean {
-  if (typeof url !== "string" || url.length === 0) return false;
-  let parsed: URL;
-  try {
-    parsed = new URL(url);
-  } catch {
-    return false;
-  }
-  const host = parsed.hostname.toLowerCase();
-  return STAGE3C_ALLOWED_HOSTS.includes(host);
+  return isStage3DisposableHostAllowed(url);
 }
 
 export function requireStage3CEnv(): Stage3CEnv {
-  if (process.env.ALLOW_SOCIOHUB_LIVE_STAGE3C !== "true") {
-    throw new Error(
-      "Stage 3C live fixtures require ALLOW_SOCIOHUB_LIVE_STAGE3C=true. Refusing to run.",
-    );
-  }
-  const url = process.env.SOCIOHUB_TEST_SUPABASE_URL ?? "";
-  const serviceRoleKey = process.env.SOCIOHUB_TEST_SUPABASE_SERVICE_ROLE_KEY ?? "";
-  const publishableKey = process.env.SOCIOHUB_TEST_SUPABASE_PUBLISHABLE_KEY ?? "";
-  if (!url || !serviceRoleKey || !publishableKey) {
-    throw new Error(
-      "Stage 3C fixtures require SOCIOHUB_TEST_SUPABASE_URL / _SERVICE_ROLE_KEY / _PUBLISHABLE_KEY.",
-    );
-  }
-  const shared = process.env.SUPABASE_URL ?? "";
-  if (shared && shared === url) {
-    throw new Error(
-      "Stage 3C fixtures refuse to run against the shared SUPABASE_URL. Use a disposable isolated project.",
-    );
-  }
-  if (!isStage3CHostAllowed(url)) {
-    throw new Error(
-      "Stage 3C fixtures refuse to run against a non-disposable Supabase host. Only local/isolated hostnames are permitted.",
-    );
-  }
+  const { url, serviceRoleKey, publishableKey } = requireStage3RuntimeEnv(
+    "ALLOW_SOCIOHUB_LIVE_STAGE3C",
+    "Stage 3C",
+  );
   // Register sensitive credentials/URLs so redactMessage strips them.
   registerSensitiveValue(serviceRoleKey);
   registerSensitiveValue(publishableKey);
@@ -1783,8 +1749,10 @@ async function strictCleanup(
 const receiptMonthCode = stage3cReceiptMonthCode;
 void receiptMonthCode;
 
-export async function setupStage3CFixture(): Promise<Stage3CFixture> {
-  const env = requireStage3CEnv();
+export async function setupStage3CFixture(env: Stage3CEnv = requireStage3CEnv()): Promise<Stage3CFixture> {
+  registerSensitiveValue(env.serviceRoleKey);
+  registerSensitiveValue(env.publishableKey);
+  registerSensitiveValue(process.env.SOCIOHUB_PROTECTED_SOCIETY_ID);
   const prefix = makePrefix();
   const admin = createClient(env.url, env.serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },

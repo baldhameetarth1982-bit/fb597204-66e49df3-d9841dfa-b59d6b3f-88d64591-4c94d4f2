@@ -5,7 +5,8 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createClient } from "@supabase/supabase-js";
-import { requireStage3CEnv, setupStage3CFixture, type Stage3CFixture } from "../helpers/stage3c-runtime-fixtures";
+import { requireStage3DEnv, setupStage3CFixture, type Stage3CFixture } from "../helpers/stage3c-runtime-fixtures";
+import { requireStage3RuntimeEnv, type Stage3RuntimeEnv } from "../helpers/stage3-runtime-env";
 
 const enabled = process.env.ALLOW_SOCIOHUB_LIVE_STAGE3D === "true";
 const live = enabled ? describe : describe.skip;
@@ -28,9 +29,11 @@ live("Stage 3D canonical accounting behavior", () => {
   let incomeId = "";
   let incomeJournalId = "";
   let vendorId = "";
+  let env: Stage3RuntimeEnv;
 
   beforeAll(async () => {
-    f = await setupStage3CFixture();
+    env = requireStage3RuntimeEnv("ALLOW_SOCIOHUB_LIVE_STAGE3D", "Stage 3D");
+    f = await setupStage3CFixture(env);
     const { error } = await f.admin
       .from("societies")
       .update({ plan_id: "premium", plan_status: "active" })
@@ -254,7 +257,6 @@ live("Stage 3D canonical accounting behavior", () => {
   });
 
   it("denies anonymous callers and checks authorization before plan entitlement", async () => {
-    const env = requireStage3CEnv();
     const anonymous = createClient(env.url, env.publishableKey, { auth: { persistSession: false } });
     const period = { _society_id: f.societyA, _from: "2026-01-01", _to: "2026-12-31", _limit: 20 };
     const anonymousResult = await anonymous.rpc("get_resident_finance_transparency", period);
@@ -319,6 +321,7 @@ live("Stage 3D canonical accounting behavior", () => {
     const preservedAudit = await f.admin.from("audit_log").select("action").eq("id", auditId).single();
     expect(preservedAudit.error).toBeNull();
     expect(preservedAudit.data!.action).not.toBe("tampered");
+    expect(preservedAudit.data!.action).not.toBe("privileged_tamper");
   });
 
   it("makes backfill requests durable and idempotent", async () => {

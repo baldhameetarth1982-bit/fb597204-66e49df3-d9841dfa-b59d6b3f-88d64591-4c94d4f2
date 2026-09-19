@@ -7,6 +7,8 @@ const chain = readdirSync(migrationsDir).filter(f => f.endsWith(".sql")).sort().
 const route = (name: string) => readFileSync(join(process.cwd(), `src/routes/_society/${name}`), "utf8");
 const finalClosure = readFileSync(join(process.cwd(), "drizzle/migrations/0008_finalize_stage3d_resident_authorization_and_audit_integrity.sql"), "utf8");
 const auditLockdown = readFileSync(join(process.cwd(), "drizzle/migrations/0010_restore_universal_audit_log_immutability.sql"), "utf8");
+const managedAuditLockdown = readFileSync(join(process.cwd(), "drizzle/migrations/0011_restore_universal_audit_log_immutability.sql"), "utf8");
+const managedAuditAppendBoundary = readFileSync(join(process.cwd(), "drizzle/migrations/0012_restrict_audit_log_append_to_canonical_server_path.sql"), "utf8");
 
 describe("Stage 3D canonical accounting foundation", () => {
   it("creates society-scoped accounts and immutable balanced journals", () => {
@@ -129,5 +131,11 @@ describe("Stage 3D canonical accounting foundation", () => {
     expect(auditLockdown).toMatch(/REVOKE UPDATE, DELETE ON TABLE public\.audit_log FROM PUBLIC, anon, authenticated, service_role/);
     expect(auditLockdown).toMatch(/GRANT SELECT, INSERT ON TABLE public\.audit_log TO service_role/);
     expect(auditLockdown).toContain("including requests made with service-role privileges");
+    expect(managedAuditLockdown).not.toContain("auth.role()");
+    expect(managedAuditLockdown).toMatch(/RAISE EXCEPTION 'audit_log_immutable'/);
+    expect(managedAuditLockdown).toMatch(/REVOKE UPDATE, DELETE ON TABLE public\.audit_log FROM PUBLIC, anon, authenticated, service_role/);
+    expect(managedAuditLockdown).toMatch(/GRANT SELECT, INSERT ON TABLE public\.audit_log TO service_role/);
+    expect(managedAuditAppendBoundary).toMatch(/REVOKE INSERT ON TABLE public\.audit_log FROM PUBLIC, anon, authenticated/);
+    expect(managedAuditAppendBoundary).toMatch(/GRANT SELECT, INSERT ON TABLE public\.audit_log TO service_role/);
   });
 });

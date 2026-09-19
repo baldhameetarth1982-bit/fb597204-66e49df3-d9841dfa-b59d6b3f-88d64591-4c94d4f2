@@ -329,6 +329,14 @@ must(
   "requireStage3CEnv must delegate to the neutral runtime guard with the Stage 3C gate",
 );
 must(
+  /requireStage3RuntimeEnv\(\s*"ALLOW_SOCIOHUB_LIVE_STAGE3D",\s*"Stage 3D"/.test(src),
+  "requireStage3DEnv must delegate to the neutral runtime guard with the Stage 3D gate",
+);
+mustNot(
+  /process\.env\.ALLOW_SOCIOHUB_LIVE_STAGE3D\s*=\s*["']true["']/,
+  "fixture source must not implicitly enable the Stage 3D gate",
+);
+must(
   /"localhost"[\s\S]{0,120}"127\.0\.0\.1"/.test(runtimeEnv),
   "neutral runtime allowlist must include localhost + 127.0.0.1",
 );

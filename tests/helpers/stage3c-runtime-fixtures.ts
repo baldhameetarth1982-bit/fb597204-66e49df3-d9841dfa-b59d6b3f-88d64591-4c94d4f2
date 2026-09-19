@@ -8,8 +8,8 @@
  * The module is transport-agnostic: it constructs an authoritative Supabase
  * service-role client against the isolated (local `supabase start`) stack
  * whose URL and keys are injected by the GitHub Actions workflow. Its default
- * entry point requires `ALLOW_SOCIOHUB_LIVE_STAGE3C=true`; Stage 3D may supply
- * an environment already validated by its separate gate.
+ * default entry point requires `ALLOW_SOCIOHUB_LIVE_STAGE3C=true`. Stage 3D
+ * validates its own gate and supplies that environment to the same factory.
  *
  * This module intentionally does NOT contain any protected-society literal.
  *
@@ -283,6 +283,17 @@ export function requireStage3CEnv(): Stage3CEnv {
     "Stage 3C",
   );
   // Register sensitive credentials/URLs so redactMessage strips them.
+  registerSensitiveValue(serviceRoleKey);
+  registerSensitiveValue(publishableKey);
+  registerSensitiveValue(process.env.SOCIOHUB_PROTECTED_SOCIETY_ID);
+  return { url, serviceRoleKey, publishableKey };
+}
+
+export function requireStage3DEnv(): Stage3CEnv {
+  const { url, serviceRoleKey, publishableKey } = requireStage3RuntimeEnv(
+    "ALLOW_SOCIOHUB_LIVE_STAGE3D",
+    "Stage 3D",
+  );
   registerSensitiveValue(serviceRoleKey);
   registerSensitiveValue(publishableKey);
   registerSensitiveValue(process.env.SOCIOHUB_PROTECTED_SOCIETY_ID);
@@ -1749,7 +1760,9 @@ async function strictCleanup(
 const receiptMonthCode = stage3cReceiptMonthCode;
 void receiptMonthCode;
 
-export async function setupStage3CFixture(env: Stage3CEnv = requireStage3CEnv()): Promise<Stage3CFixture> {
+export async function setupStage3CFixture(
+  env: Stage3CEnv = requireStage3CEnv(),
+): Promise<Stage3CFixture> {
   registerSensitiveValue(env.serviceRoleKey);
   registerSensitiveValue(env.publishableKey);
   registerSensitiveValue(process.env.SOCIOHUB_PROTECTED_SOCIETY_ID);

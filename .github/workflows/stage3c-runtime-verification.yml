@@ -218,6 +218,7 @@ jobs:
 
       - name: Stage 3C live integration (must not skip)
         id: live_tests
+        if: always()
         run: |
           export ALLOW_SOCIOHUB_LIVE_STAGE3C=true
           bunx vitest run tests/integration/billing-stage3c-live.test.ts \

@@ -100,6 +100,13 @@ describe("audit-log contract recovery", () => {
     expect(managedFinalLockdown).toMatch(/BEFORE UPDATE OR DELETE ON public\.audit_log/);
     expect(managedFinalLockdown).toMatch(/REVOKE UPDATE, DELETE ON TABLE public\.audit_log FROM PUBLIC, anon, authenticated, service_role/);
     expect(managedFinalLockdown).toMatch(/GRANT SELECT, INSERT ON TABLE public\.audit_log TO service_role/);
+    const managedAppendBoundary = readFileSync(
+      join(process.cwd(), "drizzle/migrations/0012_restrict_audit_log_append_to_canonical_server_path.sql"),
+      "utf8",
+    );
+    expect(managedAppendBoundary).toMatch(/REVOKE INSERT ON TABLE public\.audit_log FROM PUBLIC, anon, authenticated/);
+    expect(managedAppendBoundary).toMatch(/REVOKE SELECT ON TABLE public\.audit_log FROM PUBLIC, anon/);
+    expect(managedAppendBoundary).toMatch(/GRANT SELECT, INSERT ON TABLE public\.audit_log TO service_role/);
   });
 });
 

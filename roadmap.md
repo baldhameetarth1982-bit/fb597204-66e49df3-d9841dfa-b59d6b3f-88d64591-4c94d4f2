@@ -15,4 +15,5 @@
 - [x] Remove Stage 3D's hidden Stage 3C opt-in through a neutral disposable-runtime guard.
 - [x] Preserve the Stage 3C 93-case source contract and independent workflow opt-in.
 - [x] Apply the terminal audit lock through the managed database migration path (`0011`) without rewriting history.
+- [x] Restrict direct audit-log append access to the canonical server-side role through managed migration `0012`.
 - [ ] Mirror the terminal audit lock into the legacy fresh-reset `supabase/migrations/` track; blocked because that directory rejects direct edits and the managed migration tool owns the Drizzle track.

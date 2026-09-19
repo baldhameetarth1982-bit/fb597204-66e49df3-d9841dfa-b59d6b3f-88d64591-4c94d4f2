@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { EXPECTED_STAGE3D_LIVE_TESTS, verifyStage3DLiveReport } from "../../scripts/verify-stage3d-live-report";
 
 describe("Stage 3D live report gate", () => {
+  const sha = "0123456789abcdef0123456789abcdef01234567";
+  const metadata = { commit: sha };
   const valid = {
     success: true,
     numTotalTestSuites: 1,
@@ -17,7 +19,7 @@ describe("Stage 3D live report gate", () => {
 
   it("accepts only the exact eleven-case success result", () => {
     expect(EXPECTED_STAGE3D_LIVE_TESTS).toBe(11);
-    expect(() => verifyStage3DLiveReport(valid)).not.toThrow();
+    expect(() => verifyStage3DLiveReport(valid, sha, metadata)).not.toThrow();
   });
 
   it.each([
@@ -31,10 +33,28 @@ describe("Stage 3D live report gate", () => {
     { ...valid, numFailedTestSuites: 1 },
     { ...valid, numPendingTestSuites: 1 },
   ])("rejects incomplete or non-passing evidence", (report) => {
-    expect(() => verifyStage3DLiveReport(report)).toThrow(/Expected Stage 3D exact result/);
+    expect(() => verifyStage3DLiveReport(report, sha, metadata)).toThrow(/Expected Stage 3D exact result/);
   });
 
   it("rejects malformed reports", () => {
-    expect(() => verifyStage3DLiveReport({ success: true })).toThrow();
+    expect(() => verifyStage3DLiveReport({ success: true }, sha, metadata)).toThrow();
+  });
+
+  it("accepts matching commit metadata", () => {
+    expect(() => verifyStage3DLiveReport(valid, sha, { commit: sha.toUpperCase() })).not.toThrow();
+  });
+
+  it.each([
+    ["missing metadata", undefined],
+    ["missing SHA", {}],
+    ["malformed SHA", { commit: "short" }],
+    ["mismatched SHA", { commit: "fedcba9876543210fedcba9876543210fedcba98" }],
+  ])("rejects %s", (_label, value) => {
+    expect(() => verifyStage3DLiveReport(valid, sha, value)).toThrow();
+  });
+
+  it("rejects a missing or malformed expected SHA", () => {
+    expect(() => verifyStage3DLiveReport(valid, "", metadata)).toThrow(/canonical full SHA/);
+    expect(() => verifyStage3DLiveReport(valid, "short", metadata)).toThrow(/canonical full SHA/);
   });
 });

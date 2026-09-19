@@ -30,7 +30,7 @@ mkdir -p reports
 report="reports/stage3d-live.json"
 meta="reports/stage3d-live.meta.json"
 actual_sha="$(git rev-parse HEAD)"
-expected_sha="${EXPECTED_COMMIT_SHA:-$actual_sha}"
+expected_sha="${EXPECTED_COMMIT_SHA:-}"
 if ! printf '%s' "$expected_sha" | grep -Eq '^[0-9a-fA-F]{40}$'; then
   printf '%s\n' "Stage 3D requires a canonical full expected commit SHA." >&2
   exit 1

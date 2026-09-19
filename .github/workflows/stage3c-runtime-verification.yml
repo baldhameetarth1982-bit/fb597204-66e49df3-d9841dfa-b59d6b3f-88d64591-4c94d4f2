@@ -93,6 +93,9 @@ jobs:
       - name: Self-check the independent canonical 93-case contract
         run: bun scripts/stage3c-canonical-case-contract.ts
 
+      - name: Validate Stage 3C fixture safety (pre-flight)
+        run: bun scripts/verify-stage3c-fixture-source.ts
+
       - name: Validate Stage 3C core live source (pre-flight)
         run: bun scripts/verify-stage3c-live-core-source.ts
 

@@ -687,9 +687,10 @@ describe("Stage 3C fixtures — source contract", () => {
       expect(SRC).toMatch(new RegExp(`export\\s+(async\\s+)?function\\s+${name}\\b`));
     }
   });
-  it("tracks setupStartedAt for the audit boundary", () => {
+  it("retains audit metadata without attempting immutable-history cleanup", () => {
     expect(SRC).toContain("setupStartedAt");
-    expect(SRC).toMatch(/gte\("created_at",\s*sel\.since\)/);
+    expect(SRC).toMatch(/auditSelectors:\s*"metadata"/);
+    expect(SRC).not.toMatch(/from\("audit_log"\)\s*\.delete\(\)/);
   });
   it("bill_line_items kind is `maintenance` (schema-valid)", () => {
     expect(SRC).toMatch(/kind:\s*"maintenance"/);

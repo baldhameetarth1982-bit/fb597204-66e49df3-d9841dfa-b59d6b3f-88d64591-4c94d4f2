@@ -5,7 +5,7 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createClient } from "@supabase/supabase-js";
-import { setupStage3CFixture, type Stage3CFixture } from "../helpers/stage3c-runtime-fixtures";
+import { requireStage3DEnv, setupStage3CFixture, type Stage3CFixture } from "../helpers/stage3c-runtime-fixtures";
 import { requireStage3RuntimeEnv, type Stage3RuntimeEnv } from "../helpers/stage3-runtime-env";
 
 const enabled = process.env.ALLOW_SOCIOHUB_LIVE_STAGE3D === "true";

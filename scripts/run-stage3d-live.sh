@@ -13,6 +13,19 @@ for name in SOCIOHUB_TEST_SUPABASE_URL SOCIOHUB_TEST_SUPABASE_SERVICE_ROLE_KEY S
   fi
 done
 
+case "$SOCIOHUB_TEST_SUPABASE_URL" in
+  http://127.0.0.1:*|http://localhost:*|http://host.docker.internal:*|http://kong:*|http://supabase_kong:*|http://supabase-kong:*) ;;
+  *)
+    printf '%s\n' "Stage 3D refuses to run against a non-disposable database URL." >&2
+    exit 1
+    ;;
+esac
+
+if [ -n "${SUPABASE_URL:-}" ] && [ "$SUPABASE_URL" = "$SOCIOHUB_TEST_SUPABASE_URL" ]; then
+  printf '%s\n' "Stage 3D refuses to run because the test URL matches SUPABASE_URL." >&2
+  exit 1
+fi
+
 mkdir -p reports
 report="reports/stage3d-live.json"
 rm -f "$report"

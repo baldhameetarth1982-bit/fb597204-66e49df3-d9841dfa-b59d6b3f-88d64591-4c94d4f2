@@ -7,9 +7,9 @@
  *
  * The module is transport-agnostic: it constructs an authoritative Supabase
  * service-role client against the isolated (local `supabase start`) stack
- * whose URL and keys are injected by the GitHub Actions workflow. It never
- * touches the shared production project and refuses to run when the caller
- * has not opted in via `ALLOW_SOCIOHUB_LIVE_STAGE3C=true`.
+ * whose URL and keys are injected by the GitHub Actions workflow. Its default
+ * entry point requires `ALLOW_SOCIOHUB_LIVE_STAGE3C=true`; Stage 3D may supply
+ * an environment already validated by its separate gate.
  *
  * This module intentionally does NOT contain any protected-society literal.
  *
@@ -287,6 +287,17 @@ export function requireStage3CEnv(): Stage3CEnv {
   registerSensitiveValue(publishableKey);
   registerSensitiveValue(process.env.SOCIOHUB_PROTECTED_SOCIETY_ID);
   return { url, serviceRoleKey, publishableKey };
+
+export function requireStage3DEnv(): Stage3CEnv {
+  const { url, serviceRoleKey, publishableKey } = requireStage3RuntimeEnv(
+    "ALLOW_SOCIOHUB_LIVE_STAGE3D",
+    "Stage 3D",
+  );
+  registerSensitiveValue(serviceRoleKey);
+  registerSensitiveValue(publishableKey);
+  registerSensitiveValue(process.env.SOCIOHUB_PROTECTED_SOCIETY_ID);
+  return { url, serviceRoleKey, publishableKey };
+}
 }
 
 // ---------------------------------------------------------------------------

@@ -108,6 +108,27 @@ describe("audit-log contract recovery", () => {
     expect(managedAppendBoundary).toMatch(/REVOKE SELECT ON TABLE public\.audit_log FROM PUBLIC, anon/);
     expect(managedAppendBoundary).toMatch(/GRANT SELECT, INSERT ON TABLE public\.audit_log TO service_role/);
   });
+
+  it("converges the fresh-reset track on the final authorization and audit contract", () => {
+    const freshResetFinal = migrations.find(({ file }) =>
+      file.startsWith("20260919050000_converge_stage3d_authorization_and_audit_security"),
+    )?.sql ?? "";
+
+    expect(freshResetFinal).toMatch(/v_is_admin := public\.current_user_is_super_admin\(\)/);
+    expect(freshResetFinal).toMatch(/public\.current_user_is_society_admin_for\(_society_id\)/);
+    expect(freshResetFinal).toMatch(/fr\.is_active = true/);
+    expect(freshResetFinal).toMatch(/fr\.moved_out_at IS NULL/);
+    expect(freshResetFinal).toMatch(/IF NOT v_is_admin AND NOT v_is_active_resident THEN/);
+    expect(freshResetFinal).not.toContain("auth.role()");
+    expect(freshResetFinal).toMatch(/RAISE EXCEPTION 'audit_log_immutable'/);
+    expect(freshResetFinal).toMatch(/BEFORE UPDATE OR DELETE ON public\.audit_log/);
+    expect(freshResetFinal).toMatch(/REVOKE ALL ON FUNCTION public\._protect_audit_log_history\(\) FROM PUBLIC, anon, authenticated, service_role/);
+    expect(freshResetFinal).toMatch(/REVOKE UPDATE, DELETE ON TABLE public\.audit_log FROM PUBLIC, anon, authenticated, service_role/);
+    expect(freshResetFinal).toMatch(/REVOKE INSERT ON TABLE public\.audit_log FROM PUBLIC, anon, authenticated/);
+    expect(freshResetFinal).toMatch(/REVOKE SELECT ON TABLE public\.audit_log FROM PUBLIC, anon/);
+    expect(freshResetFinal).toMatch(/GRANT SELECT ON TABLE public\.audit_log TO authenticated/);
+    expect(freshResetFinal).toMatch(/GRANT SELECT, INSERT ON TABLE public\.audit_log TO service_role/);
+  });
 });
 
 describe("submit_offline_payment recovery", () => {

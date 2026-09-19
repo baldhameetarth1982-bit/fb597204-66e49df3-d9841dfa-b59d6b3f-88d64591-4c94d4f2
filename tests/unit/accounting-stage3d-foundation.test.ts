@@ -16,7 +16,9 @@ const migrationTrackStatus = {
   managedAppendBoundaryImplemented:
     /REVOKE INSERT ON TABLE public\.audit_log FROM PUBLIC, anon, authenticated/.test(managedAuditAppendBoundary),
   cliFreshResetAuditLockReplayed: /audit_log_immutable/.test(chain),
-  cliFreshResetStatus: "blocked_divergent" as const,
+  cliFreshResetAppendBoundaryReplayed:
+    /REVOKE INSERT ON TABLE public\.audit_log FROM PUBLIC, anon, authenticated/.test(chain),
+  cliFreshResetStatus: "source_converged_runtime_unverified" as const,
 };
 
 describe("Stage 3D canonical accounting foundation", () => {
@@ -150,12 +152,13 @@ describe("Stage 3D canonical accounting foundation", () => {
     expect(migrationTrackStatus.managedAppendBoundaryImplemented).toBe(true);
   });
 
-  it("reports the CLI fresh-reset audit contract as a divergence blocker, not a passing security state", () => {
+  it("requires the CLI fresh-reset track to contain the final audit contract", () => {
     expect(migrationTrackStatus).toEqual({
       managedAuditLockImplemented: true,
       managedAppendBoundaryImplemented: true,
-      cliFreshResetAuditLockReplayed: false,
-      cliFreshResetStatus: "blocked_divergent",
+      cliFreshResetAuditLockReplayed: true,
+      cliFreshResetAppendBoundaryReplayed: true,
+      cliFreshResetStatus: "source_converged_runtime_unverified",
     });
   });
 });

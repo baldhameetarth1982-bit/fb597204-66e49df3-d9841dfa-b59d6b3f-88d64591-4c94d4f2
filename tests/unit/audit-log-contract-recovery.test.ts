@@ -91,13 +91,15 @@ describe("audit-log contract recovery", () => {
     expect(finalLockdown).toMatch(/REVOKE ALL ON FUNCTION public\._protect_audit_log_history\(\) FROM PUBLIC, anon, authenticated, service_role/);
     expect(finalLockdown).toMatch(/REVOKE UPDATE, DELETE ON TABLE public\.audit_log FROM PUBLIC, anon, authenticated, service_role/);
     expect(finalLockdown).toMatch(/GRANT SELECT, INSERT ON TABLE public\.audit_log TO service_role/);
-    const canonicalFinalLockdown = migrations.at(-1);
-    expect(canonicalFinalLockdown?.file).toBe("20260918006000_restore_universal_audit_log_immutability.sql");
-    expect(canonicalFinalLockdown?.sql).not.toContain("auth.role()");
-    expect(canonicalFinalLockdown?.sql).toMatch(/RAISE EXCEPTION 'audit_log_immutable'/);
-    expect(canonicalFinalLockdown?.sql).toMatch(/BEFORE UPDATE OR DELETE ON public\.audit_log/);
-    expect(canonicalFinalLockdown?.sql).toMatch(/REVOKE UPDATE, DELETE ON TABLE public\.audit_log FROM PUBLIC, anon, authenticated, service_role/);
-    expect(canonicalFinalLockdown?.sql).toMatch(/GRANT SELECT, INSERT ON TABLE public\.audit_log TO service_role/);
+    const managedFinalLockdown = readFileSync(
+      join(process.cwd(), "drizzle/migrations/0011_restore_universal_audit_log_immutability.sql"),
+      "utf8",
+    );
+    expect(managedFinalLockdown).not.toContain("auth.role()");
+    expect(managedFinalLockdown).toMatch(/RAISE EXCEPTION 'audit_log_immutable'/);
+    expect(managedFinalLockdown).toMatch(/BEFORE UPDATE OR DELETE ON public\.audit_log/);
+    expect(managedFinalLockdown).toMatch(/REVOKE UPDATE, DELETE ON TABLE public\.audit_log FROM PUBLIC, anon, authenticated, service_role/);
+    expect(managedFinalLockdown).toMatch(/GRANT SELECT, INSERT ON TABLE public\.audit_log TO service_role/);
   });
 });
 

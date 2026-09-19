@@ -21,3 +21,6 @@
 - [x] Split Stage 3C and Stage 3D CI into independent disposable database jobs.
 - [x] Bind exact Stage 3D runtime reports to the expected full commit SHA.
 - [x] Require callers to supply the expected SHA; remove stale generated reports and run fixture safety checks in both local and CI preflights.
+- [ ] Add the smallest forward-only fresh-reset migration that converges the final Stage 3D authorization and audit-security state.
+- [ ] Add positive cross-track security assertions and rerun the complete Prompt #45 verification order.
+- [ ] Record only observed fresh-reset/runtime evidence and keep Stage 3E unstarted.

@@ -71,6 +71,13 @@
       "when": 1789762198532,
       "tag": "0009_allow_service_role_audit_fixture_cleanup",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789781283922,
+      "tag": "0010_restore_universal_audit_log_immutability",
+      "breakpoints": true
     }
   ]
 }

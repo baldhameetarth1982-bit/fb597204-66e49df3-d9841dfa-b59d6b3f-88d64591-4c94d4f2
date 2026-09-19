@@ -17,3 +17,6 @@
 - [x] Apply the terminal audit lock through the managed database migration path (`0011`) without rewriting history.
 - [x] Restrict direct audit-log append access to the canonical server-side role through managed migration `0012`.
 - [ ] Reconcile the managed production migration track with the CLI fresh-reset `supabase/migrations/` replay track; production has managed `0011`/`0012`, while `supabase db reset --no-seed` does not yet replay that final audit contract.
+- [x] Remove immutable audit history from fixture cleanup obligations and reject direct or obvious indirect audit-cleanup bypasses.
+- [x] Split Stage 3C and Stage 3D CI into independent disposable database jobs.
+- [x] Bind exact Stage 3D runtime reports to the expected full commit SHA.

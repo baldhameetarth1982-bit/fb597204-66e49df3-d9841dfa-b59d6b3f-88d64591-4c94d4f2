@@ -9,7 +9,15 @@ const finalClosure = readFileSync(join(process.cwd(), "drizzle/migrations/0008_f
 const auditLockdown = readFileSync(join(process.cwd(), "drizzle/migrations/0010_restore_universal_audit_log_immutability.sql"), "utf8");
 const managedAuditLockdown = readFileSync(join(process.cwd(), "drizzle/migrations/0011_restore_universal_audit_log_immutability.sql"), "utf8");
 const managedAuditAppendBoundary = readFileSync(join(process.cwd(), "drizzle/migrations/0012_restrict_audit_log_append_to_canonical_server_path.sql"), "utf8");
-const freshResetHasAuditLockdown = /audit_log_immutable/.test(chain);
+const migrationTrackStatus = {
+  managedAuditLockImplemented:
+    /audit_log_immutable/.test(managedAuditLockdown) &&
+    /REVOKE UPDATE, DELETE ON TABLE public\.audit_log FROM PUBLIC, anon, authenticated, service_role/.test(managedAuditLockdown),
+  managedAppendBoundaryImplemented:
+    /REVOKE INSERT ON TABLE public\.audit_log FROM PUBLIC, anon, authenticated/.test(managedAuditAppendBoundary),
+  cliFreshResetAuditLockReplayed: /audit_log_immutable/.test(chain),
+  cliFreshResetStatus: "blocked_divergent" as const,
+};
 
 describe("Stage 3D canonical accounting foundation", () => {
   it("creates society-scoped accounts and immutable balanced journals", () => {
@@ -138,6 +146,16 @@ describe("Stage 3D canonical accounting foundation", () => {
     expect(managedAuditLockdown).toMatch(/GRANT SELECT, INSERT ON TABLE public\.audit_log TO service_role/);
     expect(managedAuditAppendBoundary).toMatch(/REVOKE INSERT ON TABLE public\.audit_log FROM PUBLIC, anon, authenticated/);
     expect(managedAuditAppendBoundary).toMatch(/GRANT SELECT, INSERT ON TABLE public\.audit_log TO service_role/);
-    expect(freshResetHasAuditLockdown).toBe(false);
+    expect(migrationTrackStatus.managedAuditLockImplemented).toBe(true);
+    expect(migrationTrackStatus.managedAppendBoundaryImplemented).toBe(true);
+  });
+
+  it("reports the CLI fresh-reset audit contract as a divergence blocker, not a passing security state", () => {
+    expect(migrationTrackStatus).toEqual({
+      managedAuditLockImplemented: true,
+      managedAppendBoundaryImplemented: true,
+      cliFreshResetAuditLockReplayed: false,
+      cliFreshResetStatus: "blocked_divergent",
+    });
   });
 });

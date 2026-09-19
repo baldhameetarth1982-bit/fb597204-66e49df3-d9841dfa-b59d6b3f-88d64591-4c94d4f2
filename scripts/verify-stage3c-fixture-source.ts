@@ -240,6 +240,22 @@ mustNot(
   /from\("audit_log"\)\s*\.delete\(\)/,
   "fixture cleanup must not delete immutable audit history",
 );
+mustNot(
+  /\bTRUNCATE\s+(?:TABLE\s+)?(?:public\.)?audit_log\b/i,
+  "fixture cleanup must not truncate immutable audit history",
+);
+mustNot(
+  /\.rpc\(\s*["'][^"']*(?:audit[^"']*cleanup|cleanup[^"']*audit|delete[^"']*audit)[^"']*["']/i,
+  "fixture cleanup must not invoke an audit deletion or cleanup RPC",
+);
+mustNot(
+  /ALTER\s+TABLE\s+(?:public\.)?audit_log\s+DISABLE\s+TRIGGER/i,
+  "fixture cleanup must not disable audit-log triggers",
+);
+mustNot(
+  /(?:auth\.role\(\)|service_role)[\s\S]{0,240}(?:audit_log|audit history)[\s\S]{0,240}(?:delete|cleanup|bypass|exception)/i,
+  "fixture cleanup must not add a role-based audit-history exception",
+);
 must(
   /auditSelectors:\s*"metadata"/.test(src),
   "audit selectors must be metadata retained until disposable-stack destruction",

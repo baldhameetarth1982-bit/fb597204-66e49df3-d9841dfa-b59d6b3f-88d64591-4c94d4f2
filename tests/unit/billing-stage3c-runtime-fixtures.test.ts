@@ -692,6 +692,17 @@ describe("Stage 3C fixtures — source contract", () => {
     expect(SRC).toMatch(/auditSelectors:\s*"metadata"/);
     expect(SRC).not.toMatch(/from\("audit_log"\)\s*\.delete\(\)/);
   });
+  it("keeps the fixture source validator narrow but blocks obvious audit cleanup bypasses", () => {
+    const validator = readFileSync(
+      join(process.cwd(), "scripts/verify-stage3c-fixture-source.ts"),
+      "utf8",
+    );
+    expect(validator).toContain("fixture cleanup must not delete immutable audit history");
+    expect(validator).toContain("fixture cleanup must not truncate immutable audit history");
+    expect(validator).toContain("fixture cleanup must not invoke an audit deletion or cleanup RPC");
+    expect(validator).toContain("fixture cleanup must not disable audit-log triggers");
+    expect(validator).toContain("fixture cleanup must not add a role-based audit-history exception");
+  });
   it("bill_line_items kind is `maintenance` (schema-valid)", () => {
     expect(SRC).toMatch(/kind:\s*"maintenance"/);
     expect(SRC).not.toMatch(/kind:\s*"charge"/);

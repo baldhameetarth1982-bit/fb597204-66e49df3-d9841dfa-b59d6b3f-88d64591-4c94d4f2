@@ -16,10 +16,6 @@ done
 mkdir -p reports
 report="reports/stage3d-live.json"
 rm -f "$report"
-# The shared synthetic fixture retains its Stage 3C safety gate. This bridge is
-# process-local and is reached only after the independent Stage 3D opt-in and
-# disposable-host checks above succeed.
-export ALLOW_SOCIOHUB_LIVE_STAGE3C=true
 bunx vitest run tests/integration/accounting-stage3d-live.test.ts \
   --reporter=default --reporter=json --outputFile="$report"
 bun scripts/verify-stage3d-live-report.ts "$report"

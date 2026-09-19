@@ -23,4 +23,4 @@
 - [x] Require callers to supply the expected SHA; remove stale generated reports and run fixture safety checks in both local and CI preflights.
 - [x] Add the smallest forward-only fresh-reset migration that converges the final Stage 3D authorization and audit-security state.
 - [x] Add positive cross-track security assertions and rerun all locally available Prompt #45 verification gates.
-- [ ] Record only observed fresh-reset/runtime evidence and keep Stage 3E unstarted.
+- [x] Record only observed fresh-reset/runtime evidence and keep Stage 3E unstarted.

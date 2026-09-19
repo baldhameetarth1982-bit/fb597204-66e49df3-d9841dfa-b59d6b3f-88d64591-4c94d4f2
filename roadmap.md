@@ -16,4 +16,4 @@
 - [x] Preserve the Stage 3C 93-case source contract and independent workflow opt-in.
 - [x] Apply the terminal audit lock through the managed database migration path (`0011`) without rewriting history.
 - [x] Restrict direct audit-log append access to the canonical server-side role through managed migration `0012`.
-- [ ] Mirror the terminal audit lock into the legacy fresh-reset `supabase/migrations/` track; blocked because that directory rejects direct edits and the managed migration tool owns the Drizzle track.
+- [ ] Reconcile the managed production migration track with the CLI fresh-reset `supabase/migrations/` replay track; production has managed `0011`/`0012`, while `supabase db reset --no-seed` does not yet replay that final audit contract.

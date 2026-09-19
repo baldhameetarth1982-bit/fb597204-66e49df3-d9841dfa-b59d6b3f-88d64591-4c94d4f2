@@ -330,7 +330,7 @@ export type TrackedIds = {
   paymentReceiptIds: string[];
   receiptSequences: ReceiptSequenceKey[];
   auditSelectors: FixtureAuditSelector[];
-  /** Fixture setup start ISO timestamp — audit deletion boundary. */
+  /** Fixture setup start ISO timestamp — immutable audit-observation boundary. */
   setupStartedAt: string;
 };
 
@@ -1502,19 +1502,6 @@ export async function verifyTrackedRowsAbsent(
     }
   }
 
-  for (const sel of tracked.auditSelectors) {
-    const { data, error } = await admin
-      .from("audit_log")
-      .select("id")
-      .eq("society_id", sel.society_id)
-      .gte("created_at", sel.since)
-      .limit(1);
-    if (error) {
-      sink.push({ label: "verify:audit_log", message: redactMessage(extractErrorMessage(error)) });
-    } else if ((data ?? []).length > 0) {
-      sink.push({ label: "verify:audit_log", message: "fixture-time audit rows remain" });
-    }
-  }
 }
 
 /**
@@ -1702,17 +1689,9 @@ async function strictCleanup(
     );
   }
 
-  for (const sel of tracked.auditSelectors) {
-    await collectCleanupResult(
-      "delete:audit_log",
-      admin
-        .from("audit_log")
-        .delete()
-        .eq("society_id", sel.society_id)
-        .gte("created_at", sel.since),
-      fails,
-    );
-  }
+  // Audit history is universally immutable, including to service_role.
+  // It remains in this disposable database until the runner destroys the
+  // isolated stack; teardown must never weaken or exercise a deletion bypass.
   if (tracked.societyIds.length)
     await collectCleanupResult(
       "delete:societies",
@@ -2689,7 +2668,7 @@ export const STAGE3C_TRACKER_COVERAGE = Object.freeze({
   paymentIds: "evidence",
   paymentReceiptIds: "evidence",
   receiptSequences: "evidence",
-  auditSelectors: "evidence",
+  auditSelectors: "metadata",
   setupStartedAt: "metadata",
 }) satisfies Record<keyof TrackedIds, Stage3CTrackerCoverage>;
 
@@ -2709,7 +2688,6 @@ export const STAGE3C_EVIDENCE_ID_GROUPS = Object.freeze([
   "paymentReceiptIds",
   "monthlyReceiptSequences",
   "yearlyReceiptSequences",
-  "auditSelectors",
   "storagePaths",
 ] as const);
 

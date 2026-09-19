@@ -20,3 +20,4 @@
 - [x] Remove immutable audit history from fixture cleanup obligations and reject direct or obvious indirect audit-cleanup bypasses.
 - [x] Split Stage 3C and Stage 3D CI into independent disposable database jobs.
 - [x] Bind exact Stage 3D runtime reports to the expected full commit SHA.
+- [x] Require callers to supply the expected SHA; remove stale generated reports and run fixture safety checks in both local and CI preflights.

@@ -106,6 +106,7 @@ fi
 # before the live suite runs, and the EXIT trap still tears services down.
 for preflight in \
   scripts/stage3c-canonical-case-contract.ts \
+  scripts/verify-stage3c-fixture-source.ts \
   scripts/verify-stage3c-live-core-source.ts \
   scripts/verify-stage3c-live-matrix-93-source.ts; do
   preflight_status=0

@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { EXPECTED_STAGE3D_LIVE_TESTS, verifyStage3DLiveReport } from "../../scripts/verify-stage3d-live-report";
 
 describe("Stage 3D live report gate", () => {
@@ -56,5 +58,13 @@ describe("Stage 3D live report gate", () => {
   it("rejects a missing or malformed expected SHA", () => {
     expect(() => verifyStage3DLiveReport(valid, "", metadata)).toThrow(/canonical full SHA/);
     expect(() => verifyStage3DLiveReport(valid, "short", metadata)).toThrow(/canonical full SHA/);
+  });
+
+  it("requires the runner caller to provide the expected commit SHA", () => {
+    const runner = readFileSync(join(process.cwd(), "scripts/run-stage3d-live.sh"), "utf8");
+    expect(runner).toContain('expected_sha="${EXPECTED_COMMIT_SHA:-}"');
+    expect(runner).not.toContain('expected_sha="${EXPECTED_COMMIT_SHA:-$actual_sha}"');
+    expect(runner).toMatch(/actual_sha=.*git rev-parse HEAD/);
+    expect(runner).toMatch(/actual_sha,,.*expected_sha,,/);
   });
 });

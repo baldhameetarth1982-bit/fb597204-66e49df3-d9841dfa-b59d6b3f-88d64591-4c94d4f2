@@ -8,3 +8,7 @@
 - [x] Make every Stage 3D runtime entry point fail closed on missing or skipped evidence.
 - [ ] Observe fresh-reset 11/0/0 runtime and authenticated visual/accessibility evidence.
 - [x] Record exact evidence and blockers; keep Stage 3E not started.
+- [ ] Restore audit-log immutability for every database role with an additive terminal migration.
+- [ ] Separate the Stage 3D live opt-in and exact 11-case gate from Stage 3C.
+- [ ] Re-run Stage 3D closure, Stage 3C preservation, build, and secret validations.
+- [ ] Record Prompt #38 evidence honestly; keep Stage 3E unstarted.

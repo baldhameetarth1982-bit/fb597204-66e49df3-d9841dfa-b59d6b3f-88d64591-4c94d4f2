@@ -228,10 +228,10 @@ describe("Stage 3C CLEANUP — registration and coverage", () => {
         evidenceGroups.has(group) ||
         (group === "receiptSequences" &&
           evidenceGroups.has("monthlyReceiptSequences") &&
-          evidenceGroups.has("yearlyReceiptSequences")) ||
-        (group === "auditSelectors" && evidenceGroups.has("auditSelectors"));
+          evidenceGroups.has("yearlyReceiptSequences"));
       expect(carried, group).toBe(true);
     }
+    expect(STAGE3C_TRACKER_COVERAGE.auditSelectors).toBe("metadata");
   });
 });
 
@@ -243,6 +243,7 @@ describe("Stage 3C CLEANUP — evidence capture", () => {
     for (const g of STAGE3C_EVIDENCE_ID_GROUPS) {
       expect(e[g].length, g).toBe(e.expectedCounts[g]);
     }
+    expect(e.auditSelectors).toHaveLength(1);
     expect(e.prefix).toBe(PREFIX);
   });
 

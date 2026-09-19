@@ -235,10 +235,14 @@ must(
   "verifyTrackedRowsAbsent must verify user_roles by exact id",
 );
 
-// ---- Audit boundary ------------------------------------------------------
+// ---- Immutable audit boundary -------------------------------------------
+mustNot(
+  /from\("audit_log"\)\s*\.delete\(\)/,
+  "fixture cleanup must not delete immutable audit history",
+);
 must(
-  /gte\("created_at",\s*sel\.since\)/.test(src),
-  "audit deletion/verification must use fixture-time boundary (sel.since)",
+  /auditSelectors:\s*"metadata"/.test(src),
+  "audit selectors must be metadata retained until disposable-stack destruction",
 );
 must(/setupStartedAt/.test(src), "TrackedIds must include setupStartedAt");
 
@@ -362,7 +366,7 @@ must(
 
 // ---- Exact remaining-ID reporting ----------------------------------------
 // verifyTrackedRowsAbsent must NOT use .limit(1) on exact-ID categories.
-// Only the audit_log time-bounded probe is allowed to use .limit(1).
+// Exact-ID cleanup verification must never truncate its observation.
 {
   const vf = src.indexOf("export async function verifyTrackedRowsAbsent");
   const vfEnd = src.indexOf("export const STAGE3C_LIST_USERS_PAGE_CAP", vf);

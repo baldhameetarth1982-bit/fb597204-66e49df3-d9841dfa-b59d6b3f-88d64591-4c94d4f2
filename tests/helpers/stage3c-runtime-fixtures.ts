@@ -278,6 +278,17 @@ export function isStage3CHostAllowed(url: string): boolean {
 }
 
 export function requireStage3CEnv(): Stage3CEnv {
+
+export function requireStage3DEnv(): Stage3CEnv {
+  const { url, serviceRoleKey, publishableKey } = requireStage3RuntimeEnv(
+    "ALLOW_SOCIOHUB_LIVE_STAGE3D",
+    "Stage 3D",
+  );
+  registerSensitiveValue(serviceRoleKey);
+  registerSensitiveValue(publishableKey);
+  registerSensitiveValue(process.env.SOCIOHUB_PROTECTED_SOCIETY_ID);
+  return { url, serviceRoleKey, publishableKey };
+}
   const { url, serviceRoleKey, publishableKey } = requireStage3RuntimeEnv(
     "ALLOW_SOCIOHUB_LIVE_STAGE3C",
     "Stage 3C",

@@ -27,3 +27,4 @@
 - [x] Remove the unused non-atomic income transition path and retain only the canonical transactional RPC.
 - [x] Add semantic audit RLS, privilege, append-boundary, resident-authorization, and cross-society source checks.
 - [x] Correct the master roadmap to show Stage 3D as implemented_unverified and Stage 3E unstarted.
+- [x] Converge managed and fresh-reset audit TRUNCATE denial through forward-only migrations and positive source checks.

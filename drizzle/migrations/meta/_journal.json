@@ -92,6 +92,13 @@
       "when": 1789783779855,
       "tag": "0012_restrict_audit_log_append_to_canonical_server_path",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1790033222973,
+      "tag": "0013_close_audit_log_truncate_bypass",
+      "breakpoints": true
     }
   ]
 }

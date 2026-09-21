@@ -396,10 +396,10 @@ already existed.
 ### Server functions (`src/lib/non-member-income.functions.ts`)
 - `listIncomeCategoriesFn`, `createIncomeCategoryFn`, `updateIncomeCategoryFn`
 - `listNonMemberPayersFn`, `createNonMemberPayerFn`, `updateNonMemberPayerFn`
-- `createNonMemberIncomeRecordFn`, `verifyNonMemberIncomeRecordFn`, `rejectNonMemberIncomeRecordFn`, `reverseIncomeRecordFn`, `listIncomeRecordsFn`
+- `createNonMemberIncomeRecordFn`, `verifyIncomeRecordByIdFn`, `rejectIncomeRecordByIdFn`, `reverseIncomeRecordByIdFn`, `listIncomeRecordsFn`
 - Every function re-verifies society admin AND Pro/Premium plan server-side via `is_society_admin_for` RPC + `normalizePlan(plan_id, plan_status)`. Basic/expired/cancelled → denied.
-- Verification transitions gated by `canTransitionVerification` state machine; `reversed` is terminal.
-- Every state-change writes an `audit_log` entry (`income_record.created/verified/rejected/reversed`).
+- Verification transitions use the canonical `transition_income_record` database function; status changes and their `audit_log` entries are atomic, and `reversed` is terminal.
+- The obsolete direct-update wrappers and best-effort browser-role audit insert path were removed during the Stage 3D security closure.
 
 ### Pure logic (`src/lib/non-member-income.server.ts`)
 - Zod schemas, `PAYER_TYPES`, `PAYER_KINDS`, `SUPPORTED_METHODS`, `VERIFICATION_STATES`, `RECONCILIATION_STATES`.

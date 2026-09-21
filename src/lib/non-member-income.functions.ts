@@ -22,17 +22,11 @@ import {
   CreatePayerInput,
   UpdatePayerInput,
   CreateIncomeRecordInput,
-  VerifyRecordInput,
-  RejectRecordInput,
-  ReverseRecordInput,
   ForbiddenPlanError,
   ForbiddenSocietyError,
-  InvalidTransitionError,
-  canTransitionVerification,
   isNonMemberIncomeAllowed,
   toPublicPayerList,
   toPublicIncomeList,
-  type VerificationState,
 } from "@/lib/non-member-income.server";
 import { z } from "zod";
 
@@ -101,27 +95,6 @@ async function assertProPlan(ctx: Ctx, societyId: string): Promise<void> {
 async function requireAdminAndPlan(ctx: Ctx, societyId: string): Promise<void> {
   await assertSocietyAdmin(ctx, societyId);
   await assertProPlan(ctx, societyId);
-}
-
-async function auditLog(
-  ctx: Ctx,
-  action: string,
-  societyId: string,
-  targetId: string,
-  metadata: Record<string, unknown>,
-) {
-  try {
-    await ctx.supabase.from("audit_log").insert({
-      actor_id: ctx.userId,
-      action,
-      target_table: "society_income_records",
-      target_id: targetId,
-      society_id: societyId,
-      metadata,
-    });
-  } catch {
-    // audit log is best-effort but never blocks user-visible responses
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -389,93 +362,6 @@ export const createNonMemberIncomeRecordFn = createServerFn({ method: "POST" })
   });
 
 
-
-async function transitionVerification(
-  ctx: Ctx,
-  societyId: string,
-  id: string,
-  next: VerificationState,
-  extraPatch: Record<string, unknown>,
-  meta: Record<string, unknown>,
-) {
-  const { data: existing } = await ctx.supabase
-    .from("society_income_records")
-    .select("id, society_id, verification_status")
-    .eq("id", id)
-    .maybeSingle();
-  if (!existing || (existing as any).society_id !== societyId)
-    throw new ForbiddenSocietyError();
-  const current = (existing as any).verification_status as VerificationState;
-  if (!canTransitionVerification(current, next))
-    throw new InvalidTransitionError(current, next);
-  const { error } = await ctx.supabase
-    .from("society_income_records")
-    .update({ verification_status: next, ...extraPatch })
-    .eq("id", id)
-    .eq("society_id", societyId);
-  if (error) throw new Error("update_failed");
-  await auditLog(ctx, `income_record.${next}`, societyId, id, {
-    from: current,
-    to: next,
-    ...meta,
-  });
-}
-
-export const verifyNonMemberIncomeRecordFn = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((raw) => VerifyRecordInput.parse(raw))
-  .handler(async ({ data, context }) => {
-    const ctx = context as Ctx;
-    await requireAdminAndPlan(ctx, data.societyId);
-    await transitionVerification(
-      ctx,
-      data.societyId,
-      data.id,
-      "verified",
-      { verified_at: new Date().toISOString(), verified_by: ctx.userId },
-      {},
-    );
-    return { ok: true };
-  });
-
-export const rejectNonMemberIncomeRecordFn = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((raw) => RejectRecordInput.parse(raw))
-  .handler(async ({ data, context }) => {
-    const ctx = context as Ctx;
-    await requireAdminAndPlan(ctx, data.societyId);
-    await transitionVerification(
-      ctx,
-      data.societyId,
-      data.id,
-      "rejected",
-      { reversal_reason: data.reason },
-      { reason: data.reason },
-    );
-    return { ok: true };
-  });
-
-export const reverseIncomeRecordFn = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((raw) => ReverseRecordInput.parse(raw))
-  .handler(async ({ data, context }) => {
-    const ctx = context as Ctx;
-    await requireAdminAndPlan(ctx, data.societyId);
-    await transitionVerification(
-      ctx,
-      data.societyId,
-      data.id,
-      "reversed",
-      {
-        reversed_at: new Date().toISOString(),
-        reversed_by: ctx.userId,
-        reversal_reason: data.reason,
-        reconciliation_status: "reversed",
-      },
-      { reason: data.reason },
-    );
-    return { ok: true };
-  });
 
 const ListFilters = z.object({
   societyId: z.string().uuid(),

@@ -24,3 +24,6 @@
 - [x] Add the smallest forward-only fresh-reset migration that converges the final Stage 3D authorization and audit-security state.
 - [x] Add positive cross-track security assertions and rerun all locally available Prompt #45 verification gates.
 - [x] Record only observed fresh-reset/runtime evidence and keep Stage 3E unstarted.
+- [x] Remove the unused non-atomic income transition path and retain only the canonical transactional RPC.
+- [x] Add semantic audit RLS, privilege, append-boundary, resident-authorization, and cross-society source checks.
+- [x] Correct the master roadmap to show Stage 3D as implemented_unverified and Stage 3E unstarted.

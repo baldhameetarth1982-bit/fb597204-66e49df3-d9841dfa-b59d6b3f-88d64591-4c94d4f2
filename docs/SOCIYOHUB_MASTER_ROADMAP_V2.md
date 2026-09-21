@@ -210,7 +210,7 @@ minor accessibility polish and noncritical optimisation to Stages 12, 13 or 16.
 - Safe team directory and audit history.
 
 ## 2D — Migration and bulk import
-**CURRENT ACTIVE STAGE**
+**COMPLETE**
 
 Completed foundation:
 - Private CSV upload.
@@ -751,10 +751,9 @@ targeted using private resident data.
 
 # 8. Current next position
 
-Current active work remains:
+Current closure work remains:
 
-> **Stage 2D — Migration and Bulk Import**
+> **Stage 3D — implemented_unverified pending disposable fresh-reset and exact 11/0/0 runtime evidence**
 
-Do not start Stage 2E until trusted internal mutations, real canonical commit,
-separate idempotency, real provenance, unresolved-row blocking and final result
-UI are complete with no known critical/high issue.
+Stage 2D and Stage 3C are complete. Do not start Stage 3E until Stage 3D has
+fresh disposable-runtime evidence and no unresolved critical/high issue.

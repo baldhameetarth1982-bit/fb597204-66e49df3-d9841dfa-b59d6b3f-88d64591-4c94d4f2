@@ -753,7 +753,7 @@ targeted using private resident data.
 
 Current closure work remains:
 
-> **Stage 3D — implemented_unverified pending disposable fresh-reset and exact 11/0/0 runtime evidence**
+> **Stage 3D — source-converged, implemented_unverified pending disposable fresh-reset and exact 11/0/0 runtime evidence**
 
 Stage 2D and Stage 3C are complete. Do not start Stage 3E until Stage 3D has
 fresh disposable-runtime evidence and no unresolved critical/high issue.

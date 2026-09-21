@@ -99,6 +99,13 @@
       "when": 1790033222973,
       "tag": "0013_close_audit_log_truncate_bypass",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1790034407833,
+      "tag": "0014_close_audit_log_truncate_bypass_fresh_reset",
+      "breakpoints": true
     }
   ]
 }

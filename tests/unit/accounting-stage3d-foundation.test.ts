@@ -112,6 +112,25 @@ describe("Stage 3D canonical accounting foundation", () => {
     expect(definition).toContain("role = 'society_admin'::public.app_role");
     expect(definition).not.toContain("block_admin");
     expect(definition).toContain("is_active");
+
+    const internalDefinitions = [
+      ...chain.matchAll(
+        /CREATE OR REPLACE FUNCTION public\.is_society_admin_for_internal\s*\([\s\S]*?\$\$;/g,
+      ),
+    ];
+    const effectiveInternal = internalDefinitions.at(-1)?.[0] ?? "";
+    expect(effectiveInternal).toContain("role = 'society_admin'::public.app_role");
+    expect(effectiveInternal).not.toContain("block_admin");
+
+    const currentUserDefinitions = [
+      ...chain.matchAll(
+        /CREATE OR REPLACE FUNCTION public\.current_user_is_society_admin_for\s*\([\s\S]*?\$\$;/g,
+      ),
+    ];
+    const effectiveCurrentUser = currentUserDefinitions.at(-1)?.[0] ?? "";
+    expect(effectiveCurrentUser).toMatch(
+      /is_society_admin_for_internal\(auth\.uid\(\), _society_id\)/,
+    );
   });
 
   it("validates journal sources and keeps posting helpers private", () => {

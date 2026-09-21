@@ -365,6 +365,19 @@ describe("mutation input surface is minimal (Turn 18B.2)", () => {
     expect(src).not.toMatch(/rejected_by\s*:/);
     expect(src).not.toMatch(/reversed_by\s*:/);
   });
+
+  it("has no legacy direct-update transition or best-effort audit path", () => {
+    const src = fs.readFileSync(
+      path.resolve(__dirname, "../..", "src/lib/non-member-income.functions.ts"),
+      "utf8",
+    );
+    expect(src).not.toMatch(/function\s+transitionVerification/);
+    expect(src).not.toMatch(/verifyNonMemberIncomeRecordFn/);
+    expect(src).not.toMatch(/rejectNonMemberIncomeRecordFn/);
+    expect(src).not.toMatch(/reverseIncomeRecordFn/);
+    expect(src).not.toMatch(/ctx\.supabase\.from\(["']audit_log["']\)\.insert/);
+    expect(src).toMatch(/ctx\.supabase\.rpc\(["']transition_income_record["']/);
+  });
 });
 
 describe("safe-next path (preflight)", () => {

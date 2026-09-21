@@ -50,6 +50,56 @@ function auditColumnLists(sql: string) {
 }
 
 describe("audit-log contract recovery", () => {
+  it("keeps authenticated audit reads society-isolated under RLS", () => {
+    const auditPolicies = migrations
+      .filter(({ sql }) => /ON public\.audit_log FOR SELECT TO authenticated/i.test(sql))
+      .flatMap(({ sql }) => [
+        ...sql.matchAll(/CREATE POLICY\s+"[^"]+"\s+ON public\.audit_log FOR SELECT TO authenticated\s+USING\s*\(([\s\S]*?)\);/gi),
+      ])
+      .map((match) => match[1] ?? "");
+
+    expect(auditPolicies).toHaveLength(2);
+    expect(auditPolicies.some((policy) => /is_super_admin\(auth\.uid\(\)\)/.test(policy))).toBe(true);
+    expect(
+      auditPolicies.some(
+        (policy) =>
+          /society_id IS NOT NULL/.test(policy) &&
+          /is_society_admin_for\(auth\.uid\(\), society_id\)/.test(policy),
+      ),
+    ).toBe(true);
+    expect(migrationChain).toMatch(/ALTER TABLE public\.audit_log ENABLE ROW LEVEL SECURITY/);
+    expect(migrationChain).not.toMatch(/CREATE POLICY[\s\S]{0,180}ON public\.audit_log[\s\S]{0,180}USING\s*\(\s*true\s*\)/i);
+
+    const latestAdminHelper = latestFunctionDefinition("is_society_admin_for");
+    expect(latestAdminHelper).toMatch(/role\s*=\s*'society_admin'::public\.app_role/);
+    expect(latestAdminHelper).not.toMatch(/block_admin/);
+  });
+
+  it("retains only append/read privileges and no indirect audit deletion path", () => {
+    const terminalIndex = migrationChain.lastIndexOf(
+      "REVOKE UPDATE, DELETE ON TABLE public.audit_log FROM PUBLIC, anon, authenticated, service_role",
+    );
+    expect(terminalIndex).toBeGreaterThanOrEqual(0);
+    const effectiveTail = migrationChain.slice(terminalIndex);
+    expect(effectiveTail).not.toMatch(/GRANT\s+(?:ALL|[^;]*(?:UPDATE|DELETE)[^;]*)\s+ON(?:\s+TABLE)?\s+public\.audit_log/i);
+    expect(effectiveTail).not.toMatch(/DROP\s+TRIGGER\s+audit_log_immutable(?![\s\S]*CREATE\s+TRIGGER\s+audit_log_immutable)/i);
+    expect(migrationChain).not.toMatch(/TRUNCATE\s+(?:TABLE\s+)?public\.audit_log/i);
+    expect(migrationChain).not.toMatch(/CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION[\s\S]*?DELETE\s+FROM\s+public\.audit_log/i);
+  });
+
+  it("keeps the canonical income transition update and audit append atomic", () => {
+    const definition = latestFunctionDefinition("transition_income_record");
+    expect(definition).toMatch(/SECURITY DEFINER/);
+    expect(definition).toMatch(/SET search_path = public/);
+    expect(definition).toMatch(/UPDATE public\.society_income_records/);
+    expect(definition).toMatch(/INSERT INTO public\.audit_log/);
+    expect(definition.indexOf("UPDATE public.society_income_records")).toBeLessThan(
+      definition.indexOf("INSERT INTO public.audit_log"),
+    );
+    expect(migrationChain).toMatch(/REVOKE ALL ON FUNCTION public\.transition_income_record[^;]*FROM PUBLIC/);
+    expect(migrationChain).toMatch(/REVOKE ALL ON FUNCTION public\.transition_income_record[^;]*FROM anon/);
+  });
+
   it("keeps every effective repaired function on the canonical audit columns", () => {
     for (const functionName of repairedFunctions) {
       const definition = latestFunctionDefinition(functionName);
@@ -128,6 +178,21 @@ describe("audit-log contract recovery", () => {
     expect(freshResetFinal).toMatch(/REVOKE SELECT ON TABLE public\.audit_log FROM PUBLIC, anon/);
     expect(freshResetFinal).toMatch(/GRANT SELECT ON TABLE public\.audit_log TO authenticated/);
     expect(freshResetFinal).toMatch(/GRANT SELECT, INSERT ON TABLE public\.audit_log TO service_role/);
+    const authIndex = freshResetFinal.indexOf("IF NOT v_is_admin AND NOT v_is_active_resident THEN");
+    const visibilityIndex = freshResetFinal.indexOf("resolve_financial_visibility(_society_id)");
+    const planIndex = freshResetFinal.indexOf("_finance_plan_enabled(_society_id)");
+    const dataIndex = freshResetFinal.indexOf("WITH scoped_lines AS");
+    expect(authIndex).toBeGreaterThanOrEqual(0);
+    expect(authIndex).toBeLessThan(visibilityIndex);
+    expect(visibilityIndex).toBeLessThan(planIndex);
+    expect(planIndex).toBeLessThan(dataIndex);
+    expect(freshResetFinal).toMatch(/f\.society_id = _society_id/);
+    expect(freshResetFinal).toMatch(/j\.society_id = _society_id/);
+    expect(freshResetFinal).toMatch(/l\.society_id = j\.society_id/);
+    expect(freshResetFinal).toMatch(/a\.society_id = l\.society_id/);
+    expect(freshResetFinal).toMatch(/_to - _from > 730/);
+    expect(freshResetFinal).toMatch(/_limit NOT BETWEEN 1 AND 50/);
+    expect(freshResetFinal).not.toMatch(/actor_id|user_id'|payer_id|flat_id'/);
   });
 });
 

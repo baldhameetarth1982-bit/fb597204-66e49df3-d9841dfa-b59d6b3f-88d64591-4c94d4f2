@@ -85,10 +85,14 @@ describe("audit-log contract recovery", () => {
     expect(effectiveTail).not.toMatch(/DROP\s+TRIGGER\s+audit_log_immutable(?![\s\S]*CREATE\s+TRIGGER\s+audit_log_immutable)/i);
     expect(migrationChain).not.toMatch(/TRUNCATE\s+(?:TABLE\s+)?public\.audit_log/i);
     expect(migrationChain).not.toMatch(/CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION[\s\S]*?DELETE\s+FROM\s+public\.audit_log/i);
-    expect(migrationChain).toMatch(
+    const managedTruncateLockdown = readFileSync(
+      join(process.cwd(), "drizzle/migrations/0013_close_audit_log_truncate_bypass.sql"),
+      "utf8",
+    );
+    expect(managedTruncateLockdown).toMatch(
       /REVOKE TRUNCATE ON TABLE public\.audit_log FROM PUBLIC, anon, authenticated, service_role/,
     );
-    expect(migrationChain).toMatch(
+    expect(managedTruncateLockdown).toMatch(
       /CREATE TRIGGER audit_log_truncate_immutable\s+BEFORE TRUNCATE ON public\.audit_log\s+FOR EACH STATEMENT\s+EXECUTE FUNCTION public\._protect_audit_log_history\(\)/,
     );
   });

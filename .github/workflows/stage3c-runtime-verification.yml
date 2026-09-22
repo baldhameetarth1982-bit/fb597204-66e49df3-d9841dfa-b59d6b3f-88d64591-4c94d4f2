@@ -478,6 +478,9 @@ jobs:
           } >> "$GITHUB_ENV"
           rm -f .stage3d-supabase.env
 
+      - name: Validate Stage 3D fixture safety
+        run: bun scripts/verify-stage3c-fixture-source.ts
+
       - name: Stage 3D focused contracts
         run: |
           bunx vitest run \

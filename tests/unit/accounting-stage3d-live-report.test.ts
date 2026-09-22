@@ -67,4 +67,18 @@ describe("Stage 3D live report gate", () => {
     expect(runner).toMatch(/actual_sha=.*git rev-parse HEAD/);
     expect(runner).toMatch(/actual_sha,,.*expected_sha,,/);
   });
+
+  it("requires fixture safety before the independent Stage 3D runtime", () => {
+    const workflow = readFileSync(
+      join(process.cwd(), ".github/workflows/stage3c-runtime-verification.yml"),
+      "utf8",
+    );
+    const stage3dJob = workflow.slice(workflow.indexOf("  stage3d_runtime:"));
+    const fixtureCheck = stage3dJob.indexOf("bun scripts/verify-stage3c-fixture-source.ts");
+    const liveRun = stage3dJob.indexOf("bun run test:stage3d:live");
+
+    expect(fixtureCheck).toBeGreaterThan(-1);
+    expect(liveRun).toBeGreaterThan(fixtureCheck);
+    expect(stage3dJob).not.toMatch(/^\s+needs:\s+runtime\s*$/m);
+  });
 });

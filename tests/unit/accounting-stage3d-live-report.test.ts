@@ -81,4 +81,15 @@ describe("Stage 3D live report gate", () => {
     expect(liveRun).toBeGreaterThan(fixtureCheck);
     expect(stage3dJob).not.toMatch(/^\s+needs:\s+runtime\s*$/m);
   });
+
+  it("requires the disposable SQL connection used for real TRUNCATE denial checks", () => {
+    const runner = readFileSync(join(process.cwd(), "scripts/run-stage3d-live.sh"), "utf8");
+    const liveSuite = readFileSync(
+      join(process.cwd(), "tests/integration/accounting-stage3d-live.test.ts"),
+      "utf8",
+    );
+    expect(runner).toContain("SOCIOHUB_TEST_DATABASE_URL");
+    expect(liveSuite).toContain('sql.unsafe("truncate table public.audit_log")');
+    expect(liveSuite).toContain('["authenticated", "service_role"]');
+  });
 });

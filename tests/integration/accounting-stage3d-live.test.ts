@@ -5,12 +5,13 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createClient } from "@supabase/supabase-js";
+import postgres from "postgres";
 import {
   requireStage3DEnv,
   setupStage3CFixture,
   type Stage3CFixture,
 } from "../helpers/stage3c-runtime-fixtures";
-import type { Stage3RuntimeEnv } from "../helpers/stage3-runtime-env";
+import { requireStage3DDatabaseUrl, type Stage3RuntimeEnv } from "../helpers/stage3-runtime-env";
 
 const enabled = process.env.ALLOW_SOCIOHUB_LIVE_STAGE3D === "true";
 const live = enabled ? describe : describe.skip;
@@ -321,6 +322,26 @@ live("Stage 3D canonical accounting behavior", () => {
     expect(privilegedMutation.error).toBeTruthy();
     const privilegedDelete = await f.admin.from("audit_log").delete().eq("id", originalAudit.id);
     expect(privilegedDelete.error).toBeTruthy();
+
+    // PostgREST does not expose TRUNCATE. Use the disposable database connection
+    // to execute the real statement under each API role, then prove all rows remain.
+    const sql = postgres(requireStage3DDatabaseUrl(), { max: 1 });
+    const beforeTruncate = await sql<{ count: string }[]>`select count(*)::text as count from public.audit_log`;
+    try {
+      for (const role of ["authenticated", "service_role"] as const) {
+        await sql.unsafe(`set role ${role}`);
+        await expect(sql.unsafe("truncate table public.audit_log")).rejects.toBeTruthy();
+        await sql.unsafe("reset role");
+      }
+    } finally {
+      await sql.unsafe("reset role").catch(() => undefined);
+      await sql.end();
+    }
+    const verificationSql = postgres(requireStage3DDatabaseUrl(), { max: 1 });
+    const afterTruncate = await verificationSql<{ count: string }[]>`select count(*)::text as count from public.audit_log`;
+    await verificationSql.end();
+    expect(afterTruncate[0]?.count).toBe(beforeTruncate[0]?.count);
+
     const preservedAudit = await f.admin.from("audit_log").select("id,action,target_table,target_id,metadata").eq("id", originalAudit.id).single();
     expect(preservedAudit.error).toBeNull();
     expect(preservedAudit.data).toEqual(originalAudit);

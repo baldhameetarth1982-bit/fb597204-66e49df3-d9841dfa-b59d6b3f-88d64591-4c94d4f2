@@ -6,7 +6,7 @@ if [ "${ALLOW_SOCIOHUB_LIVE_STAGE3D:-}" != "true" ]; then
   exit 1
 fi
 
-for name in SOCIOHUB_TEST_SUPABASE_URL SOCIOHUB_TEST_SUPABASE_SERVICE_ROLE_KEY SOCIOHUB_TEST_SUPABASE_PUBLISHABLE_KEY; do
+for name in SOCIOHUB_TEST_SUPABASE_URL SOCIOHUB_TEST_SUPABASE_SERVICE_ROLE_KEY SOCIOHUB_TEST_SUPABASE_PUBLISHABLE_KEY SOCIOHUB_TEST_DATABASE_URL; do
   if [ -z "${!name:-}" ]; then
     printf 'Stage 3D live verification requires %s.\n' "$name" >&2
     exit 1
@@ -23,6 +23,19 @@ esac
 
 if [ -n "${SUPABASE_URL:-}" ] && [ "$SUPABASE_URL" = "$SOCIOHUB_TEST_SUPABASE_URL" ]; then
   printf '%s\n' "Stage 3D refuses to run because the test URL matches SUPABASE_URL." >&2
+  exit 1
+fi
+
+case "$SOCIOHUB_TEST_DATABASE_URL" in
+  postgres://*@127.0.0.1:*/*|postgresql://*@127.0.0.1:*/*|postgres://*@localhost:*/*|postgresql://*@localhost:*/*) ;;
+  *)
+    printf '%s\n' "Stage 3D refuses to run against a non-disposable PostgreSQL URL." >&2
+    exit 1
+    ;;
+esac
+
+if [ -n "${DATABASE_URL:-}" ] && [ "$DATABASE_URL" = "$SOCIOHUB_TEST_DATABASE_URL" ]; then
+  printf '%s\n' "Stage 3D refuses to run because the test database URL matches DATABASE_URL." >&2
   exit 1
 fi
 

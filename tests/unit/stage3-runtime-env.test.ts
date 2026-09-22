@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
   isStage3DisposableHostAllowed,
+  requireStage3DDatabaseUrl,
   requireStage3RuntimeEnv,
 } from "../helpers/stage3-runtime-env";
 
@@ -11,6 +12,8 @@ const names = [
   "SOCIOHUB_TEST_SUPABASE_SERVICE_ROLE_KEY",
   "SOCIOHUB_TEST_SUPABASE_PUBLISHABLE_KEY",
   "SUPABASE_URL",
+  "SOCIOHUB_TEST_DATABASE_URL",
+  "DATABASE_URL",
 ] as const;
 
 afterEach(() => {
@@ -55,5 +58,15 @@ describe("neutral Stage 3 disposable runtime guard", () => {
     expect(() => requireStage3RuntimeEnv("ALLOW_SOCIOHUB_LIVE_STAGE3D", "Stage 3D")).toThrow(
       /shared SUPABASE_URL/,
     );
+  });
+
+  it("requires a distinct local PostgreSQL connection for Stage 3D SQL-only checks", () => {
+    expect(() => requireStage3DDatabaseUrl()).toThrow(/SOCIOHUB_TEST_DATABASE_URL/);
+    process.env.SOCIOHUB_TEST_DATABASE_URL = "postgresql://postgres:postgres@example.invalid:5432/postgres";
+    expect(() => requireStage3DDatabaseUrl()).toThrow(/non-disposable/);
+    process.env.SOCIOHUB_TEST_DATABASE_URL = "postgresql://postgres:postgres@127.0.0.1:54322/postgres";
+    expect(requireStage3DDatabaseUrl()).toBe(process.env.SOCIOHUB_TEST_DATABASE_URL);
+    process.env.DATABASE_URL = process.env.SOCIOHUB_TEST_DATABASE_URL;
+    expect(() => requireStage3DDatabaseUrl()).toThrow(/matching DATABASE_URL/);
   });
 });

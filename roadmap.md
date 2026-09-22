@@ -28,3 +28,4 @@
 - [x] Add semantic audit RLS, privilege, append-boundary, resident-authorization, and cross-society source checks.
 - [x] Correct the master roadmap to show Stage 3D as implemented_unverified and Stage 3E unstarted.
 - [x] Converge managed and fresh-reset audit TRUNCATE denial through forward-only migrations and positive source checks.
+- [x] Add an executable Stage 3D external runtime handoff and require fixture-source validation in its independent CI job.

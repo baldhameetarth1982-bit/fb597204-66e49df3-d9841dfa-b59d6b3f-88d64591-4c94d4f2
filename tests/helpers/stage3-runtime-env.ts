@@ -4,6 +4,29 @@ export type Stage3RuntimeEnv = {
   publishableKey: string;
 };
 
+export function requireStage3DDatabaseUrl(): string {
+  const databaseUrl = process.env.SOCIOHUB_TEST_DATABASE_URL ?? "";
+  if (!databaseUrl) {
+    throw new Error("Stage 3D live fixtures require SOCIOHUB_TEST_DATABASE_URL.");
+  }
+  let parsed: URL;
+  try {
+    parsed = new URL(databaseUrl);
+  } catch {
+    throw new Error("Stage 3D database URL is malformed.");
+  }
+  if (!["postgres:", "postgresql:"].includes(parsed.protocol)) {
+    throw new Error("Stage 3D database URL must use PostgreSQL.");
+  }
+  if (!STAGE3_DISPOSABLE_HOSTS.includes(parsed.hostname.toLowerCase())) {
+    throw new Error("Stage 3D refuses a non-disposable database connection.");
+  }
+  if (process.env.DATABASE_URL && process.env.DATABASE_URL === databaseUrl) {
+    throw new Error("Stage 3D refuses a database connection matching DATABASE_URL.");
+  }
+  return databaseUrl;
+}
+
 export const STAGE3_DISPOSABLE_HOSTS: readonly string[] = Object.freeze([
   "localhost",
   "127.0.0.1",

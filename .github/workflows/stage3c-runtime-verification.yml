@@ -465,18 +465,24 @@ jobs:
           : "${API_URL:?API_URL missing}"
           : "${SERVICE_ROLE_KEY:?SERVICE_ROLE_KEY missing}"
           : "${ANON_KEY:?ANON_KEY missing}"
+          : "${DB_URL:?DB_URL missing}"
           case "$API_URL" in
             http://127.0.0.1:*|http://localhost:*) : ok ;;
             *) echo "Refusing non-local Stage 3D database URL"; exit 1 ;;
           esac
           echo "::add-mask::${SERVICE_ROLE_KEY}"
           echo "::add-mask::${ANON_KEY}"
+          echo "::add-mask::${DB_URL}"
           {
             echo "SOCIOHUB_TEST_SUPABASE_URL=${API_URL}"
             echo "SOCIOHUB_TEST_SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}"
             echo "SOCIOHUB_TEST_SUPABASE_PUBLISHABLE_KEY=${ANON_KEY}"
+            echo "SOCIOHUB_TEST_DATABASE_URL=${DB_URL}"
           } >> "$GITHUB_ENV"
           rm -f .stage3d-supabase.env
+
+      - name: Validate Stage 3D fixture safety
+        run: bun scripts/verify-stage3c-fixture-source.ts
 
       - name: Stage 3D focused contracts
         run: |

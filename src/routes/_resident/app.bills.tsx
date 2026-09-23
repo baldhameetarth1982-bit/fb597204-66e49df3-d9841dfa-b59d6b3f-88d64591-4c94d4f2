@@ -10,6 +10,7 @@ import { ClaimFlatSheet } from "@/components/resident/ClaimFlatSheet";
 import { useServerFn } from "@tanstack/react-start";
 import { getResidentBills } from "@/lib/billing-generate.functions";
 import { getBillDisplayStatus } from "@/lib/bill-display-status";
+import { toSafeFinanceError } from "@/lib/finance-safe-error";
 
 export const Route = createFileRoute("/_resident/app/bills")({
   head: () => ({ meta: [{ title: "Bills — SociyoHub" }] }),
@@ -42,12 +43,15 @@ function BillsScreen() {
   const [loading, setLoading] = useState(true);
   const [noFlat, setNoFlat] = useState(false);
   const [claimOpen, setClaimOpen] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     const sync = async () => {
       const isNowOnline = typeof navigator !== "undefined" ? navigator.onLine : true;
       setOnline(isNowOnline);
+      setLoadError(null);
       const cacheKey = profile?.id ? `bills:${profile.id}` : "bills";
       if (isNowOnline) {
         if (!profile?.id) {
@@ -71,8 +75,12 @@ function BillsScreen() {
             setNoFlat(res.hasLinkedFlat === false);
             setVisibleBills(rows);
           }
-        } catch {
-          if (!cancelled) setVisibleBills([]);
+        } catch (e) {
+          // Never show "no bills" after a failed load; keep last cached rows.
+          if (!cancelled) {
+            setLoadError(toSafeFinanceError(e).message);
+            setVisibleBills(cacheGet<BillRow[]>(cacheKey) ?? []);
+          }
         }
       } else {
         setVisibleBills(cacheGet<BillRow[]>(cacheKey) ?? []);
@@ -87,7 +95,7 @@ function BillsScreen() {
       window.removeEventListener("online", sync);
       window.removeEventListener("offline", sync);
     };
-  }, [profile?.id, profile?.society_id, listMyBills]);
+  }, [profile?.id, profile?.society_id, listMyBills, reloadKey]);
 
   if (loading) {
     return (
@@ -144,7 +152,20 @@ function BillsScreen() {
           Your bills
         </h2>
         <div className="space-y-3">
-          {visibleBills.length === 0 ? (
+          {loadError && (
+            <Card className="rounded-2xl border-destructive/30" role="alert">
+              <CardContent className="p-4 flex items-center justify-between gap-3">
+                <p className="text-sm text-muted-foreground">
+                  {loadError}
+                  {visibleBills.length > 0 ? " Showing your last saved bills." : ""}
+                </p>
+                <Button size="sm" variant="outline" className="min-h-11 shrink-0" onClick={() => setReloadKey((k) => k + 1)}>
+                  Retry
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+          {visibleBills.length === 0 && loadError ? null : visibleBills.length === 0 ? (
             <Card className="rounded-2xl">
               <CardContent className="p-6 text-center text-sm text-muted-foreground">
                 No bills found for your flat yet.

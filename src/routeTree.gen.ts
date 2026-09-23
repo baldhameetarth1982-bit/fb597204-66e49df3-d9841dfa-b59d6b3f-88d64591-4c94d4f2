@@ -111,7 +111,6 @@ import { Route as ResidentAppActivityRouteImport } from './routes/_resident/app.
 import { Route as ResidentAppAchievementsRouteImport } from './routes/_resident/app.achievements'
 import { Route as AdminAdminWithdrawalsRouteImport } from './routes/_admin/admin.withdrawals'
 import { Route as AdminAdminUsersRouteImport } from './routes/_admin/admin.users'
-import { Route as AdminAdminSocietiesRouteImport } from './routes/_admin/admin.societies'
 import { Route as AdminAdminSettingsRouteImport } from './routes/_admin/admin.settings'
 import { Route as AdminAdminSecurityRouteImport } from './routes/_admin/admin.security'
 import { Route as AdminAdminSearchRouteImport } from './routes/_admin/admin.search'
@@ -131,6 +130,7 @@ import { Route as AdminAdminAdsRouteImport } from './routes/_admin/admin.ads'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as SocietySocietyQrIndexRouteImport } from './routes/_society/society.qr.index'
+import { Route as AdminAdminSocietiesIndexRouteImport } from './routes/_admin/admin.societies.index'
 import { Route as ApiPublicHooksRunBillingRouteImport } from './routes/api/public/hooks/run-billing'
 import { Route as ApiPublicHooksRazorpayRouteImport } from './routes/api/public/hooks/razorpay'
 import { Route as ApiPublicHooksMaintenanceRemindersRouteImport } from './routes/api/public/hooks/maintenance-reminders'
@@ -672,11 +672,6 @@ const AdminAdminUsersRoute = AdminAdminUsersRouteImport.update({
   path: '/admin/users',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminAdminSocietiesRoute = AdminAdminSocietiesRouteImport.update({
-  id: '/admin/societies',
-  path: '/admin/societies',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminAdminSettingsRoute = AdminAdminSettingsRouteImport.update({
   id: '/admin/settings',
   path: '/admin/settings',
@@ -773,6 +768,12 @@ const SocietySocietyQrIndexRoute = SocietySocietyQrIndexRouteImport.update({
   path: '/society/qr/',
   getParentRoute: () => SocietyRoute,
 } as any)
+const AdminAdminSocietiesIndexRoute =
+  AdminAdminSocietiesIndexRouteImport.update({
+    id: '/admin/societies/',
+    path: '/admin/societies/',
+    getParentRoute: () => AdminRoute,
+  } as any)
 const ApiPublicHooksRunBillingRoute =
   ApiPublicHooksRunBillingRouteImport.update({
     id: '/api/public/hooks/run-billing',
@@ -925,7 +926,6 @@ export interface FileRoutesByFullPath {
   '/admin/search': typeof AdminAdminSearchRoute
   '/admin/security': typeof AdminAdminSecurityRoute
   '/admin/settings': typeof AdminAdminSettingsRoute
-  '/admin/societies': typeof AdminAdminSocietiesRoute
   '/admin/users': typeof AdminAdminUsersRoute
   '/admin/withdrawals': typeof AdminAdminWithdrawalsRoute
   '/app/achievements': typeof ResidentAppAchievementsRoute
@@ -1014,6 +1014,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
+  '/admin/societies/': typeof AdminAdminSocietiesIndexRoute
   '/society/qr/': typeof SocietySocietyQrIndexRoute
   '/api/public/verify/no-dues/$token': typeof ApiPublicVerifyNoDuesTokenRoute
 }
@@ -1063,7 +1064,6 @@ export interface FileRoutesByTo {
   '/admin/search': typeof AdminAdminSearchRoute
   '/admin/security': typeof AdminAdminSecurityRoute
   '/admin/settings': typeof AdminAdminSettingsRoute
-  '/admin/societies': typeof AdminAdminSocietiesRoute
   '/admin/users': typeof AdminAdminUsersRoute
   '/admin/withdrawals': typeof AdminAdminWithdrawalsRoute
   '/app/achievements': typeof ResidentAppAchievementsRoute
@@ -1152,6 +1152,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
+  '/admin/societies': typeof AdminAdminSocietiesIndexRoute
   '/society/qr': typeof SocietySocietyQrIndexRoute
   '/api/public/verify/no-dues/$token': typeof ApiPublicVerifyNoDuesTokenRoute
 }
@@ -1207,7 +1208,6 @@ export interface FileRoutesById {
   '/_admin/admin/search': typeof AdminAdminSearchRoute
   '/_admin/admin/security': typeof AdminAdminSecurityRoute
   '/_admin/admin/settings': typeof AdminAdminSettingsRoute
-  '/_admin/admin/societies': typeof AdminAdminSocietiesRoute
   '/_admin/admin/users': typeof AdminAdminUsersRoute
   '/_admin/admin/withdrawals': typeof AdminAdminWithdrawalsRoute
   '/_resident/app/achievements': typeof ResidentAppAchievementsRoute
@@ -1296,6 +1296,7 @@ export interface FileRoutesById {
   '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
+  '/_admin/admin/societies/': typeof AdminAdminSocietiesIndexRoute
   '/_society/society/qr/': typeof SocietySocietyQrIndexRoute
   '/api/public/verify/no-dues/$token': typeof ApiPublicVerifyNoDuesTokenRoute
 }
@@ -1348,7 +1349,6 @@ export interface FileRouteTypes {
     | '/admin/search'
     | '/admin/security'
     | '/admin/settings'
-    | '/admin/societies'
     | '/admin/users'
     | '/admin/withdrawals'
     | '/app/achievements'
@@ -1437,6 +1437,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/maintenance-reminders'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
+    | '/admin/societies/'
     | '/society/qr/'
     | '/api/public/verify/no-dues/$token'
   fileRoutesByTo: FileRoutesByTo
@@ -1486,7 +1487,6 @@ export interface FileRouteTypes {
     | '/admin/search'
     | '/admin/security'
     | '/admin/settings'
-    | '/admin/societies'
     | '/admin/users'
     | '/admin/withdrawals'
     | '/app/achievements'
@@ -1575,6 +1575,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/maintenance-reminders'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
+    | '/admin/societies'
     | '/society/qr'
     | '/api/public/verify/no-dues/$token'
   id:
@@ -1629,7 +1630,6 @@ export interface FileRouteTypes {
     | '/_admin/admin/search'
     | '/_admin/admin/security'
     | '/_admin/admin/settings'
-    | '/_admin/admin/societies'
     | '/_admin/admin/users'
     | '/_admin/admin/withdrawals'
     | '/_resident/app/achievements'
@@ -1718,6 +1718,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/maintenance-reminders'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
+    | '/_admin/admin/societies/'
     | '/_society/society/qr/'
     | '/api/public/verify/no-dues/$token'
   fileRoutesById: FileRoutesById
@@ -2475,13 +2476,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminUsersRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/_admin/admin/societies': {
-      id: '/_admin/admin/societies'
-      path: '/admin/societies'
-      fullPath: '/admin/societies'
-      preLoaderRoute: typeof AdminAdminSocietiesRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/_admin/admin/settings': {
       id: '/_admin/admin/settings'
       path: '/admin/settings'
@@ -2614,6 +2608,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/society/qr/'
       preLoaderRoute: typeof SocietySocietyQrIndexRouteImport
       parentRoute: typeof SocietyRoute
+    }
+    '/_admin/admin/societies/': {
+      id: '/_admin/admin/societies/'
+      path: '/admin/societies'
+      fullPath: '/admin/societies/'
+      preLoaderRoute: typeof AdminAdminSocietiesIndexRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/api/public/hooks/run-billing': {
       id: '/api/public/hooks/run-billing'
@@ -2768,9 +2769,9 @@ interface AdminRouteChildren {
   AdminAdminSearchRoute: typeof AdminAdminSearchRoute
   AdminAdminSecurityRoute: typeof AdminAdminSecurityRoute
   AdminAdminSettingsRoute: typeof AdminAdminSettingsRoute
-  AdminAdminSocietiesRoute: typeof AdminAdminSocietiesRoute
   AdminAdminUsersRoute: typeof AdminAdminUsersRoute
   AdminAdminWithdrawalsRoute: typeof AdminAdminWithdrawalsRoute
+  AdminAdminSocietiesIndexRoute: typeof AdminAdminSocietiesIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
@@ -2790,9 +2791,9 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAdminSearchRoute: AdminAdminSearchRoute,
   AdminAdminSecurityRoute: AdminAdminSecurityRoute,
   AdminAdminSettingsRoute: AdminAdminSettingsRoute,
-  AdminAdminSocietiesRoute: AdminAdminSocietiesRoute,
   AdminAdminUsersRoute: AdminAdminUsersRoute,
   AdminAdminWithdrawalsRoute: AdminAdminWithdrawalsRoute,
+  AdminAdminSocietiesIndexRoute: AdminAdminSocietiesIndexRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)

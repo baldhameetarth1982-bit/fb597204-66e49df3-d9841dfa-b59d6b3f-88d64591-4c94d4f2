@@ -35,6 +35,17 @@ async function assertAdmin(ctx: Ctx, societyId: string) {
   if (error || !data) throw new Error("permission denied");
 }
 
+export interface SmartQrListItem {
+  id: string; title: string; purpose: string | null; fixedAmount: number | null; isActive: boolean;
+  expiresAt: string | null; createdAt: string; categoryName: string; pendingCount: number;
+}
+export interface SmartQrSubmission {
+  id: string; payerName: string; payerPhone: string | null; amount: number; method: "bank_transfer" | "cash";
+  reference: string | null; paidOn: string; note: string | null; status: "submitted" | "recorded" | "rejected";
+  reviewReason: string | null; createdAt: string; incomeRecordId: string | null;
+  verification: string | null; reconciliation: string | null;
+}
+
 // ---------------------------------------------------------------------------
 // Admin
 // ---------------------------------------------------------------------------
@@ -63,8 +74,7 @@ export const listSmartQrFn = createServerFn({ method: "POST" })
         .limit(1000);
       for (const s of subs ?? []) pending[s.qr_id] = (pending[s.qr_id] ?? 0) + 1;
     }
-    return {
-      items: (rows ?? []).map((r: any) => ({
+    const items: SmartQrListItem[] = (rows ?? []).map((r: any) => ({
         id: r.id as string,
         title: r.title as string,
         purpose: r.purpose as string | null,
@@ -74,8 +84,8 @@ export const listSmartQrFn = createServerFn({ method: "POST" })
         createdAt: r.created_at as string,
         categoryName: (r.category?.display_name as string) ?? "Income",
         pendingCount: pending[r.id] ?? 0,
-      })),
-    };
+    }));
+    return { items };
   });
 
 export const getSmartQrFn = createServerFn({ method: "POST" })
@@ -117,7 +127,7 @@ export const getSmartQrFn = createServerFn({ method: "POST" })
         createdAt: q.created_at as string,
         categoryName: ((q as any).category?.display_name as string) ?? "Income",
       },
-      submissions: (subs ?? []).map((s: any) => ({
+      submissions: (subs ?? []).map((s: any): SmartQrSubmission => ({
         id: s.id as string,
         payerName: s.payer_name as string,
         payerPhone: s.payer_phone as string | null,

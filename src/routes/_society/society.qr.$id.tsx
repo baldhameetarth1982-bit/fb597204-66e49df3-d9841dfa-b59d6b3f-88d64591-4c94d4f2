@@ -18,7 +18,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { getSmartQrFn, setSmartQrActiveFn, reviewSmartQrSubmissionFn } from "@/lib/smart-qr.functions";
+import { type SmartQrSubmission, getSmartQrFn, setSmartQrActiveFn, reviewSmartQrSubmissionFn } from "@/lib/smart-qr.functions";
 import { toSafeFinanceError } from "@/lib/finance-safe-error";
 import { inr, REVIEW_ERRORS } from "@/lib/smart-qr-ui";
 
@@ -210,7 +210,7 @@ function Row({ k, v }: { k: string; v: string }) {
   );
 }
 
-type Sub = Extract<Awaited<ReturnType<typeof getSmartQrFn>>, { found: true }>["submissions"][number];
+type Sub = SmartQrSubmission;
 
 const VERIFY_LABEL: Record<string, { label: string; cls: string }> = {
   pending: { label: "Pending verification", cls: "bg-warning/10 text-warning" },

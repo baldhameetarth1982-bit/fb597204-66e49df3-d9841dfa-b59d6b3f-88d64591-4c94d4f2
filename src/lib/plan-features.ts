@@ -502,6 +502,7 @@ const CATALOG: FeatureCatalogEntry[] = [
     icon: "Wallet",
     status: "available",
     backendReady: true,
+    route: "/society/qr",
     navigationGroup: "Finance",
   },
   {

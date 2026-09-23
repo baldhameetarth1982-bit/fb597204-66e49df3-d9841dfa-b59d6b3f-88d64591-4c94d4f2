@@ -129,6 +129,7 @@ import { Route as AdminAdminAuditRouteImport } from './routes/_admin/admin.audit
 import { Route as AdminAdminAdsRouteImport } from './routes/_admin/admin.ads'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
+import { Route as SocietySocietyQrIndexRouteImport } from './routes/_society/society.qr.index'
 import { Route as ApiPublicHooksRunBillingRouteImport } from './routes/api/public/hooks/run-billing'
 import { Route as ApiPublicHooksRazorpayRouteImport } from './routes/api/public/hooks/razorpay'
 import { Route as ApiPublicHooksMaintenanceRemindersRouteImport } from './routes/api/public/hooks/maintenance-reminders'
@@ -760,6 +761,11 @@ const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   path: '/.lovable/oauth/consent',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SocietySocietyQrIndexRoute = SocietySocietyQrIndexRouteImport.update({
+  id: '/society/qr/',
+  path: '/society/qr/',
+  getParentRoute: () => SocietyRoute,
+} as any)
 const ApiPublicHooksRunBillingRoute =
   ApiPublicHooksRunBillingRouteImport.update({
     id: '/api/public/hooks/run-billing',
@@ -994,6 +1000,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
+  '/society/qr/': typeof SocietySocietyQrIndexRoute
   '/api/public/verify/no-dues/$token': typeof ApiPublicVerifyNoDuesTokenRoute
 }
 export interface FileRoutesByTo {
@@ -1129,6 +1136,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
+  '/society/qr': typeof SocietySocietyQrIndexRoute
   '/api/public/verify/no-dues/$token': typeof ApiPublicVerifyNoDuesTokenRoute
 }
 export interface FileRoutesById {
@@ -1270,6 +1278,7 @@ export interface FileRoutesById {
   '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
+  '/_society/society/qr/': typeof SocietySocietyQrIndexRoute
   '/api/public/verify/no-dues/$token': typeof ApiPublicVerifyNoDuesTokenRoute
 }
 export interface FileRouteTypes {
@@ -1408,6 +1417,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/maintenance-reminders'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
+    | '/society/qr/'
     | '/api/public/verify/no-dues/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -1543,6 +1553,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/maintenance-reminders'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
+    | '/society/qr'
     | '/api/public/verify/no-dues/$token'
   id:
     | '__root__'
@@ -1683,6 +1694,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/maintenance-reminders'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
+    | '/_society/society/qr/'
     | '/api/public/verify/no-dues/$token'
   fileRoutesById: FileRoutesById
 }
@@ -2564,6 +2576,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DotlovableOauthConsentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_society/society/qr/': {
+      id: '/_society/society/qr/'
+      path: '/society/qr'
+      fullPath: '/society/qr/'
+      preLoaderRoute: typeof SocietySocietyQrIndexRouteImport
+      parentRoute: typeof SocietyRoute
+    }
     '/api/public/hooks/run-billing': {
       id: '/api/public/hooks/run-billing'
       path: '/api/public/hooks/run-billing'
@@ -2970,6 +2989,7 @@ interface SocietyRouteChildren {
   SocietySocietyVerificationsRoute: typeof SocietySocietyVerificationsRoute
   SocietySocietyVisitorsRoute: typeof SocietySocietyVisitorsRoute
   SocietySocietyBillsIdRoute: typeof SocietySocietyBillsIdRoute
+  SocietySocietyQrIndexRoute: typeof SocietySocietyQrIndexRoute
 }
 
 const SocietyRouteChildren: SocietyRouteChildren = {
@@ -3014,6 +3034,7 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyVerificationsRoute: SocietySocietyVerificationsRoute,
   SocietySocietyVisitorsRoute: SocietySocietyVisitorsRoute,
   SocietySocietyBillsIdRoute: SocietySocietyBillsIdRoute,
+  SocietySocietyQrIndexRoute: SocietySocietyQrIndexRoute,
 }
 
 const SocietyRouteWithChildren =

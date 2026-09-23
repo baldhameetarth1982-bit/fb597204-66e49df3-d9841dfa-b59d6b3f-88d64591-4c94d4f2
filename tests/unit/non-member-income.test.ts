@@ -620,7 +620,7 @@ describe("Turn 18B.2B migration — helper privacy + parity", () => {
   const files = fs.readdirSync(migDir).filter((f) => f.endsWith(".sql")).sort();
   const b2b = files
     .map((f) => ({ f, sql: fs.readFileSync(path.join(migDir, f), "utf8") }))
-    .filter((x) => /is_non_member_income_enabled_internal/.test(x.sql))
+    .filter((x) => /REVOKE ALL ON FUNCTION public\.is_non_member_income_enabled_internal/.test(x.sql))
     .pop()!;
 
   it("has an additive Turn 18B.2B migration touching the helper", () => {

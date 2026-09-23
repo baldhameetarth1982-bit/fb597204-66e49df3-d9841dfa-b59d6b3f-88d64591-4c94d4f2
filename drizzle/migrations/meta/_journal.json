@@ -120,6 +120,13 @@
       "when": 1790203811509,
       "tag": "0016_super_admin_saas_operations",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1790204496133,
+      "tag": "0017_gamification_verified_points",
+      "breakpoints": true
     }
   ]
 }

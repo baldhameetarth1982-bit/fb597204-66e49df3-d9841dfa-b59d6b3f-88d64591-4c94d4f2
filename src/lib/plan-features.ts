@@ -487,8 +487,8 @@ const CATALOG: FeatureCatalogEntry[] = [
     roles: ["society_admin", "resident"],
     keywords: ["ai secretary", "knowledge base", "bylaws ai", "documents ai"],
     icon: "Sparkles",
-    status: "planned",
-    backendReady: false,
+    status: "available",
+    backendReady: true,
     navigationGroup: "AI",
   },
   {

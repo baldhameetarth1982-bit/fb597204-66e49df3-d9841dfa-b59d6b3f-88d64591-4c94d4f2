@@ -31,6 +31,7 @@ import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as AdminRouteImport } from './routes/_admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding.index'
+import { Route as QTokenRouteImport } from './routes/q.$token'
 import { Route as OnboardingPlanRouteImport } from './routes/onboarding.plan'
 import { Route as OnboardingPendingRouteImport } from './routes/onboarding.pending'
 import { Route as OnboardingJoinRouteImport } from './routes/onboarding.join'
@@ -129,11 +130,13 @@ import { Route as AdminAdminAuditRouteImport } from './routes/_admin/admin.audit
 import { Route as AdminAdminAdsRouteImport } from './routes/_admin/admin.ads'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
+import { Route as SocietySocietyQrIndexRouteImport } from './routes/_society/society.qr.index'
 import { Route as ApiPublicHooksRunBillingRouteImport } from './routes/api/public/hooks/run-billing'
 import { Route as ApiPublicHooksRazorpayRouteImport } from './routes/api/public/hooks/razorpay'
 import { Route as ApiPublicHooksMaintenanceRemindersRouteImport } from './routes/api/public/hooks/maintenance-reminders'
 import { Route as ApiPublicAuthFirebaseSessionRouteImport } from './routes/api/public/auth/firebase-session'
 import { Route as SocietySocietyResidentsIdRouteImport } from './routes/_society/society.residents.$id'
+import { Route as SocietySocietyQrIdRouteImport } from './routes/_society/society.qr.$id'
 import { Route as SocietySocietyNoDuesIdRouteImport } from './routes/_society/society.no-dues.$id'
 import { Route as SocietySocietyIncomePayersRouteImport } from './routes/_society/society.income.payers'
 import { Route as SocietySocietyIncomeNewRouteImport } from './routes/_society/society.income.new'
@@ -253,6 +256,11 @@ const OnboardingIndexRoute = OnboardingIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => OnboardingRoute,
+} as any)
+const QTokenRoute = QTokenRouteImport.update({
+  id: '/q/$token',
+  path: '/q/$token',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingPlanRoute = OnboardingPlanRouteImport.update({
   id: '/plan',
@@ -760,6 +768,11 @@ const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   path: '/.lovable/oauth/consent',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SocietySocietyQrIndexRoute = SocietySocietyQrIndexRouteImport.update({
+  id: '/society/qr/',
+  path: '/society/qr/',
+  getParentRoute: () => SocietyRoute,
+} as any)
 const ApiPublicHooksRunBillingRoute =
   ApiPublicHooksRunBillingRouteImport.update({
     id: '/api/public/hooks/run-billing',
@@ -789,6 +802,11 @@ const SocietySocietyResidentsIdRoute =
     path: '/$id',
     getParentRoute: () => SocietySocietyResidentsRoute,
   } as any)
+const SocietySocietyQrIdRoute = SocietySocietyQrIdRouteImport.update({
+  id: '/society/qr/$id',
+  path: '/society/qr/$id',
+  getParentRoute: () => SocietyRoute,
+} as any)
 const SocietySocietyNoDuesIdRoute = SocietySocietyNoDuesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -887,6 +905,7 @@ export interface FileRoutesByFullPath {
   '/onboarding/join': typeof OnboardingJoinRoute
   '/onboarding/pending': typeof OnboardingPendingRoute
   '/onboarding/plan': typeof OnboardingPlanRoute
+  '/q/$token': typeof QTokenRoute
   '/onboarding/': typeof OnboardingIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -989,11 +1008,13 @@ export interface FileRoutesByFullPath {
   '/society/income/new': typeof SocietySocietyIncomeNewRoute
   '/society/income/payers': typeof SocietySocietyIncomePayersRoute
   '/society/no-dues/$id': typeof SocietySocietyNoDuesIdRoute
+  '/society/qr/$id': typeof SocietySocietyQrIdRoute
   '/society/residents/$id': typeof SocietySocietyResidentsIdRoute
   '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
   '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
+  '/society/qr/': typeof SocietySocietyQrIndexRoute
   '/api/public/verify/no-dues/$token': typeof ApiPublicVerifyNoDuesTokenRoute
 }
 export interface FileRoutesByTo {
@@ -1022,6 +1043,7 @@ export interface FileRoutesByTo {
   '/onboarding/join': typeof OnboardingJoinRoute
   '/onboarding/pending': typeof OnboardingPendingRoute
   '/onboarding/plan': typeof OnboardingPlanRoute
+  '/q/$token': typeof QTokenRoute
   '/onboarding': typeof OnboardingIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -1124,11 +1146,13 @@ export interface FileRoutesByTo {
   '/society/income/new': typeof SocietySocietyIncomeNewRoute
   '/society/income/payers': typeof SocietySocietyIncomePayersRoute
   '/society/no-dues/$id': typeof SocietySocietyNoDuesIdRoute
+  '/society/qr/$id': typeof SocietySocietyQrIdRoute
   '/society/residents/$id': typeof SocietySocietyResidentsIdRoute
   '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
   '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
+  '/society/qr': typeof SocietySocietyQrIndexRoute
   '/api/public/verify/no-dues/$token': typeof ApiPublicVerifyNoDuesTokenRoute
 }
 export interface FileRoutesById {
@@ -1163,6 +1187,7 @@ export interface FileRoutesById {
   '/onboarding/join': typeof OnboardingJoinRoute
   '/onboarding/pending': typeof OnboardingPendingRoute
   '/onboarding/plan': typeof OnboardingPlanRoute
+  '/q/$token': typeof QTokenRoute
   '/onboarding/': typeof OnboardingIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -1265,11 +1290,13 @@ export interface FileRoutesById {
   '/_society/society/income/new': typeof SocietySocietyIncomeNewRoute
   '/_society/society/income/payers': typeof SocietySocietyIncomePayersRoute
   '/_society/society/no-dues/$id': typeof SocietySocietyNoDuesIdRoute
+  '/_society/society/qr/$id': typeof SocietySocietyQrIdRoute
   '/_society/society/residents/$id': typeof SocietySocietyResidentsIdRoute
   '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
   '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
+  '/_society/society/qr/': typeof SocietySocietyQrIndexRoute
   '/api/public/verify/no-dues/$token': typeof ApiPublicVerifyNoDuesTokenRoute
 }
 export interface FileRouteTypes {
@@ -1301,6 +1328,7 @@ export interface FileRouteTypes {
     | '/onboarding/join'
     | '/onboarding/pending'
     | '/onboarding/plan'
+    | '/q/$token'
     | '/onboarding/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -1403,11 +1431,13 @@ export interface FileRouteTypes {
     | '/society/income/new'
     | '/society/income/payers'
     | '/society/no-dues/$id'
+    | '/society/qr/$id'
     | '/society/residents/$id'
     | '/api/public/auth/firebase-session'
     | '/api/public/hooks/maintenance-reminders'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
+    | '/society/qr/'
     | '/api/public/verify/no-dues/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -1436,6 +1466,7 @@ export interface FileRouteTypes {
     | '/onboarding/join'
     | '/onboarding/pending'
     | '/onboarding/plan'
+    | '/q/$token'
     | '/onboarding'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -1538,11 +1569,13 @@ export interface FileRouteTypes {
     | '/society/income/new'
     | '/society/income/payers'
     | '/society/no-dues/$id'
+    | '/society/qr/$id'
     | '/society/residents/$id'
     | '/api/public/auth/firebase-session'
     | '/api/public/hooks/maintenance-reminders'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
+    | '/society/qr'
     | '/api/public/verify/no-dues/$token'
   id:
     | '__root__'
@@ -1576,6 +1609,7 @@ export interface FileRouteTypes {
     | '/onboarding/join'
     | '/onboarding/pending'
     | '/onboarding/plan'
+    | '/q/$token'
     | '/onboarding/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -1678,11 +1712,13 @@ export interface FileRouteTypes {
     | '/_society/society/income/new'
     | '/_society/society/income/payers'
     | '/_society/society/no-dues/$id'
+    | '/_society/society/qr/$id'
     | '/_society/society/residents/$id'
     | '/api/public/auth/firebase-session'
     | '/api/public/hooks/maintenance-reminders'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
+    | '/_society/society/qr/'
     | '/api/public/verify/no-dues/$token'
   fileRoutesById: FileRoutesById
 }
@@ -1712,6 +1748,7 @@ export interface RootRouteChildren {
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ApiSupportChatRoute: typeof ApiSupportChatRoute
   CheckoutPlanIdRoute: typeof CheckoutPlanIdRoute
+  QTokenRoute: typeof QTokenRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   VerifyNoDuesTokenRoute: typeof VerifyNoDuesTokenRoute
@@ -1877,6 +1914,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/onboarding/'
       preLoaderRoute: typeof OnboardingIndexRouteImport
       parentRoute: typeof OnboardingRoute
+    }
+    '/q/$token': {
+      id: '/q/$token'
+      path: '/q/$token'
+      fullPath: '/q/$token'
+      preLoaderRoute: typeof QTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/onboarding/plan': {
       id: '/onboarding/plan'
@@ -2564,6 +2608,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DotlovableOauthConsentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_society/society/qr/': {
+      id: '/_society/society/qr/'
+      path: '/society/qr'
+      fullPath: '/society/qr/'
+      preLoaderRoute: typeof SocietySocietyQrIndexRouteImport
+      parentRoute: typeof SocietyRoute
+    }
     '/api/public/hooks/run-billing': {
       id: '/api/public/hooks/run-billing'
       path: '/api/public/hooks/run-billing'
@@ -2598,6 +2649,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/society/residents/$id'
       preLoaderRoute: typeof SocietySocietyResidentsIdRouteImport
       parentRoute: typeof SocietySocietyResidentsRoute
+    }
+    '/_society/society/qr/$id': {
+      id: '/_society/society/qr/$id'
+      path: '/society/qr/$id'
+      fullPath: '/society/qr/$id'
+      preLoaderRoute: typeof SocietySocietyQrIdRouteImport
+      parentRoute: typeof SocietyRoute
     }
     '/_society/society/no-dues/$id': {
       id: '/_society/society/no-dues/$id'
@@ -2970,6 +3028,8 @@ interface SocietyRouteChildren {
   SocietySocietyVerificationsRoute: typeof SocietySocietyVerificationsRoute
   SocietySocietyVisitorsRoute: typeof SocietySocietyVisitorsRoute
   SocietySocietyBillsIdRoute: typeof SocietySocietyBillsIdRoute
+  SocietySocietyQrIdRoute: typeof SocietySocietyQrIdRoute
+  SocietySocietyQrIndexRoute: typeof SocietySocietyQrIndexRoute
 }
 
 const SocietyRouteChildren: SocietyRouteChildren = {
@@ -3014,6 +3074,8 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyVerificationsRoute: SocietySocietyVerificationsRoute,
   SocietySocietyVisitorsRoute: SocietySocietyVisitorsRoute,
   SocietySocietyBillsIdRoute: SocietySocietyBillsIdRoute,
+  SocietySocietyQrIdRoute: SocietySocietyQrIdRoute,
+  SocietySocietyQrIndexRoute: SocietySocietyQrIndexRoute,
 }
 
 const SocietyRouteWithChildren =
@@ -3066,6 +3128,7 @@ const rootRouteChildren: RootRouteChildren = {
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ApiSupportChatRoute: ApiSupportChatRoute,
   CheckoutPlanIdRoute: CheckoutPlanIdRoute,
+  QTokenRoute: QTokenRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   VerifyNoDuesTokenRoute: VerifyNoDuesTokenRoute,

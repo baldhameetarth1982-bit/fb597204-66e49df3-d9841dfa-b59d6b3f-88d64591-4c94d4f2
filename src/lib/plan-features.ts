@@ -500,8 +500,9 @@ const CATALOG: FeatureCatalogEntry[] = [
     roles: ["society_admin"],
     keywords: ["qr", "collection", "event", "donation", "amenity"],
     icon: "Wallet",
-    status: "planned",
-    backendReady: false,
+    status: "available",
+    backendReady: true,
+    route: "/society/qr",
     navigationGroup: "Finance",
   },
   {

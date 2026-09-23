@@ -127,7 +127,7 @@ export const getSmartQrFn = createServerFn({ method: "POST" })
         createdAt: q.created_at as string,
         categoryName: ((q as any).category?.display_name as string) ?? "Income",
       },
-      submissions: (subs ?? []).map((s: any): SmartQrSubmission => ({
+      submissions: ((subs ?? []) as any[]).map((s: any): SmartQrSubmission => ({
         id: s.id as string,
         payerName: s.payer_name as string,
         payerPhone: s.payer_phone as string | null,

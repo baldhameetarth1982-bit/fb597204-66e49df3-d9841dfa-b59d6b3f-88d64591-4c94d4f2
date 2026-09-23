@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { getResidentFinanceTransparency } from "@/lib/finance-stage3d.functions";
+import { toSafeFinanceError } from "@/lib/finance-safe-error";
 
 export const Route = createFileRoute("/_resident/app/trust")({
   head: () => ({ meta: [
@@ -41,7 +42,7 @@ function TrustScreen() {
       <p className="text-sm text-muted-foreground">A privacy-controlled view sourced from your society&apos;s canonical journal.</p>
     </header>
 
-    {!societyId ? <StateCard title="Society unavailable" message="Your active society could not be determined."/> : report.isLoading ? <div className="text-center py-10" aria-label="Loading financial transparency"><Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground"/></div> : report.error ? <StateCard title={/pro or premium plan/i.test((report.error as Error).message) ? "Transparency is plan locked" : /not allowed/i.test((report.error as Error).message) ? "Transparency is restricted" : "Transparency unavailable"} message={(report.error as Error).message} action={<Button variant="outline" onClick={()=>void report.refetch()}>Retry</Button>}/> : report.data ? <>
+    {!societyId ? <StateCard title="Society unavailable" message="Your active society could not be determined."/> : report.isLoading ? <div className="text-center py-10" role="status" aria-label="Loading financial transparency"><Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground"/></div> : report.error ? (() => { const safe = toSafeFinanceError(report.error, typeof navigator === "undefined" || navigator.onLine); return <StateCard title={safe.title} message={safe.message} action={safe.retryable ? <Button variant="outline" className="min-h-11" disabled={report.isFetching} onClick={()=>void report.refetch()}>{report.isFetching ? "Retrying…" : "Retry"}</Button> : undefined}/>; })() : report.data ? <>
       <Card className="rounded-3xl border-0 shadow-md bg-gradient-to-br from-primary to-primary/85 text-primary-foreground"><CardContent className="p-6">
         <p className="text-xs uppercase tracking-wider opacity-80">Net movement · last 12 months</p>
         <p className="mt-1 text-4xl font-semibold tabular-nums">{fmt.format(report.data.net_movement)}</p>

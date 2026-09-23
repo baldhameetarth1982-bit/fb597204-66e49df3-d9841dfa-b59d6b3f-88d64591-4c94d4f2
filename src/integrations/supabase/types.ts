@@ -4397,6 +4397,10 @@ export type Database = {
         Args: { _id: string; _society_id: string }
         Returns: undefined
       }
+      admin_extend_trial: {
+        Args: { _days: number; _reason: string; _society_id: string }
+        Returns: Json
+      }
       admin_global_metrics: {
         Args: never
         Returns: {
@@ -4428,6 +4432,23 @@ export type Database = {
           plan_id: string
           plan_status: string
           status: string
+        }[]
+      }
+      admin_list_societies_v2: {
+        Args: never
+        Returns: {
+          admin_count: number
+          city: string
+          created_at: string
+          id: string
+          member_count: number
+          name: string
+          plan_expires_at: string
+          plan_id: string
+          plan_status: string
+          status: string
+          trial_ends_at: string
+          unit_count: number
         }[]
       }
       admin_list_society_residents: {
@@ -4479,10 +4500,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_set_society_status: {
+        Args: { _reason: string; _society_id: string; _status: string }
+        Returns: Json
+      }
       admin_set_team_active: {
         Args: { _is_active: boolean; _role_id: string; _society_id: string }
         Returns: string
       }
+      admin_society_overview: { Args: { _society_id: string }; Returns: Json }
       admin_upsert_family_member: {
         Args: {
           _age?: number

@@ -113,6 +113,13 @@
       "when": 1790202788910,
       "tag": "0015_smart_qr_collections",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1790203811509,
+      "tag": "0016_super_admin_saas_operations",
+      "breakpoints": true
     }
   ]
 }

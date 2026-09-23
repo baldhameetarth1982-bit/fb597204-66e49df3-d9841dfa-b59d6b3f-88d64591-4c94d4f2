@@ -9,6 +9,10 @@ Bills never auto-generate. Only Society Admin generates bills. Bills are immutab
 Opening cash + bank balances entered ONCE in Setup Wizard, then immutable. Current balances are always derived (opening + income − expenses + adjustments). Corrections use Adjustment Entries.
 UI never exposes accounting jargon ("Ledger"). Use Income, Expenses, Transactions, Reports.
 RLS, plan-gate, Razorpay, KYC RPCs, audit_log, multi-tenant isolation triggers are working — preserve them; only add to them.
+"Complete X" = build it fully end-to-end myself; no test campaigns/CI/runtime loops; security never skipped.
+
+## Preferences
+- [Build mode](mem://preferences/build-mode) — Autonomous feature completion rules, UI bar, what not to spend prompts on
 
 ## Memories
 - [Phase Roadmap](mem://roadmap) — Six-phase rebuild plan (nav shell → auth/onboarding → setup wizard → billing → accounting → visitors)

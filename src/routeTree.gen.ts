@@ -149,6 +149,7 @@ import { Route as SocietySocietyBillStudioGenerateRouteImport } from './routes/_
 import { Route as ResidentAppNoDuesIdRouteImport } from './routes/_resident/app.no-dues.$id'
 import { Route as ResidentAppFeedPostIdRouteImport } from './routes/_resident/app.feed.$postId'
 import { Route as ResidentAppBillsIdRouteImport } from './routes/_resident/app.bills.$id'
+import { Route as AdminAdminSocietiesIdRouteImport } from './routes/_admin/admin.societies.$id'
 import { Route as ApiPublicVerifyNoDuesTokenRouteImport } from './routes/api/public/verify.no-dues.$token'
 
 const WelcomeRoute = WelcomeRouteImport.update({
@@ -872,6 +873,11 @@ const ResidentAppBillsIdRoute = ResidentAppBillsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ResidentAppBillsRoute,
 } as any)
+const AdminAdminSocietiesIdRoute = AdminAdminSocietiesIdRouteImport.update({
+  id: '/admin/societies/$id',
+  path: '/admin/societies/$id',
+  getParentRoute: () => AdminRoute,
+} as any)
 const ApiPublicVerifyNoDuesTokenRoute =
   ApiPublicVerifyNoDuesTokenRouteImport.update({
     id: '/api/public/verify/no-dues/$token',
@@ -996,6 +1002,7 @@ export interface FileRoutesByFullPath {
   '/society/verifications': typeof SocietySocietyVerificationsRoute
   '/society/visitors': typeof SocietySocietyVisitorsRoute
   '/verify/no-dues/$token': typeof VerifyNoDuesTokenRoute
+  '/admin/societies/$id': typeof AdminAdminSocietiesIdRoute
   '/app/bills/$id': typeof ResidentAppBillsIdRoute
   '/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
   '/app/no-dues/$id': typeof ResidentAppNoDuesIdRoute
@@ -1134,6 +1141,7 @@ export interface FileRoutesByTo {
   '/society/verifications': typeof SocietySocietyVerificationsRoute
   '/society/visitors': typeof SocietySocietyVisitorsRoute
   '/verify/no-dues/$token': typeof VerifyNoDuesTokenRoute
+  '/admin/societies/$id': typeof AdminAdminSocietiesIdRoute
   '/app/bills/$id': typeof ResidentAppBillsIdRoute
   '/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
   '/app/no-dues/$id': typeof ResidentAppNoDuesIdRoute
@@ -1278,6 +1286,7 @@ export interface FileRoutesById {
   '/_society/society/verifications': typeof SocietySocietyVerificationsRoute
   '/_society/society/visitors': typeof SocietySocietyVisitorsRoute
   '/verify/no-dues/$token': typeof VerifyNoDuesTokenRoute
+  '/_admin/admin/societies/$id': typeof AdminAdminSocietiesIdRoute
   '/_resident/app/bills/$id': typeof ResidentAppBillsIdRoute
   '/_resident/app/feed/$postId': typeof ResidentAppFeedPostIdRoute
   '/_resident/app/no-dues/$id': typeof ResidentAppNoDuesIdRoute
@@ -1419,6 +1428,7 @@ export interface FileRouteTypes {
     | '/society/verifications'
     | '/society/visitors'
     | '/verify/no-dues/$token'
+    | '/admin/societies/$id'
     | '/app/bills/$id'
     | '/app/feed/$postId'
     | '/app/no-dues/$id'
@@ -1557,6 +1567,7 @@ export interface FileRouteTypes {
     | '/society/verifications'
     | '/society/visitors'
     | '/verify/no-dues/$token'
+    | '/admin/societies/$id'
     | '/app/bills/$id'
     | '/app/feed/$postId'
     | '/app/no-dues/$id'
@@ -1700,6 +1711,7 @@ export interface FileRouteTypes {
     | '/_society/society/verifications'
     | '/_society/society/visitors'
     | '/verify/no-dues/$token'
+    | '/_admin/admin/societies/$id'
     | '/_resident/app/bills/$id'
     | '/_resident/app/feed/$postId'
     | '/_resident/app/no-dues/$id'
@@ -2742,6 +2754,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResidentAppBillsIdRouteImport
       parentRoute: typeof ResidentAppBillsRoute
     }
+    '/_admin/admin/societies/$id': {
+      id: '/_admin/admin/societies/$id'
+      path: '/admin/societies/$id'
+      fullPath: '/admin/societies/$id'
+      preLoaderRoute: typeof AdminAdminSocietiesIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/api/public/verify/no-dues/$token': {
       id: '/api/public/verify/no-dues/$token'
       path: '/api/public/verify/no-dues/$token'
@@ -2771,6 +2790,7 @@ interface AdminRouteChildren {
   AdminAdminSettingsRoute: typeof AdminAdminSettingsRoute
   AdminAdminUsersRoute: typeof AdminAdminUsersRoute
   AdminAdminWithdrawalsRoute: typeof AdminAdminWithdrawalsRoute
+  AdminAdminSocietiesIdRoute: typeof AdminAdminSocietiesIdRoute
   AdminAdminSocietiesIndexRoute: typeof AdminAdminSocietiesIndexRoute
 }
 
@@ -2793,6 +2813,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAdminSettingsRoute: AdminAdminSettingsRoute,
   AdminAdminUsersRoute: AdminAdminUsersRoute,
   AdminAdminWithdrawalsRoute: AdminAdminWithdrawalsRoute,
+  AdminAdminSocietiesIdRoute: AdminAdminSocietiesIdRoute,
   AdminAdminSocietiesIndexRoute: AdminAdminSocietiesIndexRoute,
 }
 

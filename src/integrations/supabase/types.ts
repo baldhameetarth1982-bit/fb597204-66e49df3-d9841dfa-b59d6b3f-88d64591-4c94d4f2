@@ -3242,6 +3242,166 @@ export type Database = {
         }
         Relationships: []
       }
+      smart_qr_codes: {
+        Row: {
+          accepts_cash: boolean
+          account_number: string
+          bank_name: string | null
+          category_id: string
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          fixed_amount: number | null
+          id: string
+          ifsc: string
+          instructions: string | null
+          is_active: boolean
+          payee_name: string
+          purpose: string | null
+          society_id: string
+          title: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          accepts_cash?: boolean
+          account_number: string
+          bank_name?: string | null
+          category_id: string
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          fixed_amount?: number | null
+          id?: string
+          ifsc: string
+          instructions?: string | null
+          is_active?: boolean
+          payee_name: string
+          purpose?: string | null
+          society_id: string
+          title: string
+          token: string
+          updated_at?: string
+        }
+        Update: {
+          accepts_cash?: boolean
+          account_number?: string
+          bank_name?: string | null
+          category_id?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          fixed_amount?: number | null
+          id?: string
+          ifsc?: string
+          instructions?: string | null
+          is_active?: boolean
+          payee_name?: string
+          purpose?: string | null
+          society_id?: string
+          title?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smart_qr_codes_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "society_income_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "smart_qr_codes_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      smart_qr_submissions: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          idempotency_key: string
+          income_record_id: string | null
+          note: string | null
+          paid_on: string
+          payer_name: string
+          payer_phone: string | null
+          payment_method: string
+          qr_id: string
+          reference_number: string | null
+          review_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          society_id: string
+          status: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          income_record_id?: string | null
+          note?: string | null
+          paid_on: string
+          payer_name: string
+          payer_phone?: string | null
+          payment_method: string
+          qr_id: string
+          reference_number?: string | null
+          review_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          society_id: string
+          status?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          income_record_id?: string | null
+          note?: string | null
+          paid_on?: string
+          payer_name?: string
+          payer_phone?: string | null
+          payment_method?: string
+          qr_id?: string
+          reference_number?: string | null
+          review_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          society_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smart_qr_submissions_income_record_id_fkey"
+            columns: ["income_record_id"]
+            isOneToOne: false
+            referencedRelation: "society_income_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "smart_qr_submissions_qr_id_fkey"
+            columns: ["qr_id"]
+            isOneToOne: false
+            referencedRelation: "smart_qr_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "smart_qr_submissions_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       societies: {
         Row: {
           address: string | null
@@ -5271,6 +5431,45 @@ export type Database = {
       }
       set_society_unit_active: {
         Args: { _active: boolean; _unit_id: string }
+        Returns: Json
+      }
+      smart_qr_create: {
+        Args: {
+          _accepts_cash: boolean
+          _account_number: string
+          _bank_name: string
+          _category_id: string
+          _expires_at: string
+          _fixed_amount: number
+          _ifsc: string
+          _instructions: string
+          _payee_name: string
+          _purpose: string
+          _title: string
+        }
+        Returns: Json
+      }
+      smart_qr_public_submit: {
+        Args: {
+          _amount: number
+          _idempotency_key: string
+          _note: string
+          _paid_on: string
+          _payer_name: string
+          _payer_phone: string
+          _payment_method: string
+          _reference_number: string
+          _token: string
+        }
+        Returns: Json
+      }
+      smart_qr_public_view: { Args: { _token: string }; Returns: Json }
+      smart_qr_review_submission: {
+        Args: { _action: string; _reason?: string; _submission_id: string }
+        Returns: Json
+      }
+      smart_qr_set_active: {
+        Args: { _active: boolean; _qr_id: string }
         Returns: Json
       }
       society_has_access: { Args: { _society_id: string }; Returns: boolean }

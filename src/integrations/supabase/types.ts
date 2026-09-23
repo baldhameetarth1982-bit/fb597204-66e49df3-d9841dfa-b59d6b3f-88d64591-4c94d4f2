@@ -5007,6 +5007,17 @@ export type Database = {
         Args: { _society_id: string }
         Returns: string
       }
+      get_society_leaderboard: {
+        Args: { _limit?: number }
+        Returns: {
+          avatar_url: string
+          badge_count: number
+          display_name: string
+          is_me: boolean
+          rank: number
+          total_points: number
+        }[]
+      }
       get_society_payout_admin: {
         Args: { _society_id: string }
         Returns: {

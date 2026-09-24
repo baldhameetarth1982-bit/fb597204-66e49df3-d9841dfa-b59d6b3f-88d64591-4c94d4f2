@@ -15,6 +15,7 @@ import { StatusChip } from "@/components/system/StatusChip";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { shareBillAsImage } from "@/components/billing/BillCardImage";
+import { toSafeFinanceError } from "@/lib/finance-safe-error";
 
 export const Route = createFileRoute("/_society/society/billing")({
   head: () => ({ meta: [{ title: "Bill History — SociyoHub" }] }),

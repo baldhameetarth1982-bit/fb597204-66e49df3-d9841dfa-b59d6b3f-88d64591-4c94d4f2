@@ -57,9 +57,13 @@ function ResidentBillDetail() {
   const [bill, setBill] = useState<Bill | null>(null);
   const [lines, setLines] = useState<Line[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
+    setLoadError(null);
     (async () => {
       try {
         const res = await load({ data: { billId: id } });
@@ -67,28 +71,42 @@ function ResidentBillDetail() {
         setBill(res.bill as unknown as Bill);
         setLines((res.lines ?? []) as unknown as Line[]);
       } catch (e) {
-        toast.error((e as Error).message);
+        if (cancelled) return;
+        const safe = toSafeFinanceError(e);
+        // "not found" stays as the not-found screen; other failures offer retry.
+        if (safe.kind !== "not_found") setLoadError(safe.message);
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [id, load]);
+  }, [id, load, reloadKey]);
 
   if (loading) {
     return (
-      <div className="min-h-[60vh] grid place-items-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="px-5 py-6 space-y-3" aria-busy="true" aria-label="Loading bill">
+        <div className="h-8 w-28 rounded-lg bg-muted animate-pulse" />
+        <div className="h-40 rounded-2xl bg-muted animate-pulse" />
+        <div className="h-28 rounded-2xl bg-muted animate-pulse" />
       </div>
     );
   }
 
   if (!bill) {
     return (
-      <div className="px-5 py-6">
-        <p className="text-muted-foreground">Bill not found.</p>
-        <Button asChild variant="ghost" className="mt-4">
-          <Link to="/app/bills"><ArrowLeft className="h-4 w-4 mr-2" />Back</Link>
+      <div className="px-5 py-6 space-y-4">
+        {loadError ? (
+          <div role="alert" className="rounded-2xl border border-destructive/30 p-4 flex items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">{loadError}</p>
+            <Button size="sm" variant="outline" className="min-h-11 shrink-0" onClick={() => setReloadKey((k) => k + 1)}>
+              Try again
+            </Button>
+          </div>
+        ) : (
+          <p className="text-muted-foreground">This bill isn't available for your home.</p>
+        )}
+        <Button asChild variant="ghost" className="min-h-11">
+          <Link to="/app/bills"><ArrowLeft className="h-4 w-4 mr-2" />Back to bills</Link>
         </Button>
       </div>
     );

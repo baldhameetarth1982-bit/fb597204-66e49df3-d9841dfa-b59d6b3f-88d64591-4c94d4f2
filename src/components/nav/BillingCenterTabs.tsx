@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { FilePlus2, ListChecks, LayoutTemplate, SlidersHorizontal } from "lucide-react";
+import { FilePlus2, ListChecks, LayoutTemplate, SlidersHorizontal, AlertTriangle, Receipt } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -11,6 +11,8 @@ import { cn } from "@/lib/utils";
 const TABS: Array<{ to: string; label: string; icon: any; matches?: string[] }> = [
   { to: "/society/billing/generate", label: "Generate", icon: FilePlus2 },
   { to: "/society/billing", label: "History", icon: ListChecks },
+  { to: "/society/defaulters", label: "Dues", icon: AlertTriangle },
+  { to: "/society/receipts", label: "Receipts", icon: Receipt },
   { to: "/society/bill-studio", label: "Templates", icon: LayoutTemplate },
   { to: "/society/billing-settings", label: "Settings", icon: SlidersHorizontal },
 ];

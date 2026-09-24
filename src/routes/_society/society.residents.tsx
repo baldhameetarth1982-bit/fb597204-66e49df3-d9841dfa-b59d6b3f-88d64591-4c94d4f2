@@ -30,7 +30,7 @@ export const Route = createFileRoute("/_society/society/residents")({
   component: ResidentsPage,
 });
 
-type Filter = "all" | "owner" | "tenant" | "unassigned" | "vacant";
+type Filter = "all" | "owner" | "tenant" | "unassigned" | "moved_out" | "vacant";
 
 function initials(name?: string | null) {
   if (!name) return "?";
@@ -85,7 +85,8 @@ function ResidentsPage() {
     return residents.filter((r) => {
       if (filter === "owner" && r.relationship !== "owner") return false;
       if (filter === "tenant" && r.relationship !== "tenant") return false;
-      if (filter === "unassigned" && r.flat_id) return false;
+      if (filter === "unassigned" && (r.flat_id || r.moved_out)) return false;
+      if (filter === "moved_out" && !r.moved_out) return false;
       if (!ql) return true;
       const hay = [
         r.full_name, r.email, r.phone,
@@ -155,7 +156,8 @@ function ResidentsPage() {
     toast.success("PDF exported");
   }
 
-  const unassignedCount = residents.filter((r) => !r.flat_id).length;
+  const unassignedCount = residents.filter((r) => !r.flat_id && !r.moved_out).length;
+  const movedOutCount = residents.filter((r) => r.moved_out).length;
   const verifiedCount = residents.filter((r) => r.aadhaar_verified).length;
   const unverifiedCount = residents.length - verifiedCount;
 
@@ -164,6 +166,7 @@ function ResidentsPage() {
     { key: "owner", label: "Owners", count: residents.filter((r) => r.relationship === "owner").length },
     { key: "tenant", label: "Tenants", count: residents.filter((r) => r.relationship === "tenant").length },
     { key: "unassigned", label: "Unassigned", count: unassignedCount },
+    { key: "moved_out", label: "Moved out", count: movedOutCount },
     { key: "vacant", label: "Vacant", count: vacantFlats.length },
   ];
 
@@ -199,8 +202,8 @@ function ResidentsPage() {
         stats={
           <StatPillRow>
             <StatPill label="Total" value={counters?.total_residents ?? residents.length} />
-            <StatPill label="Owners" value={counters?.owners ?? 0} />
-            <StatPill label="Tenants" value={counters?.tenants ?? 0} />
+            <StatPill label="Owners" value={counters?.owners ?? "—"} />
+            <StatPill label="Tenants" value={counters?.tenants ?? "—"} />
             <StatPill label="Vacant units" value={counters?.vacant_units ?? vacantFlats.length} />
           </StatPillRow>
         }
@@ -334,8 +337,8 @@ function ResidentCard({ r, onAssign }: { r: any; onAssign: () => void }) {
               <div className="text-xs text-muted-foreground truncate">
                 {r.flat_id
                   ? `${r.block_name ? r.block_name + " · " : ""}${r.flat_number}`
-                  : "No house assigned"}
-                {r.relationship ? ` · ${r.relationship}` : ""}
+                  : r.moved_out ? "Moved out" : "No house assigned"}
+                {r.flat_id && r.relationship ? ` · ${r.relationship === "owner" ? "Owner" : r.relationship === "tenant" ? "Tenant" : r.relationship}` : ""}
               </div>
             </Link>
             <div className="flex items-center gap-1.5 shrink-0">
@@ -344,7 +347,9 @@ function ResidentCard({ r, onAssign }: { r: any; onAssign: () => void }) {
                   <UserCheck className="h-2.5 w-2.5 mr-0.5" /> KYC
                 </Badge>
               ) : null}
-              {!r.flat_id ? (
+              {r.moved_out ? (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground">Moved out</Badge>
+              ) : !r.flat_id ? (
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-500/30 text-amber-600">
                   <UserX className="h-2.5 w-2.5 mr-0.5" /> Unlinked
                 </Badge>

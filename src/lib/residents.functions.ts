@@ -51,6 +51,9 @@ export const listSocietyResidents = createServerFn({ method: "POST" })
         relationship: (primary?.relationship as string | undefined) ?? null,
         moved_in_at: (primary as any)?.moved_in_at ?? null,
         assignments_count: active.length,
+        moved_out:
+          active.length === 0 &&
+          (assignmentsRes.data ?? []).some((a: any) => a.user_id === p.id && a.is_active === false),
         custom_fields: cf,
       };
     });
@@ -159,5 +162,22 @@ export const flatOccupancyHistory = createServerFn({ method: "POST" })
       .eq("flat_id", data.flatId)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
+    return rows ?? [];
+  });
+
+const householdInput = z.object({ userId: z.string().uuid() });
+// Committee view of a resident's household. RLS ("family admin society read")
+// limits rows to societies the caller administers; phone numbers are omitted.
+export const residentHousehold = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { userId: string }) => householdInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: rows, error } = await context.supabase
+      .from("family_members")
+      .select("id, full_name, relation, age")
+      .eq("user_id", data.userId)
+      .eq("is_active", true)
+      .order("created_at", { ascending: true });
+    if (error) throw new Error("household_unavailable");
     return rows ?? [];
   });

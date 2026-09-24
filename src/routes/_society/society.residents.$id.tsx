@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  ArrowLeft, Loader2, User, Home, Phone, Mail, IndianRupee, FileText,
+  ArrowLeft, Loader2, User, Users, Home, Phone, Mail, IndianRupee, FileText,
   History, ChevronDown, ChevronRight, Edit2, Save, X, AlertTriangle,
   Calendar, ShieldCheck, Upload, Trash2, Paperclip, Download,
 } from "lucide-react";
@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  updateResidentProfile, flatOutstanding, flatOccupancyHistory,
+  updateResidentProfile, flatOutstanding, flatOccupancyHistory, residentHousehold,
 } from "@/lib/residents.functions";
 import { getResidentPrivateDetail } from "@/lib/residents-admin.functions";
 import { useSocietyId } from "@/hooks/useSocietyId";
@@ -40,6 +40,7 @@ function ResidentDetailPage() {
   const getOutstanding = useServerFn(flatOutstanding);
   const getHistory = useServerFn(flatOccupancyHistory);
   const getPrivate = useServerFn(getResidentPrivateDetail);
+  const getHousehold = useServerFn(residentHousehold);
 
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -49,7 +50,7 @@ function ResidentDetailPage() {
   // Private detail (strict Zod-parsed server response). Directory rows never
   // carry phone/email/KYC; this authorised server function is the only path
   // that exposes them to the admin UI.
-  const { data: privateResult, isLoading, refetch } = useQuery({
+  const { data: privateResult, isLoading, isError, refetch } = useQuery({
     enabled: !!societyId,
     queryKey: ["resident-private", societyId, id],
     queryFn: async () => getPrivate({ data: { societyId: societyId!, userId: id } }),
@@ -62,6 +63,14 @@ function ResidentDetailPage() {
   })();
 
   const flatId = resident?.assignment?.flat_id ?? null;
+  // Moved-out residents have no active flat; show the history of their last house.
+  const historyFlatId = flatId ?? resident?.detail.relationships[0]?.flat_id ?? null;
+
+  const household = useQuery({
+    enabled: !!resident && openSection === "household",
+    queryKey: ["resident-household", id],
+    queryFn: async () => getHousehold({ data: { userId: id } }),
+  });
 
   const { data: outstanding } = useQuery({
     enabled: !!flatId,
@@ -70,9 +79,9 @@ function ResidentDetailPage() {
   });
 
   const { data: history } = useQuery({
-    enabled: !!flatId && openSection === "history",
-    queryKey: ["flat-history", flatId],
-    queryFn: async () => getHistory({ data: { flatId: flatId! } }),
+    enabled: !!historyFlatId && openSection === "history",
+    queryKey: ["flat-history", historyFlatId],
+    queryFn: async () => getHistory({ data: { flatId: historyFlatId! } }),
   });
 
   const { data: bills } = useQuery({
@@ -94,6 +103,18 @@ function ResidentDetailPage() {
     return (
       <PageShell>
         <div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+      </PageShell>
+    );
+  }
+
+  if (isError) {
+    return (
+      <PageShell>
+        <div className="py-20 text-center space-y-3">
+          <p className="font-medium">Couldn't load this resident</p>
+          <p className="text-sm text-muted-foreground">Please check your connection and try again.</p>
+          <Button variant="outline" className="h-11 rounded-xl" onClick={() => void refetch()}>Try again</Button>
+        </div>
       </PageShell>
     );
   }
@@ -316,6 +337,30 @@ function ResidentDetailPage() {
           <DocumentsPanel userId={p.id} active={openSection === "documents"} />
         </Section>
 
+        <Section id="household" title="Household members" icon={Users}>
+          <div className="pt-3 space-y-2">
+            {household.isLoading ? (
+              <div className="py-6 text-center"><Loader2 className="h-4 w-4 animate-spin inline text-muted-foreground" /></div>
+            ) : household.isError ? (
+              <div className="py-3 text-center space-y-2">
+                <p className="text-sm text-muted-foreground">Couldn't load household members.</p>
+                <Button size="sm" variant="outline" onClick={() => void household.refetch()}>Try again</Button>
+              </div>
+            ) : !household.data?.length ? (
+              <p className="text-sm text-muted-foreground py-3 text-center">No family members added by this resident.</p>
+            ) : (
+              household.data.map((m: any) => (
+                <div key={m.id} className="flex items-center justify-between text-sm py-2 border-b last:border-0">
+                  <span className="font-medium truncate">{m.full_name}</span>
+                  <span className="text-xs text-muted-foreground shrink-0 ml-3 capitalize">
+                    {m.relation}{m.age != null ? ` · ${m.age}y` : ""}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        </Section>
+
         <Section id="history" title="Occupancy history" icon={History}>
           <div className="pt-3 space-y-2">
             {!history ? (
@@ -328,7 +373,7 @@ function ResidentDetailPage() {
                   <div className="min-w-0">
                     <div className="font-medium truncate">{h.profiles?.full_name ?? "—"}</div>
                     <div className="text-xs text-muted-foreground truncate">
-                      {h.relationship}{h.is_primary ? " · primary" : ""}
+                      <span className="capitalize">{h.relationship}</span>{h.is_primary ? " · primary" : ""}
                     </div>
                     {h.ended_reason ? (
                       <div className="text-[11px] text-muted-foreground italic mt-0.5">"{h.ended_reason}"</div>
@@ -336,7 +381,7 @@ function ResidentDetailPage() {
                   </div>
                   <div className="text-right shrink-0 ml-3">
                     <Badge variant="outline" className={`text-[10px] ${h.is_active ? "border-emerald-500/30 text-emerald-600" : "text-muted-foreground"}`}>
-                      {h.is_active ? "Active" : "Ended"}
+                      {h.is_active ? "Current" : "Moved out"}
                     </Badge>
                     <div className="text-[11px] text-muted-foreground mt-1">
                       {h.moved_in_at ? new Date(h.moved_in_at).toLocaleDateString() : new Date(h.created_at).toLocaleDateString()}

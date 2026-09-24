@@ -183,6 +183,13 @@
       "when": 1790216410543,
       "tag": "0025_society_knowledge_sources",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1790221786774,
+      "tag": "0026_outstanding_dues_rpc",
+      "breakpoints": true
     }
   ]
 }

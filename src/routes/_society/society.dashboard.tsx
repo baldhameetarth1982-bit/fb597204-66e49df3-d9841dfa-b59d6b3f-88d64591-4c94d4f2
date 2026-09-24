@@ -4,7 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Building2, Wallet, AlertTriangle, Megaphone, Receipt, UserCheck, Users,
   UsersRound, KeyRound, Copy, TrendingUp, Sparkles, ArrowUpRight, Home,
+  LifeBuoy, BadgeCheck, ChevronRight, FileText, CheckCircle2,
 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/system/ErrorState";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -22,7 +25,11 @@ export const Route = createFileRoute("/_society/society/dashboard")({
   head: () => ({
     meta: [
       { title: "Dashboard — SociyoHub" },
-      { name: "description", content: "Society admin overview." },
+      { name: "description", content: "Society admin overview: pending actions, collections, requests and visitors." },
+      { property: "og:title", content: "Committee dashboard — SociyoHub" },
+      { property: "og:description", content: "What needs your attention today in your society." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: SocietyDashboard,
@@ -58,9 +65,10 @@ function SocietyDashboard() {
   const { profile } = useAuth();
   const { societyId } = useSocietyId();
 
-  const { data } = useQuery({
+  const { data, isError, isLoading, refetch, isFetching } = useQuery({
     enabled: !!societyId,
-    queryKey: ["society-dashboard-v2", societyId],
+    staleTime: 30_000,
+    queryKey: ["society-dashboard-v3", societyId],
     queryFn: async () => {
       const sid = societyId!;
       const monthStart = new Date();
@@ -79,6 +87,9 @@ function SocietyDashboard() {
         recentPayments,
         recentPosts,
         recentApprovals,
+        monthPayments,
+        { count: paymentsToVerify },
+        helpdeskRes,
       ] = await Promise.all([
         supabase.from("societies").select("name").eq("id", sid).maybeSingle(),
         (supabase as any).rpc("get_society_invite_code", { _society_id: sid }),
@@ -97,12 +108,21 @@ function SocietyDashboard() {
         supabase.from("join_requests").select("id, full_name, created_at")
           .eq("society_id", sid).eq("status", "approved")
           .order("created_at", { ascending: false }).limit(3),
+        // Collected this month = confirmed payments only, from the server.
+        supabase.from("payments").select("amount")
+          .eq("society_id", sid).eq("status", "success").gte("paid_at", monthStart.toISOString()).limit(5000),
+        supabase.from("payments").select("id", { count: "exact", head: true })
+          .eq("society_id", sid).eq("status", "pending"),
+        supabase.rpc("helpdesk_admin_queue", { _limit: 300 }),
       ]);
+      if (summaryRes.error && monthPayments.error) throw new Error("dashboard_unavailable");
 
       const summary = Array.isArray(summaryRes.data) ? summaryRes.data[0] : null;
-      const collectedThisMonth = (recentPayments.data ?? [])
-        .filter((p: any) => p.status === "success" && p.paid_at && new Date(p.paid_at) >= monthStart)
+      const collectedThisMonth = monthPayments.error ? null : (monthPayments.data ?? [])
         .reduce((s: number, p: any) => s + Number(p.amount ?? 0), 0);
+      const tickets = (helpdeskRes.data ?? []) as Array<{ status: string }>;
+      const openRequests = helpdeskRes.error ? null : tickets.filter((t) => t.status === "open" || t.status === "in_progress").length;
+      const ticketApprovals = helpdeskRes.error ? null : tickets.filter((t) => t.status === "awaiting_approval").length;
 
       return {
         societyName: (soc as any)?.name ?? "",
@@ -112,6 +132,10 @@ function SocietyDashboard() {
         visitorsToday: visitorsToday ?? 0,
         unpaidBills: unpaidBills ?? 0,
         collectedThisMonth,
+        paymentsToVerify: paymentsToVerify ?? 0,
+        openRequests,
+        ticketApprovals,
+        summaryOk: !summaryRes.error,
         outstandingAmount: Number(summary?.outstanding_amount ?? 0),
         collectionPercent: Number(summary?.collection_percent ?? 0),
         paidHouses: Number(summary?.paid_periods ?? 0),
@@ -125,12 +149,13 @@ function SocietyDashboard() {
 
   const activity = useMemo(() => {
     if (!data) return [];
-    const items: Array<{ id: string; icon: any; text: string; when: string }> = [];
+    const items: Array<{ id: string; icon: any; text: string; when: string; to: string }> = [];
     for (const p of data.recentPayments.slice(0, 3)) {
       const when = (p as any).paid_at ?? (p as any).created_at;
       items.push({
         id: `pay-${p.id}`,
         icon: Wallet,
+        to: "/society/payments",
         text: `Payment ${p.status} · ${INR.format(Number(p.amount ?? 0))}`,
         when,
       });
@@ -139,6 +164,7 @@ function SocietyDashboard() {
       items.push({
         id: `apr-${a.id}`,
         icon: UserCheck,
+        to: "/society/residents",
         text: `Resident approved · ${a.full_name ?? "Unnamed"}`,
         when: a.created_at,
       });
@@ -148,6 +174,7 @@ function SocietyDashboard() {
       items.push({
         id: `post-${post.id}`,
         icon: Megaphone,
+        to: "/society/communication",
         text: `Notice · ${body.slice(0, 60)}${body.length > 60 ? "…" : ""}`,
         when: post.created_at,
       });
@@ -166,8 +193,16 @@ function SocietyDashboard() {
 
   const displayName = profile?.full_name?.split(" ")[0] ?? "there";
 
-  const outstandingLabel = data && data.outstandingAmount > 0 ? INR.format(data.outstandingAmount) : "₹0";
-  const collectedLabel = data ? INR.format(data.collectedThisMonth) : "₹0";
+  // Never show a fake ₹0 when data is missing or failed.
+  const outstandingLabel = data?.summaryOk ? INR.format(data.outstandingAmount) : "—";
+  const collectedLabel = data && data.collectedThisMonth !== null ? INR.format(data.collectedThisMonth) : "—";
+  const attention = data ? [
+    { to: "/society/payments", icon: BadgeCheck, tone: "warning" as const, label: "Payments to verify", hint: "Cash & bank transfers awaiting a check", count: data.paymentsToVerify },
+    { to: "/society/approvals", icon: UserCheck, tone: "primary" as const, label: "Residents to approve", hint: "Join requests waiting", count: data.pendingApprovals },
+    { to: "/society/helpdesk", icon: LifeBuoy, tone: "info" as const, label: "Open requests", hint: "Complaints & repairs", count: data.openRequests },
+    { to: "/society/helpdesk", icon: FileText, tone: "primary" as const, label: "Requests needing approval", hint: "Renovation, events, NOC", count: data.ticketApprovals },
+    { to: "/society/billing", icon: AlertTriangle, tone: "warning" as const, label: "Unpaid bills", hint: "Unpaid or overdue", count: data.unpaidBills },
+  ].filter((a) => (a.count ?? 0) > 0) : [];
 
   return (
     <div className="pb-24">
@@ -186,8 +221,7 @@ function SocietyDashboard() {
           <StatPillRow>
             <StatPill label="Collected (mo)" value={collectedLabel} icon={Wallet} />
             <StatPill label="Outstanding" value={outstandingLabel} icon={TrendingUp} />
-            <StatPill label="Houses" value={data?.totalFlats ?? "—"} icon={Building2} />
-            <StatPill label="Collection" value={data?.collectionPercent ? `${Math.round(data.collectionPercent)}%` : "—"} icon={Sparkles} />
+            <StatPill label="Collection" value={data?.summaryOk ? `${Math.round(data.collectionPercent)}%` : "—"} icon={Sparkles} />
           </StatPillRow>
         }
       />
@@ -223,60 +257,48 @@ function SocietyDashboard() {
 
 
 
-      {/* Primary action tiles — highest urgency */}
-      <section className="grid grid-cols-3 gap-2 sm:gap-3 mb-5">
-        <PrimaryTile
-          to="/society/billing"
-          icon={AlertTriangle}
-          tone="warning"
-          label="Pending payments"
-          value={data ? String(data.unpaidBills) : "—"}
-        />
-        <PrimaryTile
-          to="/society/approvals"
-          icon={UserCheck}
-          tone="primary"
-          label="Approvals"
-          value={data ? String(data.pendingApprovals) : "—"}
-        />
-        <PrimaryTile
-          to="/society/visitors"
-          icon={UsersRound}
-          tone="info"
-          label="Visitors today"
-          value={data ? String(data.visitorsToday) : "—"}
-        />
-      </section>
+      {isError && !data ? (
+        <Card className="rounded-2xl">
+          <ErrorState
+            title="Dashboard didn't load"
+            description="We couldn't load your society's latest numbers. Nothing has changed — try again."
+            onRetry={() => refetch()}
+            showSupport={false}
+          />
+        </Card>
+      ) : (
+        <section aria-labelledby="attention-h" aria-busy={isLoading}>
+          <div className="flex items-center justify-between mb-2">
+            <h2 id="attention-h" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Needs your attention</h2>
+            {isFetching && data && <span className="text-[11px] text-muted-foreground">Updating…</span>}
+          </div>
+          {!data ? (
+            <div className="space-y-2">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-[68px] rounded-2xl" />)}</div>
+          ) : attention.length === 0 ? (
+            <Card className="rounded-2xl">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="h-10 w-10 shrink-0 rounded-xl bg-success/10 text-success grid place-items-center"><CheckCircle2 className="h-5 w-5" /></div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold">You're all caught up</p>
+                  <p className="text-xs text-muted-foreground">No payments, approvals or requests are waiting.</p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <ul className="rounded-2xl border bg-card divide-y overflow-hidden">
+              {attention.map((a) => (
+                <li key={a.label}>
+                  <AttentionRow {...a} count={a.count ?? 0} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
-      {/* Overview cards — hide any without data */}
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        {data && data.totalFlats > 0 && (
-          <OverviewCard icon={Building2} label="Total houses" value={String(data.totalFlats)} />
-        )}
-        {data && data.collectedThisMonth > 0 && (
-          <OverviewCard
-            icon={Wallet}
-            tone="success"
-            label="Collected this month"
-            value={INR.format(data.collectedThisMonth)}
-          />
-        )}
-        {data && data.outstandingAmount > 0 && (
-          <OverviewCard
-            icon={TrendingUp}
-            tone="destructive"
-            label="Outstanding"
-            value={INR.format(data.outstandingAmount)}
-          />
-        )}
-        {data && data.collectionPercent > 0 && (
-          <OverviewCard
-            icon={Sparkles}
-            tone="primary"
-            label="Collection"
-            value={`${Math.round(data.collectionPercent)}%`}
-          />
-        )}
+      <section aria-label="Today" className="grid grid-cols-2 gap-3">
+        <PrimaryTile to="/society/visitors" icon={UsersRound} tone="info" label="Visitors today" value={data ? String(data.visitorsToday) : "—"} />
+        <PrimaryTile to="/society/flats" icon={Building2} tone="primary" label="Houses" value={data ? String(data.totalFlats) : "—"} />
       </section>
 
       {/* Finance chart */}
@@ -291,19 +313,23 @@ function SocietyDashboard() {
         <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
           Quick actions
         </h2>
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
           {[
             { to: "/society/billing" as const, label: "New bill", icon: Receipt },
             { to: "/society/residents" as const, label: "Residents", icon: Users },
             { to: "/society/approvals" as const, label: "Approvals", icon: UserCheck },
             { to: "/society/visitors" as const, label: "Visitors", icon: UsersRound },
             { to: "/society/announcements" as const, label: "Notice", icon: Megaphone },
-            { to: "/society/expenses" as const, label: "Expenses", icon: Wallet },
+            { to: "/society/income" as const, label: "Income", icon: Wallet },
+            { to: "/society/helpdesk" as const, label: "Helpdesk", icon: LifeBuoy },
+            { to: "/society/payments" as const, label: "Payments", icon: BadgeCheck },
+            { to: "/society/knowledge" as const, label: "Docs & FAQs", icon: FileText },
+            { to: "/society/expenses" as const, label: "Expenses", icon: TrendingUp },
           ].map((a) => (
             <Link
               key={a.to}
               to={a.to}
-              className="rounded-2xl border bg-card hover:bg-primary/5 hover:border-primary/40 transition p-3 flex flex-col items-center gap-1.5 text-center min-h-[76px] justify-center"
+              className="rounded-2xl border bg-card hover:bg-primary/5 hover:border-primary/40 active:scale-[0.98] transition p-3 flex flex-col items-center gap-1.5 text-center min-h-[76px] justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <a.icon className="h-5 w-5 text-primary" />
               <span className="text-[11px] font-medium leading-tight">{a.label}</span>
@@ -329,21 +355,24 @@ function SocietyDashboard() {
           <CardContent className="p-0">
             {activity.length === 0 ? (
               <div className="py-10 text-center text-sm text-muted-foreground">
-                No recent activity yet
+                {data ? "No recent activity yet" : "Loading activity…"}
               </div>
             ) : (
               <ul className="divide-y divide-border">
                 {activity.map((it) => (
-                  <li key={it.id} className="p-4 flex items-start gap-3">
+                  <li key={it.id}>
+                   <Link to={it.to as "/society/payments"} className="p-4 flex items-start gap-3 hover:bg-muted/50 focus-visible:outline-none focus-visible:bg-muted/60">
                     <div className="h-9 w-9 shrink-0 rounded-xl bg-primary/10 grid place-items-center">
                       <it.icon className="h-4 w-4 text-primary" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm truncate">{it.text}</p>
                       <p className="text-[11px] text-muted-foreground">
-                        {new Date(it.when).toLocaleString()}
+                        {new Date(it.when).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}
                       </p>
                     </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 self-center" aria-hidden />
+                   </Link>
                   </li>
                 ))}
               </ul>
@@ -369,6 +398,23 @@ function SocietyDashboard() {
       )}
       </div>
     </div>
+  );
+}
+
+function AttentionRow({ to, icon: Icon, tone, label, hint, count }: {
+  to: string; icon: any; tone: "primary" | "warning" | "info"; label: string; hint: string; count: number;
+}) {
+  const toneClass = tone === "warning" ? "bg-warning/10 text-warning" : tone === "info" ? "bg-info/10 text-info" : "bg-primary/10 text-primary";
+  return (
+    <Link to={to as "/society/payments"} className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-3 p-3.5 min-h-[68px] hover:bg-muted/50 focus-visible:outline-none focus-visible:bg-muted/60">
+      <div className={`h-10 w-10 rounded-xl grid place-items-center ${toneClass}`}><Icon className="h-5 w-5" /></div>
+      <div className="min-w-0">
+        <p className="text-sm font-semibold truncate">{label}</p>
+        <p className="text-xs text-muted-foreground truncate">{hint}</p>
+      </div>
+      <span className="min-w-8 h-7 px-2 rounded-full bg-foreground text-background text-sm font-semibold tabular-nums grid place-items-center">{count > 99 ? "99+" : count}</span>
+      <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />
+    </Link>
   );
 }
 

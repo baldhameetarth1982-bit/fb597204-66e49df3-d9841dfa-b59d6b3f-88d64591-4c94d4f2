@@ -2414,6 +2414,98 @@ export type Database = {
           },
         ]
       }
+      notice_reads: {
+        Row: {
+          notice_id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          notice_id: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          notice_id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notice_reads_notice_id_fkey"
+            columns: ["notice_id"]
+            isOneToOne: false
+            referencedRelation: "notices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notices: {
+        Row: {
+          audience: string
+          block_id: string | null
+          body: string
+          category: string
+          created_at: string
+          created_by: string
+          edited_at: string | null
+          id: string
+          publish_at: string | null
+          published_at: string | null
+          society_id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          audience?: string
+          block_id?: string | null
+          body: string
+          category?: string
+          created_at?: string
+          created_by: string
+          edited_at?: string | null
+          id?: string
+          publish_at?: string | null
+          published_at?: string | null
+          society_id: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          audience?: string
+          block_id?: string | null
+          body?: string
+          category?: string
+          created_at?: string
+          created_by?: string
+          edited_at?: string | null
+          id?: string
+          publish_at?: string | null
+          published_at?: string | null
+          society_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notices_block_id_fkey"
+            columns: ["block_id"]
+            isOneToOne: false
+            referencedRelation: "blocks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notices_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       offline_residents: {
         Row: {
           created_at: string
@@ -4547,6 +4639,11 @@ export type Database = {
         }
         Returns: undefined
       }
+      _notice_admin_society: { Args: never; Returns: string }
+      _notice_visible: {
+        Args: { _n: Database["public"]["Tables"]["notices"]["Row"] }
+        Returns: boolean
+      }
       _notify_flat: {
         Args: {
           _body: string
@@ -5641,6 +5738,39 @@ export type Database = {
       next_no_dues_cert_number_internal: {
         Args: { _actor_id: string; _society_id: string }
         Returns: string
+      }
+      notice_archive: { Args: { _id: string }; Returns: undefined }
+      notice_read_counts: {
+        Args: never
+        Returns: {
+          notice_id: string
+          reads: number
+        }[]
+      }
+      notice_save: {
+        Args: {
+          _audience: string
+          _block_id: string
+          _body: string
+          _category: string
+          _id: string
+          _publish: boolean
+          _publish_at: string
+          _title: string
+        }
+        Returns: string
+      }
+      poll_cast_vote: {
+        Args: { _option: string; _poll: string }
+        Returns: undefined
+      }
+      poll_results: {
+        Args: { _poll_ids: string[] }
+        Returns: {
+          option_id: string
+          poll_id: string
+          votes: number
+        }[]
       }
       preview_bill_batch: {
         Args: {

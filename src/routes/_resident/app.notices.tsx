@@ -1,134 +1,131 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Bell, Megaphone, Paperclip, Pin, Search } from "lucide-react";
+import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Megaphone, Search, Siren } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useState } from "react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
+import { cn } from "@/lib/utils";
+import { NOTICE_CATEGORIES, liveAt, noticeCategory, type NoticeRow } from "@/lib/notices";
+import { useResidentNotices, markNoticeRead } from "@/hooks/useResidentNotices";
 
 export const Route = createFileRoute("/_resident/app/notices")({
-  head: () => ({ meta: [{ title: "Notices — SociyoHub" }] }),
+  head: () => ({
+    meta: [
+      { title: "Notices — SociyoHub" },
+      { name: "description", content: "Official notices and announcements from your society committee." },
+    ],
+  }),
   component: NoticesPage,
 });
 
-type Notice = {
-  id: string;
-  title: string;
-  body: string;
-  category: "General" | "Maintenance" | "Event" | "Urgent";
-  date: string;
-  pinned?: boolean;
-  attachments?: number;
-};
-
-const SAMPLE: Notice[] = [
-  {
-    id: "1",
-    title: "Diwali celebration — Saturday 7 PM",
-    body: "Join us at the clubhouse for sweets, music and rangoli. Families welcome.",
-    category: "Event",
-    date: "Today",
-    pinned: true,
-    attachments: 1,
-  },
-  {
-    id: "2",
-    title: "Water tank cleaning — Block A",
-    body: "Supply will be off from 10 AM to 2 PM on Friday. Please store water in advance.",
-    category: "Maintenance",
-    date: "Yesterday",
-  },
-  {
-    id: "3",
-    title: "Lift AMC renewal completed",
-    body: "Annual maintenance contract for all 6 elevators has been renewed with OTIS.",
-    category: "General",
-    date: "2 days ago",
-    attachments: 2,
-  },
-  {
-    id: "4",
-    title: "Visitor entry policy update",
-    body: "All visitors must now be pre-approved via the app. See attached SOP.",
-    category: "Urgent",
-    date: "1 week ago",
-    attachments: 1,
-  },
-];
-
-const CAT_COLORS: Record<Notice["category"], string> = {
-  General: "bg-blue-100 text-blue-700",
-  Maintenance: "bg-amber-100 text-amber-700",
-  Event: "bg-emerald-100 text-emerald-700",
-  Urgent: "bg-rose-100 text-rose-700",
-};
 
 function NoticesPage() {
-  const [q, setQ] = useState("");
-  const filtered = SAMPLE.filter(
-    (n) =>
-      n.title.toLowerCase().includes(q.toLowerCase()) ||
-      n.body.toLowerCase().includes(q.toLowerCase()),
-  );
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const q = useResidentNotices();
+  const [search, setSearch] = useState("");
+  const [cat, setCat] = useState("all");
+  const [open, setOpen] = useState<NoticeRow | null>(null);
+
+  const notices = q.data?.notices ?? [];
+  const read = q.data?.read ?? new Set<string>();
+  const emergencies = notices.filter((n) => n.category === "emergency" && Date.now() - new Date(liveAt(n) ?? n.created_at).getTime() < 3 * 864e5);
+  const filtered = useMemo(() => {
+    const s = search.trim().toLowerCase();
+    return notices.filter((n) => (cat === "all" || n.category === cat) && (!s || `${n.title} ${n.body}`.toLowerCase().includes(s)));
+  }, [notices, search, cat]);
+
+  function openNotice(n: NoticeRow) {
+    setOpen(n);
+    if (user && !read.has(n.id)) void markNoticeRead(n.id, user.id).then(() => qc.invalidateQueries({ queryKey: ["resident-notices"] }));
+  }
 
   return (
-    <div className="px-4 py-5 space-y-4">
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-xl bg-primary/10 grid place-items-center">
-          <Megaphone className="h-5 w-5 text-primary" />
-        </div>
-        <div className="flex-1">
-          <h1 className="text-xl font-semibold tracking-tight">Notices</h1>
-          <p className="text-xs text-muted-foreground">
-            Announcements from your society admin
-          </p>
-        </div>
-      </div>
+    <div className="px-4 py-5 space-y-4 pb-28 max-w-2xl mx-auto">
+      <header>
+        <h1 className="text-2xl font-semibold tracking-tight">Notices</h1>
+        <p className="text-sm text-muted-foreground">Official updates from your committee</p>
+      </header>
+
+      {emergencies.map((n) => (
+        <button key={n.id} onClick={() => openNotice(n)} className="w-full text-left rounded-2xl bg-destructive text-destructive-foreground p-4 flex gap-3">
+          <Siren className="h-6 w-6 shrink-0" />
+          <div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-wide">Emergency</p><p className="font-semibold">{n.title}</p></div>
+        </button>
+      ))}
 
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search notices..."
-          className="pl-9 rounded-xl h-11"
-        />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input aria-label="Search notices" className="pl-9 h-11 rounded-xl" placeholder="Search notices" value={search} onChange={(e) => setSearch(e.target.value)} />
+      </div>
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {[{ value: "all", label: "All" }, ...NOTICE_CATEGORIES].map((c) => (
+          <button key={c.value} onClick={() => setCat(c.value)}
+            className={cn("min-h-11 px-4 rounded-full border text-sm whitespace-nowrap", cat === c.value ? "bg-primary text-primary-foreground border-primary" : "border-border")}>
+            {c.label}
+          </button>
+        ))}
       </div>
 
-      {filtered.length === 0 ? (
-        <div className="py-16 text-center">
-          <Bell className="mx-auto h-10 w-10 text-muted-foreground/50" />
-          <p className="mt-3 text-sm text-muted-foreground">No notices found.</p>
-        </div>
+      {q.isLoading ? (
+        <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-20 rounded-2xl bg-muted animate-pulse" />)}</div>
+      ) : q.isError ? (
+        <Card className="rounded-2xl"><CardContent className="p-6 text-center space-y-3">
+          <p className="text-sm">We couldn't load notices.</p>
+          <Button variant="outline" className="min-h-11 rounded-xl" onClick={() => q.refetch()}>Retry</Button>
+        </CardContent></Card>
+      ) : filtered.length === 0 ? (
+        <Card className="rounded-2xl"><CardContent className="p-8 text-center">
+          <Megaphone className="h-8 w-8 mx-auto text-muted-foreground" />
+          <p className="mt-2 text-sm text-muted-foreground">{notices.length ? "No notices match." : "No notices from your committee yet."}</p>
+        </CardContent></Card>
       ) : (
-        <div className="space-y-3">
-          {filtered.map((n) => (
-            <Card key={n.id} className="rounded-2xl border-border">
-              <CardContent className="p-4 space-y-2">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    {n.pinned && <Pin className="h-3.5 w-3.5 text-primary" />}
-                    <Badge
-                      variant="secondary"
-                      className={`${CAT_COLORS[n.category]} rounded-full px-2 py-0.5 text-[10px] font-medium border-0`}
-                    >
-                      {n.category}
-                    </Badge>
-                  </div>
-                  <span className="text-[11px] text-muted-foreground">{n.date}</span>
-                </div>
-                <h3 className="font-semibold text-sm leading-snug">{n.title}</h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">{n.body}</p>
-                {n.attachments && (
-                  <div className="flex items-center gap-1 pt-1 text-[11px] text-primary">
-                    <Paperclip className="h-3 w-3" />
-                    {n.attachments} attachment{n.attachments > 1 ? "s" : ""}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <ul className="space-y-2">
+          {filtered.map((n) => {
+            const c = noticeCategory(n.category);
+            const unread = !read.has(n.id);
+            return (
+              <li key={n.id}>
+                <button onClick={() => openNotice(n)} className="w-full text-left">
+                  <Card className={cn("rounded-2xl hover:bg-accent/40 transition-colors", unread && "border-primary/40")}>
+                    <CardContent className="p-4 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium", c.className)}>{c.label}</span>
+                        <span className="text-[11px] text-muted-foreground">{new Date(liveAt(n) ?? n.created_at).toLocaleDateString()}</span>
+                        {unread && <span className="ml-auto h-2.5 w-2.5 rounded-full bg-primary" aria-label="Unread" />}
+                      </div>
+                      <p className="font-semibold">{n.title}</p>
+                      <p className="text-sm text-muted-foreground line-clamp-2">{n.body}</p>
+                    </CardContent>
+                  </Card>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
       )}
+
+      <Sheet open={!!open} onOpenChange={(o) => !o && setOpen(null)}>
+        <SheetContent side="bottom" className="rounded-t-3xl max-h-[88vh] overflow-y-auto">
+          {open && (
+            <>
+              <SheetHeader><SheetTitle className="text-left">{open.title}</SheetTitle></SheetHeader>
+              <div className="py-3 space-y-3">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className={cn("rounded-full px-2 py-0.5 font-medium", noticeCategory(open.category).className)}>{noticeCategory(open.category).label}</span>
+                  {new Date(liveAt(open) ?? open.created_at).toLocaleString()}
+                  {open.edited_at && " · edited"}
+                </div>
+                <p className="text-sm whitespace-pre-wrap leading-relaxed">{open.body}</p>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

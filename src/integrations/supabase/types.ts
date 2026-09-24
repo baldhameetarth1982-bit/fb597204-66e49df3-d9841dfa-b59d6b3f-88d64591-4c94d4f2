@@ -5327,6 +5327,19 @@ export type Database = {
         Args: { _from: string; _society_id: string; _to: string }
         Returns: Json
       }
+      get_outstanding_dues: {
+        Args: { _society_id: string }
+        Returns: {
+          bill_id: string
+          due_date: string
+          flat_id: string
+          flat_label: string
+          outstanding: number
+          period_label: string
+          total_payable: number
+          verified_paid: number
+        }[]
+      }
       get_partner_summary_for_current_user: {
         Args: never
         Returns: {

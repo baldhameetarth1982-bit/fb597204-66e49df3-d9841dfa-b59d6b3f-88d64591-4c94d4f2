@@ -28,11 +28,11 @@ type OpenBill = { id: string; period: string; due: string | null; outstanding: n
 type Home = { flatId: string; label: string; bills: OpenBill[]; total: number; overdueCount: number; oldestDue: string | null };
 
 const INR = (v: number) => `₹${v.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
-const OPEN_STATUSES = ["unpaid", "partially_paid", "overdue"];
 
 /**
- * Defaulters — committee only. Reads bills + verified payments through RLS
- * (society admins / billing managers only). Outstanding = bill total minus
+ * Defaulters — committee only. Amounts come from the get_outstanding_dues
+ * server function, which authorizes the caller and sums payments over the
+ * complete set for each bill it returns. Outstanding = bill total minus
  * VERIFIED payments; pending/rejected/reversed payments never reduce dues.
  * Cancelled and paid bills are excluded.
  */
@@ -49,54 +49,19 @@ function DefaultersPage() {
     setLoading(true);
     setError(null);
     try {
-      const { data: bills, error: bErr } = await supabase
-        .from("bills")
-        .select("id, flat_id, period_label, due_date, status, total_payable, amount, cancelled_at")
-        .eq("society_id", societyId)
-        .in("status", OPEN_STATUSES)
-        .is("cancelled_at", null)
-        .limit(2000);
-      if (bErr) throw bErr;
-      const list = bills ?? [];
-      const billIds = list.map((b) => b.id);
-      const paid: Record<string, number> = {};
-      for (let i = 0; i < billIds.length; i += 200) {
-        const { data: pays, error: pErr } = await supabase
-          .from("payments")
-          .select("bill_id, amount")
-          .eq("status", "verified")
-          .in("bill_id", billIds.slice(i, i + 200));
-        if (pErr) throw pErr;
-        for (const p of pays ?? []) {
-          if (p.bill_id) paid[p.bill_id] = (paid[p.bill_id] ?? 0) + Number(p.amount ?? 0);
-        }
-      }
-      const flatIds = Array.from(new Set(list.map((b) => b.flat_id).filter(Boolean))) as string[];
-      const labels: Record<string, string> = {};
-      if (flatIds.length) {
-        const { data: flats, error: fErr } = await supabase
-          .from("flats").select("id, flat_number, block_id").in("id", flatIds);
-        if (fErr) throw fErr;
-        const blockIds = Array.from(new Set((flats ?? []).map((f) => f.block_id).filter(Boolean))) as string[];
-        const blocks: Record<string, string> = {};
-        if (blockIds.length) {
-          const { data: bl } = await supabase.from("blocks").select("id, name").in("id", blockIds);
-          for (const b of bl ?? []) blocks[b.id] = b.name;
-        }
-        for (const f of flats ?? []) {
-          labels[f.id] = `${f.block_id && blocks[f.block_id] ? blocks[f.block_id] + "-" : ""}${f.flat_number}`;
-        }
-      }
+      // Server computes outstanding = bill total − verified payments over the
+      // complete payment set, scoped to what this user may manage.
+      const { data, error: rErr } = await supabase.rpc("get_outstanding_dues", { _society_id: societyId });
+      if (rErr) throw rErr;
+      const list = data ?? [];
       const today = new Date(); today.setHours(0, 0, 0, 0);
       const map = new Map<string, Home>();
       for (const b of list) {
-        if (!b.flat_id) continue;
-        const total = Number(b.total_payable ?? b.amount ?? 0);
-        const outstanding = Math.round((total - (paid[b.id] ?? 0)) * 100) / 100;
-        if (outstanding <= 0) continue;
+        const outstanding = Math.round(Number(b.outstanding) * 100) / 100;
+        if (!b.flat_id || !Number.isFinite(outstanding) || outstanding <= 0) continue;
         const overdue = !!b.due_date && new Date(b.due_date) < today;
-        const h = map.get(b.flat_id) ?? { flatId: b.flat_id, label: labels[b.flat_id] ?? "Home", bills: [], total: 0, overdueCount: 0, oldestDue: null };
-        h.bills.push({ id: b.id, period: b.period_label ?? "Bill", due: b.due_date, outstanding, overdue });
+        const h = map.get(b.flat_id) ?? { flatId: b.flat_id, label: b.flat_label ?? "Home", bills: [], total: 0, overdueCount: 0, oldestDue: null };
+        h.bills.push({ id: b.bill_id, period: b.period_label ?? "Bill", due: b.due_date, outstanding, overdue });
         h.total += outstanding;
         if (overdue) h.overdueCount++;
         if (b.due_date && (!h.oldestDue || b.due_date < h.oldestDue)) h.oldestDue = b.due_date;
@@ -151,7 +116,7 @@ function DefaultersPage() {
             <Button size="sm" variant="outline" className="min-h-11 shrink-0" onClick={() => void load()}>Try again</Button>
           </div>
         ) : homes.length === 0 ? (
-          <EmptyState icon={AlertTriangle} title="No outstanding dues" description="Every open bill is settled by verified payments." />
+          <EmptyState icon={AlertTriangle} title="No outstanding dues" description="Every open bill you manage is settled by verified payments." />
         ) : (
           <>
             <div className="flex flex-col sm:flex-row gap-2">

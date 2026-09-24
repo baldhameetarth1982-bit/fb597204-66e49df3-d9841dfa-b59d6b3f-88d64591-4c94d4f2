@@ -141,6 +141,13 @@
       "when": 1790211116861,
       "tag": "0019_visitors_guards_parking_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1790211793282,
+      "tag": "0020_notices_and_poll_integrity",
+      "breakpoints": true
     }
   ]
 }

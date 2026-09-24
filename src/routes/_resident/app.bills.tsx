@@ -99,11 +99,24 @@ function BillsScreen() {
 
   if (loading) {
     return (
-      <div className="min-h-[60vh] grid place-items-center text-muted-foreground">
-        <Loader2 className="h-6 w-6 animate-spin" />
+      <div className="px-5 py-6 space-y-3" aria-busy="true" aria-label="Loading bills">
+        <div className="h-8 w-32 rounded-lg bg-muted animate-pulse" />
+        <div className="h-24 rounded-2xl bg-muted animate-pulse" />
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="h-20 rounded-2xl bg-muted animate-pulse" />
+        ))}
       </div>
     );
   }
+
+  const openBills = visibleBills.filter((b) => {
+    const s = getBillDisplayStatus(b);
+    return !s.isPaid && !s.isCancelled;
+  });
+  const overdueCount = openBills.filter((b) => getBillDisplayStatus(b).isOverdue).length;
+  const outstanding = openBills.reduce((sum, b) => sum + b.amount, 0);
+  // Only show a total when data is fresh — never a fake ₹0 after failure.
+  const showSummary = !loadError && !noFlat && visibleBills.length > 0;
 
   return (
     <div className="px-5 py-6 space-y-6">
@@ -129,6 +142,25 @@ function BillsScreen() {
                 Pick my flat
               </Button>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {showSummary && (
+        <Card className="rounded-2xl">
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground">Outstanding (bill totals)</p>
+            <p className="text-2xl font-semibold tabular-nums mt-1 break-words">
+              ₹{outstanding.toLocaleString("en-IN")}
+            </p>
+            <p className="text-xs mt-1 text-muted-foreground">
+              {openBills.length === 0
+                ? "No open bills. You're all settled."
+                : `${openBills.length} open bill${openBills.length > 1 ? "s" : ""}`}
+              {overdueCount > 0 && (
+                <span className="text-destructive font-medium"> · {overdueCount} overdue</span>
+              )}
+            </p>
           </CardContent>
         </Card>
       )}
@@ -209,8 +241,16 @@ function BillsScreen() {
                           ₹{b.amount.toLocaleString("en-IN")}
                         </p>
                         <Badge
-                          variant={state.code === "paid" ? "secondary" : "outline"}
-                          className="mt-1 rounded-full text-[10px]"
+                          variant="outline"
+                          className={`mt-1 rounded-full text-[10px] ${
+                            state.code === "paid"
+                              ? "border-success/40 bg-success/10 text-success"
+                              : state.code === "overdue"
+                                ? "border-destructive/40 bg-destructive/10 text-destructive"
+                                : state.code === "cancelled"
+                                  ? "text-muted-foreground line-through"
+                                  : ""
+                          }`}
                         >
                           {state.label}
                         </Badge>

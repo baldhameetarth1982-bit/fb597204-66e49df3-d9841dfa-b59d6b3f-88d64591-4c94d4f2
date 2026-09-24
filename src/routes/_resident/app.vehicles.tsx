@@ -128,6 +128,7 @@ function VehiclesPage() {
           </DialogContent>
         </Dialog>
       </header>
+      <MyParking />
 
       {loading ? (
         <div className="text-center py-10"><Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" /></div>

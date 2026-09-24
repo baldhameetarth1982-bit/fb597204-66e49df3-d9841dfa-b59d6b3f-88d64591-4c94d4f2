@@ -74,7 +74,7 @@ function CreateSocietyWizardPage() {
           });
           sid = created.id;
         } catch (e) {
-          toast.error(e instanceof Error ? e.message : "Could not start setup");
+          toast.error("Could not start setup. Your details are kept — please try again.");
         }
       }
       setSocietyId(sid ?? null);

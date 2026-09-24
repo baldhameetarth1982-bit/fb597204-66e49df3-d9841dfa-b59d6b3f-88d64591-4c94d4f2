@@ -115,6 +115,19 @@ export const initializeMigrationUpload = createServerFn({ method: "POST" })
     );
     if (!canAdmin) throw new MigrationError("unavailable");
 
+    // Structure mode is derived from the society record server-side — never
+    // from the browser. Serial-number societies previously got "structured"
+    // hard-coded by the client, which broke their unit matching.
+    const { data: soc } = await supabase
+      .from("societies")
+      .select("structure_mode, layout")
+      .eq("id", data.society_id)
+      .maybeSingle();
+    const derivedMode: "structured" | "serial" =
+      soc?.structure_mode === "serial" || (!soc?.structure_mode && soc?.layout === "serial")
+        ? "serial"
+        : "structured";
+
     // Trusted mutation via service role. The RPC also re-checks admin scope
     // against the verified actor id (defence in depth).
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -126,7 +139,7 @@ export const initializeMigrationUpload = createServerFn({ method: "POST" })
         _source_type: data.source_type,
         _filename: data.filename,
         _declared_size: data.declared_size,
-        _structure_mode: data.structure_mode ?? "structured",
+        _structure_mode: derivedMode,
       },
     );
     if (beginErr || !beginRes || beginRes.length === 0) {

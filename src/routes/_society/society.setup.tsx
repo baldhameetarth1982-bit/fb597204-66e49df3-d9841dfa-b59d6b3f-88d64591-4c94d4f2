@@ -115,7 +115,7 @@ function SetupWizardPage() {
         await refreshOverview(societyId);
       }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not set mode");
+      toast.error("Could not change the structure type. Please try again.");
     } finally {
       setModeSaving(false);
     }
@@ -130,7 +130,7 @@ function SetupWizardPage() {
         .select("*")
         .eq("society_id", societyId)
         .maybeSingle();
-      if (error && error.code !== "PGRST116") toast.error(error.message);
+      if (error && error.code !== "PGRST116") toast.error("Could not load your society setup. Please refresh.");
       const next = (data as Settings | null) ?? defaultSettings(societyId);
       setS(next);
       setStep(Math.min(next.wizard_step ?? 0, STEPS.length - 1));
@@ -154,7 +154,7 @@ function SetupWizardPage() {
       .upsert(payload, { onConflict: "society_id" });
     setSaving(false);
     if (error) {
-      toast.error(error.message);
+      toast.error("Could not save. Your entries are kept — please try again.");
       return false;
     }
     setS(payload);
@@ -174,7 +174,7 @@ function SetupWizardPage() {
     const { error } = await supabase.rpc("complete_setup_wizard", { _society_id: societyId });
     setSaving(false);
     if (error) {
-      toast.error(error.message);
+      toast.error("Could not save. Your entries are kept — please try again.");
       return;
     }
     toast.success("Setup complete — opening balances are now locked");

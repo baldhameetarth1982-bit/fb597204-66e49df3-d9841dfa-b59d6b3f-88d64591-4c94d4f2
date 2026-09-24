@@ -35,6 +35,30 @@ import {
 
 // Stage 2E — human-readable guidance for stored failure codes. Kept in
 // one place so the UX never leaks raw DB errors.
+
+const IMPORT_ERROR_TEXT: Record<string, string> = {
+  unavailable: "You don't have access to import for this society, or the service is busy. Please try again.",
+  job_not_ready: "This import isn't ready for that step yet. Finish the previous step first.",
+  invalid_file: "This file couldn't be read. Save it as CSV or Excel and try again.",
+  unsupported_format: "This file type isn't supported. Use CSV or Excel.",
+  format_mismatch: "The file contents don't match its type. Re-save it as CSV or Excel.",
+  empty_header: "Some columns have no heading. Add a heading to every column.",
+  duplicate_header: "Two columns have the same heading. Rename one of them.",
+  malformed_quote: "The file has broken quotation marks. Re-save it from your spreadsheet app.",
+  cell_too_long: "A cell has too much text. Shorten it and try again.",
+  too_many_columns: "The file has too many columns. Remove unused columns.",
+  too_many_rows: "The file has too many rows. Split it into smaller files.",
+  invalid_mapping: "Some columns are matched incorrectly. Check the column matching.",
+  occupancy_rows_unsupported: "Occupancy rows can't be imported directly. Import units and residents instead.",
+  structure_rows_not_allowed_serial: "Your society uses serial house numbers, so block/wing rows can't be imported.",
+  upload_failed: "The file didn't upload. Check your connection and try again.",
+  operation_failed: "Something went wrong. Your existing data wasn't changed. Please try again.",
+};
+function importErrorText(e: unknown): string {
+  const code = String((e as { message?: unknown } | null)?.message ?? "").trim();
+  return IMPORT_ERROR_TEXT[code] ?? IMPORT_ERROR_TEXT.operation_failed;
+}
+
 const FAILURE_GUIDANCE: Record<string, { title: string; hint: string }> = {
   occupancy_rows_unsupported: {
     title: "Occupancy rows are not imported directly",
@@ -179,7 +203,7 @@ function ImportPage() {
     setBusy("jobs");
     listJobs({ data: { society_id: societyId, limit: 20, offset: 0 } })
       .then((res) => { if (!cancelled) setJobsList(res.items as JobListItem[]); })
-      .catch((e) => { if (!cancelled) setJobsError((e as Error).message); })
+      .catch((e) => { if (!cancelled) setJobsError(importErrorText(e)); })
       .finally(() => { if (!cancelled) setBusy((b) => (b === "jobs" ? null : b)); });
     return () => { cancelled = true; };
   }, [societyId, listJobs, commitStatus]);
@@ -200,7 +224,7 @@ function ImportPage() {
           filename: file.name,
           declared_size: file.size,
           declared_mime: file.type || null,
-          structure_mode: "structured",
+          // structure mode is derived server-side from the society
         },
       });
       const uploadRes = await fetch(init.upload_url, {
@@ -218,8 +242,7 @@ function ImportPage() {
       setMapping(suggestedMapping(fin.headers, entityType, sourceType));
       toast.success(`Uploaded ${fin.row_count} rows`);
     } catch (e) {
-      const code = (e as Error).message || "operation_failed";
-      toast.error(`Upload failed: ${code}`);
+      toast.error(importErrorText(e));
     } finally {
       setBusy(null);
     }
@@ -242,7 +265,7 @@ function ImportPage() {
       setPreviewRows(p.items as PreviewRow[]);
       toast.success(`${res.valid} valid, ${res.errors} error rows`);
     } catch (e) {
-      toast.error(`Validation failed: ${(e as Error).message}`);
+      toast.error(importErrorText(e));
     } finally {
       setBusy(null);
     }
@@ -278,7 +301,7 @@ function ImportPage() {
         toast.success(`Import committed (${res.result?.total_committed ?? 0} rows)`);
         setConfirmMode(false);
       } else {
-        toast.error(`Commit ${res.status}`);
+        toast.error("The import didn't finish. Nothing was partly imported — see the guidance below.");
         // Fetch stored failure code for guidance.
         try {
           const f = await jobFailure({ data: { job_id: jobId } });
@@ -286,7 +309,7 @@ function ImportPage() {
         } catch { /* ignore */ }
       }
     } catch (e) {
-      toast.error(`Commit failed: ${(e as Error).message}`);
+      toast.error(`${importErrorText(e)} Nothing was partly imported.`);
       if (jobId) {
         try {
           const f = await jobFailure({ data: { job_id: jobId } });
@@ -317,7 +340,7 @@ function ImportPage() {
       setFailureCode(f.failure_code);
       toast.success("Resumed job");
     } catch (e) {
-      toast.error(`Resume failed: ${(e as Error).message}`);
+      toast.error(importErrorText(e));
     } finally {
       setBusy(null);
     }

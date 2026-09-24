@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import type { LucideIcon } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useState, useRef, type ReactNode } from "react";
 import {
   ArrowLeft,
   Loader2,
@@ -11,6 +11,7 @@ import {
   XCircle,
   RotateCcw,
   Clock,
+  Sparkles,
 } from "lucide-react";
 import { IncomeAccessBoundary } from "@/components/subscription/IncomeAccessBoundary";
 import { incomeKeys, incomeInvalidations } from "@/lib/income-query-keys";
@@ -21,6 +22,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -31,6 +33,10 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { suggestIncomeCategoryFn } from "@/lib/income-category-suggestion.functions";
+import type { IncomeSuggestionResult } from "@/lib/income-category-suggestion.server";
+import { confirmIncomeCategoryFn } from "@/lib/income-category-review.functions";
+import { listIncomeCategoriesFn } from "@/lib/non-member-income.functions";
 import {
   getIncomeRecordDetailFn,
   verifyIncomeRecordByIdFn,
@@ -62,7 +68,7 @@ export const Route = createFileRoute("/_society/society/income/$id")({
 
 const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
 
-type DialogKind = "verify" | "reject" | "reverse" | "reconcile" | "unreconcile" | null;
+type DialogKind = "category" | "verify" | "reject" | "reverse" | "reconcile" | "unreconcile" | null;
 
 function statusMessage(result: IncomeTransitionResult): string {
   switch (result.status) {
@@ -164,7 +170,7 @@ function IncomeDetail({ societyId }: { societyId: string }) {
           </CardContent>
         </Card>
       ) : record ? (
-        <RecordView r={record} onAction={setDialog} />
+        <RecordView r={record} societyId={societyId} onAction={setDialog} onRefresh={invalidateAll} />
       ) : null}
 
       {record && dialog === "verify" && (
@@ -173,6 +179,9 @@ function IncomeDetail({ societyId }: { societyId: string }) {
           onClose={() => setDialog(null)}
           onResult={handleResult}
         />
+      )}
+      {record && dialog === "category" && (
+        <CategoryDialog record={record} societyId={societyId} onClose={() => setDialog(null)} onDone={() => { setDialog(null); invalidateAll(); }} />
       )}
       {record && dialog === "reject" && (
         <ReasonDialog
@@ -209,6 +218,8 @@ function IncomeDetail({ societyId }: { societyId: string }) {
                   ? "Please provide a reason (at least 5 characters)."
                   : r.status === "plan_required"
                     ? "Upgrade to Pro to reconcile income."
+                     : r.status === "rate_limited"
+                       ? "Too many reconciliation requests. Please try again later."
                     : r.status === "not_authorized" || r.status === "not_found"
                       ? "You don't have access to this record."
                       : "The reconciliation could not be updated. Please try again.";
@@ -245,9 +256,13 @@ function buildTimeline(r: IncomeRecordDetail): TimelineEvent[] {
 
 function RecordView({
   r,
+  societyId,
+  onRefresh,
   onAction,
 }: {
   r: IncomeRecordDetail;
+  societyId: string;
+  onRefresh: () => void;
   onAction: (d: DialogKind) => void;
 }) {
   const events = buildTimeline(r);
@@ -315,8 +330,10 @@ function RecordView({
           <div className="flex flex-wrap gap-2 pt-4">
             {canVerify && (
               <>
+                <Button variant="outline" className="min-h-[44px]" onClick={() => onAction("category")}>Review category</Button>
                 <Button
                   onClick={() => onAction("verify")}
+                  disabled={!r.category_confirmed_at}
                   className="min-h-[44px]"
                   aria-label="Verify income record"
                 >
@@ -332,6 +349,7 @@ function RecordView({
                 </Button>
               </>
             )}
+            {canVerify && !r.category_confirmed_at && <p className="w-full text-xs text-muted-foreground">Review and confirm the accounting category before verifying this payment.</p>}
             {canReverse && !canReject && (
               <Button
                 variant="destructive"
@@ -366,6 +384,10 @@ function RecordView({
         )}
       </SectionCard>
 
+       {r.verification_status === "pending" && (r.category_confirmed_at
+         ? <SectionCard title="Category reviewed"><p className="text-sm text-muted-foreground">A human confirmed {r.category?.display_name ?? "the category"}. Payment verification remains separate.</p></SectionCard>
+         : <IncomeCategoryAssistant record={r} onRefresh={onRefresh} onReview={() => onAction("category")} />)}
+
 
 
       <SectionCard title="Timeline">
@@ -390,6 +412,113 @@ function RecordView({
       </SectionCard>
     </>
   );
+}
+
+function IncomeCategoryAssistant({ record, onRefresh, onReview }: { record: IncomeRecordDetail; onRefresh: () => void; onReview: () => void }) {
+  const suggest = useServerFn(suggestIncomeCategoryFn);
+  const [result, setResult] = useState<IncomeSuggestionResult | null>(null);
+  const m = useMutation({
+    mutationFn: () => suggest({ data: { recordId: record.id } }),
+    onSuccess: (value) => { setResult(value); if (value.status === "suggested") onRefresh(); },
+    onError: () => setResult({ status: "unavailable" }),
+  });
+  return (
+    <SectionCard title="AI category review">
+      <div className="space-y-3 text-sm">
+        <p className="text-muted-foreground">AI can suggest a category using this record and your society's active categories. It does not change the recorded category, verify a payment, or reconcile income.</p>
+        <div className="rounded-lg border border-teal-600/25 bg-teal-600/5 p-3 space-y-1" aria-live="polite">
+          {m.isPending ? <p>Reviewing available categories… This may take up to 20 seconds.</p> : result?.status === "suggested" ? (
+            <>
+              <p className="font-semibold">Suggested: {result.categoryName} · {result.confidence} confidence</p>
+              <p>{result.explanation}</p>
+               <p className="text-muted-foreground">Recorded category: {record.category?.display_name ?? "Unavailable"}. Only the human-confirmed category is used for accounting. Review before verification.</p>
+            </>
+          ) : result?.status === "indeterminate" ? <p>{result.message}</p>
+            : result?.status === "plan_required" ? <p>AI suggestions require the Pro or Premium plan.</p>
+            : result?.status === "rate_limited" ? <p>Too many suggestions. Please try again later or review manually.</p>
+            : result?.status === "invalid_transition" ? <p>This record is no longer pending. Refresh the record.</p>
+            : result?.status === "not_found" ? <p>This record is unavailable or you don't have access.</p>
+            : result?.status === "unavailable" ? <p>AI is temporarily unavailable. Review the recorded category manually or retry.</p>
+            : record.suggested_category_id ? <p>Previous suggestion: {record.suggestion_explanation} ({record.suggestion_confidence ?? "unknown"} confidence). Open manual review to compare categories.</p>
+            : <p>Suggestions are optional; you remain responsible for reviewing the recorded category.</p>}
+        </div>
+        <Button type="button" variant="outline" className="min-h-[44px]" disabled={m.isPending} onClick={() => { if (!m.isPending) m.mutate(); }}>
+          {m.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+          {result ? "Retry suggestion" : "Suggest category"}
+        </Button>
+        <Button type="button" className="min-h-[44px] ml-2" onClick={onReview}>Review category manually</Button>
+      </div>
+    </SectionCard>
+  );
+}
+
+function CategoryDialog({ record, societyId, onClose, onDone }: {
+  record: IncomeRecordDetail; societyId: string; onClose: () => void; onDone: () => void;
+}) {
+  type CategoryOption = { id: string; display_name: string; is_active: boolean };
+  const list = useServerFn(listIncomeCategoriesFn);
+  const confirm = useServerFn(confirmIncomeCategoryFn);
+  const [selected, setSelected] = useState(record.category_id);
+  const requestId = useRef(crypto.randomUUID());
+  const [notice, setNotice] = useState("");
+  const categories = useQuery({
+    queryKey: incomeKeys.categories(societyId),
+    queryFn: () => list({ data: { societyId } }),
+    retry: 1,
+  });
+  const mutation = useMutation({
+    mutationFn: () => confirm({ data: {
+      recordId: record.id,
+      categoryId: selected,
+      expectedRevision: record.suggestion_revision,
+      requestId: requestId.current,
+    } }),
+    onSuccess: (r) => {
+      if (r.status === "success" || r.status === "already_processed") {
+        toast.success("Category confirmed. Verification remains a separate step.");
+        onDone();
+      } else {
+        setNotice(r.status === "conflict" ? "The suggestion or category changed. Close and reopen this review to see the latest record."
+          : r.status === "category_unavailable" ? "That category is no longer active. Choose another category."
+          : r.status === "invalid_transition" ? "This record is no longer pending. Refresh the record."
+          : r.status === "plan_required" ? "This action requires the Pro or Premium plan."
+          : r.status === "rate_limited" ? "Too many category reviews. Please try again later."
+          : r.status === "not_found" ? "This record is unavailable or you don't have access."
+          : "The category could not be confirmed. Please retry.");
+      }
+    },
+    onError: () => setNotice("The category could not be confirmed. Please retry."),
+  });
+  const active: CategoryOption[] = (categories.data?.items ?? []).filter((c: CategoryOption) => c.is_active);
+  const selectedName = active.find((c) => c.id === selected)?.display_name;
+  return <Dialog open onOpenChange={(open) => !open && !mutation.isPending && onClose()}>
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>Review income category</DialogTitle>
+        <DialogDescription>Choose the accounting category yourself. AI does not make this decision or verify payment.</DialogDescription>
+      </DialogHeader>
+      <div className="space-y-3 text-sm">
+        <p>Recorded category: <strong>{record.category?.display_name ?? "Unavailable"}</strong></p>
+        {record.suggested_category_id && <p className="text-muted-foreground">AI suggested: {active.find((c) => c.id === record.suggested_category_id)?.display_name ?? "Category no longer active"} ({record.suggestion_confidence ?? "unknown"} confidence). {record.suggestion_explanation}</p>}
+        <Label htmlFor="income-category-select">Final category</Label>
+        {categories.isLoading ? <p role="status">Loading categories…</p>
+          : categories.isError ? <Button variant="outline" onClick={() => categories.refetch()}>Retry loading categories</Button>
+          : active.length === 0 ? <p>No active categories are available. Add one before confirming.</p>
+          : <Select value={selected} onValueChange={(value) => { setSelected(value); requestId.current = crypto.randomUUID(); setNotice(""); }}>
+              <SelectTrigger id="income-category-select" className="min-h-[44px]"><SelectValue placeholder="Select a category" /></SelectTrigger>
+              <SelectContent>{active.map((c) => <SelectItem key={c.id} value={c.id}>{c.display_name}</SelectItem>)}</SelectContent>
+            </Select>}
+        {notice && <p role="alert" className="text-destructive">{notice}</p>}
+        <p className="text-muted-foreground">Confirming {selectedName ?? "your selection"} does not mark this income as received or reconciled.</p>
+      </div>
+      <DialogFooter>
+        <Button variant="outline" disabled={mutation.isPending} onClick={onClose}>Cancel</Button>
+        <Button disabled={mutation.isPending || !selectedName || categories.isLoading || categories.isError || notice.includes("changed") || notice.includes("no longer pending")} onClick={() => { if (!mutation.isPending) mutation.mutate(); }}>
+          {mutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Confirm category
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 }
 
 function Field({

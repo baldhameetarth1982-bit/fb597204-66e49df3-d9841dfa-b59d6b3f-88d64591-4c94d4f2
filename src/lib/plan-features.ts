@@ -468,14 +468,14 @@ const CATALOG: FeatureCatalogEntry[] = [
   {
     key: "ai_income_categorization",
     label: "AI Income Categorization",
-    shortDescription: "Auto-categorize society income with AI: maintenance, vendor, ads, fines, events, and more.",
+    shortDescription: "Get optional AI category suggestions for pending income, with a required human confirmation before verification.",
     category: "ai_insights",
     minPlan: "pro",
     roles: ["society_admin"],
     keywords: ["ai income", "categorization", "reporting"],
     icon: "Sparkles",
-    status: "planned",
-    backendReady: false,
+    status: "available",
+    backendReady: true,
     navigationGroup: "AI",
   },
   {

@@ -437,6 +437,12 @@ export interface IncomeRecordListItem {
 
 export interface IncomeRecordDetail {
   id: string;
+  category_id: string;
+  suggestion_revision: string | null;
+  suggested_category_id: string | null;
+  suggestion_confidence: string | null;
+  suggestion_explanation: string | null;
+  category_confirmed_at: string | null;
   amount: number;
   payer_kind: IncomePayerKind;
   payment_method: IncomePaymentMethod;
@@ -631,6 +637,7 @@ export const IncomeReconciliationResultSchema = z.discriminatedUnion("status", [
   z.object({ status: z.literal("not_found") }),
   z.object({ status: z.literal("not_authorized") }),
   z.object({ status: z.literal("plan_required") }),
+  z.object({ status: z.literal("rate_limited") }),
   z.object({ status: z.literal("error") }),
 ]);
 export type IncomeReconciliationResult = z.infer<

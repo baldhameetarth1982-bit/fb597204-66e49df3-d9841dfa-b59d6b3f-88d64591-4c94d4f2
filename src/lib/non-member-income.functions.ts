@@ -15,6 +15,7 @@ import { createServerFn } from "@tanstack/react-start";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { normalizePlan } from "@/lib/plan-features";
+import { checkRateLimit, RateLimitedError } from "@/lib/rate-limit.server";
 import type { Database } from "@/integrations/supabase/types";
 import {
   CreateCategoryInput,
@@ -642,7 +643,7 @@ export const getIncomeRecordDetailFn = createServerFn({ method: "POST" })
       const { data: row, error } = await ctx.supabase
         .from("society_income_records")
         .select(
-          "id, society_id, category_id, payer_kind, non_member_payer_id, amount, payment_method, payment_status, verification_status, reconciliation_status, payment_date, reference_number, description, created_at, verified_at, reversed_at, reversal_reason",
+          "id, society_id, category_id, suggested_category_id, suggestion_revision, suggestion_confidence, suggestion_explanation, category_confirmed_at, payer_kind, non_member_payer_id, amount, payment_method, payment_status, verification_status, reconciliation_status, payment_date, reference_number, description, created_at, verified_at, reversed_at, reversal_reason",
         )
         .eq("id", data.id)
         .maybeSingle();
@@ -653,6 +654,11 @@ export const getIncomeRecordDetailFn = createServerFn({ method: "POST" })
         id: string;
         society_id: string;
         category_id: string;
+        suggested_category_id: string | null;
+        suggestion_revision: string | null;
+        suggestion_confidence: string | null;
+        suggestion_explanation: string | null;
+        category_confirmed_at: string | null;
         payer_kind: string;
         non_member_payer_id: string | null;
         amount: number | string;
@@ -717,6 +723,12 @@ export const getIncomeRecordDetailFn = createServerFn({ method: "POST" })
         status: "available",
         record: {
           id: r.id,
+          category_id: r.category_id,
+          suggested_category_id: r.suggested_category_id,
+          suggestion_revision: r.suggestion_revision,
+          suggestion_confidence: r.suggestion_confidence,
+          suggestion_explanation: r.suggestion_explanation,
+          category_confirmed_at: r.category_confirmed_at,
           amount: parsedAmount,
           payer_kind: r.payer_kind as import("@/lib/non-member-income.server").IncomePayerKind,
           payment_method: r.payment_method as import("@/lib/non-member-income.server").IncomePaymentMethod,
@@ -918,6 +930,17 @@ export const transitionIncomeReconciliationFn = createServerFn({ method: "POST" 
         if (r.length < 5 || /<[^>]+>/.test(r)) {
           return { status: "invalid_input" };
         }
+      }
+      // Check authorization before consuming quota; the RPC repeats this check
+      // under a row lock so the authorization cannot go stale during the write.
+      const auth = await authorizeMutation(ctx, data.recordId);
+      if (!auth.ok) {
+        return { status: auth.result.status === "plan_required" ? "plan_required" : auth.result.status === "error" ? "error" : "not_found" };
+      }
+      try {
+        await checkRateLimit({ bucket: "income_reconciliation_user", subject: ctx.userId, limit: 60, windowSec: 3600 });
+      } catch (e) {
+        return { status: e instanceof RateLimitedError ? "rate_limited" : "error" };
       }
       const { data: raw, error } = await ctx.supabase.rpc(
         "transition_income_reconciliation",

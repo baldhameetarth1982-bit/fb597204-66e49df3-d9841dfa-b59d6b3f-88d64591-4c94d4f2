@@ -1,3 +1,4 @@
+import { toSafeFinanceMessage } from "@/lib/finance-safe-error";
 import { createFileRoute } from "@tanstack/react-router";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useEffect, useState } from "react";
@@ -131,7 +132,7 @@ function BillAppearanceCard({ societyId }: { societyId: string }) {
       if (kind === "logo") setLogoUrl(url); else setSignatureUrl(url);
       toast.success(`${kind === "logo" ? "Logo" : "Signature"} uploaded`);
     } catch (e: any) {
-      toast.error(e.message ?? "Upload failed");
+      toast.error(toSafeFinanceMessage(e, "Upload failed. Please try again."));
     }
     setBusy(false);
   }
@@ -150,7 +151,7 @@ function BillAppearanceCard({ societyId }: { societyId: string }) {
       if (error) throw error;
       toast.success("Template saved. Future bills will use this design.");
     } catch (e: any) {
-      toast.error(e.message ?? "Save failed");
+      toast.error(toSafeFinanceMessage(e, "Could not save. Please try again."));
     }
     setSaving(false);
   }
@@ -158,7 +159,7 @@ function BillAppearanceCard({ societyId }: { societyId: string }) {
   async function removeAsset(kind: "logo" | "signature") {
     const patch = kind === "logo" ? { logo_url: null } : { signature_url: null };
     const { error } = await (supabase as any).from("societies").update(patch).eq("id", societyId);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(toSafeFinanceMessage(error)); return; }
     if (kind === "logo") setLogoUrl(null); else setSignatureUrl(null);
     toast.success("Removed");
   }

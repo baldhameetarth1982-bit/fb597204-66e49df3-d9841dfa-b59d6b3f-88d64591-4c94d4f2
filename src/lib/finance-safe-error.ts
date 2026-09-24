@@ -78,3 +78,20 @@ export function toSafeFinanceError(err: unknown, online = true): SafeFinanceErro
   const kind = classifyFinanceError(err, online);
   return { kind, ...COPY[kind] };
 }
+
+/**
+ * For form actions (e.g. bill creation): keep short, plain validation
+ * messages from the server so the user knows what to fix, but replace
+ * anything that looks technical (SQL, constraint/table/RPC names, stack
+ * traces, IDs) with safe copy.
+ */
+const TECHNICAL =
+  /violates|constraint|relation|column|syntax|function\s+\w+\(|rpc|pgrst|sqlstate|duplicate key|\bat\s+\S+:\d+|stack|[0-9a-f]{8}-[0-9a-f]{4}-|_\w+_|\bnull value\b|jwt|supabase|postgres/i;
+
+export function toSafeFinanceMessage(err: unknown, fallback = "Something went wrong. Please try again."): string {
+  const kind = classifyFinanceError(err);
+  if (kind !== "unavailable") return COPY[kind].message;
+  const t = rawText(err).trim();
+  if (t && t.length <= 160 && !TECHNICAL.test(t)) return t;
+  return fallback;
+}

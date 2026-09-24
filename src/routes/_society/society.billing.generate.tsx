@@ -1,3 +1,4 @@
+import { toSafeFinanceMessage } from "@/lib/finance-safe-error";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -88,7 +89,7 @@ function GenerateBillsPage() {
     }));
     const { error } = await supabase.from("bills").insert(payload);
     setGenerating(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(toSafeFinanceMessage(error, "Could not generate bills. Please try again."));
     toast.success(`Generated ${payload.length} bill${payload.length === 1 ? "" : "s"}`);
     navigate({ to: "/society/billing" });
   }

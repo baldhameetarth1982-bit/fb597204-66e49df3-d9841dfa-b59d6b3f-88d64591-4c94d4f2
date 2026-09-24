@@ -15,6 +15,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { cancelBill, getAdminBillDetail, type AdminBillDetail } from "@/lib/billing-generate.functions";
 import { getBillDisplayStatus } from "@/lib/bill-display-status";
 import { toast } from "sonner";
+import { toSafeFinanceError } from "@/lib/finance-safe-error";
 import { shareBillAsImage } from "@/components/billing/BillCardImage";
 import { formatDate } from "@/utils/format";
 
@@ -39,6 +40,8 @@ function BillDetailPage() {
   const cancelBillFn = useServerFn(cancelBill);
   const [detail, setDetail] = useState<AdminBillDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelBusy, setCancelBusy] = useState(false);
@@ -48,6 +51,7 @@ function BillDetailPage() {
     let cancelled = false;
     (async () => {
       setLoading(true);
+      setLoadError(null);
       try {
         // societyId is intentionally omitted — RLS scopes bills to the
         // caller's society admin / super admin rows. The server returns
@@ -55,13 +59,13 @@ function BillDetailPage() {
         const res = await loadDetail({ data: { billId: id } });
         if (!cancelled) setDetail(res);
       } catch (e) {
-        if (!cancelled) toast.error((e as Error).message);
+        if (!cancelled && toSafeFinanceError(e).kind !== "not_found") setLoadError(toSafeFinanceError(e).message);
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [id, loadDetail]);
+  }, [id, loadDetail, reloadKey]);
 
   async function onCancel() {
     if (!detail) return;
@@ -82,7 +86,7 @@ function BillDetailPage() {
       });
       setDetail(fresh);
     } catch (e) {
-      toast.error((e as Error).message);
+      toast.error(toSafeFinanceError(e).message);
     } finally {
       setCancelBusy(false);
     }
@@ -99,7 +103,7 @@ function BillDetailPage() {
   if (!detail) {
     return (
       <PageShell>
-        <p className="text-muted-foreground">Bill not found.</p>
+        {loadError ? (<div role="alert" className="rounded-2xl border border-destructive/30 p-4 flex items-center justify-between gap-3"><p className="text-sm text-muted-foreground">{loadError}</p><Button size="sm" variant="outline" className="min-h-11 shrink-0" onClick={() => setReloadKey((k) => k + 1)}>Try again</Button></div>) : (<p className="text-muted-foreground">This bill is not available in your society.</p>)}
         <Button asChild variant="ghost" className="mt-4">
           <Link to="/society/billing"><ArrowLeft className="h-4 w-4 mr-2" />Back</Link>
         </Button>

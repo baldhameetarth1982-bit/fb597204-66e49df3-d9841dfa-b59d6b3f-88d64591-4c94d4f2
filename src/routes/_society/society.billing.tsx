@@ -15,6 +15,7 @@ import { StatusChip } from "@/components/system/StatusChip";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { shareBillAsImage } from "@/components/billing/BillCardImage";
+import { toSafeFinanceError } from "@/lib/finance-safe-error";
 
 export const Route = createFileRoute("/_society/society/billing")({
   head: () => ({ meta: [{ title: "Bill History — SociyoHub" }] }),
@@ -36,19 +37,21 @@ function BillingPage() {
   const { societyId, loading: sidLoading } = useSocietyId();
   const [rows, setRows] = useState<BillRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "paid" | "unpaid" | "overdue" | "cancelled">("all");
 
   async function load() {
     if (!societyId) { setLoading(false); return; }
     setLoading(true);
+    setLoadError(null);
     const { data, error } = await supabase
       .from("bills")
       .select("id, period_label, amount, due_date, status, flat_id")
       .eq("society_id", societyId)
       .order("due_date", { ascending: false })
       .limit(500);
-    if (error) { toast.error(error.message); setLoading(false); return; }
+    if (error) { setRows([]); setLoadError(toSafeFinanceError(error).message); setLoading(false); return; }
     const bills = (data as any[]) ?? [];
     const flatIds = Array.from(new Set(bills.map((b) => b.flat_id).filter(Boolean)));
     let flatMap: Record<string, { flat_number: string; block_id: string | null }> = {};
@@ -93,6 +96,7 @@ function BillingPage() {
     cancelled: rows.filter((r) => r.status === "cancelled").length,
   };
   const collected = rows.filter((r) => r.status === "paid").reduce((s, r) => s + Number(r.amount || 0), 0);
+  const statsReady = !sidLoading && !loading && !loadError;
   const outstanding = rows.filter((r) => r.status !== "paid" && r.status !== "cancelled").reduce((s, r) => s + Number(r.amount || 0), 0);
 
   const FILTERS: Array<{ key: typeof statusFilter; label: string; count: number }> = [
@@ -118,10 +122,10 @@ function BillingPage() {
         }
         stats={
           <StatPillRow>
-            <StatPill label="Bills" value={counts.all} />
-            <StatPill label="Pending" value={counts.unpaid + counts.overdue} />
-            <StatPill label="Collected" value={`₹${collected.toLocaleString("en-IN")}`} />
-            <StatPill label="Outstanding" value={`₹${outstanding.toLocaleString("en-IN")}`} />
+            <StatPill label="Bills" value={statsReady ? counts.all : "—"} />
+            <StatPill label="Pending" value={statsReady ? counts.unpaid + counts.overdue : "—"} />
+            <StatPill label="Paid bills" value={statsReady ? `₹${collected.toLocaleString("en-IN")}` : "—"} />
+            <StatPill label="Outstanding" value={statsReady ? `₹${outstanding.toLocaleString("en-IN")}` : "—"} />
           </StatPillRow>
         }
       />
@@ -132,8 +136,17 @@ function BillingPage() {
         </div>
 
         {sidLoading || loading ? (
-          <div className="min-h-[40vh] grid place-items-center">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <div className="space-y-3" aria-busy="true" aria-label="Loading bills">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="h-16 rounded-2xl bg-muted animate-pulse" />
+            ))}
+          </div>
+        ) : loadError ? (
+          <div role="alert" className="rounded-2xl border border-destructive/30 bg-card p-4 flex items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">{loadError}</p>
+            <Button size="sm" variant="outline" className="min-h-11 shrink-0" onClick={() => void load()}>
+              Try again
+            </Button>
           </div>
         ) : rows.length === 0 ? (
           <EmptyState icon={Receipt} title="No bills yet" description="Generate your first monthly maintenance bill." />

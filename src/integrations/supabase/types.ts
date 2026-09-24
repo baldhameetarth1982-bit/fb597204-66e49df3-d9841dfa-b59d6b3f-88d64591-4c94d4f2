@@ -3899,43 +3899,114 @@ export type Database = {
           },
         ]
       }
+      support_ticket_events: {
+        Row: {
+          actor_id: string | null
+          actor_kind: string
+          body: string | null
+          created_at: string
+          from_status: string | null
+          id: string
+          kind: string
+          society_id: string
+          ticket_id: string
+          to_status: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_kind: string
+          body?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          kind: string
+          society_id: string
+          ticket_id: string
+          to_status?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_kind?: string
+          body?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          kind?: string
+          society_id?: string
+          ticket_id?: string
+          to_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_events_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       support_tickets: {
         Row: {
           ai_transcript: Json | null
+          approval_status: string | null
+          assigned_to: string | null
           category: string
+          closed_at: string | null
           created_at: string
           description: string
           id: string
+          last_activity_at: string
           priority: string
+          requires_approval: boolean
+          resolution_note: string | null
+          resolved_at: string | null
           society_id: string | null
           status: string
           subject: string
+          ticket_no: number
           updated_at: string
           user_id: string
         }
         Insert: {
           ai_transcript?: Json | null
+          approval_status?: string | null
+          assigned_to?: string | null
           category?: string
+          closed_at?: string | null
           created_at?: string
           description: string
           id?: string
+          last_activity_at?: string
           priority?: string
+          requires_approval?: boolean
+          resolution_note?: string | null
+          resolved_at?: string | null
           society_id?: string | null
           status?: string
           subject: string
+          ticket_no?: never
           updated_at?: string
           user_id: string
         }
         Update: {
           ai_transcript?: Json | null
+          approval_status?: string | null
+          assigned_to?: string | null
           category?: string
+          closed_at?: string | null
           created_at?: string
           description?: string
           id?: string
+          last_activity_at?: string
           priority?: string
+          requires_approval?: boolean
+          resolution_note?: string | null
+          resolved_at?: string | null
           society_id?: string | null
           status?: string
           subject?: string
+          ticket_no?: never
           updated_at?: string
           user_id?: string
         }
@@ -4356,6 +4427,7 @@ export type Database = {
         Args: { _actor_id: string; _society_id: string }
         Returns: undefined
       }
+      _helpdesk_is_admin: { Args: { _sid: string }; Returns: boolean }
       _migration_link_or_conflict: {
         Args: {
           _canonical_entity_id: string
@@ -5052,6 +5124,77 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      helpdesk_add_comment: {
+        Args: { _body: string; _ticket: string }
+        Returns: undefined
+      }
+      helpdesk_admin_queue: {
+        Args: { _limit?: number; _status?: string }
+        Returns: {
+          approval_status: string
+          assigned_to: string
+          assignee_name: string
+          category: string
+          created_at: string
+          description: string
+          flat_label: string
+          id: string
+          last_activity_at: string
+          priority: string
+          requester_name: string
+          requires_approval: boolean
+          status: string
+          subject: string
+          ticket_no: number
+        }[]
+      }
+      helpdesk_admin_update: {
+        Args: {
+          _assign?: string
+          _note?: string
+          _status?: string
+          _ticket: string
+          _unassign?: boolean
+        }
+        Returns: undefined
+      }
+      helpdesk_assignees: {
+        Args: never
+        Returns: {
+          full_name: string
+          user_id: string
+        }[]
+      }
+      helpdesk_create_ticket: {
+        Args: {
+          _category: string
+          _description: string
+          _priority: string
+          _subject: string
+        }
+        Returns: string
+      }
+      helpdesk_decide_approval: {
+        Args: { _approve: boolean; _reason?: string; _ticket: string }
+        Returns: undefined
+      }
+      helpdesk_resident_action: {
+        Args: { _action: string; _note?: string; _ticket: string }
+        Returns: undefined
+      }
+      helpdesk_ticket_timeline: {
+        Args: { _ticket: string }
+        Returns: {
+          actor_kind: string
+          actor_name: string
+          body: string
+          created_at: string
+          from_status: string
+          id: string
+          kind: string
+          to_status: string
+        }[]
       }
       is_active_society_plan: {
         Args: { _society_id: string }

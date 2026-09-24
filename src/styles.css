@@ -343,6 +343,37 @@
     min-height: 44px;
     font-size: 16px;
   }
+
+  /* Phone polish: never scroll sideways; keep focused fields clear of the
+     fixed bottom menu and on-screen keyboard. */
+  html {
+    scroll-padding-top: calc(72px + env(safe-area-inset-top));
+    scroll-padding-bottom: calc(104px + env(safe-area-inset-bottom));
+    -webkit-tap-highlight-color: transparent;
+    text-size-adjust: 100%;
+  }
+  body { overflow-x: clip; }
+  input, textarea, select { scroll-margin-bottom: calc(112px + env(safe-area-inset-bottom)); }
+
+  /* Readable text: balanced headings, no orphans, long words/IDs wrap instead of clipping. */
+  h1, h2, h3 { text-wrap: balance; }
+  p, li, dd { text-wrap: pretty; overflow-wrap: break-word; }
+  img, svg, video { max-width: 100%; }
+
+  /* Money and counts line up in tables and stat cards. */
+  table, [data-amount], .tabular { font-variant-numeric: tabular-nums; }
+
+  /* Disabled controls look clearly inactive (processing / locked states). */
+  button:disabled, [aria-disabled="true"] { cursor: not-allowed; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* ========================================================================

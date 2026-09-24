@@ -3,7 +3,10 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { hasFeature, normalizePlan } from "@/lib/plan-features";
 
-const Input = z.object({ question: z.string().trim().min(3).max(1000) });
+const Input = z.object({
+  question: z.string().trim().min(3).max(1000),
+  history: z.array(z.string().max(1000)).max(6).optional(),
+});
 
 export type AskSecretaryResult =
   | { ok: true; data: import("./ai-secretary.server").SecretaryAnswer }
@@ -107,11 +110,16 @@ export const askSecretary = createServerFn({ method: "POST" })
       const result = await answerQuestion(data.question, {
         retrieve: async () => {
           // RLS-scoped reads as the signed-in user.
-          const [settings, contacts] = await Promise.all([
+          const nowIso = new Date().toISOString();
+          const [settings, contacts, notices] = await Promise.all([
             supabase.from("society_settings").select("bylaws_html,updated_at").eq("society_id", societyId).maybeSingle(),
             supabase.from("society_contacts").select("role_label,name,phone,category").eq("society_id", societyId).order("sort_order").limit(50),
+            // RLS limits notices to those addressed to this user's home/block.
+            supabase.from("notices").select("title,body,category,publish_at,published_at")
+              .eq("society_id", societyId).eq("status", "published").lte("publish_at", nowIso)
+              .order("publish_at", { ascending: false }).limit(40),
           ]);
-          if (settings.error && contacts.error) { retrievalFailed = true; throw new Error("retrieval"); }
+          if (settings.error && contacts.error && notices.error) { retrievalFailed = true; throw new Error("retrieval"); }
           const out: import("./ai-secretary.server").SecretarySource[] = [];
           if (settings.data?.bylaws_html) {
             out.push({ kind: "bylaws", title: "Society by-laws", text: settings.data.bylaws_html, date: settings.data.updated_at?.slice(0, 10) ?? null, href: "/app/bylaws" });
@@ -124,14 +132,21 @@ export const askSecretary = createServerFn({ method: "POST" })
               href: "/app/contacts",
             });
           }
+          for (const n of (notices.data ?? []) as any[]) {
+            if (!n.title && !n.body) continue;
+            const d = (n.publish_at ?? n.published_at ?? "").slice(0, 10) || null;
+            out.push({ kind: "notice", title: `Notice: ${String(n.title ?? "Untitled").slice(0, 120)}`, text: `${n.title ?? ""}\n\n${n.body ?? ""}`, date: d, href: "/app/notices" });
+          }
           return out;
         },
         callModel: async (system, user) => parseModelJson(await callResponses(system, user)),
-      });
+      }, data.history ?? []);
       return { ok: true, data: result };
     } catch (e) {
       if (retrievalFailed) return { ok: false, code: "retrieval_failed", message: "Couldn't read your society's sources. Please try again." };
-      console.error("ai_secretary_failed", (e as any)?.status ?? (e as Error).message);
+      const status = (e as any)?.status;
+      console.error("ai_secretary_failed", status ?? (e as Error).message);
+      if (status === 429) return { ok: false, code: "rate_limited", message: "AI Secretary is busy right now. Please wait a minute and try again." };
       return { ok: false, code: "ai_unavailable", message: "AI Secretary is unavailable right now. Your question is kept — try again shortly." };
     }
   });

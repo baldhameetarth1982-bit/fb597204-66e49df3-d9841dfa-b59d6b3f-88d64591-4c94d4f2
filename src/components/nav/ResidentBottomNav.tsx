@@ -22,6 +22,7 @@ const TABS = [
       "/app/polls",
       "/app/notifications",
       "/app/emergency",
+      "/app/secretary",
     ],
     badge: "notif" as const,
   },

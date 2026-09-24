@@ -37,7 +37,7 @@ export function AppHeader({
   const { user, profile, signOut, hasRole } = useAuth() as any;
   const navigate = useNavigate();
   const isSocietyAdmin = typeof hasRole === "function" && (hasRole("society_admin") || hasRole("super_admin"));
-  const notificationsHref = isSocietyAdmin ? "/society/announcements" : "/app/notices";
+  const notificationsHref = isSocietyAdmin ? "/society/announcements" : "/app/notifications";
   const profileHref = isSocietyAdmin ? "/settings" : "/app/profile";
   const settingsHref = "/settings";
 

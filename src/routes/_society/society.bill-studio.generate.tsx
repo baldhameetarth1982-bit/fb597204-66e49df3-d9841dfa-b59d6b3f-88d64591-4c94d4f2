@@ -1,3 +1,4 @@
+import { toSafeFinanceMessage } from "@/lib/finance-safe-error";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
@@ -54,7 +55,7 @@ function GenerateBillsPage() {
         setCycles((c.cycles ?? []) as Cycle[]);
         setBatches((b.batches ?? []) as Batch[]);
       } catch (e) {
-        toast.error((e as Error).message);
+        toast.error(toSafeFinanceMessage(e));
       } finally {
         setLoading(false);
       }
@@ -69,7 +70,7 @@ function GenerateBillsPage() {
       const res = await preview({ data: { societyId, cycleConfigId: cycleId, limit: 200 } });
       setPreviewData(res.preview);
     } catch (e) {
-      toast.error((e as Error).message);
+      toast.error(toSafeFinanceMessage(e));
       setPreviewData(null);
     } finally {
       setBusy(false);
@@ -94,7 +95,7 @@ function GenerateBillsPage() {
       const b = await listBatches({ data: { societyId } });
       setBatches((b.batches ?? []) as Batch[]);
     } catch (e) {
-      toast.error((e as Error).message);
+      toast.error(toSafeFinanceMessage(e));
     } finally {
       setBusy(false);
     }

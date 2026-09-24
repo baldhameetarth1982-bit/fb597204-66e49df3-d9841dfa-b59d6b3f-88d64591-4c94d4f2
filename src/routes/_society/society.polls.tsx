@@ -49,13 +49,14 @@ function AdminPolls() {
     setPolls(list);
     if (list.length) {
       const ids = list.map((p) => p.id);
-      const [{ data: os }, { data: vs }] = await Promise.all([
+      // Aggregate counts only — voter identities are never shown.
+      const [{ data: os }, { data: rs }] = await Promise.all([
         supabase.from("poll_options").select("id,poll_id,label,position").in("poll_id", ids).order("position"),
-        supabase.from("poll_votes").select("poll_id").in("poll_id", ids),
+        supabase.rpc("poll_results", { _poll_ids: ids }),
       ]);
       setOptions((os as Opt[]) ?? []);
       const c: Record<string, number> = {};
-      (vs ?? []).forEach((v: { poll_id: string }) => { c[v.poll_id] = (c[v.poll_id] ?? 0) + 1; });
+      ((rs ?? []) as { poll_id: string; votes: number }[]).forEach((r) => { c[r.poll_id] = (c[r.poll_id] ?? 0) + Number(r.votes); });
       setCounts(c);
     }
     setLoading(false);

@@ -63,6 +63,7 @@ import { Route as SocietySocietyLedgerRouteImport } from './routes/_society/soci
 import { Route as SocietySocietyLeaderboardRouteImport } from './routes/_society/society.leaderboard'
 import { Route as SocietySocietyIncomeRouteImport } from './routes/_society/society.income'
 import { Route as SocietySocietyImportRouteImport } from './routes/_society/society.import'
+import { Route as SocietySocietyHelpdeskRouteImport } from './routes/_society/society.helpdesk'
 import { Route as SocietySocietyFlatsRouteImport } from './routes/_society/society.flats'
 import { Route as SocietySocietyFeaturesRouteImport } from './routes/_society/society.features'
 import { Route as SocietySocietyExplorerRouteImport } from './routes/_society/society.explorer'
@@ -423,6 +424,11 @@ const SocietySocietyIncomeRoute = SocietySocietyIncomeRouteImport.update({
 const SocietySocietyImportRoute = SocietySocietyImportRouteImport.update({
   id: '/society/import',
   path: '/society/import',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyHelpdeskRoute = SocietySocietyHelpdeskRouteImport.update({
+  id: '/society/helpdesk',
+  path: '/society/helpdesk',
   getParentRoute: () => SocietyRoute,
 } as any)
 const SocietySocietyFlatsRoute = SocietySocietyFlatsRouteImport.update({
@@ -980,6 +986,7 @@ export interface FileRoutesByFullPath {
   '/society/explorer': typeof SocietySocietyExplorerRoute
   '/society/features': typeof SocietySocietyFeaturesRoute
   '/society/flats': typeof SocietySocietyFlatsRouteWithChildren
+  '/society/helpdesk': typeof SocietySocietyHelpdeskRoute
   '/society/import': typeof SocietySocietyImportRoute
   '/society/income': typeof SocietySocietyIncomeRouteWithChildren
   '/society/leaderboard': typeof SocietySocietyLeaderboardRoute
@@ -1119,6 +1126,7 @@ export interface FileRoutesByTo {
   '/society/explorer': typeof SocietySocietyExplorerRoute
   '/society/features': typeof SocietySocietyFeaturesRoute
   '/society/flats': typeof SocietySocietyFlatsRouteWithChildren
+  '/society/helpdesk': typeof SocietySocietyHelpdeskRoute
   '/society/import': typeof SocietySocietyImportRoute
   '/society/income': typeof SocietySocietyIncomeRouteWithChildren
   '/society/leaderboard': typeof SocietySocietyLeaderboardRoute
@@ -1264,6 +1272,7 @@ export interface FileRoutesById {
   '/_society/society/explorer': typeof SocietySocietyExplorerRoute
   '/_society/society/features': typeof SocietySocietyFeaturesRoute
   '/_society/society/flats': typeof SocietySocietyFlatsRouteWithChildren
+  '/_society/society/helpdesk': typeof SocietySocietyHelpdeskRoute
   '/_society/society/import': typeof SocietySocietyImportRoute
   '/_society/society/income': typeof SocietySocietyIncomeRouteWithChildren
   '/_society/society/leaderboard': typeof SocietySocietyLeaderboardRoute
@@ -1406,6 +1415,7 @@ export interface FileRouteTypes {
     | '/society/explorer'
     | '/society/features'
     | '/society/flats'
+    | '/society/helpdesk'
     | '/society/import'
     | '/society/income'
     | '/society/leaderboard'
@@ -1545,6 +1555,7 @@ export interface FileRouteTypes {
     | '/society/explorer'
     | '/society/features'
     | '/society/flats'
+    | '/society/helpdesk'
     | '/society/import'
     | '/society/income'
     | '/society/leaderboard'
@@ -1689,6 +1700,7 @@ export interface FileRouteTypes {
     | '/_society/society/explorer'
     | '/_society/society/features'
     | '/_society/society/flats'
+    | '/_society/society/helpdesk'
     | '/_society/society/import'
     | '/_society/society/income'
     | '/_society/society/leaderboard'
@@ -2150,6 +2162,13 @@ declare module '@tanstack/react-router' {
       path: '/society/import'
       fullPath: '/society/import'
       preLoaderRoute: typeof SocietySocietyImportRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/helpdesk': {
+      id: '/_society/society/helpdesk'
+      path: '/society/helpdesk'
+      fullPath: '/society/helpdesk'
+      preLoaderRoute: typeof SocietySocietyHelpdeskRouteImport
       parentRoute: typeof SocietyRoute
     }
     '/_society/society/flats': {
@@ -3028,6 +3047,7 @@ interface SocietyRouteChildren {
   SocietySocietyExplorerRoute: typeof SocietySocietyExplorerRoute
   SocietySocietyFeaturesRoute: typeof SocietySocietyFeaturesRoute
   SocietySocietyFlatsRoute: typeof SocietySocietyFlatsRouteWithChildren
+  SocietySocietyHelpdeskRoute: typeof SocietySocietyHelpdeskRoute
   SocietySocietyImportRoute: typeof SocietySocietyImportRoute
   SocietySocietyIncomeRoute: typeof SocietySocietyIncomeRouteWithChildren
   SocietySocietyLeaderboardRoute: typeof SocietySocietyLeaderboardRoute
@@ -3074,6 +3094,7 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyExplorerRoute: SocietySocietyExplorerRoute,
   SocietySocietyFeaturesRoute: SocietySocietyFeaturesRoute,
   SocietySocietyFlatsRoute: SocietySocietyFlatsRouteWithChildren,
+  SocietySocietyHelpdeskRoute: SocietySocietyHelpdeskRoute,
   SocietySocietyImportRoute: SocietySocietyImportRoute,
   SocietySocietyIncomeRoute: SocietySocietyIncomeRouteWithChildren,
   SocietySocietyLeaderboardRoute: SocietySocietyLeaderboardRoute,

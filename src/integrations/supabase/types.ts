@@ -3795,6 +3795,9 @@ export type Database = {
       society_income_records: {
         Row: {
           amount: number
+          category_confirmed_at: string | null
+          category_confirmed_by: string | null
+          category_decision_id: string | null
           category_id: string
           created_at: string
           created_by: string | null
@@ -3824,6 +3827,11 @@ export type Database = {
           reversed_by: string | null
           society_id: string
           source: string
+          suggested_at: string | null
+          suggested_category_id: string | null
+          suggestion_confidence: string | null
+          suggestion_explanation: string | null
+          suggestion_revision: string | null
           updated_at: string
           verification_status: string
           verified_at: string | null
@@ -3831,6 +3839,9 @@ export type Database = {
         }
         Insert: {
           amount: number
+          category_confirmed_at?: string | null
+          category_confirmed_by?: string | null
+          category_decision_id?: string | null
           category_id: string
           created_at?: string
           created_by?: string | null
@@ -3860,6 +3871,11 @@ export type Database = {
           reversed_by?: string | null
           society_id: string
           source?: string
+          suggested_at?: string | null
+          suggested_category_id?: string | null
+          suggestion_confidence?: string | null
+          suggestion_explanation?: string | null
+          suggestion_revision?: string | null
           updated_at?: string
           verification_status?: string
           verified_at?: string | null
@@ -3867,6 +3883,9 @@ export type Database = {
         }
         Update: {
           amount?: number
+          category_confirmed_at?: string | null
+          category_confirmed_by?: string | null
+          category_decision_id?: string | null
           category_id?: string
           created_at?: string
           created_by?: string | null
@@ -3896,6 +3915,11 @@ export type Database = {
           reversed_by?: string | null
           society_id?: string
           source?: string
+          suggested_at?: string | null
+          suggested_category_id?: string | null
+          suggestion_confidence?: string | null
+          suggestion_explanation?: string | null
+          suggestion_revision?: string | null
           updated_at?: string
           verification_status?: string
           verified_at?: string | null
@@ -4963,6 +4987,15 @@ export type Database = {
         Args: { _mode: string; _society_id: string }
         Returns: Json
       }
+      confirm_income_category: {
+        Args: {
+          _category_id: string
+          _expected_revision?: string
+          _record_id: string
+          _request_id: string
+        }
+        Returns: Json
+      }
       create_finance_expense: {
         Args: {
           _amount: number
@@ -6007,6 +6040,26 @@ export type Database = {
         Args: { _society_id: string }
         Returns: string
       }
+      store_income_category_suggestion:
+        | {
+            Args: {
+              _actor_id: string
+              _category_id: string
+              _confidence: string
+              _explanation: string
+              _record_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _category_id: string
+              _confidence: string
+              _explanation: string
+              _record_id: string
+            }
+            Returns: Json
+          }
       submit_join_request: {
         Args: {
           _code: string

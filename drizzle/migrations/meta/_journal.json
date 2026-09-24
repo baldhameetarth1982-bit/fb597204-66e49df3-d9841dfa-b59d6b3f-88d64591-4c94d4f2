@@ -148,6 +148,34 @@
       "when": 1790211793282,
       "tag": "0020_notices_and_poll_integrity",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1790213106617,
+      "tag": "0021_income_category_human_review",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1790213164262,
+      "tag": "0022_secure_income_suggestion_actor",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1790213238578,
+      "tag": "0023_enforce_income_category_review_before_posting",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1790213374801,
+      "tag": "0024_lock_income_category_review_fields",
+      "breakpoints": true
     }
   ]
 }

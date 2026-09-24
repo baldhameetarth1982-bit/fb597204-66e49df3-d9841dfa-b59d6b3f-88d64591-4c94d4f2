@@ -30,7 +30,7 @@ export const Route = createFileRoute("/_society/society/residents")({
   component: ResidentsPage,
 });
 
-type Filter = "all" | "owner" | "tenant" | "unassigned" | "vacant";
+type Filter = "all" | "owner" | "tenant" | "unassigned" | "moved_out" | "vacant";
 
 function initials(name?: string | null) {
   if (!name) return "?";

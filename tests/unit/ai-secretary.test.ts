@@ -67,3 +67,18 @@ describe("AI Secretary server boundary (source contract)", () => {
     expect(src).not.toMatch(/from\("(bills|payments|finance_|society_income|expenses)/);
   });
 });
+
+describe("AI Secretary actions & recency", async () => {
+  const { suggestActions } = await import("@/lib/ai-secretary.server");
+  it("not-found always offers Helpdesk first, links only from allowlist", () => {
+    const a = suggestActions("what is my maintenance due?", "not_found");
+    expect(a[0].href).toBe("/app/helpdesk");
+    expect(a.some((x) => x.href === "/app/bills")).toBe(true);
+    expect(a.every((x) => x.href.startsWith("/app/"))).toBe(true);
+  });
+  it("newer dated source ranks first on ties", () => {
+    const old: SecretarySource = { kind: "notice", title: "Water", text: "water cut", date: "2025-01-01" };
+    const fresh: SecretarySource = { ...old, date: "2026-09-01" };
+    expect(selectChunks("water", [old, fresh])[0].date).toBe("2026-09-01");
+  });
+});

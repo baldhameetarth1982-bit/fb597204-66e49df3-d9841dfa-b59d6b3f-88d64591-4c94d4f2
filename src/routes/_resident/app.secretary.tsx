@@ -288,11 +288,14 @@ function AnswerBlock({ r }: { r: Extract<AskSecretaryResult, { ok: true }>["data
           </p>
         )}
         <p className={cn("text-[15px] leading-relaxed whitespace-pre-wrap break-words", !answered && "text-muted-foreground")}>{r.answer}</p>
-        {!answered && (
-          <p className="text-xs text-muted-foreground">
-            You can raise a question with the committee from{" "}
-            <Link to="/app/helpdesk" className="text-primary underline underline-offset-2">Helpdesk</Link>.
-          </p>
+        {r.actions?.length > 0 && (
+          <div className="flex flex-wrap gap-2" aria-label="Helpful actions">
+            {r.actions.map((a) => (
+              <Link key={a.href} to={a.href as "/app/helpdesk"} className="inline-flex min-h-11 items-center rounded-full border bg-card px-3.5 text-sm font-medium text-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                {a.label} →
+              </Link>
+            ))}
+          </div>
         )}
         {r.citations.length > 0 && (
           <div className="space-y-2">

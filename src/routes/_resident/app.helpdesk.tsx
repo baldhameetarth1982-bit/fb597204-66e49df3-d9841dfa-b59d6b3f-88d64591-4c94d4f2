@@ -1,326 +1,308 @@
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  LifeBuoy, Plus, Loader2, AlertCircle, Sparkles, Wrench, PackageSearch,
-  CheckCircle2, Clock, Filter,
+  LifeBuoy, Plus, Loader2, AlertCircle, Sparkles, Wrench, PackageSearch, Gavel, RefreshCw, ChevronRight,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
-import { useSocietyId } from "@/hooks/useSocietyId";
-import { toast } from "sonner";
+import { TicketTimeline } from "@/components/helpdesk/TicketTimeline";
+import {
+  CATEGORY_HINT, CATEGORY_LABEL, PRIORITY_LABEL, fmtDate, helpdeskErrorMessage, statusMeta,
+  type TicketCategory, type TicketPriority,
+} from "@/lib/helpdesk";
 
-type Category = "complaint" | "daily_help" | "maintenance" | "lost_found";
+const CATS: TicketCategory[] = ["complaint", "maintenance", "daily_help", "approval", "lost_found"];
+const ICONS: Record<TicketCategory, typeof AlertCircle> = {
+  complaint: AlertCircle, maintenance: Wrench, daily_help: Sparkles, approval: Gavel, lost_found: PackageSearch,
+};
 
 const searchSchema = z.object({
-  cat: z.enum(["complaint", "daily_help", "maintenance", "lost_found", "all"]).optional(),
+  cat: z.enum(["complaint", "daily_help", "maintenance", "lost_found", "approval", "all"]).optional(),
   new: z.coerce.boolean().optional(),
 });
 
 export const Route = createFileRoute("/_resident/app/helpdesk")({
-  head: () => ({ meta: [{ title: "Helpdesk — SociyoHub" }] }),
+  head: () => ({
+    meta: [
+      { title: "Helpdesk — SociyoHub" },
+      { name: "description", content: "Raise complaints, service requests and approval requests, and track them to resolution." },
+    ],
+  }),
   validateSearch: searchSchema,
   component: HelpdeskPage,
 });
 
-const CATS: Record<Category, { label: string; icon: typeof AlertCircle; accent: string }> = {
-  complaint:   { label: "Complaint",   icon: AlertCircle,   accent: "bg-destructive/10 text-destructive" },
-  daily_help:  { label: "Daily Help",  icon: Sparkles,      accent: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
-  maintenance: { label: "Maintenance", icon: Wrench,        accent: "bg-blue-500/10 text-blue-600 dark:text-blue-400" },
-  lost_found:  { label: "Lost & Found",icon: PackageSearch, accent: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
-};
-
 interface Ticket {
-  id: string;
-  subject: string;
-  description: string;
-  status: "open" | "in_progress" | "resolved" | "closed" | string;
-  priority: "low" | "normal" | "high" | "urgent" | string;
-  category: Category;
-  created_at: string;
+  id: string; ticket_no: number; subject: string; description: string; status: string;
+  priority: string; category: TicketCategory; created_at: string; last_activity_at: string;
+  resolution_note: string | null; approval_status: string | null;
 }
+
+type Tab = "active" | "done";
+const DONE = ["closed", "rejected", "cancelled"];
 
 function HelpdeskPage() {
   const { user } = useAuth();
-  const { societyId } = useSocietyId();
+  const qc = useQueryClient();
   const navigate = useNavigate();
   const search = useSearch({ from: "/_resident/app/helpdesk" });
+  const initialCat: TicketCategory = search.cat && search.cat !== "all" ? search.cat : "complaint";
 
-  const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [open, setOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const [tab, setTab] = useState<Tab>("active");
+  const [openNew, setOpenNew] = useState(false);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [form, setForm] = useState({ category: initialCat, subject: "", description: "", priority: "normal" as TicketPriority });
 
-  const initialCat: Category =
-    search.cat && search.cat !== "all" ? (search.cat as Category) : "complaint";
-
-  const [form, setForm] = useState({
-    category: initialCat,
-    subject: "",
-    description: "",
-    priority: "normal" as Ticket["priority"],
-  });
-
-  // open "new" sheet if URL says so
   useEffect(() => {
     if (search.new) {
-      setForm((f) => ({ ...f, category: initialCat }));
-      setOpen(true);
+      setOpenNew(true);
       navigate({ to: "/app/helpdesk", search: { cat: search.cat }, replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function load() {
-    if (!user) return;
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("support_tickets")
-      .select("id, subject, description, status, priority, category, created_at")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(100);
-    setLoading(false);
-    if (error) return toast.error(error.message);
-    setTickets((data ?? []) as Ticket[]);
-  }
-  useEffect(() => { void load(); /* eslint-disable-next-line */ }, [user]);
+  const q = useQuery({
+    queryKey: ["helpdesk", "mine", user?.id],
+    enabled: !!user,
+    staleTime: 20_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("support_tickets")
+        .select("id, ticket_no, subject, description, status, priority, category, created_at, last_activity_at, resolution_note, approval_status")
+        .eq("user_id", user!.id)
+        .order("last_activity_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return (data ?? []) as Ticket[];
+    },
+  });
 
-  const filter: Category | "all" = (search.cat as any) || "all";
-  const filtered = useMemo(
-    () => (filter === "all" ? tickets : tickets.filter((t) => t.category === filter)),
-    [tickets, filter],
+  const list = useMemo(
+    () => (q.data ?? []).filter((t) => (tab === "done" ? DONE.includes(t.status) : !DONE.includes(t.status))),
+    [q.data, tab],
   );
+  const current = q.data?.find((t) => t.id === selected) ?? null;
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!user) return;
-    const subject = form.subject.trim();
-    const description = form.description.trim();
-    if (subject.length < 3) return toast.error("Subject is too short");
-    if (description.length < 5) return toast.error("Please describe the issue");
-    setSubmitting(true);
-    const { error } = await supabase.from("support_tickets").insert({
-      user_id: user.id,
-      society_id: societyId,
-      category: form.category,
-      subject: subject.slice(0, 120),
-      description: description.slice(0, 2000),
-      priority: form.priority,
-      status: "open",
-    });
-    setSubmitting(false);
-    if (error) return toast.error(error.message);
-    toast.success("Ticket raised — society admin notified");
-    setOpen(false);
-    setForm({ category: form.category, subject: "", description: "", priority: "normal" });
-    void load();
-  }
+  const create = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.rpc("helpdesk_create_ticket", {
+        _category: form.category, _subject: form.subject.trim(), _description: form.description.trim(), _priority: form.priority,
+      });
+      if (error) throw error;
+      return data as string;
+    },
+    onSuccess: () => {
+      toast.success(form.category === "approval" ? "Sent to the committee for approval" : "Request raised — the society office can see it now");
+      setOpenNew(false);
+      setForm((f) => ({ ...f, subject: "", description: "", priority: "normal" }));
+      setTab("active");
+      qc.invalidateQueries({ queryKey: ["helpdesk"] });
+    },
+    onError: (e) => toast.error(helpdeskErrorMessage(e)), // form kept for retry
+  });
 
-  function openNew(cat: Category) {
+  const act = useMutation({
+    mutationFn: async (v: { id: string; action: "cancel" | "confirm" | "reopen" }) => {
+      const { error } = await supabase.rpc("helpdesk_resident_action", { _ticket: v.id, _action: v.action });
+      if (error) throw error;
+    },
+    onSuccess: (_d, v) => {
+      toast.success(v.action === "cancel" ? "Request cancelled" : v.action === "confirm" ? "Thanks — marked as closed" : "Request reopened");
+      qc.invalidateQueries({ queryKey: ["helpdesk"] });
+    },
+    onError: (e) => toast.error(helpdeskErrorMessage(e)),
+  });
+
+  function startNew(cat: TicketCategory) {
     setForm({ category: cat, subject: "", description: "", priority: "normal" });
-    setOpen(true);
+    setOpenNew(true);
   }
+
+  const subjectOk = form.subject.trim().length >= 3;
+  const descOk = form.description.trim().length >= 5;
 
   return (
-    <div className="px-5 py-6 space-y-6 pb-24">
+    <div className="mx-auto max-w-2xl space-y-6 px-5 pb-28 pt-6">
       <header className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
+          <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
             <LifeBuoy className="h-6 w-6 text-primary" /> Helpdesk
           </h1>
-          <p className="text-sm text-muted-foreground">
-            Raise a request and track its resolution.
-          </p>
+          <p className="text-sm text-muted-foreground">Complaints, service requests and approvals</p>
         </div>
-        <Button onClick={() => openNew(initialCat)} className="rounded-xl h-10 shrink-0">
-          <Plus className="h-4 w-4 mr-1" /> New
+        <Button onClick={() => startNew(initialCat)} className="min-h-11 shrink-0 rounded-xl">
+          <Plus className="mr-1 h-4 w-4" /> New
         </Button>
       </header>
 
-      {/* Quick category tiles */}
-      <section className="grid grid-cols-2 gap-3">
-        {(Object.keys(CATS) as Category[]).map((c) => {
-          const meta = CATS[c];
-          const Icon = meta.icon;
+      <section aria-label="Start a request" className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {CATS.map((c) => {
+          const Icon = ICONS[c];
           return (
             <button
               key={c}
               type="button"
-              onClick={() => openNew(c)}
-              className="rounded-2xl bg-secondary/60 hover:bg-secondary p-4 flex items-center gap-3 active:scale-[0.98] transition-transform text-left"
+              onClick={() => startNew(c)}
+              className="flex min-h-14 items-center gap-3 rounded-2xl border bg-card p-3 text-left transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <span className={`h-10 w-10 rounded-xl grid place-items-center ${meta.accent}`}>
-                <Icon className="h-5 w-5" />
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><Icon className="h-5 w-5" /></span>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold">{CATEGORY_LABEL[c]}</span>
+                <span className="block truncate text-xs text-muted-foreground">{CATEGORY_HINT[c]}</span>
               </span>
-              <span className="text-sm font-semibold">{meta.label}</span>
             </button>
           );
         })}
       </section>
 
-      {/* Filter pills */}
-      <div className="flex items-center gap-2 overflow-x-auto -mx-1 px-1">
-        <span className="text-xs text-muted-foreground flex items-center gap-1 shrink-0">
-          <Filter className="h-3 w-3" /> Filter:
-        </span>
-        {(["all", "complaint", "daily_help", "maintenance", "lost_found"] as const).map((c) => {
-          const active = filter === c;
-          const label = c === "all" ? "All" : CATS[c as Category].label;
-          return (
+      <section aria-label="My requests" className="space-y-3">
+        <div role="tablist" className="inline-flex rounded-xl bg-secondary p-1">
+          {(["active", "done"] as Tab[]).map((t) => (
             <button
-              key={c}
-              type="button"
-              onClick={() => navigate({ to: "/app/helpdesk", search: { cat: c } })}
-              className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                active
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-muted-foreground hover:text-foreground"
-              }`}
+              key={t}
+              role="tab"
+              aria-selected={tab === t}
+              onClick={() => setTab(t)}
+              className={`min-h-10 rounded-lg px-4 text-sm font-medium ${tab === t ? "bg-background shadow-sm" : "text-muted-foreground"}`}
             >
-              {label}
+              {t === "active" ? "Active" : "Past"}
             </button>
-          );
-        })}
-      </div>
-
-      {/* Tickets */}
-      {loading ? (
-        <div className="grid place-items-center py-12">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          ))}
         </div>
-      ) : filtered.length === 0 ? (
-        <Card className="rounded-2xl">
-          <CardContent className="p-8 text-center space-y-2">
-            <LifeBuoy className="h-8 w-8 mx-auto text-muted-foreground" />
-            <p className="text-sm font-medium">No tickets yet</p>
-            <p className="text-xs text-muted-foreground">
-              Tap a tile above to raise your first request.
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <ul className="space-y-3">
-          {filtered.map((t) => {
-            const meta = CATS[t.category] ?? CATS.complaint;
-            const Icon = meta.icon;
-            const resolved = t.status === "resolved" || t.status === "closed";
-            return (
-              <li key={t.id}>
-                <Card className="rounded-2xl">
-                  <CardContent className="p-4 flex gap-3">
-                    <span className={`h-10 w-10 rounded-xl grid place-items-center shrink-0 ${meta.accent}`}>
-                      <Icon className="h-5 w-5" />
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-semibold truncate">{t.subject}</p>
-                        <Badge variant={resolved ? "secondary" : "outline"} className="rounded-md text-[10px]">
-                          {resolved ? (
-                            <><CheckCircle2 className="h-3 w-3 mr-1" />{t.status}</>
-                          ) : (
-                            <><Clock className="h-3 w-3 mr-1" />{t.status.replace("_", " ")}</>
-                          )}
-                        </Badge>
-                        {t.priority === "high" || t.priority === "urgent" ? (
-                          <Badge variant="destructive" className="rounded-md text-[10px]">{t.priority}</Badge>
-                        ) : null}
-                      </div>
-                      <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
-                        {t.description}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground mt-1">
-                        {meta.label} · {new Date(t.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </li>
-            );
-          })}
-        </ul>
-      )}
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Raise a request</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={submit} className="space-y-4">
-            <div className="grid gap-2">
-              <Label>Category</Label>
-              <Select
-                value={form.category}
-                onValueChange={(v) => setForm({ ...form, category: v as Category })}
-              >
-                <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {(Object.keys(CATS) as Category[]).map((c) => (
-                    <SelectItem key={c} value={c}>{CATS[c].label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        {q.isPending ? (
+          <div className="space-y-2">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-20 w-full rounded-2xl" />)}</div>
+        ) : q.isError ? (
+          <div role="alert" className="rounded-2xl border bg-card p-5 text-center">
+            <p className="font-semibold">Couldn't load your requests</p>
+            <p className="mt-1 text-sm text-muted-foreground">{helpdeskErrorMessage(q.error)}</p>
+            <Button variant="outline" className="mt-3 min-h-11" onClick={() => q.refetch()} disabled={q.isFetching}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${q.isFetching ? "animate-spin" : ""}`} /> Try again
+            </Button>
+          </div>
+        ) : list.length === 0 ? (
+          <div className="rounded-2xl border border-dashed bg-card p-8 text-center">
+            <LifeBuoy className="mx-auto h-8 w-8 text-muted-foreground" />
+            <p className="mt-2 text-sm font-medium">{tab === "active" ? "Nothing open right now" : "No past requests"}</p>
+            <p className="text-xs text-muted-foreground">{tab === "active" ? "Pick a type above to raise a request." : "Closed and cancelled requests appear here."}</p>
+          </div>
+        ) : (
+          <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
+            {list.map((t) => {
+              const s = statusMeta(t.status);
+              return (
+                <li key={t.id}>
+                  <button type="button" onClick={() => setSelected(t.id)} className="flex min-h-16 w-full items-center gap-3 px-4 py-3 text-left hover:bg-secondary/50">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="truncate font-medium">{t.subject}</p>
+                        <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${s.tone}`}>{s.label}</span>
+                        {(t.priority === "high" || t.priority === "urgent") && (
+                          <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] font-semibold text-destructive">{PRIORITY_LABEL[t.priority as TicketPriority]}</span>
+                        )}
+                      </div>
+                      <p className="mt-0.5 text-xs text-muted-foreground">#{t.ticket_no} · {CATEGORY_LABEL[t.category] ?? "Request"} · updated {fmtDate(t.last_activity_at)}</p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      {/* New request */}
+      <Sheet open={openNew} onOpenChange={(o) => !create.isPending && setOpenNew(o)}>
+        <SheetContent side="bottom" className="mx-auto max-h-[92dvh] max-w-lg overflow-y-auto rounded-t-3xl pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <SheetHeader><SheetTitle>New request</SheetTitle></SheetHeader>
+          <form className="mt-4 space-y-4" onSubmit={(e) => { e.preventDefault(); if (subjectOk && descOk && !create.isPending) create.mutate(); }}>
+            <fieldset className="space-y-2">
+              <legend className="text-sm font-medium">Type</legend>
+              <div className="flex flex-wrap gap-2">
+                {CATS.map((c) => (
+                  <button key={c} type="button" onClick={() => setForm({ ...form, category: c })} aria-pressed={form.category === c}
+                    className={`min-h-10 rounded-full border px-3 text-sm ${form.category === c ? "border-primary bg-primary text-primary-foreground" : "bg-background"}`}>
+                    {CATEGORY_LABEL[c]}
+                  </button>
+                ))}
+              </div>
+              {form.category === "approval" && (
+                <p className="text-xs text-muted-foreground">This goes straight to the committee. You'll see their decision here.</p>
+              )}
+            </fieldset>
+            <div className="space-y-1.5">
+              <Label htmlFor="hd-subject">Title</Label>
+              <Input id="hd-subject" value={form.subject} maxLength={120} className="min-h-11 rounded-xl"
+                placeholder="e.g. Lift not working in B-wing" onChange={(e) => setForm({ ...form, subject: e.target.value })} />
             </div>
-            <div className="grid gap-2">
-              <Label>Subject</Label>
-              <Input
-                value={form.subject}
-                onChange={(e) => setForm({ ...form, subject: e.target.value })}
-                placeholder="Short title (e.g. Lift not working on B-wing)"
-                maxLength={120}
-                className="rounded-xl"
-              />
+            <div className="space-y-1.5">
+              <Label htmlFor="hd-desc">Details</Label>
+              <Textarea id="hd-desc" value={form.description} rows={4} maxLength={2000} className="rounded-xl"
+                placeholder="Where, since when, anything that helps the team act faster"
+                onChange={(e) => setForm({ ...form, description: e.target.value })} />
+              <p className="text-right text-[11px] text-muted-foreground">{form.description.length}/2000</p>
             </div>
-            <div className="grid gap-2">
-              <Label>Description</Label>
-              <Textarea
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                placeholder="Add details so the admin can act faster…"
-                rows={4}
-                maxLength={2000}
-                className="rounded-xl"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label>Priority</Label>
-              <Select
-                value={form.priority}
-                onValueChange={(v) => setForm({ ...form, priority: v })}
-              >
-                <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="normal">Normal</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="urgent">Urgent</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => setOpen(false)} className="rounded-xl">
-                Cancel
-              </Button>
-              <Button type="submit" disabled={submitting} className="rounded-xl">
-                {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Submit ticket
-              </Button>
-            </DialogFooter>
+            <fieldset className="space-y-2">
+              <legend className="text-sm font-medium">Priority</legend>
+              <div className="grid grid-cols-4 gap-2">
+                {(Object.keys(PRIORITY_LABEL) as TicketPriority[]).map((p) => (
+                  <button key={p} type="button" aria-pressed={form.priority === p} onClick={() => setForm({ ...form, priority: p })}
+                    className={`min-h-11 rounded-xl border text-sm ${form.priority === p ? "border-primary bg-primary/10 font-semibold text-primary" : ""}`}>
+                    {PRIORITY_LABEL[p]}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+            <Button type="submit" className="min-h-12 w-full rounded-xl" disabled={!subjectOk || !descOk || create.isPending}>
+              {create.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {form.category === "approval" ? "Send for approval" : "Submit request"}
+            </Button>
           </form>
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
+
+      {/* Detail */}
+      <Sheet open={!!current} onOpenChange={(o) => !o && setSelected(null)}>
+        <SheetContent side="bottom" className="mx-auto max-h-[92dvh] max-w-lg overflow-y-auto rounded-t-3xl pb-[max(1rem,env(safe-area-inset-bottom))]">
+          {current && (
+            <div className="space-y-5">
+              <SheetHeader className="text-left">
+                <p className="text-xs text-muted-foreground">#{current.ticket_no} · {CATEGORY_LABEL[current.category]}</p>
+                <SheetTitle className="break-words">{current.subject}</SheetTitle>
+                <span className={`w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusMeta(current.status).tone}`}>{statusMeta(current.status).label}</span>
+              </SheetHeader>
+              <p className="whitespace-pre-wrap break-words text-sm">{current.description}</p>
+              {current.resolution_note && (
+                <div className="rounded-xl bg-muted/60 p-3 text-sm">
+                  <p className="text-xs font-semibold text-muted-foreground">{current.status === "rejected" ? "Reason" : "Resolution"}</p>
+                  <p className="mt-1 whitespace-pre-wrap break-words">{current.resolution_note}</p>
+                </div>
+              )}
+              {current.status === "resolved" && (
+                <div className="flex gap-2">
+                  <Button className="min-h-11 flex-1 rounded-xl" disabled={act.isPending} onClick={() => act.mutate({ id: current.id, action: "confirm" })}>It's fixed</Button>
+                  <Button variant="outline" className="min-h-11 flex-1 rounded-xl" disabled={act.isPending} onClick={() => act.mutate({ id: current.id, action: "reopen" })}>Still an issue</Button>
+                </div>
+              )}
+              {(current.status === "open" || current.status === "awaiting_approval") && (
+                <Button variant="ghost" className="min-h-11 w-full rounded-xl text-destructive" disabled={act.isPending}
+                  onClick={() => act.mutate({ id: current.id, action: "cancel" })}>Cancel request</Button>
+              )}
+              <TicketTimeline ticketId={current.id} canComment={!["closed", "cancelled"].includes(current.status)} />
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

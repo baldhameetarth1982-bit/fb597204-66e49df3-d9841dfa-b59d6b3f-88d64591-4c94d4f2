@@ -40,6 +40,15 @@ import {
   type OpenBillForPayment,
 } from "@/lib/offline-payments.functions";
 import { formatDate } from "@/utils/format";
+import { toSafeFinanceError } from "@/lib/finance-safe-error";
+
+const STATUS_LABEL: Record<string, string> = {
+  pending: "Awaiting verification",
+  verified: "Verified",
+  rejected: "Rejected",
+  reversed: "Reversed",
+};
+
 
 
 export const Route = createFileRoute("/_society/society/payments")({
@@ -62,6 +71,7 @@ function SocietyPaymentsRoute() {
   const [tab, setTab] = useState<Tab>("pending");
   const [rows, setRows] = useState<OfflinePaymentRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [reasonById, setReasonById] = useState<Record<string, string>>({});
   const [confirm, setConfirm] = useState<Confirm | null>(null);
@@ -69,11 +79,14 @@ function SocietyPaymentsRoute() {
   async function refresh() {
     if (!societyId) return;
     setLoading(true);
+    setLoadError(null);
     try {
       const { payments } = await list({ data: { societyId, status: tab, limit: 100 } });
       setRows(payments);
     } catch (e) {
-      toast.error((e as Error).message);
+      // Never show "no payments" after a failed load.
+      setRows([]);
+      setLoadError(toSafeFinanceError(e).message);
     } finally {
       setLoading(false);
     }
@@ -124,7 +137,7 @@ function SocietyPaymentsRoute() {
       setConfirm(null);
       refresh();
     } catch (e) {
-      toast.error((e as Error).message);
+      toast.error(toSafeFinanceError(e).message);
     } finally {
       setBusyId(null);
     }
@@ -177,13 +190,26 @@ function SocietyPaymentsRoute() {
       </div>
 
       {loading ? (
-        <div className="grid place-items-center py-12">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        <div className="space-y-3" aria-busy="true" aria-label="Loading payments">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-24 rounded-2xl bg-muted animate-pulse" />
+          ))}
         </div>
+      ) : loadError ? (
+        <Card className="rounded-2xl border-destructive/30" role="alert">
+          <CardContent className="p-4 flex items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">{loadError}</p>
+            <Button size="sm" variant="outline" className="min-h-11 shrink-0" onClick={refresh}>
+              Try again
+            </Button>
+          </CardContent>
+        </Card>
       ) : rows.length === 0 ? (
         <Card className="rounded-2xl">
           <CardContent className="p-6 text-sm text-muted-foreground text-center">
-            No {tab} payments.
+            {tab === "pending"
+              ? "No payments waiting for verification. You're all caught up."
+              : `No ${tab} payments.`}
           </CardContent>
         </Card>
       ) : (
@@ -220,9 +246,21 @@ function SocietyPaymentsRoute() {
                             : "neutral"
                     }
                   >
-                    {p.status}
+                    <span className="inline-flex items-center gap-1">
+                      {p.status === "verified" ? (
+                        <CheckCircle2 className="h-3 w-3" aria-hidden />
+                      ) : p.status === "pending" ? (
+                        <Clock className="h-3 w-3" aria-hidden />
+                      ) : p.status === "rejected" ? (
+                        <XCircle className="h-3 w-3" aria-hidden />
+                      ) : (
+                        <RotateCcw className="h-3 w-3" aria-hidden />
+                      )}
+                      {STATUS_LABEL[p.status] ?? p.status}
+                    </span>
                   </StatusChip>
                 </div>
+
 
                 {p.status === "verified" && p.verified_at && (
                   <p className="text-[11px] text-muted-foreground flex items-center gap-1">

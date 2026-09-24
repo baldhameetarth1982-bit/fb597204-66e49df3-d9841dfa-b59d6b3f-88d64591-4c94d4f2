@@ -18,6 +18,7 @@ export const listFamily = createServerFn({ method: "GET" })
       .from("family_members")
       .select("id, full_name, relation, phone, age, created_at")
       .eq("user_id", context.userId)
+      .eq("is_active", true)
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
     return data ?? [];

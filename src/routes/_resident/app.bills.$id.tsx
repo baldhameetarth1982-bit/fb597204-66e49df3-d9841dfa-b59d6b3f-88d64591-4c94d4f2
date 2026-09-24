@@ -12,6 +12,7 @@ import { getBillDisplayStatus } from "@/lib/bill-display-status";
 import { formatDate } from "@/utils/format";
 import { OfflinePaymentSubmitCard } from "@/components/billing/OfflinePaymentSubmitCard";
 import { toast } from "sonner";
+import { toSafeFinanceError } from "@/lib/finance-safe-error";
 
 export const Route = createFileRoute("/_resident/app/bills/$id")({
   head: () => ({ meta: [{ title: "Bill — SociyoHub" }] }),

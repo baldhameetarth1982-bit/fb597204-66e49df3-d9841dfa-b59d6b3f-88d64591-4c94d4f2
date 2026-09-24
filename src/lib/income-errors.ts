@@ -24,6 +24,7 @@ export const INCOME_ERROR_CODES = [
   "not_found",
   "idempotency_conflict",
   "temporary_error",
+  "category_review_required",
 ] as const;
 
 export type IncomeErrorCode = (typeof INCOME_ERROR_CODES)[number];
@@ -47,6 +48,9 @@ export function mapIncomeError(raw: unknown): IncomeErrorCode {
     case "forbidden_society":
     case "invalid_transition":
       return "not_authorized";
+    case "income_category_review_required":
+    case "income_category_locked":
+      return "category_review_required";
     case "not_found":
       return "not_found";
     case "duplicate_request":
@@ -73,6 +77,8 @@ export const INCOME_ERROR_MESSAGES: Record<IncomeErrorCode, string> = {
   idempotency_conflict:
     "This entry was changed after being reviewed. Start over to record it.",
   temporary_error: "Something went wrong. Please try again.",
+  category_review_required:
+    "Confirm the income category before verifying. Categories are locked once verified.",
 };
 
 export function friendlyIncomeError(raw: unknown): string {

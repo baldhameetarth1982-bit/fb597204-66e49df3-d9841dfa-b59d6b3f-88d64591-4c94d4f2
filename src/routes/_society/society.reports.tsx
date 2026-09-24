@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
+import { toSafeFinanceMessage } from "@/lib/finance-safe-error";
 import { useState } from "react";
 import { AlertCircle, BarChart3, Loader2, TrendingDown, TrendingUp } from "lucide-react";
 import { FeatureGate } from "@/components/subscription/FeatureGate";

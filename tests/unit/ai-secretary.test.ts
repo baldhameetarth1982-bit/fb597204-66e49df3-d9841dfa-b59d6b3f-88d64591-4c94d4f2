@@ -82,3 +82,13 @@ describe("AI Secretary actions & recency", async () => {
     expect(selectChunks("water", [old, fresh])[0].date).toBe("2026-09-01");
   });
 });
+
+describe("AI Secretary conversational actions", async () => {
+  const { suggestActions } = await import("@/lib/ai-secretary.server");
+  it("vague follow-up inherits previous topic", () => {
+    expect(suggestActions("where do I do that?", "answered", ["can my guest park inside?"]).map((a) => a.href)).toContain("/app/visitors");
+  });
+  it("report intent without topic → Helpdesk", () => {
+    expect(suggestActions("how do I report this?", "answered")[0].href).toBe("/app/helpdesk");
+  });
+});

@@ -24,6 +24,7 @@ const GROUPS: Group[] = [
       { label: "Dashboard", to: "/society/dashboard", icon: LayoutDashboard },
       { label: "Society Explorer", to: "/society/explorer", icon: Compass },
       { label: "Maintenance Matrix", to: "/society/matrix", icon: Grid3x3 },
+      { label: "Helpdesk", to: "/society/helpdesk", icon: BadgeCheck },
       { label: "Approvals", to: "/society/approvals", icon: BadgeCheck },
     ],
   },

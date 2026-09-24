@@ -26,6 +26,7 @@ const MANAGEMENT: Tile[] = [
   { to: "/society/residents", label: "Residents", icon: Users },
   { to: "/society/flats", label: "Houses", icon: Home },
   { to: "/society/blocks", label: "Blocks", icon: Building },
+  { to: "/society/helpdesk", label: "Helpdesk", icon: LifeBuoy },
   { to: "/society/approvals", label: "Approvals", icon: UserCheck },
   { to: "/society/verifications", label: "Verifications", icon: ShieldCheck },
   { to: "/society/visitors", label: "Visitors", icon: UsersRound, feature: "visitors" },

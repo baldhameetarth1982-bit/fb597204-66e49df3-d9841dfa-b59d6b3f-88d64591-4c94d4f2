@@ -134,3 +134,38 @@ export const deactivateFinanceVendor = createServerFn({ method: "POST" }).middle
 export const previewFinanceBackfill = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({ societyId: uuid })).handler(async ({ data, context }) => z.object({ verified_payments_unposted: z.coerce.number().int(), verified_income_unposted: z.coerce.number().int(), legacy_ledger_unconverted: z.coerce.number().int() }).parse(await rpc(context, "preview_finance_backfill", { _society_id: data.societyId })));
 
 export const executeFinanceBackfill = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({ societyId: uuid, requestId: uuid })).handler(async ({ data, context }) => z.object({ status: z.literal("success"), payments_posted: z.coerce.number().int().nonnegative(), income_posted: z.coerce.number().int().nonnegative() }).parse(await rpc(context, "execute_finance_backfill", { _society_id: data.societyId, _request_id: data.requestId })));
+
+// Filtered Journal/Expenses view. Reuses the canonical list_finance_workspace
+// RPC (same authorization and society scope), pages through it server-side,
+// then filters by date/category/status so totals cover the whole filtered set.
+const FILTER_SCAN_CAP = 5000;
+const filteredInput = z.object({
+  societyId: uuid,
+  resource: z.enum(["expenses", "journal"]),
+  from: date.nullable().default(null),
+  to: date.nullable().default(null),
+  category: z.string().trim().max(40).nullable().default(null),
+  status: z.enum(["draft", "pending", "posted", "reversed"]).nullable().default(null),
+  limit: z.number().int().min(1).max(200).default(50),
+  offset: z.number().int().min(0).max(FILTER_SCAN_CAP).default(0),
+});
+export const listFinanceFiltered = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(filteredInput).handler(async ({ data, context }) => {
+  const pageSchema = z.object({ visibility: z.literal("admin"), rows: z.array(z.unknown()) });
+  const all: unknown[] = [];
+  let truncated = false;
+  for (let off = 0; ; off += 200) {
+    const page = pageSchema.parse(await rpc(context, "list_finance_workspace", { _society_id: data.societyId, _resource: data.resource, _limit: 200, _offset: off }));
+    all.push(...page.rows);
+    if (page.rows.length < 200) break;
+    if (all.length >= FILTER_SCAN_CAP) { truncated = true; break; }
+  }
+  const inRange = (d: string) => (!data.from || d >= data.from) && (!data.to || d <= data.to);
+  if (data.resource === "journal") {
+    const rows = z.array(journalRowSchema).parse(all).filter((r) => inRange(r.transaction_date) && (!data.status || r.status === data.status));
+    const totals = rows.reduce((a, r) => ({ debit: a.debit + r.debit, credit: a.credit + r.credit, count: a.count + 1 }), { debit: 0, credit: 0, count: 0 });
+    return { resource: "journal" as const, rows: rows.slice(data.offset, data.offset + data.limit), totals: { ...totals, posted: 0, reversed: 0 }, truncated };
+  }
+  const rows = z.array(expenseRowSchema).parse(all).filter((r) => inRange(r.expense_date) && (!data.category || r.category === data.category) && (!data.status || r.status === data.status));
+  const totals = rows.reduce((a, r) => ({ ...a, count: a.count + 1, posted: a.posted + (r.status === "posted" ? r.amount : 0), reversed: a.reversed + (r.status === "reversed" ? 1 : 0) }), { debit: 0, credit: 0, count: 0, posted: 0, reversed: 0 });
+  return { resource: "expenses" as const, rows: rows.slice(data.offset, data.offset + data.limit), totals, truncated };
+});

@@ -121,7 +121,12 @@ function BillsScreen() {
   return (
     <div className="px-5 py-6 space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Bills</h1>
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-2xl font-semibold tracking-tight">Bills</h1>
+          <Button asChild variant="outline" size="sm" className="min-h-11 rounded-xl">
+            <Link to="/app/receipts"><Receipt className="h-4 w-4 mr-1" />Receipts</Link>
+          </Button>
+        </div>
         <p className="text-sm text-muted-foreground">
           Your maintenance & society dues{online ? "" : " · offline cache"}
         </p>

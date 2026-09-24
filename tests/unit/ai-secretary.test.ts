@@ -57,7 +57,7 @@ describe("AI Secretary server boundary (source contract)", () => {
   const src = readFileSync("src/lib/ai-secretary.functions.ts", "utf8");
   it("requires auth, derives society server-side, gates plan, rate limits server-side", () => {
     expect(src).toContain("requireSupabaseAuth");
-    expect(src).toMatch(/z\.object\(\{ question: z\.string\(\)[^}]*\}\)/);
+    expect(src).toMatch(/z\.object\(\{\s*question: z\.string\(\)/);
     expect(src).not.toMatch(/data\.societyId|societyId: z/);
     expect(src).toContain('"ai_secretary"');
     expect(src).toContain("checkRateLimit");

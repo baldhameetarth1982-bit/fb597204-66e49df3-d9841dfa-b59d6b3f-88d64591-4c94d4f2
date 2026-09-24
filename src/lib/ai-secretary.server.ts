@@ -16,7 +16,7 @@ export const MAX_CONTEXT_CHARS = 16_000;
 export const MAX_CHUNK_CHARS = 1_800;
 
 export type SecretarySource = {
-  kind: "bylaws" | "contacts" | "notice";
+  kind: "bylaws" | "contacts" | "notice" | "document" | "faq";
   title: string;
   text: string;
   date?: string | null;

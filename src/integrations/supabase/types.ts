@@ -3963,6 +3963,83 @@ export type Database = {
           },
         ]
       }
+      society_knowledge_sources: {
+        Row: {
+          archived_at: string | null
+          audience: string
+          created_at: string
+          created_by: string | null
+          extracted_text: string | null
+          faq_answer: string | null
+          file_name: string | null
+          id: string
+          kind: string
+          mime_type: string | null
+          size_bytes: number | null
+          society_id: string
+          status: string
+          status_reason: string | null
+          storage_path: string | null
+          text_chars: number
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          archived_at?: string | null
+          audience?: string
+          created_at?: string
+          created_by?: string | null
+          extracted_text?: string | null
+          faq_answer?: string | null
+          file_name?: string | null
+          id?: string
+          kind: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          society_id: string
+          status?: string
+          status_reason?: string | null
+          storage_path?: string | null
+          text_chars?: number
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          archived_at?: string | null
+          audience?: string
+          created_at?: string
+          created_by?: string | null
+          extracted_text?: string | null
+          faq_answer?: string | null
+          file_name?: string | null
+          id?: string
+          kind?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          society_id?: string
+          status?: string
+          status_reason?: string | null
+          storage_path?: string | null
+          text_chars?: number
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "society_knowledge_sources_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       society_settings: {
         Row: {
           address: string | null
@@ -4651,6 +4728,7 @@ export type Database = {
       }
       _gate_society: { Args: never; Returns: string }
       _helpdesk_is_admin: { Args: { _sid: string }; Returns: boolean }
+      _knowledge_admin_society: { Args: never; Returns: string }
       _migration_link_or_conflict: {
         Args: {
           _canonical_entity_id: string
@@ -5560,6 +5638,43 @@ export type Database = {
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       is_super_admin_internal: { Args: { _actor_id: string }; Returns: boolean }
       join_society_with_code: { Args: { _code: string }; Returns: string }
+      knowledge_begin_document: {
+        Args: {
+          _audience: string
+          _ext: string
+          _file_name: string
+          _mime: string
+          _replace_id?: string
+          _size: number
+          _title: string
+        }
+        Returns: Json
+      }
+      knowledge_delete: { Args: { _id: string }; Returns: Json }
+      knowledge_document_path: { Args: { _id: string }; Returns: string }
+      knowledge_finish_document: {
+        Args: {
+          _id: string
+          _reason: string
+          _status: string
+          _text: string
+          _version: number
+        }
+        Returns: Json
+      }
+      knowledge_set_archived: {
+        Args: { _archived: boolean; _id: string }
+        Returns: Json
+      }
+      knowledge_upsert_faq: {
+        Args: {
+          _answer: string
+          _audience: string
+          _id: string
+          _question: string
+        }
+        Returns: Json
+      }
       list_finance_book: {
         Args: {
           _book: string

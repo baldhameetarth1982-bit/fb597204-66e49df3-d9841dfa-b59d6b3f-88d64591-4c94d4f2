@@ -28,9 +28,12 @@ interface V {
 
 type Filter = "all" | "pending" | "inside" | "exited";
 
+// "pending" tab = anything not yet inside and not finished (expected passes and
+// walk-ins waiting for a resident). Finished states fall under "exited".
 function computeStatus(v: V): Filter {
   if (v.exit_at) return "exited";
-  if (v.status === "pending") return "pending";
+  if (["pending", "expected", "awaiting", "approved"].includes(v.status ?? "")) return "pending";
+  if (["denied", "rejected", "cancelled", "expired"].includes(v.status ?? "")) return "exited";
   return "inside";
 }
 

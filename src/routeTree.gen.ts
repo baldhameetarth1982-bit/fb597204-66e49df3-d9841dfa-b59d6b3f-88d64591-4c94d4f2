@@ -54,6 +54,7 @@ import { Route as SocietySocietyPollsRouteImport } from './routes/_society/socie
 import { Route as SocietySocietyPlanRequiredRouteImport } from './routes/_society/society.plan-required'
 import { Route as SocietySocietyPayoutsRouteImport } from './routes/_society/society.payouts'
 import { Route as SocietySocietyPaymentsRouteImport } from './routes/_society/society.payments'
+import { Route as SocietySocietyParkingRouteImport } from './routes/_society/society.parking'
 import { Route as SocietySocietyNoDuesRouteImport } from './routes/_society/society.no-dues'
 import { Route as SocietySocietyMoreRouteImport } from './routes/_society/society.more'
 import { Route as SocietySocietyMatrixImportRouteImport } from './routes/_society/society.matrix-import'
@@ -376,6 +377,11 @@ const SocietySocietyPayoutsRoute = SocietySocietyPayoutsRouteImport.update({
 const SocietySocietyPaymentsRoute = SocietySocietyPaymentsRouteImport.update({
   id: '/society/payments',
   path: '/society/payments',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyParkingRoute = SocietySocietyParkingRouteImport.update({
+  id: '/society/parking',
+  path: '/society/parking',
   getParentRoute: () => SocietyRoute,
 } as any)
 const SocietySocietyNoDuesRoute = SocietySocietyNoDuesRouteImport.update({
@@ -996,6 +1002,7 @@ export interface FileRoutesByFullPath {
   '/society/matrix-import': typeof SocietySocietyMatrixImportRoute
   '/society/more': typeof SocietySocietyMoreRoute
   '/society/no-dues': typeof SocietySocietyNoDuesRouteWithChildren
+  '/society/parking': typeof SocietySocietyParkingRoute
   '/society/payments': typeof SocietySocietyPaymentsRoute
   '/society/payouts': typeof SocietySocietyPayoutsRoute
   '/society/plan-required': typeof SocietySocietyPlanRequiredRoute
@@ -1136,6 +1143,7 @@ export interface FileRoutesByTo {
   '/society/matrix-import': typeof SocietySocietyMatrixImportRoute
   '/society/more': typeof SocietySocietyMoreRoute
   '/society/no-dues': typeof SocietySocietyNoDuesRouteWithChildren
+  '/society/parking': typeof SocietySocietyParkingRoute
   '/society/payments': typeof SocietySocietyPaymentsRoute
   '/society/payouts': typeof SocietySocietyPayoutsRoute
   '/society/plan-required': typeof SocietySocietyPlanRequiredRoute
@@ -1282,6 +1290,7 @@ export interface FileRoutesById {
   '/_society/society/matrix-import': typeof SocietySocietyMatrixImportRoute
   '/_society/society/more': typeof SocietySocietyMoreRoute
   '/_society/society/no-dues': typeof SocietySocietyNoDuesRouteWithChildren
+  '/_society/society/parking': typeof SocietySocietyParkingRoute
   '/_society/society/payments': typeof SocietySocietyPaymentsRoute
   '/_society/society/payouts': typeof SocietySocietyPayoutsRoute
   '/_society/society/plan-required': typeof SocietySocietyPlanRequiredRoute
@@ -1425,6 +1434,7 @@ export interface FileRouteTypes {
     | '/society/matrix-import'
     | '/society/more'
     | '/society/no-dues'
+    | '/society/parking'
     | '/society/payments'
     | '/society/payouts'
     | '/society/plan-required'
@@ -1565,6 +1575,7 @@ export interface FileRouteTypes {
     | '/society/matrix-import'
     | '/society/more'
     | '/society/no-dues'
+    | '/society/parking'
     | '/society/payments'
     | '/society/payouts'
     | '/society/plan-required'
@@ -1710,6 +1721,7 @@ export interface FileRouteTypes {
     | '/_society/society/matrix-import'
     | '/_society/society/more'
     | '/_society/society/no-dues'
+    | '/_society/society/parking'
     | '/_society/society/payments'
     | '/_society/society/payouts'
     | '/_society/society/plan-required'
@@ -2099,6 +2111,13 @@ declare module '@tanstack/react-router' {
       path: '/society/payments'
       fullPath: '/society/payments'
       preLoaderRoute: typeof SocietySocietyPaymentsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/parking': {
+      id: '/_society/society/parking'
+      path: '/society/parking'
+      fullPath: '/society/parking'
+      preLoaderRoute: typeof SocietySocietyParkingRouteImport
       parentRoute: typeof SocietyRoute
     }
     '/_society/society/no-dues': {
@@ -3057,6 +3076,7 @@ interface SocietyRouteChildren {
   SocietySocietyMatrixImportRoute: typeof SocietySocietyMatrixImportRoute
   SocietySocietyMoreRoute: typeof SocietySocietyMoreRoute
   SocietySocietyNoDuesRoute: typeof SocietySocietyNoDuesRouteWithChildren
+  SocietySocietyParkingRoute: typeof SocietySocietyParkingRoute
   SocietySocietyPaymentsRoute: typeof SocietySocietyPaymentsRoute
   SocietySocietyPayoutsRoute: typeof SocietySocietyPayoutsRoute
   SocietySocietyPlanRequiredRoute: typeof SocietySocietyPlanRequiredRoute
@@ -3104,6 +3124,7 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyMatrixImportRoute: SocietySocietyMatrixImportRoute,
   SocietySocietyMoreRoute: SocietySocietyMoreRoute,
   SocietySocietyNoDuesRoute: SocietySocietyNoDuesRouteWithChildren,
+  SocietySocietyParkingRoute: SocietySocietyParkingRoute,
   SocietySocietyPaymentsRoute: SocietySocietyPaymentsRoute,
   SocietySocietyPayoutsRoute: SocietySocietyPayoutsRoute,
   SocietySocietyPlanRequiredRoute: SocietySocietyPlanRequiredRoute,

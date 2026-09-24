@@ -32,10 +32,10 @@ export function markNotificationsSeen() {
   } catch {}
 }
 
-/** Returns unread notification count for the current society. Realtime + polls. */
+/** Unread count of the signed-in user's own notifications. Realtime + polls. */
 export function useUnreadNotifications() {
-  const { profile } = useAuth();
-  const societyId = profile?.society_id;
+  const { user } = useAuth();
+  const uid = user?.id;
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
@@ -45,36 +45,35 @@ export function useUnreadNotifications() {
   }, []);
 
   const query = useQuery({
-    enabled: !!societyId,
-    queryKey: ["notifications-unread", societyId, tick],
+    enabled: !!uid,
+    queryKey: ["notifications-unread", uid, tick],
     staleTime: 15_000,
     refetchInterval: 60_000,
     queryFn: async () => {
       const since = getLastSeen();
       const { count } = await supabase
-        .from("audit_log")
+        .from("user_notifications")
         .select("id", { count: "exact", head: true })
-        .eq("society_id", societyId!)
-        .in("action", TRACKED_ACTIONS)
+        .is("read_at", null)
         .gt("created_at", since);
       return count ?? 0;
     },
   });
 
   useEffect(() => {
-    if (!societyId) return;
+    if (!uid) return;
     const channel = supabase
-      .channel(`notif-unread-${societyId}`)
+      .channel(`notif-unread-${uid}`)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "audit_log", filter: `society_id=eq.${societyId}` },
+        { event: "INSERT", schema: "public", table: "user_notifications", filter: `user_id=eq.${uid}` },
         () => setTick((t) => t + 1),
       )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [societyId]);
+  }, [uid]);
 
   return query.data ?? 0;
 }

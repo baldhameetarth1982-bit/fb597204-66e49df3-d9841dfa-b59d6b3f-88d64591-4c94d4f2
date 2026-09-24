@@ -128,6 +128,7 @@ function VehiclesPage() {
           </DialogContent>
         </Dialog>
       </header>
+      <MyParking />
 
       {loading ? (
         <div className="text-center py-10"><Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" /></div>
@@ -156,5 +157,38 @@ function VehiclesPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function MyParking() {
+  const [slots, setSlots] = useState<{ id: string; label: string; slot_type: string; notes: string | null }[] | null>(null);
+  useEffect(() => {
+    // RLS limits this to parking allotted to the resident's own active home.
+    void supabase
+      .from("parking_slots")
+      .select("id, label, slot_type, notes")
+      .eq("is_active", true)
+      .order("label")
+      .then(({ data }) => setSlots(data ?? []));
+  }, []);
+  if (slots === null) return <div className="h-16 rounded-2xl bg-muted animate-pulse" />;
+  return (
+    <Card className="rounded-2xl">
+      <CardContent className="p-4">
+        <p className="text-sm font-semibold">Your parking</p>
+        {slots.length === 0 ? (
+          <p className="text-sm text-muted-foreground mt-1">No parking slot allotted yet. Your committee assigns parking.</p>
+        ) : (
+          <div className="flex flex-wrap gap-2 mt-2">
+            {slots.map((s) => (
+              <span key={s.id} className="rounded-xl bg-primary/10 text-primary px-3 py-2 text-sm font-medium">
+                {s.label} <span className="capitalize text-xs opacity-80">· {s.slot_type}</span>
+                {s.notes ? <span className="text-xs opacity-80"> · {s.notes}</span> : null}
+              </span>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

@@ -31,6 +31,7 @@ const MANAGEMENT: Tile[] = [
   { to: "/society/verifications", label: "Verifications", icon: ShieldCheck },
   { to: "/society/visitors", label: "Visitors", icon: UsersRound, feature: "visitors" },
   { to: "/society/vehicles", label: "Vehicles", icon: Car, feature: "vehicles" },
+  { to: "/society/parking", label: "Parking", icon: Car, feature: "vehicles" },
   { to: "/society/maintenance", label: "Maintenance", icon: BookOpen },
   { to: "/society/communication", label: "Communication", icon: MessageSquare },
   { to: "/society/polls", label: "Polls", icon: Sparkles, feature: "polls" },

@@ -2465,6 +2465,67 @@ export type Database = {
           },
         ]
       }
+      parking_slots: {
+        Row: {
+          created_at: string
+          flat_id: string | null
+          id: string
+          is_active: boolean
+          label: string
+          notes: string | null
+          slot_type: string
+          society_id: string
+          updated_at: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          flat_id?: string | null
+          id?: string
+          is_active?: boolean
+          label: string
+          notes?: string | null
+          slot_type?: string
+          society_id: string
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          flat_id?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string
+          notes?: string | null
+          slot_type?: string
+          society_id?: string
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parking_slots_flat_id_fkey"
+            columns: ["flat_id"]
+            isOneToOne: false
+            referencedRelation: "flats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parking_slots_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parking_slots_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_receipt_month_sequences: {
         Row: {
           next_number: number
@@ -4057,6 +4118,42 @@ export type Database = {
           },
         ]
       }
+      user_notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          kind: string
+          link: string | null
+          read_at: string | null
+          society_id: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          link?: string | null
+          read_at?: string | null
+          society_id?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          link?: string | null
+          read_at?: string | null
+          society_id?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_points: {
         Row: {
           created_at: string
@@ -4264,7 +4361,9 @@ export type Database = {
       visitors: {
         Row: {
           approved_by: string | null
+          category: string
           created_at: string
+          decided_at: string | null
           entry_at: string
           exit_at: string | null
           expected_at: string | null
@@ -4279,12 +4378,15 @@ export type Database = {
           purpose: string | null
           society_id: string
           status: string
+          valid_until: string | null
           vehicle_number: string | null
           visitor_name: string
         }
         Insert: {
           approved_by?: string | null
+          category?: string
           created_at?: string
+          decided_at?: string | null
           entry_at?: string
           exit_at?: string | null
           expected_at?: string | null
@@ -4299,12 +4401,15 @@ export type Database = {
           purpose?: string | null
           society_id: string
           status?: string
+          valid_until?: string | null
           vehicle_number?: string | null
           visitor_name: string
         }
         Update: {
           approved_by?: string | null
+          category?: string
           created_at?: string
+          decided_at?: string | null
           entry_at?: string
           exit_at?: string | null
           expected_at?: string | null
@@ -4319,6 +4424,7 @@ export type Database = {
           purpose?: string | null
           society_id?: string
           status?: string
+          valid_until?: string | null
           vehicle_number?: string | null
           visitor_name?: string
         }
@@ -4427,6 +4533,7 @@ export type Database = {
         Args: { _actor_id: string; _society_id: string }
         Returns: undefined
       }
+      _gate_society: { Args: never; Returns: string }
       _helpdesk_is_admin: { Args: { _sid: string }; Returns: boolean }
       _migration_link_or_conflict: {
         Args: {
@@ -4440,10 +4547,43 @@ export type Database = {
         }
         Returns: undefined
       }
+      _notify_flat: {
+        Args: {
+          _body: string
+          _flat: string
+          _kind: string
+          _link: string
+          _society: string
+          _title: string
+        }
+        Returns: undefined
+      }
+      _notify_user: {
+        Args: {
+          _body: string
+          _kind: string
+          _link: string
+          _society: string
+          _title: string
+          _user: string
+        }
+        Returns: undefined
+      }
+      _rate_hit: {
+        Args: {
+          _bucket: string
+          _max: number
+          _subject: string
+          _window: string
+        }
+        Returns: undefined
+      }
       _sync_bill_payment_state: {
         Args: { _bill_id: string }
         Returns: undefined
       }
+      _visitor_clean: { Args: { _max: number; _t: string }; Returns: string }
+      _visitor_new_code: { Args: { _society: string }; Returns: string }
       activate_society_plan: {
         Args: { _months?: number; _plan_id: string; _society_id: string }
         Returns: undefined
@@ -4549,6 +4689,18 @@ export type Database = {
           society_id: string
           society_name: string
         }[]
+      }
+      admin_parking_archive: { Args: { _id: string }; Returns: undefined }
+      admin_parking_upsert: {
+        Args: {
+          _flat_id: string
+          _id: string
+          _label: string
+          _notes: string
+          _slot_type: string
+          _vehicle_id: string
+        }
+        Returns: string
       }
       admin_platform_summary: {
         Args: never
@@ -5117,6 +5269,59 @@ export type Database = {
       guard_checkin_by_code: {
         Args: { _code: string; _society_id: string }
         Returns: string
+      }
+      guard_checkin_code: {
+        Args: { _code: string }
+        Returns: {
+          flat_label: string
+          id: string
+          visitor_name: string
+        }[]
+      }
+      guard_gate_list: {
+        Args: { _q?: string; _scope?: string }
+        Returns: {
+          category: string
+          created_at: string
+          entry_at: string
+          exit_at: string
+          expected_at: string
+          flat_label: string
+          id: string
+          phone_last4: string
+          pre_approved: boolean
+          purpose: string
+          status: string
+          valid_until: string
+          vehicle_number: string
+          visitor_name: string
+        }[]
+      }
+      guard_log_walkin: {
+        Args: {
+          _category: string
+          _flat_label: string
+          _name: string
+          _phone: string
+          _purpose: string
+          _vehicle: string
+        }
+        Returns: string
+      }
+      guard_verify_vehicle: {
+        Args: { _plate: string }
+        Returns: {
+          color: string
+          flat_label: string
+          make_model: string
+          parking_label: string
+          plate_number: string
+          vehicle_type: string
+        }[]
+      }
+      guard_visitor_action: {
+        Args: { _action: string; _id: string }
+        Returns: undefined
       }
       has_role: {
         Args: {
@@ -5793,6 +5998,26 @@ export type Database = {
       }
       verify_resident_kyc: {
         Args: { _approved: boolean; _reason?: string; _user_id: string }
+        Returns: undefined
+      }
+      visitor_invite: {
+        Args: {
+          _category: string
+          _expected_at: string
+          _flat_id: string
+          _name: string
+          _phone: string
+          _purpose: string
+          _valid_hours: number
+          _vehicle: string
+        }
+        Returns: {
+          gate_pass_code: string
+          id: string
+        }[]
+      }
+      visitor_resident_action: {
+        Args: { _action: string; _id: string }
         Returns: undefined
       }
     }

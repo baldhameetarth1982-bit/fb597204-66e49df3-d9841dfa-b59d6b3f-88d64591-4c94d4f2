@@ -197,9 +197,14 @@ function CommunicationCenter() {
               <FileText className="h-8 w-8 mx-auto text-muted-foreground opacity-60" />
               <p className="mt-2 font-medium">Society documents</p>
               <p className="text-xs text-muted-foreground">By-laws, forms, minutes, certificates.</p>
-              <Button asChild size="sm" className="mt-3 rounded-xl">
-                <Link to="/app/bylaws">Open document centre</Link>
-              </Button>
+              <div className="mt-3 flex flex-wrap justify-center gap-2">
+                <Button asChild size="sm" className="rounded-xl min-h-11">
+                  <Link to="/app/bylaws">Open document centre</Link>
+                </Button>
+                <Button asChild size="sm" variant="outline" className="rounded-xl min-h-11">
+                  <Link to="/app/secretary">Ask AI Secretary</Link>
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

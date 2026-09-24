@@ -256,7 +256,7 @@ const QUICK_ACTIONS: Array<{ to: string; label: string; icon: any; tone: string 
   { to: "/app/helpdesk", label: "Complaints", icon: LifeBuoy, tone: "bg-rose-500/10 text-rose-600" },
   { to: "/app/comm", label: "Notices", icon: Megaphone, tone: "bg-amber-500/10 text-amber-600" },
   { to: "/app/bylaws", label: "Documents", icon: FileText, tone: "bg-violet-500/10 text-violet-600" },
-  { to: "/support", label: "Ask AI", icon: Bot, tone: "bg-indigo-500/10 text-indigo-600" },
+  { to: "/app/secretary", label: "Ask AI", icon: Bot, tone: "bg-indigo-500/10 text-indigo-600" },
   { to: "/app/emergency", label: "SOS", icon: ShieldAlert, tone: "bg-destructive/10 text-destructive" },
 ];
 

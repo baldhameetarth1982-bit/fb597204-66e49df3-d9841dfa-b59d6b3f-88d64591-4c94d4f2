@@ -5,6 +5,7 @@ import { Loader2, Vote, CheckCircle2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { commErrorMessage } from "@/lib/notices";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 
@@ -42,8 +43,14 @@ function PollsPage() {
         supabase.from("poll_options").select("id,poll_id,label,position").in("poll_id", ids).order("position"),
         supabase.from("poll_votes").select("poll_id,option_id,user_id").in("poll_id", ids),
       ]);
+      // Aggregate counts only (no voter identities); shown after voting or once closed.
+      const { data: rs } = await supabase.rpc("poll_results", { _poll_ids: ids });
+      const expanded: Vote[] = [];
+      for (const r of (rs ?? []) as { poll_id: string; option_id: string; votes: number }[]) {
+        for (let i = 0; i < Number(r.votes); i++) expanded.push({ poll_id: r.poll_id, option_id: r.option_id, user_id: "" } as Vote);
+      }
       setOptions((os as Opt[]) ?? []);
-      setVotes((vs as Vote[]) ?? []);
+      setVotes([...((vs as Vote[]) ?? []).map((v) => ({ ...v, poll_id: `mine:${v.poll_id}` })), ...expanded]);
     } else {
       setOptions([]);
       setVotes([]);
@@ -55,16 +62,16 @@ function PollsPage() {
   const myVotes = useMemo(() => {
     const m = new Map<string, string>();
     if (!user) return m;
-    votes.filter((v) => v.user_id === user.id).forEach((v) => m.set(v.poll_id, v.option_id));
+    votes.filter((v) => v.poll_id.startsWith("mine:")).forEach((v) => m.set(v.poll_id.slice(5), v.option_id));
     return m;
   }, [votes, user]);
 
   async function castVote(pollId: string, optionId: string) {
-    if (!user) return;
+    if (!user || voting) return;
     setVoting(pollId);
-    const { error } = await supabase.from("poll_votes").insert({ poll_id: pollId, option_id: optionId, user_id: user.id });
+    const { error } = await supabase.rpc("poll_cast_vote", { _poll: pollId, _option: optionId });
     setVoting(null);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(commErrorMessage(error)); void load(); return; }
     toast.success("Vote recorded");
     void load();
   }
@@ -87,7 +94,7 @@ function PollsPage() {
             const pollVotes = votes.filter((v) => v.poll_id === p.id);
             const total = pollVotes.length;
             const myChoice = myVotes.get(p.id);
-            const closed = p.status !== "open";
+            const closed = p.status !== "open" || (!!p.closes_at && new Date(p.closes_at) < new Date());
             return (
               <Card key={p.id} className="rounded-2xl">
                 <CardContent className="p-5 space-y-3">

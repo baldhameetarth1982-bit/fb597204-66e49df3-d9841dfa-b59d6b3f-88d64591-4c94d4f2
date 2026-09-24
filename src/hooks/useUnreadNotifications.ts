@@ -51,12 +51,15 @@ export function useUnreadNotifications() {
     refetchInterval: 60_000,
     queryFn: async () => {
       const since = getLastSeen();
-      const { count } = await supabase
-        .from("user_notifications")
-        .select("id", { count: "exact", head: true })
-        .is("read_at", null)
-        .gt("created_at", since);
-      return count ?? 0;
+      const [personal, notices, reads] = await Promise.all([
+        supabase.from("user_notifications").select("id", { count: "exact", head: true }).is("read_at", null).gt("created_at", since),
+        // RLS limits notices to those meant for this resident.
+        supabase.from("notices").select("id").eq("status", "published").gt("publish_at", since).lte("publish_at", new Date().toISOString()).limit(50),
+        supabase.from("notice_reads").select("notice_id").gt("read_at", since),
+      ]);
+      const readSet = new Set((reads.data ?? []).map((r) => r.notice_id as string));
+      const unreadNotices = (notices.data ?? []).filter((n) => !readSet.has(n.id as string)).length;
+      return (personal.count ?? 0) + unreadNotices;
     },
   });
 

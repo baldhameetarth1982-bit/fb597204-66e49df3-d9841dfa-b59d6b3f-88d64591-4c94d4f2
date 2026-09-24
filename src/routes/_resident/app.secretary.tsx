@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  AlertTriangle, ArrowUp, BookOpen, ChevronLeft, Clock, FileSearch, Landmark, Lock, Megaphone, Phone, RotateCcw, SquarePen,
+  AlertTriangle, ArrowUp, BookOpen, FileText, HelpCircle, ChevronLeft, Clock, FileSearch, Landmark, Lock, Megaphone, Phone, RotateCcw, SquarePen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -37,8 +37,8 @@ const SUGGESTIONS = [
   "How do I book the clubhouse?",
 ];
 
-const KIND_ICON = { bylaws: BookOpen, notice: Megaphone, contacts: Phone } as const;
-const KIND_LABEL = { bylaws: "By-laws", notice: "Notice", contacts: "Contacts" } as const;
+const KIND_ICON = { bylaws: BookOpen, notice: Megaphone, contacts: Phone, document: FileText, faq: HelpCircle } as const;
+const KIND_LABEL = { bylaws: "By-laws", notice: "Notice", contacts: "Contacts", document: "Document", faq: "FAQ" } as const;
 const RETRYABLE = new Set(["ai_unavailable", "retrieval_failed", "rate_limited"]);
 
 function storageKey(uid?: string) {
@@ -243,11 +243,12 @@ function EmptyState({ onPick, disabled }: { onPick: (s: string) => void; disable
           ))}
         </div>
       </div>
-      <div className="grid grid-cols-3 gap-2 text-center">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
         {([
           ["/app/bylaws", BookOpen, "By-laws"],
           ["/app/notices", Megaphone, "Notices"],
           ["/app/contacts", Phone, "Contacts"],
+          ["/app/documents", FileText, "Documents"],
         ] as const).map(([to, Icon, label]) => (
           <Link key={to} to={to} className="min-h-11 rounded-xl border p-3 flex flex-col items-center gap-1 text-xs hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <Icon className="h-4 w-4 text-primary" />{label}
@@ -311,7 +312,7 @@ function AnswerBlock({ r }: { r: Extract<AskSecretaryResult, { ok: true }>["data
                     <p className="text-xs text-muted-foreground line-clamp-3 break-words">{c.excerpt}</p>
                     {c.href && (
                       <Link to={c.href as "/app/bylaws"} className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:underline underline-offset-2">
-                        Open {KIND_LABEL[c.kind].toLowerCase()} →
+                        Open {c.kind === "faq" ? "FAQs" : KIND_LABEL[c.kind].toLowerCase()} →
                       </Link>
                     )}
                   </li>

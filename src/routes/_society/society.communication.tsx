@@ -74,7 +74,7 @@ function CommunicationCenter() {
         <SectionCard title="Channels">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             <ChannelTile to="/society/announcements" icon={Megaphone} label="Notices" count={counts?.notices} tone="ok" />
-            <ChannelTile to="/society/bylaws" icon={FileText} label="Documents" tone="info" />
+            <ChannelTile to="/society/knowledge" icon={FileText} label="Documents" tone="info" />
             <ChannelTile to="/society/contacts" icon={PhoneIcon} label="Contacts" count={counts?.contacts} tone="neutral" />
             <ChannelTile to="/society/polls" icon={Vote} label="Polls" tone="warn" />
           </div>
@@ -86,7 +86,7 @@ function CommunicationCenter() {
               <Link to="/society/announcements"><Megaphone className="h-4 w-4" /><span className="text-xs">New Notice</span></Link>
             </Button>
             <Button asChild variant="outline" className="rounded-xl h-auto py-3 flex-col gap-1.5">
-              <Link to="/society/bylaws"><FileText className="h-4 w-4" /><span className="text-xs">Upload Doc</span></Link>
+              <Link to="/society/knowledge"><FileText className="h-4 w-4" /><span className="text-xs">Upload Doc</span></Link>
             </Button>
             <Button asChild variant="outline" className="rounded-xl h-auto py-3 flex-col gap-1.5">
               <Link to="/society/contacts"><PhoneIcon className="h-4 w-4" /><span className="text-xs">Contacts</span></Link>

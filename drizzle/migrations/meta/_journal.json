@@ -176,6 +176,13 @@
       "when": 1790213374801,
       "tag": "0024_lock_income_category_review_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1790216410543,
+      "tag": "0025_society_knowledge_sources",
+      "breakpoints": true
     }
   ]
 }

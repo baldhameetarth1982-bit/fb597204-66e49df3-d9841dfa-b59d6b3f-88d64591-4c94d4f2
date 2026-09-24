@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { ErrorState } from "@/components/system/ErrorState";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -46,7 +47,7 @@ function ResidentsPage() {
   const [filter, setFilter] = useState<Filter>("all");
   const [assignTarget, setAssignTarget] = useState<{ id: string; full_name: string | null } | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     enabled: !!societyId,
     queryKey: ["society-residents", societyId],
     queryFn: async () => list({ data: { societyId: societyId! } }),
@@ -250,6 +251,12 @@ function ResidentsPage() {
           <div className="flex justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
+        ) : isError ? (
+          <ErrorState
+            title="Couldn't load residents"
+            description="Please check your connection and try again."
+            onRetry={() => void refetch()}
+          />
         ) : filter === "vacant" ? (
           vacantFlats.length === 0 ? (
             <EmptyState icon={Home} title="No vacant houses" description="Every house is occupied." />

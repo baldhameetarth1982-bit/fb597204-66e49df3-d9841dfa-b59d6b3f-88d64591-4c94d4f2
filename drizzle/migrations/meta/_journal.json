@@ -267,6 +267,13 @@
       "when": 1790330353222,
       "tag": "0037_fix_commit_migration_job_units_vehicles_family",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1790330456641,
+      "tag": "0038_grant_commit_migration_job_authenticated",
+      "breakpoints": true
     }
   ]
 }

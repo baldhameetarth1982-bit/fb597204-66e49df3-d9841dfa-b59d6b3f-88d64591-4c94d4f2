@@ -197,6 +197,13 @@
       "when": 1790308386199,
       "tag": "0027_fix_list_society_residents_page_admin_check",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1790308412335,
+      "tag": "0028_add_single_arg_society_admin_check",
+      "breakpoints": true
     }
   ]
 }

@@ -1,22 +1,28 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, UserCheck, Plus, Check, X } from "lucide-react";
+import { Loader2, UserCheck, Plus, Check, X, LogOut } from "lucide-react";
+import { StatusChip, SummaryStrip, ListSkeleton, LoadError, ListEmpty, SearchField, SegmentedFilter } from "@/components/people/PeopleUI";
+import { SectionLabel } from "@/components/comm/CommUI";
+import { gateErrorMessage } from "@/lib/visitors";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useSocietyId } from "@/hooks/useSocietyId";
-import { PageHeader, PageShell, EmptyState } from "@/components/shared/PageHeader";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { PageHeader, PageShell } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_society/society/visitors")({
-  head: () => ({ meta: [{ title: "Visitors — SociyoHub" }] }),
+  head: () => ({ meta: [
+    { title: "Visitor log — SociyoHub" },
+    { name: "description", content: "Gate activity: waiting, inside and completed visits." },
+    { property: "og:title", content: "Visitor log — SociyoHub" },
+    { property: "og:description", content: "Gate activity: waiting, inside and completed visits." },
+  ] }),
   component: () => (<FeatureGate feature="visitors"><SocietyVisitors /></FeatureGate>),
 });
 
@@ -45,16 +51,20 @@ function SocietyVisitors() {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [denyFor, setDenyFor] = useState<V | null>(null);
   const [form, setForm] = useState({ visitor_name: "", phone: "", vehicle_number: "", purpose: "", flat_number: "" });
 
   async function load() {
     if (!societyId) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("visitors")
       .select("id, visitor_name, phone, vehicle_number, purpose, entry_at, exit_at, flat_number, status, pre_approved")
       .eq("society_id", societyId)
       .order("entry_at", { ascending: false })
       .limit(200);
+    if (error) { setLoadFailed(true); setLoading(false); return; }
+    setLoadFailed(false);
     setList((data as V[]) ?? []);
     setLoading(false);
   }
@@ -95,7 +105,7 @@ function SocietyVisitors() {
       status: "approved",
     });
     setSaving(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(gateErrorMessage(error));
     toast.success("Visitor logged");
     setForm({ visitor_name: "", phone: "", vehicle_number: "", purpose: "", flat_number: "" });
     setOpen(false);
@@ -104,18 +114,18 @@ function SocietyVisitors() {
 
   async function approve(id: string) {
     const { error } = await supabase.from("visitors").update({ status: "approved" }).eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(gateErrorMessage(error));
     toast.success("Approved");
     void load();
   }
   async function reject(id: string) {
     const { error } = await supabase.from("visitors").update({ status: "rejected", exit_at: new Date().toISOString() }).eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(gateErrorMessage(error));
     void load();
   }
   async function markExit(id: string) {
     const { error } = await supabase.from("visitors").update({ exit_at: new Date().toISOString() }).eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(gateErrorMessage(error));
     void load();
   }
 

@@ -45,43 +45,88 @@ const DEFAULTS: Settings = {
 function BillingSettingsPage() {
   const { societyId, loading: sidLoading } = useSocietyId();
   const [form, setForm] = useState<Settings>(DEFAULTS);
+  const [baseline, setBaseline] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [missing, setMissing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [gatewayConfigured, setGatewayConfigured] = useState<boolean | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
-    if (!societyId) return;
+    if (!societyId) { if (!sidLoading) setLoading(false); return; }
+    let cancelled = false;
+    setLoading(true);
+    setLoadError(false);
+    setMissing(false);
     (async () => {
-      const [settingsRes, platformRes] = await Promise.all([
-        supabase
-          .from("society_settings")
-          .select("maintenance_frequency,maintenance_due_day,grace_days,late_fee_amount,late_fee_type,financial_year_start_month")
-          .eq("society_id", societyId)
-          .maybeSingle(),
-        supabase.from("platform_settings").select("razorpay_configured").maybeSingle(),
-      ]);
-      if (settingsRes.data) {
-        setForm({
+      const settingsRes = await supabase
+        .from("society_settings")
+        .select("maintenance_frequency,maintenance_due_day,grace_days,late_fee_amount,late_fee_type,financial_year_start_month")
+        .eq("society_id", societyId)
+        .maybeSingle();
+      if (cancelled) return;
+      if (settingsRes.error) {
+        setLoadError(true);
+        setBaseline(null);
+      } else if (!settingsRes.data) {
+        // No settings row visible: never show or save defaults as if they were real.
+        setMissing(true);
+        setBaseline(null);
+      } else {
+        const next: Settings = {
           maintenance_frequency: settingsRes.data.maintenance_frequency ?? DEFAULTS.maintenance_frequency,
           maintenance_due_day: settingsRes.data.maintenance_due_day ?? DEFAULTS.maintenance_due_day,
           grace_days: settingsRes.data.grace_days ?? DEFAULTS.grace_days,
           late_fee_amount: Number(settingsRes.data.late_fee_amount ?? 0),
           late_fee_type: settingsRes.data.late_fee_type ?? DEFAULTS.late_fee_type,
           financial_year_start_month: settingsRes.data.financial_year_start_month ?? DEFAULTS.financial_year_start_month,
-        });
+        };
+        setForm(next);
+        setBaseline(next);
       }
-      setGatewayConfigured(platformRes.data?.razorpay_configured ?? null);
       setLoading(false);
     })();
-  }, [societyId]);
+    return () => { cancelled = true; };
+  }, [societyId, sidLoading, reloadKey]);
+
+  const policyLoaded = baseline !== null && !loadError;
+  const dirty = policyLoaded && JSON.stringify(form) !== JSON.stringify(baseline);
+
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
+
+  function validate(f: Settings): string | null {
+    if (!Number.isInteger(f.maintenance_due_day) || f.maintenance_due_day < 1 || f.maintenance_due_day > 28)
+      return "Due day must be a whole number from 1 to 28.";
+    if (!Number.isInteger(f.grace_days) || f.grace_days < 0 || f.grace_days > 30)
+      return "Grace period must be a whole number from 0 to 30 days.";
+    if (!Number.isFinite(f.late_fee_amount) || f.late_fee_amount < 0)
+      return "Late fee can't be negative.";
+    if (f.late_fee_type === "percent" && f.late_fee_amount > 100)
+      return "A percentage late fee can't be more than 100%.";
+    return null;
+  }
 
   async function save() {
-    if (!societyId) return;
+    if (!societyId || !policyLoaded || saving || !dirty) return;
+    const problem = validate(form);
+    if (problem) return toast.error(problem);
     setSaving(true);
-    const { error } = await supabase.from("society_settings").update(form).eq("society_id", societyId);
+    const { data, error } = await supabase
+      .from("society_settings")
+      .update(form)
+      .eq("society_id", societyId)
+      .select("society_id");
     setSaving(false);
-    if (error) return toast.error(error.message);
-    toast.success("Billing settings saved");
+    if (error) return toast.error(toSafeFinanceMessage(error, "Couldn't save. Your changes are still here — please try again."));
+    if (!data || data.length === 0)
+      return toast.error("Only Society Admins can change billing settings. Nothing was saved.");
+    setBaseline(form);
+    toast.success("Billing policy saved");
   }
 
   if (sidLoading || loading) {
@@ -97,7 +142,7 @@ function BillingSettingsPage() {
       <MobileHero
         eyebrow="Billing centre"
         title="Billing settings"
-        subtitle="Payment methods, billing cycle, grace period, late fees, and auto-billing."
+        subtitle="Society-wide rules for billing cycle, due dates, grace period, late fees and auto-billing."
         icon={SlidersHorizontal}
         variant="teal"
       />
@@ -106,6 +151,10 @@ function BillingSettingsPage() {
           <BillingCenterTabs />
         </div>
 
+      <p className="text-xs text-muted-foreground px-1">
+        These settings apply to every home in your society. Only Society Admins can change them.
+        Bills already issued keep the amounts and dates they were created with.
+      </p>
 
       {/* Payment collection */}
       <Card className="rounded-2xl mb-4">
@@ -116,22 +165,12 @@ function BillingSettingsPage() {
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold">Maintenance payment methods</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Residents can pay by <b>Cash</b> or <b>Bank Transfer</b>. Bank transfers are marked
-              <span className="whitespace-nowrap"> "Pending verification" </span>
-              until you confirm the receipt.
-            </p>
-            <p className="text-xs text-muted-foreground mt-2">
-              Want online collection (UPI / cards / net-banking) for your society?
-              {" "}
-              <a href="mailto:support@sociohub.live" className="text-primary font-medium underline">
-                Contact SociyoHub Support
-              </a>
-              {" "}to enable online payments.
+              Residents can pay by <b>Cash</b> or <b>Bank Transfer</b>. Each payment stays
+              <span className="whitespace-nowrap"> "Awaiting verification" </span>
+              until a committee member confirms it, and a receipt is issued only after that.
             </p>
           </div>
-          <StatusChip tone={gatewayConfigured ? "success" : "warning"}>
-            {gatewayConfigured ? "Online enabled" : "Offline only"}
-          </StatusChip>
+          <StatusChip tone="success">Cash + Bank Transfer</StatusChip>
         </CardContent>
       </Card>
 

@@ -298,8 +298,12 @@ function AutoBillingSection({ societyId }: { societyId: string }) {
   const [lateFeeType, setLateFeeType] = useState<"none" | "flat" | "percent">("none");
   const [lateFeeValue, setLateFeeValue] = useState("0");
   const [prorate, setProrate] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [reload, setReload] = useState(0);
 
   useEffect(() => {
+    setLoading(true);
+    setLoadFailed(false);
     (async () => {
       try {
         const { schedule } = await get({ data: { societyId } });
@@ -315,12 +319,21 @@ function AutoBillingSection({ societyId }: { societyId: string }) {
           setProrate(schedule.prorate);
           setEnabled(schedule.enabled);
         }
-      } catch (e: any) { toast.error(e.message); }
+      } catch {
+        // Never let defaults be saved over a schedule we couldn't read.
+        setLoadFailed(true);
+      }
       setLoading(false);
     })();
-  }, [societyId]);
+  }, [societyId, reload]);
 
   async function handleSave() {
+    if (loadFailed || saving) return;
+    const amt = Number(amount), anchor = Number(anchorDay), offset = Number(dueOffsetDays), lf = Number(lateFeeValue);
+    if (!Number.isFinite(amt) || amt <= 0) return toast.error("Enter a billing amount above ₹0.");
+    if (!Number.isInteger(anchor) || anchor < 1 || anchor > 28) return toast.error("Billing day must be from 1 to 28.");
+    if (!Number.isInteger(offset) || offset < 0 || offset > 60) return toast.error("Days until due must be from 0 to 60.");
+    if (!Number.isFinite(lf) || lf < 0 || (lateFeeType === "percent" && lf > 100)) return toast.error("Enter a valid late fee.");
     setSaving(true);
     try {
       const res = await save({
@@ -332,21 +345,23 @@ function AutoBillingSection({ societyId }: { societyId: string }) {
           prorate, enabled,
         },
       });
-      toast.success("Auto-billing saved. Next run " + new Date(res.nextRunAt).toLocaleDateString());
+      toast.success("Auto-billing saved. Next run " + new Date(res.nextRunAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }));
       const { schedule } = await get({ data: { societyId } });
       setSch(schedule);
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e) { toast.error(toSafeFinanceMessage(e, "Couldn't save auto-billing. Your changes are still here — please try again.")); }
     setSaving(false);
   }
 
   async function handleRun() {
+    if (running) return;
+    if (!window.confirm("Generate this cycle's bills for all billable homes now? Homes already billed for this cycle are skipped.")) return;
     setRunning(true);
     try {
       const res = await runNow({ data: { societyId } });
       toast.success(`Generated ${res.count} bills · ₹${res.total.toLocaleString("en-IN")}`);
       const { schedule } = await get({ data: { societyId } });
       setSch(schedule);
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e) { toast.error(toSafeFinanceMessage(e, "Couldn't generate bills. Please try again.")); }
     setRunning(false);
   }
 
@@ -354,6 +369,21 @@ function AutoBillingSection({ societyId }: { societyId: string }) {
     return (
       <Card className="rounded-2xl">
         <CardContent className="p-6 flex items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></CardContent>
+      </Card>
+    );
+  }
+
+  if (loadFailed) {
+    return (
+      <Card className="rounded-2xl">
+        <CardContent className="p-2">
+          <ErrorState
+            title="Couldn't load auto-billing"
+            description="Nothing has been changed. Your saved schedule is safe."
+            onRetry={() => setReload((k) => k + 1)}
+            showSupport={false}
+          />
+        </CardContent>
       </Card>
     );
   }

@@ -6,10 +6,7 @@ import { ShieldCheck, Loader2, Plus, Crown, Building2, UserCog, ShieldAlert, Eye
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { supabase } from "@/integrations/supabase/client";
 import { EmptyState } from "@/components/shared/PageHeader";
-import { MobileHero } from "@/components/shared/MobileHero";
-import { StatPill, StatPillRow } from "@/components/shared/StatPill";
-import { SectionCard } from "@/components/shared/SectionCard";
-import { ListCard, ListCardGroup } from "@/components/shared/ListCard";
+import { SettingsShell, SettingsSection, SettingsDisclosure } from "@/components/settings/SettingsUI";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -172,145 +169,135 @@ function TeamPage() {
 
   if (!sidLoading && !societyId) {
     return (
-      <div className="pb-[calc(96px+env(safe-area-inset-bottom))]">
-        <MobileHero eyebrow="Society Admin" title="Team & Roles" icon={ShieldCheck} variant="teal" />
-        <div className="px-4 pt-4 max-w-5xl mx-auto md:px-8">
-          <EmptyState icon={ShieldCheck} title="Set up your society first" />
-        </div>
-      </div>
+      <SettingsShell title="Team & roles" scope="Whole society" icon={ShieldCheck}>
+        <EmptyState icon={ShieldCheck} title="Set up your society first" />
+      </SettingsShell>
     );
   }
 
+  const active = members.filter((m) => m.is_active);
+  const inactive = members.filter((m) => !m.is_active);
+  const renderMember = (m: Member) => {
+    const isSelf = m.user_id === user?.id;
+    const busy = busyRoleId === m.role_id;
+    return (
+      <li key={m.role_id} className="flex flex-wrap items-center gap-3 py-3">
+        <Avatar className="h-11 w-11">
+          <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">{initials(m.full_name)}</AvatarFallback>
+        </Avatar>
+        <div className="min-w-0 flex-1">
+          <p className="flex items-center gap-1 font-medium">
+            {m.role === "society_admin" && <Crown className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />}
+            <span className="truncate">{m.full_name}</span>
+            {isSelf && <span className="shrink-0 text-xs font-normal text-muted-foreground">(you)</span>}
+          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            <Badge variant="secondary" className="rounded-md text-xs">{ROLE_LABELS[m.role as Role]}</Badge>
+            {m.block_names.map((bn) => (
+              <Badge key={bn} variant="outline" className="rounded-md text-xs"><Building2 className="mr-1 h-3 w-3" />{bn}</Badge>
+            ))}
+            {!m.is_active && <Badge variant="outline" className="rounded-md text-xs text-muted-foreground">Inactive</Badge>}
+          </div>
+        </div>
+        <Button
+          size="sm"
+          variant={m.is_active ? "ghost" : "outline"}
+          disabled={!!busyRoleId}
+          onClick={() => (m.is_active ? setConfirmTarget(m) : handleToggleActive(m))}
+          className={"h-11 min-w-[44px] rounded-xl " + (m.is_active ? "text-destructive hover:bg-destructive/10 hover:text-destructive" : "")}
+          aria-label={`${m.is_active ? "Deactivate" : "Reactivate"} ${m.full_name}`}
+        >
+          {busy && <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />}
+          {m.is_active ? "Deactivate" : "Reactivate"}
+        </Button>
+      </li>
+    );
+  };
+
   return (
-    <div className="pb-[calc(96px+env(safe-area-inset-bottom))]">
-      <MobileHero
-        eyebrow="Society Admin"
-        title="Team & Roles"
-        subtitle="Assign roles, manage block scope, and control what residents can see."
-        icon={ShieldCheck}
-        variant="teal"
-        action={
-          <AssignDialog
-            blocks={blocks}
-            structureMode={structureMode}
-            fnCandidates={fnCandidates}
-            fnUpsert={fnUpsert}
-            societyId={societyId!}
-            onDone={() => societyId && loadAll(societyId)}
+    <>
+    <SettingsShell
+      title="Team & roles"
+      scope="Whole society"
+      icon={ShieldCheck}
+      description="Who helps run the society, what each person can do, and what residents can see."
+      action={
+        <AssignDialog
+          blocks={blocks}
+          structureMode={structureMode}
+          fnCandidates={fnCandidates}
+          fnUpsert={fnUpsert}
+          societyId={societyId!}
+          onDone={() => societyId && loadAll(societyId)}
+        />
+      }
+    >
+      <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {[
+          ["Active team", activeMembers.length],
+          ["Society admins", chairmanCount],
+          ["Block admins", blockAdminCount],
+          ["Guards", securityCount],
+        ].map(([label, n]) => (
+          <div key={label as string} className="rounded-xl border bg-card p-3">
+            <dt className="text-xs text-muted-foreground">{label}</dt>
+            <dd className="text-xl font-semibold tabular-nums">{stat(n as number)}</dd>
+          </div>
+        ))}
+      </dl>
+
+      <SettingsSection title="Team members" icon={UserCog}
+        description="Deactivating removes access straight away but keeps history. The last Society Admin can't be removed.">
+        {loading ? (
+          <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        ) : loadError ? (
+          <ErrorState
+            title="Couldn't load your team"
+            description="Your team and settings are safe. Check your connection and try again."
+            onRetry={() => societyId && loadAll(societyId)}
+            showSupport={false}
           />
-        }
-        stats={
-          <StatPillRow>
-            <StatPill label="Active team" value={stat(activeMembers.length)} />
-            <StatPill label="Society admins" value={stat(chairmanCount)} />
-            <StatPill label="Block admins" value={stat(blockAdminCount)} />
-            <StatPill label="Guards" value={stat(securityCount)} />
-          </StatPillRow>
-        }
-      />
+        ) : members.length === 0 ? (
+          <EmptyState icon={ShieldCheck} title="No team roles yet" description="Promote residents to delegate management of blocks or security." />
+        ) : (
+          <>
+            {active.length === 0 ? (
+              <p className="py-3 text-sm text-muted-foreground">No active team members.</p>
+            ) : (
+              <ul className="divide-y">{active.map(renderMember)}</ul>
+            )}
+            {inactive.length > 0 && (
+              <details className="mt-2 rounded-xl border">
+                <summary className="flex min-h-11 cursor-pointer items-center px-3 text-sm font-medium">
+                  Inactive ({inactive.length})
+                </summary>
+                <ul className="divide-y border-t px-3">{inactive.map(renderMember)}</ul>
+              </details>
+            )}
+          </>
+        )}
+      </SettingsSection>
 
-      <div className="px-4 pt-4 space-y-4 max-w-5xl mx-auto md:px-8">
-        <SectionCard title={statsReady ? `Team members · ${members.length}` : "Team members"} bodyClassName="p-0">
-          {loading ? (
-            <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-          ) : loadError ? (
-            <div className="p-4">
-              <ErrorState
-                title="Couldn't load your team"
-                description="Your team and settings are safe. Check your connection and try again."
-                onRetry={() => societyId && loadAll(societyId)}
-                showSupport={false}
-              />
-            </div>
-          ) : members.length === 0 ? (
-            <div className="p-6">
-              <EmptyState icon={ShieldCheck} title="No team roles yet" description="Promote residents to delegate management of blocks or security." />
-            </div>
-          ) : (
-            <ListCardGroup>
-              {members.map((m) => {
-                const isSelf = m.user_id === user?.id;
-                const busy = busyRoleId === m.role_id;
-                return (
-                <ListCard
-                  key={m.role_id}
-                  leading={
-                    <Avatar className="h-11 w-11">
-                      <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
-                        {initials(m.full_name)}
-                      </AvatarFallback>
-                    </Avatar>
-                  }
-                  title={
-                    <span className="flex items-center gap-1 min-w-0">
-                      {m.role === "society_admin" && <Crown className="h-3.5 w-3.5 text-primary shrink-0" />}
-                      <span className="truncate">{m.full_name}</span>
-                      {isSelf && <span className="text-xs font-normal text-muted-foreground shrink-0">(you)</span>}
-                    </span>
-                  }
-                  subtitle={
-                    <span className="flex items-center gap-1.5 flex-wrap">
-                      <Badge variant="secondary" className="rounded-md text-[10px]">{ROLE_LABELS[m.role as Role]}</Badge>
-                      {m.block_names.map((bn) => (
-                        <Badge key={bn} variant="outline" className="rounded-md text-[10px]">
-                          <Building2 className="h-3 w-3 mr-1" />{bn}
-                        </Badge>
-                      ))}
-                      {!m.is_active && (
-                        <Badge variant="outline" className="rounded-md text-[10px] border-destructive/40 text-destructive">
-                          Inactive
-                        </Badge>
-                      )}
-                    </span>
-                  }
-                  trailing={
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      disabled={!!busyRoleId}
-                      onClick={() => (m.is_active ? setConfirmTarget(m) : handleToggleActive(m))}
-                      className="h-11 min-w-[44px] text-xs"
-                      aria-label={`${m.is_active ? "Deactivate" : "Reactivate"} ${m.full_name}`}
-                    >
-                      {busy && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />}
-                      {m.is_active ? "Deactivate" : "Reactivate"}
-                    </Button>
-                  }
-                />
-                );
-              })}
-            </ListCardGroup>
-          )}
-        </SectionCard>
+      <SettingsSection title="Resident privacy" icon={EyeOff}
+        description="What residents can see about each other and the society. Changes apply to everyone and are recorded.">
+        {loading ? (
+          <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+        ) : loadError ? (
+          <p className="text-sm text-muted-foreground">
+            Privacy settings couldn't be loaded, so they can't be changed right now. Use "Try again" above.
+          </p>
+        ) : (
+          <PrivacyControls value={privacy} saving={savingPrivacy} onSave={handlePrivacySave} />
+        )}
+      </SettingsSection>
 
-        <SectionCard
-          title="Privacy & Transparency"
-          description="Control what residents can see. Changes are audited."
-          icon={EyeOff}
-        >
-          {loading ? (
-            <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
-          ) : loadError ? (
-            <p className="text-sm text-muted-foreground">
-              Privacy settings couldn't be loaded, so they can't be changed right now. Use "Try again" above.
-            </p>
-          ) : (
-            <PrivacyControls
-              value={privacy}
-              saving={savingPrivacy}
-              onSave={handlePrivacySave}
-            />
-          )}
-        </SectionCard>
-
-        <SectionCard
-          title="Role permissions"
-          description="What each role can do. Roles are separate from your subscription plan — a plan decides which features your society has; a role decides who can use them."
-          icon={UserCog}
-        >
-          <RolePermissionPreview />
-        </SectionCard>
-      </div>
+      <SettingsDisclosure
+        title="What each role can do"
+        description="Roles decide who can use a feature; your plan decides which features the society has."
+      >
+        <RolePermissionPreview />
+      </SettingsDisclosure>
+    </SettingsShell>
 
       <AlertDialog open={!!confirmTarget} onOpenChange={(o) => !o && !busyRoleId && setConfirmTarget(null)}>
         <AlertDialogContent>
@@ -336,7 +323,7 @@ function TeamPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 }
 
@@ -414,8 +401,8 @@ function AssignDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="rounded-xl h-9 bg-white/15 hover:bg-white/25 text-white border-0">
-          <Plus className="h-4 w-4 mr-1" /> Assign
+        <Button className="h-11 w-full rounded-xl sm:w-auto">
+          <Plus className="h-4 w-4 mr-1" /> Assign a role
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md rounded-2xl p-6">

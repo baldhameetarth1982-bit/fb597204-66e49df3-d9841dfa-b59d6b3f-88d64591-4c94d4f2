@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { BillingConfigCard } from "@/components/billing/BillingConfigCard";
 
-export const Route = createFileRoute("/_society/society/bill-studio")({
+export const Route = createFileRoute("/_society/society/bill-studio/")({
   head: () => ({
     meta: [
       { title: "Bill Templates — SociyoHub" },

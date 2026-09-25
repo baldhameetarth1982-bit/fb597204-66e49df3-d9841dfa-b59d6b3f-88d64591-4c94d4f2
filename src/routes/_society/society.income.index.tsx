@@ -61,7 +61,7 @@ interface CategoryItem {
   created_at: string;
 }
 
-export const Route = createFileRoute("/_society/society/income")({
+export const Route = createFileRoute("/_society/society/income/")({
   head: () => ({
     meta: [
       { title: "Income & Collections — SociyoHub" },

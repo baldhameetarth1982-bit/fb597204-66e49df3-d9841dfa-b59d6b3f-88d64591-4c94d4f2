@@ -10,7 +10,7 @@ import { getResidentBills } from "@/lib/billing-generate.functions";
 import { getBillDisplayStatus } from "@/lib/bill-display-status";
 import { toSafeFinanceError } from "@/lib/finance-safe-error";
 
-export const Route = createFileRoute("/_resident/app/bills")({
+export const Route = createFileRoute("/_resident/app/bills/")({
   head: () => ({ meta: [{ title: "Bills — SociyoHub" }] }),
   component: BillsScreen,
 });

@@ -16,7 +16,7 @@ import {
 import { statusLabel, formatCurrency } from "@/lib/no-dues-labels";
 import { useSocietyId } from "@/hooks/useSocietyId";
 
-export const Route = createFileRoute("/_society/society/no-dues")({
+export const Route = createFileRoute("/_society/society/no-dues/")({
   head: () => ({
     meta: [
       { title: "No-Dues Requests — SociyoHub" },

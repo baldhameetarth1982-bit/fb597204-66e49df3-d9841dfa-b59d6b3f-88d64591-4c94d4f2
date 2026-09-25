@@ -10,22 +10,20 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <header className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
+    <header className="mb-6 flex flex-col gap-4 border-b border-border pb-5 md:mb-8 md:flex-row md:items-end md:justify-between">
+      <div className="min-w-0">
+        <h1 className="text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">{title}</h1>
         {description && (
-          <p className="mt-1 text-muted-foreground">{description}</p>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</p>
         )}
       </div>
-      {actions && <div className="flex gap-2">{actions}</div>}
+      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
     </header>
   );
 }
 
 export function PageShell({ children }: { children: ReactNode }) {
-  return (
-    <div className="px-4 md:px-8 py-6 md:py-10 max-w-7xl mx-auto">{children}</div>
-  );
+  return <div className="container-page py-6 md:py-10">{children}</div>;
 }
 
 export function EmptyState({

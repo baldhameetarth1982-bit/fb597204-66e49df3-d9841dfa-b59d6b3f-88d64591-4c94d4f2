@@ -274,172 +274,136 @@ function FeedScreen() {
     );
   }
 
+  const composer = (
+    <section aria-label="Write a post" className="rounded-2xl border bg-card p-3">
+      <label htmlFor="feed-compose" className="sr-only">Share something with your neighbours</label>
+      <Textarea
+        id="feed-compose"
+        value={body}
+        onChange={(e) => setBody(e.target.value.slice(0, 4000))}
+        placeholder="Share something with your neighbours…"
+        className="min-h-[72px] resize-none rounded-xl border-0 px-2 focus-visible:ring-0"
+      />
+      {imagePreview && (
+        <div className="relative mt-2 overflow-hidden rounded-xl">
+          <img src={imagePreview} alt="Selected photo" className="max-h-64 w-full object-cover" />
+          <button type="button" aria-label="Remove photo"
+            onClick={() => { pickImage(null); if (fileRef.current) fileRef.current.value = ""; }}
+            className="absolute right-2 top-2 grid h-11 w-11 place-items-center rounded-full bg-background/90">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+      <div className="mt-2 flex items-center justify-between gap-2 border-t pt-2">
+        <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden onChange={(e) => pickImage(e.target.files?.[0] ?? null)} />
+        <Button variant="ghost" onClick={() => fileRef.current?.click()} className="h-11 rounded-xl text-muted-foreground">
+          <ImageIcon className="mr-1.5 h-4 w-4" /> Photo
+        </Button>
+        <span className="ml-auto text-xs tabular-nums text-muted-foreground">{body.length > 3500 ? `${body.length}/4000` : ""}</span>
+        <Button onClick={submitPost} disabled={!body.trim() || posting} className="h-11 rounded-xl px-5">
+          {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          <span className="ml-1.5">{posting ? "Posting…" : "Post"}</span>
+        </Button>
+      </div>
+    </section>
+  );
+
   return (
-    <div className="px-4 py-5 space-y-4 pb-24">
-      <header className="px-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Community</h1>
-        <p className="text-sm text-muted-foreground">Posts shared by residents of your society</p>
+    <div className="mx-auto w-full max-w-5xl px-4 pb-28 pt-5 md:px-8 md:pt-8">
+      <header className="mb-5">
+        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Community</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Conversations between residents of your society</p>
       </header>
 
-      <Link
-        to="/app/notices"
-        className="flex items-center gap-3 rounded-2xl border bg-card px-4 py-3 min-h-[52px] hover:bg-muted/50 transition-colors"
-      >
-        <Megaphone className="h-4 w-4 text-primary shrink-0" />
-        <span className="text-sm flex-1 min-w-0">
-          <span className="font-medium">Official notices</span>
-          <span className="text-muted-foreground"> from your committee are on the Notices page.</span>
-        </span>
-      </Link>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+        <div className="min-w-0 space-y-4">
+          {composer}
 
-      {digest && (
-        <Card className="rounded-2xl border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <span className="text-xs font-semibold text-primary uppercase tracking-wide">
-                AI Community Digest
-              </span>
-              <Badge variant="secondary" className="ml-auto rounded-full text-[10px]">
-                Week of {new Date(digest.week_start).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
-              </Badge>
+          {loading && posts.length === 0 ? (
+            <div className="space-y-3" aria-busy="true" aria-label="Loading posts">
+              {[0, 1, 2].map((i) => <div key={i} className="h-36 animate-pulse rounded-2xl bg-muted/60" />)}
             </div>
-            <p className="text-sm leading-relaxed whitespace-pre-line">{digest.summary}</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Composer */}
-      <Card className="rounded-2xl">
-        <CardContent className="p-3 space-y-2">
-          <Textarea
-            value={body}
-            onChange={(e) => setBody(e.target.value.slice(0, 4000))}
-            placeholder="Share something with your neighbors…"
-            className="rounded-xl resize-none min-h-[64px] border-0 focus-visible:ring-0 px-2"
-          />
-          {imagePreview && (
-            <div className="relative rounded-xl overflow-hidden">
-              <img src={imagePreview} alt="" className="w-full max-h-64 object-cover" />
-              <button
-                type="button"
-                aria-label="Remove photo"
-                onClick={() => { pickImage(null); if (fileRef.current) fileRef.current.value = ""; }}
-                className="absolute top-2 right-2 h-9 w-9 rounded-full bg-background/90 grid place-items-center"
-              >
-                <X className="h-4 w-4" />
-              </button>
+          ) : loadError ? (
+            <ErrorState title="Couldn't load the community feed" description="Check your connection and try again." onRetry={() => void load()} showSupport={false} />
+          ) : posts.length === 0 ? (
+            <div className="rounded-2xl border border-dashed bg-card px-6 py-12 text-center">
+              <MessageCircle className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
+              <p className="font-medium">No posts yet</p>
+              <p className="mt-1 text-sm text-muted-foreground">Start the conversation — say hello to your neighbours.</p>
             </div>
+          ) : (
+            <ul className="space-y-3" aria-label="Community posts">
+              {posts.map((p) => {
+                const mine = p.author_id === user?.id;
+                const canRemove = mine || isSocietyAdmin;
+                return (
+                  <li key={p.id}>
+                    <article className="overflow-hidden rounded-2xl border bg-card">
+                      <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 pt-4">
+                        <Avatar className="h-10 w-10 shrink-0">
+                          {p.author_avatar && <AvatarImage src={p.author_avatar} alt="" />}
+                          <AvatarFallback className="bg-primary/10 text-xs text-primary">{initials(p.author_name)}</AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold">{p.author_name ?? "Resident"}{mine && <span className="font-normal text-muted-foreground"> · you</span>}</p>
+                          <p className="text-xs text-muted-foreground">Resident post · {timeAgo(p.created_at)}</p>
+                        </div>
+                        {canRemove && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-11 w-11 rounded-xl text-muted-foreground" aria-label="Post options">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem className="min-h-11 text-destructive focus:text-destructive" onSelect={() => setPendingDelete(p)}>
+                                <Trash2 className="mr-2 h-4 w-4" />{mine ? "Remove my post" : "Remove post (committee)"}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                      </header>
+                      <p className="whitespace-pre-line break-words px-4 pt-3 text-[15px] leading-relaxed">{p.body}</p>
+                      {p.image_url && <img src={p.image_url} alt="Photo shared with the post" loading="lazy" className="mt-3 max-h-96 w-full object-cover" />}
+                      <footer className="mt-2 grid grid-cols-2 border-t">
+                        <button type="button" onClick={() => toggleLike(p)} disabled={likeBusy.has(p.id)} aria-pressed={p.liked}
+                          aria-label={`${p.liked ? "Unlike" : "Like"}${p.reactions ? `, ${p.reactions} likes` : ""}`}
+                          className={`flex min-h-12 items-center justify-center gap-2 text-sm font-medium transition-colors hover:bg-muted/60 ${p.liked ? "text-destructive" : "text-muted-foreground"}`}>
+                          <Heart className={`h-4 w-4 ${p.liked ? "fill-current" : ""}`} />{p.reactions ? p.reactions : "Like"}
+                        </button>
+                        <Link to="/app/feed/$postId" params={{ postId: p.id }}
+                          className="flex min-h-12 items-center justify-center gap-2 border-l text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60">
+                          <MessageCircle className="h-4 w-4" />{p.comments ? `${p.comments} comment${p.comments === 1 ? "" : "s"}` : "Comment"}
+                        </Link>
+                      </footer>
+                    </article>
+                  </li>
+                );
+              })}
+            </ul>
           )}
-          <div className="flex items-center justify-between pt-1">
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              hidden
-              onChange={(e) => pickImage(e.target.files?.[0] ?? null)}
-            />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => fileRef.current?.click()}
-              className="rounded-xl text-muted-foreground"
-            >
-              <ImageIcon className="h-4 w-4 mr-1" /> Photo
-            </Button>
-            <Button
-              onClick={submitPost}
-              disabled={!body.trim() || posting}
-              className="rounded-xl"
-              size="sm"
-            >
-              {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              <span className="ml-1.5">Post</span>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {loading && posts.length === 0 ? (
-        <div className="space-y-3" aria-busy="true" aria-label="Loading posts">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="h-32 rounded-2xl bg-muted/60 animate-pulse" />
-          ))}
-        </div>
-      ) : loadError ? (
-        <ErrorState
-          title="Couldn't load the community feed"
-          description="Check your connection and try again."
-          onRetry={() => void load()}
-          showSupport={false}
-        />
-      ) : posts.length === 0 ? (
-        <div className="text-center py-12 text-sm text-muted-foreground">
-          No posts yet. Be the first to share!
-        </div>
-      ) : (
-        posts.map((p) => (
-          <Card key={p.id} className="rounded-2xl overflow-hidden">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3 mb-2">
-                <Avatar className="h-10 w-10">
-                  {p.author_avatar && <AvatarImage src={p.author_avatar} />}
-                  <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                    {initials(p.author_name)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-sm truncate">
-                    {p.author_name ?? "Resident"}
-                    {p.author_id === user?.id && <span className="text-muted-foreground font-normal"> (you)</span>}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">{timeAgo(p.created_at)}</p>
-                </div>
-                {(p.author_id === user?.id || isSocietyAdmin) && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label={p.author_id === user?.id ? "Remove your post" : "Remove post (committee)"}
-                    onClick={() => setPendingDelete(p)}
-                    className="h-10 w-10 rounded-xl text-muted-foreground shrink-0"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-              <p className="text-sm leading-relaxed whitespace-pre-line break-words">{p.body}</p>
-              {p.image_url && (
-                <img
-                  src={p.image_url}
-                  alt=""
-                  loading="lazy"
-                  className="mt-3 -mx-4 max-h-80 w-[calc(100%+2rem)] object-cover"
-                />
-              )}
-              <div className="mt-3 flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => toggleLike(p)}
-                  disabled={likeBusy.has(p.id)}
-                  aria-pressed={p.liked}
-                  aria-label={p.liked ? "Unlike" : "Like"}
-                  className={`rounded-xl ${p.liked ? "text-red-500" : "text-muted-foreground"}`}
-                >
-                  <Heart className={`h-4 w-4 mr-1 ${p.liked ? "fill-current" : ""}`} />
-                  {p.reactions || ""}
-                </Button>
-                <Button asChild variant="ghost" size="sm" className="rounded-xl text-muted-foreground">
-                  <Link to="/app/feed/$postId" params={{ postId: p.id }}>
-                    <MessageCircle className="h-4 w-4 mr-1" />
-                    {p.comments || "Comment"}
-                  </Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))
-      )}
+        <aside className="order-first space-y-3 lg:order-none" aria-label="From your committee">
+          <Link to="/app/notices" className="flex min-h-14 items-center gap-3 rounded-2xl border border-primary/30 bg-primary-container px-4 py-3 text-primary-container-foreground transition-colors hover:opacity-90">
+            <Megaphone className="h-5 w-5 shrink-0" />
+            <span className="min-w-0 flex-1 text-sm">
+              <span className="block font-semibold">Official notices</span>
+              <span className="block opacity-80">Committee announcements live separately from resident posts.</span>
+            </span>
+          </Link>
+          {digest && (
+            <section className="rounded-2xl border bg-card p-4">
+              <p className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <Sparkles className="h-4 w-4 text-primary" /> Weekly digest
+                <span className="ml-auto font-normal normal-case">{new Date(digest.week_start).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span>
+              </p>
+              <p className="text-sm leading-relaxed whitespace-pre-line line-clamp-6 lg:line-clamp-none">{digest.summary}</p>
+              <p className="mt-2 text-xs text-muted-foreground">AI summary of recent posts — may miss details.</p>
+            </section>
+          )}
+        </aside>
+      </div>
 
       <AlertDialog open={!!pendingDelete} onOpenChange={(o) => !o && !deleting && setPendingDelete(null)}>
         <AlertDialogContent>

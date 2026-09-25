@@ -76,11 +76,11 @@ function ResidentDashboard() {
   const d = home.data;
 
   return (
-    <div className="px-4 md:px-8 py-6 md:py-10 max-w-3xl mx-auto space-y-5">
-      <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+    <div className="px-4 py-5 md:py-8 max-w-3xl mx-auto space-y-6">
+      <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border pb-5">
         <div className="min-w-0">
           <p className="text-sm text-muted-foreground">Welcome back</p>
-          <h1 className="text-2xl md:text-3xl font-semibold tracking-tight truncate">Hi {firstName}</h1>
+          <h1 className="mt-0.5 text-2xl md:text-[28px] md:leading-[34px] font-semibold tracking-tight truncate">Hi {firstName}</h1>
         </div>
         <Link
           to="/app/notifications"
@@ -93,7 +93,7 @@ function ResidentDashboard() {
       </header>
 
       {/* Dues — the most important thing for a resident. Never shows a fake ₹0. */}
-      <Card className="rounded-2xl bg-primary text-primary-foreground border-0 overflow-hidden">
+      <Card className="rounded-xl bg-primary text-primary-foreground border-0 overflow-hidden">
         <CardContent className="p-5 md:p-7" aria-busy={home.isLoading}>
           {home.isError && !d ? (
             <div role="alert" className="space-y-3">
@@ -144,7 +144,9 @@ function ResidentDashboard() {
       </Card>
 
       {/* Your activity */}
-      <section aria-label="Your activity" className="rounded-2xl border bg-card divide-y overflow-hidden">
+      <section aria-labelledby="activity-h">
+        <h2 id="activity-h" className="mb-2 text-sm font-semibold">Needs your attention</h2>
+        <div className="rounded-xl border bg-card divide-y overflow-hidden">
         <HomeRow to="/app/helpdesk" icon={LifeBuoy} label="My requests"
           value={d?.openTickets == null ? "—" : d.openTickets === 0 ? "None open" : `${d.openTickets} open`}
           hint={d?.resolvedToConfirm ? `${d.resolvedToConfirm} resolved — please confirm` : "Complaints & repairs"} />
@@ -152,10 +154,11 @@ function ResidentDashboard() {
           value={d?.visitorsToday == null ? "—" : String(d.visitorsToday)} hint="Passes & gate entries" />
         <HomeRow to="/app/notices" icon={Megaphone} label="Notices"
           value={notices.isError ? "—" : unread.length ? `${unread.length} new` : "Up to date"} hint="From your committee" />
+        </div>
       </section>
 
       {/* AI Secretary */}
-      <Link to="/app/secretary" className="group flex items-center gap-4 rounded-2xl border border-primary/25 bg-primary/5 p-4 hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+      <Link to="/app/secretary" className="group flex items-center gap-4 rounded-xl border border-primary/25 bg-primary/5 p-4 hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
         <span className="h-11 w-11 shrink-0 rounded-xl bg-primary text-primary-foreground grid place-items-center"><Bot className="h-5 w-5" /></span>
         <span className="min-w-0 flex-1">
           <span className="block font-semibold">Ask AI Secretary</span>
@@ -166,10 +169,10 @@ function ResidentDashboard() {
 
       <QuickActions />
 
-      <Card className="rounded-2xl">
+      <Card className="rounded-xl">
         <CardContent className="p-5">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold flex items-center gap-2"><Bell className="h-4 w-4 text-primary" /> Recent notices</h2>
+            <h2 className="text-sm font-semibold">Recent notices</h2>
             <Link to="/app/notices" className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:underline">View all <ArrowRight className="h-4 w-4 ml-1" /></Link>
           </div>
           {notices.isLoading ? (
@@ -211,7 +214,7 @@ function ResidentDashboard() {
 function HomeRow({ to, icon: Icon, label, value, hint }: { to: "/app/helpdesk" | "/app/visitors" | "/app/notices"; icon: any; label: string; value: string; hint: string }) {
   return (
     <Link to={to} className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-3 p-3.5 min-h-[64px] hover:bg-muted/50 focus-visible:outline-none focus-visible:bg-muted/60">
-      <span className="h-10 w-10 rounded-xl bg-primary/10 text-primary grid place-items-center"><Icon className="h-5 w-5" /></span>
+      <span className="h-10 w-10 shrink-0 rounded-lg bg-primary/10 text-primary grid place-items-center"><Icon className="h-5 w-5" /></span>
       <span className="min-w-0">
         <span className="block text-sm font-semibold truncate">{label}</span>
         <span className="block text-xs text-muted-foreground truncate">{hint}</span>
@@ -232,24 +235,24 @@ const QUICK_ACTIONS: Array<{ to: string; label: string; icon: any; tone: string 
 
 function QuickActions() {
   return (
-    <section aria-label="Quick actions">
-      <div className="grid grid-cols-4 gap-2">
-        {QUICK_ACTIONS.map((a) => {
+    <section aria-labelledby="shortcuts-h">
+      <h2 id="shortcuts-h" className="mb-2 text-sm font-semibold">Shortcuts</h2>
+      <nav className="grid grid-cols-2 overflow-hidden rounded-xl border border-border bg-card">
+        {QUICK_ACTIONS.map((a, i) => {
           const Icon = a.icon;
+          const lastRow = i >= QUICK_ACTIONS.length - (QUICK_ACTIONS.length % 2 || 2);
           return (
             <Link
               key={a.label}
               to={a.to}
-              className="flex flex-col items-center gap-1.5 rounded-2xl border bg-card p-3 min-h-[76px] justify-center hover:bg-accent/40 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className={`flex min-h-[52px] items-center gap-2.5 border-border px-3.5 text-sm font-medium hover:bg-muted/50 focus-visible:outline-none focus-visible:bg-muted/60 ${i % 2 === 0 ? "border-r" : ""} ${lastRow ? "" : "border-b"}`}
             >
-              <span className={`h-10 w-10 rounded-xl grid place-items-center ${a.tone}`}>
-                <Icon className="h-5 w-5" />
-              </span>
-              <span className="text-[11px] font-medium text-center leading-tight">{a.label}</span>
+              <Icon className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+              <span className="truncate">{a.label}</span>
             </Link>
           );
         })}
-      </div>
+      </nav>
     </section>
   );
 }

@@ -7,13 +7,10 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, PageShell } from "@/components/shared/PageHeader";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { InlineNotice, ListEmpty, ListSkeleton, LoadError, SearchField, SegmentedFilter, StatusChip, SummaryStrip } from "@/components/people/PeopleUI";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -118,7 +115,7 @@ function KnowledgeAdmin() {
           <ListSkeleton rows={4} />
         ) : q.isError || (res && !res.ok) ? (
           res && !res.ok && res.message.includes("Pro") ? (
-            <InlineNotice tone="info" title="Available on the Pro plan">{res.message}</InlineNotice>
+            <InlineNotice icon={Lock} title="Available on the Pro plan">{res.message}</InlineNotice>
           ) : (
             <LoadError title={res && !res.ok ? res.message : "Couldn't load documents."} onRetry={() => q.refetch()} />
           )

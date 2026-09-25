@@ -5,8 +5,7 @@ import { Loader2, Building2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { SettingsShell, SettingsSection, SettingsDisclosure, SaveBar } from "@/components/settings/SettingsUI";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -137,106 +136,55 @@ function BusinessProfilePage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6 space-y-6 pb-[calc(96px+env(safe-area-inset-bottom))]">
-      {societyId && <SocietyInviteCodeCard societyId={societyId} />}
+    <SettingsShell
+      title="Society information"
+      scope="Whole society"
+      icon={Building2}
+      description="Registered name and address used for the whole society. Only Society Admins can change these, and every change is recorded."
+      action={payoutReady ? (
+        <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30">
+          <ShieldCheck className="h-3 w-3 mr-1" /> Payout ready
+        </Badge>
+      ) : undefined}
+    >
+      <SettingsSection title="Registered name" description="Exactly as on your society registration certificate.">
+        <Field label="Legal business / society name *" value={form.legal_business_name}
+          onChange={(v) => setForm((s) => ({ ...s, legal_business_name: v }))} />
+      </SettingsSection>
 
-      <header className="flex items-start gap-3">
-        <div className="h-11 w-11 rounded-xl bg-primary/10 text-primary grid place-items-center shrink-0">
-          <Building2 className="h-5 w-5" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight">Society details</h1>
-          <p className="text-sm text-muted-foreground">
-            Your society's registered name and address. These apply to the whole society and only Society Admins can
-            change them. Changes are recorded in activity history.
-          </p>
-        </div>
-        {payoutReady && (
-          <Badge className="bg-emerald-500/15 text-emerald-500 border-emerald-500/30">
-            <ShieldCheck className="h-3 w-3 mr-1" /> Payout ready
-          </Badge>
-        )}
-      </header>
-
-      <Card className="rounded-2xl">
-        <CardHeader>
-          <CardTitle className="text-base">Registered details</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Field
-            label="Legal business / society name *"
-            hint="Exact name as on your society registration certificate."
-            value={form.legal_business_name}
-            onChange={(v) => setForm((s) => ({ ...s, legal_business_name: v }))}
-          />
-
+      <SettingsSection title="Registered address">
+        <div className="space-y-4">
           <div>
-            <Label>Registered address *</Label>
-            <Textarea
-              rows={2}
-              value={form.business_address}
-              onChange={(e) => setForm((s) => ({ ...s, business_address: e.target.value }))}
-              className="mt-1"
-            />
+            <Label htmlFor="bp-address">Address *</Label>
+            <Textarea id="bp-address" rows={2} value={form.business_address}
+              onChange={(e) => setForm((s) => ({ ...s, business_address: e.target.value }))} className="mt-1" />
           </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <Field
-              label="City *"
-              value={form.business_city}
-              onChange={(v) => setForm((s) => ({ ...s, business_city: v }))}
-            />
-            <Field
-              label="State *"
-              value={form.business_state}
-              onChange={(v) => setForm((s) => ({ ...s, business_state: v }))}
-            />
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field label="City *" value={form.business_city} onChange={(v) => setForm((s) => ({ ...s, business_city: v }))} />
+            <Field label="State *" value={form.business_state} onChange={(v) => setForm((s) => ({ ...s, business_state: v }))} />
+            <Field label="Pincode *" inputMode="numeric" value={form.business_pincode}
+              onChange={(v) => setForm((s) => ({ ...s, business_pincode: v.replace(/[^0-9]/g, "").slice(0, 6) }))} />
           </div>
+        </div>
+      </SettingsSection>
 
-          <div className="grid grid-cols-2 gap-3">
-            <Field
-              label="Pincode *"
-              value={form.business_pincode}
-              onChange={(v) => setForm((s) => ({ ...s, business_pincode: v.replace(/[^0-9]/g, "").slice(0, 6) }))}
-            />
-            <Field
-              label="GSTIN (optional)"
-              value={form.business_gstin}
-              onChange={(v) => setForm((s) => ({ ...s, business_gstin: v.toUpperCase().slice(0, 15) }))}
-            />
-          </div>
+      <SettingsDisclosure title="Tax details (optional)" description="GSTIN and PAN, if your society has them"
+        defaultOpen={!!(form.business_gstin || form.business_pan)}>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="GSTIN" value={form.business_gstin}
+            onChange={(v) => setForm((s) => ({ ...s, business_gstin: v.toUpperCase().slice(0, 15) }))} />
+          <Field label="PAN" hint="Format: ABCDE1234F" value={form.business_pan}
+            onChange={(v) => setForm((s) => ({ ...s, business_pan: v.toUpperCase().slice(0, 10) }))} />
+        </div>
+      </SettingsDisclosure>
 
-          <Field
-            label="PAN (optional)"
-            hint="Format: ABCDE1234F"
-            value={form.business_pan}
-            onChange={(v) => setForm((s) => ({ ...s, business_pan: v.toUpperCase().slice(0, 10) }))}
-          />
+      <SaveBar dirty={dirty} saving={saving} disabled={isFetching}
+        onSave={save} onDiscard={() => baseline && setForm(baseline)} />
 
-          <div className="flex gap-2">
-            {dirty && (
-              <Button
-                variant="outline"
-                onClick={() => baseline && setForm(baseline)}
-                disabled={saving}
-                className="min-h-[48px] rounded-xl"
-              >
-                Discard
-              </Button>
-            )}
-            <Button
-              onClick={save}
-              disabled={saving || !dirty || isFetching}
-              className="flex-1 min-h-[48px] rounded-xl"
-            >
-              {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-              {dirty ? "Save changes" : "No changes to save"}
-            </Button>
-          </div>
-          {dirty && <p className="text-xs text-muted-foreground text-center">You have unsaved changes.</p>}
-        </CardContent>
-      </Card>
-    </div>
+      <SettingsDisclosure title="Invite code" description="Share with residents so they can join this society">
+        {societyId && <SocietyInviteCodeCard societyId={societyId} />}
+      </SettingsDisclosure>
+    </SettingsShell>
   );
 }
 
@@ -245,16 +193,19 @@ function Field({
   hint,
   value,
   onChange,
+  inputMode,
 }: {
   label: string;
   hint?: string;
   value: string;
   onChange: (v: string) => void;
+  inputMode?: "numeric" | "text";
 }) {
+  const id = "bp-" + label.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   return (
     <div>
-      <Label>{label}</Label>
-      <Input value={value} onChange={(e) => onChange(e.target.value)} className="mt-1" />
+      <Label htmlFor={id}>{label}</Label>
+      <Input id={id} inputMode={inputMode} value={value} onChange={(e) => onChange(e.target.value)} className="mt-1 h-11" />
       {hint && <p className="text-[11px] text-muted-foreground mt-1">{hint}</p>}
     </div>
   );

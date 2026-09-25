@@ -239,6 +239,13 @@
       "when": 1790327945388,
       "tag": "0033_fix_finance_journal_list_ordering",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1790328342048,
+      "tag": "0034_drop_permissive_societies_insert",
+      "breakpoints": true
     }
   ]
 }

@@ -291,7 +291,14 @@ export const unitRowSchema = z.object({
   unit_label: z.string().trim().min(1).max(40),
   structure_name: z.string().trim().max(80).optional().nullable(),
   floor: z.coerce.number().int().min(-5).max(200).optional().nullable(),
-  unit_type: z.string().trim().max(40).optional().nullable(),
+  // Must match the houses table's allowed types; blank defaults to "flat".
+  unit_type: z.preprocess((v) => {
+    const t = String(v ?? "").trim().toLowerCase();
+    if (!t || ["residential", "apartment", "flat", "unit"].includes(t)) return "flat";
+    if (t === "house") return "bungalow";
+    if (["commercial", "store"].includes(t)) return "shop";
+    return t;
+  }, z.enum(["flat", "bungalow", "villa", "shop", "office"])),
   active: z.boolean().optional().default(true),
 });
 

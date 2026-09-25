@@ -162,11 +162,17 @@ export const flatOccupancyHistory = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
       .from("flat_residents")
-      .select("id, user_id, relationship, is_primary, is_active, moved_in_at, moved_out_at, ended_reason, created_at, profiles:profiles!flat_residents_user_id_fkey(full_name, phone)")
+      .select("id, user_id, relationship, is_primary, is_active, moved_in_at, moved_out_at, ended_reason, created_at")
       .eq("flat_id", data.flatId)
       .order("created_at", { ascending: false });
-    if (error) throw new Error(error.message);
-    return rows ?? [];
+    if (error) throw new Error("history_unavailable");
+    // No FK from flat_residents to profiles: look names up separately (RLS applies).
+    const ids = Array.from(new Set((rows ?? []).map((r) => r.user_id).filter(Boolean))) as string[];
+    const { data: profs } = ids.length
+      ? await context.supabase.from("profiles").select("id, full_name, phone").in("id", ids)
+      : { data: [] as { id: string; full_name: string | null; phone: string | null }[] };
+    const byId = new Map((profs ?? []).map((p) => [p.id, { full_name: p.full_name, phone: p.phone }]));
+    return (rows ?? []).map((r) => ({ ...r, profiles: byId.get(r.user_id as string) ?? null }));
   });
 
 const householdInput = z.object({ userId: z.string().uuid() });

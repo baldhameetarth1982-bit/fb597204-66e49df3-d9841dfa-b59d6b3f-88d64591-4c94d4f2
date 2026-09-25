@@ -56,6 +56,14 @@ const SafeError = z.enum([
   "occupancy_rows_unsupported",
   "structure_rows_not_allowed_serial",
 ]);
+function rowSourceKey(entity: string, d: Record<string, unknown>): string | null {
+  if (d.external_resident_key) return String(d.external_resident_key);
+  if (entity === "unit" && d.unit_label) {
+    const s = String(d.structure_name ?? "").trim();
+    return s ? `${s}::${String(d.unit_label)}` : String(d.unit_label);
+  }
+  return (d.unit_label ?? d.registration_number ?? null) as string | null;
+}
 export type SafeErrorCode = z.infer<typeof SafeError>;
 
 class MigrationError extends Error {
@@ -109,11 +117,14 @@ export const initializeMigrationUpload = createServerFn({ method: "POST" })
     }
 
     // Server-side authorization via the authenticated client.
-    const { data: canAdmin } = await supabase.rpc(
+    const { data: canAdmin, error: canErr } = await supabase.rpc(
       "current_user_can_admin_migrations",
       { _society_id: data.society_id },
     );
-    if (!canAdmin) throw new MigrationError("unavailable");
+    if (!canAdmin) {
+      if (canErr) console.error("[migration] access check failed", canErr.code, canErr.message);
+      throw new MigrationError("unavailable");
+    }
 
     // Structure mode is derived from the society record server-side — never
     // from the browser. Serial-number societies previously got "structured"
@@ -143,6 +154,7 @@ export const initializeMigrationUpload = createServerFn({ method: "POST" })
       },
     );
     if (beginErr || !beginRes || beginRes.length === 0) {
+      console.error("[migration] begin_upload failed", beginErr?.code, beginErr?.message);
       throw new MigrationError("unavailable");
     }
     const jobId = beginRes[0].job_id as string;
@@ -152,7 +164,10 @@ export const initializeMigrationUpload = createServerFn({ method: "POST" })
     const { data: signed, error: signErr } = await supabase.storage
       .from("migration-uploads")
       .createSignedUploadUrl(finalPath);
-    if (signErr || !signed) throw new MigrationError("unavailable");
+    if (signErr || !signed) {
+      console.error("[migration] signed upload url failed", signErr?.message);
+      throw new MigrationError("unavailable");
+    }
 
     return {
       job_id: jobId,
@@ -368,6 +383,22 @@ export const validateMigrationJob = createServerFn({ method: "POST" })
     let errors = 0;
     let warnings = 0;
     const seenKeys = new Set<string>();
+    const norm = (v: unknown) => String(v ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+    // Houses and active plates that already exist in this society are skipped
+    // (with a warning) so re-imports and retries never fail or duplicate data.
+    const existingUnits = new Set<string>();
+    const existingPlates = new Set<string>();
+    if (entity === "unit") {
+      const { data: fl } = await supabase
+        .from("flats").select("flat_number, blocks(name)").eq("society_id", job.society_id);
+      for (const f of (fl ?? []) as Array<{ flat_number: string; blocks: { name: string } | null }>) {
+        existingUnits.add(`${norm(f.blocks?.name)}::${norm(f.flat_number)}`);
+      }
+    } else if (entity === "vehicle") {
+      const { data: vs } = await supabase
+        .from("vehicles").select("plate_number").eq("society_id", job.society_id).eq("is_active", true);
+      for (const v of vs ?? []) existingPlates.add(String(v.plate_number).replace(/\s+/g, "").toUpperCase());
+    }
 
     for (const pr of parsedRows) {
       const values = (pr.values_json as unknown as string[]) ?? [];
@@ -384,7 +415,8 @@ export const validateMigrationJob = createServerFn({ method: "POST" })
 
       const parseResult = schema.safeParse(mapped);
       const errorCodes: string[] = [];
-      let status: "valid" | "warning" | "error" = "valid";
+      const warningCodes: string[] = [];
+      let status = "valid" as "valid" | "warning" | "error";
       let action: "create" | "match_existing" | "skip" | "conflict" = "create";
 
       if (!parseResult.success) {
@@ -395,12 +427,11 @@ export const validateMigrationJob = createServerFn({ method: "POST" })
         action = "conflict";
         errors++;
       } else {
-        // Uniqueness by source_key within a file
-        const sourceKey =
-          (parseResult.data as Record<string, unknown>).external_resident_key ??
-          (parseResult.data as Record<string, unknown>).unit_label ??
-          (parseResult.data as Record<string, unknown>).registration_number ??
-          null;
+        const d = parseResult.data as Record<string, unknown>;
+        // Commit reads `type`/`color`; keep both spellings so they aren't dropped.
+        if (entity === "vehicle") { d.type = d.vehicle_type ?? null; d.color = d.colour ?? null; }
+        // Uniqueness by source_key within a file (units are unique per structure).
+        const sourceKey = rowSourceKey(entity, d);
         if (sourceKey) {
           const key = `${entity}:${String(sourceKey).toLowerCase()}`;
           if (seenKeys.has(key)) {
@@ -412,7 +443,15 @@ export const validateMigrationJob = createServerFn({ method: "POST" })
             seenKeys.add(key);
           }
         }
+        if (status === "valid" && entity === "unit" &&
+            existingUnits.has(`${(job.structure_mode ?? "structured") === "serial" ? "" : norm(d.structure_name)}::${norm(d.unit_label)}`)) {
+          status = "warning"; action = "skip"; warningCodes.push("unit_already_exists");
+        }
+        if (status === "valid" && entity === "vehicle" && existingPlates.has(String(d.registration_number))) {
+          status = "warning"; action = "skip"; warningCodes.push("vehicle_already_registered");
+        }
         if (status === "valid") valid++;
+        else if (status === "warning") warnings++;
       }
 
       const rowChecksum = await sha256Hex(
@@ -424,12 +463,7 @@ export const validateMigrationJob = createServerFn({ method: "POST" })
       );
 
       const sourceKey = parseResult.success
-        ? String(
-            (parseResult.data as Record<string, unknown>).external_resident_key ??
-              (parseResult.data as Record<string, unknown>).unit_label ??
-              (parseResult.data as Record<string, unknown>).registration_number ??
-              "",
-          )
+        ? String(rowSourceKey(entity, parseResult.data as Record<string, unknown>) ?? "")
         : "";
 
       stagingRows.push({
@@ -442,7 +476,7 @@ export const validateMigrationJob = createServerFn({ method: "POST" })
         action,
         status,
         error_codes: errorCodes,
-        warning_codes: [] as string[],
+        warning_codes: warningCodes,
       });
     }
 
@@ -628,11 +662,16 @@ export async function _commitMigrationJobViaRpc(
     _expected_checksum: data.expected_checksum,
   });
   if (error) {
+    console.error("[migration] commit failed", (error as {code?:string}).code, (error as {message?:string}).message);
     return { status: "operation_failed" as const, result: null };
   }
   const obj = (raw ?? {}) as { status?: string; result?: unknown };
+  if (obj.status === "operation_failed") {
+    console.error("[migration] commit operation_failed sqlstate", (raw as { sqlstate?: string } | null)?.sqlstate);
+  }
   const parsedStatus = CommitStatus.safeParse(obj.status);
   if (!parsedStatus.success) {
+    console.error("[migration] commit returned unknown status", obj.status);
     return { status: "operation_failed" as const, result: null };
   }
   if (parsedStatus.data === "completed" || parsedStatus.data === "idempotent_replay") {

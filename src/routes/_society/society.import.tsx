@@ -468,7 +468,7 @@ function ImportPage() {
                   value={entityType}
                   onChange={(e) => setEntityType(e.target.value as EntityType)}
                 >
-                  {ENTITY_TYPES.map((s) => (
+                  {ENTITY_TYPES.filter((s) => s !== "occupancy").map((s) => (
                     <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
@@ -596,8 +596,11 @@ function ImportPage() {
                         <td className="p-2">{r.entity_type}</td>
                         <td className="p-2 capitalize">{r.status}</td>
                         <td className="p-2">{r.source_key ?? "—"}</td>
-                        <td className="p-2 text-destructive text-[10px]">
-                          {r.error_codes.join("; ")}
+                        <td className="p-2 text-[10px]">
+                          <span className="text-destructive">{r.error_codes.map(rowCodeLabel).join("; ")}</span>
+                          {r.warning_codes?.length ? (
+                            <span className="text-muted-foreground">{r.warning_codes.map(rowCodeLabel).join("; ")}</span>
+                          ) : null}
                         </td>
                       </tr>
                     ))}
@@ -631,7 +634,7 @@ function ImportPage() {
               <ul className="text-xs text-muted-foreground list-disc pl-5 space-y-1">
                 <li>Society records will be created — structures, units, residents, occupancy, family and vehicles as applicable.</li>
                 <li>New non-login residents are created as offline residents (no login account is issued).</li>
-                <li>Existing records will not be silently overwritten. Duplicate active vehicle plates block the commit.</li>
+                <li>Existing records will not be silently overwritten. Houses and active vehicle plates that already exist are skipped, not duplicated.</li>
                 <li>Provenance is recorded for every canonical row.</li>
                 <li>This operation is idempotent — retrying with the same request replays the stored result.</li>
               </ul>
@@ -725,4 +728,15 @@ function ImportPage() {
       </div>
     </div>
   );
+}
+
+function rowCodeLabel(code: string): string {
+  const labels: Record<string, string> = {
+    duplicate_source_key_in_file: "Appears more than once in this file",
+    unit_already_exists: "House already exists — will be skipped",
+    vehicle_already_registered: "Vehicle already registered — will be skipped",
+  };
+  if (labels[code]) return labels[code];
+  if (code.startsWith("field_")) return `Check “${code.slice(6).replace(/_/g, " ")}”`;
+  return code.replace(/_/g, " ");
 }

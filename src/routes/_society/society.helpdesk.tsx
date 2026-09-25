@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useDeferredValue, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Inbox, Loader2, RefreshCw, Search, UserCheck, XCircle } from "lucide-react";
+import { CheckCircle2, Gavel, Inbox, Loader2, UserCheck, XCircle } from "lucide-react";
+import { SummaryStrip, SearchField, SegmentedFilter, ListSkeleton, LoadError, ListEmpty } from "@/components/people/PeopleUI";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -110,69 +111,67 @@ function HelpdeskQueue() {
   });
   const busy = update.isPending || decide.isPending;
 
+  const nextAction = (r: Row) =>
+    r.status === "awaiting_approval" ? "Committee decision needed"
+      : r.status === "open" ? (r.assigned_to ? "Start work" : "Assign an owner")
+      : r.status === "in_progress" ? "Resolve when done"
+      : r.status === "resolved" ? "Waiting for resident to confirm" : null;
+  const val = (k: View) => (q.data ? counts[k] : "—");
+
   return (
     <PageShell>
-      <PageHeader title="Helpdesk" description="Complaints, service requests and approvals from residents." />
-      <p className="-mt-2 mb-4 text-xs text-muted-foreground">
+      <PageHeader title="Helpdesk" description="What needs action from the committee." />
+
+      <SummaryStrip items={[
+        { label: "New", value: val("needs_action"), hint: "Not started" },
+        { label: "Approvals", value: val("approvals"), hint: "Need a decision" },
+        { label: "In progress", value: val("in_progress") },
+        { label: "Resolved", value: val("resolved"), hint: "Awaiting confirmation" },
+      ]} />
+
+      <div className="mb-4 flex flex-col gap-3">
+        <SearchField value={term} onChange={setTerm} placeholder="Search title, resident, house or #number" label="Search requests" />
+        <SegmentedFilter label="Request status" value={view} onChange={setView}
+          options={VIEWS.map((v) => ({ key: v.key, label: v.label, count: q.data ? counts[v.key] : undefined }))} />
+      </div>
+      <p className="mb-4 text-xs text-muted-foreground">
         New member join requests are under <Link to="/society/approvals" className="font-medium text-primary underline-offset-2 hover:underline">Resident approvals</Link>.
       </p>
 
-      <div className="relative mb-3">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input value={term} onChange={(e) => setTerm(e.target.value)} placeholder="Search title, resident, house or #number" className="min-h-11 rounded-xl pl-9" aria-label="Search requests" />
-      </div>
-
-      <div role="tablist" className="-mx-1 mb-4 flex gap-2 overflow-x-auto px-1 pb-1">
-        {VIEWS.map((v) => (
-          <button key={v.key} role="tab" aria-selected={view === v.key} onClick={() => setView(v.key)}
-            className={`min-h-10 shrink-0 rounded-full px-4 text-sm font-medium ${view === v.key ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"}`}>
-            {v.label}{q.data ? <span className="ml-1.5 tabular-nums opacity-80">{counts[v.key]}</span> : null}
-          </button>
-        ))}
-      </div>
-
-      {q.isPending ? (
-        <div className="space-y-2">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full rounded-2xl" />)}</div>
-      ) : q.isError ? (
-        <div role="alert" className="rounded-2xl border bg-card p-6 text-center">
-          <p className="font-semibold">Couldn't load the queue</p>
-          <p className="mt-1 text-sm text-muted-foreground">{helpdeskErrorMessage(q.error)}</p>
-          <Button variant="outline" className="mt-3 min-h-11" onClick={() => q.refetch()} disabled={q.isFetching}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${q.isFetching ? "animate-spin" : ""}`} /> Try again
-          </Button>
-        </div>
-      ) : rows.length === 0 ? (
-        <div className="rounded-2xl border border-dashed bg-card p-10 text-center">
-          <Inbox className="mx-auto h-8 w-8 text-muted-foreground" />
-          <p className="mt-2 font-medium">{search ? "No matches" : "All clear"}</p>
-          <p className="text-sm text-muted-foreground">{search ? "Try a different search." : "Nothing waiting in this view."}</p>
-        </div>
-      ) : (
+      {q.isPending ? <ListSkeleton rows={5} />
+        : q.isError ? <LoadError title="Couldn't load the helpdesk queue." onRetry={() => q.refetch()} />
+        : rows.length === 0 ? (
+          <ListEmpty icon={Inbox} title={search ? "No matches" : "All clear"}>{search ? "Try a different search." : "Nothing waiting in this view."}</ListEmpty>
+        ) : (
         <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
           {rows.map((r) => {
             const s = statusMeta(r.status);
+            const urgent = r.priority === "high" || r.priority === "urgent";
+            const approval = r.status === "awaiting_approval";
+            const na = nextAction(r);
             return (
               <li key={r.id}>
-                <button type="button" onClick={() => { setSelectedId(r.id); setNote(""); }} className="flex min-h-16 w-full items-start gap-3 px-4 py-3 text-left hover:bg-secondary/50">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="truncate font-medium">{r.subject}</p>
-                      <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${s.tone}`}>{s.label}</span>
-                      {(r.priority === "high" || r.priority === "urgent") && (
-                        <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] font-semibold text-destructive">{PRIORITY_LABEL[r.priority as TicketPriority]}</span>
-                      )}
-                    </div>
-                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                      #{r.ticket_no} · {r.requester_name}{r.flat_label ? ` · ${r.flat_label}` : ""} · {CATEGORY_LABEL[r.category] ?? "Request"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{r.assignee_name ? `Owner: ${r.assignee_name}` : "Unassigned"} · {fmtDate(r.last_activity_at)}</p>
-                  </div>
+                <button type="button" onClick={() => { setSelectedId(r.id); setNote(""); }}
+                  className={`relative grid w-full gap-1 px-4 py-3 text-left transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring md:grid-cols-[1fr_12rem_11rem] md:items-center md:gap-4 before:absolute before:inset-y-2 before:left-0 before:w-1 before:rounded-r ${approval ? "before:bg-info bg-info-container/30" : urgent ? "before:bg-destructive" : r.status === "open" ? "before:bg-primary" : "before:bg-transparent"}`}>
+                  <span className="min-w-0">
+                    <span className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                      {approval && <Gavel className="h-3.5 w-3.5 text-info" aria-label="Approval request" />}
+                      <span className={`rounded px-1.5 py-0.5 font-semibold ${s.tone}`}>{s.label}</span>
+                      {urgent && <span className="rounded bg-destructive/10 px-1.5 py-0.5 font-semibold text-destructive">{PRIORITY_LABEL[r.priority as TicketPriority]}</span>}
+                      <span>{CATEGORY_LABEL[r.category] ?? "Request"} · #{r.ticket_no}</span>
+                    </span>
+                    <span className="mt-0.5 block truncate font-medium">{r.subject}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{r.requester_name}{r.flat_label ? ` · ${r.flat_label}` : ""}</span>
+                  </span>
+                  <span className="text-xs text-muted-foreground md:text-sm">{r.assignee_name ? `Owner: ${r.assignee_name}` : "Unassigned"} · {fmtDate(r.last_activity_at)}</span>
+                  {na && <span className={`text-xs font-medium md:text-right md:text-sm ${approval ? "text-info" : "text-foreground"}`}>{na} →</span>}
                 </button>
               </li>
             );
           })}
         </ul>
       )}
+
 
       <Sheet open={!!sel} onOpenChange={(o) => !o && !busy && setSelectedId(null)}>
         <SheetContent side="right" className="w-full overflow-y-auto pb-[max(1rem,env(safe-area-inset-bottom))] sm:max-w-lg">

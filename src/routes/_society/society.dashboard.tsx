@@ -204,144 +204,143 @@ function SocietyDashboard() {
     { to: "/society/billing", icon: AlertTriangle, tone: "warning" as const, label: "Unpaid bills", hint: "Unpaid or overdue", count: data.unpaidBills },
   ].filter((a) => (a.count ?? 0) > 0) : [];
 
+  const collectionLabel = data?.summaryOk ? `${Math.round(data.collectionPercent)}%` : "—";
+
   return (
-    <div className="pb-24">
-      <MobileHero
-        eyebrow={`${greeting()}, ${displayName}`}
-        title={data?.societyName || "Your society"}
-        subtitle="Your society at a glance — collections, approvals, and today's visitor flow."
-        icon={Home}
-        variant="teal"
-        action={
-          <Button asChild size="sm" className="rounded-xl h-9 bg-white/15 hover:bg-white/25 text-white border-0">
-            <Link to="/society/residents"><Users className="h-4 w-4 mr-1.5" /> Add</Link>
+    <div className="container-page py-5 md:py-8">
+      {/* Page header */}
+      <header className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-sm text-muted-foreground">{greeting()}, {displayName}</p>
+          <h1 className="mt-0.5 truncate text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">
+            {data?.societyName || (isLoading ? <Skeleton className="h-8 w-56" /> : "Your society")}
+          </h1>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline" className="h-11">
+            <Link to="/society/residents"><Users className="mr-1.5 h-4 w-4" aria-hidden /> Residents</Link>
           </Button>
-        }
-        stats={
-          <StatPillRow>
-            <StatPill label="Collected (mo)" value={collectedLabel} icon={Wallet} />
-            <StatPill label="Outstanding" value={outstandingLabel} icon={TrendingUp} />
-            <StatPill label="Collection" value={data?.summaryOk ? `${Math.round(data.collectionPercent)}%` : "—"} icon={Sparkles} />
-          </StatPillRow>
-        }
-      />
+          <Button asChild className="h-11">
+            <Link to="/society/billing"><Receipt className="mr-1.5 h-4 w-4" aria-hidden /> Billing</Link>
+          </Button>
+        </div>
+      </header>
 
-      <div className="px-4 pt-4 space-y-4 max-w-7xl mx-auto md:px-8">
-
-      {/* Invite code (only if present) */}
-      {data?.inviteCode && (
-        <Card className="rounded-2xl border-primary/20 bg-primary/5">
-          <CardContent className="p-4 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
-            <div className="h-10 w-10 shrink-0 rounded-xl bg-primary/10 grid place-items-center">
-              <KeyRound className="h-4 w-4 text-primary" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Invite code</p>
-              <p className="text-lg font-bold tracking-[0.25em] font-mono truncate">{data.inviteCode}</p>
-            </div>
-            <Button onClick={copyInvite} variant="outline" size="sm" className="rounded-xl shrink-0">
-              <Copy className="h-3.5 w-3.5 mr-1" /> Copy
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Stage 2E — server-derived setup checklist */}
-      {societyId && (
-        <section aria-label="Society setup checklist">
-          <SetupChecklistCard societyId={societyId} />
-        </section>
-      )}
-
-
-
-
-
-      {isError && !data ? (
-        <Card className="rounded-2xl">
-          <ErrorState
-            title="Dashboard didn't load"
-            description="We couldn't load your society's latest numbers. Nothing has changed — try again."
-            onRetry={() => refetch()}
-            showSupport={false}
-          />
-        </Card>
-      ) : (
-        <section aria-labelledby="attention-h" aria-busy={isLoading}>
-          <div className="flex items-center justify-between mb-2">
-            <h2 id="attention-h" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Needs your attention</h2>
-            {isFetching && data && <span className="text-[11px] text-muted-foreground">Updating…</span>}
+      {/* Key money figures — one strip, not three hero cards */}
+      <dl aria-busy={isLoading} className="mt-5 grid grid-cols-2 overflow-hidden rounded-xl border border-border bg-card lg:grid-cols-4 [&>div]:border-border [&>div:nth-child(odd)]:border-r lg:[&>div]:border-r lg:[&>div:last-child]:border-r-0 [&>div:nth-child(-n+2)]:border-b lg:[&>div]:border-b-0">
+        {[
+          { k: "Collected this month", v: collectedLabel, to: "/society/payments" },
+          { k: "Outstanding", v: outstandingLabel, to: "/society/billing" },
+          { k: "Collection rate", v: collectionLabel, to: "/society/billing" },
+          { k: "Visitors today", v: data ? String(data.visitorsToday) : "—", to: "/society/visitors" },
+        ].map((m) => (
+          <div key={m.k}>
+            <Link to={m.to as "/society/billing"} className="block px-4 py-3.5 hover:bg-muted/50 focus-visible:outline-none focus-visible:bg-muted/60 md:px-5 md:py-4">
+              <dt className="text-xs text-muted-foreground">{m.k}</dt>
+              <dd className="mt-1 text-xl font-semibold tabular-nums tracking-tight md:text-2xl">
+                {isLoading ? <Skeleton className="h-7 w-20" /> : m.v}
+              </dd>
+            </Link>
           </div>
-          {!data ? (
-            <div className="space-y-2">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-[68px] rounded-2xl" />)}</div>
-          ) : attention.length === 0 ? (
-            <Card className="rounded-2xl">
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="h-10 w-10 shrink-0 rounded-xl bg-success/10 text-success grid place-items-center"><CheckCircle2 className="h-5 w-5" /></div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold">You're all caught up</p>
-                  <p className="text-xs text-muted-foreground">No payments, approvals or requests are waiting.</p>
-                </div>
-              </CardContent>
+        ))}
+      </dl>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-12">
+        {/* Primary column */}
+        <div className="space-y-6 lg:col-span-8">
+          {isError && !data ? (
+            <Card className="rounded-xl">
+              <ErrorState
+                title="Dashboard didn't load"
+                description="We couldn't load your society's latest numbers. Nothing has changed — try again."
+                onRetry={() => refetch()}
+                showSupport={false}
+              />
             </Card>
           ) : (
-            <ul className="rounded-2xl border bg-card divide-y overflow-hidden">
-              {attention.map((a) => (
-                <li key={a.label}>
-                  <AttentionRow {...a} count={a.count ?? 0} />
-                </li>
-              ))}
-            </ul>
+            <section aria-labelledby="attention-h" aria-busy={isLoading}>
+              <div className="mb-2 flex items-center justify-between">
+                <h2 id="attention-h" className="text-sm font-semibold">Needs your attention</h2>
+                {isFetching && data && <span className="text-xs text-muted-foreground" role="status">Updating…</span>}
+              </div>
+              {!data ? (
+                <div className="space-y-2">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-[64px] rounded-xl" />)}</div>
+              ) : attention.length === 0 ? (
+                <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-success/10 text-success"><CheckCircle2 className="h-5 w-5" /></div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold">You're all caught up</p>
+                    <p className="text-xs text-muted-foreground">No payments, approvals or requests are waiting.</p>
+                  </div>
+                </div>
+              ) : (
+                <ul className="divide-y overflow-hidden rounded-xl border bg-card">
+                  {attention.map((a) => (
+                    <li key={a.label}>
+                      <AttentionRow {...a} count={a.count ?? 0} />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
           )}
-        </section>
-      )}
 
-      <section aria-label="Today" className="grid grid-cols-2 gap-3">
-        <PrimaryTile to="/society/visitors" icon={UsersRound} tone="info" label="Visitors today" value={data ? String(data.visitorsToday) : "—"} />
-        <PrimaryTile to="/society/flats" icon={Building2} tone="primary" label="Houses" value={data ? String(data.totalFlats) : "—"} />
-      </section>
+          {societyId && (
+            <section aria-label="Society setup checklist">
+              <SetupChecklistCard societyId={societyId} />
+            </section>
+          )}
 
-      {/* Finance chart */}
-      {societyId && (
-        <section className="mb-6">
-          <SocietyFinanceChart societyId={societyId} />
-        </section>
-      )}
-
-      {/* Quick actions */}
-      <section className="mb-6">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-          Quick actions
-        </h2>
-        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-          {[
-            { to: "/society/billing" as const, label: "New bill", icon: Receipt },
-            { to: "/society/residents" as const, label: "Residents", icon: Users },
-            { to: "/society/approvals" as const, label: "Approvals", icon: UserCheck },
-            { to: "/society/visitors" as const, label: "Visitors", icon: UsersRound },
-            { to: "/society/announcements" as const, label: "Notice", icon: Megaphone },
-            { to: "/society/income" as const, label: "Income", icon: Wallet },
-            { to: "/society/helpdesk" as const, label: "Helpdesk", icon: LifeBuoy },
-            { to: "/society/payments" as const, label: "Payments", icon: BadgeCheck },
-            { to: "/society/knowledge" as const, label: "Docs & FAQs", icon: FileText },
-            { to: "/society/expenses" as const, label: "Expenses", icon: TrendingUp },
-          ].map((a) => (
-            <Link
-              key={a.to}
-              to={a.to}
-              className="rounded-2xl border bg-card hover:bg-primary/5 hover:border-primary/40 active:scale-[0.98] transition p-3 flex flex-col items-center gap-1.5 text-center min-h-[76px] justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <a.icon className="h-5 w-5 text-primary" />
-              <span className="text-[11px] font-medium leading-tight">{a.label}</span>
-            </Link>
-          ))}
+          {societyId && (
+            <section>
+              <SocietyFinanceChart societyId={societyId} />
+            </section>
+          )}
         </div>
-      </section>
+
+        {/* Secondary column */}
+        <aside className="space-y-6 lg:col-span-4">
+          <section aria-labelledby="shortcuts-h">
+            <h2 id="shortcuts-h" className="mb-2 text-sm font-semibold">Shortcuts</h2>
+            <nav className="grid grid-cols-2 overflow-hidden rounded-xl border border-border bg-card">
+              {[
+                { to: "/society/payments" as const, label: "Payments", icon: BadgeCheck },
+                { to: "/society/approvals" as const, label: "Approvals", icon: UserCheck },
+                { to: "/society/helpdesk" as const, label: "Helpdesk", icon: LifeBuoy },
+                { to: "/society/announcements" as const, label: "Notice", icon: Megaphone },
+                { to: "/society/income" as const, label: "Income", icon: Wallet },
+                { to: "/society/expenses" as const, label: "Expenses", icon: TrendingUp },
+                { to: "/society/knowledge" as const, label: "Docs & FAQs", icon: FileText },
+                { to: "/society/flats" as const, label: `Houses${data ? ` · ${data.totalFlats}` : ""}`, icon: Building2 },
+              ].map((a, i) => (
+                <Link
+                  key={a.to}
+                  to={a.to}
+                  className={`flex min-h-[52px] items-center gap-2.5 border-border px-3.5 text-sm font-medium hover:bg-muted/50 focus-visible:outline-none focus-visible:bg-muted/60 ${i % 2 === 0 ? "border-r" : ""} ${i < 6 ? "border-b" : ""}`}
+                >
+                  <a.icon className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+                  <span className="truncate">{a.label}</span>
+                </Link>
+              ))}
+            </nav>
+          </section>
+
+          {data?.inviteCode && (
+            <section className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-4">
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">Invite code for residents</p>
+                <p className="mt-0.5 truncate font-mono text-lg font-semibold tracking-[0.2em]">{data.inviteCode}</p>
+              </div>
+              <Button onClick={copyInvite} variant="outline" className="h-11 shrink-0">
+                <Copy className="mr-1.5 h-4 w-4" aria-hidden /> Copy
+              </Button>
+            </section>
+          )}
 
       {/* Recent activity */}
       <section>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-sm font-semibold">
             Recent activity
           </h2>
           <Link
@@ -351,7 +350,7 @@ function SocietyDashboard() {
             View all <ArrowUpRight className="h-3 w-3" />
           </Link>
         </div>
-        <Card className="rounded-2xl">
+        <Card className="rounded-xl">
           <CardContent className="p-0">
             {activity.length === 0 ? (
               <div className="py-10 text-center text-sm text-muted-foreground">
@@ -383,7 +382,7 @@ function SocietyDashboard() {
 
       {/* Empty-state onboarding nudge only when society is truly empty */}
       {data && data.totalFlats === 0 && (
-        <Card className="rounded-2xl mt-6 border-dashed">
+        <Card className="rounded-xl mt-6 border-dashed">
           <CardContent className="p-6 text-center">
             <Building2 className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
             <p className="font-medium">Your society is ready to be set up</p>
@@ -396,6 +395,7 @@ function SocietyDashboard() {
           </CardContent>
         </Card>
       )}
+        </aside>
       </div>
     </div>
   );

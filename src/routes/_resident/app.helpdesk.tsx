@@ -169,7 +169,7 @@ function HelpdeskPage() {
   );
 
   return (
-    <div className="mx-auto max-w-3xl px-4 pb-28 pt-5 md:px-8 md:pt-8">
+    <div className="mx-auto max-w-3xl px-4 pb-28 pt-5">
       <header className="mb-5 flex items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Helpdesk</h1>

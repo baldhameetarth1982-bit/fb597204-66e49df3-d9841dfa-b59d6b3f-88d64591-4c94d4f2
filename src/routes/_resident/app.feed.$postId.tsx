@@ -244,8 +244,8 @@ function PostThread() {
       </section>
 
       {/* 3. Write a comment — pinned above the bottom nav, aligned to the conversation column */}
-      <div className="fixed inset-x-0 bottom-[calc(68px+env(safe-area-inset-bottom))] z-20 border-t bg-background/95 backdrop-blur md:bottom-0">
-        <div className="mx-auto w-full max-w-2xl px-4 py-3 md:px-8">
+      <div className="fixed inset-x-0 bottom-[calc(68px+env(safe-area-inset-bottom))] z-20 border-t bg-background/95 backdrop-blur">
+        <div className="mx-auto w-full max-w-[480px] px-4 py-3">
           <div className="flex items-end gap-2">
             <Textarea
               value={text}

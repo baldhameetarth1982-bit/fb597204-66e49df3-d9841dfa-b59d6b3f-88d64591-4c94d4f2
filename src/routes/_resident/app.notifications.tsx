@@ -211,7 +211,7 @@ function NotificationCenter() {
           <>
             {unreadShown.length > 0 && (<><SectionLabel count={unreadShown.length}>Needs your attention</SectionLabel><RowList>{unreadShown.map(row)}</RowList></>)}
             {Object.entries(readGrouped).map(([k, list]) => (
-              <div key={k}><SectionLabel>{k}</SectionLabel><RowList>{list.map(row)}</RowList></div>
+              <div key={k} className="mt-6 first:mt-0"><SectionLabel>{k}</SectionLabel><RowList>{list.map(row)}</RowList></div>
             ))}
           </>
         )}

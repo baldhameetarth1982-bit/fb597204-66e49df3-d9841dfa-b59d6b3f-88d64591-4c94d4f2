@@ -27,7 +27,7 @@ function safeMsg(e: unknown, fallback: string): string {
   return m;
 }
 
-export const Route = createFileRoute("/_resident/app/feed")({
+export const Route = createFileRoute("/_resident/app/feed/")({
   head: () => ({
     meta: [
       { title: "Community — SociyoHub" },
@@ -323,7 +323,7 @@ function FeedScreen() {
         <p className="mt-1 text-sm text-muted-foreground">Conversations between residents of your society</p>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+      <div className="grid gap-4">
         <div className="min-w-0 space-y-4">
           {composer}
 
@@ -392,7 +392,7 @@ function FeedScreen() {
           )}
         </div>
 
-        <aside className="order-first space-y-3 lg:order-none" aria-label="From your committee">
+        <aside className="order-first space-y-3" aria-label="From your committee">
           <Link to="/app/notices" className="flex min-h-14 items-center gap-3 rounded-2xl border border-primary/30 bg-primary-container px-4 py-3 text-primary-container-foreground transition-colors hover:opacity-90">
             <Megaphone className="h-5 w-5 shrink-0" />
             <span className="min-w-0 flex-1 text-sm">
@@ -406,7 +406,7 @@ function FeedScreen() {
                 <Sparkles className="h-4 w-4 text-primary" /> Weekly digest
                 <span className="ml-auto font-normal normal-case">{new Date(digest.week_start).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span>
               </p>
-              <p className="text-sm leading-relaxed whitespace-pre-line line-clamp-6 lg:line-clamp-none">{digest.summary}</p>
+              <p className="text-sm leading-relaxed whitespace-pre-line line-clamp-6">{digest.summary}</p>
               <p className="mt-2 text-xs text-muted-foreground">AI summary of recent posts — may miss details.</p>
             </section>
           )}

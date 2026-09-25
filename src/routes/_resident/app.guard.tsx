@@ -149,7 +149,7 @@ function GuardDashboard() {
       </Card>
 
       {/* Gate actions stay pinned above the bottom nav on phones for one-thumb reach. */}
-      <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-20 -mx-1 order-last grid grid-cols-2 gap-2 rounded-2xl border bg-background/95 p-1 shadow-sm backdrop-blur md:static md:border-0 md:bg-transparent md:p-0 md:shadow-none">
+      <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-20 -mx-1 grid grid-cols-2 gap-2 rounded-2xl border bg-background/95 p-1 shadow-sm backdrop-blur md:static md:border-0 md:bg-transparent md:p-0 md:shadow-none">
         <Button onClick={() => setWalkOpen(true)} className="h-14 rounded-xl text-base">
           <UserPlus className="h-5 w-5 mr-2" /> Walk-in
         </Button>

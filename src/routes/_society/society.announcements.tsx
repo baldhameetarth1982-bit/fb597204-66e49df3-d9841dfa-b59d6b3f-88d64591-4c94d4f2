@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, Megaphone, Plus, Archive, Clock, Eye } from "lucide-react";
+import { Loader2, Megaphone, Plus, Archive, Clock, Eye, Siren, Users } from "lucide-react";
+import { ListSkeleton, LoadError, ListEmpty } from "@/components/people/PeopleUI";
 import { PageHeader, PageShell, EmptyState } from "@/components/shared/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,12 +22,20 @@ export const Route = createFileRoute("/_society/society/announcements")({
     meta: [
       { title: "Notices & Announcements — SociyoHub" },
       { name: "description", content: "Write, schedule and publish official notices to residents." },
+      { property: "og:title", content: "Notices & Announcements — SociyoHub" },
+      { property: "og:description", content: "Write, schedule and publish official notices to residents." },
     ],
   }),
   component: NoticesAdmin,
 });
 
 type Tab = "published" | "scheduled" | "draft" | "archived";
+const FLOW: { key: Tab; label: string; hint: string }[] = [
+  { key: "draft", label: "Drafts", hint: "Saved but not visible to residents. Continue editing to publish or schedule." },
+  { key: "scheduled", label: "Scheduled", hint: "Will go live automatically at the time shown." },
+  { key: "published", label: "Published", hint: "Live for residents. Editing is allowed for 7 days after publishing." },
+  { key: "archived", label: "Archived", hint: "Removed from residents' view; kept for your records." },
+];
 const EMPTY = { id: null as string | null, title: "", body: "", category: "general", audience: "all", block_id: "", schedule: "" };
 
 function NoticesAdmin() {
@@ -104,48 +113,56 @@ function NoticesAdmin() {
         description="Official announcements for residents"
         actions={<Button className="rounded-xl min-h-11" onClick={() => { setForm(EMPTY); setOpen(true); }}><Plus className="h-4 w-4 mr-2" />New notice</Button>}
       />
-      <div role="tablist" className="grid grid-cols-4 gap-1 rounded-2xl bg-muted p-1">
-        {(["published", "scheduled", "draft", "archived"] as Tab[]).map((t) => (
-          <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}
-            className={cn("min-h-11 rounded-xl text-xs sm:text-sm font-medium capitalize", tab === t ? "bg-background shadow-sm" : "text-muted-foreground")}>
-            {t === "draft" ? "Drafts" : t} ({count(t)})
+      <nav aria-label="Notice workflow" className="-mx-1 mb-2 flex gap-1 overflow-x-auto px-1">
+        {FLOW.map((f, i) => (
+          <button key={f.key} role="tab" aria-selected={tab === f.key} onClick={() => setTab(f.key)}
+            className={cn("flex min-h-14 shrink-0 items-center gap-2 rounded-xl border px-3 text-left text-sm transition-colors",
+              tab === f.key ? "border-foreground bg-foreground text-background" : "border-border bg-card text-muted-foreground hover:text-foreground")}>
+            <span className={cn("grid h-6 w-6 place-items-center rounded-full text-xs font-semibold", tab === f.key ? "bg-background/20" : "bg-muted")}>{i + 1}</span>
+            <span><span className="block font-medium">{f.label}</span><span className="block text-xs tabular-nums opacity-80">{q.data ? count(f.key) : "—"}</span></span>
           </button>
         ))}
-      </div>
+      </nav>
+      <p className="mb-4 px-1 text-xs text-muted-foreground">{FLOW.find((f) => f.key === tab)!.hint}</p>
 
-      {q.isLoading ? (
-        <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-20 rounded-2xl bg-muted animate-pulse" />)}</div>
-      ) : q.isError ? (
-        <Card className="rounded-2xl"><CardContent className="p-6 text-center space-y-3">
-          <p className="text-sm">{commErrorMessage(q.error)}</p>
-          <Button variant="outline" className="min-h-11 rounded-xl" onClick={() => q.refetch()}>Retry</Button>
-        </CardContent></Card>
-      ) : rows.length === 0 ? (
-        <EmptyState icon={Megaphone} title="Nothing here" description={tab === "published" ? "Publish your first notice to reach residents." : "No notices in this list."} />
-      ) : (
-        <ul className="space-y-2">
+      {q.isLoading ? <ListSkeleton rows={4} />
+        : q.isError ? <LoadError title="We couldn't load notices." onRetry={() => q.refetch()} />
+        : rows.length === 0 ? (
+          <ListEmpty icon={Megaphone} title={tab === "published" ? "Nothing published yet" : "Nothing here"}>
+            {tab === "published" ? "Publish your first notice to reach residents." : "No notices in this stage."}
+          </ListEmpty>
+        ) : (
+        <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
           {rows.map((n) => {
             const c = noticeCategory(n.category);
+            const em = n.category === "emergency";
             const editable = n.status !== "archived" && (n.status === "draft" || now - new Date(liveAt(n) ?? n.created_at).getTime() < 7 * 864e5);
             return (
-              <li key={n.id}><Card className="rounded-2xl"><CardContent className="p-4 space-y-2">
-                <div className="flex items-center gap-2 flex-wrap text-[11px] text-muted-foreground">
-                  <span className={cn("rounded-full px-2 py-0.5 font-medium", c.className)}>{c.label}</span>
-                  <span>{n.audience === "block" ? `Block ${blockName(n.block_id) ?? ""}` : "All residents"}</span>
-                  {tab === "scheduled" && <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{new Date(liveAt(n)!).toLocaleString()}</span>}
-                  {tab === "published" && <span>{new Date(liveAt(n) ?? n.created_at).toLocaleString()}</span>}
-                  {tab === "published" && <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{q.data?.reads.get(n.id) ?? 0} read</span>}
-                  {n.edited_at && <span>edited</span>}
+              <li key={n.id} className={cn("relative grid gap-2 px-4 py-3 before:absolute before:inset-y-2 before:left-0 before:w-1 before:rounded-r md:grid-cols-[1fr_13rem_auto] md:items-center md:gap-4",
+                em ? "before:bg-destructive bg-destructive/5" : tab === "scheduled" ? "before:bg-info" : tab === "draft" ? "before:bg-warning" : "before:bg-transparent")}>
+                <div className="min-w-0">
+                  <p className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                    {em && <Siren className="h-3.5 w-3.5 text-destructive" aria-hidden />}
+                    <span className={cn("rounded px-1.5 py-0.5 font-medium", c.className)}>{c.label}</span>
+                    <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" aria-hidden />{n.audience === "block" ? `Block ${blockName(n.block_id) ?? ""}` : "All residents"}</span>
+                    {n.edited_at && <span>· edited</span>}
+                  </p>
+                  <p className="mt-0.5 truncate font-medium">{n.title}</p>
+                  <p className="truncate text-sm text-muted-foreground">{n.body}</p>
                 </div>
-                <p className="font-semibold">{n.title}</p>
-                <p className="text-sm text-muted-foreground line-clamp-2">{n.body}</p>
+                <div className="text-xs text-muted-foreground md:text-sm">
+                  {tab === "scheduled" && <p className="flex items-center gap-1 font-medium text-foreground"><Clock className="h-3.5 w-3.5" />Goes live {new Date(liveAt(n)!).toLocaleString(undefined, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}</p>}
+                  {tab === "published" && <><p>Published {new Date(liveAt(n) ?? n.created_at).toLocaleDateString()}</p><p className="flex items-center gap-1"><Eye className="h-3.5 w-3.5" />{q.data?.reads.has(n.id) ? `${q.data.reads.get(n.id)} read` : "Reads unavailable"}</p></>}
+                  {tab === "draft" && <p>Not visible to residents</p>}
+                  {tab === "archived" && <p>Hidden from residents</p>}
+                </div>
                 {n.status !== "archived" && (
                   <div className="flex gap-2">
-                    {editable && <Button size="sm" variant="outline" className="min-h-11 rounded-xl" onClick={() => edit(n)}>Edit</Button>}
-                    <Button size="sm" variant="ghost" className="min-h-11 rounded-xl" onClick={() => archive(n.id)}><Archive className="h-4 w-4 mr-1" />Archive</Button>
+                    {editable && <Button variant={tab === "draft" ? "default" : "outline"} className="h-11 flex-1 rounded-xl md:flex-none" onClick={() => edit(n)}>{tab === "draft" ? "Continue" : "Edit"}</Button>}
+                    <Button variant="ghost" className="h-11 rounded-xl text-muted-foreground" aria-label={`Archive ${n.title}`} onClick={() => archive(n.id)}><Archive className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Archive</span></Button>
                   </div>
                 )}
-              </CardContent></Card></li>
+              </li>
             );
           })}
         </ul>

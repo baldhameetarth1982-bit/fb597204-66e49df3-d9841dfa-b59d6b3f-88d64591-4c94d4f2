@@ -180,100 +180,89 @@ function PostThread() {
   const canRemovePost = isOwnPost || isSocietyAdmin;
 
   return (
-    <div className="px-4 py-4 space-y-4 pb-[calc(176px+env(safe-area-inset-bottom))]">
+    <div className="mx-auto w-full max-w-2xl px-4 pt-4 pb-[calc(200px+env(safe-area-inset-bottom))] md:px-8 md:pb-40">
       {back}
 
-      <Card className="rounded-2xl">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-3 mb-2">
-            <Avatar className="h-10 w-10">
-              {post.author_avatar && <AvatarImage src={post.author_avatar} />}
-              <AvatarFallback className="bg-primary/10 text-primary text-xs">{initials(post.author_name)}</AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <p className="font-semibold text-sm truncate">
-                {post.author_name ?? "Resident"}
-                {isOwnPost && <span className="text-muted-foreground font-normal"> (you)</span>}
-              </p>
-              <p className="text-[11px] text-muted-foreground">{fmtDate(post.created_at)}</p>
-            </div>
-            {canRemovePost && (
-              <Button
-                variant="ghost" size="icon"
-                aria-label={isOwnPost ? "Remove your post" : "Remove post (committee)"}
-                onClick={() => setPendingPostDelete(true)}
-                className="h-10 w-10 rounded-xl text-muted-foreground shrink-0"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
+      {/* 1. Post context */}
+      <article aria-label="Post" className="mt-3 overflow-hidden rounded-2xl border bg-card">
+        <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 pt-4">
+          <Avatar className="h-10 w-10 shrink-0">
+            {post.author_avatar && <AvatarImage src={post.author_avatar} alt="" />}
+            <AvatarFallback className="bg-primary/10 text-xs text-primary">{initials(post.author_name)}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold">{post.author_name ?? "Resident"}{isOwnPost && <span className="font-normal text-muted-foreground"> · you</span>}</p>
+            <p className="text-xs text-muted-foreground">Resident post · {fmtDate(post.created_at)}</p>
           </div>
-          <p className="text-sm leading-relaxed whitespace-pre-line break-words">{post.body}</p>
-          {post.image_url && (
-            <img src={post.image_url} alt="" loading="lazy" className="mt-3 -mx-4 max-h-96 w-[calc(100%+2rem)] object-cover" />
+          {canRemovePost && (
+            <Button variant="ghost" className="h-11 rounded-xl text-muted-foreground" aria-label={isOwnPost ? "Remove your post" : "Remove post (committee)"} onClick={() => setPendingPostDelete(true)}>
+              <Trash2 className="h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">{isOwnPost ? "Remove" : "Moderate"}</span>
+            </Button>
           )}
-        </CardContent>
-      </Card>
+        </header>
+        <p className="whitespace-pre-line break-words px-4 pb-4 pt-3 text-[15px] leading-relaxed">{post.body}</p>
+        {post.image_url && <img src={post.image_url} alt="Photo shared with the post" loading="lazy" className="max-h-96 w-full object-cover" />}
+      </article>
 
-      <h2 className="px-1 text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-        Comments ({comments.length})
-      </h2>
-      {comments.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-6">No comments yet. Start the conversation.</p>
-      ) : (
-        <ul className="space-y-2">
-          {comments.map((c) => (
-            <li key={c.id}>
-              <Card className="rounded-2xl">
-                <CardContent className="p-3 flex gap-3">
+      {/* 2. Conversation */}
+      <section aria-labelledby="comments-h" className="mt-6">
+        <h2 id="comments-h" className="mb-2 flex items-center gap-2 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Conversation <span className="rounded-full bg-muted px-1.5 tabular-nums">{comments.length}</span>
+        </h2>
+        {comments.length === 0 ? (
+          <div className="rounded-2xl border border-dashed bg-card px-6 py-8 text-center">
+            <p className="text-sm font-medium">No comments yet</p>
+            <p className="mt-1 text-xs text-muted-foreground">Be the first to reply below.</p>
+          </div>
+        ) : (
+          <ul className="divide-y rounded-2xl border bg-card">
+            {comments.map((c) => {
+              const mine = c.user_id === user?.id;
+              return (
+                <li key={c.id} className="grid grid-cols-[auto_minmax(0,1fr)_auto] gap-3 px-4 py-3">
                   <Avatar className="h-8 w-8 shrink-0">
-                    {c.author_avatar && <AvatarImage src={c.author_avatar} />}
-                    <AvatarFallback className="bg-primary/10 text-primary text-[10px]">{initials(c.author_name)}</AvatarFallback>
+                    {c.author_avatar && <AvatarImage src={c.author_avatar} alt="" />}
+                    <AvatarFallback className="bg-primary/10 text-[10px] text-primary">{initials(c.author_name)}</AvatarFallback>
                   </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-semibold truncate">
-                        {c.author_name ?? "Resident"}
-                        {c.user_id === user?.id && <span className="text-muted-foreground font-normal"> (you)</span>}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">{fmtDate(c.created_at)}</p>
-                    </div>
-                    <p className="text-sm leading-relaxed whitespace-pre-line break-words">{c.body}</p>
+                  <div className="min-w-0">
+                    <p className="flex flex-wrap items-baseline gap-x-2 text-sm">
+                      <span className="truncate font-semibold">{c.author_name ?? "Resident"}{mine && <span className="font-normal text-muted-foreground"> · you</span>}</span>
+                      <span className="text-xs text-muted-foreground">{fmtDate(c.created_at)}</span>
+                    </p>
+                    <p className="mt-0.5 whitespace-pre-line break-words text-sm leading-relaxed">{c.body}</p>
                   </div>
-                  {c.user_id === user?.id && (
-                    <Button
-                      variant="ghost" size="icon" aria-label="Remove your comment"
-                      onClick={() => setPendingComment(c)}
-                      className="h-10 w-10 rounded-xl text-muted-foreground shrink-0 -mr-1"
-                    >
+                  {mine && (
+                    <Button variant="ghost" size="icon" aria-label="Remove your comment" onClick={() => setPendingComment(c)} className="-mr-2 h-11 w-11 rounded-xl text-muted-foreground">
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   )}
-                </CardContent>
-              </Card>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <div className="fixed bottom-[calc(68px+env(safe-area-inset-bottom))] inset-x-0 mx-auto w-full max-w-[420px] border-t bg-background p-3">
-        <div className="flex gap-2">
-          <Textarea
-            value={text}
-            onChange={(e) => setText(e.target.value.slice(0, MAX_COMMENT))}
-            onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void send(); }}
-            placeholder="Add a comment…"
-            aria-label="Write a comment"
-            className="rounded-xl min-h-[44px] resize-none"
-          />
-          <Button onClick={send} disabled={!text.trim() || sending} aria-label="Send comment" className="rounded-xl shrink-0 h-11 w-11 p-0">
-            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          </Button>
-        </div>
-        {text.length > MAX_COMMENT - 200 && (
-          <p className="text-[11px] text-muted-foreground mt-1 text-right">{text.length}/{MAX_COMMENT}</p>
+                </li>
+              );
+            })}
+          </ul>
         )}
+      </section>
+
+      {/* 3. Write a comment — pinned above the bottom nav, aligned to the conversation column */}
+      <div className="fixed inset-x-0 bottom-[calc(68px+env(safe-area-inset-bottom))] z-20 border-t bg-background/95 backdrop-blur md:bottom-0">
+        <div className="mx-auto w-full max-w-2xl px-4 py-3 md:px-8">
+          <div className="flex items-end gap-2">
+            <Textarea
+              value={text}
+              onChange={(e) => setText(e.target.value.slice(0, MAX_COMMENT))}
+              onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void send(); }}
+              placeholder="Write a comment…"
+              aria-label="Write a comment"
+              className="max-h-40 min-h-[44px] resize-none rounded-xl"
+            />
+            <Button onClick={send} disabled={!text.trim() || sending} aria-label="Send comment" className="h-11 shrink-0 rounded-xl px-4">
+              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Send className="h-4 w-4 sm:mr-1.5" /><span className="hidden sm:inline">Send</span></>}
+            </Button>
+          </div>
+          <p className="mt-1 text-right text-xs text-muted-foreground tabular-nums">{text.length > MAX_COMMENT - 200 ? `${text.length}/${MAX_COMMENT}` : " "}</p>
+        </div>
       </div>
+
 
       <AlertDialog open={!!pendingComment} onOpenChange={(o) => !o && !deleting && setPendingComment(null)}>
         <AlertDialogContent>

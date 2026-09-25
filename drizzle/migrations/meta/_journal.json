@@ -260,6 +260,13 @@
       "when": 1790329635258,
       "tag": "0036_fix_migration_server_pathway_auth",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1790330353222,
+      "tag": "0037_fix_commit_migration_job_units_vehicles_family",
+      "breakpoints": true
     }
   ]
 }

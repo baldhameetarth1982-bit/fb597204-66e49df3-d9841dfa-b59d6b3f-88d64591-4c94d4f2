@@ -354,7 +354,7 @@ function AutoBillingSection({ societyId }: { societyId: string }) {
 
   async function handleRun() {
     if (running) return;
-    if (!window.confirm("Generate this cycle's bills for all billable homes now? Homes already billed for this cycle are skipped.")) return;
+    if (!window.confirm("Generate this cycle's bills for all billable homes now?")) return;
     setRunning(true);
     try {
       const res = await runNow({ data: { societyId } });

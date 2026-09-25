@@ -130,7 +130,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-const AUTH_PATHS = ["/login", "/verify-phone", "/support", "/terms"];
+const AUTH_PATHS = ["/login", "/verify-phone", "/support", "/terms", "/welcome"];
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();

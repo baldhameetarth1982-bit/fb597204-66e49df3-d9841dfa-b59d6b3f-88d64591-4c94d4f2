@@ -27,7 +27,7 @@ function safeMsg(e: unknown, fallback: string): string {
   return m;
 }
 
-export const Route = createFileRoute("/_resident/app/feed")({
+export const Route = createFileRoute("/_resident/app/feed/")({
   head: () => ({
     meta: [
       { title: "Community — SociyoHub" },

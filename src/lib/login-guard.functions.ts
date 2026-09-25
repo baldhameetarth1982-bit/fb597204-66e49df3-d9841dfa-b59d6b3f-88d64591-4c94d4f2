@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /**
  * Pre-auth login rate limiting + soft account lockout.
@@ -75,8 +76,12 @@ export const recordLoginFailure = createServerFn({ method: "POST" })
   });
 
 export const clearLoginFailures = createServerFn({ method: "POST" })
-  .inputValidator((d) => emailSchema.parse(d))
-  .handler(async ({ data }) => {
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    // Only the signed-in user may clear their own lockout.
+    const email = typeof (context.claims as any)?.email === "string" ? (context.claims as any).email : null;
+    if (!email) return { ok: true as const };
+    const data = { email };
     const { fingerprintSubject } = await limiter();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await supabaseAdmin

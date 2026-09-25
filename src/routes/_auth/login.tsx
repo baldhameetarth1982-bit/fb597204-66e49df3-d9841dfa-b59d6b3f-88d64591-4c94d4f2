@@ -19,6 +19,9 @@ import {
   startTruecallerAuth,
 } from "@/lib/auth-service";
 import { sanitizeNextPath } from "@/lib/safe-next";
+import { useServerFn } from "@tanstack/react-start";
+import { assertLoginAllowed, clearLoginFailures, recordLoginFailure } from "@/lib/login-guard.functions";
+import { Clock } from "lucide-react";
 
 export const Route = createFileRoute("/_auth/login")({
   head: () => ({
@@ -55,7 +58,11 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [busy, setBusy] = useState<null | "email" | "google" | "truecaller">(null);
+  const [limited, setLimited] = useState<string | null>(null);
   const caps = useMemo(() => getCapabilities(), []);
+  const assertAllowed = useServerFn(assertLoginAllowed);
+  const recordFailure = useServerFn(recordLoginFailure);
+  const clearFailures = useServerFn(clearLoginFailures);
 
   if (isLoading) {
     return (
@@ -89,10 +96,15 @@ function LoginPage() {
   async function submitEmail(e: React.FormEvent) {
     e.preventDefault();
     setBusy("email");
+    setLimited(null);
+    const addr = email.trim();
     try {
+      const gate = await assertAllowed({ data: { email: addr } }).catch(() => null);
+      if (!gate) { toast.error("Couldn't reach SociyoHub. Check your connection and try again."); return; }
+      if (!gate.ok) { setLimited(gate.message); return; }
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
-          email: email.trim(),
+          email: addr,
           password,
           options: {
             emailRedirectTo: emailRedirect,
@@ -102,14 +114,16 @@ function LoginPage() {
         if (error) throw error;
         toast.success("Account created. Check your email if confirmation is required.");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password,
-        });
-        if (error) throw error;
+        const { error } = await supabase.auth.signInWithPassword({ email: addr, password });
+        if (error) {
+          await recordFailure({ data: { email: addr } }).catch(() => {});
+          toast.error("Email or password is incorrect. Please try again.");
+          return;
+        }
+        clearFailures().catch(() => {});
       }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not sign in");
+    } catch {
+      toast.error(mode === "signup" ? "Couldn't create the account. Please try again." : "Couldn't sign in. Please try again.");
     } finally {
       setBusy(null);
     }
@@ -117,12 +131,20 @@ function LoginPage() {
 
   async function withGoogle() {
     setBusy("google");
+    setLimited(null);
     try {
+      const gate = await assertAllowed({ data: {} }).catch(() => null);
+      if (!gate) { toast.error("Couldn't reach SociyoHub. Check your connection and try again."); return; }
+      if (!gate.ok) { setLimited(gate.message); return; }
       const r = await signInWithGoogleFirebase();
-      if (!r.ok) throw new Error(r.error ?? "Google sign-in failed");
+      if (!r.ok) {
+        if (/temporarily limited|too many/i.test(r.error ?? "")) setLimited(r.error!);
+        else toast.error(r.error ?? "Google sign-in failed. Please try again.");
+        return;
+      }
       goNext(next, () => navigate({ to: "/" }));
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Google sign-in failed");
+    } catch {
+      toast.error("Google sign-in failed. Please try again.");
     } finally {
       setBusy(null);
     }
@@ -160,6 +182,16 @@ function LoginPage() {
       <p className="mt-2 text-sm text-muted-foreground text-center">
         Society management, simplified.
       </p>
+
+      {limited && (
+        <div role="alert" className="mt-5 flex gap-3 rounded-2xl border border-warning/40 bg-warning/10 p-4 text-sm">
+          <Clock className="h-5 w-5 shrink-0 text-warning" aria-hidden />
+          <div>
+            <p className="font-medium text-foreground">Please wait before trying again</p>
+            <p className="mt-0.5 text-muted-foreground">{limited} Your account is not blocked.</p>
+          </div>
+        </div>
+      )}
 
       {step === "choose" && (
         <div className="mt-6 space-y-3">

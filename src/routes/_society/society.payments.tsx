@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { StatusChip } from "@/components/system/StatusChip";
+import { PageHeader, PageShell } from "@/components/shared/PageHeader";
+import { BillingCenterTabs } from "@/components/nav/BillingCenterTabs";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -162,197 +164,118 @@ function SocietyPaymentsRoute() {
     { id: "reversed", label: "Reversed", tone: "neutral" },
   ];
 
+  const TAB_META: Record<Tab, { title: string; hint: string; empty: string; bar: string }> = {
+    pending: { title: "Awaiting verification", hint: "Check each payment against cash received or your bank statement before verifying.", empty: "No payments waiting for verification. You're all caught up.", bar: "bg-warning" },
+    verified: { title: "Verified", hint: "Receipts have been issued. Reverse only if a payment was recorded in error.", empty: "No verified payments yet.", bar: "bg-success" },
+    rejected: { title: "Rejected", hint: "Closed without a receipt. Kept for the record.", empty: "No rejected payments.", bar: "bg-destructive" },
+    reversed: { title: "Reversed", hint: "Receipts voided and bill balances re-opened. History is kept.", empty: "No reversed payments.", bar: "bg-muted-foreground" },
+  };
+  const meta = TAB_META[tab];
+  const methodLabel = (m: string) => (m === "bank_transfer" ? "Bank Transfer" : m === "cash" ? "Cash" : m);
+
   return (
-    <div className="px-5 py-6 space-y-4 max-w-3xl mx-auto">
-      <div>
-        <h1 className="text-xl font-semibold">Payments</h1>
-        <p className="text-sm text-muted-foreground">
-          Verify offline maintenance payments (Cash / Bank Transfer). Receipts are issued only after verification.
-        </p>
-      </div>
+    <PageShell>
+      <PageHeader title="Payments" description="Cash and Bank Transfer payments. A receipt is issued only after you verify a payment." />
+      <div className="mb-5 rounded-2xl border border-border bg-card"><BillingCenterTabs /></div>
 
-      <RecordOfflinePaymentSection societyId={societyId} onRecorded={refresh} />
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+        <div className="min-w-0 space-y-4">
+          <div role="tablist" aria-label="Payment status" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {TABS.map((t) => {
+              const active = tab === t.id;
+              return (
+                <button key={t.id} type="button" role="tab" aria-selected={active} onClick={() => setTab(t.id)}
+                  className={`flex min-h-12 items-center gap-2 rounded-xl border px-3 text-left text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${active ? "border-foreground bg-card shadow-sm" : "border-border bg-card/60 text-muted-foreground hover:text-foreground"}`}>
+                  <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${TAB_META[t.id].bar}`} aria-hidden />
+                  {t.id === "pending" ? "Awaiting" : t.label}
+                </button>
+              );
+            })}
+          </div>
 
+          <div>
+            <h2 className="font-semibold">{meta.title}</h2>
+            <p className="text-sm text-muted-foreground">{meta.hint}</p>
+          </div>
 
-
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        {TABS.map((t) => (
-          <Button
-            key={t.id}
-            variant={tab === t.id ? "default" : "outline"}
-            size="sm"
-            className="rounded-full"
-            onClick={() => setTab(t.id)}
-          >
-            {t.label}
-          </Button>
-        ))}
-      </div>
-
-      {loading ? (
-        <div className="space-y-3" aria-busy="true" aria-label="Loading payments">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="h-24 rounded-2xl bg-muted animate-pulse" />
-          ))}
-        </div>
-      ) : loadError ? (
-        <Card className="rounded-2xl border-destructive/30" role="alert">
-          <CardContent className="p-4 flex items-center justify-between gap-3">
-            <p className="text-sm text-muted-foreground">{loadError}</p>
-            <Button size="sm" variant="outline" className="min-h-11 shrink-0" onClick={refresh}>
-              Try again
-            </Button>
-          </CardContent>
-        </Card>
-      ) : rows.length === 0 ? (
-        <Card className="rounded-2xl">
-          <CardContent className="p-6 text-sm text-muted-foreground text-center">
-            {tab === "pending"
-              ? "No payments waiting for verification. You're all caught up."
-              : `No ${tab} payments.`}
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-3">
-          {rows.map((p) => (
-            <Card key={p.id} className="rounded-2xl">
-              <CardContent className="p-4 space-y-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold tabular-nums">
-                      ₹{Number(p.amount).toLocaleString("en-IN")}{" "}
-                      <span className="text-xs font-normal text-muted-foreground">
-                        · {p.method === "bank_transfer" ? "Bank Transfer" : p.method === "cash" ? "Cash" : p.method}
-                      </span>
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {p.reference_no ? `Ref: ${p.reference_no}` : "No reference"} ·{" "}
-                      {p.payment_date ? formatDate(p.payment_date) : "date n/a"}
-                    </p>
-                    {p.notes && (
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                        {p.notes}
-                      </p>
-                    )}
-                  </div>
-                  <StatusChip
-                    tone={
-                      p.status === "verified"
-                        ? "success"
-                        : p.status === "pending"
-                          ? "warning"
-                          : p.status === "rejected"
-                            ? "danger"
-                            : "neutral"
-                    }
-                  >
-                    <span className="inline-flex items-center gap-1">
-                      {p.status === "verified" ? (
-                        <CheckCircle2 className="h-3 w-3" aria-hidden />
-                      ) : p.status === "pending" ? (
-                        <Clock className="h-3 w-3" aria-hidden />
-                      ) : p.status === "rejected" ? (
-                        <XCircle className="h-3 w-3" aria-hidden />
-                      ) : (
-                        <RotateCcw className="h-3 w-3" aria-hidden />
-                      )}
-                      {STATUS_LABEL[p.status] ?? p.status}
-                    </span>
-                  </StatusChip>
-                </div>
-
-
-                {p.status === "verified" && p.verified_at && (
-                  <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-                    <Receipt className="h-3 w-3" />
-                    Verified {formatDate(p.verified_at)}
-                    {p.verification_notes ? ` · ${p.verification_notes}` : ""}
-                  </p>
-                )}
-                {p.status === "rejected" && p.rejection_reason && (
-                  <p className="text-[11px] text-muted-foreground">
-                    Rejected: {p.rejection_reason}
-                  </p>
-                )}
-                {p.status === "reversed" && p.reversal_reason && (
-                  <p className="text-[11px] text-muted-foreground">
-                    Reversed: {p.reversal_reason}
-                  </p>
-                )}
-
-                {(tab === "pending" || tab === "verified") && (
-                  <div className="space-y-2">
-                    {tab !== "verified" && (
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          size="sm"
-                          className="rounded-lg"
-                          onClick={() => onVerify(p)}
-                          disabled={busyId === p.id}
-                        >
-                          {busyId === p.id ? (
-                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                          ) : (
-                            <CheckCircle2 className="h-4 w-4 mr-1" />
-                          )}
-                          Verify
-                        </Button>
+          {loading ? (
+            <div className="space-y-2" aria-busy="true" aria-label="Loading payments">
+              {[0, 1, 2].map((i) => <div key={i} className="h-24 rounded-2xl bg-muted animate-pulse" />)}
+            </div>
+          ) : loadError ? (
+            <div role="alert" className="flex items-center justify-between gap-3 rounded-2xl border border-destructive/30 bg-card p-4">
+              <p className="text-sm text-muted-foreground">{loadError}</p>
+              <Button variant="outline" className="min-h-11 shrink-0 rounded-xl" onClick={refresh}>Try again</Button>
+            </div>
+          ) : rows.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">{meta.empty}</div>
+          ) : (
+            <ul className="space-y-2" aria-label={meta.title}>
+              {rows.map((p) => (
+                <li key={p.id} className="relative overflow-hidden rounded-2xl border border-border bg-card">
+                  <span className={`absolute inset-y-0 left-0 w-1 ${TAB_META[(p.status as Tab)]?.bar ?? "bg-muted"}`} aria-hidden />
+                  <div className="space-y-3 p-4 pl-5">
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+                      <div className="min-w-0">
+                        <p className="text-lg font-semibold tabular-nums">₹{Number(p.amount).toLocaleString("en-IN")}</p>
+                        <dl className="mt-1 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                          <dt>Method</dt><dd className="text-foreground">{methodLabel(p.method)}</dd>
+                          <dt>Paid on</dt><dd className="text-foreground">{p.payment_date ? formatDate(p.payment_date) : "Not given"}</dd>
+                          <dt>Reference</dt><dd className="truncate text-foreground">{p.reference_no ?? "None"}</dd>
+                          {p.submitted_at && (<><dt>Submitted</dt><dd>{formatDate(p.submitted_at)}{p.source ? ` · ${p.source.replace("_", " ")}` : ""}</dd></>)}
+                        </dl>
+                        {p.notes && <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">“{p.notes}”</p>}
                       </div>
-                    )}
-                    <div className="space-y-1">
-                      <Label htmlFor={`reason-${p.id}`} className="text-[11px]">
-                        {tab === "verified" ? "Reason to reverse" : "Reason to reject"}
-                      </Label>
-                      <Textarea
-                        id={`reason-${p.id}`}
-                        rows={2}
-                        value={reasonById[p.id] ?? ""}
-                        onChange={(e) =>
-                          setReasonById((prev) => ({ ...prev, [p.id]: e.target.value }))
-                        }
-                        placeholder="Required"
-                      />
-                      <div className="flex gap-2">
-                        {tab === "pending" ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="rounded-lg"
-                            onClick={() => onReject(p)}
-                            disabled={busyId === p.id}
-                          >
-                            <XCircle className="h-4 w-4 mr-1" />
-                            Reject
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="rounded-lg"
-                            onClick={() => onReverse(p)}
-                            disabled={busyId === p.id}
-                          >
-                            <RotateCcw className="h-4 w-4 mr-1" />
-                            Reverse
-                          </Button>
-                        )}
-                      </div>
+                      <StatusChip tone={p.status === "verified" ? "success" : p.status === "pending" ? "warning" : p.status === "rejected" ? "danger" : "neutral"}
+                        icon={p.status === "verified" ? <CheckCircle2 className="h-3 w-3" /> : p.status === "pending" ? <Clock className="h-3 w-3" /> : p.status === "rejected" ? <XCircle className="h-3 w-3" /> : <RotateCcw className="h-3 w-3" />}>
+                        {STATUS_LABEL[p.status] ?? p.status}
+                      </StatusChip>
                     </div>
-                  </div>
-                )}
 
-                {p.submitted_at && (
-                  <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    Submitted {formatDate(p.submitted_at)}
-                    {p.source ? ` · ${p.source.replace("_", " ")}` : ""}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+                    {p.status === "pending" && (
+                      <p className="rounded-lg bg-warning-container px-3 py-2 text-xs text-warning-container-foreground">Not confirmed yet — no receipt has been issued and the bill is still unpaid.</p>
+                    )}
+                    {p.status === "verified" && p.verified_at && (
+                      <p className="flex items-center gap-1 text-xs text-muted-foreground"><Receipt className="h-3.5 w-3.5" />Verified {formatDate(p.verified_at)}{p.verification_notes ? ` · ${p.verification_notes}` : ""}</p>
+                    )}
+                    {p.status === "rejected" && p.rejection_reason && <p className="text-xs text-muted-foreground">Reason: {p.rejection_reason}</p>}
+                    {p.status === "reversed" && p.reversal_reason && <p className="text-xs text-muted-foreground">Reason: {p.reversal_reason}</p>}
+
+                    {(tab === "pending" || tab === "verified") && (
+                      <details className="group rounded-xl border border-border" open={tab === "pending" ? undefined : false}>
+                        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-3 text-sm font-medium">
+                          {tab === "pending" ? "Verify or reject" : "Reverse this payment"}
+                          <span className="text-xs text-muted-foreground group-open:hidden">Open</span>
+                        </summary>
+                        <div className="space-y-3 border-t border-border p-3">
+                          {tab === "pending" && (
+                            <Button className="min-h-11 w-full rounded-xl sm:w-auto" onClick={() => onVerify(p)} disabled={busyId === p.id}>
+                              {busyId === p.id ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-1 h-4 w-4" />}Verify payment
+                            </Button>
+                          )}
+                          <div className="space-y-1">
+                            <Label htmlFor={`reason-${p.id}`} className="text-xs">{tab === "verified" ? "Reason to reverse (required)" : "Reason to reject (required)"}</Label>
+                            <Textarea id={`reason-${p.id}`} rows={2} value={reasonById[p.id] ?? ""} onChange={(e) => setReasonById((prev) => ({ ...prev, [p.id]: e.target.value }))} />
+                          </div>
+                          {tab === "pending" ? (
+                            <Button variant="outline" className="min-h-11 rounded-xl text-destructive" onClick={() => onReject(p)} disabled={busyId === p.id}><XCircle className="mr-1 h-4 w-4" />Reject</Button>
+                          ) : (
+                            <Button variant="outline" className="min-h-11 rounded-xl text-destructive" onClick={() => onReverse(p)} disabled={busyId === p.id}><RotateCcw className="mr-1 h-4 w-4" />Reverse</Button>
+                          )}
+                        </div>
+                      </details>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
-      )}
+
+        <aside aria-label="Record a payment" className="lg:sticky lg:top-20">
+          <RecordOfflinePaymentSection societyId={societyId} onRecorded={refresh} />
+        </aside>
+      </div>
 
       <AlertDialog open={!!confirm} onOpenChange={(o) => !o && setConfirm(null)}>
         <AlertDialogContent>
@@ -410,7 +333,7 @@ function SocietyPaymentsRoute() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </PageShell>
   );
 }
 

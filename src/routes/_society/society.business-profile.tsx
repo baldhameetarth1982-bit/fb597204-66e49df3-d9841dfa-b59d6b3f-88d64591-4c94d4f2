@@ -12,9 +12,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { SocietyInviteCodeCard } from "@/components/society/SocietyInviteCodeCard";
+import { ErrorState } from "@/components/system/ErrorState";
 
 export const Route = createFileRoute("/_society/society/business-profile")({
-  head: () => ({ meta: [{ title: "Business Profile — SociyoHub" }] }),
+  head: () => ({ meta: [{ title: "Society details — SociyoHub" }] }),
   component: BusinessProfilePage,
 });
 
@@ -32,8 +33,9 @@ function BusinessProfilePage() {
     business_pan: "",
   });
   const [saving, setSaving] = useState(false);
+  const [baseline, setBaseline] = useState<typeof form | null>(null);
 
-  const { data: society, isLoading, refetch } = useQuery({
+  const { data: society, isLoading, isError, isFetching, refetch } = useQuery({
     enabled: !!societyId,
     queryKey: ["society-business", societyId],
     queryFn: async () => {
@@ -46,8 +48,8 @@ function BusinessProfilePage() {
   });
 
   useEffect(() => {
-    if (!society) return;
-    setForm({
+    if (!society || isError) return;
+    const next = {
       legal_business_name: society.legal_business_name ?? "",
       business_address: society.business_address ?? "",
       business_city: society.business_city ?? "",
@@ -55,8 +57,21 @@ function BusinessProfilePage() {
       business_pincode: society.business_pincode ?? "",
       business_gstin: society.business_gstin ?? "",
       business_pan: society.business_pan ?? "",
-    });
-  }, [society]);
+    };
+    setForm(next);
+    setBaseline(next);
+  }, [society, isError]);
+
+  // Only allow saving once the real saved values have loaded — never save defaults/blanks over real data.
+  const loaded = !!society && !isError && baseline !== null;
+  const dirty = loaded && JSON.stringify(form) !== JSON.stringify(baseline);
+
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
 
   const complete =
     !!form.legal_business_name &&
@@ -69,7 +84,7 @@ function BusinessProfilePage() {
   const payoutReady = complete && society?.payout_status === "active";
 
   async function save() {
-    if (!societyId) return;
+    if (!societyId || !loaded || saving) return;
     if (!complete) {
       toast.error("Please fill all required fields correctly.");
       return;
@@ -87,10 +102,16 @@ function BusinessProfilePage() {
     });
     setSaving(false);
     if (error) {
-      toast.error(error.message ?? "Could not save business profile");
+      const msg = String(error.message ?? "");
+      toast.error(
+        /forbidden|permission|not authori/i.test(msg)
+          ? "Only Society Admins can change these details."
+          : "Couldn't save. Your changes are still here — please try again.",
+      );
       return;
     }
-    toast.success("Business profile saved");
+    toast.success("Society details saved");
+    setBaseline(form);
     void refetch();
   }
 
@@ -102,19 +123,32 @@ function BusinessProfilePage() {
     );
   }
 
+  if (!societyId || isError || !society) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-10">
+        <ErrorState
+          title={!societyId ? "No society linked" : "Couldn't load your society details"}
+          description="Nothing has been changed. Your saved details are safe."
+          onRetry={societyId ? () => void refetch() : undefined}
+          showSupport={false}
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6 space-y-6">
+    <div className="mx-auto max-w-2xl px-4 py-6 space-y-6 pb-[calc(96px+env(safe-area-inset-bottom))]">
       {societyId && <SocietyInviteCodeCard societyId={societyId} />}
 
       <header className="flex items-start gap-3">
-        <div className="h-11 w-11 rounded-xl bg-primary/10 text-primary grid place-items-center">
+        <div className="h-11 w-11 rounded-xl bg-primary/10 text-primary grid place-items-center shrink-0">
           <Building2 className="h-5 w-5" />
         </div>
-        <div className="flex-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Business Profile</h1>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-2xl font-semibold tracking-tight">Society details</h1>
           <p className="text-sm text-muted-foreground">
-            Legal identity used for payment gateway merchant verification. Must match the business proof submitted to
-            the gateway.
+            Your society's registered name and address. These apply to the whole society and only Society Admins can
+            change them. Changes are recorded in activity history.
           </p>
         </div>
         {payoutReady && (
@@ -179,17 +213,27 @@ function BusinessProfilePage() {
             onChange={(v) => setForm((s) => ({ ...s, business_pan: v.toUpperCase().slice(0, 10) }))}
           />
 
-          <Button onClick={save} disabled={saving} className="w-full min-h-[48px] rounded-xl">
-            {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-            Save business profile
-          </Button>
-
-          {!payoutReady && (
-            <p className="text-xs text-muted-foreground text-center">
-              After saving, complete bank attach on <a href="/society/payouts" className="underline">Payouts</a> to
-              activate online payment collection.
-            </p>
-          )}
+          <div className="flex gap-2">
+            {dirty && (
+              <Button
+                variant="outline"
+                onClick={() => baseline && setForm(baseline)}
+                disabled={saving}
+                className="min-h-[48px] rounded-xl"
+              >
+                Discard
+              </Button>
+            )}
+            <Button
+              onClick={save}
+              disabled={saving || !dirty || isFetching}
+              className="flex-1 min-h-[48px] rounded-xl"
+            >
+              {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              {dirty ? "Save changes" : "No changes to save"}
+            </Button>
+          </div>
+          {dirty && <p className="text-xs text-muted-foreground text-center">You have unsaved changes.</p>}
         </CardContent>
       </Card>
     </div>

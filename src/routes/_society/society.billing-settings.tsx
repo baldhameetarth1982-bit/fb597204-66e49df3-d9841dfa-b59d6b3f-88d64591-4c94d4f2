@@ -450,7 +450,7 @@ function AutoBillingSection({ societyId }: { societyId: string }) {
             Save auto-billing
           </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

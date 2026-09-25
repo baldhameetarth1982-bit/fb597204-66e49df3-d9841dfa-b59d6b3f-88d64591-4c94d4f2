@@ -188,7 +188,7 @@ function LoginPage() {
           <Clock className="h-5 w-5 shrink-0 text-warning" aria-hidden />
           <div>
             <p className="font-medium text-foreground">Please wait before trying again</p>
-            <p className="mt-0.5 text-muted-foreground">{limited} Your account is not blocked.</p>
+            <p className="mt-0.5 text-muted-foreground">{limited} This limit is temporary.</p>
           </div>
         </div>
       )}

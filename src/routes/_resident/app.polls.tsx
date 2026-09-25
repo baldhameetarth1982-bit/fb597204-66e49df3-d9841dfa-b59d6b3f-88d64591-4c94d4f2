@@ -121,7 +121,7 @@ function PollsPage() {
                 return (
                   <label key={o.id} className={cn("flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border px-3 text-sm font-medium transition-colors",
                     sel ? "border-primary bg-primary/5" : "border-border hover:bg-muted/60")}>
-                    <input type="radio" name={`poll-${p.id}`} className="h-5 w-5 accent-[hsl(var(--primary))]" checked={sel}
+                    <input type="radio" name={`poll-${p.id}`} className="h-5 w-5 accent-primary" checked={sel}
                       onChange={() => setPicked((s) => ({ ...s, [p.id]: o.id }))} />
                     {o.label}
                   </label>

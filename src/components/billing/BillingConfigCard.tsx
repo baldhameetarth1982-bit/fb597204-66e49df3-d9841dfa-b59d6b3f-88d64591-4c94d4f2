@@ -125,7 +125,7 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
           <FileText className="h-5 w-5 text-primary" /> Billing configuration
         </CardTitle>
         <p className="text-xs text-muted-foreground">
-          Configure charge heads, templates, and preview per-unit calculations. Preview is safe — no bills are generated in this stage.
+          Configure charge heads, templates, and preview per-unit calculations. Previewing never creates bills.
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -267,7 +267,7 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
                   <p className="text-sm font-semibold flex items-center gap-1.5"><CalendarClock className="h-4 w-4" /> Billing cycles</p>
-                  <p className="text-xs text-muted-foreground">Draft the periods your bills will cover. Nothing is generated in Stage 3A.</p>
+                  <p className="text-xs text-muted-foreground">Draft the periods your bills will cover. Drafting a cycle never creates bills.</p>
                 </div>
                 <Button
                   size="sm"

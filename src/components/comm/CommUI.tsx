@@ -24,9 +24,9 @@ export function CommHeader({ title, subtitle, action }: { title: string; subtitl
   );
 }
 
-export function SectionLabel({ children, count }: { children: ReactNode; count?: number }) {
+export function SectionLabel({ children, count, id }: { children: ReactNode; count?: number; id?: string }) {
   return (
-    <h2 className="mb-2 mt-6 flex items-center gap-2 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground first:mt-0">
+    <h2 id={id} className="mb-2 mt-6 flex items-center gap-2 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground first:mt-0">
       {children}
       {count != null && <span className="rounded-full bg-muted px-1.5 tabular-nums">{count}</span>}
     </h2>

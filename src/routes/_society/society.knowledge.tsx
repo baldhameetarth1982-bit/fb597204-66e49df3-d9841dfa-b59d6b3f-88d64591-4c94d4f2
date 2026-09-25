@@ -3,18 +3,16 @@ import { useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  Archive, ArchiveRestore, CheckCircle2, ExternalLink, FileText, HelpCircle, Loader2, Lock, Pencil, Plus, RefreshCw, Trash2, Upload, XCircle,
+  Archive, ArchiveRestore, CheckCircle2, ExternalLink, FileText, HelpCircle, Loader2, Lock, MoreHorizontal, Pencil, Plus, RefreshCw, Trash2, Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, PageShell } from "@/components/shared/PageHeader";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { InlineNotice, ListEmpty, ListSkeleton, LoadError, SearchField, SegmentedFilter, StatusChip, SummaryStrip } from "@/components/people/PeopleUI";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -38,12 +36,12 @@ export const Route = createFileRoute("/_society/society/knowledge")({
   component: KnowledgeAdmin,
 });
 
-const STATUS: Record<KnowledgeItem["status"], { label: string; cls: string }> = {
-  processing: { label: "Processing", cls: "bg-muted text-muted-foreground" },
-  ready: { label: "Ready for AI", cls: "bg-primary/10 text-primary" },
-  unsupported: { label: "Not readable", cls: "bg-amber-500/15 text-amber-700 dark:text-amber-400" },
-  failed: { label: "Failed", cls: "bg-destructive/10 text-destructive" },
-  archived: { label: "Archived", cls: "bg-muted text-muted-foreground" },
+const STATUS: Record<KnowledgeItem["status"], { label: string; tone: "info" | "success" | "warning" | "neutral" | "muted" }> = {
+  processing: { label: "Processing", tone: "info" },
+  ready: { label: "Ready for AI", tone: "success" },
+  unsupported: { label: "Not readable", tone: "warning" },
+  failed: { label: "Failed", tone: "warning" },
+  archived: { label: "Archived", tone: "muted" },
 };
 
 function fmtSize(n: number | null) {
@@ -57,7 +55,7 @@ function KnowledgeAdmin() {
   const archiveFn = useServerFn(setKnowledgeArchived);
   const deleteFn = useServerFn(deleteKnowledge);
   const openFn = useServerFn(openKnowledgeDocument);
-  const [tab, setTab] = useState<"all" | "document" | "faq" | "archived">("all");
+  const [tab, setTab] = useState<"document" | "faq" | "attention" | "archived">("document");
   const [search, setSearch] = useState("");
   const [uploadFor, setUploadFor] = useState<KnowledgeItem | "new" | null>(null);
   const [faqFor, setFaqFor] = useState<KnowledgeItem | "new" | null>(null);
@@ -86,87 +84,117 @@ function KnowledgeAdmin() {
   const res = q.data;
   const items = res?.ok ? res.items : [];
   const needle = search.trim().toLowerCase();
-  const shown = items
-    .filter((i) => tab === "all" ? i.status !== "archived" : tab === "archived" ? i.status === "archived" : i.kind === tab && i.status !== "archived")
-    .filter((i) => !needle || i.title.toLowerCase().includes(needle) || (i.fileName ?? "").toLowerCase().includes(needle));
-  const ready = items.filter((i) => i.status === "ready").length;
+  const needsFix = (i: KnowledgeItem) => i.status === "failed" || i.status === "unsupported" || i.status === "processing";
+  const inTab = (i: KnowledgeItem) =>
+    tab === "archived" ? i.status === "archived"
+    : tab === "attention" ? needsFix(i)
+    : i.kind === tab && i.status !== "archived";
+  const shown = items.filter(inTab).filter((i) => !needle || i.title.toLowerCase().includes(needle) || (i.fileName ?? "").toLowerCase().includes(needle));
+  const count = (f: (i: KnowledgeItem) => boolean) => items.filter(f).length;
+  const nDocs = count((i) => i.kind === "document" && i.status !== "archived");
+  const nFaqs = count((i) => i.kind === "faq" && i.status !== "archived");
+  const nFix = count(needsFix);
+  const nArch = count((i) => i.status === "archived");
+  const ready = count((i) => i.status === "ready");
+  const loaded = !!res?.ok;
 
   return (
     <PageShell>
-      <PageHeader title="Documents & FAQs" description="What AI Secretary can use to answer residents. Only items marked Ready for AI are used." />
+      <PageHeader
+        title="Documents & FAQs"
+        description="The society information AI Secretary answers from. Only items marked Ready are used."
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => setFaqFor("new")} className="min-h-11"><Plus className="h-4 w-4 mr-1.5" /> Add FAQ</Button>
+            <Button onClick={() => setUploadFor("new")} className="min-h-11"><Upload className="h-4 w-4 mr-1.5" /> Upload document</Button>
+          </div>
+        }
+      />
       <div className="space-y-4">
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={() => setUploadFor("new")} className="min-h-11"><Upload className="h-4 w-4 mr-1.5" /> Upload document</Button>
-          <Button variant="outline" onClick={() => setFaqFor("new")} className="min-h-11"><Plus className="h-4 w-4 mr-1.5" /> Add FAQ</Button>
-        </div>
-
         {q.isLoading ? (
-          <div className="space-y-2">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-20 rounded-2xl" />)}</div>
+          <ListSkeleton rows={4} />
         ) : q.isError || (res && !res.ok) ? (
-          <Card className="rounded-2xl"><CardContent className="p-6 text-center space-y-3">
-            {res && !res.ok && res.message.includes("Pro") ? <Lock className="h-6 w-6 mx-auto text-muted-foreground" /> : <XCircle className="h-6 w-6 mx-auto text-destructive" />}
-            <p className="text-sm">{res && !res.ok ? res.message : "Couldn't load documents."}</p>
-            <Button variant="outline" onClick={() => q.refetch()} className="min-h-11"><RefreshCw className="h-4 w-4 mr-1.5" /> Try again</Button>
-          </CardContent></Card>
+          res && !res.ok && res.message.includes("Pro") ? (
+            <InlineNotice icon={Lock} title="Available on the Pro plan">{res.message}</InlineNotice>
+          ) : (
+            <LoadError title={res && !res.ok ? res.message : "Couldn't load documents."} onRetry={() => q.refetch()} />
+          )
         ) : (
           <>
-            <p className="text-sm text-muted-foreground">{ready} of {items.length} item{items.length === 1 ? "" : "s"} ready for AI Secretary.</p>
-            <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
-              <TabsList className="w-full sm:w-auto overflow-x-auto">
-                <TabsTrigger value="all">All</TabsTrigger>
-                <TabsTrigger value="document">Documents</TabsTrigger>
-                <TabsTrigger value="faq">FAQs</TabsTrigger>
-                <TabsTrigger value="archived">Archived</TabsTrigger>
-              </TabsList>
-            </Tabs>
-            <Input type="search" aria-label="Search documents and FAQs" placeholder="Search by title or file name" value={search} onChange={(e) => setSearch(e.target.value)} className="min-h-11" />
+            <SummaryStrip items={[
+              { label: "Ready for AI", value: loaded ? ready : "—" },
+              { label: "Documents", value: loaded ? nDocs : "—" },
+              { label: "FAQs", value: loaded ? nFaqs : "—" },
+              { label: "Need attention", value: loaded ? nFix : "—", hint: "Processing, failed or unreadable" },
+            ]} />
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <SegmentedFilter label="Show" value={tab} onChange={setTab} options={[
+                { key: "document", label: "Documents", count: nDocs },
+                { key: "faq", label: "FAQs", count: nFaqs },
+                { key: "attention", label: "Needs attention", count: nFix },
+                { key: "archived", label: "Archived", count: nArch },
+              ]} />
+              <div className="md:w-72"><SearchField value={search} onChange={setSearch} placeholder="Search title or file name" label="Search documents and FAQs" /></div>
+            </div>
             {shown.length === 0 ? (
-              <Card className="rounded-2xl"><CardContent className="p-8 text-center space-y-2">
-                <FileText className="h-7 w-7 mx-auto text-muted-foreground" />
-                <p className="font-medium">{needle ? "No matches" : tab === "archived" ? "Nothing archived" : "No knowledge yet"}</p>
-                <p className="text-sm text-muted-foreground">{tab === "archived" ? "Archived items appear here and aren't used by AI Secretary." : "Upload rules, policies or circulars as PDF or text, or add common questions as FAQs."}</p>
-              </CardContent></Card>
+              <ListEmpty icon={tab === "faq" ? HelpCircle : FileText} title={needle ? "No matches" : tab === "archived" ? "Nothing archived" : tab === "attention" ? "Nothing needs attention" : tab === "faq" ? "No FAQs yet" : "No documents yet"}>
+                {needle ? `Nothing matches “${search.trim()}”.` : tab === "archived" ? "Archived items stay here and aren't used by AI Secretary." : tab === "attention" ? "Every item has finished processing." : tab === "faq" ? "Add common questions residents ask, with the committee's answer." : "Upload rules, policies or circulars as PDF or text."}
+              </ListEmpty>
             ) : (
-              <ul className="space-y-2">
-                {shown.map((i) => (
-                  <li key={i.id}>
-                    <Card className="rounded-2xl"><CardContent className="p-4 space-y-2">
+              <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
+                {shown.map((i) => {
+                  const st = STATUS[i.status];
+                  return (
+                    <li key={i.id} className={`relative px-4 py-3 ${i.status === "failed" ? "border-l-4 border-l-destructive" : i.status === "unsupported" ? "border-l-4 border-l-warning" : ""}`}>
                       <div className="flex items-start gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary grid place-items-center shrink-0">
+                        <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
                           {i.kind === "faq" ? <HelpCircle className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="font-medium leading-snug break-words">{i.title}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {i.kind === "faq" ? "FAQ" : [i.fileName, fmtSize(i.sizeBytes)].filter(Boolean).join(" · ")}
-                            {" · "}Updated {new Date(i.updatedAt).toLocaleDateString("en-IN")}
-                            {i.audience === "committee" ? " · Committee only" : " · Residents"}
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <StatusChip tone={st.tone}>
+                              {i.status === "processing" && <Loader2 className="h-3 w-3 mr-1 motion-safe:animate-spin" />}
+                              {i.status === "ready" && <CheckCircle2 className="h-3 w-3 mr-1" />}
+                              {st.label}
+                            </StatusChip>
+                            {i.audience === "committee" && <StatusChip tone="muted"><Lock className="h-3 w-3 mr-1" />Committee only</StatusChip>}
+                          </div>
+                          <p className="mt-1 font-medium leading-snug break-words">{i.title}</p>
+                          <p className="text-xs text-muted-foreground break-all">
+                            {[i.kind === "faq" ? "FAQ" : i.fileName, i.kind === "document" ? fmtSize(i.sizeBytes) : null, `Updated ${new Date(i.updatedAt).toLocaleDateString("en-IN")}`].filter(Boolean).join(" · ")}
                           </p>
+                          {i.kind === "faq" && i.faqAnswer && <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{i.faqAnswer}</p>}
+                          {i.statusReason && i.status !== "ready" && <p className="mt-2 rounded-lg bg-muted px-3 py-2 text-xs">{i.statusReason}</p>}
+                          {i.status === "processing" && <p className="mt-1 text-xs text-muted-foreground" role="status">Still processing — not searchable yet. If this stays, upload the file again.</p>}
                         </div>
-                        <Badge variant="secondary" className={STATUS[i.status].cls}>
-                          {i.status === "processing" && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
-                          {i.status === "ready" && <CheckCircle2 className="h-3 w-3 mr-1" />}
-                          {STATUS[i.status].label}
-                        </Badge>
+                        <div className="flex shrink-0 items-center gap-1">
+                          {i.kind === "document"
+                            ? <Button size="sm" variant="outline" className="min-h-11 hidden sm:inline-flex" onClick={() => open(i.id)}><ExternalLink className="h-4 w-4 mr-1" /> View</Button>
+                            : <Button size="sm" variant="outline" className="min-h-11 hidden sm:inline-flex" onClick={() => setFaqFor(i)}><Pencil className="h-4 w-4 mr-1" /> Edit</Button>}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button size="icon" variant="ghost" className="h-11 w-11" aria-label={`More actions for ${i.title}`}><MoreHorizontal className="h-5 w-5" /></Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              {i.kind === "document" ? (
+                                <>
+                                  <DropdownMenuItem className="min-h-11 sm:hidden" onSelect={() => open(i.id)}><ExternalLink className="h-4 w-4 mr-2" /> View</DropdownMenuItem>
+                                  <DropdownMenuItem className="min-h-11" onSelect={() => setUploadFor(i)}><RefreshCw className="h-4 w-4 mr-2" /> Replace file</DropdownMenuItem>
+                                </>
+                              ) : (
+                                <DropdownMenuItem className="min-h-11 sm:hidden" onSelect={() => setFaqFor(i)}><Pencil className="h-4 w-4 mr-2" /> Edit</DropdownMenuItem>
+                              )}
+                              {i.status === "ready" && <DropdownMenuItem className="min-h-11" disabled={archive.isPending} onSelect={() => archive.mutate({ id: i.id, archived: true })}><Archive className="h-4 w-4 mr-2" /> Archive</DropdownMenuItem>}
+                              {i.status === "archived" && <DropdownMenuItem className="min-h-11" disabled={archive.isPending} onSelect={() => archive.mutate({ id: i.id, archived: false })}><ArchiveRestore className="h-4 w-4 mr-2" /> Restore</DropdownMenuItem>}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="min-h-11 text-destructive focus:text-destructive" onSelect={() => setRemoving(i)}><Trash2 className="h-4 w-4 mr-2" /> Remove…</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
-                      {i.statusReason && i.status !== "ready" && <p className="text-xs rounded-lg bg-muted px-3 py-2">{i.statusReason}</p>}
-                      {i.status === "processing" && <p className="text-xs text-muted-foreground">Still processing. It isn't searchable yet — if this stays, upload the file again.</p>}
-                      {i.kind === "faq" && i.faqAnswer && <p className="text-sm text-muted-foreground line-clamp-2">{i.faqAnswer}</p>}
-                      <div className="flex flex-wrap gap-1.5 pt-1">
-                        {i.kind === "document" && (
-                          <>
-                            <Button size="sm" variant="ghost" className="min-h-11" onClick={() => open(i.id)}><ExternalLink className="h-4 w-4 mr-1" /> View</Button>
-                            <Button size="sm" variant="ghost" className="min-h-11" onClick={() => setUploadFor(i)}><RefreshCw className="h-4 w-4 mr-1" /> Replace</Button>
-                          </>
-                        )}
-                        {i.kind === "faq" && <Button size="sm" variant="ghost" className="min-h-11" onClick={() => setFaqFor(i)}><Pencil className="h-4 w-4 mr-1" /> Edit</Button>}
-                        {i.status === "ready" && <Button size="sm" variant="ghost" className="min-h-11" disabled={archive.isPending} onClick={() => archive.mutate({ id: i.id, archived: true })}><Archive className="h-4 w-4 mr-1" /> Archive</Button>}
-                        {i.status === "archived" && <Button size="sm" variant="ghost" className="min-h-11" disabled={archive.isPending} onClick={() => archive.mutate({ id: i.id, archived: false })}><ArchiveRestore className="h-4 w-4 mr-1" /> Restore</Button>}
-                        <Button size="sm" variant="ghost" className="min-h-11 text-destructive" onClick={() => setRemoving(i)}><Trash2 className="h-4 w-4 mr-1" /> Remove</Button>
-                      </div>
-                    </CardContent></Card>
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </>

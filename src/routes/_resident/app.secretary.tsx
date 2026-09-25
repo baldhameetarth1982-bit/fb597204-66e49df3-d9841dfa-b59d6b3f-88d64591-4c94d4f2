@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  AlertTriangle, ArrowUp, BookOpen, FileText, HelpCircle, ChevronLeft, Clock, FileSearch, Landmark, Lock, Megaphone, Phone, RotateCcw, SquarePen,
+  AlertTriangle, ArrowUp, BookOpen, FileText, HelpCircle, ChevronLeft, Clock, FileSearch, Landmark, Lock, Megaphone, Phone, RotateCcw, ShieldCheck, SquarePen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -155,7 +155,7 @@ function SecretaryPage() {
         </div>
       ) : (
         <>
-          <main className="flex-1 px-4 pt-4 pb-4 space-y-5" aria-live="polite" aria-relevant="additions">
+          <main className="flex-1 px-4 pt-4 pb-4 space-y-6" aria-live="polite" aria-relevant="additions">
             {turns.length === 0 && <EmptyState onPick={(s) => void submit(s)} disabled={busy} />}
 
             {turns.map((t, i) => (
@@ -188,7 +188,7 @@ function SecretaryPage() {
           </main>
 
           <form
-            className="sticky bottom-[calc(64px+env(safe-area-inset-bottom))] z-10 bg-background/95 backdrop-blur border-t px-3 pt-2 pb-3"
+            className="sticky bottom-[calc(68px+env(safe-area-inset-bottom))] z-10 bg-background/95 backdrop-blur border-t px-3 pt-2 pb-3"
             onSubmit={(e) => { e.preventDefault(); void submit(question); }}
           >
             <div className="flex items-end gap-2 rounded-2xl border bg-card px-3 py-1.5 focus-within:ring-2 focus-within:ring-ring">
@@ -220,41 +220,50 @@ function SecretaryPage() {
 
 function EmptyState({ onPick, disabled }: { onPick: (s: string) => void; disabled: boolean }) {
   return (
-    <section className="pt-4 space-y-6">
+    <section className="pt-2 space-y-6" aria-labelledby="sec-hello">
       <div className="space-y-2">
-        <h2 className="text-2xl font-semibold tracking-tight">How can I help?</h2>
+        <h2 id="sec-hello" className="text-2xl font-semibold tracking-tight">Ask your society</h2>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Ask about your society's rules, recent notices or who to contact. I'll show where each answer comes from, and tell you plainly when something isn't covered.
+          I answer only from information your committee has published for your society. Every answer shows its sources, and I'll say plainly when something isn't covered.
         </p>
       </div>
-      <div className="space-y-2">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Try asking</p>
-        <div className="flex flex-wrap gap-2">
-          {SUGGESTIONS.map((s) => (
-            <button
-              key={s}
-              type="button"
-              disabled={disabled}
-              onClick={() => onPick(s)}
-              className="min-h-11 rounded-full border bg-card px-4 text-sm text-left hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 transition-colors"
-            >
-              {s}
-            </button>
+
+      <div>
+        <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">What I use</p>
+        <ul className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border bg-border sm:grid-cols-4">
+          {([
+            ["/app/bylaws", BookOpen, "By-laws"],
+            ["/app/notices", Megaphone, "Notices"],
+            ["/app/contacts", Phone, "Contacts"],
+            ["/app/documents", FileText, "Documents & FAQs"],
+          ] as const).map(([to, Icon, label]) => (
+            <li key={to} className="bg-card">
+              <Link to={to} className="flex min-h-12 items-center gap-2 px-3 py-2.5 text-sm hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
+                <Icon className="h-4 w-4 shrink-0 text-primary" aria-hidden /><span className="min-w-0 break-words">{label}</span>
+              </Link>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-        {([
-          ["/app/bylaws", BookOpen, "By-laws"],
-          ["/app/notices", Megaphone, "Notices"],
-          ["/app/contacts", Phone, "Contacts"],
-          ["/app/documents", FileText, "Documents"],
-        ] as const).map(([to, Icon, label]) => (
-          <Link key={to} to={to} className="min-h-11 rounded-xl border p-3 flex flex-col items-center gap-1 text-xs hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            <Icon className="h-4 w-4 text-primary" />{label}
-          </Link>
-        ))}
+
+      <div>
+        <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Try asking</p>
+        <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
+          {SUGGESTIONS.slice(0, 4).map((s) => (
+            <li key={s}>
+              <button type="button" disabled={disabled} onClick={() => onPick(s)}
+                className="flex w-full min-h-12 items-center gap-3 px-4 text-left text-sm hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:opacity-50">
+                <span className="flex-1">{s}</span><ArrowUp className="h-4 w-4 rotate-45 text-muted-foreground" aria-hidden />
+              </button>
+            </li>
+          ))}
+        </ul>
       </div>
+
+      <p className="flex gap-2 px-1 text-xs text-muted-foreground">
+        <ShieldCheck className="h-4 w-4 shrink-0" aria-hidden />
+        Not legal or accounting advice. For decisions, confirm with your committee.
+      </p>
     </section>
   );
 }
@@ -297,14 +306,20 @@ function AnswerBlock({ r }: { r: Extract<AskSecretaryResult, { ok: true }>["data
             ))}
           </div>
         )}
+        {!answered && !(r.actions?.length > 0) && (
+          <Link to="/app/helpdesk" className="inline-flex min-h-11 items-center rounded-full border bg-card px-3.5 text-sm font-medium text-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            Ask the committee on Helpdesk →
+          </Link>
+        )}
         {r.citations.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground">Sources</p>
+          <div className="space-y-2 border-l-2 border-primary/30 pl-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Based on {r.citations.length} source{r.citations.length === 1 ? "" : "s"}</p>
             <ul className="space-y-2">
               {r.citations.map((c) => {
                 const Icon = KIND_ICON[c.kind] ?? BookOpen;
                 return (
                   <li key={c.label} className="rounded-xl border bg-card p-3 space-y-1.5">
+                    <span className="sr-only">Source: </span>
                     <div className="flex items-start gap-2">
                       <Icon className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                       <div className="min-w-0 flex-1">

@@ -666,6 +666,9 @@ export async function _commitMigrationJobViaRpc(
     return { status: "operation_failed" as const, result: null };
   }
   const obj = (raw ?? {}) as { status?: string; result?: unknown };
+  if (obj.status === "operation_failed") {
+    console.error("[migration] commit operation_failed sqlstate", (raw as { sqlstate?: string } | null)?.sqlstate);
+  }
   const parsedStatus = CommitStatus.safeParse(obj.status);
   if (!parsedStatus.success) {
     console.error("[migration] commit returned unknown status", obj.status);

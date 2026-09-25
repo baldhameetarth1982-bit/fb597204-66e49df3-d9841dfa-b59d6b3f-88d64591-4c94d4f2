@@ -247,7 +247,7 @@ function SocietyDashboard() {
 
       <div className="mt-6 grid gap-6 lg:grid-cols-12">
         {/* Primary column */}
-        <div className="space-y-6 lg:col-span-8">
+        <div className="min-w-0 space-y-6 lg:col-span-8">
           {isError && !data ? (
             <Card className="rounded-xl">
               <ErrorState
@@ -299,7 +299,7 @@ function SocietyDashboard() {
         </div>
 
         {/* Secondary column */}
-        <aside className="space-y-6 lg:col-span-4">
+        <aside className="min-w-0 space-y-6 lg:col-span-4">
           <section aria-labelledby="shortcuts-h">
             <h2 id="shortcuts-h" className="mb-2 text-sm font-semibold">Shortcuts</h2>
             <nav className="grid grid-cols-2 overflow-hidden rounded-xl border border-border bg-card">

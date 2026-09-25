@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { toast } from "sonner";
+import { ROLES } from "@/config/roles";
 import { ErrorState } from "@/components/system/ErrorState";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
@@ -62,7 +63,9 @@ function initials(n?: string | null) {
 }
 
 function FeedScreen() {
-  const { user } = useAuth();
+  const { user, hasAnyRole } = useAuth();
+  // UI hint only — the database only lets Society Admins of the post's society remove others' posts.
+  const isSocietyAdmin = hasAnyRole([ROLES.SOCIETY_ADMIN]);
   const { societyId } = useSocietyId();
   const [posts, setPosts] = useState<PostRow[]>([]);
   const [digest, setDigest] = useState<DigestRow | null>(null);
@@ -255,7 +258,7 @@ function FeedScreen() {
     const { data, error } = await supabase.from("posts").delete().eq("id", pendingDelete.id).select("id");
     setDeleting(false);
     if (error || !data || data.length === 0) {
-      toast.error("Couldn't remove this post. You can only remove your own posts.");
+      toast.error("Couldn't remove this post. You don't have permission to remove it.");
     } else {
       setPosts((prev) => prev.filter((x) => x.id !== pendingDelete.id));
       toast.success("Post removed");
@@ -392,11 +395,11 @@ function FeedScreen() {
                   </p>
                   <p className="text-[11px] text-muted-foreground">{timeAgo(p.created_at)}</p>
                 </div>
-                {p.author_id === user?.id && (
+                {(p.author_id === user?.id || isSocietyAdmin) && (
                   <Button
                     variant="ghost"
                     size="icon"
-                    aria-label="Remove your post"
+                    aria-label={p.author_id === user?.id ? "Remove your post" : "Remove post (committee)"}
                     onClick={() => setPendingDelete(p)}
                     className="h-10 w-10 rounded-xl text-muted-foreground shrink-0"
                   >
@@ -441,9 +444,14 @@ function FeedScreen() {
       <AlertDialog open={!!pendingDelete} onOpenChange={(o) => !o && !deleting && setPendingDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove this post?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {pendingDelete && pendingDelete.author_id !== user?.id ? "Remove this resident's post?" : "Remove this post?"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              It will disappear from the community feed for everyone. This can't be undone.
+              {pendingDelete && pendingDelete.author_id !== user?.id
+                ? "As a Society Admin you can remove posts that break your society's rules. "
+                : ""}
+              It will disappear from the community feed for everyone, along with its comments. This can't be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

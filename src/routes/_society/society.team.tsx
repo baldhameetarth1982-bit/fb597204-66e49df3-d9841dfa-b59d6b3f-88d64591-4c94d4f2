@@ -23,6 +23,12 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { ErrorState } from "@/components/system/ErrorState";
+import { useAuth } from "@/context/AuthContext";
+import {
   listTeamMembers, upsertTeamRole, setTeamActive,
   listAssignmentCandidates, getSocietyPrivacy, setSocietyPrivacy,
 } from "@/lib/team-admin.functions";
@@ -81,12 +87,16 @@ function friendlyError(code: string): string {
 
 function TeamPage() {
   const { societyId, loading: sidLoading } = useSocietyId();
+  const { user } = useAuth();
   const [members, setMembers] = useState<Member[]>([]);
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [structureMode, setStructureMode] = useState<"structured" | "serial">("structured");
   const [privacy, setPrivacy] = useState<SocietyPrivacySettings>(DEFAULT_PRIVACY);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [savingPrivacy, setSavingPrivacy] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState<Member | null>(null);
+  const [busyRoleId, setBusyRoleId] = useState<string | null>(null);
 
   const fnList = useServerFn(listTeamMembers);
   const fnUpsert = useServerFn(upsertTeamRole);
@@ -97,6 +107,7 @@ function TeamPage() {
 
   async function loadAll(sid: string) {
     setLoading(true);
+    setLoadError(false);
     try {
       const [team, blocksRes, socRes, priv] = await Promise.all([
         fnList({ data: { societyId: sid, includeInactive: true } }),
@@ -104,12 +115,15 @@ function TeamPage() {
         supabase.from("societies").select("structure_mode").eq("id", sid).maybeSingle(),
         fnGetPrivacy({ data: { societyId: sid } }),
       ]);
+      if (blocksRes.error || socRes.error) throw new Error("load_failed");
       setMembers(team.members);
       setBlocks((blocksRes.data ?? []).filter((b) => b.is_active !== false).map((b) => ({ id: b.id, name: b.name })));
       setStructureMode(((socRes.data?.structure_mode as string) === "serial") ? "serial" : "structured");
       setPrivacy(priv);
     } catch (e) {
-      toast.error(friendlyError((e as Error).message));
+      setLoadError(true);
+      const msg = (e as Error).message;
+      if (msg === "forbidden") toast.error(friendlyError(msg));
     } finally {
       setLoading(false);
     }
@@ -124,15 +138,21 @@ function TeamPage() {
   const chairmanCount = activeMembers.filter((m) => m.role === "society_admin").length;
   const blockAdminCount = activeMembers.filter((m) => m.role === "block_admin").length;
   const securityCount = activeMembers.filter((m) => m.role === "security").length;
+  const statsReady = !loading && !loadError;
+  const stat = (n: number) => (statsReady ? n : "—");
 
   async function handleToggleActive(m: Member) {
-    if (!societyId) return;
+    if (!societyId || busyRoleId) return;
+    setBusyRoleId(m.role_id);
     try {
       await fnSetActive({ data: { societyId, roleId: m.role_id, isActive: !m.is_active } });
       toast.success(m.is_active ? "Team member deactivated" : "Team member reactivated");
       void loadAll(societyId);
     } catch (e) {
       toast.error(friendlyError((e as Error).message));
+    } finally {
+      setBusyRoleId(null);
+      setConfirmTarget(null);
     }
   }
 
@@ -181,25 +201,37 @@ function TeamPage() {
         }
         stats={
           <StatPillRow>
-            <StatPill label="Active team" value={activeMembers.length} />
-            <StatPill label="Society admins" value={chairmanCount} />
-            <StatPill label="Block admins" value={blockAdminCount} />
-            <StatPill label="Guards" value={securityCount} />
+            <StatPill label="Active team" value={stat(activeMembers.length)} />
+            <StatPill label="Society admins" value={stat(chairmanCount)} />
+            <StatPill label="Block admins" value={stat(blockAdminCount)} />
+            <StatPill label="Guards" value={stat(securityCount)} />
           </StatPillRow>
         }
       />
 
       <div className="px-4 pt-4 space-y-4 max-w-5xl mx-auto md:px-8">
-        <SectionCard title={`Team members · ${members.length}`} bodyClassName="p-0">
+        <SectionCard title={statsReady ? `Team members · ${members.length}` : "Team members"} bodyClassName="p-0">
           {loading ? (
             <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+          ) : loadError ? (
+            <div className="p-4">
+              <ErrorState
+                title="Couldn't load your team"
+                description="Your team and settings are safe. Check your connection and try again."
+                onRetry={() => societyId && loadAll(societyId)}
+                showSupport={false}
+              />
+            </div>
           ) : members.length === 0 ? (
             <div className="p-6">
               <EmptyState icon={ShieldCheck} title="No team roles yet" description="Promote residents to delegate management of blocks or security." />
             </div>
           ) : (
             <ListCardGroup>
-              {members.map((m) => (
+              {members.map((m) => {
+                const isSelf = m.user_id === user?.id;
+                const busy = busyRoleId === m.role_id;
+                return (
                 <ListCard
                   key={m.role_id}
                   leading={
@@ -210,9 +242,10 @@ function TeamPage() {
                     </Avatar>
                   }
                   title={
-                    <span className="flex items-center gap-1">
-                      {m.role === "society_admin" && <Crown className="h-3.5 w-3.5 text-primary" />}
-                      {m.full_name}
+                    <span className="flex items-center gap-1 min-w-0">
+                      {m.role === "society_admin" && <Crown className="h-3.5 w-3.5 text-primary shrink-0" />}
+                      <span className="truncate">{m.full_name}</span>
+                      {isSelf && <span className="text-xs font-normal text-muted-foreground shrink-0">(you)</span>}
                     </span>
                   }
                   subtitle={
@@ -234,15 +267,18 @@ function TeamPage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => handleToggleActive(m)}
-                      className="h-9 min-w-[44px] text-xs"
-                      aria-label={m.is_active ? "Deactivate" : "Reactivate"}
+                      disabled={!!busyRoleId}
+                      onClick={() => (m.is_active ? setConfirmTarget(m) : handleToggleActive(m))}
+                      className="h-11 min-w-[44px] text-xs"
+                      aria-label={`${m.is_active ? "Deactivate" : "Reactivate"} ${m.full_name}`}
                     >
+                      {busy && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />}
                       {m.is_active ? "Deactivate" : "Reactivate"}
                     </Button>
                   }
                 />
-              ))}
+                );
+              })}
             </ListCardGroup>
           )}
         </SectionCard>
@@ -252,21 +288,54 @@ function TeamPage() {
           description="Control what residents can see. Changes are audited."
           icon={EyeOff}
         >
-          <PrivacyControls
-            value={privacy}
-            saving={savingPrivacy}
-            onSave={handlePrivacySave}
-          />
+          {loading ? (
+            <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+          ) : loadError ? (
+            <p className="text-sm text-muted-foreground">
+              Privacy settings couldn't be loaded, so they can't be changed right now. Use "Try again" above.
+            </p>
+          ) : (
+            <PrivacyControls
+              value={privacy}
+              saving={savingPrivacy}
+              onSave={handlePrivacySave}
+            />
+          )}
         </SectionCard>
 
         <SectionCard
           title="Role permissions"
-          description="Read-only preview generated from the canonical permission model."
+          description="What each role can do. Roles are separate from your subscription plan — a plan decides which features your society has; a role decides who can use them."
           icon={UserCog}
         >
           <RolePermissionPreview />
         </SectionCard>
       </div>
+
+      <AlertDialog open={!!confirmTarget} onOpenChange={(o) => !o && !busyRoleId && setConfirmTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmTarget?.user_id === user?.id ? "Remove your own role?" : `Deactivate ${confirmTarget?.full_name}?`}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmTarget?.user_id === user?.id
+                ? "You'll lose access to these admin tools straight away. Another Society Admin would need to restore it."
+                : `They'll lose ${confirmTarget ? ROLE_LABELS[confirmTarget.role as Role] : "this role"} access straight away. Their history is kept and you can reactivate them later.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!busyRoleId}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={!!busyRoleId}
+              onClick={(e) => { e.preventDefault(); if (confirmTarget) void handleToggleActive(confirmTarget); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {busyRoleId && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Deactivate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

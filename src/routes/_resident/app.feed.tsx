@@ -18,7 +18,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2, Megaphone } from "lucide-react";
+import { Trash2, Megaphone, MoreHorizontal } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 function safeMsg(e: unknown, fallback: string): string {
   const m = e instanceof Error ? e.message : typeof e === "object" && e && "message" in e ? String((e as any).message) : "";
@@ -27,7 +28,14 @@ function safeMsg(e: unknown, fallback: string): string {
 }
 
 export const Route = createFileRoute("/_resident/app/feed")({
-  head: () => ({ meta: [{ title: "Community Feed — SociyoHub" }] }),
+  head: () => ({
+    meta: [
+      { title: "Community — SociyoHub" },
+      { name: "description", content: "Posts and conversations between residents of your society." },
+      { property: "og:title", content: "Community — SociyoHub" },
+      { property: "og:description", content: "Posts and conversations between residents of your society." },
+    ],
+  }),
   component: FeedScreen,
 });
 

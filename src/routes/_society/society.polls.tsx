@@ -118,6 +118,7 @@ function AdminPolls() {
         <div className="grid gap-2 px-4 py-3 md:grid-cols-[1fr_10rem_auto] md:items-center md:gap-4">
           <button type="button" onClick={() => setExpanded(isOpen ? null : p.id)} aria-expanded={isOpen}
             className="flex min-h-11 min-w-0 items-start gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg">
+            <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground"><ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`} aria-hidden /></span>
             <span className="min-w-0 flex-1">
               <span className="flex flex-wrap items-center gap-1.5">
                 {done ? <StatusChip tone="muted">Closed</StatusChip> : <StatusChip tone="success">Open for voting</StatusChip>}
@@ -125,7 +126,6 @@ function AdminPolls() {
               </span>
               <span className="mt-0.5 block font-medium">{p.title}</span>
             </span>
-            <ChevronDown className={`mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`} aria-hidden />
           </button>
           <p className="text-sm text-muted-foreground md:text-right">
             <span className="font-semibold tabular-nums text-foreground">{total}</span> vote{total === 1 ? "" : "s"}

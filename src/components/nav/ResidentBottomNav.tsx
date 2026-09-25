@@ -1,6 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Home, Receipt, ShieldCheck, Building2, User } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 

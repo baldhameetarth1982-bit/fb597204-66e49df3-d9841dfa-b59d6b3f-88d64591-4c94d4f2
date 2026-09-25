@@ -54,38 +54,46 @@ const PLATFORM: ModuleItem[] = [
 ];
 
 function AdminDashboard() {
-  const { data: summary } = useQuery({
+  const sumQ = useQuery({
     queryKey: ["admin-platform-summary"],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("admin_platform_summary");
-      if (error) throw error;
+      if (error) throw new Error("load_failed");
       return data?.[0] ?? null;
     },
   });
 
-  const { data: rev } = useQuery({
+  const revQ = useQuery({
     queryKey: ["admin-mrr"],
     queryFn: async () => {
       const [socs, plans] = await Promise.all([
-        supabase.from("societies").select("plan_id").eq("plan_status", "active"),
+        supabase.from("societies").select("plan_id, plan_expires_at, status").eq("plan_status", "active"),
         supabase.from("plans").select("id, price_monthly_inr"),
       ]);
+      // Never compute revenue from a partial dataset.
+      if (socs.error || plans.error) throw new Error("load_failed");
       const map = new Map<string, number>(
-        (plans.data ?? []).map((p: any) => [p.id, p.price_monthly_inr ?? 0]),
+        (plans.data ?? []).map((p: any) => [p.id, Number(p.price_monthly_inr ?? 0)]),
       );
+      const now = Date.now();
       let mrr = 0;
-      for (const s of socs.data ?? []) mrr += map.get(s.plan_id ?? "") ?? 0;
+      for (const s of socs.data ?? []) {
+        if ((s as any).status === "suspended") continue;
+        const exp = (s as any).plan_expires_at as string | null;
+        if (exp && new Date(exp).getTime() < now) continue; // expired plans aren't recurring revenue
+        mrr += map.get(s.plan_id ?? "") ?? 0; // unknown plan ids contribute nothing
+      }
       return { mrr };
     },
   });
 
-  const mrr = rev?.mrr ?? 0;
-  const totalSocs = Number(summary?.total_societies ?? 0);
-  const activeSocs = Number(summary?.active_societies ?? 0);
-  const trialing = Number(summary?.trialing_societies ?? 0);
-  const totalUsers = Number(summary?.total_users ?? 0);
-  const unpaid = Number(summary?.unpaid_bill_total ?? 0);
-  const paid = Number(summary?.successful_payment_total ?? 0);
+  const summary = sumQ.data;
+  const sumOk = sumQ.isSuccess && !!summary;
+  const dash = "—";
+  const num = (v: unknown) => Number(v ?? 0);
+  const activeSocs = num(summary?.active_societies);
+  const trialing = num(summary?.trialing_societies);
+  const unpaid = num(summary?.unpaid_bill_total);
 
   return (
     <div className="min-h-dvh bg-muted/30 pb-24">
@@ -97,33 +105,47 @@ function AdminDashboard() {
         variant="navy"
         stats={
           <StatPillRow>
-            <StatPill label="MRR" value={compact(mrr)} icon={TrendingUp} />
-            <StatPill label="Societies" value={totalSocs} icon={Building2} />
-            <StatPill label="Users" value={totalUsers.toLocaleString("en-IN")} icon={Users} />
-            <StatPill label="Payments" value={compact(paid)} icon={CreditCard} />
+            <StatPill label="MRR" value={revQ.isSuccess ? compact(revQ.data.mrr) : dash} icon={TrendingUp} />
+            <StatPill label="Societies" value={sumOk ? num(summary.total_societies) : dash} icon={Building2} />
+            <StatPill label="Users" value={sumOk ? num(summary.total_users).toLocaleString("en-IN") : dash} icon={Users} />
+            <StatPill label="Payments" value={sumOk ? compact(num(summary.successful_payment_total)) : dash} icon={CreditCard} />
           </StatPillRow>
         }
       />
 
       <div className="px-4 pt-4 space-y-4 max-w-5xl mx-auto">
+        {(sumQ.isError || revQ.isError) && (
+          <div role="alert" className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between gap-3">
+            <p className="text-sm text-foreground">Some platform figures couldn't load. Numbers show "—" until they do.</p>
+            <button
+              type="button"
+              onClick={() => { sumQ.refetch(); revQ.refetch(); }}
+              className="min-h-11 shrink-0 rounded-xl border border-border bg-card px-4 text-sm font-medium"
+            >
+              Try again
+            </button>
+          </div>
+        )}
         <SectionCard title="Platform pulse" icon={ShieldCheck} bodyClassName="p-0">
           <ListCardGroup>
             <ListCard
               title="Active subscriptions"
-              subtitle={`${activeSocs} paying · ${trialing} on trial`}
-              trailing={<StatusChip tone="success">{activeSocs} active</StatusChip>}
+              subtitle={sumOk ? `${activeSocs} paying · ${trialing} on trial` : sumQ.isLoading ? "Loading…" : "Unavailable"}
+              trailing={<StatusChip tone={sumOk ? "success" : "neutral"}>{sumOk ? `${activeSocs} active` : dash}</StatusChip>}
             />
             <ListCard
               title="Outstanding bills"
               subtitle="Across all societies, all months"
               trailing={
-                <StatusChip tone={unpaid > 0 ? "warning" : "success"}>{compact(unpaid)}</StatusChip>
+                <StatusChip tone={!sumOk ? "neutral" : unpaid > 0 ? "warning" : "success"}>{sumOk ? compact(unpaid) : dash}</StatusChip>
               }
             />
             <ListCard
               title="Payment gateway"
               subtitle="Razorpay handles SociyoHub plan payments"
-              trailing={<StatusChip tone="info">Live</StatusChip>}
+              trailing={
+                <Link to={"/admin/razorpay" as any} className="text-sm font-medium text-primary">Check status</Link>
+              }
             />
           </ListCardGroup>
         </SectionCard>

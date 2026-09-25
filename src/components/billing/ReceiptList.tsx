@@ -43,26 +43,17 @@ export function ReceiptList({ societyId, showHome }: { societyId?: string | null
     setLoading(true);
     setError(null);
     try {
-      let query = supabase
-        .from("payment_receipts")
-        .select("id, payment_id, receipt_number, status, issued_at, verified_at, voided_at, void_reason, amount_snapshot, method_snapshot, reference_snapshot, bill_number_snapshot")
-        .order("issued_at", { ascending: false })
-        .limit(300);
-      if (societyId) query = query.eq("society_id", societyId);
-      const { data, error: err } = await query;
+      // Direct table reads are revoked; this server-checked function returns
+      // the whole society for committee members and own-home rows for residents.
+      const { data, error: err } = await (supabase.rpc as unknown as (
+        fn: string, args: Record<string, unknown>,
+      ) => Promise<{ data: unknown; error: unknown }>)("list_payment_receipts_v1", {
+        _society_id: showHome ? societyId ?? null : null,
+        _limit: 300,
+      });
       if (err) throw err;
-      const list = data ?? [];
-      const homes: Record<string, string> = {};
-      if (showHome && list.length) {
-        const { data: pays } = await supabase.from("payments").select("id, flat_id").in("id", list.map((r) => r.payment_id));
-        const flatIds = Array.from(new Set((pays ?? []).map((p) => p.flat_id).filter(Boolean))) as string[];
-        const { data: flats } = flatIds.length
-          ? await supabase.from("flats").select("id, flat_number").in("id", flatIds)
-          : { data: [] as { id: string; flat_number: string }[] };
-        const fl: Record<string, string> = Object.fromEntries((flats ?? []).map((f) => [f.id, f.flat_number]));
-        for (const p of pays ?? []) if (p.flat_id && fl[p.flat_id]) homes[p.id] = fl[p.flat_id];
-      }
-      setRows(list.map((r) => ({ ...r, home: homes[r.payment_id] ?? null })));
+      const list = (Array.isArray(data) ? data : []) as Row[];
+      setRows(list.map((r) => ({ ...r, home: showHome ? r.home ?? null : null })));
     } catch (e) {
       setRows([]);
       setError(toSafeFinanceError(e).message);

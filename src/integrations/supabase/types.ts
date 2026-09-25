@@ -5728,6 +5728,10 @@ export type Database = {
         }
         Returns: Json
       }
+      list_payment_receipts_v1: {
+        Args: { _limit?: number; _society_id: string }
+        Returns: Json[]
+      }
       list_pending_join_requests: {
         Args: { _society_id: string }
         Returns: {

@@ -225,6 +225,20 @@
       "when": 1790326547176,
       "tag": "0031_stage13_revoke_internal_helper_execute",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1790327806033,
+      "tag": "0032_list_payment_receipts_rpc",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1790327945388,
+      "tag": "0033_fix_finance_journal_list_ordering",
+      "breakpoints": true
     }
   ]
 }

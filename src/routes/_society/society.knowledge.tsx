@@ -161,7 +161,7 @@ function KnowledgeAdmin() {
                           </div>
                           <p className="mt-1 font-medium leading-snug break-words">{i.title}</p>
                           <p className="text-xs text-muted-foreground break-all">
-                            {[i.kind === "faq" ? "FAQ" : i.fileName, i.kind === "document" ? fmtSize(i.sizeBytes) : null, `Updated ${new Date(i.updatedAt).toLocaleDateString("en-IN")}`].filter(Boolean).join(" · ")}
+                            {[i.kind === "faq" ? "FAQ" : i.fileName, i.kind === "document" ? fmtSize(i.sizeBytes) : null, `Updated ${new Date(i.updatedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`].filter(Boolean).join(" · ")}
                           </p>
                           {i.kind === "faq" && i.faqAnswer && <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{i.faqAnswer}</p>}
                           {i.statusReason && i.status !== "ready" && <p className="mt-2 rounded-lg bg-muted px-3 py-2 text-xs">{i.statusReason}</p>}
@@ -211,7 +211,7 @@ function KnowledgeAdmin() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction disabled={remove.isPending} onClick={(e) => { e.preventDefault(); if (removing) remove.mutate(removing.id); }}>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={remove.isPending} onClick={(e) => { e.preventDefault(); if (removing) remove.mutate(removing.id); }}>
               {remove.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} Remove
             </AlertDialogAction>
           </AlertDialogFooter>

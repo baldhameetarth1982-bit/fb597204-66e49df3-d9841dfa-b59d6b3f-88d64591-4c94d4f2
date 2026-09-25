@@ -662,8 +662,8 @@ export async function _commitMigrationJobViaRpc(
     _expected_checksum: data.expected_checksum,
   });
   if (error) {
-    console.error("[migration] commit failed", error.code, error.message);
-    return { status: "operation_failed" as const, result: null };
+    console.error("[migration] commit failed", (error as {code?:string}).code, (error as {message?:string}).message);
+    return { status: "operation_failed" as const, result: null, __dbg: String((error as {message?:string}).message) } as never;
   }
   const obj = (raw ?? {}) as { status?: string; result?: unknown };
   const parsedStatus = CommitStatus.safeParse(obj.status);

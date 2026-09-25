@@ -1,8 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Receipt, Clock, CheckCircle2, Loader2, Home, Info, ChevronRight, Ban } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Receipt, Clock, CheckCircle2, Home, Info, ChevronRight, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { cacheSet, cacheGet } from "@/lib/offline-cache";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
@@ -118,169 +116,104 @@ function BillsScreen() {
   // Only show a total when data is fresh — never a fake ₹0 after failure.
   const showSummary = !loadError && !noFlat && visibleBills.length > 0;
 
+  const paidBills = visibleBills.filter((b) => getBillDisplayStatus(b).isPaid);
+  const cancelledBills = visibleBills.filter((b) => getBillDisplayStatus(b).isCancelled);
+  const groups = [
+    { key: "open", title: "Open bills", rows: openBills },
+    { key: "paid", title: "Paid", rows: paidBills },
+    { key: "cancelled", title: "Cancelled", rows: cancelledBills },
+  ];
+
   return (
-    <div className="px-5 py-6 space-y-6">
-      <header>
-        <div className="flex items-center justify-between gap-3">
+    <div className="mx-auto max-w-3xl px-5 py-6 space-y-6">
+      <header className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+        <div className="min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight">Bills</h1>
-          <Button asChild variant="outline" size="sm" className="min-h-11 rounded-xl">
-            <Link to="/app/receipts"><Receipt className="h-4 w-4 mr-1" />Receipts</Link>
-          </Button>
+          <p className="text-sm text-muted-foreground">What you owe and what's already paid{online ? "" : " · saved copy (offline)"}</p>
         </div>
-        <p className="text-sm text-muted-foreground">
-          Your maintenance & society dues{online ? "" : " · offline cache"}
-        </p>
+        <Button asChild variant="outline" className="min-h-11 rounded-xl">
+          <Link to="/app/receipts"><Receipt className="h-4 w-4 mr-1" />Receipts</Link>
+        </Button>
       </header>
 
       {noFlat && (
-        <Card className="rounded-2xl border-amber-500/30 bg-amber-500/10">
-          <CardContent className="p-4 flex items-start gap-3">
-            <div className="h-10 w-10 rounded-xl bg-amber-500/20 grid place-items-center shrink-0">
-              <Home className="h-5 w-5 text-amber-700 dark:text-amber-200" />
-            </div>
-            <div className="flex-1">
-              <p className="font-medium text-sm">You're not linked to a flat yet</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Pick your flat so bills can reach you. Your society admin will approve it.
-              </p>
-              <Button size="sm" className="mt-3 rounded-lg" onClick={() => setClaimOpen(true)}>
-                Pick my flat
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {showSummary && (
-        <Card className="rounded-2xl">
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Outstanding (bill totals)</p>
-            <p className="text-2xl font-semibold tabular-nums mt-1 break-words">
-              ₹{outstanding.toLocaleString("en-IN")}
-            </p>
-            <p className="text-xs mt-1 text-muted-foreground">
-              {openBills.length === 0
-                ? "No open bills. You're all settled."
-                : `${openBills.length} open bill${openBills.length > 1 ? "s" : ""}`}
-              {overdueCount > 0 && (
-                <span className="text-destructive font-medium"> · {overdueCount} overdue</span>
-              )}
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      <Card className="rounded-2xl border-primary/10 bg-primary/5">
-        <CardContent className="p-4 flex items-start gap-3">
-          <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-          <div className="text-sm">
-            <p className="font-medium">Read-only bill view</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Contact your society office for the currently approved payment
-              instructions. Payment recording and receipt verification are
-              handled separately.
-            </p>
+        <section className="flex items-start gap-3 rounded-2xl bg-warning-container p-4 text-warning-container-foreground">
+          <Home className="h-5 w-5 shrink-0 mt-0.5" />
+          <div className="min-w-0 flex-1">
+            <p className="font-medium text-sm">You're not linked to a house yet</p>
+            <p className="text-sm opacity-80 mt-0.5">Pick your house so bills can reach you. Your society admin will approve it.</p>
+            <Button className="mt-3 min-h-11 rounded-xl" onClick={() => setClaimOpen(true)}>Pick my house</Button>
           </div>
-        </CardContent>
-      </Card>
+        </section>
+      )}
 
-      <section>
-        <h2 className="px-1 mb-3 text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-          Your bills
-        </h2>
-        <div className="space-y-3">
-          {loadError && (
-            <Card className="rounded-2xl border-destructive/30" role="alert">
-              <CardContent className="p-4 flex items-center justify-between gap-3">
-                <p className="text-sm text-muted-foreground">
-                  {loadError}
-                  {visibleBills.length > 0 ? " Showing your last saved bills." : ""}
-                </p>
-                <Button size="sm" variant="outline" className="min-h-11 shrink-0" onClick={() => setReloadKey((k) => k + 1)}>
-                  Retry
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-          {visibleBills.length === 0 && loadError ? null : visibleBills.length === 0 ? (
-            <Card className="rounded-2xl">
-              <CardContent className="p-6 text-center text-sm text-muted-foreground">
-                No bills found for your flat yet.
-              </CardContent>
-            </Card>
-          ) : (
-            visibleBills.map((b) => {
-              const state = getBillDisplayStatus(b);
-              const iconTone =
-                state.code === "paid"
-                  ? "bg-success/10 text-success"
-                  : state.code === "cancelled"
-                    ? "bg-muted text-muted-foreground"
-                    : state.code === "overdue"
-                      ? "bg-destructive/10 text-destructive"
-                      : "bg-primary/10 text-primary";
-              const Icon =
-                state.code === "paid"
-                  ? CheckCircle2
-                  : state.code === "cancelled"
-                    ? Ban
-                    : Clock;
-              return (
-                <Link
-                  key={b.id}
-                  to="/app/bills/$id"
-                  params={{ id: b.id }}
-                  className="block"
-                >
-                  <Card className="rounded-2xl hover:bg-accent/40 transition-colors">
-                    <CardContent className="p-4 flex items-center gap-3">
-                      <div className={`h-11 w-11 rounded-xl grid place-items-center ${iconTone}`}>
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{b.title}</p>
-                        <p className="text-xs text-muted-foreground">Due {b.due}</p>
-                      </div>
-                      <div className="text-right shrink-0 max-w-[110px]">
-                        <p className="font-semibold tabular-nums truncate">
-                          ₹{b.amount.toLocaleString("en-IN")}
-                        </p>
-                        <Badge
-                          variant="outline"
-                          className={`mt-1 rounded-full text-[10px] ${
-                            state.code === "paid"
-                              ? "border-success/40 bg-success/10 text-success"
-                              : state.code === "overdue"
-                                ? "border-destructive/40 bg-destructive/10 text-destructive"
-                                : state.code === "cancelled"
-                                  ? "text-muted-foreground line-through"
-                                  : ""
-                          }`}
-                        >
-                          {state.label}
-                        </Badge>
-                      </div>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                    </CardContent>
-                  </Card>
-                </Link>
-              );
-            })
-          )}
+      {/* Primary answer: amount owed */}
+      {showSummary && (
+        <section aria-labelledby="owed-h" className={`rounded-2xl border p-5 ${overdueCount > 0 ? "border-destructive/40 bg-danger-container text-danger-container-foreground" : "border-border bg-card"}`}>
+          <p id="owed-h" className="text-sm opacity-80">{openBills.length === 0 ? "Nothing to pay" : "You owe"}</p>
+          <p className="mt-1 text-4xl font-semibold tabular-nums tracking-tight break-words">₹{outstanding.toLocaleString("en-IN")}</p>
+          <p className="mt-2 text-sm">
+            {openBills.length === 0 ? "All your bills are settled." : `${openBills.length} open bill${openBills.length > 1 ? "s" : ""}`}
+            {overdueCount > 0 && <span className="font-semibold"> · {overdueCount} overdue</span>}
+          </p>
+          <p className="mt-3 flex items-start gap-2 border-t border-current/15 pt-3 text-xs opacity-80">
+            <Info className="h-4 w-4 shrink-0" />
+            Pay by cash or bank transfer as instructed by your society office. Bills are marked paid only after the committee verifies your payment.
+          </p>
+        </section>
+      )}
+
+      {loadError && (
+        <div role="alert" className="flex items-center justify-between gap-3 rounded-2xl border border-destructive/30 bg-card p-4">
+          <p className="text-sm text-muted-foreground">{loadError}{visibleBills.length > 0 ? " Showing your last saved bills." : ""}</p>
+          <Button variant="outline" className="min-h-11 shrink-0 rounded-xl" onClick={() => setReloadKey((k) => k + 1)}>Retry</Button>
         </div>
-      </section>
+      )}
 
-      <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-        <Receipt className="h-3.5 w-3.5" />
-        Powered by SociyoHub
-      </div>
+      {visibleBills.length === 0 && !loadError && !noFlat && (
+        <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center">
+          <Receipt className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
+          <p className="font-medium">No bills yet</p>
+          <p className="text-sm text-muted-foreground">Bills from your society will appear here.</p>
+        </div>
+      )}
+
+      {groups.map((g) => g.rows.length > 0 && (
+        <section key={g.key} aria-labelledby={`bills-${g.key}`}>
+          <h2 id={`bills-${g.key}`} className="mb-2 flex items-baseline justify-between px-1 text-sm font-semibold">
+            {g.title}<span className="text-xs font-normal text-muted-foreground tabular-nums">{g.rows.length}</span>
+          </h2>
+          <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+            {g.rows.map((b) => {
+              const state = getBillDisplayStatus(b);
+              const tone = state.code === "paid" ? "bg-success-container text-success-container-foreground"
+                : state.code === "overdue" ? "bg-danger-container text-danger-container-foreground"
+                : state.code === "cancelled" ? "bg-muted text-muted-foreground"
+                : "bg-warning-container text-warning-container-foreground";
+              const Icon = state.code === "paid" ? CheckCircle2 : state.code === "cancelled" ? Ban : Clock;
+              return (
+                <li key={b.id}>
+                  <Link to="/app/bills/$id" params={{ id: b.id }} className="flex min-h-16 items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
+                    <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${tone}`}><Icon className="h-5 w-5" /></span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium">{b.title}</span>
+                      <span className="block text-xs text-muted-foreground">Due {b.due}</span>
+                    </span>
+                    <span className="shrink-0 text-right">
+                      <span className={`block font-semibold tabular-nums ${state.code === "cancelled" ? "line-through text-muted-foreground" : ""}`}>₹{b.amount.toLocaleString("en-IN")}</span>
+                      <span className={`mt-1 inline-block rounded-md px-1.5 py-0.5 text-[11px] font-medium ${tone}`}>{state.label}</span>
+                    </span>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))}
 
       {profile?.society_id && (
-        <ClaimFlatSheet
-          open={claimOpen}
-          onOpenChange={setClaimOpen}
-          societyId={profile.society_id}
-        />
+        <ClaimFlatSheet open={claimOpen} onOpenChange={setClaimOpen} societyId={profile.society_id} />
       )}
     </div>
   );

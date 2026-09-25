@@ -191,7 +191,7 @@ export const openKnowledgeDocument = createServerFn({ method: "POST" })
     return { ok: true, url: signed.signedUrl };
   });
 
-export type ResidentKnowledgeItem = { id: string; kind: "document" | "faq"; title: string; answer: string | null; updatedAt: string };
+export type ResidentKnowledgeItem = { id: string; kind: "document" | "faq"; title: string; answer: string | null; fileType: string | null; sizeBytes: number | null; updatedAt: string };
 
 export const listResidentKnowledge = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -200,9 +200,14 @@ export const listResidentKnowledge = createServerFn({ method: "POST" })
     const { data: profile } = await supabase.from("profiles").select("society_id").eq("id", context.userId).maybeSingle();
     if (!profile?.society_id) return { ok: false, message: "Join a society to see its documents." };
     // RLS returns only ready, resident-visible items of the caller's own society.
-    const { data, error } = await supabase.from("society_knowledge_sources").select("id,kind,title,faq_answer,updated_at")
+    const { data, error } = await supabase.from("society_knowledge_sources").select("id,kind,title,faq_answer,file_name,size_bytes,updated_at")
       .eq("society_id", profile.society_id).eq("status", "ready").eq("audience", "residents")
       .order("updated_at", { ascending: false }).limit(200);
     if (error) return { ok: false, message: "Couldn't load documents. Please try again." };
-    return { ok: true, items: (data ?? []).map((r: any) => ({ id: r.id, kind: r.kind, title: r.title, answer: r.kind === "faq" ? r.faq_answer : null, updatedAt: r.updated_at })) };
+    return { ok: true, items: (data ?? []).map((r: any) => ({
+      id: r.id, kind: r.kind, title: r.title, answer: r.kind === "faq" ? r.faq_answer : null,
+      fileType: r.kind === "document" && r.file_name ? (String(r.file_name).split(".").pop() ?? "").toUpperCase().slice(0, 4) || null : null,
+      sizeBytes: r.kind === "document" ? r.size_bytes ?? null : null,
+      updatedAt: r.updated_at,
+    })) };
   });

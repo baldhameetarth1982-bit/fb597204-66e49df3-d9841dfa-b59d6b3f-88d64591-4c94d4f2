@@ -91,3 +91,76 @@ export function InlineNotice({ icon: Icon, title, children, action }: {
     </div>
   );
 }
+
+/** Compact search field shared across People & property pages. */
+export function SearchField({ value, onChange, placeholder, label }: {
+  value: string; onChange: (v: string) => void; placeholder: string; label: string;
+}) {
+  return (
+    <div className="relative min-w-0 flex-1">
+      <svg aria-hidden viewBox="0 0 24 24" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+      <input
+        type="search"
+        aria-label={label}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="h-11 w-full rounded-xl border border-input bg-background pl-9 pr-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      />
+    </div>
+  );
+}
+
+/** Segmented filter: single-select pills with counts. */
+export function SegmentedFilter<K extends string>({ value, onChange, options, label }: {
+  value: K; onChange: (k: K) => void; label: string;
+  options: Array<{ key: K; label: string; count?: number }>;
+}) {
+  return (
+    <div role="radiogroup" aria-label={label} className="-mx-1 flex gap-1 overflow-x-auto px-1">
+      {options.map((o) => {
+        const active = o.key === value;
+        return (
+          <button
+            key={o.key}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            onClick={() => onChange(o.key)}
+            className={cn(
+              "inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              active ? "border-foreground bg-foreground text-background" : "border-border bg-card text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {o.label}
+            {o.count != null && <span className="tabular-nums opacity-70">{o.count}</span>}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Failure block — never looks like an empty dataset. */
+export function LoadError({ title, onRetry }: { title: string; onRetry: () => void }) {
+  return (
+    <div role="alert" className="rounded-2xl border border-dashed border-border bg-card px-6 py-10 text-center">
+      <p className="font-medium">{title}</p>
+      <p className="mt-1 text-sm text-muted-foreground">Check your connection and try again.</p>
+      <button type="button" onClick={onRetry} className="mt-4 inline-flex min-h-11 items-center rounded-xl border border-border px-4 text-sm font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        Retry
+      </button>
+    </div>
+  );
+}
+
+/** Quiet empty / no-results block used inside list regions. */
+export function ListEmpty({ icon: Icon, title, children }: { icon: ComponentType<{ className?: string }>; title: string; children?: ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center">
+      <Icon className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
+      <p className="font-medium">{title}</p>
+      {children && <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">{children}</p>}
+    </div>
+  );
+}

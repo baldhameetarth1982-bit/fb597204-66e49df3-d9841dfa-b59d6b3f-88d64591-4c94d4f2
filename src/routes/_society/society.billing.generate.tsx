@@ -7,11 +7,8 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
-import { EmptyState } from "@/components/shared/PageHeader";
+import { EmptyState, PageHeader, PageShell } from "@/components/shared/PageHeader";
 import { BillingCenterTabs } from "@/components/nav/BillingCenterTabs";
-import { MobileHero } from "@/components/shared/MobileHero";
-import { StatPill, StatPillRow } from "@/components/shared/StatPill";
-import { SectionCard } from "@/components/shared/SectionCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -72,12 +69,23 @@ function GenerateBillsPage() {
   const billable = useMemo(() => flats.filter((f) => f.block_id && f.has_resident), [flats]);
   const totalAmount = billable.length * (Number(amount) || 0);
 
+  const skipped = useMemo(() => flats.filter((f) => !(f.block_id && f.has_resident)), [flats]);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [confirmed, setConfirmed] = useState(false);
+  const [result, setResult] = useState<{ ok: boolean; count?: number; message?: string } | null>(null);
+  const configValid = !!period.trim() && Number(amount) > 0 && !!dueDate;
+  const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
+  const dueLabel = dueDate ? new Date(dueDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—";
+  const dueInPast = dueDate ? new Date(dueDate).getTime() < new Date(new Date().toDateString()).getTime() : false;
+  const houseLabel = (f: FlatSummary) => `${f.block_name ? `${f.block_name}-` : ""}${f.flat_number}`;
+
   async function generate() {
-    if (!societyId) return;
+    if (!societyId || generating) return;
     const amt = Number(amount);
     if (!period.trim() || !amt || !dueDate) return toast.error("Fill all fields");
     if (!billable.length) return toast.error("No billable flats. Assign residents to flats before generating bills.");
     setGenerating(true);
+    setStep(3);
     const due = new Date(dueDate);
     const start = new Date(due.getFullYear(), due.getMonth(), 1).toISOString().slice(0, 10);
     const end = new Date(due.getFullYear(), due.getMonth() + 1, 0).toISOString().slice(0, 10);
@@ -89,110 +97,135 @@ function GenerateBillsPage() {
     }));
     const { error } = await supabase.from("bills").insert(payload);
     setGenerating(false);
-    if (error) return toast.error(toSafeFinanceMessage(error, "Could not generate bills. Please try again."));
+    if (error) {
+      const message = toSafeFinanceMessage(error, "Could not generate bills. Please try again.");
+      setResult({ ok: false, message });
+      return toast.error(message);
+    }
+    setResult({ ok: true, count: payload.length });
     toast.success(`Generated ${payload.length} bill${payload.length === 1 ? "" : "s"}`);
-    navigate({ to: "/society/billing" });
   }
 
+  const STEPS = ["Configure", "Review", "Generate"] as const;
+
   return (
-    <div className="pb-24">
-      <MobileHero
-        eyebrow="Billing centre"
-        title="Generate bills"
-        subtitle="Bulk generate one bill per occupied house."
-        icon={FilePlus2}
-        variant="teal"
-        stats={
-          <StatPillRow>
-            <StatPill label="Occupied" value={billable.length} />
-            <StatPill label="Vacant" value={Math.max(flats.length - billable.length, 0)} />
-            <StatPill label="Per house" value={`₹${(Number(amount) || 0).toLocaleString("en-IN")}`} />
-            <StatPill label="Total" value={`₹${totalAmount.toLocaleString("en-IN")}`} />
-          </StatPillRow>
-        }
-      />
+    <PageShell>
+      <PageHeader title="Generate bills" description="Create one maintenance bill for every occupied house, in three steps." />
+      <div className="mb-5 rounded-2xl border border-border bg-card"><BillingCenterTabs /></div>
 
-      <div className="px-4 pt-4 space-y-4">
-        <div className="rounded-2xl bg-card border shadow-sm">
-          <BillingCenterTabs />
-        </div>
+      <ol className="mb-6 grid grid-cols-3 gap-2" aria-label="Steps">
+        {STEPS.map((label, i) => {
+          const n = (i + 1) as 1 | 2 | 3;
+          const state = step === n ? "current" : step > n ? "done" : "todo";
+          return (
+            <li key={label} aria-current={state === "current" ? "step" : undefined}
+              className={`rounded-xl border px-3 py-2 text-sm ${state === "current" ? "border-foreground bg-card font-semibold" : state === "done" ? "border-border bg-success-container text-success-container-foreground" : "border-border text-muted-foreground"}`}>
+              <span className="block text-xs opacity-70">Step {n}</span>{label}
+            </li>
+          );
+        })}
+      </ol>
 
-        {sidLoading || loading ? (
-          <div className="min-h-[30vh] grid place-items-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-        ) : flats.length === 0 ? (
-          <EmptyState icon={Building2} title="No houses yet" description="Set up blocks and houses first." />
-        ) : billable.length === 0 ? (
-          <EmptyState icon={Users} title="No occupied houses" description="Assign residents to houses first." />
-        ) : (
-          <>
-            <SectionCard title="Bill details" icon={Receipt}>
-              <div className="flex items-center gap-2 mb-3 text-sm text-muted-foreground">
-                <Info className="h-4 w-4 text-primary" />
-                <span>Will generate <b className="text-foreground">{billable.length}</b> bill{billable.length === 1 ? "" : "s"}.</span>
+      {sidLoading || loading ? (
+        <div className="min-h-[30vh] grid place-items-center" role="status" aria-label="Loading houses"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+      ) : flats.length === 0 ? (
+        <EmptyState icon={Building2} title="No houses yet" description="Set up blocks and houses first." />
+      ) : billable.length === 0 ? (
+        <EmptyState icon={Users} title="No occupied houses" description="Assign residents to houses first." />
+      ) : step === 1 ? (
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+          <section aria-labelledby="cfg-h" className="rounded-2xl border border-border bg-card p-5">
+            <h2 id="cfg-h" className="mb-4 font-semibold">Bill settings</h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="g-period">Bill period</Label>
+                <Input id="g-period" value={period} onChange={(e) => setPeriod(e.target.value)} placeholder="June 2026" className="h-11 rounded-xl" />
+                <p className="text-xs text-muted-foreground">Shown on every bill, e.g. "June 2026".</p>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Period label</Label>
-                  <Input value={period} onChange={(e) => setPeriod(e.target.value)} placeholder="June 2026" className="rounded-xl" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Amount per house (₹)</Label>
-                  <div className="relative">
-                    <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input type="number" min={0} value={amount} onChange={(e) => setAmount(e.target.value)} className="pl-9 rounded-xl" />
-                  </div>
-                </div>
-                <div className="space-y-1.5 sm:col-span-2">
-                  <Label className="text-xs">Due date</Label>
-                  <div className="relative">
-                    <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="pl-9 rounded-xl" />
-                  </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="g-amt">Amount per house (₹)</Label>
+                <div className="relative">
+                  <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input id="g-amt" type="number" inputMode="decimal" min={0} value={amount} onChange={(e) => setAmount(e.target.value)} className="h-11 pl-9 rounded-xl" />
                 </div>
               </div>
-              <div className="mt-4 flex items-baseline justify-between rounded-xl bg-muted/50 px-4 py-3">
-                <span className="text-xs text-muted-foreground">Estimated total</span>
-                <span className="text-lg font-bold inline-flex items-baseline">
-                  <IndianRupee className="h-4 w-4" />{totalAmount.toLocaleString("en-IN")}
-                </span>
+              <div className="space-y-1.5">
+                <Label htmlFor="g-due">Due date</Label>
+                <div className="relative">
+                  <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input id="g-due" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="h-11 pl-9 rounded-xl" />
+                </div>
               </div>
-            </SectionCard>
-
-            <SectionCard
-              title="Occupied houses"
-              icon={Building2}
-              action={<StatusChip tone="primary">{billable.length}</StatusChip>}
-            >
-              <div className="grid gap-1.5 max-h-72 overflow-y-auto">
-                {billable.map((f) => (
-                  <div key={f.id} className="flex items-center justify-between rounded-xl border border-border px-3 py-2 text-sm">
-                    <span className="font-medium">
-                      {f.block_name ? `${f.block_name}-` : ""}{f.flat_number}
-                    </span>
-                    <StatusChip tone="success">Occupied</StatusChip>
-                  </div>
-                ))}
-              </div>
-              {flats.length - billable.length > 0 && (
-                <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <AlertCircle className="h-3.5 w-3.5" />
-                  {flats.length - billable.length} house{flats.length - billable.length === 1 ? " is" : "s are"} vacant and will be skipped.
-                </p>
-              )}
-            </SectionCard>
-
-            <div className="sticky bottom-4 flex gap-2">
-              <Button asChild variant="outline" className="rounded-xl">
-                <Link to="/society/billing"><ArrowLeft className="h-4 w-4 mr-1.5" />Cancel</Link>
-              </Button>
-              <Button onClick={generate} disabled={generating} className="rounded-xl flex-1 h-11 shadow-lg">
-                {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FilePlus2 className="h-4 w-4 mr-2" />}
-                Generate {billable.length} bill{billable.length === 1 ? "" : "s"}
-              </Button>
             </div>
-          </>
-        )}
-      </div>
-    </div>
+            {!configValid && <p className="mt-4 text-sm text-destructive" role="alert">Enter a period, an amount above ₹0 and a due date to continue.</p>}
+          </section>
+          <aside className="rounded-2xl border border-border bg-card p-5" aria-label="What will be generated">
+            <p className="text-sm text-muted-foreground">What will be generated</p>
+            <p className="mt-1 text-3xl font-semibold tabular-nums">{billable.length} <span className="text-base font-normal text-muted-foreground">bills</span></p>
+            <dl className="mt-4 space-y-2 text-sm">
+              <div className="flex justify-between"><dt className="text-muted-foreground">Per house</dt><dd className="tabular-nums">{Number(amount) > 0 ? inr(Number(amount)) : "—"}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted-foreground">Total billed</dt><dd className="font-semibold tabular-nums">{Number(amount) > 0 ? inr(totalAmount) : "—"}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted-foreground">Skipped houses</dt><dd className="tabular-nums">{skipped.length}</dd></div>
+            </dl>
+            <Button className="mt-5 h-11 w-full rounded-xl" disabled={!configValid} onClick={() => { setConfirmed(false); setStep(2); }}>Review bills</Button>
+          </aside>
+        </div>
+      ) : step === 2 ? (
+        <div className="space-y-5">
+          <section className="grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-4" aria-label="Summary">
+            {[["Period", period.trim()], ["Due", dueLabel], ["Bills", String(billable.length)], ["Total", inr(totalAmount)]].map(([l, v]) => (
+              <div key={l} className="bg-card px-4 py-3"><p className="text-xs text-muted-foreground">{l}</p><p className="font-semibold tabular-nums">{v}</p></div>
+            ))}
+          </section>
+
+          <div className="space-y-2">
+            {dueInPast && <p className="flex gap-2 rounded-xl bg-danger-container px-4 py-3 text-sm text-danger-container-foreground"><AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />The due date is in the past. These bills will show as overdue immediately.</p>}
+            <p className="flex gap-2 rounded-xl bg-warning-container px-4 py-3 text-sm text-warning-container-foreground"><Info className="h-4 w-4 shrink-0 mt-0.5" />Generated bills can't be edited. A wrong bill must be cancelled individually from Bill history.</p>
+          </div>
+
+          <div className="grid gap-5 lg:grid-cols-2">
+            <section aria-labelledby="bill-h" className="rounded-2xl border border-border bg-card">
+              <h2 id="bill-h" className="flex items-center justify-between border-b border-border px-4 py-3 text-sm font-semibold">Will be billed <StatusChip tone="success">{billable.length}</StatusChip></h2>
+              <ul className="max-h-80 divide-y divide-border overflow-y-auto">
+                {billable.map((f) => (
+                  <li key={f.id} className="flex items-center justify-between px-4 py-2 text-sm"><span className="font-medium">House {houseLabel(f)}</span><span className="tabular-nums">{inr(Number(amount))}</span></li>
+                ))}
+              </ul>
+            </section>
+            <section aria-labelledby="skip-h" className="rounded-2xl border border-border bg-card">
+              <h2 id="skip-h" className="flex items-center justify-between border-b border-border px-4 py-3 text-sm font-semibold">Will be skipped <StatusChip tone="neutral">{skipped.length}</StatusChip></h2>
+              {skipped.length === 0 ? <p className="px-4 py-6 text-center text-sm text-muted-foreground">No houses skipped.</p> : (
+                <ul className="max-h-80 divide-y divide-border overflow-y-auto">
+                  {skipped.map((f) => (
+                    <li key={f.id} className="flex items-center justify-between px-4 py-2 text-sm"><span>House {houseLabel(f)}</span><span className="text-xs text-muted-foreground">{!f.block_id ? "No block" : "No resident"}</span></li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </div>
+
+          <label className="flex min-h-11 items-start gap-3 rounded-xl border border-border bg-card p-4 text-sm">
+            <input type="checkbox" className="mt-0.5 h-5 w-5" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />
+            I've checked the period, amount and due date. Create {billable.length} bill{billable.length === 1 ? "" : "s"} totalling {inr(totalAmount)}.
+          </label>
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
+            <Button variant="outline" className="h-11 rounded-xl" onClick={() => setStep(1)}><ArrowLeft className="h-4 w-4 mr-1.5" />Back to settings</Button>
+            <Button className="h-11 rounded-xl" disabled={!confirmed || generating} onClick={() => void generate()}><FilePlus2 className="h-4 w-4 mr-2" />Generate {billable.length} bill{billable.length === 1 ? "" : "s"}</Button>
+          </div>
+        </div>
+      ) : (
+        <section className="mx-auto max-w-lg rounded-2xl border border-border bg-card p-6 text-center" aria-live="polite">
+          {generating ? (
+            <><Loader2 className="mx-auto mb-3 h-8 w-8 animate-spin text-muted-foreground" /><p className="font-semibold">Creating bills…</p><p className="text-sm text-muted-foreground">Please keep this page open.</p></>
+          ) : result?.ok ? (
+            <><Receipt className="mx-auto mb-3 h-8 w-8 text-success" /><p className="font-semibold">{result.count} bill{result.count === 1 ? "" : "s"} created</p><p className="text-sm text-muted-foreground">Residents can now see them in their Bills.</p>
+              <Button className="mt-4 h-11 rounded-xl" onClick={() => navigate({ to: "/society/billing" })}>Open bill history</Button></>
+          ) : (
+            <><AlertCircle className="mx-auto mb-3 h-8 w-8 text-destructive" /><p className="font-semibold">No bills were created</p><p className="text-sm text-muted-foreground">{result?.message}</p>
+              <div className="mt-4 flex justify-center gap-2"><Button variant="outline" className="h-11 rounded-xl" onClick={() => setStep(2)}>Back to review</Button><Button asChild variant="ghost" className="h-11 rounded-xl"><Link to="/society/billing">Bill history</Link></Button></div></>
+          )}
+        </section>
+      )}
+    </PageShell>
   );
 }

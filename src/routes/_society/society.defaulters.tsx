@@ -1,14 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Search, ChevronRight } from "lucide-react";
+import { AlertTriangle, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
-import { MobileHero } from "@/components/shared/MobileHero";
-import { StatPill, StatPillRow } from "@/components/shared/StatPill";
-import { EmptyState } from "@/components/shared/PageHeader";
+import { PageHeader, PageShell } from "@/components/shared/PageHeader";
+import { SummaryStrip, ListSkeleton, SearchField, SegmentedFilter, LoadError, ListEmpty } from "@/components/people/PeopleUI";
 import { BillingCenterTabs } from "@/components/nav/BillingCenterTabs";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { StatusChip } from "@/components/system/StatusChip";
 import { toSafeFinanceError } from "@/lib/finance-safe-error";
 import { formatDate } from "@/utils/format";
@@ -88,90 +85,71 @@ function DefaultersPage() {
   const overdueHomes = homes.filter((h) => h.overdueCount > 0).length;
 
   return (
-    <div className="pb-24">
-      <MobileHero
-        eyebrow="Billing centre"
-        title="Outstanding dues"
-        subtitle="Homes with unpaid bills, after verified payments."
-        icon={AlertTriangle}
-        variant="teal"
-        stats={
-          <StatPillRow>
-            <StatPill label="Homes" value={ready ? homes.length : "—"} />
-            <StatPill label="Overdue" value={ready ? overdueHomes : "—"} />
-            <StatPill label="Outstanding" value={ready ? INR(totalDue) : "—"} />
-          </StatPillRow>
-        }
-      />
-      <div className="px-4 pt-4 space-y-4">
-        <div className="rounded-2xl bg-card border shadow-sm"><BillingCenterTabs /></div>
+    <PageShell>
+      <PageHeader title="Outstanding dues" description="Which homes still owe money, how much, and what is overdue — after verified payments only." />
+      <div className="mb-5 rounded-2xl border border-border bg-card"><BillingCenterTabs /></div>
 
-        {sidLoading || loading ? (
-          <div className="space-y-3" aria-busy="true" aria-label="Loading dues">
-            {[0, 1, 2, 3].map((i) => <div key={i} className="h-20 rounded-2xl bg-muted animate-pulse" />)}
+      <SummaryStrip items={[
+        { label: "Total outstanding", value: ready ? INR(totalDue) : "—" },
+        { label: "Homes owing", value: ready ? homes.length : "—" },
+        { label: "Homes overdue", value: ready ? overdueHomes : "—" },
+        { label: "Open bills", value: ready ? homes.reduce((n, h) => n + h.bills.length, 0) : "—" },
+      ]} />
+
+      {sidLoading || loading ? (
+        <ListSkeleton />
+      ) : error ? (
+        <LoadError title={error} onRetry={() => void load()} />
+      ) : homes.length === 0 ? (
+        <ListEmpty icon={AlertTriangle} title="No outstanding dues">Every open bill you manage is settled by verified payments.</ListEmpty>
+      ) : (
+        <>
+          <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center">
+            <SearchField label="Search by house" placeholder="Search by house" value={q} onChange={setQ} />
+            <SegmentedFilter<"all" | "overdue"> label="Dues filter" value={onlyOverdue ? "overdue" : "all"} onChange={(k) => setOnlyOverdue(k === "overdue")} options={[
+              { key: "all", label: "All homes", count: homes.length },
+              { key: "overdue", label: "Overdue only", count: overdueHomes },
+            ]} />
           </div>
-        ) : error ? (
-          <div role="alert" className="rounded-2xl border border-destructive/30 bg-card p-4 flex items-center justify-between gap-3">
-            <p className="text-sm text-muted-foreground">{error}</p>
-            <Button size="sm" variant="outline" className="min-h-11 shrink-0" onClick={() => void load()}>Try again</Button>
-          </div>
-        ) : homes.length === 0 ? (
-          <EmptyState icon={AlertTriangle} title="No outstanding dues" description="Every open bill you manage is settled by verified payments." />
-        ) : (
-          <>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input aria-label="Search by house" placeholder="Search by house" value={q} onChange={(e) => setQ(e.target.value)} className="pl-9 rounded-xl h-11" />
-              </div>
-              <Button variant={onlyOverdue ? "default" : "outline"} className="min-h-11 rounded-xl" aria-pressed={onlyOverdue} onClick={() => setOnlyOverdue((v) => !v)}>
-                Overdue only
-              </Button>
-            </div>
-            {filtered.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">No homes match this search.</p>
-            ) : (
-              <ul className="space-y-3">
-                {filtered.map((h) => (
-                  <li key={h.flatId} className="rounded-2xl border bg-card p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="font-semibold truncate">{h.label}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {h.bills.length} open bill{h.bills.length > 1 ? "s" : ""}
-                          {h.oldestDue ? ` · oldest due ${formatDate(h.oldestDue)}` : ""}
-                        </p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="font-semibold tabular-nums">{INR(h.total)}</p>
-                        {h.overdueCount > 0 ? (
-                          <StatusChip tone="danger" className="mt-1">{h.overdueCount} overdue</StatusChip>
-                        ) : (
-                          <StatusChip tone="warning" className="mt-1">Due</StatusChip>
-                        )}
-                      </div>
-                    </div>
-                    <ul className="mt-3 divide-y border-t">
+          {filtered.length === 0 ? (
+            <ListEmpty icon={AlertTriangle} title="No matching homes">Try another house or clear the overdue filter.</ListEmpty>
+          ) : (
+            <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card" aria-label="Homes with dues">
+              {filtered.map((h) => (
+                <li key={h.flatId} className="relative">
+                  <span className={cn("absolute inset-y-0 left-0 w-1", h.overdueCount > 0 ? "bg-destructive" : "bg-warning")} aria-hidden />
+                  <details className="group">
+                    <summary className="grid min-h-16 cursor-pointer list-none grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 py-3 pl-5 pr-4 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
+                      <span className="min-w-0">
+                        <span className="block truncate font-semibold">{h.label}</span>
+                        <span className="block text-xs text-muted-foreground">{h.bills.length} open bill{h.bills.length > 1 ? "s" : ""}{h.oldestDue ? ` · oldest due ${formatDate(h.oldestDue)}` : ""}</span>
+                      </span>
+                      <span className="text-right">
+                        <span className="block font-semibold tabular-nums">{INR(h.total)}</span>
+                        {h.overdueCount > 0 ? <StatusChip tone="danger" className="mt-1">{h.overdueCount} overdue</StatusChip> : <StatusChip tone="warning" className="mt-1">Due</StatusChip>}
+                      </span>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-90 motion-reduce:transition-none" aria-hidden />
+                    </summary>
+                    <ul className="divide-y divide-border border-t border-border bg-muted/30">
                       {h.bills.map((b) => (
                         <li key={b.id}>
-                          <Link to="/society/bills/$id" params={{ id: b.id }} className="flex items-center gap-2 py-2 min-h-11 text-sm hover:bg-accent/40 rounded-lg px-1">
-                            <span className="flex-1 min-w-0 truncate">{b.period}</span>
-                            <span className={cn("text-xs", b.overdue ? "text-destructive" : "text-muted-foreground")}>
+                          <Link to="/society/bills/$id" params={{ id: b.id }} className="grid min-h-11 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 py-2 pl-5 pr-4 text-sm hover:bg-muted/60 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+                            <span className="truncate">{b.period}</span>
+                            <span className="text-right font-medium tabular-nums sm:order-last">{INR(b.outstanding)}</span>
+                            <span className={cn("col-span-2 text-xs sm:col-span-1", b.overdue ? "text-destructive" : "text-muted-foreground")}>
                               {b.due ? `${b.overdue ? "Overdue since" : "Due"} ${formatDate(b.due)}` : "No due date"}
                             </span>
-                            <span className="tabular-nums font-medium">{INR(b.outstanding)}</span>
-                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
                           </Link>
                         </li>
                       ))}
                     </ul>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </>
-        )}
-      </div>
-    </div>
+                  </details>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+    </PageShell>
   );
 }

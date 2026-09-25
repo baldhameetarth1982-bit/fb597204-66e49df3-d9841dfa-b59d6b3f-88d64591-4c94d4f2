@@ -55,6 +55,7 @@ const CERTIFICATES: Tile[] = [
 
 const OTHER: Tile[] = [
   { to: "/society/business-profile", label: "Society profile", icon: Building2 },
+  { to: "/society/subscription", label: "Subscription", icon: Wallet },
   { to: "/society/team", label: "Team & roles", icon: Users, feature: "team_roles" },
   { to: "/society/import", label: "Resident import", icon: Users, feature: "resident_import" },
   { to: "/society/bill-studio", label: "Bill templates", icon: Receipt, feature: "bill_templates" },
@@ -74,7 +75,7 @@ function TileGrid({ tiles }: { tiles: Tile[] }) {
         return (
           <Link
             key={t.to}
-            to={locked ? "/society/plan-required" : (t.to as any)}
+            to={locked ? "/society/subscription" : (t.to as any)}
             className="group relative rounded-2xl border bg-card hover:bg-primary/5 hover:border-primary/40 active:scale-[0.98] transition p-3 flex flex-col items-center justify-center gap-1.5 text-center min-h-[96px]"
           >
             <div className={`h-10 w-10 rounded-2xl grid place-items-center ${locked ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"}`}>

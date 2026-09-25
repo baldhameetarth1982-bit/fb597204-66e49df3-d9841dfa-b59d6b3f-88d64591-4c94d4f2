@@ -20,7 +20,8 @@ import {
 } from "@/lib/auth-service";
 import { sanitizeNextPath } from "@/lib/safe-next";
 import { useServerFn } from "@tanstack/react-start";
-import { assertLoginAllowed, clearLoginFailures, recordLoginFailure } from "@/lib/login-guard.functions";
+import { assertLoginAllowed } from "@/lib/login-guard.functions";
+import { emailSignIn, emailSignUp } from "@/lib/email-auth.functions";
 import { Clock } from "lucide-react";
 
 export const Route = createFileRoute("/_auth/login")({
@@ -61,8 +62,8 @@ function LoginPage() {
   const [limited, setLimited] = useState<string | null>(null);
   const caps = useMemo(() => getCapabilities(), []);
   const assertAllowed = useServerFn(assertLoginAllowed);
-  const recordFailure = useServerFn(recordLoginFailure);
-  const clearFailures = useServerFn(clearLoginFailures);
+  const signInFn = useServerFn(emailSignIn);
+  const signUpFn = useServerFn(emailSignUp);
 
   if (isLoading) {
     return (
@@ -99,28 +100,15 @@ function LoginPage() {
     setLimited(null);
     const addr = email.trim();
     try {
-      const gate = await assertAllowed({ data: { email: addr } }).catch(() => null);
-      if (!gate) { toast.error("Couldn't reach SociyoHub. Check your connection and try again."); return; }
-      if (!gate.ok) { setLimited(gate.message); return; }
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
-          email: addr,
-          password,
-          options: {
-            emailRedirectTo: emailRedirect,
-            data: { full_name: fullName.trim() || null },
-          },
-        });
-        if (error) throw error;
+        const r = await signUpFn({ data: { email: addr, password, fullName: fullName.trim() || undefined, next } });
+        if (!r.ok) { if (r.reason === "limited") setLimited(r.message); else toast.error(r.message); return; }
         toast.success("Account created. Check your email if confirmation is required.");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email: addr, password });
-        if (error) {
-          await recordFailure({ data: { email: addr } }).catch(() => {});
-          toast.error("Email or password is incorrect. Please try again.");
-          return;
-        }
-        clearFailures().catch(() => {});
+        const r = await signInFn({ data: { email: addr, password } });
+        if (!r.ok) { if (r.reason === "limited") setLimited(r.message); else toast.error(r.message); return; }
+        const { error } = await supabase.auth.setSession({ access_token: r.access_token, refresh_token: r.refresh_token });
+        if (error) throw error;
       }
     } catch {
       toast.error(mode === "signup" ? "Couldn't create the account. Please try again." : "Couldn't sign in. Please try again.");

@@ -468,7 +468,7 @@ function ImportPage() {
                   value={entityType}
                   onChange={(e) => setEntityType(e.target.value as EntityType)}
                 >
-                  {ENTITY_TYPES.map((s) => (
+                  {ENTITY_TYPES.filter((s) => s !== "occupancy").map((s) => (
                     <option key={s} value={s}>{s}</option>
                   ))}
                 </select>

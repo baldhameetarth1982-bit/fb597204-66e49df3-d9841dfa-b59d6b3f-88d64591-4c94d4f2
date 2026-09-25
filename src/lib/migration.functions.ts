@@ -56,6 +56,14 @@ const SafeError = z.enum([
   "occupancy_rows_unsupported",
   "structure_rows_not_allowed_serial",
 ]);
+function rowSourceKey(entity: string, d: Record<string, unknown>): string | null {
+  if (d.external_resident_key) return String(d.external_resident_key);
+  if (entity === "unit" && d.unit_label) {
+    const s = String(d.structure_name ?? "").trim();
+    return s ? `${s}::${String(d.unit_label)}` : String(d.unit_label);
+  }
+  return (d.unit_label ?? d.registration_number ?? null) as string | null;
+}
 export type SafeErrorCode = z.infer<typeof SafeError>;
 
 class MigrationError extends Error {
@@ -368,6 +376,22 @@ export const validateMigrationJob = createServerFn({ method: "POST" })
     let errors = 0;
     let warnings = 0;
     const seenKeys = new Set<string>();
+    const norm = (v: unknown) => String(v ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+    // Houses and active plates that already exist in this society are skipped
+    // (with a warning) so re-imports and retries never fail or duplicate data.
+    const existingUnits = new Set<string>();
+    const existingPlates = new Set<string>();
+    if (entity === "unit") {
+      const { data: fl } = await supabase
+        .from("flats").select("flat_number, blocks(name)").eq("society_id", job.society_id);
+      for (const f of (fl ?? []) as Array<{ flat_number: string; blocks: { name: string } | null }>) {
+        existingUnits.add(`${norm(f.blocks?.name)}::${norm(f.flat_number)}`);
+      }
+    } else if (entity === "vehicle") {
+      const { data: vs } = await supabase
+        .from("vehicles").select("plate_number").eq("society_id", job.society_id).eq("is_active", true);
+      for (const v of vs ?? []) existingPlates.add(String(v.plate_number).replace(/\s+/g, "").toUpperCase());
+    }
 
     for (const pr of parsedRows) {
       const values = (pr.values_json as unknown as string[]) ?? [];
@@ -384,7 +408,8 @@ export const validateMigrationJob = createServerFn({ method: "POST" })
 
       const parseResult = schema.safeParse(mapped);
       const errorCodes: string[] = [];
-      let status: "valid" | "warning" | "error" = "valid";
+      const warningCodes: string[] = [];
+      let status = "valid" as "valid" | "warning" | "error";
       let action: "create" | "match_existing" | "skip" | "conflict" = "create";
 
       if (!parseResult.success) {
@@ -395,12 +420,11 @@ export const validateMigrationJob = createServerFn({ method: "POST" })
         action = "conflict";
         errors++;
       } else {
-        // Uniqueness by source_key within a file
-        const sourceKey =
-          (parseResult.data as Record<string, unknown>).external_resident_key ??
-          (parseResult.data as Record<string, unknown>).unit_label ??
-          (parseResult.data as Record<string, unknown>).registration_number ??
-          null;
+        const d = parseResult.data as Record<string, unknown>;
+        // Commit reads `type`/`color`; keep both spellings so they aren't dropped.
+        if (entity === "vehicle") { d.type = d.vehicle_type ?? null; d.color = d.colour ?? null; }
+        // Uniqueness by source_key within a file (units are unique per structure).
+        const sourceKey = rowSourceKey(entity, d);
         if (sourceKey) {
           const key = `${entity}:${String(sourceKey).toLowerCase()}`;
           if (seenKeys.has(key)) {
@@ -412,7 +436,15 @@ export const validateMigrationJob = createServerFn({ method: "POST" })
             seenKeys.add(key);
           }
         }
+        if (status === "valid" && entity === "unit" &&
+            existingUnits.has(`${(job.structure_mode ?? "structured") === "serial" ? "" : norm(d.structure_name)}::${norm(d.unit_label)}`)) {
+          status = "warning"; action = "skip"; warningCodes.push("unit_already_exists");
+        }
+        if (status === "valid" && entity === "vehicle" && existingPlates.has(String(d.registration_number))) {
+          status = "warning"; action = "skip"; warningCodes.push("vehicle_already_registered");
+        }
         if (status === "valid") valid++;
+        else if (status === "warning") warnings++;
       }
 
       const rowChecksum = await sha256Hex(
@@ -424,12 +456,7 @@ export const validateMigrationJob = createServerFn({ method: "POST" })
       );
 
       const sourceKey = parseResult.success
-        ? String(
-            (parseResult.data as Record<string, unknown>).external_resident_key ??
-              (parseResult.data as Record<string, unknown>).unit_label ??
-              (parseResult.data as Record<string, unknown>).registration_number ??
-              "",
-          )
+        ? String(rowSourceKey(entity, parseResult.data as Record<string, unknown>) ?? "")
         : "";
 
       stagingRows.push({
@@ -442,7 +469,7 @@ export const validateMigrationJob = createServerFn({ method: "POST" })
         action,
         status,
         error_codes: errorCodes,
-        warning_codes: [] as string[],
+        warning_codes: warningCodes,
       });
     }
 

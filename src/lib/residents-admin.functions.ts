@@ -368,9 +368,7 @@ export const listSocietyVehicles = createServerFn({ method: "POST" })
     if (!allowed) throw new Error("forbidden");
     let q = context.supabase
       .from("vehicles")
-      .select(
-        "id, plate_number, type, make_model, color, flat_id, user_id, created_at, is_active, flats(flat_number, blocks(name)), profiles!vehicles_user_id_fkey(full_name)",
-      )
+      .select("id, plate_number, type, make_model, color, flat_id, user_id, created_at, is_active")
       .eq("society_id", data.societyId)
       .order("created_at", { ascending: false })
       .range(data.offset, data.offset + data.limit - 1);
@@ -378,25 +376,37 @@ export const listSocietyVehicles = createServerFn({ method: "POST" })
     if (data.search) q = q.ilike("plate_number", `%${data.search.toUpperCase()}%`);
     const { data: rows, error } = await q;
     if (error) throw safeError(error);
-    type Row = {
-      id: string; plate_number: string; type: string;
-      make_model: string | null; color: string | null;
-      flat_id: string | null; user_id: string; created_at: string; is_active: boolean;
-      flats?: { flat_number?: string | null; blocks?: { name?: string | null } | null } | null;
-      profiles?: { full_name?: string | null } | null;
-    };
-    return ((rows ?? []) as unknown as Row[]).map((v) => ({
-      id: v.id,
-      plate_number: v.plate_number,
-      type: v.type,
-      make_model: v.make_model,
-      color: v.color,
-      flat_id: v.flat_id,
-      user_id: v.user_id,
-      is_active: v.is_active,
-      flat_number: v.flats?.flat_number ?? null,
-      block_name: v.flats?.blocks?.name ?? null,
-      owner_name: v.profiles?.full_name ?? null,
-      created_at: v.created_at,
-    }));
+    const list = rows ?? [];
+    // vehicles has no FK to flats/profiles, so embedded joins fail; look up separately.
+    const flatIds = [...new Set(list.map((v) => v.flat_id).filter(Boolean))] as string[];
+    const userIds = [...new Set(list.map((v) => v.user_id).filter(Boolean))] as string[];
+    const [flatsRes, profRes] = await Promise.all([
+      flatIds.length
+        ? context.supabase.from("flats").select("id, flat_number, blocks(name)").in("id", flatIds).eq("society_id", data.societyId)
+        : Promise.resolve({ data: [] as unknown[] }),
+      userIds.length
+        ? context.supabase.from("profiles").select("id, full_name").in("id", userIds)
+        : Promise.resolve({ data: [] as unknown[] }),
+    ]);
+    type F = { id: string; flat_number: string | null; blocks?: { name?: string | null } | null };
+    type P = { id: string; full_name: string | null };
+    const fm = new Map(((flatsRes.data ?? []) as unknown as F[]).map((f) => [f.id, f]));
+    const pm = new Map(((profRes.data ?? []) as unknown as P[]).map((p) => [p.id, p.full_name]));
+    return list.map((v) => {
+      const f = v.flat_id ? fm.get(v.flat_id) : undefined;
+      return {
+        id: v.id,
+        plate_number: v.plate_number,
+        type: v.type,
+        make_model: v.make_model,
+        color: v.color,
+        flat_id: v.flat_id,
+        user_id: v.user_id,
+        is_active: v.is_active,
+        flat_number: f?.flat_number ?? null,
+        block_name: f?.blocks?.name ?? null,
+        owner_name: (v.user_id && pm.get(v.user_id)) ?? null,
+        created_at: v.created_at,
+      };
+    });
   });

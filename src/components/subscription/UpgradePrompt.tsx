@@ -49,7 +49,7 @@ export function UpgradePrompt({ feature, currentPlan, compact }: Props) {
             </div>
             <div className="flex flex-wrap gap-2">
               <Button asChild className="rounded-xl">
-                <Link to="/society/plan-required">
+                <Link to="/society/subscription">
                   Upgrade to {PLAN_LABELS[required]} <ArrowRight className="h-4 w-4 ml-1" />
                 </Link>
               </Button>

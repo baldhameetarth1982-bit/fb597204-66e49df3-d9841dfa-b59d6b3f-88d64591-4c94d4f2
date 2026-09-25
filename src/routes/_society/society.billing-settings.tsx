@@ -17,6 +17,8 @@ import { Switch } from "@/components/ui/switch";
 import { StatusChip } from "@/components/system/StatusChip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { ErrorState } from "@/components/system/ErrorState";
+import { toSafeFinanceMessage } from "@/lib/finance-safe-error";
 import { getBillingSchedule, saveBillingSchedule, runBillingNow } from "@/lib/billing.functions";
 
 export const Route = createFileRoute("/_society/society/billing-settings")({
@@ -45,43 +47,88 @@ const DEFAULTS: Settings = {
 function BillingSettingsPage() {
   const { societyId, loading: sidLoading } = useSocietyId();
   const [form, setForm] = useState<Settings>(DEFAULTS);
+  const [baseline, setBaseline] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [missing, setMissing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [gatewayConfigured, setGatewayConfigured] = useState<boolean | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
-    if (!societyId) return;
+    if (!societyId) { if (!sidLoading) setLoading(false); return; }
+    let cancelled = false;
+    setLoading(true);
+    setLoadError(false);
+    setMissing(false);
     (async () => {
-      const [settingsRes, platformRes] = await Promise.all([
-        supabase
-          .from("society_settings")
-          .select("maintenance_frequency,maintenance_due_day,grace_days,late_fee_amount,late_fee_type,financial_year_start_month")
-          .eq("society_id", societyId)
-          .maybeSingle(),
-        supabase.from("platform_settings").select("razorpay_configured").maybeSingle(),
-      ]);
-      if (settingsRes.data) {
-        setForm({
+      const settingsRes = await supabase
+        .from("society_settings")
+        .select("maintenance_frequency,maintenance_due_day,grace_days,late_fee_amount,late_fee_type,financial_year_start_month")
+        .eq("society_id", societyId)
+        .maybeSingle();
+      if (cancelled) return;
+      if (settingsRes.error) {
+        setLoadError(true);
+        setBaseline(null);
+      } else if (!settingsRes.data) {
+        // No settings row visible: never show or save defaults as if they were real.
+        setMissing(true);
+        setBaseline(null);
+      } else {
+        const next: Settings = {
           maintenance_frequency: settingsRes.data.maintenance_frequency ?? DEFAULTS.maintenance_frequency,
           maintenance_due_day: settingsRes.data.maintenance_due_day ?? DEFAULTS.maintenance_due_day,
           grace_days: settingsRes.data.grace_days ?? DEFAULTS.grace_days,
           late_fee_amount: Number(settingsRes.data.late_fee_amount ?? 0),
           late_fee_type: settingsRes.data.late_fee_type ?? DEFAULTS.late_fee_type,
           financial_year_start_month: settingsRes.data.financial_year_start_month ?? DEFAULTS.financial_year_start_month,
-        });
+        };
+        setForm(next);
+        setBaseline(next);
       }
-      setGatewayConfigured(platformRes.data?.razorpay_configured ?? null);
       setLoading(false);
     })();
-  }, [societyId]);
+    return () => { cancelled = true; };
+  }, [societyId, sidLoading, reloadKey]);
+
+  const policyLoaded = baseline !== null && !loadError;
+  const dirty = policyLoaded && JSON.stringify(form) !== JSON.stringify(baseline);
+
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
+
+  function validate(f: Settings): string | null {
+    if (!Number.isInteger(f.maintenance_due_day) || f.maintenance_due_day < 1 || f.maintenance_due_day > 28)
+      return "Due day must be a whole number from 1 to 28.";
+    if (!Number.isInteger(f.grace_days) || f.grace_days < 0 || f.grace_days > 30)
+      return "Grace period must be a whole number from 0 to 30 days.";
+    if (!Number.isFinite(f.late_fee_amount) || f.late_fee_amount < 0)
+      return "Late fee can't be negative.";
+    if (f.late_fee_type === "percent" && f.late_fee_amount > 100)
+      return "A percentage late fee can't be more than 100%.";
+    return null;
+  }
 
   async function save() {
-    if (!societyId) return;
+    if (!societyId || !policyLoaded || saving || !dirty) return;
+    const problem = validate(form);
+    if (problem) return toast.error(problem);
     setSaving(true);
-    const { error } = await supabase.from("society_settings").update(form).eq("society_id", societyId);
+    const { data, error } = await supabase
+      .from("society_settings")
+      .update(form)
+      .eq("society_id", societyId)
+      .select("society_id");
     setSaving(false);
-    if (error) return toast.error(error.message);
-    toast.success("Billing settings saved");
+    if (error) return toast.error(toSafeFinanceMessage(error, "Couldn't save. Your changes are still here — please try again."));
+    if (!data || data.length === 0)
+      return toast.error("Only Society Admins can change billing settings. Nothing was saved.");
+    setBaseline(form);
+    toast.success("Billing policy saved");
   }
 
   if (sidLoading || loading) {
@@ -97,7 +144,7 @@ function BillingSettingsPage() {
       <MobileHero
         eyebrow="Billing centre"
         title="Billing settings"
-        subtitle="Payment methods, billing cycle, grace period, late fees, and auto-billing."
+        subtitle="Society-wide rules for billing cycle, due dates, grace period, late fees and auto-billing."
         icon={SlidersHorizontal}
         variant="teal"
       />
@@ -106,6 +153,10 @@ function BillingSettingsPage() {
           <BillingCenterTabs />
         </div>
 
+      <p className="text-xs text-muted-foreground px-1">
+        These settings apply to every home in your society. Only Society Admins can change them.
+        Bills already issued keep the amounts and dates they were created with.
+      </p>
 
       {/* Payment collection */}
       <Card className="rounded-2xl mb-4">
@@ -116,22 +167,12 @@ function BillingSettingsPage() {
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold">Maintenance payment methods</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Residents can pay by <b>Cash</b> or <b>Bank Transfer</b>. Bank transfers are marked
-              <span className="whitespace-nowrap"> "Pending verification" </span>
-              until you confirm the receipt.
-            </p>
-            <p className="text-xs text-muted-foreground mt-2">
-              Want online collection (UPI / cards / net-banking) for your society?
-              {" "}
-              <a href="mailto:support@sociohub.live" className="text-primary font-medium underline">
-                Contact SociyoHub Support
-              </a>
-              {" "}to enable online payments.
+              Residents can pay by <b>Cash</b> or <b>Bank Transfer</b>. Each payment stays
+              <span className="whitespace-nowrap"> "Awaiting verification" </span>
+              until a committee member confirms it, and a receipt is issued only after that.
             </p>
           </div>
-          <StatusChip tone={gatewayConfigured ? "success" : "warning"}>
-            {gatewayConfigured ? "Online enabled" : "Offline only"}
-          </StatusChip>
+          <StatusChip tone="success">Cash + Bank Transfer</StatusChip>
         </CardContent>
       </Card>
 
@@ -139,11 +180,30 @@ function BillingSettingsPage() {
       {societyId && <AutoBillingSection societyId={societyId} />}
 
       {/* Policy */}
+      {!policyLoaded ? (
+        <Card className="rounded-2xl mt-4">
+          <CardContent className="p-2">
+            <ErrorState
+              title={missing ? "Billing policy isn't set up yet" : "Couldn't load your billing policy"}
+              description={
+                missing
+                  ? "Finish society setup first, or ask a Society Admin. Nothing has been changed."
+                  : "Nothing has been changed. Your saved settings are safe."
+              }
+              onRetry={() => setReloadKey((k) => k + 1)}
+              showSupport={false}
+            />
+          </CardContent>
+        </Card>
+      ) : (<>
       <Card className="rounded-2xl mt-4">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Settings2 className="h-4 w-4" /> Billing policy
           </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Due day and grace period decide when a bill counts as overdue. Late fees apply only after the grace period ends.
+          </p>
         </CardHeader>
         <CardContent className="grid sm:grid-cols-2 gap-4">
           <div>
@@ -199,12 +259,19 @@ function BillingSettingsPage() {
         </CardContent>
       </Card>
 
-      <div className="mt-4 flex justify-end pb-6">
-        <Button onClick={save} disabled={saving} className="rounded-xl h-11">
+      <div className="mt-4 flex flex-wrap items-center justify-end gap-2 pb-6">
+        {dirty && <p className="text-xs text-muted-foreground mr-auto">You have unsaved changes.</p>}
+        {dirty && (
+          <Button variant="outline" onClick={() => baseline && setForm(baseline)} disabled={saving} className="rounded-xl h-11">
+            Discard
+          </Button>
+        )}
+        <Button onClick={save} disabled={saving || !dirty} className="rounded-xl h-11">
           {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-          Save policy
+          {dirty ? "Save policy" : "No changes to save"}
         </Button>
       </div>
+      </>)}
       </div>
     </div>
   );
@@ -231,8 +298,12 @@ function AutoBillingSection({ societyId }: { societyId: string }) {
   const [lateFeeType, setLateFeeType] = useState<"none" | "flat" | "percent">("none");
   const [lateFeeValue, setLateFeeValue] = useState("0");
   const [prorate, setProrate] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [reload, setReload] = useState(0);
 
   useEffect(() => {
+    setLoading(true);
+    setLoadFailed(false);
     (async () => {
       try {
         const { schedule } = await get({ data: { societyId } });
@@ -248,12 +319,21 @@ function AutoBillingSection({ societyId }: { societyId: string }) {
           setProrate(schedule.prorate);
           setEnabled(schedule.enabled);
         }
-      } catch (e: any) { toast.error(e.message); }
+      } catch {
+        // Never let defaults be saved over a schedule we couldn't read.
+        setLoadFailed(true);
+      }
       setLoading(false);
     })();
-  }, [societyId]);
+  }, [societyId, reload]);
 
   async function handleSave() {
+    if (loadFailed || saving) return;
+    const amt = Number(amount), anchor = Number(anchorDay), offset = Number(dueOffsetDays), lf = Number(lateFeeValue);
+    if (!Number.isFinite(amt) || amt <= 0) return toast.error("Enter a billing amount above ₹0.");
+    if (!Number.isInteger(anchor) || anchor < 1 || anchor > 28) return toast.error("Billing day must be from 1 to 28.");
+    if (!Number.isInteger(offset) || offset < 0 || offset > 60) return toast.error("Days until due must be from 0 to 60.");
+    if (!Number.isFinite(lf) || lf < 0 || (lateFeeType === "percent" && lf > 100)) return toast.error("Enter a valid late fee.");
     setSaving(true);
     try {
       const res = await save({
@@ -265,21 +345,23 @@ function AutoBillingSection({ societyId }: { societyId: string }) {
           prorate, enabled,
         },
       });
-      toast.success("Auto-billing saved. Next run " + new Date(res.nextRunAt).toLocaleDateString());
+      toast.success("Auto-billing saved. Next run " + new Date(res.nextRunAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }));
       const { schedule } = await get({ data: { societyId } });
       setSch(schedule);
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e) { toast.error(toSafeFinanceMessage(e, "Couldn't save auto-billing. Your changes are still here — please try again.")); }
     setSaving(false);
   }
 
   async function handleRun() {
+    if (running) return;
+    if (!window.confirm("Generate this cycle's bills for all billable homes now?")) return;
     setRunning(true);
     try {
       const res = await runNow({ data: { societyId } });
       toast.success(`Generated ${res.count} bills · ₹${res.total.toLocaleString("en-IN")}`);
       const { schedule } = await get({ data: { societyId } });
       setSch(schedule);
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e) { toast.error(toSafeFinanceMessage(e, "Couldn't generate bills. Please try again.")); }
     setRunning(false);
   }
 
@@ -287,6 +369,21 @@ function AutoBillingSection({ societyId }: { societyId: string }) {
     return (
       <Card className="rounded-2xl">
         <CardContent className="p-6 flex items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></CardContent>
+      </Card>
+    );
+  }
+
+  if (loadFailed) {
+    return (
+      <Card className="rounded-2xl">
+        <CardContent className="p-2">
+          <ErrorState
+            title="Couldn't load auto-billing"
+            description="Nothing has been changed. Your saved schedule is safe."
+            onRetry={() => setReload((k) => k + 1)}
+            showSupport={false}
+          />
+        </CardContent>
       </Card>
     );
   }

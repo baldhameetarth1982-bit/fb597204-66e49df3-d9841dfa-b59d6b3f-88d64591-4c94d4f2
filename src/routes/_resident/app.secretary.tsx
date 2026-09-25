@@ -172,14 +172,18 @@ function SecretaryPage() {
                 ) : (
                   <div role="alert" className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 space-y-3">
                     <p className="text-sm text-foreground flex gap-2"><AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />{t.r.message}</p>
-                    {RETRYABLE.has(t.r.code) && (
-                      <Button size="sm" variant="outline" className="h-11" disabled={busy} onClick={() => submit(t.q, i)}>
-                        <RotateCcw className="h-4 w-4 mr-1.5" /> Try again
-                      </Button>
-                    )}
-                    {t.r.code === "plan_locked" && (
-                      <Button asChild size="sm" variant="outline" className="h-11"><Link to="/app/plan-required">See plans</Link></Button>
-                    )}
+                    <div className="flex flex-wrap gap-2">
+                      {RETRYABLE.has(t.r.code) && (
+                        <Button size="sm" variant="outline" className="h-11" disabled={busy} onClick={() => submit(t.q, i)}>
+                          <RotateCcw className="h-4 w-4 mr-1.5" /> Try again
+                        </Button>
+                      )}
+                      {t.r.code === "plan_locked" ? (
+                        <Button asChild size="sm" variant="outline" className="h-11"><Link to="/app/plan-required">See plans</Link></Button>
+                      ) : (
+                        <Button asChild size="sm" variant="ghost" className="h-11 text-primary"><Link to="/app/helpdesk">Ask the committee on Helpdesk →</Link></Button>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { ArrowLeft, Check, CreditCard, Loader2, Lock, ShieldCheck, Sparkles } from "lucide-react";
+import { Check, CreditCard, Loader2, Lock, ShieldCheck, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { useSocietyId } from "@/hooks/useSocietyId";
@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getSocietyAccessStatus, type SocietyAccessStatus } from "@/lib/pricing-engine";
 import { getFeatureCatalog, PLAN_LABELS, type PlanKey } from "@/lib/plan-features";
 import { openRazorpayCheckout } from "@/lib/razorpay";
-import { Card } from "@/components/ui/card";
+import { SettingsShell, SettingsSection, SettingsDisclosure } from "@/components/settings/SettingsUI";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -114,122 +114,138 @@ function SubscriptionPage() {
   const planName =
     (plans.data ?? []).find((p) => p.id === access.data?.plan_id)?.name ?? access.data?.plan_id ?? null;
 
+  const showPlans = !loading && !access.isError && status !== "forbidden";
   return (
-    <main className="max-w-3xl mx-auto px-4 py-5 pb-28 space-y-5">
-      <Link to="/society/more" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground min-h-[44px]">
-        <ArrowLeft className="h-4 w-4 mr-1" /> Back
-      </Link>
-      <h1 className="text-2xl font-semibold tracking-tight">Subscription & plan</h1>
-
-      {loading ? (
-        <Card className="rounded-2xl p-5 space-y-3">
-          <Skeleton className="h-5 w-32" />
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-4 w-full" />
-        </Card>
-      ) : access.isError || !copy ? (
-        <ErrorState
-          title="Couldn't confirm your plan"
-          description="We can't show your plan status right now. Your features aren't changed."
-          onRetry={() => access.refetch()}
-        />
-      ) : (
-        <Card className="rounded-2xl p-5 space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className={`text-xs font-medium rounded-full px-2.5 py-1 ${copy.tone}`}>{copy.label}</span>
-            {confirming && (
-              <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
-                <Loader2 className="h-3 w-3 animate-spin" /> Confirming payment…
-              </span>
-            )}
+    <SettingsShell
+      title="Subscription"
+      scope="Whole society"
+      icon={CreditCard}
+      description="Your society's SociyoHub plan. This is separate from maintenance payments, which are unaffected."
+    >
+      <SettingsSection title="Current plan" icon={ShieldCheck}>
+        {loading ? (
+          <div className="space-y-3">
+            <Skeleton className="h-5 w-32" />
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-full" />
           </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Current plan</p>
-            <p className="text-2xl font-semibold">
+        ) : access.isError || !copy ? (
+          <ErrorState
+            title="Couldn't confirm your plan"
+            description="We can't show your plan status right now. Your features aren't changed."
+            onRetry={() => access.refetch()}
+          />
+        ) : (
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={`text-xs font-medium rounded-full px-2.5 py-1 ${copy.tone}`}>{copy.label}</span>
+              {confirming && (
+                <span role="status" className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Confirming payment — not active yet
+                </span>
+              )}
+            </div>
+            <p className="text-3xl font-semibold tracking-tight">
               {status === "trial" ? "Free trial" : status === "active" && planName ? planName : "—"}
             </p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Features available now: <b className="text-foreground">{planLoading ? "—" : PLAN_LABELS[effectivePlan]}</b>
-            </p>
+            <dl className="grid gap-2 sm:grid-cols-2">
+              <div className="rounded-xl border p-3">
+                <dt className="text-xs text-muted-foreground">Features available now</dt>
+                <dd className="font-medium">{planLoading ? "—" : PLAN_LABELS[effectivePlan]}</dd>
+              </div>
+              <div className="rounded-xl border p-3">
+                <dt className="text-xs text-muted-foreground">
+                  {status === "trial" ? "Trial ends" : status === "active" ? "Renews / ends" : "Next step"}
+                </dt>
+                <dd className="font-medium">
+                  {status === "trial"
+                    ? fmtDate(access.data!.trial_ends_at) ?? "—"
+                    : status === "active"
+                    ? fmtDate(access.data!.plan_expires_at) ?? "—"
+                    : "Choose a plan"}
+                </dd>
+              </div>
+            </dl>
+            <p className="text-sm text-muted-foreground">{copy.note}</p>
           </div>
-          <p className="text-sm text-muted-foreground">{copy.note}</p>
-          {status === "trial" && fmtDate(access.data!.trial_ends_at) && (
-            <p className="text-sm">Trial ends on <b>{fmtDate(access.data!.trial_ends_at)}</b></p>
-          )}
-          {status === "active" && fmtDate(access.data!.plan_expires_at) && (
-            <p className="text-sm">Renews / ends on <b>{fmtDate(access.data!.plan_expires_at)}</b></p>
-          )}
-        </Card>
-      )}
+        )}
+      </SettingsSection>
 
-      {!loading && !access.isError && status !== "forbidden" && (
-        <section className="space-y-3">
-          <h2 className="text-lg font-semibold">{status === "active" ? "Change or renew plan" : "Choose a plan"}</h2>
+      {showPlans && (
+        <SettingsSection
+          title={status === "active" ? "Change or renew" : "Choose a plan"}
+          icon={Sparkles}
+          description="Paid securely via Razorpay. Your plan changes only after we confirm the payment."
+        >
           {plans.isLoading ? (
             <Skeleton className="h-28 w-full rounded-2xl" />
           ) : plans.isError ? (
             <ErrorState title="Couldn't load plans" description="Please try again." onRetry={() => plans.refetch()} />
           ) : (
-            <div className="grid sm:grid-cols-3 gap-3">
+            <ul className="divide-y">
               {(plans.data ?? []).map((p) => {
                 const current = status === "active" && p.id === access.data?.plan_id;
                 return (
-                  <Card key={p.id} className={`rounded-2xl p-4 flex flex-col gap-3 ${p.is_recommended ? "border-primary border-2" : ""}`}>
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="font-semibold">{p.name}</p>
-                      {current ? <Badge variant="secondary">Current</Badge> : p.is_recommended ? <Badge><Sparkles className="h-3 w-3 mr-1" />Popular</Badge> : null}
+                  <li key={p.id} className={`flex flex-wrap items-center gap-3 py-3 ${current ? "-mx-2 rounded-xl bg-primary/5 px-2" : ""}`}>
+                    <div className="min-w-0 flex-1">
+                      <p className="flex flex-wrap items-center gap-2 font-semibold">
+                        {p.name}
+                        {current ? <Badge variant="secondary">Your plan</Badge> : p.is_recommended ? <Badge variant="outline">Popular</Badge> : null}
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold tabular-nums">₹{Number(p.price_monthly_inr).toLocaleString("en-IN")}</span>
+                        <span className="text-muted-foreground"> / month</span>
+                      </p>
                     </div>
-                    <p>
-                      <span className="text-2xl font-bold tabular-nums">₹{Number(p.price_monthly_inr).toLocaleString("en-IN")}</span>
-                      <span className="text-sm text-muted-foreground">/month</span>
-                    </p>
                     <Button
-                      className="mt-auto min-h-[44px] rounded-xl"
+                      className="h-11 rounded-xl"
                       variant={current ? "outline" : "default"}
                       disabled={busyId !== null || confirming}
                       onClick={() => handleBuy(p as any)}
+                      aria-label={`${current ? "Renew" : "Choose"} ${p.name}`}
                     >
                       {busyId === p.id && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                      {current ? "Renew" : "Choose"} {p.name}
+                      {current ? "Renew" : "Choose"}
                     </Button>
-                  </Card>
+                  </li>
                 );
               })}
-            </div>
+            </ul>
           )}
-          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-            <ShieldCheck className="h-3.5 w-3.5" /> Paid securely via Razorpay. Your plan activates only after we confirm the payment.
-            <Link to="/pricing" className="underline ml-1">Compare plans</Link>
-          </p>
-        </section>
+          <Link to="/pricing" className="mt-2 inline-flex min-h-11 items-center text-sm text-primary underline-offset-4 hover:underline">
+            Compare plans in detail
+          </Link>
+        </SettingsSection>
       )}
 
-      {!loading && !access.isError && status !== "forbidden" && (
-        <section className="grid sm:grid-cols-2 gap-3">
-          <Card className="rounded-2xl p-4">
-            <h3 className="font-semibold flex items-center gap-2 mb-2"><Check className="h-4 w-4 text-success" /> Included ({included.length})</h3>
-            <ul className="space-y-1 text-sm">
-              {included.map((f) => <li key={f.key}>{f.label}</li>)}
-            </ul>
-          </Card>
-          <Card className="rounded-2xl p-4">
-            <h3 className="font-semibold flex items-center gap-2 mb-2"><Lock className="h-4 w-4 text-muted-foreground" /> Needs a higher plan ({locked.length})</h3>
-            {locked.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Everything is unlocked.</p>
-            ) : (
-              <ul className="space-y-1 text-sm">
-                {locked.map((f) => (
-                  <li key={f.key} className="flex justify-between gap-2">
-                    <span>{f.label}</span>
-                    <span className="text-xs text-muted-foreground">{PLAN_LABELS[f.minPlan]}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-        </section>
+      {showPlans && (
+        <SettingsDisclosure
+          title="What's included"
+          description={`${included.length} included · ${locked.length} need a higher plan`}
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold"><Check className="h-4 w-4 text-success" /> Included</h3>
+              <ul className="space-y-1 text-sm">{included.map((f) => <li key={f.key}>{f.label}</li>)}</ul>
+            </div>
+            <div>
+              <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold"><Lock className="h-4 w-4 text-muted-foreground" /> Needs a higher plan</h3>
+              {locked.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Everything is unlocked.</p>
+              ) : (
+                <ul className="space-y-1 text-sm">
+                  {locked.map((f) => (
+                    <li key={f.key} className="flex justify-between gap-2">
+                      <span>{f.label}</span>
+                      <span className="text-xs text-muted-foreground">{PLAN_LABELS[f.minPlan]}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </SettingsDisclosure>
       )}
-      <p className="text-xs text-muted-foreground flex items-center gap-1.5"><CreditCard className="h-3.5 w-3.5" /> This is SociyoHub's subscription only. Maintenance payments are unaffected.</p>
-    </main>
+    </SettingsShell>
   );
 }

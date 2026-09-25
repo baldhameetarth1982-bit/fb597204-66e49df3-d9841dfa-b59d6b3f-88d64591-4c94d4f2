@@ -160,6 +160,23 @@ export const Route = createFileRoute("/api/public/auth/firebase-session")({
           }
         }
 
+        // Server-authoritative per-account lockout (shared with the sign-in screens).
+        {
+          const { fingerprintSubject } = await import("@/lib/rate-limit.server");
+          const { accountSubject, isAccountLocked, clearAccountFailures, LOCKED_MSG } = await import("@/lib/login-guard.functions");
+          const subject = accountSubject(
+            provider === "phone" ? { phone: payload.phone_number } : { email: payload.email },
+            fingerprintSubject,
+          );
+          if (subject) {
+            if (await isAccountLocked(subject)) {
+              return json({ error: LOCKED_MSG, limited: true }, { status: 429, headers: { "retry-after": "900" } });
+            }
+            // A verified identity proves ownership — reset this account's failure count.
+            await clearAccountFailures(subject);
+          }
+        }
+
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const admin = supabaseAdmin.auth.admin;
 

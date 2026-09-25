@@ -1,3 +1,4 @@
+import { PeopleAreaNav } from "@/components/people/PeopleUI";
 import { createFileRoute } from "@tanstack/react-router";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useMemo, useState } from "react";
@@ -70,6 +71,7 @@ function SocietyVehicles() {
 
   return (
     <PageShell>
+      <PeopleAreaNav />
       <PageHeader title="Vehicles" description="All registered vehicles in your society." />
       <div className="mb-4 flex items-center gap-2 flex-wrap">
         <div className="relative max-w-sm flex-1 min-w-[200px]">

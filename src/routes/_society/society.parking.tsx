@@ -1,3 +1,4 @@
+import { PeopleAreaNav } from "@/components/people/PeopleUI";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -91,6 +92,7 @@ function ParkingPage() {
 
   return (
     <PageShell>
+      <PeopleAreaNav />
       <PageHeader
         title="Parking"
         description={total ? `${assigned} of ${total} slots allotted` : "Create slots and allot them to homes"}

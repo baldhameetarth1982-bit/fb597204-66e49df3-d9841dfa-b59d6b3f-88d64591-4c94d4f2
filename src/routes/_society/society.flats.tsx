@@ -1,3 +1,4 @@
+import { PeopleAreaNav } from "@/components/people/PeopleUI";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { DoorOpen, Plus, Loader2, ChevronLeft, ChevronRight, Search } from "lucide-react";
@@ -129,6 +130,7 @@ function FlatsPage() {
   if (!sidLoading && !societyId) {
     return (
       <PageShell>
+      <PeopleAreaNav />
         <PageHeader title="Units" />
         <EmptyState
           icon={DoorOpen}
@@ -145,6 +147,7 @@ function FlatsPage() {
   if (!loading && overview && !overview.configured && overview.total_units === 0) {
     return (
       <PageShell>
+      <PeopleAreaNav />
         <PageHeader title="Units" description="Every unit across your society." />
         <EmptyState
           icon={DoorOpen}
@@ -158,6 +161,7 @@ function FlatsPage() {
 
   return (
     <PageShell>
+      <PeopleAreaNav />
       <PageHeader
         title="Units"
         description={

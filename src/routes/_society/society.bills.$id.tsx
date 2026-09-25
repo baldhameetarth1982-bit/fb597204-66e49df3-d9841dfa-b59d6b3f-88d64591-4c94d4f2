@@ -119,174 +119,101 @@ function BillDetailPage() {
   const hasVerifiedPayment = detail.payment_summary.has_verified_payment;
   const amount = Number(bill.total_payable ?? bill.amount ?? 0);
 
+  const statusBand = state.code === "paid" ? "bg-success-container text-success-container-foreground"
+    : state.code === "overdue" ? "bg-danger-container text-danger-container-foreground"
+    : state.code === "cancelled" ? "bg-muted text-muted-foreground"
+    : "bg-warning-container text-warning-container-foreground";
+  const onShare = async () => {
+    try {
+      await shareBillAsImage({
+        societyName: detail.society?.name ?? "Society", flatLabel,
+        residentName: detail.resident?.full_name ?? undefined,
+        period: bill.period_label ?? "Bill", amount,
+        dueDate: bill.due_date ? formatDate(bill.due_date) : "—",
+        status: state.code === "paid" ? "paid" : state.code === "cancelled" ? "cancelled" : state.code === "overdue" ? "overdue" : "due",
+        adminSignature: user?.email?.split("@")[0],
+      });
+    } catch { toast.error("Could not share this bill."); }
+  };
+
   return (
     <PageShell>
-      <div className="mb-4">
-        <Button asChild variant="ghost" size="sm" className="rounded-lg -ml-2">
-          <Link to="/society/billing"><ArrowLeft className="h-4 w-4 mr-1" />Billing Center</Link>
-        </Button>
-      </div>
+      <Button asChild variant="ghost" className="mb-3 min-h-11 -ml-2 rounded-xl">
+        <Link to="/society/billing"><ArrowLeft className="h-4 w-4 mr-1" />Bill history</Link>
+      </Button>
 
-      <Card className="rounded-2xl mb-4">
-        <CardContent className="p-5">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div>
-              <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
-                {bill.bill_number ?? "Bill"}
-              </p>
-              <h1 className="text-xl font-semibold">{bill.period_label ?? "Society bill"}</h1>
-              <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1.5">
-                <Home className="h-3.5 w-3.5" />{flatLabel}
-                {detail.resident?.full_name && <> · {detail.resident.full_name}</>}
-              </p>
-            </div>
-            <StatusChip tone={state.tone}>{state.label}</StatusChip>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
+        <article className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card" aria-labelledby="bill-title">
+          <div className={`flex items-center justify-between gap-3 px-5 py-2.5 text-sm font-medium ${statusBand}`}>
+            <span>{state.label}</span>
+            <span className="font-mono text-xs opacity-80">{bill.bill_number ?? "Bill"}</span>
           </div>
-
-          <div className="mt-5 flex items-baseline gap-1">
-            <IndianRupee className="h-5 w-5 text-muted-foreground" />
-            <span className="text-3xl font-bold tabular-nums">{amount.toLocaleString("en-IN")}</span>
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-            {bill.bill_date && (
+          <div className="p-5">
+            <h1 id="bill-title" className="type-section">{bill.period_label ?? "Society bill"}</h1>
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground"><Home className="h-4 w-4" />House {flatLabel}{detail.resident?.full_name && <> · {detail.resident.full_name}</>}</p>
+            <div className="mt-5 grid grid-cols-2 gap-4 border-t border-border pt-5">
               <div>
-                <p className="text-xs text-muted-foreground">Generated</p>
-                <p className="font-medium">{formatDate(bill.bill_date)}</p>
+                <p className="text-xs text-muted-foreground">Amount</p>
+                <p className={`text-3xl font-semibold tabular-nums ${state.code === "cancelled" ? "line-through text-muted-foreground" : ""}`}>₹{amount.toLocaleString("en-IN")}</p>
               </div>
-            )}
-            {bill.due_date && (
               <div>
                 <p className="text-xs text-muted-foreground">Due date</p>
-                <p className="font-medium">{formatDate(bill.due_date)}</p>
+                <p className={`text-lg font-semibold ${state.code === "overdue" ? "text-destructive" : ""}`}>{bill.due_date ? formatDate(bill.due_date) : "—"}</p>
               </div>
-            )}
-            {bill.cancelled_at && (
-              <div>
-                <p className="text-xs text-muted-foreground">Cancelled on</p>
-                <p className="font-medium">{formatDate(bill.cancelled_at)}</p>
-              </div>
-            )}
-            {detail.resident?.phone && (
-              <div>
-                <p className="text-xs text-muted-foreground">Mobile</p>
-                <p className="font-medium">{detail.resident.phone}</p>
-              </div>
-            )}
+            </div>
           </div>
 
-          <div className="mt-5 flex flex-wrap gap-2">
-            <Button
-              size="sm"
-              className="rounded-xl"
-              onClick={async () => {
-                try {
-                  await shareBillAsImage({
-                    societyName: detail.society?.name ?? "Society",
-                    flatLabel,
-                    residentName: detail.resident?.full_name ?? undefined,
-                    period: bill.period_label ?? "Bill",
-                    amount,
-                    dueDate: bill.due_date ? formatDate(bill.due_date) : "—",
-                    status: state.code === "paid" ? "paid" : state.code === "cancelled" ? "cancelled" : state.code === "overdue" ? "overdue" : "due",
-                    adminSignature: user?.email?.split("@")[0],
-                  });
-                } catch (e) {
-                  toast.error((e as Error)?.message ?? "Could not share");
-                }
-              }}
-            >
-              <Share2 className="h-4 w-4 mr-2" />Share
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="rounded-xl"
-              onClick={() => window.print()}
-            >
-              <FileDown className="h-4 w-4 mr-2" />Print / PDF
-            </Button>
-            {canCancel && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="rounded-xl text-destructive border-destructive/40 hover:bg-destructive/10"
-                onClick={() => setCancelOpen(true)}
-              >
-                <Ban className="h-4 w-4 mr-2" />Cancel bill
-              </Button>
-            )}
-          </div>
-
-          {isAdmin && hasVerifiedPayment && !bill.cancelled_at && (
-            <p className="mt-3 text-xs text-muted-foreground">
-              This bill has verified payment records and cannot be cancelled.
-            </p>
+          {detail.lines.length > 0 && (
+            <details className="group border-t border-border">
+              <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-5 text-sm font-medium hover:bg-muted/40">Charges ({detail.lines.length})<span className="text-xs text-muted-foreground group-open:hidden">Show</span></summary>
+              <ul className="divide-y divide-border px-5 pb-3">
+                {detail.lines.map((l) => (
+                  <li key={String(l.id)} className="flex items-center justify-between py-2 text-sm">
+                    <span className="truncate">{(l.description as string | null) ?? (l.kind as string | null) ?? "Charge"}</span>
+                    <span className="font-medium tabular-nums">₹{Number(l.amount ?? 0).toLocaleString("en-IN")}</span>
+                  </li>
+                ))}
+              </ul>
+            </details>
           )}
-        </CardContent>
-      </Card>
 
-      {detail.lines.length > 0 && (
-        <Card className="rounded-2xl mb-4">
-          <CardContent className="p-5">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground mb-3">Charges</p>
-            <ul className="divide-y">
-              {detail.lines.map((l) => (
-                <li key={String(l.id)} className="flex items-center justify-between py-2 text-sm">
-                  <span className="truncate">
-                    {(l.description as string | null) ?? (l.kind as string | null) ?? "Charge"}
-                  </span>
-                  <span className="font-medium tabular-nums">
-                    ₹{Number(l.amount ?? 0).toLocaleString("en-IN")}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      )}
+          <details className="group border-t border-border">
+            <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-5 text-sm font-medium hover:bg-muted/40">History & details<span className="text-xs text-muted-foreground group-open:hidden">Show</span></summary>
+            <div className="space-y-4 px-5 pb-5">
+              <ol className="space-y-3">
+                {bill.bill_date && (
+                  <li className="flex items-start gap-3">
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary-container text-primary-container-foreground"><Receipt className="h-4 w-4" /></span>
+                    <div><p className="text-sm font-medium">Bill generated</p><p className="flex items-center gap-1 text-xs text-muted-foreground"><Calendar className="h-3 w-3" />{formatDate(bill.bill_date)}</p></div>
+                  </li>
+                )}
+                {bill.cancelled_at && (
+                  <li className="flex items-start gap-3">
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-danger-container text-danger-container-foreground"><XCircle className="h-4 w-4" /></span>
+                    <div><p className="text-sm font-medium">Cancelled{bill.cancel_reason ? ` — ${bill.cancel_reason}` : ""}</p><p className="flex items-center gap-1 text-xs text-muted-foreground"><Calendar className="h-3 w-3" />{formatDate(bill.cancelled_at)}</p></div>
+                  </li>
+                )}
+              </ol>
+              {detail.resident?.phone && <p className="text-sm"><span className="text-muted-foreground">Resident mobile: </span>{detail.resident.phone}</p>}
+              <p className="flex items-start gap-2 rounded-xl bg-muted/40 p-3 text-xs text-muted-foreground"><Info className="h-4 w-4 shrink-0" />Payments for this bill are verified on the Payments page. Verified payments issue receipts; pending ones don't change the bill.</p>
+            </div>
+          </details>
+        </article>
 
-      <Card className="rounded-2xl mb-4">
-        <CardContent className="p-5">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground mb-3">Timeline</p>
-          <ol className="space-y-3">
-            {bill.bill_date && (
-              <li className="flex items-start gap-3">
-                <span className="h-8 w-8 rounded-full grid place-items-center bg-primary/10 text-primary shrink-0">
-                  <Receipt className="h-4 w-4" />
-                </span>
-                <div>
-                  <p className="text-sm font-medium">Bill generated</p>
-                  <p className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />{formatDate(bill.bill_date)}
-                  </p>
-                </div>
-              </li>
-            )}
-            {bill.cancelled_at && (
-              <li className="flex items-start gap-3">
-                <span className="h-8 w-8 rounded-full grid place-items-center bg-danger-container text-danger-container-foreground shrink-0">
-                  <XCircle className="h-4 w-4" />
-                </span>
-                <div>
-                  <p className="text-sm font-medium">
-                    Cancelled{bill.cancel_reason ? ` — ${bill.cancel_reason}` : ""}
-                  </p>
-                  <p className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />{formatDate(bill.cancelled_at)}
-                  </p>
-                </div>
-              </li>
-            )}
-          </ol>
-          <div className="mt-4 rounded-xl bg-muted/40 p-3 flex items-start gap-2">
-            <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-            <p className="text-xs text-muted-foreground">
-              Payment records and receipts are part of Stage 3C. Stage 3B tracks bill generation and cancellation only.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+        <aside className="space-y-2" aria-label="Bill actions">
+          <Button className="h-11 w-full rounded-xl" onClick={() => void onShare()}><Share2 className="h-4 w-4 mr-2" />Share with resident</Button>
+          <Button variant="outline" className="h-11 w-full rounded-xl" onClick={() => window.print()}><FileDown className="h-4 w-4 mr-2" />Print / PDF</Button>
+          {state.code !== "paid" && state.code !== "cancelled" && (
+            <Button asChild variant="outline" className="h-11 w-full rounded-xl"><Link to="/society/payments">Record or verify a payment</Link></Button>
+          )}
+          {canCancel && (
+            <Button variant="ghost" className="h-11 w-full rounded-xl text-destructive" onClick={() => setCancelOpen(true)}><Ban className="h-4 w-4 mr-2" />Cancel bill</Button>
+          )}
+          {isAdmin && hasVerifiedPayment && !bill.cancelled_at && (
+            <p className="px-1 text-xs text-muted-foreground">This bill has verified payments and can't be cancelled.</p>
+          )}
+        </aside>
+      </div>
 
       <Dialog open={cancelOpen} onOpenChange={(v) => (cancelBusy ? null : setCancelOpen(v))}>
         <DialogContent>

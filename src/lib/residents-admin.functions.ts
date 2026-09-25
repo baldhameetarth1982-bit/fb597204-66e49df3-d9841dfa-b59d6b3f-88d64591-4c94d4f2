@@ -33,6 +33,7 @@ const KNOWN_CODES = new Set([
 
 function safeError(e: unknown): Error {
   const msg = (e as { message?: string } | null)?.message ?? "";
+  if (msg) console.error("[residents-admin] db error:", (e as { code?: string })?.code ?? "", msg.slice(0, 200));
   for (const code of KNOWN_CODES) if (msg.includes(code)) return new Error(code);
   return new Error("operation_failed");
 }

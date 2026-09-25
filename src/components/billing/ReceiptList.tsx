@@ -114,35 +114,29 @@ export function ReceiptList({ societyId, showHome }: { societyId?: string | null
       {filtered.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-8">No receipts match this search.</p>
       ) : (
-        <ul className="space-y-3">
+        <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
           {filtered.map((r) => {
             const voided = r.status === "voided" || !!r.voided_at;
             return (
-              <li key={r.id} className="rounded-2xl border bg-card p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Receipt</p>
-                    <p className={`font-semibold break-all ${voided ? "line-through text-muted-foreground" : ""}`}>{r.receipt_number}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {[showHome && r.home ? `House ${r.home}` : null, r.bill_number_snapshot ? `Bill ${r.bill_number_snapshot}` : null,
-                        r.method_snapshot ? (METHOD[r.method_snapshot] ?? r.method_snapshot) : null].filter(Boolean).join(" · ")}
-                    </p>
-                    {r.reference_snapshot && <p className="text-xs text-muted-foreground break-all">Ref: {r.reference_snapshot}</p>}
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="font-semibold tabular-nums">{r.amount_snapshot != null ? INR(Number(r.amount_snapshot)) : "—"}</p>
-                    {voided ? (
-                      <StatusChip tone="neutral" icon={<Ban className="h-3 w-3" />} className="mt-1">Voided</StatusChip>
-                    ) : (
-                      <StatusChip tone="success" icon={<CheckCircle2 className="h-3 w-3" />} className="mt-1">Verified</StatusChip>
-                    )}
-                  </div>
+              <li key={r.id} className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 px-4 py-3 ${voided ? "bg-muted/40" : ""}`}>
+                <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${voided ? "bg-muted text-muted-foreground" : "bg-success-container text-success-container-foreground"}`}>
+                  {voided ? <Ban className="h-5 w-5" /> : <CheckCircle2 className="h-5 w-5" />}
+                </span>
+                <div className="min-w-0">
+                  <p className={`font-mono text-sm font-semibold break-all ${voided ? "line-through text-muted-foreground" : ""}`}>{r.receipt_number}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {[showHome && r.home ? `House ${r.home}` : null, r.bill_number_snapshot ? `Bill ${r.bill_number_snapshot}` : null,
+                      r.method_snapshot ? (METHOD[r.method_snapshot] ?? r.method_snapshot) : null, r.issued_at ? formatDate(r.issued_at) : null].filter(Boolean).join(" · ")}
+                  </p>
+                  {r.reference_snapshot && <p className="text-xs text-muted-foreground break-all">Ref {r.reference_snapshot}</p>}
+                  {voided && (
+                    <p className="mt-1 text-xs text-muted-foreground">Voided{r.voided_at ? ` ${formatDate(r.voided_at)}` : ""} after payment reversal{r.void_reason ? ` · ${r.void_reason}` : ""}</p>
+                  )}
                 </div>
-                <p className="text-[11px] text-muted-foreground mt-2">
-                  Issued {r.issued_at ? formatDate(r.issued_at) : "—"}
-                  {voided && r.voided_at ? ` · Voided ${formatDate(r.voided_at)} after payment reversal` : ""}
-                  {voided && r.void_reason ? ` · ${r.void_reason}` : ""}
-                </p>
+                <div className="text-right">
+                  <p className={`font-semibold tabular-nums ${voided ? "line-through text-muted-foreground" : ""}`}>{r.amount_snapshot != null ? INR(Number(r.amount_snapshot)) : "—"}</p>
+                  <StatusChip tone={voided ? "neutral" : "success"} className="mt-1">{voided ? "Voided" : "Verified"}</StatusChip>
+                </div>
               </li>
             );
           })}

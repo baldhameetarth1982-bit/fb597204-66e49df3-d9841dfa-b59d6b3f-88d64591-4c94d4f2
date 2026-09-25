@@ -104,7 +104,6 @@ import { Route as ResidentAppNoDuesRouteImport } from './routes/_resident/app.no
 import { Route as ResidentAppLedgerRouteImport } from './routes/_resident/app.ledger'
 import { Route as ResidentAppHelpdeskRouteImport } from './routes/_resident/app.helpdesk'
 import { Route as ResidentAppGuardRouteImport } from './routes/_resident/app.guard'
-import { Route as ResidentAppFeedRouteImport } from './routes/_resident/app.feed'
 import { Route as ResidentAppFeaturesRouteImport } from './routes/_resident/app.features'
 import { Route as ResidentAppFamilyRouteImport } from './routes/_resident/app.family'
 import { Route as ResidentAppEmergencyRouteImport } from './routes/_resident/app.emergency'
@@ -138,6 +137,7 @@ import { Route as AdminAdminAdsRouteImport } from './routes/_admin/admin.ads'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as SocietySocietyQrIndexRouteImport } from './routes/_society/society.qr.index'
+import { Route as ResidentAppFeedIndexRouteImport } from './routes/_resident/app.feed.index'
 import { Route as AdminAdminSocietiesIndexRouteImport } from './routes/_admin/admin.societies.index'
 import { Route as ApiPublicHooksRunBillingRouteImport } from './routes/api/public/hooks/run-billing'
 import { Route as ApiPublicHooksRazorpayRouteImport } from './routes/api/public/hooks/razorpay'
@@ -648,11 +648,6 @@ const ResidentAppGuardRoute = ResidentAppGuardRouteImport.update({
   path: '/app/guard',
   getParentRoute: () => ResidentRoute,
 } as any)
-const ResidentAppFeedRoute = ResidentAppFeedRouteImport.update({
-  id: '/app/feed',
-  path: '/app/feed',
-  getParentRoute: () => ResidentRoute,
-} as any)
 const ResidentAppFeaturesRoute = ResidentAppFeaturesRouteImport.update({
   id: '/app/features',
   path: '/app/features',
@@ -819,6 +814,11 @@ const SocietySocietyQrIndexRoute = SocietySocietyQrIndexRouteImport.update({
   path: '/society/qr/',
   getParentRoute: () => SocietyRoute,
 } as any)
+const ResidentAppFeedIndexRoute = ResidentAppFeedIndexRouteImport.update({
+  id: '/app/feed/',
+  path: '/app/feed/',
+  getParentRoute: () => ResidentRoute,
+} as any)
 const AdminAdminSocietiesIndexRoute =
   AdminAdminSocietiesIndexRouteImport.update({
     id: '/admin/societies/',
@@ -914,9 +914,9 @@ const ResidentAppNoDuesIdRoute = ResidentAppNoDuesIdRouteImport.update({
   getParentRoute: () => ResidentAppNoDuesRoute,
 } as any)
 const ResidentAppFeedPostIdRoute = ResidentAppFeedPostIdRouteImport.update({
-  id: '/$postId',
-  path: '/$postId',
-  getParentRoute: () => ResidentAppFeedRoute,
+  id: '/app/feed/$postId',
+  path: '/app/feed/$postId',
+  getParentRoute: () => ResidentRoute,
 } as any)
 const ResidentAppBillsIdRoute = ResidentAppBillsIdRouteImport.update({
   id: '/$id',
@@ -996,7 +996,6 @@ export interface FileRoutesByFullPath {
   '/app/emergency': typeof ResidentAppEmergencyRoute
   '/app/family': typeof ResidentAppFamilyRoute
   '/app/features': typeof ResidentAppFeaturesRoute
-  '/app/feed': typeof ResidentAppFeedRouteWithChildren
   '/app/guard': typeof ResidentAppGuardRoute
   '/app/helpdesk': typeof ResidentAppHelpdeskRoute
   '/app/ledger': typeof ResidentAppLedgerRoute
@@ -1080,6 +1079,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
   '/admin/societies/': typeof AdminAdminSocietiesIndexRoute
+  '/app/feed/': typeof ResidentAppFeedIndexRoute
   '/society/qr/': typeof SocietySocietyQrIndexRoute
   '/api/public/verify/no-dues/$token': typeof ApiPublicVerifyNoDuesTokenRoute
 }
@@ -1143,7 +1143,6 @@ export interface FileRoutesByTo {
   '/app/emergency': typeof ResidentAppEmergencyRoute
   '/app/family': typeof ResidentAppFamilyRoute
   '/app/features': typeof ResidentAppFeaturesRoute
-  '/app/feed': typeof ResidentAppFeedRouteWithChildren
   '/app/guard': typeof ResidentAppGuardRoute
   '/app/helpdesk': typeof ResidentAppHelpdeskRoute
   '/app/ledger': typeof ResidentAppLedgerRoute
@@ -1227,6 +1226,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
   '/admin/societies': typeof AdminAdminSocietiesIndexRoute
+  '/app/feed': typeof ResidentAppFeedIndexRoute
   '/society/qr': typeof SocietySocietyQrIndexRoute
   '/api/public/verify/no-dues/$token': typeof ApiPublicVerifyNoDuesTokenRoute
 }
@@ -1296,7 +1296,6 @@ export interface FileRoutesById {
   '/_resident/app/emergency': typeof ResidentAppEmergencyRoute
   '/_resident/app/family': typeof ResidentAppFamilyRoute
   '/_resident/app/features': typeof ResidentAppFeaturesRoute
-  '/_resident/app/feed': typeof ResidentAppFeedRouteWithChildren
   '/_resident/app/guard': typeof ResidentAppGuardRoute
   '/_resident/app/helpdesk': typeof ResidentAppHelpdeskRoute
   '/_resident/app/ledger': typeof ResidentAppLedgerRoute
@@ -1380,6 +1379,7 @@ export interface FileRoutesById {
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
   '/_admin/admin/societies/': typeof AdminAdminSocietiesIndexRoute
+  '/_resident/app/feed/': typeof ResidentAppFeedIndexRoute
   '/_society/society/qr/': typeof SocietySocietyQrIndexRoute
   '/api/public/verify/no-dues/$token': typeof ApiPublicVerifyNoDuesTokenRoute
 }
@@ -1446,7 +1446,6 @@ export interface FileRouteTypes {
     | '/app/emergency'
     | '/app/family'
     | '/app/features'
-    | '/app/feed'
     | '/app/guard'
     | '/app/helpdesk'
     | '/app/ledger'
@@ -1530,6 +1529,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
     | '/admin/societies/'
+    | '/app/feed/'
     | '/society/qr/'
     | '/api/public/verify/no-dues/$token'
   fileRoutesByTo: FileRoutesByTo
@@ -1593,7 +1593,6 @@ export interface FileRouteTypes {
     | '/app/emergency'
     | '/app/family'
     | '/app/features'
-    | '/app/feed'
     | '/app/guard'
     | '/app/helpdesk'
     | '/app/ledger'
@@ -1677,6 +1676,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
     | '/admin/societies'
+    | '/app/feed'
     | '/society/qr'
     | '/api/public/verify/no-dues/$token'
   id:
@@ -1745,7 +1745,6 @@ export interface FileRouteTypes {
     | '/_resident/app/emergency'
     | '/_resident/app/family'
     | '/_resident/app/features'
-    | '/_resident/app/feed'
     | '/_resident/app/guard'
     | '/_resident/app/helpdesk'
     | '/_resident/app/ledger'
@@ -1829,6 +1828,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
     | '/_admin/admin/societies/'
+    | '/_resident/app/feed/'
     | '/_society/society/qr/'
     | '/api/public/verify/no-dues/$token'
   fileRoutesById: FileRoutesById
@@ -2537,13 +2537,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResidentAppGuardRouteImport
       parentRoute: typeof ResidentRoute
     }
-    '/_resident/app/feed': {
-      id: '/_resident/app/feed'
-      path: '/app/feed'
-      fullPath: '/app/feed'
-      preLoaderRoute: typeof ResidentAppFeedRouteImport
-      parentRoute: typeof ResidentRoute
-    }
     '/_resident/app/features': {
       id: '/_resident/app/features'
       path: '/app/features'
@@ -2775,6 +2768,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SocietySocietyQrIndexRouteImport
       parentRoute: typeof SocietyRoute
     }
+    '/_resident/app/feed/': {
+      id: '/_resident/app/feed/'
+      path: '/app/feed'
+      fullPath: '/app/feed/'
+      preLoaderRoute: typeof ResidentAppFeedIndexRouteImport
+      parentRoute: typeof ResidentRoute
+    }
     '/_admin/admin/societies/': {
       id: '/_admin/admin/societies/'
       path: '/admin/societies'
@@ -2896,10 +2896,10 @@ declare module '@tanstack/react-router' {
     }
     '/_resident/app/feed/$postId': {
       id: '/_resident/app/feed/$postId'
-      path: '/$postId'
+      path: '/app/feed/$postId'
       fullPath: '/app/feed/$postId'
       preLoaderRoute: typeof ResidentAppFeedPostIdRouteImport
-      parentRoute: typeof ResidentAppFeedRoute
+      parentRoute: typeof ResidentRoute
     }
     '/_resident/app/bills/$id': {
       id: '/_resident/app/bills/$id'
@@ -2994,18 +2994,6 @@ const ResidentAppBillsRouteChildren: ResidentAppBillsRouteChildren = {
 const ResidentAppBillsRouteWithChildren =
   ResidentAppBillsRoute._addFileChildren(ResidentAppBillsRouteChildren)
 
-interface ResidentAppFeedRouteChildren {
-  ResidentAppFeedPostIdRoute: typeof ResidentAppFeedPostIdRoute
-}
-
-const ResidentAppFeedRouteChildren: ResidentAppFeedRouteChildren = {
-  ResidentAppFeedPostIdRoute: ResidentAppFeedPostIdRoute,
-}
-
-const ResidentAppFeedRouteWithChildren = ResidentAppFeedRoute._addFileChildren(
-  ResidentAppFeedRouteChildren,
-)
-
 interface ResidentAppNoDuesRouteChildren {
   ResidentAppNoDuesIdRoute: typeof ResidentAppNoDuesIdRoute
 }
@@ -3030,7 +3018,6 @@ interface ResidentRouteChildren {
   ResidentAppEmergencyRoute: typeof ResidentAppEmergencyRoute
   ResidentAppFamilyRoute: typeof ResidentAppFamilyRoute
   ResidentAppFeaturesRoute: typeof ResidentAppFeaturesRoute
-  ResidentAppFeedRoute: typeof ResidentAppFeedRouteWithChildren
   ResidentAppGuardRoute: typeof ResidentAppGuardRoute
   ResidentAppHelpdeskRoute: typeof ResidentAppHelpdeskRoute
   ResidentAppLedgerRoute: typeof ResidentAppLedgerRoute
@@ -3047,6 +3034,8 @@ interface ResidentRouteChildren {
   ResidentAppTrustRoute: typeof ResidentAppTrustRoute
   ResidentAppVehiclesRoute: typeof ResidentAppVehiclesRoute
   ResidentAppVisitorsRoute: typeof ResidentAppVisitorsRoute
+  ResidentAppFeedPostIdRoute: typeof ResidentAppFeedPostIdRoute
+  ResidentAppFeedIndexRoute: typeof ResidentAppFeedIndexRoute
 }
 
 const ResidentRouteChildren: ResidentRouteChildren = {
@@ -3062,7 +3051,6 @@ const ResidentRouteChildren: ResidentRouteChildren = {
   ResidentAppEmergencyRoute: ResidentAppEmergencyRoute,
   ResidentAppFamilyRoute: ResidentAppFamilyRoute,
   ResidentAppFeaturesRoute: ResidentAppFeaturesRoute,
-  ResidentAppFeedRoute: ResidentAppFeedRouteWithChildren,
   ResidentAppGuardRoute: ResidentAppGuardRoute,
   ResidentAppHelpdeskRoute: ResidentAppHelpdeskRoute,
   ResidentAppLedgerRoute: ResidentAppLedgerRoute,
@@ -3079,6 +3067,8 @@ const ResidentRouteChildren: ResidentRouteChildren = {
   ResidentAppTrustRoute: ResidentAppTrustRoute,
   ResidentAppVehiclesRoute: ResidentAppVehiclesRoute,
   ResidentAppVisitorsRoute: ResidentAppVisitorsRoute,
+  ResidentAppFeedPostIdRoute: ResidentAppFeedPostIdRoute,
+  ResidentAppFeedIndexRoute: ResidentAppFeedIndexRoute,
 }
 
 const ResidentRouteWithChildren = ResidentRoute._addFileChildren(

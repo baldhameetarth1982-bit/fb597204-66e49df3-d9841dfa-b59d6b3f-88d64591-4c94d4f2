@@ -151,6 +151,7 @@ export const initializeMigrationUpload = createServerFn({ method: "POST" })
       },
     );
     if (beginErr || !beginRes || beginRes.length === 0) {
+      console.error("[migration] begin_upload failed", beginErr?.code, beginErr?.message);
       throw new MigrationError("unavailable");
     }
     const jobId = beginRes[0].job_id as string;
@@ -160,7 +161,10 @@ export const initializeMigrationUpload = createServerFn({ method: "POST" })
     const { data: signed, error: signErr } = await supabase.storage
       .from("migration-uploads")
       .createSignedUploadUrl(finalPath);
-    if (signErr || !signed) throw new MigrationError("unavailable");
+    if (signErr || !signed) {
+      console.error("[migration] signed upload url failed", signErr?.message);
+      throw new MigrationError("unavailable");
+    }
 
     return {
       job_id: jobId,

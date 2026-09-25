@@ -123,158 +123,77 @@ function ResidentBillDetail() {
     (bill.adjustments ?? 0) !== 0 ||
     (bill.tax_amount ?? 0) !== 0;
 
+  const band = state.code === "paid" ? "bg-success-container text-success-container-foreground"
+    : state.code === "overdue" ? "bg-danger-container text-danger-container-foreground"
+    : state.isCancelled ? "bg-muted text-muted-foreground"
+    : "bg-warning-container text-warning-container-foreground";
+  const open = !state.isCancelled && !state.isPaid;
+  const row = (label: string, v: any) => (
+    <li className="flex items-center justify-between gap-3"><span>{label}</span><span className="tabular-nums font-medium">{INR(v)}</span></li>
+  );
+
   return (
-    <div className="px-5 py-6 space-y-4">
-      <Button asChild variant="ghost" size="sm" className="rounded-lg -ml-2">
-        <Link to="/app/bills"><ArrowLeft className="h-4 w-4 mr-1" />Back to bills</Link>
+    <div className="mx-auto max-w-2xl px-5 py-6 space-y-5">
+      <Button asChild variant="ghost" className="-ml-2 min-h-11 rounded-xl">
+        <Link to="/app/bills"><ArrowLeft className="h-4 w-4 mr-1" />Bills</Link>
       </Button>
 
-      <Card className="rounded-2xl">
-        <CardContent className="p-5">
-          <div className="flex items-start justify-between gap-3 flex-wrap">
+      <article className="overflow-hidden rounded-2xl border border-border bg-card" aria-labelledby="rb-title">
+        <div className={`flex items-center justify-between gap-3 px-5 py-2.5 text-sm font-medium ${band}`}>
+          <span>{state.label}</span><span className="font-mono text-xs opacity-80">{bill.bill_number ?? "Bill"}</span>
+        </div>
+        <div className="p-5">
+          <h1 id="rb-title" className="type-section">{bill.period_label ?? "Society bill"}</h1>
+          <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground"><Home className="h-4 w-4" />Your house</p>
+          <div className="mt-5 grid grid-cols-2 gap-4 border-t border-border pt-5">
             <div className="min-w-0">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
-                {bill.bill_number ?? "Bill"}
-              </p>
-              <h1 className="text-xl font-semibold truncate">{bill.period_label ?? "Society bill"}</h1>
-              <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1.5">
-                <Home className="h-3.5 w-3.5" />
-                <span>Your flat</span>
-              </p>
+              <p className="text-xs text-muted-foreground">{open ? "Amount to pay" : "Amount"}</p>
+              <p className={`truncate text-3xl font-semibold tabular-nums ${state.isCancelled ? "line-through text-muted-foreground" : ""}`}>₹{amount.toLocaleString("en-IN")}</p>
             </div>
-            <StatusChip tone={state.tone}>{state.label}</StatusChip>
-          </div>
-
-          {state.isCancelled && (
-            <p className="mt-3 text-xs text-muted-foreground">
-              This bill has been cancelled and is not an active bill.
-            </p>
-          )}
-
-          <div className="mt-5 flex items-baseline gap-1 min-w-0">
-            <IndianRupee className="h-5 w-5 text-muted-foreground shrink-0" />
-            <span className="text-3xl font-bold tabular-nums truncate">
-              {amount.toLocaleString("en-IN")}
-            </span>
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-            {bill.bill_date && (
-              <div>
-                <p className="text-xs text-muted-foreground">Generated</p>
-                <p className="font-medium">{formatDate(bill.bill_date)}</p>
-              </div>
-            )}
-            {bill.due_date && (
-              <div>
-                <p className="text-xs text-muted-foreground">Due date</p>
-                <p className="font-medium flex items-center gap-1">
-                  <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                  {formatDate(bill.due_date)}
-                </p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {showBreakdown && (
-        <Card className="rounded-2xl">
-          <CardContent className="p-5">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground mb-3">
-              Breakdown
-            </p>
-            <ul className="space-y-2 text-sm">
-              {(bill.current_charges ?? 0) !== 0 && (
-                <li className="flex items-center justify-between gap-3">
-                  <span>Current charges</span>
-                  <span className="tabular-nums font-medium">{INR(bill.current_charges)}</span>
-                </li>
-              )}
-              {(bill.previous_balance ?? 0) !== 0 && (
-                <li className="flex items-center justify-between gap-3">
-                  <span>Previous balance</span>
-                  <span className="tabular-nums font-medium">{INR(bill.previous_balance)}</span>
-                </li>
-              )}
-              {(bill.penalties ?? 0) !== 0 && (
-                <li className="flex items-center justify-between gap-3">
-                  <span>Penalties</span>
-                  <span className="tabular-nums font-medium">{INR(bill.penalties)}</span>
-                </li>
-              )}
-              {(bill.adjustments ?? 0) !== 0 && (
-                <li className="flex items-center justify-between gap-3">
-                  <span>
-                    Adjustments{" "}
-                    <span className="text-xs text-muted-foreground">
-                      ({Number(bill.adjustments) >= 0 ? "credit" : "debit"})
-                    </span>
-                  </span>
-                  <span className="tabular-nums font-medium">{INR(bill.adjustments)}</span>
-                </li>
-              )}
-              {(bill.tax_amount ?? 0) !== 0 && (
-                <li className="flex items-center justify-between gap-3">
-                  <span>Taxes</span>
-                  <span className="tabular-nums font-medium">{INR(bill.tax_amount)}</span>
-                </li>
-              )}
-            </ul>
-            <div className="mt-3 pt-3 border-t flex items-center justify-between">
-              <span className="text-sm font-semibold">Total payable</span>
-              <span className="text-base font-semibold tabular-nums">{INR(amount)}</span>
+            <div>
+              <p className="text-xs text-muted-foreground">Due date</p>
+              <p className={`flex items-center gap-1 text-lg font-semibold ${state.code === "overdue" ? "text-destructive" : ""}`}><Calendar className="h-4 w-4 opacity-60" />{bill.due_date ? formatDate(bill.due_date) : "—"}</p>
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {lines.length > 0 && (
-        <Card className="rounded-2xl">
-          <CardContent className="p-5">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground mb-3">
-              Line items
-            </p>
-            <ul className="divide-y">
-              {lines.map((l) => (
-                <li key={l.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-                  <span className="truncate">{l.description ?? l.kind ?? "Charge"}</span>
-                  <span className="font-medium tabular-nums shrink-0">{INR(l.amount)}</span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      )}
-
-      {!state.isCancelled && !state.isPaid && (
-        <OfflinePaymentSubmitCard
-          billId={bill.id}
-          billAmount={amount}
-          billStatus={bill.status}
-          cancelled={!!bill.cancelled_at}
-        />
-      )}
-
-      <Card className="rounded-2xl border-primary/10 bg-primary/5">
-        <CardContent className="p-4 flex items-start gap-3">
-          <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-          <div className="text-sm">
-            <p className="font-medium">Offline payments only</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Record your Cash or Bank Transfer payment above. Your admin
-              will verify it and issue a receipt. No online gateway is
-              enabled for maintenance collection.
-            </p>
           </div>
-        </CardContent>
-      </Card>
+          {state.isCancelled && <p className="mt-4 text-sm text-muted-foreground">This bill was cancelled and isn't payable. It stays here for your records.</p>}
+          {state.isPaid && <p className="mt-4 text-sm text-muted-foreground">Payment verified by the committee. Your receipt is in <Link to="/app/receipts" className="font-medium text-foreground underline underline-offset-2">My receipts</Link>.</p>}
+        </div>
 
+        {(showBreakdown || lines.length > 0) && (
+          <details className="group border-t border-border">
+            <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-5 text-sm font-medium hover:bg-muted/40">How this amount is made up<span className="text-xs text-muted-foreground group-open:hidden">Show</span></summary>
+            <div className="space-y-4 px-5 pb-5 text-sm">
+              {showBreakdown && (
+                <ul className="space-y-2">
+                  {(bill.current_charges ?? 0) !== 0 && row("Current charges", bill.current_charges)}
+                  {(bill.previous_balance ?? 0) !== 0 && row("Previous balance", bill.previous_balance)}
+                  {(bill.penalties ?? 0) !== 0 && row("Penalties", bill.penalties)}
+                  {(bill.adjustments ?? 0) !== 0 && row(`Adjustments (${Number(bill.adjustments) >= 0 ? "credit" : "debit"})`, bill.adjustments)}
+                  {(bill.tax_amount ?? 0) !== 0 && row("Taxes", bill.tax_amount)}
+                </ul>
+              )}
+              {lines.length > 0 && (
+                <ul className="divide-y divide-border border-t border-border">
+                  {lines.map((l) => (
+                    <li key={l.id} className="flex items-center justify-between gap-3 py-2"><span className="truncate">{l.description ?? l.kind ?? "Charge"}</span><span className="shrink-0 font-medium tabular-nums">{INR(l.amount)}</span></li>
+                  ))}
+                </ul>
+              )}
+              <div className="flex items-center justify-between border-t border-border pt-3 font-semibold"><span>Total payable</span><span className="tabular-nums">{INR(amount)}</span></div>
+            </div>
+          </details>
+        )}
+      </article>
 
-      <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground pt-2">
-        <Receipt className="h-3.5 w-3.5" />
-        Powered by SociyoHub
-      </div>
+      {open && (
+        <section aria-labelledby="pay-h" className="space-y-3">
+          <div>
+            <h2 id="pay-h" className="font-semibold">Paid this bill?</h2>
+            <p className="text-sm text-muted-foreground">Tell the committee about your Cash or Bank Transfer payment. The bill stays unpaid until they verify it and issue a receipt.</p>
+          </div>
+          <OfflinePaymentSubmitCard billId={bill.id} billAmount={amount} billStatus={bill.status} cancelled={!!bill.cancelled_at} />
+        </section>
+      )}
     </div>
   );
 }

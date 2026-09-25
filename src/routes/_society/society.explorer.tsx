@@ -54,10 +54,16 @@ function ExplorerPage() {
       setLoading(true);
       const [b, f, bi, fr] = await Promise.all([
         supabase.from("blocks").select("id,name").eq("society_id", societyId).order("name"),
-        supabase.from("flats").select("id,flat_number,block_id"),
-        supabase.from("bills").select("id,flat_id,period_label,period_start,amount,status,due_date"),
-        supabase.from("flat_residents").select("flat_id,user_id,relationship,profiles!flat_residents_user_id_fkey(full_name,phone,email)"),
+        supabase.from("flats").select("id,flat_number,block_id").eq("society_id", societyId),
+        supabase.from("bills").select("id,flat_id,period_label,period_start,amount,status,due_date").eq("society_id", societyId),
+        supabase.from("flat_residents").select("flat_id,user_id,relationship,flats!inner(society_id)").eq("flats.society_id", societyId).eq("is_active", true),
       ]);
+      // flat_residents has no FK to profiles, so names are looked up separately.
+      const userIds = Array.from(new Set(((fr.data ?? []) as any[]).map((r) => r.user_id).filter(Boolean)));
+      const profs = userIds.length
+        ? await supabase.from("profiles").select("id,full_name,phone,email").in("id", userIds)
+        : { data: [] as any[] };
+      const profById = new Map(((profs.data ?? []) as any[]).map((x) => [x.id, x]));
       if (cancel) return;
       if (b.error || f.error || bi.error) toast.error(b.error?.message || f.error?.message || bi.error?.message || "Load failed");
       const billIds = (bi.data ?? []).map((x) => x.id);
@@ -70,7 +76,7 @@ function ExplorerPage() {
       setPays(((p.data ?? []) as any[]).map((x) => ({ ...x, amount: Number(x.amount) })));
       const map: typeof resByFlat = {};
       for (const r of (fr.data ?? []) as any[]) {
-        const prof = r.profiles ?? {};
+        const prof = profById.get(r.user_id) ?? {};
         (map[r.flat_id] ||= []).push({ name: prof.full_name ?? "—", phone: prof.phone, email: prof.email });
       }
       setResByFlat(map);

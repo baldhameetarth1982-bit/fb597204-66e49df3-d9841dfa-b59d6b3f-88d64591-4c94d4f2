@@ -104,6 +104,27 @@ export const Route = createFileRoute("/api/public/auth/firebase-session")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        // Per-IP rate limit (HMAC-fingerprinted; fails closed on limiter errors).
+        try {
+          const { getRequestIP } = await import("@tanstack/react-start/server");
+          let ip = "anon";
+          try { ip = getRequestIP({ xForwardedFor: true }) ?? "anon"; } catch { /* ignore */ }
+          const { checkRateLimit, fingerprintSubject } = await import("@/lib/rate-limit.server");
+          await checkRateLimit({
+            bucket: "auth-firebase-session",
+            subject: fingerprintSubject(ip, "auth-firebase-session"),
+            limit: 20,
+            windowSec: 300,
+          });
+        } catch (e: any) {
+          const retry = Number(e?.retryAfterSeconds ?? 60);
+          console.error("[firebase-session] rate limit", e?.message);
+          return json(
+            { error: "Too many sign-in attempts. Please wait a few minutes and try again." },
+            { status: 429, headers: { "retry-after": String(retry) } },
+          );
+        }
+
         let body: any;
         try {
           body = await request.json();
@@ -112,8 +133,8 @@ export const Route = createFileRoute("/api/public/auth/firebase-session")({
         }
 
         const provider = body?.provider as "phone" | "google" | undefined;
-        const idToken = typeof body?.idToken === "string" ? body.idToken : null;
-        const phoneClaim = typeof body?.phone === "string" ? body.phone : null;
+        const idToken = typeof body?.idToken === "string" && body.idToken.length <= 8192 ? body.idToken : null;
+        const phoneClaim = typeof body?.phone === "string" ? body.phone.slice(0, 20) : null;
         if (!idToken || (provider !== "phone" && provider !== "google")) {
           return json({ error: "Bad request" }, { status: 400 });
         }
@@ -122,7 +143,8 @@ export const Route = createFileRoute("/api/public/auth/firebase-session")({
         try {
           payload = await verifyFirebaseIdToken(idToken);
         } catch (e: any) {
-          return json({ error: e?.message ?? "Invalid token" }, { status: 401 });
+          console.error("[firebase-session] token verify failed", e?.message);
+          return json({ error: "Sign-in could not be verified. Please try again." }, { status: 401 });
         }
 
         // Cross-check the phone in the token with what the client sent

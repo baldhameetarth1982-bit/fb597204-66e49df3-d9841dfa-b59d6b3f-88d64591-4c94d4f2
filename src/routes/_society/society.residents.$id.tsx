@@ -1,3 +1,4 @@
+import { StatusChip } from "@/components/people/PeopleUI";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -166,96 +167,78 @@ function ResidentDetailPage() {
     ? `https://wa.me/${phoneDigits.length === 10 ? "91" + phoneDigits : phoneDigits}`
     : null;
 
-  const Section = ({ id: sid, title, icon: Icon, children }: any) => (
-    <Card className="rounded-2xl overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpenSection(openSection === sid ? "" : sid)}
-        className="w-full flex items-center justify-between px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
-      >
-        <div className="flex items-center gap-2.5">
-          <Icon className="h-4 w-4 text-muted-foreground" />
-          <span className="font-medium text-sm">{title}</span>
-        </div>
-        {openSection === sid ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-      </button>
-      {openSection === sid && <CardContent className="pt-0 pb-4 px-4 border-t">{children}</CardContent>}
-    </Card>
-  );
+  const Section = ({ id: sid, title, icon: Icon, children }: any) => {
+    const isOpen = openSection === sid;
+    return (
+      <section className="border-b border-border last:border-0">
+        <h2>
+          <button
+            type="button"
+            aria-expanded={isOpen}
+            aria-controls={`sec-${sid}`}
+            onClick={() => setOpenSection(isOpen ? "" : sid)}
+            className="flex min-h-12 w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+          >
+            <span className="flex items-center gap-2.5 text-sm font-medium"><Icon className="h-4 w-4 text-muted-foreground" />{title}</span>
+            {isOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+          </button>
+        </h2>
+        {isOpen && <div id={`sec-${sid}`} className="px-4 pb-4">{children}</div>}
+      </section>
+    );
+  };
+
+  const movedOut = !a && resident.detail.relationships.length > 0;
+  const rel = a?.relationship ?? null;
+  const relLabel = rel === "owner" || rel === "co-owner" ? (rel === "co-owner" ? "Co-owner" : "Owner") : rel === "tenant" ? "Tenant" : rel;
+  const house = a ? `${a.block_name ? a.block_name + "-" : ""}${a.flat_number ?? ""}` : null;
+  const pending = outstanding ? Number(outstanding.pending) : 0;
 
   return (
     <PageShell>
-      <div className="flex items-center gap-2 mb-3">
-        <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/society/residents" })}>
-          <ArrowLeft className="h-4 w-4 mr-1" /> Residents
-        </Button>
-      </div>
+      <Button variant="ghost" className="mb-3 min-h-11 -ml-2" onClick={() => navigate({ to: "/society/residents" })}>
+        <ArrowLeft className="h-4 w-4 mr-1" /> Residents
+      </Button>
 
-      <div className="rounded-2xl border bg-card p-4 mb-4">
-        <div className="flex items-start gap-3">
-          <Avatar className="h-14 w-14">
-            {p.avatar_url ? <AvatarImage src={p.avatar_url} /> : null}
-            <AvatarFallback className="bg-primary/10 text-primary font-medium">
-              {initials(p.full_name)}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <div className="text-lg font-semibold truncate">{p.full_name ?? "Unnamed"}</div>
-            <div className="text-sm text-muted-foreground truncate">
-              {a
-                ? `${a.block_name ? a.block_name + " · " : ""}${a.flat_number ?? ""}${a.relationship ? " · " + a.relationship : ""}`
-                : "Not linked to a house"}
-            </div>
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
-              {p.aadhaar_verified && (
-                <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-600">
-                  <ShieldCheck className="h-2.5 w-2.5 mr-1" /> KYC verified
-                </Badge>
-              )}
-              {a?.moved_in_at && (
-                <Badge variant="outline" className="text-[10px]">
-                  Since {new Date(a.moved_in_at).toLocaleDateString()}
-                </Badge>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-4 grid grid-cols-3 gap-2">
-          {p.phone && (
-            <Button asChild size="sm" variant="outline" className="rounded-lg h-9">
-              <a href={`tel:${p.phone}`}><Phone className="h-3.5 w-3.5 mr-1" /> Call</a>
-            </Button>
-          )}
-          {waLink && (
-            <Button asChild size="sm" variant="outline" className="rounded-lg h-9">
-              <a href={waLink} target="_blank" rel="noreferrer">WhatsApp</a>
-            </Button>
-          )}
-          {p.email && (
-            <Button asChild size="sm" variant="outline" className="rounded-lg h-9">
-              <a href={`mailto:${p.email}`}><Mail className="h-3.5 w-3.5 mr-1" /> Email</a>
-            </Button>
-          )}
-        </div>
-
-        {outstanding && Number(outstanding.pending) > 0 && (
-          <div className="mt-4 rounded-xl bg-rose-500/10 border border-rose-500/30 p-3 text-sm">
-            <div className="flex items-center gap-2 text-rose-700 dark:text-rose-300 font-medium">
-              <IndianRupee className="h-4 w-4" />
-              Outstanding ₹{Number(outstanding.pending).toLocaleString("en-IN")}
-            </div>
-            {outstanding.overdue_count > 0 && (
-              <div className="text-xs text-rose-600/80 mt-0.5">
-                {outstanding.overdue_count} overdue period{outstanding.overdue_count === 1 ? "" : "s"}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+        <div className="min-w-0 space-y-6">
+          {/* Identity header */}
+          <header className="flex items-start gap-4">
+            <Avatar className="h-16 w-16 shrink-0">
+              {p.avatar_url ? <AvatarImage src={p.avatar_url} alt="" /> : null}
+              <AvatarFallback className="bg-primary-container text-primary-container-foreground text-lg font-semibold">{initials(p.full_name)}</AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <h1 className="type-section truncate">{p.full_name ?? "Unnamed resident"}</h1>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                {house ? `House ${house}` : movedOut ? "No current house" : "Not linked to a house"}
+                {a?.moved_in_at ? ` · since ${new Date(a.moved_in_at).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}` : ""}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {relLabel && <StatusChip tone={rel === "tenant" ? "info" : "primary"}>{relLabel}</StatusChip>}
+                {a ? <StatusChip tone="success">Current</StatusChip> : movedOut ? <StatusChip tone="muted">Moved out</StatusChip> : <StatusChip tone="warning">No house</StatusChip>}
+                {p.aadhaar_verified && <StatusChip tone="success"><ShieldCheck className="mr-1 h-3 w-3" />KYC verified</StatusChip>}
               </div>
-            )}
-          </div>
-        )}
-      </div>
+            </div>
+          </header>
 
-      <div className="space-y-2.5">
-        <Section id="basic" title="Basic info" icon={User}>
+          {/* Contact actions */}
+          {(p.phone || p.email) && (
+            <div className="flex flex-wrap gap-2" aria-label="Contact resident">
+              {p.phone && <Button asChild className="min-h-11 rounded-xl"><a href={`tel:${p.phone}`}><Phone className="h-4 w-4 mr-2" />Call</a></Button>}
+              {waLink && <Button asChild variant="outline" className="min-h-11 rounded-xl"><a href={waLink} target="_blank" rel="noreferrer">WhatsApp</a></Button>}
+              {p.email && <Button asChild variant="outline" className="min-h-11 rounded-xl"><a href={`mailto:${p.email}`}><Mail className="h-4 w-4 mr-2" />Email</a></Button>}
+            </div>
+          )}
+
+          {!a && (
+            <p className="rounded-2xl bg-warning-container px-4 py-3 text-sm text-warning-container-foreground">
+              {movedOut ? "This resident has moved out. Past occupancy is kept in the history below." : "This resident isn't linked to any house yet. Assign a house from the Residents list."}
+            </p>
+          )}
+
+          <div className="overflow-hidden rounded-2xl border border-border bg-card">
+        <Section id="basic" title="Identity & contact" icon={User}>
           {editing ? (
             <div className="space-y-3 pt-3">
               <Field label="Full name" value={form.full_name} onChange={(v) => setForm({ ...form, full_name: v })} />
@@ -284,7 +267,62 @@ function ResidentDetailPage() {
           )}
         </Section>
 
-        <Section id="property" title="Property" icon={Home}>
+        <Section id="household" title="Household members" icon={Users}>
+          <div className="pt-3 space-y-2">
+            {household.isLoading ? (
+              <div className="py-6 text-center"><Loader2 className="h-4 w-4 animate-spin inline text-muted-foreground" /></div>
+            ) : household.isError ? (
+              <div className="py-3 text-center space-y-2">
+                <p className="text-sm text-muted-foreground">Couldn't load household members.</p>
+                <Button size="sm" variant="outline" onClick={() => void household.refetch()}>Try again</Button>
+              </div>
+            ) : !household.data?.length ? (
+              <p className="text-sm text-muted-foreground py-3 text-center">No family members added by this resident.</p>
+            ) : (
+              household.data.map((m: any) => (
+                <div key={m.id} className="flex items-center justify-between text-sm py-2 border-b last:border-0">
+                  <span className="font-medium truncate">{m.full_name}</span>
+                  <span className="text-xs text-muted-foreground shrink-0 ml-3 capitalize">
+                    {m.relation}{m.age != null ? ` · ${m.age}y` : ""}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        </Section>
+        <Section id="history" title="Occupancy history" icon={History}>
+          <div className="pt-3 space-y-2">
+            {!history ? (
+              <div className="py-6 text-center"><Loader2 className="h-4 w-4 animate-spin inline text-muted-foreground" /></div>
+            ) : history.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-3 text-center">No history yet.</p>
+            ) : (
+              history.map((h: any) => (
+                <div key={h.id} className="flex items-start justify-between text-sm py-2 border-b last:border-0">
+                  <div className="min-w-0">
+                    <div className="font-medium truncate">{h.profiles?.full_name ?? "—"}</div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      <span className="capitalize">{h.relationship}</span>{h.is_primary ? " · primary" : ""}
+                    </div>
+                    {h.ended_reason ? (
+                      <div className="text-[11px] text-muted-foreground italic mt-0.5">"{h.ended_reason}"</div>
+                    ) : null}
+                  </div>
+                  <div className="text-right shrink-0 ml-3">
+                    <Badge variant="outline" className={`text-[10px] ${h.is_active ? "border-emerald-500/30 text-emerald-600" : "text-muted-foreground"}`}>
+                      {h.is_active ? "Current" : "Moved out"}
+                    </Badge>
+                    <div className="text-[11px] text-muted-foreground mt-1">
+                      {h.moved_in_at ? new Date(h.moved_in_at).toLocaleDateString() : new Date(h.created_at).toLocaleDateString()}
+                      {h.moved_out_at ? ` → ${new Date(h.moved_out_at).toLocaleDateString()}` : ""}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </Section>
+        <Section id="property" title="Resident information" icon={Home}>
           {editing ? (
             <div className="space-y-3 pt-3">
               <Field label="Property number" value={form.property_number} onChange={(v) => setForm({ ...form, property_number: v })} />
@@ -337,62 +375,21 @@ function ResidentDetailPage() {
           <DocumentsPanel userId={p.id} active={openSection === "documents"} />
         </Section>
 
-        <Section id="household" title="Household members" icon={Users}>
-          <div className="pt-3 space-y-2">
-            {household.isLoading ? (
-              <div className="py-6 text-center"><Loader2 className="h-4 w-4 animate-spin inline text-muted-foreground" /></div>
-            ) : household.isError ? (
-              <div className="py-3 text-center space-y-2">
-                <p className="text-sm text-muted-foreground">Couldn't load household members.</p>
-                <Button size="sm" variant="outline" onClick={() => void household.refetch()}>Try again</Button>
-              </div>
-            ) : !household.data?.length ? (
-              <p className="text-sm text-muted-foreground py-3 text-center">No family members added by this resident.</p>
-            ) : (
-              household.data.map((m: any) => (
-                <div key={m.id} className="flex items-center justify-between text-sm py-2 border-b last:border-0">
-                  <span className="font-medium truncate">{m.full_name}</span>
-                  <span className="text-xs text-muted-foreground shrink-0 ml-3 capitalize">
-                    {m.relation}{m.age != null ? ` · ${m.age}y` : ""}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-        </Section>
 
-        <Section id="history" title="Occupancy history" icon={History}>
-          <div className="pt-3 space-y-2">
-            {!history ? (
-              <div className="py-6 text-center"><Loader2 className="h-4 w-4 animate-spin inline text-muted-foreground" /></div>
-            ) : history.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-3 text-center">No history yet.</p>
-            ) : (
-              history.map((h: any) => (
-                <div key={h.id} className="flex items-start justify-between text-sm py-2 border-b last:border-0">
-                  <div className="min-w-0">
-                    <div className="font-medium truncate">{h.profiles?.full_name ?? "—"}</div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      <span className="capitalize">{h.relationship}</span>{h.is_primary ? " · primary" : ""}
-                    </div>
-                    {h.ended_reason ? (
-                      <div className="text-[11px] text-muted-foreground italic mt-0.5">"{h.ended_reason}"</div>
-                    ) : null}
-                  </div>
-                  <div className="text-right shrink-0 ml-3">
-                    <Badge variant="outline" className={`text-[10px] ${h.is_active ? "border-emerald-500/30 text-emerald-600" : "text-muted-foreground"}`}>
-                      {h.is_active ? "Current" : "Moved out"}
-                    </Badge>
-                    <div className="text-[11px] text-muted-foreground mt-1">
-                      {h.moved_in_at ? new Date(h.moved_in_at).toLocaleDateString() : new Date(h.created_at).toLocaleDateString()}
-                      {h.moved_out_at ? ` → ${new Date(h.moved_out_at).toLocaleDateString()}` : ""}
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
           </div>
-        </Section>
+        </div>
+
+        {/* Side summary: occupancy + dues */}
+        <aside className="space-y-3" aria-label="Occupancy summary">
+          <dl className="divide-y divide-border rounded-2xl border border-border bg-card text-sm">
+            <div className="flex justify-between gap-3 px-4 py-3"><dt className="text-muted-foreground">House</dt><dd className="font-medium">{house ?? "—"}</dd></div>
+            <div className="flex justify-between gap-3 px-4 py-3"><dt className="text-muted-foreground">Type</dt><dd className="font-medium">{relLabel ?? "—"}</dd></div>
+            <div className="flex justify-between gap-3 px-4 py-3"><dt className="text-muted-foreground">Outstanding</dt><dd className="font-semibold tabular-nums">{!flatId ? "—" : outstanding ? `₹${pending.toLocaleString("en-IN")}` : "—"}</dd></div>
+            {outstanding && outstanding.overdue_count > 0 && (
+              <div className="px-4 py-3"><StatusChip tone="warning">{outstanding.overdue_count} overdue period{outstanding.overdue_count === 1 ? "" : "s"}</StatusChip></div>
+            )}
+          </dl>
+        </aside>
       </div>
     </PageShell>
   );

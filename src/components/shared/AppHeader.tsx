@@ -1,5 +1,5 @@
 import { Bell, LogOut, Settings, User } from "lucide-react";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -27,6 +27,13 @@ function initials(name?: string | null, email?: string | null) {
     .toUpperCase();
 }
 
+function sectionTitle(pathname: string) {
+  const seg = pathname.split("/")[2];
+  if (!seg) return null;
+  const words = seg.replace(/[-_]/g, " ");
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
 export function AppHeader({
   withSidebarTrigger = true,
   leading,
@@ -41,14 +48,17 @@ export function AppHeader({
   const profileHref = isSocietyAdmin ? "/settings" : "/app/profile";
   const settingsHref = "/settings";
 
+  const pathname = useRouterState({ select: (st) => st.location.pathname });
+  const section = sectionTitle(pathname);
+
   const handleSignOut = async () => {
     await signOut();
     navigate({ to: "/login" });
   };
 
   return (
-    <header className="sticky top-0 z-30 h-16 border-b border-border bg-background">
-      <div className="h-full flex items-center gap-2 px-3 md:px-6">
+    <header className="sticky top-0 z-30 border-b border-border bg-background/95 supports-[backdrop-filter]:backdrop-blur" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+      <div className="h-16 flex items-center gap-2 px-3 md:px-6">
         {leading}
         {withSidebarTrigger && <SidebarTrigger className="hidden md:inline-flex rounded-xl h-10 w-10" />}
 
@@ -56,6 +66,13 @@ export function AppHeader({
           <Logo size={32} />
           <SociyoHubLogo size={18} />
         </Link>
+
+        {section && (
+          <div className="hidden md:flex min-w-0 items-center gap-2 text-sm">
+            <span className="h-4 w-px bg-border" aria-hidden />
+            <span className="truncate font-semibold text-foreground">{section}</span>
+          </div>
+        )}
 
         <div className="ml-auto flex items-center gap-1 md:gap-2">
           <ThemeToggle />

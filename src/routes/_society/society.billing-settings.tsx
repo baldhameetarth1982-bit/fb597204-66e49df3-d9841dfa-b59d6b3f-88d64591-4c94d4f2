@@ -17,6 +17,8 @@ import { Switch } from "@/components/ui/switch";
 import { StatusChip } from "@/components/system/StatusChip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { ErrorState } from "@/components/system/ErrorState";
+import { toSafeFinanceMessage } from "@/lib/finance-safe-error";
 import { getBillingSchedule, saveBillingSchedule, runBillingNow } from "@/lib/billing.functions";
 
 export const Route = createFileRoute("/_society/society/billing-settings")({
@@ -178,11 +180,30 @@ function BillingSettingsPage() {
       {societyId && <AutoBillingSection societyId={societyId} />}
 
       {/* Policy */}
+      {!policyLoaded ? (
+        <Card className="rounded-2xl mt-4">
+          <CardContent className="p-2">
+            <ErrorState
+              title={missing ? "Billing policy isn't set up yet" : "Couldn't load your billing policy"}
+              description={
+                missing
+                  ? "Finish society setup first, or ask a Society Admin. Nothing has been changed."
+                  : "Nothing has been changed. Your saved settings are safe."
+              }
+              onRetry={() => setReloadKey((k) => k + 1)}
+              showSupport={false}
+            />
+          </CardContent>
+        </Card>
+      ) : (<>
       <Card className="rounded-2xl mt-4">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Settings2 className="h-4 w-4" /> Billing policy
           </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Due day and grace period decide when a bill counts as overdue. Late fees apply only after the grace period ends.
+          </p>
         </CardHeader>
         <CardContent className="grid sm:grid-cols-2 gap-4">
           <div>
@@ -238,12 +259,19 @@ function BillingSettingsPage() {
         </CardContent>
       </Card>
 
-      <div className="mt-4 flex justify-end pb-6">
-        <Button onClick={save} disabled={saving} className="rounded-xl h-11">
+      <div className="mt-4 flex flex-wrap items-center justify-end gap-2 pb-6">
+        {dirty && <p className="text-xs text-muted-foreground mr-auto">You have unsaved changes.</p>}
+        {dirty && (
+          <Button variant="outline" onClick={() => baseline && setForm(baseline)} disabled={saving} className="rounded-xl h-11">
+            Discard
+          </Button>
+        )}
+        <Button onClick={save} disabled={saving || !dirty} className="rounded-xl h-11">
           {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-          Save policy
+          {dirty ? "Save policy" : "No changes to save"}
         </Button>
       </div>
+      </>)}
       </div>
     </div>
   );

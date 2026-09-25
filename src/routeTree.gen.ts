@@ -49,7 +49,6 @@ import { Route as SocietySocietyTeamRouteImport } from './routes/_society/societ
 import { Route as SocietySocietySubscriptionRouteImport } from './routes/_society/society.subscription'
 import { Route as SocietySocietySetupRouteImport } from './routes/_society/society.setup'
 import { Route as SocietySocietySearchRouteImport } from './routes/_society/society.search'
-import { Route as SocietySocietyResidentsRouteImport } from './routes/_society/society.residents'
 import { Route as SocietySocietyReportsRouteImport } from './routes/_society/society.reports'
 import { Route as SocietySocietyReceiptsRouteImport } from './routes/_society/society.receipts'
 import { Route as SocietySocietyPollsRouteImport } from './routes/_society/society.polls'
@@ -57,7 +56,6 @@ import { Route as SocietySocietyPlanRequiredRouteImport } from './routes/_societ
 import { Route as SocietySocietyPayoutsRouteImport } from './routes/_society/society.payouts'
 import { Route as SocietySocietyPaymentsRouteImport } from './routes/_society/society.payments'
 import { Route as SocietySocietyParkingRouteImport } from './routes/_society/society.parking'
-import { Route as SocietySocietyNoDuesRouteImport } from './routes/_society/society.no-dues'
 import { Route as SocietySocietyMoreRouteImport } from './routes/_society/society.more'
 import { Route as SocietySocietyMatrixImportRouteImport } from './routes/_society/society.matrix-import'
 import { Route as SocietySocietyMatrixRouteImport } from './routes/_society/society.matrix'
@@ -65,10 +63,8 @@ import { Route as SocietySocietyMaintenanceRouteImport } from './routes/_society
 import { Route as SocietySocietyLedgerRouteImport } from './routes/_society/society.ledger'
 import { Route as SocietySocietyLeaderboardRouteImport } from './routes/_society/society.leaderboard'
 import { Route as SocietySocietyKnowledgeRouteImport } from './routes/_society/society.knowledge'
-import { Route as SocietySocietyIncomeRouteImport } from './routes/_society/society.income'
 import { Route as SocietySocietyImportRouteImport } from './routes/_society/society.import'
 import { Route as SocietySocietyHelpdeskRouteImport } from './routes/_society/society.helpdesk'
-import { Route as SocietySocietyFlatsRouteImport } from './routes/_society/society.flats'
 import { Route as SocietySocietyFeaturesRouteImport } from './routes/_society/society.features'
 import { Route as SocietySocietyExplorerRouteImport } from './routes/_society/society.explorer'
 import { Route as SocietySocietyExpensesRouteImport } from './routes/_society/society.expenses'
@@ -82,8 +78,6 @@ import { Route as SocietySocietyBylawsRouteImport } from './routes/_society/soci
 import { Route as SocietySocietyBusinessProfileRouteImport } from './routes/_society/society.business-profile'
 import { Route as SocietySocietyBlocksRouteImport } from './routes/_society/society.blocks'
 import { Route as SocietySocietyBillingSettingsRouteImport } from './routes/_society/society.billing-settings'
-import { Route as SocietySocietyBillingRouteImport } from './routes/_society/society.billing'
-import { Route as SocietySocietyBillStudioRouteImport } from './routes/_society/society.bill-studio'
 import { Route as SocietySocietyAutomationsRouteImport } from './routes/_society/society.automations'
 import { Route as SocietySocietyApprovalsRouteImport } from './routes/_society/society.approvals'
 import { Route as SocietySocietyAnnouncementsRouteImport } from './routes/_society/society.announcements'
@@ -100,7 +94,6 @@ import { Route as ResidentAppPollsRouteImport } from './routes/_resident/app.pol
 import { Route as ResidentAppPlanRequiredRouteImport } from './routes/_resident/app.plan-required'
 import { Route as ResidentAppNotificationsRouteImport } from './routes/_resident/app.notifications'
 import { Route as ResidentAppNoticesRouteImport } from './routes/_resident/app.notices'
-import { Route as ResidentAppNoDuesRouteImport } from './routes/_resident/app.no-dues'
 import { Route as ResidentAppLedgerRouteImport } from './routes/_resident/app.ledger'
 import { Route as ResidentAppHelpdeskRouteImport } from './routes/_resident/app.helpdesk'
 import { Route as ResidentAppGuardRouteImport } from './routes/_resident/app.guard'
@@ -113,7 +106,6 @@ import { Route as ResidentAppDashboardRouteImport } from './routes/_resident/app
 import { Route as ResidentAppContactsRouteImport } from './routes/_resident/app.contacts'
 import { Route as ResidentAppCommRouteImport } from './routes/_resident/app.comm'
 import { Route as ResidentAppBylawsRouteImport } from './routes/_resident/app.bylaws'
-import { Route as ResidentAppBillsRouteImport } from './routes/_resident/app.bills'
 import { Route as ResidentAppActivityRouteImport } from './routes/_resident/app.activity'
 import { Route as ResidentAppAchievementsRouteImport } from './routes/_resident/app.achievements'
 import { Route as AdminAdminWithdrawalsRouteImport } from './routes/_admin/admin.withdrawals'
@@ -136,8 +128,16 @@ import { Route as AdminAdminAuditRouteImport } from './routes/_admin/admin.audit
 import { Route as AdminAdminAdsRouteImport } from './routes/_admin/admin.ads'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
+import { Route as SocietySocietyResidentsIndexRouteImport } from './routes/_society/society.residents.index'
 import { Route as SocietySocietyQrIndexRouteImport } from './routes/_society/society.qr.index'
+import { Route as SocietySocietyNoDuesIndexRouteImport } from './routes/_society/society.no-dues.index'
+import { Route as SocietySocietyIncomeIndexRouteImport } from './routes/_society/society.income.index'
+import { Route as SocietySocietyFlatsIndexRouteImport } from './routes/_society/society.flats.index'
+import { Route as SocietySocietyBillingIndexRouteImport } from './routes/_society/society.billing.index'
+import { Route as SocietySocietyBillStudioIndexRouteImport } from './routes/_society/society.bill-studio.index'
+import { Route as ResidentAppNoDuesIndexRouteImport } from './routes/_resident/app.no-dues.index'
 import { Route as ResidentAppFeedIndexRouteImport } from './routes/_resident/app.feed.index'
+import { Route as ResidentAppBillsIndexRouteImport } from './routes/_resident/app.bills.index'
 import { Route as AdminAdminSocietiesIndexRouteImport } from './routes/_admin/admin.societies.index'
 import { Route as ApiPublicHooksRunBillingRouteImport } from './routes/api/public/hooks/run-billing'
 import { Route as ApiPublicHooksRazorpayRouteImport } from './routes/api/public/hooks/razorpay'
@@ -360,11 +360,6 @@ const SocietySocietySearchRoute = SocietySocietySearchRouteImport.update({
   path: '/society/search',
   getParentRoute: () => SocietyRoute,
 } as any)
-const SocietySocietyResidentsRoute = SocietySocietyResidentsRouteImport.update({
-  id: '/society/residents',
-  path: '/society/residents',
-  getParentRoute: () => SocietyRoute,
-} as any)
 const SocietySocietyReportsRoute = SocietySocietyReportsRouteImport.update({
   id: '/society/reports',
   path: '/society/reports',
@@ -399,11 +394,6 @@ const SocietySocietyPaymentsRoute = SocietySocietyPaymentsRouteImport.update({
 const SocietySocietyParkingRoute = SocietySocietyParkingRouteImport.update({
   id: '/society/parking',
   path: '/society/parking',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyNoDuesRoute = SocietySocietyNoDuesRouteImport.update({
-  id: '/society/no-dues',
-  path: '/society/no-dues',
   getParentRoute: () => SocietyRoute,
 } as any)
 const SocietySocietyMoreRoute = SocietySocietyMoreRouteImport.update({
@@ -444,11 +434,6 @@ const SocietySocietyKnowledgeRoute = SocietySocietyKnowledgeRouteImport.update({
   path: '/society/knowledge',
   getParentRoute: () => SocietyRoute,
 } as any)
-const SocietySocietyIncomeRoute = SocietySocietyIncomeRouteImport.update({
-  id: '/society/income',
-  path: '/society/income',
-  getParentRoute: () => SocietyRoute,
-} as any)
 const SocietySocietyImportRoute = SocietySocietyImportRouteImport.update({
   id: '/society/import',
   path: '/society/import',
@@ -457,11 +442,6 @@ const SocietySocietyImportRoute = SocietySocietyImportRouteImport.update({
 const SocietySocietyHelpdeskRoute = SocietySocietyHelpdeskRouteImport.update({
   id: '/society/helpdesk',
   path: '/society/helpdesk',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyFlatsRoute = SocietySocietyFlatsRouteImport.update({
-  id: '/society/flats',
-  path: '/society/flats',
   getParentRoute: () => SocietyRoute,
 } as any)
 const SocietySocietyFeaturesRoute = SocietySocietyFeaturesRouteImport.update({
@@ -532,17 +512,6 @@ const SocietySocietyBillingSettingsRoute =
   SocietySocietyBillingSettingsRouteImport.update({
     id: '/society/billing-settings',
     path: '/society/billing-settings',
-    getParentRoute: () => SocietyRoute,
-  } as any)
-const SocietySocietyBillingRoute = SocietySocietyBillingRouteImport.update({
-  id: '/society/billing',
-  path: '/society/billing',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyBillStudioRoute =
-  SocietySocietyBillStudioRouteImport.update({
-    id: '/society/bill-studio',
-    path: '/society/bill-studio',
     getParentRoute: () => SocietyRoute,
   } as any)
 const SocietySocietyAutomationsRoute =
@@ -628,11 +597,6 @@ const ResidentAppNoticesRoute = ResidentAppNoticesRouteImport.update({
   path: '/app/notices',
   getParentRoute: () => ResidentRoute,
 } as any)
-const ResidentAppNoDuesRoute = ResidentAppNoDuesRouteImport.update({
-  id: '/app/no-dues',
-  path: '/app/no-dues',
-  getParentRoute: () => ResidentRoute,
-} as any)
 const ResidentAppLedgerRoute = ResidentAppLedgerRouteImport.update({
   id: '/app/ledger',
   path: '/app/ledger',
@@ -691,11 +655,6 @@ const ResidentAppCommRoute = ResidentAppCommRouteImport.update({
 const ResidentAppBylawsRoute = ResidentAppBylawsRouteImport.update({
   id: '/app/bylaws',
   path: '/app/bylaws',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppBillsRoute = ResidentAppBillsRouteImport.update({
-  id: '/app/bills',
-  path: '/app/bills',
   getParentRoute: () => ResidentRoute,
 } as any)
 const ResidentAppActivityRoute = ResidentAppActivityRouteImport.update({
@@ -809,14 +768,60 @@ const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   path: '/.lovable/oauth/consent',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SocietySocietyResidentsIndexRoute =
+  SocietySocietyResidentsIndexRouteImport.update({
+    id: '/society/residents/',
+    path: '/society/residents/',
+    getParentRoute: () => SocietyRoute,
+  } as any)
 const SocietySocietyQrIndexRoute = SocietySocietyQrIndexRouteImport.update({
   id: '/society/qr/',
   path: '/society/qr/',
   getParentRoute: () => SocietyRoute,
 } as any)
+const SocietySocietyNoDuesIndexRoute =
+  SocietySocietyNoDuesIndexRouteImport.update({
+    id: '/society/no-dues/',
+    path: '/society/no-dues/',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyIncomeIndexRoute =
+  SocietySocietyIncomeIndexRouteImport.update({
+    id: '/society/income/',
+    path: '/society/income/',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyFlatsIndexRoute =
+  SocietySocietyFlatsIndexRouteImport.update({
+    id: '/society/flats/',
+    path: '/society/flats/',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyBillingIndexRoute =
+  SocietySocietyBillingIndexRouteImport.update({
+    id: '/society/billing/',
+    path: '/society/billing/',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyBillStudioIndexRoute =
+  SocietySocietyBillStudioIndexRouteImport.update({
+    id: '/society/bill-studio/',
+    path: '/society/bill-studio/',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const ResidentAppNoDuesIndexRoute = ResidentAppNoDuesIndexRouteImport.update({
+  id: '/app/no-dues/',
+  path: '/app/no-dues/',
+  getParentRoute: () => ResidentRoute,
+} as any)
 const ResidentAppFeedIndexRoute = ResidentAppFeedIndexRouteImport.update({
   id: '/app/feed/',
   path: '/app/feed/',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppBillsIndexRoute = ResidentAppBillsIndexRouteImport.update({
+  id: '/app/bills/',
+  path: '/app/bills/',
   getParentRoute: () => ResidentRoute,
 } as any)
 const AdminAdminSocietiesIndexRoute =
@@ -850,9 +855,9 @@ const ApiPublicAuthFirebaseSessionRoute =
   } as any)
 const SocietySocietyResidentsIdRoute =
   SocietySocietyResidentsIdRouteImport.update({
-    id: '/$id',
-    path: '/$id',
-    getParentRoute: () => SocietySocietyResidentsRoute,
+    id: '/society/residents/$id',
+    path: '/society/residents/$id',
+    getParentRoute: () => SocietyRoute,
   } as any)
 const SocietySocietyQrIdRoute = SocietySocietyQrIdRouteImport.update({
   id: '/society/qr/$id',
@@ -860,36 +865,36 @@ const SocietySocietyQrIdRoute = SocietySocietyQrIdRouteImport.update({
   getParentRoute: () => SocietyRoute,
 } as any)
 const SocietySocietyNoDuesIdRoute = SocietySocietyNoDuesIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => SocietySocietyNoDuesRoute,
+  id: '/society/no-dues/$id',
+  path: '/society/no-dues/$id',
+  getParentRoute: () => SocietyRoute,
 } as any)
 const SocietySocietyIncomePayersRoute =
   SocietySocietyIncomePayersRouteImport.update({
-    id: '/payers',
-    path: '/payers',
-    getParentRoute: () => SocietySocietyIncomeRoute,
+    id: '/society/income/payers',
+    path: '/society/income/payers',
+    getParentRoute: () => SocietyRoute,
   } as any)
 const SocietySocietyIncomeNewRoute = SocietySocietyIncomeNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => SocietySocietyIncomeRoute,
+  id: '/society/income/new',
+  path: '/society/income/new',
+  getParentRoute: () => SocietyRoute,
 } as any)
 const SocietySocietyIncomeCategoriesRoute =
   SocietySocietyIncomeCategoriesRouteImport.update({
-    id: '/categories',
-    path: '/categories',
-    getParentRoute: () => SocietySocietyIncomeRoute,
+    id: '/society/income/categories',
+    path: '/society/income/categories',
+    getParentRoute: () => SocietyRoute,
   } as any)
 const SocietySocietyIncomeIdRoute = SocietySocietyIncomeIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => SocietySocietyIncomeRoute,
+  id: '/society/income/$id',
+  path: '/society/income/$id',
+  getParentRoute: () => SocietyRoute,
 } as any)
 const SocietySocietyFlatsIdRoute = SocietySocietyFlatsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => SocietySocietyFlatsRoute,
+  id: '/society/flats/$id',
+  path: '/society/flats/$id',
+  getParentRoute: () => SocietyRoute,
 } as any)
 const SocietySocietyBillsIdRoute = SocietySocietyBillsIdRouteImport.update({
   id: '/society/bills/$id',
@@ -898,20 +903,20 @@ const SocietySocietyBillsIdRoute = SocietySocietyBillsIdRouteImport.update({
 } as any)
 const SocietySocietyBillingGenerateRoute =
   SocietySocietyBillingGenerateRouteImport.update({
-    id: '/generate',
-    path: '/generate',
-    getParentRoute: () => SocietySocietyBillingRoute,
+    id: '/society/billing/generate',
+    path: '/society/billing/generate',
+    getParentRoute: () => SocietyRoute,
   } as any)
 const SocietySocietyBillStudioGenerateRoute =
   SocietySocietyBillStudioGenerateRouteImport.update({
-    id: '/generate',
-    path: '/generate',
-    getParentRoute: () => SocietySocietyBillStudioRoute,
+    id: '/society/bill-studio/generate',
+    path: '/society/bill-studio/generate',
+    getParentRoute: () => SocietyRoute,
   } as any)
 const ResidentAppNoDuesIdRoute = ResidentAppNoDuesIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => ResidentAppNoDuesRoute,
+  id: '/app/no-dues/$id',
+  path: '/app/no-dues/$id',
+  getParentRoute: () => ResidentRoute,
 } as any)
 const ResidentAppFeedPostIdRoute = ResidentAppFeedPostIdRouteImport.update({
   id: '/app/feed/$postId',
@@ -919,9 +924,9 @@ const ResidentAppFeedPostIdRoute = ResidentAppFeedPostIdRouteImport.update({
   getParentRoute: () => ResidentRoute,
 } as any)
 const ResidentAppBillsIdRoute = ResidentAppBillsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => ResidentAppBillsRoute,
+  id: '/app/bills/$id',
+  path: '/app/bills/$id',
+  getParentRoute: () => ResidentRoute,
 } as any)
 const AdminAdminSocietiesIdRoute = AdminAdminSocietiesIdRouteImport.update({
   id: '/admin/societies/$id',
@@ -986,7 +991,6 @@ export interface FileRoutesByFullPath {
   '/admin/withdrawals': typeof AdminAdminWithdrawalsRoute
   '/app/achievements': typeof ResidentAppAchievementsRoute
   '/app/activity': typeof ResidentAppActivityRoute
-  '/app/bills': typeof ResidentAppBillsRouteWithChildren
   '/app/bylaws': typeof ResidentAppBylawsRoute
   '/app/comm': typeof ResidentAppCommRoute
   '/app/contacts': typeof ResidentAppContactsRoute
@@ -999,7 +1003,6 @@ export interface FileRoutesByFullPath {
   '/app/guard': typeof ResidentAppGuardRoute
   '/app/helpdesk': typeof ResidentAppHelpdeskRoute
   '/app/ledger': typeof ResidentAppLedgerRoute
-  '/app/no-dues': typeof ResidentAppNoDuesRouteWithChildren
   '/app/notices': typeof ResidentAppNoticesRoute
   '/app/notifications': typeof ResidentAppNotificationsRoute
   '/app/plan-required': typeof ResidentAppPlanRequiredRoute
@@ -1016,8 +1019,6 @@ export interface FileRoutesByFullPath {
   '/society/announcements': typeof SocietySocietyAnnouncementsRoute
   '/society/approvals': typeof SocietySocietyApprovalsRoute
   '/society/automations': typeof SocietySocietyAutomationsRoute
-  '/society/bill-studio': typeof SocietySocietyBillStudioRouteWithChildren
-  '/society/billing': typeof SocietySocietyBillingRouteWithChildren
   '/society/billing-settings': typeof SocietySocietyBillingSettingsRoute
   '/society/blocks': typeof SocietySocietyBlocksRoute
   '/society/business-profile': typeof SocietySocietyBusinessProfileRoute
@@ -1031,10 +1032,8 @@ export interface FileRoutesByFullPath {
   '/society/expenses': typeof SocietySocietyExpensesRoute
   '/society/explorer': typeof SocietySocietyExplorerRoute
   '/society/features': typeof SocietySocietyFeaturesRoute
-  '/society/flats': typeof SocietySocietyFlatsRouteWithChildren
   '/society/helpdesk': typeof SocietySocietyHelpdeskRoute
   '/society/import': typeof SocietySocietyImportRoute
-  '/society/income': typeof SocietySocietyIncomeRouteWithChildren
   '/society/knowledge': typeof SocietySocietyKnowledgeRoute
   '/society/leaderboard': typeof SocietySocietyLeaderboardRoute
   '/society/ledger': typeof SocietySocietyLedgerRoute
@@ -1042,7 +1041,6 @@ export interface FileRoutesByFullPath {
   '/society/matrix': typeof SocietySocietyMatrixRoute
   '/society/matrix-import': typeof SocietySocietyMatrixImportRoute
   '/society/more': typeof SocietySocietyMoreRoute
-  '/society/no-dues': typeof SocietySocietyNoDuesRouteWithChildren
   '/society/parking': typeof SocietySocietyParkingRoute
   '/society/payments': typeof SocietySocietyPaymentsRoute
   '/society/payouts': typeof SocietySocietyPayoutsRoute
@@ -1050,7 +1048,6 @@ export interface FileRoutesByFullPath {
   '/society/polls': typeof SocietySocietyPollsRoute
   '/society/receipts': typeof SocietySocietyReceiptsRoute
   '/society/reports': typeof SocietySocietyReportsRoute
-  '/society/residents': typeof SocietySocietyResidentsRouteWithChildren
   '/society/search': typeof SocietySocietySearchRoute
   '/society/setup': typeof SocietySocietySetupRoute
   '/society/subscription': typeof SocietySocietySubscriptionRoute
@@ -1079,8 +1076,16 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
   '/admin/societies/': typeof AdminAdminSocietiesIndexRoute
+  '/app/bills/': typeof ResidentAppBillsIndexRoute
   '/app/feed/': typeof ResidentAppFeedIndexRoute
+  '/app/no-dues/': typeof ResidentAppNoDuesIndexRoute
+  '/society/bill-studio/': typeof SocietySocietyBillStudioIndexRoute
+  '/society/billing/': typeof SocietySocietyBillingIndexRoute
+  '/society/flats/': typeof SocietySocietyFlatsIndexRoute
+  '/society/income/': typeof SocietySocietyIncomeIndexRoute
+  '/society/no-dues/': typeof SocietySocietyNoDuesIndexRoute
   '/society/qr/': typeof SocietySocietyQrIndexRoute
+  '/society/residents/': typeof SocietySocietyResidentsIndexRoute
   '/api/public/verify/no-dues/$token': typeof ApiPublicVerifyNoDuesTokenRoute
 }
 export interface FileRoutesByTo {
@@ -1133,7 +1138,6 @@ export interface FileRoutesByTo {
   '/admin/withdrawals': typeof AdminAdminWithdrawalsRoute
   '/app/achievements': typeof ResidentAppAchievementsRoute
   '/app/activity': typeof ResidentAppActivityRoute
-  '/app/bills': typeof ResidentAppBillsRouteWithChildren
   '/app/bylaws': typeof ResidentAppBylawsRoute
   '/app/comm': typeof ResidentAppCommRoute
   '/app/contacts': typeof ResidentAppContactsRoute
@@ -1146,7 +1150,6 @@ export interface FileRoutesByTo {
   '/app/guard': typeof ResidentAppGuardRoute
   '/app/helpdesk': typeof ResidentAppHelpdeskRoute
   '/app/ledger': typeof ResidentAppLedgerRoute
-  '/app/no-dues': typeof ResidentAppNoDuesRouteWithChildren
   '/app/notices': typeof ResidentAppNoticesRoute
   '/app/notifications': typeof ResidentAppNotificationsRoute
   '/app/plan-required': typeof ResidentAppPlanRequiredRoute
@@ -1163,8 +1166,6 @@ export interface FileRoutesByTo {
   '/society/announcements': typeof SocietySocietyAnnouncementsRoute
   '/society/approvals': typeof SocietySocietyApprovalsRoute
   '/society/automations': typeof SocietySocietyAutomationsRoute
-  '/society/bill-studio': typeof SocietySocietyBillStudioRouteWithChildren
-  '/society/billing': typeof SocietySocietyBillingRouteWithChildren
   '/society/billing-settings': typeof SocietySocietyBillingSettingsRoute
   '/society/blocks': typeof SocietySocietyBlocksRoute
   '/society/business-profile': typeof SocietySocietyBusinessProfileRoute
@@ -1178,10 +1179,8 @@ export interface FileRoutesByTo {
   '/society/expenses': typeof SocietySocietyExpensesRoute
   '/society/explorer': typeof SocietySocietyExplorerRoute
   '/society/features': typeof SocietySocietyFeaturesRoute
-  '/society/flats': typeof SocietySocietyFlatsRouteWithChildren
   '/society/helpdesk': typeof SocietySocietyHelpdeskRoute
   '/society/import': typeof SocietySocietyImportRoute
-  '/society/income': typeof SocietySocietyIncomeRouteWithChildren
   '/society/knowledge': typeof SocietySocietyKnowledgeRoute
   '/society/leaderboard': typeof SocietySocietyLeaderboardRoute
   '/society/ledger': typeof SocietySocietyLedgerRoute
@@ -1189,7 +1188,6 @@ export interface FileRoutesByTo {
   '/society/matrix': typeof SocietySocietyMatrixRoute
   '/society/matrix-import': typeof SocietySocietyMatrixImportRoute
   '/society/more': typeof SocietySocietyMoreRoute
-  '/society/no-dues': typeof SocietySocietyNoDuesRouteWithChildren
   '/society/parking': typeof SocietySocietyParkingRoute
   '/society/payments': typeof SocietySocietyPaymentsRoute
   '/society/payouts': typeof SocietySocietyPayoutsRoute
@@ -1197,7 +1195,6 @@ export interface FileRoutesByTo {
   '/society/polls': typeof SocietySocietyPollsRoute
   '/society/receipts': typeof SocietySocietyReceiptsRoute
   '/society/reports': typeof SocietySocietyReportsRoute
-  '/society/residents': typeof SocietySocietyResidentsRouteWithChildren
   '/society/search': typeof SocietySocietySearchRoute
   '/society/setup': typeof SocietySocietySetupRoute
   '/society/subscription': typeof SocietySocietySubscriptionRoute
@@ -1226,8 +1223,16 @@ export interface FileRoutesByTo {
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
   '/admin/societies': typeof AdminAdminSocietiesIndexRoute
+  '/app/bills': typeof ResidentAppBillsIndexRoute
   '/app/feed': typeof ResidentAppFeedIndexRoute
+  '/app/no-dues': typeof ResidentAppNoDuesIndexRoute
+  '/society/bill-studio': typeof SocietySocietyBillStudioIndexRoute
+  '/society/billing': typeof SocietySocietyBillingIndexRoute
+  '/society/flats': typeof SocietySocietyFlatsIndexRoute
+  '/society/income': typeof SocietySocietyIncomeIndexRoute
+  '/society/no-dues': typeof SocietySocietyNoDuesIndexRoute
   '/society/qr': typeof SocietySocietyQrIndexRoute
+  '/society/residents': typeof SocietySocietyResidentsIndexRoute
   '/api/public/verify/no-dues/$token': typeof ApiPublicVerifyNoDuesTokenRoute
 }
 export interface FileRoutesById {
@@ -1286,7 +1291,6 @@ export interface FileRoutesById {
   '/_admin/admin/withdrawals': typeof AdminAdminWithdrawalsRoute
   '/_resident/app/achievements': typeof ResidentAppAchievementsRoute
   '/_resident/app/activity': typeof ResidentAppActivityRoute
-  '/_resident/app/bills': typeof ResidentAppBillsRouteWithChildren
   '/_resident/app/bylaws': typeof ResidentAppBylawsRoute
   '/_resident/app/comm': typeof ResidentAppCommRoute
   '/_resident/app/contacts': typeof ResidentAppContactsRoute
@@ -1299,7 +1303,6 @@ export interface FileRoutesById {
   '/_resident/app/guard': typeof ResidentAppGuardRoute
   '/_resident/app/helpdesk': typeof ResidentAppHelpdeskRoute
   '/_resident/app/ledger': typeof ResidentAppLedgerRoute
-  '/_resident/app/no-dues': typeof ResidentAppNoDuesRouteWithChildren
   '/_resident/app/notices': typeof ResidentAppNoticesRoute
   '/_resident/app/notifications': typeof ResidentAppNotificationsRoute
   '/_resident/app/plan-required': typeof ResidentAppPlanRequiredRoute
@@ -1316,8 +1319,6 @@ export interface FileRoutesById {
   '/_society/society/announcements': typeof SocietySocietyAnnouncementsRoute
   '/_society/society/approvals': typeof SocietySocietyApprovalsRoute
   '/_society/society/automations': typeof SocietySocietyAutomationsRoute
-  '/_society/society/bill-studio': typeof SocietySocietyBillStudioRouteWithChildren
-  '/_society/society/billing': typeof SocietySocietyBillingRouteWithChildren
   '/_society/society/billing-settings': typeof SocietySocietyBillingSettingsRoute
   '/_society/society/blocks': typeof SocietySocietyBlocksRoute
   '/_society/society/business-profile': typeof SocietySocietyBusinessProfileRoute
@@ -1331,10 +1332,8 @@ export interface FileRoutesById {
   '/_society/society/expenses': typeof SocietySocietyExpensesRoute
   '/_society/society/explorer': typeof SocietySocietyExplorerRoute
   '/_society/society/features': typeof SocietySocietyFeaturesRoute
-  '/_society/society/flats': typeof SocietySocietyFlatsRouteWithChildren
   '/_society/society/helpdesk': typeof SocietySocietyHelpdeskRoute
   '/_society/society/import': typeof SocietySocietyImportRoute
-  '/_society/society/income': typeof SocietySocietyIncomeRouteWithChildren
   '/_society/society/knowledge': typeof SocietySocietyKnowledgeRoute
   '/_society/society/leaderboard': typeof SocietySocietyLeaderboardRoute
   '/_society/society/ledger': typeof SocietySocietyLedgerRoute
@@ -1342,7 +1341,6 @@ export interface FileRoutesById {
   '/_society/society/matrix': typeof SocietySocietyMatrixRoute
   '/_society/society/matrix-import': typeof SocietySocietyMatrixImportRoute
   '/_society/society/more': typeof SocietySocietyMoreRoute
-  '/_society/society/no-dues': typeof SocietySocietyNoDuesRouteWithChildren
   '/_society/society/parking': typeof SocietySocietyParkingRoute
   '/_society/society/payments': typeof SocietySocietyPaymentsRoute
   '/_society/society/payouts': typeof SocietySocietyPayoutsRoute
@@ -1350,7 +1348,6 @@ export interface FileRoutesById {
   '/_society/society/polls': typeof SocietySocietyPollsRoute
   '/_society/society/receipts': typeof SocietySocietyReceiptsRoute
   '/_society/society/reports': typeof SocietySocietyReportsRoute
-  '/_society/society/residents': typeof SocietySocietyResidentsRouteWithChildren
   '/_society/society/search': typeof SocietySocietySearchRoute
   '/_society/society/setup': typeof SocietySocietySetupRoute
   '/_society/society/subscription': typeof SocietySocietySubscriptionRoute
@@ -1379,8 +1376,16 @@ export interface FileRoutesById {
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
   '/_admin/admin/societies/': typeof AdminAdminSocietiesIndexRoute
+  '/_resident/app/bills/': typeof ResidentAppBillsIndexRoute
   '/_resident/app/feed/': typeof ResidentAppFeedIndexRoute
+  '/_resident/app/no-dues/': typeof ResidentAppNoDuesIndexRoute
+  '/_society/society/bill-studio/': typeof SocietySocietyBillStudioIndexRoute
+  '/_society/society/billing/': typeof SocietySocietyBillingIndexRoute
+  '/_society/society/flats/': typeof SocietySocietyFlatsIndexRoute
+  '/_society/society/income/': typeof SocietySocietyIncomeIndexRoute
+  '/_society/society/no-dues/': typeof SocietySocietyNoDuesIndexRoute
   '/_society/society/qr/': typeof SocietySocietyQrIndexRoute
+  '/_society/society/residents/': typeof SocietySocietyResidentsIndexRoute
   '/api/public/verify/no-dues/$token': typeof ApiPublicVerifyNoDuesTokenRoute
 }
 export interface FileRouteTypes {
@@ -1436,7 +1441,6 @@ export interface FileRouteTypes {
     | '/admin/withdrawals'
     | '/app/achievements'
     | '/app/activity'
-    | '/app/bills'
     | '/app/bylaws'
     | '/app/comm'
     | '/app/contacts'
@@ -1449,7 +1453,6 @@ export interface FileRouteTypes {
     | '/app/guard'
     | '/app/helpdesk'
     | '/app/ledger'
-    | '/app/no-dues'
     | '/app/notices'
     | '/app/notifications'
     | '/app/plan-required'
@@ -1466,8 +1469,6 @@ export interface FileRouteTypes {
     | '/society/announcements'
     | '/society/approvals'
     | '/society/automations'
-    | '/society/bill-studio'
-    | '/society/billing'
     | '/society/billing-settings'
     | '/society/blocks'
     | '/society/business-profile'
@@ -1481,10 +1482,8 @@ export interface FileRouteTypes {
     | '/society/expenses'
     | '/society/explorer'
     | '/society/features'
-    | '/society/flats'
     | '/society/helpdesk'
     | '/society/import'
-    | '/society/income'
     | '/society/knowledge'
     | '/society/leaderboard'
     | '/society/ledger'
@@ -1492,7 +1491,6 @@ export interface FileRouteTypes {
     | '/society/matrix'
     | '/society/matrix-import'
     | '/society/more'
-    | '/society/no-dues'
     | '/society/parking'
     | '/society/payments'
     | '/society/payouts'
@@ -1500,7 +1498,6 @@ export interface FileRouteTypes {
     | '/society/polls'
     | '/society/receipts'
     | '/society/reports'
-    | '/society/residents'
     | '/society/search'
     | '/society/setup'
     | '/society/subscription'
@@ -1529,8 +1526,16 @@ export interface FileRouteTypes {
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
     | '/admin/societies/'
+    | '/app/bills/'
     | '/app/feed/'
+    | '/app/no-dues/'
+    | '/society/bill-studio/'
+    | '/society/billing/'
+    | '/society/flats/'
+    | '/society/income/'
+    | '/society/no-dues/'
     | '/society/qr/'
+    | '/society/residents/'
     | '/api/public/verify/no-dues/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -1583,7 +1588,6 @@ export interface FileRouteTypes {
     | '/admin/withdrawals'
     | '/app/achievements'
     | '/app/activity'
-    | '/app/bills'
     | '/app/bylaws'
     | '/app/comm'
     | '/app/contacts'
@@ -1596,7 +1600,6 @@ export interface FileRouteTypes {
     | '/app/guard'
     | '/app/helpdesk'
     | '/app/ledger'
-    | '/app/no-dues'
     | '/app/notices'
     | '/app/notifications'
     | '/app/plan-required'
@@ -1613,8 +1616,6 @@ export interface FileRouteTypes {
     | '/society/announcements'
     | '/society/approvals'
     | '/society/automations'
-    | '/society/bill-studio'
-    | '/society/billing'
     | '/society/billing-settings'
     | '/society/blocks'
     | '/society/business-profile'
@@ -1628,10 +1629,8 @@ export interface FileRouteTypes {
     | '/society/expenses'
     | '/society/explorer'
     | '/society/features'
-    | '/society/flats'
     | '/society/helpdesk'
     | '/society/import'
-    | '/society/income'
     | '/society/knowledge'
     | '/society/leaderboard'
     | '/society/ledger'
@@ -1639,7 +1638,6 @@ export interface FileRouteTypes {
     | '/society/matrix'
     | '/society/matrix-import'
     | '/society/more'
-    | '/society/no-dues'
     | '/society/parking'
     | '/society/payments'
     | '/society/payouts'
@@ -1647,7 +1645,6 @@ export interface FileRouteTypes {
     | '/society/polls'
     | '/society/receipts'
     | '/society/reports'
-    | '/society/residents'
     | '/society/search'
     | '/society/setup'
     | '/society/subscription'
@@ -1676,8 +1673,16 @@ export interface FileRouteTypes {
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
     | '/admin/societies'
+    | '/app/bills'
     | '/app/feed'
+    | '/app/no-dues'
+    | '/society/bill-studio'
+    | '/society/billing'
+    | '/society/flats'
+    | '/society/income'
+    | '/society/no-dues'
     | '/society/qr'
+    | '/society/residents'
     | '/api/public/verify/no-dues/$token'
   id:
     | '__root__'
@@ -1735,7 +1740,6 @@ export interface FileRouteTypes {
     | '/_admin/admin/withdrawals'
     | '/_resident/app/achievements'
     | '/_resident/app/activity'
-    | '/_resident/app/bills'
     | '/_resident/app/bylaws'
     | '/_resident/app/comm'
     | '/_resident/app/contacts'
@@ -1748,7 +1752,6 @@ export interface FileRouteTypes {
     | '/_resident/app/guard'
     | '/_resident/app/helpdesk'
     | '/_resident/app/ledger'
-    | '/_resident/app/no-dues'
     | '/_resident/app/notices'
     | '/_resident/app/notifications'
     | '/_resident/app/plan-required'
@@ -1765,8 +1768,6 @@ export interface FileRouteTypes {
     | '/_society/society/announcements'
     | '/_society/society/approvals'
     | '/_society/society/automations'
-    | '/_society/society/bill-studio'
-    | '/_society/society/billing'
     | '/_society/society/billing-settings'
     | '/_society/society/blocks'
     | '/_society/society/business-profile'
@@ -1780,10 +1781,8 @@ export interface FileRouteTypes {
     | '/_society/society/expenses'
     | '/_society/society/explorer'
     | '/_society/society/features'
-    | '/_society/society/flats'
     | '/_society/society/helpdesk'
     | '/_society/society/import'
-    | '/_society/society/income'
     | '/_society/society/knowledge'
     | '/_society/society/leaderboard'
     | '/_society/society/ledger'
@@ -1791,7 +1790,6 @@ export interface FileRouteTypes {
     | '/_society/society/matrix'
     | '/_society/society/matrix-import'
     | '/_society/society/more'
-    | '/_society/society/no-dues'
     | '/_society/society/parking'
     | '/_society/society/payments'
     | '/_society/society/payouts'
@@ -1799,7 +1797,6 @@ export interface FileRouteTypes {
     | '/_society/society/polls'
     | '/_society/society/receipts'
     | '/_society/society/reports'
-    | '/_society/society/residents'
     | '/_society/society/search'
     | '/_society/society/setup'
     | '/_society/society/subscription'
@@ -1828,8 +1825,16 @@ export interface FileRouteTypes {
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
     | '/_admin/admin/societies/'
+    | '/_resident/app/bills/'
     | '/_resident/app/feed/'
+    | '/_resident/app/no-dues/'
+    | '/_society/society/bill-studio/'
+    | '/_society/society/billing/'
+    | '/_society/society/flats/'
+    | '/_society/society/income/'
+    | '/_society/society/no-dues/'
     | '/_society/society/qr/'
+    | '/_society/society/residents/'
     | '/api/public/verify/no-dues/$token'
   fileRoutesById: FileRoutesById
 }
@@ -2152,13 +2157,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SocietySocietySearchRouteImport
       parentRoute: typeof SocietyRoute
     }
-    '/_society/society/residents': {
-      id: '/_society/society/residents'
-      path: '/society/residents'
-      fullPath: '/society/residents'
-      preLoaderRoute: typeof SocietySocietyResidentsRouteImport
-      parentRoute: typeof SocietyRoute
-    }
     '/_society/society/reports': {
       id: '/_society/society/reports'
       path: '/society/reports'
@@ -2206,13 +2204,6 @@ declare module '@tanstack/react-router' {
       path: '/society/parking'
       fullPath: '/society/parking'
       preLoaderRoute: typeof SocietySocietyParkingRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/no-dues': {
-      id: '/_society/society/no-dues'
-      path: '/society/no-dues'
-      fullPath: '/society/no-dues'
-      preLoaderRoute: typeof SocietySocietyNoDuesRouteImport
       parentRoute: typeof SocietyRoute
     }
     '/_society/society/more': {
@@ -2264,13 +2255,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SocietySocietyKnowledgeRouteImport
       parentRoute: typeof SocietyRoute
     }
-    '/_society/society/income': {
-      id: '/_society/society/income'
-      path: '/society/income'
-      fullPath: '/society/income'
-      preLoaderRoute: typeof SocietySocietyIncomeRouteImport
-      parentRoute: typeof SocietyRoute
-    }
     '/_society/society/import': {
       id: '/_society/society/import'
       path: '/society/import'
@@ -2283,13 +2267,6 @@ declare module '@tanstack/react-router' {
       path: '/society/helpdesk'
       fullPath: '/society/helpdesk'
       preLoaderRoute: typeof SocietySocietyHelpdeskRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/flats': {
-      id: '/_society/society/flats'
-      path: '/society/flats'
-      fullPath: '/society/flats'
-      preLoaderRoute: typeof SocietySocietyFlatsRouteImport
       parentRoute: typeof SocietyRoute
     }
     '/_society/society/features': {
@@ -2381,20 +2358,6 @@ declare module '@tanstack/react-router' {
       path: '/society/billing-settings'
       fullPath: '/society/billing-settings'
       preLoaderRoute: typeof SocietySocietyBillingSettingsRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/billing': {
-      id: '/_society/society/billing'
-      path: '/society/billing'
-      fullPath: '/society/billing'
-      preLoaderRoute: typeof SocietySocietyBillingRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/bill-studio': {
-      id: '/_society/society/bill-studio'
-      path: '/society/bill-studio'
-      fullPath: '/society/bill-studio'
-      preLoaderRoute: typeof SocietySocietyBillStudioRouteImport
       parentRoute: typeof SocietyRoute
     }
     '/_society/society/automations': {
@@ -2509,13 +2472,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResidentAppNoticesRouteImport
       parentRoute: typeof ResidentRoute
     }
-    '/_resident/app/no-dues': {
-      id: '/_resident/app/no-dues'
-      path: '/app/no-dues'
-      fullPath: '/app/no-dues'
-      preLoaderRoute: typeof ResidentAppNoDuesRouteImport
-      parentRoute: typeof ResidentRoute
-    }
     '/_resident/app/ledger': {
       id: '/_resident/app/ledger'
       path: '/app/ledger'
@@ -2598,13 +2554,6 @@ declare module '@tanstack/react-router' {
       path: '/app/bylaws'
       fullPath: '/app/bylaws'
       preLoaderRoute: typeof ResidentAppBylawsRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/bills': {
-      id: '/_resident/app/bills'
-      path: '/app/bills'
-      fullPath: '/app/bills'
-      preLoaderRoute: typeof ResidentAppBillsRouteImport
       parentRoute: typeof ResidentRoute
     }
     '/_resident/app/activity': {
@@ -2761,6 +2710,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DotlovableOauthConsentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_society/society/residents/': {
+      id: '/_society/society/residents/'
+      path: '/society/residents'
+      fullPath: '/society/residents/'
+      preLoaderRoute: typeof SocietySocietyResidentsIndexRouteImport
+      parentRoute: typeof SocietyRoute
+    }
     '/_society/society/qr/': {
       id: '/_society/society/qr/'
       path: '/society/qr'
@@ -2768,11 +2724,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SocietySocietyQrIndexRouteImport
       parentRoute: typeof SocietyRoute
     }
+    '/_society/society/no-dues/': {
+      id: '/_society/society/no-dues/'
+      path: '/society/no-dues'
+      fullPath: '/society/no-dues/'
+      preLoaderRoute: typeof SocietySocietyNoDuesIndexRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/income/': {
+      id: '/_society/society/income/'
+      path: '/society/income'
+      fullPath: '/society/income/'
+      preLoaderRoute: typeof SocietySocietyIncomeIndexRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/flats/': {
+      id: '/_society/society/flats/'
+      path: '/society/flats'
+      fullPath: '/society/flats/'
+      preLoaderRoute: typeof SocietySocietyFlatsIndexRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/billing/': {
+      id: '/_society/society/billing/'
+      path: '/society/billing'
+      fullPath: '/society/billing/'
+      preLoaderRoute: typeof SocietySocietyBillingIndexRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/bill-studio/': {
+      id: '/_society/society/bill-studio/'
+      path: '/society/bill-studio'
+      fullPath: '/society/bill-studio/'
+      preLoaderRoute: typeof SocietySocietyBillStudioIndexRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_resident/app/no-dues/': {
+      id: '/_resident/app/no-dues/'
+      path: '/app/no-dues'
+      fullPath: '/app/no-dues/'
+      preLoaderRoute: typeof ResidentAppNoDuesIndexRouteImport
+      parentRoute: typeof ResidentRoute
+    }
     '/_resident/app/feed/': {
       id: '/_resident/app/feed/'
       path: '/app/feed'
       fullPath: '/app/feed/'
       preLoaderRoute: typeof ResidentAppFeedIndexRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/bills/': {
+      id: '/_resident/app/bills/'
+      path: '/app/bills'
+      fullPath: '/app/bills/'
+      preLoaderRoute: typeof ResidentAppBillsIndexRouteImport
       parentRoute: typeof ResidentRoute
     }
     '/_admin/admin/societies/': {
@@ -2812,10 +2817,10 @@ declare module '@tanstack/react-router' {
     }
     '/_society/society/residents/$id': {
       id: '/_society/society/residents/$id'
-      path: '/$id'
+      path: '/society/residents/$id'
       fullPath: '/society/residents/$id'
       preLoaderRoute: typeof SocietySocietyResidentsIdRouteImport
-      parentRoute: typeof SocietySocietyResidentsRoute
+      parentRoute: typeof SocietyRoute
     }
     '/_society/society/qr/$id': {
       id: '/_society/society/qr/$id'
@@ -2826,45 +2831,45 @@ declare module '@tanstack/react-router' {
     }
     '/_society/society/no-dues/$id': {
       id: '/_society/society/no-dues/$id'
-      path: '/$id'
+      path: '/society/no-dues/$id'
       fullPath: '/society/no-dues/$id'
       preLoaderRoute: typeof SocietySocietyNoDuesIdRouteImport
-      parentRoute: typeof SocietySocietyNoDuesRoute
+      parentRoute: typeof SocietyRoute
     }
     '/_society/society/income/payers': {
       id: '/_society/society/income/payers'
-      path: '/payers'
+      path: '/society/income/payers'
       fullPath: '/society/income/payers'
       preLoaderRoute: typeof SocietySocietyIncomePayersRouteImport
-      parentRoute: typeof SocietySocietyIncomeRoute
+      parentRoute: typeof SocietyRoute
     }
     '/_society/society/income/new': {
       id: '/_society/society/income/new'
-      path: '/new'
+      path: '/society/income/new'
       fullPath: '/society/income/new'
       preLoaderRoute: typeof SocietySocietyIncomeNewRouteImport
-      parentRoute: typeof SocietySocietyIncomeRoute
+      parentRoute: typeof SocietyRoute
     }
     '/_society/society/income/categories': {
       id: '/_society/society/income/categories'
-      path: '/categories'
+      path: '/society/income/categories'
       fullPath: '/society/income/categories'
       preLoaderRoute: typeof SocietySocietyIncomeCategoriesRouteImport
-      parentRoute: typeof SocietySocietyIncomeRoute
+      parentRoute: typeof SocietyRoute
     }
     '/_society/society/income/$id': {
       id: '/_society/society/income/$id'
-      path: '/$id'
+      path: '/society/income/$id'
       fullPath: '/society/income/$id'
       preLoaderRoute: typeof SocietySocietyIncomeIdRouteImport
-      parentRoute: typeof SocietySocietyIncomeRoute
+      parentRoute: typeof SocietyRoute
     }
     '/_society/society/flats/$id': {
       id: '/_society/society/flats/$id'
-      path: '/$id'
+      path: '/society/flats/$id'
       fullPath: '/society/flats/$id'
       preLoaderRoute: typeof SocietySocietyFlatsIdRouteImport
-      parentRoute: typeof SocietySocietyFlatsRoute
+      parentRoute: typeof SocietyRoute
     }
     '/_society/society/bills/$id': {
       id: '/_society/society/bills/$id'
@@ -2875,24 +2880,24 @@ declare module '@tanstack/react-router' {
     }
     '/_society/society/billing/generate': {
       id: '/_society/society/billing/generate'
-      path: '/generate'
+      path: '/society/billing/generate'
       fullPath: '/society/billing/generate'
       preLoaderRoute: typeof SocietySocietyBillingGenerateRouteImport
-      parentRoute: typeof SocietySocietyBillingRoute
+      parentRoute: typeof SocietyRoute
     }
     '/_society/society/bill-studio/generate': {
       id: '/_society/society/bill-studio/generate'
-      path: '/generate'
+      path: '/society/bill-studio/generate'
       fullPath: '/society/bill-studio/generate'
       preLoaderRoute: typeof SocietySocietyBillStudioGenerateRouteImport
-      parentRoute: typeof SocietySocietyBillStudioRoute
+      parentRoute: typeof SocietyRoute
     }
     '/_resident/app/no-dues/$id': {
       id: '/_resident/app/no-dues/$id'
-      path: '/$id'
+      path: '/app/no-dues/$id'
       fullPath: '/app/no-dues/$id'
       preLoaderRoute: typeof ResidentAppNoDuesIdRouteImport
-      parentRoute: typeof ResidentAppNoDuesRoute
+      parentRoute: typeof ResidentRoute
     }
     '/_resident/app/feed/$postId': {
       id: '/_resident/app/feed/$postId'
@@ -2903,10 +2908,10 @@ declare module '@tanstack/react-router' {
     }
     '/_resident/app/bills/$id': {
       id: '/_resident/app/bills/$id'
-      path: '/$id'
+      path: '/app/bills/$id'
       fullPath: '/app/bills/$id'
       preLoaderRoute: typeof ResidentAppBillsIdRouteImport
-      parentRoute: typeof ResidentAppBillsRoute
+      parentRoute: typeof ResidentRoute
     }
     '/_admin/admin/societies/$id': {
       id: '/_admin/admin/societies/$id'
@@ -2983,32 +2988,9 @@ const AuthRouteChildren: AuthRouteChildren = {
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
-interface ResidentAppBillsRouteChildren {
-  ResidentAppBillsIdRoute: typeof ResidentAppBillsIdRoute
-}
-
-const ResidentAppBillsRouteChildren: ResidentAppBillsRouteChildren = {
-  ResidentAppBillsIdRoute: ResidentAppBillsIdRoute,
-}
-
-const ResidentAppBillsRouteWithChildren =
-  ResidentAppBillsRoute._addFileChildren(ResidentAppBillsRouteChildren)
-
-interface ResidentAppNoDuesRouteChildren {
-  ResidentAppNoDuesIdRoute: typeof ResidentAppNoDuesIdRoute
-}
-
-const ResidentAppNoDuesRouteChildren: ResidentAppNoDuesRouteChildren = {
-  ResidentAppNoDuesIdRoute: ResidentAppNoDuesIdRoute,
-}
-
-const ResidentAppNoDuesRouteWithChildren =
-  ResidentAppNoDuesRoute._addFileChildren(ResidentAppNoDuesRouteChildren)
-
 interface ResidentRouteChildren {
   ResidentAppAchievementsRoute: typeof ResidentAppAchievementsRoute
   ResidentAppActivityRoute: typeof ResidentAppActivityRoute
-  ResidentAppBillsRoute: typeof ResidentAppBillsRouteWithChildren
   ResidentAppBylawsRoute: typeof ResidentAppBylawsRoute
   ResidentAppCommRoute: typeof ResidentAppCommRoute
   ResidentAppContactsRoute: typeof ResidentAppContactsRoute
@@ -3021,7 +3003,6 @@ interface ResidentRouteChildren {
   ResidentAppGuardRoute: typeof ResidentAppGuardRoute
   ResidentAppHelpdeskRoute: typeof ResidentAppHelpdeskRoute
   ResidentAppLedgerRoute: typeof ResidentAppLedgerRoute
-  ResidentAppNoDuesRoute: typeof ResidentAppNoDuesRouteWithChildren
   ResidentAppNoticesRoute: typeof ResidentAppNoticesRoute
   ResidentAppNotificationsRoute: typeof ResidentAppNotificationsRoute
   ResidentAppPlanRequiredRoute: typeof ResidentAppPlanRequiredRoute
@@ -3034,14 +3015,17 @@ interface ResidentRouteChildren {
   ResidentAppTrustRoute: typeof ResidentAppTrustRoute
   ResidentAppVehiclesRoute: typeof ResidentAppVehiclesRoute
   ResidentAppVisitorsRoute: typeof ResidentAppVisitorsRoute
+  ResidentAppBillsIdRoute: typeof ResidentAppBillsIdRoute
   ResidentAppFeedPostIdRoute: typeof ResidentAppFeedPostIdRoute
+  ResidentAppNoDuesIdRoute: typeof ResidentAppNoDuesIdRoute
+  ResidentAppBillsIndexRoute: typeof ResidentAppBillsIndexRoute
   ResidentAppFeedIndexRoute: typeof ResidentAppFeedIndexRoute
+  ResidentAppNoDuesIndexRoute: typeof ResidentAppNoDuesIndexRoute
 }
 
 const ResidentRouteChildren: ResidentRouteChildren = {
   ResidentAppAchievementsRoute: ResidentAppAchievementsRoute,
   ResidentAppActivityRoute: ResidentAppActivityRoute,
-  ResidentAppBillsRoute: ResidentAppBillsRouteWithChildren,
   ResidentAppBylawsRoute: ResidentAppBylawsRoute,
   ResidentAppCommRoute: ResidentAppCommRoute,
   ResidentAppContactsRoute: ResidentAppContactsRoute,
@@ -3054,7 +3038,6 @@ const ResidentRouteChildren: ResidentRouteChildren = {
   ResidentAppGuardRoute: ResidentAppGuardRoute,
   ResidentAppHelpdeskRoute: ResidentAppHelpdeskRoute,
   ResidentAppLedgerRoute: ResidentAppLedgerRoute,
-  ResidentAppNoDuesRoute: ResidentAppNoDuesRouteWithChildren,
   ResidentAppNoticesRoute: ResidentAppNoticesRoute,
   ResidentAppNotificationsRoute: ResidentAppNotificationsRoute,
   ResidentAppPlanRequiredRoute: ResidentAppPlanRequiredRoute,
@@ -3067,102 +3050,23 @@ const ResidentRouteChildren: ResidentRouteChildren = {
   ResidentAppTrustRoute: ResidentAppTrustRoute,
   ResidentAppVehiclesRoute: ResidentAppVehiclesRoute,
   ResidentAppVisitorsRoute: ResidentAppVisitorsRoute,
+  ResidentAppBillsIdRoute: ResidentAppBillsIdRoute,
   ResidentAppFeedPostIdRoute: ResidentAppFeedPostIdRoute,
+  ResidentAppNoDuesIdRoute: ResidentAppNoDuesIdRoute,
+  ResidentAppBillsIndexRoute: ResidentAppBillsIndexRoute,
   ResidentAppFeedIndexRoute: ResidentAppFeedIndexRoute,
+  ResidentAppNoDuesIndexRoute: ResidentAppNoDuesIndexRoute,
 }
 
 const ResidentRouteWithChildren = ResidentRoute._addFileChildren(
   ResidentRouteChildren,
 )
 
-interface SocietySocietyBillStudioRouteChildren {
-  SocietySocietyBillStudioGenerateRoute: typeof SocietySocietyBillStudioGenerateRoute
-}
-
-const SocietySocietyBillStudioRouteChildren: SocietySocietyBillStudioRouteChildren =
-  {
-    SocietySocietyBillStudioGenerateRoute:
-      SocietySocietyBillStudioGenerateRoute,
-  }
-
-const SocietySocietyBillStudioRouteWithChildren =
-  SocietySocietyBillStudioRoute._addFileChildren(
-    SocietySocietyBillStudioRouteChildren,
-  )
-
-interface SocietySocietyBillingRouteChildren {
-  SocietySocietyBillingGenerateRoute: typeof SocietySocietyBillingGenerateRoute
-}
-
-const SocietySocietyBillingRouteChildren: SocietySocietyBillingRouteChildren = {
-  SocietySocietyBillingGenerateRoute: SocietySocietyBillingGenerateRoute,
-}
-
-const SocietySocietyBillingRouteWithChildren =
-  SocietySocietyBillingRoute._addFileChildren(
-    SocietySocietyBillingRouteChildren,
-  )
-
-interface SocietySocietyFlatsRouteChildren {
-  SocietySocietyFlatsIdRoute: typeof SocietySocietyFlatsIdRoute
-}
-
-const SocietySocietyFlatsRouteChildren: SocietySocietyFlatsRouteChildren = {
-  SocietySocietyFlatsIdRoute: SocietySocietyFlatsIdRoute,
-}
-
-const SocietySocietyFlatsRouteWithChildren =
-  SocietySocietyFlatsRoute._addFileChildren(SocietySocietyFlatsRouteChildren)
-
-interface SocietySocietyIncomeRouteChildren {
-  SocietySocietyIncomeIdRoute: typeof SocietySocietyIncomeIdRoute
-  SocietySocietyIncomeCategoriesRoute: typeof SocietySocietyIncomeCategoriesRoute
-  SocietySocietyIncomeNewRoute: typeof SocietySocietyIncomeNewRoute
-  SocietySocietyIncomePayersRoute: typeof SocietySocietyIncomePayersRoute
-}
-
-const SocietySocietyIncomeRouteChildren: SocietySocietyIncomeRouteChildren = {
-  SocietySocietyIncomeIdRoute: SocietySocietyIncomeIdRoute,
-  SocietySocietyIncomeCategoriesRoute: SocietySocietyIncomeCategoriesRoute,
-  SocietySocietyIncomeNewRoute: SocietySocietyIncomeNewRoute,
-  SocietySocietyIncomePayersRoute: SocietySocietyIncomePayersRoute,
-}
-
-const SocietySocietyIncomeRouteWithChildren =
-  SocietySocietyIncomeRoute._addFileChildren(SocietySocietyIncomeRouteChildren)
-
-interface SocietySocietyNoDuesRouteChildren {
-  SocietySocietyNoDuesIdRoute: typeof SocietySocietyNoDuesIdRoute
-}
-
-const SocietySocietyNoDuesRouteChildren: SocietySocietyNoDuesRouteChildren = {
-  SocietySocietyNoDuesIdRoute: SocietySocietyNoDuesIdRoute,
-}
-
-const SocietySocietyNoDuesRouteWithChildren =
-  SocietySocietyNoDuesRoute._addFileChildren(SocietySocietyNoDuesRouteChildren)
-
-interface SocietySocietyResidentsRouteChildren {
-  SocietySocietyResidentsIdRoute: typeof SocietySocietyResidentsIdRoute
-}
-
-const SocietySocietyResidentsRouteChildren: SocietySocietyResidentsRouteChildren =
-  {
-    SocietySocietyResidentsIdRoute: SocietySocietyResidentsIdRoute,
-  }
-
-const SocietySocietyResidentsRouteWithChildren =
-  SocietySocietyResidentsRoute._addFileChildren(
-    SocietySocietyResidentsRouteChildren,
-  )
-
 interface SocietyRouteChildren {
   SocietySocietyAccountsRoute: typeof SocietySocietyAccountsRoute
   SocietySocietyAnnouncementsRoute: typeof SocietySocietyAnnouncementsRoute
   SocietySocietyApprovalsRoute: typeof SocietySocietyApprovalsRoute
   SocietySocietyAutomationsRoute: typeof SocietySocietyAutomationsRoute
-  SocietySocietyBillStudioRoute: typeof SocietySocietyBillStudioRouteWithChildren
-  SocietySocietyBillingRoute: typeof SocietySocietyBillingRouteWithChildren
   SocietySocietyBillingSettingsRoute: typeof SocietySocietyBillingSettingsRoute
   SocietySocietyBlocksRoute: typeof SocietySocietyBlocksRoute
   SocietySocietyBusinessProfileRoute: typeof SocietySocietyBusinessProfileRoute
@@ -3176,10 +3080,8 @@ interface SocietyRouteChildren {
   SocietySocietyExpensesRoute: typeof SocietySocietyExpensesRoute
   SocietySocietyExplorerRoute: typeof SocietySocietyExplorerRoute
   SocietySocietyFeaturesRoute: typeof SocietySocietyFeaturesRoute
-  SocietySocietyFlatsRoute: typeof SocietySocietyFlatsRouteWithChildren
   SocietySocietyHelpdeskRoute: typeof SocietySocietyHelpdeskRoute
   SocietySocietyImportRoute: typeof SocietySocietyImportRoute
-  SocietySocietyIncomeRoute: typeof SocietySocietyIncomeRouteWithChildren
   SocietySocietyKnowledgeRoute: typeof SocietySocietyKnowledgeRoute
   SocietySocietyLeaderboardRoute: typeof SocietySocietyLeaderboardRoute
   SocietySocietyLedgerRoute: typeof SocietySocietyLedgerRoute
@@ -3187,7 +3089,6 @@ interface SocietyRouteChildren {
   SocietySocietyMatrixRoute: typeof SocietySocietyMatrixRoute
   SocietySocietyMatrixImportRoute: typeof SocietySocietyMatrixImportRoute
   SocietySocietyMoreRoute: typeof SocietySocietyMoreRoute
-  SocietySocietyNoDuesRoute: typeof SocietySocietyNoDuesRouteWithChildren
   SocietySocietyParkingRoute: typeof SocietySocietyParkingRoute
   SocietySocietyPaymentsRoute: typeof SocietySocietyPaymentsRoute
   SocietySocietyPayoutsRoute: typeof SocietySocietyPayoutsRoute
@@ -3195,7 +3096,6 @@ interface SocietyRouteChildren {
   SocietySocietyPollsRoute: typeof SocietySocietyPollsRoute
   SocietySocietyReceiptsRoute: typeof SocietySocietyReceiptsRoute
   SocietySocietyReportsRoute: typeof SocietySocietyReportsRoute
-  SocietySocietyResidentsRoute: typeof SocietySocietyResidentsRouteWithChildren
   SocietySocietySearchRoute: typeof SocietySocietySearchRoute
   SocietySocietySetupRoute: typeof SocietySocietySetupRoute
   SocietySocietySubscriptionRoute: typeof SocietySocietySubscriptionRoute
@@ -3203,9 +3103,24 @@ interface SocietyRouteChildren {
   SocietySocietyVehiclesRoute: typeof SocietySocietyVehiclesRoute
   SocietySocietyVerificationsRoute: typeof SocietySocietyVerificationsRoute
   SocietySocietyVisitorsRoute: typeof SocietySocietyVisitorsRoute
+  SocietySocietyBillStudioGenerateRoute: typeof SocietySocietyBillStudioGenerateRoute
+  SocietySocietyBillingGenerateRoute: typeof SocietySocietyBillingGenerateRoute
   SocietySocietyBillsIdRoute: typeof SocietySocietyBillsIdRoute
+  SocietySocietyFlatsIdRoute: typeof SocietySocietyFlatsIdRoute
+  SocietySocietyIncomeIdRoute: typeof SocietySocietyIncomeIdRoute
+  SocietySocietyIncomeCategoriesRoute: typeof SocietySocietyIncomeCategoriesRoute
+  SocietySocietyIncomeNewRoute: typeof SocietySocietyIncomeNewRoute
+  SocietySocietyIncomePayersRoute: typeof SocietySocietyIncomePayersRoute
+  SocietySocietyNoDuesIdRoute: typeof SocietySocietyNoDuesIdRoute
   SocietySocietyQrIdRoute: typeof SocietySocietyQrIdRoute
+  SocietySocietyResidentsIdRoute: typeof SocietySocietyResidentsIdRoute
+  SocietySocietyBillStudioIndexRoute: typeof SocietySocietyBillStudioIndexRoute
+  SocietySocietyBillingIndexRoute: typeof SocietySocietyBillingIndexRoute
+  SocietySocietyFlatsIndexRoute: typeof SocietySocietyFlatsIndexRoute
+  SocietySocietyIncomeIndexRoute: typeof SocietySocietyIncomeIndexRoute
+  SocietySocietyNoDuesIndexRoute: typeof SocietySocietyNoDuesIndexRoute
   SocietySocietyQrIndexRoute: typeof SocietySocietyQrIndexRoute
+  SocietySocietyResidentsIndexRoute: typeof SocietySocietyResidentsIndexRoute
 }
 
 const SocietyRouteChildren: SocietyRouteChildren = {
@@ -3213,8 +3128,6 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyAnnouncementsRoute: SocietySocietyAnnouncementsRoute,
   SocietySocietyApprovalsRoute: SocietySocietyApprovalsRoute,
   SocietySocietyAutomationsRoute: SocietySocietyAutomationsRoute,
-  SocietySocietyBillStudioRoute: SocietySocietyBillStudioRouteWithChildren,
-  SocietySocietyBillingRoute: SocietySocietyBillingRouteWithChildren,
   SocietySocietyBillingSettingsRoute: SocietySocietyBillingSettingsRoute,
   SocietySocietyBlocksRoute: SocietySocietyBlocksRoute,
   SocietySocietyBusinessProfileRoute: SocietySocietyBusinessProfileRoute,
@@ -3228,10 +3141,8 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyExpensesRoute: SocietySocietyExpensesRoute,
   SocietySocietyExplorerRoute: SocietySocietyExplorerRoute,
   SocietySocietyFeaturesRoute: SocietySocietyFeaturesRoute,
-  SocietySocietyFlatsRoute: SocietySocietyFlatsRouteWithChildren,
   SocietySocietyHelpdeskRoute: SocietySocietyHelpdeskRoute,
   SocietySocietyImportRoute: SocietySocietyImportRoute,
-  SocietySocietyIncomeRoute: SocietySocietyIncomeRouteWithChildren,
   SocietySocietyKnowledgeRoute: SocietySocietyKnowledgeRoute,
   SocietySocietyLeaderboardRoute: SocietySocietyLeaderboardRoute,
   SocietySocietyLedgerRoute: SocietySocietyLedgerRoute,
@@ -3239,7 +3150,6 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyMatrixRoute: SocietySocietyMatrixRoute,
   SocietySocietyMatrixImportRoute: SocietySocietyMatrixImportRoute,
   SocietySocietyMoreRoute: SocietySocietyMoreRoute,
-  SocietySocietyNoDuesRoute: SocietySocietyNoDuesRouteWithChildren,
   SocietySocietyParkingRoute: SocietySocietyParkingRoute,
   SocietySocietyPaymentsRoute: SocietySocietyPaymentsRoute,
   SocietySocietyPayoutsRoute: SocietySocietyPayoutsRoute,
@@ -3247,7 +3157,6 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyPollsRoute: SocietySocietyPollsRoute,
   SocietySocietyReceiptsRoute: SocietySocietyReceiptsRoute,
   SocietySocietyReportsRoute: SocietySocietyReportsRoute,
-  SocietySocietyResidentsRoute: SocietySocietyResidentsRouteWithChildren,
   SocietySocietySearchRoute: SocietySocietySearchRoute,
   SocietySocietySetupRoute: SocietySocietySetupRoute,
   SocietySocietySubscriptionRoute: SocietySocietySubscriptionRoute,
@@ -3255,9 +3164,24 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyVehiclesRoute: SocietySocietyVehiclesRoute,
   SocietySocietyVerificationsRoute: SocietySocietyVerificationsRoute,
   SocietySocietyVisitorsRoute: SocietySocietyVisitorsRoute,
+  SocietySocietyBillStudioGenerateRoute: SocietySocietyBillStudioGenerateRoute,
+  SocietySocietyBillingGenerateRoute: SocietySocietyBillingGenerateRoute,
   SocietySocietyBillsIdRoute: SocietySocietyBillsIdRoute,
+  SocietySocietyFlatsIdRoute: SocietySocietyFlatsIdRoute,
+  SocietySocietyIncomeIdRoute: SocietySocietyIncomeIdRoute,
+  SocietySocietyIncomeCategoriesRoute: SocietySocietyIncomeCategoriesRoute,
+  SocietySocietyIncomeNewRoute: SocietySocietyIncomeNewRoute,
+  SocietySocietyIncomePayersRoute: SocietySocietyIncomePayersRoute,
+  SocietySocietyNoDuesIdRoute: SocietySocietyNoDuesIdRoute,
   SocietySocietyQrIdRoute: SocietySocietyQrIdRoute,
+  SocietySocietyResidentsIdRoute: SocietySocietyResidentsIdRoute,
+  SocietySocietyBillStudioIndexRoute: SocietySocietyBillStudioIndexRoute,
+  SocietySocietyBillingIndexRoute: SocietySocietyBillingIndexRoute,
+  SocietySocietyFlatsIndexRoute: SocietySocietyFlatsIndexRoute,
+  SocietySocietyIncomeIndexRoute: SocietySocietyIncomeIndexRoute,
+  SocietySocietyNoDuesIndexRoute: SocietySocietyNoDuesIndexRoute,
   SocietySocietyQrIndexRoute: SocietySocietyQrIndexRoute,
+  SocietySocietyResidentsIndexRoute: SocietySocietyResidentsIndexRoute,
 }
 
 const SocietyRouteWithChildren =

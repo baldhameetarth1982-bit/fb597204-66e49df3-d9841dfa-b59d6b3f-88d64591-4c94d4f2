@@ -290,7 +290,7 @@ function SocietyPaymentsRoute() {
             <AlertDialogDescription>
               {confirm ? (
                 <>
-                  <div className="mb-2">
+                  <span className="mb-2 block">
                     <span className="font-semibold tabular-nums">
                       ₹{Number(confirm.p.amount).toLocaleString("en-IN")}
                     </span>{" "}
@@ -301,7 +301,7 @@ function SocietyPaymentsRoute() {
                         ? "Cash"
                         : confirm.p.method}
                     {confirm.p.reference_no ? ` · Ref ${confirm.p.reference_no}` : ""}
-                  </div>
+                  </span>
                   {confirm.kind === "verify" && (
                     <>Verifying issues a receipt and marks the bill balance paid. This cannot be undone by editing — you would need to reverse it later.</>
                   )}

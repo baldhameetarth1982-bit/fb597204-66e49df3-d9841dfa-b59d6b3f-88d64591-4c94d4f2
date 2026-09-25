@@ -79,8 +79,8 @@ function ResidentsPage() {
   const filtered = useMemo(() => {
     const ql = q.trim().toLowerCase();
     return residents.filter((r) => {
-      if (filter === "owner" && r.relationship !== "owner") return false;
-      if (filter === "tenant" && r.relationship !== "tenant") return false;
+      if (filter === "owner" && !r.is_owner) return false;
+      if (filter === "tenant" && !r.is_tenant) return false;
       if (filter === "unassigned" && (r.flat_id || r.moved_out)) return false;
       if (filter === "moved_out" && !r.moved_out) return false;
       if (!ql) return true;
@@ -159,8 +159,8 @@ function ResidentsPage() {
 
   const FILTERS: Array<{ key: Filter; label: string; count: number }> = [
     { key: "all", label: "All", count: residents.length },
-    { key: "owner", label: "Owners", count: residents.filter((r) => r.relationship === "owner").length },
-    { key: "tenant", label: "Tenants", count: residents.filter((r) => r.relationship === "tenant").length },
+    { key: "owner", label: "Owners", count: residents.filter((r) => r.is_owner).length },
+    { key: "tenant", label: "Tenants", count: residents.filter((r) => r.is_tenant).length },
     { key: "unassigned", label: "Unassigned", count: unassignedCount },
     { key: "moved_out", label: "Moved out", count: movedOutCount },
     { key: "vacant", label: "Vacant", count: vacantFlats.length },

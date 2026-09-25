@@ -51,6 +51,10 @@ export const listSocietyResidents = createServerFn({ method: "POST" })
         relationship: (primary?.relationship as string | undefined) ?? null,
         moved_in_at: (primary as any)?.moved_in_at ?? null,
         assignments_count: active.length,
+        // Same definition as get_resident_directory_overview: any active
+        // assignment counts (owner includes co-owner).
+        is_owner: active.some((a: any) => a.relationship === "owner" || a.relationship === "co-owner"),
+        is_tenant: active.some((a: any) => a.relationship === "tenant"),
         moved_out:
           active.length === 0 &&
           (assignmentsRes.data ?? []).some((a: any) => a.user_id === p.id && a.is_active === false),

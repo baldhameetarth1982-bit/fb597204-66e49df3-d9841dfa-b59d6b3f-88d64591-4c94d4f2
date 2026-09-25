@@ -1,12 +1,11 @@
-import { PeopleAreaNav } from "@/components/people/PeopleUI";
+import { PeopleAreaNav, StatusChip, SummaryStrip, ListSkeleton, SearchField, SegmentedFilter, LoadError, ListEmpty } from "@/components/people/PeopleUI";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, Plus, ParkingSquare, Search, Archive } from "lucide-react";
+import { Loader2, Plus, ParkingSquare, Archive } from "lucide-react";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
-import { PageHeader, PageShell, EmptyState } from "@/components/shared/PageHeader";
-import { Card, CardContent } from "@/components/ui/card";
+import { PageHeader, PageShell } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,6 +35,7 @@ function ParkingPage() {
   const { societyId } = useSocietyId();
   const qc = useQueryClient();
   const [q, setQ] = useState("");
+  const [view, setView] = useState<"all" | "allotted" | "free">("all");
   const [form, setForm] = useState(EMPTY);
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -90,41 +90,60 @@ function ParkingPage() {
     qc.invalidateQueries({ queryKey: ["parking"] });
   }
 
+  const all = data.data?.slots ?? [];
+  const shown = slots.filter((s) => view === "all" ? true : view === "allotted" ? !!s.flat_id : !s.flat_id);
+  const failed = data.isError;
+  const dash = data.isLoading || failed;
+  const edit = (s: Slot) => { setForm({ id: s.id, label: s.label, slot_type: s.slot_type, flat_id: s.flat_id ?? NONE, vehicle_id: s.vehicle_id ?? NONE, notes: s.notes ?? "" }); setOpen(true); };
+
   return (
     <PageShell>
       <PeopleAreaNav />
       <PageHeader
         title="Parking"
-        description={total ? `${assigned} of ${total} slots allotted` : "Create slots and allot them to homes"}
+        description="Which spaces exist, which homes they're allotted to, and which are still free."
         actions={<Button className="rounded-xl min-h-11" onClick={() => { setForm(EMPTY); setOpen(true); }}><Plus className="h-4 w-4 mr-2" />Add slot</Button>}
       />
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input aria-label="Search parking" className="pl-9 h-11 rounded-xl" placeholder="Slot, house or plate" value={q} onChange={(e) => setQ(e.target.value)} />
+
+      <SummaryStrip items={[
+        { label: "Total slots", value: dash ? "—" : total },
+        { label: "Allotted", value: dash ? "—" : assigned },
+        { label: "Free", value: dash ? "—" : total - assigned },
+        { label: "Linked to a vehicle", value: dash ? "—" : all.filter((s) => s.vehicle_id).length },
+      ]} />
+
+      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center">
+        <SearchField label="Search parking" placeholder="Slot, house or plate" value={q} onChange={setQ} />
+        <SegmentedFilter<"all" | "allotted" | "free"> label="Slot status" value={view} onChange={setView} options={[
+          { key: "all", label: "All", count: dash ? undefined : total },
+          { key: "allotted", label: "Allotted", count: dash ? undefined : assigned },
+          { key: "free", label: "Free", count: dash ? undefined : total - assigned },
+        ]} />
       </div>
+
       {data.isLoading ? (
-        <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-16 rounded-2xl bg-muted animate-pulse" />)}</div>
-      ) : data.isError ? (
-        <Card className="rounded-2xl"><CardContent className="p-6 text-center space-y-3">
-          <p className="text-sm">{gateErrorMessage(data.error)}</p>
-          <Button variant="outline" className="min-h-11 rounded-xl" onClick={() => data.refetch()}>Retry</Button>
-        </CardContent></Card>
-      ) : slots.length === 0 ? (
-        <EmptyState icon={ParkingSquare} title={q ? "No matches" : "No parking slots yet"} description={q ? "Try another search." : "Add your first slot to start allotting parking."} />
+        <ListSkeleton rows={4} />
+      ) : failed ? (
+        <LoadError title={gateErrorMessage(data.error)} onRetry={() => void data.refetch()} />
+      ) : total === 0 ? (
+        <ListEmpty icon={ParkingSquare} title="No parking slots yet">Add your first slot, then allot it to a home and optionally a vehicle.</ListEmpty>
+      ) : shown.length === 0 ? (
+        <ListEmpty icon={ParkingSquare} title="No matching slots">Try another search or filter.</ListEmpty>
       ) : (
-        <ul className="grid gap-2 sm:grid-cols-2">
-          {slots.map((s) => (
+        <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card" aria-label="Parking slots">
+          {shown.map((s) => (
             <li key={s.id}>
-              <button className="w-full text-left" onClick={() => { setForm({ id: s.id, label: s.label, slot_type: s.slot_type, flat_id: s.flat_id ?? NONE, vehicle_id: s.vehicle_id ?? NONE, notes: s.notes ?? "" }); setOpen(true); }}>
-                <Card className="rounded-2xl hover:bg-accent/40 transition-colors"><CardContent className="p-4 flex items-center gap-3">
-                  <div className="h-11 w-11 rounded-xl bg-primary/10 text-primary grid place-items-center font-semibold text-sm">{s.label.slice(0, 4)}</div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold">{s.label} <span className="text-xs font-normal text-muted-foreground capitalize">· {s.slot_type}</span></p>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {s.flat_id ? `House ${flatName.get(s.flat_id) ?? "—"}` : "Free"}{s.vehicle_id ? ` · ${plate.get(s.vehicle_id) ?? ""}` : ""}
-                    </p>
-                  </div>
-                </CardContent></Card>
+              <button type="button" onClick={() => edit(s)} aria-label={`Edit slot ${s.label}`} className="grid w-full gap-2 px-4 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] md:items-center">
+                <span className="flex min-w-0 items-center gap-3">
+                  <span className="grid h-11 min-w-11 place-items-center rounded-xl border border-border bg-background px-2 font-mono text-sm font-semibold">{s.label}</span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium capitalize">{s.slot_type} slot</span>
+                    {s.notes && <span className="block truncate text-xs text-muted-foreground">{s.notes}</span>}
+                  </span>
+                </span>
+                <span className="text-sm">{s.flat_id ? `House ${flatName.get(s.flat_id) ?? "—"}` : <span className="text-muted-foreground">No house</span>}</span>
+                <span className="font-mono text-sm">{s.vehicle_id ? plate.get(s.vehicle_id) ?? "—" : <span className="font-sans text-muted-foreground">{s.flat_id ? "Any vehicle of the house" : "—"}</span>}</span>
+                <span>{s.flat_id ? <StatusChip tone="primary">Allotted</StatusChip> : <StatusChip tone="success">Free</StatusChip>}</span>
               </button>
             </li>
           ))}

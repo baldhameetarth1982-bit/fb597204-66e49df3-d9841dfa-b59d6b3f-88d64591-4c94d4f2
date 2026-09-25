@@ -210,67 +210,35 @@ function ApprovalsPage() {
           </CardContent>
         </Card>
       ) : (
-        <ul className="space-y-3">
+        <ul className="divide-y overflow-hidden rounded-2xl border bg-card" aria-label="Pending join requests">
           {rows.map((r) => (
-            <li key={r.id}>
-              <Card className="rounded-2xl">
-                <CardContent className="p-4 space-y-3">
-                  <div className="flex items-start gap-3">
-                    <Checkbox
-                      checked={selected.has(r.id)}
-                      onCheckedChange={() => toggleRow(r.id)}
-                      aria-label="Select request"
-                      className="mt-1"
-                    />
-                    <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary">
-                      <User className="h-5 w-5" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold truncate">{r.full_name ?? "Unnamed"}</p>
-                      <p className="text-xs text-muted-foreground truncate">{r.requester_email ?? "—"}</p>
-                    </div>
-                    <Badge className="capitalize">{r.owner_or_tenant ?? "resident"}</Badge>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <DoorOpen className="h-3.5 w-3.5" />
-                      <span className="font-medium text-foreground">{r.flat_number_input ?? "—"}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <Phone className="h-3.5 w-3.5" />
-                      <span className="font-medium text-foreground truncate">{r.mobile ?? "—"}</span>
-                    </div>
-                    <div className="col-span-2 text-[11px] text-muted-foreground">
-                      Requested {new Date(r.created_at).toLocaleString()}
-                    </div>
-                  </div>
-                  <div className="flex gap-2 pt-1">
-                    <Button
-                      onClick={() => approveOne(r)}
-                      disabled={busy === r.id}
-                      className="flex-1 h-11 rounded-xl"
-                    >
-                      {busy === r.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <>
-                          <CheckCircle2 className="h-4 w-4 mr-1" /> Approve
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        setRejectFor(r);
-                        setReason("");
-                      }}
-                      variant="outline"
-                      className="flex-1 h-11 rounded-xl"
-                    >
-                      <XCircle className="h-4 w-4 mr-1" /> Reject
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+            <li key={r.id} className="relative grid gap-3 px-4 py-4 before:absolute before:inset-y-3 before:left-0 before:w-1 before:rounded-r before:bg-info md:grid-cols-[1fr_14rem_auto] md:items-center">
+              <div className="flex min-w-0 items-start gap-2">
+              <label className="-ml-2 flex h-11 w-11 shrink-0 items-center justify-center">
+                <Checkbox checked={selected.has(r.id)} onCheckedChange={() => toggleRow(r.id)} aria-label={`Select ${r.full_name ?? "request"}`} />
+              </label>
+              <div className="min-w-0">
+                <p className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className="rounded bg-info-container px-1.5 py-0.5 font-semibold text-info-container-foreground">Awaiting approval</span>
+                  <span>Wants to join as <span className="capitalize">{r.owner_or_tenant ?? "resident"}</span></span>
+                </p>
+                <p className="mt-0.5 truncate font-semibold">{r.full_name ?? "Unnamed"}</p>
+                <p className="truncate text-xs text-muted-foreground">{r.requester_email ?? "—"}</p>
+              </div>
+              </div>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm md:block md:space-y-0.5">
+                <p className="flex items-center gap-1.5"><DoorOpen className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />House <span className="font-medium">{r.flat_number_input ?? "—"}</span></p>
+                <p className="flex items-center gap-1.5 text-muted-foreground"><Phone className="h-3.5 w-3.5" aria-hidden /><span className="truncate">{r.mobile ?? "—"}</span></p>
+                <p className="text-xs text-muted-foreground">Requested {new Date(r.created_at).toLocaleDateString()}</p>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={() => approveOne(r)} disabled={busy === r.id} className="h-11 flex-1 rounded-xl md:flex-none">
+                  {busy === r.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle2 className="mr-1 h-4 w-4" /> Approve</>}
+                </Button>
+                <Button onClick={() => { setRejectFor(r); setReason(""); }} variant="outline" className="h-11 flex-1 rounded-xl md:flex-none">
+                  <XCircle className="mr-1 h-4 w-4" /> Reject
+                </Button>
+              </div>
             </li>
           ))}
         </ul>

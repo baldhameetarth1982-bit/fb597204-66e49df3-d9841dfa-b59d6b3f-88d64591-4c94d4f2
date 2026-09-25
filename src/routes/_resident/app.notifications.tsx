@@ -11,6 +11,8 @@ import { getLastSeen, markNotificationsSeen } from "@/hooks/useUnreadNotificatio
 import { useResidentNotices, markNoticeRead } from "@/hooks/useResidentNotices";
 import { liveAt, noticeCategory } from "@/lib/notices";
 import { cn } from "@/lib/utils";
+import { ListSkeleton, ListEmpty } from "@/components/people/PeopleUI";
+import { CommPage, CommHeader, SectionLabel, RowList } from "@/components/comm/CommUI";
 
 export const Route = createFileRoute("/_resident/app/notifications")({
   head: () => ({
@@ -137,74 +139,82 @@ function NotificationCenter() {
 
   const loading = personal.isLoading && notices.isLoading;
   const partialError = personal.isError || notices.isError || bills.isError;
+  const unreadShown = shown.filter((i) => i.unread);
+  const readGrouped = useMemo(() => {
+    const g: Record<string, Item[]> = {};
+    for (const [k, list] of Object.entries(grouped)) {
+      const r = list.filter((i) => !i.unread);
+      if (r.length) g[k] = r;
+    }
+    return g;
+  }, [grouped]);
+
+  const row = (i: Item) => (
+    <li key={i.key}>
+      <Link to={i.to} onClick={() => onOpen(i)}
+        className={cn("relative flex min-h-14 items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring before:absolute before:inset-y-2 before:left-0 before:w-1 before:rounded-r",
+          i.emergency ? "before:bg-destructive bg-destructive/5" : i.unread ? "before:bg-primary" : "before:bg-transparent")}>
+        <span className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-full", i.emergency ? "bg-destructive text-destructive-foreground" : "bg-muted text-foreground")}>
+          <i.icon className="h-4 w-4" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-xs text-muted-foreground">{TABS.find((t) => t.v === i.cat)?.label} · {new Date(i.at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}</span>
+          <span className={cn("block truncate text-sm", i.unread ? "font-semibold" : "font-medium")}>{i.title}</span>
+          {i.body && <span className="block truncate text-xs text-muted-foreground">{i.body}</span>}
+        </span>
+        {i.unread && <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-primary" aria-label="Unread" />}
+      </Link>
+    </li>
+  );
 
   return (
-    <div className="px-4 md:px-8 py-6 md:py-10 max-w-3xl mx-auto space-y-4">
-      <header className="flex items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-semibold tracking-tight flex items-center gap-2"><Bell className="h-6 w-6 text-primary" /> Notifications</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Notices, bills, visitors, requests and parking.</p>
-        </div>
-        {unreadBy("all") > 0 && <Button variant="ghost" className="min-h-11" onClick={markAllRead}>Mark all read</Button>}
-      </header>
+    <CommPage>
+      <CommHeader
+        title="Notifications"
+        subtitle={unreadBy("all") > 0 ? `${unreadBy("all")} unread` : "Notices, bills, visitors, requests and parking"}
+        action={unreadBy("all") > 0 ? <Button variant="outline" className="min-h-11 rounded-xl" onClick={markAllRead}>Mark all read</Button> : undefined}
+      />
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input aria-label="Search notifications" className="pl-9 rounded-xl h-11" placeholder="Search notifications…" value={q} onChange={(e) => setQ(e.target.value)} />
-      </div>
-      <div className="flex gap-2 overflow-x-auto pb-1" role="tablist">
-        {TABS.map((t) => {
-          const n = unreadBy(t.v);
-          return (
-            <button key={t.v} role="tab" aria-selected={cat === t.v} onClick={() => setCat(t.v)}
-              className={cn("min-h-11 px-4 rounded-full border text-sm whitespace-nowrap", cat === t.v ? "bg-primary text-primary-foreground border-primary" : "border-border")}>
-              {t.label}{n > 0 ? ` · ${n}` : ""}
-            </button>
-          );
-        })}
+      <div className="mb-4 space-y-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input aria-label="Search notifications" className="h-11 rounded-xl pl-9" placeholder="Search notifications…" value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
+        <div className="-mx-1 flex gap-1 overflow-x-auto px-1" role="tablist" aria-label="Notification type">
+          {TABS.map((t) => {
+            const n = unreadBy(t.v);
+            return (
+              <button key={t.v} role="tab" aria-selected={cat === t.v} onClick={() => setCat(t.v)}
+                className={cn("inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border px-3 text-sm font-medium",
+                  cat === t.v ? "border-foreground bg-foreground text-background" : "border-border bg-card text-muted-foreground")}>
+                {t.label}
+                {n > 0 && <span className={cn("rounded-full px-1.5 text-xs tabular-nums", cat === t.v ? "bg-background/20" : "bg-primary text-primary-foreground")}>{n}</span>}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {partialError && !loading && (
-        <div className="rounded-xl bg-muted p-3 text-sm flex items-center justify-between gap-2">
-          <span>Some updates couldn't load.</span>
-          <Button size="sm" variant="outline" className="min-h-11" onClick={() => { void personal.refetch(); void notices.refetch(); void bills.refetch(); }}>Retry</Button>
+        <div role="alert" className="mb-4 flex items-center justify-between gap-2 rounded-2xl bg-warning-container px-4 py-3 text-sm text-warning-container-foreground">
+          <span>Some updates couldn't load, so this list may be incomplete.</span>
+          <Button size="sm" variant="outline" className="min-h-11 rounded-xl" onClick={() => { void personal.refetch(); void notices.refetch(); void bills.refetch(); }}>Retry</Button>
         </div>
       )}
 
-      {loading ? (
-        <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-16 rounded-2xl bg-muted animate-pulse" />)}</div>
-      ) : shown.length === 0 ? (
-        <Card className="rounded-2xl"><CardContent className="p-10 text-center">
-          <Inbox className="h-10 w-10 mx-auto text-muted-foreground opacity-60" />
-          <p className="mt-2 font-semibold">{q ? "No matches" : "You're all caught up"}</p>
-          <p className="text-xs text-muted-foreground mt-1">New notices and updates will show here.</p>
-        </CardContent></Card>
-      ) : (
-        Object.entries(grouped).map(([k, list]) => (
-          <div key={k}>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-1 mb-1.5">{k}</p>
-            <div className="space-y-2">
-              {list.map((i) => (
-                <Link key={i.key} to={i.to} onClick={() => onOpen(i)} className="block">
-                  <Card className={cn("rounded-2xl hover:bg-accent/40 transition-colors", i.unread && "border-primary/40", i.emergency && "border-destructive bg-destructive/5")}>
-                    <CardContent className="p-4 flex items-center gap-3">
-                      <div className={cn("h-10 w-10 rounded-full grid place-items-center shrink-0", i.emergency ? "bg-destructive text-destructive-foreground" : "bg-primary/10 text-primary")}>
-                        <i.icon className="h-4 w-4" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{i.title}</p>
-                        {i.body && <p className="text-xs text-muted-foreground truncate">{i.body}</p>}
-                        <p className="text-[11px] text-muted-foreground">{new Date(i.at).toLocaleString()}</p>
-                      </div>
-                      {i.unread && <span className="h-2.5 w-2.5 rounded-full bg-primary shrink-0" aria-label="Unread" />}
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          </div>
-        ))
-      )}
-    </div>
+      {loading ? <ListSkeleton rows={5} />
+        : shown.length === 0 ? (
+          partialError ? null : (
+            <ListEmpty icon={Inbox} title={q ? "No matches" : "You're all caught up"}>New notices and updates will show here.</ListEmpty>
+          )
+        ) : (
+          <>
+            {unreadShown.length > 0 && (<><SectionLabel count={unreadShown.length}>Needs your attention</SectionLabel><RowList>{unreadShown.map(row)}</RowList></>)}
+            {Object.entries(readGrouped).map(([k, list]) => (
+              <div key={k}><SectionLabel>{k}</SectionLabel><RowList>{list.map(row)}</RowList></div>
+            ))}
+          </>
+        )}
+    </CommPage>
   );
 }

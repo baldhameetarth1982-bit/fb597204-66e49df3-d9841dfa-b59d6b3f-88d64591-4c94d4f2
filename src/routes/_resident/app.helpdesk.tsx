@@ -130,59 +130,70 @@ function HelpdeskPage() {
   const subjectOk = form.subject.trim().length >= 3;
   const descOk = form.description.trim().length >= 5;
 
+  const attention = tab === "active" ? list.filter((t) => t.status === "resolved") : [];
+  const approvals = tab === "active" ? list.filter((t) => t.status !== "resolved" && t.category === "approval") : [];
+  const others = tab === "active" ? list.filter((t) => t.status !== "resolved" && t.category !== "approval") : list;
+
+  const row = (t: Ticket) => {
+    const s = statusMeta(t.status);
+    const Icon = ICONS[t.category] ?? LifeBuoy;
+    const urgent = t.priority === "high" || t.priority === "urgent";
+    const isApproval = t.category === "approval";
+    const next = t.status === "resolved" ? "Confirm it's fixed" : t.status === "awaiting_approval" ? "Waiting for committee decision"
+      : t.status === "open" ? "Waiting for the office to pick up" : t.status === "in_progress" ? "Being worked on" : null;
+    return (
+      <li key={t.id}>
+        <button type="button" onClick={() => setSelected(t.id)}
+          className={`relative flex min-h-16 w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring before:absolute before:inset-y-2 before:left-0 before:w-1 before:rounded-r ${t.status === "resolved" ? "before:bg-success" : urgent ? "before:bg-destructive" : isApproval ? "before:bg-info" : "before:bg-transparent"}`}>
+          <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${isApproval ? "bg-info-container text-info-container-foreground" : "bg-muted"}`}><Icon className="h-4 w-4" /></span>
+          <span className="min-w-0 flex-1">
+            <span className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+              <span className={`rounded px-1.5 py-0.5 font-semibold ${s.tone}`}>{s.label}</span>
+              {urgent && <span className="rounded bg-destructive/10 px-1.5 py-0.5 font-semibold text-destructive">{PRIORITY_LABEL[t.priority as TicketPriority]}</span>}
+              <span>{CATEGORY_LABEL[t.category] ?? "Request"} · #{t.ticket_no}</span>
+            </span>
+            <span className="mt-0.5 block truncate text-sm font-medium">{t.subject}</span>
+            <span className="block text-xs text-muted-foreground">{next ? `${next} · ` : ""}updated {fmtDate(t.last_activity_at)}</span>
+          </span>
+          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+        </button>
+      </li>
+    );
+  };
+  const group = (label: string, items: Ticket[], hint?: string) => items.length > 0 && (
+    <div>
+      <h2 className="mb-1 mt-5 flex items-center gap-2 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}<span className="rounded-full bg-muted px-1.5 tabular-nums">{items.length}</span></h2>
+      {hint && <p className="mb-2 px-1 text-xs text-muted-foreground">{hint}</p>}
+      <ul className="divide-y overflow-hidden rounded-2xl border bg-card">{items.map(row)}</ul>
+    </div>
+  );
+
   return (
-    <div className="mx-auto max-w-2xl space-y-6 px-5 pb-28 pt-6">
-      <header className="flex items-start justify-between gap-3">
+    <div className="mx-auto max-w-3xl px-4 pb-28 pt-5 md:px-8 md:pt-8">
+      <header className="mb-5 flex items-end justify-between gap-3">
         <div>
-          <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-            <LifeBuoy className="h-6 w-6 text-primary" /> Helpdesk
-          </h1>
-          <p className="text-sm text-muted-foreground">Complaints, service requests and approvals</p>
+          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Helpdesk</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Your complaints, service requests and approvals</p>
         </div>
         <Button onClick={() => startNew(initialCat)} className="min-h-11 shrink-0 rounded-xl">
-          <Plus className="mr-1 h-4 w-4" /> New
+          <Plus className="mr-1 h-4 w-4" /> New request
         </Button>
       </header>
 
-      <section aria-label="Start a request" className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        {CATS.map((c) => {
-          const Icon = ICONS[c];
-          return (
-            <button
-              key={c}
-              type="button"
-              onClick={() => startNew(c)}
-              className="flex min-h-14 items-center gap-3 rounded-2xl border bg-card p-3 text-left transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><Icon className="h-5 w-5" /></span>
-              <span className="min-w-0">
-                <span className="block text-sm font-semibold">{CATEGORY_LABEL[c]}</span>
-                <span className="block truncate text-xs text-muted-foreground">{CATEGORY_HINT[c]}</span>
-              </span>
-            </button>
-          );
-        })}
-      </section>
-
-      <section aria-label="My requests" className="space-y-3">
+      <section aria-label="My requests">
         <div role="tablist" className="inline-flex rounded-xl bg-secondary p-1">
           {(["active", "done"] as Tab[]).map((t) => (
-            <button
-              key={t}
-              role="tab"
-              aria-selected={tab === t}
-              onClick={() => setTab(t)}
-              className={`min-h-10 rounded-lg px-4 text-sm font-medium ${tab === t ? "bg-background shadow-sm" : "text-muted-foreground"}`}
-            >
+            <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}
+              className={`min-h-11 rounded-lg px-4 text-sm font-medium ${tab === t ? "bg-background shadow-sm" : "text-muted-foreground"}`}>
               {t === "active" ? "Active" : "Past"}
             </button>
           ))}
         </div>
 
         {q.isPending ? (
-          <div className="space-y-2">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-20 w-full rounded-2xl" />)}</div>
+          <div className="mt-4 space-y-2">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-16 w-full rounded-2xl" />)}</div>
         ) : q.isError ? (
-          <div role="alert" className="rounded-2xl border bg-card p-5 text-center">
+          <div role="alert" className="mt-4 rounded-2xl border border-dashed bg-card p-6 text-center">
             <p className="font-semibold">Couldn't load your requests</p>
             <p className="mt-1 text-sm text-muted-foreground">{helpdeskErrorMessage(q.error)}</p>
             <Button variant="outline" className="mt-3 min-h-11" onClick={() => q.refetch()} disabled={q.isFetching}>
@@ -190,36 +201,39 @@ function HelpdeskPage() {
             </Button>
           </div>
         ) : list.length === 0 ? (
-          <div className="rounded-2xl border border-dashed bg-card p-8 text-center">
+          <div className="mt-4 rounded-2xl border border-dashed bg-card p-8 text-center">
             <LifeBuoy className="mx-auto h-8 w-8 text-muted-foreground" />
             <p className="mt-2 text-sm font-medium">{tab === "active" ? "Nothing open right now" : "No past requests"}</p>
-            <p className="text-xs text-muted-foreground">{tab === "active" ? "Pick a type above to raise a request." : "Closed and cancelled requests appear here."}</p>
+            <p className="text-xs text-muted-foreground">{tab === "active" ? "Start a request below." : "Closed and cancelled requests appear here."}</p>
           </div>
         ) : (
-          <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
-            {list.map((t) => {
-              const s = statusMeta(t.status);
-              return (
-                <li key={t.id}>
-                  <button type="button" onClick={() => setSelected(t.id)} className="flex min-h-16 w-full items-center gap-3 px-4 py-3 text-left hover:bg-secondary/50">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="truncate font-medium">{t.subject}</p>
-                        <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${s.tone}`}>{s.label}</span>
-                        {(t.priority === "high" || t.priority === "urgent") && (
-                          <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] font-semibold text-destructive">{PRIORITY_LABEL[t.priority as TicketPriority]}</span>
-                        )}
-                      </div>
-                      <p className="mt-0.5 text-xs text-muted-foreground">#{t.ticket_no} · {CATEGORY_LABEL[t.category] ?? "Request"} · updated {fmtDate(t.last_activity_at)}</p>
-                    </div>
-                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+          <>
+            {group("Needs your attention", attention, "The office marked these resolved — confirm or reopen.")}
+            {group("Approval requests", approvals, "Decided by the committee.")}
+            {group(tab === "active" ? "Open requests" : "Past requests", others)}
+          </>
         )}
       </section>
+
+      <section aria-label="Start a request" className="mt-8">
+        <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Start a request</h2>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {CATS.map((c) => {
+            const Icon = ICONS[c];
+            return (
+              <button key={c} type="button" onClick={() => startNew(c)}
+                className="flex min-h-14 items-center gap-3 rounded-2xl border bg-card p-3 text-left transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-muted"><Icon className="h-5 w-5" /></span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold">{CATEGORY_LABEL[c]}</span>
+                  <span className="block truncate text-xs text-muted-foreground">{CATEGORY_HINT[c]}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
 
       {/* New request */}
       <Sheet open={openNew} onOpenChange={(o) => !create.isPending && setOpenNew(o)}>

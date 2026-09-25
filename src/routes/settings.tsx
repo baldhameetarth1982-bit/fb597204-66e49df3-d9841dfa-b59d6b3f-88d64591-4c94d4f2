@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import {
   Loader2, User as UserIcon, Save, Bell, ShieldCheck, Lock,
   Users as UsersIcon, HelpCircle, LogOut, ChevronRight, BadgeCheck,
-  Globe, Smartphone, Trash2,
+  Globe, Smartphone, Trash2, Building2, Receipt, CreditCard,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
@@ -101,260 +101,198 @@ function SettingsPage() {
 
   const aadhaarVerified = (profile as any)?.aadhaar_verified;
   const aadhaarUploaded = (profile as any)?.aadhaar_uploaded_at;
+  const isSocietyAdmin = hasRole?.("society_admin") ?? false;
+  const dirty =
+    fullName !== (profile?.full_name ?? "") || phone !== (profile?.phone ?? "");
+  function discard() {
+    setFullName(profile?.full_name ?? "");
+    setPhone(profile?.phone ?? "");
+  }
+
+  const sections = [
+    { value: "profile", label: "Profile", icon: UserIcon },
+    { value: "notifications", label: "Alerts", icon: Bell },
+    { value: "privacy", label: "Privacy", icon: Lock },
+    { value: "security", label: "Security", icon: ShieldCheck },
+    ...(isSocietyAdmin ? [{ value: "society", label: "Society", icon: Building2 }] : []),
+    { value: "more", label: "More", icon: HelpCircle },
+  ];
 
   return (
     <PageShell>
       <PageHeader
-        title="Account"
-        description="Manage your profile, preferences and privacy."
+        title="Settings"
+        description="Your own account first. Whole-society settings are kept separate."
       />
 
-      {/* Identity card */}
-      <Card className="rounded-2xl mb-6">
-        <CardContent className="p-5 flex items-center gap-4">
-          <Avatar className="h-16 w-16">
-            <AvatarFallback className="bg-primary/15 text-primary text-lg font-semibold">
-              {initials(profile?.full_name, user?.email)}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <p className="font-semibold text-lg truncate">
-                {profile?.full_name ?? "Add your name"}
-              </p>
-              {aadhaarVerified ? (
-                <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 gap-1">
-                  <BadgeCheck className="h-3 w-3" /> Verified
-                </Badge>
-              ) : aadhaarUploaded ? (
-                <Badge variant="secondary">Verification pending</Badge>
-              ) : (
-                <Badge variant="outline">Unverified</Badge>
-              )}
-            </div>
-            <p className="text-sm text-muted-foreground truncate">
-              {user?.email}
+      {/* Identity */}
+      <section aria-label="Your account" className="mb-6 flex items-center gap-4 rounded-2xl border bg-card p-4">
+        <Avatar className="h-14 w-14">
+          <AvatarFallback className="bg-primary/15 text-primary text-lg font-semibold">
+            {initials(profile?.full_name, user?.email)}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="font-semibold text-lg truncate">
+              {profile?.full_name || "Add your name"}
             </p>
+            {aadhaarVerified ? (
+              <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 gap-1">
+                <BadgeCheck className="h-3 w-3" /> Verified
+              </Badge>
+            ) : aadhaarUploaded ? (
+              <Badge variant="secondary">Verification pending</Badge>
+            ) : (
+              <Badge variant="outline">Unverified</Badge>
+            )}
+            {isSocietyAdmin && <Badge variant="outline">Committee admin</Badge>}
           </div>
-        </CardContent>
-      </Card>
+          <p className="text-sm text-muted-foreground truncate">{user?.email}</p>
+        </div>
+      </section>
 
-      <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid grid-cols-5 w-full rounded-2xl">
-          <TabsTrigger value="profile" className="rounded-xl">
-            <UserIcon className="h-4 w-4 md:mr-2" />
-            <span className="hidden md:inline">Profile</span>
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="rounded-xl">
-            <Bell className="h-4 w-4 md:mr-2" />
-            <span className="hidden md:inline">Alerts</span>
-          </TabsTrigger>
-          <TabsTrigger value="privacy" className="rounded-xl">
-            <Lock className="h-4 w-4 md:mr-2" />
-            <span className="hidden md:inline">Privacy</span>
-          </TabsTrigger>
-          <TabsTrigger value="security" className="rounded-xl">
-            <ShieldCheck className="h-4 w-4 md:mr-2" />
-            <span className="hidden md:inline">Security</span>
-          </TabsTrigger>
-          <TabsTrigger value="more" className="rounded-xl">
-            <HelpCircle className="h-4 w-4 md:mr-2" />
-            <span className="hidden md:inline">More</span>
-          </TabsTrigger>
+      <Tabs defaultValue="profile" orientation="vertical" className="w-full md:grid md:grid-cols-[200px_1fr] md:gap-6">
+        <TabsList
+          aria-label="Settings sections"
+          className="mb-5 flex h-auto w-full justify-start gap-1 overflow-x-auto rounded-2xl bg-muted/60 p-1 md:mb-0 md:flex-col md:items-stretch md:self-start md:bg-transparent md:p-0"
+        >
+          {sections.map((s) => (
+            <TabsTrigger
+              key={s.value}
+              value={s.value}
+              className="h-11 shrink-0 justify-start gap-2 rounded-xl px-3 data-[state=active]:bg-card data-[state=active]:text-primary md:data-[state=active]:bg-primary/10"
+            >
+              <s.icon className="h-4 w-4" aria-hidden />
+              {s.label}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
+        <div className="min-w-0">
         {/* PROFILE */}
-        <TabsContent value="profile" className="mt-6">
-          <Card className="rounded-2xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <UserIcon className="h-5 w-5 text-primary" /> Personal information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+        <TabsContent value="profile" className="mt-0">
+          <SettingsGroup title="Personal information" scope="Only you" icon={UserIcon}>
+            <div className="space-y-4">
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" value={user?.email ?? ""} disabled />
+                <Input id="email" value={user?.email ?? ""} disabled className="h-11" />
+                <p className="text-xs text-muted-foreground">Your sign-in email can't be changed here.</p>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="name">Full name</Label>
-                <Input
-                  id="name"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Your name"
-                />
+                <Input id="name" className="h-11" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your name" />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+91 ..."
-                />
+                <Input id="phone" className="h-11" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91 ..." />
               </div>
-              <Button onClick={save} disabled={saving} className="rounded-xl h-11">
-                {saving ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Save className="h-4 w-4 mr-2" />
-                )}
-                Save changes
-              </Button>
-            </CardContent>
-          </Card>
+              <div className="flex flex-wrap items-center gap-3 border-t pt-4">
+                <p role="status" className="mr-auto text-sm text-muted-foreground">
+                  {dirty ? <span className="font-medium text-amber-700 dark:text-amber-400">Unsaved changes</span> : "All changes saved"}
+                </p>
+                <Button variant="ghost" onClick={discard} disabled={!dirty || saving} className="h-11 rounded-xl">
+                  Discard
+                </Button>
+                <Button onClick={save} disabled={!dirty || saving} className="h-11 rounded-xl">
+                  {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                  Save changes
+                </Button>
+              </div>
+            </div>
+          </SettingsGroup>
         </TabsContent>
 
         {/* NOTIFICATIONS */}
-        <TabsContent value="notifications" className="mt-6">
-          <Card className="rounded-2xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Bell className="h-5 w-5 text-primary" /> Notification preferences
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-1">
-              <Row
-                label="Announcements"
-                desc="Push when society admin posts an update"
-                checked={prefs.pushAnnouncements}
-                onChange={(v) => setPrefs({ ...prefs, pushAnnouncements: v })}
-              />
-              <Separator />
-              <Row
-                label="Visitor approvals"
-                desc="Alert when a guest is at the gate"
-                checked={prefs.pushVisitors}
-                onChange={(v) => setPrefs({ ...prefs, pushVisitors: v })}
-              />
-              <Separator />
-              <Row
-                label="Bills & dues"
-                desc="Reminders for maintenance and society bills"
-                checked={prefs.pushBills}
-                onChange={(v) => setPrefs({ ...prefs, pushBills: v })}
-              />
-              <Separator />
-              <Row
-                label="Weekly email digest"
-                desc="Sunday recap of society activity"
-                checked={prefs.emailDigest}
-                onChange={(v) => setPrefs({ ...prefs, emailDigest: v })}
-              />
-            </CardContent>
-          </Card>
+        <TabsContent value="notifications" className="mt-0">
+          <SettingsGroup title="Notification preferences" scope="This device" icon={Bell}
+            hint="Changes apply straight away and are remembered on this device.">
+            <Row label="Announcements" desc="Push when society admin posts an update" checked={prefs.pushAnnouncements} onChange={(v) => setPrefs({ ...prefs, pushAnnouncements: v })} />
+            <Separator />
+            <Row label="Visitor approvals" desc="Alert when a guest is at the gate" checked={prefs.pushVisitors} onChange={(v) => setPrefs({ ...prefs, pushVisitors: v })} />
+            <Separator />
+            <Row label="Bills & dues" desc="Reminders for maintenance and society bills" checked={prefs.pushBills} onChange={(v) => setPrefs({ ...prefs, pushBills: v })} />
+            <Separator />
+            <Row label="Weekly email digest" desc="Sunday recap of society activity" checked={prefs.emailDigest} onChange={(v) => setPrefs({ ...prefs, emailDigest: v })} />
+          </SettingsGroup>
         </TabsContent>
 
         {/* PRIVACY */}
-        <TabsContent value="privacy" className="mt-6">
-          <Card className="rounded-2xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Lock className="h-5 w-5 text-primary" /> Privacy controls
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-1">
-              <Row
-                label="Show my phone to neighbors"
-                desc="Other residents can call you from the directory"
-                checked={prefs.showPhoneToNeighbors}
-                onChange={(v) => setPrefs({ ...prefs, showPhoneToNeighbors: v })}
-              />
-              <Separator />
-              <Row
-                label="Show flat number to visitors"
-                desc="Gate will display your flat when announcing a visitor"
-                checked={prefs.showFlatToVisitors}
-                onChange={(v) => setPrefs({ ...prefs, showFlatToVisitors: v })}
-              />
-              <Separator />
-              <Row
-                label="Marketing emails"
-                desc="Product updates and tips from SociyoHub"
-                checked={prefs.marketingEmails}
-                onChange={(v) => setPrefs({ ...prefs, marketingEmails: v })}
-              />
-            </CardContent>
-          </Card>
+        <TabsContent value="privacy" className="mt-0">
+          <SettingsGroup title="Privacy controls" scope="This device" icon={Lock}
+            hint="Changes apply straight away and are remembered on this device.">
+            <Row label="Show my phone to neighbors" desc="Other residents can call you from the directory" checked={prefs.showPhoneToNeighbors} onChange={(v) => setPrefs({ ...prefs, showPhoneToNeighbors: v })} />
+            <Separator />
+            <Row label="Show flat number to visitors" desc="Gate will display your flat when announcing a visitor" checked={prefs.showFlatToVisitors} onChange={(v) => setPrefs({ ...prefs, showFlatToVisitors: v })} />
+            <Separator />
+            <Row label="Marketing emails" desc="Product updates and tips from SociyoHub" checked={prefs.marketingEmails} onChange={(v) => setPrefs({ ...prefs, marketingEmails: v })} />
+          </SettingsGroup>
         </TabsContent>
 
         {/* SECURITY */}
-        <TabsContent value="security" className="mt-6 space-y-6">
-          <Card className="rounded-2xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <ShieldCheck className="h-5 w-5 text-primary" /> Identity verification
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {aadhaarVerified ? (
-                <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 flex items-center gap-3">
-                  <BadgeCheck className="h-5 w-5 text-emerald-600" />
-                  <div>
-                    <p className="font-medium">Your identity is verified</p>
-                    <p className="text-sm text-muted-foreground">
-                      Your society admin has approved your Aadhaar.
-                    </p>
-                  </div>
+        <TabsContent value="security" className="mt-0 space-y-5">
+          <SettingsGroup title="Identity verification" scope="Only you" icon={ShieldCheck}>
+            {aadhaarVerified ? (
+              <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 flex items-center gap-3">
+                <BadgeCheck className="h-5 w-5 text-emerald-600" />
+                <div>
+                  <p className="font-medium">Your identity is verified</p>
+                  <p className="text-sm text-muted-foreground">Your society admin has approved your Aadhaar.</p>
                 </div>
-              ) : aadhaarUploaded ? (
-                <div className="rounded-xl border bg-muted/40 p-4">
-                  <p className="font-medium">Verification pending</p>
-                  <p className="text-sm text-muted-foreground">
-                    Your society admin will review your Aadhaar shortly.
-                  </p>
-                </div>
-              ) : (
-                <div className="rounded-xl border border-dashed p-4">
-                  <p className="font-medium">Upload your Aadhaar to get verified</p>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Verification builds trust with your society and unlocks visitor approvals.
-                  </p>
-                  <Button asChild className="rounded-xl">
-                    <Link to="/onboarding/join">Start verification</Link>
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+            ) : aadhaarUploaded ? (
+              <div className="rounded-xl border bg-muted/40 p-4">
+                <p className="font-medium">Verification pending</p>
+                <p className="text-sm text-muted-foreground">Your society admin will review your Aadhaar shortly.</p>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed p-4">
+                <p className="font-medium">Upload your Aadhaar to get verified</p>
+                <p className="text-sm text-muted-foreground mb-3">Verification builds trust with your society and unlocks visitor approvals.</p>
+                <Button asChild className="rounded-xl h-11">
+                  <Link to="/onboarding/join">Start verification</Link>
+                </Button>
+              </div>
+            )}
+          </SettingsGroup>
 
-          <Card className="rounded-2xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Lock className="h-5 w-5 text-primary" /> Account security
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <ActionRow
-                icon={Lock}
-                label="Change password"
-                desc="Update your sign-in password"
-                onClick={async () => {
-                  if (!user?.email) return;
-                  const { error } = await supabase.auth.resetPasswordForEmail(
-                    user.email,
-                    { redirectTo: `${window.location.origin}/login` },
-                  );
-                  if (error) return toast.error(error.message);
-                  toast.success("Password reset email sent");
-                }}
-              />
-              <Separator />
-              <ActionRow
-                icon={Smartphone}
-                label="Active sessions"
-                desc="You're signed in on this device"
-              />
-            </CardContent>
-          </Card>
+          <SettingsGroup title="Sign-in" scope="Only you" icon={Lock}>
+            <ActionRow
+              icon={Lock}
+              label="Change password"
+              desc="We'll email you a secure reset link"
+              onClick={async () => {
+                if (!user?.email) return;
+                const { error } = await supabase.auth.resetPasswordForEmail(user.email, { redirectTo: `${window.location.origin}/login` });
+                if (error) return toast.error(error.message);
+                toast.success("Password reset email sent");
+              }}
+            />
+            <Separator />
+            <ActionRow icon={Smartphone} label="Active sessions" desc="You're signed in on this device" />
+          </SettingsGroup>
 
           <TwoFactorCard />
         </TabsContent>
 
+        {/* SOCIETY (committee only — each page enforces its own permissions) */}
+        {isSocietyAdmin && (
+          <TabsContent value="society" className="mt-0">
+            <SettingsGroup title="Society administration" scope="Whole society" icon={Building2}
+              hint="These change settings for every resident. Each page checks your committee role again before saving.">
+              <LinkRow to="/society/business-profile" icon={Building2} label="Society information" desc="Name, address and business details" />
+              <Separator />
+              <LinkRow to="/society/team" icon={UsersIcon} label="Team & roles" desc="Committee members and what they can do" />
+              <Separator />
+              <LinkRow to="/society/billing-settings" icon={Receipt} label="Billing settings" desc="Bill defaults, due dates and payment details" />
+              <Separator />
+              <LinkRow to="/society/subscription" icon={CreditCard} label="Subscription" desc="Your SociyoHub plan" />
+            </SettingsGroup>
+          </TabsContent>
+        )}
 
         {/* MORE */}
-        <TabsContent value="more" className="mt-6 space-y-6">
+        <TabsContent value="more" className="mt-0 space-y-5">
           <AppearanceCard
             currentTheme={(profile as any)?.theme ?? "default"}
             societyId={profile?.society_id ?? null}
@@ -363,50 +301,71 @@ function SettingsPage() {
             onChanged={() => refresh?.()}
           />
 
+          <SettingsGroup title="Household & language" scope="Only you" icon={UsersIcon}>
+            <LinkRow to="/app/family" icon={UsersIcon} label="Family members" />
+            <Separator />
+            <LanguageRow />
+          </SettingsGroup>
 
-          <Card className="rounded-2xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <UsersIcon className="h-5 w-5 text-primary" /> Household
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <LinkRow to="/app/family" icon={UsersIcon} label="Family members" />
-              <Separator />
-              <LanguageRow />
-            </CardContent>
-          </Card>
+          <SettingsGroup title="Support & legal" icon={HelpCircle}>
+            <LinkRow to="/support" icon={HelpCircle} label="Help & support" />
+            <Separator />
+            <LinkRow to="/terms" icon={ShieldCheck} label="Terms & privacy" />
+            <Separator />
+            <LinkRow to="/pricing" icon={ShieldCheck} label="Plans & pricing" />
+          </SettingsGroup>
 
-
-          <Card className="rounded-2xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <HelpCircle className="h-5 w-5 text-primary" /> Support & legal
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <LinkRow to="/support" icon={HelpCircle} label="Help & support" />
-              <Separator />
-              <LinkRow to="/terms" icon={ShieldCheck} label="Terms & privacy" />
-              <Separator />
-              <LinkRow to="/pricing" icon={ShieldCheck} label="Plans & pricing" />
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-2xl border-destructive/30">
-            <CardContent className="p-2">
-              <ActionRow
-                icon={LogOut}
-                label="Sign out"
-                onClick={() => signOut?.()}
-              />
-              <Separator />
-              <DeleteAccountRow email={user?.email ?? null} onSignOut={signOut} />
-            </CardContent>
-          </Card>
+          <section aria-labelledby="danger-zone" className="rounded-2xl border border-destructive/30 p-2">
+            <h2 id="danger-zone" className="px-2 pt-2 text-xs font-semibold uppercase tracking-wide text-destructive">Sign out & account removal</h2>
+            <SignOutRow onSignOut={signOut} />
+            <Separator />
+            <DeleteAccountRow email={user?.email ?? null} onSignOut={signOut} />
+          </section>
         </TabsContent>
+        </div>
       </Tabs>
     </PageShell>
+  );
+}
+
+function SettingsGroup({
+  title, scope, icon: Icon, hint, children,
+}: { title: string; scope?: string; icon: any; hint?: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-2xl border bg-card p-4 sm:p-5">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <Icon className="h-5 w-5 text-primary" aria-hidden />
+        <h2 className="text-base font-semibold">{title}</h2>
+        {scope && (
+          <span className="ml-auto rounded-full border px-2 py-0.5 text-xs text-muted-foreground">{scope}</span>
+        )}
+      </div>
+      {hint && <p className="mb-2 text-sm text-muted-foreground">{hint}</p>}
+      {children}
+    </section>
+  );
+}
+
+function SignOutRow({ onSignOut }: { onSignOut?: () => Promise<void> }) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <button className="w-full min-h-11 flex items-center gap-3 px-2 py-3 rounded-xl hover:bg-muted/50 transition text-left">
+          <LogOut className="h-5 w-5 shrink-0" />
+          <span className="flex-1 font-medium">Sign out</span>
+        </button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Sign out?</AlertDialogTitle>
+          <AlertDialogDescription>You'll need to sign in again to use SociyoHub on this device.</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Stay signed in</AlertDialogCancel>
+          <AlertDialogAction onClick={() => onSignOut?.()}>Sign out</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 

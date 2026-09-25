@@ -27,9 +27,14 @@ function initials(name?: string | null, email?: string | null) {
     .toUpperCase();
 }
 
+const SECTION_LABELS: Record<string, string> = {
+  knowledge: "Documents & FAQs",
+};
+
 function sectionTitle(pathname: string) {
   const seg = pathname.split("/")[2];
   if (!seg) return null;
+  if (SECTION_LABELS[seg]) return SECTION_LABELS[seg];
   const words = seg.replace(/[-_]/g, " ");
   return words.charAt(0).toUpperCase() + words.slice(1);
 }

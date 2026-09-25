@@ -235,24 +235,24 @@ const QUICK_ACTIONS: Array<{ to: string; label: string; icon: any; tone: string 
 
 function QuickActions() {
   return (
-    <section aria-label="Quick actions">
-      <div className="grid grid-cols-4 gap-2">
-        {QUICK_ACTIONS.map((a) => {
+    <section aria-labelledby="shortcuts-h">
+      <h2 id="shortcuts-h" className="mb-2 text-sm font-semibold">Shortcuts</h2>
+      <nav className="grid grid-cols-2 overflow-hidden rounded-xl border border-border bg-card">
+        {QUICK_ACTIONS.map((a, i) => {
           const Icon = a.icon;
+          const lastRow = i >= QUICK_ACTIONS.length - (QUICK_ACTIONS.length % 2 || 2);
           return (
             <Link
               key={a.label}
               to={a.to}
-              className="flex flex-col items-center gap-1.5 rounded-xl border bg-card p-3 min-h-[76px] justify-center hover:bg-accent/40 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className={`flex min-h-[52px] items-center gap-2.5 border-border px-3.5 text-sm font-medium hover:bg-muted/50 focus-visible:outline-none focus-visible:bg-muted/60 ${i % 2 === 0 ? "border-r" : ""} ${lastRow ? "" : "border-b"}`}
             >
-              <span className={`h-10 w-10 rounded-xl grid place-items-center ${a.tone}`}>
-                <Icon className="h-5 w-5" />
-              </span>
-              <span className="text-[11px] font-medium text-center leading-tight">{a.label}</span>
+              <Icon className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+              <span className="truncate">{a.label}</span>
             </Link>
           );
         })}
-      </div>
+      </nav>
     </section>
   );
 }

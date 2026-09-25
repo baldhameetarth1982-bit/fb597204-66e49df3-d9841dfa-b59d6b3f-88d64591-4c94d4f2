@@ -1,3 +1,4 @@
+import { Skeleton } from "@/components/ui/skeleton";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -95,64 +96,79 @@ function AdminDashboard() {
   const trialing = num(summary?.trialing_societies);
   const unpaid = num(summary?.unpaid_bill_total);
 
+  const metrics = [
+    { k: "Monthly recurring revenue", v: revQ.isSuccess ? compact(revQ.data.mrr) : dash, loading: revQ.isLoading },
+    { k: "Societies", v: sumOk ? String(num(summary.total_societies)) : dash, loading: sumQ.isLoading },
+    { k: "Users", v: sumOk ? num(summary.total_users).toLocaleString("en-IN") : dash, loading: sumQ.isLoading },
+    { k: "Confirmed payments", v: sumOk ? compact(num(summary.successful_payment_total)) : dash, loading: sumQ.isLoading },
+  ];
+
   return (
-    <div className="min-h-dvh bg-muted/30 pb-24">
-      <MobileHero
-        eyebrow="Super Admin"
-        title="Command Center"
-        subtitle="Every society, every rupee, every user — one screen."
-        icon={Sparkles}
-        variant="navy"
-        stats={
-          <StatPillRow>
-            <StatPill label="MRR" value={revQ.isSuccess ? compact(revQ.data.mrr) : dash} icon={TrendingUp} />
-            <StatPill label="Societies" value={sumOk ? num(summary.total_societies) : dash} icon={Building2} />
-            <StatPill label="Users" value={sumOk ? num(summary.total_users).toLocaleString("en-IN") : dash} icon={Users} />
-            <StatPill label="Payments" value={sumOk ? compact(num(summary.successful_payment_total)) : dash} icon={CreditCard} />
-          </StatPillRow>
-        }
-      />
+    <div className="container-page py-5 md:py-8">
+      <header className="border-b border-border pb-5">
+        <p className="text-sm text-muted-foreground">Super Admin</p>
+        <h1 className="mt-0.5 text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">Platform overview</h1>
+      </header>
 
-      <div className="px-4 pt-4 space-y-4 max-w-5xl mx-auto">
-        {(sumQ.isError || revQ.isError) && (
-          <div role="alert" className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between gap-3">
-            <p className="text-sm text-foreground">Some platform figures couldn't load. Numbers show "—" until they do.</p>
-            <button
-              type="button"
-              onClick={() => { sumQ.refetch(); revQ.refetch(); }}
-              className="min-h-11 shrink-0 rounded-xl border border-border bg-card px-4 text-sm font-medium"
-            >
-              Try again
-            </button>
+      <dl className="mt-5 grid grid-cols-2 overflow-hidden rounded-xl border border-border bg-card lg:grid-cols-4 [&>div]:border-border [&>div:nth-child(odd)]:border-r lg:[&>div]:border-r lg:[&>div:last-child]:border-r-0 [&>div:nth-child(-n+2)]:border-b lg:[&>div]:border-b-0">
+        {metrics.map((m) => (
+          <div key={m.k} className="px-4 py-3.5 md:px-5 md:py-4">
+            <dt className="text-xs text-muted-foreground">{m.k}</dt>
+            <dd className="mt-1 text-xl font-semibold tabular-nums tracking-tight md:text-2xl">
+              {m.loading ? <Skeleton className="h-7 w-20" /> : m.v}
+            </dd>
           </div>
-        )}
-        <SectionCard title="Platform pulse" icon={ShieldCheck} bodyClassName="p-0">
-          <ListCardGroup>
-            <ListCard
-              title="Active subscriptions"
-              subtitle={sumOk ? `${activeSocs} paying · ${trialing} on trial` : sumQ.isLoading ? "Loading…" : "Unavailable"}
-              trailing={<StatusChip tone={sumOk ? "success" : "neutral"}>{sumOk ? `${activeSocs} active` : dash}</StatusChip>}
-            />
-            <ListCard
-              title="Outstanding bills"
-              subtitle="Across all societies, all months"
-              trailing={
-                <StatusChip tone={!sumOk ? "neutral" : unpaid > 0 ? "warning" : "success"}>{sumOk ? compact(unpaid) : dash}</StatusChip>
-              }
-            />
-            <ListCard
-              title="Payment gateway"
-              subtitle="Razorpay handles SociyoHub plan payments"
-              trailing={
-                <Link to={"/admin/razorpay" as any} className="text-sm font-medium text-primary">Check status</Link>
-              }
-            />
-          </ListCardGroup>
-        </SectionCard>
+        ))}
+      </dl>
 
-        <ModuleGroup title="Growth" items={GROWTH} />
-        <ModuleGroup title="Money" items={MONEY} />
-        <ModuleGroup title="Platform" items={PLATFORM} />
+      <div className="mt-6 grid gap-6 lg:grid-cols-12">
+        <div className="min-w-0 space-y-6 lg:col-span-7">
+          {(sumQ.isError || revQ.isError) && (
+            <div role="alert" className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+              <p className="text-sm text-foreground">Some platform figures couldn't load. Numbers show "—" until they do.</p>
+              <button
+                type="button"
+                onClick={() => { sumQ.refetch(); revQ.refetch(); }}
+                className="min-h-11 shrink-0 rounded-lg border border-border bg-card px-4 text-sm font-medium"
+              >
+                Try again
+              </button>
+            </div>
+          )}
+          <section aria-labelledby="pulse-h">
+            <h2 id="pulse-h" className="mb-2 text-sm font-semibold">Needs your attention</h2>
+            <ul className="divide-y overflow-hidden rounded-xl border border-border bg-card">
+              <li className="grid min-h-[64px] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold">Active subscriptions</p>
+                  <p className="truncate text-xs text-muted-foreground">{sumOk ? `${activeSocs} paying · ${trialing} on trial` : sumQ.isLoading ? "Loading…" : "Unavailable"}</p>
+                </div>
+                <StatusChip tone={sumOk ? "success" : "neutral"}>{sumOk ? `${activeSocs} active` : dash}</StatusChip>
+              </li>
+              <li className="grid min-h-[64px] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold">Outstanding bills</p>
+                  <p className="truncate text-xs text-muted-foreground">Across all societies, all months</p>
+                </div>
+                <StatusChip tone={!sumOk ? "neutral" : unpaid > 0 ? "warning" : "success"}>{sumOk ? compact(unpaid) : dash}</StatusChip>
+              </li>
+              <li>
+                <Link to={"/admin/razorpay" as any} className="grid min-h-[64px] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 hover:bg-muted/50 focus-visible:outline-none focus-visible:bg-muted/60">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold">Payment gateway</p>
+                    <p className="truncate text-xs text-muted-foreground">Razorpay handles SociyoHub plan payments</p>
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-sm font-medium text-primary">Check status <ArrowRight className="h-4 w-4" aria-hidden /></span>
+                </Link>
+              </li>
+            </ul>
+          </section>
+          <ModuleGroup title="Growth" items={GROWTH} />
+        </div>
+        <aside className="min-w-0 space-y-6 lg:col-span-5">
+          <ModuleGroup title="Money" items={MONEY} />
+          <ModuleGroup title="Platform" items={PLATFORM} />
+        </aside>
       </div>
     </div>
   );
@@ -160,24 +176,26 @@ function AdminDashboard() {
 
 function ModuleGroup({ title, items }: { title: string; items: ModuleItem[] }) {
   return (
-    <SectionCard title={title} bodyClassName="p-0">
-      <ListCardGroup>
+    <section>
+      <h2 className="mb-2 text-sm font-semibold">{title}</h2>
+      <ul className="divide-y overflow-hidden rounded-xl border border-border bg-card">
         {items.map((m) => (
-          <Link key={m.to} to={m.to as any} className="block">
-            <ListCard
-              leading={
-                <div className="h-10 w-10 rounded-2xl bg-primary/10 text-primary grid place-items-center">
-                  <m.icon className="h-4 w-4" />
-                </div>
-              }
-              title={m.title}
-              subtitle={m.desc}
-              trailing={<ArrowRight className="h-4 w-4 text-muted-foreground" />}
-              className="hover:bg-primary/5"
-            />
-          </Link>
+          <li key={m.to}>
+            <Link to={m.to as any} className="grid min-h-[60px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 hover:bg-muted/50 focus-visible:outline-none focus-visible:bg-muted/60">
+              <m.icon className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-medium">{m.title}</span>
+                <span className="block truncate text-xs text-muted-foreground">{m.desc}</span>
+              </span>
+              <ChevronRightIcon />
+            </Link>
+          </li>
         ))}
-      </ListCardGroup>
-    </SectionCard>
+      </ul>
+    </section>
   );
+}
+
+function ChevronRightIcon() {
+  return <ArrowRight className="h-4 w-4 text-muted-foreground" aria-hidden />;
 }

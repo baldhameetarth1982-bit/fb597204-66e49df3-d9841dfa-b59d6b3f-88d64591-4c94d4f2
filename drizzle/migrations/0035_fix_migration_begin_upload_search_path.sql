@@ -1,0 +1,1 @@
+ALTER FUNCTION public.migration_begin_upload SET search_path = public, extensions, pg_temp;

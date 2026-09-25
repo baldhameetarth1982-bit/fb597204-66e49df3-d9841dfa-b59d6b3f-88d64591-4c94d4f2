@@ -466,7 +466,7 @@ function Row({
         <p className="font-medium">{label}</p>
         {desc && <p className="text-sm text-muted-foreground">{desc}</p>}
       </div>
-      <Switch checked={checked} onCheckedChange={onChange} />
+      <Switch checked={checked} onCheckedChange={onChange} aria-label={label} />
     </div>
   );
 }
@@ -495,16 +495,19 @@ function ActionRow({
 }
 
 function LinkRow({
-  to, icon: Icon, label,
-}: { to: string; icon: any; label: string }) {
+  to, icon: Icon, label, desc,
+}: { to: string; icon: any; label: string; desc?: string }) {
   return (
     <Link
-      to={to}
-      className="w-full flex items-center gap-3 px-2 py-3 rounded-xl hover:bg-muted/50 transition"
+      to={to as any}
+      className="w-full min-h-11 flex items-center gap-3 px-2 py-3 rounded-xl hover:bg-muted/50 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <Icon className="h-5 w-5" />
-      <span className="flex-1 font-medium">{label}</span>
-      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+      <Icon className="h-5 w-5 shrink-0" aria-hidden />
+      <span className="flex-1 min-w-0">
+        <span className="block font-medium">{label}</span>
+        {desc && <span className="block text-sm text-muted-foreground">{desc}</span>}
+      </span>
+      <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />
     </Link>
   );
 }

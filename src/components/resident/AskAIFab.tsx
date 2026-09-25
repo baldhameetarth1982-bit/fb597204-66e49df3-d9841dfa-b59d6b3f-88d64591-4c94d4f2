@@ -5,7 +5,7 @@ import { Bot } from "lucide-react";
 export function AskAIFab() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   // Also hidden on post conversations, where it would cover the comment Send button.
-  if (path.startsWith("/support") || path.startsWith("/app/feed/")) return null;
+  if (path.startsWith("/support") || path.startsWith("/app/feed/") || path.startsWith("/app/secretary")) return null;
   return (
     <Link
       to="/support"

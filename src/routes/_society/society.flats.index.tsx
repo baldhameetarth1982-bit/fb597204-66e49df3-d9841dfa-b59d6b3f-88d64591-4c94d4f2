@@ -26,7 +26,7 @@ import {
   type UnitListItem,
 } from "@/lib/society-structure";
 
-export const Route = createFileRoute("/_society/society/flats")({
+export const Route = createFileRoute("/_society/society/flats/")({
   head: () => ({ meta: [{ title: "Units — SociyoHub" }] }),
   component: FlatsPage,
 });

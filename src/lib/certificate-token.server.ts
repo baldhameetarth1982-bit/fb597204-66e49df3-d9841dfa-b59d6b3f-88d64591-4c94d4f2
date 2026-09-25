@@ -29,7 +29,7 @@ function b64UrlDecode(s: string): Uint8Array {
   return out;
 }
 
-function decodeKeyMaterial(raw: string): Uint8Array {
+async function decodeKeyMaterial(raw: string): Promise<Uint8Array> {
   const s = raw.trim();
   if (/^[0-9a-fA-F]{64}$/.test(s)) {
     const out = new Uint8Array(32);
@@ -42,14 +42,20 @@ function decodeKeyMaterial(raw: string): Uint8Array {
   } catch {
     /* fallthrough */
   }
-  throw new Error("CERTIFICATE_TOKEN_ENCRYPTION_KEY invalid encoding (need 32 bytes hex or base64)");
+  // High-entropy generated secrets (e.g. 64 random characters) are not raw
+  // 32-byte encodings. Derive a 256-bit key from them with SHA-256.
+  if (s.length >= 32) {
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+    return new Uint8Array(digest);
+  }
+  throw new Error("CERTIFICATE_TOKEN_ENCRYPTION_KEY invalid (need 32 bytes hex/base64 or a 32+ character secret)");
 }
 
 async function getKey(): Promise<CryptoKey> {
   if (cachedKey) return cachedKey;
   const raw = process.env.CERTIFICATE_TOKEN_ENCRYPTION_KEY;
   if (!raw) throw new Error("CERTIFICATE_TOKEN_ENCRYPTION_KEY missing");
-  const material = decodeKeyMaterial(raw);
+  const material = await decodeKeyMaterial(raw);
   cachedKey = await crypto.subtle.importKey(
     "raw",
     material.buffer.slice(material.byteOffset, material.byteOffset + material.byteLength) as ArrayBuffer,

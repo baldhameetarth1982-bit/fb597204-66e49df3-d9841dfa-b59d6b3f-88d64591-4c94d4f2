@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { shareBillAsImage } from "@/components/billing/BillCardImage";
 import { toSafeFinanceError } from "@/lib/finance-safe-error";
 
-export const Route = createFileRoute("/_society/society/billing")({
+export const Route = createFileRoute("/_society/society/billing/")({
   head: () => ({ meta: [{ title: "Bill History — SociyoHub" }] }),
   component: BillingPage,
 });

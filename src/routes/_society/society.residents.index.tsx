@@ -21,7 +21,7 @@ import { listSocietyResidents } from "@/lib/residents.functions";
 import { getResidentDirectoryOverview, listResidentsPage } from "@/lib/residents-admin.functions";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/_society/society/residents")({
+export const Route = createFileRoute("/_society/society/residents/")({
   head: () => ({ meta: [{ title: "Residents — SociyoHub" }, { name: "description", content: "Search and manage every resident, owner and tenant in your society." }] }),
   component: ResidentsPage,
 });

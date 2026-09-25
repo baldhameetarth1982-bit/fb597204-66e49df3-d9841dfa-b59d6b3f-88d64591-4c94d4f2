@@ -281,6 +281,41 @@
       "when": 1790330574141,
       "tag": "0039_commit_migration_job_skip_generated_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1790332028282,
+      "tag": "0040_fix_payments_method_check",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1790332168459,
+      "tag": "0041_fix_receivables_ageing_status",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1790332348009,
+      "tag": "0042_recognise_verified_offline_payments",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1790332569486,
+      "tag": "0043_fix_no_dues_transition_reviewed_by",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1790332977672,
+      "tag": "0044_fix_no_dues_issuance_ambiguity",
+      "breakpoints": true
     }
   ]
 }

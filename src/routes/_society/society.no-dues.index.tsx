@@ -1,8 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
-import { toast } from "sonner";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { MobileHero } from "@/components/shared/MobileHero";
 import { SectionCard } from "@/components/shared/SectionCard";
@@ -10,17 +8,19 @@ import { StatusChip } from "@/components/system/StatusChip";
 import { Button } from "@/components/ui/button";
 import {
   listSocietyNoDuesRequests,
-  reviewNoDuesRequest,
-  issueNoDuesCertificate,
 } from "@/lib/no-dues.functions";
 import { statusLabel, formatCurrency } from "@/lib/no-dues-labels";
 import { useSocietyId } from "@/hooks/useSocietyId";
 
-export const Route = createFileRoute("/_society/society/no-dues")({
+export const Route = createFileRoute("/_society/society/no-dues/")({
   head: () => ({
     meta: [
       { title: "No-Dues Requests — SociyoHub" },
       { name: "description", content: "Review resident no-dues requests and issue certificates." },
+      { property: "og:title", content: "No-Dues Requests — SociyoHub" },
+      { property: "og:description", content: "Review resident no-dues requests and issue certificates." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: NoDuesAdmin,
@@ -37,40 +37,10 @@ function NoDuesAdmin() {
 function NoDuesAdminInner() {
   const { societyId } = useSocietyId();
   const list = useServerFn(listSocietyNoDuesRequests);
-  const review = useServerFn(reviewNoDuesRequest);
-  const issue = useServerFn(issueNoDuesCertificate);
-  const [busy, setBusy] = useState<string | null>(null);
-
-  const { data, refetch, isLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     enabled: !!societyId,
     queryKey: ["society-no-dues", societyId],
     queryFn: () => list({ data: { societyId: societyId! } }),
-  });
-
-  const act = useMutation({
-    mutationFn: async (args: { id: string; kind: "approve" | "reject" | "issue" }) => {
-      setBusy(args.id);
-      try {
-        if (args.kind === "issue") {
-          await issue({ data: { requestId: args.id } });
-        } else {
-          await review({
-            data: {
-              requestId: args.id,
-              decision: args.kind,
-              reason: args.kind === "reject" ? "Rejected by admin" : undefined,
-            },
-          });
-        }
-      } finally {
-        setBusy(null);
-      }
-    },
-    onSuccess: () => {
-      toast.success("Updated");
-      refetch();
-    },
-    onError: (e: any) => toast.error(e?.message ?? "Failed"),
   });
 
   return (
@@ -109,36 +79,15 @@ function NoDuesAdminInner() {
                   Outstanding: {formatCurrency(snap.total_outstanding)} ({(snap.blockers?.length ?? 0)} items)
                 </p>
               )}
-              <div className="flex gap-2 flex-wrap">
-                {(r.status === "submitted" || r.status === "under_review") && (
-                  <>
-                    <Button
-                      size="sm"
-                      disabled={busy === r.id}
-                      onClick={() => act.mutate({ id: r.id, kind: "approve" })}
-                    >
-                      Approve
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={busy === r.id}
-                      onClick={() => act.mutate({ id: r.id, kind: "reject" })}
-                    >
-                      Reject
-                    </Button>
-                  </>
-                )}
-                {r.status === "approved" && (
-                  <Button
-                    size="sm"
-                    disabled={busy === r.id}
-                    onClick={() => act.mutate({ id: r.id, kind: "issue" })}
-                  >
-                    Issue Certificate
-                  </Button>
-                )}
-              </div>
+              <Button asChild size="sm" variant={r.status === "submitted" || r.status === "under_review" || r.status === "approved" ? "default" : "outline"} className="min-h-11">
+                <Link to="/society/no-dues/$id" params={{ id: r.id }}>
+                  {r.status === "submitted" || r.status === "under_review"
+                    ? "Review request"
+                    : r.status === "approved"
+                      ? "Issue certificate"
+                      : "Open details"}
+                </Link>
+              </Button>
             </SectionCard>
           );
         })}

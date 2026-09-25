@@ -148,11 +148,12 @@ function GuardDashboard() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-2 gap-3">
-        <Button onClick={() => setWalkOpen(true)} variant="outline" className="h-16 rounded-2xl text-base">
+      {/* Gate actions stay pinned above the bottom nav on phones for one-thumb reach. */}
+      <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-20 -mx-1 order-last grid grid-cols-2 gap-2 rounded-2xl border bg-background/95 p-1 shadow-sm backdrop-blur md:static md:border-0 md:bg-transparent md:p-0 md:shadow-none">
+        <Button onClick={() => setWalkOpen(true)} className="h-14 rounded-xl text-base">
           <UserPlus className="h-5 w-5 mr-2" /> Walk-in
         </Button>
-        <Button onClick={() => setPlateOpen(true)} variant="outline" className="h-16 rounded-2xl text-base">
+        <Button onClick={() => setPlateOpen(true)} variant="outline" className="h-14 rounded-xl text-base">
           <Car className="h-5 w-5 mr-2" /> Check vehicle
         </Button>
       </div>

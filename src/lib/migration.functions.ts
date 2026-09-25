@@ -117,11 +117,14 @@ export const initializeMigrationUpload = createServerFn({ method: "POST" })
     }
 
     // Server-side authorization via the authenticated client.
-    const { data: canAdmin } = await supabase.rpc(
+    const { data: canAdmin, error: canErr } = await supabase.rpc(
       "current_user_can_admin_migrations",
       { _society_id: data.society_id },
     );
-    if (!canAdmin) throw new MigrationError("unavailable");
+    if (!canAdmin) {
+      if (canErr) console.error("[migration] access check failed", canErr.code, canErr.message);
+      throw new MigrationError("unavailable");
+    }
 
     // Structure mode is derived from the society record server-side — never
     // from the browser. Serial-number societies previously got "structured"

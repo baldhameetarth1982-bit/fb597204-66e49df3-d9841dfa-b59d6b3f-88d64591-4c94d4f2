@@ -274,6 +274,13 @@
       "when": 1790330456641,
       "tag": "0038_grant_commit_migration_job_authenticated",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1790330574141,
+      "tag": "0039_commit_migration_job_skip_generated_columns",
+      "breakpoints": true
     }
   ]
 }

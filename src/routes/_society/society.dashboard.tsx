@@ -209,7 +209,7 @@ function SocietyDashboard() {
   return (
     <div className="container-page py-5 md:py-8">
       {/* Page header */}
-      <header className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
+      <header className="flex flex-col gap-4 border-b border-border pb-5 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
           <p className="text-sm text-muted-foreground">{greeting()}, {displayName}</p>
           <h1 className="mt-0.5 truncate text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">

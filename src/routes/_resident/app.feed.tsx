@@ -12,6 +12,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { toast } from "sonner";
+import { ErrorState } from "@/components/system/ErrorState";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Trash2, Megaphone } from "lucide-react";
+
+function safeMsg(e: unknown, fallback: string): string {
+  const m = e instanceof Error ? e.message : typeof e === "object" && e && "message" in e ? String((e as any).message) : "";
+  if (!m || m.length > 120 || /sql|relation|column|constraint|policy|violat|rpc|function|uuid|stack|\bat\s|jwt|42\d{3}|23\d{3}/i.test(m)) return fallback;
+  return m;
+}
 
 export const Route = createFileRoute("/_resident/app/feed")({
   head: () => ({ meta: [{ title: "Community Feed — SociyoHub" }] }),
@@ -55,6 +67,10 @@ function FeedScreen() {
   const [posts, setPosts] = useState<PostRow[]>([]);
   const [digest, setDigest] = useState<DigestRow | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [likeBusy, setLikeBusy] = useState<Set<string>>(new Set());
+  const [pendingDelete, setPendingDelete] = useState<PostRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [body, setBody] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -64,8 +80,9 @@ function FeedScreen() {
   async function load() {
     if (!societyId || !user) return;
     setLoading(true);
-
-    const [{ data: postRows }, { data: digestRow }] = await Promise.all([
+    setLoadError(false);
+    try {
+    const [{ data: postRows, error: postsErr }, { data: digestRow }] = await Promise.all([
       supabase
         .from("posts")
         .select("id, body, image_url, created_at, author_id")
@@ -81,6 +98,7 @@ function FeedScreen() {
         .maybeSingle(),
     ]);
 
+    if (postsErr) throw postsErr;
     setDigest((digestRow as DigestRow) ?? null);
 
     if (!postRows || postRows.length === 0) {
@@ -90,12 +108,13 @@ function FeedScreen() {
     }
     const ids = postRows.map((p) => p.id);
     const authorIds = [...new Set(postRows.map((p) => p.author_id))];
-    const [{ data: profs }, { data: rxns }, { data: cmts }] = await Promise.all([
+    const [{ data: profs }, { data: rxns, error: rxErr }, { data: cmts, error: cmErr }] = await Promise.all([
       supabase.from("profiles").select("id, full_name, avatar_url").in("id", authorIds),
       supabase.from("post_reactions").select("post_id, user_id").in("post_id", ids),
       supabase.from("post_comments").select("post_id").in("post_id", ids),
     ]);
 
+    if (rxErr || cmErr) throw rxErr ?? cmErr;
     const profMap = new Map((profs ?? []).map((p: any) => [p.id, p]));
     const rxnCount = new Map<string, number>();
     const liked = new Set<string>();
@@ -139,6 +158,9 @@ function FeedScreen() {
         };
       }),
     );
+    } catch {
+      setLoadError(true);
+    }
     setLoading(false);
   }
 
@@ -152,7 +174,7 @@ function FeedScreen() {
     if (!societyId) return;
     const ch = supabase
       .channel(`feed-${societyId}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "posts" }, () => void load())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "posts", filter: `society_id=eq.${societyId}` }, () => void load())
       .subscribe();
     return () => void supabase.removeChannel(ch);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -165,7 +187,7 @@ function FeedScreen() {
   }
 
   async function submitPost() {
-    if (!body.trim() || !user || !societyId) return;
+    if (!body.trim() || !user || !societyId || posting) return;
     setPosting(true);
     try {
       let imageUrl: string | null = null;
@@ -198,14 +220,16 @@ function FeedScreen() {
       toast.success("Posted");
       void load();
     } catch (e: any) {
-      toast.error(e.message);
+      // Keep the typed text and photo so the resident can retry.
+      toast.error(safeMsg(e, "Couldn't post. Your message is still here — please try again."));
     } finally {
       setPosting(false);
     }
   }
 
   async function toggleLike(p: PostRow) {
-    if (!user) return;
+    if (!user || likeBusy.has(p.id)) return;
+    setLikeBusy((s) => new Set(s).add(p.id));
     // optimistic
     setPosts((prev) =>
       prev.map((x) =>
@@ -214,11 +238,29 @@ function FeedScreen() {
           : x,
       ),
     );
-    if (p.liked) {
-      await supabase.from("post_reactions").delete().eq("post_id", p.id).eq("user_id", user.id);
-    } else {
-      await supabase.from("post_reactions").insert({ post_id: p.id, user_id: user.id, kind: "like" });
+    const { error } = p.liked
+      ? await supabase.from("post_reactions").delete().eq("post_id", p.id).eq("user_id", user.id)
+      : await supabase.from("post_reactions").insert({ post_id: p.id, user_id: user.id, kind: "like" });
+    if (error) {
+      // Roll back the optimistic change.
+      setPosts((prev) => prev.map((x) => (x.id === p.id ? { ...x, liked: p.liked, reactions: p.reactions } : x)));
+      toast.error("Couldn't update your like. Please try again.");
     }
+    setLikeBusy((s) => { const n = new Set(s); n.delete(p.id); return n; });
+  }
+
+  async function confirmDelete() {
+    if (!pendingDelete || deleting) return;
+    setDeleting(true);
+    const { data, error } = await supabase.from("posts").delete().eq("id", pendingDelete.id).select("id");
+    setDeleting(false);
+    if (error || !data || data.length === 0) {
+      toast.error("Couldn't remove this post. You can only remove your own posts.");
+    } else {
+      setPosts((prev) => prev.filter((x) => x.id !== pendingDelete.id));
+      toast.success("Post removed");
+    }
+    setPendingDelete(null);
   }
 
   if (!societyId) {
@@ -233,8 +275,19 @@ function FeedScreen() {
     <div className="px-4 py-5 space-y-4 pb-24">
       <header className="px-1">
         <h1 className="text-2xl font-semibold tracking-tight">Community</h1>
-        <p className="text-sm text-muted-foreground">What's happening in your society</p>
+        <p className="text-sm text-muted-foreground">Posts shared by residents of your society</p>
       </header>
+
+      <Link
+        to="/app/notices"
+        className="flex items-center gap-3 rounded-2xl border bg-card px-4 py-3 min-h-[52px] hover:bg-muted/50 transition-colors"
+      >
+        <Megaphone className="h-4 w-4 text-primary shrink-0" />
+        <span className="text-sm flex-1 min-w-0">
+          <span className="font-medium">Official notices</span>
+          <span className="text-muted-foreground"> from your committee are on the Notices page.</span>
+        </span>
+      </Link>
 
       {digest && (
         <Card className="rounded-2xl border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
@@ -245,7 +298,7 @@ function FeedScreen() {
                 AI Community Digest
               </span>
               <Badge variant="secondary" className="ml-auto rounded-full text-[10px]">
-                Week of {new Date(digest.week_start).toLocaleDateString()}
+                Week of {new Date(digest.week_start).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
               </Badge>
             </div>
             <p className="text-sm leading-relaxed whitespace-pre-line">{digest.summary}</p>
@@ -266,8 +319,10 @@ function FeedScreen() {
             <div className="relative rounded-xl overflow-hidden">
               <img src={imagePreview} alt="" className="w-full max-h-64 object-cover" />
               <button
-                onClick={() => pickImage(null)}
-                className="absolute top-2 right-2 h-7 w-7 rounded-full bg-background/90 grid place-items-center"
+                type="button"
+                aria-label="Remove photo"
+                onClick={() => { pickImage(null); if (fileRef.current) fileRef.current.value = ""; }}
+                className="absolute top-2 right-2 h-9 w-9 rounded-full bg-background/90 grid place-items-center"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -277,7 +332,7 @@ function FeedScreen() {
             <input
               ref={fileRef}
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp,image/gif"
               hidden
               onChange={(e) => pickImage(e.target.files?.[0] ?? null)}
             />
@@ -302,10 +357,19 @@ function FeedScreen() {
         </CardContent>
       </Card>
 
-      {loading ? (
-        <div className="text-center py-8">
-          <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
+      {loading && posts.length === 0 ? (
+        <div className="space-y-3" aria-busy="true" aria-label="Loading posts">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-32 rounded-2xl bg-muted/60 animate-pulse" />
+          ))}
         </div>
+      ) : loadError ? (
+        <ErrorState
+          title="Couldn't load the community feed"
+          description="Check your connection and try again."
+          onRetry={() => void load()}
+          showSupport={false}
+        />
       ) : posts.length === 0 ? (
         <div className="text-center py-12 text-sm text-muted-foreground">
           No posts yet. Be the first to share!
@@ -321,16 +385,31 @@ function FeedScreen() {
                     {initials(p.author_name)}
                   </AvatarFallback>
                 </Avatar>
-                <div className="min-w-0">
-                  <p className="font-semibold text-sm">{p.author_name ?? "Resident"}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-sm truncate">
+                    {p.author_name ?? "Resident"}
+                    {p.author_id === user?.id && <span className="text-muted-foreground font-normal"> (you)</span>}
+                  </p>
                   <p className="text-[11px] text-muted-foreground">{timeAgo(p.created_at)}</p>
                 </div>
+                {p.author_id === user?.id && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Remove your post"
+                    onClick={() => setPendingDelete(p)}
+                    className="h-10 w-10 rounded-xl text-muted-foreground shrink-0"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
-              <p className="text-sm leading-relaxed whitespace-pre-line">{p.body}</p>
+              <p className="text-sm leading-relaxed whitespace-pre-line break-words">{p.body}</p>
               {p.image_url && (
                 <img
                   src={p.image_url}
                   alt=""
+                  loading="lazy"
                   className="mt-3 -mx-4 max-h-80 w-[calc(100%+2rem)] object-cover"
                 />
               )}
@@ -339,6 +418,9 @@ function FeedScreen() {
                   variant="ghost"
                   size="sm"
                   onClick={() => toggleLike(p)}
+                  disabled={likeBusy.has(p.id)}
+                  aria-pressed={p.liked}
+                  aria-label={p.liked ? "Unlike" : "Like"}
                   className={`rounded-xl ${p.liked ? "text-red-500" : "text-muted-foreground"}`}
                 >
                   <Heart className={`h-4 w-4 mr-1 ${p.liked ? "fill-current" : ""}`} />
@@ -355,6 +437,23 @@ function FeedScreen() {
           </Card>
         ))
       )}
+
+      <AlertDialog open={!!pendingDelete} onOpenChange={(o) => !o && !deleting && setPendingDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this post?</AlertDialogTitle>
+            <AlertDialogDescription>
+              It will disappear from the community feed for everyone. This can't be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Keep</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); void confirmDelete(); }} disabled={deleting}>
+              {deleting ? "Removing…" : "Remove"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

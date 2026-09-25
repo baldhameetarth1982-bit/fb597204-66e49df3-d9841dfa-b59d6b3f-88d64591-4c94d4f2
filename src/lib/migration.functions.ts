@@ -662,11 +662,13 @@ export async function _commitMigrationJobViaRpc(
     _expected_checksum: data.expected_checksum,
   });
   if (error) {
+    console.error("[migration] commit failed", error.code, error.message);
     return { status: "operation_failed" as const, result: null };
   }
   const obj = (raw ?? {}) as { status?: string; result?: unknown };
   const parsedStatus = CommitStatus.safeParse(obj.status);
   if (!parsedStatus.success) {
+    console.error("[migration] commit returned unknown status", obj.status);
     return { status: "operation_failed" as const, result: null };
   }
   if (parsedStatus.data === "completed" || parsedStatus.data === "idempotent_replay") {

@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Loader2, Phone, ShieldCheck } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { Clock, Loader2, Phone, ShieldCheck } from "lucide-react";
+import { assertLoginAllowed, recordLoginFailure } from "@/lib/login-guard.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,42 +26,67 @@ export function PhoneOtpForm({ onVerified, linkToCurrentUser, submitLabel }: Pro
   const [phone, setPhone] = useState("+91");
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
+  const [limited, setLimited] = useState<string | null>(null);
+  const assertAllowed = useServerFn(assertLoginAllowed);
+  const recordFailure = useServerFn(recordLoginFailure);
+
+  const normalized = phone.replace(/[\s-]/g, "");
+
+  /** Server-authoritative check; returns true when the attempt may proceed. */
+  async function gate(): Promise<boolean> {
+    setLimited(null);
+    const valid = /^\+[1-9]\d{6,14}$/.test(normalized);
+    const r = await assertAllowed({ data: valid ? { phone: normalized } : {} }).catch(() => null);
+    if (!r) { toast.error("Couldn't reach SociyoHub. Check your connection and try again."); return false; }
+    if (!r.ok) { setLimited(r.message); return false; }
+    return true;
+  }
 
   async function sendCode() {
     setBusy(true);
-    const r = await startPhoneOtp(phone);
-    setBusy(false);
-    if (!r.ok) {
-      toast.error(r.error ?? "Could not send OTP");
-      return;
+    try {
+      if (!(await gate())) return;
+      const r = await startPhoneOtp(normalized);
+      if (!r.ok) { toast.error(r.error ?? "Could not send the code. Please try again."); return; }
+      setStage("code");
+      toast.success("Code sent");
+    } finally {
+      setBusy(false);
     }
-    setStage("code");
-    toast.success("OTP sent");
   }
 
   async function verify() {
     setBusy(true);
-    const r = await verifyPhoneOtp(code);
-    if (!r.ok || !r.firebaseUid || !r.firebaseIdToken) {
-      setBusy(false);
-      toast.error(r.error ?? "Wrong code");
-      return;
-    }
-    if (linkToCurrentUser) {
-      const link = await linkVerifiedPhoneToCurrentUser(phone, r.firebaseUid);
-      if (!link.ok) {
-        setBusy(false);
-        toast.error(link.error ?? "Could not link phone");
+    try {
+      if (!(await gate())) return;
+      const r = await verifyPhoneOtp(code);
+      if (!r.ok || !r.firebaseUid || !r.firebaseIdToken) {
+        await recordFailure({ data: { phone: normalized } }).catch(() => {});
+        toast.error("That code didn't work. Check it and try again.");
         return;
       }
+      if (linkToCurrentUser) {
+        const link = await linkVerifiedPhoneToCurrentUser(normalized, r.firebaseUid);
+        if (!link.ok) { toast.error(link.error ?? "Could not link phone"); return; }
+      }
+      resetOtpState();
+      onVerified({ phone: normalized, firebaseUid: r.firebaseUid, firebaseIdToken: r.firebaseIdToken });
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
-    resetOtpState();
-    onVerified({ phone, firebaseUid: r.firebaseUid, firebaseIdToken: r.firebaseIdToken });
   }
 
   return (
     <div className="space-y-4">
+      {limited && (
+        <div role="alert" className="flex gap-3 rounded-2xl border border-warning/40 bg-warning/10 p-4 text-sm">
+          <Clock className="h-5 w-5 shrink-0 text-warning" aria-hidden />
+          <div>
+            <p className="font-medium text-foreground">Please wait before trying again</p>
+            <p className="mt-0.5 text-muted-foreground">{limited} This limit is temporary.</p>
+          </div>
+        </div>
+      )}
       {stage === "phone" ? (
         <>
           <div className="space-y-2">

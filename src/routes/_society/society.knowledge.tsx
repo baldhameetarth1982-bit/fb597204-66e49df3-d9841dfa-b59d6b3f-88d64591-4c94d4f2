@@ -84,7 +84,10 @@ function KnowledgeAdmin() {
 
   const res = q.data;
   const items = res?.ok ? res.items : [];
-  const shown = items.filter((i) => tab === "all" ? i.status !== "archived" : tab === "archived" ? i.status === "archived" : i.kind === tab && i.status !== "archived");
+  const needle = search.trim().toLowerCase();
+  const shown = items
+    .filter((i) => tab === "all" ? i.status !== "archived" : tab === "archived" ? i.status === "archived" : i.kind === tab && i.status !== "archived")
+    .filter((i) => !needle || i.title.toLowerCase().includes(needle) || (i.fileName ?? "").toLowerCase().includes(needle));
   const ready = items.filter((i) => i.status === "ready").length;
 
   return (
@@ -115,10 +118,11 @@ function KnowledgeAdmin() {
                 <TabsTrigger value="archived">Archived</TabsTrigger>
               </TabsList>
             </Tabs>
+            <Input type="search" aria-label="Search documents and FAQs" placeholder="Search by title or file name" value={search} onChange={(e) => setSearch(e.target.value)} className="min-h-11" />
             {shown.length === 0 ? (
               <Card className="rounded-2xl"><CardContent className="p-8 text-center space-y-2">
                 <FileText className="h-7 w-7 mx-auto text-muted-foreground" />
-                <p className="font-medium">{tab === "archived" ? "Nothing archived" : "No knowledge yet"}</p>
+                <p className="font-medium">{needle ? "No matches" : tab === "archived" ? "Nothing archived" : "No knowledge yet"}</p>
                 <p className="text-sm text-muted-foreground">{tab === "archived" ? "Archived items appear here and aren't used by AI Secretary." : "Upload rules, policies or circulars as PDF or text, or add common questions as FAQs."}</p>
               </CardContent></Card>
             ) : (

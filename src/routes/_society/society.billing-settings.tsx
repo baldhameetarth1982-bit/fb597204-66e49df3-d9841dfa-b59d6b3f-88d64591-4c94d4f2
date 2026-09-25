@@ -7,8 +7,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { BillingCenterTabs } from "@/components/nav/BillingCenterTabs";
-import { MobileHero } from "@/components/shared/MobileHero";
-import { SectionCard } from "@/components/shared/SectionCard";
+import { SettingsShell, SettingsSection, SettingsDisclosure, SaveBar } from "@/components/settings/SettingsUI";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -140,140 +139,99 @@ function BillingSettingsPage() {
   }
 
   return (
-    <div className="pb-24">
-      <MobileHero
-        eyebrow="Billing centre"
-        title="Billing settings"
-        subtitle="Society-wide rules for billing cycle, due dates, grace period, late fees and auto-billing."
-        icon={SlidersHorizontal}
-        variant="teal"
-      />
-      <div className="px-4 pt-4 space-y-4">
-        <div className="rounded-2xl bg-card border shadow-sm">
-          <BillingCenterTabs />
-        </div>
+    <SettingsShell
+      title="Billing settings"
+      scope="Whole society"
+      icon={SlidersHorizontal}
+      description="Rules for every home in the society. Bills already issued keep the amounts and dates they were created with."
+    >
+      <div className="rounded-2xl border bg-card"><BillingCenterTabs /></div>
 
-      <p className="text-xs text-muted-foreground px-1">
-        These settings apply to every home in your society. Only Society Admins can change them.
-        Bills already issued keep the amounts and dates they were created with.
-      </p>
+      <SettingsSection title="How residents pay" icon={ShieldCheck} trailing={<StatusChip tone="success">Cash + Bank Transfer</StatusChip>}>
+        <p className="text-sm text-muted-foreground">
+          Residents pay by <b className="text-foreground">Cash</b> or <b className="text-foreground">Bank Transfer</b>. Each payment stays
+          "Awaiting verification" until a committee member confirms it, and a receipt is issued only after that.
+          This can't be changed here.
+        </p>
+      </SettingsSection>
 
-      {/* Payment collection */}
-      <Card className="rounded-2xl mb-4">
-        <CardContent className="p-5 flex items-start gap-4 flex-wrap">
-          <div className="h-11 w-11 rounded-xl grid place-items-center shrink-0 bg-primary/10 text-primary">
-            <ShieldCheck className="h-5 w-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold">Maintenance payment methods</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Residents can pay by <b>Cash</b> or <b>Bank Transfer</b>. Each payment stays
-              <span className="whitespace-nowrap"> "Awaiting verification" </span>
-              until a committee member confirms it, and a receipt is issued only after that.
-            </p>
-          </div>
-          <StatusChip tone="success">Cash + Bank Transfer</StatusChip>
-        </CardContent>
-      </Card>
-
-      {/* Auto-billing schedule */}
-      {societyId && <AutoBillingSection societyId={societyId} />}
-
-      {/* Policy */}
       {!policyLoaded ? (
-        <Card className="rounded-2xl mt-4">
-          <CardContent className="p-2">
-            <ErrorState
-              title={missing ? "Billing policy isn't set up yet" : "Couldn't load your billing policy"}
-              description={
-                missing
-                  ? "Finish society setup first, or ask a Society Admin. Nothing has been changed."
-                  : "Nothing has been changed. Your saved settings are safe."
-              }
-              onRetry={() => setReloadKey((k) => k + 1)}
-              showSupport={false}
-            />
-          </CardContent>
-        </Card>
+        <SettingsSection title="Billing policy" icon={Settings2}>
+          <ErrorState
+            title={missing ? "Billing policy isn't set up yet" : "Couldn't load your billing policy"}
+            description={missing ? "Finish society setup first, or ask a Society Admin. Nothing has been changed." : "Nothing has been changed. Your saved settings are safe."}
+            onRetry={() => setReloadKey((k) => k + 1)}
+            showSupport={false}
+          />
+        </SettingsSection>
       ) : (<>
-      <Card className="rounded-2xl mt-4">
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Settings2 className="h-4 w-4" /> Billing policy
-          </CardTitle>
-          <p className="text-xs text-muted-foreground">
-            Due day and grace period decide when a bill counts as overdue. Late fees apply only after the grace period ends.
-          </p>
-        </CardHeader>
-        <CardContent className="grid sm:grid-cols-2 gap-4">
-          <div>
-            <Label className="text-xs">Billing frequency</Label>
-            <Select value={form.maintenance_frequency} onValueChange={(v) => setForm({ ...form, maintenance_frequency: v })}>
-              <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="monthly">Monthly</SelectItem>
-                <SelectItem value="quarterly">Quarterly</SelectItem>
-                <SelectItem value="half_yearly">Half-yearly</SelectItem>
-                <SelectItem value="yearly">Yearly</SelectItem>
-              </SelectContent>
-            </Select>
+        <SettingsSection title="Billing policy" icon={Settings2}
+          description="When bills are due and when they count as overdue.">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="bs-freq">Billing frequency</Label>
+              <Select value={form.maintenance_frequency} onValueChange={(v) => setForm({ ...form, maintenance_frequency: v })}>
+                <SelectTrigger id="bs-freq" className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="quarterly">Quarterly</SelectItem>
+                  <SelectItem value="half_yearly">Half-yearly</SelectItem>
+                  <SelectItem value="yearly">Yearly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="bs-due">Due day of the month</Label>
+              <Input id="bs-due" type="number" min={1} max={28} value={form.maintenance_due_day} onChange={(e) => setForm({ ...form, maintenance_due_day: Number(e.target.value) })} className="h-11 rounded-xl" />
+              <p className="text-xs text-muted-foreground">1 to 28</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="bs-grace">Grace period (days)</Label>
+              <Input id="bs-grace" type="number" min={0} max={30} value={form.grace_days} onChange={(e) => setForm({ ...form, grace_days: Number(e.target.value) })} className="h-11 rounded-xl" />
+              <p className="text-xs text-muted-foreground">Days after the due day before a bill is overdue</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="bs-fy">Financial year starts</Label>
+              <Select value={String(form.financial_year_start_month)} onValueChange={(v) => setForm({ ...form, financial_year_start_month: Number(v) })}>
+                <SelectTrigger id="bs-fy" className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {["January","February","March","April","May","June","July","August","September","October","November","December"].map((m, i) => (
+                    <SelectItem key={m} value={String(i + 1)}>{m}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+        </SettingsSection>
 
-          <div>
-            <Label className="text-xs">Due day (1–28)</Label>
-            <Input type="number" min={1} max={28} value={form.maintenance_due_day} onChange={(e) => setForm({ ...form, maintenance_due_day: Number(e.target.value) })} className="rounded-xl" />
+        <SettingsSection title="Late fee" description="Applied only after the grace period ends.">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="bs-lft">Late fee type</Label>
+              <Select value={form.late_fee_type} onValueChange={(v) => setForm({ ...form, late_fee_type: v })}>
+                <SelectTrigger id="bs-lft" className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="flat">Flat amount (₹)</SelectItem>
+                  <SelectItem value="percent">Percent of bill (%)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="bs-lfa">Late fee {form.late_fee_type === "percent" ? "(%)" : "(₹)"}</Label>
+              <Input id="bs-lfa" type="number" min={0} step="0.01" value={form.late_fee_amount} onChange={(e) => setForm({ ...form, late_fee_amount: Number(e.target.value) })} className="h-11 rounded-xl" />
+            </div>
           </div>
+        </SettingsSection>
 
-          <div>
-            <Label className="text-xs">Grace period (days)</Label>
-            <Input type="number" min={0} max={30} value={form.grace_days} onChange={(e) => setForm({ ...form, grace_days: Number(e.target.value) })} className="rounded-xl" />
-          </div>
-
-          <div>
-            <Label className="text-xs">Financial year start month</Label>
-            <Select value={String(form.financial_year_start_month)} onValueChange={(v) => setForm({ ...form, financial_year_start_month: Number(v) })}>
-              <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m, i) => (
-                  <SelectItem key={m} value={String(i + 1)}>{m}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label className="text-xs">Late fee type</Label>
-            <Select value={form.late_fee_type} onValueChange={(v) => setForm({ ...form, late_fee_type: v })}>
-              <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="flat">Flat amount (₹)</SelectItem>
-                <SelectItem value="percent">Percent of bill (%)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label className="text-xs">Late fee {form.late_fee_type === "percent" ? "(%)" : "(₹)"}</Label>
-            <Input type="number" min={0} step="0.01" value={form.late_fee_amount} onChange={(e) => setForm({ ...form, late_fee_amount: Number(e.target.value) })} className="rounded-xl" />
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="mt-4 flex flex-wrap items-center justify-end gap-2 pb-6">
-        {dirty && <p className="text-xs text-muted-foreground mr-auto">You have unsaved changes.</p>}
-        {dirty && (
-          <Button variant="outline" onClick={() => baseline && setForm(baseline)} disabled={saving} className="rounded-xl h-11">
-            Discard
-          </Button>
-        )}
-        <Button onClick={save} disabled={saving || !dirty} className="rounded-xl h-11">
-          {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-          {dirty ? "Save policy" : "No changes to save"}
-        </Button>
-      </div>
+        <SaveBar dirty={dirty} saving={saving} saveLabel="Save policy" onSave={save} onDiscard={() => baseline && setForm(baseline)} />
       </>)}
-      </div>
-    </div>
+
+      {societyId && (
+        <SettingsDisclosure title="Automatic billing" description="Create bills on a schedule. Saved separately from the policy above.">
+          <AutoBillingSection societyId={societyId} />
+        </SettingsDisclosure>
+      )}
+    </SettingsShell>
   );
 }
 
@@ -389,19 +347,14 @@ function AutoBillingSection({ societyId }: { societyId: string }) {
   }
 
   return (
-    <Card className="rounded-2xl">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Sparkles className="h-4 w-4 text-primary" /> Auto-billing
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <div>
+      <div className="space-y-4">
         <div className="flex items-center justify-between rounded-xl border border-border p-4">
           <div>
             <p className="text-sm font-medium">Auto-generate every cycle</p>
-            <p className="text-xs text-muted-foreground">System generates bills automatically. Bills stay pending until residents pay online.</p>
+            <p className="text-xs text-muted-foreground">Bills are created automatically each cycle and stay unpaid until a Cash or Bank Transfer payment is verified.</p>
           </div>
-          <Switch checked={enabled} onCheckedChange={setEnabled} />
+          <Switch checked={enabled} onCheckedChange={setEnabled} aria-label="Auto-generate every cycle" />
         </div>
 
         {sch && (
@@ -484,15 +437,15 @@ function AutoBillingSection({ societyId }: { societyId: string }) {
             <p className="text-sm font-medium">Pro-rate new residents</p>
             <p className="text-xs text-muted-foreground">Bill partial cycle if a resident joins mid-period.</p>
           </div>
-          <Switch checked={prorate} onCheckedChange={setProrate} />
+          <Switch checked={prorate} onCheckedChange={setProrate} aria-label="Pro-rate new residents" />
         </div>
 
         <div className="flex flex-wrap justify-end gap-2">
-          <Button onClick={handleRun} disabled={running || !sch} variant="secondary" className="rounded-xl">
+          <Button onClick={handleRun} disabled={running || !sch} variant="secondary" className="h-11 rounded-xl">
             {running ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Play className="h-4 w-4 mr-2" />}
             Run now
           </Button>
-          <Button onClick={handleSave} disabled={saving} className="rounded-xl">
+          <Button onClick={handleSave} disabled={saving} className="h-11 rounded-xl">
             {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
             Save auto-billing
           </Button>

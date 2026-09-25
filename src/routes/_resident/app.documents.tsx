@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import { listResidentKnowledge, openKnowledgeDocument } from "@/lib/society-knowledge.functions";
 
 export const Route = createFileRoute("/_resident/app/documents")({
@@ -28,11 +29,15 @@ function DocumentsScreen() {
   const openFn = useServerFn(openKnowledgeDocument);
   const [opening, setOpening] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
   const q = useQuery({ queryKey: ["resident-knowledge"], queryFn: () => list(), staleTime: 60_000 });
   const res = q.data;
   const items = res?.ok ? res.items : [];
-  const docs = items.filter((i) => i.kind === "document");
-  const faqs = items.filter((i) => i.kind === "faq");
+  const needle = search.trim().toLowerCase();
+  const matches = items.filter((i) => !needle || i.title.toLowerCase().includes(needle) || (i.answer ?? "").toLowerCase().includes(needle));
+  const docs = matches.filter((i) => i.kind === "document");
+  const faqs = matches.filter((i) => i.kind === "faq");
+  const fmtSize = (b: number | null) => (b == null ? null : b < 1024 * 1024 ? `${Math.max(1, Math.round(b / 1024))} KB` : `${(b / 1048576).toFixed(1)} MB`);
 
   async function open(id: string) {
     setOpening(id);
@@ -67,6 +72,10 @@ function DocumentsScreen() {
         </CardContent></Card>
       ) : (
         <>
+          <Input type="search" aria-label="Search documents and FAQs" placeholder="Search documents and FAQs" value={search} onChange={(e) => setSearch(e.target.value)} className="min-h-11" />
+          {matches.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-6">No documents or FAQs match “{search.trim()}”.</p>
+          )}
           {docs.length > 0 && (
             <section className="space-y-2">
               <h2 className="text-sm font-medium text-muted-foreground">Documents</h2>
@@ -75,7 +84,7 @@ function DocumentsScreen() {
                   <FileText className="h-5 w-5 text-primary shrink-0" />
                   <div className="min-w-0 flex-1">
                     <p className="font-medium break-words">{d.title}</p>
-                    <p className="text-xs text-muted-foreground">Updated {new Date(d.updatedAt).toLocaleDateString("en-IN")}</p>
+                    <p className="text-xs text-muted-foreground">{[d.fileType, fmtSize(d.sizeBytes), `Updated ${new Date(d.updatedAt).toLocaleDateString("en-IN")}`].filter(Boolean).join(" · ")}</p>
                   </div>
                   <Button size="sm" variant="outline" className="min-h-11" disabled={opening === d.id} onClick={() => open(d.id)}>
                     {opening === d.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4 mr-1" />} Open

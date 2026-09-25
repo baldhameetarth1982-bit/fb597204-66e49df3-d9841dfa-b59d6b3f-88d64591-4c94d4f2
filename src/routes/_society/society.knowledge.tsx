@@ -58,6 +58,7 @@ function KnowledgeAdmin() {
   const deleteFn = useServerFn(deleteKnowledge);
   const openFn = useServerFn(openKnowledgeDocument);
   const [tab, setTab] = useState<"all" | "document" | "faq" | "archived">("all");
+  const [search, setSearch] = useState("");
   const [uploadFor, setUploadFor] = useState<KnowledgeItem | "new" | null>(null);
   const [faqFor, setFaqFor] = useState<KnowledgeItem | "new" | null>(null);
   const [removing, setRemoving] = useState<KnowledgeItem | null>(null);

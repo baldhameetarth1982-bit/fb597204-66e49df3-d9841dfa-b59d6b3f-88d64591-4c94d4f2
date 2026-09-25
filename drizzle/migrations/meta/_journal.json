@@ -253,6 +253,13 @@
       "when": 1790329456425,
       "tag": "0035_fix_migration_begin_upload_search_path",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1790329635258,
+      "tag": "0036_fix_migration_server_pathway_auth",
+      "breakpoints": true
     }
   ]
 }

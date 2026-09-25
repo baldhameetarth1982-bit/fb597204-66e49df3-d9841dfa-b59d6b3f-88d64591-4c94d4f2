@@ -5,24 +5,37 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 /**
  * Pre-auth login rate limiting + soft account lockout.
  *
- * - Per-email failure bucket (15-minute window, 5 failures => locked).
- * - Per-IP check bucket to stop enumeration / spraying across emails.
+ * - Per-account failure bucket (email or phone; 15-minute window, 5 failures => locked).
+ * - Per-IP check bucket to stop enumeration / spraying across accounts.
  * Uses the atomic `touch_rate_limit` RPC (no SELECT-then-write race).
- * Emails and IPs are HMAC-fingerprinted; raw values are never stored.
+ * Identifiers and IPs are HMAC-fingerprinted; raw values are never stored.
+ * Responses never reveal whether an account exists.
  */
 
 const WINDOW_SEC = 15 * 60;
 const MAX_FAILS = 5;
-const LOCKED_MSG = "Too many failed attempts. Please wait 15 minutes and try again.";
+export const LOCKED_MSG =
+  "Sign-in attempts are temporarily limited. Please wait about 15 minutes and try again.";
 
-const emailSchema = z.object({ email: z.string().trim().email().max(255) });
+const identitySchema = z
+  .object({
+    email: z.string().trim().email().max(255).optional(),
+    phone: z.string().trim().regex(/^\+[1-9]\d{6,14}$/).optional(),
+  })
+  .strict();
+type Identity = z.infer<typeof identitySchema>;
+
+type Result = { ok: true } | { ok: false; limited: true; message: string };
 
 async function limiter() {
   return import("@/lib/rate-limit.server");
 }
 
-function emailKey(email: string) {
-  return email.trim().toLowerCase();
+/** Fingerprinted per-account subject, or null when no identifier was given. */
+export function accountSubject(id: Identity, fp: (raw: string, salt?: string) => string): string | null {
+  if (id.email) return fp(id.email.trim().toLowerCase(), "login-email");
+  if (id.phone) return fp(id.phone.trim(), "login-phone");
+  return null;
 }
 
 async function ipSubject(fp: (raw: string, salt?: string) => string) {
@@ -32,9 +45,29 @@ async function ipSubject(fp: (raw: string, salt?: string) => string) {
   return fp(ip, "login-ip");
 }
 
+/** Server-side lockout check for one account subject. Shared with the Firebase session exchange. */
+export async function isAccountLocked(subject: string): Promise<boolean> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: rows, error } = await supabaseAdmin
+    .from("rate_limits")
+    .select("count")
+    .eq("bucket", "login:fail")
+    .eq("subject", subject)
+    .gte("window_start", new Date(Date.now() - WINDOW_SEC * 1000).toISOString());
+  if (error) return true; // fail closed
+  const fails = (rows ?? []).reduce((n, r: any) => n + Number(r.count ?? 0), 0);
+  return fails >= MAX_FAILS;
+}
+
+export async function clearAccountFailures(subject: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  await supabaseAdmin.from("rate_limits").delete().eq("bucket", "login:fail").eq("subject", subject);
+}
+
+/** Call before every sign-in attempt. Counts toward the per-IP limit; checks the per-account lockout. */
 export const assertLoginAllowed = createServerFn({ method: "POST" })
-  .inputValidator((d) => emailSchema.parse(d))
-  .handler(async ({ data }) => {
+  .inputValidator((d) => identitySchema.parse(d ?? {}))
+  .handler(async ({ data }): Promise<Result> => {
     const { checkRateLimit, fingerprintSubject } = await limiter();
     try {
       await checkRateLimit({
@@ -43,32 +76,23 @@ export const assertLoginAllowed = createServerFn({ method: "POST" })
         limit: 30,
         windowSec: WINDOW_SEC,
       });
+      const subject = accountSubject(data, fingerprintSubject);
+      if (subject && (await isAccountLocked(subject))) return { ok: false, limited: true, message: LOCKED_MSG };
     } catch {
-      throw new Error(LOCKED_MSG);
+      return { ok: false, limited: true, message: LOCKED_MSG };
     }
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: rows } = await supabaseAdmin
-      .from("rate_limits")
-      .select("count")
-      .eq("bucket", "login:fail")
-      .eq("subject", fingerprintSubject(emailKey(data.email), "login-email"))
-      .gte("window_start", new Date(Date.now() - WINDOW_SEC * 1000).toISOString());
-    const fails = (rows ?? []).reduce((n, r: any) => n + Number(r.count ?? 0), 0);
-    if (fails >= MAX_FAILS) throw new Error(LOCKED_MSG);
-    return { ok: true as const };
+    return { ok: true };
   });
 
+/** Call after a failed credential/OTP attempt. */
 export const recordLoginFailure = createServerFn({ method: "POST" })
-  .inputValidator((d) => emailSchema.parse(d))
+  .inputValidator((d) => identitySchema.parse(d ?? {}))
   .handler(async ({ data }) => {
     const { checkRateLimit, fingerprintSubject } = await limiter();
+    const subject = accountSubject(data, fingerprintSubject);
+    if (!subject) return { ok: true as const };
     try {
-      await checkRateLimit({
-        bucket: "login:fail",
-        subject: fingerprintSubject(emailKey(data.email), "login-email"),
-        limit: 1_000,
-        windowSec: WINDOW_SEC,
-      });
+      await checkRateLimit({ bucket: "login:fail", subject, limit: 1_000, windowSec: WINDOW_SEC });
     } catch {
       /* counter already saturated — lockout still applies */
     }
@@ -78,16 +102,12 @@ export const recordLoginFailure = createServerFn({ method: "POST" })
 export const clearLoginFailures = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    // Only the signed-in user may clear their own lockout.
-    const email = typeof (context.claims as any)?.email === "string" ? (context.claims as any).email : null;
-    if (!email) return { ok: true as const };
-    const data = { email };
+    // Only the signed-in user may clear their own lockout; identity comes from verified claims.
+    const claims = context.claims as any;
     const { fingerprintSubject } = await limiter();
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await supabaseAdmin
-      .from("rate_limits")
-      .delete()
-      .eq("bucket", "login:fail")
-      .eq("subject", fingerprintSubject(emailKey(data.email), "login-email"));
+    const email = typeof claims?.email === "string" ? claims.email : null;
+    const phone = typeof claims?.phone === "string" && claims.phone ? `+${String(claims.phone).replace(/^\+/, "")}` : null;
+    if (email) await clearAccountFailures(fingerprintSubject(email.trim().toLowerCase(), "login-email"));
+    if (phone) await clearAccountFailures(fingerprintSubject(phone, "login-phone"));
     return { ok: true as const };
   });

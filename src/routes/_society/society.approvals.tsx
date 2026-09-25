@@ -212,17 +212,19 @@ function ApprovalsPage() {
       ) : (
         <ul className="divide-y overflow-hidden rounded-2xl border bg-card" aria-label="Pending join requests">
           {rows.map((r) => (
-            <li key={r.id} className="relative grid gap-3 px-4 py-4 before:absolute before:inset-y-3 before:left-0 before:w-1 before:rounded-r before:bg-info md:grid-cols-[auto_1fr_14rem_auto] md:items-center">
-              <label className="flex h-11 w-11 items-center justify-center md:-ml-2">
+            <li key={r.id} className="relative grid gap-3 px-4 py-4 before:absolute before:inset-y-3 before:left-0 before:w-1 before:rounded-r before:bg-info md:grid-cols-[1fr_14rem_auto] md:items-center">
+              <div className="flex min-w-0 items-start gap-2">
+              <label className="-ml-2 flex h-11 w-11 shrink-0 items-center justify-center">
                 <Checkbox checked={selected.has(r.id)} onCheckedChange={() => toggleRow(r.id)} aria-label={`Select ${r.full_name ?? "request"}`} />
               </label>
-              <div className="min-w-0 -mt-12 pl-12 md:mt-0 md:pl-0">
+              <div className="min-w-0">
                 <p className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                   <span className="rounded bg-info-container px-1.5 py-0.5 font-semibold text-info-container-foreground">Awaiting approval</span>
                   <span>Wants to join as <span className="capitalize">{r.owner_or_tenant ?? "resident"}</span></span>
                 </p>
                 <p className="mt-0.5 truncate font-semibold">{r.full_name ?? "Unnamed"}</p>
                 <p className="truncate text-xs text-muted-foreground">{r.requester_email ?? "—"}</p>
+              </div>
               </div>
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm md:block md:space-y-0.5">
                 <p className="flex items-center gap-1.5"><DoorOpen className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />House <span className="font-medium">{r.flat_number_input ?? "—"}</span></p>

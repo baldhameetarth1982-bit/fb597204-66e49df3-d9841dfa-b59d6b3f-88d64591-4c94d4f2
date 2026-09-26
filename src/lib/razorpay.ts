@@ -1,5 +1,4 @@
 import { toast } from "sonner";
-import { RAZORPAY_CONFIG } from "@/config/app";
 
 declare global {
   interface Window { Razorpay?: any }
@@ -18,49 +17,6 @@ export function loadRazorpayScript(): Promise<boolean> {
     document.body.appendChild(s);
   });
   return scriptPromise;
-}
-
-export interface RzpPlan {
-  id: string;
-  name: string;
-  price_monthly_inr: number;
-}
-
-export interface RzpOpenOpts {
-  plan: RzpPlan;
-  prefill?: { email?: string; contact?: string; name?: string };
-  onSuccess: (resp: { razorpay_payment_id: string; razorpay_order_id?: string; razorpay_signature?: string }) => void | Promise<void>;
-  onDismiss?: () => void;
-}
-
-export async function openRazorpayCheckout(opts: RzpOpenOpts) {
-  const keyId = RAZORPAY_CONFIG.keyId;
-  if (!keyId) {
-    toast.error("Razorpay key not configured.");
-    return false;
-  }
-  const ok = await loadRazorpayScript();
-  if (!ok) { toast.error("Could not load Razorpay. Check your internet."); return false; }
-
-  const options = {
-    key: keyId,
-    amount: Math.max(opts.plan.price_monthly_inr, 1) * 100,
-    currency: RAZORPAY_CONFIG.currency,
-    name: "SociyoHub",
-    description: `${opts.plan.name} plan — monthly`,
-    prefill: opts.prefill ?? {},
-    theme: { color: "#B91C1C" },
-    handler: (resp: any) => { void opts.onSuccess(resp); },
-    modal: { ondismiss: () => opts.onDismiss?.() },
-  };
-
-  const rzp = new window.Razorpay!(options);
-  rzp.on("payment.failed", (resp: any) => {
-    toast.error(resp?.error?.description ?? "Payment failed");
-    opts.onDismiss?.();
-  });
-  rzp.open();
-  return true;
 }
 
 export interface RzpOrderOpts {
@@ -88,7 +44,12 @@ export async function openRazorpayForOrder(opts: RzpOrderOpts) {
     description: opts.description ?? "Maintenance bill",
     prefill: opts.prefill ?? {},
     theme: { color: "#0F766E" },
-    handler: (resp: any) => { void opts.onSuccess(resp); },
+    handler: (resp: any) => {
+      void Promise.resolve(opts.onSuccess(resp)).catch((error) => {
+        toast.error(error instanceof Error ? error.message : "Payment confirmation failed. Please contact support.");
+        opts.onDismiss?.();
+      });
+    },
     modal: { ondismiss: () => opts.onDismiss?.() },
   };
   const rzp = new window.Razorpay!(options);

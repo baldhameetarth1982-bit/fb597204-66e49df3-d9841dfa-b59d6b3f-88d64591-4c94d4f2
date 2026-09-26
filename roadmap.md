@@ -2,11 +2,11 @@
 
 ## Stage 12 — Premium UI/UX
 
-- [ ] Unify shared design tokens, typography, controls, panels, dialogs, tables, and motion.
-- [ ] Refine app shells and role navigation across mobile and desktop.
-- [ ] Fix stale public/auth claims and inconsistent sign-in presentation.
-- [ ] Refine representative dashboards and remaining legacy visual patterns.
-- [ ] Validate responsive layouts, accessibility, runtime, and build health.
+- [x] Unify shared design tokens, typography, controls, panels, dialogs, tables, and motion.
+- [x] Refine app shells and role navigation across mobile and desktop.
+- [x] Fix stale public/auth claims and inconsistent sign-in presentation.
+- [x] Refine representative dashboards and remaining legacy visual patterns.
+- [x] Validate responsive layouts, accessibility, runtime, and build health.
 
 - [x] Audit the current Stage 3D tree against Prompt #36.
 - [x] Correct resident transaction signs, explicit active-resident authorization, and audit immutability.

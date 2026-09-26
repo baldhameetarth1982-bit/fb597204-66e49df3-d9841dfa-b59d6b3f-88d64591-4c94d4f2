@@ -4902,6 +4902,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_income_summary: {
+        Args: never
+        Returns: {
+          collected_30d: number
+          collected_total: number
+          plans: Json
+          subscription_mrr: number
+          total_revenue: number
+        }[]
+      }
       admin_list_societies: {
         Args: never
         Returns: {

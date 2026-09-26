@@ -50,7 +50,7 @@ export function ResidentBottomNav() {
   return (
     <nav
       aria-label="Resident navigation"
-      className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-background/98 pb-[env(safe-area-inset-bottom)]"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl"
     >
       <ul className="mx-auto grid grid-cols-5 max-w-[480px] px-1">
         {TABS.map((it) => {
@@ -68,7 +68,7 @@ export function ResidentBottomNav() {
               >
                 <span
                   className={cn(
-                    "relative grid place-items-center h-9 w-14 rounded-2xl transition-colors",
+                    "relative grid h-8 w-12 place-items-center rounded-md transition-colors",
                     active && "bg-primary/10",
                   )}
                 >

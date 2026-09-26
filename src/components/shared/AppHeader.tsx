@@ -62,10 +62,10 @@ export function AppHeader({
   };
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-background/95 supports-[backdrop-filter]:backdrop-blur" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+    <header className="sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur-xl" style={{ paddingTop: "env(safe-area-inset-top)" }}>
       <div className="h-16 flex items-center gap-2 px-3 md:px-6">
         {leading}
-        {withSidebarTrigger && <SidebarTrigger className="hidden md:inline-flex rounded-xl h-10 w-10" />}
+        {withSidebarTrigger && <SidebarTrigger className="hidden md:inline-flex h-10 w-10 rounded-md" />}
 
         <Link to="/" className="md:hidden flex items-center gap-2 ml-1">
           <Logo size={32} />
@@ -87,7 +87,7 @@ export function AppHeader({
             size="icon"
             aria-label="Notifications"
             asChild
-            className="relative rounded-xl h-10 w-10 text-foreground hover:bg-secondary"
+            className="relative h-10 w-10 rounded-md text-foreground hover:bg-secondary"
           >
             <Link to={notificationsHref as any}>
               <Bell className="h-5 w-5" />
@@ -107,7 +107,7 @@ export function AppHeader({
                 </Avatar>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-60 rounded-xl">
+            <DropdownMenuContent align="end" className="w-60 rounded-lg">
               <DropdownMenuLabel className="flex flex-col">
                 <span className="text-sm font-semibold truncate">
                   {profile?.full_name || "Account"}
@@ -117,12 +117,12 @@ export function AppHeader({
                 </span>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
+              <DropdownMenuItem asChild className="cursor-pointer rounded-md">
                 <Link to={profileHref as any}>
                   <User className="h-4 w-4 mr-2" /> Profile
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
+              <DropdownMenuItem asChild className="cursor-pointer rounded-md">
                 <Link to={settingsHref as any}>
                   <Settings className="h-4 w-4 mr-2" /> Settings
                 </Link>
@@ -130,7 +130,7 @@ export function AppHeader({
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleSignOut}
-                className="rounded-lg text-destructive focus:text-destructive cursor-pointer"
+                className="cursor-pointer rounded-md text-destructive focus:text-destructive"
               >
                 <LogOut className="h-4 w-4 mr-2" /> Log out
               </DropdownMenuItem>

@@ -72,7 +72,7 @@ export const applySocietyPlan = createServerFn({ method: "POST" })
       sum + Math.max(1, block.floors) * block.units_per_floor, 0);
     if (unitsRequested > 5000) throw new Error("The plan is too large to apply safely.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: result, error } = await supabaseAdmin.rpc("apply_society_structure_plan_internal", {
+    const { data: result, error } = await (supabaseAdmin.rpc as any)("apply_society_structure_plan_internal", {
       _actor_id: context.userId, _society_id: data.societyId, _plan: data.plan,
     });
     if (error) {
@@ -105,7 +105,7 @@ export const duplicateBlock = createServerFn({ method: "POST" })
     const { checkRateLimit } = await import("@/lib/rate-limit.server");
     await checkRateLimit({ bucket: "society_structure_duplicate", subject: src.society_id, limit: 20, windowSec: 3600 });
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: result, error } = await supabaseAdmin.rpc("duplicate_society_block_internal", {
+    const { data: result, error } = await (supabaseAdmin.rpc as any)("duplicate_society_block_internal", {
       _actor_id: context.userId, _block_id: src.id, _new_name: data.newName,
     });
     if (error) {

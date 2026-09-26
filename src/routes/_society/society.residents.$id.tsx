@@ -378,7 +378,7 @@ function ResidentDetailPage() {
         </Section>
 
         <Section id="documents" title="Documents" icon={Paperclip}>
-          <DocumentsPanel userId={p.id} societyId={societyId} active={openSection === "documents"} />
+          {societyId && <DocumentsPanel userId={p.id} societyId={societyId} active={openSection === "documents"} />}
         </Section>
 
 

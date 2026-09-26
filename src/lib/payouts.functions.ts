@@ -86,7 +86,7 @@ export const createSocietyLinkedAccount = createServerFn({ method: "POST" })
     const { error } = await supabaseAdmin.rpc("update_society_payout_setup_internal", {
       _actor_id: context.userId,
       _society_id: data.societyId,
-      _razorpay_account_id: accountId,
+      _razorpay_account_id: accountId ?? "",
       _payout_status: accountId ? status : "pending",
       _bank_last4: last4,
       _holder_name: data.beneficiaryName,

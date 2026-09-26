@@ -297,7 +297,7 @@ describe("Stage 2B — production lifecycle SQL contract", () => {
 
   it("reactivation validates duplicate plate", () => {
     const sql = latestFunction("admin_upsert_vehicle");
-    expect(sql).toMatch(/id\s*<>\s*_id[\s\S]*is_active\s*=\s*true[\s\S]*v_norm/);
+    expect(sql).toMatch(/is_active\s*=\s*true\s+AND\s+id\s*<>\s*_id[\s\S]*v_norm/);
     expect(sql).toMatch(/RAISE EXCEPTION 'duplicate_active_plate'/);
   });
 

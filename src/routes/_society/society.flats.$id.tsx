@@ -168,10 +168,10 @@ function IdentityHeader({ snapshot }: { snapshot: Flat360Snapshot }) {
           <Badge
             variant="outline"
             className={cn(
-              "rounded-full shrink-0",
+              "rounded-full shrink-0 border-0",
               isVacant
                 ? "bg-muted text-muted-foreground"
-                : "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+                : "bg-success-container text-success-container-foreground",
             )}
           >
             {isVacant
@@ -778,8 +778,10 @@ function FlatDetailPage() {
 
       <div className="space-y-3">
         <IdentityHeader snapshot={snapshot} />
-        <OccupancySection snapshot={snapshot} />
-        <BasicFinancialSection snapshot={snapshot} />
+        <div className="grid gap-3 lg:grid-cols-2 lg:items-start">
+          <OccupancySection snapshot={snapshot} />
+          <BasicFinancialSection snapshot={snapshot} />
+        </div>
 
         {/* Basic locked experience */}
         {!canViewAdvanced && (

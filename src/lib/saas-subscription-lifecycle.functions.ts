@@ -137,13 +137,40 @@ export const cancelPendingSaasSubscriptionOrder = createServerFn({ method: "POST
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: payment, error } = await supabaseAdmin
       .from("saas_subscription_payments")
-      .select("id,lifecycle_status")
+      .select("id,society_id,plan_id,purchased_by,amount_paise,currency,lifecycle_status")
       .eq("razorpay_order_id", data.orderId)
       .eq("society_id", data.societyId)
       .single();
     if (error || !payment) throw new Error("Subscription order was not found.");
     if (payment.lifecycle_status === "captured") throw new Error("A captured payment cannot be cancelled.");
     if (payment.lifecycle_status === "cancelled") return { status: "cancelled" as const };
+    const provider = await import("@/lib/saas-payments/razorpay.server");
+    const providerOrder = await provider.fetchRazorpayOrder(data.orderId);
+    if (providerOrder.amount !== payment.amount_paise || providerOrder.currency !== payment.currency) {
+      throw new Error("Provider order does not match the recorded amount.");
+    }
+    if (providerOrder.status === "paid") {
+      const providerPayments = await provider.fetchRazorpayOrderPayments(data.orderId);
+      const captured = providerPayments.items.find((item) =>
+        item.status === "captured"
+        && item.order_id === data.orderId
+        && item.amount === payment.amount_paise
+        && item.currency === payment.currency,
+      );
+      if (!captured) throw new Error("Captured payment confirmation is still processing.");
+      const { error: finalizeError } = await supabaseAdmin.rpc("finalize_saas_subscription_payment", {
+        _society_id: payment.society_id,
+        _plan_id: payment.plan_id,
+        _purchased_by: payment.purchased_by,
+        _razorpay_order_id: data.orderId,
+        _razorpay_payment_id: captured.id,
+        _amount_paise: payment.amount_paise,
+        _currency: payment.currency,
+        _provider_status: "captured",
+      });
+      if (finalizeError) throw new Error("Captured payment could not be confirmed. The order was not cancelled.");
+      return { status: "captured" as const };
+    }
     const { error: updateError } = await supabaseAdmin
       .from("saas_subscription_payments")
       .update({ lifecycle_status: "cancelled", cancelled_at: new Date().toISOString(), failure_code: "cancelled_by_manager" })

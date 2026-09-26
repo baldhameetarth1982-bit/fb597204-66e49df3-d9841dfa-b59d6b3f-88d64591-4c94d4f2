@@ -36,14 +36,31 @@ async function assertAdmin(ctx: Ctx, societyId: string) {
 }
 
 export interface SmartQrListItem {
-  id: string; title: string; purpose: string | null; fixedAmount: number | null; isActive: boolean;
-  expiresAt: string | null; createdAt: string; categoryName: string; pendingCount: number;
+  id: string;
+  title: string;
+  purpose: string | null;
+  fixedAmount: number | null;
+  isActive: boolean;
+  expiresAt: string | null;
+  createdAt: string;
+  categoryName: string;
+  pendingCount: number;
 }
 export interface SmartQrSubmission {
-  id: string; payerName: string; payerPhone: string | null; amount: number; method: "bank_transfer" | "cash";
-  reference: string | null; paidOn: string; note: string | null; status: "submitted" | "recorded" | "rejected";
-  reviewReason: string | null; createdAt: string; incomeRecordId: string | null;
-  verification: string | null; reconciliation: string | null;
+  id: string;
+  payerName: string;
+  payerPhone: string | null;
+  amount: number;
+  method: "bank_transfer" | "cash";
+  reference: string | null;
+  paidOn: string;
+  note: string | null;
+  status: "submitted" | "recorded" | "rejected";
+  reviewReason: string | null;
+  createdAt: string;
+  incomeRecordId: string | null;
+  verification: string | null;
+  reconciliation: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -58,7 +75,9 @@ export const listSmartQrFn = createServerFn({ method: "POST" })
     await assertAdmin(ctx, data.societyId);
     const { data: rows, error } = await ctx.supabase
       .from("smart_qr_codes")
-      .select("id, title, purpose, fixed_amount, is_active, expires_at, created_at, category:society_income_categories(display_name)")
+      .select(
+        "id, title, purpose, fixed_amount, is_active, expires_at, created_at, category:society_income_categories(display_name)",
+      )
       .eq("society_id", data.societyId)
       .order("created_at", { ascending: false })
       .limit(200);
@@ -75,15 +94,15 @@ export const listSmartQrFn = createServerFn({ method: "POST" })
       for (const s of subs ?? []) pending[s.qr_id] = (pending[s.qr_id] ?? 0) + 1;
     }
     const items: SmartQrListItem[] = (rows ?? []).map((r: any) => ({
-        id: r.id as string,
-        title: r.title as string,
-        purpose: r.purpose as string | null,
-        fixedAmount: r.fixed_amount === null ? null : Number(r.fixed_amount),
-        isActive: r.is_active as boolean,
-        expiresAt: r.expires_at as string | null,
-        createdAt: r.created_at as string,
-        categoryName: (r.category?.display_name as string) ?? "Income",
-        pendingCount: pending[r.id] ?? 0,
+      id: r.id as string,
+      title: r.title as string,
+      purpose: r.purpose as string | null,
+      fixedAmount: r.fixed_amount === null ? null : Number(r.fixed_amount),
+      isActive: r.is_active as boolean,
+      expiresAt: r.expires_at as string | null,
+      createdAt: r.created_at as string,
+      categoryName: (r.category?.display_name as string) ?? "Income",
+      pendingCount: pending[r.id] ?? 0,
     }));
     return { items };
   });
@@ -96,14 +115,18 @@ export const getSmartQrFn = createServerFn({ method: "POST" })
     // RLS returns the row only to admins of its society.
     const { data: q, error } = await ctx.supabase
       .from("smart_qr_codes")
-      .select("id, token, title, purpose, fixed_amount, payee_name, bank_name, account_number, ifsc, instructions, accepts_cash, is_active, expires_at, created_at, category:society_income_categories(display_name)")
+      .select(
+        "id, token, title, purpose, fixed_amount, payee_name, bank_name, account_number, ifsc, instructions, accepts_cash, is_active, expires_at, created_at, category:society_income_categories(display_name)",
+      )
       .eq("id", data.id)
       .maybeSingle();
     if (error) throw new Error("load_failed");
     if (!q) return { found: false as const };
     const { data: subs, error: subErr } = await ctx.supabase
       .from("smart_qr_submissions")
-      .select("id, payer_name, payer_phone, amount, payment_method, reference_number, paid_on, note, status, review_reason, reviewed_at, created_at, income_record_id, income:society_income_records(verification_status, reconciliation_status)")
+      .select(
+        "id, payer_name, payer_phone, amount, payment_method, reference_number, paid_on, note, status, review_reason, reviewed_at, created_at, income_record_id, income:society_income_records(verification_status, reconciliation_status)",
+      )
       .eq("qr_id", data.id)
       .order("created_at", { ascending: false })
       .limit(200);
@@ -127,22 +150,24 @@ export const getSmartQrFn = createServerFn({ method: "POST" })
         createdAt: q.created_at as string,
         categoryName: ((q as any).category?.display_name as string) ?? "Income",
       },
-      submissions: ((subs ?? []) as any[]).map((s: any): SmartQrSubmission => ({
-        id: s.id as string,
-        payerName: s.payer_name as string,
-        payerPhone: s.payer_phone as string | null,
-        amount: Number(s.amount),
-        method: s.payment_method as "bank_transfer" | "cash",
-        reference: s.reference_number as string | null,
-        paidOn: s.paid_on as string,
-        note: s.note as string | null,
-        status: s.status as "submitted" | "recorded" | "rejected",
-        reviewReason: s.review_reason as string | null,
-        createdAt: s.created_at as string,
-        incomeRecordId: s.income_record_id as string | null,
-        verification: (s.income?.verification_status as string | null) ?? null,
-        reconciliation: (s.income?.reconciliation_status as string | null) ?? null,
-      })),
+      submissions: ((subs ?? []) as any[]).map(
+        (s: any): SmartQrSubmission => ({
+          id: s.id as string,
+          payerName: s.payer_name as string,
+          payerPhone: s.payer_phone as string | null,
+          amount: Number(s.amount),
+          method: s.payment_method as "bank_transfer" | "cash",
+          reference: s.reference_number as string | null,
+          paidOn: s.paid_on as string,
+          note: s.note as string | null,
+          status: s.status as "submitted" | "recorded" | "rejected",
+          reviewReason: s.review_reason as string | null,
+          createdAt: s.created_at as string,
+          incomeRecordId: s.income_record_id as string | null,
+          verification: (s.income?.verification_status as string | null) ?? null,
+          reconciliation: (s.income?.reconciliation_status as string | null) ?? null,
+        }),
+      ),
     };
   });
 
@@ -154,7 +179,10 @@ const CreateInput = z.object({
   payeeName: z.string().trim().min(2).max(100),
   bankName: z.string().trim().max(100).optional().nullable(),
   accountNumber: z.string().regex(/^[0-9]{6,20}$/),
-  ifsc: z.string().toUpperCase().regex(/^[A-Z]{4}0[A-Z0-9]{6}$/),
+  ifsc: z
+    .string()
+    .toUpperCase()
+    .regex(/^[A-Z]{4}0[A-Z0-9]{6}$/),
   instructions: z.string().trim().max(500).optional().nullable(),
   acceptsCash: z.boolean(),
   expiresAt: z.string().datetime().nullable(),
@@ -232,7 +260,8 @@ function publicClient() {
     global: {
       fetch: (input, init) => {
         const h = new Headers(init?.headers);
-        if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`) h.delete("Authorization");
+        if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`)
+          h.delete("Authorization");
         h.set("apikey", key);
         return fetch(input, { ...init, headers: h });
       },
@@ -265,7 +294,11 @@ export const getPublicQrFn = createServerFn({ method: "GET" })
       const { getRequestIP } = await import("@tanstack/react-start/server");
       const { checkRateLimit, fingerprintSubject } = await import("@/lib/rate-limit.server");
       let ip = "anon";
-      try { ip = getRequestIP({ xForwardedFor: true }) ?? "anon"; } catch { /* ignore */ }
+      try {
+        ip = getRequestIP({ xForwardedFor: true }) ?? "anon";
+      } catch {
+        /* ignore */
+      }
       await checkRateLimit({
         bucket: "smart_qr_public_view_ip",
         subject: fingerprintSubject(ip, "smart_qr_view"),
@@ -275,10 +308,13 @@ export const getPublicQrFn = createServerFn({ method: "GET" })
     } catch {
       throw new Error("unavailable");
     }
-    const { data: res, error } = await publicClient().rpc("smart_qr_public_view", { _token: data.token });
+    const { data: res, error } = await publicClient().rpc("smart_qr_public_view", {
+      _token: data.token,
+    });
     if (error) throw new Error("unavailable");
     const r = rpcStatus(res) as any;
-    if (r.status === "inactive") return { status: "inactive", societyName: r.society_name, title: r.title };
+    if (r.status === "inactive")
+      return { status: "inactive", societyName: r.society_name, title: r.title };
     if (r.status !== "ok") return { status: "not_found" };
     return {
       status: "ok",
@@ -298,7 +334,11 @@ export const getPublicQrFn = createServerFn({ method: "GET" })
 const SubmitInput = z.object({
   token: z.string().regex(TOKEN_RE),
   payerName: z.string().trim().min(2).max(100),
-  payerPhone: z.string().regex(/^[0-9]{10}$/).optional().or(z.literal("")),
+  payerPhone: z
+    .string()
+    .regex(/^[0-9]{10}$/)
+    .optional()
+    .or(z.literal("")),
   amount: z.number().positive().max(10_000_000).multipleOf(0.01),
   method: z.enum(["bank_transfer", "cash"]),
   reference: z.string().trim().max(64).optional().or(z.literal("")),
@@ -313,11 +353,21 @@ export const submitPublicQrFn = createServerFn({ method: "POST" })
     // Per-IP limit (hashed, raw IP never stored) on top of the per-QR limit in the RPC.
     try {
       const { getRequestIP } = await import("@tanstack/react-start/server");
-      const { checkRateLimit, fingerprintSubject, RateLimitedError } = await import("@/lib/rate-limit.server");
+      const { checkRateLimit, fingerprintSubject, RateLimitedError } =
+        await import("@/lib/rate-limit.server");
       let ip = "anon";
-      try { ip = getRequestIP({ xForwardedFor: true }) ?? "anon"; } catch { /* ignore */ }
       try {
-        await checkRateLimit({ bucket: "smart_qr_submit_ip", subject: fingerprintSubject(ip, "smart_qr"), limit: 8, windowSec: 600 });
+        ip = getRequestIP({ xForwardedFor: true }) ?? "anon";
+      } catch {
+        /* ignore */
+      }
+      try {
+        await checkRateLimit({
+          bucket: "smart_qr_submit_ip",
+          subject: fingerprintSubject(ip, "smart_qr"),
+          limit: 8,
+          windowSec: 600,
+        });
       } catch (e) {
         if (e instanceof RateLimitedError) return { status: "rate_limited" };
         throw e;

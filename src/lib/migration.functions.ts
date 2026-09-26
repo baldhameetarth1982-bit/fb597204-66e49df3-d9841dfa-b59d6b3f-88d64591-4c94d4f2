@@ -67,7 +67,10 @@ function rowSourceKey(entity: string, d: Record<string, unknown>): string | null
 export type SafeErrorCode = z.infer<typeof SafeError>;
 
 class MigrationError extends Error {
-  constructor(public code: SafeErrorCode, message?: string) {
+  constructor(
+    public code: SafeErrorCode,
+    message?: string,
+  ) {
     super(message ?? code);
   }
 }
@@ -111,8 +114,8 @@ export const initializeMigrationUpload = createServerFn({ method: "POST" })
         safety.code === "too_many_rows"
           ? "too_many_rows"
           : safety.code === "empty_file" || safety.code === "invalid_file"
-          ? "invalid_file"
-          : "unsupported_format",
+            ? "invalid_file"
+            : "unsupported_format",
       );
     }
 
@@ -127,10 +130,23 @@ export const initializeMigrationUpload = createServerFn({ method: "POST" })
     }
     const { checkRateLimit } = await import("@/lib/rate-limit.server");
     await Promise.all([
-      checkRateLimit({ bucket: "migration_upload_user", subject: userId, limit: 5, windowSec: 600 }),
-      checkRateLimit({ bucket: "migration_upload_society", subject: data.society_id, limit: 10, windowSec: 3600 }),
+      checkRateLimit({
+        bucket: "migration_upload_user",
+        subject: userId,
+        limit: 5,
+        windowSec: 600,
+      }),
+      checkRateLimit({
+        bucket: "migration_upload_society",
+        subject: data.society_id,
+        limit: 10,
+        windowSec: 3600,
+      }),
     ]).catch((error) => {
-      console.error("[migration] upload rate limit denied", error instanceof Error ? error.name : "unknown");
+      console.error(
+        "[migration] upload rate limit denied",
+        error instanceof Error ? error.name : "unknown",
+      );
       throw new MigrationError("unavailable");
     });
 
@@ -150,17 +166,14 @@ export const initializeMigrationUpload = createServerFn({ method: "POST" })
     // Trusted mutation via service role. The RPC also re-checks admin scope
     // against the verified actor id (defence in depth).
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: beginRes, error: beginErr } = await supabaseAdmin.rpc(
-      "migration_begin_upload",
-      {
-        _actor: userId,
-        _society_id: data.society_id,
-        _source_type: data.source_type,
-        _filename: data.filename,
-        _declared_size: data.declared_size,
-        _structure_mode: derivedMode,
-      },
-    );
+    const { data: beginRes, error: beginErr } = await supabaseAdmin.rpc("migration_begin_upload", {
+      _actor: userId,
+      _society_id: data.society_id,
+      _source_type: data.source_type,
+      _filename: data.filename,
+      _declared_size: data.declared_size,
+      _structure_mode: derivedMode,
+    });
     if (beginErr || !beginRes || beginRes.length === 0) {
       console.error("[migration] begin_upload failed", beginErr?.code, beginErr?.message);
       throw new MigrationError("unavailable");
@@ -206,10 +219,23 @@ export const finalizeMigrationUpload = createServerFn({ method: "POST" })
     if (job.status !== "uploaded") throw new MigrationError("job_not_ready");
     const { checkRateLimit } = await import("@/lib/rate-limit.server");
     await Promise.all([
-      checkRateLimit({ bucket: "migration_finalize_user", subject: userId, limit: 5, windowSec: 600 }),
-      checkRateLimit({ bucket: "migration_finalize_society", subject: job.society_id, limit: 10, windowSec: 3600 }),
+      checkRateLimit({
+        bucket: "migration_finalize_user",
+        subject: userId,
+        limit: 5,
+        windowSec: 600,
+      }),
+      checkRateLimit({
+        bucket: "migration_finalize_society",
+        subject: job.society_id,
+        limit: 10,
+        windowSec: 3600,
+      }),
     ]).catch((error) => {
-      console.error("[migration] finalize rate limit denied", error instanceof Error ? error.name : "unknown");
+      console.error(
+        "[migration] finalize rate limit denied",
+        error instanceof Error ? error.name : "unknown",
+      );
       throw new MigrationError("unavailable");
     });
 
@@ -282,9 +308,7 @@ export const finalizeMigrationUpload = createServerFn({ method: "POST" })
       const inserts = await Promise.all(
         slice.map(async (values, idx) => {
           const rowNumber = i + idx + 1;
-          const rowChecksum = await sha256Hex(
-            stableStringify({ n: rowNumber, v: values }),
-          );
+          const rowChecksum = await sha256Hex(stableStringify({ n: rowNumber, v: values }));
           return {
             job_id: data.job_id,
             society_id: job.society_id,
@@ -295,24 +319,19 @@ export const finalizeMigrationUpload = createServerFn({ method: "POST" })
           };
         }),
       );
-      const { error: insErr } = await supabaseAdmin
-        .from("migration_parsed_rows")
-        .insert(inserts);
+      const { error: insErr } = await supabaseAdmin.from("migration_parsed_rows").insert(inserts);
       if (insErr) throw new MigrationError("operation_failed");
     }
 
     // Finalize job via service role. Authenticated callers cannot invoke
     // this RPC directly (grants revoked); only the trusted server pathway
     // may write authoritative checksum/size/row totals.
-    const { data: finRes, error: finErr } = await supabaseAdmin.rpc(
-      "migration_finalize_upload",
-      {
-        _job_id: data.job_id,
-        _checksum: checksum,
-        _actual_size: bytes.length,
-        _row_count: parsed.rows.length,
-      },
-    );
+    const { data: finRes, error: finErr } = await supabaseAdmin.rpc("migration_finalize_upload", {
+      _job_id: data.job_id,
+      _checksum: checksum,
+      _actual_size: bytes.length,
+      _row_count: parsed.rows.length,
+    });
     if (finErr) throw new MigrationError("unavailable");
     const finStatus =
       typeof finRes === "object" && finRes && "status" in finRes
@@ -399,21 +418,33 @@ export const validateMigrationJob = createServerFn({ method: "POST" })
     let errors = 0;
     let warnings = 0;
     const seenKeys = new Set<string>();
-    const norm = (v: unknown) => String(v ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+    const norm = (v: unknown) =>
+      String(v ?? "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "");
     // Houses and active plates that already exist in this society are skipped
     // (with a warning) so re-imports and retries never fail or duplicate data.
     const existingUnits = new Set<string>();
     const existingPlates = new Set<string>();
     if (entity === "unit") {
       const { data: fl } = await supabase
-        .from("flats").select("flat_number, blocks(name)").eq("society_id", job.society_id);
-      for (const f of (fl ?? []) as Array<{ flat_number: string; blocks: { name: string } | null }>) {
+        .from("flats")
+        .select("flat_number, blocks(name)")
+        .eq("society_id", job.society_id);
+      for (const f of (fl ?? []) as Array<{
+        flat_number: string;
+        blocks: { name: string } | null;
+      }>) {
         existingUnits.add(`${norm(f.blocks?.name)}::${norm(f.flat_number)}`);
       }
     } else if (entity === "vehicle") {
       const { data: vs } = await supabase
-        .from("vehicles").select("plate_number").eq("society_id", job.society_id).eq("is_active", true);
-      for (const v of vs ?? []) existingPlates.add(String(v.plate_number).replace(/\s+/g, "").toUpperCase());
+        .from("vehicles")
+        .select("plate_number")
+        .eq("society_id", job.society_id)
+        .eq("is_active", true);
+      for (const v of vs ?? [])
+        existingPlates.add(String(v.plate_number).replace(/\s+/g, "").toUpperCase());
     }
 
     for (const pr of parsedRows) {
@@ -445,7 +476,10 @@ export const validateMigrationJob = createServerFn({ method: "POST" })
       } else {
         const d = parseResult.data as Record<string, unknown>;
         // Commit reads `type`/`color`; keep both spellings so they aren't dropped.
-        if (entity === "vehicle") { d.type = d.vehicle_type ?? null; d.color = d.colour ?? null; }
+        if (entity === "vehicle") {
+          d.type = d.vehicle_type ?? null;
+          d.color = d.colour ?? null;
+        }
         // Uniqueness by source_key within a file (units are unique per structure).
         const sourceKey = rowSourceKey(entity, d);
         if (sourceKey) {
@@ -459,12 +493,25 @@ export const validateMigrationJob = createServerFn({ method: "POST" })
             seenKeys.add(key);
           }
         }
-        if (status === "valid" && entity === "unit" &&
-            existingUnits.has(`${(job.structure_mode ?? "structured") === "serial" ? "" : norm(d.structure_name)}::${norm(d.unit_label)}`)) {
-          status = "warning"; action = "skip"; warningCodes.push("unit_already_exists");
+        if (
+          status === "valid" &&
+          entity === "unit" &&
+          existingUnits.has(
+            `${(job.structure_mode ?? "structured") === "serial" ? "" : norm(d.structure_name)}::${norm(d.unit_label)}`,
+          )
+        ) {
+          status = "warning";
+          action = "skip";
+          warningCodes.push("unit_already_exists");
         }
-        if (status === "valid" && entity === "vehicle" && existingPlates.has(String(d.registration_number))) {
-          status = "warning"; action = "skip"; warningCodes.push("vehicle_already_registered");
+        if (
+          status === "valid" &&
+          entity === "vehicle" &&
+          existingPlates.has(String(d.registration_number))
+        ) {
+          status = "warning";
+          action = "skip";
+          warningCodes.push("vehicle_already_registered");
         }
         if (status === "valid") valid++;
         else if (status === "warning") warnings++;
@@ -678,12 +725,19 @@ export async function _commitMigrationJobViaRpc(
     _expected_checksum: data.expected_checksum,
   });
   if (error) {
-    console.error("[migration] commit failed", (error as {code?:string}).code, (error as {message?:string}).message);
+    console.error(
+      "[migration] commit failed",
+      (error as { code?: string }).code,
+      (error as { message?: string }).message,
+    );
     return { status: "operation_failed" as const, result: null };
   }
   const obj = (raw ?? {}) as { status?: string; result?: unknown };
   if (obj.status === "operation_failed") {
-    console.error("[migration] commit operation_failed sqlstate", (raw as { sqlstate?: string } | null)?.sqlstate);
+    console.error(
+      "[migration] commit operation_failed sqlstate",
+      (raw as { sqlstate?: string } | null)?.sqlstate,
+    );
   }
   const parsedStatus = CommitStatus.safeParse(obj.status);
   if (!parsedStatus.success) {
@@ -696,8 +750,6 @@ export async function _commitMigrationJobViaRpc(
   }
   return { status: parsedStatus.data, result: null };
 }
-
-
 
 // ---------- getMigrationJobFailure ----------
 // Returns the failure_code (if any) of the most recent commit attempt for
@@ -718,10 +770,9 @@ export const getMigrationJobFailure = createServerFn({ method: "POST" })
       .eq("id", data.job_id)
       .maybeSingle();
     if (!job) throw new MigrationError("unavailable");
-    const { data: canAdmin } = await supabase.rpc(
-      "current_user_can_admin_migrations",
-      { _society_id: job.society_id },
-    );
+    const { data: canAdmin } = await supabase.rpc("current_user_can_admin_migrations", {
+      _society_id: job.society_id,
+    });
     if (!canAdmin) throw new MigrationError("unavailable");
     const { data: rows } = await supabase
       .from("migration_commit_requests")
@@ -751,10 +802,9 @@ export const getSetupChecklist = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => SetupChecklistInput.parse(input))
   .handler(async ({ data, context }) => {
-    const { data: raw, error } = await context.supabase.rpc(
-      "migration_setup_checklist",
-      { _society_id: data.society_id },
-    );
+    const { data: raw, error } = await context.supabase.rpc("migration_setup_checklist", {
+      _society_id: data.society_id,
+    });
     if (error) throw new MigrationError("operation_failed");
     const obj = (raw ?? {}) as Record<string, unknown>;
     if (obj.status !== "ok") throw new MigrationError("unavailable");

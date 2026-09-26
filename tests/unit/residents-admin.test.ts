@@ -207,7 +207,7 @@ describe("Stage 2B — SQL rules (latest migration set)", () => {
 
 describe("Stage 2B — route wiring (existing UI consumes safe services)", () => {
   const vehicles = read("src/routes/_society/society.vehicles.tsx");
-  const residentsList = read("src/routes/_society/society.residents.tsx");
+  const residentsList = read("src/routes/_society/society.residents.index.tsx");
   const residentsDetail = read("src/routes/_society/society.residents.$id.tsx");
 
   it("vehicles route uses listSocietyVehicles (no direct browser private-table query)", () => {
@@ -251,7 +251,7 @@ describe("Stage 2B — protected society untouched", () => {
     for (const p of [
       "src/lib/residents-admin.functions.ts",
       "src/routes/_society/society.vehicles.tsx",
-      "src/routes/_society/society.residents.tsx",
+      "src/routes/_society/society.residents.index.tsx",
       "src/routes/_society/society.residents.$id.tsx",
     ]) {
       expect(read(p), `${p} must not reference the protected society`).not.toContain(forbidden);

@@ -8,7 +8,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 
-const residentList = readFileSync("src/routes/_resident/app.bills.tsx", "utf8");
+const residentList = readFileSync("src/routes/_resident/app.bills.index.tsx", "utf8");
 const residentDetail = readFileSync("src/routes/_resident/app.bills.$id.tsx", "utf8");
 const adminDetail = readFileSync("src/routes/_society/society.bills.$id.tsx", "utf8");
 const genSrc = readFileSync("src/lib/billing-generate.functions.ts", "utf8");
@@ -103,7 +103,7 @@ describe("Stage 3B — getAdminBillDetail contract", () => {
 
 describe("Stage 3B — protected society is not referenced anywhere in bill UI", () => {
   const paths = [
-    "src/routes/_resident/app.bills.tsx",
+    "src/routes/_resident/app.bills.index.tsx",
     "src/routes/_resident/app.bills.$id.tsx",
     "src/routes/_society/society.bills.$id.tsx",
     "src/lib/billing-generate.functions.ts",

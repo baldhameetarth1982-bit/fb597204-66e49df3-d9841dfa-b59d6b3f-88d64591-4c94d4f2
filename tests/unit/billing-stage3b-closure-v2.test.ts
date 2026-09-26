@@ -110,7 +110,7 @@ describe("Stage 3B closure — bill routes have no online-payment promises", () 
       .replace(/(^|[^:])\/\/[^\n]*/g, "$1");
 
   const billRoutes = [
-    "src/routes/_resident/app.bills.tsx",
+    "src/routes/_resident/app.bills.index.tsx",
     "src/routes/_resident/app.bills.$id.tsx",
     "src/routes/_society/society.bills.$id.tsx",
   ];

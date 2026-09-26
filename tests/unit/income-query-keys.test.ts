@@ -10,7 +10,7 @@ import {
 } from "@/lib/income-query-keys";
 
 const ROUTES = [
-  "src/routes/_society/society.income.tsx",
+  "src/routes/_society/society.income.index.tsx",
   "src/routes/_society/society.income.$id.tsx",
   "src/routes/_society/society.income.categories.tsx",
   "src/routes/_society/society.income.payers.tsx",

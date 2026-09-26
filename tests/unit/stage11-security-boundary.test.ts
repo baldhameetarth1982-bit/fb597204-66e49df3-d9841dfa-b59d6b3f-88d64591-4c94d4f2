@@ -27,8 +27,8 @@ describe("Stage 11 security and payment boundaries", () => {
 
   it("keeps maintenance fee claims out of subscription checkout", () => {
     const checkout = read("src/routes/checkout.$planId.tsx");
-    expect(checkout).toContain(
-      "Maintenance payments remain Cash or Bank Transfer with no platform fee",
+    expect(checkout).toMatch(
+      /Maintenance payments\s+remain Cash or Bank Transfer with no platform fee/,
     );
     expect(checkout).not.toContain("transaction fee on maintenance");
     expect(checkout).not.toContain("txn_fee_pct");

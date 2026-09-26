@@ -9,7 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { openRazorpayCheckout } from "@/lib/razorpay";
+import { openRazorpayForOrder } from "@/lib/razorpay";
+import { confirmSaasSubscriptionPayment, createSaasSubscriptionOrder } from "@/lib/saas-subscription-payment.functions";
 
 export const Route = createFileRoute("/_society/society/plan-required")({
   head: () => ({ meta: [{ title: "Unlock SociyoHub — Renew plan" }] }),
@@ -66,15 +67,25 @@ function PlanRequired() {
 
   async function handleBuy(plan: any) {
     setBusyId(plan.id);
-    const opened = await openRazorpayCheckout({
-      plan: { id: plan.id, name: plan.name, price_monthly_inr: plan.price_monthly_inr },
+    try {
+    const order = await createSaasSubscriptionOrder({ data: { societyId: societyId!, planId: plan.id } });
+    const opened = await openRazorpayForOrder({
+      orderId: order.orderId,
+      keyId: order.keyId,
+      amount: order.amount,
+      description: `${order.planName} plan — monthly`,
       prefill: {
         email: profile?.email ?? user?.email ?? "",
         contact: profile?.phone ?? "",
         name: profile?.full_name ?? "",
       },
-      onSuccess: async () => {
-        toast.message("Payment received. Confirming your plan — this can take a minute.");
+      onSuccess: async (response) => {
+        await confirmSaasSubscriptionPayment({ data: {
+          societyId: societyId!, planId: plan.id,
+          razorpayOrderId: response.razorpay_order_id, razorpayPaymentId: response.razorpay_payment_id,
+          razorpaySignature: response.razorpay_signature,
+        } });
+        toast.success("Subscription activated successfully.");
         try { localStorage.removeItem("user_subscription"); } catch {}
         // Force every dependent query to re-fetch; trigger registered on backend will flip plan_status.
         await qc.invalidateQueries();
@@ -83,6 +94,10 @@ function PlanRequired() {
       onDismiss: () => setBusyId(null),
     });
     if (!opened) setBusyId(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Subscription payment could not be completed.");
+      setBusyId(null);
+    }
   }
 
   return (

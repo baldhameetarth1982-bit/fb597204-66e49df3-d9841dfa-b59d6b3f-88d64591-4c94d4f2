@@ -5022,6 +5022,10 @@ export type Database = {
         Returns: string
       }
       admin_society_overview: { Args: { _society_id: string }; Returns: Json }
+      admin_transition_withdrawal: {
+        Args: { _reason: string; _status: string; _withdrawal_id: string }
+        Returns: undefined
+      }
       admin_upsert_family_member: {
         Args: {
           _age?: number

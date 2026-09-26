@@ -400,6 +400,13 @@
       "when": 1790444239833,
       "tag": "0056_stage11_guard_and_lockout_boundary",
       "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "7",
+      "when": 1790444322996,
+      "tag": "0057_stage11_reasoned_withdrawal_transition",
+      "breakpoints": true
     }
   ]
 }

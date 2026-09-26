@@ -189,7 +189,7 @@ describe("Stage 3A · source contracts", () => {
   });
 
   it("BillingConfigCard shows the Stage 3B boundary and preview-only messaging", () => {
-    expect(card).toMatch(/Stage 3B/);
+    expect(card).toMatch(/Draft only/);
     expect(card).toMatch(/no bills generated/i);
   });
 

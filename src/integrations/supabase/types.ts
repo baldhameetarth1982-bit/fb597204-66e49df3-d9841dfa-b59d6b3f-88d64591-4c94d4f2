@@ -3458,6 +3458,72 @@ export type Database = {
           },
         ]
       }
+      saas_subscription_order_requests: {
+        Row: {
+          amount_paise: number
+          attempt_count: number
+          created_at: string
+          currency: string
+          failure_code: string | null
+          id: string
+          plan_id: string
+          provider_mode: string
+          razorpay_order_id: string | null
+          request_id: string
+          requested_by: string
+          society_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount_paise: number
+          attempt_count?: number
+          created_at?: string
+          currency?: string
+          failure_code?: string | null
+          id?: string
+          plan_id: string
+          provider_mode: string
+          razorpay_order_id?: string | null
+          request_id: string
+          requested_by: string
+          society_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_paise?: number
+          attempt_count?: number
+          created_at?: string
+          currency?: string
+          failure_code?: string | null
+          id?: string
+          plan_id?: string
+          provider_mode?: string
+          razorpay_order_id?: string | null
+          request_id?: string
+          requested_by?: string
+          society_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saas_subscription_order_requests_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saas_subscription_order_requests_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saas_subscription_payments: {
         Row: {
           amount_paise: number
@@ -5368,6 +5434,18 @@ export type Database = {
             Args: { _bill_id: string; _reason: string; _society_id: string }
             Returns: Json
           }
+      claim_saas_subscription_order: {
+        Args: {
+          _amount_paise: number
+          _currency: string
+          _plan_id: string
+          _provider_mode: string
+          _request_id: string
+          _requested_by: string
+          _society_id: string
+        }
+        Returns: Json
+      }
       commit_migration_job: {
         Args: {
           _expected_checksum: string
@@ -5379,6 +5457,10 @@ export type Database = {
       commit_society_wizard: {
         Args: { _payload: Json; _society_id: string }
         Returns: undefined
+      }
+      complete_saas_subscription_order: {
+        Args: { _razorpay_order_id: string; _request_record_id: string }
+        Returns: string
       }
       complete_setup_wizard: {
         Args: { _society_id: string }
@@ -5584,6 +5666,10 @@ export type Database = {
       execute_finance_backfill: {
         Args: { _request_id: string; _society_id: string }
         Returns: Json
+      }
+      fail_saas_subscription_order: {
+        Args: { _failure_code: string; _request_record_id: string }
+        Returns: undefined
       }
       finalize_bill_batch: {
         Args: {

@@ -5446,6 +5446,15 @@ export type Database = {
         }
         Returns: Json
       }
+      claim_saas_subscription_refund: {
+        Args: {
+          _payment_id: string
+          _reason: string
+          _request_id: string
+          _requested_by: string
+        }
+        Returns: Json
+      }
       commit_migration_job: {
         Args: {
           _expected_checksum: string
@@ -5669,6 +5678,10 @@ export type Database = {
       }
       fail_saas_subscription_order: {
         Args: { _failure_code: string; _request_record_id: string }
+        Returns: undefined
+      }
+      fail_saas_subscription_refund: {
+        Args: { _failure_code: string; _refund_record_id: string }
         Returns: undefined
       }
       finalize_bill_batch: {

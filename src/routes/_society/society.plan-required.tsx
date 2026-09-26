@@ -87,50 +87,57 @@ function PlanRequired() {
 
   return (
     <main className="min-h-dvh bg-background text-foreground">
-      <div className="max-w-5xl mx-auto px-5 py-12 space-y-8">
-        <div className="text-center space-y-3">
-          <div className="mx-auto h-16 w-16 rounded-2xl bg-primary/15 border border-primary/30 grid place-items-center">
-            <Rocket className="h-8 w-8 text-primary" />
+      <div className="mx-auto max-w-5xl space-y-8 px-4 py-10 md:px-6 md:py-14">
+        <header className="grid gap-4 border-b border-border pb-6 md:grid-cols-[auto_minmax(0,1fr)] md:items-center">
+          <div className="grid h-12 w-12 place-items-center rounded-2xl bg-warning/15 text-warning">
+            <Rocket className="h-6 w-6" />
           </div>
-          <Badge className="bg-primary/15 text-primary border-primary/30 rounded-full">
-            <Sparkles className="h-3 w-3 mr-1" /> Plan renewal needed
-          </Badge>
-          <h1 className="text-4xl font-bold tracking-tight text-foreground">
-            Unlock SociyoHub's Full Power
-          </h1>
-          <p className="text-muted-foreground max-w-xl mx-auto">
-            Upgrade {society?.name ? <b>{society.name}</b> : "your society"}'s plan to automate security, finances, and
-            community communications — seamlessly.
-          </p>
-        </div>
+          <div className="min-w-0 space-y-1.5">
+            <Badge variant="outline" className="rounded-full">Plan renewal needed</Badge>
+            <h1 className="text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">
+              Renew {society?.name ?? "your society"}'s plan to continue
+            </h1>
+            <p className="max-w-2xl text-sm text-muted-foreground">
+              Features are paused for committee and residents until a plan is active. All your data is kept. Access returns automatically once payment is confirmed.
+            </p>
+          </div>
+        </header>
 
-        <div className="grid md:grid-cols-3 gap-5">
-          {(plans ?? []).map((p: any) => (
-            <Card key={p.id} className={`rounded-3xl p-6 bg-card flex flex-col ${p.is_recommended ? "border-2 border-primary shadow-lg" : "border"}`}>
-              {p.is_recommended && (
-                <Badge className="self-start mb-3 bg-primary text-primary-foreground"><Sparkles className="h-3 w-3 mr-1" /> Best value</Badge>
-              )}
-              <h3 className="text-xl font-semibold text-foreground">{p.name}</h3>
-              <div className="mt-2 flex items-baseline gap-1">
-                <span className="text-3xl font-bold text-foreground">₹{p.price_monthly_inr}</span>
-                <span className="text-muted-foreground">/mo</span>
-              </div>
-              <Button
-                onClick={() => handleBuy(p)}
-                disabled={busyId !== null}
-                className={`mt-auto pt-4 min-h-[52px] rounded-xl ${p.is_recommended ? "" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
-              >
-                {busyId === p.id ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-                Renew with {p.name} <ArrowRight className="h-4 w-4 ml-1" />
-              </Button>
-            </Card>
-          ))}
-        </div>
+        <section aria-label="Choose a plan" className="space-y-3">
+          <h2 className="text-sm font-semibold">Choose a plan</h2>
+          {!plans ? (
+            <div className="grid gap-4 md:grid-cols-3">{[0, 1, 2].map((i) => <div key={i} className="h-40 animate-pulse rounded-2xl bg-muted" />)}</div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-3">
+              {plans.map((p: any) => (
+                <Card key={p.id} className={`flex flex-col rounded-2xl p-5 ${p.is_recommended ? "border-2 border-primary" : ""}`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="text-lg font-semibold">{p.name}</h3>
+                    {p.is_recommended && <Badge className="shrink-0"><Sparkles className="mr-1 h-3 w-3" />Best value</Badge>}
+                  </div>
+                  <p className="mt-2 flex items-baseline gap-1">
+                    <span className="text-3xl font-bold tabular-nums">₹{p.price_monthly_inr}</span>
+                    <span className="text-sm text-muted-foreground">/month</span>
+                  </p>
+                  <Button
+                    onClick={() => handleBuy(p)}
+                    disabled={busyId !== null}
+                    variant={p.is_recommended ? "default" : "outline"}
+                    className="mt-5 min-h-12 rounded-xl"
+                  >
+                    {busyId === p.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Renew with {p.name} <ArrowRight className="ml-1 h-4 w-4" />
+                  </Button>
+                </Card>
+              ))}
+            </div>
+          )}
+        </section>
 
-        <div className="text-center text-sm text-muted-foreground space-y-2">
-          <p className="flex items-center justify-center gap-2"><ShieldCheck className="h-4 w-4" /> Paid securely via Razorpay · Access returns once payment is confirmed</p>
-          <button onClick={() => signOut()} className="underline text-xs text-muted-foreground">Sign out</button>
-        </div>
+        <footer className="flex flex-col gap-3 border-t border-border pt-5 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+          <p className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 shrink-0" /> Paid securely via Razorpay · checking status automatically</p>
+          <Button variant="ghost" onClick={() => signOut()} className="min-h-11 self-start sm:self-auto">Sign out</Button>
+        </footer>
       </div>
     </main>
   );

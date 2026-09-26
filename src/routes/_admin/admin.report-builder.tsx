@@ -1,14 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { FileText, Loader2, Download, Search } from "lucide-react";
+import { Download, Search, RefreshCw, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ErrorState } from "@/components/system/ErrorState";
+import { PageHeader, PageShell } from "@/components/shared/PageHeader";
 
 export const Route = createFileRoute("/_admin/admin/report-builder")({
   head: () => ({ meta: [{ title: "Report Builder — Super Admin" }] }),
@@ -18,12 +17,14 @@ export const Route = createFileRoute("/_admin/admin/report-builder")({
 type Dataset = "societies" | "bills" | "payments" | "visitors" | "audit_log";
 
 const DATASETS: Record<Dataset, { label: string; fields: string[]; dateField?: string; select: string }> = {
-  societies:   { label: "Societies", fields: ["id","name","plan_id","plan_status","status","created_at"], dateField: "created_at", select: "id,name,plan_id,plan_status,status,created_at" },
-  bills:       { label: "Bills", fields: ["id","society_id","amount","status","bill_date","due_date","paid_at"], dateField: "bill_date", select: "id,society_id,amount,status,bill_date,due_date,paid_at" },
-  payments:    { label: "Payments", fields: ["id","society_id","amount","status","method","paid_at","created_at"], dateField: "created_at", select: "id,society_id,amount,status,method,paid_at,created_at" },
-  visitors:    { label: "Visitors", fields: ["id","society_id","visitor_name","status","entry_at","exit_at","created_at"], dateField: "created_at", select: "id,society_id,visitor_name,status,entry_at,exit_at,created_at" },
-  audit_log:   { label: "Audit log", fields: ["id","actor_id","action","target_table","target_id","society_id","created_at"], dateField: "created_at", select: "id,actor_id,action,target_table,target_id,society_id,created_at" },
+  societies: { label: "Societies", fields: ["id", "name", "plan_id", "plan_status", "status", "created_at"], dateField: "created_at", select: "id,name,plan_id,plan_status,status,created_at" },
+  bills: { label: "Bills", fields: ["id", "society_id", "amount", "status", "bill_date", "due_date", "paid_at"], dateField: "bill_date", select: "id,society_id,amount,status,bill_date,due_date,paid_at" },
+  payments: { label: "Payments", fields: ["id", "society_id", "amount", "status", "method", "paid_at", "created_at"], dateField: "created_at", select: "id,society_id,amount,status,method,paid_at,created_at" },
+  visitors: { label: "Visitors", fields: ["id", "society_id", "visitor_name", "status", "entry_at", "exit_at", "created_at"], dateField: "created_at", select: "id,society_id,visitor_name,status,entry_at,exit_at,created_at" },
+  audit_log: { label: "Audit log", fields: ["id", "actor_id", "action", "target_table", "target_id", "society_id", "created_at"], dateField: "created_at", select: "id,actor_id,action,target_table,target_id,society_id,created_at" },
 };
+
+const label = (f: string) => f.replace(/_/g, " ");
 
 function toCsv(rows: any[], fields: string[]) {
   const esc = (v: any) => {
@@ -39,10 +40,9 @@ function ReportBuilder() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [q, setQ] = useState("");
-
   const cfg = DATASETS[dataset];
 
-  const { data: rows = [], isFetching, refetch } = useQuery({
+  const { data: rows = [], isFetching, isError, refetch } = useQuery({
     queryKey: ["report-builder", dataset, from, to],
     queryFn: async () => {
       let query = supabase.from(dataset as any).select(cfg.select).limit(2000);
@@ -61,8 +61,7 @@ function ReportBuilder() {
   }, [rows, q]);
 
   const download = () => {
-    const csv = toCsv(filtered, cfg.fields);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const blob = new Blob([toCsv(filtered, cfg.fields)], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -72,79 +71,71 @@ function ReportBuilder() {
   };
 
   return (
-    <div className="container-page space-y-6 py-6 md:py-10">
-      <header className="flex flex-col gap-4 border-b border-border pb-5 md:flex-row md:items-end md:justify-between"><div>
-          <h1 className="text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">Custom Report Builder</h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Pick a dataset, apply filters, export CSV.</p>
+    <PageShell>
+      <PageHeader
+        title="Report Builder"
+        description="Choose a dataset, narrow it down, then export CSV."
+        actions={<Button onClick={download} disabled={!filtered.length || isFetching} className="h-11 rounded-xl"><Download className="mr-1 h-4 w-4" /> Export {filtered.length ? filtered.length.toLocaleString("en-IN") : ""} rows</Button>}
+      />
+
+      <div className="space-y-4">
+        <div role="tablist" aria-label="Dataset" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 md:mx-0 md:px-0">
+          {(Object.keys(DATASETS) as Dataset[]).map((k) => (
+            <button
+              key={k}
+              role="tab"
+              aria-selected={dataset === k}
+              onClick={() => setDataset(k)}
+              className={`min-h-11 shrink-0 rounded-full border px-4 text-sm font-medium transition-colors ${dataset === k ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card hover:bg-muted"}`}
+            >
+              {DATASETS[k].label}
+            </button>
+          ))}
         </div>
-      </header>
 
-      <Card className="rounded-2xl">
-        <CardContent className="p-4 grid md:grid-cols-4 gap-3">
-          <div>
-            <Label>Dataset</Label>
-            <Select value={dataset} onValueChange={(v) => setDataset(v as Dataset)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {Object.entries(DATASETS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>From</Label>
-            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} disabled={!cfg.dateField} />
-          </div>
-          <div>
-            <Label>To</Label>
-            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} disabled={!cfg.dateField} />
-          </div>
-          <div className="flex items-end gap-2">
-            <Button variant="outline" onClick={() => refetch()} className="flex-1">Refresh</Button>
-            <Button onClick={download} disabled={!filtered.length}><Download className="h-4 w-4 mr-1" />CSV</Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="rounded-2xl">
-        <CardContent className="p-4 border-b">
+        <div className="grid gap-3 rounded-2xl border border-border bg-card p-3 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto] sm:items-end">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search any column…" value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input aria-label="Search any column" placeholder="Search any column…" value={q} onChange={(e) => setQ(e.target.value)} className="h-11 pl-9" />
           </div>
-        </CardContent>
-        <CardContent className="p-0 overflow-x-auto">
-          {isFetching ? (
-            <div className="p-8 text-center"><Loader2 className="h-5 w-5 inline animate-spin" /></div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {cfg.fields.map((f) => <TableHead key={f}>{f}</TableHead>)}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.slice(0, 500).map((r, i) => (
-                  <TableRow key={r.id ?? i}>
-                    {cfg.fields.map((f) => (
-                      <TableCell key={f} className="text-xs font-mono max-w-[220px] truncate">
-                        {typeof r[f] === "string" && r[f].length > 30 ? r[f].slice(0, 30) + "…" : String(r[f] ?? "")}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-                {filtered.length === 0 && (
-                  <TableRow><TableCell colSpan={cfg.fields.length} className="text-center py-8 text-muted-foreground">No rows</TableCell></TableRow>
-                )}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-        <CardContent className="p-3 border-t text-xs text-muted-foreground">
-          Showing {Math.min(filtered.length, 500)} of {filtered.length} rows. Export includes all filtered rows.
-        </CardContent>
-      </Card>
-    </div>
+          <div className="grid grid-cols-2 gap-3 sm:contents">
+            <div className="space-y-1"><Label htmlFor="rb-from" className="text-xs">From</Label><Input id="rb-from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} disabled={!cfg.dateField} className="h-11" /></div>
+            <div className="space-y-1"><Label htmlFor="rb-to" className="text-xs">To</Label><Input id="rb-to" type="date" value={to} onChange={(e) => setTo(e.target.value)} disabled={!cfg.dateField} className="h-11" /></div>
+          </div>
+          <Button variant="outline" onClick={() => refetch()} className="h-11 rounded-xl" aria-label="Refresh">
+            {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}<span className="ml-1 sm:hidden">Refresh</span>
+          </Button>
+        </div>
+
+        {isError ? (
+          <ErrorState onRetry={() => refetch()} showSupport={false} />
+        ) : (
+          <div className="overflow-hidden rounded-2xl border border-border bg-card">
+            <div className="max-h-[65vh] overflow-auto">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 z-10 bg-muted text-left text-xs uppercase tracking-wide text-muted-foreground">
+                  <tr>{cfg.fields.map((f) => <th key={f} className="whitespace-nowrap px-3 py-2.5 font-medium">{label(f)}</th>)}</tr>
+                </thead>
+                <tbody className={`divide-y divide-border ${isFetching ? "opacity-50" : ""}`}>
+                  {filtered.slice(0, 500).map((r, i) => (
+                    <tr key={r.id ?? i} className="hover:bg-muted/40">
+                      {cfg.fields.map((f) => (
+                        <td key={f} className="max-w-[220px] truncate whitespace-nowrap px-3 py-2 font-mono text-xs" title={String(r[f] ?? "")}>{String(r[f] ?? "")}</td>
+                      ))}
+                    </tr>
+                  ))}
+                  {!isFetching && filtered.length === 0 && (
+                    <tr><td colSpan={cfg.fields.length} className="py-10 text-center text-muted-foreground">No rows match these filters.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <p className="border-t border-border px-3 py-2 text-xs text-muted-foreground">
+              Showing {Math.min(filtered.length, 500).toLocaleString("en-IN")} of {filtered.length.toLocaleString("en-IN")} rows. Export includes every filtered row.
+            </p>
+          </div>
+        )}
+      </div>
+    </PageShell>
   );
 }

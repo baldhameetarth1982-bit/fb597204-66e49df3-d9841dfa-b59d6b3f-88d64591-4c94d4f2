@@ -51,6 +51,7 @@ function SettingsPage() {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
+  const preferencesKey = user?.id ? `sociohub:prefs:${user.id}` : null;
 
   // local-only preferences
   const [prefs, setPrefs] = useState({
@@ -67,16 +68,16 @@ function SettingsPage() {
     setFullName(profile?.full_name ?? "");
     setPhone(profile?.phone ?? "");
     try {
-      const raw = localStorage.getItem("sociohub:prefs");
+      const raw = preferencesKey ? localStorage.getItem(preferencesKey) : null;
       if (raw) setPrefs((p) => ({ ...p, ...JSON.parse(raw) }));
     } catch {}
-  }, [profile]);
+  }, [preferencesKey, profile]);
 
   useEffect(() => {
     try {
-      localStorage.setItem("sociohub:prefs", JSON.stringify(prefs));
+      if (preferencesKey) localStorage.setItem(preferencesKey, JSON.stringify(prefs));
     } catch {}
-  }, [prefs]);
+  }, [preferencesKey, prefs]);
 
   if (isLoading) {
     return (

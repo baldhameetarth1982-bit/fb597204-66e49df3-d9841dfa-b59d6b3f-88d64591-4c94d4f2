@@ -16,6 +16,8 @@ SociyoHub is an Android Trusted Web Activity (TWA) for `https://sociohub.live`. 
 
 The TWA has no JavaScript bridge or local-file bridge. Browser/TWA navigation, back, keyboard, camera capture, and file chooser behaviour remain browser-owned. Only `sociohub.live` is trusted; links outside that verified origin open in browser UI. Authentication remains the existing web flow (email/password, Firebase Phone OTP, Google, session exchange, expiry and logout). Server RLS remains authoritative. Razorpay is only for SociyoHub SaaS subscriptions; society maintenance remains Cash or Bank Transfer.
 
+Bubblewrap's generated manifest may include only the permissions required by Android Browser Helper features (not blanket camera or storage access). Inspect the generated manifest and final AAB before upload; reject unexpected dangerous permissions. Camera capture and uploads currently use browser file inputs, so permission denial remains a browser flow and no native QR bridge is enabled.
+
 ## Prerequisites
 
 - A trusted owner machine with 64-bit JDK 17 and `JAVA_HOME` configured.
@@ -76,7 +78,7 @@ Use the **Play App Signing app certificate** fingerprint, not an invented value 
 
 ## Play Console owner-only handoff
 
-1. Use the owner's Google Play developer account, enable Play App Signing, retain the upload keystore and credentials outside source control, and build/verify/upload the signed AAB.
+1. Use the owner's Google Play developer account, enable Play App Signing, retain the upload keystore and credentials outside source control, and build/verify/upload the signed AAB. Inspect the final merged manifest and AAB permissions before upload.
 2. Copy the Play App Signing SHA-256 fingerprint to the server variable above, deploy, then check App Links in Play Console and on a test device.
 3. Enter privacy policy `https://sociohub.live/privacy` and account deletion `https://sociohub.live/gdpr`.
 4. Complete Data Safety and content rating from actual production behaviour; do not copy assumed answers. Review authentication identifiers, profile/contact/KYC data, society/flat records, uploads, visitor/security records, payment records, diagnostics, web push, Firebase, Supabase, Razorpay, and deletion/retention behaviour.

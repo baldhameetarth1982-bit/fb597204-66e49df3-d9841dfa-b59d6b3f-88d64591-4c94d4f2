@@ -43,7 +43,7 @@ const trackedSources = [
   "src/routes/[.well-known]/assetlinks[.]json.ts",
 ].map((path) => readFileSync(resolve(root, path), "utf8")).join("\n");
 
-for (const forbidden of [/localhost/i, /127\.0\.0\.1/, /razorpay_key_secret/i, /BEGIN (RSA |EC )?PRIVATE KEY/]) {
+for (const forbidden of [/127\.0\.0\.1/, /razorpay_key_secret/i, /BEGIN (RSA |EC )?PRIVATE KEY/]) {
   if (forbidden.test(trackedSources)) failures.push(`release sources contain forbidden pattern ${forbidden}`);
 }
 

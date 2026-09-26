@@ -134,7 +134,7 @@ describe("Stage 3C — resident submission card", () => {
   it("resident detail wires the submission card only for open bills", () => {
     expect(residentDetail).toMatch(/OfflinePaymentSubmitCard/);
     expect(residentDetail).toMatch(
-      /!state\.isCancelled && !state\.isPaid && \(\s*<OfflinePaymentSubmitCard/,
+      /const open = !state\.isCancelled && !state\.isPaid;[\s\S]*\{open && \([\s\S]*<OfflinePaymentSubmitCard/,
     );
   });
 

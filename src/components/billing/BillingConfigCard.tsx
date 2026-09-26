@@ -569,7 +569,7 @@ function CycleDialog({ open, onOpenChange, templates, onSave }: {
         <DialogHeader>
           <DialogTitle>New billing cycle</DialogTitle>
           <p className="text-[11px] text-muted-foreground">
-            Draft only — bill generation comes in Stage 3B.
+            Draft only — bills are created from Generate bills.
           </p>
         </DialogHeader>
         <div className="space-y-3">
@@ -597,7 +597,7 @@ function CycleDialog({ open, onOpenChange, templates, onSave }: {
               onChange={(e) => setStatus(e.target.value as "draft" | "ready")}
             >
               <option value="draft">Draft</option>
-              <option value="ready">Ready (Stage 3B will pick this up)</option>
+              <option value="ready">Ready to generate</option>
             </select>
           </div>
           {!validDates && (

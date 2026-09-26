@@ -110,7 +110,7 @@ describe("Stage 3B closure — protected society + no payment/receipt scope cree
       "src/lib/billing-generate.functions.ts",
       "src/routes/_society/society.bill-studio.generate.tsx",
       "src/routes/_society/society.bills.$id.tsx",
-      "src/routes/_resident/app.bills.tsx",
+      "src/routes/_resident/app.bills.index.tsx",
     ];
     for (const p of paths) {
       expect(readFileSync(p, "utf8")).not.toContain(
@@ -132,9 +132,8 @@ describe("Stage 3B closure — protected society + no payment/receipt scope cree
       "utf8",
     );
     expect(uiSrc).toMatch(/No payments are recorded in this step/);
-    expect(uiSrc).toMatch(/Stage 3C/);
-    expect(uiSrc).toMatch(/RR\/YYYYMM/);
-    expect(uiSrc).toMatch(/Preview only — no bills generated yet/);
+    expect(uiSrc).toMatch(/Preview only/);
+    expect(uiSrc.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, "")).not.toMatch(/Stage \d[A-E]/); // no internal roadmap copy shown to users
   });
 
   it("admin bill detail exposes cancel-with-reason, blocked when payments exist", () => {
@@ -145,7 +144,7 @@ describe("Stage 3B closure — protected society + no payment/receipt scope cree
   });
 
   it("resident bills route uses getResidentBills (server-authoritative ownership)", () => {
-    const src = readFileSync("src/routes/_resident/app.bills.tsx", "utf8");
+    const src = readFileSync("src/routes/_resident/app.bills.index.tsx", "utf8");
     expect(src).toMatch(/getResidentBills/);
     expect(src).toMatch(/useServerFn\(getResidentBills\)/);
   });

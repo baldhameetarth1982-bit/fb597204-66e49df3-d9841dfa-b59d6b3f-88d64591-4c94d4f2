@@ -291,7 +291,7 @@ describe("parseFinancialAmount (Turn 18B.1A)", () => {
 
 describe("Income UI/service files: no handwritten `any` (Turn 18B.1A)", () => {
   const files = [
-    "src/routes/_society/society.income.tsx",
+    "src/routes/_society/society.income.index.tsx",
     "src/routes/_society/society.income.$id.tsx",
   ];
   for (const rel of files) {
@@ -597,7 +597,7 @@ describe("normalizePlan canonical matrix (Turn 18B.2B)", () => {
     { raw: "gold-super-plan", status: "active", expected: "basic", label: "unknown plan denied" },
     { raw: "pro", status: "  ACTIVE  ", expected: "pro", label: "whitespace/case normalized" },
     { raw: "  PREMIUM  ", status: "active", expected: "premium", label: "raw whitespace/case normalized" },
-    { raw: "pro", status: "who-knows", expected: "pro", label: "unknown status falls to plan_id" },
+    { raw: "pro", status: "who-knows", expected: "basic", label: "unknown status fails closed to basic" },
   ];
 
   for (const c of cases) {

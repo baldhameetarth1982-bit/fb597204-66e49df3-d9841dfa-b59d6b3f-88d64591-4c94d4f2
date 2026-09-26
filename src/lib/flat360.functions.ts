@@ -2,9 +2,8 @@
  * Flat 360 — typed server data service (ADMIN surface).
  *
  * Server-side authoritative behaviour:
- *   - authorization: society-scoped admin (`is_society_admin_for_internal`),
- *     block-scoped admin (`is_block_admin_for_flat_internal`), or super
- *     admin (`is_super_admin_internal`). Residents/guards denied.
+ *   - authorization: authenticated self-check RPCs bind every society, block,
+ *     and super-admin decision to auth.uid(). Residents/guards are denied.
  *   - plan derivation: society's `plan_id + plan_status` normalised on the
  *     server via `normalizePlan` (inactive → basic). Basic returns `locked`
  *     for all advanced sections and Pro queries are NOT executed.
@@ -512,7 +511,7 @@ export async function loadFlat360Snapshot(input: {
 }
 
 /* ================================================================== */
-/*  Real Supabase-backed deps                                          */
+/*  Real database-backed deps                                          */
 /* ================================================================== */
 
 // Narrow Supabase-client shape we need — kept local so the module carries

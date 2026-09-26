@@ -33,7 +33,7 @@ describe("Flat 360 isolated tenant and role integration", () => {
     await expect(fixture.load(IDS.guardA, IDS.flatA)).rejects.toThrow("NOT_AUTHORIZED");
   });
 
-  it("binds direct privileged RPC checks to both actor and requested object", async () => {
+  it("binds direct authenticated RPC checks to both actor and requested object", async () => {
     const fixture = createSyntheticFlat360Fixture();
     const { probed, invocations } = fixture.attachRpcProbe(IDS.adminA, IDS.societyA, IDS.flatA);
     expect(await probed.isSocietyAdmin(IDS.adminA, IDS.societyA)).toBe(true);

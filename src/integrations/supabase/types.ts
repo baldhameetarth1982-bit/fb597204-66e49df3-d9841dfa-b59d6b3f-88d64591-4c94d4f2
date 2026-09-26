@@ -6439,6 +6439,10 @@ export type Database = {
           new_status: string
         }[]
       }
+      record_saas_subscription_refund_submission: {
+        Args: { _provider_refund_id: string; _refund_record_id: string }
+        Returns: undefined
+      }
       refresh_society_payout_status_internal: {
         Args: { _actor_id: string; _payout_status: string; _society_id: string }
         Returns: Json

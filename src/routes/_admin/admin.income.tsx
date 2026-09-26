@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { TrendingUp, Wallet, Building2, BarChart3 } from "lucide-react";
+import { TrendingUp, Building2, Layers } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader, EmptyState } from "@/components/shared/PageHeader";
+import { MetricGroup, LeadFigure, MetricsSkeleton } from "@/components/shared/MetricGroup";
+import { ErrorState } from "@/components/system/ErrorState";
 
 export const Route = createFileRoute("/_admin/admin/income")({
   head: () => ({ meta: [{ title: "Income — Super Admin" }] }),
@@ -12,7 +14,7 @@ export const Route = createFileRoute("/_admin/admin/income")({
 const INR = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 
 function IncomePage() {
-  const { data } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["admin-income"],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("admin_income_summary" as any).maybeSingle();
@@ -21,58 +23,65 @@ function IncomePage() {
     },
   });
 
+  const header = <PageHeader title="Income & analytics" description="SociyoHub revenue by source and plan." />;
+  if (error) return <div className="container-page py-6 md:py-10">{header}<ErrorState title="Couldn't load income" onRetry={() => refetch()} /></div>;
+  if (isLoading) return <div className="container-page py-6 md:py-10">{header}<MetricsSkeleton /></div>;
+
   const subRev = Number(data?.subscription_mrr ?? 0);
   const txnRev = Number(data?.transaction_fee_revenue ?? 0);
   const total = Number(data?.total_revenue ?? subRev + txnRev);
-  const plans = Array.isArray(data?.plans) ? data.plans : [];
+  const plans: any[] = Array.isArray(data?.plans) ? data.plans : [];
+  const totalSocieties = plans.reduce((a, p) => a + Number(p.society_count ?? 0), 0);
 
   return (
     <div className="container-page space-y-6 py-6 md:py-10">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">Income & Analytics
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">Platform-wide revenue summary.</p>
-      </header>
+      {header}
 
-      <div className="grid sm:grid-cols-3 gap-4">
-        <Stat icon={Wallet} title="Total revenue (MRR)" value={INR.format(total)} tone="primary" />
-        <Stat icon={TrendingUp} title="Subscriptions" value={INR.format(subRev)} tone="emerald" />
-        <Stat icon={Building2} title="Transaction fees" value={INR.format(txnRev)} tone="violet" />
-      </div>
+      <LeadFigure label="Total revenue (MRR)" value={INR.format(total)} hint={`${totalSocieties} societies across ${plans.length} plans`} />
 
-      <Card className="rounded-2xl">
-        <CardHeader><CardTitle className="text-base">Societies by plan</CardTitle></CardHeader>
-        <CardContent>
-          <div className="grid sm:grid-cols-2 gap-3">
-            {plans.map((p: any) => {
-              const count = Number(p.society_count ?? 0);
-              return (
-                <div key={p.id} className="flex items-center justify-between rounded-xl border p-3">
-                  <div>
-                    <p className="font-medium">{p.name}</p>
-                    <p className="text-xs text-muted-foreground">₹{p.price_monthly_inr}/mo · {p.txn_fee_pct}% fee</p>
-                  </div>
-                  <p className="text-2xl font-bold tabular-nums">{count}</p>
-                </div>
-              );
-            })}
+      <MetricGroup
+        title="By source"
+        cols={2}
+        items={[
+          { label: "Subscriptions", value: INR.format(subRev), icon: TrendingUp },
+          { label: "Transaction fees", value: INR.format(txnRev), icon: Layers },
+        ]}
+      />
+
+      <section className="space-y-2">
+        <h2 className="px-1 text-sm font-semibold tracking-tight">Societies by plan</h2>
+        {plans.length === 0 ? (
+          <EmptyState icon={Building2} title="No plans yet" description="Plans appear here once they are created." />
+        ) : (
+          <div className="overflow-hidden rounded-2xl border border-border bg-card">
+            <div className="hidden grid-cols-[minmax(0,1fr)_8rem_6rem_10rem] gap-4 border-b border-border px-4 py-2 text-xs font-medium text-muted-foreground sm:grid">
+              <span>Plan</span><span className="text-right">Price / month</span><span className="text-right">Societies</span><span>Share</span>
+            </div>
+            <ul className="divide-y divide-border">
+              {plans.map((p) => {
+                const count = Number(p.society_count ?? 0);
+                const share = totalSocieties > 0 ? count / totalSocieties : 0;
+                return (
+                  <li key={p.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_8rem_6rem_10rem]">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{p.name}</p>
+                      <p className="text-xs text-muted-foreground sm:hidden">{INR.format(Number(p.price_monthly_inr ?? 0))}/mo · {p.txn_fee_pct}% fee</p>
+                    </div>
+                    <p className="hidden text-right text-sm tabular-nums sm:block">{INR.format(Number(p.price_monthly_inr ?? 0))}</p>
+                    <p className="text-right text-lg font-semibold tabular-nums">{count}</p>
+                    <div className="col-span-2 flex items-center gap-2 sm:col-span-1">
+                      <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                        <span className="block h-full origin-left rounded-full bg-primary" style={{ transform: `scaleX(${share})` }} />
+                      </span>
+                      <span className="w-10 text-right text-xs tabular-nums text-muted-foreground">{Math.round(share * 100)}%</span>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </section>
     </div>
-  );
-}
-
-function Stat({ icon: Icon, title, value, tone }: any) {
-  const toneCls = tone === "emerald" ? "bg-emerald-500/10 text-emerald-500"
-    : tone === "violet" ? "bg-violet-500/10 text-violet-500" : "bg-primary/10 text-primary";
-  return (
-    <Card className="rounded-2xl">
-      <CardContent className="p-5">
-        <div className={`h-10 w-10 rounded-xl grid place-items-center ${toneCls} mb-3`}><Icon className="h-5 w-5" /></div>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{title}</p>
-        <p className="text-2xl font-bold mt-1">{value}</p>
-      </CardContent>
-    </Card>
   );
 }

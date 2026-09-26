@@ -210,14 +210,16 @@ function ControlRow({ title, desc, children }: { title: string; desc: string; ch
 function InviteReset({ societyId }: { societyId: string }) {
   const [busy, setBusy] = useState(false);
   return (
-    <ActBtn icon={busy ? Loader2 : KeyRound} label="New invite code" disabled={busy} onClick={async () => {
+    <Button variant="outline" className="min-h-11" disabled={busy} onClick={async () => {
       if (busy || !window.confirm("Generate a new invite code? The old code stops working immediately.")) return;
       setBusy(true);
       const { error } = await supabase.rpc("regenerate_society_invite_code", { _society_id: societyId });
       setBusy(false);
       if (error) toast.error("Couldn't regenerate the invite code. Try again.");
       else toast.success("New invite code generated");
-    }} />
+    }}>
+      {busy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <KeyRound className="mr-1.5 h-4 w-4" />}New code
+    </Button>
   );
 }
 

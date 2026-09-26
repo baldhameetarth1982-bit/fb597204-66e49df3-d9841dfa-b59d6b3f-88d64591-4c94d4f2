@@ -63,17 +63,19 @@ function SocietyDetailPage() {
   );
 
   if (q.isLoading) {
-    return <div className="mx-auto max-w-4xl space-y-3 p-4"><Skeleton className="h-10 w-32" /><Skeleton className="h-44 rounded-3xl" /><Skeleton className="h-28 rounded-3xl" /></div>;
+    return <div className="container-page space-y-4 py-6 md:py-10"><Skeleton className="h-11 w-32" /><Skeleton className="h-20 rounded-xl" /><Skeleton className="h-24 rounded-xl" /><Skeleton className="h-48 rounded-xl" /></div>;
   }
   if (q.error || !q.data || q.data.status !== "ok") {
     const nf = q.data?.status === "not_found";
+    const na = q.data?.status === "not_authorized";
     return (
-      <div className="mx-auto max-w-4xl p-4">
+      <div className="container-page py-6 md:py-10">
         {back}
-        <div className="rounded-3xl border bg-card p-8 text-center">
-          <AlertCircle className="mx-auto mb-2 h-6 w-6 text-muted-foreground" />
-          <p className="font-medium">{nf ? "Society not found" : q.data?.status === "not_authorized" ? "Super Admin access required" : "Couldn't load this society"}</p>
-          {!nf && q.data?.status !== "not_authorized" && <Button variant="outline" className="mt-3 min-h-11" onClick={() => q.refetch()}>Retry</Button>}
+        <div className="mt-4 rounded-xl border border-border bg-card p-8 text-center">
+          <AlertCircle className="mx-auto mb-2 h-6 w-6 text-muted-foreground" aria-hidden />
+          <p className="font-medium">{nf ? "Society not found" : na ? "Super Admin access required" : "Couldn't load this society"}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{nf ? "It may have been removed, or the link is wrong." : na ? "Only platform admins can open this page." : "Check your connection and try again."}</p>
+          {!nf && !na && <Button variant="outline" className="mt-4 min-h-11" onClick={() => q.refetch()}>Try again</Button>}
         </div>
       </div>
     );

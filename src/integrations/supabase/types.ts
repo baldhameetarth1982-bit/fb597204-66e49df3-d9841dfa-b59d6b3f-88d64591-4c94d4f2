@@ -3395,6 +3395,69 @@ export type Database = {
         }
         Relationships: []
       }
+      saas_subscription_payments: {
+        Row: {
+          amount_paise: number
+          confirmed_at: string | null
+          created_at: string
+          currency: string
+          id: string
+          plan_id: string
+          provider_status: string | null
+          purchased_by: string
+          razorpay_order_id: string
+          razorpay_payment_id: string | null
+          society_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount_paise: number
+          confirmed_at?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          plan_id: string
+          provider_status?: string | null
+          purchased_by: string
+          razorpay_order_id: string
+          razorpay_payment_id?: string | null
+          society_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_paise?: number
+          confirmed_at?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          plan_id?: string
+          provider_status?: string | null
+          purchased_by?: string
+          razorpay_order_id?: string
+          razorpay_payment_id?: string | null
+          society_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saas_subscription_payments_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saas_subscription_payments_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       smart_qr_codes: {
         Row: {
           accepts_cash: boolean
@@ -5271,6 +5334,19 @@ export type Database = {
           certificate_number: string
           status: string
         }[]
+      }
+      finalize_saas_subscription_payment: {
+        Args: {
+          _amount_paise: number
+          _currency: string
+          _plan_id: string
+          _provider_status: string
+          _purchased_by: string
+          _razorpay_order_id: string
+          _razorpay_payment_id: string
+          _society_id: string
+        }
+        Returns: Json
       }
       find_referrer_by_code: { Args: { _code: string }; Returns: string }
       find_society_by_code: {

@@ -5715,6 +5715,17 @@ export type Database = {
         Returns: boolean
       }
       is_known_capability: { Args: { _cap: string }; Returns: boolean }
+      is_login_account_locked: {
+        Args: {
+          _max_failures?: number
+          _subject: string
+          _window_seconds?: number
+        }
+        Returns: {
+          locked: boolean
+          retry_after_seconds: number
+        }[]
+      }
       is_non_member_income_enabled_internal: {
         Args: { _society_id: string }
         Returns: boolean

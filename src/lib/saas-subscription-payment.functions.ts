@@ -4,7 +4,6 @@ import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const purchaseSchema = z.object({
   societyId: z.string().uuid(),
@@ -57,6 +56,11 @@ export const createSaasSubscriptionOrder = createServerFn({ method: "POST" })
   .inputValidator((input) => purchaseSchema.parse(input))
   .handler(async ({ data, context }) => {
     await requirePlanManager(context.supabase, data.societyId);
+    const { checkRateLimit } = await import("@/lib/rate-limit.server");
+    await Promise.all([
+      checkRateLimit({ bucket: "saas_subscription_order_user", subject: context.userId, limit: 5, windowSec: 600 }),
+      checkRateLimit({ bucket: "saas_subscription_order_society", subject: data.societyId, limit: 10, windowSec: 3600 }),
+    ]);
     const { data: plan, error } = await context.supabase
       .from("plans")
       .select("id,name,price_monthly_inr")
@@ -76,6 +80,7 @@ export const createSaasSubscriptionOrder = createServerFn({ method: "POST" })
       }),
     });
     const orderId = z.string().parse(order.id);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error: insertError } = await supabaseAdmin.from("saas_subscription_payments").insert({
       society_id: data.societyId,
       plan_id: data.planId,
@@ -93,6 +98,12 @@ export const confirmSaasSubscriptionPayment = createServerFn({ method: "POST" })
   .inputValidator((input) => confirmationSchema.parse(input))
   .handler(async ({ data, context }) => {
     await requirePlanManager(context.supabase, data.societyId);
+    const { checkRateLimit } = await import("@/lib/rate-limit.server");
+    await Promise.all([
+      checkRateLimit({ bucket: "saas_subscription_confirm_user", subject: context.userId, limit: 10, windowSec: 600 }),
+      checkRateLimit({ bucket: "saas_subscription_confirm_society", subject: data.societyId, limit: 30, windowSec: 3600 }),
+    ]);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: pending, error } = await supabaseAdmin
       .from("saas_subscription_payments")
       .select("society_id,plan_id,purchased_by,amount_paise,currency")
@@ -124,6 +135,9 @@ export const confirmSaasSubscriptionPayment = createServerFn({ method: "POST" })
       _currency: pending.currency,
       _provider_status: "captured",
     });
-    if (finalizeError) throw new Error(`Subscription activation failed: ${finalizeError.message}`);
+    if (finalizeError) {
+      console.error("[subscription] activation failed", finalizeError.code);
+      throw new Error("Subscription activation failed. Please try again.");
+    }
     return result;
   });

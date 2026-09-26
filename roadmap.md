@@ -1,5 +1,13 @@
 # Active roadmap
 
+## Stage 13 — Final security and reliability closure
+
+- [ ] Review privileged database functions, grants, and tenant authorization.
+- [ ] Close verified rate-limit and server-validation gaps.
+- [ ] Review financial, payment, storage, AI, audit, error, race, and recovery boundaries.
+- [ ] Run security, unit, type, build, bundle-secret, database lint, and dependency checks.
+- [ ] Record honest unavailable runtime/provider checks; do not begin Stage 14.
+
 ## Stage 12 — Premium UI/UX
 
 - [x] Unify shared design tokens, typography, controls, panels, dialogs, tables, and motion.

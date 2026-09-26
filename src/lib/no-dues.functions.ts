@@ -385,6 +385,13 @@ export const issueNoDuesCertificate = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
+    const { checkRateLimit } = await import("@/lib/rate-limit.server");
+    try {
+      await checkRateLimit({ bucket: "no_dues_certificate_issue", subject: userId, limit: 10, windowSec: 3600 });
+    } catch (error) {
+      logServerError("issue.rateLimit", error);
+      throw new NoDuesError("RATE_LIMITED");
+    }
 
     const { data: req, error } = await supabase
       .from("no_dues_requests")
@@ -534,6 +541,13 @@ export const getCertificateDownloadUrl = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
+    const { checkRateLimit } = await import("@/lib/rate-limit.server");
+    try {
+      await checkRateLimit({ bucket: "no_dues_certificate_download", subject: userId, limit: 30, windowSec: 3600 });
+    } catch (error) {
+      logServerError("download.rateLimit", error);
+      throw new NoDuesError("RATE_LIMITED");
+    }
     const { data: cert, error } = await supabase
       .from("no_dues_certificates")
       .select("id,storage_path,society_id,flat_id,request_id")
@@ -581,6 +595,13 @@ export const revokeNoDuesCertificate = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { userId } = context as any;
+    const { checkRateLimit } = await import("@/lib/rate-limit.server");
+    try {
+      await checkRateLimit({ bucket: "no_dues_verification_link", subject: userId, limit: 30, windowSec: 3600 });
+    } catch (error) {
+      logServerError("verifyLink.rateLimit", error);
+      throw new NoDuesError("RATE_LIMITED");
+    }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await (supabaseAdmin.rpc as any)(
       "revoke_no_dues_certificate_internal",

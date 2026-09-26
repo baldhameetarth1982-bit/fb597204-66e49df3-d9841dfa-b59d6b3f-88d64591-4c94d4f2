@@ -261,6 +261,20 @@ export const getPublicQrFn = createServerFn({ method: "GET" })
   .inputValidator((raw) => z.object({ token: z.string().max(80) }).parse(raw))
   .handler(async ({ data }): Promise<PublicQr> => {
     if (!TOKEN_RE.test(data.token)) return { status: "not_found" };
+    try {
+      const { getRequestIP } = await import("@tanstack/react-start/server");
+      const { checkRateLimit, fingerprintSubject } = await import("@/lib/rate-limit.server");
+      let ip = "anon";
+      try { ip = getRequestIP({ xForwardedFor: true }) ?? "anon"; } catch { /* ignore */ }
+      await checkRateLimit({
+        bucket: "smart_qr_public_view_ip",
+        subject: fingerprintSubject(ip, "smart_qr_view"),
+        limit: 30,
+        windowSec: 60,
+      });
+    } catch {
+      throw new Error("unavailable");
+    }
     const { data: res, error } = await publicClient().rpc("smart_qr_public_view", { _token: data.token });
     if (error) throw new Error("unavailable");
     const r = rpcStatus(res) as any;

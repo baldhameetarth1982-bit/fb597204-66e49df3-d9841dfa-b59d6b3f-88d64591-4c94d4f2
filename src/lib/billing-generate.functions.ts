@@ -74,6 +74,8 @@ export const previewBillBatch = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     try {
+      const { checkRateLimit } = await import("@/lib/rate-limit.server");
+      await checkRateLimit({ bucket: "billing_batch_preview", subject: data.societyId, limit: 60, windowSec: 3600 });
       const raw = (await callBillingRpc(toBillingRpcClient(context), "preview_bill_batch", buildRpcArgs({
         _society_id: data.societyId,
         _cycle_config_id: data.cycleConfigId,
@@ -107,6 +109,8 @@ export const finalizeBillBatch = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     try {
+      const { checkRateLimit } = await import("@/lib/rate-limit.server");
+      await checkRateLimit({ bucket: "billing_batch_finalize", subject: data.societyId, limit: 10, windowSec: 3600 });
       const raw = await callBillingRpc(toBillingRpcClient(context), "finalize_bill_batch", buildRpcArgs({
         _society_id: data.societyId,
         _cycle_config_id: data.cycleConfigId,

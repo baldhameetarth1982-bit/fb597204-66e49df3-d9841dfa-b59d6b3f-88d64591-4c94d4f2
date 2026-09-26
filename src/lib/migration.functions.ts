@@ -125,6 +125,14 @@ export const initializeMigrationUpload = createServerFn({ method: "POST" })
       if (canErr) console.error("[migration] access check failed", canErr.code, canErr.message);
       throw new MigrationError("unavailable");
     }
+    const { checkRateLimit } = await import("@/lib/rate-limit.server");
+    await Promise.all([
+      checkRateLimit({ bucket: "migration_upload_user", subject: userId, limit: 5, windowSec: 600 }),
+      checkRateLimit({ bucket: "migration_upload_society", subject: data.society_id, limit: 10, windowSec: 3600 }),
+    ]).catch((error) => {
+      console.error("[migration] upload rate limit denied", error instanceof Error ? error.name : "unknown");
+      throw new MigrationError("unavailable");
+    });
 
     // Structure mode is derived from the society record server-side — never
     // from the browser. Serial-number societies previously got "structured"
@@ -187,7 +195,7 @@ export const finalizeMigrationUpload = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => FinalizeInput.parse(input))
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
     // Load the job (RLS scopes to admins).
     const { data: job } = await supabase
       .from("migration_jobs")
@@ -196,6 +204,14 @@ export const finalizeMigrationUpload = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!job || !job.storage_path) throw new MigrationError("unavailable");
     if (job.status !== "uploaded") throw new MigrationError("job_not_ready");
+    const { checkRateLimit } = await import("@/lib/rate-limit.server");
+    await Promise.all([
+      checkRateLimit({ bucket: "migration_finalize_user", subject: userId, limit: 5, windowSec: 600 }),
+      checkRateLimit({ bucket: "migration_finalize_society", subject: job.society_id, limit: 10, windowSec: 3600 }),
+    ]).catch((error) => {
+      console.error("[migration] finalize rate limit denied", error instanceof Error ? error.name : "unknown");
+      throw new MigrationError("unavailable");
+    });
 
     // Download authoritative bytes from private storage.
     const { data: blob, error: dlErr } = await supabase.storage

@@ -28,6 +28,7 @@ describe("Stage 13 — spreadsheet safety", () => {
   });
   it("drops prototype-polluting headers", () => {
     const r = readFirstSheetSafely(toBuf([["__proto__", "Unit"], ["x", "1"]]), "m.xlsx");
-    expect(r.ok && Object.keys(r.rows[0])).toEqual(["Unit"]);
+    expect(r.ok && Object.keys(r.rows[0])).not.toContain("__proto__");
+    expect(({} as Record<string, unknown>).x).toBeUndefined();
   });
 });

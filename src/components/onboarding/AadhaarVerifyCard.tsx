@@ -30,8 +30,8 @@ export function AadhaarVerifyCard({
   function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
-    if (!/^image\//.test(f.type)) {
-      toast.error("Please pick an image of your Aadhaar.");
+    if (!["image/jpeg", "image/png", "image/webp"].includes(f.type)) {
+      toast.error("Use a JPEG, PNG, or WebP image.");
       return;
     }
     if (f.size > 8 * 1024 * 1024) {
@@ -100,7 +100,7 @@ export function AadhaarVerifyCard({
       <input
         ref={fileRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp"
         capture="environment"
         onChange={onFile}
         className="hidden"

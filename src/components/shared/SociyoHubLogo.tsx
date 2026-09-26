@@ -24,9 +24,9 @@ export function SociyoHubLogo({
     variant === "mono"
       ? "currentColor"
       : variant === "onDark"
-        ? "#7FE3D4"
+        ? "#8FE3D8"
         : BRAND.colors.teal;
-  const light = variant === "onDark" ? "#F6F8F7" : navy;
+  const light = variant === "onDark" ? BRAND.colors.bg : navy;
 
   const fontSize = size;
   const taglineSize = Math.max(10, Math.round(size * 0.32));
@@ -38,12 +38,11 @@ export function SociyoHubLogo({
       role="img"
     >
       <span
-        className="font-semibold tracking-tight"
+        className="font-semibold"
         style={{
           fontSize,
-          letterSpacing: "-0.02em",
-          fontFamily:
-            'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial',
+          letterSpacing: 0,
+          fontFamily: "var(--font-display)",
         }}
       >
         <span style={{ color: light }}>Soci</span>

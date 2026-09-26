@@ -105,6 +105,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Sora:wght@600;700&display=swap" },
       { rel: "manifest", href: "/manifest.webmanifest" },
     ],
     scripts: [],
@@ -246,7 +249,9 @@ function ShellSwitcher() {
 }
 
 function ProtectedShell({ pathname }: { pathname: string }) {
+  const { primaryRole } = useAuth();
   const isGuard = pathname.startsWith("/app/guard");
+  const isGuardSettings = primaryRole === "security" && pathname === "/settings";
   const isOnboarding = pathname.startsWith("/onboarding");
   const isPlanBlocker =
     pathname.endsWith("/plan-required") ||
@@ -254,7 +259,7 @@ function ProtectedShell({ pathname }: { pathname: string }) {
     pathname === "/society/plan-required";
 
   // Guard shell: minimal 3-tab mobile app.
-  if (isGuard) {
+  if (isGuard || isGuardSettings) {
     return (
       <div className="min-h-[100dvh] w-full bg-muted/40">
         <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-[480px] flex-col bg-background shadow-xl md:shadow-none">

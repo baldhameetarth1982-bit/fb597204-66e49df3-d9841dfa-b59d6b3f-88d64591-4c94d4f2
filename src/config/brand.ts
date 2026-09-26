@@ -10,10 +10,10 @@ export const BRAND = {
   supportEmail: "support@sociohub.live",
   domain: "sociohub.live",
   colors: {
-    navy: "#0B2545",
-    teal: "#00A896",
-    tealAlt: "#06B6A4",
-    bg: "#F6F8F7",
+    navy: "#123047",
+    teal: "#0C8F82",
+    tealAlt: "#0C8F82",
+    bg: "#F7FAF9",
   },
   coFounders: [
     { name: "Meetarth Baldha", role: "Co-Founder" },

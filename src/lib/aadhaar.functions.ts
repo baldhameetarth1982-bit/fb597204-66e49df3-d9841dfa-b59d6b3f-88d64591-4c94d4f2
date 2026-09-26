@@ -4,12 +4,14 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { isValidAadhaar, nameSimilarity } from "./aadhaar";
 
 const Input = z.object({ storagePath: z.string().min(1).max(512) });
-const OcrResult = z.object({
-  is_aadhaar_card: z.boolean(),
-  aadhaar_number: z.string().max(32).nullable(),
-  name: z.string().trim().max(120).nullable(),
-  dob: z.string().max(32).nullable(),
-}).strict();
+const OcrResult = z
+  .object({
+    is_aadhaar_card: z.boolean(),
+    aadhaar_number: z.string().max(32).nullable(),
+    name: z.string().trim().max(120).nullable(),
+    dob: z.string().max(32).nullable(),
+  })
+  .strict();
 
 export const verifyAadhaarPhoto = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -25,7 +27,12 @@ export const verifyAadhaarPhoto = createServerFn({ method: "POST" })
 
     try {
       const { checkRateLimit } = await import("@/lib/rate-limit.server");
-      await checkRateLimit({ bucket: "aadhaar_verify_user", subject: userId, limit: 5, windowSec: 3600 });
+      await checkRateLimit({
+        bucket: "aadhaar_verify_user",
+        subject: userId,
+        limit: 5,
+        windowSec: 3600,
+      });
     } catch {
       return { ok: false, reason: "Too many attempts. Please try again later." } as const;
     }
@@ -38,8 +45,9 @@ export const verifyAadhaarPhoto = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // Download image bytes
-    const { data: file, error: dlErr } = await supabaseAdmin
-      .storage.from("kyc-admin").download(storagePath);
+    const { data: file, error: dlErr } = await supabaseAdmin.storage
+      .from("kyc-admin")
+      .download(storagePath);
     if (dlErr || !file) {
       return { ok: false, reason: "Could not read uploaded image." } as const;
     }
@@ -66,7 +74,7 @@ export const verifyAadhaarPhoto = createServerFn({ method: "POST" })
           {
             role: "system",
             content:
-              "You read Indian Aadhaar identity cards. Reply with ONLY a single JSON object, no prose, no code fences. Schema: {\"is_aadhaar_card\": boolean, \"aadhaar_number\": string|null, \"name\": string|null, \"dob\": string|null}. aadhaar_number must be the 12 digits as printed (spaces allowed). Set is_aadhaar_card=false if the image is not an Aadhaar card.",
+              'You read Indian Aadhaar identity cards. Reply with ONLY a single JSON object, no prose, no code fences. Schema: {"is_aadhaar_card": boolean, "aadhaar_number": string|null, "name": string|null, "dob": string|null}. aadhaar_number must be the 12 digits as printed (spaces allowed). Set is_aadhaar_card=false if the image is not an Aadhaar card.',
           },
           {
             role: "user",
@@ -80,28 +88,41 @@ export const verifyAadhaarPhoto = createServerFn({ method: "POST" })
       }),
     });
 
-    if (aiResp.status === 429) return { ok: false, reason: "Too many attempts. Try again in a minute." } as const;
-    if (aiResp.status === 402) return { ok: false, reason: "Verification quota exhausted. Please try later." } as const;
+    if (aiResp.status === 429)
+      return { ok: false, reason: "Too many attempts. Try again in a minute." } as const;
+    if (aiResp.status === 402)
+      return { ok: false, reason: "Verification quota exhausted. Please try later." } as const;
     if (!aiResp.ok) return { ok: false, reason: "Verification service error. Try again." } as const;
 
     const payload = await aiResp.json();
     const raw = payload?.choices?.[0]?.message?.content ?? "{}";
     const parsed = (() => {
-      try { return OcrResult.safeParse(JSON.parse(raw)); } catch { return null; }
+      try {
+        return OcrResult.safeParse(JSON.parse(raw));
+      } catch {
+        return null;
+      }
     })();
-    if (!parsed?.success) return { ok: false, reason: "Could not read the card. Try a clearer photo." } as const;
+    if (!parsed?.success)
+      return { ok: false, reason: "Could not read the card. Try a clearer photo." } as const;
 
     if (!parsed.data.is_aadhaar_card) {
       return { ok: false, reason: "That doesn't look like an Aadhaar card." } as const;
     }
     const digits = (parsed.data.aadhaar_number ?? "").replace(/\D/g, "");
     if (!isValidAadhaar(digits)) {
-      return { ok: false, reason: "Couldn't read a valid Aadhaar number. Retake the photo in good light." } as const;
+      return {
+        ok: false,
+        reason: "Couldn't read a valid Aadhaar number. Retake the photo in good light.",
+      } as const;
     }
 
     // Match name against profile
     const { data: profile } = await supabase
-      .from("profiles").select("full_name").eq("id", userId).maybeSingle();
+      .from("profiles")
+      .select("full_name")
+      .eq("id", userId)
+      .maybeSingle();
     const profileName = (profile?.full_name ?? "").trim();
     const cardName = (parsed.data.name ?? "").trim();
     if (profileName && cardName) {

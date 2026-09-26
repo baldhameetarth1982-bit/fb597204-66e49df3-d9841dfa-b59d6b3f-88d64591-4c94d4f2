@@ -12,7 +12,9 @@ function rzpAuthHeader() {
 }
 
 async function ensureSocietyAdmin(supabase: any, userId: string, societyId: string) {
-  const { data: isAdmin } = await supabase.rpc("current_user_is_society_admin_for", { _society_id: societyId });
+  const { data: isAdmin } = await supabase.rpc("current_user_is_society_admin_for", {
+    _society_id: societyId,
+  });
   if (!isAdmin) {
     const { data: isSuper } = await supabase.rpc("current_user_is_super_admin");
     if (!isSuper) throw new Error("Forbidden");
@@ -38,8 +40,18 @@ export const createSocietyLinkedAccount = createServerFn({ method: "POST" })
     await ensureSocietyAdmin(context.supabase, context.userId, data.societyId);
     const { checkRateLimit } = await import("@/lib/rate-limit.server");
     await Promise.all([
-      checkRateLimit({ bucket: "payout_setup_user", subject: context.userId, limit: 3, windowSec: 3600 }),
-      checkRateLimit({ bucket: "payout_setup_society", subject: data.societyId, limit: 5, windowSec: 86400 }),
+      checkRateLimit({
+        bucket: "payout_setup_user",
+        subject: context.userId,
+        limit: 3,
+        windowSec: 3600,
+      }),
+      checkRateLimit({
+        bucket: "payout_setup_society",
+        subject: data.societyId,
+        limit: 5,
+        windowSec: 86400,
+      }),
     ]);
 
     // Razorpay v2 Linked Account creation
@@ -106,7 +118,12 @@ export const refreshPayoutStatus = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await ensureSocietyAdmin(context.supabase, context.userId, data.societyId);
     const { checkRateLimit } = await import("@/lib/rate-limit.server");
-    await checkRateLimit({ bucket: "payout_refresh_user", subject: context.userId, limit: 20, windowSec: 3600 });
+    await checkRateLimit({
+      bucket: "payout_refresh_user",
+      subject: context.userId,
+      limit: 20,
+      windowSec: 3600,
+    });
     const { data: soc } = await context.supabase
       .from("societies")
       .select("razorpay_account_id, payout_status")
@@ -121,8 +138,11 @@ export const refreshPayoutStatus = createServerFn({ method: "POST" })
       const body = await res.json();
       if (!res.ok) return { status: soc.payout_status };
       const status =
-        body.status === "activated" ? "active" :
-        body.status === "rejected" ? "rejected" : "pending";
+        body.status === "activated"
+          ? "active"
+          : body.status === "rejected"
+            ? "rejected"
+            : "pending";
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { error } = await supabaseAdmin.rpc("refresh_society_payout_status_internal", {
         _actor_id: context.userId,

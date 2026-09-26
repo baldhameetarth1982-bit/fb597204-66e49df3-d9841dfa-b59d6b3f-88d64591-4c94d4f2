@@ -177,7 +177,6 @@ async function assertNoDuesEntitled(societyId: string) {
     throw new NoDuesError("NOT_AUTHORIZED", "No-Dues certificates are available on the Pro plan.");
   }
 }
-}
 
 /* -------------------------------------------------------------------- */
 /*  Public: check eligibility (DB-derived, never client-supplied)        */

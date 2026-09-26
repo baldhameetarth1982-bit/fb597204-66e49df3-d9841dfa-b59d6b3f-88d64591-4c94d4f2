@@ -28,8 +28,9 @@ function IncomePage() {
   if (isLoading) return <div className="container-page py-6 md:py-10">{header}<MetricsSkeleton /></div>;
 
   const subRev = Number(data?.subscription_mrr ?? 0);
-  const txnRev = Number(data?.transaction_fee_revenue ?? 0);
-  const total = Number(data?.total_revenue ?? subRev + txnRev);
+  const collectedTotal = Number(data?.collected_total ?? 0);
+  const collected30 = Number(data?.collected_30d ?? 0);
+  const total = subRev;
   const plans: any[] = Array.isArray(data?.plans) ? data.plans : [];
   const totalSocieties = plans.reduce((a, p) => a + Number(p.society_count ?? 0), 0);
 
@@ -37,16 +38,17 @@ function IncomePage() {
     <div className="container-page space-y-6 py-6 md:py-10">
       {header}
 
-      <LeadFigure label="Total revenue (MRR)" value={INR.format(total)} hint={`${totalSocieties} societies across ${plans.length} plans`} />
+      <LeadFigure label="Monthly recurring revenue" value={INR.format(total)} hint={`${totalSocieties} societies across ${plans.length} plans`} />
 
       <MetricGroup
-        title="By source"
+        title="Verified subscription payments"
         cols={2}
         items={[
-          { label: "Subscriptions", value: INR.format(subRev), icon: TrendingUp },
-          { label: "Transaction fees", value: INR.format(txnRev), icon: Layers },
+          { label: "Last 30 days", value: INR.format(collected30), icon: TrendingUp },
+          { label: "All time", value: INR.format(collectedTotal), icon: Layers },
         ]}
       />
+
 
       <section className="space-y-2">
         <h2 className="px-1 text-sm font-semibold tracking-tight">Societies by plan</h2>

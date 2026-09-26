@@ -74,7 +74,7 @@ describe("Stage 3B — admin bill detail is server-authoritative", () => {
   });
 
   it("does not show internal roadmap copy to users", () => {
-    expect(adminDetail).not.toMatch(/Stage \d[A-E]/);
+    expect(adminDetail.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, "")).not.toMatch(/Stage \d[A-E]/);
   });
 });
 

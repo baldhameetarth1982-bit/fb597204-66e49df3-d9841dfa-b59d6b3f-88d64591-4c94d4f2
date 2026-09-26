@@ -51,6 +51,32 @@ export const listSaasSubscriptionPayments = createServerFn({ method: "POST" })
     }));
   });
 
+export const listAdminSaasSubscriptionPayments = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: isSuper, error: roleError } = await context.supabase.rpc("current_user_is_super_admin");
+    if (roleError || !isSuper) throw new Error("Only Super Admin can view platform subscription payments.");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: payments, error } = await supabaseAdmin
+      .from("saas_subscription_payments")
+      .select("id,society_id,plan_id,amount_paise,currency,lifecycle_status,provider_mode,razorpay_order_id,razorpay_payment_id,created_at,confirmed_at,refunded_at,refund_reference,societies(name)")
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (error) throw new Error("Platform subscription payment history is unavailable.");
+    const paymentIds = (payments ?? []).map((payment) => payment.id);
+    const { data: receipts } = paymentIds.length
+      ? await supabaseAdmin
+          .from("saas_subscription_receipts")
+          .select("payment_id,receipt_number,status,issued_at")
+          .in("payment_id", paymentIds)
+      : { data: [] };
+    const receiptByPayment = new Map((receipts ?? []).map((receipt) => [receipt.payment_id, receipt]));
+    return (payments ?? []).map((payment) => ({
+      ...payment,
+      receipt: receiptByPayment.get(payment.id) ?? null,
+    }));
+  });
+
 export const reconcileSaasSubscriptionOrder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => orderSchema.parse(input))
@@ -193,6 +219,9 @@ export const refundSaasSubscriptionPayment = createServerFn({ method: "POST" })
         { _refund_record_id: claim.refund_record_id, _provider_refund_id: refund.id },
       );
       if (submissionError) throw new Error("Refund submission could not be recorded.");
+      if (refund.status !== "processed") {
+        return { status: "submitted" as const, providerRefundId: refund.id };
+      }
       const { error: finalizeError } = await supabaseAdmin.rpc("finalize_saas_subscription_refund", {
         _payment_id: data.paymentId,
         _provider_refund_id: refund.id,

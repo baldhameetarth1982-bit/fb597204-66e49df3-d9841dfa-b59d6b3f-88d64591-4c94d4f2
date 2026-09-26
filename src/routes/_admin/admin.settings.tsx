@@ -45,12 +45,10 @@ function SettingsPage() {
   if (isLoading) return <div className="min-h-[40vh] grid place-items-center"><Loader2 className="h-6 w-6 animate-spin" /></div>;
 
   return (
-    <div className="px-6 py-8 space-y-6 max-w-3xl">
-      <header className="flex items-center gap-3">
-        <Settings className="h-7 w-7 text-primary" />
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Platform Settings</h1>
-          <p className="text-sm text-muted-foreground">Global toggles for ads, fees and gateway defaults.</p>
+    <div className="container-page space-y-6 py-6 md:py-10">
+      <header className="flex flex-col gap-4 border-b border-border pb-5 md:flex-row md:items-end md:justify-between"><div>
+          <h1 className="text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">Platform Settings</h1>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Global toggles for ads, fees and gateway defaults.</p>
         </div>
       </header>
 

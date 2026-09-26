@@ -67,10 +67,9 @@ function ExecutiveDashboard() {
   const healthTone = health >= 70 ? "text-emerald-600" : health >= 50 ? "text-amber-600" : "text-destructive";
 
   return (
-    <div className="px-6 py-8 space-y-6 max-w-7xl">
+    <div className="container-page space-y-6 py-6 md:py-10">
       <header>
-        <h1 className="text-3xl font-semibold tracking-tight flex items-center gap-2">
-          <TrendingUp className="h-7 w-7 text-primary" /> Executive Dashboard
+        <h1 className="text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">Executive Dashboard
         </h1>
         <p className="text-sm text-muted-foreground mt-1">Live snapshot across every society.</p>
       </header>
@@ -81,7 +80,7 @@ function ExecutiveDashboard() {
             {health}
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Platform health score</p>
+            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Platform health score</p>
             <p className={`text-2xl font-bold ${healthTone}`}>{healthLabel}</p>
             <p className="text-xs text-muted-foreground">Composite of collection, revenue, engagement and growth signals.</p>
           </div>

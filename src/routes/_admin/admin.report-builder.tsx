@@ -110,8 +110,21 @@ function ReportBuilder() {
         {isError ? (
           <ErrorState onRetry={() => refetch()} showSupport={false} />
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-border bg-card">
-            <div className="max-h-[65vh] overflow-auto">
+          <div className="overflow-hidden rounded-lg border border-border bg-card">
+            <ul className={`divide-y divide-border md:hidden ${isFetching ? "opacity-50" : ""}`}>
+              {filtered.slice(0, 100).map((r, i) => (
+                <li key={r.id ?? i} className="space-y-2 p-4">
+                  {cfg.fields.map((f) => (
+                    <div key={f} className="grid grid-cols-[minmax(0,0.42fr)_minmax(0,0.58fr)] gap-3 text-xs">
+                      <span className="capitalize text-muted-foreground">{label(f)}</span>
+                      <span className="min-w-0 break-words text-right font-mono">{String(r[f] ?? "")}</span>
+                    </div>
+                  ))}
+                </li>
+              ))}
+              {!isFetching && filtered.length === 0 && <li className="py-10 text-center text-sm text-muted-foreground">No rows match these filters.</li>}
+            </ul>
+            <div className="hidden max-h-[65vh] overflow-auto md:block">
               <table className="w-full text-sm">
                 <thead className="sticky top-0 z-10 bg-muted text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>{cfg.fields.map((f) => <th key={f} className="whitespace-nowrap px-3 py-2.5 font-medium">{label(f)}</th>)}</tr>
@@ -131,7 +144,7 @@ function ReportBuilder() {
               </table>
             </div>
             <p className="border-t border-border px-3 py-2 text-xs text-muted-foreground">
-              Showing {Math.min(filtered.length, 500).toLocaleString("en-IN")} of {filtered.length.toLocaleString("en-IN")} rows. Export includes every filtered row.
+              Showing {Math.min(filtered.length, 500).toLocaleString("en-IN")} of {filtered.length.toLocaleString("en-IN")} rows. Mobile view shows the first {Math.min(filtered.length, 100).toLocaleString("en-IN")}. Export includes every filtered row.
             </p>
           </div>
         )}

@@ -14,7 +14,7 @@ export function GoogleButton({ onClick, loading, label = "Continue with Google" 
       variant="outline"
       onClick={onClick}
       disabled={loading}
-      className="w-full h-12 rounded-2xl font-semibold gap-2"
+      className="w-full"
     >
       {loading ? (
         <Loader2 className="h-4 w-4 animate-spin" />

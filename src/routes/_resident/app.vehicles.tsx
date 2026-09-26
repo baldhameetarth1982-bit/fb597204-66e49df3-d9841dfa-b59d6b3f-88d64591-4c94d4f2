@@ -6,13 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import {
   Select,
   SelectContent,
@@ -100,21 +94,22 @@ function VehiclesPage() {
           <h1 className="text-2xl font-semibold tracking-tight">My Vehicles</h1>
           <p className="text-sm text-muted-foreground">So guards can verify you at the gate</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" className="rounded-xl">
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger asChild>
+            <Button size="sm">
               <Plus className="h-4 w-4 mr-1" />
               Add
             </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add vehicle</DialogTitle>
-            </DialogHeader>
+          </SheetTrigger>
+          <SheetContent side="bottom" className="mx-auto max-h-[92dvh] max-w-[480px] overflow-y-auto rounded-t-lg pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+            <SheetHeader className="text-left">
+              <SheetTitle>Add vehicle</SheetTitle>
+            </SheetHeader>
             <form onSubmit={add} className="space-y-3">
               <div>
-                <Label>Plate number *</Label>
+                <Label htmlFor="vehicle-plate">Plate number *</Label>
                 <Input
+                  id="vehicle-plate"
                   value={form.plate_number}
                   onChange={(e) => setForm({ ...form, plate_number: e.target.value })}
                   placeholder="MH 12 AB 1234"
@@ -122,8 +117,9 @@ function VehiclesPage() {
                 />
               </div>
               <div>
-                <Label>Make & model</Label>
+                <Label htmlFor="vehicle-model">Make & model</Label>
                 <Input
+                  id="vehicle-model"
                   value={form.make_model}
                   onChange={(e) => setForm({ ...form, make_model: e.target.value })}
                   placeholder="Honda City"
@@ -131,17 +127,18 @@ function VehiclesPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Color</Label>
+                  <Label htmlFor="vehicle-color">Color</Label>
                   <Input
+                    id="vehicle-color"
                     value={form.color}
                     onChange={(e) => setForm({ ...form, color: e.target.value })}
                     placeholder="White"
                   />
                 </div>
                 <div>
-                  <Label>Type</Label>
+                  <Label htmlFor="vehicle-type">Type</Label>
                   <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
-                    <SelectTrigger>
+                    <SelectTrigger id="vehicle-type">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -152,12 +149,12 @@ function VehiclesPage() {
                   </Select>
                 </div>
               </div>
-              <Button type="submit" className="w-full rounded-xl" disabled={submitting}>
+              <Button type="submit" className="w-full" disabled={submitting}>
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
               </Button>
             </form>
-          </DialogContent>
-        </Dialog>
+          </SheetContent>
+        </Sheet>
       </header>
       <MyParking />
 
@@ -185,7 +182,7 @@ function VehiclesPage() {
                     {[v.make_model, v.color, v.type].filter(Boolean).join(" · ") || "—"}
                   </p>
                 </div>
-                <Button size="icon" variant="ghost" onClick={() => remove(v.id)}>
+                <Button size="icon" variant="ghost" onClick={() => remove(v.id)} aria-label={`Remove ${v.plate_number}`}>
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
               </CardContent>

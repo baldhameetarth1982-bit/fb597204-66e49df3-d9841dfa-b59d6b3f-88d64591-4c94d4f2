@@ -41,18 +41,23 @@ async function pad(started: number) {
 
 /** Per-device check + per-account lockout. Returns a subject for failure recording. */
 async function gate(email: string): Promise<{ ok: true; subject: string } | Fail> {
-  const { checkRateLimit, fingerprintSubject } = await import("@/lib/rate-limit.server");
+  const { checkRateLimit, fingerprintSubject, RateLimitedError } = await import("@/lib/rate-limit.server");
   const { getRequestIP } = await import("@tanstack/react-start/server");
   let ip = "anon";
   try { ip = getRequestIP({ xForwardedFor: true }) ?? "anon"; } catch { /* ignore */ }
-  const subject = accountSubject({ email }, fingerprintSubject)!;
   try {
+    const subject = accountSubject({ email }, fingerprintSubject)!;
     await checkRateLimit({ bucket: "login:ip", subject: fingerprintSubject(ip, "login-ip"), limit: 30, windowSec: WINDOW_SEC });
     if (await isAccountLocked(subject)) return LIMITED;
-  } catch {
-    return LIMITED;
+    return { ok: true, subject };
+  } catch (e) {
+    // Only a real, active limit is reported as "limited". Configuration or
+    // database faults still fail closed, but must not masquerade as a lock
+    // that never expires.
+    if (e instanceof RateLimitedError) return LIMITED;
+    console.error("[email-auth] sign-in guard unavailable");
+    return UNAVAILABLE;
   }
-  return { ok: true, subject };
 }
 
 async function recordFailure(subject: string) {

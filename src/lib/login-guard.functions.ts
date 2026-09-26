@@ -68,7 +68,7 @@ export async function clearAccountFailures(subject: string) {
 export const assertLoginAllowed = createServerFn({ method: "POST" })
   .inputValidator((d) => identitySchema.parse(d ?? {}))
   .handler(async ({ data }): Promise<Result> => {
-    const { checkRateLimit, fingerprintSubject } = await limiter();
+    const { checkRateLimit, fingerprintSubject, RateLimitedError } = await limiter();
     try {
       await checkRateLimit({
         bucket: "login:ip",
@@ -78,8 +78,11 @@ export const assertLoginAllowed = createServerFn({ method: "POST" })
       });
       const subject = accountSubject(data, fingerprintSubject);
       if (subject && (await isAccountLocked(subject))) return { ok: false, limited: true, message: LOCKED_MSG };
-    } catch {
-      return { ok: false, limited: true, message: LOCKED_MSG };
+    } catch (e) {
+      if (e instanceof RateLimitedError) return { ok: false, limited: true, message: LOCKED_MSG };
+      // Fail closed, but don't claim a timed lock for a configuration/database fault.
+      console.error("[login-guard] guard unavailable");
+      throw new Error("Sign-in is unavailable right now. Please try again.");
     }
     return { ok: true };
   });

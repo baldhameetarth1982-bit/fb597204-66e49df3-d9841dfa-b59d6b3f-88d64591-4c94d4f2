@@ -407,6 +407,13 @@
       "when": 1790444322996,
       "tag": "0057_stage11_reasoned_withdrawal_transition",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1790447522002,
+      "tag": "0058_stage13_function_hardening",
+      "breakpoints": true
     }
   ]
 }

@@ -38,3 +38,10 @@ dist-ssr
 
 # Generated verification evidence; CI uploads these as artifacts.
 reports/
+
+# Android signing — never commit
+*.keystore
+*.jks
+android/app/
+android/*.aab
+android/*.apk

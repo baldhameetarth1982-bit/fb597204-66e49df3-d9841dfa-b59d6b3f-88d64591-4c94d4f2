@@ -48,6 +48,10 @@ export function ProtectedRoute({ pathname, children }: { pathname: string; child
     return <Navigate to={primaryRole ? ROLE_HOME[primaryRole] : "/login"} replace />;
   }
 
+  if (pathname.startsWith("/app") && primaryRole === ROLES.SECURITY && pathname !== "/app/guard" && pathname !== "/app/plan-required") {
+    return <Navigate to={ROLE_HOME[ROLES.SECURITY]} replace />;
+  }
+
   if (pathname.startsWith("/onboarding")) {
     if (primaryRole === ROLES.SUPER_ADMIN) return <Navigate to={ROLE_HOME[ROLES.SUPER_ADMIN]} replace />;
     if (profile?.society_id && primaryRole && pathname !== "/onboarding/plan") {

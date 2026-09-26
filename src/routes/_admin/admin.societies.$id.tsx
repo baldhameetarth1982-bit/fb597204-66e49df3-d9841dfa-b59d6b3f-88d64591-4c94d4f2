@@ -239,16 +239,16 @@ function ActionSheet({
   const [days, setDays] = useState("7");
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
-  const needsReason = action !== null && action !== "grant";
+  const needsReason = action !== null;
   const paidPlans = plans.filter((p) => p.id !== "trial");
 
   async function submit() {
     if (busy) return;
-    if (needsReason && reason.trim().length < 3) { toast.error(ACTION_MESSAGES.reason_required); return; }
+    if (needsReason && reason.trim().length < 5) { toast.error(ACTION_MESSAGES.reason_required); return; }
     setBusy(true);
     try {
       if (action === "grant") {
-        const { error } = await supabase.rpc("admin_grant_society_plan", { _society_id: societyId, _plan_id: planId, _months: Number(months), _extend: true });
+        const { error } = await supabase.rpc("admin_grant_society_plan", { _society_id: societyId, _plan_id: planId, _months: Number(months), _extend: true, _reason: reason.trim() });
         if (error) throw error;
         toast.success(`${planName(planId)} granted for ${months} month${months === "1" ? "" : "s"}`);
       } else {
@@ -319,10 +319,10 @@ function ActionSheet({
               {needsReason && (
                 <div className="space-y-1.5">
                   <Label htmlFor="reason">Reason (saved in audit history)</Label>
-                  <Textarea id="reason" rows={3} maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} />
+                  <Textarea id="reason" rows={3} maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="At least 5 characters" />
                 </div>
               )}
-              <Button className="min-h-12 w-full" variant={action === "suspend" || action === "cancel" ? "destructive" : "default"} disabled={busy} onClick={submit}>
+              <Button className="min-h-12 w-full" variant={action === "suspend" || action === "cancel" ? "destructive" : "default"} disabled={busy || reason.trim().length < 5} onClick={submit}>
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : titles[action][0]}
               </Button>
             </div>

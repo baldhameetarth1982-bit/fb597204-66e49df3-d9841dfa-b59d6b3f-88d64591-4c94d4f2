@@ -60,7 +60,6 @@ function PlansAdmin() {
                 <tr>
                   <th className="px-4 py-3 font-medium">Plan</th>
                   <th className="px-4 py-3 text-right font-medium">Monthly</th>
-                  <th className="px-4 py-3 text-right font-medium">Txn fee</th>
                   <th className="px-4 py-3 font-medium">Ads</th>
                   <th className="px-4 py-3 text-right font-medium">Trial</th>
                   <th className="px-4 py-3 font-medium">Societies</th>
@@ -76,7 +75,6 @@ function PlansAdmin() {
                         <div className="flex items-center gap-2 font-medium">{p.name}{p.is_recommended && <StatusChip tone="primary">Recommended</StatusChip>}</div>
                       </td>
                       <td className="px-4 py-3 text-right font-semibold tabular-nums">{inr(p.price_monthly_inr)}</td>
-                      <td className="px-4 py-3 text-right tabular-nums">{p.txn_fee_pct}%</td>
                       <td className="px-4 py-3">{p.ads_enabled ? "Yes" : "No"}</td>
                       <td className="px-4 py-3 text-right tabular-nums">{p.trial_days ? `${p.trial_days} d` : "—"}</td>
                       <td className="px-4 py-3">
@@ -104,7 +102,7 @@ function PlansAdmin() {
                   <span className="font-semibold tabular-nums">{inr(p.price_monthly_inr)}{p.price_monthly_inr > 0 && <span className="text-xs font-normal text-muted-foreground">/mo</span>}</span>
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Fee {p.txn_fee_pct}% · Ads {p.ads_enabled ? "on" : "off"} · Trial {p.trial_days || "—"}d · <span className="tabular-nums">{stats?.[p.id] ?? 0}</span> societies
+                  Ads {p.ads_enabled ? "on" : "off"} · Trial {p.trial_days || "—"}d · <span className="tabular-nums">{stats?.[p.id] ?? 0}</span> societies
                 </p>
               </li>
             ))}

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Megaphone, Percent } from "lucide-react";
+import { Megaphone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,14 +21,12 @@ type S = {
   ads_banner_enabled: boolean;
   ads_interstitial_enabled: boolean;
   ads_interstitial_seconds: number | string;
-  maintenance_fee_percent: number | string;
 };
 
 const pick = (d: any): S => ({
   ads_banner_enabled: !!d?.ads_banner_enabled,
   ads_interstitial_enabled: !!d?.ads_interstitial_enabled,
   ads_interstitial_seconds: d?.ads_interstitial_seconds ?? 15,
-  maintenance_fee_percent: d?.maintenance_fee_percent ?? 1.5,
 });
 
 function Row({ label, hint, children, htmlFor }: { label: string; hint: string; children: React.ReactNode; htmlFor?: string }) {
@@ -66,7 +64,6 @@ function SettingsPage() {
         ads_banner_enabled: state.ads_banner_enabled,
         ads_interstitial_enabled: state.ads_interstitial_enabled,
         ads_interstitial_seconds: Math.min(30, Math.max(10, Number(state.ads_interstitial_seconds) || 15)),
-        maintenance_fee_percent: Number(state.maintenance_fee_percent) || 0,
       }).eq("id", 1);
       if (error) throw error;
     },
@@ -99,15 +96,6 @@ function SettingsPage() {
                 </Row>
               )}
             </div>
-          </SettingsSection>
-
-          <SettingsSection title="Transaction fees" icon={Percent} description="Internal only — never shown to residents or societies. No fee is charged on maintenance today.">
-            <Row label="Maintenance transaction fee" hint="Reference value for reports." htmlFor="fee">
-              <div className="flex items-center gap-2">
-                <Input id="fee" type="number" step="0.01" className="h-11 w-24 tabular-nums" value={state.maintenance_fee_percent} onChange={(e) => set({ maintenance_fee_percent: e.target.value })} />
-                <span className="text-sm text-muted-foreground">%</span>
-              </div>
-            </Row>
           </SettingsSection>
 
           <SaveBar dirty={dirty} saving={save.isPending} onSave={() => save.mutate()} onDiscard={() => setState(base)} />

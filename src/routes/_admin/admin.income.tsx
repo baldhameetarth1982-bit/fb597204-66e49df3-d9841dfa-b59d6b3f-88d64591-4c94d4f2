@@ -67,7 +67,7 @@ function IncomePage() {
                   <li key={p.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_8rem_6rem_10rem]">
                     <div className="min-w-0">
                       <p className="truncate font-medium">{p.name}</p>
-                      <p className="text-xs text-muted-foreground sm:hidden">{INR.format(Number(p.price_monthly_inr ?? 0))}/mo · {p.txn_fee_pct}% fee</p>
+                      <p className="text-xs text-muted-foreground sm:hidden">{INR.format(Number(p.price_monthly_inr ?? 0))}/month</p>
                     </div>
                     <p className="hidden text-right text-sm tabular-nums sm:block">{INR.format(Number(p.price_monthly_inr ?? 0))}</p>
                     <p className="text-right text-lg font-semibold tabular-nums">{count}</p>

@@ -45,6 +45,7 @@ function HealthPage() {
         supabase.from("flat_residents").select("flat_id, flats!inner(society_id)"),
         supabase.from("posts").select("society_id"),
       ]);
+      if (socs.error || bills.error || resAgg.error || posts.error) throw new Error("health_load_failed");
       const paidBy = new Map<string, number>();
       const unpaidBy = new Map<string, number>();
       for (const b of bills.data ?? []) {

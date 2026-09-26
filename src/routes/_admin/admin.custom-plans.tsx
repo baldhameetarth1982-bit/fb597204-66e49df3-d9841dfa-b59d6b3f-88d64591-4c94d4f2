@@ -28,7 +28,6 @@ interface CustomPlan {
   name: string;
   price: number;
   duration_days: number;
-  transaction_fee_pct: number;
   notes: string | null;
   status: string;
   created_at: string;
@@ -52,7 +51,6 @@ function CustomPlansPage() {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [duration, setDuration] = useState("30");
-  const [feePct, setFeePct] = useState("1.5");
   const [notes, setNotes] = useState("");
 
   async function load() {
@@ -74,13 +72,13 @@ function CustomPlansPage() {
     setSaving(true);
     const { error } = await (supabase as any).from("custom_plans").insert({
       society_id: societyId, name, price: Number(price), duration_days: Number(duration),
-      transaction_fee_pct: Number(feePct), notes: notes || null, status: "active",
+      transaction_fee_pct: 0, notes: notes || null, status: "active",
     });
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Custom plan created");
     setOpen(false);
-    setName(""); setPrice(""); setDuration("30"); setFeePct("1.5"); setNotes(""); setSocietyId("");
+    setName(""); setPrice(""); setDuration("30"); setNotes(""); setSocietyId("");
     void load();
   }
 
@@ -132,7 +130,7 @@ function CustomPlansPage() {
                     <p className="truncate font-medium">{p.name}</p>
                     <StatusChip tone={p.status === "active" ? "success" : "neutral"} className="capitalize">{p.status}</StatusChip>
                   </div>
-                  <p className="truncate text-xs text-muted-foreground">{p.society?.name ?? "—"} · fee {p.transaction_fee_pct}%{p.notes ? ` · ${p.notes}` : ""}</p>
+                  <p className="truncate text-xs text-muted-foreground">{p.society?.name ?? "—"}{p.notes ? ` · ${p.notes}` : ""}</p>
                 </div>
                 <p className="text-right font-semibold tabular-nums">
                   ₹{Number(p.price).toLocaleString("en-IN")}<span className="block text-xs font-normal text-muted-foreground">{p.duration_days} days</span>
@@ -163,10 +161,9 @@ function CustomPlansPage() {
               <Label htmlFor="cp-name">Plan name</Label>
               <Input id="cp-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Premium — 6 months" className="h-11" />
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5"><Label htmlFor="cp-price">Price (₹)</Label><Input id="cp-price" type="number" value={price} onChange={(e) => setPrice(e.target.value)} className="h-11" /></div>
               <div className="space-y-1.5"><Label htmlFor="cp-days">Days</Label><Input id="cp-days" type="number" value={duration} onChange={(e) => setDuration(e.target.value)} className="h-11" /></div>
-              <div className="space-y-1.5"><Label htmlFor="cp-fee">Fee %</Label><Input id="cp-fee" type="number" step="0.1" value={feePct} onChange={(e) => setFeePct(e.target.value)} className="h-11" /></div>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="cp-notes">Internal notes</Label>

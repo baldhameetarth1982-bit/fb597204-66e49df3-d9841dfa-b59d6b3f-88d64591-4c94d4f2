@@ -34,7 +34,7 @@ function CheckoutPage() {
     supabase.rpc("is_razorpay_live").then(({ data }) => setLive(Boolean(data)));
   }, []);
 
-  const { data: plan, isLoading } = useQuery({
+  const { data: plan, isLoading, isError, refetch } = useQuery({
     queryKey: ["plan", planId],
     queryFn: async () => (await supabase.from("plans").select("*").eq("id", planId).maybeSingle()).data,
   });
@@ -87,17 +87,22 @@ function CheckoutPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-5">
-              {isLoading || !plan ? (
+              {isLoading ? (
                 <div className="py-6 grid place-items-center">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : isError || !plan ? (
+                <div role="alert" className="rounded-xl border border-destructive/30 p-4 text-center">
+                  <p className="font-medium">This plan couldn't be loaded.</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Check the plan link or try again.</p>
+                  <Button variant="outline" className="mt-3 min-h-11" onClick={() => void refetch()}>Try again</Button>
                 </div>
               ) : (
                 <div className="rounded-xl bg-secondary p-4">
                   <p className="text-sm text-muted-foreground">You are subscribing to</p>
                   <p className="text-2xl font-semibold mt-0.5 text-foreground">{plan.name}</p>
-                  <p className="text-lg mt-1">
-                    ₹{plan.price_monthly_inr}/month · {plan.txn_fee_pct}% transaction fee on maintenance
-                  </p>
+                  <p className="text-lg mt-1">₹{plan.price_monthly_inr}/month</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Razorpay is used only for this SociyoHub subscription. Maintenance payments remain Cash or Bank Transfer with no platform fee.</p>
                 </div>
               )}
 

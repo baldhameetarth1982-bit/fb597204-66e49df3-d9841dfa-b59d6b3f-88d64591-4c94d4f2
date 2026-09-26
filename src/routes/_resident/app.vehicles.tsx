@@ -76,8 +76,9 @@ function VehiclesPage() {
   }
 
   async function remove(id: string) {
-    const { error } = await supabase.from("vehicles").delete().eq("id", id);
-    if (error) return toast.error(error.message);
+    if (!user) return;
+    const { error } = await supabase.from("vehicles").delete().eq("id", id).eq("user_id", user.id);
+    if (error) return toast.error("Couldn't remove this vehicle. Please try again.");
     toast.success("Removed");
     void load();
   }

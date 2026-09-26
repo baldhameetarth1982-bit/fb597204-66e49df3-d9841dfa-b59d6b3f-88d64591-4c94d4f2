@@ -470,6 +470,13 @@
       "when": 1790455305022,
       "tag": "0066_stage14_refund_submission_recovery",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1790455593515,
+      "tag": "0067_retire_legacy_gateway_selector",
+      "breakpoints": true
     }
   ]
 }

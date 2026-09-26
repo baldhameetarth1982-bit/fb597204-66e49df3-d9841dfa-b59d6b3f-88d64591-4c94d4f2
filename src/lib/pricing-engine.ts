@@ -70,7 +70,6 @@ export interface PricingSettings {
   trial_days: number;
   enterprise_contact_email: string | null;
   enterprise_contact_phone: string | null;
-  active_gateway: string;
 }
 
 export async function getPricingSettings(): Promise<PricingSettings | null> {
@@ -81,7 +80,6 @@ export async function getPricingSettings(): Promise<PricingSettings | null> {
   return {
     enterprise_threshold_units: row.enterprise_threshold_units,
     trial_days: row.trial_days,
-    active_gateway: row.active_gateway,
     enterprise_contact_email: null,
     enterprise_contact_phone: null,
   };

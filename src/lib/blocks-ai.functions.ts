@@ -13,7 +13,7 @@ const PlanSchema = z.object({
         floors: z.number().int().min(0).max(80),
         units_per_floor: z.number().int().min(1).max(40),
         naming_pattern: z.enum(["A-101", "A1-101", "Plain"]).default("A-101"),
-        description: z.string().optional(),
+        description: z.string().max(500).optional(),
       }),
     )
     .min(1)
@@ -95,7 +95,7 @@ export const applySocietyPlan = createServerFn({ method: "POST" })
     );
     if (unitsRequested > 5000) throw new Error("The plan is too large to apply safely.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: result, error } = await (supabaseAdmin.rpc as any)(
+    const { data: result, error } = await supabaseAdmin.rpc(
       "apply_society_structure_plan_internal",
       {
         _actor_id: context.userId,
@@ -140,7 +140,7 @@ export const duplicateBlock = createServerFn({ method: "POST" })
       windowSec: 3600,
     });
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: result, error } = await (supabaseAdmin.rpc as any)(
+    const { data: result, error } = await supabaseAdmin.rpc(
       "duplicate_society_block_internal",
       {
         _actor_id: context.userId,

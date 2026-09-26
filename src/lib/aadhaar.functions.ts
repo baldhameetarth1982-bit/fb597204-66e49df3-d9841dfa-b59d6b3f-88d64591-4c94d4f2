@@ -18,7 +18,7 @@ export const verifyAadhaarPhoto = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => Input.parse(d))
   .handler(async ({ data, context }) => {
     const { storagePath } = data;
-    const { userId, supabase } = context as any;
+    const { userId, supabase } = context;
 
     // Storage path must live in the user's own folder
     if (!storagePath.startsWith(`${userId}/`)) {
@@ -33,8 +33,13 @@ export const verifyAadhaarPhoto = createServerFn({ method: "POST" })
         limit: 5,
         windowSec: 3600,
       });
-    } catch {
-      return { ok: false, reason: "Too many attempts. Please try again later." } as const;
+    } catch (error) {
+      const { RateLimitedError } = await import("@/lib/rate-limit.server");
+      if (error instanceof RateLimitedError) {
+        return { ok: false, reason: "Too many attempts. Please try again later." } as const;
+      }
+      console.error("[aadhaar] rate-limit check failed");
+      return { ok: false, reason: "Verification is temporarily unavailable." } as const;
     }
 
     const apiKey = process.env.LOVABLE_API_KEY;

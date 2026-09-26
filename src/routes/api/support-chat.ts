@@ -92,8 +92,13 @@ export const Route = createFileRoute("/api/support-chat")({
         try {
           const { checkRateLimit } = await import("@/lib/rate-limit.server");
           await checkRateLimit({ bucket: "support.chat", subject: userId, limit: 20 });
-        } catch {
-          return new Response("Too many requests. Please try again shortly.", { status: 429 });
+        } catch (error) {
+          const { RateLimitedError } = await import("@/lib/rate-limit.server");
+          if (error instanceof RateLimitedError) {
+            return new Response("Too many requests. Please try again shortly.", { status: 429 });
+          }
+          console.error("[support] rate-limit check failed");
+          return new Response("Support is temporarily unavailable", { status: 503 });
         }
 
         const {

@@ -11,7 +11,7 @@ function rzpAuthHeader() {
   return "Basic " + Buffer.from(`${id}:${secret}`).toString("base64");
 }
 
-async function ensureSocietyAdmin(supabase: any, userId: string, societyId: string) {
+async function ensureSocietyAdmin(supabase: any, societyId: string) {
   const { data: isAdmin } = await supabase.rpc("current_user_is_society_admin_for", {
     _society_id: societyId,
   });
@@ -37,7 +37,7 @@ export const createSocietyLinkedAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => LinkedInput.parse(i))
   .handler(async ({ data, context }) => {
-    await ensureSocietyAdmin(context.supabase, context.userId, data.societyId);
+    await ensureSocietyAdmin(context.supabase, data.societyId);
     const { checkRateLimit } = await import("@/lib/rate-limit.server");
     await Promise.all([
       checkRateLimit({
@@ -116,7 +116,7 @@ export const refreshPayoutStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ societyId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await ensureSocietyAdmin(context.supabase, context.userId, data.societyId);
+    await ensureSocietyAdmin(context.supabase, data.societyId);
     const { checkRateLimit } = await import("@/lib/rate-limit.server");
     await checkRateLimit({
       bucket: "payout_refresh_user",
@@ -164,7 +164,7 @@ export const getPayoutInfo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ societyId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await ensureSocietyAdmin(context.supabase, context.userId, data.societyId);
+    await ensureSocietyAdmin(context.supabase, data.societyId);
     const { data: row } = await context.supabase
       .from("societies")
       .select("payout_status, payout_bank_last4, payout_holder_name, razorpay_account_id")

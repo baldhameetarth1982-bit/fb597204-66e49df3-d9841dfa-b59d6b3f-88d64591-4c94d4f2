@@ -4,7 +4,9 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const BUCKET = "uploads";
 const uuid = z.string().uuid();
-const key = z.string().regex(/^[0-9a-f-]{36}-[A-Za-z0-9._-]{1,120}$/);
+const key = z
+  .string()
+  .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}-[A-Za-z0-9._-]{1,100}$/i);
 const allowedMime = new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]);
 
 const baseInput = z.object({ societyId: uuid, residentUserId: uuid });

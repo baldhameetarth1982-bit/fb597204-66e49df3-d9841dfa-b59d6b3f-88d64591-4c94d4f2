@@ -238,9 +238,16 @@ interface TimelineEvent {
   icon: LucideIcon;
 }
 
+const fmtPaymentDate = (v: string | null | undefined) => {
+  if (!v) return "—";
+  const d = new Date(v.length === 10 ? `${v}T00:00:00Z` : v);
+  return Number.isNaN(d.getTime()) ? v : d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+};
+
 function buildTimeline(r: IncomeRecordDetail): TimelineEvent[] {
   const events: Array<TimelineEvent | null> = [
     { label: "Recorded", when: r.created_at, icon: Clock },
+    r.category_confirmed_at ? { label: "Category confirmed", when: r.category_confirmed_at, icon: CheckCircle2 } : null,
     r.verification_status === "verified" || r.verified_at
       ? { label: "Verified", when: r.verified_at, icon: CheckCircle2 }
       : null,
@@ -282,7 +289,7 @@ function RecordView({
     <>
       <MobileHero
         title={r.category?.display_name ?? "Income record"}
-        subtitle={`${r.payment_date} · ${r.payment_method.replace(/_/g, " ")}`}
+        subtitle={`${fmtPaymentDate(r.payment_date)} · ${r.payment_method.replace(/_/g, " ")}`}
       />
       <SectionCard title="Details">
         <div className="grid sm:grid-cols-2 gap-3 text-sm">
@@ -292,7 +299,7 @@ function RecordView({
           <Field label="Payment method">
             <span className="capitalize">{r.payment_method.replace(/_/g, " ")}</span>
           </Field>
-          <Field label="Payment date">{r.payment_date}</Field>
+          <Field label="Payment date">{fmtPaymentDate(r.payment_date)}</Field>
           <Field label="Payment status">
             <span className="capitalize">{r.payment_status}</span>
           </Field>
@@ -565,7 +572,7 @@ function RecordSummary({ r }: { r: IncomeRecordDetail }) {
       </div>
       <div className="flex justify-between">
         <dt className="text-muted-foreground">Payment date</dt>
-        <dd>{r.payment_date}</dd>
+        <dd>{fmtPaymentDate(r.payment_date)}</dd>
       </div>
       <div className="flex justify-between">
         <dt className="text-muted-foreground">Reference</dt>

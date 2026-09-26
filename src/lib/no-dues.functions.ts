@@ -159,6 +159,26 @@ async function assertSocietyScopeAdmin(userId: string, societyId: string) {
   if (!sa && !su) throw new NoDuesError("NOT_AUTHORIZED");
 }
 
+/**
+ * Server-side entitlement: No-Dues is a Pro feature. Plan is resolved from the
+ * canonical society row (expiry + suspension aware); browser state is ignored.
+ * Existing certificates remain downloadable/verifiable after a downgrade.
+ */
+async function assertNoDuesEntitled(societyId: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("societies")
+    .select("plan_id,plan_status,trial_ends_at,plan_expires_at,status")
+    .eq("id", societyId)
+    .maybeSingle();
+  if (error) logServerError("entitlement", error);
+  const { hasFeature, planFromSocietyRow } = await import("@/lib/plan-features");
+  if (error || !hasFeature(planFromSocietyRow(data as any), "no_dues")) {
+    throw new NoDuesError("NOT_AUTHORIZED", "No-Dues certificates are available on the Pro plan.");
+  }
+}
+}
+
 /* -------------------------------------------------------------------- */
 /*  Public: check eligibility (DB-derived, never client-supplied)        */
 /* -------------------------------------------------------------------- */

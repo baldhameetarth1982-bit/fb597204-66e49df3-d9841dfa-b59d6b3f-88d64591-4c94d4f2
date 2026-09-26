@@ -76,7 +76,7 @@ function SupportPage() {
           <Bot className="h-5 w-5" />
         </div>
         <div>
-          <p className="font-semibold leading-tight">Support</p>
+          <h1 className="text-base font-semibold leading-tight">Support</h1>
           <p className="text-[11px] text-muted-foreground">AI chat · Auto-ticketing when needed</p>
         </div>
       </header>

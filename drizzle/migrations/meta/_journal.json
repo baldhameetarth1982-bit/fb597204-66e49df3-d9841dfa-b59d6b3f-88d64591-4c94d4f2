@@ -344,6 +344,13 @@
       "when": 1790435940326,
       "tag": "0048_server_authoritative_login_lock_expiry",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1790436092325,
+      "tag": "0049_correct_saas_finalizer_and_login_lock_authorization",
+      "breakpoints": true
     }
   ]
 }

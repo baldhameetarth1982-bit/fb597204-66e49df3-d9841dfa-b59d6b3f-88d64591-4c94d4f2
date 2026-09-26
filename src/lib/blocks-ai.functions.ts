@@ -140,14 +140,11 @@ export const duplicateBlock = createServerFn({ method: "POST" })
       windowSec: 3600,
     });
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: result, error } = await supabaseAdmin.rpc(
-      "duplicate_society_block_internal",
-      {
-        _actor_id: context.userId,
-        _block_id: src.id,
-        _new_name: data.newName,
-      },
-    );
+    const { data: result, error } = await supabaseAdmin.rpc("duplicate_society_block_internal", {
+      _actor_id: context.userId,
+      _block_id: src.id,
+      _new_name: data.newName,
+    });
     if (error) {
       console.error("[blocks-ai] duplicate failed", error.code);
       throw new Error("The block could not be duplicated.");

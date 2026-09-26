@@ -17,17 +17,21 @@ const TRACKED_ACTIONS = [
 
 const STORAGE_KEY = "sh:notif:last_seen";
 
-export function getLastSeen(): string {
+function storageKey(userId?: string) {
+  return userId ? `${STORAGE_KEY}:${userId}` : STORAGE_KEY;
+}
+
+export function getLastSeen(userId?: string): string {
   try {
-    return localStorage.getItem(STORAGE_KEY) || new Date(Date.now() - 7 * 864e5).toISOString();
+    return localStorage.getItem(storageKey(userId)) || new Date(Date.now() - 7 * 864e5).toISOString();
   } catch {
     return new Date(Date.now() - 7 * 864e5).toISOString();
   }
 }
 
-export function markNotificationsSeen() {
+export function markNotificationsSeen(userId?: string) {
   try {
-    localStorage.setItem(STORAGE_KEY, new Date().toISOString());
+    localStorage.setItem(storageKey(userId), new Date().toISOString());
     window.dispatchEvent(new Event("sh:notif:seen"));
   } catch {}
 }
@@ -50,7 +54,7 @@ export function useUnreadNotifications() {
     staleTime: 15_000,
     refetchInterval: 60_000,
     queryFn: async () => {
-      const since = getLastSeen();
+      const since = getLastSeen(uid);
       const [personal, notices, reads] = await Promise.all([
         supabase.from("user_notifications").select("id", { count: "exact", head: true }).is("read_at", null).gt("created_at", since),
         // RLS limits notices to those meant for this resident.

@@ -14,12 +14,15 @@ export function SplashScreen() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const isInstalled = window.matchMedia("(display-mode: standalone)").matches;
+    if (isInstalled || params.get("source") === "twa") return;
     if (sessionStorage.getItem(SESSION_KEY)) return;
     setVisible(true);
     const t = setTimeout(() => {
       sessionStorage.setItem(SESSION_KEY, "1");
       setVisible(false);
-    }, 1600);
+    }, 600);
     return () => clearTimeout(t);
   }, []);
 

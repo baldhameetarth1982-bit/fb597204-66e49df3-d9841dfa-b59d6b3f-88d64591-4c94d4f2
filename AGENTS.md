@@ -5,3 +5,4 @@
 - Motion is brief, functional, transform/opacity based, and must respect reduced-motion preferences.
 - Security service integration uses deterministic synthetic Society A/B adapters; Flat 360 role decisions use authenticated self-check RPCs, while only canonical eligibility uses the trusted server client.
 - Razorpay SaaS payments use one server-only provider module, atomic request/event/refund records, and canonical database finalizers; maintenance remains Cash and Bank Transfer only to prevent duplicate payment domains.
+- Android releases use the pinned Bubblewrap manifest and release script; generated Gradle output and signing material stay outside source control.

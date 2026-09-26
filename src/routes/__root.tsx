@@ -1,5 +1,5 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import {
   Outlet,
   Link,
@@ -145,6 +145,7 @@ function RootComponent() {
     <RootErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
+          <AccountDataBoundary />
           <SplashScreen />
           <ThemeApplier />
           <ReferralCapture />
@@ -155,6 +156,23 @@ function RootComponent() {
       </QueryClientProvider>
     </RootErrorBoundary>
   );
+}
+
+function AccountDataBoundary() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const previousUserId = useRef<string | null | undefined>(undefined);
+
+  useEffect(() => {
+    const nextUserId = user?.id ?? null;
+    if (previousUserId.current !== undefined && previousUserId.current !== nextUserId) {
+      void queryClient.cancelQueries();
+      queryClient.clear();
+    }
+    previousUserId.current = nextUserId;
+  }, [queryClient, user?.id]);
+
+  return null;
 }
 
 

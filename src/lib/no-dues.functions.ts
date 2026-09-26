@@ -212,6 +212,7 @@ export const submitNoDuesRequest = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
     await assertResidentOfFlat(supabase, userId, data.flatId, data.societyId);
+    await assertNoDuesEntitled(data.societyId);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await (supabaseAdmin.rpc as any)(
@@ -301,6 +302,7 @@ export const getNoDuesRequestDetail = createServerFn({ method: "POST" })
     if (!ok) {
       try {
         await assertCanManageFlat(userId, req.flat_id);
+    await assertNoDuesEntitled(req.society_id);
         ok = true;
       } catch {
         ok = false;
@@ -362,6 +364,7 @@ export const reviewNoDuesRequest = createServerFn({ method: "POST" })
       .maybeSingle();
     if (error || !req) throw new NoDuesError("REQUEST_NOT_FOUND");
     await assertCanManageFlat(userId, req.flat_id);
+    await assertNoDuesEntitled(req.society_id);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -781,6 +784,13 @@ export const recheckAndResubmitNoDues = createServerFn({ method: "POST" })
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: reqRow } = await supabaseAdmin
+      .from("no_dues_requests")
+      .select("society_id")
+      .eq("id", data.requestId)
+      .maybeSingle();
+    if (!reqRow) throw new NoDuesError("REQUEST_NOT_FOUND");
+    await assertNoDuesEntitled((reqRow as any).society_id);
     const { data: rows, error } = await (supabaseAdmin.rpc as any)(
       "recheck_no_dues_request_internal",
       { _actor_id: userId, _request_id: data.requestId },

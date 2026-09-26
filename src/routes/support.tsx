@@ -14,7 +14,18 @@ import { Shimmer } from "@/components/ai-elements/shimmer";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/support")({
-  head: () => ({ meta: [{ title: "Support — SociyoHub" }] }),
+  head: () => ({
+    meta: [
+      { title: "Support — SociyoHub" },
+      { name: "description", content: "Get help with SociyoHub society management: sign-in, billing, residents and account questions." },
+      { property: "og:title", content: "Support — SociyoHub" },
+      { property: "og:description", content: "Help and contact options for SociyoHub users and societies." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { property: "og:url", content: "https://sociohub.live/support" },
+    ],
+    links: [{ rel: "canonical", href: "https://sociohub.live/support" }],
+  }),
   component: SupportPage,
 });
 

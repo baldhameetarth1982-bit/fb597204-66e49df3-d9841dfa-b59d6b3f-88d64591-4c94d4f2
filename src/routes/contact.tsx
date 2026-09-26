@@ -10,7 +10,11 @@ export const Route = createFileRoute("/contact")({
       { name: "description", content: "Contact the SociyoHub Grievance Officer. Response within 48 business hours." },
       { property: "og:title", content: "Contact & Grievance — SociyoHub" },
       { property: "og:description", content: "Grievance Officer contact for SociyoHub SaaS platform." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { property: "og:url", content: "https://sociohub.live/contact" },
     ],
+    links: [{ rel: "canonical", href: "https://sociohub.live/contact" }],
   }),
   component: ContactPage,
 });

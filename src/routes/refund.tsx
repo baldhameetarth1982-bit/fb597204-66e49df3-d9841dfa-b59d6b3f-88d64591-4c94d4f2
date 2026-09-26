@@ -10,7 +10,11 @@ export const Route = createFileRoute("/refund")({
       { name: "description", content: "SociyoHub refund and cancellation policy for society maintenance and subscription plans." },
       { property: "og:title", content: "Refund & Cancellation Policy — SociyoHub" },
       { property: "og:description", content: "Refund eligibility, timelines and how to raise a request." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { property: "og:url", content: "https://sociohub.live/refund" },
     ],
+    links: [{ rel: "canonical", href: "https://sociohub.live/refund" }],
   }),
   component: RefundPage,
 });

@@ -10,7 +10,11 @@ export const Route = createFileRoute("/legal")({
       { name: "description", content: "Privacy Policy, Terms of Service, Refund Policy and Grievance contact for SociyoHub." },
       { property: "og:title", content: "SociyoHub Legal Center" },
       { property: "og:description", content: "Policies and grievance contact for SociyoHub, a SaaS platform for housing societies." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { property: "og:url", content: "https://sociohub.live/legal" },
     ],
+    links: [{ rel: "canonical", href: "https://sociohub.live/legal" }],
   }),
   component: LegalCenter,
 });

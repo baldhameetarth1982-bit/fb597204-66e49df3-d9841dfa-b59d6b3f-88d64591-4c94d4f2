@@ -16,6 +16,7 @@ export const Route = createFileRoute("/about")({
         content: `${BRAND.name} — ${BRAND.tagline}`,
       },
       { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { property: "og:url", content: "https://sociohub.live/about" },
     ],
     links: [{ rel: "canonical", href: "https://sociohub.live/about" }],

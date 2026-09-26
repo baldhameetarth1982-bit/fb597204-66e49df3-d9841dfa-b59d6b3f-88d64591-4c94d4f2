@@ -22,7 +22,9 @@ export const Route = createFileRoute("/pricing")({
       { property: "og:description", content: "Simple pricing for every society, with a free trial and transparent per-unit rates." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { property: "og:url", content: "https://sociohub.live/pricing" },
     ],
+    links: [{ rel: "canonical", href: "https://sociohub.live/pricing" }],
   }),
   component: PricingPage,
 });

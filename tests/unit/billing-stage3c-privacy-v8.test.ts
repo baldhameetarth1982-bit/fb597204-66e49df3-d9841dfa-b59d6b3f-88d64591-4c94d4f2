@@ -263,16 +263,11 @@ describe("Stage 3C v8 — production parser rejects leaked resident fields", () 
 });
 
 describe("Stage 3C v8 — protected society isolation", () => {
-  const protectedUuid = (process.env.SOCIOHUB_PROTECTED_SOCIETY_ID ?? "").trim();
-
-  it.skipIf(!protectedUuid)(
-    "protected society UUID does not appear in Stage 3C source",
-    () => {
-      const content = fs.readFileSync(
-        path.join(process.cwd(), "src/lib/offline-payments.functions.ts"),
-        "utf8",
-      );
-      expect(content).not.toContain(protectedUuid);
-    },
-  );
+  it("contains no hard-coded society UUID in Stage 3C payment source", () => {
+    const content = fs.readFileSync(
+      path.join(process.cwd(), "src/lib/offline-payments.functions.ts"),
+      "utf8",
+    );
+    expect(content).not.toMatch(/["'][0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}["']/i);
+  });
 });

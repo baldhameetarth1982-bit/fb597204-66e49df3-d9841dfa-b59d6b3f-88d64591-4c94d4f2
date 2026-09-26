@@ -14,6 +14,7 @@ import {
   residentRowSchema,
   privateDetailSchema,
 } from "@/lib/residents-admin.functions";
+import { createResidentLifecycleFixture } from "../helpers/resident-lifecycle-isolated-fixture";
 
 function read(p: string) {
   return readFileSync(join(process.cwd(), p), "utf8");
@@ -262,10 +263,43 @@ describe("Stage 2B — protected society untouched", () => {
   });
 });
 
-describe.skip("Stage 2B — integration against Postgres (requires isolated fixtures)", () => {
-  it("assign then end preserves history row", () => { /* fixture-only */ });
-  it("family deactivation preserves the row and its ID", () => { /* fixture-only */ });
-  it("vehicle deactivation preserves the plate value", () => { /* fixture-only */ });
-  it("reactivation validates duplicate plate", () => { /* fixture-only */ });
-  it("cross-society same plate is allowed", () => { /* fixture-only */ });
+describe("Stage 2B — deterministic synthetic lifecycle", () => {
+  it("assign then end preserves history row", () => {
+    const fixture = createResidentLifecycleFixture();
+    const assigned = fixture.assign("synthetic-society-a", "synthetic-resident-a");
+    const ended = fixture.end(assigned.id);
+    expect(fixture.relationships).toHaveLength(1);
+    expect(ended).toMatchObject({ id: assigned.id, active: false });
+    expect(ended.movedOutAt).not.toBeNull();
+  });
+
+  it("family deactivation preserves the row and its ID", () => {
+    const fixture = createResidentLifecycleFixture();
+    const member = fixture.addFamily();
+    expect(fixture.deactivateFamily(member.id)).toEqual({ id: member.id, active: false });
+    expect(fixture.family).toHaveLength(1);
+  });
+
+  it("vehicle deactivation preserves the plate value", () => {
+    const fixture = createResidentLifecycleFixture();
+    const vehicle = fixture.addVehicle("synthetic-society-a", "gj 01 aa 0001");
+    fixture.deactivateVehicle(vehicle.id);
+    expect(vehicle).toMatchObject({ active: false, plate: "GJ01AA0001" });
+    expect(fixture.vehicles).toHaveLength(1);
+  });
+
+  it("reactivation validates duplicate plate", () => {
+    const fixture = createResidentLifecycleFixture();
+    const archived = fixture.addVehicle("synthetic-society-a", "GJ01AA0001");
+    fixture.deactivateVehicle(archived.id);
+    fixture.addVehicle("synthetic-society-a", "GJ 01 AA 0001");
+    expect(() => fixture.reactivateVehicle(archived.id)).toThrow("duplicate_active_plate");
+  });
+
+  it("cross-society same plate is allowed", () => {
+    const fixture = createResidentLifecycleFixture();
+    fixture.addVehicle("synthetic-society-a", "GJ01AA0001");
+    fixture.addVehicle("synthetic-society-b", "GJ01AA0001");
+    expect(fixture.vehicles).toHaveLength(2);
+  });
 });

@@ -302,7 +302,6 @@ export const getNoDuesRequestDetail = createServerFn({ method: "POST" })
     if (!ok) {
       try {
         await assertCanManageFlat(userId, req.flat_id);
-    await assertNoDuesEntitled(req.society_id);
         ok = true;
       } catch {
         ok = false;
@@ -427,6 +426,7 @@ export const issueNoDuesCertificate = createServerFn({ method: "POST" })
       .maybeSingle();
     if (error || !req) throw new NoDuesError("REQUEST_NOT_FOUND");
     await assertCanManageFlat(userId, req.flat_id);
+    await assertNoDuesEntitled(req.society_id);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 

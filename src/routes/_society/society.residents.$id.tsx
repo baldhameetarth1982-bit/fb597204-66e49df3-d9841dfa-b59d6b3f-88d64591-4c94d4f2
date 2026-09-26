@@ -1,6 +1,6 @@
 import { StatusChip } from "@/components/people/PeopleUI";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -21,6 +21,12 @@ import {
   updateResidentProfile, flatOutstanding, flatOccupancyHistory, residentHousehold,
 } from "@/lib/residents.functions";
 import { getResidentPrivateDetail } from "@/lib/residents-admin.functions";
+import {
+  deleteResidentDocument,
+  initializeResidentDocumentUpload,
+  listResidentDocuments,
+  openResidentDocument,
+} from "@/lib/resident-documents.functions";
 import { useSocietyId } from "@/hooks/useSocietyId";
 
 export const Route = createFileRoute("/_society/society/residents/$id")({
@@ -417,25 +423,21 @@ function Row({ label, value }: { label: string; value: string | null | undefined
 
 type DocRow = { name: string; size: number; updated_at: string | null };
 
-function DocumentsPanel({ userId, active }: { userId: string; active: boolean }) {
+function DocumentsPanel({ userId, societyId, active }: { userId: string; societyId: string; active: boolean }) {
   const [items, setItems] = useState<DocRow[] | null>(null);
   const [busy, setBusy] = useState(false);
-  const prefix = useMemo(() => `residents/${userId}`, [userId]);
+  const listDocuments = useServerFn(listResidentDocuments);
+  const initializeUpload = useServerFn(initializeResidentDocumentUpload);
+  const openDocument = useServerFn(openResidentDocument);
+  const removeDocument = useServerFn(deleteResidentDocument);
 
   async function refresh() {
-    const { data, error } = await supabase.storage.from("uploads").list(prefix, {
-      limit: 100, sortBy: { column: "updated_at", order: "desc" },
-    });
-    if (error) { toast.error(error.message); setItems([]); return; }
-    setItems(
-      (data ?? [])
-        .filter((f) => f.name && !f.name.endsWith("/"))
-        .map((f) => ({
-          name: f.name,
-          size: (f.metadata as any)?.size ?? 0,
-          updated_at: f.updated_at ?? null,
-        })),
-    );
+    try {
+      setItems(await listDocuments({ data: { societyId, residentUserId: userId } }));
+    } catch {
+      toast.error("Documents aren't available right now.");
+      setItems([]);
+    }
   }
 
   useEffect(() => { if (active && items === null) refresh(); /* eslint-disable-next-line */ }, [active]);
@@ -446,12 +448,19 @@ function DocumentsPanel({ userId, active }: { userId: string; active: boolean })
     let ok = 0, fail = 0;
     for (const file of Array.from(files)) {
       if (file.size > 15 * 1024 * 1024) { toast.error(`${file.name}: exceeds 15 MB`); fail++; continue; }
-      const safe = file.name.replace(/[^a-z0-9._-]/gi, "_");
-      const path = `${prefix}/${Date.now()}-${safe}`;
-      const { error } = await supabase.storage.from("uploads").upload(path, file, {
-        cacheControl: "3600", upsert: false, contentType: file.type || undefined,
-      });
-      if (error) { toast.error(`${file.name}: ${error.message}`); fail++; } else ok++;
+      try {
+        const upload = await initializeUpload({
+          data: { societyId, residentUserId: userId, filename: file.name, size: file.size, mime: file.type },
+        });
+        const { error } = await supabase.storage.from("uploads").uploadToSignedUrl(upload.path, upload.token, file, {
+          cacheControl: "3600", contentType: file.type,
+        });
+        if (error) throw error;
+        ok++;
+      } catch {
+        toast.error(`${file.name}: upload failed`);
+        fail++;
+      }
     }
     setBusy(false);
     if (ok) toast.success(`Uploaded ${ok} file${ok === 1 ? "" : "s"}`);
@@ -459,18 +468,19 @@ function DocumentsPanel({ userId, active }: { userId: string; active: boolean })
   }
 
   async function openDoc(name: string) {
-    const { data, error } = await supabase.storage.from("uploads")
-      .createSignedUrl(`${prefix}/${name}`, 60 * 10);
-    if (error || !data?.signedUrl) { toast.error(error?.message ?? "Failed"); return; }
-    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+    try {
+      const { url } = await openDocument({ data: { societyId, residentUserId: userId, key: name } });
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch { toast.error("This document isn't available."); }
   }
 
   async function deleteDoc(name: string) {
     if (!confirm(`Delete ${name}?`)) return;
-    const { error } = await supabase.storage.from("uploads").remove([`${prefix}/${name}`]);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Deleted");
-    await refresh();
+    try {
+      await removeDocument({ data: { societyId, residentUserId: userId, key: name } });
+      toast.success("Deleted");
+      await refresh();
+    } catch { toast.error("Document could not be deleted."); }
   }
 
   return (

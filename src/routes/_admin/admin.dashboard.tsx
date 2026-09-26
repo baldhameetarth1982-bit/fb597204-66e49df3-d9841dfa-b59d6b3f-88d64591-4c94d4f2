@@ -11,7 +11,14 @@ import { PageHeader, PageShell } from "@/components/shared/PageHeader";
 import { StatusChip } from "@/components/system/StatusChip";
 
 export const Route = createFileRoute("/_admin/admin/dashboard")({
-  head: () => ({ meta: [{ title: "Super Admin — SociyoHub" }] }),
+  head: () => ({ meta: [
+    { title: "Platform Overview — SociyoHub" },
+    { name: "description", content: "Subscription, society, user and payment operations for SociyoHub administrators." },
+    { property: "og:title", content: "Platform Overview — SociyoHub" },
+    { property: "og:description", content: "Subscription, society, user and payment operations for SociyoHub administrators." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: AdminDashboard,
 });
 

@@ -4,9 +4,9 @@ import { cn } from "@/lib/utils";
 export type HeroVariant = "teal" | "navy" | "muted";
 
 const variants: Record<HeroVariant, string> = {
-  teal: "bg-gradient-to-br from-primary via-primary to-[oklch(0.42_0.09_205)] text-primary-foreground",
-  navy: "bg-gradient-to-br from-[oklch(0.28_0.06_255)] via-[oklch(0.22_0.05_260)] to-[oklch(0.18_0.04_260)] text-white",
-  muted: "bg-gradient-to-br from-muted via-background to-muted text-foreground",
+  teal: "bg-primary text-primary-foreground",
+  navy: "bg-foreground text-background",
+  muted: "bg-secondary text-secondary-foreground",
 };
 
 /**
@@ -38,7 +38,7 @@ export function MobileHero({
   return (
     <div
       className={cn(
-        "relative px-5 pt-8 pb-10 rounded-b-[32px] shadow-[0_20px_40px_-24px_rgba(0,0,0,0.35)]",
+        "relative border-b border-border px-5 pb-8 pt-7 shadow-[var(--elevation-2)]",
         variants[variant],
         className,
       )}
@@ -47,17 +47,17 @@ export function MobileHero({
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
           <div className="min-w-0 flex items-start gap-3">
             {Icon && (
-              <div className="shrink-0 h-11 w-11 rounded-2xl bg-white/15 backdrop-blur-sm grid place-items-center">
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-background/15">
                 <Icon className="h-5 w-5" />
               </div>
             )}
             <div className="min-w-0">
               {eyebrow && (
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] opacity-80">
+                 <p className="text-[11px] font-semibold uppercase opacity-80">
                   {eyebrow}
                 </p>
               )}
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight leading-tight">
+               <h1 className="font-display text-2xl font-bold leading-tight sm:text-3xl">
                 {title}
               </h1>
               {subtitle && (

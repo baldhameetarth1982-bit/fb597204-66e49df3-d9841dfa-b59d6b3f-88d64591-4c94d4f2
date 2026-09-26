@@ -39,8 +39,8 @@ export function AdminSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border">
-      <SidebarHeader className="px-4 py-5">
+    <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar">
+      <SidebarHeader className="h-16 justify-center border-b border-sidebar-border px-4">
         <Link to="/admin/dashboard" className="flex items-center gap-2">
           <Logo size={36} />
           {!collapsed && (
@@ -69,9 +69,10 @@ export function AdminSidebar() {
                       asChild
                       isActive={active}
                       tooltip={item.title}
-                      className="rounded-xl h-11 data-[active=true]:bg-primary data-[active=true]:text-primary-foreground hover:bg-secondary"
+                       className="relative h-11 rounded-md px-3 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:font-semibold data-[active=true]:text-primary"
                     >
-                      <Link to={item.url} className="flex items-center gap-3">
+                       <Link to={item.url} aria-current={active ? "page" : undefined} className="flex items-center gap-3">
+                         {active && <span aria-hidden className="absolute inset-y-2 left-0 w-[3px] rounded-full bg-primary" />}
                         <item.icon className="h-5 w-5 shrink-0" />
                         {!collapsed && (
                           <span className="text-sm font-medium">{item.title}</span>

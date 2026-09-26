@@ -47,6 +47,7 @@ function SettingsPage() {
   const { user, profile, isLoading, isAuthenticated, refresh, signOut, hasRole } =
     useAuth() as any;
   const isSuperAdmin = hasRole?.("super_admin") ?? false;
+  const isSecurity = hasRole?.("security") ?? false;
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
@@ -111,8 +112,8 @@ function SettingsPage() {
 
   const sections = [
     { value: "profile", label: "Profile", icon: UserIcon },
-    { value: "notifications", label: "Alerts", icon: Bell },
-    { value: "privacy", label: "Privacy", icon: Lock },
+    ...(!isSecurity ? [{ value: "notifications", label: "Alerts", icon: Bell }] : []),
+    ...(!isSecurity ? [{ value: "privacy", label: "Privacy", icon: Lock }] : []),
     { value: "security", label: "Security", icon: ShieldCheck },
     ...(isSocietyAdmin ? [{ value: "society", label: "Society", icon: Building2 }] : []),
     { value: "more", label: "More", icon: HelpCircle },
@@ -231,7 +232,7 @@ function SettingsPage() {
 
         {/* SECURITY */}
         <TabsContent value="security" className="mt-0 space-y-5">
-          <SettingsGroup title="Identity verification" scope="Only you" icon={ShieldCheck}>
+          {!isSecurity && <SettingsGroup title="Identity verification" scope="Only you" icon={ShieldCheck}>
             {aadhaarVerified ? (
               <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 flex items-center gap-3">
                 <BadgeCheck className="h-5 w-5 text-emerald-600" />
@@ -254,7 +255,7 @@ function SettingsPage() {
                 </Button>
               </div>
             )}
-          </SettingsGroup>
+          </SettingsGroup>}
 
           <SettingsGroup title="Sign-in" scope="Only you" icon={Lock}>
             <ActionRow
@@ -293,26 +294,29 @@ function SettingsPage() {
 
         {/* MORE */}
         <TabsContent value="more" className="mt-0 space-y-5">
-          <AppearanceCard
+          {!isSecurity && <AppearanceCard
             currentTheme={(profile as any)?.theme ?? "default"}
             societyId={profile?.society_id ?? null}
             userId={user?.id ?? null}
             isSuperAdmin={isSuperAdmin}
             onChanged={() => refresh?.()}
-          />
+          />}
 
-          <SettingsGroup title="Household & language" scope="Only you" icon={UsersIcon}>
+          {!isSecurity && <SettingsGroup title="Household & language" scope="Only you" icon={UsersIcon}>
             <LinkRow to="/app/family" icon={UsersIcon} label="Family members" />
             <Separator />
             <LanguageRow />
-          </SettingsGroup>
+          </SettingsGroup>}
 
           <SettingsGroup title="Support & legal" icon={HelpCircle}>
             <LinkRow to="/support" icon={HelpCircle} label="Help & support" />
             <Separator />
             <LinkRow to="/terms" icon={ShieldCheck} label="Terms & privacy" />
             <Separator />
-            <LinkRow to="/pricing" icon={ShieldCheck} label="Plans & pricing" />
+            {!isSecurity && <>
+              <Separator />
+              <LinkRow to="/pricing" icon={ShieldCheck} label="Plans & pricing" />
+            </>}
           </SettingsGroup>
 
           <section aria-labelledby="danger-zone" className="rounded-2xl border border-destructive/30 p-2">

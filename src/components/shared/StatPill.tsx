@@ -16,11 +16,11 @@ export function StatPill({
   return (
     <div
       className={cn(
-        "rounded-2xl bg-white/12 backdrop-blur-sm px-3 py-2.5 min-w-0",
+        "min-w-0 rounded-md bg-background/15 px-3 py-2.5",
         className,
       )}
     >
-      <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider opacity-80">
+      <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase opacity-80">
         {Icon && <Icon className="h-3 w-3" />}
         <span className="truncate">{label}</span>
       </div>

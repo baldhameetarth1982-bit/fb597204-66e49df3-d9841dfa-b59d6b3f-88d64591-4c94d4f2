@@ -32,7 +32,7 @@ export function MetricGroup({
         <h2 className="text-sm font-semibold tracking-tight">{title}</h2>
         {description && <p className="truncate text-xs text-muted-foreground">{description}</p>}
       </div>
-      <div className={cn("grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border", colCls)}>
+      <div className={cn("grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border", colCls)}>
         {items.map((m) => (
           <div key={m.label} className="min-w-0 bg-card p-4">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -61,7 +61,7 @@ export function LeadFigure({
   aside?: ReactNode;
 }) {
   return (
-    <section className="grid gap-4 rounded-2xl border border-border bg-card p-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:p-6">
+    <section className="grid gap-4 rounded-lg border border-border bg-card p-5 shadow-[var(--elevation-1)] md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:p-6">
       <div className="min-w-0">
         <p className="text-sm text-muted-foreground">{label}</p>
         <p className="mt-1 truncate text-3xl font-bold tabular-nums tracking-tight md:text-4xl">{value}</p>
@@ -75,9 +75,9 @@ export function LeadFigure({
 export function MetricsSkeleton() {
   return (
     <div className="space-y-6" aria-busy="true" aria-label="Loading">
-      <div className="h-28 animate-pulse rounded-2xl bg-muted" />
-      <div className="h-40 animate-pulse rounded-2xl bg-muted" />
-      <div className="h-40 animate-pulse rounded-2xl bg-muted" />
+      <div className="h-28 animate-pulse rounded-lg bg-muted" />
+      <div className="h-40 animate-pulse rounded-lg bg-muted" />
+      <div className="h-40 animate-pulse rounded-lg bg-muted" />
     </div>
   );
 }

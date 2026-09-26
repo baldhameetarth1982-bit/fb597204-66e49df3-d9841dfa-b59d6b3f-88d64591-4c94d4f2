@@ -152,7 +152,7 @@ function ResidentDashboard() {
           hint={d?.resolvedToConfirm ? `${d.resolvedToConfirm} resolved — please confirm` : "Complaints & repairs"} />
         <HomeRow to="/app/visitors" icon={ShieldCheck} label="My visitors today"
           value={d?.visitorsToday == null ? "—" : String(d.visitorsToday)} hint="Passes & gate entries" />
-        <HomeRow to="/app/notices" icon={Megaphone} label="Notices"
+        <HomeRow to="/app/comm" icon={Megaphone} label="Notices"
           value={notices.isError ? "—" : unread.length ? `${unread.length} new` : "Up to date"} hint="From your committee" />
         </div>
       </section>
@@ -173,7 +173,7 @@ function ResidentDashboard() {
         <CardContent className="p-5">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold">Recent notices</h2>
-            <Link to="/app/notices" className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:underline">View all <ArrowRight className="h-4 w-4 ml-1" /></Link>
+            <Link to="/app/comm" className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:underline">View all <ArrowRight className="h-4 w-4 ml-1" /></Link>
           </div>
           {notices.isLoading ? (
             <div className="space-y-2">{[0, 1].map((i) => <Skeleton key={i} className="h-12 rounded-lg" />)}</div>
@@ -187,7 +187,7 @@ function ResidentDashboard() {
             <ul className="divide-y divide-border">
               {latest.map((n) => (
                 <li key={n.id}>
-                  <Link to="/app/notices" className="flex items-start gap-3 py-3">
+                  <Link to="/app/comm" className="flex items-start gap-3 py-3">
                     {!notices.data?.read.has(n.id) && <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" aria-label="Unread" />}
                     <span className="min-w-0 flex-1">
                       <span className="block font-medium line-clamp-1">{n.title || "Notice"}</span>
@@ -211,7 +211,7 @@ function ResidentDashboard() {
   );
 }
 
-function HomeRow({ to, icon: Icon, label, value, hint }: { to: "/app/helpdesk" | "/app/visitors" | "/app/notices"; icon: any; label: string; value: string; hint: string }) {
+function HomeRow({ to, icon: Icon, label, value, hint }: { to: "/app/helpdesk" | "/app/visitors" | "/app/comm"; icon: any; label: string; value: string; hint: string }) {
   return (
     <Link to={to} className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-3 p-3.5 min-h-[64px] hover:bg-muted/50 focus-visible:outline-none focus-visible:bg-muted/60">
       <span className="h-10 w-10 shrink-0 rounded-lg bg-primary/10 text-primary grid place-items-center"><Icon className="h-5 w-5" /></span>

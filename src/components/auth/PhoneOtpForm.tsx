@@ -79,7 +79,7 @@ export function PhoneOtpForm({ onVerified, linkToCurrentUser, submitLabel }: Pro
   return (
     <div className="space-y-4">
       {limited && (
-        <div role="alert" className="flex gap-3 rounded-2xl border border-warning/40 bg-warning/10 p-4 text-sm">
+        <div role="alert" className="flex gap-3 rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
           <Clock className="h-5 w-5 shrink-0 text-warning" aria-hidden />
           <div>
             <p className="font-medium text-foreground">Please wait before trying again</p>
@@ -90,16 +90,17 @@ export function PhoneOtpForm({ onVerified, linkToCurrentUser, submitLabel }: Pro
       {stage === "phone" ? (
         <>
           <div className="space-y-2">
-            <Label className="flex items-center gap-1.5 text-sm">
+            <Label htmlFor="phone-number" className="flex items-center gap-1.5 text-sm">
               <Phone className="h-4 w-4 text-primary" /> Mobile number
             </Label>
             <Input
               type="tel"
+              id="phone-number"
               inputMode="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="+919876543210"
-              className="rounded-2xl h-12 text-base"
+              className="text-base"
               autoFocus
             />
             <p className="text-[11px] text-muted-foreground">
@@ -109,7 +110,7 @@ export function PhoneOtpForm({ onVerified, linkToCurrentUser, submitLabel }: Pro
           <Button
             onClick={sendCode}
             disabled={busy}
-            className="w-full h-12 rounded-2xl text-base font-semibold"
+            className="w-full"
           >
             {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Send code
@@ -118,15 +119,16 @@ export function PhoneOtpForm({ onVerified, linkToCurrentUser, submitLabel }: Pro
       ) : (
         <>
           <div className="space-y-2">
-            <Label className="flex items-center gap-1.5 text-sm">
+            <Label htmlFor="phone-code" className="flex items-center gap-1.5 text-sm">
               <ShieldCheck className="h-4 w-4 text-primary" /> Enter code
             </Label>
             <Input
               inputMode="numeric"
+              id="phone-code"
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
               placeholder="123456"
-              className="rounded-2xl h-14 text-center tracking-[0.5em] text-2xl font-semibold"
+              className="h-14 text-center text-2xl font-semibold"
               autoFocus
             />
             <p className="text-[11px] text-muted-foreground">
@@ -136,21 +138,22 @@ export function PhoneOtpForm({ onVerified, linkToCurrentUser, submitLabel }: Pro
           <Button
             onClick={verify}
             disabled={busy || code.length !== 6}
-            className="w-full h-12 rounded-2xl text-base font-semibold"
+            className="w-full"
           >
             {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             {submitLabel ?? "Verify"}
           </Button>
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={() => {
               setStage("phone");
               setCode("");
             }}
-            className="w-full text-sm text-muted-foreground hover:text-foreground"
+            className="w-full text-muted-foreground"
           >
             Change number
-          </button>
+          </Button>
         </>
       )}
       <div id="recaptcha-container" />

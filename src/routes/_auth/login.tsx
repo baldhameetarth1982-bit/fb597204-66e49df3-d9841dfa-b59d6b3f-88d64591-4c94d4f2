@@ -151,16 +151,18 @@ function LoginPage() {
   return (
     <AuthShell>
       {step !== "choose" && (
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => setStep("choose")}
-          className="mb-3 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+          className="mb-3 -ml-2"
         >
           <ArrowLeft className="h-4 w-4" /> Back
-        </button>
+        </Button>
       )}
 
-      <h1 className="text-2xl font-semibold tracking-tight text-center">
+      <h1 className="type-headline text-center">
         {step === "email"
           ? mode === "signin" ? "Sign in with email" : "Create your account"
           : step === "phone"
@@ -188,7 +190,7 @@ function LoginPage() {
             type="button"
             variant="outline"
             onClick={() => setStep("phone")}
-            className="w-full h-12 rounded-2xl font-semibold gap-2"
+            className="w-full"
           >
             <Phone className="h-4 w-4" /> Continue with Phone
           </Button>
@@ -199,7 +201,7 @@ function LoginPage() {
             type="button"
             variant="ghost"
             onClick={() => setStep("email")}
-            className="w-full h-12 rounded-2xl font-semibold gap-2"
+            className="w-full"
           >
             <Mail className="h-4 w-4" /> Continue with Email
           </Button>
@@ -231,40 +233,40 @@ function LoginPage() {
           <form onSubmit={submitEmail} className="mt-6 space-y-3">
             {mode === "signup" && (
               <div className="space-y-1.5">
-                <Label className="text-sm">Full name</Label>
+                <Label htmlFor="auth-name" className="text-sm">Full name</Label>
                 <Input
+                  id="auth-name"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Your name"
-                  className="h-12 rounded-2xl"
                   autoComplete="name"
                 />
               </div>
             )}
             <div className="space-y-1.5">
-              <Label className="flex items-center gap-1.5 text-sm">
+              <Label htmlFor="auth-email" className="flex items-center gap-1.5 text-sm">
                 <Mail className="h-4 w-4 text-primary" /> Email
               </Label>
               <Input
                 type="email"
+                id="auth-email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="h-12 rounded-2xl"
                 autoComplete="email"
                 required
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="flex items-center gap-1.5 text-sm">
+              <Label htmlFor="auth-password" className="flex items-center gap-1.5 text-sm">
                 <Lock className="h-4 w-4 text-primary" /> Password
               </Label>
               <Input
                 type="password"
+                id="auth-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="h-12 rounded-2xl"
                 autoComplete={mode === "signup" ? "new-password" : "current-password"}
                 minLength={6}
                 required
@@ -273,32 +275,33 @@ function LoginPage() {
             <Button
               type="submit"
               disabled={busy === "email"}
-              className="w-full h-12 rounded-2xl text-base font-semibold"
+              className="w-full"
             >
               {busy === "email" && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {mode === "signin" ? "Sign in" : "Create account"}
             </Button>
           </form>
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-            className="mt-4 w-full text-sm text-muted-foreground hover:text-foreground"
+            className="mt-4 w-full text-muted-foreground"
           >
             {mode === "signin" ? "New here? Create an account" : "Already have an account? Sign in"}
-          </button>
+          </Button>
         </>
       )}
 
-      <div className="mt-6 rounded-2xl bg-secondary/60 p-4 space-y-2">
+      <div className="mt-6 rounded-lg border border-border bg-secondary/60 p-4 space-y-2">
         <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
           <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Your data is safe with SociyoHub
         </p>
         <ul className="text-[11px] text-muted-foreground space-y-1.5">
           <li className="flex gap-1.5">
-            <Lock className="h-3 w-3 mt-0.5 text-primary" /> Encrypted end-to-end, never sold or shared
+            <Lock className="h-3 w-3 mt-0.5 text-primary" /> Sign-in attempts are checked before they proceed
           </li>
           <li className="flex gap-1.5">
-            <FileCheck2 className="h-3 w-3 mt-0.5 text-primary" /> GDPR-aligned, ISO-grade infrastructure
+            <FileCheck2 className="h-3 w-3 mt-0.5 text-primary" /> Access follows your assigned society role
           </li>
         </ul>
         <p className="text-[10px] text-muted-foreground pt-1">

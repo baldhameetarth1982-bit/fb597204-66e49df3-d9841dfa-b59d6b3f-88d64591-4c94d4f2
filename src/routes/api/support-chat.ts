@@ -12,6 +12,15 @@ If you cannot solve the issue, if a payment/account/bug needs human action, or i
 
 type ChatRequestBody = { messages?: unknown };
 
+const chatMessageSchema = z.object({
+  id: z.string().max(200).optional(),
+  role: z.enum(["user", "assistant"]),
+  parts: z.array(z.object({
+    type: z.string().max(50),
+    text: z.string().max(8_000).optional(),
+  }).passthrough()).max(40),
+}).passthrough();
+
 function getAuthedClient(request: Request) {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_PUBLISHABLE_KEY;
@@ -28,10 +37,14 @@ export const Route = createFileRoute("/api/support-chat")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const { messages } = (await request.json()) as ChatRequestBody;
-        if (!Array.isArray(messages)) {
+        let body: ChatRequestBody;
+        try { body = (await request.json()) as ChatRequestBody; }
+        catch { return new Response("Invalid request", { status: 400 }); }
+        const parsedMessages = z.array(chatMessageSchema).max(50).safeParse(body.messages);
+        if (!parsedMessages.success) {
           return new Response("Messages are required", { status: 400 });
         }
+        const messages = parsedMessages.data;
         const MAX_MESSAGES = 50;
         const MAX_TOTAL_CHARS = 40_000;
         const MAX_MESSAGE_CHARS = 8_000;
@@ -67,8 +80,8 @@ export const Route = createFileRoute("/api/support-chat")({
         try {
           const { checkRateLimit } = await import("@/lib/rate-limit.server");
           await checkRateLimit({ bucket: "support.chat", subject: userId, limit: 20 });
-        } catch (e: any) {
-          return new Response(e?.message ?? "Rate limit exceeded", { status: 429 });
+        } catch {
+          return new Response("Too many requests. Please try again shortly.", { status: 429 });
         }
 
         const {
@@ -108,7 +121,10 @@ export const Route = createFileRoute("/api/support-chat")({
                   })
                   .select("id")
                   .single();
-                if (error) throw new Error(error.message);
+                if (error) {
+                  console.error("[support] ticket creation failed", error.code);
+                  throw new Error("Ticket creation failed");
+                }
                 return { ticketId: row.id, shortId: row.id.slice(0, 8), status: "created" };
               },
             }),

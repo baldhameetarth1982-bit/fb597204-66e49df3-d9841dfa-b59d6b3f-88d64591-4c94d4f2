@@ -11,7 +11,7 @@ const baseInput = z.object({ societyId: uuid, residentUserId: uuid });
 const keyInput = baseInput.extend({ key });
 
 async function requireResidentAdmin(
-  supabase: Parameters<Parameters<typeof requireSupabaseAuth>["options"]["server"]>[0] extends never ? never : any,
+  supabase: any,
   societyId: string,
   residentUserId: string,
 ) {

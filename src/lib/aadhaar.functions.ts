@@ -4,6 +4,12 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { isValidAadhaar, nameSimilarity } from "./aadhaar";
 
 const Input = z.object({ storagePath: z.string().min(1).max(512) });
+const OcrResult = z.object({
+  is_aadhaar_card: z.boolean(),
+  aadhaar_number: z.string().max(32).nullable(),
+  name: z.string().trim().max(120).nullable(),
+  dob: z.string().max(32).nullable(),
+}).strict();
 
 export const verifyAadhaarPhoto = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -15,6 +21,13 @@ export const verifyAadhaarPhoto = createServerFn({ method: "POST" })
     // Storage path must live in the user's own folder
     if (!storagePath.startsWith(`${userId}/`)) {
       return { ok: false, reason: "Invalid file path." } as const;
+    }
+
+    try {
+      const { checkRateLimit } = await import("@/lib/rate-limit.server");
+      await checkRateLimit({ bucket: "aadhaar_verify_user", subject: userId, limit: 5, windowSec: 3600 });
+    } catch {
+      return { ok: false, reason: "Too many attempts. Please try again later." } as const;
     }
 
     const apiKey = process.env.LOVABLE_API_KEY;
@@ -32,6 +45,9 @@ export const verifyAadhaarPhoto = createServerFn({ method: "POST" })
     }
     const buf = Buffer.from(await file.arrayBuffer());
     const mime = file.type || "image/jpeg";
+    if (!new Set(["image/jpeg", "image/png", "image/webp"]).has(mime)) {
+      return { ok: false, reason: "Use a JPEG, PNG, or WebP image." } as const;
+    }
     if (buf.byteLength > 8 * 1024 * 1024) {
       return { ok: false, reason: "Image too large. Use a photo under 8 MB." } as const;
     }
@@ -70,13 +86,15 @@ export const verifyAadhaarPhoto = createServerFn({ method: "POST" })
 
     const payload = await aiResp.json();
     const raw = payload?.choices?.[0]?.message?.content ?? "{}";
-    let parsed: { is_aadhaar_card?: boolean; aadhaar_number?: string | null; name?: string | null };
-    try { parsed = JSON.parse(raw); } catch { return { ok: false, reason: "Could not read the card. Try a clearer photo." } as const; }
+    const parsed = (() => {
+      try { return OcrResult.safeParse(JSON.parse(raw)); } catch { return null; }
+    })();
+    if (!parsed?.success) return { ok: false, reason: "Could not read the card. Try a clearer photo." } as const;
 
-    if (!parsed.is_aadhaar_card) {
+    if (!parsed.data.is_aadhaar_card) {
       return { ok: false, reason: "That doesn't look like an Aadhaar card." } as const;
     }
-    const digits = (parsed.aadhaar_number ?? "").replace(/\D/g, "");
+    const digits = (parsed.data.aadhaar_number ?? "").replace(/\D/g, "");
     if (!isValidAadhaar(digits)) {
       return { ok: false, reason: "Couldn't read a valid Aadhaar number. Retake the photo in good light." } as const;
     }
@@ -85,7 +103,7 @@ export const verifyAadhaarPhoto = createServerFn({ method: "POST" })
     const { data: profile } = await supabase
       .from("profiles").select("full_name").eq("id", userId).maybeSingle();
     const profileName = (profile?.full_name ?? "").trim();
-    const cardName = (parsed.name ?? "").trim();
+    const cardName = (parsed.data.name ?? "").trim();
     if (profileName && cardName) {
       const sim = nameSimilarity(profileName, cardName);
       if (sim < 0.6) {
@@ -98,7 +116,10 @@ export const verifyAadhaarPhoto = createServerFn({ method: "POST" })
 
     const last4 = digits.slice(-4);
     const { error: rpcErr } = await supabase.rpc("mark_aadhaar_verified", { _last4: last4 });
-    if (rpcErr) return { ok: false, reason: rpcErr.message } as const;
+    if (rpcErr) {
+      console.error("[aadhaar] verification persistence failed", rpcErr.code);
+      return { ok: false, reason: "Verification could not be saved. Please try again." } as const;
+    }
 
     // Best-effort cleanup — keep only verification metadata, not the photo.
     void supabaseAdmin.storage.from("kyc-admin").remove([storagePath]);

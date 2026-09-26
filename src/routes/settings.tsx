@@ -313,7 +313,10 @@ function SettingsPage() {
             <Separator />
             <LinkRow to="/terms" icon={ShieldCheck} label="Terms & privacy" />
             <Separator />
-            <LinkRow to="/pricing" icon={ShieldCheck} label="Plans & pricing" />
+            {!isSecurity && <>
+              <Separator />
+              <LinkRow to="/pricing" icon={ShieldCheck} label="Plans & pricing" />
+            </>}
           </SettingsGroup>
 
           <section aria-labelledby="danger-zone" className="rounded-2xl border border-destructive/30 p-2">

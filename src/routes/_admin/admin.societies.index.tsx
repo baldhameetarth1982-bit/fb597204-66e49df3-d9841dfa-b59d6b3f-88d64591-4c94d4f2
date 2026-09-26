@@ -1,13 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Building2, Search, Loader2, ChevronRight, AlertCircle, Users, Home } from "lucide-react";
+import { Search, Loader2, ChevronRight, AlertCircle, Users, Home } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MobileHero } from "@/components/shared/MobileHero";
-import { StatPill, StatPillRow } from "@/components/shared/StatPill";
+import { PageHeader, PageShell } from "@/components/shared/PageHeader";
+import { MetricGroup } from "@/components/shared/MetricGroup";
 import { StatusChip } from "@/components/system/StatusChip";
 import { saasState, planName, type SaasState } from "@/lib/super-admin-ui";
 
@@ -64,21 +64,16 @@ function SocietiesPage() {
   ];
 
   return (
-    <div className="min-h-dvh bg-muted/30 pb-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))]">
-      <MobileHero
-        eyebrow="Super Admin" title="Societies" icon={Building2} variant="navy"
-        subtitle="Plans, trials and lifecycle for every society on SociyoHub."
-        stats={
-          <StatPillRow>
-            <StatPill label="Total" value={query.isLoading ? "—" : counts.all} />
-            <StatPill label="Paid" value={query.isLoading ? "—" : counts.paid} />
-            <StatPill label="Trial" value={query.isLoading ? "—" : counts.trial} />
-            <StatPill label="Attention" value={query.isLoading ? "—" : counts.attention} />
-          </StatPillRow>
-        }
-      />
-      <div className="mx-auto max-w-5xl space-y-4 px-4 pt-4">
-        <div className="space-y-3 rounded-3xl border bg-card p-3 shadow-sm">
+    <PageShell>
+      <PageHeader title="Societies" description="Plans, trials and lifecycle for every society on SociyoHub. Open a society to extend, grant, cancel, suspend or restore." />
+      <div className="space-y-4">
+        <MetricGroup title="Overview" cols={4} items={[
+          { label: "Total", value: query.isLoading ? "—" : counts.all },
+          { label: "Paid", value: query.isLoading ? "—" : counts.paid },
+          { label: "Trial", value: query.isLoading ? "—" : counts.trial },
+          { label: "Needs attention", value: query.isLoading ? "—" : counts.attention },
+        ]} />
+        <div className="space-y-3 rounded-2xl border bg-card p-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input aria-label="Search societies" placeholder="Search by name or city" value={q} onChange={(e) => setQ(e.target.value)} className="min-h-11 rounded-xl border-0 bg-muted/60 pl-9" />
@@ -87,7 +82,7 @@ function SocietiesPage() {
             {chips.map((c) => (
               <button
                 key={c.key} role="tab" aria-selected={filter === c.key} onClick={() => setFilter(c.key)}
-                className={`min-h-9 shrink-0 rounded-full border px-3 text-xs font-semibold transition-colors ${filter === c.key ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:bg-muted"}`}
+                className={`min-h-11 shrink-0 rounded-full border px-3 text-xs font-semibold transition-colors ${filter === c.key ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:bg-muted"}`}
               >
                 {c.label} · {counts[c.key]}
               </button>
@@ -95,7 +90,7 @@ function SocietiesPage() {
           </div>
         </div>
 
-        <section className="overflow-hidden rounded-3xl border bg-card shadow-sm">
+        <section className="overflow-hidden rounded-2xl border bg-card">
           {query.isLoading ? (
             <div className="divide-y">{[0, 1, 2, 3].map((i) => <div key={i} className="p-4"><Skeleton className="h-12" /></div>)}</div>
           ) : query.error ? (
@@ -140,6 +135,6 @@ function SocietiesPage() {
           )}
         </section>
       </div>
-    </div>
+    </PageShell>
   );
 }

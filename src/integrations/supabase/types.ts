@@ -4893,15 +4893,26 @@ export type Database = {
           visitors_today: number
         }[]
       }
-      admin_grant_society_plan: {
-        Args: {
-          _extend?: boolean
-          _months?: number
-          _plan_id: string
-          _society_id: string
-        }
-        Returns: undefined
-      }
+      admin_grant_society_plan:
+        | {
+            Args: {
+              _extend?: boolean
+              _months?: number
+              _plan_id: string
+              _society_id: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              _extend: boolean
+              _months: number
+              _plan_id: string
+              _reason: string
+              _society_id: string
+            }
+            Returns: undefined
+          }
       admin_income_summary: {
         Args: never
         Returns: {

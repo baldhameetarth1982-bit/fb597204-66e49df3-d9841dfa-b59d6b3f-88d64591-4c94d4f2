@@ -1,310 +1,183 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Users, Search, Gift, Loader2, Crown } from "lucide-react";
+import { Users, Search, Gift, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { MobileHero } from "@/components/shared/MobileHero";
-import { StatPill, StatPillRow } from "@/components/shared/StatPill";
-import { SectionCard } from "@/components/shared/SectionCard";
+import { PageHeader, PageShell } from "@/components/shared/PageHeader";
+import { MetricGroup } from "@/components/shared/MetricGroup";
 import { StatusChip } from "@/components/system/StatusChip";
+import { EmptyState } from "@/components/system/EmptyState";
+import { ErrorState } from "@/components/system/ErrorState";
+import { planName } from "@/lib/super-admin-ui";
 
 export const Route = createFileRoute("/_admin/admin/users")({
-  head: () => ({ meta: [{ title: "Users — Super Admin" }] }),
+  head: () => ({ meta: [{ title: "People & access — Super Admin" }, { name: "description", content: "Search every SociyoHub user and grant plans to their society." }] }),
   component: UsersPage,
 });
 
-interface Society {
-  id: string;
-  name: string;
-  plan_id: string | null;
-  plan_status: string;
-  plan_expires_at: string | null;
-}
+interface GrantTarget { id: string; name: string; plan_id: string | null }
 
 function initials(name: string | null | undefined) {
   if (!name) return "?";
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase() ?? "")
-    .join("");
+  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("");
 }
 
 function UsersPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
-  const [tab, setTab] = useState<"users" | "societies">("users");
-  const [grantTarget, setGrantTarget] = useState<Society | null>(null);
+  const [target, setTarget] = useState<GrantTarget | null>(null);
   const [planId, setPlanId] = useState("pro");
   const [months, setMonths] = useState(12);
+  const [reason, setReason] = useState("");
 
-  const { data: users, isLoading: usersLoading, error: usersError } = useQuery({
+  const usersQ = useQuery({
     queryKey: ["admin-users-all"],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("admin_list_users");
-      if (error) { toast.error(`Users: ${error.message}`); throw error; }
+      if (error) throw new Error("load_failed");
       return data ?? [];
     },
+    staleTime: 30_000,
   });
 
-  const { data: societies, error: societiesError } = useQuery({
-    queryKey: ["admin-societies-all"],
+  const plansQ = useQuery({
+    queryKey: ["admin-plans-grantable"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("admin_list_societies");
-      if (error) { toast.error(`Societies: ${error.message}`); throw error; }
-      return (data ?? []) as Society[];
+      const { data, error } = await supabase.from("plans").select("id, name, price_monthly_inr").order("sort_order");
+      if (error) throw new Error("load_failed");
+      return (data ?? []).filter((p) => !["trial", "ad_free", "resident"].includes(p.id));
     },
-  });
-
-  const { data: plans } = useQuery({
-    queryKey: ["admin-plans-list"],
-    queryFn: async () =>
-      (await supabase.from("plans").select("id, name, price_monthly_inr").order("sort_order")).data ?? [],
+    staleTime: 60_000,
   });
 
   const grant = useMutation({
-    mutationFn: async (vars: { society_id: string; plan_id: string; months: number }) => {
+    mutationFn: async (v: { society_id: string; plan_id: string; months: number; reason: string }) => {
       const { error } = await supabase.rpc("admin_grant_society_plan", {
-        _society_id: vars.society_id,
-        _plan_id: vars.plan_id,
-        _months: vars.months,
-        _extend: true,
+        _society_id: v.society_id, _plan_id: v.plan_id, _months: v.months, _extend: true, _reason: v.reason,
       });
-      if (error) throw error;
+      if (error) throw new Error(error.message.includes("reason_required") ? "A reason of at least 5 characters is required." : "Could not grant this plan. Please try again.");
     },
     onSuccess: () => {
-      toast.success("Plan granted successfully");
+      toast.success("Plan granted. Recorded in the audit history.");
       qc.invalidateQueries({ queryKey: ["admin-users-all"] });
-      qc.invalidateQueries({ queryKey: ["admin-societies-all"] });
-      setGrantTarget(null);
+      qc.invalidateQueries({ queryKey: ["admin-societies-v2"] });
+      setTarget(null);
     },
-    onError: (e: any) => toast.error(e.message ?? "Failed to grant plan"),
+    onError: (e: Error) => toast.error(e.message),
   });
 
-  const filteredUsers = useMemo(() => {
+  const users = usersQ.data ?? [];
+  const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
-    if (!q) return users ?? [];
-    return (users ?? []).filter((u: any) =>
-      (u.full_name ?? "").toLowerCase().includes(q) ||
-      (u.email ?? "").toLowerCase().includes(q) ||
-      (u.phone ?? "").toLowerCase().includes(q) ||
-      (u.society_name ?? "").toLowerCase().includes(q),
-    );
+    if (!q) return users;
+    return users.filter((u) =>
+      [u.full_name, u.email, u.phone, u.society_name].some((v) => (v ?? "").toLowerCase().includes(q)));
   }, [users, search]);
+  const onboarded = users.filter((u) => u.society_id).length;
 
-  const filteredSocieties = useMemo(() => {
-    const q = search.toLowerCase().trim();
-    if (!q) return societies ?? [];
-    return (societies ?? []).filter((s) => s.name.toLowerCase().includes(q));
-  }, [societies, search]);
-
-  const withSociety = (users ?? []).filter((u: any) => u.society_id).length;
+  function openGrant(u: (typeof users)[number]) {
+    setTarget({ id: u.society_id, name: u.society_name ?? "Society", plan_id: u.plan_id });
+    setPlanId(u.plan_id && !["trial", "ad_free", "resident"].includes(u.plan_id) ? u.plan_id : "pro");
+    setMonths(12);
+    setReason("");
+  }
 
   return (
-    <div className="min-h-dvh bg-muted/30 pb-24">
-      <MobileHero
-        eyebrow="Super Admin"
-        title="People & societies"
-        subtitle="Search every user. Grant plans for free to any society."
-        icon={Users}
-        variant="navy"
-        stats={
-          <StatPillRow>
-            <StatPill label="Users" value={(users ?? []).length.toLocaleString("en-IN")} />
-            <StatPill label="Onboarded" value={withSociety} />
-            <StatPill label="Societies" value={(societies ?? []).length} />
-            <StatPill label="Plans" value={(plans ?? []).length} />
-          </StatPillRow>
-        }
-      />
+    <PageShell>
+      <PageHeader title="People & access" description="Find any user and grant a plan to their society. Society lifecycle lives on each society's page." />
 
-      <div className="px-4 pt-4 space-y-4 max-w-5xl mx-auto">
-        <div className="rounded-3xl bg-card border shadow-sm p-3 space-y-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search name, email, phone, society…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 rounded-xl border-0 bg-muted/60"
-            />
-          </div>
-          <div className="grid grid-cols-2 rounded-2xl bg-muted p-1">
-            {(["users", "societies"] as const).map((k) => (
-              <button
-                key={k}
-                onClick={() => setTab(k)}
-                className={`rounded-xl py-1.5 text-xs font-semibold capitalize transition ${
-                  tab === k ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
-                }`}
-              >
-                {k}
-              </button>
-            ))}
-          </div>
-        </div>
+      {usersQ.error ? (
+        <ErrorState title="Couldn't load users" onRetry={() => usersQ.refetch()} showSupport={false} />
+      ) : (
+        <div className="space-y-6">
+          <MetricGroup title="Overview" cols={3} items={[
+            { label: "Users", value: usersQ.isLoading ? "—" : users.length.toLocaleString("en-IN"), icon: Users },
+            { label: "In a society", value: usersQ.isLoading ? "—" : onboarded.toLocaleString("en-IN") },
+            { label: "Not onboarded", value: usersQ.isLoading ? "—" : (users.length - onboarded).toLocaleString("en-IN") },
+          ]} />
 
-        {(usersError || societiesError) && (
-          <div className="rounded-2xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
-            {(usersError as any)?.message || (societiesError as any)?.message}
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input aria-label="Search users" placeholder="Name, email, phone or society" value={search} onChange={(e) => setSearch(e.target.value)} className="h-11 pl-9" />
           </div>
-        )}
 
-        {tab === "users" ? (
-          <SectionCard
-            title="All users"
-            description={`${filteredUsers.length} shown`}
-            bodyClassName="p-0"
-          >
-            {usersLoading ? (
-              <div className="py-12 grid place-items-center">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : filteredUsers.length === 0 ? (
-              <div className="py-12 text-center text-sm text-muted-foreground">No users match.</div>
-            ) : (
-              <div className="divide-y divide-border/60">
-                {filteredUsers.map((u: any) => (
-                  <div key={u.id} className="p-4 grid grid-cols-[auto_minmax(0,1fr)_auto] gap-3 items-center">
-                    <div className="h-10 w-10 rounded-2xl bg-primary/10 text-primary grid place-items-center text-xs font-bold">
-                      {initials(u.full_name)}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-semibold truncate">
-                          {u.full_name || "—"}
-                        </span>
-                        {u.society_id && u.plan_id && (
-                          <StatusChip tone={u.plan_status === "active" ? "success" : "info"}>
-                            {u.plan_id}
-                          </StatusChip>
-                        )}
-                      </div>
-                      <div className="text-xs text-muted-foreground truncate mt-0.5">
-                        {u.email || u.phone || "—"}
-                        {u.society_name && <> · {u.society_name}</>}
-                      </div>
-                    </div>
-                    {u.society_id ? (
-                      <Button
-                        size="sm" variant="outline" className="rounded-full h-8 text-xs"
-                        onClick={() => {
-                          setGrantTarget({
-                            id: u.society_id,
-                            name: u.society_name ?? "Society",
-                            plan_id: u.plan_id,
-                            plan_status: u.plan_status,
-                            plan_expires_at: u.plan_expires_at,
-                          });
-                          setPlanId(u.plan_id && u.plan_id !== "trial" ? u.plan_id : "pro");
-                          setMonths(12);
-                        }}
-                      >
-                        <Crown className="h-3.5 w-3.5 mr-1" />Grant
-                      </Button>
-                    ) : (
-                      <span className="text-[11px] text-muted-foreground">No society</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </SectionCard>
-        ) : (
-          <SectionCard
-            title="Societies"
-            description={`${filteredSocieties.length} shown`}
-            bodyClassName="p-0"
-          >
-            <div className="divide-y divide-border/60">
-              {filteredSocieties.map((s) => (
-                <div key={s.id} className="p-4 grid grid-cols-[minmax(0,1fr)_auto] gap-3 items-center">
+          {usersQ.isLoading ? (
+            <div className="space-y-2" aria-busy="true">{[0, 1, 2, 3].map((i) => <div key={i} className="h-16 animate-pulse rounded-xl bg-muted" />)}</div>
+          ) : users.length === 0 ? (
+            <EmptyState icon={Users} title="No users yet" description="People appear here once they sign up." />
+          ) : (
+            <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+              {filtered.map((u) => (
+                <li key={u.id} className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 px-4 py-3 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
+                  <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-xs font-bold text-primary" aria-hidden>{initials(u.full_name)}</div>
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-semibold truncate">{s.name}</span>
-                      <StatusChip tone={s.plan_status === "active" ? "success" : s.plan_status === "trialing" ? "info" : "neutral"}>
-                        {s.plan_status}
-                      </StatusChip>
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      <span className="truncate font-medium">{u.full_name || "Unnamed user"}</span>
+                      {u.society_id && u.plan_id && (
+                        <StatusChip tone={u.plan_status === "active" ? "success" : "info"}>{planName(u.plan_id)}</StatusChip>
+                      )}
                     </div>
-                    <div className="text-xs text-muted-foreground truncate mt-0.5">
-                      Plan {s.plan_id ?? "—"}
-                      {s.plan_expires_at && <> · expires {new Date(s.plan_expires_at).toLocaleDateString()}</>}
-                    </div>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {u.email || u.phone || "No contact"}
+                      {u.society_id && u.society_name ? <> · <Link to="/admin/societies/$id" params={{ id: u.society_id }} className="underline-offset-2 hover:underline">{u.society_name}</Link></> : " · No society"}
+                    </p>
                   </div>
-                  <Button
-                    size="sm" className="rounded-full h-8 text-xs"
-                    onClick={() => {
-                      setGrantTarget(s);
-                      setPlanId(s.plan_id && s.plan_id !== "trial" ? s.plan_id : "pro");
-                      setMonths(12);
-                    }}
-                  >
-                    <Gift className="h-3.5 w-3.5 mr-1" />Grant
-                  </Button>
-                </div>
+                  {u.society_id && (
+                    <Button variant="outline" className="col-span-2 h-11 rounded-xl sm:col-span-1" onClick={() => openGrant(u)}>
+                      <Gift className="mr-1 h-4 w-4" /> Grant plan
+                    </Button>
+                  )}
+                </li>
               ))}
-            </div>
-          </SectionCard>
-        )}
-      </div>
+              {filtered.length === 0 && <li className="px-4 py-8 text-center text-sm text-muted-foreground">No users match "{search}".</li>}
+            </ul>
+          )}
+        </div>
+      )}
 
-      <Dialog open={!!grantTarget} onOpenChange={(o) => !o && setGrantTarget(null)}>
-        <DialogContent className="rounded-3xl">
+      <Dialog open={!!target} onOpenChange={(o) => !o && !grant.isPending && setTarget(null)}>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Grant plan — {grantTarget?.name}</DialogTitle>
+            <DialogTitle>Grant a plan to {target?.name}</DialogTitle>
+            <DialogDescription>Free grant with no payment. Time is added on top of any current expiry and recorded in the audit history.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
+          <div className="grid gap-3">
+            <div className="space-y-1.5">
               <Label>Plan</Label>
               <Select value={planId} onValueChange={setPlanId}>
-                <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {(plans ?? []).map((p: any) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name} {p.price_monthly_inr > 0 && `— ₹${p.price_monthly_inr}/mo`}
-                    </SelectItem>
+                  {(plansQ.data ?? []).map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}{Number(p.price_monthly_inr) > 0 ? ` — ₹${Number(p.price_monthly_inr).toLocaleString("en-IN")}/mo` : ""}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>Duration (months)</Label>
-              <Input
-                type="number" min={1} max={120} value={months}
-                onChange={(e) => setMonths(Math.max(1, Number(e.target.value) || 1))}
-                className="rounded-xl"
-              />
-              <p className="text-xs text-muted-foreground">
-                Free grant — no payment required. Adds time on top of any current expiry.
-              </p>
+            <div className="space-y-1.5">
+              <Label htmlFor="grant-months">Months</Label>
+              <Input id="grant-months" type="number" min={1} max={120} value={months} onChange={(e) => setMonths(Math.min(120, Math.max(1, Number(e.target.value) || 1)))} className="h-11" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="grant-reason">Reason</Label>
+              <Input id="grant-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Pilot partner, 12 months free" className="h-11" />
+              <p className="text-xs text-muted-foreground">At least 5 characters.</p>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="ghost" className="rounded-xl" onClick={() => setGrantTarget(null)}>
-              Cancel
-            </Button>
-            <Button
-              className="rounded-xl"
-              onClick={() => grantTarget && grant.mutate({ society_id: grantTarget.id, plan_id: planId, months })}
-              disabled={grant.isPending}
-            >
-              {grant.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Gift className="h-4 w-4 mr-1" />}
-              Grant for free
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" className="h-11 rounded-xl" disabled={grant.isPending} onClick={() => setTarget(null)}>Cancel</Button>
+            <Button className="h-11 rounded-xl" disabled={grant.isPending || reason.trim().length < 5 || !plansQ.data?.length}
+              onClick={() => target && grant.mutate({ society_id: target.id, plan_id: planId, months, reason: reason.trim() })}>
+              {grant.isPending && <Loader2 className="mr-1 h-4 w-4 animate-spin" />} Grant plan
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   );
 }

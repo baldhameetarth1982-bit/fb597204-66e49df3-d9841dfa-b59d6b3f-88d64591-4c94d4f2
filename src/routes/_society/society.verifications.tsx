@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { userMessage } from "@/lib/user-error";
 import { useEffect, useState } from "react";
 import { ShieldCheck, Loader2, BadgeCheck, FileText, Clock, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,7 +52,7 @@ function VerificationsPage() {
       .not("aadhaar_uploaded_at", "is", null)
       .order("aadhaar_uploaded_at", { ascending: false });
     if (error) {
-      toast.error(error.message);
+      toast.error(userMessage(error));
       setLoading(false);
       return;
     }
@@ -85,7 +86,7 @@ function VerificationsPage() {
       _user_id: id, _approved: true, _reason: null,
     });
     setBusyId(null);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(userMessage(error));
     toast.success("Resident verified");
     void load();
   }
@@ -99,7 +100,7 @@ function VerificationsPage() {
       _user_id: rejectId, _approved: false, _reason: reason,
     });
     setBusyId(null);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(userMessage(error));
     toast.success("KYC rejected — resident notified");
     setRejectId(null);
     setRejectReason("");

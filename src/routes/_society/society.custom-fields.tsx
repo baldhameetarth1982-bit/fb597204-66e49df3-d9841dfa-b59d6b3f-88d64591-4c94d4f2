@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { userMessage } from "@/lib/user-error";
 import { useEffect, useState } from "react";
 import { ListChecks, Plus, Loader2, Trash2, GripVertical } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -61,7 +62,7 @@ function CustomFieldsPage() {
       .select("*")
       .eq("society_id", sid)
       .order("sort_order");
-    if (error) toast.error(error.message);
+    if (error) toast.error(userMessage(error));
     setFields(((data as any) ?? []) as Field[]);
     setLoading(false);
   }
@@ -94,7 +95,7 @@ function CustomFieldsPage() {
       sort_order: fields.length,
     });
     setSaving(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(userMessage(error)); return; }
     toast.success("Field added");
     setForm(blankForm);
     setOpen(false);
@@ -105,7 +106,7 @@ function CustomFieldsPage() {
     if (!societyId) return;
     if (!confirm("Delete this field and all resident values?")) return;
     const { error } = await supabase.from("custom_fields").delete().eq("id", id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(userMessage(error)); return; }
     void load(societyId);
   }
 

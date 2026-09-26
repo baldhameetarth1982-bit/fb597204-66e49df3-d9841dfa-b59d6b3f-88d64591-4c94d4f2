@@ -1,4 +1,5 @@
 import { StatusChip } from "@/components/people/PeopleUI";
+import { userMessage } from "@/lib/user-error";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -200,7 +201,7 @@ function ResidentDetailPage() {
       setEditing(false);
       await refetch();
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed to update");
+      toast.error(userMessage(e, "Failed to update"));
     } finally {
       setSaving(false);
     }

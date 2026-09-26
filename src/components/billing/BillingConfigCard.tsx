@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { userMessage } from "@/lib/user-error";
 import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Plus, Eye, Archive, FileText, Coins, CalendarClock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -218,7 +219,7 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
                           setPreview(r.preview);
                           setPreviewOpen(true);
                         } catch (e: any) {
-                          toast.error(e.message ?? "Preview failed");
+                          toast.error(userMessage(e, "Preview failed"));
                         }
                       }}
                     >
@@ -247,7 +248,7 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
                                 size="icon" variant="ghost" className="h-7 w-7"
                                 onClick={async () => {
                                   try { await archLine({ data: { societyId, id: l.id } }); toast.success("Line archived"); void refreshLines(activeTpl.id); }
-                                  catch (e: any) { toast.error(e.message ?? "Archive failed"); }
+                                  catch (e: any) { toast.error(userMessage(e, "Archive failed")); }
                                 }}
                               >
                                 <Archive className="h-3.5 w-3.5" />
@@ -394,7 +395,7 @@ function ChargeHeadDialog({ open, onOpenChange, onSave }: { open: boolean; onOpe
           <Button disabled={busy || !name.trim()} onClick={async () => {
             setBusy(true);
             try { await onSave({ name: name.trim(), category: category.trim() || "general", defaultAmount: amount ? Number(amount) : null }); onOpenChange(false); }
-            catch (e: any) { toast.error(e.message ?? "Save failed"); }
+            catch (e: any) { toast.error(userMessage(e, "Save failed")); }
             finally { setBusy(false); }
           }}>Save</Button>
         </DialogFooter>
@@ -420,7 +421,7 @@ function TemplateDialog({ open, onOpenChange, onSave }: { open: boolean; onOpenC
           <Button disabled={busy || !name.trim()} onClick={async () => {
             setBusy(true);
             try { await onSave({ name: name.trim(), status: "draft", billingFrequency: "monthly", effectiveFrom }); onOpenChange(false); }
-            catch (e: any) { toast.error(e.message ?? "Save failed"); }
+            catch (e: any) { toast.error(userMessage(e, "Save failed")); }
             finally { setBusy(false); }
           }}>Save draft</Button>
         </DialogFooter>
@@ -487,7 +488,7 @@ function LineDialog({ open, onOpenChange, heads, onSave }: {
                 sortOrder: 0,
               });
               onOpenChange(false);
-            } catch (e: any) { toast.error(e.message ?? "Save failed"); }
+            } catch (e: any) { toast.error(userMessage(e, "Save failed")); }
             finally { setBusy(false); }
           }}>Save</Button>
         </DialogFooter>

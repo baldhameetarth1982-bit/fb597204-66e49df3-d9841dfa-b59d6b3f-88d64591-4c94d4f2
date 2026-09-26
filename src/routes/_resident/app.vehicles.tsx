@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { userMessage } from "@/lib/user-error";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Trash2, Car, Loader2 } from "lucide-react";
@@ -72,7 +73,7 @@ function VehiclesPage() {
       type: form.type,
     });
     setSubmitting(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(userMessage(error));
     toast.success("Vehicle added");
     setForm({ plate_number: "", make_model: "", color: "", type: "car" });
     setOpen(false);

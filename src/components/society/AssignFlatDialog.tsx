@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { userMessage } from "@/lib/user-error";
 import { Loader2, Home, Search, CheckCircle2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -38,7 +39,7 @@ export function AssignFlatDialog({ open, onOpenChange, societyId, userId, userNa
     setQ("");
     setLoading(true);
     supabase.rpc("list_society_flats_public", { _society_id: societyId }).then(({ data, error }) => {
-      if (error) toast.error(error.message);
+      if (error) toast.error(userMessage(error));
       setFlats((data as any[]) ?? []);
       setLoading(false);
     });
@@ -61,7 +62,7 @@ export function AssignFlatDialog({ open, onOpenChange, societyId, userId, userNa
     });
     setSubmitting(false);
     if (error) {
-      toast.error(error.message);
+      toast.error(userMessage(error));
       return;
     }
     toast.success("Resident linked to flat");

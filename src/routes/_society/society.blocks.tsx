@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { userMessage } from "@/lib/user-error";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Building2, Plus, Loader2, Copy, Sparkles, Wand2, Trash2 } from "lucide-react";
@@ -72,7 +73,7 @@ function BlocksPage() {
       .select("id, name, description, created_at, flats(count)")
       .eq("society_id", sid)
       .order("name");
-    if (error) toast.error(error.message);
+    if (error) toast.error(userMessage(error));
     else
       setBlocks(
         (data ?? []).map((b: any) => ({ ...b, flat_count: b.flats?.[0]?.count ?? 0 })),
@@ -97,7 +98,7 @@ function BlocksPage() {
       description: description.trim() || null,
     });
     setSaving(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(userMessage(error));
     toast.success("Block created");
     setName(""); setDescription(""); setOpen(false);
     void fetchBlocks(societyId);
@@ -111,7 +112,7 @@ function BlocksPage() {
       toast.success(`Created ${dupName} with ${res.unitsCreated} units`);
       setDupOpen(false); setDupName("");
       if (societyId) void fetchBlocks(societyId);
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: any) { toast.error(userMessage(e)); }
     setDupBusy(false);
   }
 
@@ -121,7 +122,7 @@ function BlocksPage() {
     try {
       const res = await planFn({ data: { text: aiText.trim() } });
       setAiPlan(res.plan);
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: any) { toast.error(userMessage(e)); }
     setAiBusy(false);
   }
 
@@ -133,7 +134,7 @@ function BlocksPage() {
       toast.success(`Created ${res.blocksCreated} blocks · ${res.unitsCreated} units`);
       setAiOpen(false); setAiPlan(null); setAiText("");
       void fetchBlocks(societyId);
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: any) { toast.error(userMessage(e)); }
     setAiBusy(false);
   }
 
@@ -160,7 +161,7 @@ function BlocksPage() {
       setAutoOpen(false);
       void fetchBlocks(societyId);
     } catch (e: any) {
-      toast.error(e.message ?? "Auto-design failed");
+      toast.error(userMessage(e, "Auto-design failed"));
     }
     setAutoBusy(false);
   }

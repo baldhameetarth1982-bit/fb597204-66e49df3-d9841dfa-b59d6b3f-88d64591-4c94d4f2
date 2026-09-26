@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { userMessage } from "@/lib/user-error";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -73,7 +74,7 @@ function DigestPage() {
       setResult(res.summary);
       toast.success("Digest published to residents");
     } catch (e: any) {
-      toast.error(e.message ?? "Failed to generate");
+      toast.error(userMessage(e, "Failed to generate"));
     } finally {
       setLoading(false);
     }

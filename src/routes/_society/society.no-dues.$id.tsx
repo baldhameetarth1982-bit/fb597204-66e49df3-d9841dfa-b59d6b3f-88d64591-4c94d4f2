@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { userMessage } from "@/lib/user-error";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
@@ -86,7 +87,7 @@ function SocietyNoDuesDetail() {
       toast.success(r?.status === "blocked_by_dues" ? "Blocked — new dues found" : "Approved");
       setApproveOpen(false); setApproveNotes(""); invalidate();
     },
-    onError: (e: any) => toast.error(e?.message ?? "Failed"),
+    onError: (e: any) => toast.error(userMessage(e, "Failed")),
   });
 
   const reject = useMutation({
@@ -95,7 +96,7 @@ function SocietyNoDuesDetail() {
       toast.success("Rejected");
       setRejectOpen(false); setRejectReason(""); setRejectNotes(""); invalidate();
     },
-    onError: (e: any) => toast.error(e?.message ?? "Failed"),
+    onError: (e: any) => toast.error(userMessage(e, "Failed")),
   });
 
   const issue = useMutation({
@@ -118,7 +119,7 @@ function SocietyNoDuesDetail() {
       return revokeFn({ data: { certificateId: cid, reason: revokeReason.trim() } });
     },
     onSuccess: () => { toast.success("Revoked"); setRevokeOpen(false); setRevokeReason(""); invalidate(); },
-    onError: (e: any) => toast.error(e?.message ?? "Failed"),
+    onError: (e: any) => toast.error(userMessage(e, "Failed")),
   });
 
   const handleDownload = async () => {
@@ -127,7 +128,7 @@ function SocietyNoDuesDetail() {
     try {
       const r = await dlFn({ data: { certificateId: cid } });
       window.open(r.url, "_blank");
-    } catch (e: any) { toast.error(e?.message ?? "Failed"); }
+    } catch (e: any) { toast.error(userMessage(e, "Failed")); }
   };
 
   const handleCopyVerify = async () => {

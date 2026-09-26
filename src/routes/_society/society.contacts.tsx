@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { userMessage } from "@/lib/user-error";
 import { useEffect, useState } from "react";
 import { Phone, Plus, Trash2, ShieldCheck, Wrench, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,7 +34,7 @@ function ContactsPage() {
     if (!societyId) return;
     setLoading(true);
     const { data, error } = await supabase.from("society_contacts").select("*").eq("society_id", societyId).order("category").order("sort_order");
-    if (error) toast.error(error.message);
+    if (error) toast.error(userMessage(error));
     setItems((data ?? []) as Contact[]);
     setLoading(false);
   }
@@ -42,12 +43,12 @@ function ContactsPage() {
   async function save() {
     if (!societyId || !form.name || !form.role_label || !form.category) { toast.error("Name & role required"); return; }
     const { error } = await supabase.from("society_contacts").insert({ society_id: societyId, category: form.category, role_label: form.role_label, name: form.name, phone: form.phone ?? null, notes: form.notes ?? null });
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(userMessage(error));
     toast.success("Added"); setOpen(false); setForm({ category: "committee", role_label: "Chairman" }); load();
   }
   async function remove(id: string) {
     const { error } = await supabase.from("society_contacts").delete().eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(userMessage(error));
     setItems((x) => x.filter((c) => c.id !== id));
   }
 

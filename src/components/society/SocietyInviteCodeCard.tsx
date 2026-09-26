@@ -2,6 +2,7 @@
  * Society Invite Code card — used from Society Settings / Business Profile.
  * Admins can view, copy, regenerate, customize, and disable the code.
  */
+import { userMessage } from "@/lib/user-error";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Copy, RefreshCw, KeyRound, Loader2, Pencil, ToggleLeft, ToggleRight } from "lucide-react";
@@ -46,7 +47,7 @@ export function SocietyInviteCodeCard({ societyId }: Props) {
       qc.invalidateQueries({ queryKey: ["society-invite-state", societyId] });
       toast.success("New code generated");
     } catch (e: any) {
-      toast.error(e.message);
+      toast.error(userMessage(e));
     } finally {
       setBusy(null);
     }
@@ -61,7 +62,7 @@ export function SocietyInviteCodeCard({ societyId }: Props) {
       setEditing(false);
       setCustomCode("");
     } catch (e: any) {
-      toast.error(e.message);
+      toast.error(userMessage(e));
     } finally {
       setBusy(null);
     }
@@ -74,7 +75,7 @@ export function SocietyInviteCodeCard({ societyId }: Props) {
       qc.invalidateQueries({ queryKey: ["society-invite-state", societyId] });
       toast.success(v ? "Code-based joins enabled" : "Code-based joins paused");
     } catch (e: any) {
-      toast.error(e.message);
+      toast.error(userMessage(e));
     } finally {
       setBusy(null);
     }

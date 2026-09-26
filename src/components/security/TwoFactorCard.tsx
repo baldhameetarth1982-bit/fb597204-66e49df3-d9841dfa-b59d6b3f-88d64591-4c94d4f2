@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { userMessage } from "@/lib/user-error";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,7 +59,7 @@ export function TwoFactorCard() {
       friendlyName: `SociyoHub-${Date.now()}`,
     });
     setWorking(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(userMessage(error));
     setEnroll({
       factorId: data.id,
       qr: data.totp.qr_code,
@@ -98,7 +99,7 @@ export function TwoFactorCard() {
       factorId: verifiedFactorId,
     });
     setWorking(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(userMessage(error));
     toast.success("Two-factor authentication disabled");
     void refresh();
   }

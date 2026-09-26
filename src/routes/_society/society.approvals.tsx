@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { userMessage } from "@/lib/user-error";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -72,7 +73,7 @@ function ApprovalsPage() {
     });
     setBusy(null);
     if (error) {
-      toast.error(error.message);
+      toast.error(userMessage(error));
       return;
     }
     toast.success(`${r.full_name ?? "Resident"} approved`);
@@ -93,7 +94,7 @@ function ApprovalsPage() {
       setSelected(new Set());
       qc.invalidateQueries({ queryKey: ["join-requests-v2"] });
     } catch (e: any) {
-      toast.error(e.message);
+      toast.error(userMessage(e));
     } finally {
       setBusy(null);
     }
@@ -110,7 +111,7 @@ function ApprovalsPage() {
       setReason("");
       qc.invalidateQueries({ queryKey: ["join-requests-v2"] });
     } catch (e: any) {
-      toast.error(e.message);
+      toast.error(userMessage(e));
     } finally {
       setBusy(null);
     }
@@ -130,7 +131,7 @@ function ApprovalsPage() {
     });
     setBusy(null);
     if (error) {
-      toast.error(error.message);
+      toast.error(userMessage(error));
       return;
     }
     toast.success("Request rejected");

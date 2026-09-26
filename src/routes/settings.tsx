@@ -1,4 +1,5 @@
 import { createFileRoute, Navigate, Link } from "@tanstack/react-router";
+import { userMessage } from "@/lib/user-error";
 import { useEffect, useState } from "react";
 import {
   Loader2, User as UserIcon, Save, Bell, ShieldCheck, Lock,
@@ -98,7 +99,7 @@ function SettingsPage() {
       .update({ full_name: fullName.trim() || null, phone: phone.trim() || null })
       .eq("id", user.id);
     setSaving(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(userMessage(error));
     toast.success("Profile updated");
     if (typeof refresh === "function") await refresh();
   }
@@ -268,7 +269,7 @@ function SettingsPage() {
               onClick={async () => {
                 if (!user?.email) return;
                 const { error } = await supabase.auth.resetPasswordForEmail(user.email, { redirectTo: `${window.location.origin}/login` });
-                if (error) return toast.error(error.message);
+                if (error) return toast.error(userMessage(error));
                 toast.success("Password reset email sent");
               }}
             />
@@ -548,7 +549,7 @@ function AppearanceCard({
     setSaving(true);
     const { error } = await (supabase as any).from("profiles").update({ theme: next }).eq("id", userId);
     setSaving(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(userMessage(error));
     toast.success(next === "neon" ? "Neon theme applied" : "Switched to standard theme");
     onChanged();
   }

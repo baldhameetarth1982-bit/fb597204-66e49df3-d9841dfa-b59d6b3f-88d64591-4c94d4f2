@@ -587,11 +587,13 @@ Mandatory before completion:
 
 # Stage 14 — Final Payment Integration
 
+**Status:** CLOSED for the approved SaaS subscription scope. Razorpay production calls and real-money verification were intentionally not performed. The optional society-owned gateway remains unapproved, disabled, and outside this closure.
+
 ## 14A — Razorpay SociyoHub subscriptions
 - Checkout, trial conversion, renewal, failure, cancellation and receipt.
 
 ## 14B — Optional society-owned gateway adapter
-- Only after founder/provider/legal approval.
+- Deferred. Only after founder/provider/legal approval; society maintenance remains Cash and Bank Transfer only.
 - Society-owned merchant account; SociyoHub does not silently become aggregator.
 
 ## 14C — Webhooks and idempotency
@@ -601,7 +603,8 @@ Mandatory before completion:
 - Pending/failed/refunded states, support workflow and settlement reconciliation.
 
 ## 14E — Sandbox-to-live verification
-- Sandbox matrix, controlled live test, monitoring and rollback.
+- Deterministic provider-contract, migration, authorization, and failure-state tests completed without calling Razorpay.
+- Controlled test/live transactions remain an operational release activity and were not fabricated for this closure.
 
 ### Stage 14 exit gate
 - No client-authoritative payment success.

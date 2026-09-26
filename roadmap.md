@@ -6,7 +6,8 @@
 - [x] Add idempotent subscription order creation, canonical capture, durable webhook replay records, and receipts.
 - [x] Add authorized history, delayed confirmation recovery, audited pending-order cancellation, and Super Admin refunds.
 - [x] Add focused lifecycle, tenant-boundary, maintenance-isolation, and secret-boundary tests.
-- [ ] Record final typecheck, build, full-suite, security-linter, and bundle-secret evidence.
+- [x] Record final typecheck, build, full-suite, security-linter, and bundle-secret evidence.
+- [x] Close the approved subscription-only scope without starting Stage 15 or enabling a maintenance gateway.
 
 ## Stage 13 — Final security and reliability closure
 

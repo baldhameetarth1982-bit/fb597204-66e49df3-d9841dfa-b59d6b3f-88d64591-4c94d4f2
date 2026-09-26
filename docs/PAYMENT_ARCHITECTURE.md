@@ -13,7 +13,7 @@
 - **Default**: Cash + Bank Transfer.
 - Resident submits payment claim (mode = cash or bank_transfer, reference / receipt).
 - Society Admin verifies → payment status → `verified`; on verification the bill status flips to `paid` and (Stage 3A) the gamification ledger awards points if the payment was on time.
-- **Online gateways** (Razorpay/Cashfree/PayU as configured) are **only** enabled per-society by SociyoHub Support. Adapters live in `src/lib/payments/`.
+- **Razorpay** is used only for SociyoHub SaaS subscription checkout. Society maintenance payments remain Cash and Bank Transfer only; no society-owned online gateway is enabled without separate founder, provider, and legal approval.
 - **No platform fee** exists. No `FeeBreakdown` visible. No 1.5%, 1.7%, 98.5% math anywhere. Do not reintroduce.
 
 ## Non-member payments (Stage 3B)

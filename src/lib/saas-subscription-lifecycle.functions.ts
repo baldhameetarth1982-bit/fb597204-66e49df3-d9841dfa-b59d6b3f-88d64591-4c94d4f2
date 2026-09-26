@@ -228,7 +228,7 @@ export const refundSaasSubscriptionPayment = createServerFn({ method: "POST" })
 
     try {
       const provider = await import("@/lib/saas-payments/razorpay.server");
-      const refund = claim.status === "submitted" && claim.provider_refund_id
+      const refund = claim.provider_refund_id
         ? await provider.fetchRazorpayRefund(claim.provider_refund_id)
         : claim.status === "claimed"
           ? await provider.refundRazorpayPayment(

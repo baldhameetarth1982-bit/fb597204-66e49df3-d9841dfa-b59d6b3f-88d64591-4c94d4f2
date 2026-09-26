@@ -1,5 +1,13 @@
 # Active roadmap
 
+## Stage 14 — Razorpay SaaS subscription payments
+
+- [x] Preserve Cash and Bank Transfer-only society maintenance payments and zero platform fees.
+- [x] Add idempotent subscription order creation, canonical capture, durable webhook replay records, and receipts.
+- [x] Add authorized history, delayed confirmation recovery, audited pending-order cancellation, and Super Admin refunds.
+- [x] Add focused lifecycle, tenant-boundary, maintenance-isolation, and secret-boundary tests.
+- [ ] Record final typecheck, build, full-suite, security-linter, and bundle-secret evidence.
+
 ## Stage 13 — Final security and reliability closure
 
 - [x] Review privileged database functions, grants, and tenant authorization.

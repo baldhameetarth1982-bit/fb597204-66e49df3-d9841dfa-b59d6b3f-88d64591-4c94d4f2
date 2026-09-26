@@ -55,7 +55,7 @@ describe("Stage 14 subscription payment security contracts", () => {
   it("keeps refunds privileged, reasoned, idempotent, and append-only", () => {
     expect(lifecycle).toContain('rpc("current_user_is_super_admin")');
     expect(lifecycle).toMatch(/reason: z\.string\(\)\.trim\(\)\.min\(3\)\.max\(500\)/);
-    expect(refundMigration).toMatch(/request_id uuid NOT NULL UNIQUE/i);
+    expect(lifecycleMigration).toMatch(/request_id uuid NOT NULL UNIQUE/i);
     expect(refundMigration).toMatch(/provider_refund_id = COALESCE\(provider_refund_id, _provider_refund_id\)/i);
     expect(lifecycleMigration).toMatch(/lifecycle_status = 'refunded'/i);
     expect(lifecycleMigration).toMatch(/UPDATE public\.saas_subscription_receipts[\s\S]+status = 'refunded'/i);

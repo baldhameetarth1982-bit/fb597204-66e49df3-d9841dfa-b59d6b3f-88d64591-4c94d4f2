@@ -15,7 +15,12 @@ export const Route = createFileRoute("/_admin/admin/plans")({
 const inr = (n: number) => (n === 0 ? "Free" : `₹${Number(n).toLocaleString("en-IN")}`);
 
 function PlansAdmin() {
-  const { data: plans, isLoading, isError, refetch } = useQuery({
+  const {
+    data: plans,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ["admin-plans"],
     queryFn: async () => {
       const { data, error } = await supabase.from("plans").select("*").order("sort_order");
@@ -29,7 +34,9 @@ function PlansAdmin() {
     queryFn: async () => {
       const { data } = await supabase.from("societies").select("plan_id");
       const m: Record<string, number> = {};
-      (data ?? []).forEach((r: any) => { m[r.plan_id ?? "trial"] = (m[r.plan_id ?? "trial"] ?? 0) + 1; });
+      (data ?? []).forEach((r: any) => {
+        m[r.plan_id ?? "trial"] = (m[r.plan_id ?? "trial"] ?? 0) + 1;
+      });
       return m;
     },
   });
@@ -42,7 +49,9 @@ function PlansAdmin() {
         description="Live SociyoHub subscription plans and how many societies use each."
         actions={
           <Button asChild variant="outline" className="h-11 rounded-xl">
-            <Link to="/pricing">Public pricing page <ArrowRight className="ml-1 h-4 w-4" /></Link>
+            <Link to="/pricing">
+              Public pricing page <ArrowRight className="ml-1 h-4 w-4" />
+            </Link>
           </Button>
         }
       />
@@ -72,14 +81,23 @@ function PlansAdmin() {
                   return (
                     <tr key={p.id}>
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-2 font-medium">{p.name}{p.is_recommended && <StatusChip tone="primary">Recommended</StatusChip>}</div>
+                        <div className="flex items-center gap-2 font-medium">
+                          {p.name}
+                          {p.is_recommended && <StatusChip tone="primary">Recommended</StatusChip>}
+                        </div>
                       </td>
-                      <td className="px-4 py-3 text-right font-semibold tabular-nums">{inr(p.price_monthly_inr)}</td>
+                      <td className="px-4 py-3 text-right font-semibold tabular-nums">
+                        {inr(p.price_monthly_inr)}
+                      </td>
                       <td className="px-4 py-3">{p.ads_enabled ? "Yes" : "No"}</td>
-                      <td className="px-4 py-3 text-right tabular-nums">{p.trial_days ? `${p.trial_days} d` : "—"}</td>
+                      <td className="px-4 py-3 text-right tabular-nums">
+                        {p.trial_days ? `${p.trial_days} d` : "—"}
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <div className="h-1.5 w-24 overflow-hidden rounded-full bg-muted"><div className="h-full bg-primary" style={{ width: `${pct}%` }} /></div>
+                          <div className="h-1.5 w-24 overflow-hidden rounded-full bg-muted">
+                            <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
+                          </div>
                           <span className="tabular-nums">{n}</span>
                         </div>
                       </td>
@@ -99,10 +117,16 @@ function PlansAdmin() {
                     <span className="truncate font-medium">{p.name}</span>
                     {p.is_recommended && <StatusChip tone="primary">Top</StatusChip>}
                   </div>
-                  <span className="font-semibold tabular-nums">{inr(p.price_monthly_inr)}{p.price_monthly_inr > 0 && <span className="text-xs font-normal text-muted-foreground">/mo</span>}</span>
+                  <span className="font-semibold tabular-nums">
+                    {inr(p.price_monthly_inr)}
+                    {p.price_monthly_inr > 0 && (
+                      <span className="text-xs font-normal text-muted-foreground">/mo</span>
+                    )}
+                  </span>
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Ads {p.ads_enabled ? "on" : "off"} · Trial {p.trial_days || "—"}d · <span className="tabular-nums">{stats?.[p.id] ?? 0}</span> societies
+                  Ads {p.ads_enabled ? "on" : "off"} · Trial {p.trial_days || "—"}d ·{" "}
+                  <span className="tabular-nums">{stats?.[p.id] ?? 0}</span> societies
                 </p>
               </li>
             ))}
@@ -110,7 +134,10 @@ function PlansAdmin() {
 
           <div className="flex items-start gap-3 rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
             <Info className="mt-0.5 h-4 w-4 shrink-0" />
-            <p>Razorpay is used only for SociyoHub subscriptions. The 14-day trial needs no card and moves to <strong className="text-foreground">Basic</strong> if no plan is chosen.</p>
+            <p>
+              Razorpay is used only for SociyoHub subscriptions. The 14-day trial needs no card and
+              moves to <strong className="text-foreground">Basic</strong> if no plan is chosen.
+            </p>
           </div>
         </div>
       )}

@@ -7,8 +7,14 @@ import { EmptyState } from "@/components/system/EmptyState";
 import { ErrorState } from "@/components/system/ErrorState";
 import { PageHeader, PageShell } from "@/components/shared/PageHeader";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
-  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -33,13 +39,24 @@ interface Row {
   profile?: { full_name: string | null; email: string | null } | null;
 }
 
-const fmt = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
+const fmt = new Intl.NumberFormat("en-IN", {
+  style: "currency",
+  currency: "INR",
+  maximumFractionDigits: 0,
+});
 const FILTERS = [
   { key: "pending", label: "Waiting" },
   { key: "paid", label: "Paid" },
   { key: "all", label: "All" },
 ] as const;
-const tone = (s: string) => (s === "paid" ? "success" : s === "rejected" ? "danger" : s === "pending" ? "warning" : "neutral") as any;
+const tone = (s: string) =>
+  (s === "paid"
+    ? "success"
+    : s === "rejected"
+      ? "danger"
+      : s === "pending"
+        ? "warning"
+        : "neutral") as any;
 
 function WithdrawalsAdmin() {
   const [rows, setRows] = useState<Row[]>([]);
@@ -61,11 +78,18 @@ function WithdrawalsAdmin() {
       .limit(100);
     if (filter !== "all") q = q.eq("status", filter);
     const { data, error } = await q;
-    if (error) { setFailed(true); setLoading(false); return; }
+    if (error) {
+      setFailed(true);
+      setLoading(false);
+      return;
+    }
     const list = (data as Row[]) ?? [];
     const ids = Array.from(new Set(list.map((r) => r.user_id)));
     if (ids.length) {
-      const { data: profs } = await supabase.from("profiles").select("id, full_name, email").in("id", ids);
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", ids);
       const map = new Map((profs ?? []).map((p: any) => [p.id, p]));
       list.forEach((r) => (r.profile = map.get(r.user_id) ?? null));
     }
@@ -73,7 +97,9 @@ function WithdrawalsAdmin() {
     setLoading(false);
   }
 
-  useEffect(() => { void load(); }, [filter]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    void load();
+  }, [filter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function apply() {
     if (!confirm) return;
@@ -99,7 +125,10 @@ function WithdrawalsAdmin() {
       <PageHeader title="Withdrawals" description="Review and pay out referral commissions." />
 
       <div className="mb-4 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
-        <div role="tablist" className="flex w-fit gap-1 rounded-xl border border-border bg-muted/40 p-1">
+        <div
+          role="tablist"
+          className="flex w-fit gap-1 rounded-xl border border-border bg-muted/40 p-1"
+        >
           {FILTERS.map((f) => (
             <button
               key={f.key}
@@ -113,16 +142,29 @@ function WithdrawalsAdmin() {
           ))}
         </div>
         {!loading && !failed && rows.length > 0 && (
-          <p className="text-right text-sm text-muted-foreground"><span className="font-semibold text-foreground tabular-nums">{fmt.format(total)}</span> · {rows.length}</p>
+          <p className="text-right text-sm text-muted-foreground">
+            <span className="font-semibold text-foreground tabular-nums">{fmt.format(total)}</span>{" "}
+            · {rows.length}
+          </p>
         )}
       </div>
 
       {loading ? (
-        <div className="space-y-2" aria-busy="true">{[0, 1, 2].map((i) => <div key={i} className="h-16 animate-pulse rounded-xl bg-muted" />)}</div>
+        <div className="space-y-2" aria-busy="true">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-16 animate-pulse rounded-xl bg-muted" />
+          ))}
+        </div>
       ) : failed ? (
         <ErrorState onRetry={load} showSupport={false} />
       ) : rows.length === 0 ? (
-        <EmptyState icon={Banknote} title={filter === "pending" ? "Nothing waiting" : "No requests"} description={filter === "pending" ? "New withdrawal requests will appear here." : undefined} />
+        <EmptyState
+          icon={Banknote}
+          title={filter === "pending" ? "Nothing waiting" : "No requests"}
+          description={
+            filter === "pending" ? "New withdrawal requests will appear here." : undefined
+          }
+        />
       ) : (
         <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
           {rows.map((r) => {
@@ -137,35 +179,57 @@ function WithdrawalsAdmin() {
                   <div className="min-w-0">
                     <p className="truncate font-medium">{r.profile?.full_name || "Unknown"}</p>
                     <p className="truncate text-xs text-muted-foreground">
-                      {r.method === "upi" ? "UPI" : "Bank"} · {new Date(r.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                      {r.method === "upi" ? "UPI" : "Bank"} ·{" "}
+                      {new Date(r.created_at).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                      })}
                     </p>
                   </div>
                   <div className="text-right">
                     <p className="font-semibold tabular-nums">{fmt.format(Number(r.amount))}</p>
-                    <StatusChip tone={tone(r.status)} className="mt-0.5 capitalize">{r.status}</StatusChip>
+                    <StatusChip tone={tone(r.status)} className="mt-0.5 capitalize">
+                      {r.status}
+                    </StatusChip>
                   </div>
-                  <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                  <ChevronDown
+                    className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}
+                  />
                 </button>
                 {isOpen && (
                   <div className="space-y-3 border-t border-border bg-muted/30 px-4 py-3">
                     <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1 text-sm">
-                      <dt className="text-muted-foreground">Email</dt><dd className="truncate">{r.profile?.email ?? "—"}</dd>
+                      <dt className="text-muted-foreground">Email</dt>
+                      <dd className="truncate">{r.profile?.email ?? "—"}</dd>
                       {r.method === "upi" ? (
-                        <><dt className="text-muted-foreground">UPI</dt><dd className="truncate">{r.upi_id ?? "—"}</dd></>
+                        <>
+                          <dt className="text-muted-foreground">UPI</dt>
+                          <dd className="truncate">{r.upi_id ?? "—"}</dd>
+                        </>
                       ) : (
                         <>
-                          <dt className="text-muted-foreground">Account</dt><dd className="truncate tabular-nums">{r.bank_account ?? "—"}</dd>
-                          <dt className="text-muted-foreground">IFSC</dt><dd className="truncate">{r.bank_ifsc ?? "—"}</dd>
+                          <dt className="text-muted-foreground">Account</dt>
+                          <dd className="truncate tabular-nums">{r.bank_account ?? "—"}</dd>
+                          <dt className="text-muted-foreground">IFSC</dt>
+                          <dd className="truncate">{r.bank_ifsc ?? "—"}</dd>
                         </>
                       )}
-                      <dt className="text-muted-foreground">Requested</dt><dd>{new Date(r.created_at).toLocaleString("en-IN")}</dd>
+                      <dt className="text-muted-foreground">Requested</dt>
+                      <dd>{new Date(r.created_at).toLocaleString("en-IN")}</dd>
                     </dl>
                     {r.status === "pending" && (
                       <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
-                        <Button variant="outline" className="h-11 rounded-xl" onClick={() => setConfirm({ row: r, status: "rejected" })}>
+                        <Button
+                          variant="outline"
+                          className="h-11 rounded-xl"
+                          onClick={() => setConfirm({ row: r, status: "rejected" })}
+                        >
                           <XCircle className="mr-1 h-4 w-4" /> Reject
                         </Button>
-                        <Button className="h-11 rounded-xl" onClick={() => setConfirm({ row: r, status: "paid" })}>
+                        <Button
+                          className="h-11 rounded-xl"
+                          onClick={() => setConfirm({ row: r, status: "paid" })}
+                        >
                           <CheckCircle2 className="mr-1 h-4 w-4" /> Mark paid
                         </Button>
                       </div>
@@ -178,22 +242,52 @@ function WithdrawalsAdmin() {
         </ul>
       )}
 
-      <AlertDialog open={!!confirm} onOpenChange={(o) => { if (!o && !busy) { setConfirm(null); setReason(""); } }}>
+      <AlertDialog
+        open={!!confirm}
+        onOpenChange={(o) => {
+          if (!o && !busy) {
+            setConfirm(null);
+            setReason("");
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{confirm?.status === "paid" ? "Mark as paid?" : "Reject this request?"}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {confirm?.status === "paid" ? "Mark as paid?" : "Reject this request?"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              {confirm && `${fmt.format(Number(confirm.row.amount))} to ${confirm.row.profile?.full_name || "this user"}.`}{" "}
-              {confirm?.status === "paid" ? "Only do this after the money has been sent." : "The user will see the request as rejected."}
+              {confirm &&
+                `${fmt.format(Number(confirm.row.amount))} to ${confirm.row.profile?.full_name || "this user"}.`}{" "}
+              {confirm?.status === "paid"
+                ? "Only do this after the money has been sent."
+                : "The user will see the request as rejected."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-1.5">
             <Label htmlFor="withdrawal-reason">Reason (saved in audit history)</Label>
-            <Textarea id="withdrawal-reason" rows={3} maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} placeholder={confirm?.status === "paid" ? "e.g. Bank transfer completed and confirmed" : "e.g. Payout details could not be verified"} />
+            <Textarea
+              id="withdrawal-reason"
+              rows={3}
+              maxLength={300}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder={
+                confirm?.status === "paid"
+                  ? "e.g. Bank transfer completed and confirmed"
+                  : "e.g. Payout details could not be verified"
+              }
+            />
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={(e) => { e.preventDefault(); void apply(); }} disabled={busy || reason.trim().length < 5}>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void apply();
+              }}
+              disabled={busy || reason.trim().length < 5}
+            >
               {busy && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
               {confirm?.status === "paid" ? "Mark paid" : "Reject"}
             </AlertDialogAction>

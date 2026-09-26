@@ -14,11 +14,24 @@ export const Route = createFileRoute("/_admin/admin/health")({
 });
 
 type Row = {
-  id: string; name: string; score: number; label: string;
-  paid: number; unpaid: number; residents: number; complaints: number; planActive: boolean;
+  id: string;
+  name: string;
+  score: number;
+  label: string;
+  paid: number;
+  unpaid: number;
+  residents: number;
+  complaints: number;
+  planActive: boolean;
 };
 
-function scoreFor(paid: number, unpaid: number, residents: number, complaints: number, planActive: boolean): number {
+function scoreFor(
+  paid: number,
+  unpaid: number,
+  residents: number,
+  complaints: number,
+  planActive: boolean,
+): number {
   let s = 0;
   const total = paid + unpaid;
   const collection = total > 0 ? paid / total : 0;
@@ -45,13 +58,16 @@ function HealthPage() {
         supabase.from("flat_residents").select("flat_id, flats!inner(society_id)"),
         supabase.from("posts").select("society_id"),
       ]);
-      if (socs.error || bills.error || resAgg.error || posts.error) throw new Error("health_load_failed");
+      if (socs.error || bills.error || resAgg.error || posts.error)
+        throw new Error("health_load_failed");
       const paidBy = new Map<string, number>();
       const unpaidBy = new Map<string, number>();
       for (const b of bills.data ?? []) {
         if (!b.society_id) continue;
-        if (b.status === "paid") paidBy.set(b.society_id, (paidBy.get(b.society_id) ?? 0) + Number(b.amount ?? 0));
-        else if (b.status === "unpaid" || b.status === "overdue") unpaidBy.set(b.society_id, (unpaidBy.get(b.society_id) ?? 0) + Number(b.amount ?? 0));
+        if (b.status === "paid")
+          paidBy.set(b.society_id, (paidBy.get(b.society_id) ?? 0) + Number(b.amount ?? 0));
+        else if (b.status === "unpaid" || b.status === "overdue")
+          unpaidBy.set(b.society_id, (unpaidBy.get(b.society_id) ?? 0) + Number(b.amount ?? 0));
       }
       const residentsBy = new Map<string, number>();
       for (const r of (resAgg.data ?? []) as any[]) {
@@ -69,7 +85,17 @@ function HealthPage() {
         const complaints = postsBy.get(s.id) ?? 0;
         const planActive = s.plan_status === "active";
         const score = scoreFor(paid, unpaid, residents, complaints, planActive);
-        return { id: s.id, name: s.name, score, label: labelFor(score), paid, unpaid, residents, complaints, planActive };
+        return {
+          id: s.id,
+          name: s.name,
+          score,
+          label: labelFor(score),
+          paid,
+          unpaid,
+          residents,
+          complaints,
+          planActive,
+        };
       });
     },
   });
@@ -77,22 +103,39 @@ function HealthPage() {
   const [filter, setFilter] = useState<string>("all");
   const rows = useMemo(() => (data ?? []).slice().sort((a, b) => a.score - b.score), [data]);
   const labels = ["Critical", "Needs attention", "Good", "Excellent"];
-  const byLabel = Object.fromEntries(labels.map((l) => [l, rows.filter((r) => r.label === l).length]));
+  const byLabel = Object.fromEntries(
+    labels.map((l) => [l, rows.filter((r) => r.label === l).length]),
+  );
   const shown = filter === "all" ? rows : rows.filter((r) => r.label === filter);
-  const tone = (l: string) => (l === "Excellent" || l === "Good" ? "success" : l === "Needs attention" ? "warning" : "danger") as "success" | "warning" | "danger";
+  const tone = (l: string) =>
+    (l === "Excellent" || l === "Good"
+      ? "success"
+      : l === "Needs attention"
+        ? "warning"
+        : "danger") as "success" | "warning" | "danger";
 
   return (
     <div className="container-page space-y-6 py-6 md:py-10">
-      <PageHeader title="Society health" description="Weakest societies first, so you can see who needs help." />
+      <PageHeader
+        title="Society health"
+        description="Weakest societies first, so you can see who needs help."
+      />
 
-      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-4" role="tablist" aria-label="Filter by rating">
+      <div
+        className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-4"
+        role="tablist"
+        aria-label="Filter by rating"
+      >
         {labels.map((l) => (
           <button
             key={l}
             role="tab"
             aria-selected={filter === l}
             onClick={() => setFilter(filter === l ? "all" : l)}
-            className={cn("min-w-0 bg-card p-4 text-left hover:bg-muted/60", filter === l && "bg-primary/5 ring-2 ring-inset ring-primary")}
+            className={cn(
+              "min-w-0 bg-card p-4 text-left hover:bg-muted/60",
+              filter === l && "bg-primary/5 ring-2 ring-inset ring-primary",
+            )}
           >
             <StatusChip tone={tone(l)}>{l}</StatusChip>
             <p className="mt-2 text-2xl font-semibold tabular-nums">{byLabel[l]}</p>
@@ -103,9 +146,16 @@ function HealthPage() {
       {error ? (
         <ErrorState title="Couldn't load society health" onRetry={() => refetch()} />
       ) : isLoading ? (
-        <div className="space-y-2">{[0, 1, 2, 3].map((i) => <div key={i} className="h-16 animate-pulse rounded-xl bg-muted" />)}</div>
+        <div className="space-y-2">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="h-16 animate-pulse rounded-xl bg-muted" />
+          ))}
+        </div>
       ) : shown.length === 0 ? (
-        <EmptyState icon={Heart} title={filter === "all" ? "No societies yet" : `No societies rated ${filter}`} />
+        <EmptyState
+          icon={Heart}
+          title={filter === "all" ? "No societies yet" : `No societies rated ${filter}`}
+        />
       ) : (
         <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
           {shown.map((r) => {
@@ -113,15 +163,24 @@ function HealthPage() {
             const pct = total > 0 ? Math.round((r.paid / total) * 100) : 0;
             return (
               <li key={r.id}>
-                <Link to="/admin/societies/$id" params={{ id: r.id }} className="grid grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 hover:bg-muted/60">
-                  <span className="grid h-11 w-11 place-items-center rounded-xl bg-muted text-base font-semibold tabular-nums">{r.score}</span>
+                <Link
+                  to="/admin/societies/$id"
+                  params={{ id: r.id }}
+                  className="grid grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 hover:bg-muted/60"
+                >
+                  <span className="grid h-11 w-11 place-items-center rounded-xl bg-muted text-base font-semibold tabular-nums">
+                    {r.score}
+                  </span>
                   <span className="min-w-0">
                     <span className="block truncate font-medium">{r.name}</span>
                     <span className="block truncate text-xs text-muted-foreground">
-                      {pct}% collected · {r.residents} residents · {r.complaints} posts · plan {r.planActive ? "active" : "inactive"}
+                      {pct}% collected · {r.residents} residents · {r.complaints} posts · plan{" "}
+                      {r.planActive ? "active" : "inactive"}
                     </span>
                   </span>
-                  <StatusChip tone={tone(r.label)} className="hidden sm:inline-flex">{r.label}</StatusChip>
+                  <StatusChip tone={tone(r.label)} className="hidden sm:inline-flex">
+                    {r.label}
+                  </StatusChip>
                 </Link>
               </li>
             );

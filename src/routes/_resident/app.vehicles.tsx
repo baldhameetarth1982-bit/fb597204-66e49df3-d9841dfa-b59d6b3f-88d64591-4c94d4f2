@@ -7,10 +7,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
@@ -49,7 +57,9 @@ function VehiclesPage() {
     setList((data as Vehicle[]) ?? []);
     setLoading(false);
   }
-  useEffect(() => { void load(); /* eslint-disable-next-line */ }, [user]);
+  useEffect(() => {
+    void load(); /* eslint-disable-next-line */
+  }, [user]);
 
   async function add(e: React.FormEvent) {
     e.preventDefault();
@@ -92,28 +102,48 @@ function VehiclesPage() {
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="rounded-xl"><Plus className="h-4 w-4 mr-1" />Add</Button>
+            <Button size="sm" className="rounded-xl">
+              <Plus className="h-4 w-4 mr-1" />
+              Add
+            </Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>Add vehicle</DialogTitle></DialogHeader>
+            <DialogHeader>
+              <DialogTitle>Add vehicle</DialogTitle>
+            </DialogHeader>
             <form onSubmit={add} className="space-y-3">
               <div>
                 <Label>Plate number *</Label>
-                <Input value={form.plate_number} onChange={(e) => setForm({ ...form, plate_number: e.target.value })} placeholder="MH 12 AB 1234" required />
+                <Input
+                  value={form.plate_number}
+                  onChange={(e) => setForm({ ...form, plate_number: e.target.value })}
+                  placeholder="MH 12 AB 1234"
+                  required
+                />
               </div>
               <div>
                 <Label>Make & model</Label>
-                <Input value={form.make_model} onChange={(e) => setForm({ ...form, make_model: e.target.value })} placeholder="Honda City" />
+                <Input
+                  value={form.make_model}
+                  onChange={(e) => setForm({ ...form, make_model: e.target.value })}
+                  placeholder="Honda City"
+                />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Color</Label>
-                  <Input value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} placeholder="White" />
+                  <Input
+                    value={form.color}
+                    onChange={(e) => setForm({ ...form, color: e.target.value })}
+                    placeholder="White"
+                  />
                 </div>
                 <div>
                   <Label>Type</Label>
                   <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="car">Car</SelectItem>
                       <SelectItem value="bike">Bike</SelectItem>
@@ -132,9 +162,15 @@ function VehiclesPage() {
       <MyParking />
 
       {loading ? (
-        <div className="text-center py-10"><Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" /></div>
+        <div className="text-center py-10">
+          <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
+        </div>
       ) : list.length === 0 ? (
-        <Card className="rounded-2xl"><CardContent className="p-8 text-center text-sm text-muted-foreground">No vehicles yet</CardContent></Card>
+        <Card className="rounded-2xl">
+          <CardContent className="p-8 text-center text-sm text-muted-foreground">
+            No vehicles yet
+          </CardContent>
+        </Card>
       ) : (
         <div className="space-y-2">
           {list.map((v) => (
@@ -162,7 +198,9 @@ function VehiclesPage() {
 }
 
 function MyParking() {
-  const [slots, setSlots] = useState<{ id: string; label: string; slot_type: string; notes: string | null }[] | null>(null);
+  const [slots, setSlots] = useState<
+    { id: string; label: string; slot_type: string; notes: string | null }[] | null
+  >(null);
   useEffect(() => {
     // RLS limits this to parking allotted to the resident's own active home.
     void supabase
@@ -178,11 +216,16 @@ function MyParking() {
       <CardContent className="p-4">
         <p className="text-sm font-semibold">Your parking</p>
         {slots.length === 0 ? (
-          <p className="text-sm text-muted-foreground mt-1">No parking slot allotted yet. Your committee assigns parking.</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            No parking slot allotted yet. Your committee assigns parking.
+          </p>
         ) : (
           <div className="flex flex-wrap gap-2 mt-2">
             {slots.map((s) => (
-              <span key={s.id} className="rounded-xl bg-primary/10 text-primary px-3 py-2 text-sm font-medium">
+              <span
+                key={s.id}
+                className="rounded-xl bg-primary/10 text-primary px-3 py-2 text-sm font-medium"
+              >
                 {s.label} <span className="capitalize text-xs opacity-80">· {s.slot_type}</span>
                 {s.notes ? <span className="text-xs opacity-80"> · {s.notes}</span> : null}
               </span>

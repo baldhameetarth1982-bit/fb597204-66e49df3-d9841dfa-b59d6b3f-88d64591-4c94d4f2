@@ -7,7 +7,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { ROLES, ROLE_HOME } from "@/config/roles";
 import { AskAIFab } from "@/components/resident/AskAIFab";
 
-
 /** Resident layout. All `/app/*` routes require an authenticated user and an active society plan. */
 export const Route = createFileRoute("/_resident")({
   component: ResidentGuard,
@@ -40,6 +39,13 @@ function ResidentGuard() {
   if (primaryRole !== ROLES.RESIDENT && primaryRole !== ROLES.SECURITY) {
     return <Navigate to={primaryRole ? ROLE_HOME[primaryRole] : "/onboarding"} replace />;
   }
+  if (
+    primaryRole === ROLES.SECURITY &&
+    pathname !== "/app/guard" &&
+    pathname !== "/app/plan-required"
+  ) {
+    return <Navigate to={ROLE_HOME[ROLES.SECURITY]} replace />;
+  }
   if (!societyId) return <Navigate to="/onboarding" search={{ ref: undefined }} replace />;
   if (!isSuper && societyId && access === false && !pathname.endsWith("/plan-required")) {
     return <Navigate to="/app/plan-required" replace />;
@@ -51,4 +57,3 @@ function ResidentGuard() {
     </>
   );
 }
-

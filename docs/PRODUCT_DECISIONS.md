@@ -128,7 +128,7 @@ Ads are disabled by default, clearly labelled, society-approved and never target
 
 - Firebase Phone OTP + Firebase Google → server-verified → Supabase magic-link exchange.
 - Razorpay = subscriptions only.
-- Maintenance = Cash + Bank Transfer default. Online gateway per-society, Support-enabled.
+- Maintenance = Cash + Bank Transfer only. A society-owned online gateway remains deferred until separate founder, provider, and legal approval.
 - No platform fee.
 - `create_society_full` idempotent, authenticated EXECUTE, schema-cache reload.
 
@@ -140,3 +140,12 @@ Ads are disabled by default, clearly labelled, society-approved and never target
 - New RPCs (SECURITY DEFINER, authenticated-only): `get_society_structure_overview`, `configure_society_structure_mode`, `list_society_units_page`, `create_society_unit`, `update_society_unit`, `set_society_unit_active`, `set_society_block_active`.
 - Unsafe mode conversions with existing units are blocked; ambiguous legacy data left unchanged.
 - `commit_society_wizard` writes canonical rows and no longer creates a fake "Houses" block for serial.
+
+## Stage 14 closure (2026-09-26)
+
+- Razorpay remains limited to SociyoHub SaaS subscriptions; unused PayU/Cashfree adapters and the runtime provider selector were retired.
+- Order creation, capture, webhook replay, receipts, cancellation, refunds, and recovery use server-authoritative idempotent records and written audit reasons.
+- Society maintenance remains Cash and Bank Transfer only, and no platform fee was introduced.
+- Evidence: 2,637 runnable tests passed; 105 isolated-backend tests skipped and 11 remained todo; TypeScript, preview build, focused payment tests, grants/RLS review, backend linter review, and client-bundle secret scan passed.
+- No Razorpay API call, real-money transaction, protected-society access, or production-data test was performed. Provider delivery and live database behavior remain operational release checks, not fabricated evidence.
+- Stage 15 was not started.

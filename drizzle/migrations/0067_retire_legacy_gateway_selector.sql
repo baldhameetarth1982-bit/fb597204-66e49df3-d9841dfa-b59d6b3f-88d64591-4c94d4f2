@@ -1,0 +1,1 @@
+COMMENT ON COLUMN public.pricing_settings.active_gateway IS 'DEPRECATED: provider selection is fixed to Razorpay for SociyoHub SaaS subscriptions; society maintenance remains Cash and Bank Transfer only.';

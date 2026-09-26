@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Sparkles, ArrowRight, ShieldCheck, Rocket, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
@@ -23,6 +23,7 @@ function PlanRequired() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const requestIds = useRef(new Map<string, string>());
 
   const { data: society } = useQuery({
     enabled: !!societyId,
@@ -68,7 +69,11 @@ function PlanRequired() {
   async function handleBuy(plan: any) {
     setBusyId(plan.id);
     try {
-    const order = await createSaasSubscriptionOrder({ data: { societyId: societyId!, planId: plan.id } });
+    const requestId = requestIds.current.get(plan.id) ?? crypto.randomUUID();
+    requestIds.current.set(plan.id, requestId);
+    const order = await createSaasSubscriptionOrder({ data: {
+      societyId: societyId!, planId: plan.id, requestId,
+    } });
     const opened = await openRazorpayForOrder({
       orderId: order.orderId,
       keyId: order.keyId,
@@ -86,6 +91,7 @@ function PlanRequired() {
           razorpaySignature: response.razorpay_signature,
         } });
         toast.success("Subscription activated successfully.");
+        requestIds.current.delete(plan.id);
         try { localStorage.removeItem("user_subscription"); } catch {}
         // Force every dependent query to re-fetch; trigger registered on backend will flip plan_status.
         await qc.invalidateQueries();

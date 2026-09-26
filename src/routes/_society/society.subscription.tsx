@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { Check, CreditCard, Loader2, Lock, ShieldCheck, Sparkles } from "lucide-react";
+import { useRef, useState } from "react";
+import { Check, CreditCard, Loader2, Lock, RefreshCw, ShieldCheck, Sparkles, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { useSocietyId } from "@/hooks/useSocietyId";
@@ -16,6 +17,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/system/ErrorState";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  cancelPendingSaasSubscriptionOrder,
+  listSaasSubscriptionPayments,
+  reconcileSaasSubscriptionOrder,
+} from "@/lib/saas-subscription-lifecycle.functions";
 
 export const Route = createFileRoute("/_society/society/subscription")({
   head: () => ({
@@ -56,6 +68,13 @@ function SubscriptionPage() {
   const qc = useQueryClient();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const requestIds = useRef(new Map<string, string>());
+  const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [historyBusy, setHistoryBusy] = useState<string | null>(null);
+  const listPayments = useServerFn(listSaasSubscriptionPayments);
+  const reconcileOrder = useServerFn(reconcileSaasSubscriptionOrder);
+  const cancelOrder = useServerFn(cancelPendingSaasSubscriptionOrder);
 
   const access = useQuery({
     enabled: !!societyId,
@@ -79,10 +98,51 @@ function SubscriptionPage() {
     },
   });
 
+  const paymentHistory = useQuery({
+    enabled: !!societyId,
+    queryKey: ["saas-subscription-payments", societyId],
+    queryFn: () => listPayments({ data: { societyId: societyId as string } }),
+  });
+
+  async function reconcile(orderId: string) {
+    if (!societyId) return;
+    setHistoryBusy(orderId);
+    try {
+      const result = await reconcileOrder({ data: { societyId, orderId } });
+      toast.success(result.status === "captured" ? "Payment confirmed." : "Payment is not captured yet.");
+      await paymentHistory.refetch();
+      await qc.invalidateQueries({ queryKey: ["society-access-status", societyId] });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Payment could not be checked.");
+    } finally {
+      setHistoryBusy(null);
+    }
+  }
+
+  async function cancelPending() {
+    if (!societyId || !cancelOrderId) return;
+    setHistoryBusy(cancelOrderId);
+    try {
+      await cancelOrder({ data: { societyId, orderId: cancelOrderId, reason: cancelReason } });
+      toast.success("Pending order cancelled.");
+      setCancelOrderId(null);
+      setCancelReason("");
+      await paymentHistory.refetch();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Order could not be cancelled.");
+    } finally {
+      setHistoryBusy(null);
+    }
+  }
+
   async function handleBuy(p: { id: string; name: string; price_monthly_inr: number }) {
     setBusyId(p.id);
     try {
-    const order = await createSaasSubscriptionOrder({ data: { societyId: societyId!, planId: p.id as "basic" | "pro" | "premium" } });
+    const requestId = requestIds.current.get(p.id) ?? crypto.randomUUID();
+    requestIds.current.set(p.id, requestId);
+    const order = await createSaasSubscriptionOrder({ data: {
+      societyId: societyId!, planId: p.id as "basic" | "pro" | "premium", requestId,
+    } });
     const opened = await openRazorpayForOrder({
       orderId: order.orderId,
       keyId: order.keyId,
@@ -100,6 +160,7 @@ function SubscriptionPage() {
           razorpaySignature: response.razorpay_signature,
         } });
         toast.success("Subscription activated successfully.");
+        requestIds.current.delete(p.id);
         setConfirming(true);
         setTimeout(() => setConfirming(false), 15_000);
         await qc.invalidateQueries({ queryKey: ["society-access-status", societyId] });
@@ -233,6 +294,54 @@ function SubscriptionPage() {
       )}
 
       {showPlans && (
+        <SettingsSection
+          title="Payment history"
+          icon={CreditCard}
+          description="Server-confirmed subscription orders and receipts. Maintenance collections remain separate."
+        >
+          {paymentHistory.isLoading ? (
+            <Skeleton className="h-24 w-full" />
+          ) : paymentHistory.isError ? (
+            <ErrorState title="Couldn't load payment history" description="No payment status was changed." onRetry={() => paymentHistory.refetch()} />
+          ) : paymentHistory.data?.length ? (
+            <ul className="divide-y">
+              {paymentHistory.data.map((payment) => {
+                const pending = ["created", "pending", "processing", "failed"].includes(payment.lifecycle_status);
+                return (
+                  <li key={payment.id} className="grid gap-3 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-semibold capitalize">{payment.plan_id} plan</p>
+                        <Badge variant="outline" className="capitalize">{payment.lifecycle_status.replaceAll("_", " ")}</Badge>
+                        {payment.provider_mode && <Badge variant="secondary">{payment.provider_mode}</Badge>}
+                      </div>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        ₹{(payment.amount_paise / 100).toLocaleString("en-IN")} · {fmtDate(payment.confirmed_at ?? payment.created_at)}
+                        {payment.receipt ? ` · Receipt ${payment.receipt.receipt_number}` : ""}
+                      </p>
+                    </div>
+                    {pending && (
+                      <div className="flex flex-wrap gap-2">
+                        <Button variant="outline" className="min-h-11" disabled={historyBusy !== null} onClick={() => reconcile(payment.razorpay_order_id)}>
+                          {historyBusy === payment.razorpay_order_id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                          Check payment
+                        </Button>
+                        <Button variant="ghost" className="min-h-11" disabled={historyBusy !== null} onClick={() => setCancelOrderId(payment.razorpay_order_id)}>
+                          <XCircle className="mr-2 h-4 w-4" /> Cancel
+                        </Button>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">No subscription payments yet.</p>
+          )}
+        </SettingsSection>
+      )}
+
+      {showPlans && (
         <SettingsDisclosure
           title="What's included"
           description={`${included.length} included · ${locked.length} need a higher plan`}
@@ -260,6 +369,24 @@ function SubscriptionPage() {
           </div>
         </SettingsDisclosure>
       )}
+      <AlertDialog open={!!cancelOrderId} onOpenChange={(open) => { if (!open && !historyBusy) { setCancelOrderId(null); setCancelReason(""); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel this pending order?</AlertDialogTitle>
+            <AlertDialogDescription>This does not refund captured money. Check the payment first if the checkout may have completed.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-1.5">
+            <Label htmlFor="cancel-subscription-reason">Reason saved in audit history</Label>
+            <Textarea id="cancel-subscription-reason" value={cancelReason} onChange={(event) => setCancelReason(event.target.value)} maxLength={500} rows={3} />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!historyBusy}>Keep order</AlertDialogCancel>
+            <AlertDialogAction onClick={(event) => { event.preventDefault(); void cancelPending(); }} disabled={!!historyBusy || cancelReason.trim().length < 3}>
+              Cancel order
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SettingsShell>
   );
 }

@@ -448,7 +448,7 @@ Whole-app usability sweep, WCAG-level accessibility, performance budget, offline
 PWA vs native wrapper decision, app icons, splash, deep links, notification permissions, Privacy/Data Safety forms, account deletion, legal pages, crash monitoring, release build, internal/closed testing.
 
 ## Final Stage — Payment Integration
-Payment-provider review, live gateway integration, webhook verification, reconciliation, failure/refund handling, production payment testing. **Absolutely no payment activation before this stage.**
+Stage 14 closed the approved Razorpay SaaS subscription scope on 2026-09-26: server-authoritative checkout, webhook verification, idempotency, receipts, recovery, cancellation, and Super Admin refunds. Society maintenance remains Cash and Bank Transfer only; the optional society-owned gateway remains deferred pending founder/provider/legal approval. No live or real-money transaction was performed.
 
 ---
 
@@ -456,6 +456,14 @@ Payment-provider review, live gateway integration, webhook verification, reconci
 stage that touches payment activation, platform fees, or replaces
 Cash + Bank Transfer maintenance behavior violates the lock. See
 `docs/RELEASE_READINESS.md` for permanent rules.
+
+### Stage 14 closure evidence (2026-09-26)
+
+- 2,637 runnable unit/integration tests passed; 105 isolated-backend cases were skipped and 11 remained todo because no safe isolated fixture backend exists.
+- Focused payment lifecycle tests, TypeScript, preview build, grants/RLS inspection, backend linter review, and client-bundle secret scan passed.
+- Independent source review found no critical/high payment-security blocker.
+- Razorpay provider delivery and live database enforcement were not exercised; no protected society or production data was accessed.
+- Stage 15 remains unstarted.
 
 ---
 

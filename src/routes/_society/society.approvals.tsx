@@ -140,10 +140,10 @@ function ApprovalsPage() {
   }
 
   return (
-    <div className="px-4 pt-4 pb-8 max-w-3xl mx-auto space-y-4">
+    <div className="container-page space-y-4 py-6 md:py-10">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Resident approvals</h1>
+          <h1 className="text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">Resident approvals</h1>
           <p className="text-xs text-muted-foreground">
             Review and approve residents who requested to join your society.
           </p>

@@ -32,10 +32,13 @@ describe("Stage 15 Android release contract", () => {
 
   it("requires external signing and a pinned release generator", () => {
     const script = read("android/release.sh");
+    const ignore = read("android/.gitignore");
     expect(script).toContain("@bubblewrap/cli@1.25.0");
     expect(script).toContain("BUBBLEWRAP_KEYSTORE_PASSWORD");
     expect(script).toContain("BUBBLEWRAP_KEY_PASSWORD");
     expect(script).not.toContain("keytool -genkey");
+    expect(ignore).toContain("/.build/");
+    expect(ignore).toContain("*.jks");
   });
 
   it("preserves the approved payment boundary", () => {

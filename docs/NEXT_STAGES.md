@@ -463,7 +463,7 @@ Cash + Bank Transfer maintenance behavior violates the lock. See
 - Focused payment lifecycle tests, TypeScript, preview build, grants/RLS inspection, backend linter review, and client-bundle secret scan passed.
 - Independent source review found no critical/high payment-security blocker.
 - Razorpay provider delivery and live database enforcement were not exercised; no protected society or production data was accessed.
-- Stage 15 remains unstarted.
+- Stage 15 repository preparation closed on 2026-09-26: the production TWA identity, fail-closed App Links, external signing, deterministic Bubblewrap build path, account-switch cache boundary, safe notification navigation, mobile accessibility and Play handoff are complete. No signed AAB was generated because this environment has no JDK/Android SDK; generation, signing, device testing and Play upload remain owner-only external release actions.
 
 ---
 

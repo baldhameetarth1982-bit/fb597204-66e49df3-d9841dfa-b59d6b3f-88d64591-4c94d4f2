@@ -615,6 +615,8 @@ Mandatory before completion:
 
 # Stage 15 — Android & Play Store
 
+**Status: CLOSED for repository implementation (2026-09-26).** The production TWA is pinned to `live.sociohub.app` and `sociohub.live`; signing is external, App Links fail closed without the real Play fingerprint, and the reproducible build/Play handoff is in `android/README.md`. No AAB, device test, fingerprint, or Play submission is claimed. The sole external dependency is to generate/sign the AAB with Android tooling and upload it through the owner's Play Console workflow.
+
 ## 15A — App shell
 - PWA/native-wrapper decision, navigation, session and deep links.
 

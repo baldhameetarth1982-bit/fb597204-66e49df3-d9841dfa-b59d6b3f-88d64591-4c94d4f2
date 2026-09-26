@@ -84,6 +84,12 @@ export async function fetchRazorpayOrder(orderId: string) {
   return razorpayRequest<RazorpayOrder>(`/orders/${encodeURIComponent(orderId)}`);
 }
 
+export async function fetchRazorpayOrderPayments(orderId: string) {
+  return razorpayRequest<{ items: RazorpayPayment[] }>(
+    `/orders/${encodeURIComponent(orderId)}/payments`,
+  );
+}
+
 export async function fetchRazorpayPayment(paymentId: string) {
   return razorpayRequest<RazorpayPayment>(`/payments/${encodeURIComponent(paymentId)}`);
 }

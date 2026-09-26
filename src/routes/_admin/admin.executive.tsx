@@ -1,8 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { TrendingUp, Wallet, Users, Building2, UserCheck, MessageSquare, Receipt, Loader2, Activity } from "lucide-react";
+import { TrendingUp, Wallet, Users, Building2, UserCheck, MessageSquare, Receipt, Activity } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { MetricGroup, LeadFigure, MetricsSkeleton } from "@/components/shared/MetricGroup";
+import { StatusChip } from "@/components/system/StatusChip";
+import { ErrorState } from "@/components/system/ErrorState";
 
 export const Route = createFileRoute("/_admin/admin/executive")({
   head: () => ({ meta: [{ title: "Executive Dashboard — Super Admin" }] }),
@@ -12,7 +15,7 @@ export const Route = createFileRoute("/_admin/admin/executive")({
 const fmt = (n: number) => "₹" + Math.round(n).toLocaleString("en-IN");
 
 function ExecutiveDashboard() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["exec-dashboard"],
     queryFn: async () => {
       const since = new Date(Date.now() - 30 * 86400_000).toISOString();
@@ -24,6 +27,7 @@ function ExecutiveDashboard() {
         supabase.from("posts").select("id", { count: "exact", head: true }).gte("created_at", since),
         supabase.from("flat_residents").select("id", { count: "exact", head: true }),
       ]);
+      if (summary.error) throw summary.error;
       const priceMap = new Map<string, number>((plans.data ?? []).map((p: any) => [p.id, p.price_monthly_inr ?? 0]));
       let mrr = 0;
       let newSocieties30 = 0;
@@ -44,79 +48,89 @@ function ExecutiveDashboard() {
     },
   });
 
-  if (isLoading || !data) return <div className="min-h-[40vh] grid place-items-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+  const header = <PageHeader title="Executive dashboard" description="Live snapshot across every society." />;
 
-  const collectionPct = (() => {
-    const paid = Number(data.s.successful_payment_total ?? 0);
-    const unpaid = Number(data.s.unpaid_bill_total ?? 0);
-    const denom = paid + unpaid;
-    return denom > 0 ? Math.round((paid / denom) * 100) : 0;
-  })();
+  if (error) return <div className="container-page py-6 md:py-10">{header}<ErrorState title="Couldn't load the dashboard" onRetry={() => refetch()} /></div>;
+  if (isLoading || !data) return <div className="container-page py-6 md:py-10">{header}<MetricsSkeleton /></div>;
 
-  const health = (() => {
-    let score = 0;
-    if (collectionPct >= 70) score += 25; else if (collectionPct >= 40) score += 15; else score += 5;
-    if (data.mrr > 0) score += 25; else score += 5;
-    if (data.posts30 > 10) score += 20; else if (data.posts30 > 0) score += 10;
-    if ((data.s.active_societies ?? 0) > 0) score += 20;
-    if (data.growth30 > 5) score += 10; else score += 5;
-    return Math.min(100, score);
-  })();
+  const paid = Number(data.s.successful_payment_total ?? 0);
+  const unpaid = Number(data.s.unpaid_bill_total ?? 0);
+  const collectionPct = paid + unpaid > 0 ? Math.round((paid / (paid + unpaid)) * 100) : 0;
 
+  const signals = [
+    { label: "Collection", pts: collectionPct >= 70 ? 25 : collectionPct >= 40 ? 15 : 5, max: 25 },
+    { label: "Revenue", pts: data.mrr > 0 ? 25 : 5, max: 25 },
+    { label: "Engagement", pts: data.posts30 > 10 ? 20 : data.posts30 > 0 ? 10 : 0, max: 20 },
+    { label: "Active societies", pts: (data.s.active_societies ?? 0) > 0 ? 20 : 0, max: 20 },
+    { label: "Growth", pts: data.growth30 > 5 ? 10 : 5, max: 10 },
+  ];
+  const health = Math.min(100, signals.reduce((a, s) => a + s.pts, 0));
   const healthLabel = health >= 85 ? "Excellent" : health >= 70 ? "Good" : health >= 50 ? "Needs attention" : "Critical";
-  const healthTone = health >= 70 ? "text-emerald-600" : health >= 50 ? "text-amber-600" : "text-destructive";
+  const healthTone = health >= 70 ? "success" : health >= 50 ? "warning" : "danger";
 
   return (
     <div className="container-page space-y-6 py-6 md:py-10">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">Executive Dashboard
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">Live snapshot across every society.</p>
-      </header>
+      {header}
 
-      <Card className="rounded-2xl border-primary/30">
-        <CardContent className="p-6 flex items-center gap-6">
-          <div className="h-16 w-16 rounded-2xl bg-primary text-primary-foreground grid place-items-center text-3xl font-bold">
-            {health}
-          </div>
-          <div>
-            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Platform health score</p>
-            <p className={`text-2xl font-bold ${healthTone}`}>{healthLabel}</p>
-            <p className="text-xs text-muted-foreground">Composite of collection, revenue, engagement and growth signals.</p>
-          </div>
-        </CardContent>
-      </Card>
+      <LeadFigure
+        label="Platform health score"
+        value={<span>{health}<span className="text-lg font-medium text-muted-foreground"> / 100</span></span>}
+        hint={<StatusChip tone={healthTone as any}>{healthLabel}</StatusChip>}
+        aside={
+          <ul className="grid w-full gap-2 md:w-72">
+            {signals.map((s) => (
+              <li key={s.label} className="grid grid-cols-[7rem_minmax(0,1fr)_2.5rem] items-center gap-2 text-xs">
+                <span className="truncate text-muted-foreground">{s.label}</span>
+                <span className="h-1.5 overflow-hidden rounded-full bg-muted">
+                  <span className="block h-full origin-left rounded-full bg-primary" style={{ transform: `scaleX(${s.pts / s.max})` }} />
+                </span>
+                <span className="text-right tabular-nums">{s.pts}/{s.max}</span>
+              </li>
+            ))}
+          </ul>
+        }
+      />
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Metric title="MRR" value={fmt(data.mrr)} icon={TrendingUp} tone="primary" />
-        <Metric title="ARR" value={fmt(data.arr)} icon={TrendingUp} tone="primary" />
-        <Metric title="Collection rate" value={collectionPct + "%"} icon={Wallet} />
-        <Metric title="Growth 30d" value={data.growth30.toFixed(1) + "%"} icon={Activity} />
-        <Metric title="Active societies" value={String(data.s.active_societies ?? 0)} icon={Building2} />
-        <Metric title="Trials" value={String(data.s.trialing_societies ?? 0)} icon={Building2} />
-        <Metric title="Residents" value={String(data.residents)} icon={Users} />
-        <Metric title="Visitors 30d" value={String(data.visitors30)} icon={UserCheck} />
-        <Metric title="Complaints/Posts 30d" value={String(data.posts30)} icon={MessageSquare} />
-        <Metric title="Payments (all-time)" value={fmt(Number(data.s.successful_payment_total ?? 0))} icon={Receipt} />
-        <Metric title="Outstanding" value={fmt(Number(data.s.unpaid_bill_total ?? 0))} icon={Wallet} />
-        <Metric title="New societies 30d" value={String(data.newSocieties30)} icon={Building2} />
+      <MetricGroup
+        title="Subscription revenue"
+        description="Active paid plans"
+        cols={3}
+        items={[
+          { label: "MRR", value: fmt(data.mrr), icon: TrendingUp },
+          { label: "ARR", value: fmt(data.arr), icon: TrendingUp },
+          { label: "Collection rate", value: collectionPct + "%", icon: Wallet, hint: "Paid vs unpaid bills" },
+        ]}
+      />
+
+      <MetricGroup
+        title="Societies"
+        items={[
+          { label: "Active", value: String(data.s.active_societies ?? 0), icon: Building2 },
+          { label: "On trial", value: String(data.s.trialing_societies ?? 0), icon: Building2 },
+          { label: "New · 30 days", value: String(data.newSocieties30), icon: Building2 },
+          { label: "Growth · 30 days", value: data.growth30.toFixed(1) + "%", icon: Activity },
+        ]}
+      />
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <MetricGroup
+          title="Community activity"
+          cols={3}
+          items={[
+            { label: "Residents", value: String(data.residents), icon: Users },
+            { label: "Visitors · 30d", value: String(data.visitors30), icon: UserCheck },
+            { label: "Posts · 30d", value: String(data.posts30), icon: MessageSquare },
+          ]}
+        />
+        <MetricGroup
+          title="Maintenance money (all societies)"
+          cols={2}
+          items={[
+            { label: "Payments received", value: fmt(paid), icon: Receipt, hint: "All time" },
+            { label: "Outstanding", value: fmt(unpaid), icon: Wallet, hint: "Unpaid bills" },
+          ]}
+        />
       </div>
     </div>
-  );
-}
-
-function Metric({ title, value, icon: Icon, tone }: { title: string; value: string; icon: any; tone?: "primary" }) {
-  return (
-    <Card className="rounded-2xl">
-      <CardContent className="p-5 flex items-center gap-4">
-        <div className={`h-10 w-10 rounded-xl grid place-items-center ${tone === "primary" ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"}`}>
-          <Icon className="h-5 w-5" />
-        </div>
-        <div className="min-w-0">
-          <p className="text-sm text-muted-foreground">{title}</p>
-          <p className="text-2xl font-bold tabular-nums truncate">{value}</p>
-        </div>
-      </CardContent>
-    </Card>
   );
 }

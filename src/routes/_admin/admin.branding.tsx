@@ -1,114 +1,123 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Palette, Loader2, Building2, Check, X } from "lucide-react";
+import { Building2, Check, X, Search, Palette } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { PageHeader, EmptyState } from "@/components/shared/PageHeader";
+import { MetricGroup } from "@/components/shared/MetricGroup";
+import { ErrorState } from "@/components/system/ErrorState";
+import { StatusChip } from "@/components/system/StatusChip";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_admin/admin/branding")({
   head: () => ({ meta: [{ title: "Branding — Super Admin" }] }),
   component: BrandingPage,
 });
 
+type Filter = "all" | "incomplete" | "complete";
+
 function BrandingPage() {
-  const { data, isLoading } = useQuery({
+  const [q, setQ] = useState("");
+  const [filter, setFilter] = useState<Filter>("all");
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["admin-branding"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("societies")
         .select("id, name, logo_url, bill_theme, signature_url, plan_id, status")
         .order("name");
+      if (error) throw error;
       return data ?? [];
     },
   });
 
-  const stats = useMemo(() => {
-    const rows = data ?? [];
-    return {
-      total: rows.length,
-      withLogo: rows.filter((r: any) => r.logo_url).length,
-      withSignature: rows.filter((r: any) => r.signature_url).length,
-    };
-  }, [data]);
+  const rows = data ?? [];
+  const stats = useMemo(() => ({
+    total: rows.length,
+    withLogo: rows.filter((r: any) => r.logo_url).length,
+    withSignature: rows.filter((r: any) => r.signature_url).length,
+    complete: rows.filter((r: any) => r.logo_url && r.signature_url).length,
+  }), [rows]);
+
+  const shown = rows.filter((r: any) => {
+    const done = Boolean(r.logo_url && r.signature_url);
+    if (filter === "complete" && !done) return false;
+    if (filter === "incomplete" && done) return false;
+    return !q || r.name?.toLowerCase().includes(q.toLowerCase());
+  });
 
   return (
     <div className="container-page space-y-6 py-6 md:py-10">
-      <header className="flex flex-col gap-4 border-b border-border pb-5 md:flex-row md:items-end md:justify-between"><div>
-          <h1 className="text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">White-label & Branding</h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Per-society branding foundation for enterprise / white-label rollouts.</p>
+      <PageHeader title="Branding" description="How ready each society's logo and signature are for bills and receipts." />
+
+      <MetricGroup
+        title="Branding readiness"
+        items={[
+          { label: "Societies", value: stats.total },
+          { label: "Fully branded", value: stats.complete, hint: "Logo + signature" },
+          { label: "With logo", value: stats.withLogo },
+          { label: "With signature", value: stats.withSignature },
+        ]}
+      />
+
+      <section className="space-y-3">
+        <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search societies" className="h-11 pl-9" aria-label="Search societies" />
+          </div>
+          <div className="flex gap-1 rounded-xl bg-muted p-1" role="tablist">
+            {(["all", "incomplete", "complete"] as Filter[]).map((f) => (
+              <button
+                key={f}
+                role="tab"
+                aria-selected={filter === f}
+                onClick={() => setFilter(f)}
+                className={cn("min-h-9 flex-1 rounded-lg px-3 text-sm capitalize", filter === f ? "bg-card shadow-sm font-medium" : "text-muted-foreground")}
+              >
+                {f === "incomplete" ? "Missing items" : f}
+              </button>
+            ))}
+          </div>
         </div>
-      </header>
 
-      <div className="grid sm:grid-cols-3 gap-4">
-        <Stat title="Societies" value={stats.total} />
-        <Stat title="With logo" value={stats.withLogo} />
-        <Stat title="With signature" value={stats.withSignature} />
-      </div>
-
-      <Card className="rounded-2xl">
-        <CardContent className="p-4">
-          <h2 className="font-semibold mb-2">White-label foundation</h2>
-          <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-5">
-            <li>Every society already carries <code>logo_url</code>, <code>bill_theme</code> and business identity fields.</li>
-            <li>Bill themes render on generated PDFs; new themes plug in without codebase forks.</li>
-            <li>Custom domains / organization layer route through the same single codebase — no second app.</li>
-            <li>Feature toggles are enforced at plan-level via <code>society_has_access</code>.</li>
+        {error ? (
+          <ErrorState title="Couldn't load societies" onRetry={() => refetch()} />
+        ) : isLoading ? (
+          <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-16 animate-pulse rounded-xl bg-muted" />)}</div>
+        ) : shown.length === 0 ? (
+          <EmptyState icon={Palette} title="No societies match" description="Try a different search or filter." />
+        ) : (
+          <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+            {shown.map((r: any) => (
+              <li key={r.id} className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 px-4 py-3 md:grid-cols-[auto_minmax(0,1fr)_auto]">
+                {r.logo_url ? (
+                  <img src={r.logo_url} alt="" className="h-10 w-10 shrink-0 rounded-xl object-cover" />
+                ) : (
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-muted"><Building2 className="h-4 w-4 text-muted-foreground" /></div>
+                )}
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{r.name}</p>
+                  <p className="truncate text-xs text-muted-foreground">{r.plan_id ?? "No plan"} · {r.bill_theme ?? "classic"} bill theme · {r.status}</p>
+                </div>
+                <div className="col-span-2 flex flex-wrap gap-1.5 md:col-span-1">
+                  <Item ok={!!r.logo_url} label="Logo" />
+                  <Item ok={!!r.signature_url} label="Signature" />
+                </div>
+              </li>
+            ))}
           </ul>
-        </CardContent>
-      </Card>
-
-      <Card className="rounded-2xl">
-        <CardContent className="p-0">
-          {isLoading ? (
-            <div className="p-8 text-center"><Loader2 className="h-5 w-5 inline animate-spin" /></div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Society</TableHead>
-                  <TableHead>Plan</TableHead>
-                  <TableHead>Logo</TableHead>
-                  <TableHead>Signature</TableHead>
-                  <TableHead>Bill theme</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(data ?? []).map((r: any) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="font-medium flex items-center gap-2">
-                      {r.logo_url ? (
-                        <img src={r.logo_url} alt="" className="h-6 w-6 rounded object-cover" />
-                      ) : (
-                        <div className="h-6 w-6 rounded bg-muted grid place-items-center"><Building2 className="h-3 w-3 text-muted-foreground" /></div>
-                      )}
-                      {r.name}
-                    </TableCell>
-                    <TableCell><Badge variant="secondary">{r.plan_id ?? "—"}</Badge></TableCell>
-                    <TableCell>{r.logo_url ? <Check className="h-4 w-4 text-emerald-600" /> : <X className="h-4 w-4 text-muted-foreground" />}</TableCell>
-                    <TableCell>{r.signature_url ? <Check className="h-4 w-4 text-emerald-600" /> : <X className="h-4 w-4 text-muted-foreground" />}</TableCell>
-                    <TableCell className="text-xs">{r.bill_theme ?? "classic"}</TableCell>
-                    <TableCell><Badge variant={r.status === "active" ? "default" : "outline"}>{r.status}</Badge></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+        )}
+      </section>
     </div>
   );
 }
 
-function Stat({ title, value }: { title: string; value: number }) {
+function Item({ ok, label }: { ok: boolean; label: string }) {
   return (
-    <Card className="rounded-2xl">
-      <CardContent className="p-5">
-        <p className="text-sm text-muted-foreground">{title}</p>
-        <p className="text-2xl font-bold tabular-nums">{value}</p>
-      </CardContent>
-    </Card>
+    <StatusChip tone={ok ? "success" : "neutral"} icon={ok ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}>
+      {label}
+    </StatusChip>
   );
 }

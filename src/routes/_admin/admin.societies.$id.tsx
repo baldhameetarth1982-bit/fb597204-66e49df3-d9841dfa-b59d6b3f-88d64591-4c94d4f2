@@ -83,80 +83,100 @@ function SocietyDetailPage() {
   const st = saasState({ status: s.lifecycle, plan_status: s.plan_status, plan_expires_at: s.plan_expires_at, trial_ends_at: s.trial_ends_at });
   const suspended = s.lifecycle === "suspended";
 
-  return (
-    <div className="min-h-dvh bg-muted/30 pb-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))]">
-      <div className="mx-auto max-w-4xl space-y-4 p-4">
-        {back}
-        <section className="rounded-3xl bg-[oklch(0.22_0.05_260)] p-5 text-white shadow-sm">
-          <p className="text-xs font-medium uppercase tracking-wide text-white/60">Society</p>
-          <h1 className="mt-1 text-2xl font-semibold leading-tight">{s.name}</h1>
-          <p className="mt-0.5 text-sm text-white/70">{[s.city, s.state].filter(Boolean).join(", ") || "Location not set"} · joined {fmtDate(s.created_at)}</p>
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Kv k="Plan" v={planName(s.plan_id)} />
-            <Kv k="Status" v={st.label} />
-            <Kv k={st.key.startsWith("trial") ? "Trial ends" : "Plan until"} v={st.key.startsWith("trial") ? (s.trial_ends_at ? fmtDate(s.trial_ends_at) : "—") : (s.plan_expires_at ? fmtDate(s.plan_expires_at) : "—")} />
-            <Kv k="Units" v={`${counts.units}${s.total_units ? ` / ${s.total_units} declared` : ""}`} />
-          </div>
-        </section>
+  const attention: string[] = [];
+  if (admins.length === 0) attention.push("No active admin — the society can't be managed until someone is assigned.");
+  if (counts.pending_joins > 0) attention.push(`${counts.pending_joins} join request${counts.pending_joins === 1 ? "" : "s"} waiting for the committee.`);
+  if (counts.open_tickets > 0) attention.push(`${counts.open_tickets} open helpdesk ticket${counts.open_tickets === 1 ? "" : "s"}.`);
+  const isTrial = st.key.startsWith("trial");
 
-        <section className="rounded-3xl border bg-card p-4 shadow-sm">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <h2 className="font-semibold">Subscription controls</h2>
+  return (
+    <div className="container-page space-y-6 py-6 pb-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))] md:py-10">
+      {back}
+
+      <header className="grid gap-3 border-b border-border pb-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="truncate text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">{s.name}</h1>
             <StatusChip tone={st.tone}>{st.label}</StatusChip>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <ActBtn icon={Gift} label="Grant plan" onClick={() => setAction("grant")} />
-            <ActBtn icon={Clock} label="Extend trial" disabled={s.plan_status === "active"} onClick={() => setAction("trial")} />
-            {suspended
-              ? <ActBtn icon={RotateCcw} label="Restore" onClick={() => setAction("restore")} />
-              : <ActBtn icon={Ban} label="Suspend" danger onClick={() => setAction("suspend")} />}
-            <InviteReset societyId={s.id} />
-          </div>
-          <p className="mt-3 flex items-start gap-1.5 text-xs text-muted-foreground">
-            <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" /> Every action is checked on the server and recorded in the audit history. Paid plans bought by societies go through Razorpay checkout.
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">{[s.city, s.state].filter(Boolean).join(", ") || "Location not set"} · joined {fmtDate(s.created_at)}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button className="min-h-11" onClick={() => setAction("grant")}><Gift className="mr-1.5 h-4 w-4" />Grant plan</Button>
+          <Button variant="outline" className="min-h-11" disabled={s.plan_status === "active"} onClick={() => setAction("trial")}><Clock className="mr-1.5 h-4 w-4" />Extend trial</Button>
+        </div>
+      </header>
+
+      {attention.length > 0 && (
+        <section className="rounded-2xl border border-warning/40 bg-warning/10 p-4" aria-label="Needs attention">
+          <p className="mb-1 flex items-center gap-1.5 text-sm font-semibold"><AlertCircle className="h-4 w-4" />Needs attention</p>
+          <ul className="space-y-0.5 text-sm">{attention.map((a) => <li key={a}>{a}</li>)}</ul>
         </section>
+      )}
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Metric icon={Home} label="Active units" value={counts.units} />
-          <Metric icon={Users} label="Members" value={counts.members} />
-          <Metric icon={UserPlus} label="Pending joins" value={counts.pending_joins} warn={counts.pending_joins > 0} />
-          <Metric icon={LifeBuoy} label="Open tickets" value={counts.open_tickets} warn={counts.open_tickets > 0} />
-        </div>
+      <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border lg:grid-cols-4">
+        <Kv k="Plan" v={planName(s.plan_id)} />
+        <Kv k={isTrial ? "Trial ends" : "Plan until"} v={isTrial ? (s.trial_ends_at ? fmtDate(s.trial_ends_at) : "—") : (s.plan_expires_at ? fmtDate(s.plan_expires_at) : "—")} />
+        <Kv k="Active units" v={`${counts.units}${s.total_units ? ` of ${s.total_units}` : ""}`} icon={Home} />
+        <Kv k="Members" v={String(counts.members)} icon={Users} />
+        <Kv k="Pending joins" v={String(counts.pending_joins)} icon={UserPlus} />
+        <Kv k="Open tickets" v={String(counts.open_tickets)} icon={LifeBuoy} />
+        <Kv k="Structure" v={s.structure_mode ?? "—"} />
+        <Kv k="Invite code" v={s.invite_code_enabled ? "Enabled" : "Disabled"} icon={KeyRound} />
+      </dl>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <section className="rounded-3xl border bg-card p-4 shadow-sm">
-            <h2 className="mb-2 font-semibold">Committee</h2>
-            {admins.length === 0 ? (
-              <p className="rounded-xl bg-warning/10 p-3 text-sm text-warning">No active admin — the society can't be managed until someone is assigned.</p>
-            ) : (
-              <ul className="divide-y">
-                {admins.map((a, i) => (
-                  <li key={i} className="flex items-center justify-between gap-2 py-2.5 text-sm">
-                    <span className="truncate font-medium">{a.name}</span>
-                    <span className="shrink-0 text-xs text-muted-foreground">{a.role === "society_admin" ? "Society admin" : "Block admin"}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-          <section className="rounded-3xl border bg-card p-4 shadow-sm">
-            <h2 className="mb-2 flex items-center gap-2 font-semibold"><History className="h-4 w-4 text-primary" /> Recent activity</h2>
-            {activity.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No recorded activity yet.</p>
-            ) : (
-              <ul className="space-y-2">
-                {activity.map((a, i) => (
-                  <li key={i} className="flex items-baseline justify-between gap-3 text-sm">
-                    <span className="min-w-0 truncate">{humanAction(a.action)}</span>
-                    <time className="shrink-0 text-xs text-muted-foreground">{new Date(a.at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</time>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        </div>
+      <div className="grid gap-6 md:grid-cols-2">
+        <section className="space-y-2">
+          <h2 className="px-1 text-sm font-semibold">Committee</h2>
+          {admins.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-border p-4 text-sm text-muted-foreground">No admins assigned.</p>
+          ) : (
+            <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+              {admins.map((a, i) => (
+                <li key={i} className="flex min-h-12 items-center justify-between gap-2 px-4 py-2.5 text-sm">
+                  <span className="truncate font-medium">{a.name}</span>
+                  <span className="shrink-0 text-xs text-muted-foreground">{a.role === "society_admin" ? "Society admin" : "Block admin"} · since {fmtDate(a.since)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+        <section className="space-y-2">
+          <h2 className="flex items-center gap-1.5 px-1 text-sm font-semibold"><History className="h-4 w-4 text-primary" />Recent activity</h2>
+          {activity.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-border p-4 text-sm text-muted-foreground">No recorded activity yet.</p>
+          ) : (
+            <ol className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+              {activity.map((a, i) => (
+                <li key={i} className="flex min-h-11 items-baseline justify-between gap-3 px-4 py-2.5 text-sm">
+                  <span className="min-w-0 truncate">{humanAction(a.action)}</span>
+                  <time className="shrink-0 text-xs text-muted-foreground">{new Date(a.at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</time>
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
       </div>
+
+      <section className="space-y-2">
+        <h2 className="px-1 text-sm font-semibold">Access controls</h2>
+        <div className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+          <ControlRow title="Invite code" desc="Issue a new code. The old one stops working immediately.">
+            <InviteReset societyId={s.id} />
+          </ControlRow>
+          <ControlRow
+            title={suspended ? "Restore society" : "Suspend society"}
+            desc={suspended ? "Members regain access with their existing plan." : "Members lose access until restored. No data is deleted."}
+          >
+            {suspended
+              ? <Button variant="outline" className="min-h-11" onClick={() => setAction("restore")}><RotateCcw className="mr-1.5 h-4 w-4" />Restore</Button>
+              : <Button variant="outline" className="min-h-11 border-destructive/40 text-destructive hover:text-destructive" onClick={() => setAction("suspend")}><Ban className="mr-1.5 h-4 w-4" />Suspend</Button>}
+          </ControlRow>
+        </div>
+        <p className="flex items-start gap-1.5 px-1 text-xs text-muted-foreground">
+          <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" /> Every action is checked on the server and recorded in the audit history. Paid plans bought by societies go through Razorpay checkout.
+        </p>
+      </section>
 
       <ActionSheet
         action={action} onClose={() => setAction(null)} societyId={s.id} societyName={s.name}
@@ -167,37 +187,39 @@ function SocietyDetailPage() {
   );
 }
 
-function Kv({ k, v }: { k: string; v: string }) {
-  return <div className="min-w-0"><p className="text-[11px] text-white/60">{k}</p><p className="truncate text-sm font-semibold">{v}</p></div>;
-}
-function Metric({ icon: Icon, label, value, warn }: { icon: React.ComponentType<{ className?: string }>; label: string; value: number; warn?: boolean }) {
+function Kv({ k, v, icon: Icon }: { k: string; v: string; icon?: React.ComponentType<{ className?: string }> }) {
   return (
-    <div className="rounded-2xl border bg-card p-3.5 shadow-sm">
-      <Icon className="h-4 w-4 text-muted-foreground" />
-      <p className={`mt-1.5 text-xl font-semibold tabular-nums ${warn ? "text-warning" : ""}`}>{value}</p>
-      <p className="text-xs text-muted-foreground">{label}</p>
+    <div className="min-w-0 bg-card p-4">
+      <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">{Icon && <Icon className="h-3.5 w-3.5" />}{k}</dt>
+      <dd className="mt-1 truncate text-base font-semibold tabular-nums capitalize">{v}</dd>
     </div>
   );
 }
-function ActBtn({ icon: Icon, label, onClick, disabled, danger }: { icon: React.ComponentType<{ className?: string }>; label: string; onClick: () => void; disabled?: boolean; danger?: boolean }) {
+function ControlRow({ title, desc, children }: { title: string; desc: string; children: React.ReactNode }) {
   return (
-    <Button variant="outline" disabled={disabled} onClick={onClick} className={`min-h-12 flex-col gap-1 py-2 text-xs ${danger ? "text-destructive hover:text-destructive" : ""}`}>
-      <Icon className="h-4 w-4" />{label}
-    </Button>
+    <div className="grid gap-3 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+      <div className="min-w-0">
+        <p className="text-sm font-medium">{title}</p>
+        <p className="text-xs text-muted-foreground">{desc}</p>
+      </div>
+      {children}
+    </div>
   );
 }
 
 function InviteReset({ societyId }: { societyId: string }) {
   const [busy, setBusy] = useState(false);
   return (
-    <ActBtn icon={busy ? Loader2 : KeyRound} label="New invite code" disabled={busy} onClick={async () => {
+    <Button variant="outline" className="min-h-11" disabled={busy} onClick={async () => {
       if (busy || !window.confirm("Generate a new invite code? The old code stops working immediately.")) return;
       setBusy(true);
       const { error } = await supabase.rpc("regenerate_society_invite_code", { _society_id: societyId });
       setBusy(false);
       if (error) toast.error("Couldn't regenerate the invite code. Try again.");
       else toast.success("New invite code generated");
-    }} />
+    }}>
+      {busy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <KeyRound className="mr-1.5 h-4 w-4" />}New code
+    </Button>
   );
 }
 

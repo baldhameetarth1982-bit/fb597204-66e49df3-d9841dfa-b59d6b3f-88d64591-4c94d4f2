@@ -1,33 +1,36 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Landmark, Loader2, ShieldCheck, AlertTriangle, RefreshCw } from "lucide-react";
+import { Landmark, Loader2, Info, RefreshCw } from "lucide-react";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { PageHeader, PageShell } from "@/components/shared/PageHeader";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatusChip } from "@/components/system/StatusChip";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { SettingsSection, SettingsDisclosure } from "@/components/settings/SettingsUI";
 import { toast } from "sonner";
-import {
-  createSocietyLinkedAccount, refreshPayoutStatus, getPayoutInfo,
-} from "@/lib/payouts.functions";
+import { createSocietyLinkedAccount, refreshPayoutStatus, getPayoutInfo } from "@/lib/payouts.functions";
 
 export const Route = createFileRoute("/_society/society/payouts")({
   head: () => ({ meta: [{ title: "Payouts — SociyoHub" }] }),
   component: PayoutsPage,
 });
 
-function StatusChip({ status }: { status: string }) {
-  const map: Record<string, { label: string; cls: string }> = {
-    not_setup: { label: "Not set up", cls: "bg-muted text-muted-foreground" },
-    pending: { label: "Pending review", cls: "bg-amber-500/15 text-amber-700 dark:text-amber-300" },
-    active: { label: "Active — receiving payments", cls: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" },
-    rejected: { label: "Rejected — please resubmit", cls: "bg-rose-500/15 text-rose-700 dark:text-rose-300" },
-  };
-  const m = map[status] ?? map.not_setup;
-  return <Badge className={`rounded-full ${m.cls} border-0`}>{m.label}</Badge>;
+const STATUS: Record<string, { label: string; tone: "neutral" | "warning" | "success" | "danger"; next: string }> = {
+  not_setup: { label: "Not set up", tone: "neutral", next: "Add your society's bank details below to start verification." },
+  pending: { label: "Pending review", tone: "warning", next: "Verification usually takes a few working days. Tap Refresh to check." },
+  active: { label: "Verified", tone: "success", next: "Your bank account is verified." },
+  rejected: { label: "Rejected", tone: "danger", next: "Check the details below and resubmit." },
+};
+
+function Field({ id, label, className, ...p }: { id: string; label: string; className?: string } & React.ComponentProps<typeof Input>) {
+  return (
+    <div className={`space-y-1.5 ${className ?? ""}`}>
+      <Label htmlFor={id}>{label}</Label>
+      <Input id={id} className="h-11" {...p} />
+    </div>
+  );
 }
 
 function PayoutsPage() {
@@ -57,7 +60,7 @@ function PayoutsPage() {
       try { setState(await info({ data: { societyId } })); } catch (e: any) { toast.error(e.message); }
       setLoading(false);
     })();
-  }, [societyId, sidLoading]);
+  }, [societyId, sidLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function submit() {
     if (!societyId) return;
@@ -67,7 +70,7 @@ function PayoutsPage() {
       const res = await create({
         data: { societyId, holderName, email, phone, accountNumber, ifsc: ifsc.toUpperCase(), beneficiaryName, pan: pan.toUpperCase() },
       });
-      toast.success(res.status === "active" ? "Bank attached — payments live" : "Submitted — pending verification");
+      toast.success(res.status === "active" ? "Bank account verified" : "Submitted — pending verification");
       setState(await info({ data: { societyId } }));
     } catch (e: any) { toast.error(e.message); }
     setSaving(false);
@@ -79,87 +82,86 @@ function PayoutsPage() {
     try {
       const r = await refresh({ data: { societyId } });
       setState(await info({ data: { societyId } }));
-      toast.success(`Status: ${r.status}`);
+      toast.success(`Status: ${STATUS[r.status]?.label ?? r.status}`);
     } catch (e: any) { toast.error(e.message); }
     setRefreshing(false);
   }
 
-  if (sidLoading || loading) {
-    return <div className="min-h-[60vh] grid place-items-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
-  }
+  const s = STATUS[state.status] ?? STATUS.not_setup;
+  const complete = holderName && accountNumber && ifsc && pan && email && phone && beneficiaryName;
+
+  const form = (
+    <div className="space-y-5">
+      <fieldset className="space-y-3">
+        <legend className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Society</legend>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field id="p-holder" label="Society / legal name" value={holderName} onChange={(e) => setHolderName(e.target.value)} placeholder="Green Park Apartments CHS" />
+          <Field id="p-pan" label="PAN of society / signatory" value={pan} onChange={(e) => setPan(e.target.value.toUpperCase())} placeholder="ABCDE1234F" maxLength={10} />
+        </div>
+      </fieldset>
+      <fieldset className="space-y-3">
+        <legend className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Bank account</legend>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field id="p-ben" label="Beneficiary name (as in bank)" value={beneficiaryName} onChange={(e) => setBeneficiaryName(e.target.value)} className="sm:col-span-2" />
+          <Field id="p-acc" label="Account number" inputMode="numeric" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, ""))} />
+          <Field id="p-ifsc" label="IFSC" value={ifsc} onChange={(e) => setIfsc(e.target.value.toUpperCase())} placeholder="HDFC0001234" />
+        </div>
+      </fieldset>
+      <fieldset className="space-y-3">
+        <legend className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Contact</legend>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field id="p-email" label="Admin email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <Field id="p-phone" label="Admin phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+919876543210" />
+        </div>
+      </fieldset>
+      <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-xs text-muted-foreground">{complete ? "Ready to submit." : "Fill every field to submit."}</p>
+        <Button onClick={submit} disabled={saving || !complete} className="h-11 rounded-xl">
+          {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {state.hasLinkedAccount ? "Resubmit for verification" : "Submit for verification"}
+        </Button>
+      </div>
+    </div>
+  );
 
   return (
     <PageShell>
-      <PageHeader title="Payouts" description="Attach your society's bank account to record maintenance payouts. Online maintenance collection is enabled by SociyoHub support on request." />
-
-      <Card className="rounded-2xl mb-5">
-        <CardContent className="p-5 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="h-11 w-11 rounded-xl bg-primary/10 grid place-items-center"><Landmark className="h-5 w-5 text-primary" /></div>
-            <div>
-              <div className="text-sm font-medium">Current status</div>
-              <div className="mt-1"><StatusChip status={state.status} /></div>
-              {state.last4 && <div className="text-xs text-muted-foreground mt-1">A/C ending {state.last4} · {state.holder}</div>}
+      <PageHeader title="Payouts" description="Your society's bank account on record with SociyoHub." />
+      {sidLoading || loading ? (
+        <div className="space-y-4" aria-busy="true"><div className="h-24 animate-pulse rounded-2xl bg-muted" /><div className="h-72 animate-pulse rounded-2xl bg-muted" /></div>
+      ) : (
+        <div className="mx-auto max-w-3xl space-y-5">
+          <section className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-4 rounded-2xl border border-border bg-card p-5 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
+            <div className="grid h-11 w-11 place-items-center rounded-xl bg-primary/10 text-primary"><Landmark className="h-5 w-5" /></div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="font-semibold">Bank account</h2>
+                <StatusChip tone={s.tone}>{s.label}</StatusChip>
+              </div>
+              {state.last4 && <p className="mt-1 truncate text-sm">A/C ending <span className="tabular-nums">{state.last4}</span> · {state.holder}</p>}
+              <p className="mt-1 text-sm text-muted-foreground">{s.next}</p>
             </div>
+            {state.hasLinkedAccount && (
+              <Button variant="outline" className="col-span-2 h-11 rounded-xl sm:col-span-1" onClick={doRefresh} disabled={refreshing}>
+                {refreshing ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-1 h-4 w-4" />} Refresh
+              </Button>
+            )}
+          </section>
+
+          <div className="flex items-start gap-3 rounded-2xl border border-border bg-muted/40 p-4 text-sm">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+            <p>Residents pay maintenance by <b>Cash</b> or <b>Bank Transfer</b>. The committee verifies each payment from the Payments screen.</p>
           </div>
-          {state.hasLinkedAccount && (
-            <Button variant="outline" size="sm" className="rounded-xl" onClick={doRefresh} disabled={refreshing}>
-              {refreshing ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />} Refresh
-            </Button>
+
+          {state.hasLinkedAccount ? (
+            <SettingsDisclosure title="Update bank details" description="Resubmitting starts verification again." defaultOpen={state.status === "rejected"}>
+              {form}
+            </SettingsDisclosure>
+          ) : (
+            <SettingsSection title="Society bank details">{form}</SettingsSection>
           )}
-        </CardContent>
-      </Card>
-
-      {state.status !== "active" && (
-        <Card className="rounded-2xl mb-5 border-amber-500/30 bg-amber-500/5">
-          <CardContent className="p-4 flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-            <p className="text-sm">Until your bank is verified, residents can <b>only pay in cash</b>. You can still mark their bills paid manually from the Billing screen.</p>
-          </CardContent>
-        </Card>
+        </div>
       )}
-
-      <Card className="rounded-2xl">
-        <CardHeader><CardTitle className="flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-primary" /> Society bank details</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label>Society / legal name</Label>
-              <Input value={holderName} onChange={(e) => setHolderName(e.target.value)} placeholder="Green Park Apartments CHS" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Beneficiary name (as in bank)</Label>
-              <Input value={beneficiaryName} onChange={(e) => setBeneficiaryName(e.target.value)} placeholder="Green Park Apt CHS" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Admin email</Label>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@society.com" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Admin phone</Label>
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+919876543210" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Account number</Label>
-              <Input value={accountNumber} onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, ""))} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>IFSC</Label>
-              <Input value={ifsc} onChange={(e) => setIfsc(e.target.value.toUpperCase())} placeholder="HDFC0001234" />
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label>PAN of society / signatory</Label>
-              <Input value={pan} onChange={(e) => setPan(e.target.value.toUpperCase())} placeholder="ABCDE1234F" maxLength={10} />
-            </div>
-          </div>
-          <div className="flex justify-end">
-            <Button onClick={submit} disabled={saving || !holderName || !accountNumber || !ifsc || !pan || !email || !phone || !beneficiaryName} className="rounded-xl h-11">
-              {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-              {state.hasLinkedAccount ? "Resubmit" : "Submit for verification"}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
     </PageShell>
   );
 }

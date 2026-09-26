@@ -54,7 +54,7 @@ function SettingsPage() {
   const preferencesKey = user?.id ? `sociohub:prefs:${user.id}` : null;
 
   // local-only preferences
-  const [prefs, setPrefs] = useState({
+  const defaultPreferences = {
     pushAnnouncements: true,
     pushVisitors: true,
     pushBills: true,
@@ -62,14 +62,15 @@ function SettingsPage() {
     showPhoneToNeighbors: false,
     showFlatToVisitors: true,
     marketingEmails: false,
-  });
+  };
+  const [prefs, setPrefs] = useState(defaultPreferences);
 
   useEffect(() => {
     setFullName(profile?.full_name ?? "");
     setPhone(profile?.phone ?? "");
     try {
       const raw = preferencesKey ? localStorage.getItem(preferencesKey) : null;
-      if (raw) setPrefs((p) => ({ ...p, ...JSON.parse(raw) }));
+      setPrefs(raw ? { ...defaultPreferences, ...JSON.parse(raw) } : defaultPreferences);
     } catch {}
   }, [preferencesKey, profile]);
 

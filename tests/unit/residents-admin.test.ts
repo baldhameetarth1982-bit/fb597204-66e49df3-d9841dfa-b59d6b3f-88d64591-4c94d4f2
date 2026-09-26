@@ -14,7 +14,6 @@ import {
   residentRowSchema,
   privateDetailSchema,
 } from "@/lib/residents-admin.functions";
-import { createResidentLifecycleFixture } from "../helpers/resident-lifecycle-isolated-fixture";
 
 function read(p: string) {
   return readFileSync(join(process.cwd(), p), "utf8");
@@ -23,6 +22,18 @@ function read(p: string) {
 const MIG_DIR = "supabase/migrations";
 const migFiles = readdirSync(MIG_DIR).filter((f) => f.endsWith(".sql")).sort();
 const migSql = migFiles.map((f) => read(join(MIG_DIR, f))).join("\n");
+
+function latestFunction(name: string): string {
+  const marker = `CREATE OR REPLACE FUNCTION public.${name}`;
+  for (let index = migFiles.length - 1; index >= 0; index -= 1) {
+    const sql = read(join(MIG_DIR, migFiles[index]));
+    const start = sql.indexOf(marker);
+    if (start < 0) continue;
+    const next = sql.indexOf("CREATE OR REPLACE FUNCTION public.", start + marker.length);
+    return sql.slice(start, next < 0 ? undefined : next);
+  }
+  throw new Error(`Missing production function ${name}`);
+}
 
 describe("Stage 2B — canonical reuse", () => {
   it("no new resident/family/vehicle tables were introduced", () => {
@@ -263,43 +274,36 @@ describe("Stage 2B — protected society untouched", () => {
   });
 });
 
-describe("Stage 2B — deterministic synthetic lifecycle", () => {
+describe("Stage 2B — production lifecycle SQL contract", () => {
   it("assign then end preserves history row", () => {
-    const fixture = createResidentLifecycleFixture();
-    const assigned = fixture.assign("synthetic-society-a", "synthetic-resident-a");
-    const ended = fixture.end(assigned.id);
-    expect(fixture.relationships).toHaveLength(1);
-    expect(ended).toMatchObject({ id: assigned.id, active: false });
-    expect(ended.movedOutAt).not.toBeNull();
+    const sql = latestFunction("end_resident_unit_relationship");
+    expect(sql).toMatch(/UPDATE public\.flat_residents[\s\S]*SET is_active = false[\s\S]*moved_out_at/);
+    expect(sql).not.toMatch(/DELETE\s+FROM\s+public\.flat_residents/i);
   });
 
   it("family deactivation preserves the row and its ID", () => {
-    const fixture = createResidentLifecycleFixture();
-    const member = fixture.addFamily();
-    expect(fixture.deactivateFamily(member.id)).toEqual({ id: member.id, active: false });
-    expect(fixture.family).toHaveLength(1);
+    const sql = latestFunction("admin_delete_family_member");
+    expect(sql).toMatch(/UPDATE public\.family_members[\s\S]*SET is_active = false/);
+    expect(sql).not.toMatch(/DELETE\s+FROM\s+public\.family_members/i);
+    expect(sql).toMatch(/target_id[\s\S]*_id/);
   });
 
   it("vehicle deactivation preserves the plate value", () => {
-    const fixture = createResidentLifecycleFixture();
-    const vehicle = fixture.addVehicle("synthetic-society-a", "gj 01 aa 0001");
-    fixture.deactivateVehicle(vehicle.id);
-    expect(vehicle).toMatchObject({ active: false, plate: "GJ01AA0001" });
-    expect(fixture.vehicles).toHaveLength(1);
+    const sql = latestFunction("admin_delete_vehicle");
+    expect(sql).toMatch(/UPDATE public\.vehicles[\s\S]*SET is_active = false/);
+    expect(sql).not.toMatch(/DELETE\s+FROM\s+public\.vehicles/i);
+    expect(sql).not.toMatch(/SET[\s\S]*plate_number\s*=/i);
   });
 
   it("reactivation validates duplicate plate", () => {
-    const fixture = createResidentLifecycleFixture();
-    const archived = fixture.addVehicle("synthetic-society-a", "GJ01AA0001");
-    fixture.deactivateVehicle(archived.id);
-    fixture.addVehicle("synthetic-society-a", "GJ 01 AA 0001");
-    expect(() => fixture.reactivateVehicle(archived.id)).toThrow("duplicate_active_plate");
+    const sql = latestFunction("admin_upsert_vehicle");
+    expect(sql).toMatch(/id\s*<>\s*_id[\s\S]*is_active\s*=\s*true[\s\S]*v_norm/);
+    expect(sql).toMatch(/RAISE EXCEPTION 'duplicate_active_plate'/);
   });
 
   it("cross-society same plate is allowed", () => {
-    const fixture = createResidentLifecycleFixture();
-    fixture.addVehicle("synthetic-society-a", "GJ01AA0001");
-    fixture.addVehicle("synthetic-society-b", "GJ01AA0001");
-    expect(fixture.vehicles).toHaveLength(2);
+    const sql = latestFunction("admin_upsert_vehicle");
+    expect(sql).toMatch(/WHERE society_id = _society_id AND is_active = true/);
+    expect(sql).toMatch(/hashtextextended\(_society_id::text \|\| '\|' \|\| v_norm/);
   });
 });

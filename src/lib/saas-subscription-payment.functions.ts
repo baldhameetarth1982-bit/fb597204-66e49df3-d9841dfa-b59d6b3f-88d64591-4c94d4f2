@@ -1,6 +1,8 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
@@ -40,7 +42,7 @@ async function razorpay(path: string, keyId: string, keySecret: string, init?: R
 }
 
 async function requirePlanManager(
-  supabase: Parameters<Parameters<typeof requireSupabaseAuth>[0]>[0] extends never ? never : any,
+  supabase: SupabaseClient<Database>,
   societyId: string,
 ) {
   const { data, error } = await supabase.rpc("current_user_has_society_permission", {

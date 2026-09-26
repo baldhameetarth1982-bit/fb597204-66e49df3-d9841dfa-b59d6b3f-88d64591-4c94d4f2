@@ -74,7 +74,7 @@ export interface RzpOrderOpts {
   onDismiss?: () => void;
 }
 
-/** Open Razorpay with a pre-created server Order (for maintenance bills). */
+/** Open Razorpay with a pre-created, server-authoritative order. */
 export async function openRazorpayForOrder(opts: RzpOrderOpts) {
   if (!opts.keyId) { toast.error("Razorpay key missing"); return false; }
   const ok = await loadRazorpayScript();

@@ -1,12 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Heart, Loader2 } from "lucide-react";
+import { Heart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { PageHeader, EmptyState } from "@/components/shared/PageHeader";
+import { ErrorState } from "@/components/system/ErrorState";
+import { StatusChip } from "@/components/system/StatusChip";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_admin/admin/health")({
   head: () => ({ meta: [{ title: "Society Health — Super Admin" }] }),
@@ -36,7 +36,7 @@ function labelFor(n: number) {
 }
 
 function HealthPage() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["admin-health"],
     queryFn: async () => {
       const [socs, bills, resAgg, posts] = await Promise.all([
@@ -73,66 +73,60 @@ function HealthPage() {
     },
   });
 
-  const rows = useMemo(() => (data ?? []).slice().sort((a, b) => b.score - a.score), [data]);
+  const [filter, setFilter] = useState<string>("all");
+  const rows = useMemo(() => (data ?? []).slice().sort((a, b) => a.score - b.score), [data]);
+  const labels = ["Critical", "Needs attention", "Good", "Excellent"];
+  const byLabel = Object.fromEntries(labels.map((l) => [l, rows.filter((r) => r.label === l).length]));
+  const shown = filter === "all" ? rows : rows.filter((r) => r.label === filter);
+  const tone = (l: string) => (l === "Excellent" || l === "Good" ? "success" : l === "Needs attention" ? "warning" : "danger") as "success" | "warning" | "danger";
 
   return (
     <div className="container-page space-y-6 py-6 md:py-10">
-      <header className="flex flex-col gap-4 border-b border-border pb-5 md:flex-row md:items-end md:justify-between"><div>
-          <h1 className="text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">Society Health Score</h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Composite ranking of financial, engagement and configuration signals.</p>
-        </div>
-      </header>
+      <PageHeader title="Society health" description="Weakest societies first, so you can see who needs help." />
 
-      <Card className="rounded-2xl">
-        <CardContent className="p-0">
-          {isLoading ? (
-            <div className="p-8 text-center"><Loader2 className="h-5 w-5 inline animate-spin" /></div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Society</TableHead>
-                  <TableHead className="w-40">Score</TableHead>
-                  <TableHead>Rating</TableHead>
-                  <TableHead className="text-right">Collection</TableHead>
-                  <TableHead className="text-right">Residents</TableHead>
-                  <TableHead className="text-right">Complaints</TableHead>
-                  <TableHead>Plan</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((r) => {
-                  const total = r.paid + r.unpaid;
-                  const pct = total > 0 ? Math.round((r.paid / total) * 100) : 0;
-                  const tone =
-                    r.score >= 85 ? "default" :
-                    r.score >= 70 ? "secondary" :
-                    r.score >= 50 ? "outline" : "destructive";
-                  return (
-                    <TableRow key={r.id}>
-                      <TableCell className="font-medium">{r.name}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Progress value={r.score} className="h-2 w-24" />
-                          <span className="text-sm font-semibold tabular-nums">{r.score}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell><Badge variant={tone as any}>{r.label}</Badge></TableCell>
-                      <TableCell className="text-right text-xs">{pct}%</TableCell>
-                      <TableCell className="text-right text-xs">{r.residents}</TableCell>
-                      <TableCell className="text-right text-xs">{r.complaints}</TableCell>
-                      <TableCell><Badge variant={r.planActive ? "default" : "outline"}>{r.planActive ? "active" : "—"}</Badge></TableCell>
-                    </TableRow>
-                  );
-                })}
-                {rows.length === 0 && (
-                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No societies yet</TableCell></TableRow>
-                )}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-4" role="tablist" aria-label="Filter by rating">
+        {labels.map((l) => (
+          <button
+            key={l}
+            role="tab"
+            aria-selected={filter === l}
+            onClick={() => setFilter(filter === l ? "all" : l)}
+            className={cn("min-w-0 bg-card p-4 text-left hover:bg-muted/60", filter === l && "bg-primary/5 ring-2 ring-inset ring-primary")}
+          >
+            <StatusChip tone={tone(l)}>{l}</StatusChip>
+            <p className="mt-2 text-2xl font-semibold tabular-nums">{byLabel[l]}</p>
+          </button>
+        ))}
+      </div>
+
+      {error ? (
+        <ErrorState title="Couldn't load society health" onRetry={() => refetch()} />
+      ) : isLoading ? (
+        <div className="space-y-2">{[0, 1, 2, 3].map((i) => <div key={i} className="h-16 animate-pulse rounded-xl bg-muted" />)}</div>
+      ) : shown.length === 0 ? (
+        <EmptyState icon={Heart} title={filter === "all" ? "No societies yet" : `No societies rated ${filter}`} />
+      ) : (
+        <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+          {shown.map((r) => {
+            const total = r.paid + r.unpaid;
+            const pct = total > 0 ? Math.round((r.paid / total) * 100) : 0;
+            return (
+              <li key={r.id}>
+                <Link to="/admin/societies/$id" params={{ id: r.id }} className="grid grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 hover:bg-muted/60">
+                  <span className="grid h-11 w-11 place-items-center rounded-xl bg-muted text-base font-semibold tabular-nums">{r.score}</span>
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium">{r.name}</span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {pct}% collected · {r.residents} residents · {r.complaints} posts · plan {r.planActive ? "active" : "inactive"}
+                    </span>
+                  </span>
+                  <StatusChip tone={tone(r.label)} className="hidden sm:inline-flex">{r.label}</StatusChip>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }

@@ -1,11 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Loader2, Building2 } from "lucide-react";
+import { Search, Loader2, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { StatusChip } from "@/components/system/StatusChip";
+import { ErrorState } from "@/components/system/ErrorState";
+import { PageHeader, PageShell } from "@/components/shared/PageHeader";
 
 export const Route = createFileRoute("/_admin/admin/search")({
   head: () => ({ meta: [{ title: "Platform Search — Super Admin" }] }),
@@ -14,10 +15,11 @@ export const Route = createFileRoute("/_admin/admin/search")({
 
 function AdminSearchPage() {
   const [q, setQ] = useState("");
-  const { data: societies = [], isFetching } = useQuery({
+  const { data: societies = [], isFetching, isError, refetch } = useQuery({
     queryKey: ["admin-search-societies"],
     queryFn: async () => {
-      const { data } = await supabase.rpc("admin_list_societies");
+      const { data, error } = await supabase.rpc("admin_list_societies");
+      if (error) throw error;
       return data ?? [];
     },
   });
@@ -31,41 +33,52 @@ function AdminSearchPage() {
   }, [societies, q]);
 
   return (
-    <div className="container-page space-y-6 py-6 md:py-10">
-      <header className="flex flex-col gap-4 border-b border-border pb-5 md:flex-row md:items-end md:justify-between"><div>
-          <h1 className="text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">Platform Search</h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Locate any society across the platform.</p>
+    <PageShell>
+      <PageHeader title="Platform Search" description="Find any society by name, ID or plan." />
+      <div className="mx-auto max-w-3xl space-y-3">
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            autoFocus
+            aria-label="Search societies"
+            placeholder={`Search ${societies.length ? societies.length.toLocaleString("en-IN") + " " : ""}societies…`}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            className="h-12 rounded-2xl pl-11 text-base"
+          />
+          {isFetching && <Loader2 className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />}
         </div>
-      </header>
 
-      <Card className="rounded-2xl">
-        <CardContent className="p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search societies by name, id or plan…" value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
-            {isFetching && <Loader2 className="h-4 w-4 animate-spin absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />}
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="space-y-2">
-        {filtered.map((r: any) => (
-          <Card key={r.id} className="rounded-xl">
-            <CardContent className="p-4 flex items-center gap-3">
-              <Building2 className="h-5 w-5 text-primary" />
-              <div className="flex-1 min-w-0">
-                <div className="font-medium truncate">{r.name}</div>
-                <div className="text-xs text-muted-foreground font-mono truncate">{r.id}</div>
-              </div>
-              <Badge variant="secondary">{r.plan_id ?? "—"}</Badge>
-              <Badge variant={r.status === "active" ? "default" : "outline"}>{r.status}</Badge>
-            </CardContent>
-          </Card>
-        ))}
-        {q.trim() && filtered.length === 0 && !isFetching && (
-          <p className="text-sm text-muted-foreground text-center py-8">No matches.</p>
+        {isError ? (
+          <ErrorState onRetry={() => refetch()} showSupport={false} />
+        ) : !q.trim() ? (
+          <p className="py-10 text-center text-sm text-muted-foreground">Start typing to search.</p>
+        ) : filtered.length === 0 ? (
+          !isFetching && <p className="py-10 text-center text-sm text-muted-foreground">No societies match "{q}".</p>
+        ) : (
+          <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+            {filtered.map((r: any) => (
+              <li key={r.id}>
+                <Link
+                  to="/admin/societies/$id"
+                  params={{ id: r.id }}
+                  className="grid min-h-14 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 px-4 py-3 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{r.name}</p>
+                    <p className="truncate font-mono text-xs text-muted-foreground">{r.id}</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 sm:flex-row sm:items-center">
+                    <StatusChip tone="neutral" className="capitalize">{r.plan_id ?? "—"}</StatusChip>
+                    <StatusChip tone={r.status === "active" ? "success" : "warning"} className="capitalize">{r.status}</StatusChip>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </Link>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
-    </div>
+    </PageShell>
   );
 }

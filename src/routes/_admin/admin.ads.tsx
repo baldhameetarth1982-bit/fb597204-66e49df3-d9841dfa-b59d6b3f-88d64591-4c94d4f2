@@ -10,6 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_admin/admin/ads")({
@@ -35,6 +39,7 @@ function AdsPage() {
   const [ads, setAds] = useState<Ad[]>([]);
   const [interstitial, setInterstitial] = useState(false);
   const [seconds, setSeconds] = useState(15);
+  const [deleting, setDeleting] = useState<Ad | null>(null);
 
   async function reload() {
     const [{ data: adsData }, { data: settings }] = await Promise.all([
@@ -79,7 +84,6 @@ function AdsPage() {
   }
 
   async function remove(id: string) {
-    if (!confirm("Delete this ad?")) return;
     const { error } = await (supabase as any).from("ads").delete().eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Ad deleted");
@@ -93,72 +97,82 @@ function AdsPage() {
   return (
     <div className="container-page space-y-6 py-6 md:py-10">
       <header className="flex flex-col gap-4 border-b border-border pb-5 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">Ads
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage ad creatives shown on Basic-plan societies. Max <b>4 active ads</b> across all placements.
-          </p>
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">Ads</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Creatives shown to societies on plans with ads.</p>
         </div>
         <NewAdDialog disabled={activeCount >= 4} onCreated={reload} />
       </header>
 
-      <Card className="rounded-2xl">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-base">Active ads <span className="text-muted-foreground font-normal">({activeCount}/4)</span></CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+        <section aria-labelledby="ads-list" className="space-y-2">
+          <div className="flex items-center justify-between gap-3 px-1">
+            <h2 id="ads-list" className="text-sm font-semibold">Creatives</h2>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="tabular-nums">{activeCount} of 4 active</span>
+              <div className="flex gap-0.5" aria-hidden>
+                {[0, 1, 2, 3].map((i) => <span key={i} className={`h-2 w-4 rounded-full ${i < activeCount ? "bg-primary" : "bg-muted"}`} />)}
+              </div>
+            </div>
+          </div>
           {ads.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">No ads yet. Click "New ad" to add one.</p>
+            <div className="rounded-2xl border border-dashed border-border py-12 text-center text-sm text-muted-foreground">No ads yet. Use "New ad" to add one.</div>
           ) : (
-            <div className="grid gap-3">
+            <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
               {ads.map((ad) => (
-                <div key={ad.id} className="flex items-center gap-4 rounded-xl border p-3">
-                  <img src={ad.image_url} alt={ad.title} className="h-16 w-24 rounded-lg object-cover bg-muted" />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{ad.title}</div>
-                    <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
-                      <ExternalLink className="h-3 w-3" />
-                      <a href={ad.link_url} target="_blank" rel="noreferrer" className="underline truncate">{ad.link_url}</a>
-                    </div>
-                    <div className="text-xs mt-0.5">
-                      Placement: <span className="font-medium">{PLACEMENTS.find((p) => p.id === ad.placement)?.label ?? ad.placement}</span>
-                    </div>
+                <li key={ad.id} className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 p-3 ${ad.active ? "" : "opacity-60"}`}>
+                  <img src={ad.image_url} alt={ad.title} className="h-14 w-20 rounded-lg bg-muted object-cover" />
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{ad.title}</p>
+                    <p className="truncate text-xs text-muted-foreground">{PLACEMENTS.find((p) => p.id === ad.placement)?.label ?? ad.placement}</p>
+                    <a href={ad.link_url} target="_blank" rel="noreferrer" className="flex items-center gap-1 truncate text-xs text-primary underline-offset-2 hover:underline">
+                      <ExternalLink className="h-3 w-3 shrink-0" /> <span className="truncate">{ad.link_url}</span>
+                    </a>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Switch checked={ad.active} onCheckedChange={(v) => toggleActive(ad, v)} />
-                    <Button variant="ghost" size="icon" onClick={() => remove(ad.id)}>
+                  <div className="flex items-center gap-1">
+                    <Switch aria-label={`${ad.active ? "Pause" : "Activate"} ${ad.title}`} checked={ad.active} onCheckedChange={(v) => toggleActive(ad, v)} />
+                    <Button variant="ghost" size="icon" className="h-11 w-11" aria-label={`Delete ${ad.title}`} onClick={() => setDeleting(ad)}>
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
-        </CardContent>
-      </Card>
+        </section>
 
-      <Card className="rounded-2xl">
-        <CardHeader><CardTitle className="text-base">Interstitial duration</CardTitle></CardHeader>
-        <CardContent className="space-y-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Enable full-screen ads</p>
-              <p className="text-xs text-muted-foreground">Shown occasionally when opening the app. Skippable after timer.</p>
+        <section aria-labelledby="ads-inter" className="space-y-4 rounded-2xl border border-border bg-card p-4">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+            <div className="min-w-0">
+              <h2 id="ads-inter" className="text-sm font-semibold">Full-screen ads</h2>
+              <p className="text-xs text-muted-foreground">Shown occasionally when opening the app; skippable after the timer.</p>
             </div>
-            <Switch checked={interstitial} onCheckedChange={setInterstitial} />
+            <Switch aria-label="Enable full-screen ads" checked={interstitial} onCheckedChange={setInterstitial} />
           </div>
-          <div className={interstitial ? "" : "opacity-50 pointer-events-none"}>
-            <div className="flex items-center justify-between mb-2">
-              <Label>Duration (seconds)</Label>
-              <span className="font-mono text-sm">{seconds}s</span>
+          <div className={interstitial ? "" : "pointer-events-none opacity-50"}>
+            <div className="mb-2 flex items-center justify-between">
+              <Label>Duration</Label>
+              <span className="text-sm font-semibold tabular-nums">{seconds}s</span>
             </div>
             <Slider min={10} max={30} step={1} value={[seconds]} onValueChange={(v) => setSeconds(v[0])} />
-            <p className="text-xs text-muted-foreground mt-2">Range: 10–30 seconds. Applies to ads with "interstitial" placement.</p>
+            <p className="mt-2 text-xs text-muted-foreground">10–30 seconds.</p>
           </div>
-          <Button onClick={saveInterstitial} className="rounded-xl">Save</Button>
-        </CardContent>
-      </Card>
+          <Button onClick={saveInterstitial} className="h-11 w-full rounded-xl">Save</Button>
+        </section>
+      </div>
+
+      <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete "{deleting?.title}"?</AlertDialogTitle>
+            <AlertDialogDescription>This removes the ad everywhere. It can't be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (deleting) void remove(deleting.id); setDeleting(null); }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

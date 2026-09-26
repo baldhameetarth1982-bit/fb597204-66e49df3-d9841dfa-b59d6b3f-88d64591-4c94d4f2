@@ -557,12 +557,21 @@ export function buildRealDeps(supabase: unknown): Flat360Deps {
       return { data: (r.data ?? []) as T, error: null } as const;
     });
 
+  // flat_residents has no FK to profiles, so names are looked up separately (RLS applies).
+  const profileNames = async (ids: string[]): Promise<Map<string, string | null>> => {
+    const unique = Array.from(new Set(ids.filter(Boolean)));
+    if (!unique.length) return new Map();
+    const sel = (db.from("profiles") as unknown as { select: (c: string) => unknown }).select("id, full_name");
+    const res = await (sel as { in: (c: string, v: string[]) => Promise<{ data: unknown }> }).in("id", unique);
+    return new Map(((res.data ?? []) as Array<{ id: string; full_name: string | null }>).map((p) => [p.id, p.full_name]));
+  };
+
   return {
     async fetchFlat(flatId) {
       const chain = db
         .from("flats")
         .select(
-          "id, society_id, flat_number, floor, block_id, tenancy_type, blocks(name), societies(name, plan_id, plan_status, trial_ends_at)",
+          "id, society_id, flat_number, floor, block_id, blocks(name), societies(name, plan_id, plan_status, trial_ends_at)",
         );
       const eq = (chain as unknown as { eq: (c: string, v: string) => unknown }).eq(
         "id",
@@ -578,7 +587,6 @@ export function buildRealDeps(supabase: unknown): Flat360Deps {
         flat_number: string | null;
         floor: number | null;
         block_id: string | null;
-        tenancy_type: string | null;
         blocks: { name: string | null } | null;
         societies: {
           name: string | null;
@@ -593,7 +601,7 @@ export function buildRealDeps(supabase: unknown): Flat360Deps {
         flat_number: row.flat_number,
         floor: row.floor,
         block_id: row.block_id,
-        tenancy_type: row.tenancy_type,
+        tenancy_type: null, // flats has no tenancy column; occupancy comes from flat_residents
         block_name: row.blocks?.name ?? null,
         society_name: row.societies?.name ?? null,
         society_plan_id: row.societies?.plan_id ?? null,
@@ -605,7 +613,7 @@ export function buildRealDeps(supabase: unknown): Flat360Deps {
       const chain = db
         .from("flat_residents")
         .select(
-          "user_id, relationship, is_primary, is_active, moved_in_at, moved_out_at, profiles:profiles(full_name)",
+          "user_id, relationship, is_primary, is_active, moved_in_at, moved_out_at",
         );
       const eq = (chain as unknown as { eq: (c: string, v: string) => unknown }).eq(
         "flat_id",
@@ -631,6 +639,7 @@ export function buildRealDeps(supabase: unknown): Flat360Deps {
         moved_out_at: string | null;
         profiles: { full_name: string | null } | null;
       }>;
+      const names = await profileNames(rows.map((r) => r.user_id));
       return {
         data: rows.map((r) => ({
           user_id: r.user_id,
@@ -639,13 +648,13 @@ export function buildRealDeps(supabase: unknown): Flat360Deps {
           is_active: !!r.is_active,
           moved_in_at: r.moved_in_at,
           moved_out_at: r.moved_out_at,
-          display_name: r.profiles?.full_name ?? null,
+          display_name: names.get(r.user_id) ?? null,
         })),
         error: null,
       };
     },
     async fetchFamily(flatId) {
-      const chain = db.from("family_members").select("id, name, relationship");
+      const chain = db.from("family_members").select("id, name:full_name, relationship:relation");
       const eq = (chain as unknown as { eq: (c: string, v: string) => unknown }).eq(
         "flat_id",
         flatId,
@@ -690,7 +699,7 @@ export function buildRealDeps(supabase: unknown): Flat360Deps {
       return q<PaymentRow[]>(limited);
     },
     async fetchVehicles(flatId) {
-      const chain = db.from("vehicles").select("id, number_plate, type, is_active");
+      const chain = db.from("vehicles").select("id, number_plate:plate_number, type, is_active");
       const eq = (chain as unknown as { eq: (c: string, v: string) => unknown }).eq(
         "flat_id",
         flatId,
@@ -704,7 +713,7 @@ export function buildRealDeps(supabase: unknown): Flat360Deps {
       const chain = db
         .from("flat_residents")
         .select(
-          "user_id, relationship, is_primary, is_active, moved_in_at, moved_out_at, profiles:profiles(full_name)",
+          "user_id, relationship, is_primary, is_active, moved_in_at, moved_out_at",
         );
       const eq = (chain as unknown as { eq: (c: string, v: string) => unknown }).eq(
         "flat_id",
@@ -727,6 +736,7 @@ export function buildRealDeps(supabase: unknown): Flat360Deps {
         moved_out_at: string | null;
         profiles: { full_name: string | null } | null;
       }>;
+      const names = await profileNames(rows.map((r) => r.user_id));
       return {
         data: rows.map((r) => ({
           user_id: r.user_id,
@@ -735,7 +745,7 @@ export function buildRealDeps(supabase: unknown): Flat360Deps {
           is_active: !!r.is_active,
           moved_in_at: r.moved_in_at,
           moved_out_at: r.moved_out_at,
-          display_name: r.profiles?.full_name ?? null,
+          display_name: names.get(r.user_id) ?? null,
         })),
         error: null,
       };

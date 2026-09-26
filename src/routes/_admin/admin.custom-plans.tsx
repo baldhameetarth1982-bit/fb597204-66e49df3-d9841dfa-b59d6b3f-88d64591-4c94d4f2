@@ -1,18 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Tags, Plus, Loader2, IndianRupee } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Tags, Plus, Loader2, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { StatusChip } from "@/components/system/StatusChip";
+import { EmptyState } from "@/components/system/EmptyState";
+import { ErrorState } from "@/components/system/ErrorState";
+import { PageHeader, PageShell } from "@/components/shared/PageHeader";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_admin/admin/custom-plans")({
@@ -32,17 +34,19 @@ interface CustomPlan {
   created_at: string;
   society?: { name: string } | null;
 }
-
 interface SocietyOpt { id: string; name: string }
 
 function CustomPlansPage() {
   const [rows, setRows] = useState<CustomPlan[]>([]);
   const [societies, setSocieties] = useState<SocietyOpt[]>([]);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [q, setQ] = useState("");
+  const [grant, setGrant] = useState<CustomPlan | null>(null);
+  const [granting, setGranting] = useState(false);
 
-  // form
   const [societyId, setSocietyId] = useState("");
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
@@ -52,10 +56,12 @@ function CustomPlansPage() {
 
   async function load() {
     setLoading(true);
-    const [{ data: plans }, { data: socs }] = await Promise.all([
+    setFailed(false);
+    const [{ data: plans, error }, { data: socs }] = await Promise.all([
       (supabase as any).from("custom_plans").select("*, society:societies(name)").order("created_at", { ascending: false }),
       supabase.from("societies").select("id,name").order("name"),
     ]);
+    if (error) setFailed(true);
     setRows((plans as any) ?? []);
     setSocieties((socs as any) ?? []);
     setLoading(false);
@@ -66,13 +72,8 @@ function CustomPlansPage() {
     if (!societyId || !name || !price) return toast.error("Fill society, name and price");
     setSaving(true);
     const { error } = await (supabase as any).from("custom_plans").insert({
-      society_id: societyId,
-      name,
-      price: Number(price),
-      duration_days: Number(duration),
-      transaction_fee_pct: Number(feePct),
-      notes: notes || null,
-      status: "active",
+      society_id: societyId, name, price: Number(price), duration_days: Number(duration),
+      transaction_fee_pct: Number(feePct), notes: notes || null, status: "active",
     });
     setSaving(false);
     if (error) return toast.error(error.message);
@@ -82,108 +83,115 @@ function CustomPlansPage() {
     void load();
   }
 
-  async function grantToSociety(p: CustomPlan) {
+  async function grantToSociety() {
+    if (!grant) return;
+    setGranting(true);
     const { error } = await (supabase as any).rpc("admin_grant_society_plan", {
-      _society_id: p.society_id,
-      _duration_days: p.duration_days,
-      _label: `Custom: ${p.name}`,
+      _society_id: grant.society_id, _duration_days: grant.duration_days, _label: `Custom: ${grant.name}`,
     });
+    setGranting(false);
+    setGrant(null);
     if (error) return toast.error(error.message);
     toast.success("Plan granted to society");
   }
 
+  const filtered = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    return s ? rows.filter((r) => `${r.name} ${r.society?.name ?? ""}`.toLowerCase().includes(s)) : rows;
+  }, [rows, q]);
+
   return (
-    <div className="container-page space-y-6 py-6 md:py-10">
-      <header className="flex flex-col gap-4 border-b border-border pb-5 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">Custom Plans
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Build ad-hoc subscription tiers for specific societies — custom duration, price, and platform fee.
-          </p>
-        </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button className="rounded-xl"><Plus className="h-4 w-4 mr-1" /> New custom plan</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>Create custom plan</DialogTitle></DialogHeader>
-            <div className="grid gap-3">
-              <div>
-                <Label>Society</Label>
-                <Select value={societyId} onValueChange={setSocietyId}>
-                  <SelectTrigger className="rounded-xl mt-1"><SelectValue placeholder="Pick a society" /></SelectTrigger>
-                  <SelectContent>
-                    {societies.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Plan name</Label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Premium — 6 months" className="rounded-xl mt-1" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Price (₹)</Label>
-                  <Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} className="rounded-xl mt-1" />
-                </div>
-                <div>
-                  <Label>Duration (days)</Label>
-                  <Input type="number" value={duration} onChange={(e) => setDuration(e.target.value)} className="rounded-xl mt-1" />
-                </div>
-              </div>
-              <div>
-                <Label>Transaction fee (%)</Label>
-                <Input type="number" step="0.1" value={feePct} onChange={(e) => setFeePct(e.target.value)} className="rounded-xl mt-1" />
-              </div>
-              <div>
-                <Label>Internal notes</Label>
-                <Input value={notes} onChange={(e) => setNotes(e.target.value)} className="rounded-xl mt-1" />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="ghost" onClick={() => setOpen(false)} className="rounded-xl">Cancel</Button>
-              <Button onClick={createPlan} disabled={saving} className="rounded-xl">
-                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Create
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </header>
+    <PageShell>
+      <PageHeader
+        title="Custom Plans"
+        description="One-off subscription terms for a specific society."
+        actions={<Button className="h-11 rounded-xl" onClick={() => setOpen(true)}><Plus className="mr-1 h-4 w-4" /> New custom plan</Button>}
+      />
 
       {loading ? (
-        <div className="grid place-items-center py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        <div className="space-y-2" aria-busy="true">{[0, 1, 2].map((i) => <div key={i} className="h-16 animate-pulse rounded-xl bg-muted" />)}</div>
+      ) : failed ? (
+        <ErrorState onRetry={load} showSupport={false} />
       ) : rows.length === 0 ? (
-        <Card className="rounded-2xl"><CardContent className="p-8 text-center text-sm text-muted-foreground">
-          No custom plans yet. Create one to set a bespoke price/duration for a specific society.
-        </CardContent></Card>
+        <EmptyState icon={Tags} title="No custom plans yet" description="Create one to set a bespoke price and duration for a society." action={{ label: "New custom plan", onClick: () => setOpen(true) }} />
       ) : (
-        <div className="grid sm:grid-cols-2 gap-4">
-          {rows.map((p) => (
-            <Card key={p.id} className="rounded-2xl">
-              <CardContent className="p-5 space-y-3">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="text-xs text-muted-foreground">{p.society?.name ?? "—"}</div>
-                    <div className="font-semibold text-lg">{p.name}</div>
+        <div className="space-y-3">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input aria-label="Search custom plans" placeholder="Search plan or society" value={q} onChange={(e) => setQ(e.target.value)} className="h-11 pl-9" />
+          </div>
+          <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+            {filtered.map((p) => (
+              <li key={p.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+                <div className="min-w-0">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <p className="truncate font-medium">{p.name}</p>
+                    <StatusChip tone={p.status === "active" ? "success" : "neutral"} className="capitalize">{p.status}</StatusChip>
                   </div>
-                  <Badge variant="secondary" className="rounded-full">{p.status}</Badge>
+                  <p className="truncate text-xs text-muted-foreground">{p.society?.name ?? "—"} · fee {p.transaction_fee_pct}%{p.notes ? ` · ${p.notes}` : ""}</p>
                 </div>
-                <div className="flex items-baseline gap-1">
-                  <IndianRupee className="h-4 w-4" />
-                  <span className="text-2xl font-bold">{Number(p.price).toLocaleString("en-IN")}</span>
-                  <span className="text-xs text-muted-foreground ml-1">/ {p.duration_days}d</span>
-                </div>
-                <div className="text-xs text-muted-foreground">Platform fee: {p.transaction_fee_pct}%</div>
-                {p.notes && <p className="text-xs text-muted-foreground italic">{p.notes}</p>}
-                <Button size="sm" className="rounded-xl w-full" onClick={() => grantToSociety(p)}>
-                  Grant to society now
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
+                <p className="text-right font-semibold tabular-nums">
+                  ₹{Number(p.price).toLocaleString("en-IN")}<span className="block text-xs font-normal text-muted-foreground">{p.duration_days} days</span>
+                </p>
+                <Button variant="outline" className="col-span-2 h-11 rounded-xl sm:col-span-1" onClick={() => setGrant(p)}>Grant now</Button>
+              </li>
+            ))}
+            {filtered.length === 0 && <li className="px-4 py-8 text-center text-sm text-muted-foreground">No plans match "{q}".</li>}
+          </ul>
         </div>
       )}
-    </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>New custom plan</DialogTitle>
+            <DialogDescription>Saved as a draft offer. Use "Grant now" to apply it.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <div className="space-y-1.5">
+              <Label>Society</Label>
+              <Select value={societyId} onValueChange={setSocietyId}>
+                <SelectTrigger className="h-11"><SelectValue placeholder="Pick a society" /></SelectTrigger>
+                <SelectContent>{societies.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="cp-name">Plan name</Label>
+              <Input id="cp-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Premium — 6 months" className="h-11" />
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1.5"><Label htmlFor="cp-price">Price (₹)</Label><Input id="cp-price" type="number" value={price} onChange={(e) => setPrice(e.target.value)} className="h-11" /></div>
+              <div className="space-y-1.5"><Label htmlFor="cp-days">Days</Label><Input id="cp-days" type="number" value={duration} onChange={(e) => setDuration(e.target.value)} className="h-11" /></div>
+              <div className="space-y-1.5"><Label htmlFor="cp-fee">Fee %</Label><Input id="cp-fee" type="number" step="0.1" value={feePct} onChange={(e) => setFeePct(e.target.value)} className="h-11" /></div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="cp-notes">Internal notes</Label>
+              <Input id="cp-notes" value={notes} onChange={(e) => setNotes(e.target.value)} className="h-11" />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" onClick={() => setOpen(false)} className="h-11 rounded-xl">Cancel</Button>
+            <Button onClick={createPlan} disabled={saving} className="h-11 rounded-xl">{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Create</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!grant} onOpenChange={(o) => !o && setGrant(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Grant "{grant?.name}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {grant?.society?.name ?? "This society"} gets {grant?.duration_days} days of access immediately.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={granting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); void grantToSociety(); }} disabled={granting}>
+              {granting && <Loader2 className="mr-1 h-4 w-4 animate-spin" />} Grant
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </PageShell>
   );
 }

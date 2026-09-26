@@ -4850,10 +4850,12 @@ export type Database = {
         Args: { _months?: number; _plan_id: string; _society_id: string }
         Returns: undefined
       }
-      admin_apply_custom_plan: {
-        Args: { _custom_plan_id: string }
-        Returns: boolean
-      }
+      admin_apply_custom_plan:
+        | { Args: { _custom_plan_id: string }; Returns: boolean }
+        | {
+            Args: { _custom_plan_id: string; _reason: string }
+            Returns: boolean
+          }
       admin_assign_resident_to_flat: {
         Args: {
           _flat_id: string

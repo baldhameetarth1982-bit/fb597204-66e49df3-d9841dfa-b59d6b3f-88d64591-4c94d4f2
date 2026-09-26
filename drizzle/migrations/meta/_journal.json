@@ -372,6 +372,13 @@
       "when": 1790438904310,
       "tag": "0052_withdrawal_status_transitions_audit",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1790439541043,
+      "tag": "0053_custom_plan_apply_requires_reason",
+      "breakpoints": true
     }
   ]
 }

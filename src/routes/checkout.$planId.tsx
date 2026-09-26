@@ -7,7 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
-import { openRazorpayCheckout } from "@/lib/razorpay";
+import { openRazorpayForOrder } from "@/lib/razorpay";
+import { confirmSaasSubscriptionPayment, createSaasSubscriptionOrder } from "@/lib/saas-subscription-payment.functions";
 import { TransactionSummaryModal } from "@/components/payments/TransactionSummaryModal";
 import { PaymentSecurityBadge } from "@/components/payments/PaymentSecurityBadge";
 import { LegalFooter } from "@/components/shared/LegalFooter";
@@ -39,19 +40,29 @@ function CheckoutPage() {
   });
 
   async function startPayment() {
-    if (!plan) return;
+    if (!plan || !profile?.society_id) return;
     setBusy(true);
     try {
-      await openRazorpayCheckout({
-        plan: { id: plan.id, name: plan.name, price_monthly_inr: plan.price_monthly_inr },
+      const order = await createSaasSubscriptionOrder({ data: { societyId: profile.society_id, planId: plan.id as "basic" | "pro" | "premium" } });
+      await openRazorpayForOrder({
+        orderId: order.orderId,
+        keyId: order.keyId,
+        amount: order.amount,
+        description: `${order.planName} plan — monthly`,
         prefill: {
           email: profile?.email ?? user?.email ?? "",
           contact: profile?.phone ?? "",
           name: profile?.full_name ?? "",
         },
-        onSuccess: (resp) => {
-          toast.success(`Payment captured: ${resp.razorpay_payment_id}`);
+        onSuccess: async (resp) => {
+          await confirmSaasSubscriptionPayment({ data: {
+            societyId: profile.society_id!, planId: plan.id as "basic" | "pro" | "premium",
+            razorpayOrderId: resp.razorpay_order_id, razorpayPaymentId: resp.razorpay_payment_id,
+            razorpaySignature: resp.razorpay_signature,
+          } });
+          toast.success("Subscription activated successfully.");
           setSummaryOpen(false);
+          setBusy(false);
         },
         onDismiss: () => setBusy(false),
       });

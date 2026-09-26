@@ -9,7 +9,8 @@ import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { supabase } from "@/integrations/supabase/client";
 import { getSocietyAccessStatus, type SocietyAccessStatus } from "@/lib/pricing-engine";
 import { getFeatureCatalog, PLAN_LABELS, type PlanKey } from "@/lib/plan-features";
-import { openRazorpayCheckout } from "@/lib/razorpay";
+import { openRazorpayForOrder } from "@/lib/razorpay";
+import { confirmSaasSubscriptionPayment, createSaasSubscriptionOrder } from "@/lib/saas-subscription-payment.functions";
 import { SettingsShell, SettingsSection, SettingsDisclosure } from "@/components/settings/SettingsUI";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -80,18 +81,27 @@ function SubscriptionPage() {
 
   async function handleBuy(p: { id: string; name: string; price_monthly_inr: number }) {
     setBusyId(p.id);
-    const opened = await openRazorpayCheckout({
-      plan: { id: p.id, name: p.name, price_monthly_inr: p.price_monthly_inr },
+    try {
+    const order = await createSaasSubscriptionOrder({ data: { societyId: societyId!, planId: p.id as "basic" | "pro" | "premium" } });
+    const opened = await openRazorpayForOrder({
+      orderId: order.orderId,
+      keyId: order.keyId,
+      amount: order.amount,
+      description: `${order.planName} plan — monthly`,
       prefill: {
         email: profile?.email ?? user?.email ?? "",
         contact: profile?.phone ?? "",
         name: profile?.full_name ?? "",
       },
-      onSuccess: async () => {
-        // Never claim activation here — the server webhook confirms the payment.
-        toast.message("Payment received. Confirming your plan — this can take a minute.");
+      onSuccess: async (response) => {
+        await confirmSaasSubscriptionPayment({ data: {
+          societyId: societyId!, planId: p.id as "basic" | "pro" | "premium",
+          razorpayOrderId: response.razorpay_order_id, razorpayPaymentId: response.razorpay_payment_id,
+          razorpaySignature: response.razorpay_signature,
+        } });
+        toast.success("Subscription activated successfully.");
         setConfirming(true);
-        setTimeout(() => setConfirming(false), 120_000);
+        setTimeout(() => setConfirming(false), 15_000);
         await qc.invalidateQueries({ queryKey: ["society-access-status", societyId] });
         await qc.invalidateQueries({ queryKey: ["society-plan", societyId] });
         setBusyId(null);
@@ -100,6 +110,10 @@ function SubscriptionPage() {
     });
     if (!opened) {
       toast.error("Payments couldn't be opened right now. Please try again.");
+      setBusyId(null);
+    }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Subscription payment could not be completed.");
       setBusyId(null);
     }
   }

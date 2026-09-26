@@ -48,15 +48,13 @@ async function ipSubject(fp: (raw: string, salt?: string) => string) {
 /** Server-side lockout check for one account subject. Shared with the Firebase session exchange. */
 export async function isAccountLocked(subject: string): Promise<boolean> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data: rows, error } = await supabaseAdmin
-    .from("rate_limits")
-    .select("count")
-    .eq("bucket", "login:fail")
-    .eq("subject", subject)
-    .gte("window_start", new Date(Date.now() - WINDOW_SEC * 1000).toISOString());
+  const { data: rows, error } = await supabaseAdmin.rpc("is_login_account_locked", {
+    _subject: subject,
+    _window_seconds: WINDOW_SEC,
+    _max_failures: MAX_FAILS,
+  });
   if (error) return true; // fail closed
-  const fails = (rows ?? []).reduce((n, r: any) => n + Number(r.count ?? 0), 0);
-  return fails >= MAX_FAILS;
+  return Boolean(rows?.[0]?.locked);
 }
 
 export async function clearAccountFailures(subject: string) {

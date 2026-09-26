@@ -28,10 +28,7 @@ export const razorpayAdapter: PaymentGateway = {
   },
 
   async createSubscription(_input: CreateSubscriptionInput): Promise<CreateSubscriptionResult> {
-    // The old flow uses the client-side openRazorpayCheckout helper; the
-    // abstraction layer only exposes a redirect-URL contract so leave this as
-    // a stub — checkout still runs through the legacy helper.
-    throw new Error("Razorpay: use the legacy openRazorpayCheckout helper directly.");
+    throw new Error("Razorpay checkout requires a server-created SaaS subscription order.");
   },
 
   async cancelSubscription() {

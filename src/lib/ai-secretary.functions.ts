@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { hasFeature, normalizePlan } from "@/lib/plan-features";
+import { hasFeature, normalizePlan, planFromSocietyRow } from "@/lib/plan-features";
 
 const Input = z.object({
   question: z.string().trim().min(3).max(1000),
@@ -90,9 +90,9 @@ export const askSecretary = createServerFn({ method: "POST" })
     const societyId = profile?.society_id as string | undefined;
     if (!societyId) return { ok: false, code: "not_member", message: "Join a society to use AI Secretary." };
 
-    const { data: soc } = await supabase.from("societies").select("plan_id,plan_status,trial_ends_at").eq("id", societyId).maybeSingle();
+    const { data: soc } = await supabase.from("societies").select("plan_id,plan_status,trial_ends_at,plan_expires_at,status").eq("id", societyId).maybeSingle();
     if (!soc) return { ok: false, code: "not_member", message: "Join a society to use AI Secretary." };
-    if (!hasFeature(normalizePlan(soc.plan_id, soc.plan_status, soc.trial_ends_at), "ai_secretary")) {
+    if (!hasFeature(planFromSocietyRow(soc as any), "ai_secretary")) {
       return { ok: false, code: "plan_locked", message: "AI Secretary is available on the Pro plan." };
     }
 

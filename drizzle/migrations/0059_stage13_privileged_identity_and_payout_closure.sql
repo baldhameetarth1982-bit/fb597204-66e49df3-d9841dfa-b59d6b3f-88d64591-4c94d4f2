@@ -31,7 +31,7 @@ BEGIN
   IF _payout_status NOT IN ('pending','active','rejected')
      OR _bank_last4 !~ '^[0-9]{4}$'
      OR _holder_name IS NULL OR char_length(btrim(_holder_name)) NOT BETWEEN 2 AND 120
-     OR (_razorpay_account_id IS NOT NULL AND char_length(_razorpay_account_id) > 120) THEN
+     OR char_length(_razorpay_account_id) > 120 THEN
     RAISE EXCEPTION 'invalid_input' USING ERRCODE = '22023';
   END IF;
 
@@ -43,7 +43,7 @@ BEGIN
   IF NOT FOUND THEN RAISE EXCEPTION 'not_found' USING ERRCODE = '02000'; END IF;
 
   UPDATE public.societies
-  SET razorpay_account_id = _razorpay_account_id,
+  SET razorpay_account_id = nullif(_razorpay_account_id, ''),
       payout_status = _payout_status,
       payout_bank_last4 = _bank_last4,
       payout_holder_name = btrim(_holder_name),
@@ -57,7 +57,7 @@ BEGIN
       'to_status', _payout_status,
       'from_bank_last4', v_old.payout_bank_last4,
       'to_bank_last4', _bank_last4,
-      'provider_account_changed', v_old.razorpay_account_id IS DISTINCT FROM _razorpay_account_id,
+      'provider_account_changed', v_old.razorpay_account_id IS DISTINCT FROM nullif(_razorpay_account_id, ''),
       'holder_changed', v_old.payout_holder_name IS DISTINCT FROM btrim(_holder_name)
     ));
   RETURN jsonb_build_object('status','success');

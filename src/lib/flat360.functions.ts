@@ -562,7 +562,7 @@ export function buildRealDeps(supabase: unknown): Flat360Deps {
       const chain = db
         .from("flats")
         .select(
-          "id, society_id, flat_number, floor, block_id, tenancy_type, blocks(name), societies(name, plan_id, plan_status, trial_ends_at)",
+          "id, society_id, flat_number, floor, block_id, blocks(name), societies(name, plan_id, plan_status, trial_ends_at)",
         );
       const eq = (chain as unknown as { eq: (c: string, v: string) => unknown }).eq(
         "id",
@@ -578,7 +578,6 @@ export function buildRealDeps(supabase: unknown): Flat360Deps {
         flat_number: string | null;
         floor: number | null;
         block_id: string | null;
-        tenancy_type: string | null;
         blocks: { name: string | null } | null;
         societies: {
           name: string | null;
@@ -593,7 +592,7 @@ export function buildRealDeps(supabase: unknown): Flat360Deps {
         flat_number: row.flat_number,
         floor: row.floor,
         block_id: row.block_id,
-        tenancy_type: row.tenancy_type,
+        tenancy_type: null, // flats has no tenancy column; occupancy comes from flat_residents
         block_name: row.blocks?.name ?? null,
         society_name: row.societies?.name ?? null,
         society_plan_id: row.societies?.plan_id ?? null,

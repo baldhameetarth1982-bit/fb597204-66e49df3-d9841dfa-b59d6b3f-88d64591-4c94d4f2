@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/_admin/admin/withdrawals")({
   head: () => ({ meta: [{ title: "Withdrawals — Admin" }] }),
@@ -47,6 +49,7 @@ function WithdrawalsAdmin() {
   const [open, setOpen] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<{ row: Row; status: "paid" | "rejected" } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [reason, setReason] = useState("");
 
   async function load() {
     setLoading(true);
@@ -74,11 +77,17 @@ function WithdrawalsAdmin() {
 
   async function apply() {
     if (!confirm) return;
+    if (reason.trim().length < 5) return toast.error("Write a reason of at least 5 characters.");
     setBusy(true);
-    const { error } = await supabase.from("withdrawals").update({ status: confirm.status }).eq("id", confirm.row.id);
+    const { error } = await supabase.rpc("admin_transition_withdrawal", {
+      _withdrawal_id: confirm.row.id,
+      _status: confirm.status,
+      _reason: reason.trim(),
+    });
     setBusy(false);
+    if (error) return toast.error("Couldn't update this request. Refresh and try again.");
     setConfirm(null);
-    if (error) return toast.error(error.message);
+    setReason("");
     toast.success(confirm.status === "paid" ? "Marked paid" : "Request rejected");
     void load();
   }
@@ -169,7 +178,7 @@ function WithdrawalsAdmin() {
         </ul>
       )}
 
-      <AlertDialog open={!!confirm} onOpenChange={(o) => !o && setConfirm(null)}>
+      <AlertDialog open={!!confirm} onOpenChange={(o) => { if (!o && !busy) { setConfirm(null); setReason(""); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{confirm?.status === "paid" ? "Mark as paid?" : "Reject this request?"}</AlertDialogTitle>
@@ -178,9 +187,13 @@ function WithdrawalsAdmin() {
               {confirm?.status === "paid" ? "Only do this after the money has been sent." : "The user will see the request as rejected."}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="space-y-1.5">
+            <Label htmlFor="withdrawal-reason">Reason (saved in audit history)</Label>
+            <Textarea id="withdrawal-reason" rows={3} maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} placeholder={confirm?.status === "paid" ? "e.g. Bank transfer completed and confirmed" : "e.g. Payout details could not be verified"} />
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={(e) => { e.preventDefault(); void apply(); }} disabled={busy}>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); void apply(); }} disabled={busy || reason.trim().length < 5}>
               {busy && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
               {confirm?.status === "paid" ? "Mark paid" : "Reject"}
             </AlertDialogAction>

@@ -32,7 +32,7 @@ type Overview = {
   activity: { action: string; at: string }[];
 };
 
-type Action = null | "grant" | "trial" | "suspend" | "restore";
+type Action = null | "grant" | "trial" | "suspend" | "restore" | "cancel";
 
 function SocietyDetailPage() {
   const { id } = Route.useParams();
@@ -172,6 +172,9 @@ function SocietyDetailPage() {
               ? <Button variant="outline" className="min-h-11" onClick={() => setAction("restore")}><RotateCcw className="mr-1.5 h-4 w-4" />Restore</Button>
               : <Button variant="outline" className="min-h-11 border-destructive/40 text-destructive hover:text-destructive" onClick={() => setAction("suspend")}><Ban className="mr-1.5 h-4 w-4" />Suspend</Button>}
           </ControlRow>
+          <ControlRow title="Cancel plan" desc="Ends paid or trial access now. Data is kept; the society can buy a plan again.">
+            <Button variant="outline" className="min-h-11 border-destructive/40 text-destructive hover:text-destructive" disabled={s.plan_status === "canceled"} onClick={() => setAction("cancel")}><Ban className="mr-1.5 h-4 w-4" />Cancel plan</Button>
+          </ControlRow>
         </div>
         <p className="flex items-start gap-1.5 px-1 text-xs text-muted-foreground">
           <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" /> Every action is checked on the server and recorded in the audit history. Paid plans bought by societies go through Razorpay checkout.
@@ -234,7 +237,7 @@ function ActionSheet({
   const [days, setDays] = useState("7");
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
-  const needsReason = action === "trial" || action === "suspend" || action === "restore";
+  const needsReason = action !== null && action !== "grant";
   const paidPlans = plans.filter((p) => p.id !== "trial");
 
   async function submit() {
@@ -249,11 +252,13 @@ function ActionSheet({
       } else {
         const { data, error } = action === "trial"
           ? await supabase.rpc("admin_extend_trial", { _society_id: societyId, _days: Number(days), _reason: reason.trim() })
-          : await supabase.rpc("admin_set_society_status", { _society_id: societyId, _status: action === "suspend" ? "suspended" : "active", _reason: reason.trim() });
+          : action === "cancel"
+            ? await supabase.rpc("admin_cancel_society_plan", { _society_id: societyId, _reason: reason.trim() })
+            : await supabase.rpc("admin_set_society_status", { _society_id: societyId, _status: action === "suspend" ? "suspended" : "active", _reason: reason.trim() });
         if (error) throw error;
         const status = (data as { status?: string } | null)?.status ?? "temporary_error";
         if (status !== "success") { toast.error(ACTION_MESSAGES[status] ?? "Couldn't save. Try again."); return; }
-        toast.success(action === "trial" ? "Trial extended" : action === "suspend" ? "Society suspended" : "Society restored");
+        toast.success({ trial: "Trial extended", suspend: "Society suspended", restore: "Society restored", cancel: "Plan cancelled" }[action as "trial"]);
       }
       setReason("");
       onDone();
@@ -269,6 +274,7 @@ function ActionSheet({
     trial: ["Extend trial", "Adds days from today or from the current trial end, whichever is later."],
     suspend: ["Suspend society", "Members lose access until you restore it. No data is deleted."],
     restore: ["Restore society", "Members regain access with their existing plan."],
+    cancel: ["Cancel plan", `Paid features for ${societyName} stop immediately. Nothing is refunded or deleted, and this is recorded in the audit history.`],
   };
 
   return (

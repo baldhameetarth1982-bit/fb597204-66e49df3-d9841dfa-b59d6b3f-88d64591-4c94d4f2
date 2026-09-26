@@ -320,7 +320,7 @@ function ActionSheet({
                   <Textarea id="reason" rows={3} maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} />
                 </div>
               )}
-              <Button className="min-h-12 w-full" variant={action === "suspend" ? "destructive" : "default"} disabled={busy} onClick={submit}>
+              <Button className="min-h-12 w-full" variant={action === "suspend" || action === "cancel" ? "destructive" : "default"} disabled={busy} onClick={submit}>
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : titles[action][0]}
               </Button>
             </div>

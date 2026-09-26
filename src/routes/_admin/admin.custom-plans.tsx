@@ -46,6 +46,7 @@ function CustomPlansPage() {
   const [q, setQ] = useState("");
   const [grant, setGrant] = useState<CustomPlan | null>(null);
   const [granting, setGranting] = useState(false);
+  const [grantReason, setGrantReason] = useState("");
 
   const [societyId, setSocietyId] = useState("");
   const [name, setName] = useState("");
@@ -85,14 +86,17 @@ function CustomPlansPage() {
 
   async function grantToSociety() {
     if (!grant) return;
+    if (grantReason.trim().length < 5) return toast.error("Write a reason (at least 5 characters)");
     setGranting(true);
-    const { error } = await (supabase as any).rpc("admin_grant_society_plan", {
-      _society_id: grant.society_id, _duration_days: grant.duration_days, _label: `Custom: ${grant.name}`,
+    const { error } = await supabase.rpc("admin_apply_custom_plan", {
+      _custom_plan_id: grant.id, _reason: grantReason.trim(),
     });
     setGranting(false);
+    if (error) return toast.error(error.message.includes("reason_required") ? "A reason is required." : "Could not apply this plan. Please try again.");
     setGrant(null);
-    if (error) return toast.error(error.message);
-    toast.success("Plan granted to society");
+    setGrantReason("");
+    toast.success("Plan applied to society");
+    void load();
   }
 
   const filtered = useMemo(() => {
@@ -181,12 +185,16 @@ function CustomPlansPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Grant "{grant?.name}"?</AlertDialogTitle>
             <AlertDialogDescription>
-              {grant?.society?.name ?? "This society"} gets {grant?.duration_days} days of access immediately.
+              {grant?.society?.name ?? "This society"} gets {grant?.duration_days} days of access immediately. This is recorded in the audit history.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="space-y-1.5">
+            <Label htmlFor="grant-reason">Reason</Label>
+            <Input id="grant-reason" className="h-11" value={grantReason} onChange={(e) => setGrantReason(e.target.value)} placeholder="e.g. Negotiated annual contract" />
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={granting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={(e) => { e.preventDefault(); void grantToSociety(); }} disabled={granting}>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); void grantToSociety(); }} disabled={granting || grantReason.trim().length < 5}>
               {granting && <Loader2 className="mr-1 h-4 w-4 animate-spin" />} Grant
             </AlertDialogAction>
           </AlertDialogFooter>

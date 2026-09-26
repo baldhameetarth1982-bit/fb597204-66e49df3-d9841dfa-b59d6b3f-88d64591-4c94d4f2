@@ -10,7 +10,11 @@ export const Route = createFileRoute("/privacy")({
       { name: "description", content: "How SociyoHub collects, uses and protects your personal data. We do not sell data to third parties." },
       { property: "og:title", content: "Privacy Policy — SociyoHub" },
       { property: "og:description", content: "How SociyoHub collects, uses and protects your personal data." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { property: "og:url", content: "https://sociohub.live/privacy" },
     ],
+    links: [{ rel: "canonical", href: "https://sociohub.live/privacy" }],
   }),
   component: PrivacyPage,
 });

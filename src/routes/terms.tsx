@@ -10,7 +10,11 @@ export const Route = createFileRoute("/terms")({
       { name: "description", content: "SociyoHub Terms of Service governing use of the SaaS platform for housing societies." },
       { property: "og:title", content: "Terms & Conditions — SociyoHub" },
       { property: "og:description", content: "Terms of Service for the SociyoHub SaaS platform." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { property: "og:url", content: "https://sociohub.live/terms" },
     ],
+    links: [{ rel: "canonical", href: "https://sociohub.live/terms" }],
   }),
   component: TermsPage,
 });

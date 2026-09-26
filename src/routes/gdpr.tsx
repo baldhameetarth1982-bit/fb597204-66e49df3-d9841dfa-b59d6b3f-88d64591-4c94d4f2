@@ -7,7 +7,13 @@ export const Route = createFileRoute("/gdpr")({
     meta: [
       { title: "Data Retention & Deletion — SociyoHub" },
       { name: "description", content: "How long SociyoHub keeps your data and how to request deletion or export." },
+      { property: "og:title", content: "Data Retention & Deletion — SociyoHub" },
+      { property: "og:description", content: "How long SociyoHub keeps your data and how to request deletion or export." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { property: "og:url", content: "https://sociohub.live/gdpr" },
     ],
+    links: [{ rel: "canonical", href: "https://sociohub.live/gdpr" }],
   }),
   component: GdprPage,
 });

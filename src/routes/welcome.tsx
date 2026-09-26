@@ -26,6 +26,7 @@ export const Route = createFileRoute("/welcome")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
+    links: [{ rel: "canonical", href: "https://sociohub.live/" }],
   }),
   component: Landing,
 });

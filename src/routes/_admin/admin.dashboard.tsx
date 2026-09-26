@@ -7,10 +7,7 @@ import {
   Banknote, Sparkles,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { MobileHero } from "@/components/shared/MobileHero";
-import { StatPill, StatPillRow } from "@/components/shared/StatPill";
-import { SectionCard } from "@/components/shared/SectionCard";
-import { ListCard, ListCardGroup } from "@/components/shared/ListCard";
+import { PageHeader, PageShell } from "@/components/shared/PageHeader";
 import { StatusChip } from "@/components/system/StatusChip";
 
 export const Route = createFileRoute("/_admin/admin/dashboard")({
@@ -104,13 +101,10 @@ function AdminDashboard() {
   ];
 
   return (
-    <div className="container-page py-5 md:py-8">
-      <header className="border-b border-border pb-5">
-        <p className="text-sm text-muted-foreground">Super Admin</p>
-        <h1 className="mt-0.5 text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">Platform overview</h1>
-      </header>
+    <PageShell>
+      <PageHeader title="Platform overview" description="Subscriptions, money and platform health across every society." />
 
-      <dl className="mt-5 grid grid-cols-2 overflow-hidden rounded-xl border border-border bg-card lg:grid-cols-4 [&>div]:border-border [&>div:nth-child(odd)]:border-r lg:[&>div]:border-r lg:[&>div:last-child]:border-r-0 [&>div:nth-child(-n+2)]:border-b lg:[&>div]:border-b-0">
+      <dl className="grid grid-cols-2 overflow-hidden rounded-xl border border-border bg-card lg:grid-cols-4 [&>div]:border-border [&>div:nth-child(odd)]:border-r lg:[&>div]:border-r lg:[&>div:last-child]:border-r-0 [&>div:nth-child(-n+2)]:border-b lg:[&>div]:border-b-0">
         {metrics.map((m) => (
           <div key={m.k} className="px-4 py-3.5 md:px-5 md:py-4">
             <dt className="text-xs text-muted-foreground">{m.k}</dt>
@@ -153,7 +147,7 @@ function AdminDashboard() {
                 <StatusChip tone={!sumOk ? "neutral" : unpaid > 0 ? "warning" : "success"}>{sumOk ? compact(unpaid) : dash}</StatusChip>
               </li>
               <li>
-                <Link to={"/admin/razorpay" as any} className="grid min-h-[64px] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 hover:bg-muted/50 focus-visible:outline-none focus-visible:bg-muted/60">
+                <Link to="/admin/razorpay" className="grid min-h-[64px] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 hover:bg-muted/50 focus-visible:outline-none focus-visible:bg-muted/60">
                   <div className="min-w-0">
                     <p className="text-sm font-semibold">Payment gateway</p>
                     <p className="truncate text-xs text-muted-foreground">Razorpay handles SociyoHub plan payments</p>
@@ -170,7 +164,7 @@ function AdminDashboard() {
           <ModuleGroup title="Platform" items={PLATFORM} />
         </aside>
       </div>
-    </div>
+    </PageShell>
   );
 }
 

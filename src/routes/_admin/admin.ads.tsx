@@ -15,6 +15,8 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { ErrorState } from "@/components/system/ErrorState";
+import { PageHeader, PageShell } from "@/components/shared/PageHeader";
 
 export const Route = createFileRoute("/_admin/admin/ads")({
   head: () => ({ meta: [{ title: "Ads — Super Admin" }] }),
@@ -40,12 +42,15 @@ function AdsPage() {
   const [interstitial, setInterstitial] = useState(false);
   const [seconds, setSeconds] = useState(15);
   const [deleting, setDeleting] = useState<Ad | null>(null);
+  const [failed, setFailed] = useState(false);
 
   async function reload() {
-    const [{ data: adsData }, { data: settings }] = await Promise.all([
+    setFailed(false);
+    const [{ data: adsData, error: adsErr }, { data: settings, error: setErr }] = await Promise.all([
       (supabase as any).from("ads").select("*").order("created_at", { ascending: false }),
       supabase.from("platform_settings").select("ads_interstitial_enabled, ads_interstitial_seconds").eq("id", 1).maybeSingle(),
     ]);
+    if (adsErr || setErr) { setFailed(true); setLoading(false); return; }
     const list = (adsData ?? []) as (Ad & { image_path?: string | null })[];
     // Refresh signed URLs for private bucket entries
     const refreshed = await Promise.all(list.map(async (ad) => {
@@ -69,7 +74,7 @@ function AdsPage() {
       ads_interstitial_enabled: interstitial,
       ads_interstitial_seconds: seconds,
     }).eq("id", 1);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error("Couldn't save. Try again.");
     toast.success("Interstitial settings saved");
   }
 
@@ -79,18 +84,20 @@ function AdsPage() {
       return;
     }
     const { error } = await (supabase as any).from("ads").update({ active: v }).eq("id", ad.id);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error("Couldn't save. Try again.");
     reload();
   }
 
   async function remove(id: string) {
     const { error } = await (supabase as any).from("ads").delete().eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error("Couldn't save. Try again.");
     toast.success("Ad deleted");
     reload();
   }
 
   if (loading) return <div className="p-12 grid place-items-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+
+  if (failed) return <PageShell><PageHeader title="Ads" /><ErrorState description="We couldn't load ads. Check your connection and try again." onRetry={() => { setLoading(true); reload(); }} /></PageShell>;
 
   const activeCount = ads.filter((a) => a.active).length;
 
@@ -198,14 +205,14 @@ function NewAdDialog({ onCreated, disabled }: { onCreated: () => void; disabled:
     const ext = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
     const path = `${crypto.randomUUID()}.${ext}`;
     const up = await supabase.storage.from("ads").upload(path, file, { contentType: file.type, upsert: false });
-    if (up.error) { setSaving(false); return toast.error(up.error.message); }
+    if (up.error) { setSaving(false); return toast.error("Couldn't upload the image. Try again."); }
     const { data: signed, error: signErr } = await supabase.storage.from("ads").createSignedUrl(path, 60 * 60 * 24 * 365);
-    if (signErr || !signed) { setSaving(false); return toast.error(signErr?.message ?? "Could not sign URL"); }
+    if (signErr || !signed) { setSaving(false); return toast.error("Couldn't prepare the image. Try again."); }
     const { error } = await (supabase as any).from("ads").insert({
       title: title.trim(), image_url: signed.signedUrl, image_path: path, link_url: link.trim(), placement, active: true,
     });
     setSaving(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error("Couldn't save. Try again.");
     toast.success("Ad created");
     setOpen(false); setTitle(""); setLink(""); setFile(null); setPlacement("dashboard_bottom");
     onCreated();

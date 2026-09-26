@@ -94,15 +94,13 @@ function SocietyVisitors() {
   async function logVisitor() {
     if (!user || !societyId || !form.visitor_name.trim()) return toast.error("Visitor name required");
     setSaving(true);
-    const { error } = await supabase.from("visitors").insert({
-      society_id: societyId,
-      logged_by: user.id,
-      visitor_name: form.visitor_name.trim(),
-      phone: form.phone.trim() || null,
-      vehicle_number: form.vehicle_number.trim() || null,
-      purpose: form.purpose.trim() || null,
-      flat_number: form.flat_number.trim() || null,
-      status: "approved",
+    const { error } = await supabase.rpc("guard_log_walkin", {
+      _flat_label: form.flat_number.trim() || undefined,
+      _name: form.visitor_name.trim(),
+      _phone: form.phone.trim() || undefined,
+      _category: "guest",
+      _purpose: form.purpose.trim() || undefined,
+      _vehicle: form.vehicle_number.trim() || undefined,
     });
     setSaving(false);
     if (error) return toast.error(gateErrorMessage(error));
@@ -113,18 +111,18 @@ function SocietyVisitors() {
   }
 
   async function approve(id: string) {
-    const { error } = await supabase.from("visitors").update({ status: "approved" }).eq("id", id);
+    const { error } = await supabase.rpc("guard_visitor_action", { _id: id, _action: "checkin" });
     if (error) return toast.error(gateErrorMessage(error));
-    toast.success("Approved");
+    toast.success("Visitor checked in");
     void load();
   }
   async function reject(id: string) {
-    const { error } = await supabase.from("visitors").update({ status: "rejected", exit_at: new Date().toISOString() }).eq("id", id);
+    const { error } = await supabase.rpc("guard_visitor_action", { _id: id, _action: "deny" });
     if (error) return toast.error(gateErrorMessage(error));
     void load();
   }
   async function markExit(id: string) {
-    const { error } = await supabase.from("visitors").update({ exit_at: new Date().toISOString() }).eq("id", id);
+    const { error } = await supabase.rpc("guard_visitor_action", { _id: id, _action: "checkout" });
     if (error) return toast.error(gateErrorMessage(error));
     void load();
   }
@@ -164,7 +162,7 @@ function SocietyVisitors() {
         <div className="flex gap-2">
           {s === "pending" && (
             <>
-              {v.status !== "approved" && <Button className="h-11 flex-1 rounded-xl md:flex-none" onClick={() => approve(v.id)}><Check className="mr-1 h-4 w-4" />Approve</Button>}
+               {v.status === "approved" && <Button className="h-11 flex-1 rounded-xl md:flex-none" onClick={() => approve(v.id)}><Check className="mr-1 h-4 w-4" />Check in</Button>}
               <Button variant="outline" className="h-11 flex-1 rounded-xl md:flex-none" onClick={() => setDenyFor(v)}><X className="mr-1 h-4 w-4" />Turn away</Button>
             </>
           )}

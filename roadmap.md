@@ -2,11 +2,13 @@
 
 ## Stage 13 — Final security and reliability closure
 
-- [ ] Review privileged database functions, grants, and tenant authorization.
-- [ ] Close verified rate-limit and server-validation gaps.
-- [ ] Review financial, payment, storage, AI, audit, error, race, and recovery boundaries.
-- [ ] Run security, unit, type, build, bundle-secret, database lint, and dependency checks.
-- [ ] Record honest unavailable runtime/provider checks; do not begin Stage 14.
+- [x] Review privileged database functions, grants, and tenant authorization.
+- [x] Close verified rate-limit and server-validation gaps.
+- [x] Review financial, payment, storage, AI, audit, error, race, and recovery boundaries.
+- [x] Add 13 deterministic Flat 360 Society A/B service-boundary tests and activate the seven deferred source/SQL contract checks.
+- [x] Run focused security, XLSX, full unit/integration, type, and bundle-secret checks.
+- [ ] Execute the Flat 360 matrix against a disposable database to prove live RLS/RPC behavior (blocked: Docker is forbidden and no alternate disposable backend is available).
+- [x] Record honest unavailable runtime/provider checks; do not begin Stage 14.
 
 ## Stage 12 — Premium UI/UX
 

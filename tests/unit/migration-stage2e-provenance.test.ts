@@ -24,7 +24,6 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const MIG_DIR = join(process.cwd(), "supabase/migrations");
-const PROTECTED_SOCIETY_ID = (process.env.SOCIOHUB_PROTECTED_SOCIETY_ID ?? "").trim();
 
 function latestMigrationContaining(needle: string): string {
   const files = readdirSync(MIG_DIR).filter((f) => f.endsWith(".sql")).sort();
@@ -129,7 +128,7 @@ describe("Stage 2E — _migration_link_or_conflict helper contract", () => {
 
 describe("Stage 2E — protected society is not present in the migration", () => {
   const sql = latestMigrationContaining("CREATE OR REPLACE FUNCTION public.commit_migration_job");
-  it.skipIf(!PROTECTED_SOCIETY_ID)("no runtime reference to the protected society uuid", () => {
-    expect(sql).not.toContain(PROTECTED_SOCIETY_ID);
+  it("contains no hard-coded society UUID", () => {
+    expect(sql).not.toMatch(/["'][0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}["']/i);
   });
 });

@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
-  LayoutDashboard, Building2, Tags, CreditCard, Banknote, Megaphone,
+  LayoutDashboard, Building2, Tags, CreditCard, Banknote, Megaphone, ReceiptText,
   Users, BarChart3, Settings, ShieldCheck, ScrollText, Search, Sparkles,
   TrendingUp, Heart, FileText, Palette,
 } from "lucide-react";
@@ -27,6 +27,7 @@ const items = [
   { title: "Ads", url: "/admin/ads", icon: Megaphone },
   { title: "Branding", url: "/admin/branding", icon: Palette },
   { title: "Razorpay", url: "/admin/razorpay", icon: CreditCard },
+  { title: "Plan Payments", url: "/admin/subscription-payments", icon: ReceiptText },
   { title: "Withdrawals", url: "/admin/withdrawals", icon: Banknote },
   { title: "Audit", url: "/admin/audit", icon: ScrollText },
   { title: "Security", url: "/admin/security", icon: ShieldCheck },

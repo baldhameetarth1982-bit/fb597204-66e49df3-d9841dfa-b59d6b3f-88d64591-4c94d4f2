@@ -274,7 +274,7 @@ function ActionSheet({
     trial: ["Extend trial", "Adds days from today or from the current trial end, whichever is later."],
     suspend: ["Suspend society", "Members lose access until you restore it. No data is deleted."],
     restore: ["Restore society", "Members regain access with their existing plan."],
-    cancel: ["Cancel plan", `Paid features for ${societyName} stop immediately. Nothing is refunded or deleted, and this is recorded in the audit history.`],
+    cancel: ["Cancel plan", `Paid features for ${societyName} stop immediately. No data is deleted, and this is recorded in the audit history.`],
   };
 
   return (

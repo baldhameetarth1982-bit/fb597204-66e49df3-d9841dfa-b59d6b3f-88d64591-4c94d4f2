@@ -159,6 +159,25 @@ async function assertSocietyScopeAdmin(userId: string, societyId: string) {
   if (!sa && !su) throw new NoDuesError("NOT_AUTHORIZED");
 }
 
+/**
+ * Server-side entitlement: No-Dues is a Pro feature. Plan is resolved from the
+ * canonical society row (expiry + suspension aware); browser state is ignored.
+ * Existing certificates remain downloadable/verifiable after a downgrade.
+ */
+async function assertNoDuesEntitled(societyId: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("societies")
+    .select("plan_id,plan_status,trial_ends_at,plan_expires_at,status")
+    .eq("id", societyId)
+    .maybeSingle();
+  if (error) logServerError("entitlement", error);
+  const { hasFeature, planFromSocietyRow } = await import("@/lib/plan-features");
+  if (error || !hasFeature(planFromSocietyRow(data as any), "no_dues")) {
+    throw new NoDuesError("NOT_AUTHORIZED", "No-Dues certificates are available on the Pro plan.");
+  }
+}
+
 /* -------------------------------------------------------------------- */
 /*  Public: check eligibility (DB-derived, never client-supplied)        */
 /* -------------------------------------------------------------------- */
@@ -192,6 +211,7 @@ export const submitNoDuesRequest = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
     await assertResidentOfFlat(supabase, userId, data.flatId, data.societyId);
+    await assertNoDuesEntitled(data.societyId);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await (supabaseAdmin.rpc as any)(
@@ -342,6 +362,7 @@ export const reviewNoDuesRequest = createServerFn({ method: "POST" })
       .maybeSingle();
     if (error || !req) throw new NoDuesError("REQUEST_NOT_FOUND");
     await assertCanManageFlat(userId, req.flat_id);
+    await assertNoDuesEntitled(req.society_id);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -404,6 +425,7 @@ export const issueNoDuesCertificate = createServerFn({ method: "POST" })
       .maybeSingle();
     if (error || !req) throw new NoDuesError("REQUEST_NOT_FOUND");
     await assertCanManageFlat(userId, req.flat_id);
+    await assertNoDuesEntitled(req.society_id);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -761,6 +783,13 @@ export const recheckAndResubmitNoDues = createServerFn({ method: "POST" })
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: reqRow } = await supabaseAdmin
+      .from("no_dues_requests")
+      .select("society_id")
+      .eq("id", data.requestId)
+      .maybeSingle();
+    if (!reqRow) throw new NoDuesError("REQUEST_NOT_FOUND");
+    await assertNoDuesEntitled((reqRow as any).society_id);
     const { data: rows, error } = await (supabaseAdmin.rpc as any)(
       "recheck_no_dues_request_internal",
       { _actor_id: userId, _request_id: data.requestId },

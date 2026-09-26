@@ -2,6 +2,7 @@
  * Society Invite Code card — used from Society Settings / Business Profile.
  * Admins can view, copy, regenerate, customize, and disable the code.
  */
+import { userMessage } from "@/lib/user-error";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Copy, RefreshCw, KeyRound, Loader2, Pencil, ToggleLeft, ToggleRight } from "lucide-react";

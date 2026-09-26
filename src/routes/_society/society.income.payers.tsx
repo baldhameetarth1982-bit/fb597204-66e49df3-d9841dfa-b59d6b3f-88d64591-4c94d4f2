@@ -111,7 +111,7 @@ function initials(name: string): string {
 }
 
 const AVATAR_TINTS = [
-  "bg-[#E6F7F4] text-[#007E70]",
+  "bg-[#E6F7F4] text-primary",
   "bg-[#EEF4FF] text-[#3155D4]",
   "bg-[#FFF4E6] text-[#B45309]",
   "bg-[#F1ECFB] text-[#6E3AD1]",
@@ -136,14 +136,14 @@ function SummaryCard({
   icon: React.ComponentType<{ className?: string }>;
 }) {
   return (
-    <div className="rounded-[18px] bg-white border border-[#DDE9E6] p-4 shadow-[0_2px_8px_-4px_rgba(11,37,69,0.08)]">
+    <div className="rounded-[18px] bg-card border border-border p-4">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-[#667085]">{label}</span>
+        <span className="text-xs font-medium text-muted-foreground">{label}</span>
         <span className={`h-8 w-8 rounded-xl grid place-items-center ${tint}`}>
           <Icon className="h-4 w-4" />
         </span>
       </div>
-      <div className="mt-2 text-2xl font-semibold tracking-tight text-[#0B2545]">
+      <div className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
         {value}
       </div>
     </div>
@@ -269,26 +269,26 @@ function PayersPage({ societyId }: { societyId: string }) {
     !!debounced || typeFilter !== "all" || status !== "all";
 
   return (
-    <div className="min-h-screen bg-[#F6F8F7]">
+    <div className="min-h-screen bg-muted/30">
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-5">
         <Link
           to="/society/income"
-          className="inline-flex items-center gap-1 text-sm text-[#667085] hover:text-[#0B2545] min-h-[44px]"
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground min-h-[44px]"
         >
           <ArrowLeft className="h-4 w-4" /> Back to Income
         </Link>
 
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-[22px] font-semibold tracking-tight text-[#0B2545]">
+            <h1 className="text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px] text-foreground">
               External Payers
             </h1>
-            <p className="text-sm text-[#667085] mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               Manage vendors, advertisers and other non-member payers.
             </p>
           </div>
           <Button
-            className="min-h-[44px] rounded-[14px] bg-[#00A896] hover:bg-[#007E70] text-white shadow-[0_6px_16px_-6px_rgba(0,168,150,0.55)]"
+            className="min-h-[44px] rounded-[14px] bg-primary hover:bg-primary/90 text-primary-foreground"
             onClick={() => setEditing({ mode: "create" })}
           >
             <Plus className="h-4 w-4 mr-1" /> Add Payer
@@ -296,23 +296,23 @@ function PayersPage({ societyId }: { societyId: string }) {
         </div>
 
         <div className="grid grid-cols-3 gap-3">
-          <SummaryCard label="Total" value={summary.total} tint="bg-[#E6F7F4] text-[#007E70]" icon={Users} />
+          <SummaryCard label="Total" value={summary.total} tint="bg-[#E6F7F4] text-primary" icon={Users} />
           <SummaryCard label="Active" value={summary.active} tint="bg-[#E8F5EE] text-[#12B76A]" icon={ShieldCheck} />
           <SummaryCard label="Inactive" value={summary.inactive} tint="bg-[#FEF3F2] text-[#B42318]" icon={UserX} />
         </div>
 
-        <div className="rounded-[18px] bg-white border border-[#DDE9E6] p-3 flex flex-wrap items-center gap-2">
+        <div className="rounded-[18px] bg-card border border-border p-3 flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-[180px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#667085]" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search payers"
-              className="pl-9 min-h-[44px] rounded-[14px] border-[#DDE9E6] bg-white"
+              className="pl-9 min-h-[44px] rounded-[14px] border-border bg-card"
             />
           </div>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="min-h-[44px] w-[160px] rounded-[14px] border-[#DDE9E6]">
+            <SelectTrigger className="min-h-[44px] w-[160px] rounded-[14px] border-border">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -325,7 +325,7 @@ function PayersPage({ societyId }: { societyId: string }) {
             </SelectContent>
           </Select>
           <Select value={status} onValueChange={(v) => setStatus(v as StatusFilter)}>
-            <SelectTrigger className="min-h-[44px] w-[130px] rounded-[14px] border-[#DDE9E6]">
+            <SelectTrigger className="min-h-[44px] w-[130px] rounded-[14px] border-border">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -337,7 +337,7 @@ function PayersPage({ societyId }: { societyId: string }) {
           {filtersActive && (
             <Button
               variant="outline"
-              className="min-h-[44px] rounded-[14px] border-[#DDE9E6] text-[#667085]"
+              className="min-h-[44px] rounded-[14px] border-border text-muted-foreground"
               onClick={resetFilters}
             >
               <RotateCcw className="h-4 w-4 mr-1" /> Reset
@@ -345,7 +345,7 @@ function PayersPage({ societyId }: { societyId: string }) {
           )}
         </div>
 
-        <div className="rounded-[18px] bg-white border border-[#DDE9E6] overflow-hidden">
+        <div className="rounded-[18px] bg-card border border-border overflow-hidden">
           {listQ.isError ? (
             <div className="p-6 text-sm text-[#F04438] flex items-center gap-2">
               <AlertCircle className="h-4 w-4" /> Payers are temporarily unavailable.
@@ -365,17 +365,17 @@ function PayersPage({ societyId }: { societyId: string }) {
             </div>
           ) : items.length === 0 && !filtersActive && page === 0 ? (
             <div className="p-8 text-center">
-              <div className="mx-auto h-12 w-12 rounded-2xl bg-[#E6F7F4] text-[#007E70] grid place-items-center">
+              <div className="mx-auto h-12 w-12 rounded-2xl bg-[#E6F7F4] text-primary grid place-items-center">
                 <Users className="h-5 w-5" />
               </div>
-              <div className="mt-3 text-sm font-medium text-[#0B2545]">
+              <div className="mt-3 text-sm font-medium text-foreground">
                 No external payers yet
               </div>
-              <p className="text-xs text-[#667085] mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Add vendors, advertisers or other non-member payers.
               </p>
               <Button
-                className="mt-4 min-h-[44px] rounded-[14px] bg-[#00A896] hover:bg-[#007E70] text-white"
+                className="mt-4 min-h-[44px] rounded-[14px] bg-primary hover:bg-primary/90 text-primary-foreground"
                 onClick={() => setEditing({ mode: "create" })}
               >
                 <Plus className="h-4 w-4 mr-1" /> Add Payer
@@ -383,13 +383,13 @@ function PayersPage({ societyId }: { societyId: string }) {
             </div>
           ) : items.length === 0 ? (
             <div className="p-8 text-center">
-              <div className="text-sm font-medium text-[#0B2545]">No matches</div>
-              <p className="text-xs text-[#667085] mt-1">
+              <div className="text-sm font-medium text-foreground">No matches</div>
+              <p className="text-xs text-muted-foreground mt-1">
                 Try clearing filters or a different search term.
               </p>
               <Button
                 variant="outline"
-                className="mt-4 min-h-[44px] rounded-[14px] border-[#DDE9E6]"
+                className="mt-4 min-h-[44px] rounded-[14px] border-border"
                 onClick={resetFilters}
               >
                 Reset filters
@@ -407,7 +407,7 @@ function PayersPage({ societyId }: { societyId: string }) {
                       {initials(p.display_name)}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-semibold text-[#0B2545] truncate flex items-center gap-2">
+                      <div className="text-sm font-semibold text-foreground truncate flex items-center gap-2">
                         {p.display_name}
                         {p.is_active ? (
                           <Badge className="text-[10px] bg-[#E8F5EE] text-[#12B76A] border-transparent">
@@ -419,7 +419,7 @@ function PayersPage({ societyId }: { societyId: string }) {
                           </Badge>
                         )}
                       </div>
-                      <div className="text-xs text-[#667085] truncate mt-0.5 flex items-center gap-1.5">
+                      <div className="text-xs text-muted-foreground truncate mt-0.5 flex items-center gap-1.5">
                         <Badge className="text-[10px] bg-[#EEF4FF] text-[#3155D4] border-transparent">
                           {PAYER_TYPE_LABEL[p.payer_type] ?? p.payer_type}
                         </Badge>
@@ -433,7 +433,7 @@ function PayersPage({ societyId }: { societyId: string }) {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="min-h-[44px] rounded-[14px] border-[#DDE9E6]"
+                      className="min-h-[44px] rounded-[14px] border-border"
                       onClick={() =>
                         setEditing({ mode: "edit", payerId: p.id })
                       }
@@ -445,8 +445,8 @@ function PayersPage({ societyId }: { societyId: string }) {
                 ))}
               </div>
               {total > PAGE_SIZE && (
-                <div className="flex items-center justify-between gap-2 border-t border-[#DDE9E6] px-4 py-3 text-sm">
-                  <div className="text-[#667085]">
+                <div className="flex items-center justify-between gap-2 border-t border-border px-4 py-3 text-sm">
+                  <div className="text-muted-foreground">
                     Page {currentPage + 1} of {totalPages} · {total}{" "}
                     payers
                   </div>
@@ -454,7 +454,7 @@ function PayersPage({ societyId }: { societyId: string }) {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="min-h-[40px] rounded-[14px] border-[#DDE9E6]"
+                      className="min-h-[40px] rounded-[14px] border-border"
                       onClick={() => setPage((p) => Math.max(0, p - 1))}
                       disabled={currentPage === 0}
                     >
@@ -463,7 +463,7 @@ function PayersPage({ societyId }: { societyId: string }) {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="min-h-[40px] rounded-[14px] border-[#DDE9E6]"
+                      className="min-h-[40px] rounded-[14px] border-border"
                       onClick={() => setPage((p) => p + 1)}
                       disabled={!hasNext}
                     >
@@ -607,12 +607,12 @@ function PayerDialog(props: {
 
   return (
     <Dialog open={!!editing} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="rounded-[24px] border-[#DDE9E6] bg-white/95 backdrop-blur-xl">
+      <DialogContent className="rounded-[24px] border-border bg-card/95 backdrop-blur-xl">
         <DialogHeader>
-          <DialogTitle className="text-[#0B2545]">
+          <DialogTitle className="text-foreground">
             {isEdit ? "Edit payer" : "New payer"}
           </DialogTitle>
-          <DialogDescription className="text-[#667085]">
+          <DialogDescription className="text-muted-foreground">
             {isEdit
               ? "Update details or deactivate this payer."
               : "Add a vendor, advertiser or other external payer."}
@@ -631,12 +631,12 @@ function PayerDialog(props: {
         ) : (
           <div className="space-y-3">
             <div>
-              <Label className="text-xs text-[#667085]">Type</Label>
+              <Label className="text-xs text-muted-foreground">Type</Label>
               <Select
                 value={form.payer_type}
                 onValueChange={(v) => set("payer_type", v as PayerType)}
               >
-                <SelectTrigger className="min-h-[44px] rounded-[14px] border-[#DDE9E6]">
+                <SelectTrigger className="min-h-[44px] rounded-[14px] border-border">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -649,10 +649,10 @@ function PayerDialog(props: {
               </Select>
             </div>
             <div>
-              <Label htmlFor="payer-name" className="text-xs text-[#667085]">Display name</Label>
+              <Label htmlFor="payer-name" className="text-xs text-muted-foreground">Display name</Label>
               <Input
                 id="payer-name"
-                className="min-h-[44px] rounded-[14px] border-[#DDE9E6]"
+                className="min-h-[44px] rounded-[14px] border-border"
                 value={form.display_name}
                 onChange={(e) => set("display_name", e.target.value)}
                 placeholder="ACME Signage Pvt Ltd"
@@ -660,10 +660,10 @@ function PayerDialog(props: {
               />
             </div>
             <div>
-              <Label htmlFor="payer-org" className="text-xs text-[#667085]">Organization (optional)</Label>
+              <Label htmlFor="payer-org" className="text-xs text-muted-foreground">Organization (optional)</Label>
               <Input
                 id="payer-org"
-                className="min-h-[44px] rounded-[14px] border-[#DDE9E6]"
+                className="min-h-[44px] rounded-[14px] border-border"
                 value={form.organization_name}
                 onChange={(e) => set("organization_name", e.target.value)}
                 maxLength={120}
@@ -671,10 +671,10 @@ function PayerDialog(props: {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
-                <Label htmlFor="payer-phone" className="text-xs text-[#667085]">Phone (optional)</Label>
+                <Label htmlFor="payer-phone" className="text-xs text-muted-foreground">Phone (optional)</Label>
                 <Input
                   id="payer-phone"
-                  className="min-h-[44px] rounded-[14px] border-[#DDE9E6]"
+                  className="min-h-[44px] rounded-[14px] border-border"
                   value={form.phone}
                   onChange={(e) => set("phone", e.target.value)}
                   placeholder="+91 98xxxxxxx"
@@ -683,10 +683,10 @@ function PayerDialog(props: {
                 />
               </div>
               <div>
-                <Label htmlFor="payer-email" className="text-xs text-[#667085]">Email (optional)</Label>
+                <Label htmlFor="payer-email" className="text-xs text-muted-foreground">Email (optional)</Label>
                 <Input
                   id="payer-email"
-                  className="min-h-[44px] rounded-[14px] border-[#DDE9E6]"
+                  className="min-h-[44px] rounded-[14px] border-border"
                   type="email"
                   value={form.email}
                   onChange={(e) => set("email", e.target.value)}
@@ -698,10 +698,10 @@ function PayerDialog(props: {
               </div>
             </div>
             <div>
-              <Label htmlFor="payer-ref" className="text-xs text-[#667085]">Reference code (optional)</Label>
+              <Label htmlFor="payer-ref" className="text-xs text-muted-foreground">Reference code (optional)</Label>
               <Input
                 id="payer-ref"
-                className="min-h-[44px] rounded-[14px] border-[#DDE9E6]"
+                className="min-h-[44px] rounded-[14px] border-border"
                 value={form.reference_code}
                 onChange={(e) => set("reference_code", e.target.value)}
                 placeholder="GST / internal code"
@@ -709,21 +709,21 @@ function PayerDialog(props: {
               />
             </div>
             <div>
-              <Label htmlFor="payer-notes" className="text-xs text-[#667085]">Notes (optional)</Label>
+              <Label htmlFor="payer-notes" className="text-xs text-muted-foreground">Notes (optional)</Label>
               <Textarea
                 id="payer-notes"
                 rows={3}
-                className="rounded-[14px] border-[#DDE9E6]"
+                className="rounded-[14px] border-border"
                 value={form.notes}
                 onChange={(e) => set("notes", e.target.value)}
                 maxLength={1000}
               />
             </div>
             {isEdit && (
-              <div className="flex items-center justify-between rounded-[14px] border border-[#DDE9E6] bg-[#F6F8F7] px-3 py-2">
+              <div className="flex items-center justify-between rounded-[14px] border border-border bg-muted/30 px-3 py-2">
                 <div>
-                  <div className="text-sm font-medium text-[#0B2545]">Active</div>
-                  <div className="text-[11px] text-[#667085]">
+                  <div className="text-sm font-medium text-foreground">Active</div>
+                  <div className="text-[11px] text-muted-foreground">
                     Inactive payers are hidden from new income entries.
                   </div>
                 </div>
@@ -739,14 +739,14 @@ function PayerDialog(props: {
         <DialogFooter>
           <Button
             variant="outline"
-            className="min-h-[44px] rounded-[14px] border-[#DDE9E6]"
+            className="min-h-[44px] rounded-[14px] border-border"
             onClick={onClose}
             disabled={submitting}
           >
             Cancel
           </Button>
           <Button
-            className="min-h-[44px] rounded-[14px] bg-[#00A896] hover:bg-[#007E70] text-white"
+            className="min-h-[44px] rounded-[14px] bg-primary hover:bg-primary/90 text-primary-foreground"
             onClick={submit}
             disabled={
               submitting ||

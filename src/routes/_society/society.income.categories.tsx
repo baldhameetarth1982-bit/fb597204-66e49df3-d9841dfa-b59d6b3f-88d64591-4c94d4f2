@@ -92,7 +92,7 @@ function normalizeKey(input: string): string {
 
 /** Deterministic pastel tile per category, for a calm palette. */
 const TILES = [
-  "bg-[#E6F7F4] text-[#007E70]",
+  "bg-[#E6F7F4] text-primary",
   "bg-[#EEF4FF] text-[#3155D4]",
   "bg-[#FFF4E6] text-[#B45309]",
   "bg-[#FDECEF] text-[#B42318]",
@@ -117,16 +117,16 @@ function SummaryCard({
   icon: React.ComponentType<{ className?: string }>;
 }) {
   return (
-    <div className="rounded-[18px] bg-white border border-[#DDE9E6] p-4 shadow-[0_2px_8px_-4px_rgba(11,37,69,0.08)]">
+    <div className="rounded-[18px] bg-card border border-border p-4">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-[#667085]">{label}</span>
+        <span className="text-xs font-medium text-muted-foreground">{label}</span>
         <span
           className={`h-8 w-8 rounded-xl grid place-items-center ${tint}`}
         >
           <Icon className="h-4 w-4" />
         </span>
       </div>
-      <div className="mt-2 text-2xl font-semibold tracking-tight text-[#0B2545]">
+      <div className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
         {value}
       </div>
     </div>
@@ -245,26 +245,26 @@ function CategoriesPage({ societyId }: { societyId: string }) {
     !!debounced || status !== "all" || kind !== "all" || group !== "all";
 
   return (
-    <div className="min-h-screen bg-[#F6F8F7]">
+    <div className="min-h-screen bg-muted/30">
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-5">
         <Link
           to="/society/income"
-          className="inline-flex items-center gap-1 text-sm text-[#667085] hover:text-[#0B2545] min-h-[44px]"
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground min-h-[44px]"
         >
           <ArrowLeft className="h-4 w-4" /> Back to Income
         </Link>
 
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-[22px] font-semibold tracking-tight text-[#0B2545]">
+            <h1 className="text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px] text-foreground">
               Income Categories
             </h1>
-            <p className="text-sm text-[#667085] mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               Organize where your society's income comes from.
             </p>
           </div>
           <Button
-            className="min-h-[44px] rounded-[14px] bg-[#00A896] hover:bg-[#007E70] text-white shadow-[0_6px_16px_-6px_rgba(0,168,150,0.55)]"
+            className="min-h-[44px] rounded-[14px] bg-primary hover:bg-primary/90 text-primary-foreground"
             onClick={() => setEditing({ mode: "create" })}
           >
             <Plus className="h-4 w-4 mr-1" /> Add Category
@@ -272,24 +272,24 @@ function CategoriesPage({ societyId }: { societyId: string }) {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <SummaryCard label="Total" value={summary.total} tint="bg-[#E6F7F4] text-[#007E70]" icon={Layers} />
+          <SummaryCard label="Total" value={summary.total} tint="bg-[#E6F7F4] text-primary" icon={Layers} />
           <SummaryCard label="Active" value={summary.active} tint="bg-[#E8F5EE] text-[#12B76A]" icon={ShieldCheck} />
           <SummaryCard label="System" value={summary.system} tint="bg-[#EEF4FF] text-[#3155D4]" icon={Tags} />
           <SummaryCard label="Custom" value={summary.custom} tint="bg-[#F1ECFB] text-[#6E3AD1]" icon={Sparkles} />
         </div>
 
-        <div className="rounded-[18px] bg-white border border-[#DDE9E6] p-3 flex flex-wrap items-center gap-2">
+        <div className="rounded-[18px] bg-card border border-border p-3 flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-[180px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#667085]" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search categories"
-              className="pl-9 min-h-[44px] rounded-[14px] border-[#DDE9E6] bg-white"
+              className="pl-9 min-h-[44px] rounded-[14px] border-border bg-card"
             />
           </div>
           <Select value={status} onValueChange={(v) => setStatus(v as StatusFilter)}>
-            <SelectTrigger className="min-h-[44px] w-[130px] rounded-[14px] border-[#DDE9E6]">
+            <SelectTrigger className="min-h-[44px] w-[130px] rounded-[14px] border-border">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -299,7 +299,7 @@ function CategoriesPage({ societyId }: { societyId: string }) {
             </SelectContent>
           </Select>
           <Select value={kind} onValueChange={(v) => setKind(v as KindFilter)}>
-            <SelectTrigger className="min-h-[44px] w-[130px] rounded-[14px] border-[#DDE9E6]">
+            <SelectTrigger className="min-h-[44px] w-[130px] rounded-[14px] border-border">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -310,7 +310,7 @@ function CategoriesPage({ societyId }: { societyId: string }) {
           </Select>
           {groups.length > 0 && (
             <Select value={group} onValueChange={setGroup}>
-              <SelectTrigger className="min-h-[44px] w-[150px] rounded-[14px] border-[#DDE9E6]">
+              <SelectTrigger className="min-h-[44px] w-[150px] rounded-[14px] border-border">
                 <SelectValue placeholder="Group" />
               </SelectTrigger>
               <SelectContent>
@@ -326,7 +326,7 @@ function CategoriesPage({ societyId }: { societyId: string }) {
           {filtersActive && (
             <Button
               variant="outline"
-              className="min-h-[44px] rounded-[14px] border-[#DDE9E6] text-[#667085]"
+              className="min-h-[44px] rounded-[14px] border-border text-muted-foreground"
               onClick={resetFilters}
             >
               <RotateCcw className="h-4 w-4 mr-1" /> Reset
@@ -334,7 +334,7 @@ function CategoriesPage({ societyId }: { societyId: string }) {
           )}
         </div>
 
-        <div className="rounded-[18px] bg-white border border-[#DDE9E6] overflow-hidden">
+        <div className="rounded-[18px] bg-card border border-border overflow-hidden">
           {listQ.isError ? (
             <div className="p-6 text-sm text-[#F04438] flex items-center gap-2">
               <AlertCircle className="h-4 w-4" /> Categories are temporarily unavailable.
@@ -354,17 +354,17 @@ function CategoriesPage({ societyId }: { societyId: string }) {
             </div>
           ) : items.length === 0 ? (
             <div className="p-8 text-center">
-              <div className="mx-auto h-12 w-12 rounded-2xl bg-[#E6F7F4] text-[#007E70] grid place-items-center">
+              <div className="mx-auto h-12 w-12 rounded-2xl bg-[#E6F7F4] text-primary grid place-items-center">
                 <Tags className="h-5 w-5" />
               </div>
-              <div className="mt-3 text-sm font-medium text-[#0B2545]">
+              <div className="mt-3 text-sm font-medium text-foreground">
                 No categories yet
               </div>
-              <p className="text-xs text-[#667085] mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Create your first income category to start categorizing collections.
               </p>
               <Button
-                className="mt-4 min-h-[44px] rounded-[14px] bg-[#00A896] hover:bg-[#007E70] text-white"
+                className="mt-4 min-h-[44px] rounded-[14px] bg-primary hover:bg-primary/90 text-primary-foreground"
                 onClick={() => setEditing({ mode: "create" })}
               >
                 <Plus className="h-4 w-4 mr-1" /> Add Category
@@ -372,13 +372,13 @@ function CategoriesPage({ societyId }: { societyId: string }) {
             </div>
           ) : filtered.length === 0 ? (
             <div className="p-8 text-center">
-              <div className="text-sm font-medium text-[#0B2545]">No matches</div>
-              <p className="text-xs text-[#667085] mt-1">
+              <div className="text-sm font-medium text-foreground">No matches</div>
+              <p className="text-xs text-muted-foreground mt-1">
                 Try clearing filters or a different search term.
               </p>
               <Button
                 variant="outline"
-                className="mt-4 min-h-[44px] rounded-[14px] border-[#DDE9E6]"
+                className="mt-4 min-h-[44px] rounded-[14px] border-border"
                 onClick={resetFilters}
               >
                 Reset filters
@@ -397,7 +397,7 @@ function CategoriesPage({ societyId }: { societyId: string }) {
                     <Tags className="h-5 w-5" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm font-semibold text-[#0B2545] truncate flex items-center gap-2">
+                    <div className="text-sm font-semibold text-foreground truncate flex items-center gap-2">
                       {c.display_name}
                       {c.is_system ? (
                         <Badge className="text-[10px] bg-[#EEF4FF] text-[#3155D4] border-transparent">
@@ -418,7 +418,7 @@ function CategoriesPage({ societyId }: { societyId: string }) {
                         </Badge>
                       )}
                     </div>
-                    <div className="text-xs text-[#667085] truncate mt-0.5">
+                    <div className="text-xs text-muted-foreground truncate mt-0.5">
                       <span className="font-mono">{c.key}</span>
                       {c.category_group ? ` · ${c.category_group}` : ""}
                       {c.description ? ` · ${c.description}` : ""}
@@ -429,7 +429,7 @@ function CategoriesPage({ societyId }: { societyId: string }) {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="min-h-[44px] rounded-[14px] border-[#DDE9E6] text-[#667085]"
+                        className="min-h-[44px] rounded-[14px] border-border text-muted-foreground"
                         onClick={() =>
                           updateMut.mutate({
                             id: c.id,
@@ -444,7 +444,7 @@ function CategoriesPage({ societyId }: { societyId: string }) {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="min-h-[44px] rounded-[14px] border-[#DDE9E6]"
+                      className="min-h-[44px] rounded-[14px] border-border"
                       onClick={() => setEditing({ mode: "edit", row: c })}
                       aria-label={`Edit ${c.display_name}`}
                     >
@@ -541,12 +541,12 @@ function CategoryDialog(props: {
 
   return (
     <Dialog open={!!editing} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="rounded-[24px] border-[#DDE9E6] bg-white/95 backdrop-blur-xl">
+      <DialogContent className="rounded-[24px] border-border bg-card/95 backdrop-blur-xl">
         <DialogHeader>
-          <DialogTitle className="text-[#0B2545]">
+          <DialogTitle className="text-foreground">
             {isEdit ? "Edit category" : "New category"}
           </DialogTitle>
-          <DialogDescription className="text-[#667085]">
+          <DialogDescription className="text-muted-foreground">
             {isEdit
               ? "Update details or deactivate this category."
               : "Give this income source a short key and display name."}
@@ -555,19 +555,19 @@ function CategoryDialog(props: {
         <div className="space-y-3">
           {!isEdit && (
             <div>
-              <Label htmlFor="cat-key" className="text-xs text-[#667085]">Key</Label>
+              <Label htmlFor="cat-key" className="text-xs text-muted-foreground">Key</Label>
               <Input
                 id="cat-key"
-                className="min-h-[44px] rounded-[14px] border-[#DDE9E6]"
+                className="min-h-[44px] rounded-[14px] border-border"
                 placeholder="hall_rent"
                 value={key}
                 onChange={(e) => setKey(e.target.value)}
                 autoCapitalize="none"
                 maxLength={60}
               />
-              <p className="text-[11px] text-[#667085] mt-1">
+              <p className="text-[11px] text-muted-foreground mt-1">
                 Will be saved as{" "}
-                <span className="font-mono text-[#0B2545]">
+                <span className="font-mono text-foreground">
                   {normalizedKey || "…"}
                 </span>
                 . Cannot be changed later.
@@ -580,10 +580,10 @@ function CategoryDialog(props: {
             </div>
           )}
           <div>
-            <Label htmlFor="cat-name" className="text-xs text-[#667085]">Display name</Label>
+            <Label htmlFor="cat-name" className="text-xs text-muted-foreground">Display name</Label>
             <Input
               id="cat-name"
-              className="min-h-[44px] rounded-[14px] border-[#DDE9E6]"
+              className="min-h-[44px] rounded-[14px] border-border"
               placeholder="Hall Rent"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
@@ -591,10 +591,10 @@ function CategoryDialog(props: {
             />
           </div>
           <div>
-            <Label htmlFor="cat-group" className="text-xs text-[#667085]">Group (optional)</Label>
+            <Label htmlFor="cat-group" className="text-xs text-muted-foreground">Group (optional)</Label>
             <Input
               id="cat-group"
-              className="min-h-[44px] rounded-[14px] border-[#DDE9E6]"
+              className="min-h-[44px] rounded-[14px] border-border"
               placeholder="Facilities"
               value={group}
               onChange={(e) => setGroup(e.target.value)}
@@ -602,21 +602,21 @@ function CategoryDialog(props: {
             />
           </div>
           <div>
-            <Label htmlFor="cat-desc" className="text-xs text-[#667085]">Description (optional)</Label>
+            <Label htmlFor="cat-desc" className="text-xs text-muted-foreground">Description (optional)</Label>
             <Textarea
               id="cat-desc"
               rows={3}
-              className="rounded-[14px] border-[#DDE9E6]"
+              className="rounded-[14px] border-border"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               maxLength={500}
             />
           </div>
           {isEdit && (
-            <div className="flex items-center justify-between rounded-[14px] border border-[#DDE9E6] bg-[#F6F8F7] px-3 py-2">
+            <div className="flex items-center justify-between rounded-[14px] border border-border bg-muted/30 px-3 py-2">
               <div>
-                <div className="text-sm font-medium text-[#0B2545]">Active</div>
-                <div className="text-[11px] text-[#667085]">
+                <div className="text-sm font-medium text-foreground">Active</div>
+                <div className="text-[11px] text-muted-foreground">
                   Inactive categories are hidden from new income entries.
                 </div>
               </div>
@@ -631,14 +631,14 @@ function CategoryDialog(props: {
         <DialogFooter>
           <Button
             variant="outline"
-            className="min-h-[44px] rounded-[14px] border-[#DDE9E6]"
+            className="min-h-[44px] rounded-[14px] border-border"
             onClick={onClose}
             disabled={submitting}
           >
             Cancel
           </Button>
           <Button
-            className="min-h-[44px] rounded-[14px] bg-[#00A896] hover:bg-[#007E70] text-white"
+            className="min-h-[44px] rounded-[14px] bg-primary hover:bg-primary/90 text-primary-foreground"
             onClick={submit}
             disabled={
               submitting ||

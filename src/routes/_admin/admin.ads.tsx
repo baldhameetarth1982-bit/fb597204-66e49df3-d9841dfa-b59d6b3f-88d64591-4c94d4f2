@@ -91,11 +91,10 @@ function AdsPage() {
   const activeCount = ads.filter((a) => a.active).length;
 
   return (
-    <div className="px-6 py-8 max-w-4xl space-y-6">
-      <header className="flex items-start justify-between flex-wrap gap-4">
+    <div className="container-page space-y-6 py-6 md:py-10">
+      <header className="flex flex-col gap-4 border-b border-border pb-5 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight flex items-center gap-2">
-            <Megaphone className="h-7 w-7 text-primary" /> Ads
+          <h1 className="text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">Ads
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Manage ad creatives shown on Basic-plan societies. Max <b>4 active ads</b> across all placements.

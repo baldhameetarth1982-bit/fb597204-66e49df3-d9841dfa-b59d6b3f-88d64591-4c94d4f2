@@ -93,11 +93,10 @@ function CustomPlansPage() {
   }
 
   return (
-    <div className="px-6 py-8 space-y-6 max-w-5xl">
-      <header className="flex items-center justify-between flex-wrap gap-3">
+    <div className="container-page space-y-6 py-6 md:py-10">
+      <header className="flex flex-col gap-4 border-b border-border pb-5 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight flex items-center gap-2">
-            <Tags className="h-7 w-7 text-primary" /> Custom Plans
+          <h1 className="text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">Custom Plans
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Build ad-hoc subscription tiers for specific societies — custom duration, price, and platform fee.

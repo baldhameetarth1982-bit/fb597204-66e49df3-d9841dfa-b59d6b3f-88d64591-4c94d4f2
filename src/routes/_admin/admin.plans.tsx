@@ -28,10 +28,10 @@ function PlansAdmin() {
   });
 
   return (
-    <div className="px-6 py-8 space-y-6 max-w-6xl">
-      <header className="flex flex-wrap items-end justify-between gap-3">
+    <div className="container-page space-y-6 py-6 md:py-10">
+      <header className="flex flex-col gap-4 border-b border-border pb-5 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Plans & Pricing</h1>
+          <h1 className="text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">Plans & Pricing</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Live plans powering checkout, transaction fees and ad gating.
           </p>

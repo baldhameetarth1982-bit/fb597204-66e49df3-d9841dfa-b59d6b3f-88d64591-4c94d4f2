@@ -27,10 +27,9 @@ function IncomePage() {
   const plans = Array.isArray(data?.plans) ? data.plans : [];
 
   return (
-    <div className="px-6 py-8 space-y-6 max-w-5xl">
+    <div className="container-page space-y-6 py-6 md:py-10">
       <header>
-        <h1 className="text-3xl font-semibold tracking-tight flex items-center gap-2">
-          <BarChart3 className="h-7 w-7 text-primary" /> Income & Analytics
+        <h1 className="text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">Income & Analytics
         </h1>
         <p className="text-sm text-muted-foreground mt-1">Platform-wide revenue summary.</p>
       </header>
@@ -71,7 +70,7 @@ function Stat({ icon: Icon, title, value, tone }: any) {
     <Card className="rounded-2xl">
       <CardContent className="p-5">
         <div className={`h-10 w-10 rounded-xl grid place-items-center ${toneCls} mb-3`}><Icon className="h-5 w-5" /></div>
-        <p className="text-sm text-muted-foreground">{title}</p>
+        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{title}</p>
         <p className="text-2xl font-bold mt-1">{value}</p>
       </CardContent>
     </Card>

@@ -3395,48 +3395,135 @@ export type Database = {
         }
         Relationships: []
       }
+      saas_payment_events: {
+        Row: {
+          attempt_count: number
+          event_type: string
+          failure_code: string | null
+          id: string
+          payload_sha256: string
+          payment_id: string | null
+          processed_at: string | null
+          processing_status: string
+          provider: string
+          provider_event_id: string
+          received_at: string
+          signature_verified: boolean
+          society_id: string | null
+        }
+        Insert: {
+          attempt_count?: number
+          event_type: string
+          failure_code?: string | null
+          id?: string
+          payload_sha256: string
+          payment_id?: string | null
+          processed_at?: string | null
+          processing_status?: string
+          provider?: string
+          provider_event_id: string
+          received_at?: string
+          signature_verified?: boolean
+          society_id?: string | null
+        }
+        Update: {
+          attempt_count?: number
+          event_type?: string
+          failure_code?: string | null
+          id?: string
+          payload_sha256?: string
+          payment_id?: string | null
+          processed_at?: string | null
+          processing_status?: string
+          provider?: string
+          provider_event_id?: string
+          received_at?: string
+          signature_verified?: boolean
+          society_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saas_payment_events_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "saas_subscription_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saas_payment_events_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saas_subscription_payments: {
         Row: {
           amount_paise: number
+          cancelled_at: string | null
           confirmed_at: string | null
           created_at: string
           currency: string
+          failed_at: string | null
+          failure_code: string | null
           id: string
+          lifecycle_status: string
           plan_id: string
+          provider_mode: string | null
           provider_status: string | null
           purchased_by: string
           razorpay_order_id: string
           razorpay_payment_id: string | null
+          refund_reference: string | null
+          refunded_at: string | null
+          request_id: string | null
           society_id: string
           status: string
           updated_at: string
         }
         Insert: {
           amount_paise: number
+          cancelled_at?: string | null
           confirmed_at?: string | null
           created_at?: string
           currency?: string
+          failed_at?: string | null
+          failure_code?: string | null
           id?: string
+          lifecycle_status?: string
           plan_id: string
+          provider_mode?: string | null
           provider_status?: string | null
           purchased_by: string
           razorpay_order_id: string
           razorpay_payment_id?: string | null
+          refund_reference?: string | null
+          refunded_at?: string | null
+          request_id?: string | null
           society_id: string
           status?: string
           updated_at?: string
         }
         Update: {
           amount_paise?: number
+          cancelled_at?: string | null
           confirmed_at?: string | null
           created_at?: string
           currency?: string
+          failed_at?: string | null
+          failure_code?: string | null
           id?: string
+          lifecycle_status?: string
           plan_id?: string
+          provider_mode?: string | null
           provider_status?: string | null
           purchased_by?: string
           razorpay_order_id?: string
           razorpay_payment_id?: string | null
+          refund_reference?: string | null
+          refunded_at?: string | null
+          request_id?: string | null
           society_id?: string
           status?: string
           updated_at?: string
@@ -3451,6 +3538,157 @@ export type Database = {
           },
           {
             foreignKeyName: "saas_subscription_payments_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saas_subscription_receipt_sequences: {
+        Row: {
+          last_number: number
+          period_yyyymm: number
+          updated_at: string
+        }
+        Insert: {
+          last_number?: number
+          period_yyyymm: number
+          updated_at?: string
+        }
+        Update: {
+          last_number?: number
+          period_yyyymm?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      saas_subscription_receipts: {
+        Row: {
+          amount_paise: number
+          currency: string
+          id: string
+          issued_at: string
+          payment_id: string
+          plan_id: string
+          purchased_by: string
+          receipt_number: string
+          refunded_at: string | null
+          society_id: string
+          status: string
+          void_reason: string | null
+          voided_at: string | null
+        }
+        Insert: {
+          amount_paise: number
+          currency?: string
+          id?: string
+          issued_at?: string
+          payment_id: string
+          plan_id: string
+          purchased_by: string
+          receipt_number: string
+          refunded_at?: string | null
+          society_id: string
+          status?: string
+          void_reason?: string | null
+          voided_at?: string | null
+        }
+        Update: {
+          amount_paise?: number
+          currency?: string
+          id?: string
+          issued_at?: string
+          payment_id?: string
+          plan_id?: string
+          purchased_by?: string
+          receipt_number?: string
+          refunded_at?: string | null
+          society_id?: string
+          status?: string
+          void_reason?: string | null
+          voided_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saas_subscription_receipts_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: true
+            referencedRelation: "saas_subscription_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saas_subscription_receipts_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saas_subscription_receipts_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saas_subscription_refunds: {
+        Row: {
+          amount_paise: number
+          currency: string
+          failure_code: string | null
+          id: string
+          payment_id: string
+          processed_at: string | null
+          provider_refund_id: string | null
+          reason: string
+          request_id: string
+          requested_at: string
+          requested_by: string
+          society_id: string
+          status: string
+        }
+        Insert: {
+          amount_paise: number
+          currency?: string
+          failure_code?: string | null
+          id?: string
+          payment_id: string
+          processed_at?: string | null
+          provider_refund_id?: string | null
+          reason: string
+          request_id: string
+          requested_at?: string
+          requested_by: string
+          society_id: string
+          status?: string
+        }
+        Update: {
+          amount_paise?: number
+          currency?: string
+          failure_code?: string | null
+          id?: string
+          payment_id?: string
+          processed_at?: string | null
+          provider_refund_id?: string | null
+          reason?: string
+          request_id?: string
+          requested_at?: string
+          requested_by?: string
+          society_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saas_subscription_refunds_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "saas_subscription_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saas_subscription_refunds_society_id_fkey"
             columns: ["society_id"]
             isOneToOne: false
             referencedRelation: "societies"
@@ -4752,6 +4990,10 @@ export type Database = {
         Args: { _now: string; _society_id: string }
         Returns: string
       }
+      _allocate_saas_receipt_number: {
+        Args: { _issued_at?: string }
+        Returns: string
+      }
       _billing_audit: {
         Args: {
           _action: string
@@ -5380,6 +5622,16 @@ export type Database = {
           _razorpay_order_id: string
           _razorpay_payment_id: string
           _society_id: string
+        }
+        Returns: Json
+      }
+      finalize_saas_subscription_refund: {
+        Args: {
+          _payment_id: string
+          _provider_refund_id: string
+          _reason: string
+          _request_id: string
+          _requested_by: string
         }
         Returns: Json
       }

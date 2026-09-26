@@ -435,6 +435,13 @@
       "when": 1790449056158,
       "tag": "0061_stage13_structure_limits_and_payout_preservation",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1790455009501,
+      "tag": "0062_stage14_subscription_payment_lifecycle",
+      "breakpoints": true
     }
   ]
 }

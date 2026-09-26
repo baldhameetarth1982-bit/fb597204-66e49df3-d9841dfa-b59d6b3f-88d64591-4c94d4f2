@@ -40,7 +40,6 @@ function AdsPage() {
   const [interstitial, setInterstitial] = useState(false);
   const [seconds, setSeconds] = useState(15);
   const [deleting, setDeleting] = useState<Ad | null>(null);
-  const [deleting, setDeleting] = useState<Ad | null>(null);
 
   async function reload() {
     const [{ data: adsData }, { data: settings }] = await Promise.all([

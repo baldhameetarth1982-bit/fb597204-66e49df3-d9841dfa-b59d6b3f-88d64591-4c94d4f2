@@ -132,8 +132,8 @@ describe("Stage 3B closure — protected society + no payment/receipt scope cree
       "utf8",
     );
     expect(uiSrc).toMatch(/No payments are recorded in this step/);
-    expect(uiSrc).toMatch(/RR\/YYYYMM/);
-    expect(uiSrc).toMatch(/Preview only — no bills generated yet/);
+    expect(uiSrc).toMatch(/Preview only/);
+    expect(uiSrc).not.toMatch(/Stage \d[A-E]/); // no internal roadmap copy shown to users
   });
 
   it("admin bill detail exposes cancel-with-reason, blocked when payments exist", () => {

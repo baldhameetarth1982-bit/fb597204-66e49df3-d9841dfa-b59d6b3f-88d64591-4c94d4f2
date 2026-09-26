@@ -73,8 +73,8 @@ describe("Stage 3B — admin bill detail is server-authoritative", () => {
     expect(adminDetail).toMatch(/cancelBill/);
   });
 
-  it("mentions Stage 3C boundary in timeline / info copy", () => {
-    expect(adminDetail).toMatch(/Stage 3C/);
+  it("does not show internal roadmap copy to users", () => {
+    expect(adminDetail).not.toMatch(/Stage \d[A-E]/);
   });
 });
 

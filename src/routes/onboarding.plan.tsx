@@ -1,4 +1,5 @@
 import { createFileRoute, Navigate, useNavigate, Link } from "@tanstack/react-router";
+import { userMessage } from "@/lib/user-error";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Sparkles, Check, ArrowRight, Clock, Lock, Crown, ShieldCheck, Building2, Zap } from "lucide-react";
@@ -72,7 +73,7 @@ function PlanGate() {
       toast.success(`Free trial started 🎉`);
       navigate({ to: "/society/dashboard", replace: true });
     } catch (e: any) {
-      toast.error(e.message ?? "Could not start trial");
+      toast.error(userMessage(e, "Could not start trial"));
     } finally {
       setBusy(false);
     }

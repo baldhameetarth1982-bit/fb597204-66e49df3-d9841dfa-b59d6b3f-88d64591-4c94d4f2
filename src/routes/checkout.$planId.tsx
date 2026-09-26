@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { userMessage } from "@/lib/user-error";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Loader2, ShieldAlert, CreditCard, ArrowLeft } from "lucide-react";
@@ -88,7 +89,7 @@ function CheckoutPage() {
         onDismiss: () => setBusy(false),
       });
     } catch (e: any) {
-      toast.error(e?.message ?? "Could not start payment");
+      toast.error(userMessage(e, "Could not start payment"));
       setBusy(false);
     }
   }

@@ -1,4 +1,5 @@
 import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
+import { userMessage } from "@/lib/user-error";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft, Search, Loader2, CheckCircle2, Building2, DoorOpen, User, Key, KeyRound,
@@ -58,7 +59,7 @@ function JoinFlow() {
         const list = await searchSocietiesPublic(q.trim());
         if (!cancelled) setResults(list);
       } catch (e: any) {
-        if (!cancelled) toast.error(e.message);
+        if (!cancelled) toast.error(userMessage(e));
       } finally {
         if (!cancelled) setSearching(false);
       }
@@ -99,7 +100,7 @@ function JoinFlow() {
       }
       setStep("details");
     } catch (e: any) {
-      toast.error(e?.message ?? "Could not verify code");
+      toast.error(userMessage(e, "Could not verify code"));
     } finally {
       setCodeBusy(false);
     }
@@ -124,7 +125,7 @@ function JoinFlow() {
       toast.success("Request submitted");
       navigate({ to: "/onboarding/pending" });
     } catch (e: any) {
-      toast.error(e.message ?? "Could not submit");
+      toast.error(userMessage(e, "Could not submit"));
     } finally {
       setSubmitting(false);
     }

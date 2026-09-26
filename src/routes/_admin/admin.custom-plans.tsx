@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { userMessage } from "@/lib/user-error";
 import { useEffect, useMemo, useState } from "react";
 import { Tags, Plus, Loader2, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -107,7 +108,7 @@ function CustomPlansPage() {
       status: "active",
     });
     setSaving(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(userMessage(error));
     toast.success("Custom plan created");
     setOpen(false);
     setName("");

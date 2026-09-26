@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { userMessage } from "@/lib/user-error";
 import { useEffect, useMemo, useRef } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
@@ -61,7 +62,7 @@ function SupportPage() {
   });
 
   useEffect(() => { textareaRef.current?.focus(); }, [status]);
-  useEffect(() => { if (error) toast.error(error.message || "Support chat failed"); }, [error]);
+  useEffect(() => { if (error) toast.error(userMessage(error, "Support chat failed")); }, [error]);
 
   const busy = status === "submitted" || status === "streaming";
 

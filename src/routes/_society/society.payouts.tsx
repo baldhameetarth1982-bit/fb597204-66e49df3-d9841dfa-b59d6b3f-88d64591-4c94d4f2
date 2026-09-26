@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { userMessage } from "@/lib/user-error";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Landmark, Loader2, Info, RefreshCw } from "lucide-react";
@@ -57,7 +58,7 @@ function PayoutsPage() {
   useEffect(() => {
     if (!societyId) { if (!sidLoading) setLoading(false); return; }
     (async () => {
-      try { setState(await info({ data: { societyId } })); } catch (e: any) { toast.error(e.message); }
+      try { setState(await info({ data: { societyId } })); } catch (e: any) { toast.error(userMessage(e)); }
       setLoading(false);
     })();
   }, [societyId, sidLoading]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -72,7 +73,7 @@ function PayoutsPage() {
       });
       toast.success(res.status === "active" ? "Bank account verified" : "Submitted — pending verification");
       setState(await info({ data: { societyId } }));
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: any) { toast.error(userMessage(e)); }
     setSaving(false);
   }
 
@@ -83,7 +84,7 @@ function PayoutsPage() {
       const r = await refresh({ data: { societyId } });
       setState(await info({ data: { societyId } }));
       toast.success(`Status: ${STATUS[r.status]?.label ?? r.status}`);
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: any) { toast.error(userMessage(e)); }
     setRefreshing(false);
   }
 

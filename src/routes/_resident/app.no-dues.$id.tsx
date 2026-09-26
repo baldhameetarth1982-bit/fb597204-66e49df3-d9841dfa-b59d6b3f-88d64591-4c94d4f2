@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { userMessage } from "@/lib/user-error";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
@@ -63,7 +64,7 @@ function ResidentNoDuesDetail() {
       const r = await dlFn({ data: { certificateId: cid } });
       window.open(r.url, "_blank");
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed");
+      toast.error(userMessage(e, "Failed"));
     }
   };
 

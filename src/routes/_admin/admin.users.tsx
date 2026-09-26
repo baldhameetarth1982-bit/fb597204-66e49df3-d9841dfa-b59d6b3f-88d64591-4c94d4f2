@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { userMessage } from "@/lib/user-error";
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Users, Search, Gift, Loader2 } from "lucide-react";
@@ -69,7 +70,7 @@ function UsersPage() {
       qc.invalidateQueries({ queryKey: ["admin-societies-v2"] });
       setTarget(null);
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(userMessage(e)),
   });
 
   const users = usersQ.data ?? [];

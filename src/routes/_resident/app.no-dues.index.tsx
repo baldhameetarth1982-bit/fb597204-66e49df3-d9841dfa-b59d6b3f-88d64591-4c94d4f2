@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { userMessage } from "@/lib/user-error";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
@@ -75,7 +76,7 @@ function ResidentNoDues() {
       setPurpose("");
       refetch();
     },
-    onError: (e: any) => toast.error(e?.message ?? "Failed"),
+    onError: (e: any) => toast.error(userMessage(e, "Failed")),
   });
 
   return (
@@ -152,7 +153,7 @@ function CertificateDownload({ requestId, dl }: { requestId: string; dl: any }) 
       const r = await dl({ data: { certificateId: certId } });
       window.open(r.url, "_blank");
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed");
+      toast.error(userMessage(e, "Failed"));
     }
   };
   return (

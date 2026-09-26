@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { userMessage } from "@/lib/user-error";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
@@ -41,7 +42,7 @@ function BylawsAdmin() {
     setSaving(true);
     const { error } = await supabase.from("society_settings").upsert({ society_id: societyId, bylaws_html: text }, { onConflict: "society_id" });
     setSaving(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(userMessage(error));
     setSaved(text);
     toast.success("By-laws saved");
   }

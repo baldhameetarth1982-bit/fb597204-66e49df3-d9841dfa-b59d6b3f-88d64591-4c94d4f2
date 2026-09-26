@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { userMessage } from "@/lib/user-error";
 import { useEffect, useState, type ComponentType, type ReactNode } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusChip } from "@/components/people/PeopleUI";
@@ -237,7 +238,7 @@ function WithdrawDialog({ available, onClose }: { available: number; onClose: (r
       toast.success("Withdrawal requested");
       onClose(true);
     } catch (e: any) {
-      toast.error(e.message ?? "Failed");
+      toast.error(userMessage(e, "Failed"));
     } finally { setBusy(false); }
   }
 

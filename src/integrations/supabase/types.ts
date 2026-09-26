@@ -4800,6 +4800,10 @@ export type Database = {
         }
         Returns: string
       }
+      admin_cancel_society_plan: {
+        Args: { _reason: string; _society_id: string }
+        Returns: Json
+      }
       admin_delete_family_member: {
         Args: { _id: string; _society_id: string }
         Returns: undefined

@@ -40,6 +40,7 @@ import { Route as CheckoutPlanIdRouteImport } from './routes/checkout.$planId'
 import { Route as ApiSupportChatRouteImport } from './routes/api/support-chat'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRouteImport } from './routes/[.well-known]/assetlinks[.]json'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as VerifyNoDuesTokenRouteImport } from './routes/verify.no-dues.$token'
 import { Route as SocietySocietyVisitorsRouteImport } from './routes/_society/society.visitors'
@@ -311,6 +312,12 @@ const Char91DotwellKnownChar93OauthProtectedResourceRoute =
   Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
     id: '/.well-known/oauth-protected-resource',
     path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRoute =
+  Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRouteImport.update({
+    id: '/.well-known/assetlinks.json',
+    path: '/.well-known/assetlinks.json',
     getParentRoute: () => rootRouteImport,
   } as any)
 const Char91DotmcpChar93ListToolsRoute =
@@ -966,6 +973,7 @@ export interface FileRoutesByFullPath {
   '/verify-phone': typeof VerifyPhoneRoute
   '/welcome': typeof WelcomeRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/assetlinks.json': typeof Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/login': typeof AuthLoginRoute
   '/api/support-chat': typeof ApiSupportChatRoute
@@ -1114,6 +1122,7 @@ export interface FileRoutesByTo {
   '/verify-phone': typeof VerifyPhoneRoute
   '/welcome': typeof WelcomeRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/assetlinks.json': typeof Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/login': typeof AuthLoginRoute
   '/api/support-chat': typeof ApiSupportChatRoute
@@ -1268,6 +1277,7 @@ export interface FileRoutesById {
   '/verify-phone': typeof VerifyPhoneRoute
   '/welcome': typeof WelcomeRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/assetlinks.json': typeof Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_auth/login': typeof AuthLoginRoute
   '/api/support-chat': typeof ApiSupportChatRoute
@@ -1419,6 +1429,7 @@ export interface FileRouteTypes {
     | '/verify-phone'
     | '/welcome'
     | '/.mcp/list-tools'
+    | '/.well-known/assetlinks.json'
     | '/.well-known/oauth-protected-resource'
     | '/login'
     | '/api/support-chat'
@@ -1567,6 +1578,7 @@ export interface FileRouteTypes {
     | '/verify-phone'
     | '/welcome'
     | '/.mcp/list-tools'
+    | '/.well-known/assetlinks.json'
     | '/.well-known/oauth-protected-resource'
     | '/login'
     | '/api/support-chat'
@@ -1720,6 +1732,7 @@ export interface FileRouteTypes {
     | '/verify-phone'
     | '/welcome'
     | '/.mcp/list-tools'
+    | '/.well-known/assetlinks.json'
     | '/.well-known/oauth-protected-resource'
     | '/_auth/login'
     | '/api/support-chat'
@@ -1874,6 +1887,7 @@ export interface RootRouteChildren {
   VerifyPhoneRoute: typeof VerifyPhoneRoute
   WelcomeRoute: typeof WelcomeRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
+  Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRoute: typeof Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ApiSupportChatRoute: typeof ApiSupportChatRoute
   CheckoutPlanIdRoute: typeof CheckoutPlanIdRoute
@@ -2105,6 +2119,13 @@ declare module '@tanstack/react-router' {
       path: '/.well-known/oauth-protected-resource'
       fullPath: '/.well-known/oauth-protected-resource'
       preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.well-known/assetlinks.json': {
+      id: '/.well-known/assetlinks.json'
+      path: '/.well-known/assetlinks.json'
+      fullPath: '/.well-known/assetlinks.json'
+      preLoaderRoute: typeof Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/.mcp/list-tools': {
@@ -3252,6 +3273,8 @@ const rootRouteChildren: RootRouteChildren = {
   VerifyPhoneRoute: VerifyPhoneRoute,
   WelcomeRoute: WelcomeRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
+  Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRoute:
+    Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ApiSupportChatRoute: ApiSupportChatRoute,

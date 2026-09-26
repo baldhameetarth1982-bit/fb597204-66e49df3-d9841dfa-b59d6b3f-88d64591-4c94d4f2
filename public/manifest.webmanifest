@@ -1,12 +1,18 @@
 {
+  "id": "/",
   "name": "SociyoHub",
   "short_name": "SociyoHub",
   "description": "Society management, simplified.",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#F6F8F7",
-  "theme_color": "#00A896",
+  "orientation": "portrait",
+  "background_color": "#F7FAF9",
+  "theme_color": "#123047",
+  "categories": ["productivity", "lifestyle"],
   "icons": [
-    { "src": "/favicon.ico", "sizes": "any", "type": "image/x-icon" }
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }

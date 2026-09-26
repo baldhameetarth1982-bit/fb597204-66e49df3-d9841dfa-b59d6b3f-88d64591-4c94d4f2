@@ -33,8 +33,8 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
 
-  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-display: "Inter", system-ui, sans-serif;
+  --font-sans: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Sora", "Manrope", system-ui, sans-serif;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -96,24 +96,24 @@
 
 /* ---------- LIGHT (default) ---------- */
 :root {
-  --radius: 0.75rem; /* 12px */
+  --radius: 0.5rem;
 
-  --background: oklch(0.98 0.005 180);             /* #F6F8F7 soft app bg */
-  --foreground: oklch(0.22 0.06 260);              /* #0B2545 navy */
+  --background: oklch(0.98 0.006 175);
+  --foreground: oklch(0.29 0.055 245);
 
   --card: oklch(1 0 0);                            /* #FFFFFF */
   --card-foreground: oklch(0.22 0.06 260);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.22 0.06 260);
 
-  --primary: oklch(0.66 0.11 180);                 /* #00A896 SociyoHub teal */
+  --primary: oklch(0.59 0.105 177);
   --primary-foreground: oklch(1 0 0);
 
-  --secondary: oklch(0.96 0.008 180);              /* light teal-tinted surface */
+  --secondary: oklch(0.95 0.018 175);
   --secondary-foreground: oklch(0.22 0.06 260);
-  --muted: oklch(0.96 0.005 200);
-  --muted-foreground: oklch(0.52 0.03 250);        /* slate-500 navy-leaning */
-  --accent: oklch(0.72 0.13 180);                  /* #06B6A4 brighter teal */
+  --muted: oklch(0.96 0.007 190);
+  --muted-foreground: oklch(0.49 0.025 245);
+  --accent: oklch(0.91 0.035 175);
   --accent-foreground: oklch(1 0 0);
 
   --destructive: oklch(0.6 0.22 15);               /* #E11D48 */
@@ -123,9 +123,9 @@
   --warning: oklch(0.78 0.16 70);                  /* #F59E0B */
   --warning-foreground: oklch(0.22 0.06 260);
 
-  --border: oklch(0.9 0.008 200);                  /* #E3E8E6 */
-  --input: oklch(0.9 0.008 200);
-  --ring: oklch(0.66 0.11 180);                    /* teal focus */
+  --border: oklch(0.88 0.014 180);
+  --input: oklch(0.86 0.016 180);
+  --ring: oklch(0.59 0.105 177);
 
   --chart-1: oklch(0.66 0.11 180);
   --chart-2: oklch(0.68 0.15 160);
@@ -133,14 +133,14 @@
   --chart-4: oklch(0.6 0.22 15);
   --chart-5: oklch(0.6 0.15 250);
 
-  --sidebar: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.22 0.06 260);
-  --sidebar-primary: oklch(0.66 0.11 180);
+  --sidebar: oklch(0.975 0.008 180);
+  --sidebar-foreground: oklch(0.29 0.055 245);
+  --sidebar-primary: oklch(0.59 0.105 177);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.96 0.008 180);
-  --sidebar-accent-foreground: oklch(0.22 0.06 260);
-  --sidebar-border: oklch(0.9 0.008 200);
-  --sidebar-ring: oklch(0.66 0.11 180);
+  --sidebar-accent: oklch(0.93 0.025 175);
+  --sidebar-accent-foreground: oklch(0.29 0.055 245);
+  --sidebar-border: oklch(0.88 0.014 180);
+  --sidebar-ring: oklch(0.59 0.105 177);
 
 
   /* Semantic containers */
@@ -162,10 +162,10 @@
 
 
   /* Elevation (soft, no backdrop-filter). */
-  --elevation-1: 0 1px 2px rgb(15 23 42 / 0.04), 0 1px 1px rgb(15 23 42 / 0.03);
-  --elevation-2: 0 2px 6px rgb(15 23 42 / 0.06), 0 1px 2px rgb(15 23 42 / 0.04);
-  --elevation-3: 0 8px 20px -6px rgb(15 23 42 / 0.10), 0 2px 6px rgb(15 23 42 / 0.06);
-  --elevation-4: 0 20px 40px -12px rgb(15 23 42 / 0.18), 0 4px 10px rgb(15 23 42 / 0.08);
+  --elevation-1: 0 1px 2px color-mix(in oklab, var(--foreground) 5%, transparent);
+  --elevation-2: 0 4px 12px -8px color-mix(in oklab, var(--foreground) 18%, transparent);
+  --elevation-3: 0 12px 28px -14px color-mix(in oklab, var(--foreground) 24%, transparent);
+  --elevation-4: 0 24px 48px -20px color-mix(in oklab, var(--foreground) 32%, transparent);
 
   /* Motion */
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
@@ -303,9 +303,9 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-sans);
+    font-family: var(--font-display);
     font-weight: 700;
-    letter-spacing: -0.01em;
+    letter-spacing: 0;
     color: var(--color-foreground);
   }
   h1 { font-size: 1.5rem; }   /* 24px */
@@ -319,13 +319,7 @@
     font-weight: 400 !important;
   }
 
-  /* Low-end device perf: kill backdrop-filter globally; keep shadows for depth. */
-  * {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-  }
-
-  /* Tap targets: 48px minimum, 12px radius default. */
+  /* Tap targets remain generous across touch layouts. */
   button, [role="button"], a[role="button"],
   input[type="button"], input[type="submit"], .btn {
     min-height: 48px;
@@ -365,6 +359,10 @@
 
   /* Disabled controls look clearly inactive (processing / locked states). */
   button:disabled, [aria-disabled="true"] { cursor: not-allowed; }
+
+  ::selection {
+    background: color-mix(in oklab, var(--primary) 24%, transparent);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -382,9 +380,9 @@
 @layer base {
   /* Always-on: visible keyboard focus ring on interactive elements. */
   :focus-visible {
-    outline: 2px solid hsl(var(--ring, 180 100% 25%));
-    outline-offset: 2px;
-    border-radius: 6px;
+    outline: 3px solid var(--ring);
+    outline-offset: 3px;
+    border-radius: var(--radius-sm);
   }
 
   /* Accessibility Mode: larger text, looser spacing for elderly users. */
@@ -403,19 +401,22 @@
   font-size: 2rem;
   line-height: 1.15;
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
+  font-family: var(--font-display);
 }
 @utility type-headline {
   font-size: 1.5rem;
   line-height: 1.2;
   font-weight: 700;
-  letter-spacing: -0.015em;
+  letter-spacing: 0;
+  font-family: var(--font-display);
 }
 @utility type-title {
   font-size: 1.125rem;
   line-height: 1.35;
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
+  font-family: var(--font-display);
 }
 @utility type-body {
   font-size: 0.9375rem;
@@ -432,7 +433,7 @@
   font-size: 0.9375rem;
   line-height: 1;
   font-weight: 600;
-  letter-spacing: 0.01em;
+  letter-spacing: 0;
 }
 
 /* ========================================================================
@@ -518,6 +519,14 @@
 @utility page-enter {
   animation: page-enter var(--dur-base) var(--ease-standard) both;
 }
+
+@media (prefers-reduced-transparency: reduce) {
+  [class*="backdrop-blur"] {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background-color: var(--background) !important;
+  }
+}
 @keyframes page-enter {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -536,14 +545,16 @@
 @utility type-hero {
   font-size: clamp(2.5rem, 7vw, 4.5rem);
   line-height: 1.02;
-  letter-spacing: -0.035em;
+  letter-spacing: 0;
+  font-family: var(--font-display);
   font-weight: 700;
   text-wrap: balance;
 }
 @utility type-section {
   font-size: clamp(1.5rem, 3vw, 2rem);
   line-height: 1.15;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
+  font-family: var(--font-display);
   font-weight: 650;
   text-wrap: balance;
 }

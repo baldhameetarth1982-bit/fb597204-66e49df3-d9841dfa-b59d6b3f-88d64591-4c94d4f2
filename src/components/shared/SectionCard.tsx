@@ -27,7 +27,7 @@ export function SectionCard({
   return (
     <section
       className={cn(
-        "rounded-3xl border bg-card shadow-sm overflow-hidden",
+        "overflow-hidden rounded-lg border border-border bg-card shadow-[var(--elevation-1)]",
         tone === "primary" && "border-primary/30 bg-primary/5",
         className,
       )}
@@ -36,7 +36,7 @@ export function SectionCard({
         <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-5 pt-4 pb-3 border-b border-border/60">
           <div className="min-w-0 flex items-center gap-2.5">
             {Icon && (
-              <div className="shrink-0 h-8 w-8 rounded-xl bg-primary/10 text-primary grid place-items-center">
+              <div className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-primary/10 text-primary">
                 <Icon className="h-4 w-4" />
               </div>
             )}

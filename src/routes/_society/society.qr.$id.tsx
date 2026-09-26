@@ -124,53 +124,45 @@ function QrDetail({ id }: { id: string }) {
     }
   }
 
-  return (
-    <MobileScreen className="max-w-3xl">
-      <BackLink />
-      <div className="grid gap-4 md:grid-cols-[320px_1fr]">
-        <section className="rounded-3xl border bg-card p-5 shadow-sm">
-          <div className="text-center">
-            <p className="text-xs font-medium uppercase tracking-wide text-primary">{qr.categoryName}</p>
-            <h1 className="mt-1 text-lg font-semibold leading-tight">{qr.title}</h1>
-            <p className="mt-0.5 text-sm text-muted-foreground">{qr.fixedAmount ? inr(qr.fixedAmount) : "Any amount"}</p>
-          </div>
-          <div ref={canvasWrap} className={`mx-auto mt-4 w-fit rounded-2xl border bg-white p-3 ${!qr.isActive || expired ? "opacity-40" : ""}`}>
-            <QRCodeCanvas value={url} size={220} level="M" marginSize={1} />
-          </div>
-          {(!qr.isActive || expired) && (
-            <p className="mt-2 text-center text-xs font-medium text-muted-foreground">
-              {expired ? "Expired — payers can no longer submit" : "Paused — payers can't submit right now"}
-            </p>
-          )}
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            <Button variant="outline" className="min-h-11 flex-col gap-0.5 px-1 text-xs" onClick={download}><Download className="h-4 w-4" />Save</Button>
-            <Button variant="outline" className="min-h-11 flex-col gap-0.5 px-1 text-xs" onClick={share}><Share2 className="h-4 w-4" />Share</Button>
-            <Button variant="outline" className="min-h-11 flex-col gap-0.5 px-1 text-xs" onClick={copy}><Copy className="h-4 w-4" />Copy link</Button>
-          </div>
-          <label className="mt-4 flex min-h-11 items-center justify-between rounded-xl border p-3">
-            <span className="text-sm font-medium">Accepting payments</span>
-            <Switch checked={qr.isActive} disabled={toggling} onCheckedChange={toggle} aria-label="Accepting payments" />
-          </label>
-          <dl className="mt-4 space-y-1.5 text-sm">
-            <Row k="Account holder" v={qr.payeeName} />
-            <Row k="Account" v={`••••${qr.accountNumber.slice(-4)}`} />
-            <Row k="IFSC" v={qr.ifsc} />
-            {qr.acceptsCash && <Row k="Cash" v="Accepted" />}
-            {qr.expiresAt && <Row k="Closes" v={new Date(qr.expiresAt).toLocaleDateString("en-IN")} />}
-          </dl>
-        </section>
+  const live = qr.isActive && !expired;
+  const reviewFirst = counts.submitted > 0;
 
-        <section className="min-w-0">
-          <div className="mb-3 grid grid-cols-2 gap-3">
-            <div className="rounded-2xl border bg-card p-3.5">
-              <p className="text-xs text-muted-foreground">Verified collected</p>
-              <p className="mt-1 text-xl font-semibold tabular-nums">{inr(recordedTotal)}</p>
-            </div>
-            <div className="rounded-2xl border bg-card p-3.5">
-              <p className="text-xs text-muted-foreground">Awaiting review</p>
-              <p className={`mt-1 text-xl font-semibold tabular-nums ${counts.submitted ? "text-warning" : ""}`}>{counts.submitted}</p>
-            </div>
-          </div>
+  return (
+    <MobileScreen className="max-w-5xl space-y-5">
+      <BackLink />
+
+      <header className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 border-b border-border pb-4">
+        <div className="min-w-0">
+          <p className="text-xs font-medium uppercase tracking-wide text-primary">{qr.categoryName}</p>
+          <h1 className="mt-0.5 truncate text-2xl font-semibold tracking-tight">{qr.title}</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            {qr.fixedAmount ? `${inr(qr.fixedAmount)} per payment` : "Any amount"}
+            {qr.expiresAt ? ` · closes ${new Date(qr.expiresAt).toLocaleDateString("en-IN")}` : ""}
+          </p>
+        </div>
+        <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${live ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"}`}>
+          <span className={`h-1.5 w-1.5 rounded-full ${live ? "bg-success" : "bg-muted-foreground"}`} />
+          {expired ? "Expired" : qr.isActive ? "Live" : "Paused"}
+        </span>
+      </header>
+
+      <dl className="grid grid-cols-3 gap-px overflow-hidden rounded-2xl border border-border bg-border">
+        <div className="min-w-0 bg-card p-3.5">
+          <dt className="text-xs text-muted-foreground">To review</dt>
+          <dd className={`mt-1 text-xl font-semibold tabular-nums ${counts.submitted ? "text-warning" : ""}`}>{counts.submitted}</dd>
+        </div>
+        <div className="min-w-0 bg-card p-3.5">
+          <dt className="text-xs text-muted-foreground">Verified collected</dt>
+          <dd className="mt-1 truncate text-xl font-semibold tabular-nums">{inr(recordedTotal)}</dd>
+        </div>
+        <div className="min-w-0 bg-card p-3.5">
+          <dt className="text-xs text-muted-foreground">Submissions</dt>
+          <dd className="mt-1 text-xl font-semibold tabular-nums">{submissions.length}</dd>
+        </div>
+      </dl>
+
+      <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_300px] md:items-start">
+        <section className={`min-w-0 ${reviewFirst ? "order-1" : "order-2 md:order-1"}`} aria-label="Submissions">
           <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="submitted" className="min-h-10">To review ({counts.submitted})</TabsTrigger>
@@ -178,6 +170,11 @@ function QrDetail({ id }: { id: string }) {
               <TabsTrigger value="rejected" className="min-h-10">Rejected ({counts.rejected})</TabsTrigger>
             </TabsList>
           </Tabs>
+          {filter === "submitted" && counts.submitted > 0 && (
+            <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Clock className="h-3.5 w-3.5" /> Check your bank statement before recording. Recorded entries still need verification in Income.
+            </p>
+          )}
           <div className="mt-3 space-y-2.5">
             {shown.length === 0 ? (
               <div className="rounded-2xl border border-dashed bg-card p-6 text-center text-sm text-muted-foreground">
@@ -188,6 +185,40 @@ function QrDetail({ id }: { id: string }) {
             )}
           </div>
         </section>
+
+        <aside className={`space-y-3 md:sticky md:top-20 ${reviewFirst ? "order-2" : "order-1 md:order-2"}`} aria-label="Share this QR">
+          <div className="rounded-2xl border bg-card p-4">
+            <div ref={canvasWrap} className={`mx-auto w-fit rounded-xl border bg-white p-3 ${live ? "" : "opacity-40"}`}>
+              <QRCodeCanvas value={url} size={200} level="M" marginSize={1} />
+            </div>
+            {!live && (
+              <p className="mt-2 text-center text-xs font-medium text-muted-foreground">
+                {expired ? "Expired — payers can no longer submit" : "Paused — payers can't submit right now"}
+              </p>
+            )}
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              <Button variant="outline" className="min-h-11 flex-col gap-0.5 px-1 text-xs" onClick={download}><Download className="h-4 w-4" />Save</Button>
+              <Button variant="outline" className="min-h-11 flex-col gap-0.5 px-1 text-xs" onClick={share}><Share2 className="h-4 w-4" />Share</Button>
+              <Button variant="outline" className="min-h-11 flex-col gap-0.5 px-1 text-xs" onClick={copy}><Copy className="h-4 w-4" />Copy link</Button>
+            </div>
+            <label className="mt-3 flex min-h-11 items-center justify-between gap-3 rounded-xl bg-muted/60 px-3">
+              <span className="text-sm font-medium">Accepting payments</span>
+              <Switch checked={qr.isActive} disabled={toggling} onCheckedChange={toggle} aria-label="Accepting payments" />
+            </label>
+          </div>
+          <details className="group rounded-2xl border bg-card">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between px-4 text-sm font-medium">
+              Where money goes
+              <span className="text-xs text-muted-foreground group-open:hidden">••••{qr.accountNumber.slice(-4)}</span>
+            </summary>
+            <dl className="space-y-1.5 border-t px-4 py-3 text-sm">
+              <Row k="Account holder" v={qr.payeeName} />
+              <Row k="Account" v={`••••${qr.accountNumber.slice(-4)}`} />
+              <Row k="IFSC" v={qr.ifsc} />
+              <Row k="Cash" v={qr.acceptsCash ? "Accepted" : "Not accepted"} />
+            </dl>
+          </details>
+        </aside>
       </div>
     </MobileScreen>
   );

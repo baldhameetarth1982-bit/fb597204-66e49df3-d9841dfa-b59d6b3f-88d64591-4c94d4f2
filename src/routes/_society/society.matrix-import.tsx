@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import {
   Upload, Loader2, FileDown, ArrowLeft, CheckCircle2, AlertTriangle,
 } from "lucide-react";
-import * as XLSX from "xlsx";
+import { readFirstSheetSafely, writeSafeWorkbook } from "@/lib/spreadsheet-safety";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
@@ -61,13 +61,10 @@ function MatrixImportPage() {
   }, [cells]);
 
   function downloadTemplate() {
-    const ws = XLSX.utils.json_to_sheet([
+    writeSafeWorkbook([
       { Block: "A", Unit: "101", Jan: 2500, Feb: 2500, Mar: 2500, Apr: "", May: "", Jun: "", Jul: "", Aug: "", Sep: "", Oct: "", Nov: "", Dec: "" },
       { Block: "A", Unit: "102", Jan: 2500, Feb: 2500, Mar: "", Apr: "", May: "", Jun: "", Jul: "", Aug: "", Sep: "", Oct: "", Nov: "", Dec: "" },
-    ]);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, `Matrix ${year}`);
-    XLSX.writeFile(wb, `maintenance-matrix-template-${year}.xlsx`);
+    ] as Record<string, string | number>[], `Matrix ${year}`, `maintenance-matrix-template-${year}.xlsx`);
   }
 
   async function onFile(file: File) {
@@ -83,12 +80,12 @@ function MatrixImportPage() {
     try {
     let rows: Record<string, unknown>[];
     try {
-      const buf = await file.arrayBuffer();
-      const wb = XLSX.read(buf);
-      const sheetName = wb.SheetNames[0];
-      const sheet = sheetName ? wb.Sheets[sheetName] : undefined;
-      if (!sheet) { toast.error("No readable sheet found in this file"); return; }
-      rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
+      const parsed = readFirstSheetSafely(await file.arrayBuffer(), file.name);
+      if (!parsed.ok) {
+        const msg = { empty: "That file is empty", too_large: "File is too large (max 5 MB)", bad_type: "Upload a real .xlsx, .xls or .csv file", unreadable: "That file could not be read as a spreadsheet", too_many_rows: "Too many rows (max 5,000)", too_many_columns: "Too many columns (max 40)" }[parsed.error];
+        toast.error(msg); return;
+      }
+      rows = parsed.rows;
     } catch {
       toast.error("That file could not be read as a spreadsheet");
       return;

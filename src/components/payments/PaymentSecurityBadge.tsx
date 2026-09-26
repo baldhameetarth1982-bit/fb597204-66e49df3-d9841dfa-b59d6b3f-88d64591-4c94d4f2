@@ -10,7 +10,7 @@ export function PaymentSecurityBadge({ className = "" }: { className?: string })
       <span>Secure payment gateway</span>
       <span className="opacity-40">·</span>
       <Lock className="h-3 w-3" aria-hidden />
-      <span>128-bit SSL Encrypted Transactions</span>
+      <span>Payment details handled by Razorpay</span>
     </div>
   );
 }

@@ -40,6 +40,7 @@ function AdsPage() {
   const [interstitial, setInterstitial] = useState(false);
   const [seconds, setSeconds] = useState(15);
   const [deleting, setDeleting] = useState<Ad | null>(null);
+  const [deleting, setDeleting] = useState<Ad | null>(null);
 
   async function reload() {
     const [{ data: adsData }, { data: settings }] = await Promise.all([
@@ -84,7 +85,6 @@ function AdsPage() {
   }
 
   async function remove(id: string) {
-    if (!confirm("Delete this ad?")) return;
     const { error } = await (supabase as any).from("ads").delete().eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Ad deleted");

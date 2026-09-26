@@ -414,6 +414,13 @@
       "when": 1790447522002,
       "tag": "0058_stage13_function_hardening",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1790448739083,
+      "tag": "0059_stage13_privileged_identity_and_payout_closure",
+      "breakpoints": true
     }
   ]
 }

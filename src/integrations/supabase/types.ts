@@ -6080,6 +6080,10 @@ export type Database = {
           new_status: string
         }[]
       }
+      refresh_society_payout_status_internal: {
+        Args: { _actor_id: string; _payout_status: string; _society_id: string }
+        Returns: Json
+      }
       regenerate_society_invite_code: {
         Args: { _society_id: string }
         Returns: string
@@ -6397,6 +6401,17 @@ export type Database = {
           _society_id: string
         }
         Returns: undefined
+      }
+      update_society_payout_setup_internal: {
+        Args: {
+          _actor_id: string
+          _bank_last4: string
+          _holder_name: string
+          _payout_status: string
+          _razorpay_account_id: string
+          _society_id: string
+        }
+        Returns: Json
       }
       update_society_unit: {
         Args: {

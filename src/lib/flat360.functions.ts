@@ -574,7 +574,7 @@ export function buildRealDeps(supabase: unknown): Flat360Deps {
       const chain = db
         .from("flats")
         .select(
-          "id, society_id, flat_number, floor, block_id, blocks(name), societies(name, plan_id, plan_status, trial_ends_at)",
+          "id, society_id, flat_number, floor, block_id, blocks(name), societies(name, plan_id, plan_status, trial_ends_at, plan_expires_at, status)",
         );
       const eq = (chain as unknown as { eq: (c: string, v: string) => unknown }).eq(
         "id",

@@ -477,6 +477,13 @@
       "when": 1790455593515,
       "tag": "0067_retire_legacy_gateway_selector",
       "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1790463760807,
+      "tag": "0068_close_plan_gate_expiry_suspension",
+      "breakpoints": true
     }
   ]
 }

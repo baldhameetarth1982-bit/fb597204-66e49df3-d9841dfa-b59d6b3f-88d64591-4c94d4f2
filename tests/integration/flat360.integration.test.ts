@@ -33,13 +33,13 @@ describe("Flat 360 isolated tenant and role integration", () => {
     await expect(fixture.load(IDS.guardA, IDS.flatA)).rejects.toThrow("NOT_AUTHORIZED");
   });
 
-  it("binds direct privileged RPC checks to both actor and requested object", async () => {
+  it("binds direct authenticated RPC checks to both actor and requested object", async () => {
     const fixture = createSyntheticFlat360Fixture();
     const { probed, invocations } = fixture.attachRpcProbe(IDS.adminA, IDS.societyA, IDS.flatA);
     expect(await probed.isSocietyAdmin(IDS.adminA, IDS.societyA)).toBe(true);
     expect(await probed.isSocietyAdmin(IDS.adminA, IDS.societyB)).toBe(false);
     expect(await probed.isBlockAdminForFlat(IDS.adminA, IDS.flatB)).toBe(false);
-    expect(invocations).toContainEqual({ fn: "is_society_admin_for_internal", args: { _actor_id: IDS.adminA, _society_id: IDS.societyB } });
+    expect(invocations).toContainEqual({ fn: "current_user_is_society_admin_for", args: { _society_id: IDS.societyB } });
   });
 
   it("never mixes Society B bills, payments, dues, or financial history into Society A", async () => {

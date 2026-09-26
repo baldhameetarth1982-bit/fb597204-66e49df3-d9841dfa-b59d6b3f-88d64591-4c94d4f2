@@ -172,18 +172,27 @@ export const refundSaasSubscriptionPayment = createServerFn({ method: "POST" })
     if (claim.status === "processed" && claim.provider_refund_id) {
       return { status: "refunded" as const, providerRefundId: claim.provider_refund_id };
     }
-    if (claim.status !== "claimed") throw new Error("This refund request is already processing.");
 
     try {
       const provider = await import("@/lib/saas-payments/razorpay.server");
-      const refund = await provider.refundRazorpayPayment(
-        claim.provider_payment_id,
-        claim.amount_paise,
-        data.requestId,
-      );
+      const refund = claim.status === "submitted" && claim.provider_refund_id
+        ? await provider.fetchRazorpayRefund(claim.provider_refund_id)
+        : claim.status === "claimed"
+          ? await provider.refundRazorpayPayment(
+              claim.provider_payment_id,
+              claim.amount_paise,
+              data.requestId,
+            )
+          : null;
+      if (!refund) throw new Error("This refund request requires reconciliation.");
       if (refund.payment_id !== claim.provider_payment_id || refund.amount !== claim.amount_paise) {
         throw new provider.RazorpayProviderError("invalid_refund_response");
       }
+      const { error: submissionError } = await supabaseAdmin.rpc(
+        "record_saas_subscription_refund_submission",
+        { _refund_record_id: claim.refund_record_id, _provider_refund_id: refund.id },
+      );
+      if (submissionError) throw new Error("Refund submission could not be recorded.");
       const { error: finalizeError } = await supabaseAdmin.rpc("finalize_saas_subscription_refund", {
         _payment_id: data.paymentId,
         _provider_refund_id: refund.id,

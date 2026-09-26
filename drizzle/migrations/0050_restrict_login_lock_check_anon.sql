@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.is_login_account_locked(text, integer, integer) FROM anon;

@@ -904,8 +904,12 @@ export function normalizePlan(
   raw: string | null | undefined,
   status?: string | null,
   trialEndsAt?: string | Date | null,
+  opts?: { planExpiresAt?: string | Date | null; societyStatus?: string | null },
 ): PlanKey {
   const spec = PLAN_NORMALIZATION_SPEC;
+  // Suspended/non-active societies never unlock paid features.
+  const soc = (opts?.societyStatus ?? "").toLowerCase().trim();
+  if (soc && soc !== "active") return "basic";
   const s = (status ?? "").toLowerCase().trim();
   if (includesLower(spec.inactiveStatuses, s)) return "basic";
   if (includesLower(spec.activeTrialStatuses, s)) {
@@ -918,11 +922,31 @@ export function normalizePlan(
     }
     return "premium";
   }
+  // Unknown non-empty statuses fail safe (only "active" grants a paid plan).
+  if (s && s !== "active") return "basic";
+  // A paid plan past its expiry no longer grants access.
+  if (opts?.planExpiresAt) {
+    const exp = opts.planExpiresAt instanceof Date ? opts.planExpiresAt : new Date(opts.planExpiresAt);
+    if (!Number.isFinite(exp.getTime()) || exp.getTime() <= Date.now()) return "basic";
+  }
   const p = (raw ?? "").toLowerCase().trim();
   if (!p) return "basic";
   if (includesLower(spec.paidPlanAliases.basic, p)) return "basic";
   if (includesLower(spec.paidPlanAliases.pro, p)) return "pro";
   if (includesLower(spec.paidPlanAliases.premium, p)) return "premium";
   return "basic";
+}
+
+/** Columns every server/client plan check must read. */
+export const PLAN_COLUMNS = "plan_id,plan_status,trial_ends_at,plan_expires_at,status";
+export function planFromSocietyRow(row: {
+  plan_id?: string | null; plan_status?: string | null; trial_ends_at?: string | null;
+  plan_expires_at?: string | null; status?: string | null;
+} | null | undefined): PlanKey {
+  if (!row) return "basic";
+  return normalizePlan(row.plan_id, row.plan_status, row.trial_ends_at, {
+    planExpiresAt: row.plan_expires_at ?? null,
+    societyStatus: row.status ?? null,
+  });
 }
 

@@ -68,6 +68,8 @@ export type FlatRow = {
   society_plan_id: string | null;
   society_plan_status: string | null;
   society_trial_ends_at: string | null;
+  society_plan_expires_at?: string | null;
+  society_status?: string | null;
 };
 
 export type OccupantRow = {
@@ -204,6 +206,7 @@ export async function loadFlat360Snapshot(input: {
     flatRow.society_plan_id,
     flatRow.society_plan_status,
     flatRow.society_trial_ends_at,
+    { planExpiresAt: flatRow.society_plan_expires_at ?? null, societyStatus: flatRow.society_status ?? null },
   );
   const advanced = canViewAdvanced(plan);
   const viewer: Flat360Viewer = { role, plan, canViewAdvanced: advanced };
@@ -571,7 +574,7 @@ export function buildRealDeps(supabase: unknown): Flat360Deps {
       const chain = db
         .from("flats")
         .select(
-          "id, society_id, flat_number, floor, block_id, blocks(name), societies(name, plan_id, plan_status, trial_ends_at)",
+          "id, society_id, flat_number, floor, block_id, blocks(name), societies(name, plan_id, plan_status, trial_ends_at, plan_expires_at, status)",
         );
       const eq = (chain as unknown as { eq: (c: string, v: string) => unknown }).eq(
         "id",
@@ -593,6 +596,8 @@ export function buildRealDeps(supabase: unknown): Flat360Deps {
           plan_id: string | null;
           plan_status: string | null;
           trial_ends_at: string | null;
+          plan_expires_at?: string | null;
+          status?: string | null;
         } | null;
       };
       return {
@@ -607,6 +612,8 @@ export function buildRealDeps(supabase: unknown): Flat360Deps {
         society_plan_id: row.societies?.plan_id ?? null,
         society_plan_status: row.societies?.plan_status ?? null,
         society_trial_ends_at: row.societies?.trial_ends_at ?? null,
+        society_plan_expires_at: row.societies?.plan_expires_at ?? null,
+        society_status: row.societies?.status ?? null,
       };
     },
     async fetchOccupants(flatId) {

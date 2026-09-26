@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { generateText } from "ai";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { normalizePlan, hasFeature } from "@/lib/plan-features";
+import { normalizePlan, hasFeature, planFromSocietyRow } from "@/lib/plan-features";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 import { checkRateLimit, RateLimitedError } from "@/lib/rate-limit.server";
 import { validateIncomeSuggestion, type IncomeSuggestionResult } from "@/lib/income-category-suggestion.server";
@@ -25,9 +25,9 @@ export const suggestIncomeCategoryFn = createServerFn({ method: "POST" })
     });
     if (!admin) return { status: "not_found" };
     const { data: society, error: planError } = await supabase.from("societies")
-      .select("plan_id,plan_status,trial_ends_at").eq("id", record.society_id).maybeSingle();
+      .select("plan_id,plan_status,trial_ends_at,plan_expires_at,status").eq("id", record.society_id).maybeSingle();
     if (planError || !society) return { status: "unavailable" };
-    const plan = normalizePlan(society.plan_id, society.plan_status, society.trial_ends_at);
+    const plan = planFromSocietyRow(society as any);
     if (!hasFeature(plan, "ai_income_categorization")) return { status: "plan_required" };
     if (record.verification_status !== "pending" || record.category_confirmed_at) return { status: "invalid_transition" };
     const { data: categories, error: categoryError, count } = await supabase.from("society_income_categories")

@@ -14,7 +14,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { normalizePlan } from "@/lib/plan-features";
+import { normalizePlan, planFromSocietyRow } from "@/lib/plan-features";
 import { checkRateLimit, RateLimitedError } from "@/lib/rate-limit.server";
 import type { Database } from "@/integrations/supabase/types";
 import {
@@ -80,7 +80,7 @@ async function assertSocietyAdmin(ctx: Ctx, societyId: string): Promise<void> {
 async function assertProPlan(ctx: Ctx, societyId: string): Promise<void> {
   const { data, error } = await ctx.supabase
     .from("societies")
-    .select("plan_id,plan_status,trial_ends_at")
+    .select("plan_id,plan_status,trial_ends_at,plan_expires_at,status")
     .eq("id", societyId)
     .maybeSingle();
   if (error || !data) throw new ForbiddenSocietyError();
@@ -89,7 +89,7 @@ async function assertProPlan(ctx: Ctx, societyId: string): Promise<void> {
     plan_status: string | null;
     trial_ends_at: string | null;
   };
-  const plan = normalizePlan(row.plan_id, row.plan_status, row.trial_ends_at);
+  const plan = planFromSocietyRow(row as any);
   if (!isNonMemberIncomeAllowed(plan)) throw new ForbiddenPlanError(plan);
 }
 

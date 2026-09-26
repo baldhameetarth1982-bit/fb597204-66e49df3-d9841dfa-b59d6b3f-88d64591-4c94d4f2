@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { hasFeature, normalizePlan } from "@/lib/plan-features";
+import { hasFeature, normalizePlan, planFromSocietyRow } from "@/lib/plan-features";
 
 const BUCKET = "society-knowledge";
 const uuid = z.string().uuid();
@@ -54,8 +54,8 @@ async function adminScope(supabase: any, userId: string): Promise<{ societyId: s
   if (!societyId) return { ok: false, message: "Join a society first." };
   const { data: isAdmin } = await supabase.rpc("is_society_admin_for", { _user_id: userId, _society_id: societyId });
   if (!isAdmin) return { ok: false, message: "Only society admins can manage documents." };
-  const { data: soc } = await supabase.from("societies").select("plan_id,plan_status,trial_ends_at").eq("id", societyId).maybeSingle();
-  if (!soc || !hasFeature(normalizePlan(soc.plan_id, soc.plan_status, soc.trial_ends_at), "ai_secretary")) {
+  const { data: soc } = await supabase.from("societies").select("plan_id,plan_status,trial_ends_at,plan_expires_at,status").eq("id", societyId).maybeSingle();
+  if (!soc || !hasFeature(planFromSocietyRow(soc as any), "ai_secretary")) {
     return { ok: false, message: "AI Secretary knowledge is available on the Pro plan." };
   }
   return { societyId };

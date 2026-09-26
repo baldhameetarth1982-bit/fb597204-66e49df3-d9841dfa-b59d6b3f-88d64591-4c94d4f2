@@ -25,18 +25,20 @@ export function useFeatureAccess() {
     queryFn: async () => {
       const { data } = await supabase
         .from("societies")
-        .select("plan_id,plan_status,trial_ends_at")
+        .select("plan_id,plan_status,trial_ends_at,plan_expires_at,status")
         .eq("id", societyId!)
         .maybeSingle();
       return {
         plan_id: (data as any)?.plan_id as string | null,
         plan_status: (data as any)?.plan_status as string | null,
         trial_ends_at: (data as any)?.trial_ends_at as string | null,
+        plan_expires_at: (data as any)?.plan_expires_at as string | null,
+        status: (data as any)?.status as string | null,
       };
     },
   });
 
-  const plan: PlanKey = normalizePlan(data?.plan_id, data?.plan_status, data?.trial_ends_at);
+  const plan: PlanKey = normalizePlan(data?.plan_id, data?.plan_status, data?.trial_ends_at, { planExpiresAt: data?.plan_expires_at, societyStatus: data?.status });
   const status = data?.plan_status ?? null;
   const loading = sidLoading || isLoading;
 

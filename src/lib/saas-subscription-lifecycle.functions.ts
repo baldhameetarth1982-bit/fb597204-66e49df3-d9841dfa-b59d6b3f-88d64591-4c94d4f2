@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const societySchema = z.object({ societyId: z.string().uuid() }).strict();
@@ -12,7 +14,7 @@ const refundSchema = z.object({
 }).strict();
 
 async function requirePlanManager(
-  supabase: Parameters<Parameters<typeof createServerFn>[0]>[0] extends never ? never : any,
+  supabase: SupabaseClient<Database>,
   societyId: string,
 ) {
   const { data, error } = await supabase.rpc("current_user_has_society_permission", {

@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
+import { FileCheck2 } from "lucide-react";
 import { toast } from "sonner";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { MobileHero } from "@/components/shared/MobileHero";
@@ -105,7 +106,7 @@ function ResidentNoDuesDetail() {
   if (isLoading || !data) {
     return (
       <div className="pb-24">
-        <MobileHero title="No-Dues Request" subtitle="Loading…" />
+        <MobileHero title="No-Dues Request" subtitle="Loading request details…" icon={FileCheck2} />
       </div>
     );
   }
@@ -119,8 +120,8 @@ function ResidentNoDuesDetail() {
 
   return (
     <div className="pb-24">
-      <MobileHero title={`Request · ${flat?.flat_number ?? "—"}`} subtitle={statusLabel(req.status)} />
-      <div className="px-4 space-y-3">
+      <MobileHero title={`Request · ${flat?.flat_number ?? "—"}`} subtitle={statusLabel(req.status)} icon={FileCheck2} />
+      <div className="mx-auto max-w-3xl space-y-4 px-4 pt-4">
         <SectionCard>
           <div className="flex items-center justify-between">
             <StatusChip>{statusLabel(req.status)}</StatusChip>

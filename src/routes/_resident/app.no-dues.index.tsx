@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
+import { FileCheck2 } from "lucide-react";
 import { toast } from "sonner";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { MobileHero } from "@/components/shared/MobileHero";
@@ -79,16 +80,17 @@ function ResidentNoDues() {
 
   return (
     <div className="pb-24">
-      <MobileHero title="No-Dues Certificate" subtitle="Request a certificate for your flat." />
-      <div className="px-4 space-y-3">
-        <SectionCard>
-          <p className="text-sm mb-2 font-medium">New request</p>
+      <MobileHero title="No-Dues Certificate" subtitle="Request and track a certificate for your home." icon={FileCheck2} />
+      <div className="mx-auto max-w-3xl space-y-4 px-4 pt-4">
+        <SectionCard title="New request" description="The committee checks your current dues before issuing a certificate.">
+          <label htmlFor="no-dues-purpose" className="mb-2 block text-sm font-medium">Purpose</label>
           <Input
+            id="no-dues-purpose"
             placeholder="Purpose (e.g. society transfer)"
             value={purpose}
             onChange={(e) => setPurpose(e.target.value)}
             maxLength={500}
-            className="mb-2"
+            className="mb-3"
           />
           <Button
             onClick={() => mutation.mutate()}
@@ -99,6 +101,13 @@ function ResidentNoDues() {
           </Button>
         </SectionCard>
 
+        {(requests ?? []).length === 0 && (
+          <div className="border-y border-dashed border-border py-10 text-center">
+            <FileCheck2 className="mx-auto h-7 w-7 text-muted-foreground" aria-hidden />
+            <p className="mt-2 text-sm font-medium">No requests yet</p>
+            <p className="mt-1 text-xs text-muted-foreground">Your submitted requests will appear here.</p>
+          </div>
+        )}
         {(requests ?? []).map((r: any) => (
           <SectionCard key={r.id}>
             <div className="flex items-center justify-between mb-1">

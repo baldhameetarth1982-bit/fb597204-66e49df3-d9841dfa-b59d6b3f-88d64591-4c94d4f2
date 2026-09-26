@@ -18,6 +18,10 @@ export const Route = createFileRoute("/pricing")({
         content:
           "Simple pricing for every society. Start with a free trial. Custom modules, transparent per-unit rates.",
       },
+      { property: "og:title", content: "Pricing — SociyoHub" },
+      { property: "og:description", content: "Simple pricing for every society, with a free trial and transparent per-unit rates." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: PricingPage,

@@ -10,6 +10,7 @@ import { StatPill, StatPillRow } from "@/components/shared/StatPill";
 import { SectionCard } from "@/components/shared/SectionCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -182,6 +183,7 @@ function MatrixPage() {
           <div className="flex flex-wrap items-center gap-2">
             <label className="text-xs text-muted-foreground">Year</label>
             <Input
+              aria-label="Search house or block"
               type="number"
               value={year}
               onChange={(e) => setYear(Number(e.target.value) || year)}
@@ -222,24 +224,20 @@ function MatrixPage() {
               onChange={(e) => setQ(e.target.value)}
               className="rounded-xl"
             />
-            <select
-              value={blockFilter}
-              onChange={(e) => setBlockFilter(e.target.value)}
-              className="rounded-xl border bg-background px-3 py-2 text-sm h-9"
-              aria-label="Block filter"
-            >
-              <option value="all">All blocks</option>
-              {blockOptions.map((b) => <option key={b} value={b}>{b}</option>)}
-            </select>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as StatusKey)}
-              className="rounded-xl border bg-background px-3 py-2 text-sm h-9"
-              aria-label="Status filter"
-            >
-              <option value="all">All statuses</option>
-              {STATUS_KEYS.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
+            <Select value={blockFilter} onValueChange={setBlockFilter}>
+              <SelectTrigger aria-label="Block filter"><SelectValue placeholder="All blocks" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All blocks</SelectItem>
+                {blockOptions.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusKey)}>
+              <SelectTrigger aria-label="Status filter"><SelectValue placeholder="All statuses" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                {STATUS_KEYS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex flex-wrap gap-1.5 text-[10px]">
             <LegendChip label="Paid" cls="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" />
@@ -260,7 +258,20 @@ function MatrixPage() {
           </div>
         ) : (
           <div className="-mx-4 sm:mx-0">
-            <div className="overflow-auto sm:rounded-2xl border-y sm:border bg-card max-h-[70vh]">
+            <ul className="divide-y border-y border-border bg-card sm:hidden">
+              {filtered.map((f) => (
+                <li key={f.id} className="p-4">
+                  <p className="font-semibold">{f.block_name}-{f.flat_number}</p>
+                  <div className="mt-3 grid grid-cols-4 gap-2">
+                    {MONTH_NAMES.map((month, mi) => {
+                      const c = cell(f.id, mi);
+                      return <div key={month} className="min-w-0 text-center"><p className="text-[10px] text-muted-foreground">{month}</p><p className={cn("mt-1 rounded-sm px-1 py-1 text-[10px] font-medium", c.cls)}>{c.label}</p></div>;
+                    })}
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="hidden max-h-[70vh] overflow-auto rounded-lg border bg-card sm:block">
               <table className="w-full text-xs">
                 <thead className="bg-secondary sticky top-0 z-10">
                   <tr>
@@ -291,7 +302,6 @@ function MatrixPage() {
                 </tbody>
               </table>
             </div>
-            <p className="px-4 mt-2 text-[11px] text-muted-foreground sm:hidden">Swipe horizontally to see all months →</p>
           </div>
         )}
       </div>

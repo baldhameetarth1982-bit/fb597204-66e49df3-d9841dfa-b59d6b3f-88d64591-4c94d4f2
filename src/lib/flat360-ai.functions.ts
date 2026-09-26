@@ -9,7 +9,11 @@ import { createServerFn } from "@tanstack/react-start";
 import { generateText } from "ai";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { loadFlat360Snapshot, buildRealDeps, attachAdminRpcs } from "@/lib/flat360.functions";
+import {
+  loadFlat360Snapshot,
+  buildRealDeps,
+  attachAuthorizationRpcs,
+} from "@/lib/flat360.functions";
 import {
   AI_SUMMARY_SCHEMA_VERSION,
   AI_SYSTEM_PROMPT,
@@ -145,7 +149,11 @@ export const generateFlat360AISummaryFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<Flat360AISummaryResponse> => {
     const { supabase, userId } = context as { supabase: unknown; userId: string };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const deps = attachAdminRpcs(buildRealDeps(supabase), supabaseAdmin as any);
+    const deps = attachAuthorizationRpcs(
+      buildRealDeps(supabase),
+      supabase as Parameters<typeof attachAuthorizationRpcs>[1],
+      supabaseAdmin as Parameters<typeof attachAuthorizationRpcs>[2],
+    );
     const snapshot = await loadFlat360Snapshot({ actorId: userId, flatId: data.flatId, deps });
 
     return generateFlat360AISummary(

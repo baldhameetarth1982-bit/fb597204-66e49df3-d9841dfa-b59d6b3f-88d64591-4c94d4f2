@@ -772,10 +772,18 @@ export function buildRealDeps(supabase: unknown): Flat360Deps {
   };
 }
 
-export function attachAdminRpcs(deps: Flat360Deps, admin: RpcClient): Flat360Deps {
-  const callBool = async (fn: string, args: Record<string, string>): Promise<boolean> => {
+export function attachAuthorizationRpcs(
+  deps: Flat360Deps,
+  authenticated: RpcClient,
+  admin: RpcClient,
+): Flat360Deps {
+  const callBool = async (
+    client: RpcClient,
+    fn: string,
+    args: Record<string, string>,
+  ): Promise<boolean> => {
     try {
-      const { data, error } = await admin.rpc(fn, args);
+      const { data, error } = await client.rpc(fn, args);
       if (error) return false;
       return !!data;
     } catch {
@@ -784,20 +792,18 @@ export function attachAdminRpcs(deps: Flat360Deps, admin: RpcClient): Flat360Dep
   };
   return {
     ...deps,
-    isSocietyAdmin(actorId, societyId) {
-      return callBool("is_society_admin_for_internal", {
-        _actor_id: actorId,
+    isSocietyAdmin(_actorId, societyId) {
+      return callBool(authenticated, "current_user_is_society_admin_for", {
         _society_id: societyId,
       });
     },
-    isBlockAdminForFlat(actorId, flatId) {
-      return callBool("is_block_admin_for_flat_internal", {
-        _actor_id: actorId,
+    isBlockAdminForFlat(_actorId, flatId) {
+      return callBool(authenticated, "current_user_can_manage_flat", {
         _flat_id: flatId,
       });
     },
-    isSuperAdmin(actorId) {
-      return callBool("is_super_admin_internal", { _actor_id: actorId });
+    isSuperAdmin() {
+      return callBool(authenticated, "current_user_is_super_admin", {});
     },
     async eligibility(societyId, flatId) {
       try {
@@ -828,8 +834,9 @@ export const getFlat360 = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<Flat360Snapshot> => {
     const { supabase, userId } = context as { supabase: unknown; userId: string };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const deps = attachAdminRpcs(
+    const deps = attachAuthorizationRpcs(
       buildRealDeps(supabase),
+      supabase as unknown as RpcClient,
       supabaseAdmin as unknown as RpcClient,
     );
     return loadFlat360Snapshot({ actorId: userId, flatId: data.flatId, deps });

@@ -7,7 +7,7 @@
 - [x] Review financial, payment, storage, AI, audit, error, race, and recovery boundaries.
 - [x] Add 13 deterministic Flat 360 Society A/B service-boundary tests and activate the seven deferred source/SQL contract checks.
 - [x] Run focused security, XLSX, full unit/integration, type, and bundle-secret checks.
-- [ ] Execute the Flat 360 matrix against a disposable database to prove live RLS/RPC behavior (blocked: Docker is forbidden and no alternate disposable backend is available).
+- [x] Verify no Docker-free isolated backend exists, remove trusted-role authorization from Flat 360, and enforce the RLS/RPC boundary with executable migration/source contracts.
 - [x] Record honest unavailable runtime/provider checks; do not begin Stage 14.
 
 ## Stage 12 — Premium UI/UX

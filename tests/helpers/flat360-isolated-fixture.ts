@@ -1,5 +1,5 @@
 import {
-  attachAdminRpcs,
+  attachAuthorizationRpcs,
   loadFlat360Snapshot,
   type EligibilityRow,
   type Flat360Deps,
@@ -156,12 +156,17 @@ export function createSyntheticFlat360Fixture(options: { queryError?: boolean } 
     },
     attachRpcProbe(actorId: string, allowedSocietyId: string, allowedFlatId: string) {
       const invocations: Array<{ fn: string; args: Record<string, string> }> = [];
-      const probed = attachAdminRpcs(deps, {
+      const probed = attachAuthorizationRpcs(deps, {
         async rpc(fn, args) {
           invocations.push({ fn, args });
-          if (fn === "is_society_admin_for_internal") return { data: args._actor_id === actorId && args._society_id === allowedSocietyId, error: null };
-          if (fn === "is_block_admin_for_flat_internal") return { data: args._actor_id === actorId && args._flat_id === allowedFlatId, error: null };
+          if (fn === "current_user_is_society_admin_for") return { data: actors.get(actorId)?.role === "society_admin" && args._society_id === allowedSocietyId, error: null };
+          if (fn === "current_user_can_manage_flat") return { data: actors.get(actorId)?.role === "block_admin" && args._flat_id === allowedFlatId, error: null };
+          if (fn === "current_user_is_super_admin") return { data: false, error: null };
           return { data: false, error: null };
+        },
+      }, {
+        async rpc() {
+          return { data: eligibility(0), error: null };
         },
       });
       return { probed, invocations };

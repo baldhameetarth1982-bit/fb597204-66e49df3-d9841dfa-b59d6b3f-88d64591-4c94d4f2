@@ -39,7 +39,7 @@ describe("Flat 360 isolated tenant and role integration", () => {
     expect(await probed.isSocietyAdmin(IDS.adminA, IDS.societyA)).toBe(true);
     expect(await probed.isSocietyAdmin(IDS.adminA, IDS.societyB)).toBe(false);
     expect(await probed.isBlockAdminForFlat(IDS.adminA, IDS.flatB)).toBe(false);
-    expect(invocations).toContainEqual({ fn: "is_society_admin_for_internal", args: { _actor_id: IDS.adminA, _society_id: IDS.societyB } });
+    expect(invocations).toContainEqual({ fn: "current_user_is_society_admin_for", args: { _society_id: IDS.societyB } });
   });
 
   it("never mixes Society B bills, payments, dues, or financial history into Society A", async () => {

@@ -36,8 +36,8 @@ export const Route = createFileRoute("/api/public/hooks/razorpay")({
         const paymentId = payload?.payload?.payment?.entity?.id ?? null;
         const payment = payload?.payload?.payment?.entity;
 
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         try {
-          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
           if (event === "payment.captured" && typeof paymentId === "string" && typeof payment?.order_id === "string") {
             const { data: pending, error: pendingError } = await supabaseAdmin
               .from("saas_subscription_payments")
@@ -62,15 +62,21 @@ export const Route = createFileRoute("/api/public/hooks/razorpay")({
               if (activationError) throw activationError;
             }
           }
+        } catch (error) {
+          console.error("[rzp webhook] subscription activation failed", error instanceof Error ? error.message : error);
+          return new Response("Subscription confirmation failed", { status: 500 });
+        }
+
+        try {
           await supabaseAdmin.from("audit_log").insert({
             society_id: null,
             target_table: "razorpay_webhook",
             target_id: typeof paymentId === "string" ? paymentId.slice(0, 64) : null,
             action: "razorpay_webhook_acknowledged",
-             metadata: { event, event_id: eventId, maintenance_mutation: false, subscription_recovery_checked: true },
+            metadata: { event, event_id: eventId, maintenance_mutation: false, subscription_recovery_checked: true },
           });
-        } catch (e: any) {
-          console.error("[rzp webhook] audit failed", e?.message);
+        } catch (error) {
+          console.error("[rzp webhook] audit failed", error instanceof Error ? error.message : error);
         }
 
         return new Response("ok", { status: 200 });

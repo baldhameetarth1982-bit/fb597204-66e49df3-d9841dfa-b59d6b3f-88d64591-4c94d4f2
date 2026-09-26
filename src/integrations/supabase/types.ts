@@ -5074,6 +5074,10 @@ export type Database = {
         Args: { _code: string }
         Returns: boolean
       }
+      apply_society_structure_plan_internal: {
+        Args: { _actor_id: string; _plan: Json; _society_id: string }
+        Returns: Json
+      }
       archive_billing_template_line: {
         Args: { _id: string; _society_id: string }
         Returns: undefined
@@ -5312,6 +5316,10 @@ export type Database = {
       deactivate_flat_resident: {
         Args: { _flat_resident_id: string; _reason?: string }
         Returns: undefined
+      }
+      duplicate_society_block_internal: {
+        Args: { _actor_id: string; _block_id: string; _new_name: string }
+        Returns: Json
       }
       end_resident_unit_relationship: {
         Args: {
@@ -6080,6 +6088,10 @@ export type Database = {
           new_status: string
         }[]
       }
+      refresh_society_payout_status_internal: {
+        Args: { _actor_id: string; _payout_status: string; _society_id: string }
+        Returns: Json
+      }
       regenerate_society_invite_code: {
         Args: { _society_id: string }
         Returns: string
@@ -6397,6 +6409,17 @@ export type Database = {
           _society_id: string
         }
         Returns: undefined
+      }
+      update_society_payout_setup_internal: {
+        Args: {
+          _actor_id: string
+          _bank_last4: string
+          _holder_name: string
+          _payout_status: string
+          _razorpay_account_id: string
+          _society_id: string
+        }
+        Returns: Json
       }
       update_society_unit: {
         Args: {

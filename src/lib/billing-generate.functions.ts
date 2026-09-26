@@ -67,19 +67,32 @@ const societyCycle = z.object({
 export const previewBillBatch = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) =>
-    societyCycle.extend({
-      limit: z.number().int().min(1).max(200).optional(),
-      offset: z.number().int().min(0).max(100_000).optional(),
-    }).parse(i),
+    societyCycle
+      .extend({
+        limit: z.number().int().min(1).max(200).optional(),
+        offset: z.number().int().min(0).max(100_000).optional(),
+      })
+      .parse(i),
   )
   .handler(async ({ data, context }) => {
     try {
-      const raw = (await callBillingRpc(toBillingRpcClient(context), "preview_bill_batch", buildRpcArgs({
-        _society_id: data.societyId,
-        _cycle_config_id: data.cycleConfigId,
-        _limit: data.limit ?? 25,
-        _offset: data.offset ?? 0,
-      }))) as Record<string, unknown>;
+      const { checkRateLimit } = await import("@/lib/rate-limit.server");
+      await checkRateLimit({
+        bucket: "billing_batch_preview",
+        subject: data.societyId,
+        limit: 60,
+        windowSec: 3600,
+      });
+      const raw = (await callBillingRpc(
+        toBillingRpcClient(context),
+        "preview_bill_batch",
+        buildRpcArgs({
+          _society_id: data.societyId,
+          _cycle_config_id: data.cycleConfigId,
+          _limit: data.limit ?? 25,
+          _offset: data.offset ?? 0,
+        }),
+      )) as Record<string, unknown>;
       const preview: BillBatchPreview = {
         preview_only: true,
         cycle: (raw.cycle ?? {}) as BillBatchPreview["cycle"],
@@ -100,19 +113,32 @@ export const previewBillBatch = createServerFn({ method: "POST" })
 export const finalizeBillBatch = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) =>
-    societyCycle.extend({
-      requestId: z.string().min(8).max(80),
-      prefix: z.string().trim().min(1).max(8).optional(),
-    }).parse(i),
+    societyCycle
+      .extend({
+        requestId: z.string().min(8).max(80),
+        prefix: z.string().trim().min(1).max(8).optional(),
+      })
+      .parse(i),
   )
   .handler(async ({ data, context }) => {
     try {
-      const raw = await callBillingRpc(toBillingRpcClient(context), "finalize_bill_batch", buildRpcArgs({
-        _society_id: data.societyId,
-        _cycle_config_id: data.cycleConfigId,
-        _request_id: data.requestId,
-        _prefix: data.prefix ?? "RR",
-      }));
+      const { checkRateLimit } = await import("@/lib/rate-limit.server");
+      await checkRateLimit({
+        bucket: "billing_batch_finalize",
+        subject: data.societyId,
+        limit: 10,
+        windowSec: 3600,
+      });
+      const raw = await callBillingRpc(
+        toBillingRpcClient(context),
+        "finalize_bill_batch",
+        buildRpcArgs({
+          _society_id: data.societyId,
+          _cycle_config_id: data.cycleConfigId,
+          _request_id: data.requestId,
+          _prefix: data.prefix ?? "RR",
+        }),
+      );
       const r = (raw ?? {}) as Partial<BillBatchFinalizeResult>;
       if (!r.batch_id) throw new Error("operation_failed");
       return {
@@ -134,7 +160,9 @@ export const listBillBatches = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
       .from("bill_generation_batches")
-      .select("id, cycle_config_id, template_id, status, bills_created, total_amount, finalized_at, created_at")
+      .select(
+        "id, cycle_config_id, template_id, status, bills_created, total_amount, finalized_at, created_at",
+      )
       .eq("society_id", data.societyId)
       .order("created_at", { ascending: false })
       .limit(50);
@@ -145,12 +173,14 @@ export const listBillBatches = createServerFn({ method: "POST" })
 export const listBills = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) =>
-    z.object({
-      societyId: z.string().uuid(),
-      cycleConfigId: z.string().uuid().optional(),
-      status: z.enum(["unpaid", "partially_paid", "paid", "overdue", "cancelled"]).optional(),
-      limit: z.number().int().min(1).max(200).optional(),
-    }).parse(i),
+    z
+      .object({
+        societyId: z.string().uuid(),
+        cycleConfigId: z.string().uuid().optional(),
+        status: z.enum(["unpaid", "partially_paid", "paid", "overdue", "cancelled"]).optional(),
+        limit: z.number().int().min(1).max(200).optional(),
+      })
+      .parse(i),
   )
   .handler(async ({ data, context }) => {
     let q = context.supabase
@@ -175,12 +205,16 @@ export const getBillDetail = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { data: bill, error } = await context.supabase
-      .from("bills").select("*")
-      .eq("society_id", data.societyId).eq("id", data.billId).maybeSingle();
+      .from("bills")
+      .select("*")
+      .eq("society_id", data.societyId)
+      .eq("id", data.billId)
+      .maybeSingle();
     if (error) throw new Error(mapBillingError("operation_failed"));
     if (!bill) throw new Error(mapBillingError("bill_not_found"));
     const { data: lines } = await context.supabase
-      .from("bill_line_items").select("id, kind, description, amount")
+      .from("bill_line_items")
+      .select("id, kind, description, amount")
       .eq("bill_id", data.billId);
     return { bill, lines: lines ?? [] };
   });
@@ -227,7 +261,11 @@ export type AdminBillDetail = {
   society: { name: string | null } | null;
   flat: { flat_number: string | null; block_name: string | null } | null;
   resident: { full_name: string | null; phone: string | null } | null;
-  payment_summary: { has_verified_payment: boolean; recorded_count: number; last_recorded_at: string | null };
+  payment_summary: {
+    has_verified_payment: boolean;
+    recorded_count: number;
+    last_recorded_at: string | null;
+  };
   can_cancel: boolean;
 };
 
@@ -237,19 +275,19 @@ const ADMIN_BILL_COLS =
 export const getAdminBillDetail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) =>
-    z.object({
-      societyId: z.string().uuid().optional(),
-      billId: z.string().uuid(),
-    }).parse(i),
+    z
+      .object({
+        societyId: z.string().uuid().optional(),
+        billId: z.string().uuid(),
+      })
+      .parse(i),
   )
   .handler(async ({ data, context }) => {
     // Load bill under RLS first. The optional client-provided societyId
     // must never become the authority — it is only used as an additional
     // filter for defence-in-depth. Actual authorization is derived from
     // the bill's true society_id, verified below.
-    let q = context.supabase
-      .from("bills").select(ADMIN_BILL_COLS)
-      .eq("id", data.billId);
+    let q = context.supabase.from("bills").select(ADMIN_BILL_COLS).eq("id", data.billId);
     if (data.societyId) q = q.eq("society_id", data.societyId);
     const { data: bill, error } = await q.maybeSingle();
     if (error) throw new Error(mapBillingError("operation_failed"));
@@ -270,17 +308,33 @@ export const getAdminBillDetail = createServerFn({ method: "POST" })
     }
 
     const [linesRes, flatRes, societyRes, residentLinkRes] = await Promise.all([
-      context.supabase.from("bill_line_items").select("id, kind, description, amount").eq("bill_id", data.billId),
-      context.supabase.from("flats").select("flat_number, block_id").eq("id", b.flat_id).maybeSingle(),
+      context.supabase
+        .from("bill_line_items")
+        .select("id, kind, description, amount")
+        .eq("bill_id", data.billId),
+      context.supabase
+        .from("flats")
+        .select("flat_number, block_id")
+        .eq("id", b.flat_id)
+        .maybeSingle(),
       context.supabase.from("societies").select("name").eq("id", b.society_id).maybeSingle(),
-      context.supabase.from("flat_residents").select("user_id").eq("flat_id", b.flat_id).is("moved_out_at", null).limit(1).maybeSingle(),
+      context.supabase
+        .from("flat_residents")
+        .select("user_id")
+        .eq("flat_id", b.flat_id)
+        .is("moved_out_at", null)
+        .limit(1)
+        .maybeSingle(),
     ]);
 
     let block_name: string | null = null;
     const flatRow = flatRes.data as { flat_number: string | null; block_id: string | null } | null;
     if (flatRow?.block_id) {
       const { data: blk } = await context.supabase
-        .from("blocks").select("name").eq("id", flatRow.block_id).maybeSingle();
+        .from("blocks")
+        .select("name")
+        .eq("id", flatRow.block_id)
+        .maybeSingle();
       block_name = (blk as { name: string | null } | null)?.name ?? null;
     }
 
@@ -288,7 +342,10 @@ export const getAdminBillDetail = createServerFn({ method: "POST" })
     const link = residentLinkRes.data as { user_id: string | null } | null;
     if (link?.user_id) {
       const { data: prof } = await context.supabase
-        .from("profiles").select("full_name, phone").eq("id", link.user_id).maybeSingle();
+        .from("profiles")
+        .select("full_name, phone")
+        .eq("id", link.user_id)
+        .maybeSingle();
       resident = (prof as AdminBillDetail["resident"]) ?? null;
     }
 
@@ -321,19 +378,25 @@ export const getAdminBillDetail = createServerFn({ method: "POST" })
 export const cancelBill = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) =>
-    z.object({
-      societyId: z.string().uuid(),
-      billId: z.string().uuid(),
-      reason: z.string().trim().max(500).optional(),
-    }).parse(i),
+    z
+      .object({
+        societyId: z.string().uuid(),
+        billId: z.string().uuid(),
+        reason: z.string().trim().max(500).optional(),
+      })
+      .parse(i),
   )
   .handler(async ({ data, context }) => {
     try {
-      await callBillingRpc(toBillingRpcClient(context), "cancel_bill", buildRpcArgs({
-        _society_id: data.societyId,
-        _bill_id: data.billId,
-        _reason: data.reason ?? null,
-      }));
+      await callBillingRpc(
+        toBillingRpcClient(context),
+        "cancel_bill",
+        buildRpcArgs({
+          _society_id: data.societyId,
+          _bill_id: data.billId,
+          _reason: data.reason ?? null,
+        }),
+      );
       return { ok: true };
     } catch (e) {
       throw new Error(mapBillingError((e as Error).message));
@@ -351,10 +414,12 @@ export const cancelBill = createServerFn({ method: "POST" })
 export const getResidentBills = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) =>
-    z.object({
-      limit: z.number().int().min(1).max(100).optional(),
-      offset: z.number().int().min(0).max(10_000).optional(),
-    }).parse(i),
+    z
+      .object({
+        limit: z.number().int().min(1).max(100).optional(),
+        offset: z.number().int().min(0).max(10_000).optional(),
+      })
+      .parse(i),
   )
   .handler(async ({ data, context }) => {
     // Derive resident's active flats server-side.
@@ -365,7 +430,8 @@ export const getResidentBills = createServerFn({ method: "POST" })
       .is("moved_out_at", null);
     if (linkErr) throw new Error(mapBillingError("operation_failed"));
     const flatIds = ((links ?? []) as Array<{ flat_id: string | null }>)
-      .map((r) => r.flat_id).filter((v): v is string => !!v);
+      .map((r) => r.flat_id)
+      .filter((v): v is string => !!v);
     // `hasLinkedFlat` lets the resident UI distinguish "no flat linked yet"
     // (actionable: claim a flat) from "linked, but no bills yet".
     if (flatIds.length === 0) return { bills: [], hasLinkedFlat: false };

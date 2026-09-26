@@ -96,10 +96,10 @@ export type Eligibility = {
 
 async function computeEligibilityAdmin(societyId: string, flatId: string): Promise<Eligibility> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await (supabaseAdmin.rpc as any)(
-    "compute_no_dues_eligibility_internal",
-    { _society_id: societyId, _flat_id: flatId },
-  );
+  const { data, error } = await (supabaseAdmin.rpc as any)("compute_no_dues_eligibility_internal", {
+    _society_id: societyId,
+    _flat_id: flatId,
+  });
   if (error) {
     logServerError("eligibility", error);
     throw new NoDuesError("ISSUE_FAILED");
@@ -151,7 +151,8 @@ async function assertSocietyScopeAdmin(userId: string, societyId: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const [{ data: sa }, { data: su }] = await Promise.all([
     (supabaseAdmin.rpc as any)("is_society_admin_for_internal", {
-      _actor_id: userId, _society_id: societyId,
+      _actor_id: userId,
+      _society_id: societyId,
     }),
     (supabaseAdmin.rpc as any)("is_super_admin_internal", { _actor_id: userId }),
   ]);
@@ -264,9 +265,7 @@ export const listSocietyNoDuesRequests = createServerFn({ method: "POST" })
 
 export const getNoDuesRequestDetail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { requestId: string }) =>
-    z.object({ requestId: uuid }).parse(d),
-  )
+  .inputValidator((d: { requestId: string }) => z.object({ requestId: uuid }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
     const { data: req, error } = await supabase
@@ -289,9 +288,13 @@ export const getNoDuesRequestDetail = createServerFn({ method: "POST" })
     }
     if (!ok) throw new NoDuesError("NOT_AUTHORIZED");
 
-    const [{ data: flat }, { data: resident }, { data: audit }, { data: cert }] =
-      await Promise.all([
-        supabase.from("flats").select("id,flat_number,floor,block_id").eq("id", req.flat_id).maybeSingle(),
+    const [{ data: flat }, { data: resident }, { data: audit }, { data: cert }] = await Promise.all(
+      [
+        supabase
+          .from("flats")
+          .select("id,flat_number,floor,block_id")
+          .eq("id", req.flat_id)
+          .maybeSingle(),
         supabase.from("profiles").select("id,full_name").eq("id", req.requester_id).maybeSingle(),
         supabase
           .from("no_dues_audit")
@@ -303,7 +306,8 @@ export const getNoDuesRequestDetail = createServerFn({ method: "POST" })
           .select("id,certificate_number,issued_at,valid_until,revoked_at,revoke_reason")
           .eq("request_id", req.id)
           .maybeSingle(),
-      ]);
+      ],
+    );
 
     return { request: req, flat, resident, audit: audit ?? [], certificate: cert };
   });
@@ -315,12 +319,7 @@ export const getNoDuesRequestDetail = createServerFn({ method: "POST" })
 export const reviewNoDuesRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(
-    (d: {
-      requestId: string;
-      decision: "approve" | "reject";
-      notes?: string;
-      reason?: string;
-    }) =>
+    (d: { requestId: string; decision: "approve" | "reject"; notes?: string; reason?: string }) =>
       z
         .object({
           requestId: uuid,
@@ -355,7 +354,7 @@ export const reviewNoDuesRequest = createServerFn({ method: "POST" })
         _request_id: data.requestId,
         _decision: data.decision, // 'approve' | 'reject'
         _notes: data.notes ?? null,
-        _reason: data.decision === "reject" ? data.reason ?? null : null,
+        _reason: data.decision === "reject" ? (data.reason ?? null) : null,
       },
     );
     if (tErr) {
@@ -385,6 +384,18 @@ export const issueNoDuesCertificate = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
+    const { checkRateLimit } = await import("@/lib/rate-limit.server");
+    try {
+      await checkRateLimit({
+        bucket: "no_dues_certificate_issue",
+        subject: userId,
+        limit: 10,
+        windowSec: 3600,
+      });
+    } catch (error) {
+      logServerError("issue.rateLimit", error);
+      throw new NoDuesError("RATE_LIMITED");
+    }
 
     const { data: req, error } = await supabase
       .from("no_dues_requests")
@@ -426,14 +437,21 @@ export const issueNoDuesCertificate = createServerFn({ method: "POST" })
 
     // Prepare PDF
     const [{ data: society }, { data: flat }, { data: resident }] = await Promise.all([
-      supabaseAdmin.from("societies").select("name,address,city,state").eq("id", req.society_id).single(),
-      supabaseAdmin.from("flats").select("flat_number,floor,block_id").eq("id", req.flat_id).single(),
+      supabaseAdmin
+        .from("societies")
+        .select("name,address,city,state")
+        .eq("id", req.society_id)
+        .single(),
+      supabaseAdmin
+        .from("flats")
+        .select("flat_number,floor,block_id")
+        .eq("id", req.flat_id)
+        .single(),
       supabaseAdmin.from("profiles").select("full_name").eq("id", req.requester_id).single(),
     ]);
 
-    const { generateRawToken, hashToken, renderCertificatePdf } = await import(
-      "@/lib/no-dues.server"
-    );
+    const { generateRawToken, hashToken, renderCertificatePdf } =
+      await import("@/lib/no-dues.server");
     const { encryptCertificateToken } = await import("@/lib/certificate-token.server");
     const rawToken = generateRawToken();
     const tokenHash = hashToken(rawToken);
@@ -529,11 +547,21 @@ export const issueNoDuesCertificate = createServerFn({ method: "POST" })
 
 export const getCertificateDownloadUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { certificateId: string }) =>
-    z.object({ certificateId: uuid }).parse(d),
-  )
+  .inputValidator((d: { certificateId: string }) => z.object({ certificateId: uuid }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as any;
+    const { checkRateLimit } = await import("@/lib/rate-limit.server");
+    try {
+      await checkRateLimit({
+        bucket: "no_dues_certificate_download",
+        subject: userId,
+        limit: 30,
+        windowSec: 3600,
+      });
+    } catch (error) {
+      logServerError("download.rateLimit", error);
+      throw new NoDuesError("RATE_LIMITED");
+    }
     const { data: cert, error } = await supabase
       .from("no_dues_certificates")
       .select("id,storage_path,society_id,flat_id,request_id")
@@ -575,21 +603,28 @@ export const getCertificateDownloadUrl = createServerFn({ method: "POST" })
 export const revokeNoDuesCertificate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { certificateId: string; reason: string }) =>
-    z
-      .object({ certificateId: uuid, reason: z.string().trim().min(3).max(500) })
-      .parse(d),
+    z.object({ certificateId: uuid, reason: z.string().trim().min(3).max(500) }).parse(d),
   )
   .handler(async ({ data, context }) => {
     const { userId } = context as any;
+    const { checkRateLimit } = await import("@/lib/rate-limit.server");
+    try {
+      await checkRateLimit({
+        bucket: "no_dues_verification_link",
+        subject: userId,
+        limit: 30,
+        windowSec: 3600,
+      });
+    } catch (error) {
+      logServerError("verifyLink.rateLimit", error);
+      throw new NoDuesError("RATE_LIMITED");
+    }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await (supabaseAdmin.rpc as any)(
-      "revoke_no_dues_certificate_internal",
-      {
-        _actor_id: userId,
-        _certificate_id: data.certificateId,
-        _reason: data.reason,
-      },
-    );
+    const { error } = await (supabaseAdmin.rpc as any)("revoke_no_dues_certificate_internal", {
+      _actor_id: userId,
+      _certificate_id: data.certificateId,
+      _reason: data.reason,
+    });
     if (error) {
       logServerError("revoke", error);
       throw new NoDuesError(mapPgError(error.message));
@@ -603,9 +638,7 @@ export const revokeNoDuesCertificate = createServerFn({ method: "POST" })
 
 export const getCertificateVerificationLink = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { certificateId: string }) =>
-    z.object({ certificateId: uuid }).parse(d),
-  )
+  .inputValidator((d: { certificateId: string }) => z.object({ certificateId: uuid }).parse(d))
   .handler(async ({ data, context }) => {
     const { userId } = context as any;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -706,9 +739,7 @@ export const getCertificateVerificationLink = createServerFn({ method: "POST" })
 
 export const recheckAndResubmitNoDues = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { requestId: string }) =>
-    z.object({ requestId: uuid }).parse(d),
-  )
+  .inputValidator((d: { requestId: string }) => z.object({ requestId: uuid }).parse(d))
   .handler(async ({ data, context }) => {
     const { userId } = context as any;
     // Endpoint-specific rate limit: 5 rechecks / 10 min per (user, request)

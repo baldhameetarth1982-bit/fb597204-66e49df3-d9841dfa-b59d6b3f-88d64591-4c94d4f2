@@ -5,22 +5,54 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const PlanSchema = z.object({
   property_type: z.enum(["apartment", "bungalow", "mixed"]),
-  blocks: z.array(
-    z.object({
-      name: z.string().min(1).max(40),
-      unit_type: z.enum(["flat", "bungalow", "villa", "shop", "office"]),
-      floors: z.number().int().min(0).max(80),
-      units_per_floor: z.number().int().min(1).max(40),
-      naming_pattern: z.enum(["A-101", "A1-101", "Plain"]).default("A-101"),
-      description: z.string().optional(),
-    }),
-  ),
+  blocks: z
+    .array(
+      z.object({
+        name: z.string().min(1).max(40),
+        unit_type: z.enum(["flat", "bungalow", "villa", "shop", "office"]),
+        floors: z.number().int().min(0).max(80),
+        units_per_floor: z.number().int().min(1).max(40),
+        naming_pattern: z.enum(["A-101", "A1-101", "Plain"]).default("A-101"),
+        description: z.string().max(500).optional(),
+      }),
+    )
+    .min(1)
+    .max(40),
 });
+
+async function requireStructureAdmin(supabase: any, societyId: string) {
+  const { data: allowed, error } = await supabase.rpc("current_user_is_society_admin_for", {
+    _society_id: societyId,
+  });
+  if (error || !allowed) throw new Error("You don't have permission to change this society.");
+}
 
 export const planSocietyFromText = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ text: z.string().min(3).max(800) }).parse(i))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const { data: profile } = await context.supabase
+      .from("profiles")
+      .select("society_id")
+      .eq("id", context.userId)
+      .maybeSingle();
+    if (!profile?.society_id) throw new Error("Join a society before creating a structure plan.");
+    await requireStructureAdmin(context.supabase, profile.society_id);
+    const { checkRateLimit } = await import("@/lib/rate-limit.server");
+    await Promise.all([
+      checkRateLimit({
+        bucket: "society_structure_ai_user",
+        subject: context.userId,
+        limit: 10,
+        windowSec: 3600,
+      }),
+      checkRateLimit({
+        bucket: "society_structure_ai_society",
+        subject: profile.society_id,
+        limit: 20,
+        windowSec: 86400,
+      }),
+    ]);
     const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) throw new Error("AI gateway not configured.");
     const { createLovableAiGatewayProvider } = await import("@/lib/ai-gateway.server");
@@ -49,56 +81,36 @@ export const applySocietyPlan = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-
-    await supabase
-      .from("societies")
-      .update({ property_type: data.plan.property_type })
-      .eq("id", data.societyId);
-
-    let blocksCreated = 0;
-    let unitsCreated = 0;
-
-    for (const b of data.plan.blocks) {
-      const { data: block, error: bErr } = await supabase
-        .from("blocks")
-        .insert({
-          society_id: data.societyId,
-          name: b.name,
-          description: b.description ?? null,
-        })
-        .select("id")
-        .single();
-      if (bErr || !block) continue;
-      blocksCreated++;
-
-      const units: any[] = [];
-      const floors = Math.max(1, b.floors);
-      const isFloored = b.unit_type === "flat" || b.unit_type === "office";
-      for (let f = isFloored ? 1 : 0; f <= floors; f++) {
-        for (let u = 1; u <= b.units_per_floor; u++) {
-          let number: string;
-          if (!isFloored) number = `${b.name}-${u}`;
-          else if (b.naming_pattern === "Plain") number = `${u + f * 100}`;
-          else if (b.naming_pattern === "A1-101") number = `${b.name}${f}-${String(u).padStart(2, "0")}`;
-          else number = `${b.name}-${f}${String(u).padStart(2, "0")}`;
-          units.push({
-            society_id: data.societyId,
-            block_id: block.id,
-            flat_number: number,
-            floor: isFloored ? f : null,
-            unit_type: b.unit_type,
-            status: "vacant",
-          });
-        }
-        if (!isFloored) break;
-      }
-      if (units.length) {
-        const { error: uErr } = await supabase.from("flats").insert(units);
-        if (!uErr) unitsCreated += units.length;
-      }
+    await requireStructureAdmin(supabase, data.societyId);
+    const { checkRateLimit } = await import("@/lib/rate-limit.server");
+    await checkRateLimit({
+      bucket: "society_structure_apply",
+      subject: data.societyId,
+      limit: 10,
+      windowSec: 3600,
+    });
+    const unitsRequested = data.plan.blocks.reduce(
+      (sum, block) => sum + Math.max(1, block.floors) * block.units_per_floor,
+      0,
+    );
+    if (unitsRequested > 5000) throw new Error("The plan is too large to apply safely.");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: result, error } = await supabaseAdmin.rpc(
+      "apply_society_structure_plan_internal",
+      {
+        _actor_id: context.userId,
+        _society_id: data.societyId,
+        _plan: data.plan,
+      },
+    );
+    if (error) {
+      console.error("[blocks-ai] plan apply failed", error.code);
+      throw new Error("The structure plan could not be applied.");
     }
-
-    return { ok: true, blocksCreated, unitsCreated };
+    const output = z
+      .object({ blocks_created: z.number(), units_created: z.number() })
+      .parse(result);
+    return { ok: true, blocksCreated: output.blocks_created, unitsCreated: output.units_created };
   });
 
 export const duplicateBlock = createServerFn({ method: "POST" })
@@ -119,41 +131,26 @@ export const duplicateBlock = createServerFn({ method: "POST" })
       .eq("id", data.blockId)
       .single();
     if (sErr || !src) throw new Error("Source block not found.");
-
-    const { data: newBlock, error: nbErr } = await supabase
-      .from("blocks")
-      .insert({
-        society_id: src.society_id,
-        name: data.newName,
-        description: src.description,
-      })
-      .select("id")
-      .single();
-    if (nbErr || !newBlock) throw new Error(nbErr?.message ?? "Could not create block.");
-
-    const { data: flats } = await supabase
-      .from("flats")
-      .select("flat_number, floor, type, area_sqft, unit_type")
-      .eq("block_id", src.id);
-
-    let unitsCreated = 0;
-    if (flats?.length) {
-      const newFlats = flats.map((f: any) => ({
-        society_id: src.society_id,
-        block_id: newBlock.id,
-        // Replace leading "<srcname>-" prefix with new name if present
-        flat_number: f.flat_number.startsWith(`${src.name}-`)
-          ? `${data.newName}-${f.flat_number.slice(src.name.length + 1)}`
-          : f.flat_number,
-        floor: f.floor,
-        type: f.type,
-        area_sqft: f.area_sqft,
-        unit_type: f.unit_type ?? "flat",
-        status: "vacant",
-      }));
-      const { error: iErr } = await supabase.from("flats").insert(newFlats);
-      if (!iErr) unitsCreated = newFlats.length;
+    await requireStructureAdmin(supabase, src.society_id);
+    const { checkRateLimit } = await import("@/lib/rate-limit.server");
+    await checkRateLimit({
+      bucket: "society_structure_duplicate",
+      subject: src.society_id,
+      limit: 20,
+      windowSec: 3600,
+    });
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: result, error } = await supabaseAdmin.rpc("duplicate_society_block_internal", {
+      _actor_id: context.userId,
+      _block_id: src.id,
+      _new_name: data.newName,
+    });
+    if (error) {
+      console.error("[blocks-ai] duplicate failed", error.code);
+      throw new Error("The block could not be duplicated.");
     }
-
-    return { ok: true, blockId: newBlock.id, unitsCreated };
+    const output = z
+      .object({ block_id: z.string().uuid(), units_created: z.number() })
+      .parse(result);
+    return { ok: true, blockId: output.block_id, unitsCreated: output.units_created };
   });

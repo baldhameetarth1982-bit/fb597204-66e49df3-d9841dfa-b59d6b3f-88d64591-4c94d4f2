@@ -30,8 +30,8 @@ export function AadhaarVerifyCard({
   function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
-    if (!/^image\//.test(f.type)) {
-      toast.error("Please pick an image of your Aadhaar.");
+    if (!["image/jpeg", "image/png", "image/webp"].includes(f.type)) {
+      toast.error("Use a JPEG, PNG, or WebP image.");
       return;
     }
     if (f.size > 8 * 1024 * 1024) {
@@ -100,7 +100,7 @@ export function AadhaarVerifyCard({
       <input
         ref={fileRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp"
         capture="environment"
         onChange={onFile}
         className="hidden"
@@ -112,38 +112,51 @@ export function AadhaarVerifyCard({
         </Button>
       )}
 
-      {(stage === "preview" || stage === "uploading" || stage === "reading" || stage === "failed") && preview && (
-        <div className="space-y-3">
-          <img src={preview} alt="Aadhaar preview" className="w-full max-h-48 object-contain rounded-xl border border-border bg-background" />
-          {stage === "preview" && (
-            <div className="flex gap-2">
-              <Button type="button" onClick={runVerify} className="flex-1 h-11 rounded-xl">
-                Verify instantly
-              </Button>
-              <Button type="button" variant="outline" onClick={reset} className="h-11 rounded-xl">
-                <RotateCcw className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-          {(stage === "uploading" || stage === "reading") && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              {stage === "uploading" ? "Uploading securely…" : "Reading your card with AI…"}
-            </div>
-          )}
-          {stage === "failed" && (
-            <div className="space-y-2">
-              <div className="flex items-start gap-2 text-sm text-destructive">
-                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                <p>{reason ?? "Verification failed."}</p>
+      {(stage === "preview" ||
+        stage === "uploading" ||
+        stage === "reading" ||
+        stage === "failed") &&
+        preview && (
+          <div className="space-y-3">
+            <img
+              src={preview}
+              alt="Aadhaar preview"
+              className="w-full max-h-48 object-contain rounded-xl border border-border bg-background"
+            />
+            {stage === "preview" && (
+              <div className="flex gap-2">
+                <Button type="button" onClick={runVerify} className="flex-1 h-11 rounded-xl">
+                  Verify instantly
+                </Button>
+                <Button type="button" variant="outline" onClick={reset} className="h-11 rounded-xl">
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
               </div>
-              <Button type="button" variant="outline" onClick={reset} className="w-full h-10 rounded-xl">
-                <RotateCcw className="h-4 w-4 mr-2" /> Try again
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
+            )}
+            {(stage === "uploading" || stage === "reading") && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {stage === "uploading" ? "Uploading securely…" : "Reading your card with AI…"}
+              </div>
+            )}
+            {stage === "failed" && (
+              <div className="space-y-2">
+                <div className="flex items-start gap-2 text-sm text-destructive">
+                  <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                  <p>{reason ?? "Verification failed."}</p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={reset}
+                  className="w-full h-10 rounded-xl"
+                >
+                  <RotateCcw className="h-4 w-4 mr-2" /> Try again
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
 
       {stage === "verified" && (
         <div className="rounded-xl bg-green-500/10 border border-green-500/30 p-3 space-y-1">

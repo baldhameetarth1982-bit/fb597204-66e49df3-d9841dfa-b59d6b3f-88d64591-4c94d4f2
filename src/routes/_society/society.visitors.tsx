@@ -95,12 +95,12 @@ function SocietyVisitors() {
     if (!user || !societyId || !form.visitor_name.trim()) return toast.error("Visitor name required");
     setSaving(true);
     const { error } = await supabase.rpc("guard_log_walkin", {
-      _flat_label: form.flat_number.trim() || undefined,
+      _flat_label: form.flat_number.trim(),
       _name: form.visitor_name.trim(),
-      _phone: form.phone.trim() || undefined,
+      _phone: form.phone.trim(),
       _category: "guest",
-      _purpose: form.purpose.trim() || undefined,
-      _vehicle: form.vehicle_number.trim() || undefined,
+      _purpose: form.purpose.trim(),
+      _vehicle: form.vehicle_number.trim(),
     });
     setSaving(false);
     if (error) return toast.error(gateErrorMessage(error));
@@ -162,7 +162,7 @@ function SocietyVisitors() {
         <div className="flex gap-2">
           {s === "pending" && (
             <>
-               {v.status === "approved" && <Button className="h-11 flex-1 rounded-xl md:flex-none" onClick={() => approve(v.id)}><Check className="mr-1 h-4 w-4" />Check in</Button>}
+               {v.status !== "awaiting" && <Button className="h-11 flex-1 rounded-xl md:flex-none" onClick={() => approve(v.id)}><Check className="mr-1 h-4 w-4" />Check in</Button>}
               <Button variant="outline" className="h-11 flex-1 rounded-xl md:flex-none" onClick={() => setDenyFor(v)}><X className="mr-1 h-4 w-4" />Turn away</Button>
             </>
           )}

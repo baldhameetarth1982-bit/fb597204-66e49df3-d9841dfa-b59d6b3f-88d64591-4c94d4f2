@@ -96,7 +96,7 @@ function UsersPage() {
         <ErrorState title="Couldn't load users" onRetry={() => usersQ.refetch()} showSupport={false} />
       ) : (
         <div className="space-y-6">
-          <MetricGroup cols={3} items={[
+          <MetricGroup title="Overview" cols={3} items={[
             { label: "Users", value: usersQ.isLoading ? "—" : users.length.toLocaleString("en-IN"), icon: Users },
             { label: "In a society", value: usersQ.isLoading ? "—" : onboarded.toLocaleString("en-IN") },
             { label: "Not onboarded", value: usersQ.isLoading ? "—" : (users.length - onboarded).toLocaleString("en-IN") },

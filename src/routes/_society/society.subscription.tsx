@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Check, CreditCard, Loader2, Lock, ShieldCheck, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
@@ -56,6 +56,7 @@ function SubscriptionPage() {
   const qc = useQueryClient();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const requestIds = useRef(new Map<string, string>());
 
   const access = useQuery({
     enabled: !!societyId,
@@ -82,7 +83,11 @@ function SubscriptionPage() {
   async function handleBuy(p: { id: string; name: string; price_monthly_inr: number }) {
     setBusyId(p.id);
     try {
-    const order = await createSaasSubscriptionOrder({ data: { societyId: societyId!, planId: p.id as "basic" | "pro" | "premium" } });
+    const requestId = requestIds.current.get(p.id) ?? crypto.randomUUID();
+    requestIds.current.set(p.id, requestId);
+    const order = await createSaasSubscriptionOrder({ data: {
+      societyId: societyId!, planId: p.id as "basic" | "pro" | "premium", requestId,
+    } });
     const opened = await openRazorpayForOrder({
       orderId: order.orderId,
       keyId: order.keyId,
@@ -100,6 +105,7 @@ function SubscriptionPage() {
           razorpaySignature: response.razorpay_signature,
         } });
         toast.success("Subscription activated successfully.");
+        requestIds.current.delete(p.id);
         setConfirming(true);
         setTimeout(() => setConfirming(false), 15_000);
         await qc.invalidateQueries({ queryKey: ["society-access-status", societyId] });

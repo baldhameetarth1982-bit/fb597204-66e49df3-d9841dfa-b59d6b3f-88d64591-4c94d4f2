@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2, ShieldAlert, CreditCard, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,6 +32,7 @@ function CheckoutPage() {
   const [live, setLive] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
+  const requestId = useRef(crypto.randomUUID());
 
   useEffect(() => {
     supabase.rpc("is_razorpay_live").then(({ data }) => setLive(Boolean(data)));
@@ -53,7 +54,11 @@ function CheckoutPage() {
     setBusy(true);
     try {
       const order = await createSaasSubscriptionOrder({
-        data: { societyId: profile.society_id, planId: plan.id as "basic" | "pro" | "premium" },
+        data: {
+          societyId: profile.society_id,
+          planId: plan.id as "basic" | "pro" | "premium",
+          requestId: requestId.current,
+        },
       });
       await openRazorpayForOrder({
         orderId: order.orderId,
@@ -76,6 +81,7 @@ function CheckoutPage() {
             },
           });
           toast.success("Subscription activated successfully.");
+          requestId.current = crypto.randomUUID();
           setSummaryOpen(false);
           setBusy(false);
         },

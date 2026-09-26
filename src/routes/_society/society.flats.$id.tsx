@@ -158,7 +158,7 @@ function IdentityHeader({ snapshot }: { snapshot: Flat360Snapshot }) {
               <Home className="h-6 w-6 text-primary" aria-hidden="true" />
             </div>
             <div className="min-w-0">
-              <h1 className="truncate text-xl font-bold">{identity.unit_label}</h1>
+              <h1 className="break-words text-lg font-bold leading-tight sm:text-xl">{identity.unit_label}</h1>
               <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 truncate">
                 <MapPin className="h-3 w-3" aria-hidden="true" />
                 {identity.society_name ?? "Society"}

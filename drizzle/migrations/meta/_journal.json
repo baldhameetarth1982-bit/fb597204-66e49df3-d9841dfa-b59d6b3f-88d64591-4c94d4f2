@@ -421,6 +421,13 @@
       "when": 1790448739083,
       "tag": "0059_stage13_privileged_identity_and_payout_closure",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1790448963293,
+      "tag": "0060_stage13_atomic_society_structure_operations",
+      "breakpoints": true
     }
   ]
 }

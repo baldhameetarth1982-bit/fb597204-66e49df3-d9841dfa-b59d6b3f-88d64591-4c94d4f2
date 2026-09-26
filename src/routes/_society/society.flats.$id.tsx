@@ -603,21 +603,37 @@ function UnsupportedOpsSection({
 }) {
   if (state.status === "locked") return null;
   return (
-    <Card className="rounded-2xl border-dashed">
-      <CardContent className="p-3 flex items-center gap-2 text-xs text-muted-foreground">
-        <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-        <span className="font-medium">{title}</span>
-        <span className="ml-auto">
-          {state.status === "error"
-            ? "Unavailable"
-            : state.status === "unsupported"
-              ? "Not available yet"
-              : state.status === "empty"
-                ? "None"
-                : ""}
-        </span>
-      </CardContent>
-    </Card>
+    <li className="flex min-h-11 items-center gap-2 px-4 py-2 text-sm">
+      <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+      <span className="font-medium">{title}</span>
+      <span className="ml-auto text-xs text-muted-foreground">
+        {state.status === "error"
+          ? "Unavailable"
+          : state.status === "unsupported"
+            ? "Not available yet"
+            : state.status === "empty"
+              ? "None"
+              : ""}
+      </span>
+    </li>
+  );
+}
+
+/** Secondary modules grouped into one list instead of a stack of dashed cards. */
+function OtherRecords({
+  items,
+}: {
+  items: { title: string; icon: React.ComponentType<{ className?: string }>; state: SectionState<unknown> }[];
+}) {
+  const visible = items.filter((i) => i.state.status !== "locked");
+  if (!visible.length) return null;
+  return (
+    <section aria-label="Other records" className="overflow-hidden rounded-2xl border border-border bg-card">
+      <h3 className="border-b border-border px-4 py-2.5 text-sm font-semibold">Other records</h3>
+      <ul className="divide-y divide-border">
+        {visible.map((i) => <UnsupportedOpsSection key={i.title} {...i} />)}
+      </ul>
+    </section>
   );
 }
 
@@ -799,52 +815,37 @@ function FlatDetailPage() {
           </>
         )}
 
-        {/* Pro/Premium advanced sections */}
-        {canViewAdvanced && (
-          <>
+      </div>
+
+      {/* Pro/Premium advanced sections: main history on the left, status + insights on the right */}
+      {canViewAdvanced && (
+        <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,380px)] lg:items-start">
+          <div className="min-w-0 space-y-3">
             <OccupancyHistorySection state={snapshot.occupancyHistory} />
             <AdvancedFinanceSection state={snapshot.advancedFinancial} />
             <VehiclesSection state={snapshot.vehicles} />
-
-            {/* Compact unsupported-module rows */}
-            <UnsupportedOpsSection
-              title="Visitors"
-              icon={Users}
-              state={snapshot.visitors as SectionState<unknown>}
-            />
-            <UnsupportedOpsSection
-              title="Complaints"
-              icon={AlertTriangle}
-              state={snapshot.complaints as SectionState<unknown>}
-            />
-            <UnsupportedOpsSection
-              title="Documents"
-              icon={FileText}
-              state={snapshot.documents as SectionState<unknown>}
-            />
-            <UnsupportedOpsSection
-              title="Approvals"
-              icon={ArrowRight}
-              state={snapshot.approvals as SectionState<unknown>}
-            />
-            <UnsupportedOpsSection
-              title="Notices"
-              icon={FileText}
-              state={snapshot.notices as SectionState<unknown>}
-            />
-
+          </div>
+          <div className="min-w-0 space-y-3">
             <NoDuesSection state={snapshot.noDues} />
             <DeterministicSummaryCard state={snapshot.deterministicSummary} />
-
             <AISummaryTrigger onMount={() => setAiTriggered(true)} />
             <AISummarySlot
               state={aiState}
               canRefresh={!refreshMutation.isPending && !aiQuery.isLoading}
               onRefresh={() => refreshMutation.mutate()}
             />
-          </>
-        )}
-      </div>
+            <OtherRecords
+              items={[
+                { title: "Visitors", icon: Users, state: snapshot.visitors as SectionState<unknown> },
+                { title: "Complaints", icon: AlertTriangle, state: snapshot.complaints as SectionState<unknown> },
+                { title: "Documents", icon: FileText, state: snapshot.documents as SectionState<unknown> },
+                { title: "Approvals", icon: ArrowRight, state: snapshot.approvals as SectionState<unknown> },
+                { title: "Notices", icon: FileText, state: snapshot.notices as SectionState<unknown> },
+              ]}
+            />
+          </div>
+        </div>
+      )}
     </PageShell>
   );
 }

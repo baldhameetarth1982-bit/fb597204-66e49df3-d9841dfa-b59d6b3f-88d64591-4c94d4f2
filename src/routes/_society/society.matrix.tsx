@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import * as XLSX from "xlsx";
+import { writeSafeWorkbook } from "@/lib/spreadsheet-safety";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { societyMaintenanceSummary } from "@/lib/residents.functions";
@@ -129,10 +129,7 @@ function MatrixPage() {
       for (let m = 0; m < 12; m++) row[MONTH_NAMES[m]] = cell(f.id, m).label;
       return row;
     });
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, `Matrix ${year}`);
-    XLSX.writeFile(wb, `maintenance-matrix-${year}.xlsx`);
+    writeSafeWorkbook(rows, `Matrix ${year}`, `maintenance-matrix-${year}.xlsx`);
   }
 
   function exportPDF() {

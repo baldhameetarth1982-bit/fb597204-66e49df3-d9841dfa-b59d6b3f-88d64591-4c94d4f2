@@ -17,19 +17,19 @@ import { describe, it } from "vitest";
 const allow = process.env.ALLOW_SOCIOHUB_TEST_FIXTURES === "true";
 
 describe.skipIf(!allow)("Flat 360 integration (requires isolated fixtures)", () => {
-  it.skip("Society A Admin reads Flat A", () => { /* impl in dedicated env turn */ });
-  it.skip("Society A Admin denied Society B Flat", () => {});
-  it.skip("Block A Admin allowed Block A", () => {});
-  it.skip("Block A Admin denied Block B", () => {});
-  it.skip("resident denied admin route", () => {});
-  it.skip("Basic entitlement returns core data only", () => {});
-  it.skip("Pro entitlement returns advanced data", () => {});
-  it.skip("no PII in snapshot", () => {});
-  it.skip("no certificate secrets in snapshot", () => {});
-  it.skip("query error stays as error state", () => {});
-  it.skip("unsupported stays as unsupported", () => {});
-  it.skip("serial society structure supported", () => {});
-  it.skip("structured society structure supported", () => {});
+  it.todo("Society A Admin reads Flat A");
+  it.todo("Society A Admin denied Society B Flat");
+  it.todo("Block A Admin allowed Block A");
+  it.todo("Block A Admin denied Block B");
+  it.todo("resident denied admin route");
+  it.todo("Basic entitlement returns core data only");
+  it.todo("Pro entitlement returns advanced data");
+  it.todo("no PII in snapshot");
+  it.todo("no certificate secrets in snapshot");
+  it.todo("query error stays as error state");
+  it.todo("unsupported stays as unsupported");
+  it.todo("serial society structure supported");
+  it.todo("structured society structure supported");
 });
 
 if (!allow) {

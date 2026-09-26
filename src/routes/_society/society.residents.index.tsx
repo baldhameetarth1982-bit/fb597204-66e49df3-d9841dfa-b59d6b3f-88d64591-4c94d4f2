@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Users, Search, AlertTriangle, Link2, Download, ChevronRight, Home } from "lucide-react";
-import * as XLSX from "xlsx";
+import { writeSafeWorkbook } from "@/lib/spreadsheet-safety";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { toast } from "sonner";
@@ -109,10 +109,7 @@ function ResidentsPage() {
           "Move-in": r.move_in_date ?? "",
           KYC: r.aadhaar_verified ? "Verified" : "Pending",
         }));
-    const ws = XLSX.utils.json_to_sheet(src);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Residents");
-    XLSX.writeFile(wb, `residents-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    writeSafeWorkbook(src as Record<string, string | number>[], "Residents", `residents-${new Date().toISOString().slice(0, 10)}.xlsx`);
     toast.success(`Exported ${src.length} row${src.length === 1 ? "" : "s"}`);
   }
 

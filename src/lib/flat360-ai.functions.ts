@@ -151,7 +151,7 @@ export const generateFlat360AISummaryFn = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const deps = attachAuthorizationRpcs(
       buildRealDeps(supabase),
-      supabase as Parameters<typeof attachAuthorizationRpcs>[1],
+      supabase as unknown as Parameters<typeof attachAuthorizationRpcs>[1],
       supabaseAdmin as Parameters<typeof attachAuthorizationRpcs>[2],
     );
     const snapshot = await loadFlat360Snapshot({ actorId: userId, flatId: data.flatId, deps });

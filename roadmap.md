@@ -1,5 +1,14 @@
 # Active roadmap
 
+## Stage 15 — Android and Google Play release preparation
+
+- [x] Pin the SociyoHub TWA identity, production origin, version, branding, orientation, notifications, and Custom Tabs fallback.
+- [x] Externalize Android signing and document one deterministic Bubblewrap release-build path.
+- [x] Prepare fail-closed Digital Asset Links using the real Play signing fingerprint only.
+- [x] Harden notification navigation and clear account-scoped browser state across account changes.
+- [x] Verify mobile safe areas, touch targets, reduced motion, auth continuity, payment boundaries, release assets, and repository secrets.
+- [ ] Owner-only external dependency: generate and sign the AAB with Android tooling, then upload it to Google Play Console.
+
 ## Stage 14 — Razorpay SaaS subscription payments
 
 - [x] Preserve Cash and Bank Transfer-only society maintenance payments and zero platform fees.

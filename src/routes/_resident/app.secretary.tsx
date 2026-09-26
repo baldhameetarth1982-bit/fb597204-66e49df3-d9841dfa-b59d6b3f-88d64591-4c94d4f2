@@ -60,11 +60,16 @@ function SecretaryPage() {
 
   // Conversation continuity for this tab session (per user, never shared).
   useEffect(() => {
-    if (!key) return;
+    if (!key) {
+      setTurns([]);
+      return;
+    }
     try {
       const raw = sessionStorage.getItem(key);
-      if (raw) setTurns((JSON.parse(raw) as Turn[]).filter((t) => t.r));
-    } catch { /* ignore */ }
+      setTurns(raw ? (JSON.parse(raw) as Turn[]).filter((t) => t.r) : []);
+    } catch {
+      setTurns([]);
+    }
   }, [key]);
   useEffect(() => {
     if (!key) return;

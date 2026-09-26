@@ -6,7 +6,11 @@
   "display": "standalone",
   "orientation": "portrait",
   "themeColor": "#123047",
+  "themeColorDark": "#123047",
   "navigationColor": "#123047",
+  "navigationColorDark": "#123047",
+  "navigationDividerColor": "#123047",
+  "navigationDividerColorDark": "#123047",
   "backgroundColor": "#F7FAF9",
   "enableNotifications": true,
   "startUrl": "/?source=twa",
@@ -21,8 +25,7 @@
   "webManifestUrl": "https://sociohub.live/manifest.webmanifest",
   "fallbackType": "customtabs",
   "features": {},
-  "minSdkVersion": 21,
-  "targetSdkVersion": 35,
+  "minSdkVersion": 23,
   "isChromeOSOnly": false,
   "enableSiteSettingsShortcut": true
 }

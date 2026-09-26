@@ -47,7 +47,7 @@ function NotificationCenter() {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
   const [cat, setCat] = useState<Cat>("all");
-  const [lastSeen] = useState(() => getLastSeen());
+  const [lastSeen] = useState(() => getLastSeen(user?.id));
 
   const personal = useQuery({
     enabled: !!user, queryKey: ["user-notifications", user?.id], staleTime: 15_000,
@@ -126,7 +126,7 @@ function NotificationCenter() {
     if (!user) return;
     await supabase.from("user_notifications").update({ read_at: new Date().toISOString() }).is("read_at", null);
     await Promise.all(items.filter((i) => i.source === "notice" && i.unread).map((i) => markNoticeRead(i.refId, user.id)));
-    markNotificationsSeen();
+    markNotificationsSeen(user.id);
     qc.invalidateQueries({ queryKey: ["user-notifications"] });
     qc.invalidateQueries({ queryKey: ["resident-notices"] });
   }

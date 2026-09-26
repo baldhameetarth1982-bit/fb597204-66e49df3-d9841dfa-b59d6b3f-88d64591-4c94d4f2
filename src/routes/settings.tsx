@@ -27,6 +27,16 @@ import { toast } from "sonner";
 import { NeonThemePreview } from "@/components/shared/NeonThemePreview";
 import { TwoFactorCard } from "@/components/security/TwoFactorCard";
 
+const DEFAULT_PREFERENCES = {
+  pushAnnouncements: true,
+  pushVisitors: true,
+  pushBills: true,
+  emailDigest: false,
+  showPhoneToNeighbors: false,
+  showFlatToVisitors: true,
+  marketingEmails: false,
+};
+
 export const Route = createFileRoute("/settings")({
   head: () => ({ meta: [{ title: "Settings — SociyoHub" }] }),
   component: SettingsPage,
@@ -51,32 +61,25 @@ function SettingsPage() {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
+  const preferencesKey = user?.id ? `sociohub:prefs:${user.id}` : null;
 
   // local-only preferences
-  const [prefs, setPrefs] = useState({
-    pushAnnouncements: true,
-    pushVisitors: true,
-    pushBills: true,
-    emailDigest: false,
-    showPhoneToNeighbors: false,
-    showFlatToVisitors: true,
-    marketingEmails: false,
-  });
+  const [prefs, setPrefs] = useState(DEFAULT_PREFERENCES);
 
   useEffect(() => {
     setFullName(profile?.full_name ?? "");
     setPhone(profile?.phone ?? "");
     try {
-      const raw = localStorage.getItem("sociohub:prefs");
-      if (raw) setPrefs((p) => ({ ...p, ...JSON.parse(raw) }));
+      const raw = preferencesKey ? localStorage.getItem(preferencesKey) : null;
+      setPrefs(raw ? { ...DEFAULT_PREFERENCES, ...JSON.parse(raw) } : DEFAULT_PREFERENCES);
     } catch {}
-  }, [profile]);
+  }, [preferencesKey, profile]);
 
   useEffect(() => {
     try {
-      localStorage.setItem("sociohub:prefs", JSON.stringify(prefs));
+      if (preferencesKey) localStorage.setItem(preferencesKey, JSON.stringify(prefs));
     } catch {}
-  }, [prefs]);
+  }, [preferencesKey, prefs]);
 
   if (isLoading) {
     return (

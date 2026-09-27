@@ -8,6 +8,7 @@ import { ROLES, ROLE_HOME } from "@/config/roles";
 
 /** Society Admin layout. All `/society/*` routes require SOCIETY_ADMIN role + an active plan. */
 export const Route = createFileRoute("/_society")({
+  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
   component: SocietyGuard,
 });
 

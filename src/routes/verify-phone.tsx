@@ -8,7 +8,7 @@ import { PhoneOtpForm } from "@/components/auth/PhoneOtpForm";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/verify-phone")({
-  head: () => ({ meta: [{ title: "Verify phone — SociyoHub" }] }),
+  head: () => ({ meta: [{ title: "Verify phone — SociyoHub" }, { name: "robots", content: "noindex, nofollow" }] }),
   component: VerifyPhonePage,
 });
 

@@ -9,6 +9,7 @@ import { AskAIFab } from "@/components/resident/AskAIFab";
 
 /** Resident layout. All `/app/*` routes require an authenticated user and an active society plan. */
 export const Route = createFileRoute("/_resident")({
+  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
   component: ResidentGuard,
 });
 

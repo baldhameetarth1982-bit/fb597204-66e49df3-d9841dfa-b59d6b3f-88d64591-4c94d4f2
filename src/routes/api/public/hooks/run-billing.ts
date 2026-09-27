@@ -61,12 +61,31 @@ export const Route = createFileRoute("/api/public/hooks/run-billing")({
           return new Response("Too Many Requests", { status: 429, headers: { "retry-after": String(retry) } });
         }
 
+        // Optional narrowing for controlled QA runs. Only reachable after the
+        // scheduler credential check above; it can only restrict the set of
+        // already-due, enabled schedules — never widen it or bypass any check.
+        let onlySociety: string | null = null;
+        try {
+          const raw = await request.text();
+          if (raw && raw.length <= 256) {
+            const body = JSON.parse(raw) as { societyId?: unknown };
+            if (typeof body?.societyId === "string") {
+              if (!/^[0-9a-f-]{36}$/i.test(body.societyId)) return new Response("Bad Request", { status: 400 });
+              onlySociety = body.societyId;
+            }
+          }
+        } catch {
+          return new Response("Bad Request", { status: 400 });
+        }
+
         const nowIso = new Date().toISOString();
-        const { data: schedules, error: schErr } = await supabaseAdmin
+        let schQuery = supabaseAdmin
           .from("billing_schedules")
           .select("*")
           .eq("enabled", true)
           .lte("next_run_at", nowIso);
+        if (onlySociety) schQuery = schQuery.eq("society_id", onlySociety);
+        const { data: schedules, error: schErr } = await schQuery;
         if (schErr) return new Response("Internal error", { status: 500 });
 
         let totalGenerated = 0;

@@ -44,4 +44,13 @@ describe("Stage 17 security hardening", () => {
     expect(source).toContain("file.size > 8 * 1024 * 1024");
     expect(source).not.toContain('file.name.split(".").pop()');
   });
+
+  it("enforces image MIME and extension allowlists at the storage boundary", () => {
+    const migration = read("drizzle/migrations/0071_stage17_harden_image_storage_policies.sql");
+    expect(migration).toContain("bucket_id = 'posts'");
+    expect(migration).toContain("bucket_id = 'branding'");
+    expect(migration).toContain("storage.extension(name)");
+    expect(migration).toContain("metadata->>'mimetype'");
+    expect(migration).not.toMatch(/image\/svg\+xml/i);
+  });
 });

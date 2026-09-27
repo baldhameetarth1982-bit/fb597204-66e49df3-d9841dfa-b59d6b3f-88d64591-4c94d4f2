@@ -263,10 +263,10 @@ function SubscriptionPage() {
                 return (
                   <li key={p.id} className={`flex flex-wrap items-center gap-3 py-3 ${current ? "-mx-2 rounded-xl bg-primary/5 px-2" : ""}`}>
                     <div className="min-w-0 flex-1">
-                      <p className="flex flex-wrap items-center gap-2 font-semibold">
+                      <div className="flex flex-wrap items-center gap-2 font-semibold">
                         {p.name}
                         {current ? <Badge variant="secondary">Your plan</Badge> : p.is_recommended ? <Badge variant="outline">Popular</Badge> : null}
-                      </p>
+                      </div>
                       <p className="text-sm">
                         <span className="font-semibold tabular-nums">₹{Number(p.price_monthly_inr).toLocaleString("en-IN")}</span>
                         <span className="text-muted-foreground"> / month</span>

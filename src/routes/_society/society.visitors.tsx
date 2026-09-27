@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, UserCheck, Plus, Check, X, LogOut } from "lucide-react";
 import {
   StatusChip,

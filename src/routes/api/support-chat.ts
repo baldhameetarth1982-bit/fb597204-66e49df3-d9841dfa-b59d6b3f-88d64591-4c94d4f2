@@ -92,6 +92,7 @@ export const Route = createFileRoute("/api/support-chat")({
         try {
           const { checkRateLimit } = await import("@/lib/rate-limit.server");
           await checkRateLimit({ bucket: "support.chat", subject: userId, limit: 20 });
+          await checkRateLimit({ bucket: "support.chat.daily", subject: userId, limit: 200, windowSec: 86_400 });
         } catch (error) {
           const { RateLimitedError } = await import("@/lib/rate-limit.server");
           if (error instanceof RateLimitedError) {

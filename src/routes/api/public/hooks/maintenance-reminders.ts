@@ -52,24 +52,18 @@ export const Route = createFileRoute("/api/public/hooks/maintenance-reminders")(
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-        // Per-IP rate limit — 1/min bucket.
-        const windowSec = 60;
-        const slot = new Date(Math.floor(Date.now() / (windowSec * 1000)) * windowSec * 1000).toISOString();
-        const { data: rl } = await supabaseAdmin
-          .from("rate_limits")
-          .select("count")
-          .eq("bucket", "cron:maintenance-reminders")
-          .eq("subject", ip)
-          .eq("window_start", slot)
-          .maybeSingle();
-        if ((rl?.count ?? 0) >= 1) return new Response("Too Many Requests", { status: 429 });
-        if (rl) {
-          await supabaseAdmin.from("rate_limits").update({ count: (rl.count ?? 0) + 1 })
-            .eq("bucket", "cron:maintenance-reminders").eq("subject", ip).eq("window_start", slot);
-        } else {
-          await supabaseAdmin.from("rate_limits").insert({
-            bucket: "cron:maintenance-reminders", subject: ip, window_start: slot, count: 1,
+        // Atomic per-IP limit; HMAC keeps raw network identifiers out of storage.
+        try {
+          const { checkRateLimit, fingerprintSubject } = await import("@/lib/rate-limit.server");
+          await checkRateLimit({
+            bucket: "cron:maintenance-reminders",
+            subject: fingerprintSubject(ip, "cron:maintenance-reminders"),
+            limit: 1,
+            windowSec: 60,
           });
+        } catch (error) {
+          const retry = Number((error as { retryAfterSeconds?: number })?.retryAfterSeconds ?? 60);
+          return new Response("Too Many Requests", { status: 429, headers: { "retry-after": String(retry) } });
         }
 
         const today = new Date();

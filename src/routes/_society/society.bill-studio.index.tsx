@@ -109,9 +109,23 @@ function BillAppearance({ societyId }: { societyId: string }) {
   const set = <K extends keyof Theme>(k: K, v: Theme[K]) => setT((p) => ({ ...p, [k]: v }));
 
   async function uploadTo(kind: "logo" | "signature", file: File) {
+    const extensionByType: Record<string, string> = {
+      "image/jpeg": "jpg",
+      "image/png": "png",
+      "image/webp": "webp",
+      "image/gif": "gif",
+    };
+    const ext = extensionByType[file.type];
+    if (!ext) {
+      toast.error("Choose a JPG, PNG, WEBP, or GIF image.");
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error("Image must be under 8 MB.");
+      return;
+    }
     setUploading(kind);
     try {
-      const ext = (file.name.split(".").pop() || "png").toLowerCase();
       const path = `${societyId}/${kind}-${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage.from("branding").upload(path, file, { upsert: true, contentType: file.type });
       if (upErr) throw upErr;

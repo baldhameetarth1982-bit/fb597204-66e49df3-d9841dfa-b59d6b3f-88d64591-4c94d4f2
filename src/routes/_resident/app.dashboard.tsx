@@ -11,6 +11,7 @@ import { useAuth } from "@/context/AuthContext";
 import { AdBanner } from "@/components/shared/AdBanner";
 import { supabase } from "@/integrations/supabase/client";
 import { useResidentNotices } from "@/hooks/useResidentNotices";
+import { ResidentBrandBand } from "@/components/branding/ResidentBrandBand";
 
 export const Route = createFileRoute("/_resident/app/dashboard")({
   head: () => ({

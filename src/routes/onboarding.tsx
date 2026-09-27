@@ -5,6 +5,7 @@ import { useSocietyId } from "@/hooks/useSocietyId";
 import { ROLES, ROLE_HOME } from "@/config/roles";
 
 export const Route = createFileRoute("/onboarding")({
+  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
   component: OnboardingLayout,
 });
 

@@ -5,6 +5,7 @@ import { ROLES, ROLE_HOME } from "@/config/roles";
 
 /** Super Admin layout. All `/admin/*` routes require SUPER_ADMIN role. */
 export const Route = createFileRoute("/_admin")({
+  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
   component: AdminGuard,
 });
 

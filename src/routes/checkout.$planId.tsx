@@ -22,6 +22,7 @@ export const Route = createFileRoute("/checkout/$planId")({
     meta: [
       { title: "Checkout — SociyoHub" },
       { name: "description", content: "Secure checkout for SociyoHub subscription plans." },
+      { name: "robots", content: "noindex, nofollow" },
     ],
   }),
   component: CheckoutPage,

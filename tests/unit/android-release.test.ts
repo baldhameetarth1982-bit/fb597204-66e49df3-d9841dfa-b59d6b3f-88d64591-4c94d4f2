@@ -47,3 +47,16 @@ describe("Stage 15 Android release contract", () => {
     expect(handoff).toContain("society maintenance remains Cash or Bank Transfer");
   });
 });
+describe("Stage 18 app discoverability", () => {
+  it("links the web manifest to the Play package and keeps private areas out of search", () => {
+    const m = JSON.parse(read("public/manifest.webmanifest"));
+    expect(m.related_applications[0]).toMatchObject({ platform: "play", id: "live.sociohub.app" });
+    expect(m.prefer_related_applications).toBe(false);
+    for (const f of ["_admin", "_society", "_resident", "onboarding"]) {
+      expect(read(`src/routes/${f}.tsx`)).toContain("noindex, nofollow");
+    }
+    const home = read("src/routes/index.tsx");
+    expect(home).toContain('"MobileApplication"');
+    expect(home).not.toMatch(/aggregateRating|ratingValue/);
+  });
+});

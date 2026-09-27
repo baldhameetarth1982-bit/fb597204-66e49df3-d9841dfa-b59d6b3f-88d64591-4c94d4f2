@@ -54,6 +54,23 @@ export const Route = createFileRoute("/")({
           ],
         }),
       },
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "MobileApplication",
+          "@id": "https://sociohub.live/#app",
+          name: "SociyoHub",
+          alternateName: "live.sociohub.app",
+          description:
+            "Society management app for Indian housing societies: maintenance billing with Cash and Bank Transfer records, notices, visitor management and resident communication.",
+          url: "https://sociohub.live/",
+          operatingSystem: "Android, Web",
+          applicationCategory: "BusinessApplication",
+          inLanguage: "en-IN",
+          publisher: { "@id": "https://sociohub.live/#organization" },
+        }),
+      },
     ],
   }),
   component: IndexRedirect,

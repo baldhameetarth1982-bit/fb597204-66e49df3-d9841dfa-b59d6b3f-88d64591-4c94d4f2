@@ -28,20 +28,8 @@ export const Route = createFileRoute("/api/public/hooks/maintenance-reminders")(
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const secret = process.env.CRON_SECRET;
-        if (!secret) return new Response("Unauthorized", { status: 401 });
-
-        const auth = request.headers.get("authorization") ?? "";
-        const headerSecret = request.headers.get("x-cron-secret") ?? "";
-        const bearer = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : "";
-        const provided = bearer || headerSecret;
-        function safeEqual(a: string, b: string) {
-          if (a.length !== b.length) return false;
-          let r = 0;
-          for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i);
-          return r === 0;
-        }
-        if (!provided || !safeEqual(provided, secret)) {
+        const { isAuthorizedScheduler } = await import("@/lib/scheduler-auth.server");
+        if (!(await isAuthorizedScheduler(request))) {
           return new Response("Unauthorized", { status: 401 });
         }
 

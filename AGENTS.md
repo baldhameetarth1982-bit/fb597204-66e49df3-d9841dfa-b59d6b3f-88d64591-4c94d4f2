@@ -8,3 +8,4 @@
 - Android releases use the pinned Bubblewrap manifest and release script; generated Gradle output and signing material stay outside source control.
 - Public ingress uses strict bounded schemas, redacted failures, and the shared atomic HMAC-fingerprinted limiter; this prevents amplification and race-prone local throttles.
 - Vulnerable transitive runtime packages are pinned via package.json overrides to in-major patched releases; this fixes advisories without forcing breaking upgrades.
+- Scheduler hooks accept CRON_SECRET or the DB-held pg_cron token (verify_scheduler_token); automation config writes go only through admin_set_society_automation, which enforces permission, Premium and audit.

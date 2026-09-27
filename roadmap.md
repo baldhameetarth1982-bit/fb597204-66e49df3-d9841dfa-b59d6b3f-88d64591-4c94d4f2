@@ -73,3 +73,10 @@
 - [x] Correct the master roadmap to show Stage 3D as implemented_unverified and Stage 3E unstarted.
 - [x] Converge managed and fresh-reset audit TRUNCATE denial through forward-only migrations and positive source checks.
 - [x] Add an executable Stage 3D external runtime handoff and require fixture-source validation in its independent CI job.
+
+## Full-app button sweep (requested 2026-09-27)
+- [x] Society admin: every screen opens without errors (demo society "QA Demo Society (test only)")
+- [ ] Society admin: press every button/form on each screen
+- [ ] Resident: switch test account to resident in demo society, sweep screens + buttons
+- [ ] Guard: switch test account to guard, sweep
+- [ ] Super admin: needs owner approval to grant super admin to test account

@@ -41,6 +41,8 @@ function ExplorerPage() {
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [flats, setFlats] = useState<Flat[]>([]);
   // Only the opened house's bill/payment history is loaded; society-wide dues
@@ -56,6 +58,7 @@ function ExplorerPage() {
     let cancel = false;
     (async () => {
       setLoading(true);
+      setLoadFailed(false);
       const [b, f, ds, fr] = await Promise.all([
         supabase.from("blocks").select("id,name").eq("society_id", societyId).order("name"),
         supabase.from("flats").select("id,flat_number,block_id").eq("society_id", societyId),
@@ -69,7 +72,11 @@ function ExplorerPage() {
         : { data: [] as any[] };
       const profById = new Map(((profs.data ?? []) as any[]).map((x) => [x.id, x]));
       if (cancel) return;
-      if (b.error || f.error || ds.error) toast.error(b.error?.message || f.error?.message || ds.error?.message || "Load failed");
+      if (b.error || f.error || ds.error) {
+        toast.error(b.error?.message || f.error?.message || ds.error?.message || "Load failed");
+        // Never show zero dues / "Clear" when the figures failed to load.
+        setLoadFailed(true);
+      }
       setBlocks(b.data ?? []);
       setFlats((f.data ?? []) as Flat[]);
       const d: Record<string, { outstanding: number; rank: number }> = {};
@@ -84,7 +91,7 @@ function ExplorerPage() {
       setLoading(false);
     })();
     return () => { cancel = true; };
-  }, [societyId]);
+  }, [societyId, reloadKey]);
 
   useEffect(() => {
     const flatId = search.flat;
@@ -134,6 +141,17 @@ function ExplorerPage() {
     }
     return k;
   }, [blocks, flats, flatSummary]);
+
+  if (!sidLoading && !loading && loadFailed) {
+    return (
+      <PageShell>
+        <div className="grid place-items-center gap-3 h-60 text-center">
+          <p className="text-sm text-muted-foreground">Couldn't load dues. Figures are hidden so nothing wrong is shown.</p>
+          <Button onClick={() => setReloadKey((k) => k + 1)}>Retry</Button>
+        </div>
+      </PageShell>
+    );
+  }
 
   if (sidLoading || loading || (search.flat && detailLoading)) {
     return <PageShell><div className="grid place-items-center h-60"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div></PageShell>;

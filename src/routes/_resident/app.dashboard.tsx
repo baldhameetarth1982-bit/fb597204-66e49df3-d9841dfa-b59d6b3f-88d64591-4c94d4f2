@@ -92,6 +92,8 @@ function ResidentDashboard() {
         </Link>
       </header>
 
+      <ResidentBrandBand societyId={societyId} />
+
       {/* Dues — the most important thing for a resident. Never shows a fake ₹0. */}
       <Card className="rounded-xl bg-primary text-primary-foreground border-0 overflow-hidden">
         <CardContent className="p-5 md:p-7" aria-busy={home.isLoading}>

@@ -20,6 +20,7 @@
  */
 import { createFileRoute } from "@tanstack/react-router";
 import { createLocalJWKSet, jwtVerify, type JSONWebKeySet } from "jose";
+import { z } from "zod";
 
 const FIREBASE_PROJECT_ID = "sociohub-49e4f";
 const ISSUER = `https://securetoken.google.com/${FIREBASE_PROJECT_ID}`;
@@ -61,27 +62,13 @@ interface FirebasePayload {
 
 type SupabaseAdminAuth = typeof import("@/integrations/supabase/client.server").supabaseAdmin.auth.admin;
 
-async function findAuthUserByEmail(admin: SupabaseAdminAuth, email: string) {
-  const normalizedEmail = email.trim().toLowerCase();
-  const perPage = 1000;
-
-  for (let page = 1; page <= 100; page += 1) {
-    const { data, error } = await admin.listUsers({ page, perPage });
-    if (error) throw error;
-
-    const match = data.users.find((user) => user.email?.trim().toLowerCase() === normalizedEmail);
-    if (match) return match;
-
-    if (data.users.length < perPage || (data as any).nextPage === null) break;
-  }
-
-  return null;
-}
-
-function isDuplicateEmailError(error: unknown) {
-  const message = error instanceof Error ? error.message : String((error as any)?.message ?? error ?? "");
-  return /already.*registered|already.*exists|email.*exists|duplicate/i.test(message);
-}
+const requestSchema = z
+  .object({
+    provider: z.enum(["phone", "google"]),
+    idToken: z.string().min(100).max(8_192),
+    phone: z.string().regex(/^\+[1-9]\d{6,14}$/).optional(),
+  })
+  .strict();
 
 async function verifyFirebaseIdToken(idToken: string): Promise<FirebasePayload> {
   const keySet = await getKeySet();
@@ -104,6 +91,10 @@ export const Route = createFileRoute("/api/public/auth/firebase-session")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const contentLength = Number(request.headers.get("content-length") ?? "0");
+        if (Number.isFinite(contentLength) && contentLength > 16_384) {
+          return json({ error: "Bad request" }, { status: 413 });
+        }
         // Per-IP rate limit (HMAC-fingerprinted; fails closed on limiter errors).
         try {
           const { getRequestIP } = await import("@tanstack/react-start/server");
@@ -125,25 +116,23 @@ export const Route = createFileRoute("/api/public/auth/firebase-session")({
           );
         }
 
-        let body: any;
+        let body: unknown;
         try {
           body = await request.json();
         } catch {
           return json({ error: "Invalid JSON" }, { status: 400 });
         }
-
-        const provider = body?.provider as "phone" | "google" | undefined;
-        const idToken = typeof body?.idToken === "string" && body.idToken.length <= 8192 ? body.idToken : null;
-        const phoneClaim = typeof body?.phone === "string" ? body.phone.slice(0, 20) : null;
-        if (!idToken || (provider !== "phone" && provider !== "google")) {
+        const parsed = requestSchema.safeParse(body);
+        if (!parsed.success) {
           return json({ error: "Bad request" }, { status: 400 });
         }
+        const { provider, idToken, phone: phoneClaim } = parsed.data;
 
         let payload: FirebasePayload;
         try {
           payload = await verifyFirebaseIdToken(idToken);
         } catch (e: any) {
-          console.error("[firebase-session] token verify failed", e?.message);
+          console.error("[firebase-session] token verification failed");
           return json({ error: "Sign-in could not be verified. Please try again." }, { status: 401 });
         }
 
@@ -180,6 +169,24 @@ export const Route = createFileRoute("/api/public/auth/firebase-session")({
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const admin = supabaseAdmin.auth.admin;
 
+        // A valid token can still be replayed aggressively. Bound each verified
+        // Firebase identity independently from the IP bucket without storing UID.
+        try {
+          const { checkRateLimit, fingerprintSubject } = await import("@/lib/rate-limit.server");
+          await checkRateLimit({
+            bucket: "auth-firebase-identity",
+            subject: fingerprintSubject(payload.sub, "auth-firebase-identity"),
+            limit: 10,
+            windowSec: 300,
+          });
+        } catch (error) {
+          const retry = Number((error as { retryAfterSeconds?: number })?.retryAfterSeconds ?? 60);
+          return json(
+            { error: "Too many sign-in attempts. Please wait a few minutes and try again." },
+            { status: 429, headers: { "retry-after": String(retry) } },
+          );
+        }
+
         // Resolve or create the Supabase user.
         const phone = payload.phone_number ?? null;
         const emailFromToken = payload.email ?? null;
@@ -201,7 +208,8 @@ export const Route = createFileRoute("/api/public/auth/firebase-session")({
             },
           });
           if (linkErr || !link?.properties?.hashed_token) {
-            return json({ error: linkErr?.message ?? "Could not mint session" }, { status: 500 });
+            console.error("[firebase-session] Google session mint failed");
+            return json({ error: "Sign-in is unavailable right now. Please try again." }, { status: 503 });
           }
 
           return json({
@@ -222,14 +230,6 @@ export const Route = createFileRoute("/api/public/auth/firebase-session")({
           if (existing?.user_id) userId = existing.user_id as string;
         }
 
-        // Otherwise look up by email through the Auth Admin API. Do not query
-        // the private auth schema through Data API here; that can fail silently
-        // in production and fall through to a duplicate createUser call.
-        if (!userId && emailFromToken) {
-          const found = await findAuthUserByEmail(admin, emailFromToken);
-          if (found?.id) userId = found.id;
-        }
-
         if (!userId) {
           const { data: created, error: createErr } = await admin.createUser({
             email: syntheticEmail,
@@ -244,16 +244,8 @@ export const Route = createFileRoute("/api/public/auth/firebase-session")({
             },
           });
           if (createErr || !created?.user) {
-            if (emailFromToken && isDuplicateEmailError(createErr)) {
-              const found = await findAuthUserByEmail(admin, emailFromToken);
-              if (found?.id) {
-                userId = found.id;
-              } else {
-                return json({ error: "Account already exists, but could not be linked for sign-in" }, { status: 409 });
-              }
-            } else {
-            return json({ error: createErr?.message ?? "Could not create user" }, { status: 500 });
-            }
+            console.error("[firebase-session] phone account provisioning failed");
+            return json({ error: "Sign-in is unavailable right now. Please try again." }, { status: 503 });
           } else {
             userId = created.user.id;
           }
@@ -275,7 +267,8 @@ export const Route = createFileRoute("/api/public/auth/firebase-session")({
           email: syntheticEmail,
         });
         if (linkErr || !link?.properties?.hashed_token) {
-          return json({ error: linkErr?.message ?? "Could not mint session" }, { status: 500 });
+          console.error("[firebase-session] phone session mint failed");
+          return json({ error: "Sign-in is unavailable right now. Please try again." }, { status: 503 });
         }
 
         return json({

@@ -498,6 +498,13 @@
       "when": 1790486038791,
       "tag": "0070_stage17_close_reasonless_plan_grant",
       "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1790486414070,
+      "tag": "0071_stage17_harden_image_storage_policies",
+      "breakpoints": true
     }
   ]
 }

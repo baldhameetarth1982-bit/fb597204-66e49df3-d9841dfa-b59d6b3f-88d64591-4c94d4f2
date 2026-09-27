@@ -104,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .select("id, full_name, email, avatar_url, society_id, phone, aadhaar_verified, aadhaar_uploaded_at, theme")
         .eq("id", uid)
         .maybeSingle(),
-      supabase.from("user_roles").select("role, society_id").eq("user_id", uid),
+      supabase.from("user_roles").select("role, society_id").eq("user_id", uid).eq("is_active", true),
     ]);
 
     let profileData = profileResult.data as AuthProfile | null;

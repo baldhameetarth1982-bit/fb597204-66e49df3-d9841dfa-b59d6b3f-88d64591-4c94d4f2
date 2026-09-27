@@ -72,17 +72,45 @@ export const Route = createFileRoute("/api/public/hooks/maintenance-reminders")(
           });
         }
 
-        // Idempotency: don't re-remind the same period on the same day.
-        const periodIds = periods.map((p) => p.id);
-        const dayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
-        const { data: alreadySent } = await supabaseAdmin
-          .from("audit_log")
-          .select("target_id")
-          .eq("action", "maintenance_reminder_sent")
-          .gte("created_at", dayStart)
-          .in("target_id", periodIds);
-        const sentToday = new Set((alreadySent ?? []).map((r) => r.target_id));
-        const toRemind = periods.filter((p) => !sentToday.has(p.id));
+        // Per-society automation settings (no row = defaults: on, 0 days, daily).
+        const societyIds = Array.from(new Set(periods.map((p) => p.society_id)));
+        const { data: cfgRows, error: cfgErr } = await supabaseAdmin
+          .from("society_automation_settings")
+          .select("society_id, reminders_enabled, reminder_min_days_overdue, reminder_repeat_days")
+          .in("society_id", societyIds);
+        if (cfgErr) return new Response("Internal error", { status: 500 });
+        const cfg = new Map((cfgRows ?? []).map((c) => [c.society_id, c]));
+        const dayMs = 86_400_000;
+        const dayStartMs = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+        const eligible = periods.filter((p) => {
+          const c = cfg.get(p.society_id);
+          if (c && !c.reminders_enabled) return false;
+          const minDays = c?.reminder_min_days_overdue ?? 0;
+          const dueMs = Date.parse(`${p.due_date}T00:00:00Z`);
+          return dayStartMs - dueMs >= minDays * dayMs;
+        });
+
+        // Idempotency: don't re-remind a period within its society's repeat window (default: same day).
+        const periodIds = eligible.map((p) => p.id);
+        const maxRepeat = Math.max(1, ...(cfgRows ?? []).map((c) => c.reminder_repeat_days));
+        const windowStart = new Date(dayStartMs - (maxRepeat - 1) * dayMs).toISOString();
+        const { data: alreadySent } = periodIds.length
+          ? await supabaseAdmin
+              .from("audit_log")
+              .select("target_id, society_id, created_at")
+              .eq("action", "maintenance_reminder_sent")
+              .gte("created_at", windowStart)
+              .in("target_id", periodIds)
+          : { data: [] as { target_id: string | null; society_id: string | null; created_at: string }[] };
+        const recent = new Set(
+          (alreadySent ?? [])
+            .filter((r) => {
+              const rep = cfg.get(r.society_id ?? "")?.reminder_repeat_days ?? 1;
+              return Date.parse(r.created_at) >= dayStartMs - (rep - 1) * dayMs;
+            })
+            .map((r) => r.target_id),
+        );
+        const toRemind = eligible.filter((p) => !recent.has(p.id));
         if (!toRemind.length) {
           return new Response(JSON.stringify({ ok: true, reminded: 0, skipped: periods.length }), {
             headers: { "Content-Type": "application/json" },

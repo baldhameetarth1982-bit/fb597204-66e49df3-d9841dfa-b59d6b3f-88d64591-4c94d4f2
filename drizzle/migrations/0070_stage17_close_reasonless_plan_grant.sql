@@ -1,0 +1,2 @@
+REVOKE EXECUTE ON FUNCTION public.admin_grant_society_plan(uuid, text, integer, boolean) FROM PUBLIC, anon, authenticated;
+COMMENT ON FUNCTION public.admin_grant_society_plan(uuid, text, integer, boolean) IS 'DEPRECATED AND DISABLED: use the five-argument version requiring an audited reason';

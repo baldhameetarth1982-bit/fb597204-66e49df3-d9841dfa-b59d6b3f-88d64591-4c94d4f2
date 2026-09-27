@@ -6802,6 +6802,10 @@ export type Database = {
         Args: { _society_id: string; _user_id: string }
         Returns: boolean
       }
+      user_has_verified_phone_internal: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       verify_offline_payment: {
         Args: { _notes: string; _payment_id: string }
         Returns: Json

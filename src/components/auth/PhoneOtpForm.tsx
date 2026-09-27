@@ -66,7 +66,7 @@ export function PhoneOtpForm({ onVerified, linkToCurrentUser, submitLabel }: Pro
         return;
       }
       if (linkToCurrentUser) {
-        const link = await linkVerifiedPhoneToCurrentUser(normalized, r.firebaseUid);
+        const link = await linkVerifiedPhoneToCurrentUser(normalized, r.firebaseIdToken);
         if (!link.ok) { toast.error(link.error ?? "Could not link phone"); return; }
       }
       resetOtpState();

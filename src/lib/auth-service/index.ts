@@ -12,6 +12,7 @@
  * later phase without touching login / onboarding pages.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { linkVerifiedPhone } from "@/lib/phone-link.functions";
 import { getFirebaseAuth, isFirebaseConfigured } from "@/lib/firebase";
 import {
   GoogleAuthProvider,
@@ -131,14 +132,11 @@ export function resetOtpState() {
 /* Link verified phone to the current Supabase user                         */
 /* ------------------------------------------------------------------------ */
 
-export async function linkVerifiedPhoneToCurrentUser(phone: string, firebaseUid: string) {
+export async function linkVerifiedPhoneToCurrentUser(phone: string, firebaseIdToken: string) {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) return { ok: false, error: "Sign in first" };
-  const { error } = await (supabase as any)
-    .from("phone_verifications")
-    .upsert({ user_id: u.user.id, phone, firebase_uid: firebaseUid }, { onConflict: "user_id" });
-  if (error) return { ok: false, error: error.message };
-  return { ok: true };
+  // Server verifies the Firebase phone token; the browser cannot write this row.
+  return linkVerifiedPhone({ data: { phone, idToken: firebaseIdToken } });
 }
 
 /* ------------------------------------------------------------------------ */

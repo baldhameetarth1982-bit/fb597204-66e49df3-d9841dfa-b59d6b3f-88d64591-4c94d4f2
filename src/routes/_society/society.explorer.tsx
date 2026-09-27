@@ -50,6 +50,7 @@ function ExplorerPage() {
   const [bills, setBills] = useState<BillRow[]>([]);
   const [pays, setPays] = useState<PayRow[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [detailFailed, setDetailFailed] = useState(false);
   const [dues, setDues] = useState<Record<string, { outstanding: number; rank: number }>>({});
   const [resByFlat, setResByFlat] = useState<Record<string, { name: string; phone: string | null; email: string | null }[]>>({});
 
@@ -99,19 +100,20 @@ function ExplorerPage() {
     let cancel = false;
     (async () => {
       setDetailLoading(true);
+      setDetailFailed(false);
       const bi = await supabase.from("bills").select("id,flat_id,period_label,period_start,amount,status,due_date").eq("society_id", societyId).eq("flat_id", flatId);
       const billIds = (bi.data ?? []).map((x) => x.id);
       const p = billIds.length
         ? await supabase.from("payments").select("id,bill_id,amount,paid_at,method").in("bill_id", billIds).eq("status", "success")
         : { data: [], error: null as any };
       if (cancel) return;
-      if (bi.error || p.error) toast.error(bi.error?.message || p.error?.message || "Load failed");
+      if (bi.error || p.error) { toast.error(bi.error?.message || p.error?.message || "Load failed"); setDetailFailed(true); }
       setBills(((bi.data ?? []) as any[]).map((x) => ({ ...x, amount: Number(x.amount) })));
       setPays(((p.data ?? []) as any[]).map((x) => ({ ...x, amount: Number(x.amount) })));
       setDetailLoading(false);
     })();
     return () => { cancel = true; };
-  }, [societyId, search.flat]);
+  }, [societyId, search.flat, reloadKey]);
 
   const paidByBill = useMemo(() => {
     const m: Record<string, number> = {};
@@ -142,7 +144,7 @@ function ExplorerPage() {
     return k;
   }, [blocks, flats, flatSummary]);
 
-  if (!sidLoading && !loading && loadFailed) {
+  if (!sidLoading && !loading && (loadFailed || (search.flat && !detailLoading && detailFailed))) {
     return (
       <PageShell>
         <div className="grid place-items-center gap-3 h-60 text-center">

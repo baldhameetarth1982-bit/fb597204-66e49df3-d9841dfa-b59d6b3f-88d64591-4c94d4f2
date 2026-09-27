@@ -52,6 +52,7 @@ export function useSocietyId() {
           .from("user_roles")
           .select("society_id")
           .eq("user_id", user.id)
+          .eq("is_active", true)
           .not("society_id", "is", null)
           .order("created_at", { ascending: true })
           .limit(1)

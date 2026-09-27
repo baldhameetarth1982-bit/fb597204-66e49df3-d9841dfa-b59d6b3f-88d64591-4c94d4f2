@@ -187,6 +187,9 @@ export function BrandingSettingsPanel() {
 
   return (
     <div className="space-y-6">
+      <p className="rounded-lg border bg-muted/50 px-3 py-2 text-sm" data-testid="branding-context" aria-live="polite">
+        Branding: <span className="font-semibold">{soc.data ?? "Loading society…"}</span>
+      </p>
       <div className="space-y-2">
         <p className="text-sm font-medium">Preview — resident home screen</p>
         <SocietyBrandBanner name={previewName} primary={primaryHex} accent={accentHex} logoUrl={previewLogo} />

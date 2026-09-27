@@ -36,8 +36,8 @@ export function SocietyInviteCodeCard({ societyId }: Props) {
 
   async function copy() {
     if (!data?.invite_code) return;
-    await navigator.clipboard.writeText(data.invite_code);
-    toast.success("Code copied");
+    try { await navigator.clipboard.writeText(data.invite_code); toast.success("Code copied"); }
+    catch { toast.error("Couldn't copy. Long-press the code to copy it."); }
   }
 
   async function regen() {

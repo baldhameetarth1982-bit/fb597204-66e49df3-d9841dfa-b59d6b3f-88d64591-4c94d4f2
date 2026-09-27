@@ -140,6 +140,6 @@
     "qs": "6.16.0",
     "ip-address": "10.7.2",
     "protobufjs": "7.6.6",
-    "@ai-sdk/provider-utils": "4.0.55"
+    "@ai-sdk/provider-utils": "4.0.54"
   }
 }

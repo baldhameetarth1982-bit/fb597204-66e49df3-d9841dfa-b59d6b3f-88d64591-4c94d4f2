@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -27,15 +27,12 @@ import { ErrorState } from "@/components/system/ErrorState";
 import { useAuth } from "@/context/AuthContext";
 import {
   listTeamMembers, upsertTeamRole, setTeamActive,
-  listAssignmentCandidates, getSocietyPrivacy, setSocietyPrivacy,
+  listAssignmentCandidates,
 } from "@/lib/team-admin.functions";
 import {
   ROLE_LABELS, ASSIGNABLE_TEAM_ROLES,
   capabilitiesForRole, CAPABILITY_LABELS,
-  PRIVACY_DIRECTORY, PRIVACY_CONTACTS, PRIVACY_FINANCES,
-  PRIVACY_VEHICLES, PRIVACY_DOCUMENTS,
-  PRIVACY_LABELS, PRIVACY_DESCRIPTIONS,
-  DEFAULT_PRIVACY, type SocietyPrivacySettings, type Role,
+  type Role,
 } from "@/lib/role-permissions";
 
 export const Route = createFileRoute("/_society/society/team")({
@@ -88,10 +85,8 @@ function TeamPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [structureMode, setStructureMode] = useState<"structured" | "serial">("structured");
-  const [privacy, setPrivacy] = useState<SocietyPrivacySettings>(DEFAULT_PRIVACY);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
-  const [savingPrivacy, setSavingPrivacy] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<Member | null>(null);
   const [busyRoleId, setBusyRoleId] = useState<string | null>(null);
 
@@ -99,24 +94,20 @@ function TeamPage() {
   const fnUpsert = useServerFn(upsertTeamRole);
   const fnSetActive = useServerFn(setTeamActive);
   const fnCandidates = useServerFn(listAssignmentCandidates);
-  const fnGetPrivacy = useServerFn(getSocietyPrivacy);
-  const fnSetPrivacy = useServerFn(setSocietyPrivacy);
 
   async function loadAll(sid: string) {
     setLoading(true);
     setLoadError(false);
     try {
-      const [team, blocksRes, socRes, priv] = await Promise.all([
+      const [team, blocksRes, socRes] = await Promise.all([
         fnList({ data: { societyId: sid, includeInactive: true } }),
         supabase.from("blocks").select("id, name, is_active").eq("society_id", sid).order("name"),
         supabase.from("societies").select("structure_mode").eq("id", sid).maybeSingle(),
-        fnGetPrivacy({ data: { societyId: sid } }),
       ]);
       if (blocksRes.error || socRes.error) throw new Error("load_failed");
       setMembers(team.members);
       setBlocks((blocksRes.data ?? []).filter((b) => b.is_active !== false).map((b) => ({ id: b.id, name: b.name })));
       setStructureMode(((socRes.data?.structure_mode as string) === "serial") ? "serial" : "structured");
-      setPrivacy(priv);
     } catch (e) {
       setLoadError(true);
       const msg = (e as Error).message;
@@ -153,19 +144,7 @@ function TeamPage() {
     }
   }
 
-  async function handlePrivacySave(next: SocietyPrivacySettings) {
-    if (!societyId) return;
-    setSavingPrivacy(true);
-    try {
-      await fnSetPrivacy({ data: { societyId, ...next } });
-      setPrivacy(next);
-      toast.success("Privacy updated");
-    } catch (e) {
-      toast.error(friendlyError((e as Error).message));
-    } finally {
-      setSavingPrivacy(false);
-    }
-  }
+
 
   if (!sidLoading && !societyId) {
     return (
@@ -279,16 +258,10 @@ function TeamPage() {
       </SettingsSection>
 
       <SettingsSection title="Resident privacy" icon={EyeOff}
-        description="What residents can see about each other and the society. Changes apply to everyone and are recorded.">
-        {loading ? (
-          <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
-        ) : loadError ? (
-          <p className="text-sm text-muted-foreground">
-            Privacy settings couldn't be loaded, so they can't be changed right now. Use "Try again" above.
-          </p>
-        ) : (
-          <PrivacyControls value={privacy} saving={savingPrivacy} onSave={handlePrivacySave} />
-        )}
+        description="What residents can see about each other and the society's money.">
+        <Button asChild variant="outline" className="min-h-11 rounded-xl">
+          <Link to="/society/privacy-settings">Open Privacy & Transparency</Link>
+        </Button>
       </SettingsSection>
 
       <SettingsDisclosure
@@ -511,104 +484,6 @@ function AssignDialog({
 }
 
 // ---------------------------------------------------------------------------
-
-function PrivacyControls({
-  value, saving, onSave,
-}: {
-  value: SocietyPrivacySettings;
-  saving: boolean;
-  onSave: (next: SocietyPrivacySettings) => void;
-}) {
-  const [draft, setDraft] = useState<SocietyPrivacySettings>(value);
-  useEffect(() => setDraft(value), [value]);
-  const dirty = JSON.stringify(draft) !== JSON.stringify(value);
-
-  return (
-    <div className="space-y-4">
-      <PrivacyRow
-        title="Member directory"
-        value={draft.privacy_directory}
-        options={PRIVACY_DIRECTORY.map((v) => ({
-          value: v, label: PRIVACY_LABELS.directory[v], desc: PRIVACY_DESCRIPTIONS.directory[v],
-        }))}
-        onChange={(v) => setDraft({ ...draft, privacy_directory: v as SocietyPrivacySettings["privacy_directory"] })}
-      />
-      <PrivacyRow
-        title="Resident contacts (phone, email)"
-        value={draft.privacy_contacts}
-        options={PRIVACY_CONTACTS.map((v) => ({
-          value: v, label: PRIVACY_LABELS.contacts[v], desc: PRIVACY_DESCRIPTIONS.contacts[v],
-        }))}
-        onChange={(v) => setDraft({ ...draft, privacy_contacts: v as SocietyPrivacySettings["privacy_contacts"] })}
-      />
-      <PrivacyRow
-        title="Financial transparency"
-        value={draft.privacy_finances}
-        options={PRIVACY_FINANCES.map((v) => ({
-          value: v, label: PRIVACY_LABELS.finances[v], desc: PRIVACY_DESCRIPTIONS.finances[v],
-        }))}
-        onChange={(v) => setDraft({ ...draft, privacy_finances: v as SocietyPrivacySettings["privacy_finances"] })}
-      />
-      <PrivacyRow
-        title="Vehicle information"
-        value={draft.privacy_vehicles}
-        options={PRIVACY_VEHICLES.map((v) => ({
-          value: v, label: PRIVACY_LABELS.vehicles[v], desc: PRIVACY_DESCRIPTIONS.vehicles[v],
-        }))}
-        onChange={(v) => setDraft({ ...draft, privacy_vehicles: v as SocietyPrivacySettings["privacy_vehicles"] })}
-      />
-      <PrivacyRow
-        title="Documents"
-        value={draft.privacy_documents}
-        options={PRIVACY_DOCUMENTS.map((v) => ({
-          value: v, label: PRIVACY_LABELS.documents[v], desc: PRIVACY_DESCRIPTIONS.documents[v],
-        }))}
-        onChange={(v) => setDraft({ ...draft, privacy_documents: v as SocietyPrivacySettings["privacy_documents"] })}
-      />
-      <div className="flex justify-end gap-2 pt-2">
-        <Button
-          variant="outline"
-          className="rounded-xl min-h-11"
-          disabled={!dirty || saving}
-          onClick={() => setDraft(value)}
-        >
-          Discard
-        </Button>
-        <Button
-          className="rounded-xl min-h-11"
-          disabled={!dirty || saving}
-          onClick={() => onSave(draft)}
-        >
-          {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Save privacy
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function PrivacyRow({
-  title, value, options, onChange,
-}: {
-  title: string;
-  value: string;
-  options: { value: string; label: string; desc: string }[];
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div className="space-y-2">
-      <Label className="text-sm font-medium">{title}</Label>
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="rounded-xl min-h-11"><SelectValue /></SelectTrigger>
-        <SelectContent>
-          {options.map((o) => (<SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>))}
-        </SelectContent>
-      </Select>
-      <p className="text-xs text-muted-foreground">
-        {options.find((o) => o.value === value)?.desc ?? ""}
-      </p>
-    </div>
-  );
-}
 
 // ---------------------------------------------------------------------------
 

@@ -5470,6 +5470,15 @@ export type Database = {
         Args: { _society_id: string; _user_id: string }
         Returns: boolean
       }
+      bill_run_insert_period: {
+        Args: {
+          _period_end: string
+          _period_start: string
+          _rows: Json
+          _society_id: string
+        }
+        Returns: number
+      }
       bulk_approve_join_requests: {
         Args: { _request_ids: string[]; _society_id: string }
         Returns: number

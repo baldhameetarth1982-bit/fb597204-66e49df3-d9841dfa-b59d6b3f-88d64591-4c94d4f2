@@ -18,6 +18,7 @@ import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { userMessage } from "@/lib/user-error";
 import {
   getSocietyStructureOverview,
   listSocietyUnitsPage,
@@ -117,6 +118,8 @@ function FlatsPage() {
         setFlatNumber(""); setFloor(""); setOpen(false);
         void refresh(societyId);
       }
+    } catch (error) {
+      toast.error(userMessage(error, "Could not create unit. Please try again."));
     } finally {
       setSaving(false);
     }

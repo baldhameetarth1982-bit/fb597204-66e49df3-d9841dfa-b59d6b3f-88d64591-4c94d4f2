@@ -526,6 +526,13 @@
       "when": 1790494904139,
       "tag": "0074_join_request_resolve_typed_house",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1790495197910,
+      "tag": "0075_allow_unit_layout_types",
+      "breakpoints": true
     }
   ]
 }

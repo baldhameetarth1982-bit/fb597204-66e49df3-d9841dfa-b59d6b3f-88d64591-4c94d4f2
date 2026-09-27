@@ -519,6 +519,13 @@
       "when": 1790493552110,
       "tag": "0073_explorer_flat_dues_summary_null_status",
       "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1790494904139,
+      "tag": "0074_join_request_resolve_typed_house",
+      "breakpoints": true
     }
   ]
 }

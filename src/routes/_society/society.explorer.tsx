@@ -41,6 +41,8 @@ function ExplorerPage() {
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [flats, setFlats] = useState<Flat[]>([]);
   // Only the opened house's bill/payment history is loaded; society-wide dues
@@ -48,6 +50,7 @@ function ExplorerPage() {
   const [bills, setBills] = useState<BillRow[]>([]);
   const [pays, setPays] = useState<PayRow[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [detailFailed, setDetailFailed] = useState(false);
   const [dues, setDues] = useState<Record<string, { outstanding: number; rank: number }>>({});
   const [resByFlat, setResByFlat] = useState<Record<string, { name: string; phone: string | null; email: string | null }[]>>({});
 
@@ -56,6 +59,7 @@ function ExplorerPage() {
     let cancel = false;
     (async () => {
       setLoading(true);
+      setLoadFailed(false);
       const [b, f, ds, fr] = await Promise.all([
         supabase.from("blocks").select("id,name").eq("society_id", societyId).order("name"),
         supabase.from("flats").select("id,flat_number,block_id").eq("society_id", societyId),
@@ -69,7 +73,11 @@ function ExplorerPage() {
         : { data: [] as any[] };
       const profById = new Map(((profs.data ?? []) as any[]).map((x) => [x.id, x]));
       if (cancel) return;
-      if (b.error || f.error || ds.error) toast.error(b.error?.message || f.error?.message || ds.error?.message || "Load failed");
+      if (b.error || f.error || ds.error) {
+        toast.error(b.error?.message || f.error?.message || ds.error?.message || "Load failed");
+        // Never show zero dues / "Clear" when the figures failed to load.
+        setLoadFailed(true);
+      }
       setBlocks(b.data ?? []);
       setFlats((f.data ?? []) as Flat[]);
       const d: Record<string, { outstanding: number; rank: number }> = {};
@@ -84,7 +92,7 @@ function ExplorerPage() {
       setLoading(false);
     })();
     return () => { cancel = true; };
-  }, [societyId]);
+  }, [societyId, reloadKey]);
 
   useEffect(() => {
     const flatId = search.flat;
@@ -92,19 +100,20 @@ function ExplorerPage() {
     let cancel = false;
     (async () => {
       setDetailLoading(true);
+      setDetailFailed(false);
       const bi = await supabase.from("bills").select("id,flat_id,period_label,period_start,amount,status,due_date").eq("society_id", societyId).eq("flat_id", flatId);
       const billIds = (bi.data ?? []).map((x) => x.id);
       const p = billIds.length
         ? await supabase.from("payments").select("id,bill_id,amount,paid_at,method").in("bill_id", billIds).eq("status", "success")
         : { data: [], error: null as any };
       if (cancel) return;
-      if (bi.error || p.error) toast.error(bi.error?.message || p.error?.message || "Load failed");
+      if (bi.error || p.error) { toast.error(bi.error?.message || p.error?.message || "Load failed"); setDetailFailed(true); }
       setBills(((bi.data ?? []) as any[]).map((x) => ({ ...x, amount: Number(x.amount) })));
       setPays(((p.data ?? []) as any[]).map((x) => ({ ...x, amount: Number(x.amount) })));
       setDetailLoading(false);
     })();
     return () => { cancel = true; };
-  }, [societyId, search.flat]);
+  }, [societyId, search.flat, reloadKey]);
 
   const paidByBill = useMemo(() => {
     const m: Record<string, number> = {};
@@ -134,6 +143,17 @@ function ExplorerPage() {
     }
     return k;
   }, [blocks, flats, flatSummary]);
+
+  if (!sidLoading && !loading && (loadFailed || (search.flat && !detailLoading && detailFailed))) {
+    return (
+      <PageShell>
+        <div className="grid place-items-center gap-3 h-60 text-center">
+          <p className="text-sm text-muted-foreground">Couldn't load dues. Figures are hidden so nothing wrong is shown.</p>
+          <Button onClick={() => setReloadKey((k) => k + 1)}>Retry</Button>
+        </div>
+      </PageShell>
+    );
+  }
 
   if (sidLoading || loading || (search.flat && detailLoading)) {
     return <PageShell><div className="grid place-items-center h-60"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div></PageShell>;

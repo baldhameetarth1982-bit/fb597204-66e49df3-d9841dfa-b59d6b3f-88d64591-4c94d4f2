@@ -117,6 +117,26 @@ function LoginPage() {
     }
   }
 
+  async function sendReset() {
+    const addr = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(addr)) {
+      toast.error("Enter your email above first, then tap Forgot password.");
+      return;
+    }
+    setBusy("email");
+    try {
+      await supabase.auth.resetPasswordForEmail(addr, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      // Same message either way so account existence isn't revealed.
+      toast.success("If an account exists for this email, a reset link is on its way.");
+    } catch {
+      toast.error("Couldn't send the reset email. Please try again.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function withGoogle() {
     setBusy("google");
     setLimited(null);
@@ -281,6 +301,17 @@ function LoginPage() {
               {mode === "signin" ? "Sign in" : "Create account"}
             </Button>
           </form>
+          {mode === "signin" && (
+            <Button
+              type="button"
+              variant="link"
+              disabled={busy === "email"}
+              onClick={sendReset}
+              className="mt-2 w-full min-h-11 text-primary"
+            >
+              Forgot password?
+            </Button>
+          )}
           <Button
             type="button"
             variant="ghost"

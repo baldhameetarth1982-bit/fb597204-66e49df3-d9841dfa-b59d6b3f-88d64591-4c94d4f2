@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      _scheduler_tokens: {
+        Row: {
+          created_at: string
+          name: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          name: string
+          token: string
+        }
+        Update: {
+          created_at?: string
+          name?: string
+          token?: string
+        }
+        Relationships: []
+      }
       achievements: {
         Row: {
           awarded_at: string
@@ -4062,6 +4080,44 @@ export type Database = {
           },
         ]
       }
+      society_automation_settings: {
+        Row: {
+          created_at: string
+          reminder_min_days_overdue: number
+          reminder_repeat_days: number
+          reminders_enabled: boolean
+          society_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          reminder_min_days_overdue?: number
+          reminder_repeat_days?: number
+          reminders_enabled?: boolean
+          society_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          reminder_min_days_overdue?: number
+          reminder_repeat_days?: number
+          reminders_enabled?: boolean
+          society_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "society_automation_settings_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: true
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       society_contacts: {
         Row: {
           category: string
@@ -5310,6 +5366,15 @@ export type Database = {
           unpaid_bill_total: number
         }[]
       }
+      admin_set_society_automation: {
+        Args: {
+          _config?: Json
+          _enabled: boolean
+          _key: string
+          _society_id: string
+        }
+        Returns: Json
+      }
       admin_set_society_privacy: {
         Args: {
           _contacts: string
@@ -5891,6 +5956,7 @@ export type Database = {
           trial_ends_at: string
         }[]
       }
+      get_society_automations: { Args: { _society_id: string }; Returns: Json }
       get_society_business_profile: {
         Args: { _society_id: string }
         Returns: {
@@ -6822,6 +6888,7 @@ export type Database = {
         Args: { _approved: boolean; _reason?: string; _user_id: string }
         Returns: undefined
       }
+      verify_scheduler_token: { Args: { _token: string }; Returns: boolean }
       visitor_invite: {
         Args: {
           _category: string

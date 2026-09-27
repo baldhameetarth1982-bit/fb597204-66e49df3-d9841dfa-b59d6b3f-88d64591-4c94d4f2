@@ -540,6 +540,13 @@
       "when": 1790547603585,
       "tag": "0076_auth_context_active_roles_only",
       "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1790549826785,
+      "tag": "0077_advanced_automation_config",
+      "breakpoints": true
     }
   ]
 }

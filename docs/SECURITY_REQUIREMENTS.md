@@ -39,6 +39,24 @@ Sensitive workflow status (`no_dues_requests.status`, points-ledger `source`, pa
 - Format checks on emails/phones/UUIDs/URLs.
 - Client-provided IDs cross-checked against caller's society membership on every mutation.
 
+## Stage 17 closure — ingress and storage hardening (2026-09-24)
+
+- Firebase session exchange accepts a strict bounded payload, rate-limits by a
+  keyed identity fingerprint, avoids attacker-triggered directory scans, and
+  never returns provider diagnostics.
+- Public billing jobs use the shared atomic database limiter with keyed IP
+  fingerprints; support chat has both minute and daily authenticated limits.
+- The deprecated reasonless society-plan grant cannot be executed by PUBLIC,
+  anonymous, or authenticated callers. The reasoned audited grant remains the
+  sole authenticated contract.
+- Post and society-branding image writes are private, size-capped, and require
+  an allowed image MIME type plus a matching image extension at storage RLS.
+- The public plan catalog and approved advertising delivery remain deliberately
+  readable, while their write paths stay role-restricted.
+- Dependency vulnerability status remains unverified when the scanner cannot
+  parse the pinned upstream SheetJS archive; a clean scan is never inferred
+  from that tooling failure.
+
 ## Non-member income transitions (Turn 18B.2A)
 
 `public.transition_income_record(uuid, text, text)` is authenticated-callable

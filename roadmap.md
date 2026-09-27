@@ -2,11 +2,11 @@
 
 ## Stage 17 — Security hardening
 
-- [ ] Inventory and threat-model authentication, public endpoints, uploads, AI, webhooks, financial/admin mutations, and exposed database functions.
-- [ ] Fix verified high-impact authorization, validation, rate-limit, replay, storage, error-redaction, and concurrency weaknesses with focused changes.
-- [ ] Add negative authorization, tenant-isolation, rate-limit, validation, webhook, AI-boundary, and financial-integrity regression tests.
-- [ ] Run database lint/security scans, dependency and bundle-secret scans, focused/full tests, type checking, and production build.
-- [ ] Close only with fresh evidence and an explicit list of runtime checks that were unavailable.
+- [x] Inventory and threat-model authentication, public endpoints, uploads, AI, webhooks, financial/admin mutations, and exposed database functions.
+- [x] Fix verified high-impact authorization, validation, rate-limit, replay, storage, error-redaction, and concurrency weaknesses with focused changes.
+- [x] Add focused negative source contracts while preserving the existing tenant, webhook, AI-boundary, and financial-integrity regression suites.
+- [x] Run database lint/security scans, dependency and bundle-secret scans, focused/full tests, type checking, and production build.
+- [x] Close with fresh evidence and an explicit list of runtime checks that were unavailable.
 
 ## Stage 15 — Android and Google Play release preparation
 

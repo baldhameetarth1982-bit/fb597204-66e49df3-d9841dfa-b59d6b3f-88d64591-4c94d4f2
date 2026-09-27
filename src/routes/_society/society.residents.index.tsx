@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ErrorState } from "@/components/system/ErrorState";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Users, Search, AlertTriangle, Link2, Download, ChevronRight, Home } from "lucide-react";
@@ -40,6 +40,12 @@ function ResidentsPage() {
   const overview = useServerFn(getResidentDirectoryOverview);
   const qc = useQueryClient();
   const [q, setQ] = useState("");
+  // Server search waits for typing to pause (backpressure); local filtering stays instant.
+  const [serverQ, setServerQ] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setServerQ(q.trim()), 300);
+    return () => clearTimeout(t);
+  }, [q]);
   const [filter, setFilter] = useState<Filter>("all");
   const [assignTarget, setAssignTarget] = useState<{ id: string; full_name: string | null } | null>(null);
 
@@ -59,11 +65,12 @@ function ResidentsPage() {
   // Safe server-paginated preview — projects only safe fields, no phone/email.
   const { data: safePage } = useQuery({
     enabled: !!societyId,
-    queryKey: ["society-residents-safe", societyId, q, filter],
+    queryKey: ["society-residents-safe", societyId, serverQ, filter],
+    placeholderData: (prev) => prev,
     queryFn: async () => listSafe({
       data: {
         societyId: societyId!,
-        search: q.trim() || null,
+        search: serverQ || null,
         relationship: filter === "owner" ? "owner" : filter === "tenant" ? "tenant" : null,
         activeOnly: true,
         limit: 100, offset: 0,

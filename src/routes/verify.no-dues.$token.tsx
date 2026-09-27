@@ -6,6 +6,7 @@ export const Route = createFileRoute("/verify/no-dues/$token")({
     meta: [
       { title: "Verify No-Dues Certificate — SociyoHub" },
       { name: "description", content: "Verify the authenticity of a SociyoHub no-dues certificate." },
+      { name: "robots", content: "noindex, nofollow" },
     ],
   }),
   component: VerifyPage,

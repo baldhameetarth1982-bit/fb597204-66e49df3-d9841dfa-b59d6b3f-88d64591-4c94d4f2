@@ -8,5 +8,10 @@ Disallow: /settings
 Disallow: /verify-phone
 Disallow: /checkout/
 Disallow: /api/
+Disallow: /dashboard
+Disallow: /q/
+Disallow: /verify/
+Disallow: /mcp
+Disallow: /.mcp/
 
 Sitemap: https://sociohub.live/sitemap.xml

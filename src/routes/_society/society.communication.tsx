@@ -40,7 +40,7 @@ function CommunicationCenter() {
     queryFn: async () => {
       const { data } = await supabase
         .from("posts")
-        .select("id, title, body, created_at, kind")
+        .select("id, body, created_at")
         .eq("society_id", societyId!)
         .order("created_at", { ascending: false })
         .limit(6);
@@ -112,8 +112,8 @@ function CommunicationCenter() {
                 <ListCard
                   key={r.id}
                   leading={<span className="h-10 w-10 rounded-xl bg-primary/10 text-primary grid place-items-center"><BookOpen className="h-4 w-4" /></span>}
-                  title={r.title ?? "Notice"}
-                  subtitle={r.body || new Date(r.created_at).toLocaleDateString("en-IN")}
+                  title={r.body ? r.body.slice(0, 80) : "Post"}
+                  subtitle={new Date(r.created_at).toLocaleDateString("en-IN")}
                 />
               ))}
             </ListCardGroup>

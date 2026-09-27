@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { userMessage } from "@/lib/user-error";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ShieldCheck, Loader2, BadgeCheck, FileText, Clock, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";

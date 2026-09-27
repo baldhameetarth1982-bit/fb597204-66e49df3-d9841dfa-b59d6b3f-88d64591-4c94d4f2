@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { userMessage } from "@/lib/user-error";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ShieldCheck, Loader2, BadgeCheck, FileText, Clock, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
@@ -40,8 +40,12 @@ function VerificationsPage() {
   const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
 
+  const loadSeq = useRef(0);
+  useEffect(() => () => { loadSeq.current++; }, []);
+
   async function load() {
     if (!societyId) return;
+    const seq = ++loadSeq.current;
     setLoading(true);
     const { data, error } = await (supabase as any)
       .from("profiles")
@@ -50,24 +54,27 @@ function VerificationsPage() {
       )
       .eq("society_id", societyId)
       .not("aadhaar_uploaded_at", "is", null)
-      .order("aadhaar_uploaded_at", { ascending: false });
+      .order("aadhaar_uploaded_at", { ascending: false })
+      .limit(200);
+    if (seq !== loadSeq.current) return;
     if (error) {
       toast.error(userMessage(error));
       setLoading(false);
       return;
     }
     setRows((data ?? []) as Pending[]);
-    // generate signed URLs
+    // One batched signing request instead of one request per resident.
+    const withDoc = ((data ?? []) as any[]).filter((p) => p.aadhaar_url);
     const urlMap: Record<string, string> = {};
-    await Promise.all(
-      (data ?? []).map(async (p: any) => {
-        if (!p.aadhaar_url) return;
-        const { data: signed } = await supabase.storage
-          .from("kyc")
-          .createSignedUrl(p.aadhaar_url, 600);
-        if (signed?.signedUrl) urlMap[p.id] = signed.signedUrl;
-      }),
-    );
+    if (withDoc.length) {
+      const { data: signed } = await supabase.storage
+        .from("kyc")
+        .createSignedUrls(withDoc.map((p) => p.aadhaar_url), 600);
+      if (seq !== loadSeq.current) return;
+      (signed ?? []).forEach((s, i) => {
+        if (s?.signedUrl && !s.error) urlMap[withDoc[i].id] = s.signedUrl;
+      });
+    }
     setSignedUrls(urlMap);
     setLoading(false);
   }

@@ -185,13 +185,22 @@ export const Route = createFileRoute("/api/public/hooks/run-billing")({
             };
           });
 
-          const { error: insErr } = await supabaseAdmin.from("bills").insert(rows);
-          if (insErr) {
+          // Atomic, lock-serialised insert: concurrent/retried runs for the same
+          // society + period cannot both create bills (DB is the authority).
+          const { data: inserted, error: insErr } = await supabaseAdmin.rpc("bill_run_insert_period", {
+            _society_id: sch.society_id,
+            _period_start: pStart,
+            _period_end: pEnd,
+            _rows: rows.map((r) => ({
+              flat_id: r.flat_id, period_label: r.period_label, amount: r.amount, due_date: r.due_date,
+            })),
+          });
+          if (insErr || !inserted) {
             societiesSkipped++;
             continue;
           }
 
-          totalGenerated += rows.length;
+          totalGenerated += inserted;
           societiesProcessed++;
           const cycle = sch.cycle as "weekly" | "monthly" | "quarterly";
           const next = new Date(now);

@@ -54,3 +54,11 @@ describe("Stage 17 security hardening", () => {
     expect(migration).not.toMatch(/image\/svg\+xml/i);
   });
 });
+import { readFileSync as __rf } from "node:fs";
+import { describe as __d, it as __i, expect as __e } from "vitest";
+__d("stage17 final: support chat history", () => {
+  __i("keeps only client text parts", () => {
+    const s = __rf("src/routes/api/support-chat.ts", "utf8");
+    __e(s).toMatch(/p\.type === "text" && typeof p\.text === "string"/);
+  });
+});

@@ -56,7 +56,16 @@ export const Route = createFileRoute("/api/support-chat")({
         if (!parsedMessages.success) {
           return new Response("Messages are required", { status: 400 });
         }
-        const messages = parsedMessages.data;
+        // Only plain text parts are accepted from the client; forged tool-call,
+        // tool-result, file or reasoning parts are dropped so history cannot
+        // impersonate tool output or smuggle extra payloads to the model.
+        const messages = parsedMessages.data.map((m) => ({
+          ...(m.id ? { id: m.id } : {}),
+          role: m.role,
+          parts: m.parts
+            .filter((p) => p.type === "text" && typeof p.text === "string")
+            .map((p) => ({ type: "text" as const, text: p.text as string })),
+        }));
         const MAX_MESSAGES = 50;
         const MAX_TOTAL_CHARS = 40_000;
         const MAX_MESSAGE_CHARS = 8_000;

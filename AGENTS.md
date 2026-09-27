@@ -9,3 +9,4 @@
 - Public ingress uses strict bounded schemas, redacted failures, and the shared atomic HMAC-fingerprinted limiter; this prevents amplification and race-prone local throttles.
 - Vulnerable transitive runtime packages are pinned via package.json overrides to in-major patched releases; this fixes advisories without forcing breaking upgrades.
 - Scheduler hooks accept CRON_SECRET or the DB-held pg_cron token (verify_scheduler_token); automation config writes go only through admin_set_society_automation, which enforces permission, Premium and audit.
+- Society Custom Branding lives in society_branding (strict hex/name/logo-path CHECKs) written only via admin_set/reset_society_branding RPCs (admin + Premium + audit); logos are re-encoded PNGs in the private branding bucket; this keeps branding separate from bill-template logo_url/bill_theme.

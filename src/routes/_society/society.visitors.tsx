@@ -101,8 +101,15 @@ function SocietyVisitors() {
     flat_number: "",
   });
 
+  const loadCtl = useRef<AbortController | null>(null);
   async function load() {
     if (!societyId) return;
+    // Skip background polls while the screen is hidden; cancel any older in-flight read.
+    if (typeof document !== "undefined" && document.hidden && loadCtl.current) return;
+    loadCtl.current?.abort();
+    const ctl = new AbortController();
+    loadCtl.current = ctl;
+    const timer = setTimeout(() => ctl.abort(), 15000);
     const { data, error } = await supabase
       .from("visitors")
       .select(
@@ -110,7 +117,10 @@ function SocietyVisitors() {
       )
       .eq("society_id", societyId)
       .order("entry_at", { ascending: false })
-      .limit(200);
+      .limit(200)
+      .abortSignal(ctl.signal);
+    clearTimeout(timer);
+    if (loadCtl.current !== ctl) return; // superseded or unmounted
     if (error) {
       setLoadFailed(true);
       setLoading(false);
@@ -124,7 +134,7 @@ function SocietyVisitors() {
     if (societyId) {
       void load();
       const t = setInterval(load, 30000);
-      return () => clearInterval(t);
+      return () => { clearInterval(t); loadCtl.current?.abort(); loadCtl.current = null; };
     } else if (!sl) setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [societyId, sl]);

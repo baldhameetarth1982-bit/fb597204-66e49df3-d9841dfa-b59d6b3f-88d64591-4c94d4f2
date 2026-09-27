@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Receipt, Plus, Share2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
@@ -37,27 +37,41 @@ function BillingPage() {
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "paid" | "unpaid" | "overdue" | "cancelled">("all");
 
+  const loadCtl = useRef<AbortController | null>(null);
+  const [cancelling, setCancelling] = useState<string | null>(null);
+  useEffect(() => () => loadCtl.current?.abort(), []);
+
   async function load() {
     if (!societyId) { setLoading(false); return; }
+    loadCtl.current?.abort();
+    const ctl = new AbortController();
+    loadCtl.current = ctl;
+    const timer = setTimeout(() => ctl.abort(), 20000);
+    const stale = () => loadCtl.current !== ctl;
     setLoading(true);
     setLoadError(null);
+    try {
     const { data, error } = await supabase
       .from("bills")
       .select("id, period_label, amount, due_date, status, flat_id")
       .eq("society_id", societyId)
       .order("due_date", { ascending: false })
-      .limit(500);
+      .limit(500)
+      .abortSignal(ctl.signal);
+    if (stale()) return;
     if (error) { setRows([]); setLoadError(toSafeFinanceError(error).message); setLoading(false); return; }
     const bills = (data as any[]) ?? [];
     const flatIds = Array.from(new Set(bills.map((b) => b.flat_id).filter(Boolean)));
     let flatMap: Record<string, { flat_number: string; block_id: string | null }> = {};
     let blockMap: Record<string, string> = {};
     if (flatIds.length) {
-      const { data: flats } = await supabase.from("flats").select("id, flat_number, block_id").in("id", flatIds);
+      const { data: flats } = await supabase.from("flats").select("id, flat_number, block_id").in("id", flatIds).abortSignal(ctl.signal);
+      if (stale()) return;
       flatMap = Object.fromEntries((flats ?? []).map((f: any) => [f.id, { flat_number: f.flat_number, block_id: f.block_id }]));
       const blockIds = Array.from(new Set((flats ?? []).map((f: any) => f.block_id).filter(Boolean)));
       if (blockIds.length) {
-        const { data: blocks } = await supabase.from("blocks").select("id, name").in("id", blockIds);
+        const { data: blocks } = await supabase.from("blocks").select("id, name").in("id", blockIds).abortSignal(ctl.signal);
+        if (stale()) return;
         blockMap = Object.fromEntries((blocks ?? []).map((b: any) => [b.id, b.name]));
       }
     }
@@ -66,6 +80,7 @@ function BillingPage() {
       return { ...b, flat: f ? { flat_number: f.flat_number, block: f.block_id ? { name: blockMap[f.block_id] ?? "" } : null } : null };
     }));
     setLoading(false);
+    } finally { clearTimeout(timer); }
   }
 
   useEffect(() => { void load(); }, [societyId]);
@@ -116,8 +131,10 @@ function BillingPage() {
   }
   async function cancel(r: BillRow) {
     const reason = window.prompt("Reason for cancellation?");
-    if (!reason) return;
+    if (!reason || cancelling) return;
+    setCancelling(r.id);
     const { error } = await supabase.rpc("cancel_bill", { _bill_id: r.id, _reason: reason });
+    setCancelling(null);
     if (error) toast.error(toSafeFinanceError(error).message);
     else { toast.success("Bill cancelled"); void load(); }
   }
@@ -176,7 +193,7 @@ function BillingPage() {
                       </Link>
                       <div className="mt-2 flex gap-1">
                         <Button variant="ghost" size="sm" className="min-h-11 text-xs" onClick={() => void share(r, flatLabel)} aria-label={`Share bill for house ${flatLabel}`}><Share2 className="mr-1 h-3.5 w-3.5" />Share</Button>
-                        {open && <Button variant="ghost" size="sm" className="min-h-11 text-xs text-destructive" onClick={() => void cancel(r)} aria-label={`Cancel bill for house ${flatLabel}`}>Cancel bill</Button>}
+                        {open && <Button variant="ghost" size="sm" className="min-h-11 text-xs text-destructive" disabled={cancelling !== null} onClick={() => void cancel(r)} aria-label={`Cancel bill for house ${flatLabel}`}>Cancel bill</Button>}
                       </div>
                     </li>
                   );

@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { normalizeLabel, isModeConversionBlocked, type StructureOverview } from "@/lib/society-structure";
+import fs from "node:fs";
+import path from "node:path";
 
 describe("Stage 2A — normalizeLabel", () => {
   it("trims and lowercases", () => {
@@ -74,5 +76,22 @@ describe("Stage 2A — canonical model invariants (documentation)", () => {
     // authoritative writes go to blocks + flats via commit_society_wizard
     // and the RPCs in src/lib/society-structure.ts.
     expect(true).toBe(true);
+  });
+});
+
+describe("Stage 2A — unit creation contract", () => {
+  it("keeps every layout offered by the form valid in the database", () => {
+    const migrationsDir = path.resolve(process.cwd(), "drizzle/migrations");
+    const migrationName = fs
+      .readdirSync(migrationsDir)
+      .find((name) => name.endsWith("allow_unit_layout_types.sql"));
+    const migration = migrationName
+      ? fs.readFileSync(path.join(migrationsDir, migrationName), "utf8")
+      : undefined;
+
+    expect(migration).toBeDefined();
+    for (const layout of ["1rk", "1bhk", "2bhk", "3bhk", "4bhk", "penthouse", "house", "shop"]) {
+      expect(migration).toContain(`'${layout}'`);
+    }
   });
 });

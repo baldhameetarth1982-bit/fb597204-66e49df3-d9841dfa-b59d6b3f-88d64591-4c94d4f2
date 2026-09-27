@@ -54,16 +54,33 @@ export const Route = createFileRoute("/api/public/hooks/maintenance-reminders")(
           return new Response("Too Many Requests", { status: 429, headers: { "retry-after": String(retry) } });
         }
 
+        // Optional narrowing for controlled QA runs (scheduler-authenticated only;
+        // can only restrict the candidate set, never widen it).
+        let onlySociety: string | null = null;
+        try {
+          const raw = await request.text();
+          if (raw && raw.length <= 256) {
+            const body = JSON.parse(raw) as { societyId?: unknown };
+            if (typeof body?.societyId === "string") {
+              if (!/^[0-9a-f-]{36}$/i.test(body.societyId)) return new Response("Bad Request", { status: 400 });
+              onlySociety = body.societyId;
+            }
+          }
+        } catch {
+          return new Response("Bad Request", { status: 400 });
+        }
+
         const today = new Date();
         const todayIso = today.toISOString().slice(0, 10);
 
         // Pull unpaid periods that are pending/overdue and either due today or past due.
-        const { data: periods, error: pErr } = await supabaseAdmin
+        let pQuery = supabaseAdmin
           .from("maintenance_periods")
           .select("id, society_id, flat_id, period_label, amount_due, due_date, status")
           .in("status", ["pending", "outstanding"])
-          .lte("due_date", todayIso)
-          .limit(5000);
+          .lte("due_date", todayIso);
+        if (onlySociety) pQuery = pQuery.eq("society_id", onlySociety);
+        const { data: periods, error: pErr } = await pQuery.limit(5000);
         if (pErr) return new Response("Internal error", { status: 500 });
 
         if (!periods?.length) {

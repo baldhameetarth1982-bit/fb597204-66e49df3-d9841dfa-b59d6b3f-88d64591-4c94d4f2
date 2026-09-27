@@ -299,7 +299,7 @@ export const getAdminBillDetail = createServerFn({ method: "POST" })
     // RLS ever drifts to permit the read.
     const { data: canManage, error: permErr } = await context.supabase.rpc(
       "current_user_has_society_permission",
-      { _society_id: b.society_id, _capability: "billing.manage" },
+      { _society_id: b.society_id, _capability: "billing.manage", _block_id: null as unknown as string },
     );
     if (permErr) throw new Error(mapBillingError("operation_failed"));
     if (canManage !== true) {

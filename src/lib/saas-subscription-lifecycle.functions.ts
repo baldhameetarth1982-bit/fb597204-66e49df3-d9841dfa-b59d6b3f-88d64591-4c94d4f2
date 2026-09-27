@@ -20,6 +20,8 @@ async function requirePlanManager(
   const { data, error } = await supabase.rpc("current_user_has_society_permission", {
     _society_id: societyId,
     _capability: "society.settings",
+    // Explicit null picks the 3-arg overload; 2 named args are ambiguous (PGRST203).
+    _block_id: null as unknown as string,
   });
   if (error || !data) throw new Error("You do not have permission to manage this subscription.");
 }

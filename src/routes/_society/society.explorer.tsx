@@ -43,8 +43,12 @@ function ExplorerPage() {
   const [loading, setLoading] = useState(true);
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [flats, setFlats] = useState<Flat[]>([]);
+  // Only the opened house's bill/payment history is loaded; society-wide dues
+  // come pre-aggregated from explorer_flat_dues_summary (RLS applies as caller).
   const [bills, setBills] = useState<BillRow[]>([]);
   const [pays, setPays] = useState<PayRow[]>([]);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [dues, setDues] = useState<Record<string, { outstanding: number; rank: number }>>({});
   const [resByFlat, setResByFlat] = useState<Record<string, { name: string; phone: string | null; email: string | null }[]>>({});
 
   useEffect(() => {
@@ -52,10 +56,10 @@ function ExplorerPage() {
     let cancel = false;
     (async () => {
       setLoading(true);
-      const [b, f, bi, fr] = await Promise.all([
+      const [b, f, ds, fr] = await Promise.all([
         supabase.from("blocks").select("id,name").eq("society_id", societyId).order("name"),
         supabase.from("flats").select("id,flat_number,block_id").eq("society_id", societyId),
-        supabase.from("bills").select("id,flat_id,period_label,period_start,amount,status,due_date").eq("society_id", societyId),
+        supabase.rpc("explorer_flat_dues_summary", { _society_id: societyId }),
         supabase.from("flat_residents").select("flat_id,user_id,relationship,flats!inner(society_id)").eq("flats.society_id", societyId).eq("is_active", true),
       ]);
       // flat_residents has no FK to profiles, so names are looked up separately.
@@ -65,15 +69,12 @@ function ExplorerPage() {
         : { data: [] as any[] };
       const profById = new Map(((profs.data ?? []) as any[]).map((x) => [x.id, x]));
       if (cancel) return;
-      if (b.error || f.error || bi.error) toast.error(b.error?.message || f.error?.message || bi.error?.message || "Load failed");
-      const billIds = (bi.data ?? []).map((x) => x.id);
-      const p = billIds.length
-        ? await supabase.from("payments").select("id,bill_id,amount,paid_at,method").in("bill_id", billIds).eq("status", "success")
-        : { data: [], error: null as any };
+      if (b.error || f.error || ds.error) toast.error(b.error?.message || f.error?.message || ds.error?.message || "Load failed");
       setBlocks(b.data ?? []);
       setFlats((f.data ?? []) as Flat[]);
-      setBills(((bi.data ?? []) as any[]).map((x) => ({ ...x, amount: Number(x.amount) })));
-      setPays(((p.data ?? []) as any[]).map((x) => ({ ...x, amount: Number(x.amount) })));
+      const d: Record<string, { outstanding: number; rank: number }> = {};
+      for (const r of (ds.data ?? []) as any[]) d[r.flat_id] = { outstanding: Number(r.outstanding), rank: Number(r.status_rank) };
+      setDues(d);
       const map: typeof resByFlat = {};
       for (const r of (fr.data ?? []) as any[]) {
         const prof = profById.get(r.user_id) ?? {};
@@ -85,6 +86,26 @@ function ExplorerPage() {
     return () => { cancel = true; };
   }, [societyId]);
 
+  useEffect(() => {
+    const flatId = search.flat;
+    if (!societyId || !flatId) { setBills([]); setPays([]); return; }
+    let cancel = false;
+    (async () => {
+      setDetailLoading(true);
+      const bi = await supabase.from("bills").select("id,flat_id,period_label,period_start,amount,status,due_date").eq("society_id", societyId).eq("flat_id", flatId);
+      const billIds = (bi.data ?? []).map((x) => x.id);
+      const p = billIds.length
+        ? await supabase.from("payments").select("id,bill_id,amount,paid_at,method").in("bill_id", billIds).eq("status", "success")
+        : { data: [], error: null as any };
+      if (cancel) return;
+      if (bi.error || p.error) toast.error(bi.error?.message || p.error?.message || "Load failed");
+      setBills(((bi.data ?? []) as any[]).map((x) => ({ ...x, amount: Number(x.amount) })));
+      setPays(((p.data ?? []) as any[]).map((x) => ({ ...x, amount: Number(x.amount) })));
+      setDetailLoading(false);
+    })();
+    return () => { cancel = true; };
+  }, [societyId, search.flat]);
+
   const paidByBill = useMemo(() => {
     const m: Record<string, number> = {};
     for (const p of pays) m[p.bill_id] = (m[p.bill_id] ?? 0) + p.amount;
@@ -92,21 +113,14 @@ function ExplorerPage() {
   }, [pays]);
 
   const flatSummary = useMemo(() => {
-    const today = new Date();
+    const names = ["clear", "pending", "overdue"] as const;
     const sum: Record<string, { outstanding: number; status: "clear" | "pending" | "overdue" }> = {};
-    for (const f of flats) sum[f.id] = { outstanding: 0, status: "clear" };
-    for (const b of bills) {
-      if (b.status === "cancelled") continue;
-      const paid = paidByBill[b.id] ?? 0;
-      const remain = Math.max(0, b.amount - paid);
-      sum[b.flat_id].outstanding += remain;
-      const st = statusFor(b.amount, paid, today, new Date(b.due_date));
-      const cur = sum[b.flat_id].status;
-      const rank = { clear: 0, pending: 1, overdue: 2 } as const;
-      if (rank[st] > rank[cur]) sum[b.flat_id].status = st;
+    for (const f of flats) {
+      const d = dues[f.id];
+      sum[f.id] = { outstanding: d?.outstanding ?? 0, status: names[d?.rank ?? 0] ?? "clear" };
     }
     return sum;
-  }, [flats, bills, paidByBill]);
+  }, [flats, dues]);
 
   const blockKpi = useMemo(() => {
     const k: Record<string, { total: number; clear: number; pending: number; overdue: number; outstanding: number }> = {};
@@ -121,7 +135,7 @@ function ExplorerPage() {
     return k;
   }, [blocks, flats, flatSummary]);
 
-  if (sidLoading || loading) {
+  if (sidLoading || loading || (search.flat && detailLoading)) {
     return <PageShell><div className="grid place-items-center h-60"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div></PageShell>;
   }
 

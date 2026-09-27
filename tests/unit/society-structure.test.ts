@@ -82,11 +82,12 @@ describe("Stage 2A — canonical model invariants (documentation)", () => {
 describe("Stage 2A — unit creation contract", () => {
   it("keeps every layout offered by the form valid in the database", () => {
     const migrationsDir = path.resolve(process.cwd(), "drizzle/migrations");
-    const migration = fs
+    const migrationName = fs
       .readdirSync(migrationsDir)
-      .filter((name) => name.endsWith(".sql"))
-      .map((name) => fs.readFileSync(path.join(migrationsDir, name), "utf8"))
-      .find((sql) => sql.includes("allow_unit_layout_types"));
+      .find((name) => name.endsWith("allow_unit_layout_types.sql"));
+    const migration = migrationName
+      ? fs.readFileSync(path.join(migrationsDir, migrationName), "utf8")
+      : undefined;
 
     expect(migration).toBeDefined();
     for (const layout of ["1rk", "1bhk", "2bhk", "3bhk", "4bhk", "penthouse", "house", "shop"]) {

@@ -3,7 +3,7 @@ import {
   Building2, Home, Car, Users, UserCheck, ShieldCheck, MessageSquare,
   Receipt, Wallet, BarChart3, TrendingDown, BookOpen,
   Settings2, UsersRound, Activity, LifeBuoy, Sparkles, KeyRound, Building, Lock,
-  LayoutGrid, Compass, FileCheck2, Trophy,
+  LayoutGrid, Compass, FileCheck2, Trophy, Palette,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { MobileHero } from "@/components/shared/MobileHero";
@@ -58,6 +58,7 @@ const OTHER: Tile[] = [
   { to: "/society/subscription", label: "Subscription", icon: Wallet },
   { to: "/society/team", label: "Team & roles", icon: Users, feature: "team_roles" },
   { to: "/society/privacy-settings", label: "Privacy", icon: ShieldCheck, feature: "privacy_controls" },
+  { to: "/society/branding", label: "Branding", icon: Palette, feature: "custom_branding" },
   { to: "/society/import", label: "Resident import", icon: Users, feature: "resident_import" },
   { to: "/society/bill-studio", label: "Bill templates", icon: Receipt, feature: "bill_templates" },
   { to: "/society/custom-fields", label: "Custom fields", icon: Settings2 },

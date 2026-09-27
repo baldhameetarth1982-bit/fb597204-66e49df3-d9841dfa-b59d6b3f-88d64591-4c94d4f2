@@ -4118,6 +4118,44 @@ export type Database = {
           },
         ]
       }
+      society_branding: {
+        Row: {
+          accent_color: string | null
+          display_name: string | null
+          logo_path: string | null
+          primary_color: string | null
+          society_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          accent_color?: string | null
+          display_name?: string | null
+          logo_path?: string | null
+          primary_color?: string | null
+          society_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          accent_color?: string | null
+          display_name?: string | null
+          logo_path?: string | null
+          primary_color?: string | null
+          society_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "society_branding_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: true
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       society_contacts: {
         Row: {
           category: string
@@ -5130,6 +5168,10 @@ export type Database = {
         Args: { _society_id: string }
         Returns: undefined
       }
+      _branding_plan_enabled: {
+        Args: { _society_id: string }
+        Returns: boolean
+      }
       _finance_plan_enabled: { Args: { _society_id: string }; Returns: boolean }
       _finance_post_entry: {
         Args: {
@@ -5366,11 +5408,25 @@ export type Database = {
           unpaid_bill_total: number
         }[]
       }
+      admin_reset_society_branding: {
+        Args: { _society_id: string }
+        Returns: Json
+      }
       admin_set_society_automation: {
         Args: {
           _config?: Json
           _enabled: boolean
           _key: string
+          _society_id: string
+        }
+        Returns: Json
+      }
+      admin_set_society_branding: {
+        Args: {
+          _accent_color: string
+          _display_name: string
+          _logo_path: string
+          _primary_color: string
           _society_id: string
         }
         Returns: Json
@@ -5966,6 +6022,7 @@ export type Database = {
         }[]
       }
       get_society_automations: { Args: { _society_id: string }; Returns: Json }
+      get_society_branding: { Args: { _society_id: string }; Returns: Json }
       get_society_business_profile: {
         Args: { _society_id: string }
         Returns: {

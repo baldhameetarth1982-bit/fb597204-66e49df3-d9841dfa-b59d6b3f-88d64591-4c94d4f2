@@ -596,6 +596,7 @@ const CATALOG: FeatureCatalogEntry[] = [
     category: "settings_admin",
     minPlan: "premium",
     roles: ["society_admin"],
+    route: "/society/branding",
     keywords: ["brand", "logo", "white label"],
     icon: "Sparkles",
     status: "planned",

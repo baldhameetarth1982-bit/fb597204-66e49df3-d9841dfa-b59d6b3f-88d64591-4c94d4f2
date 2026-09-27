@@ -11,6 +11,7 @@ import { useAuth } from "@/context/AuthContext";
 import { AdBanner } from "@/components/shared/AdBanner";
 import { supabase } from "@/integrations/supabase/client";
 import { useResidentNotices } from "@/hooks/useResidentNotices";
+import { ResidentBrandBand } from "@/components/branding/ResidentBrandBand";
 
 export const Route = createFileRoute("/_resident/app/dashboard")({
   head: () => ({
@@ -91,6 +92,8 @@ function ResidentDashboard() {
           {unread.length > 0 && <span className="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-destructive ring-2 ring-background" aria-hidden />}
         </Link>
       </header>
+
+      <ResidentBrandBand societyId={societyId} />
 
       {/* Dues — the most important thing for a resident. Never shows a fake ₹0. */}
       <Card className="rounded-xl bg-primary text-primary-foreground border-0 overflow-hidden">

@@ -102,7 +102,7 @@ function MyVisitors() {
   function share(code: string, name: string) {
     const text = `Hi ${name}, your gate pass code is ${code}. Show it to the guard at the gate.`;
     if (navigator.share) navigator.share({ text }).catch(() => undefined);
-    else void navigator.clipboard.writeText(text).then(() => toast.success("Copied"));
+    else void navigator.clipboard.writeText(text).then(() => toast.success("Copied"), () => toast.error("Couldn't copy"));
   }
 
   return (
@@ -234,7 +234,7 @@ function MyVisitors() {
               <p className="font-mono text-4xl font-bold tracking-[0.4em]">{issued.code}</p>
               <div className="flex gap-2">
                 <Button className="flex-1 h-12 rounded-xl" onClick={() => share(issued.code, issued.name)}><Share2 className="h-4 w-4 mr-2" />Share</Button>
-                <Button variant="outline" className="flex-1 h-12 rounded-xl" onClick={() => void navigator.clipboard.writeText(issued.code).then(() => toast.success("Copied"))}><Copy className="h-4 w-4 mr-2" />Copy</Button>
+                <Button variant="outline" className="flex-1 h-12 rounded-xl" onClick={() => void navigator.clipboard.writeText(issued.code).then(() => toast.success("Copied"), () => toast.error("Couldn't copy"))}><Copy className="h-4 w-4 mr-2" />Copy</Button>
               </div>
             </div>
           )}

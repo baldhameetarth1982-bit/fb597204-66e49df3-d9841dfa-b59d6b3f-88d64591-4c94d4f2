@@ -99,8 +99,7 @@ function ProfilePage() {
   const money = (n: number) => (loading || loadFailed ? "—" : fmt.format(n));
 
   function copyLink() {
-    navigator.clipboard.writeText(link);
-    toast.success("Referral link copied");
+    void navigator.clipboard.writeText(link).then(() => toast.success("Referral link copied"), () => toast.error("Couldn't copy the link"));
   }
   async function shareLink() {
     if (navigator.share) {

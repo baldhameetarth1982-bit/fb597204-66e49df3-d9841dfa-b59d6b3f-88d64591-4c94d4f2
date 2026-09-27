@@ -187,8 +187,7 @@ function SocietyDashboard() {
 
   function copyInvite() {
     if (!data?.inviteCode) return;
-    navigator.clipboard.writeText(data.inviteCode);
-    toast.success("Invite code copied");
+    void navigator.clipboard.writeText(data.inviteCode).then(() => toast.success("Invite code copied"), () => toast.error("Couldn't copy. Long-press the code to copy it."));
   }
 
   const displayName = profile?.full_name?.split(" ")[0] ?? "there";

@@ -484,6 +484,13 @@
       "when": 1790463760807,
       "tag": "0068_close_plan_gate_expiry_suspension",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1790476843264,
+      "tag": "0069_society_creation_requires_verified_phone",
+      "breakpoints": true
     }
   ]
 }

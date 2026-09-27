@@ -219,8 +219,9 @@ export const getSocietyPrivacy = createServerFn({ method: "POST" })
     if (error) throw safeError(error);
     const row = Array.isArray(rows) ? rows[0] : rows;
     const parsed = PrivacyRowSchema.safeParse(row);
-    // Fail-closed on malformed shape.
-    return normalizePrivacy(parsed.success ? parsed.data : {});
+    // Never present defaults as the society's real configuration.
+    if (!parsed.success) throw new Error("operation_failed");
+    return normalizePrivacy(parsed.data);
   });
 
 const privacyWriteInput = z.object({

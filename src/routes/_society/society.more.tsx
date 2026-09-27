@@ -57,6 +57,7 @@ const OTHER: Tile[] = [
   { to: "/society/business-profile", label: "Society profile", icon: Building2 },
   { to: "/society/subscription", label: "Subscription", icon: Wallet },
   { to: "/society/team", label: "Team & roles", icon: Users, feature: "team_roles" },
+  { to: "/society/privacy-settings", label: "Privacy", icon: ShieldCheck, feature: "privacy_controls" },
   { to: "/society/import", label: "Resident import", icon: Users, feature: "resident_import" },
   { to: "/society/bill-studio", label: "Bill templates", icon: Receipt, feature: "bill_templates" },
   { to: "/society/custom-fields", label: "Custom fields", icon: Settings2 },

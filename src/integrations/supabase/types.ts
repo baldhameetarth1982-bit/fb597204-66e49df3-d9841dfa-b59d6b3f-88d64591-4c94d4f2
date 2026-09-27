@@ -5676,6 +5676,14 @@ export type Database = {
         Args: { _request_id: string; _society_id: string }
         Returns: Json
       }
+      explorer_flat_dues_summary: {
+        Args: { _society_id: string }
+        Returns: {
+          flat_id: string
+          outstanding: number
+          status_rank: number
+        }[]
+      }
       fail_saas_subscription_order: {
         Args: { _failure_code: string; _request_record_id: string }
         Returns: undefined

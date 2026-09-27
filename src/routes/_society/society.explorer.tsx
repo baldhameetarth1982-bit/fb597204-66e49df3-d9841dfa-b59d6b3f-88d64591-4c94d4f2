@@ -135,7 +135,7 @@ function ExplorerPage() {
     return k;
   }, [blocks, flats, flatSummary]);
 
-  if (sidLoading || loading) {
+  if (sidLoading || loading || (search.flat && detailLoading)) {
     return <PageShell><div className="grid place-items-center h-60"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div></PageShell>;
   }
 

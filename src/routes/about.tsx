@@ -20,6 +20,7 @@ export const Route = createFileRoute("/about")({
       { property: "og:url", content: "https://sociohub.live/about" },
     ],
     links: [{ rel: "canonical", href: "https://sociohub.live/about" }],
+    scripts: [structuredDataScript({ path: "/about", name: `About — ${BRAND.name}`, type: "AboutPage" })],
   }),
   component: AboutPage,
 });

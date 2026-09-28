@@ -80,8 +80,8 @@ function SurveysPage() {
   return (
     <CommPage>
       <CommHeader title="Surveys" subtitle="Your answers are anonymous in results" />
-      {loading ? <ListSkeleton /> : failed ? <LoadError onRetry={() => void load()} /> : surveys.length === 0 ? (
-        <ListEmpty icon={ClipboardList} title="No surveys yet" hint="When your committee asks for feedback, it will appear here." />
+      {loading ? <ListSkeleton /> : failed ? <LoadError title="We couldn't load surveys." onRetry={() => void load()} /> : surveys.length === 0 ? (
+        <ListEmpty icon={ClipboardList} title="No surveys yet">When your committee asks for feedback, it will appear here.</ListEmpty>
       ) : (
         <div className="space-y-6">
           {open.length > 0 && <section><SectionLabel>Open</SectionLabel><div className="space-y-3">{open.map((s) => {

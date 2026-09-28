@@ -3249,6 +3249,7 @@ export type Database = {
           created_by: string
           description: string | null
           id: string
+          kind: string
           society_id: string
           status: string
           title: string
@@ -3260,6 +3261,7 @@ export type Database = {
           created_by: string
           description?: string | null
           id?: string
+          kind?: string
           society_id: string
           status?: string
           title: string
@@ -3271,6 +3273,7 @@ export type Database = {
           created_by?: string
           description?: string | null
           id?: string
+          kind?: string
           society_id?: string
           status?: string
           title?: string
@@ -4959,6 +4962,82 @@ export type Database = {
         }
         Relationships: []
       }
+      survey_questions: {
+        Row: {
+          id: string
+          options: Json
+          poll_id: string
+          position: number
+          prompt: string
+          qtype: string
+          required: boolean
+          society_id: string
+        }
+        Insert: {
+          id?: string
+          options?: Json
+          poll_id: string
+          position: number
+          prompt: string
+          qtype: string
+          required?: boolean
+          society_id: string
+        }
+        Update: {
+          id?: string
+          options?: Json
+          poll_id?: string
+          position?: number
+          prompt?: string
+          qtype?: string
+          required?: boolean
+          society_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_questions_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      survey_responses: {
+        Row: {
+          answers: Json
+          created_at: string
+          id: string
+          poll_id: string
+          society_id: string
+          user_id: string
+        }
+        Insert: {
+          answers: Json
+          created_at?: string
+          id?: string
+          poll_id: string
+          society_id: string
+          user_id: string
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          id?: string
+          poll_id?: string
+          society_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_responses_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       unit_billing_overrides: {
         Row: {
           amount: number
@@ -5425,6 +5504,7 @@ export type Database = {
         Args: { _society_id: string }
         Returns: boolean
       }
+      _can_manage_polls: { Args: { _society_id: string }; Returns: boolean }
       _finance_plan_enabled: { Args: { _society_id: string }; Returns: boolean }
       _finance_post_entry: {
         Args: {
@@ -5499,6 +5579,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      _survey_notify: { Args: { _poll_id: string }; Returns: undefined }
       _sync_bill_payment_state: {
         Args: { _bill_id: string }
         Returns: undefined
@@ -5527,6 +5608,17 @@ export type Database = {
       admin_cancel_society_plan: {
         Args: { _reason: string; _society_id: string }
         Returns: Json
+      }
+      admin_create_survey: {
+        Args: {
+          _closes_at: string
+          _description: string
+          _publish: boolean
+          _questions: Json
+          _society_id: string
+          _title: string
+        }
+        Returns: string
       }
       admin_delete_family_member: {
         Args: { _id: string; _society_id: string }
@@ -5701,6 +5793,10 @@ export type Database = {
       admin_set_society_status: {
         Args: { _reason: string; _society_id: string; _status: string }
         Returns: Json
+      }
+      admin_set_survey_status: {
+        Args: { _poll_id: string; _status: string }
+        Returns: undefined
       }
       admin_set_team_active: {
         Args: { _is_active: boolean; _role_id: string; _society_id: string }
@@ -6366,6 +6462,7 @@ export type Database = {
         Args: { _society_id: string }
         Returns: Json
       }
+      get_survey_results: { Args: { _poll_id: string }; Returns: Json }
       get_user_society_id: { Args: { _user_id: string }; Returns: string }
       guard_checkin_by_code: {
         Args: { _code: string; _society_id: string }
@@ -7186,6 +7283,10 @@ export type Database = {
           _reference_no: string
         }
         Returns: string
+      }
+      submit_survey_response: {
+        Args: { _answers: Json; _poll_id: string }
+        Returns: undefined
       }
       touch_rate_limit: {
         Args: {

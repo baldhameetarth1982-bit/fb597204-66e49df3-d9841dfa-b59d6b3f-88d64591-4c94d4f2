@@ -185,7 +185,7 @@ function ReconciliationPage() {
                     {l.record_label && <p className="text-xs text-muted-foreground truncate">{l.status === "matched" ? "Linked to" : "Suggested"}: {l.record_label}</p>}
                     {l.status === "conflict" && <p className="text-xs text-muted-foreground">{l.candidate_count} records fit equally. Choose the right one.</p>}
                     {l.direction === "debit" && l.status === "unmatched" && <p className="text-xs text-muted-foreground">Outgoing payment. Mark it explained once checked.</p>}
-                    {l.note && <p className="text-xs text-muted-foreground truncate">Note: {l.note}</p>}
+                    {l.note && l.status !== "matched" && <p className="text-xs text-muted-foreground truncate">Note: {l.note}</p>}
                   </div>
                   <div className="flex gap-2 flex-wrap md:justify-end">
                     {l.status === "suggested" && l.record_kind && l.record_id && (

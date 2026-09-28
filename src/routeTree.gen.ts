@@ -52,6 +52,7 @@ import { Route as SocietySocietySubscriptionRouteImport } from './routes/_societ
 import { Route as SocietySocietySetupRouteImport } from './routes/_society/society.setup'
 import { Route as SocietySocietySearchRouteImport } from './routes/_society/society.search'
 import { Route as SocietySocietyReportsRouteImport } from './routes/_society/society.reports'
+import { Route as SocietySocietyReconciliationRouteImport } from './routes/_society/society.reconciliation'
 import { Route as SocietySocietyReceiptsRouteImport } from './routes/_society/society.receipts'
 import { Route as SocietySocietyPrivacySettingsRouteImport } from './routes/_society/society.privacy-settings'
 import { Route as SocietySocietyPollsRouteImport } from './routes/_society/society.polls'
@@ -381,6 +382,12 @@ const SocietySocietyReportsRoute = SocietySocietyReportsRouteImport.update({
   path: '/society/reports',
   getParentRoute: () => SocietyRoute,
 } as any)
+const SocietySocietyReconciliationRoute =
+  SocietySocietyReconciliationRouteImport.update({
+    id: '/society/reconciliation',
+    path: '/society/reconciliation',
+    getParentRoute: () => SocietyRoute,
+  } as any)
 const SocietySocietyReceiptsRoute = SocietySocietyReceiptsRouteImport.update({
   id: '/society/receipts',
   path: '/society/receipts',
@@ -1085,6 +1092,7 @@ export interface FileRoutesByFullPath {
   '/society/polls': typeof SocietySocietyPollsRoute
   '/society/privacy-settings': typeof SocietySocietyPrivacySettingsRoute
   '/society/receipts': typeof SocietySocietyReceiptsRoute
+  '/society/reconciliation': typeof SocietySocietyReconciliationRoute
   '/society/reports': typeof SocietySocietyReportsRoute
   '/society/search': typeof SocietySocietySearchRoute
   '/society/setup': typeof SocietySocietySetupRoute
@@ -1237,6 +1245,7 @@ export interface FileRoutesByTo {
   '/society/polls': typeof SocietySocietyPollsRoute
   '/society/privacy-settings': typeof SocietySocietyPrivacySettingsRoute
   '/society/receipts': typeof SocietySocietyReceiptsRoute
+  '/society/reconciliation': typeof SocietySocietyReconciliationRoute
   '/society/reports': typeof SocietySocietyReportsRoute
   '/society/search': typeof SocietySocietySearchRoute
   '/society/setup': typeof SocietySocietySetupRoute
@@ -1395,6 +1404,7 @@ export interface FileRoutesById {
   '/_society/society/polls': typeof SocietySocietyPollsRoute
   '/_society/society/privacy-settings': typeof SocietySocietyPrivacySettingsRoute
   '/_society/society/receipts': typeof SocietySocietyReceiptsRoute
+  '/_society/society/reconciliation': typeof SocietySocietyReconciliationRoute
   '/_society/society/reports': typeof SocietySocietyReportsRoute
   '/_society/society/search': typeof SocietySocietySearchRoute
   '/_society/society/setup': typeof SocietySocietySetupRoute
@@ -1550,6 +1560,7 @@ export interface FileRouteTypes {
     | '/society/polls'
     | '/society/privacy-settings'
     | '/society/receipts'
+    | '/society/reconciliation'
     | '/society/reports'
     | '/society/search'
     | '/society/setup'
@@ -1702,6 +1713,7 @@ export interface FileRouteTypes {
     | '/society/polls'
     | '/society/privacy-settings'
     | '/society/receipts'
+    | '/society/reconciliation'
     | '/society/reports'
     | '/society/search'
     | '/society/setup'
@@ -1859,6 +1871,7 @@ export interface FileRouteTypes {
     | '/_society/society/polls'
     | '/_society/society/privacy-settings'
     | '/_society/society/receipts'
+    | '/_society/society/reconciliation'
     | '/_society/society/reports'
     | '/_society/society/search'
     | '/_society/society/setup'
@@ -2241,6 +2254,13 @@ declare module '@tanstack/react-router' {
       path: '/society/reports'
       fullPath: '/society/reports'
       preLoaderRoute: typeof SocietySocietyReportsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/reconciliation': {
+      id: '/_society/society/reconciliation'
+      path: '/society/reconciliation'
+      fullPath: '/society/reconciliation'
+      preLoaderRoute: typeof SocietySocietyReconciliationRouteImport
       parentRoute: typeof SocietyRoute
     }
     '/_society/society/receipts': {
@@ -3199,6 +3219,7 @@ interface SocietyRouteChildren {
   SocietySocietyPollsRoute: typeof SocietySocietyPollsRoute
   SocietySocietyPrivacySettingsRoute: typeof SocietySocietyPrivacySettingsRoute
   SocietySocietyReceiptsRoute: typeof SocietySocietyReceiptsRoute
+  SocietySocietyReconciliationRoute: typeof SocietySocietyReconciliationRoute
   SocietySocietyReportsRoute: typeof SocietySocietyReportsRoute
   SocietySocietySearchRoute: typeof SocietySocietySearchRoute
   SocietySocietySetupRoute: typeof SocietySocietySetupRoute
@@ -3262,6 +3283,7 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyPollsRoute: SocietySocietyPollsRoute,
   SocietySocietyPrivacySettingsRoute: SocietySocietyPrivacySettingsRoute,
   SocietySocietyReceiptsRoute: SocietySocietyReceiptsRoute,
+  SocietySocietyReconciliationRoute: SocietySocietyReconciliationRoute,
   SocietySocietyReportsRoute: SocietySocietyReportsRoute,
   SocietySocietySearchRoute: SocietySocietySearchRoute,
   SocietySocietySetupRoute: SocietySocietySetupRoute,

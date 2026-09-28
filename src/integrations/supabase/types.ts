@@ -6067,6 +6067,10 @@ export type Database = {
           pending: number
         }[]
       }
+      gate_transition_allowed: {
+        Args: { _from: string; _to: string }
+        Returns: boolean
+      }
       generate_flat_bill: {
         Args: {
           _additional?: Json

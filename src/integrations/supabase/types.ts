@@ -5494,7 +5494,10 @@ export type Database = {
         Returns: {
           collected_30d: number
           collected_total: number
+          custom_mrr: number
+          custom_priced_societies: number
           plans: Json
+          standard_paid_societies: number
           subscription_mrr: number
           total_revenue: number
         }[]

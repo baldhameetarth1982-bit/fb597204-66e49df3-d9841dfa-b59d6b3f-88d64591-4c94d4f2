@@ -103,7 +103,7 @@ function IncomePage() {
                       </p>
                     </div>
                     <p className="hidden text-right text-sm tabular-nums sm:block">
-                      {INR.format(Number(p.price_monthly_inr ?? 0))}/flat
+                      {INR.format(Number(p.price_per_flat_inr ?? 0))}/flat
                     </p>
                     <p className="text-right text-lg font-semibold tabular-nums">{count}</p>
                     <div className="col-span-2 flex items-center gap-2 sm:col-span-1">

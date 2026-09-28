@@ -284,7 +284,7 @@ function SubscriptionPage() {
                         <span className="text-muted-foreground"> / flat / month</span>
                         {p.amount_paise ? (
                           <span className="text-muted-foreground tabular-nums">
-                            {" "}· ₹{(p.amount_paise / 100).toLocaleString("en-IN")}/month for {p.flat_count} flats
+                            {" "}· ₹{(p.amount_paise / 100).toLocaleString("en-IN")}/month for {p.flat_count} {p.flat_count === 1 ? "flat" : "flats"}
                           </span>
                         ) : null}
                       </p>

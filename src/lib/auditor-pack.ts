@@ -107,8 +107,6 @@ export async function packToPdf(pack: AuditorPack): Promise<Blob> {
     const note = sec.total > sec.rows.length ? ` — first ${sec.rows.length} of ${sec.total}; use CSV for full detail` : ` — ${sec.total} records`;
     autoTable(doc, { startY: last() + 22, head: [s.columns.map((c) => c[1])], styles: { fontSize: 7, overflow: "linebreak" },
       body: sec.rows.length ? sec.rows.map((r) => s.columns.map((c) => (r[c[0]] == null ? "" : String(r[c[0]])))) : [[{ content: "No records in this period", colSpan: s.columns.length }]],
-      didDrawPage: () => undefined,
-      willDrawCell: undefined,
       margin: { top: 40 },
       showHead: "everyPage",
       tableWidth: "auto",

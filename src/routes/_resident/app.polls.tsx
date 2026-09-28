@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Loader2, Vote, CheckCircle2, Lock } from "lucide-react";
@@ -141,7 +141,7 @@ function PollsPage() {
 
   return (
     <CommPage>
-      <CommHeader title="Polls" subtitle="Vote on community decisions" />
+      <CommHeader title="Polls" subtitle="Vote on community decisions" action={<Button asChild variant="outline" className="min-h-11"><Link to="/app/surveys">Surveys</Link></Button>} />
       {loading ? <ListSkeleton rows={3} />
         : failed ? <LoadError title="We couldn't load polls." onRetry={load} />
         : polls.length === 0 ? <ListEmpty icon={Vote} title="No polls yet">When your committee opens a poll, it will appear here.</ListEmpty>

@@ -40,16 +40,22 @@ function CheckoutPage() {
     supabase.rpc("is_razorpay_live").then(({ data }) => setLive(Boolean(data)));
   }, []);
 
+  const fetchQuotes = useServerFn(getSaasSubscriptionQuotes);
   const {
-    data: plan,
+    data: quote,
     isLoading,
     isError,
     refetch,
   } = useQuery({
-    queryKey: ["plan", planId],
-    queryFn: async () =>
-      (await supabase.from("plans").select("*").eq("id", planId).maybeSingle()).data,
+    enabled: !!profile?.society_id,
+    queryKey: ["subscription-quotes", profile?.society_id],
+    queryFn: () => fetchQuotes({ data: { societyId: profile!.society_id! } }),
+    select: (quotes) => quotes.find((q) => q.plan_id === planId) ?? null,
   });
+  const plan = quote
+    ? { id: quote.plan_id, name: quote.plan_name, total: (quote.amount_paise ?? 0) / 100 }
+    : null;
+  const payable = !!quote && !quote.custom_pricing && (quote.amount_paise ?? 0) > 0;
 
   async function startPayment() {
     if (!plan || !profile?.society_id) return;
@@ -134,11 +140,32 @@ function CheckoutPage() {
                     Try again
                   </Button>
                 </div>
+              ) : quote!.custom_pricing ? (
+                <div className="rounded-xl bg-secondary p-4">
+                  <p className="text-2xl font-semibold text-foreground">Custom pricing</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Your society has {quote!.flat_count} flats. Societies with more than{" "}
+                    {quote!.threshold} flats get a custom price.
+                  </p>
+                  <Button asChild variant="outline" className="mt-3 min-h-11">
+                    <a href="mailto:sociohub710@gmail.com?subject=Custom pricing enquiry">Talk to us</a>
+                  </Button>
+                </div>
+              ) : !payable ? (
+                <div role="alert" className="rounded-xl border p-4 text-sm">
+                  Add your society's flats first. The price is ₹{quote!.price_per_flat_inr} per flat
+                  per month.
+                </div>
               ) : (
                 <div className="rounded-xl bg-secondary p-4">
                   <p className="text-sm text-muted-foreground">You are subscribing to</p>
                   <p className="text-2xl font-semibold mt-0.5 text-foreground">{plan.name}</p>
-                  <p className="text-lg mt-1">₹{plan.price_monthly_inr}/month</p>
+                  <p className="text-lg mt-1 tabular-nums">
+                    ₹{plan.total.toLocaleString("en-IN")}/month
+                  </p>
+                  <p className="text-sm text-muted-foreground tabular-nums">
+                    {quote!.flat_count} flats × ₹{quote!.price_per_flat_inr} per flat
+                  </p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     Razorpay is used only for this SociyoHub subscription. Maintenance payments
                     remain Cash or Bank Transfer with no platform fee.
@@ -150,7 +177,7 @@ function CheckoutPage() {
                 <div className="py-6 grid place-items-center">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
-              ) : live && plan ? (
+              ) : live && plan && payable ? (
                 <>
                   <Button
                     onClick={() => setSummaryOpen(true)}
@@ -199,17 +226,20 @@ function CheckoutPage() {
           </Card>
         </div>
 
-        {plan && (
+        {plan && payable && (
           <TransactionSummaryModal
             open={summaryOpen}
             onOpenChange={(v) => (busy ? null : setSummaryOpen(v))}
             title="Transaction Summary"
             description={`${plan.name} plan — monthly subscription`}
             lines={[
-              { label: `${plan.name} plan (monthly)`, amount: plan.price_monthly_inr },
+              {
+                label: `${plan.name} — ${quote!.flat_count} flats × ₹${quote!.price_per_flat_inr}`,
+                amount: plan.total,
+              },
               { label: "Taxes (incl.)", amount: 0, muted: true },
             ]}
-            total={plan.price_monthly_inr}
+            total={plan.total}
             busy={busy}
             onConfirm={startPayment}
             confirmLabel="Pay Now"

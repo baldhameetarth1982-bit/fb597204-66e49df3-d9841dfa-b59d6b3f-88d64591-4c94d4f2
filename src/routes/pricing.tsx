@@ -87,7 +87,7 @@ function PricingPage() {
                 setShowEnterprise(true);
               }}
             >
-              More than 300 flats
+              More than {threshold} flats
             </Button>
           </div>
 

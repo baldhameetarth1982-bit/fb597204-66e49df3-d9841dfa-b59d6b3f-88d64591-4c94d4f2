@@ -48,6 +48,7 @@ import { Route as SocietySocietyVisitorsRouteImport } from './routes/_society/so
 import { Route as SocietySocietyVerificationsRouteImport } from './routes/_society/society.verifications'
 import { Route as SocietySocietyVehiclesRouteImport } from './routes/_society/society.vehicles'
 import { Route as SocietySocietyTeamRouteImport } from './routes/_society/society.team'
+import { Route as SocietySocietySurveysRouteImport } from './routes/_society/society.surveys'
 import { Route as SocietySocietySubscriptionRouteImport } from './routes/_society/society.subscription'
 import { Route as SocietySocietySetupRouteImport } from './routes/_society/society.setup'
 import { Route as SocietySocietySearchRouteImport } from './routes/_society/society.search'
@@ -361,6 +362,11 @@ const SocietySocietyVehiclesRoute = SocietySocietyVehiclesRouteImport.update({
 const SocietySocietyTeamRoute = SocietySocietyTeamRouteImport.update({
   id: '/society/team',
   path: '/society/team',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietySurveysRoute = SocietySocietySurveysRouteImport.update({
+  id: '/society/surveys',
+  path: '/society/surveys',
   getParentRoute: () => SocietyRoute,
 } as any)
 const SocietySocietySubscriptionRoute =
@@ -1112,6 +1118,7 @@ export interface FileRoutesByFullPath {
   '/society/search': typeof SocietySocietySearchRoute
   '/society/setup': typeof SocietySocietySetupRoute
   '/society/subscription': typeof SocietySocietySubscriptionRoute
+  '/society/surveys': typeof SocietySocietySurveysRoute
   '/society/team': typeof SocietySocietyTeamRoute
   '/society/vehicles': typeof SocietySocietyVehiclesRoute
   '/society/verifications': typeof SocietySocietyVerificationsRoute
@@ -1267,6 +1274,7 @@ export interface FileRoutesByTo {
   '/society/search': typeof SocietySocietySearchRoute
   '/society/setup': typeof SocietySocietySetupRoute
   '/society/subscription': typeof SocietySocietySubscriptionRoute
+  '/society/surveys': typeof SocietySocietySurveysRoute
   '/society/team': typeof SocietySocietyTeamRoute
   '/society/vehicles': typeof SocietySocietyVehiclesRoute
   '/society/verifications': typeof SocietySocietyVerificationsRoute
@@ -1428,6 +1436,7 @@ export interface FileRoutesById {
   '/_society/society/search': typeof SocietySocietySearchRoute
   '/_society/society/setup': typeof SocietySocietySetupRoute
   '/_society/society/subscription': typeof SocietySocietySubscriptionRoute
+  '/_society/society/surveys': typeof SocietySocietySurveysRoute
   '/_society/society/team': typeof SocietySocietyTeamRoute
   '/_society/society/vehicles': typeof SocietySocietyVehiclesRoute
   '/_society/society/verifications': typeof SocietySocietyVerificationsRoute
@@ -1586,6 +1595,7 @@ export interface FileRouteTypes {
     | '/society/search'
     | '/society/setup'
     | '/society/subscription'
+    | '/society/surveys'
     | '/society/team'
     | '/society/vehicles'
     | '/society/verifications'
@@ -1741,6 +1751,7 @@ export interface FileRouteTypes {
     | '/society/search'
     | '/society/setup'
     | '/society/subscription'
+    | '/society/surveys'
     | '/society/team'
     | '/society/vehicles'
     | '/society/verifications'
@@ -1901,6 +1912,7 @@ export interface FileRouteTypes {
     | '/_society/society/search'
     | '/_society/society/setup'
     | '/_society/society/subscription'
+    | '/_society/society/surveys'
     | '/_society/society/team'
     | '/_society/society/vehicles'
     | '/_society/society/verifications'
@@ -2251,6 +2263,13 @@ declare module '@tanstack/react-router' {
       path: '/society/team'
       fullPath: '/society/team'
       preLoaderRoute: typeof SocietySocietyTeamRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/surveys': {
+      id: '/_society/society/surveys'
+      path: '/society/surveys'
+      fullPath: '/society/surveys'
+      preLoaderRoute: typeof SocietySocietySurveysRouteImport
       parentRoute: typeof SocietyRoute
     }
     '/_society/society/subscription': {
@@ -3266,6 +3285,7 @@ interface SocietyRouteChildren {
   SocietySocietySearchRoute: typeof SocietySocietySearchRoute
   SocietySocietySetupRoute: typeof SocietySocietySetupRoute
   SocietySocietySubscriptionRoute: typeof SocietySocietySubscriptionRoute
+  SocietySocietySurveysRoute: typeof SocietySocietySurveysRoute
   SocietySocietyTeamRoute: typeof SocietySocietyTeamRoute
   SocietySocietyVehiclesRoute: typeof SocietySocietyVehiclesRoute
   SocietySocietyVerificationsRoute: typeof SocietySocietyVerificationsRoute
@@ -3331,6 +3351,7 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietySearchRoute: SocietySocietySearchRoute,
   SocietySocietySetupRoute: SocietySocietySetupRoute,
   SocietySocietySubscriptionRoute: SocietySocietySubscriptionRoute,
+  SocietySocietySurveysRoute: SocietySocietySurveysRoute,
   SocietySocietyTeamRoute: SocietySocietyTeamRoute,
   SocietySocietyVehiclesRoute: SocietySocietyVehiclesRoute,
   SocietySocietyVerificationsRoute: SocietySocietyVerificationsRoute,

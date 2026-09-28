@@ -582,6 +582,13 @@
       "when": 1790630507398,
       "tag": "0082_per_flat_subscription_pricing",
       "breakpoints": true
+    },
+    {
+      "idx": 83,
+      "version": "7",
+      "when": 1790630551152,
+      "tag": "0083_admin_income_summary_per_flat_fix",
+      "breakpoints": true
     }
   ]
 }

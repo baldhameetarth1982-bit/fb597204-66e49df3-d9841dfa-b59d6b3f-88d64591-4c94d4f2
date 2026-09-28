@@ -83,7 +83,7 @@ function TermsPage() {
             <section>
               <h2 className="text-lg font-semibold mb-2">5. SaaS subscription fees</h2>
               <p className="text-muted-foreground">
-                Society admins may subscribe to Basic, Pro, Premium, or custom plans. Plans are billed in advance for
+                Society admins may subscribe to Starter, Growth, Pro, or custom plans. Plans are billed in advance for
                 the chosen term. See our <Link to="/refund" className="underline">Refund Policy</Link> for
                 cancellation and refund terms.
               </p>

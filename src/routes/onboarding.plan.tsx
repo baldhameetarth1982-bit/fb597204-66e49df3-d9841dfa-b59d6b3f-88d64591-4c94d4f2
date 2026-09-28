@@ -157,7 +157,7 @@ function PlanGate() {
                     <div className="flex items-center gap-2 text-xs opacity-90">
                       <Clock className="h-4 w-4" /> {trialDays} days · No card needed
                     </div>
-                    <h2 className="text-xl font-semibold tracking-tight mt-1">Try every Premium feature free</h2>
+                    <h2 className="text-xl font-semibold tracking-tight mt-1">Try every feature free</h2>
                     <p className="opacity-90 mt-1 text-sm">
                       Trial can be started once per society. After it ends, you can switch to any paid plan.
                     </p>

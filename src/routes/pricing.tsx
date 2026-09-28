@@ -132,7 +132,7 @@ function PricingPage() {
                 <div className="flex-1">
                   <h2 className="text-xl font-semibold tracking-tight">Free for {trialDays} days</h2>
                   <p className="opacity-90 text-sm mt-1">
-                    All Premium features unlocked. Auto-converts to any paid plan you pick — cancel anytime.
+                    Every feature unlocked during the trial. Then pick Starter, Growth or Pro — cancel anytime.
                   </p>
                 </div>
                 <Button

@@ -542,7 +542,7 @@ function AppearanceCard({
 
   async function setTheme(next: "default" | "neon") {
     if (next === "neon" && !isPremium) {
-      toast.error("Neon theme is a Premium-plan feature");
+      toast.error("Neon theme is included in the Growth and Pro plans");
       return;
     }
     if (!userId) return;
@@ -584,14 +584,14 @@ function AppearanceCard({
             <div className="h-20 rounded-lg mb-2 border"
               style={{ background: "radial-gradient(circle at 30% 20%, #b91c5c, #1a0a14)" }} />
             <p className="font-semibold flex items-center gap-1">Neon
-              {!isPremium && <Badge variant="outline" className="text-[10px] ml-1">Premium</Badge>}
+              {!isPremium && <Badge variant="outline" className="text-[10px] ml-1">Growth+</Badge>}
             </p>
             <p className="text-xs text-muted-foreground">Advanced premium look.</p>
           </button>
         </div>
         {!isPremium && (
           <p className="text-xs text-muted-foreground">
-            Upgrade to <Link to="/pricing" className="underline">Premium</Link> to unlock the Neon theme.
+            Upgrade to <Link to="/pricing" className="underline">Growth or Pro</Link> to unlock the Neon theme.
           </p>
         )}
         {isSuperAdmin && (

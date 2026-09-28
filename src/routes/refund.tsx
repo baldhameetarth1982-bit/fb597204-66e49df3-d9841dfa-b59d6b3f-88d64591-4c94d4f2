@@ -70,7 +70,7 @@ function RefundPage() {
           <section>
             <h2 className="text-lg font-semibold mb-2">4. SociyoHub SaaS subscription plans</h2>
             <p className="text-muted-foreground">
-              Subscription plans (Basic, Pro, Premium, custom) are billed in advance for the selected term. Cancellation
+              Subscription plans (Starter, Growth, Pro, custom) are billed in advance for the selected term. Cancellation
               stops future renewals but the current term is <strong>non-refundable</strong>. If you were charged in error or
               billed after cancellation, email the same address within 48 hours for a full refund.
             </p>

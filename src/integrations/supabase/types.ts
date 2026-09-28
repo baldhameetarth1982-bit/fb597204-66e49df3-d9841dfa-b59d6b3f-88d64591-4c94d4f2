@@ -6411,6 +6411,10 @@ export type Database = {
           razorpay_account_id: string
         }[]
       }
+      get_society_export_section: {
+        Args: { _offset?: number; _section: string; _society_id: string }
+        Returns: Json
+      }
       get_society_income_report: {
         Args: {
           _category_id?: string

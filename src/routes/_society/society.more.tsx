@@ -36,6 +36,7 @@ const MANAGEMENT: Tile[] = [
   { to: "/society/communication", label: "Communication", icon: MessageSquare },
   { to: "/society/polls", label: "Polls", icon: Sparkles, feature: "polls" },
   { to: "/society/surveys", label: "Surveys", icon: Sparkles, feature: "polls" },
+  { to: "/society/data-export", label: "Data export", icon: FileCheck2 },
 ];
 
 const FINANCE: Tile[] = [

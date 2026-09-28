@@ -48,7 +48,7 @@ export const listDiscovery = createServerFn({ method: "POST" })
     const signed = new Map<string, string>();
     if (paths.length) {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { data: urls } = await supabaseAdmin.storage.from("ads").createSignedUrls(paths, 60 * 60);
+      const { data: urls } = await supabaseAdmin.storage.from("ads").createSignedUrls(paths, 15 * 60);
       for (const u of urls ?? []) if (u.path && u.signedUrl) signed.set(u.path, u.signedUrl);
     }
     return {

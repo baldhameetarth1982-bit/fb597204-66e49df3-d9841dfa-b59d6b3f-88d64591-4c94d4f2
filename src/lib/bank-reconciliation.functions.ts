@@ -11,7 +11,7 @@ type RpcClient = { rpc: (n: string, a: Record<string, unknown>) => Promise<{ dat
 
 function safeError(message: string): Error {
   const m = message.toLowerCase();
-  if (m.includes("plan_required")) return new Error("Bank reconciliation needs an active Pro or Premium plan.");
+  if (m.includes("plan_required")) return new Error("Bank reconciliation needs an active Growth or Pro plan.");
   if (m.includes("not_authorized") || m.includes("unauthenticated") || m.includes("permission denied"))
     return new Error("You don't have permission to manage reconciliation.");
   if (m.includes("already_reconciled")) return new Error("That record is already reconciled to another bank line.");

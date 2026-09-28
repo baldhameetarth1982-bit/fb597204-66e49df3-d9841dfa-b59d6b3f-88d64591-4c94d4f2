@@ -39,7 +39,7 @@ export function saasState(s: {
   return { key: "setup", label: "No plan yet", tone: "neutral", detail: null };
 }
 
-export const PLAN_NAME: Record<string, string> = { trial: "Trial", basic: "Basic", pro: "Pro", premium: "Premium" };
+export const PLAN_NAME: Record<string, string> = { trial: "Trial", basic: "Starter", pro: "Growth", premium: "Pro" };
 export const planName = (id: string | null) => (id ? PLAN_NAME[id] ?? id : "—");
 export { fmt as fmtDate };
 

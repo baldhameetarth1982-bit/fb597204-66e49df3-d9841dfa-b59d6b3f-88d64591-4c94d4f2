@@ -83,7 +83,7 @@ interface FinanceContext {
 function safeFinanceError(error: unknown): Error {
   const message = error instanceof Error ? error.message : String(error ?? "");
   const normalized = message.toLowerCase();
-  if (normalized.includes("plan_required")) return new Error("This feature requires an active Pro or Premium plan.");
+  if (normalized.includes("plan_required")) return new Error("This feature requires an active Growth or Pro plan.");
   if (normalized.includes("not_authorized") || normalized.includes("permission denied")) return new Error("You are not allowed to view or manage these finances.");
   if (normalized.includes("invalid_amount")) return new Error("Enter a valid amount with at most two decimal places.");
   if (normalized.includes("invalid_date") || normalized.includes("invalid_period")) return new Error("Choose a valid date range.");

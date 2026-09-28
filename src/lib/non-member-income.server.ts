@@ -236,7 +236,7 @@ export function isNonMemberIncomeAllowed(plan: PlanKey): boolean {
 export class ForbiddenPlanError extends Error {
   code = "forbidden_plan" as const;
   constructor(public plan: PlanKey) {
-    super("This feature requires a Pro or Premium plan.");
+    super("This feature requires a Growth or Pro plan.");
   }
 }
 export class ForbiddenSocietyError extends Error {

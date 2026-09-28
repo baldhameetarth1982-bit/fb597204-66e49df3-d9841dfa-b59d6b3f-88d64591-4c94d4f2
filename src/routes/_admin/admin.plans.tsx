@@ -87,7 +87,7 @@ function PlansAdmin() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-right font-semibold tabular-nums">
-                        {inr(p.price_monthly_inr)}
+                        {inr(p.price_per_flat_inr)}/flat
                       </td>
                       <td className="px-4 py-3">{p.ads_enabled ? "Yes" : "No"}</td>
                       <td className="px-4 py-3 text-right tabular-nums">
@@ -118,8 +118,8 @@ function PlansAdmin() {
                     {p.is_recommended && <StatusChip tone="primary">Top</StatusChip>}
                   </div>
                   <span className="font-semibold tabular-nums">
-                    {inr(p.price_monthly_inr)}
-                    {p.price_monthly_inr > 0 && (
+                    {inr(p.price_per_flat_inr)}/flat
+                    {Number(p.price_per_flat_inr) > 0 && (
                       <span className="text-xs font-normal text-muted-foreground">/mo</span>
                     )}
                   </span>
@@ -136,7 +136,7 @@ function PlansAdmin() {
             <Info className="mt-0.5 h-4 w-4 shrink-0" />
             <p>
               Razorpay is used only for SociyoHub subscriptions. The 14-day trial needs no card and
-              moves to <strong className="text-foreground">Basic</strong> if no plan is chosen.
+              moves to <strong className="text-foreground">Starter</strong> if no plan is chosen.
             </p>
           </div>
         </div>

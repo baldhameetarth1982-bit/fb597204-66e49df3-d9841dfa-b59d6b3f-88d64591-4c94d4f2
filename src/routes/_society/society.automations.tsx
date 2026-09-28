@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_society/society/automations")({
 
 const ERR: Record<string, string> = {
   forbidden: "You don't have permission to manage automations.",
-  plan_required: "Changing automations needs the Premium plan.",
+  plan_required: "Changing automations needs the Growth or Pro plan.",
   schedule_missing: "Set up your billing schedule first.",
   invalid_config: "One of the values is out of range.",
 };
@@ -122,7 +122,7 @@ function AutomationsPage() {
         {locked && (
           <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-amber-500/40 bg-amber-500/5 p-4 text-sm">
             <Lock className="h-4 w-4" />
-            <span className="flex-1">You can view these automations. Changing them needs the Premium plan.</span>
+            <span className="flex-1">You can view these automations. Changing them needs the Growth or Pro plan.</span>
             <Button asChild size="sm" className="h-11"><Link to="/society/subscription">See plans</Link></Button>
           </div>
         )}

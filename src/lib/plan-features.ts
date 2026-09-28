@@ -507,6 +507,7 @@ const CATALOG: FeatureCatalogEntry[] = [
     icon: "Wallet",
     status: "partial",
     backendReady: true,
+    route: "/society/reconciliation",
     navigationGroup: "Finance",
   },
   {

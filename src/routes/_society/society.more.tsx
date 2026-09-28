@@ -44,6 +44,7 @@ const FINANCE: Tile[] = [
   { to: "/society/reports", label: "Reports", icon: BarChart3, feature: "advanced_reports" },
   { to: "/society/income", label: "Other income", icon: Wallet, feature: "non_member_payments" },
   { to: "/society/qr", label: "QR collections", icon: Wallet, feature: "smart_qr_collections" },
+  { to: "/society/reconciliation", label: "Reconciliation", icon: Wallet, feature: "reconciliation" },
   { to: "/society/digest", label: "AI Digest", icon: Sparkles, feature: "ai_digest" },
 ];
 

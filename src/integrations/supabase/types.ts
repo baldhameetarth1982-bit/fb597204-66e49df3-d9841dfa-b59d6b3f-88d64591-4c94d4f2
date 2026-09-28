@@ -151,6 +151,204 @@ export type Database = {
           },
         ]
       }
+      amenities: {
+        Row: {
+          advance_days: number
+          amenity_type: string
+          cancellation_hours: number
+          capacity: number
+          closes_at: string
+          created_at: string
+          created_by: string
+          defaulters_allowed: boolean
+          deposit_amount: number
+          description: string | null
+          fee_amount: number
+          id: string
+          is_active: boolean
+          name: string
+          opens_at: string
+          owner_allowed: boolean
+          slot_minutes: number
+          society_id: string
+          tenant_allowed: boolean
+          updated_at: string
+          weekly_household_limit: number | null
+        }
+        Insert: {
+          advance_days?: number
+          amenity_type?: string
+          cancellation_hours?: number
+          capacity?: number
+          closes_at?: string
+          created_at?: string
+          created_by: string
+          defaulters_allowed?: boolean
+          deposit_amount?: number
+          description?: string | null
+          fee_amount?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          opens_at?: string
+          owner_allowed?: boolean
+          slot_minutes?: number
+          society_id: string
+          tenant_allowed?: boolean
+          updated_at?: string
+          weekly_household_limit?: number | null
+        }
+        Update: {
+          advance_days?: number
+          amenity_type?: string
+          cancellation_hours?: number
+          capacity?: number
+          closes_at?: string
+          created_at?: string
+          created_by?: string
+          defaulters_allowed?: boolean
+          deposit_amount?: number
+          description?: string | null
+          fee_amount?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          opens_at?: string
+          owner_allowed?: boolean
+          slot_minutes?: number
+          society_id?: string
+          tenant_allowed?: boolean
+          updated_at?: string
+          weekly_household_limit?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "amenities_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      amenity_blocked_dates: {
+        Row: {
+          amenity_id: string
+          blocked_date: string
+          created_at: string
+          created_by: string
+          id: string
+          reason: string | null
+          society_id: string
+        }
+        Insert: {
+          amenity_id: string
+          blocked_date: string
+          created_at?: string
+          created_by: string
+          id?: string
+          reason?: string | null
+          society_id: string
+        }
+        Update: {
+          amenity_id?: string
+          blocked_date?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          reason?: string | null
+          society_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "amenity_blocked_dates_amenity_id_fkey"
+            columns: ["amenity_id"]
+            isOneToOne: false
+            referencedRelation: "amenities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "amenity_blocked_dates_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      amenity_bookings: {
+        Row: {
+          amenity_id: string
+          attendees: number
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          created_at: string
+          ends_at: string
+          flat_id: string
+          id: string
+          idempotency_key: string
+          society_id: string
+          starts_at: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amenity_id: string
+          attendees?: number
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          ends_at: string
+          flat_id: string
+          id?: string
+          idempotency_key: string
+          society_id: string
+          starts_at: string
+          status: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amenity_id?: string
+          attendees?: number
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          ends_at?: string
+          flat_id?: string
+          id?: string
+          idempotency_key?: string
+          society_id?: string
+          starts_at?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "amenity_bookings_amenity_id_fkey"
+            columns: ["amenity_id"]
+            isOneToOne: false
+            referencedRelation: "amenities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "amenity_bookings_flat_id_fkey"
+            columns: ["flat_id"]
+            isOneToOne: false
+            referencedRelation: "flats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "amenity_bookings_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
@@ -5465,6 +5663,7 @@ export type Database = {
         Args: { _issued_at?: string }
         Returns: string
       }
+      _amenity_admin: { Args: { _society_id: string }; Returns: boolean }
       _bank_line_candidates: {
         Args: { _days: number; _line_id: string }
         Returns: {
@@ -5760,6 +5959,19 @@ export type Database = {
         Args: { _society_id: string }
         Returns: Json
       }
+      admin_set_amenity_block: {
+        Args: {
+          _amenity_id: string
+          _blocked: boolean
+          _blocked_date: string
+          _reason: string
+        }
+        Returns: undefined
+      }
+      admin_set_amenity_booking_status: {
+        Args: { _booking_id: string; _status: string }
+        Returns: undefined
+      }
       admin_set_society_automation: {
         Args: {
           _config?: Json
@@ -5806,6 +6018,29 @@ export type Database = {
       admin_transition_withdrawal: {
         Args: { _reason: string; _status: string; _withdrawal_id: string }
         Returns: undefined
+      }
+      admin_upsert_amenity: {
+        Args: {
+          _advance_days: number
+          _amenity_type: string
+          _cancellation_hours: number
+          _capacity: number
+          _closes_at: string
+          _defaulters_allowed: boolean
+          _deposit_amount: number
+          _description: string
+          _fee_amount: number
+          _id: string
+          _is_active: boolean
+          _name: string
+          _opens_at: string
+          _owner_allowed: boolean
+          _slot_minutes: number
+          _society_id: string
+          _tenant_allowed: boolean
+          _weekly_household_limit: number
+        }
+        Returns: string
       }
       admin_upsert_family_member: {
         Args: {
@@ -5887,6 +6122,18 @@ export type Database = {
         }
         Returns: number
       }
+      book_amenity: {
+        Args: {
+          _amenity_id: string
+          _attendees: number
+          _idempotency_key: string
+          _starts_at: string
+        }
+        Returns: {
+          id: string
+          status: string
+        }[]
+      }
       bulk_approve_join_requests: {
         Args: { _request_ids: string[]; _society_id: string }
         Returns: number
@@ -5909,6 +6156,10 @@ export type Database = {
       can_manage_flat_internal: {
         Args: { _actor_id: string; _flat_id: string }
         Returns: boolean
+      }
+      cancel_amenity_booking: {
+        Args: { _booking_id: string; _reason?: string }
+        Returns: undefined
       }
       cancel_bill:
         | { Args: { _bill_id: string; _reason: string }; Returns: undefined }
@@ -6264,6 +6515,18 @@ export type Database = {
       generate_society_code: { Args: never; Returns: string }
       get_admin_block_ids: { Args: { _user_id: string }; Returns: string[] }
       get_admin_society_ids: { Args: { _user_id: string }; Returns: string[] }
+      get_amenity_fairness: {
+        Args: { _from: string; _society_id: string; _to: string }
+        Returns: {
+          bookings: number
+          cancellations: number
+          flat_id: string
+          flat_label: string
+          no_shows: number
+          peak_bookings: number
+          waitlisted: number
+        }[]
+      }
       get_applicable_plans: {
         Args: { _total_units?: number }
         Returns: {

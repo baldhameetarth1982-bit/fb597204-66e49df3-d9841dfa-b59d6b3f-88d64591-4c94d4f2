@@ -53,7 +53,7 @@ Legend:
 | payment_points | Payment Points | Community & Gamification | Pro | partial | — |
 | leaderboard | Leaderboard | Community & Gamification | Pro | built | /society/leaderboard |
 | ai_digest | AI Digest & Insights | AI & Insights | Premium | built | /society/digest |
-| custom_branding | Custom Branding | Settings & Admin | Premium | planned | — |
+| custom_branding | Custom Branding | Settings & Admin | Premium | partial | /society/branding |
 | online_gateway_request | Online Gateway Request | Integrations | Premium | planned | — |
 | advanced_automation | Advanced Automation | Settings & Admin | Premium | partial | /society/automations |
 

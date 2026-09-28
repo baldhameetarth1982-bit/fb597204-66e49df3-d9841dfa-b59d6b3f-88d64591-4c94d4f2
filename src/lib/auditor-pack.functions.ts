@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
-const row = z.record(z.string(), z.unknown());
+const row = z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()]));
 const section = z.object({ total: z.coerce.number().int(), rows: z.array(row) });
 
 export const auditorPackSchema = z.object({

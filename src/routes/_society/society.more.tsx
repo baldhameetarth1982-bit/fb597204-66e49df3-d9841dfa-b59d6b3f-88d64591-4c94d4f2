@@ -42,6 +42,8 @@ const FINANCE: Tile[] = [
   { to: "/society/accounts", label: "Accounts", icon: Wallet, feature: "ledger" },
   { to: "/society/expenses", label: "Expenses", icon: TrendingDown, feature: "expenses" },
   { to: "/society/reports", label: "Reports", icon: BarChart3, feature: "advanced_reports" },
+  { to: "/society/income", label: "Other income", icon: Wallet, feature: "non_member_payments" },
+  { to: "/society/qr", label: "QR collections", icon: Wallet, feature: "smart_qr_collections" },
   { to: "/society/digest", label: "AI Digest", icon: Sparkles, feature: "ai_digest" },
 ];
 
@@ -50,7 +52,7 @@ const COMMUNITY: Tile[] = [
 ];
 
 const CERTIFICATES: Tile[] = [
-  { to: "/society/features", label: "No-Dues (soon)", icon: FileCheck2, feature: "no_dues" },
+  { to: "/society/no-dues", label: "No-Dues", icon: FileCheck2, feature: "no_dues" },
 ];
 
 const OTHER: Tile[] = [
@@ -61,6 +63,8 @@ const OTHER: Tile[] = [
   { to: "/society/branding", label: "Branding", icon: Palette, feature: "custom_branding" },
   { to: "/society/import", label: "Resident import", icon: Users, feature: "resident_import" },
   { to: "/society/bill-studio", label: "Bill templates", icon: Receipt, feature: "bill_templates" },
+  { to: "/society/automations", label: "Automations", icon: Activity, feature: "advanced_automation" },
+  { to: "/society/knowledge", label: "AI Secretary", icon: Sparkles, feature: "ai_secretary" },
   { to: "/society/custom-fields", label: "Custom fields", icon: Settings2 },
   { to: "/society/setup", label: "Setup wizard", icon: Activity },
   { to: "/society/explorer", label: "Explorer", icon: KeyRound },

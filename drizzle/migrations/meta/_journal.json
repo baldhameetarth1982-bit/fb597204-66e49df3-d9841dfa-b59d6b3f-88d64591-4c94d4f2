@@ -610,6 +610,13 @@
       "when": 1790633341918,
       "tag": "0086_wave1_services_discovery",
       "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1790633913030,
+      "tag": "0087_wave1_service_categories_audit",
+      "breakpoints": true
     }
   ]
 }

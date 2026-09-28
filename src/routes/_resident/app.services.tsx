@@ -9,12 +9,19 @@ import {
   ChevronRight,
   Users,
   ScanLine,
+  Siren,
 } from "lucide-react";
+import { ServiceDirectory } from "@/components/discovery/ServiceDirectory";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
 
 export const Route = createFileRoute("/_resident/app/services")({
-  head: () => ({ meta: [{ title: "Services — SociyoHub" }] }),
+  head: () => ({
+    meta: [
+      { title: "Services — SociyoHub" },
+      { name: "description", content: "Society shortcuts and trusted local services — electricians, plumbers, cleaning and more." },
+    ],
+  }),
   component: ServicesScreen,
 });
 
@@ -29,6 +36,7 @@ function ServicesScreen() {
     { to: "/app/visitors", title: "My Visitors", desc: "See who came to your flat", icon: Users, accent: "bg-primary/10 text-primary" },
     { to: "/app/vehicles", title: "Vehicles", desc: "Register cars & two-wheelers", icon: Car, accent: "bg-primary/10 text-primary" },
     { to: "/app/helpdesk", title: "Complaints", desc: "Raise & track society issues", icon: AlertCircle, accent: "bg-destructive/10 text-destructive" },
+    { to: "/app/emergency", title: "Emergency", desc: "SOS and emergency contacts", icon: Siren, accent: "bg-destructive/10 text-destructive" },
   ] as const;
 
   const more = [
@@ -115,6 +123,7 @@ function ServicesScreen() {
           ))}
         </div>
       </section>
+      <ServiceDirectory />
     </div>
   );
 }

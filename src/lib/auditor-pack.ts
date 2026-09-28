@@ -42,7 +42,7 @@ export function sumBy(rows: Record<string, unknown>[], field: string, statusFiel
 export function bankSummary(rows: Record<string, unknown>[]) {
   let reconciled = 0, unreconciled = 0, reconciledCount = 0, unreconciledCount = 0;
   for (const r of rows) {
-    const done = r.matched_id != null || ["matched", "reconciled", "ignored", "explained"].includes(String(r.status));
+    const done = r.matched_id != null;
     if (done) { reconciled += Number(r.amount) || 0; reconciledCount++; } else { unreconciled += Number(r.amount) || 0; unreconciledCount++; }
   }
   return { reconciled, unreconciled, reconciledCount, unreconciledCount };

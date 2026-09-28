@@ -13,7 +13,7 @@ const out = z.object({
   section: z.string(),
   offset: z.number().int(),
   page_size: z.number().int(),
-  rows: z.array(z.record(z.string(), z.unknown())),
+  rows: z.array(z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()]).catch((c) => JSON.stringify(c.input)))),
   has_more: z.boolean(),
 });
 export type ExportPage = z.infer<typeof out>;

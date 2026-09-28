@@ -603,6 +603,13 @@
       "when": 1790632737429,
       "tag": "0085_wave0_gate_state_machine",
       "breakpoints": true
+    },
+    {
+      "idx": 86,
+      "version": "7",
+      "when": 1790633341918,
+      "tag": "0086_wave1_services_discovery",
+      "breakpoints": true
     }
   ]
 }

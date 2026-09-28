@@ -65,41 +65,91 @@ export type Database = {
       ads: {
         Row: {
           active: boolean
+          archived_at: string | null
+          business_name: string | null
+          category_id: string | null
           created_at: string
+          cta_label: string | null
+          description: string | null
+          ends_at: string | null
           id: string
           image_path: string | null
           image_url: string
+          kind: string
           link_url: string
+          phone: string | null
           placement: string
           sort_order: number
+          sponsored: boolean
+          starts_at: string | null
+          target_cities: string[]
+          target_plans: string[]
+          target_society_ids: string[]
           title: string
           updated_at: string
+          whatsapp: string | null
         }
         Insert: {
           active?: boolean
+          archived_at?: string | null
+          business_name?: string | null
+          category_id?: string | null
           created_at?: string
+          cta_label?: string | null
+          description?: string | null
+          ends_at?: string | null
           id?: string
           image_path?: string | null
           image_url: string
+          kind?: string
           link_url: string
+          phone?: string | null
           placement?: string
           sort_order?: number
+          sponsored?: boolean
+          starts_at?: string | null
+          target_cities?: string[]
+          target_plans?: string[]
+          target_society_ids?: string[]
           title: string
           updated_at?: string
+          whatsapp?: string | null
         }
         Update: {
           active?: boolean
+          archived_at?: string | null
+          business_name?: string | null
+          category_id?: string | null
           created_at?: string
+          cta_label?: string | null
+          description?: string | null
+          ends_at?: string | null
           id?: string
           image_path?: string | null
           image_url?: string
+          kind?: string
           link_url?: string
+          phone?: string | null
           placement?: string
           sort_order?: number
+          sponsored?: boolean
+          starts_at?: string | null
+          target_cities?: string[]
+          target_plans?: string[]
+          target_society_ids?: string[]
           title?: string
           updated_at?: string
+          whatsapp?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ads_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "service_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       audit_log: {
         Row: {
@@ -3929,6 +3979,39 @@ export type Database = {
           },
         ]
       }
+      service_categories: {
+        Row: {
+          active: boolean
+          created_at: string
+          icon: string
+          id: string
+          label: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          icon?: string
+          id?: string
+          label: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          icon?: string
+          id?: string
+          label?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       smart_qr_codes: {
         Row: {
           accepts_cash: boolean
@@ -6508,6 +6591,25 @@ export type Database = {
           _status?: string
         }
         Returns: Json
+      }
+      list_discovery_items: {
+        Args: { _kind?: string; _placement?: string }
+        Returns: {
+          business_name: string
+          category_id: string
+          cta_label: string
+          description: string
+          id: string
+          image_path: string
+          kind: string
+          link_url: string
+          phone: string
+          placement: string
+          sort_order: number
+          sponsored: boolean
+          title: string
+          whatsapp: string
+        }[]
       }
       list_finance_book: {
         Args: {

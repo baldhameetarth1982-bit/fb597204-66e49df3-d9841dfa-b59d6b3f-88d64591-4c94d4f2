@@ -17,19 +17,16 @@ function RevenuePage() {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["admin-revenue"],
     queryFn: async () => {
-      const [summary, societies, plans, ads] = await Promise.all([
+      const [summary, income, ads] = await Promise.all([
         supabase.rpc("admin_platform_summary"),
-        supabase.from("societies").select("plan_id, plan_status").eq("plan_status", "active"),
-        supabase.from("plans").select("id, price_monthly_inr"),
+        supabase.rpc("admin_income_summary" as any).maybeSingle(),
         supabase.from("ads").select("id, active").eq("active", true),
       ]);
       if (summary.error) throw summary.error;
-      const priceMap = new Map<string, number>((plans.data ?? []).map((p: any) => [p.id, p.price_monthly_inr ?? 0]));
-      let mrr = 0, activePaid = 0;
-      for (const s of societies.data ?? []) {
-        const price = priceMap.get(s.plan_id ?? "") ?? 0;
-        if (price > 0) { mrr += price; activePaid++; }
-      }
+      if (income.error || !income.data) throw income.error ?? new Error("load_failed");
+      const inc: any = income.data;
+      const mrr = Number(inc.total_revenue ?? 0);
+      const activePaid = Number(inc.standard_paid_societies ?? 0) + Number(inc.custom_priced_societies ?? 0);
       return { summary: summary.data?.[0] ?? null, mrr, arr: mrr * 12, activePaid, activeAds: (ads.data ?? []).length };
     },
   });

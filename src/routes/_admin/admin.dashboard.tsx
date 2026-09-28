@@ -71,23 +71,10 @@ function AdminDashboard() {
   const revQ = useQuery({
     queryKey: ["admin-mrr"],
     queryFn: async () => {
-      const [socs, plans] = await Promise.all([
-        supabase.from("societies").select("plan_id, plan_expires_at, status").eq("plan_status", "active"),
-        supabase.from("plans").select("id, price_monthly_inr"),
-      ]);
-      // Never compute revenue from a partial dataset.
-      if (socs.error || plans.error) throw new Error("load_failed");
-      const map = new Map<string, number>(
-        (plans.data ?? []).map((p: any) => [p.id, Number(p.price_monthly_inr ?? 0)]),
-      );
-      const now = Date.now();
-      let mrr = 0;
-      for (const s of socs.data ?? []) {
-        if ((s as any).status === "suspended") continue;
-        const exp = (s as any).plan_expires_at as string | null;
-        if (exp && new Date(exp).getTime() < now) continue; // expired plans aren't recurring revenue
-        mrr += map.get(s.plan_id ?? "") ?? 0; // unknown plan ids contribute nothing
-      }
+      // Authoritative server estimate: per-flat rate x active flats; >300-flat societies use their custom plan.
+      const { data, error } = await supabase.rpc("admin_income_summary" as any).maybeSingle();
+      if (error || !data) throw new Error("load_failed");
+      const mrr = Number((data as any).total_revenue ?? 0);
       return { mrr };
     },
   });

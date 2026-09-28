@@ -19,20 +19,19 @@ function ExecutiveDashboard() {
     queryKey: ["exec-dashboard"],
     queryFn: async () => {
       const since = new Date(Date.now() - 30 * 86400_000).toISOString();
-      const [summary, plans, socs, visitors30, postsCount, residentsCount] = await Promise.all([
+      const [summary, income, socs, visitors30, postsCount, residentsCount] = await Promise.all([
         supabase.rpc("admin_platform_summary"),
-        supabase.from("plans").select("id, price_monthly_inr"),
+        supabase.rpc("admin_income_summary" as any).maybeSingle(),
         supabase.from("societies").select("plan_id, plan_status, created_at"),
         supabase.from("visitors").select("id", { count: "exact", head: true }).gte("created_at", since),
         supabase.from("posts").select("id", { count: "exact", head: true }).gte("created_at", since),
         supabase.from("flat_residents").select("id", { count: "exact", head: true }),
       ]);
       if (summary.error) throw summary.error;
-      const priceMap = new Map<string, number>((plans.data ?? []).map((p: any) => [p.id, p.price_monthly_inr ?? 0]));
-      let mrr = 0;
+      if (income.error || !income.data) throw income.error ?? new Error("load_failed");
+      const mrr = Number((income.data as any).total_revenue ?? 0);
       let newSocieties30 = 0;
       for (const s of socs.data ?? []) {
-        if (s.plan_status === "active") mrr += priceMap.get(s.plan_id ?? "") ?? 0;
         if (s.created_at && new Date(s.created_at).getTime() > Date.now() - 30 * 86400_000) newSocieties30++;
       }
       const total = (socs.data ?? []).length || 1;

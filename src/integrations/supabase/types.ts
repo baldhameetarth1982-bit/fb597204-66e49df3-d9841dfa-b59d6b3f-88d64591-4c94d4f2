@@ -6182,6 +6182,15 @@ export type Database = {
           trial_days: number
         }[]
       }
+      get_auditor_pack: {
+        Args: {
+          _format?: string
+          _from: string
+          _society_id: string
+          _to: string
+        }
+        Returns: Json
+      }
       get_bill_payment_summary: { Args: { _bill_id: string }; Returns: Json }
       get_current_auth_context: {
         Args: never
@@ -6885,6 +6894,16 @@ export type Database = {
           eligibility: Json
           new_status: string
         }[]
+      }
+      record_auditor_pack_failure: {
+        Args: {
+          _format: string
+          _from: string
+          _reason: string
+          _society_id: string
+          _to: string
+        }
+        Returns: undefined
       }
       record_saas_subscription_refund_submission: {
         Args: { _provider_refund_id: string; _refund_record_id: string }

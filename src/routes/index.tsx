@@ -1,4 +1,5 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { structuredDataScript } from "@/lib/structured-data";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { ROLE_HOME, ROLES } from "@/config/roles";

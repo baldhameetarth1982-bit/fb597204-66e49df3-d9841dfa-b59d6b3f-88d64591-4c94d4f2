@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { structuredDataScript } from "@/lib/structured-data";
 import { BRAND } from "@/config/brand";
 import { SociyoHubLogo } from "@/components/shared/SociyoHubLogo";
 

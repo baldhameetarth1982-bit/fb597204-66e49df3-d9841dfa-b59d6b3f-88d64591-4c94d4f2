@@ -99,7 +99,7 @@ function IncomePage() {
                     <div className="min-w-0">
                       <p className="truncate font-medium">{p.name}</p>
                       <p className="text-xs text-muted-foreground sm:hidden">
-                        {INR.format(Number(p.price_monthly_inr ?? 0))}/month
+                        {INR.format(Number(p.price_per_flat_inr ?? 0))}/flat/month
                       </p>
                     </div>
                     <p className="hidden text-right text-sm tabular-nums sm:block">

@@ -87,7 +87,7 @@ function PlansAdmin() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-right font-semibold tabular-nums">
-                        {inr(p.price_monthly_inr)}
+                        {inr(p.price_per_flat_inr)}/flat
                       </td>
                       <td className="px-4 py-3">{p.ads_enabled ? "Yes" : "No"}</td>
                       <td className="px-4 py-3 text-right tabular-nums">
@@ -118,8 +118,8 @@ function PlansAdmin() {
                     {p.is_recommended && <StatusChip tone="primary">Top</StatusChip>}
                   </div>
                   <span className="font-semibold tabular-nums">
-                    {inr(p.price_monthly_inr)}
-                    {p.price_monthly_inr > 0 && (
+                    {inr(p.price_per_flat_inr)}/flat
+                    {Number(p.price_per_flat_inr) > 0 && (
                       <span className="text-xs font-normal text-muted-foreground">/mo</span>
                     )}
                   </span>

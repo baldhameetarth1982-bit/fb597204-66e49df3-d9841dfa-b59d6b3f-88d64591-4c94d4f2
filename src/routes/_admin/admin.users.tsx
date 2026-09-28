@@ -50,7 +50,7 @@ function UsersPage() {
   const plansQ = useQuery({
     queryKey: ["admin-plans-grantable"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("plans").select("id, name, price_monthly_inr").order("sort_order");
+      const { data, error } = await supabase.from("plans").select("id, name, price_per_flat_inr").order("sort_order");
       if (error) throw new Error("load_failed");
       return (data ?? []).filter((p) => !["trial", "ad_free", "resident"].includes(p.id));
     },
@@ -155,7 +155,7 @@ function UsersPage() {
                 <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {(plansQ.data ?? []).map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}{Number(p.price_monthly_inr) > 0 ? ` — ₹${Number(p.price_monthly_inr).toLocaleString("en-IN")}/mo` : ""}</SelectItem>
+                    <SelectItem key={p.id} value={p.id}>{p.name}{Number(p.price_per_flat_inr) > 0 ? ` — ₹${Number(p.price_per_flat_inr)}/flat/mo` : ""}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

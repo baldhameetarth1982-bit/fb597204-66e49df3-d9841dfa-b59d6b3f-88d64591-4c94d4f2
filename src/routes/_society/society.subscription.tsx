@@ -7,7 +7,6 @@ import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
-import { supabase } from "@/integrations/supabase/client";
 import { getSocietyAccessStatus, type SocietyAccessStatus } from "@/lib/pricing-engine";
 import { getFeatureCatalog, PLAN_LABELS, type PlanKey } from "@/lib/plan-features";
 import { openRazorpayForOrder } from "@/lib/razorpay";

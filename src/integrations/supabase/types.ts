@@ -5301,6 +5301,10 @@ export type Database = {
           score: number
         }[]
       }
+      _bank_lock_line_society: {
+        Args: { _line_id: string }
+        Returns: undefined
+      }
       _bank_refresh_suggestions: {
         Args: { _society_id: string }
         Returns: number

@@ -624,6 +624,13 @@
       "when": 1790634757078,
       "tag": "0088_wave2_auditor_pack",
       "breakpoints": true
+    },
+    {
+      "idx": 89,
+      "version": "7",
+      "when": 1790634923096,
+      "tag": "0089_wave2_auditor_pack_income_category_fix",
+      "breakpoints": true
     }
   ]
 }

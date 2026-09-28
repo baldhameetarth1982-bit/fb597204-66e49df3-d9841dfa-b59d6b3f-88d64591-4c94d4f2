@@ -137,8 +137,8 @@ function PlanRequired() {
                     {p.is_recommended && <Badge className="shrink-0"><Sparkles className="mr-1 h-3 w-3" />Best value</Badge>}
                   </div>
                   <p className="mt-2 flex items-baseline gap-1">
-                    <span className="text-3xl font-bold tabular-nums">₹{p.price_monthly_inr}</span>
-                    <span className="text-sm text-muted-foreground">/month</span>
+                    <span className="text-3xl font-bold tabular-nums">₹{Number(p.price_per_flat_inr)}</span>
+                    <span className="text-sm text-muted-foreground">/ flat / month</span>
                   </p>
                   <Button
                     onClick={() => handleBuy(p)}

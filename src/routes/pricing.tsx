@@ -16,10 +16,10 @@ export const Route = createFileRoute("/pricing")({
       {
         name: "description",
         content:
-          "Simple pricing for every society. Start with a free trial. Custom modules, transparent per-unit rates.",
+          "Starter ₹8, Growth ₹10 and Pro ₹12 per flat per month. Free trial, no platform fees, custom pricing above 300 flats.",
       },
       { property: "og:title", content: "Pricing — SociyoHub" },
-      { property: "og:description", content: "Simple pricing for every society, with a free trial and transparent per-unit rates." },
+      { property: "og:description", content: "Starter ₹8, Growth ₹10 and Pro ₹12 per flat per month, with a free trial and no platform fees." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { property: "og:url", content: "https://sociohub.live/pricing" },
@@ -45,7 +45,7 @@ function PricingPage() {
   });
 
   const trialDays = settings?.trial_days ?? 14;
-  const threshold = settings?.enterprise_threshold_units ?? 500;
+  const threshold = settings?.enterprise_threshold_units ?? 300;
   const enterprise = plans?.find((p) => p.enterprise);
   const standard = (plans ?? []).filter((p) => !p.enterprise && p.plan_id !== "trial");
 
@@ -65,7 +65,7 @@ function PricingPage() {
         {/* Total-units estimator */}
         <Card className="rounded-3xl border border-border p-5 mb-8 max-w-lg mx-auto">
           <label className="block text-xs uppercase tracking-wider text-muted-foreground mb-2">
-            How many units does your society have?
+            How many flats does your society have?
           </label>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <input
@@ -87,12 +87,12 @@ function PricingPage() {
                 setShowEnterprise(true);
               }}
             >
-              I need enterprise
+              More than 300 flats
             </Button>
           </div>
 
           <p className="mt-2 text-[11px] text-muted-foreground">
-            Societies with more than {threshold} units automatically qualify for enterprise pricing.
+            Societies with more than {threshold} flats get custom pricing. Residents never pay SociyoHub, and there are no platform or transaction fees.
           </p>
         </Card>
 
@@ -107,16 +107,16 @@ function PricingPage() {
                 <Building2 className="h-7 w-7 text-primary" />
               </div>
               <div className="flex-1 space-y-2">
-                <Badge>Enterprise</Badge>
+                <Badge>Custom pricing</Badge>
                 <h2 className="text-xl font-semibold tracking-tight">Tailored for large societies</h2>
                 <p className="text-sm text-muted-foreground">
-                  Dedicated onboarding, an SLA, priority support and volume-based pricing. Perfect for townships,
+                  For societies with more than {threshold} flats we agree a custom price together. Perfect for townships,
                   villa communities and multi-tower complexes.
                 </p>
               </div>
               <Button asChild className="rounded-2xl h-12 min-w-[200px]">
                 <a href={`mailto:${settings?.enterprise_contact_email ?? "sales@sociohub.live"}`}>
-                  Talk to sales
+                  Talk to us
                 </a>
               </Button>
             </div>
@@ -167,9 +167,14 @@ function PricingPage() {
                       <h3 className="text-xl font-semibold tracking-tight">{p.plan_name}</h3>
                     </div>
                     <div className="mt-3 flex items-baseline gap-1">
-                      <span className="text-4xl font-bold">₹{p.price_monthly_inr ?? 0}</span>
-                      <span className="text-muted-foreground text-sm">/mo</span>
+                      <span className="text-4xl font-bold">₹{p.price_per_flat_inr ?? 0}</span>
+                      <span className="text-muted-foreground text-sm">/ flat / month</span>
                     </div>
+                    {p.price_monthly_inr ? (
+                      <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+                        About ₹{p.price_monthly_inr.toLocaleString("en-IN")}/month for {units} flats
+                      </p>
+                    ) : null}
                     <ul className="mt-4 space-y-2 text-sm flex-1">
                       {p.features.map((f, i) => (
                         <li key={i} className="flex items-start gap-2">

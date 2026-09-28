@@ -115,11 +115,11 @@ function PlanGate() {
                 <Building2 className="h-7 w-7 text-primary" />
               </div>
               <div className="flex-1 space-y-2">
-                <Badge className="rounded-full">Enterprise</Badge>
+                <Badge className="rounded-full">Custom pricing</Badge>
                 <h2 className="text-xl font-semibold tracking-tight">Custom pricing for your society</h2>
                 <p className="text-sm text-muted-foreground">
-                  With <strong>{(society as any)?.total_units ?? "500+"}</strong> units, you qualify for enterprise
-                  pricing with dedicated onboarding, SLA and account management.
+                  With <strong>{(society as any)?.total_units ?? "300+"}</strong> flats, your society gets custom pricing.
+                  Talk to us and we will agree a price together.
                 </p>
               </div>
               <div className="flex flex-col gap-2 w-full md:w-auto">
@@ -130,7 +130,7 @@ function PlanGate() {
                   <a
                     href={`mailto:${settings?.enterprise_contact_email ?? "sales@sociohub.live"}?subject=Enterprise plan enquiry`}
                   >
-                    Talk to sales
+                    Talk to us
                   </a>
                 </Button>
                 {settings?.enterprise_contact_phone && (
@@ -193,9 +193,14 @@ function PlanGate() {
                       <h3 className="text-xl font-semibold tracking-tight">{p.plan_name}</h3>
                     </div>
                     <div className="mt-3 flex items-baseline gap-1">
-                      <span className="text-4xl font-bold">₹{p.price_monthly_inr ?? 0}</span>
-                      <span className="text-muted-foreground text-sm">/mo</span>
+                      <span className="text-4xl font-bold">₹{p.price_per_flat_inr ?? 0}</span>
+                      <span className="text-muted-foreground text-sm">/ flat / month</span>
                     </div>
+                    {p.price_monthly_inr ? (
+                      <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+                        About ₹{p.price_monthly_inr.toLocaleString("en-IN")}/month for {(society as any)?.total_units} flats
+                      </p>
+                    ) : null}
                     <ul className="mt-4 space-y-2 text-sm flex-1">
                       {p.features.map((f, i) => (
                         <li key={i} className="flex items-start gap-2">

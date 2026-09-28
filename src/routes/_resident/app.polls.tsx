@@ -39,7 +39,7 @@ function PollsPage() {
 
   async function load() {
     setLoading(true); setFailed(false);
-    const { data: ps, error } = await supabase.from("polls").select("id,title,description,status,closes_at").order("created_at", { ascending: false });
+    const { data: ps, error } = await supabase.from("polls").select("id,title,description,status,closes_at").eq("kind", "poll").order("created_at", { ascending: false });
     if (error) { setFailed(true); setLoading(false); return; }
     const list = (ps as Poll[]) ?? [];
     setPolls(list);

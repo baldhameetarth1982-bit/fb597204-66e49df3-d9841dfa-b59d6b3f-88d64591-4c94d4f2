@@ -53,7 +53,7 @@ function AdminPolls() {
     if (!societyId) return;
     setLoading(true); setFailed(false);
     const { data: ps, error } = await supabase
-      .from("polls").select("id,title,description,status,closes_at,created_at")
+      .from("polls").select("id,title,description,status,closes_at,created_at").eq("kind", "poll")
       .eq("society_id", societyId).order("created_at", { ascending: false });
     if (error) { setFailed(true); setLoading(false); return; }
     const list = (ps as Poll[]) ?? [];

@@ -84,6 +84,7 @@ import { Route as SocietySocietyBrandingRouteImport } from './routes/_society/so
 import { Route as SocietySocietyBlocksRouteImport } from './routes/_society/society.blocks'
 import { Route as SocietySocietyBillingSettingsRouteImport } from './routes/_society/society.billing-settings'
 import { Route as SocietySocietyAutomationsRouteImport } from './routes/_society/society.automations'
+import { Route as SocietySocietyAuditorPackRouteImport } from './routes/_society/society.auditor-pack'
 import { Route as SocietySocietyApprovalsRouteImport } from './routes/_society/society.approvals'
 import { Route as SocietySocietyAnnouncementsRouteImport } from './routes/_society/society.announcements'
 import { Route as SocietySocietyAccountsRouteImport } from './routes/_society/society.accounts'
@@ -552,6 +553,12 @@ const SocietySocietyAutomationsRoute =
   SocietySocietyAutomationsRouteImport.update({
     id: '/society/automations',
     path: '/society/automations',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyAuditorPackRoute =
+  SocietySocietyAuditorPackRouteImport.update({
+    id: '/society/auditor-pack',
+    path: '/society/auditor-pack',
     getParentRoute: () => SocietyRoute,
   } as any)
 const SocietySocietyApprovalsRoute = SocietySocietyApprovalsRouteImport.update({
@@ -1061,6 +1068,7 @@ export interface FileRoutesByFullPath {
   '/society/accounts': typeof SocietySocietyAccountsRoute
   '/society/announcements': typeof SocietySocietyAnnouncementsRoute
   '/society/approvals': typeof SocietySocietyApprovalsRoute
+  '/society/auditor-pack': typeof SocietySocietyAuditorPackRoute
   '/society/automations': typeof SocietySocietyAutomationsRoute
   '/society/billing-settings': typeof SocietySocietyBillingSettingsRoute
   '/society/blocks': typeof SocietySocietyBlocksRoute
@@ -1214,6 +1222,7 @@ export interface FileRoutesByTo {
   '/society/accounts': typeof SocietySocietyAccountsRoute
   '/society/announcements': typeof SocietySocietyAnnouncementsRoute
   '/society/approvals': typeof SocietySocietyApprovalsRoute
+  '/society/auditor-pack': typeof SocietySocietyAuditorPackRoute
   '/society/automations': typeof SocietySocietyAutomationsRoute
   '/society/billing-settings': typeof SocietySocietyBillingSettingsRoute
   '/society/blocks': typeof SocietySocietyBlocksRoute
@@ -1373,6 +1382,7 @@ export interface FileRoutesById {
   '/_society/society/accounts': typeof SocietySocietyAccountsRoute
   '/_society/society/announcements': typeof SocietySocietyAnnouncementsRoute
   '/_society/society/approvals': typeof SocietySocietyApprovalsRoute
+  '/_society/society/auditor-pack': typeof SocietySocietyAuditorPackRoute
   '/_society/society/automations': typeof SocietySocietyAutomationsRoute
   '/_society/society/billing-settings': typeof SocietySocietyBillingSettingsRoute
   '/_society/society/blocks': typeof SocietySocietyBlocksRoute
@@ -1529,6 +1539,7 @@ export interface FileRouteTypes {
     | '/society/accounts'
     | '/society/announcements'
     | '/society/approvals'
+    | '/society/auditor-pack'
     | '/society/automations'
     | '/society/billing-settings'
     | '/society/blocks'
@@ -1682,6 +1693,7 @@ export interface FileRouteTypes {
     | '/society/accounts'
     | '/society/announcements'
     | '/society/approvals'
+    | '/society/auditor-pack'
     | '/society/automations'
     | '/society/billing-settings'
     | '/society/blocks'
@@ -1840,6 +1852,7 @@ export interface FileRouteTypes {
     | '/_society/society/accounts'
     | '/_society/society/announcements'
     | '/_society/society/approvals'
+    | '/_society/society/auditor-pack'
     | '/_society/society/automations'
     | '/_society/society/billing-settings'
     | '/_society/society/blocks'
@@ -2478,6 +2491,13 @@ declare module '@tanstack/react-router' {
       path: '/society/automations'
       fullPath: '/society/automations'
       preLoaderRoute: typeof SocietySocietyAutomationsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/auditor-pack': {
+      id: '/_society/society/auditor-pack'
+      path: '/society/auditor-pack'
+      fullPath: '/society/auditor-pack'
+      preLoaderRoute: typeof SocietySocietyAuditorPackRouteImport
       parentRoute: typeof SocietyRoute
     }
     '/_society/society/approvals': {
@@ -3188,6 +3208,7 @@ interface SocietyRouteChildren {
   SocietySocietyAccountsRoute: typeof SocietySocietyAccountsRoute
   SocietySocietyAnnouncementsRoute: typeof SocietySocietyAnnouncementsRoute
   SocietySocietyApprovalsRoute: typeof SocietySocietyApprovalsRoute
+  SocietySocietyAuditorPackRoute: typeof SocietySocietyAuditorPackRoute
   SocietySocietyAutomationsRoute: typeof SocietySocietyAutomationsRoute
   SocietySocietyBillingSettingsRoute: typeof SocietySocietyBillingSettingsRoute
   SocietySocietyBlocksRoute: typeof SocietySocietyBlocksRoute
@@ -3252,6 +3273,7 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyAccountsRoute: SocietySocietyAccountsRoute,
   SocietySocietyAnnouncementsRoute: SocietySocietyAnnouncementsRoute,
   SocietySocietyApprovalsRoute: SocietySocietyApprovalsRoute,
+  SocietySocietyAuditorPackRoute: SocietySocietyAuditorPackRoute,
   SocietySocietyAutomationsRoute: SocietySocietyAutomationsRoute,
   SocietySocietyBillingSettingsRoute: SocietySocietyBillingSettingsRoute,
   SocietySocietyBlocksRoute: SocietySocietyBlocksRoute,

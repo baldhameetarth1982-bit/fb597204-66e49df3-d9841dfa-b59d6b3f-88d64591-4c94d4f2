@@ -42,6 +42,7 @@ const FINANCE: Tile[] = [
   { to: "/society/accounts", label: "Accounts", icon: Wallet, feature: "ledger" },
   { to: "/society/expenses", label: "Expenses", icon: TrendingDown, feature: "expenses" },
   { to: "/society/reports", label: "Reports", icon: BarChart3, feature: "advanced_reports" },
+  { to: "/society/auditor-pack", label: "Auditor pack", icon: FileCheck2, feature: "advanced_reports" },
   { to: "/society/income", label: "Other income", icon: Wallet, feature: "non_member_payments" },
   { to: "/society/qr", label: "QR collections", icon: Wallet, feature: "smart_qr_collections" },
   { to: "/society/reconciliation", label: "Reconciliation", icon: Wallet, feature: "reconciliation" },

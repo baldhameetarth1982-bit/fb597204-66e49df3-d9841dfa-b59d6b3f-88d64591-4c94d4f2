@@ -24,7 +24,7 @@ export interface SafeFinanceError {
 const COPY: Record<FinanceErrorKind, Omit<SafeFinanceError, "kind">> = {
   plan_locked: {
     title: "Available on a higher plan",
-    message: "This financial view is included in the Pro or Premium plan.",
+    message: "This financial view is included in the Growth or Pro plan.",
     retryable: false,
   },
   permission_denied: {

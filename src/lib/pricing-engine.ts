@@ -10,6 +10,9 @@ export interface ApplicablePlan {
   tier: "standard" | "enterprise";
   plan_id: string;
   plan_name: string;
+  /** Per-flat monthly price (₹). */
+  price_per_flat_inr: number | null;
+  /** Estimated monthly total for the given unit count, when supplied. */
   price_monthly_inr: number | null;
   trial_days: number;
   features: string[];
@@ -26,6 +29,7 @@ export async function getApplicablePlans(totalUnits: number | null): Promise<App
     tier: r.tier,
     plan_id: r.plan_id,
     plan_name: r.plan_name,
+    price_per_flat_inr: r.price_per_flat_inr == null ? null : Number(r.price_per_flat_inr),
     price_monthly_inr: r.price_monthly_inr,
     trial_days: r.trial_days ?? 0,
     features: Array.isArray(r.features) ? r.features : [],

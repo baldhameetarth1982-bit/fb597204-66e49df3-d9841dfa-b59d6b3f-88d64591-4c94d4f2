@@ -126,7 +126,7 @@ export function AISummarySlot({
         {state.kind === "locked" && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
             <Lock className="h-4 w-4" aria-hidden="true" />
-            <span>AI Summary is available on Pro and Premium plans.</span>
+            <span>AI Summary is available on Growth and Pro plans.</span>
           </div>
         )}
 

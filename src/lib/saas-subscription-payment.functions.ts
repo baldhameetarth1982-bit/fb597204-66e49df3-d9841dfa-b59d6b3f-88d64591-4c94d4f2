@@ -24,6 +24,64 @@ const confirmationSchema = purchaseSchema.omit({ requestId: true }).extend({
   razorpaySignature: z.string().regex(/^[a-f0-9]{64}$/i),
 });
 
+export type SubscriptionQuote = {
+  plan_id: "basic" | "pro" | "premium";
+  plan_name: string;
+  flat_count: number;
+  price_per_flat_inr: number;
+  threshold: number;
+  custom_pricing: boolean;
+  amount_paise: number | null;
+};
+
+const PLAN_IDS = ["basic", "pro", "premium"] as const;
+
+async function readQuote(
+  supabase: SupabaseClient<Database>,
+  societyId: string,
+  planId: (typeof PLAN_IDS)[number],
+): Promise<SubscriptionQuote> {
+  const { data, error } = await supabase.rpc("saas_subscription_quote", {
+    _society_id: societyId,
+    _plan_id: planId,
+  });
+  if (error || !data) throw new Error("Pricing is unavailable right now. Please try again.");
+  const q = data as Record<string, unknown>;
+  return {
+    plan_id: planId,
+    plan_name: String(q.plan_name ?? planId),
+    flat_count: Number(q.flat_count ?? 0),
+    price_per_flat_inr: Number(q.price_per_flat_inr ?? 0),
+    threshold: Number(q.threshold ?? 300),
+    custom_pricing: Boolean(q.custom_pricing),
+    amount_paise: q.amount_paise == null ? null : Number(q.amount_paise),
+  };
+}
+
+async function fetchQuote(
+  supabase: SupabaseClient<Database>,
+  societyId: string,
+  planId: (typeof PLAN_IDS)[number],
+): Promise<SubscriptionQuote & { amount_paise: number }> {
+  const quote = await readQuote(supabase, societyId, planId);
+  if (quote.custom_pricing)
+    throw new Error(
+      `Societies with more than ${quote.threshold} flats get custom pricing. Please talk to us.`,
+    );
+  if (!quote.amount_paise || quote.amount_paise <= 0)
+    throw new Error("Add your society's flats before choosing a plan.");
+  return { ...quote, amount_paise: quote.amount_paise };
+}
+
+/** Server-calculated monthly price for each plan for this society. */
+export const getSaasSubscriptionQuotes = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ societyId: z.string().uuid() }).strict().parse(input))
+  .handler(async ({ data, context }) => {
+    await requirePlanManager(context.supabase, data.societyId);
+    return Promise.all(PLAN_IDS.map((id) => readQuote(context.supabase, data.societyId, id)));
+  });
+
 async function requirePlanManager(supabase: SupabaseClient<Database>, societyId: string) {
   const { data, error } = await supabase.rpc("current_user_has_society_permission", {
     _society_id: societyId,
@@ -55,15 +113,11 @@ export const createSaasSubscriptionOrder = createServerFn({ method: "POST" })
         windowSec: 3600,
       }),
     ]);
-    const { data: plan, error } = await context.supabase
-      .from("plans")
-      .select("id,name,price_monthly_inr")
-      .eq("id", data.planId)
-      .single();
-    if (error || !plan || plan.price_monthly_inr <= 0)
-      throw new Error("This plan is not available for purchase.");
-
-    const amount = Math.round(plan.price_monthly_inr * 100);
+    // Amount = active flats × plan per-flat price, computed by the database.
+    // The claim RPC recomputes it and rejects any mismatch or custom-pricing society.
+    const quote = await fetchQuote(context.supabase, data.societyId, data.planId);
+    const plan = { name: quote.plan_name };
+    const amount = quote.amount_paise;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const provider = await import("@/lib/saas-payments/razorpay.server");
     const providerMode = provider.getRazorpayMode();

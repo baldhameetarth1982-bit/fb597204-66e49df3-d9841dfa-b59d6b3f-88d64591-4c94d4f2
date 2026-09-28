@@ -91,6 +91,7 @@ import { Route as SocietySocietyAccountsRouteImport } from './routes/_society/so
 import { Route as ResidentAppVisitorsRouteImport } from './routes/_resident/app.visitors'
 import { Route as ResidentAppVehiclesRouteImport } from './routes/_resident/app.vehicles'
 import { Route as ResidentAppTrustRouteImport } from './routes/_resident/app.trust'
+import { Route as ResidentAppSurveysRouteImport } from './routes/_resident/app.surveys'
 import { Route as ResidentAppServicesRouteImport } from './routes/_resident/app.services'
 import { Route as ResidentAppSecretaryRouteImport } from './routes/_resident/app.secretary'
 import { Route as ResidentAppSearchRouteImport } from './routes/_resident/app.search'
@@ -592,6 +593,11 @@ const ResidentAppTrustRoute = ResidentAppTrustRouteImport.update({
   path: '/app/trust',
   getParentRoute: () => ResidentRoute,
 } as any)
+const ResidentAppSurveysRoute = ResidentAppSurveysRouteImport.update({
+  id: '/app/surveys',
+  path: '/app/surveys',
+  getParentRoute: () => ResidentRoute,
+} as any)
 const ResidentAppServicesRoute = ResidentAppServicesRouteImport.update({
   id: '/app/services',
   path: '/app/services',
@@ -1062,6 +1068,7 @@ export interface FileRoutesByFullPath {
   '/app/search': typeof ResidentAppSearchRoute
   '/app/secretary': typeof ResidentAppSecretaryRoute
   '/app/services': typeof ResidentAppServicesRoute
+  '/app/surveys': typeof ResidentAppSurveysRoute
   '/app/trust': typeof ResidentAppTrustRoute
   '/app/vehicles': typeof ResidentAppVehiclesRoute
   '/app/visitors': typeof ResidentAppVisitorsRoute
@@ -1216,6 +1223,7 @@ export interface FileRoutesByTo {
   '/app/search': typeof ResidentAppSearchRoute
   '/app/secretary': typeof ResidentAppSecretaryRoute
   '/app/services': typeof ResidentAppServicesRoute
+  '/app/surveys': typeof ResidentAppSurveysRoute
   '/app/trust': typeof ResidentAppTrustRoute
   '/app/vehicles': typeof ResidentAppVehiclesRoute
   '/app/visitors': typeof ResidentAppVisitorsRoute
@@ -1376,6 +1384,7 @@ export interface FileRoutesById {
   '/_resident/app/search': typeof ResidentAppSearchRoute
   '/_resident/app/secretary': typeof ResidentAppSecretaryRoute
   '/_resident/app/services': typeof ResidentAppServicesRoute
+  '/_resident/app/surveys': typeof ResidentAppSurveysRoute
   '/_resident/app/trust': typeof ResidentAppTrustRoute
   '/_resident/app/vehicles': typeof ResidentAppVehiclesRoute
   '/_resident/app/visitors': typeof ResidentAppVisitorsRoute
@@ -1533,6 +1542,7 @@ export interface FileRouteTypes {
     | '/app/search'
     | '/app/secretary'
     | '/app/services'
+    | '/app/surveys'
     | '/app/trust'
     | '/app/vehicles'
     | '/app/visitors'
@@ -1687,6 +1697,7 @@ export interface FileRouteTypes {
     | '/app/search'
     | '/app/secretary'
     | '/app/services'
+    | '/app/surveys'
     | '/app/trust'
     | '/app/vehicles'
     | '/app/visitors'
@@ -1846,6 +1857,7 @@ export interface FileRouteTypes {
     | '/_resident/app/search'
     | '/_resident/app/secretary'
     | '/_resident/app/services'
+    | '/_resident/app/surveys'
     | '/_resident/app/trust'
     | '/_resident/app/vehicles'
     | '/_resident/app/visitors'
@@ -2542,6 +2554,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResidentAppTrustRouteImport
       parentRoute: typeof ResidentRoute
     }
+    '/_resident/app/surveys': {
+      id: '/_resident/app/surveys'
+      path: '/app/surveys'
+      fullPath: '/app/surveys'
+      preLoaderRoute: typeof ResidentAppSurveysRouteImport
+      parentRoute: typeof ResidentRoute
+    }
     '/_resident/app/services': {
       id: '/_resident/app/services'
       path: '/app/services'
@@ -3154,6 +3173,7 @@ interface ResidentRouteChildren {
   ResidentAppSearchRoute: typeof ResidentAppSearchRoute
   ResidentAppSecretaryRoute: typeof ResidentAppSecretaryRoute
   ResidentAppServicesRoute: typeof ResidentAppServicesRoute
+  ResidentAppSurveysRoute: typeof ResidentAppSurveysRoute
   ResidentAppTrustRoute: typeof ResidentAppTrustRoute
   ResidentAppVehiclesRoute: typeof ResidentAppVehiclesRoute
   ResidentAppVisitorsRoute: typeof ResidentAppVisitorsRoute
@@ -3189,6 +3209,7 @@ const ResidentRouteChildren: ResidentRouteChildren = {
   ResidentAppSearchRoute: ResidentAppSearchRoute,
   ResidentAppSecretaryRoute: ResidentAppSecretaryRoute,
   ResidentAppServicesRoute: ResidentAppServicesRoute,
+  ResidentAppSurveysRoute: ResidentAppSurveysRoute,
   ResidentAppTrustRoute: ResidentAppTrustRoute,
   ResidentAppVehiclesRoute: ResidentAppVehiclesRoute,
   ResidentAppVisitorsRoute: ResidentAppVisitorsRoute,

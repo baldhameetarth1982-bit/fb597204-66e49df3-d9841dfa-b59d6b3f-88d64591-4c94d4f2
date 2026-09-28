@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getSocietyAccessStatus, type SocietyAccessStatus } from "@/lib/pricing-engine";
 import { getFeatureCatalog, PLAN_LABELS, type PlanKey } from "@/lib/plan-features";
 import { openRazorpayForOrder } from "@/lib/razorpay";
-import { confirmSaasSubscriptionPayment, createSaasSubscriptionOrder } from "@/lib/saas-subscription-payment.functions";
+import { confirmSaasSubscriptionPayment, createSaasSubscriptionOrder, getSaasSubscriptionQuotes } from "@/lib/saas-subscription-payment.functions";
 import { SettingsShell, SettingsSection, SettingsDisclosure } from "@/components/settings/SettingsUI";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -84,19 +84,17 @@ function SubscriptionPage() {
     queryFn: () => getSocietyAccessStatus(societyId!),
   });
 
+  const fetchQuotes = useServerFn(getSaasSubscriptionQuotes);
   const plans = useQuery({
-    queryKey: ["subscription-plans"],
-    staleTime: 5 * 60_000,
+    enabled: !!societyId,
+    queryKey: ["subscription-quotes", societyId],
+    staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("plans")
-        .select("id,name,price_monthly_inr,is_recommended,sort_order")
-        .not("id", "in", "(ad_free,trial,resident)")
-        .order("sort_order");
-      if (error) throw new Error("plans_unavailable");
-      return data ?? [];
+      const quotes = await fetchQuotes({ data: { societyId: societyId as string } });
+      return quotes.map((q) => ({ ...q, id: q.plan_id, name: q.plan_name, is_recommended: q.plan_id === "pro" }));
     },
   });
+  const customPricing = plans.data?.[0]?.custom_pricing ?? false;
 
   const paymentHistory = useQuery({
     enabled: !!societyId,
@@ -135,7 +133,7 @@ function SubscriptionPage() {
     }
   }
 
-  async function handleBuy(p: { id: string; name: string; price_monthly_inr: number }) {
+  async function handleBuy(p: { id: string; name: string }) {
     setBusyId(p.id);
     try {
     const requestId = requestIds.current.get(p.id) ?? crypto.randomUUID();
@@ -257,6 +255,21 @@ function SubscriptionPage() {
           ) : plans.isError ? (
             <ErrorState title="Couldn't load plans" description="Please try again." onRetry={() => plans.refetch()} />
           ) : (
+            <>
+            {customPricing ? (
+              <div className="rounded-xl border p-4 text-sm">
+                <p className="font-semibold">Custom pricing</p>
+                <p className="mt-1 text-muted-foreground">
+                  Your society has {plans.data?.[0]?.flat_count} flats. Societies with more than{" "}
+                  {plans.data?.[0]?.threshold} flats get a custom price, so online checkout isn't available.
+                </p>
+                <a href="mailto:sociohub710@gmail.com?subject=Custom pricing enquiry" className="mt-2 inline-flex min-h-11 items-center text-primary underline-offset-4 hover:underline">
+                  Talk to us
+                </a>
+              </div>
+            ) : plans.data?.[0]?.flat_count === 0 ? (
+              <p className="text-sm text-muted-foreground">Add your society's flats first — the price is per flat.</p>
+            ) : null}
             <ul className="divide-y">
               {(plans.data ?? []).map((p) => {
                 const current = status === "active" && p.id === access.data?.plan_id;
@@ -268,15 +281,20 @@ function SubscriptionPage() {
                         {current ? <Badge variant="secondary">Your plan</Badge> : p.is_recommended ? <Badge variant="outline">Popular</Badge> : null}
                       </div>
                       <p className="text-sm">
-                        <span className="font-semibold tabular-nums">₹{Number(p.price_monthly_inr).toLocaleString("en-IN")}</span>
-                        <span className="text-muted-foreground"> / month</span>
+                        <span className="font-semibold tabular-nums">₹{p.price_per_flat_inr}</span>
+                        <span className="text-muted-foreground"> / flat / month</span>
+                        {p.amount_paise ? (
+                          <span className="text-muted-foreground tabular-nums">
+                            {" "}· ₹{(p.amount_paise / 100).toLocaleString("en-IN")}/month for {p.flat_count} flats
+                          </span>
+                        ) : null}
                       </p>
                     </div>
                     <Button
                       className="h-11 rounded-xl"
                       variant={current ? "outline" : "default"}
-                      disabled={busyId !== null || confirming}
-                      onClick={() => handleBuy(p as any)}
+                      disabled={busyId !== null || confirming || !p.amount_paise}
+                      onClick={() => handleBuy(p)}
                       aria-label={`${current ? "Renew" : "Choose"} ${p.name}`}
                     >
                       {busyId === p.id && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
@@ -286,6 +304,7 @@ function SubscriptionPage() {
                 );
               })}
             </ul>
+            </>
           )}
           <Link to="/pricing" className="mt-2 inline-flex min-h-11 items-center text-sm text-primary underline-offset-4 hover:underline">
             Compare plans in detail
@@ -311,7 +330,7 @@ function SubscriptionPage() {
                   <li key={payment.id} className="grid gap-3 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-semibold capitalize">{payment.plan_id} plan</p>
+                        <p className="font-semibold">{PLAN_LABELS[payment.plan_id as PlanKey] ?? payment.plan_id} plan</p>
                         <Badge variant="outline" className="capitalize">{payment.lifecycle_status.replaceAll("_", " ")}</Badge>
                         {payment.provider_mode && <Badge variant="secondary">{payment.provider_mode}</Badge>}
                       </div>

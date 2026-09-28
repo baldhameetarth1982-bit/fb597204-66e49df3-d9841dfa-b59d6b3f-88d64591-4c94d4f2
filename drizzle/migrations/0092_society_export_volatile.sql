@@ -1,0 +1,1 @@
+ALTER FUNCTION public.get_society_export_section(uuid, text, integer) VOLATILE;

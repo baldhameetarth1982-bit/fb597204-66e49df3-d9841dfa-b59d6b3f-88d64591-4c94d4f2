@@ -645,6 +645,13 @@
       "when": 1790636780473,
       "tag": "0091_society_full_export",
       "breakpoints": true
+    },
+    {
+      "idx": 92,
+      "version": "7",
+      "when": 1790636810779,
+      "tag": "0092_society_export_volatile",
+      "breakpoints": true
     }
   ]
 }

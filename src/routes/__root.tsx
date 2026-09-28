@@ -24,6 +24,7 @@ import { GuardBottomNav } from "@/components/nav/GuardBottomNav";
 import { SuperAdminBottomNav } from "@/components/nav/SuperAdminBottomNav";
 
 import { Toaster } from "@/components/ui/sonner";
+import { OfflineBanner } from "@/components/system/OfflineBanner";
 import { SplashScreen } from "@/components/shared/SplashScreen";
 import { RootErrorBoundary, installGlobalErrorLogger } from "@/components/shared/RootErrorBoundary";
 import { ProtectedRoute } from "@/components/shared/AuthGuard";

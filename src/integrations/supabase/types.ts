@@ -140,6 +140,140 @@ export type Database = {
         }
         Relationships: []
       }
+      bank_statement_imports: {
+        Row: {
+          created_at: string
+          created_by: string
+          duplicate_count: number
+          file_name: string
+          file_sha256: string
+          id: string
+          row_count: number
+          society_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          duplicate_count?: number
+          file_name: string
+          file_sha256: string
+          id?: string
+          row_count: number
+          society_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          duplicate_count?: number
+          file_name?: string
+          file_sha256?: string
+          id?: string
+          row_count?: number
+          society_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_statement_imports_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_statement_lines: {
+        Row: {
+          amount: number
+          candidate_count: number
+          created_at: string
+          description: string
+          direction: string
+          fingerprint: string
+          id: string
+          import_id: string
+          is_duplicate: boolean
+          line_no: number
+          match_strength: string | null
+          matched_at: string | null
+          matched_by: string | null
+          matched_id: string | null
+          matched_kind: string | null
+          note: string | null
+          reference: string | null
+          society_id: string
+          status: string
+          suggested_id: string | null
+          suggested_kind: string | null
+          txn_date: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          candidate_count?: number
+          created_at?: string
+          description: string
+          direction: string
+          fingerprint: string
+          id?: string
+          import_id: string
+          is_duplicate?: boolean
+          line_no: number
+          match_strength?: string | null
+          matched_at?: string | null
+          matched_by?: string | null
+          matched_id?: string | null
+          matched_kind?: string | null
+          note?: string | null
+          reference?: string | null
+          society_id: string
+          status?: string
+          suggested_id?: string | null
+          suggested_kind?: string | null
+          txn_date: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          candidate_count?: number
+          created_at?: string
+          description?: string
+          direction?: string
+          fingerprint?: string
+          id?: string
+          import_id?: string
+          is_duplicate?: boolean
+          line_no?: number
+          match_strength?: string | null
+          matched_at?: string | null
+          matched_by?: string | null
+          matched_id?: string | null
+          matched_kind?: string | null
+          note?: string | null
+          reference?: string | null
+          society_id?: string
+          status?: string
+          suggested_id?: string | null
+          suggested_kind?: string | null
+          txn_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_statement_lines_import_id_fkey"
+            columns: ["import_id"]
+            isOneToOne: false
+            referencedRelation: "bank_statement_imports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_statement_lines_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bill_generation_batches: {
         Row: {
           bills_created: number
@@ -5154,6 +5288,27 @@ export type Database = {
         Args: { _issued_at?: string }
         Returns: string
       }
+      _bank_line_candidates: {
+        Args: { _days: number; _line_id: string }
+        Returns: {
+          already_reconciled: boolean
+          amount: number
+          kind: string
+          label: string
+          record_date: string
+          record_id: string
+          reference: string
+          score: number
+        }[]
+      }
+      _bank_lock_line_society: {
+        Args: { _line_id: string }
+        Returns: undefined
+      }
+      _bank_refresh_suggestions: {
+        Args: { _society_id: string }
+        Returns: number
+      }
       _billing_audit: {
         Args: {
           _action: string
@@ -5624,6 +5779,10 @@ export type Database = {
       }
       configure_society_structure_mode: {
         Args: { _mode: string; _society_id: string }
+        Returns: Json
+      }
+      confirm_bank_line_match: {
+        Args: { _kind: string; _line_id: string; _record_id: string }
         Returns: Json
       }
       confirm_income_category: {
@@ -6228,6 +6387,19 @@ export type Database = {
           to_status: string
         }[]
       }
+      ignore_bank_line: {
+        Args: { _line_id: string; _reason: string }
+        Returns: Json
+      }
+      import_bank_statement: {
+        Args: {
+          _file_name: string
+          _file_sha256: string
+          _rows: Json
+          _society_id: string
+        }
+        Returns: Json
+      }
       is_active_society_plan: {
         Args: { _society_id: string }
         Returns: boolean
@@ -6301,6 +6473,16 @@ export type Database = {
           _audience: string
           _id: string
           _question: string
+        }
+        Returns: Json
+      }
+      list_bank_line_candidates: { Args: { _line_id: string }; Returns: Json }
+      list_bank_statement_lines: {
+        Args: {
+          _limit?: number
+          _offset?: number
+          _society_id: string
+          _status?: string
         }
         Returns: Json
       }
@@ -6582,6 +6764,10 @@ export type Database = {
       record_saas_subscription_refund_submission: {
         Args: { _provider_refund_id: string; _refund_record_id: string }
         Returns: undefined
+      }
+      refresh_bank_statement_suggestions: {
+        Args: { _society_id: string }
+        Returns: Json
       }
       refresh_society_payout_status_internal: {
         Args: { _actor_id: string; _payout_status: string; _society_id: string }
@@ -6891,6 +7077,10 @@ export type Database = {
           eligibility: Json
           new_status: Database["public"]["Enums"]["no_dues_status"]
         }[]
+      }
+      unmatch_bank_line: {
+        Args: { _line_id: string; _reason: string }
+        Returns: Json
       }
       update_society_business_profile: {
         Args: {

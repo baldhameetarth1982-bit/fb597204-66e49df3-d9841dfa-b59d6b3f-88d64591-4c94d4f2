@@ -3055,6 +3055,7 @@ export type Database = {
           is_recommended: boolean
           name: string
           price_monthly_inr: number
+          price_per_flat_inr: number
           sort_order: number
           trial_days: number
           txn_fee_pct: number
@@ -3067,6 +3068,7 @@ export type Database = {
           is_recommended?: boolean
           name: string
           price_monthly_inr: number
+          price_per_flat_inr?: number
           sort_order?: number
           trial_days?: number
           txn_fee_pct: number
@@ -3079,6 +3081,7 @@ export type Database = {
           is_recommended?: boolean
           name?: string
           price_monthly_inr?: number
+          price_per_flat_inr?: number
           sort_order?: number
           trial_days?: number
           txn_fee_pct?: number
@@ -3617,8 +3620,10 @@ export type Database = {
           created_at: string
           currency: string
           failure_code: string | null
+          flat_count: number | null
           id: string
           plan_id: string
+          price_per_flat_inr: number | null
           provider_mode: string
           razorpay_order_id: string | null
           request_id: string
@@ -3633,8 +3638,10 @@ export type Database = {
           created_at?: string
           currency?: string
           failure_code?: string | null
+          flat_count?: number | null
           id?: string
           plan_id: string
+          price_per_flat_inr?: number | null
           provider_mode: string
           razorpay_order_id?: string | null
           request_id: string
@@ -3649,8 +3656,10 @@ export type Database = {
           created_at?: string
           currency?: string
           failure_code?: string | null
+          flat_count?: number | null
           id?: string
           plan_id?: string
+          price_per_flat_inr?: number | null
           provider_mode?: string
           razorpay_order_id?: string | null
           request_id?: string
@@ -3685,9 +3694,11 @@ export type Database = {
           currency: string
           failed_at: string | null
           failure_code: string | null
+          flat_count: number | null
           id: string
           lifecycle_status: string
           plan_id: string
+          price_per_flat_inr: number | null
           provider_mode: string | null
           provider_status: string | null
           purchased_by: string
@@ -3708,9 +3719,11 @@ export type Database = {
           currency?: string
           failed_at?: string | null
           failure_code?: string | null
+          flat_count?: number | null
           id?: string
           lifecycle_status?: string
           plan_id: string
+          price_per_flat_inr?: number | null
           provider_mode?: string | null
           provider_status?: string | null
           purchased_by: string
@@ -3731,9 +3744,11 @@ export type Database = {
           currency?: string
           failed_at?: string | null
           failure_code?: string | null
+          flat_count?: number | null
           id?: string
           lifecycle_status?: string
           plan_id?: string
+          price_per_flat_inr?: number | null
           provider_mode?: string | null
           provider_status?: string | null
           purchased_by?: string
@@ -6072,6 +6087,7 @@ export type Database = {
           plan_id: string
           plan_name: string
           price_monthly_inr: number
+          price_per_flat_inr: number
           tier: string
           trial_days: number
         }[]
@@ -6817,6 +6833,10 @@ export type Database = {
       revoke_no_dues_certificate_internal: {
         Args: { _actor_id: string; _certificate_id: string; _reason: string }
         Returns: undefined
+      }
+      saas_subscription_quote: {
+        Args: { _plan_id: string; _society_id: string }
+        Returns: Json
       }
       save_billing_template: {
         Args: {

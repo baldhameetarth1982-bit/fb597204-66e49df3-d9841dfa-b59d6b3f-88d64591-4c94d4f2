@@ -575,6 +575,13 @@
       "when": 1790629451656,
       "tag": "0081_bank_recon_serialize_per_society",
       "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "7",
+      "when": 1790630507398,
+      "tag": "0082_per_flat_subscription_pricing",
+      "breakpoints": true
     }
   ]
 }

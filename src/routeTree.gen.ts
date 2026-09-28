@@ -75,6 +75,7 @@ import { Route as SocietySocietyExplorerRouteImport } from './routes/_society/so
 import { Route as SocietySocietyExpensesRouteImport } from './routes/_society/society.expenses'
 import { Route as SocietySocietyDigestRouteImport } from './routes/_society/society.digest'
 import { Route as SocietySocietyDefaultersRouteImport } from './routes/_society/society.defaulters'
+import { Route as SocietySocietyDataExportRouteImport } from './routes/_society/society.data-export'
 import { Route as SocietySocietyDashboardRouteImport } from './routes/_society/society.dashboard'
 import { Route as SocietySocietyCustomFieldsRouteImport } from './routes/_society/society.custom-fields'
 import { Route as SocietySocietyContactsRouteImport } from './routes/_society/society.contacts'
@@ -505,6 +506,12 @@ const SocietySocietyDefaultersRoute =
   SocietySocietyDefaultersRouteImport.update({
     id: '/society/defaulters',
     path: '/society/defaulters',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyDataExportRoute =
+  SocietySocietyDataExportRouteImport.update({
+    id: '/society/data-export',
+    path: '/society/data-export',
     getParentRoute: () => SocietyRoute,
   } as any)
 const SocietySocietyDashboardRoute = SocietySocietyDashboardRouteImport.update({
@@ -1092,6 +1099,7 @@ export interface FileRoutesByFullPath {
   '/society/contacts': typeof SocietySocietyContactsRoute
   '/society/custom-fields': typeof SocietySocietyCustomFieldsRoute
   '/society/dashboard': typeof SocietySocietyDashboardRoute
+  '/society/data-export': typeof SocietySocietyDataExportRoute
   '/society/defaulters': typeof SocietySocietyDefaultersRoute
   '/society/digest': typeof SocietySocietyDigestRoute
   '/society/expenses': typeof SocietySocietyExpensesRoute
@@ -1248,6 +1256,7 @@ export interface FileRoutesByTo {
   '/society/contacts': typeof SocietySocietyContactsRoute
   '/society/custom-fields': typeof SocietySocietyCustomFieldsRoute
   '/society/dashboard': typeof SocietySocietyDashboardRoute
+  '/society/data-export': typeof SocietySocietyDataExportRoute
   '/society/defaulters': typeof SocietySocietyDefaultersRoute
   '/society/digest': typeof SocietySocietyDigestRoute
   '/society/expenses': typeof SocietySocietyExpensesRoute
@@ -1410,6 +1419,7 @@ export interface FileRoutesById {
   '/_society/society/contacts': typeof SocietySocietyContactsRoute
   '/_society/society/custom-fields': typeof SocietySocietyCustomFieldsRoute
   '/_society/society/dashboard': typeof SocietySocietyDashboardRoute
+  '/_society/society/data-export': typeof SocietySocietyDataExportRoute
   '/_society/society/defaulters': typeof SocietySocietyDefaultersRoute
   '/_society/society/digest': typeof SocietySocietyDigestRoute
   '/_society/society/expenses': typeof SocietySocietyExpensesRoute
@@ -1569,6 +1579,7 @@ export interface FileRouteTypes {
     | '/society/contacts'
     | '/society/custom-fields'
     | '/society/dashboard'
+    | '/society/data-export'
     | '/society/defaulters'
     | '/society/digest'
     | '/society/expenses'
@@ -1725,6 +1736,7 @@ export interface FileRouteTypes {
     | '/society/contacts'
     | '/society/custom-fields'
     | '/society/dashboard'
+    | '/society/data-export'
     | '/society/defaulters'
     | '/society/digest'
     | '/society/expenses'
@@ -1886,6 +1898,7 @@ export interface FileRouteTypes {
     | '/_society/society/contacts'
     | '/_society/society/custom-fields'
     | '/_society/society/dashboard'
+    | '/_society/society/data-export'
     | '/_society/society/defaulters'
     | '/_society/society/digest'
     | '/_society/society/expenses'
@@ -2452,6 +2465,13 @@ declare module '@tanstack/react-router' {
       path: '/society/defaulters'
       fullPath: '/society/defaulters'
       preLoaderRoute: typeof SocietySocietyDefaultersRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/data-export': {
+      id: '/_society/society/data-export'
+      path: '/society/data-export'
+      fullPath: '/society/data-export'
+      preLoaderRoute: typeof SocietySocietyDataExportRouteImport
       parentRoute: typeof SocietyRoute
     }
     '/_society/society/dashboard': {
@@ -3259,6 +3279,7 @@ interface SocietyRouteChildren {
   SocietySocietyContactsRoute: typeof SocietySocietyContactsRoute
   SocietySocietyCustomFieldsRoute: typeof SocietySocietyCustomFieldsRoute
   SocietySocietyDashboardRoute: typeof SocietySocietyDashboardRoute
+  SocietySocietyDataExportRoute: typeof SocietySocietyDataExportRoute
   SocietySocietyDefaultersRoute: typeof SocietySocietyDefaultersRoute
   SocietySocietyDigestRoute: typeof SocietySocietyDigestRoute
   SocietySocietyExpensesRoute: typeof SocietySocietyExpensesRoute
@@ -3325,6 +3346,7 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyContactsRoute: SocietySocietyContactsRoute,
   SocietySocietyCustomFieldsRoute: SocietySocietyCustomFieldsRoute,
   SocietySocietyDashboardRoute: SocietySocietyDashboardRoute,
+  SocietySocietyDataExportRoute: SocietySocietyDataExportRoute,
   SocietySocietyDefaultersRoute: SocietySocietyDefaultersRoute,
   SocietySocietyDigestRoute: SocietySocietyDigestRoute,
   SocietySocietyExpensesRoute: SocietySocietyExpensesRoute,

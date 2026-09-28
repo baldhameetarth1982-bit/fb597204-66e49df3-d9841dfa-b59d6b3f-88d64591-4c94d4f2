@@ -5,7 +5,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Megaphone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { PageHeader, PageShell } from "@/components/shared/PageHeader";
@@ -20,14 +19,10 @@ export const Route = createFileRoute("/_admin/admin/settings")({
 
 type S = {
   ads_banner_enabled: boolean;
-  ads_interstitial_enabled: boolean;
-  ads_interstitial_seconds: number | string;
 };
 
 const pick = (d: any): S => ({
   ads_banner_enabled: !!d?.ads_banner_enabled,
-  ads_interstitial_enabled: !!d?.ads_interstitial_enabled,
-  ads_interstitial_seconds: d?.ads_interstitial_seconds ?? 15,
 });
 
 function Row({
@@ -81,11 +76,6 @@ function SettingsPage() {
         .from("platform_settings")
         .update({
           ads_banner_enabled: state.ads_banner_enabled,
-          ads_interstitial_enabled: state.ads_interstitial_enabled,
-          ads_interstitial_seconds: Math.min(
-            30,
-            Math.max(10, Number(state.ads_interstitial_seconds) || 15),
-          ),
         })
         .eq("id", 1);
       if (error) throw error;
@@ -122,33 +112,6 @@ function SettingsPage() {
                   onCheckedChange={(v) => set({ ads_banner_enabled: v })}
                 />
               </Row>
-              <Row label="Interstitial ads" hint="Full-screen ads between screens.">
-                <Switch
-                  aria-label="Interstitial ads"
-                  checked={state.ads_interstitial_enabled}
-                  onCheckedChange={(v) => set({ ads_interstitial_enabled: v })}
-                />
-              </Row>
-              {state.ads_interstitial_enabled && (
-                <Row
-                  label="Interstitial duration"
-                  hint="Between 10 and 30 seconds."
-                  htmlFor="ad-sec"
-                >
-                  <div className="flex items-center gap-2">
-                    <Input
-                      id="ad-sec"
-                      type="number"
-                      min={10}
-                      max={30}
-                      className="h-11 w-20 tabular-nums"
-                      value={state.ads_interstitial_seconds}
-                      onChange={(e) => set({ ads_interstitial_seconds: e.target.value })}
-                    />
-                    <span className="text-sm text-muted-foreground">sec</span>
-                  </div>
-                </Row>
-              )}
             </div>
           </SettingsSection>
 

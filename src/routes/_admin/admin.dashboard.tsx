@@ -52,7 +52,7 @@ const MONEY: ModuleItem[] = [
   { to: "/admin/withdrawals", icon: Banknote, title: "Withdrawals", desc: "Referral payouts." },
 ];
 const PLATFORM: ModuleItem[] = [
-  { to: "/admin/ads", icon: Megaphone, title: "Ads", desc: "Banner & interstitial." },
+  { to: "/admin/ads", icon: Megaphone, title: "Ads", desc: "Banners & services." },
   { to: "/admin/audit", icon: ScrollText, title: "Audit log", desc: "Every platform action." },
   { to: "/admin/security", icon: ShieldCheck, title: "Security", desc: "Roles & posture." },
   { to: "/admin/settings", icon: Settings, title: "Settings", desc: "Global toggles." },

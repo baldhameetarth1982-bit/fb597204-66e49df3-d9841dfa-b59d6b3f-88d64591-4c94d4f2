@@ -152,6 +152,7 @@ function RootComponent() {
           <MarketingAnalytics />
           <ShellSwitcher />
           <Toaster richColors closeButton position="top-right" />
+          <OfflineBanner />
         </AuthProvider>
       </QueryClientProvider>
     </RootErrorBoundary>

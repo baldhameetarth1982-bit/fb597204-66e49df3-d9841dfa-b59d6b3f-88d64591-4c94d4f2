@@ -28,6 +28,8 @@ export const getRouter = () => {
       mutations: {
         // Writes (bills, payments, approvals) must never be silently replayed.
         retry: false,
+        // Fail fast offline instead of pausing and auto-sending later on reconnect.
+        networkMode: "always",
       },
     },
   });

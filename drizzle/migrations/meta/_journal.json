@@ -673,6 +673,13 @@
       "when": 1790640106526,
       "tag": "0095_correct_amenity_slot_alignment",
       "breakpoints": true
+    },
+    {
+      "idx": 96,
+      "version": "7",
+      "when": 1790640585600,
+      "tag": "0096_tenant_lifecycle_and_safe_society_switching",
+      "breakpoints": true
     }
   ]
 }

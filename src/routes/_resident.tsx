@@ -54,6 +54,7 @@ function ResidentGuard() {
   }
   return (
     <>
+      <ElderModeSync />
       <Outlet />
       <AskAIFab />
     </>

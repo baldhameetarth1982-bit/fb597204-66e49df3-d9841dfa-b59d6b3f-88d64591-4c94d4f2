@@ -10,11 +10,24 @@ export const VISITOR_CATEGORIES = [
   { value: "delivery", label: "Delivery" },
   { value: "service", label: "Service" },
   { value: "cab", label: "Cab" },
+  { value: "vendor", label: "Vendor" },
+  { value: "mover", label: "Movers" },
+  { value: "other", label: "Other" },
+] as const;
+
+/** Guards may also log domestic staff walk-ins. */
+export const GATE_CATEGORIES = [...VISITOR_CATEGORIES.slice(0, 5), { value: "staff", label: "Staff" }, VISITOR_CATEGORIES[6]] as const;
+
+export const RECURRING_CATEGORIES = [
+  { value: "staff", label: "Home help" },
+  { value: "service", label: "Service" },
+  { value: "delivery", label: "Delivery" },
+  { value: "vendor", label: "Vendor" },
   { value: "other", label: "Other" },
 ] as const;
 
 export function categoryLabel(c: string | null | undefined) {
-  return VISITOR_CATEGORIES.find((x) => x.value === c)?.label ?? "Guest";
+  return [...VISITOR_CATEGORIES, ...RECURRING_CATEGORIES].find((x) => x.value === c)?.label ?? "Guest";
 }
 
 const META: Record<string, { label: string; className: string }> = {
@@ -23,6 +36,7 @@ const META: Record<string, { label: string; className: string }> = {
   awaiting: { label: "Waiting for approval", className: "bg-warning/15 text-warning-foreground" },
   approved: { label: "Approved", className: "bg-success/15 text-success" },
   inside: { label: "Inside", className: "bg-success text-success-foreground" },
+  overstayed: { label: "Overstayed", className: "bg-warning text-warning-foreground" },
   exited: { label: "Left", className: "bg-muted text-muted-foreground" },
   denied: { label: "Denied", className: "bg-destructive/10 text-destructive" },
   rejected: { label: "Denied", className: "bg-destructive/10 text-destructive" },
@@ -56,6 +70,17 @@ const MESSAGES: Record<string, string> = {
   not_found: "This record isn't available.",
   invalid_plate: "Enter at least 3 characters of the number plate.",
   invalid_label: "Enter a slot name, like P-12.",
+  restricted_visitor: "This person is on the society's restricted list. The committee must decide.",
+  needs_committee: "Movers and restricted visitors need a committee decision.",
+  reason_required: "Please write a reason (at least 10 characters).",
+  invalid_note: "Please add a short note (at least 5 characters).",
+  pass_not_valid_now: "This regular pass isn't valid right now.",
+  already_inside: "This person is already inside.",
+  slot_taken: "That parking slot is already in use.",
+  slot_not_found: "That visitor slot isn't available.",
+  not_allowed_offline: "This needs a connection. Try again when you're online.",
+  invalid_days: "Pick at least one day.",
+  invalid_time: "End time must be after start time.",
   vehicle_not_found: "That vehicle isn't registered in this society.",
 };
 

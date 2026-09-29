@@ -757,6 +757,13 @@
       "when": 1790718208421,
       "tag": "0107_fix_assign_resident_reentry",
       "breakpoints": true
+    },
+    {
+      "idx": 108,
+      "version": "7",
+      "when": 1790720759535,
+      "tag": "0108_workstream3_gate_visitor_parking_safety",
+      "breakpoints": true
     }
   ]
 }

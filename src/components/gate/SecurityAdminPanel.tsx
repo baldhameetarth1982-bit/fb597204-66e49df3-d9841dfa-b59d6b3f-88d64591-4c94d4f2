@@ -70,7 +70,7 @@ function ReviewList({ societyId, onChanged }: { societyId: string; onChanged: ()
     <>
       <ul className="space-y-2">
         {q.data.map((v) => (
-          <li key={v.id}><Card className={cn("rounded-2xl", v.restriction_id && "border-destructive/40")}><CardContent className="p-4 space-y-3">
+          <li key={v.id}><Card className={cn("rounded-2xl", v.restriction_id && "border-destructive/40")}><CardContent className="p-4 sm:p-4 space-y-3">
             <div>
               <p className="font-semibold flex items-center gap-2">{v.restriction_id && <ShieldAlert className="h-4 w-4 text-destructive" />}{v.visitor_name}</p>
               <p className="text-xs text-muted-foreground">
@@ -118,7 +118,7 @@ function RestrictedList({ societyId }: { societyId: string }) {
   }
   return (
     <div className="space-y-3">
-      <Card className="rounded-2xl"><CardContent className="p-4 space-y-3">
+      <Card className="rounded-2xl"><CardContent className="p-4 sm:p-4 space-y-3">
         <p className="text-sm text-muted-foreground">Guards see a warning and can't let listed people in without a committee decision.</p>
         <div className="grid grid-cols-2 gap-2">
           <div><Label htmlFor="r-name">Name *</Label><Input id="r-name" className="h-11" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>

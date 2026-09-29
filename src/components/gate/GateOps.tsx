@@ -58,7 +58,7 @@ export function SosAlertsCard() {
     <section aria-label="SOS alerts" className="space-y-2">
       {rows.map((a) => (
         <Card key={a.id} className="rounded-2xl border-destructive bg-destructive/10">
-          <CardContent className="p-4 space-y-3">
+          <CardContent className="p-4 sm:p-4 space-y-3">
             <div className="flex items-start gap-2">
               <Siren className="h-5 w-5 text-destructive shrink-0" />
               <div className="min-w-0">
@@ -296,7 +296,7 @@ export function OfflineQueuePanel({ onSynced }: { onSynced: () => void }) {
   if (online && !items.length) return null;
   return (
     <Card className={cn("rounded-2xl", !online && "border-warning/50 bg-warning/10")}>
-      <CardContent className="p-4 space-y-3">
+      <CardContent className="p-4 sm:p-4 space-y-3">
         <div className="flex items-center gap-2">
           {online ? <CloudOff className="h-4 w-4 text-muted-foreground" /> : <WifiOff className="h-4 w-4 text-warning-foreground" />}
           <p className="text-sm font-semibold flex-1">{online ? "Offline actions" : "You're offline"}</p>

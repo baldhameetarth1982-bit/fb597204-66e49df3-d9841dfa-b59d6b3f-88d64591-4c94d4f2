@@ -47,7 +47,7 @@ export function SosButton({ online }: { online: boolean }) {
   const active = mine.data;
   return (
     <Card className="rounded-3xl border-destructive/40">
-      <CardContent className="p-5 space-y-3">
+      <CardContent className="p-5 sm:p-5 space-y-3">
         {active ? (
           <div role="status" className="rounded-2xl bg-destructive/10 p-4 text-sm">
             <p className="font-semibold text-destructive">{active.status === "raised" ? "SOS sent — waiting for security to respond" : "Security has seen your SOS and is responding"}</p>
@@ -122,7 +122,7 @@ export function RecurringPasses() {
           {q.data.map((p) => {
             const expired = p.valid_until < today;
             return (
-              <li key={p.id}><Card className="rounded-2xl"><CardContent className="p-3 flex items-center gap-2">
+              <li key={p.id}><Card className="rounded-2xl"><CardContent className="p-3 sm:p-3 flex items-center gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="font-medium truncate">{p.visitor_name} <span className="text-xs text-muted-foreground">· {categoryLabel(p.category)}</span></p>
                   <p className="text-xs text-muted-foreground">{p.days.map((d) => DAYS[d]).join(", ")} · {p.start_time.slice(0, 5)}–{p.end_time.slice(0, 5)} · {expired ? "Expired" : p.status === "paused" ? "Paused" : `Till ${p.valid_until}`}</p>

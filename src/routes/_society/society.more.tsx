@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { Wrench, createFileRoute, Link } from "@tanstack/react-router";
 import {
   Building2, Home, Car, Users, UserCheck, ShieldCheck, MessageSquare,
   Receipt, Wallet, BarChart3, TrendingDown, BookOpen,
@@ -27,6 +27,7 @@ const MANAGEMENT: Tile[] = [
   { to: "/society/flats", label: "Houses", icon: Home },
   { to: "/society/blocks", label: "Blocks", icon: Building },
   { to: "/society/helpdesk", label: "Helpdesk", icon: LifeBuoy },
+  { to: "/society/operations", label: "Operations", icon: Wrench },
   { to: "/society/approvals", label: "Approvals", icon: UserCheck },
   { to: "/society/verifications", label: "Verifications", icon: ShieldCheck },
   { to: "/society/visitors", label: "Visitors", icon: UsersRound, feature: "visitors" },

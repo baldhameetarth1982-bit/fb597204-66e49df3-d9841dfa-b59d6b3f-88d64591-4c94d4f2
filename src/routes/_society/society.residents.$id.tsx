@@ -43,7 +43,7 @@ import {
   flatOccupancyHistory,
   residentHousehold,
 } from "@/lib/residents.functions";
-import { getResidentPrivateDetail } from "@/lib/residents-admin.functions";
+import { getResidentPrivateDetail, setTenantLeaseTerms } from "@/lib/residents-admin.functions";
 import {
   deleteResidentDocument,
   initializeResidentDocumentUpload,
@@ -76,11 +76,15 @@ function ResidentDetailPage() {
   const getHistory = useServerFn(flatOccupancyHistory);
   const getPrivate = useServerFn(getResidentPrivateDetail);
   const getHousehold = useServerFn(residentHousehold);
+  const setLeaseTerms = useServerFn(setTenantLeaseTerms);
 
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<any>({});
   const [openSection, setOpenSection] = useState<string>("basic");
+  const [leaseEditing, setLeaseEditing] = useState(false);
+  const [leaseSaving, setLeaseSaving] = useState(false);
+  const [leaseForm, setLeaseForm] = useState({ starts: "", ends: "", notice: "" });
 
   // Private detail (strict Zod-parsed server response). Directory rows never
   // carry phone/email/KYC; this authorised server function is the only path
@@ -256,6 +260,27 @@ function ResidentDetailPage() {
         : rel;
   const house = a ? `${a.block_name ? a.block_name + "-" : ""}${a.flat_number ?? ""}` : null;
   const pending = outstanding ? Number(outstanding.pending) : 0;
+
+  async function saveLease() {
+    if (!societyId || !a) return;
+    setLeaseSaving(true);
+    try {
+      await setLeaseTerms({ data: {
+        societyId,
+        flatResidentId: a.id,
+        leaseStartsOn: leaseForm.starts || null,
+        leaseEndsOn: leaseForm.ends || null,
+        noticeGivenOn: leaseForm.notice || null,
+      } });
+      toast.success("Lease terms updated");
+      setLeaseEditing(false);
+      await refetch();
+    } catch (error) {
+      toast.error(userMessage(error, "Could not update lease terms"));
+    } finally {
+      setLeaseSaving(false);
+    }
+  }
 
   return (
     <PageShell>
@@ -518,6 +543,34 @@ function ResidentDetailPage() {
                 </dl>
               )}
             </Section>
+
+            {a?.relationship === "tenant" && (
+              <Section id="tenancy" title="Tenant lease" icon={Calendar}>
+                {leaseEditing ? (
+                  <div className="space-y-3 pt-3">
+                    <Field label="Lease starts" type="date" value={leaseForm.starts} onChange={(starts) => setLeaseForm((v) => ({ ...v, starts }))} />
+                    <Field label="Lease ends" type="date" value={leaseForm.ends} onChange={(ends) => setLeaseForm((v) => ({ ...v, ends }))} />
+                    <Field label="Notice given" type="date" value={leaseForm.notice} onChange={(notice) => setLeaseForm((v) => ({ ...v, notice }))} />
+                    <div className="flex gap-2">
+                      <Button size="sm" className="min-h-11" disabled={leaseSaving} onClick={() => void saveLease()}>
+                        {leaseSaving ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Save className="mr-1 h-4 w-4" />} Save terms
+                      </Button>
+                      <Button size="sm" variant="outline" className="min-h-11" onClick={() => setLeaseEditing(false)}>Cancel</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <dl className="space-y-2 pt-3">
+                    <Row label="Lease starts" value={a.lease_starts_on ? fmtDate(a.lease_starts_on) : null} />
+                    <Row label="Lease ends" value={a.lease_ends_on ? fmtDate(a.lease_ends_on) : null} />
+                    <Row label="Notice given" value={a.notice_given_on ? fmtDate(a.notice_given_on) : null} />
+                    <Button size="sm" variant="outline" className="mt-2 min-h-11" onClick={() => {
+                      setLeaseForm({ starts: a.lease_starts_on ?? "", ends: a.lease_ends_on ?? "", notice: a.notice_given_on ?? "" });
+                      setLeaseEditing(true);
+                    }}><Edit2 className="mr-1 h-4 w-4" /> Edit lease</Button>
+                  </dl>
+                )}
+              </Section>
+            )}
 
             <Section id="bills" title="Bills" icon={FileText}>
               <div className="pt-3 space-y-2">

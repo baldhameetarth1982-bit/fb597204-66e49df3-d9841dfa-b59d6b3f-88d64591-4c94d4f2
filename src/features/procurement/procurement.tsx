@@ -96,9 +96,9 @@ export function PurchasesTab() {
         overBudget: new Set(((b.data ?? []) as { category: string; approved_amount: number | null; variance: number }[]).filter((x) => x.approved_amount != null && x.variance < 0).map((x) => x.category)) };
     },
   });
-  if (q.isLoading) return <ListSkeleton />;
   if (q.isError) return <LoadError title={procErrorMessage(q.error)} onRetry={() => q.refetch()} />;
-  const data = q.data!;
+  if (!q.data) return <ListSkeleton />;
+  const data = q.data;
   const list = data.reqs.filter((r) => filter === "all" || OPEN.includes(r.status));
   const current = data.reqs.find((r) => r.id === open) ?? null;
   return (
@@ -408,8 +408,8 @@ export function ProcurementAuditSection({ fy }: { fy: number }) {
     const url = URL.createObjectURL(new Blob([lines.join("\n")], { type: "text/csv" }));
     const a = document.createElement("a"); a.href = url; a.download = `procurement-budget-${fy}.csv`; a.click(); URL.revokeObjectURL(url);
   };
-  if (q.isLoading) return <ListSkeleton />;
   if (q.isError) return <p className="p-4 text-sm text-muted-foreground">{procErrorMessage(q.error)}</p>;
+  if (!q.data) return <ListSkeleton />;
   const counts = q.data!.procs.reduce<Record<string, number>>((a, r) => { a[r.status] = (a[r.status] ?? 0) + 1; return a; }, {});
   const b = q.data!.budgets.reduce((a, r) => ({ b: a.b + Number(r.approved_amount ?? 0), a: a.a + Number(r.actual) }), { b: 0, a: 0 });
   return (

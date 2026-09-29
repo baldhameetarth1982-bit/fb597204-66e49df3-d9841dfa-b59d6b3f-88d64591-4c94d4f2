@@ -659,6 +659,13 @@
       "when": 1790639883819,
       "tag": "0093_society_os_amenities",
       "breakpoints": true
+    },
+    {
+      "idx": 94,
+      "version": "7",
+      "when": 1790640071599,
+      "tag": "0094_harden_amenity_booking_slots",
+      "breakpoints": true
     }
   ]
 }

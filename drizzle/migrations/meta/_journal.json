@@ -701,6 +701,13 @@
       "when": 1790641670200,
       "tag": "0099_fix_auth_context_and_amenity_admin_reads",
       "breakpoints": true
+    },
+    {
+      "idx": 100,
+      "version": "7",
+      "when": 1790643124928,
+      "tag": "0100_workstream1_audit_switch_scope_assignment_waitlist",
+      "breakpoints": true
     }
   ]
 }

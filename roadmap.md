@@ -98,3 +98,7 @@
 - [x] Returning to the same flat creates a new record; overlapping active occupancy blocked
 - [x] Preview look at Flat occupancy panel and Residents → Tenancies (QA admin, read-only)
 - [ ] Guard live check — blocked: no legitimate guard account
+
+## Workstream 3 — Gate, visitor, parking & safety
+- [x] Recurring passes, movers/vendors/staff, restricted list, committee decisions, overrides with reason, incidents, overstay, visitor parking, SOS, bounded offline guard queue (rollback-tested in QA Demo Society)
+- [ ] Live guard-account check — blocked: no legitimate guard account exists

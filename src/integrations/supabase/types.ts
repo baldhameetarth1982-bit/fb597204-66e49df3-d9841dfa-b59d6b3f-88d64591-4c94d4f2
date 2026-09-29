@@ -5810,15 +5810,27 @@ export type Database = {
             Args: { _custom_plan_id: string; _reason: string }
             Returns: boolean
           }
-      admin_assign_resident_to_flat: {
-        Args: {
-          _flat_id: string
-          _is_primary?: boolean
-          _relationship?: string
-          _user_id: string
-        }
-        Returns: string
-      }
+      admin_assign_resident_to_flat:
+        | {
+            Args: {
+              _flat_id: string
+              _is_primary?: boolean
+              _relationship?: string
+              _user_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              _flat_id: string
+              _is_primary?: boolean
+              _lease_ends_on?: string
+              _lease_starts_on?: string
+              _relationship?: string
+              _user_id: string
+            }
+            Returns: string
+          }
       admin_cancel_society_plan: {
         Args: { _reason: string; _society_id: string }
         Returns: Json

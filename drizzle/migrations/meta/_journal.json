@@ -680,6 +680,13 @@
       "when": 1790640585600,
       "tag": "0096_tenant_lifecycle_and_safe_society_switching",
       "breakpoints": true
+    },
+    {
+      "idx": 97,
+      "version": "7",
+      "when": 1790640665503,
+      "tag": "0097_complete_tenant_lifecycle_contracts",
+      "breakpoints": true
     }
   ]
 }

@@ -652,6 +652,27 @@
       "when": 1790636810779,
       "tag": "0092_society_export_volatile",
       "breakpoints": true
+    },
+    {
+      "idx": 93,
+      "version": "7",
+      "when": 1790639883819,
+      "tag": "0093_society_os_amenities",
+      "breakpoints": true
+    },
+    {
+      "idx": 94,
+      "version": "7",
+      "when": 1790640071599,
+      "tag": "0094_harden_amenity_booking_slots",
+      "breakpoints": true
+    },
+    {
+      "idx": 95,
+      "version": "7",
+      "when": 1790640106526,
+      "tag": "0095_correct_amenity_slot_alignment",
+      "breakpoints": true
     }
   ]
 }

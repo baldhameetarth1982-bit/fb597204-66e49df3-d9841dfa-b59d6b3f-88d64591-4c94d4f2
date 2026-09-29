@@ -722,6 +722,13 @@
       "when": 1790644289589,
       "tag": "0102_fix_switch_society_rate_limit",
       "breakpoints": true
+    },
+    {
+      "idx": 103,
+      "version": "7",
+      "when": 1790644330676,
+      "tag": "0103_switch_society_allow_flag",
+      "breakpoints": true
     }
   ]
 }

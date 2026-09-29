@@ -729,6 +729,20 @@
       "when": 1790644330676,
       "tag": "0103_switch_society_allow_flag",
       "breakpoints": true
+    },
+    {
+      "idx": 104,
+      "version": "7",
+      "when": 1790644935435,
+      "tag": "0104_workstream2_tenant_lifecycle",
+      "breakpoints": true
+    },
+    {
+      "idx": 105,
+      "version": "7",
+      "when": 1790645200553,
+      "tag": "0105_tenancy_renew_block_expired",
+      "breakpoints": true
     }
   ]
 }

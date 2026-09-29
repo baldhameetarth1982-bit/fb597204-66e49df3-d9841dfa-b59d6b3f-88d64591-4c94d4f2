@@ -22,3 +22,4 @@
 - Full society export reads only via get_society_export_section (society.settings permission, per-section column whitelist, 1,000-row pages, rate limit, audit row); files are built on the device and never stored, so exports can't leak secrets or cross societies.
 - Public schema.org JSON-LD comes only from src/lib/structured-data.ts (one @graph with stable @ids, facts from BRAND) so pages never emit conflicting entities.
 - React Query mutations use networkMode "always" with retry off, so writes fail visibly offline and are never auto-replayed on reconnect.
+- Tenancy lifecycle state is derived by public.tenancy_state from flat_residents dates/flags (never stored or client-set); transitions go only through admin_renew_tenancy / admin_move_out_resident (No-Dues gated via compute_no_dues_eligibility_internal, reasoned override) / admin_archive_tenancy, and renewal reminders dedupe via tenancy_reminders_sent on the existing daily expiry cron.

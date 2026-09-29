@@ -1,3 +1,4 @@
+import { ElderModeToggle } from "@/components/resident/ElderMode";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { userMessage } from "@/lib/user-error";
 import { useEffect, useState, type ComponentType, type ReactNode } from "react";
@@ -113,6 +114,7 @@ function ProfilePage() {
   return (
     <div className="mx-auto w-full max-w-2xl px-4 pt-5 pb-28 space-y-6">
       <h1 className="text-2xl font-semibold tracking-tight">Account</h1>
+      <ElderModeToggle />
 
       {/* Identity */}
       <section aria-label="Your profile" className="flex items-center gap-4 rounded-2xl border bg-card p-4">

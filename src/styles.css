@@ -565,3 +565,9 @@
   background-size: 48px 48px;
   mask-image: radial-gradient(ellipse at 30% 40%, black 20%, transparent 75%);
 }
+
+/* Resident "Easy view" (elder mode): same pages, larger type and targets, stronger contrast. */
+html.elder-mode { font-size: 118%; }
+html.elder-mode body { --muted-foreground: var(--foreground); }
+html.elder-mode :where(button, a, [role="tab"], input, select) { min-height: 3.25rem; }
+html.elder-mode :where(button, a, input, select, [role="tab"]):focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }

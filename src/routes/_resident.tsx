@@ -1,3 +1,4 @@
+import { ElderModeSync } from "@/components/resident/ElderMode";
 import { Outlet, createFileRoute, Navigate, useRouterState } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -53,6 +54,7 @@ function ResidentGuard() {
   }
   return (
     <>
+      <ElderModeSync />
       <Outlet />
       <AskAIFab />
     </>

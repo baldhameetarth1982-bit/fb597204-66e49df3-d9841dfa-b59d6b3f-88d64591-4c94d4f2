@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type TicketCategory = "complaint" | "daily_help" | "maintenance" | "lost_found" | "approval";
 export type TicketStatus =
-  | "open" | "in_progress" | "awaiting_approval" | "resolved" | "closed" | "rejected" | "cancelled";
+  | "open" | "in_progress" | "awaiting_approval" | "resolved" | "closed" | "rejected" | "cancelled" | "on_hold" | "reopened";
 export type TicketPriority = "low" | "normal" | "high" | "urgent";
 
 export const CATEGORY_LABEL: Record<TicketCategory, string> = {
@@ -29,13 +29,22 @@ export const STATUS_META: Record<TicketStatus, { label: string; tone: string }> 
   closed: { label: "Closed", tone: "bg-muted text-muted-foreground" },
   rejected: { label: "Rejected", tone: "bg-destructive/10 text-destructive" },
   cancelled: { label: "Cancelled", tone: "bg-muted text-muted-foreground" },
+  on_hold: { label: "On hold", tone: "bg-muted text-foreground" },
+  reopened: { label: "Reopened", tone: "bg-destructive/10 text-destructive" },
 };
 
 export const PRIORITY_LABEL: Record<TicketPriority, string> = {
   low: "Low", normal: "Normal", high: "High", urgent: "Urgent",
 };
 
-export const ACTIVE_STATUSES: TicketStatus[] = ["open", "in_progress", "awaiting_approval", "resolved"];
+export const ACTIVE_STATUSES: TicketStatus[] = ["open", "reopened", "in_progress", "on_hold", "awaiting_approval", "resolved"];
+
+/** Server-set SLA due time → plain status. */
+export function slaState(dueIso: string | null | undefined, status: string): "overdue" | "due_soon" | null {
+  if (!dueIso || !["open", "reopened", "in_progress", "on_hold"].includes(status)) return null;
+  const ms = new Date(dueIso).getTime() - Date.now();
+  return ms < 0 ? "overdue" : ms < 12 * 3600_000 ? "due_soon" : null;
+}
 
 export function statusMeta(s: string) {
   return STATUS_META[s as TicketStatus] ?? { label: "Updated", tone: "bg-muted text-muted-foreground" };
@@ -52,6 +61,11 @@ export function helpdeskErrorMessage(err: unknown): string {
   if (raw.includes("invalid_transition")) return "This request has already moved on. Refresh to see its latest status.";
   if (raw.includes("ticket_closed")) return "This request is closed, so it can't take new comments.";
   if (raw.includes("invalid_assignee")) return "That person isn't on the society team.";
+  if (raw.includes("already_rated")) return "You've already rated this request.";
+  if (raw.includes("invalid_vendor")) return "That vendor isn't active in this society.";
+  if (raw.includes("invalid_asset")) return "That asset isn't in this society.";
+  if (raw.includes("too_many_files")) return "This request already has the maximum of 10 files.";
+  if (raw.includes("invalid_file")) return "Only JPG, PNG, WebP or PDF files up to 5 MB.";
   if (raw.includes("no_society")) return "Join a society before raising a request.";
   if (raw.includes("not_authorized") || raw.includes("42501")) return "You don't have permission to do that.";
   if (raw.includes("not_found")) return "This request couldn't be found.";
@@ -77,6 +91,12 @@ export function describeEvent(e: TimelineEvent): string {
     case "approval_requested": return "Sent for committee approval";
     case "approved": return "Approved by committee";
     case "rejected": return "Rejected";
+    case "escalated": return "Escalated";
+    case "on_hold": return "Put on hold";
+    case "reopened": return "Reopened";
+    case "rated": return `Rated ${e.body ?? ""}`;
+    case "evidence": return "File attached";
+    case "linked": return "Staff / vendor / asset updated";
     case "status": return `Status changed to ${statusMeta(e.to_status ?? "").label}`;
     default: return "Update";
   }

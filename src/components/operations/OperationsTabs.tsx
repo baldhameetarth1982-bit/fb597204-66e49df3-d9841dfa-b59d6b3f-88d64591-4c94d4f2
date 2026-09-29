@@ -272,7 +272,7 @@ export function AssetsTab() {
           })}
         </ul>
       )}
-      {open && q.data && <AssetDetail asset={open} vendors={q.data.vendors} onClose={() => setOpen(null)}
+      {open && q.data && sid && <AssetDetail sid={sid} asset={open} vendors={q.data.vendors} onClose={() => setOpen(null)}
         onEdit={() => { setForm({ id: open.id, name: open.name, category: open.category, location: open.location ?? "", status: open.status, purchase: open.purchase_date ?? "", installed: open.installed_on ?? "", warranty: open.warranty_until ?? "", amc: open.amc_until ?? "", vendor: open.vendor_id ?? "", notes: open.notes ?? "" }); setOpen(null); }} />}
       <Sheet open={!!form} onOpenChange={(o) => !o && !save.isPending && setForm(null)}>
         <SheetContent side="bottom" className="mx-auto max-h-[92dvh] max-w-lg overflow-y-auto rounded-t-3xl">
@@ -314,7 +314,7 @@ export function AssetsTab() {
   );
 }
 
-function AssetDetail({ asset, vendors, onClose, onEdit }: { asset: AssetRow; vendors: { id: string; name: string }[]; onClose: () => void; onEdit: () => void }) {
+function AssetDetail({ sid, asset, vendors, onClose, onEdit }: { sid: string; asset: AssetRow; vendors: { id: string; name: string }[]; onClose: () => void; onEdit: () => void }) {
   const qc = useQueryClient();
   const [f, setF] = useState({ date: today(), kind: "service", vendor: asset.vendor_id ?? "", expense: "", ticket: "", notes: "" });
   const q = useQuery({
@@ -323,7 +323,7 @@ function AssetDetail({ asset, vendors, onClose, onEdit }: { asset: AssetRow; ven
       const [l, t, e] = await Promise.all([
         supabase.from("asset_service_log").select("id, service_date, kind, notes, expense_id, ticket_id, vendor_id").eq("asset_id", asset.id).order("service_date", { ascending: false }).limit(100),
         supabase.from("support_tickets").select("id, ticket_no, subject, status").eq("asset_id", asset.id).order("created_at", { ascending: false }).limit(50),
-        supabase.from("expenses").select("id, category, amount, spent_on").eq("society_id", (await supabase.from("society_assets").select("society_id").eq("id", asset.id).single()).data?.society_id ?? "").neq("status", "reversed").order("spent_on", { ascending: false }).limit(50),
+        supabase.from("expenses").select("id, category, amount, spent_on").eq("society_id", sid).neq("status", "reversed").order("spent_on", { ascending: false }).limit(50),
       ]);
       const err = l.error ?? t.error ?? e.error; if (err) throw err;
       return { log: l.data ?? [], tickets: t.data ?? [], expenses: e.data ?? [] };

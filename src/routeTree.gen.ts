@@ -38,6 +38,7 @@ import { Route as OnboardingPendingRouteImport } from './routes/onboarding.pendi
 import { Route as OnboardingJoinRouteImport } from './routes/onboarding.join'
 import { Route as OnboardingCreateRouteImport } from './routes/onboarding.create'
 import { Route as CheckoutPlanIdRouteImport } from './routes/checkout.$planId'
+import { Route as AssetTokenRouteImport } from './routes/asset.$token'
 import { Route as ApiSupportChatRouteImport } from './routes/api/support-chat'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
@@ -312,6 +313,11 @@ const OnboardingCreateRoute = OnboardingCreateRouteImport.update({
 const CheckoutPlanIdRoute = CheckoutPlanIdRouteImport.update({
   id: '/checkout/$planId',
   path: '/checkout/$planId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssetTokenRoute = AssetTokenRouteImport.update({
+  id: '/asset/$token',
+  path: '/asset/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSupportChatRoute = ApiSupportChatRouteImport.update({
@@ -1049,6 +1055,7 @@ export interface FileRoutesByFullPath {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/login': typeof AuthLoginRoute
   '/api/support-chat': typeof ApiSupportChatRoute
+  '/asset/$token': typeof AssetTokenRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/onboarding/create': typeof OnboardingCreateRoute
   '/onboarding/join': typeof OnboardingJoinRoute
@@ -1209,6 +1216,7 @@ export interface FileRoutesByTo {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/login': typeof AuthLoginRoute
   '/api/support-chat': typeof ApiSupportChatRoute
+  '/asset/$token': typeof AssetTokenRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/onboarding/create': typeof OnboardingCreateRoute
   '/onboarding/join': typeof OnboardingJoinRoute
@@ -1375,6 +1383,7 @@ export interface FileRoutesById {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_auth/login': typeof AuthLoginRoute
   '/api/support-chat': typeof ApiSupportChatRoute
+  '/asset/$token': typeof AssetTokenRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/onboarding/create': typeof OnboardingCreateRoute
   '/onboarding/join': typeof OnboardingJoinRoute
@@ -1538,6 +1547,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/login'
     | '/api/support-chat'
+    | '/asset/$token'
     | '/checkout/$planId'
     | '/onboarding/create'
     | '/onboarding/join'
@@ -1698,6 +1708,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/login'
     | '/api/support-chat'
+    | '/asset/$token'
     | '/checkout/$planId'
     | '/onboarding/create'
     | '/onboarding/join'
@@ -1863,6 +1874,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/_auth/login'
     | '/api/support-chat'
+    | '/asset/$token'
     | '/checkout/$planId'
     | '/onboarding/create'
     | '/onboarding/join'
@@ -2028,6 +2040,7 @@ export interface RootRouteChildren {
   Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRoute: typeof Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ApiSupportChatRoute: typeof ApiSupportChatRoute
+  AssetTokenRoute: typeof AssetTokenRoute
   CheckoutPlanIdRoute: typeof CheckoutPlanIdRoute
   QTokenRoute: typeof QTokenRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
@@ -2243,6 +2256,13 @@ declare module '@tanstack/react-router' {
       path: '/checkout/$planId'
       fullPath: '/checkout/$planId'
       preLoaderRoute: typeof CheckoutPlanIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/asset/$token': {
+      id: '/asset/$token'
+      path: '/asset/$token'
+      fullPath: '/asset/$token'
+      preLoaderRoute: typeof AssetTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/support-chat': {
@@ -3514,6 +3534,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ApiSupportChatRoute: ApiSupportChatRoute,
+  AssetTokenRoute: AssetTokenRoute,
   CheckoutPlanIdRoute: CheckoutPlanIdRoute,
   QTokenRoute: QTokenRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,

@@ -15,6 +15,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { TicketTimeline } from "@/components/helpdesk/TicketTimeline";
+import { ResidentTicketExtras } from "@/components/helpdesk/ResidentTicketExtras";
 import {
   CATEGORY_HINT, CATEGORY_LABEL, PRIORITY_LABEL, fmtDate, helpdeskErrorMessage, statusMeta,
   type TicketCategory, type TicketPriority,
@@ -140,7 +141,8 @@ function HelpdeskPage() {
     const urgent = t.priority === "high" || t.priority === "urgent";
     const isApproval = t.category === "approval";
     const next = t.status === "resolved" ? "Confirm it's fixed" : t.status === "awaiting_approval" ? "Waiting for committee decision"
-      : t.status === "open" ? "Waiting for the office to pick up" : t.status === "in_progress" ? "Being worked on" : null;
+      : t.status === "open" ? "Waiting for the office to pick up" : t.status === "in_progress" ? "Being worked on"
+      : t.status === "on_hold" ? "On hold — the office will update you" : t.status === "reopened" ? "Reopened — waiting for the office" : null;
     return (
       <li key={t.id}>
         <button type="button" onClick={() => setSelected(t.id)}
@@ -312,6 +314,7 @@ function HelpdeskPage() {
                 <Button variant="ghost" className="min-h-11 w-full rounded-xl text-destructive" disabled={act.isPending}
                   onClick={() => act.mutate({ id: current.id, action: "cancel" })}>Cancel request</Button>
               )}
+              <ResidentTicketExtras ticketId={current.id} status={current.status} />
               <TicketTimeline ticketId={current.id} canComment={!["closed", "cancelled"].includes(current.status)} />
             </div>
           )}

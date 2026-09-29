@@ -4,6 +4,7 @@ import {
   Receipt, Wallet, BarChart3, TrendingDown, BookOpen,
   Settings2, UsersRound, Activity, LifeBuoy, Sparkles, KeyRound, Building, Lock,
   LayoutGrid, Compass, FileCheck2, Trophy, Palette, CalendarDays,
+  Wrench,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { MobileHero } from "@/components/shared/MobileHero";
@@ -27,6 +28,7 @@ const MANAGEMENT: Tile[] = [
   { to: "/society/flats", label: "Houses", icon: Home },
   { to: "/society/blocks", label: "Blocks", icon: Building },
   { to: "/society/helpdesk", label: "Helpdesk", icon: LifeBuoy },
+  { to: "/society/operations", label: "Operations", icon: Wrench },
   { to: "/society/approvals", label: "Approvals", icon: UserCheck },
   { to: "/society/verifications", label: "Verifications", icon: ShieldCheck },
   { to: "/society/visitors", label: "Visitors", icon: UsersRound, feature: "visitors" },

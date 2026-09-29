@@ -349,6 +349,84 @@ export type Database = {
           },
         ]
       }
+      asset_service_log: {
+        Row: {
+          asset_id: string
+          created_at: string
+          created_by: string | null
+          expense_id: string | null
+          id: string
+          kind: string
+          notes: string | null
+          service_date: string
+          society_id: string
+          ticket_id: string | null
+          vendor_id: string | null
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          created_by?: string | null
+          expense_id?: string | null
+          id?: string
+          kind: string
+          notes?: string | null
+          service_date: string
+          society_id: string
+          ticket_id?: string | null
+          vendor_id?: string | null
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          created_by?: string | null
+          expense_id?: string | null
+          id?: string
+          kind?: string
+          notes?: string | null
+          service_date?: string
+          society_id?: string
+          ticket_id?: string | null
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_service_log_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "society_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_service_log_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_service_log_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_service_log_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_service_log_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "finance_vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
@@ -1739,6 +1817,11 @@ export type Database = {
       finance_vendors: {
         Row: {
           category: string | null
+          contract_end: string | null
+          contract_notes: string | null
+          contract_start: string | null
+          contract_type: string
+          contract_value: number | null
           created_at: string
           created_by: string
           deactivated_at: string | null
@@ -1754,6 +1837,11 @@ export type Database = {
         }
         Insert: {
           category?: string | null
+          contract_end?: string | null
+          contract_notes?: string | null
+          contract_start?: string | null
+          contract_type?: string
+          contract_value?: number | null
           created_at?: string
           created_by: string
           deactivated_at?: string | null
@@ -1769,6 +1857,11 @@ export type Database = {
         }
         Update: {
           category?: string | null
+          contract_end?: string | null
+          contract_notes?: string | null
+          contract_start?: string | null
+          contract_type?: string
+          contract_value?: number | null
           created_at?: string
           created_by?: string
           deactivated_at?: string | null
@@ -2066,6 +2159,104 @@ export type Database = {
           },
           {
             foreignKeyName: "hierarchy_nodes_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_items: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          location: string | null
+          name: string
+          quantity: number
+          reorder_level: number
+          society_id: string
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          location?: string | null
+          name: string
+          quantity?: number
+          reorder_level?: number
+          society_id: string
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          location?: string | null
+          name?: string
+          quantity?: number
+          reorder_level?: number
+          society_id?: string
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_items_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_movements: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          delta: number
+          id: string
+          item_id: string
+          reason: string
+          resulting_qty: number
+          society_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          delta: number
+          id?: string
+          item_id: string
+          reason: string
+          resulting_qty: number
+          society_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          delta?: number
+          id?: string
+          item_id?: string
+          reason?: string
+          resulting_qty?: number
+          society_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_movements_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_movements_society_id_fkey"
             columns: ["society_id"]
             isOneToOne: false
             referencedRelation: "societies"
@@ -3013,6 +3204,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ops_reminders_sent: {
+        Row: {
+          kind: string
+          ref_date: string
+          ref_id: string
+          sent_at: string
+        }
+        Insert: {
+          kind: string
+          ref_date: string
+          ref_id: string
+          sent_at?: string
+        }
+        Update: {
+          kind?: string
+          ref_date?: string
+          ref_id?: string
+          sent_at?: string
+        }
+        Relationships: []
       }
       parking_slots: {
         Row: {
@@ -4633,6 +4845,78 @@ export type Database = {
           },
         ]
       }
+      society_assets: {
+        Row: {
+          amc_until: string | null
+          category: string
+          created_at: string
+          created_by: string | null
+          id: string
+          installed_on: string | null
+          location: string | null
+          name: string
+          notes: string | null
+          purchase_date: string | null
+          qr_token: string
+          society_id: string
+          status: string
+          updated_at: string
+          vendor_id: string | null
+          warranty_until: string | null
+        }
+        Insert: {
+          amc_until?: string | null
+          category: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          installed_on?: string | null
+          location?: string | null
+          name: string
+          notes?: string | null
+          purchase_date?: string | null
+          qr_token?: string
+          society_id: string
+          status?: string
+          updated_at?: string
+          vendor_id?: string | null
+          warranty_until?: string | null
+        }
+        Update: {
+          amc_until?: string | null
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          installed_on?: string | null
+          location?: string | null
+          name?: string
+          notes?: string | null
+          purchase_date?: string | null
+          qr_token?: string
+          society_id?: string
+          status?: string
+          updated_at?: string
+          vendor_id?: string | null
+          warranty_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "society_assets_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "society_assets_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "finance_vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       society_automation_settings: {
         Row: {
           created_at: string
@@ -5170,6 +5454,65 @@ export type Database = {
           },
         ]
       }
+      society_staff: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          full_name: string
+          id: string
+          is_active: boolean
+          job_type: string
+          notes: string | null
+          phone: string | null
+          shift_days: number[]
+          shift_end: string | null
+          shift_start: string | null
+          society_id: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          full_name: string
+          id?: string
+          is_active?: boolean
+          job_type: string
+          notes?: string | null
+          phone?: string | null
+          shift_days?: number[]
+          shift_end?: string | null
+          shift_start?: string | null
+          society_id: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          job_type?: string
+          notes?: string | null
+          phone?: string | null
+          shift_days?: number[]
+          shift_end?: string | null
+          shift_start?: string | null
+          society_id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "society_staff_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sos_alerts: {
         Row: {
           acknowledged_at: string | null
@@ -5227,6 +5570,54 @@ export type Database = {
           },
         ]
       }
+      staff_attendance: {
+        Row: {
+          created_at: string
+          day: string
+          id: string
+          note: string | null
+          recorded_by: string | null
+          society_id: string
+          staff_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          day: string
+          id?: string
+          note?: string | null
+          recorded_by?: string | null
+          society_id: string
+          staff_id: string
+          status: string
+        }
+        Update: {
+          created_at?: string
+          day?: string
+          id?: string
+          note?: string | null
+          recorded_by?: string | null
+          society_id?: string
+          staff_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_attendance_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_attendance_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "society_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       support_ticket_events: {
         Row: {
           actor_id: string | null
@@ -5278,67 +5669,123 @@ export type Database = {
         Row: {
           ai_transcript: Json | null
           approval_status: string | null
+          asset_id: string | null
           assigned_to: string | null
           category: string
           closed_at: string | null
           created_at: string
           description: string
+          escalation_level: number
+          escalation_reason: string | null
+          hold_reason: string | null
           id: string
           last_activity_at: string
+          parent_ticket_id: string | null
           priority: string
+          reopened_count: number
           requires_approval: boolean
           resolution_note: string | null
           resolved_at: string | null
+          sla_due_at: string | null
           society_id: string | null
+          staff_id: string | null
           status: string
           subject: string
           ticket_no: number
           updated_at: string
           user_id: string
+          vendor_id: string | null
         }
         Insert: {
           ai_transcript?: Json | null
           approval_status?: string | null
+          asset_id?: string | null
           assigned_to?: string | null
           category?: string
           closed_at?: string | null
           created_at?: string
           description: string
+          escalation_level?: number
+          escalation_reason?: string | null
+          hold_reason?: string | null
           id?: string
           last_activity_at?: string
+          parent_ticket_id?: string | null
           priority?: string
+          reopened_count?: number
           requires_approval?: boolean
           resolution_note?: string | null
           resolved_at?: string | null
+          sla_due_at?: string | null
           society_id?: string | null
+          staff_id?: string | null
           status?: string
           subject: string
           ticket_no?: never
           updated_at?: string
           user_id: string
+          vendor_id?: string | null
         }
         Update: {
           ai_transcript?: Json | null
           approval_status?: string | null
+          asset_id?: string | null
           assigned_to?: string | null
           category?: string
           closed_at?: string | null
           created_at?: string
           description?: string
+          escalation_level?: number
+          escalation_reason?: string | null
+          hold_reason?: string | null
           id?: string
           last_activity_at?: string
+          parent_ticket_id?: string | null
           priority?: string
+          reopened_count?: number
           requires_approval?: boolean
           resolution_note?: string | null
           resolved_at?: string | null
+          sla_due_at?: string | null
           society_id?: string | null
+          staff_id?: string | null
           status?: string
           subject?: string
           ticket_no?: never
           updated_at?: string
           user_id?: string
+          vendor_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "society_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_tickets_parent_ticket_id_fkey"
+            columns: ["parent_ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_tickets_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "society_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_tickets_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "finance_vendors"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       survey_questions: {
         Row: {
@@ -5441,6 +5888,82 @@ export type Database = {
             columns: ["flat_resident_id"]
             isOneToOne: false
             referencedRelation: "flat_residents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ticket_attachments: {
+        Row: {
+          created_at: string
+          id: string
+          mime: string
+          path: string
+          size_bytes: number
+          society_id: string
+          ticket_id: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mime: string
+          path: string
+          size_bytes: number
+          society_id: string
+          ticket_id: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mime?: string
+          path?: string
+          size_bytes?: number
+          society_id?: string
+          ticket_id?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_attachments_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ticket_ratings: {
+        Row: {
+          comment: string | null
+          created_at: string
+          rating: number
+          society_id: string
+          ticket_id: string
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          rating: number
+          society_id: string
+          ticket_id: string
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          rating?: number
+          society_id?: string
+          ticket_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_ratings_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: true
+            referencedRelation: "support_tickets"
             referencedColumns: ["id"]
           },
         ]
@@ -6083,6 +6606,7 @@ export type Database = {
       _gate_admin_society: { Args: never; Returns: string }
       _gate_society: { Args: never; Returns: string }
       _helpdesk_is_admin: { Args: { _sid: string }; Returns: boolean }
+      _helpdesk_sla_hours: { Args: { _priority: string }; Returns: number }
       _knowledge_admin_society: { Args: never; Returns: string }
       _migration_link_or_conflict: {
         Args: {
@@ -6123,6 +6647,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      _notify_society_admins: {
+        Args: {
+          _body: string
+          _kind: string
+          _link: string
+          _sid: string
+          _title: string
+        }
+        Returns: undefined
+      }
       _notify_user: {
         Args: {
           _body: string
@@ -6134,6 +6668,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      _ops_admin: { Args: { _sid: string }; Returns: string }
       _rate_hit: {
         Args: {
           _bucket: string
@@ -6161,6 +6696,22 @@ export type Database = {
       activate_society_plan: {
         Args: { _months?: number; _plan_id: string; _society_id: string }
         Returns: undefined
+      }
+      admin_add_asset_service: {
+        Args: {
+          _asset: string
+          _date: string
+          _expense: string
+          _kind: string
+          _notes: string
+          _ticket: string
+          _vendor: string
+        }
+        Returns: string
+      }
+      admin_adjust_inventory: {
+        Args: { _delta: number; _item: string; _reason: string }
+        Returns: number
       }
       admin_apply_custom_plan:
         | { Args: { _custom_plan_id: string }; Returns: boolean }
@@ -6354,6 +6905,10 @@ export type Database = {
           unpaid_bill_total: number
         }[]
       }
+      admin_record_attendance: {
+        Args: { _day: string; _note: string; _staff: string; _status: string }
+        Returns: undefined
+      }
       admin_renew_tenancy: {
         Args: { _flat_resident_id: string; _new_lease_ends_on: string }
         Returns: undefined
@@ -6431,6 +6986,17 @@ export type Database = {
         Args: { _days: number; _society_id: string }
         Returns: undefined
       }
+      admin_set_vendor_contract: {
+        Args: {
+          _end: string
+          _notes: string
+          _start: string
+          _type: string
+          _value: number
+          _vendor: string
+        }
+        Returns: undefined
+      }
       admin_society_overview: { Args: { _society_id: string }; Returns: Json }
       admin_transition_withdrawal: {
         Args: { _reason: string; _status: string; _withdrawal_id: string }
@@ -6459,6 +7025,22 @@ export type Database = {
         }
         Returns: string
       }
+      admin_upsert_asset: {
+        Args: {
+          _amc: string
+          _category: string
+          _id: string
+          _installed: string
+          _location: string
+          _name: string
+          _notes: string
+          _purchase: string
+          _status: string
+          _vendor: string
+          _warranty: string
+        }
+        Returns: string
+      }
       admin_upsert_family_member: {
         Args: {
           _age?: number
@@ -6468,6 +7050,31 @@ export type Database = {
           _relation?: string
           _resident_user_id: string
           _society_id: string
+        }
+        Returns: string
+      }
+      admin_upsert_inventory_item: {
+        Args: {
+          _active: boolean
+          _id: string
+          _location: string
+          _name: string
+          _reorder: number
+          _unit: string
+        }
+        Returns: string
+      }
+      admin_upsert_staff: {
+        Args: {
+          _active: boolean
+          _days: number[]
+          _id: string
+          _job: string
+          _name: string
+          _notes: string
+          _phone: string
+          _shift_end: string
+          _shift_start: string
         }
         Returns: string
       }
@@ -6528,6 +7135,15 @@ export type Database = {
       archive_billing_template_line: {
         Args: { _id: string; _society_id: string }
         Returns: undefined
+      }
+      asset_qr_lookup: {
+        Args: { _token: string }
+        Returns: {
+          category: string
+          location: string
+          name: string
+          status: string
+        }[]
       }
       assign_resident_to_unit: {
         Args: {
@@ -7309,6 +7925,39 @@ export type Database = {
           ticket_no: number
         }[]
       }
+      helpdesk_admin_queue_v2: {
+        Args: { _limit?: number }
+        Returns: {
+          approval_status: string
+          asset_id: string
+          asset_name: string
+          assigned_to: string
+          assignee_name: string
+          category: string
+          created_at: string
+          description: string
+          escalation_level: number
+          escalation_reason: string
+          flat_label: string
+          hold_reason: string
+          id: string
+          last_activity_at: string
+          parent_ticket_id: string
+          priority: string
+          rating: number
+          reopened_count: number
+          requester_name: string
+          requires_approval: boolean
+          sla_due_at: string
+          staff_id: string
+          staff_name: string
+          status: string
+          subject: string
+          ticket_no: number
+          vendor_id: string
+          vendor_name: string
+        }[]
+      }
       helpdesk_admin_update: {
         Args: {
           _assign?: string
@@ -7316,6 +7965,15 @@ export type Database = {
           _status?: string
           _ticket: string
           _unassign?: boolean
+        }
+        Returns: undefined
+      }
+      helpdesk_assign_work: {
+        Args: {
+          _asset: string
+          _staff: string
+          _ticket: string
+          _vendor: string
         }
         Returns: undefined
       }
@@ -7339,9 +7997,33 @@ export type Database = {
         Args: { _approve: boolean; _reason?: string; _ticket: string }
         Returns: undefined
       }
+      helpdesk_escalate: {
+        Args: { _reason: string; _ticket: string }
+        Returns: undefined
+      }
+      helpdesk_rate: {
+        Args: { _comment: string; _rating: number; _ticket: string }
+        Returns: undefined
+      }
+      helpdesk_record_attachment: {
+        Args: { _mime: string; _path: string; _size: number; _ticket: string }
+        Returns: string
+      }
+      helpdesk_reopen: {
+        Args: { _note: string; _ticket: string }
+        Returns: string
+      }
       helpdesk_resident_action: {
         Args: { _action: string; _note?: string; _ticket: string }
         Returns: undefined
+      }
+      helpdesk_ticket_access: {
+        Args: { _ticket: string }
+        Returns: {
+          can_upload: boolean
+          can_view: boolean
+          society_id: string
+        }[]
       }
       helpdesk_ticket_timeline: {
         Args: { _ticket: string }
@@ -7765,6 +8447,7 @@ export type Database = {
         }
         Returns: string
       }
+      ops_daily_reminders: { Args: never; Returns: undefined }
       poll_cast_vote: {
         Args: { _option: string; _poll: string }
         Returns: undefined

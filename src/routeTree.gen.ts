@@ -38,6 +38,7 @@ import { Route as OnboardingPendingRouteImport } from './routes/onboarding.pendi
 import { Route as OnboardingJoinRouteImport } from './routes/onboarding.join'
 import { Route as OnboardingCreateRouteImport } from './routes/onboarding.create'
 import { Route as CheckoutPlanIdRouteImport } from './routes/checkout.$planId'
+import { Route as AssetTokenRouteImport } from './routes/asset.$token'
 import { Route as ApiSupportChatRouteImport } from './routes/api/support-chat'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
@@ -61,6 +62,7 @@ import { Route as SocietySocietyPlanRequiredRouteImport } from './routes/_societ
 import { Route as SocietySocietyPayoutsRouteImport } from './routes/_society/society.payouts'
 import { Route as SocietySocietyPaymentsRouteImport } from './routes/_society/society.payments'
 import { Route as SocietySocietyParkingRouteImport } from './routes/_society/society.parking'
+import { Route as SocietySocietyOperationsRouteImport } from './routes/_society/society.operations'
 import { Route as SocietySocietyMoreRouteImport } from './routes/_society/society.more'
 import { Route as SocietySocietyMatrixImportRouteImport } from './routes/_society/society.matrix-import'
 import { Route as SocietySocietyMatrixRouteImport } from './routes/_society/society.matrix'
@@ -313,6 +315,11 @@ const CheckoutPlanIdRoute = CheckoutPlanIdRouteImport.update({
   path: '/checkout/$planId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AssetTokenRoute = AssetTokenRouteImport.update({
+  id: '/asset/$token',
+  path: '/asset/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSupportChatRoute = ApiSupportChatRouteImport.update({
   id: '/api/support-chat',
   path: '/api/support-chat',
@@ -436,6 +443,12 @@ const SocietySocietyParkingRoute = SocietySocietyParkingRouteImport.update({
   path: '/society/parking',
   getParentRoute: () => SocietyRoute,
 } as any)
+const SocietySocietyOperationsRoute =
+  SocietySocietyOperationsRouteImport.update({
+    id: '/society/operations',
+    path: '/society/operations',
+    getParentRoute: () => SocietyRoute,
+  } as any)
 const SocietySocietyMoreRoute = SocietySocietyMoreRouteImport.update({
   id: '/society/more',
   path: '/society/more',
@@ -1042,6 +1055,7 @@ export interface FileRoutesByFullPath {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/login': typeof AuthLoginRoute
   '/api/support-chat': typeof ApiSupportChatRoute
+  '/asset/$token': typeof AssetTokenRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/onboarding/create': typeof OnboardingCreateRoute
   '/onboarding/join': typeof OnboardingJoinRoute
@@ -1128,6 +1142,7 @@ export interface FileRoutesByFullPath {
   '/society/matrix': typeof SocietySocietyMatrixRoute
   '/society/matrix-import': typeof SocietySocietyMatrixImportRoute
   '/society/more': typeof SocietySocietyMoreRoute
+  '/society/operations': typeof SocietySocietyOperationsRoute
   '/society/parking': typeof SocietySocietyParkingRoute
   '/society/payments': typeof SocietySocietyPaymentsRoute
   '/society/payouts': typeof SocietySocietyPayoutsRoute
@@ -1201,6 +1216,7 @@ export interface FileRoutesByTo {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/login': typeof AuthLoginRoute
   '/api/support-chat': typeof ApiSupportChatRoute
+  '/asset/$token': typeof AssetTokenRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/onboarding/create': typeof OnboardingCreateRoute
   '/onboarding/join': typeof OnboardingJoinRoute
@@ -1287,6 +1303,7 @@ export interface FileRoutesByTo {
   '/society/matrix': typeof SocietySocietyMatrixRoute
   '/society/matrix-import': typeof SocietySocietyMatrixImportRoute
   '/society/more': typeof SocietySocietyMoreRoute
+  '/society/operations': typeof SocietySocietyOperationsRoute
   '/society/parking': typeof SocietySocietyParkingRoute
   '/society/payments': typeof SocietySocietyPaymentsRoute
   '/society/payouts': typeof SocietySocietyPayoutsRoute
@@ -1366,6 +1383,7 @@ export interface FileRoutesById {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_auth/login': typeof AuthLoginRoute
   '/api/support-chat': typeof ApiSupportChatRoute
+  '/asset/$token': typeof AssetTokenRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/onboarding/create': typeof OnboardingCreateRoute
   '/onboarding/join': typeof OnboardingJoinRoute
@@ -1452,6 +1470,7 @@ export interface FileRoutesById {
   '/_society/society/matrix': typeof SocietySocietyMatrixRoute
   '/_society/society/matrix-import': typeof SocietySocietyMatrixImportRoute
   '/_society/society/more': typeof SocietySocietyMoreRoute
+  '/_society/society/operations': typeof SocietySocietyOperationsRoute
   '/_society/society/parking': typeof SocietySocietyParkingRoute
   '/_society/society/payments': typeof SocietySocietyPaymentsRoute
   '/_society/society/payouts': typeof SocietySocietyPayoutsRoute
@@ -1528,6 +1547,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/login'
     | '/api/support-chat'
+    | '/asset/$token'
     | '/checkout/$planId'
     | '/onboarding/create'
     | '/onboarding/join'
@@ -1614,6 +1634,7 @@ export interface FileRouteTypes {
     | '/society/matrix'
     | '/society/matrix-import'
     | '/society/more'
+    | '/society/operations'
     | '/society/parking'
     | '/society/payments'
     | '/society/payouts'
@@ -1687,6 +1708,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/login'
     | '/api/support-chat'
+    | '/asset/$token'
     | '/checkout/$planId'
     | '/onboarding/create'
     | '/onboarding/join'
@@ -1773,6 +1795,7 @@ export interface FileRouteTypes {
     | '/society/matrix'
     | '/society/matrix-import'
     | '/society/more'
+    | '/society/operations'
     | '/society/parking'
     | '/society/payments'
     | '/society/payouts'
@@ -1851,6 +1874,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/_auth/login'
     | '/api/support-chat'
+    | '/asset/$token'
     | '/checkout/$planId'
     | '/onboarding/create'
     | '/onboarding/join'
@@ -1937,6 +1961,7 @@ export interface FileRouteTypes {
     | '/_society/society/matrix'
     | '/_society/society/matrix-import'
     | '/_society/society/more'
+    | '/_society/society/operations'
     | '/_society/society/parking'
     | '/_society/society/payments'
     | '/_society/society/payouts'
@@ -2015,6 +2040,7 @@ export interface RootRouteChildren {
   Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRoute: typeof Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ApiSupportChatRoute: typeof ApiSupportChatRoute
+  AssetTokenRoute: typeof AssetTokenRoute
   CheckoutPlanIdRoute: typeof CheckoutPlanIdRoute
   QTokenRoute: typeof QTokenRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
@@ -2232,6 +2258,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CheckoutPlanIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/asset/$token': {
+      id: '/asset/$token'
+      path: '/asset/$token'
+      fullPath: '/asset/$token'
+      preLoaderRoute: typeof AssetTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/support-chat': {
       id: '/api/support-chat'
       path: '/api/support-chat'
@@ -2391,6 +2424,13 @@ declare module '@tanstack/react-router' {
       path: '/society/parking'
       fullPath: '/society/parking'
       preLoaderRoute: typeof SocietySocietyParkingRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/operations': {
+      id: '/_society/society/operations'
+      path: '/society/operations'
+      fullPath: '/society/operations'
+      preLoaderRoute: typeof SocietySocietyOperationsRouteImport
       parentRoute: typeof SocietyRoute
     }
     '/_society/society/more': {
@@ -3335,6 +3375,7 @@ interface SocietyRouteChildren {
   SocietySocietyMatrixRoute: typeof SocietySocietyMatrixRoute
   SocietySocietyMatrixImportRoute: typeof SocietySocietyMatrixImportRoute
   SocietySocietyMoreRoute: typeof SocietySocietyMoreRoute
+  SocietySocietyOperationsRoute: typeof SocietySocietyOperationsRoute
   SocietySocietyParkingRoute: typeof SocietySocietyParkingRoute
   SocietySocietyPaymentsRoute: typeof SocietySocietyPaymentsRoute
   SocietySocietyPayoutsRoute: typeof SocietySocietyPayoutsRoute
@@ -3403,6 +3444,7 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyMatrixRoute: SocietySocietyMatrixRoute,
   SocietySocietyMatrixImportRoute: SocietySocietyMatrixImportRoute,
   SocietySocietyMoreRoute: SocietySocietyMoreRoute,
+  SocietySocietyOperationsRoute: SocietySocietyOperationsRoute,
   SocietySocietyParkingRoute: SocietySocietyParkingRoute,
   SocietySocietyPaymentsRoute: SocietySocietyPaymentsRoute,
   SocietySocietyPayoutsRoute: SocietySocietyPayoutsRoute,
@@ -3492,6 +3534,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ApiSupportChatRoute: ApiSupportChatRoute,
+  AssetTokenRoute: AssetTokenRoute,
   CheckoutPlanIdRoute: CheckoutPlanIdRoute,
   QTokenRoute: QTokenRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,

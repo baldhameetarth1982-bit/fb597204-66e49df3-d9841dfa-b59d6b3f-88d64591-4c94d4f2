@@ -103,4 +103,4 @@
 - [x] Recurring passes, movers/vendors/staff, restricted list, committee decisions, overrides with reason, incidents, overstay, visitor parking, SOS, bounded offline guard queue (rollback-tested in QA Demo Society)
 - [ ] Live guard-account check — blocked: no legitimate guard account exists
 
-- [ ] Workstream 4 Operations & Facilities — built and server-tested; open: resident-role/staff-login live checks and evidence upload click-test (no safe accounts)
+- [x] Workstream 4 Operations & Facilities — built, server-tested and preview-checked; attachment click-through unavailable because the authorized demo society has no Helpdesk ticket and no supported safe attachment-deletion path; resident/staff previews unavailable without legitimate accounts

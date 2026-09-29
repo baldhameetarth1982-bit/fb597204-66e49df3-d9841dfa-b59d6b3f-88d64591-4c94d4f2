@@ -13,6 +13,7 @@ import {
 } from "@/components/people/PeopleUI";
 import { SectionLabel } from "@/components/comm/CommUI";
 import { gateErrorMessage } from "@/lib/visitors";
+import { SecurityAdminPanel } from "@/components/gate/SecurityAdminPanel";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -396,6 +397,7 @@ function SocietyVisitors() {
         />
       ) : (
         <>
+          {societyId && <SecurityAdminPanel societyId={societyId} onChanged={() => void load()} />}
           <SummaryStrip
             items={[
               { label: "Waiting / expected", value: counts.pending },

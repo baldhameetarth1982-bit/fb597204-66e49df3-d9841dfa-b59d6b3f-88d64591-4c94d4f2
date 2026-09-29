@@ -11,6 +11,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
+import { RecurringPasses } from "@/components/gate/ResidentSafety";
 import { VISITOR_CATEGORIES, categoryLabel, effectiveStatus, fmtTime, gateErrorMessage, statusMeta } from "@/lib/visitors";
 
 export const Route = createFileRoute("/_resident/app/visitors")({
@@ -82,8 +83,9 @@ function MyVisitors() {
     });
     setSaving(false);
     if (error) return toast.error(gateErrorMessage(error));
-    const r = (data as { gate_pass_code: string }[])?.[0];
-    setIssued({ code: r.gate_pass_code, name: form.name });
+    const r = (data as { gate_pass_code: string | null }[])?.[0];
+    if (r?.gate_pass_code) setIssued({ code: r.gate_pass_code, name: form.name });
+    else toast.success("Sent to the committee for approval. You'll be notified.");
     setForm(EMPTY);
     setOpen(false);
     refresh();
@@ -117,7 +119,7 @@ function MyVisitors() {
 
       {waiting.length > 0 && (
         <section aria-label="Waiting at the gate" className="space-y-2">
-          {waiting.map((v) => (
+          {waiting.filter((v) => v.category !== "mover").map((v) => (
             <Card key={v.id} className="rounded-2xl border-warning/50 bg-warning/10">
               <CardContent className="p-4 space-y-3">
                 <div>
@@ -138,6 +140,8 @@ function MyVisitors() {
           ))}
         </section>
       )}
+
+      <RecurringPasses />
 
       <div role="tablist" className="grid grid-cols-2 gap-1 rounded-2xl bg-muted p-1">
         {(["active", "history"] as const).map((t) => (

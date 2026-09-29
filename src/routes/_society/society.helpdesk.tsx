@@ -13,8 +13,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PageHeader, PageShell } from "@/components/shared/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { TicketTimeline } from "@/components/helpdesk/TicketTimeline";
+import { TicketOpsPanel } from "@/components/helpdesk/TicketOpsPanel";
+import { TicketEvidence } from "@/components/helpdesk/TicketEvidence";
 import {
-  CATEGORY_LABEL, PRIORITY_LABEL, fmtDate, helpdeskErrorMessage, statusMeta,
+  CATEGORY_LABEL, PRIORITY_LABEL, fmtDate, helpdeskErrorMessage, slaState, statusMeta,
   type TicketCategory, type TicketPriority,
 } from "@/lib/helpdesk";
 
@@ -32,20 +34,28 @@ interface Row {
   id: string; ticket_no: number; subject: string; description: string; category: TicketCategory; priority: string;
   status: string; requires_approval: boolean; approval_status: string | null; assigned_to: string | null;
   assignee_name: string | null; requester_name: string; flat_label: string | null; created_at: string; last_activity_at: string;
+  sla_due_at: string | null; escalation_level: number; escalation_reason: string | null; hold_reason: string | null;
+  staff_id: string | null; staff_name: string | null; vendor_id: string | null; vendor_name: string | null;
+  asset_id: string | null; asset_name: string | null; reopened_count: number; parent_ticket_id: string | null; rating: number | null;
 }
 
-type View = "needs_action" | "approvals" | "in_progress" | "resolved" | "all";
+type View = "needs_action" | "overdue" | "escalated" | "approvals" | "in_progress" | "on_hold" | "resolved" | "all";
 const VIEWS: { key: View; label: string; match: (r: Row) => boolean }[] = [
-  { key: "needs_action", label: "New", match: (r) => r.status === "open" },
+  { key: "needs_action", label: "New", match: (r) => r.status === "open" || r.status === "reopened" },
+  { key: "overdue", label: "Overdue", match: (r) => slaState(r.sla_due_at, r.status) === "overdue" },
+  { key: "escalated", label: "Escalated", match: (r) => r.escalation_level > 0 && !["closed", "cancelled", "rejected", "resolved"].includes(r.status) },
   { key: "approvals", label: "Approvals", match: (r) => r.status === "awaiting_approval" },
   { key: "in_progress", label: "In progress", match: (r) => r.status === "in_progress" },
+  { key: "on_hold", label: "On hold", match: (r) => r.status === "on_hold" },
   { key: "resolved", label: "Resolved", match: (r) => r.status === "resolved" },
   { key: "all", label: "All", match: () => true },
 ];
 
 const NEXT: Record<string, { to: string; label: string }[]> = {
-  open: [{ to: "in_progress", label: "Start work" }, { to: "awaiting_approval", label: "Send for approval" }, { to: "resolved", label: "Mark resolved" }, { to: "rejected", label: "Reject" }],
-  in_progress: [{ to: "resolved", label: "Mark resolved" }, { to: "awaiting_approval", label: "Send for approval" }],
+  open: [{ to: "in_progress", label: "Start work" }, { to: "on_hold", label: "Put on hold" }, { to: "awaiting_approval", label: "Send for approval" }, { to: "resolved", label: "Mark resolved" }, { to: "rejected", label: "Reject" }],
+  reopened: [{ to: "in_progress", label: "Start work" }, { to: "on_hold", label: "Put on hold" }, { to: "resolved", label: "Mark resolved" }, { to: "rejected", label: "Reject" }],
+  in_progress: [{ to: "resolved", label: "Mark resolved" }, { to: "on_hold", label: "Put on hold" }, { to: "awaiting_approval", label: "Send for approval" }],
+  on_hold: [{ to: "in_progress", label: "Resume work" }, { to: "resolved", label: "Mark resolved" }],
   resolved: [{ to: "closed", label: "Close" }, { to: "in_progress", label: "Reopen" }],
 };
 
@@ -62,7 +72,7 @@ function HelpdeskQueue() {
     staleTime: 20_000,
     placeholderData: (prev) => prev,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("helpdesk_admin_queue", { _limit: 300 });
+      const { data, error } = await supabase.rpc("helpdesk_admin_queue_v2", { _limit: 300 });
       if (error) throw error;
       return (data ?? []) as Row[];
     },
@@ -113,7 +123,8 @@ function HelpdeskQueue() {
 
   const nextAction = (r: Row) =>
     r.status === "awaiting_approval" ? "Committee decision needed"
-      : r.status === "open" ? (r.assigned_to ? "Start work" : "Assign an owner")
+      : r.status === "on_hold" ? "Waiting — resume when ready"
+      : r.status === "open" || r.status === "reopened" ? (r.assigned_to ? "Start work" : "Assign an owner")
       : r.status === "in_progress" ? "Resolve when done"
       : r.status === "resolved" ? "Waiting for resident to confirm" : null;
   const val = (k: View) => (q.data ? counts[k] : "—");
@@ -124,6 +135,7 @@ function HelpdeskQueue() {
 
       <SummaryStrip items={[
         { label: "New", value: val("needs_action"), hint: "Not started" },
+        { label: "Overdue", value: val("overdue"), hint: "Past target time" },
         { label: "Approvals", value: val("approvals"), hint: "Need a decision" },
         { label: "In progress", value: val("in_progress") },
         { label: "Resolved", value: val("resolved"), hint: "Awaiting confirmation" },
@@ -157,6 +169,8 @@ function HelpdeskQueue() {
                     <span className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                       {approval && <Gavel className="h-3.5 w-3.5 text-info" aria-label="Approval request" />}
                       <span className={`rounded px-1.5 py-0.5 font-semibold ${s.tone}`}>{s.label}</span>
+                      {slaState(r.sla_due_at, r.status) === "overdue" && <span className="rounded bg-destructive/10 px-1.5 py-0.5 font-semibold text-destructive">Overdue</span>}
+                      {r.escalation_level > 0 && <span className="rounded bg-warning/15 px-1.5 py-0.5 font-semibold text-warning-foreground">Escalated</span>}
                       {urgent && <span className="rounded bg-destructive/10 px-1.5 py-0.5 font-semibold text-destructive">{PRIORITY_LABEL[r.priority as TicketPriority]}</span>}
                       <span>{CATEGORY_LABEL[r.category] ?? "Request"} · #{r.ticket_no}</span>
                     </span>
@@ -182,6 +196,12 @@ function HelpdeskQueue() {
                 <SheetTitle className="break-words">{sel.subject}</SheetTitle>
                 <p className="text-sm text-muted-foreground">{sel.requester_name}{sel.flat_label ? ` · ${sel.flat_label}` : ""} · raised {fmtDate(sel.created_at)}</p>
                 <span className={`w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusMeta(sel.status).tone}`}>{statusMeta(sel.status).label}</span>
+                {sel.sla_due_at && <p className={`text-xs ${slaState(sel.sla_due_at, sel.status) === "overdue" ? "font-semibold text-destructive" : "text-muted-foreground"}`}>Target: {fmtDate(sel.sla_due_at)}{slaState(sel.sla_due_at, sel.status) === "overdue" ? " — overdue" : ""}</p>}
+                {sel.hold_reason && sel.status === "on_hold" && <p className="text-xs text-muted-foreground">On hold: {sel.hold_reason}</p>}
+                {sel.escalation_level > 0 && <p className="text-xs text-warning-foreground">Escalated (level {sel.escalation_level}){sel.escalation_reason ? `: ${sel.escalation_reason}` : ""}</p>}
+                {sel.reopened_count > 0 && <p className="text-xs text-muted-foreground">Reopened {sel.reopened_count}×</p>}
+                {sel.parent_ticket_id && <p className="text-xs text-muted-foreground">Follow-up of an earlier request</p>}
+                {sel.rating && <p className="text-xs text-muted-foreground">Resident rating: {sel.rating}/5</p>}
               </SheetHeader>
               <p className="whitespace-pre-wrap break-words text-sm">{sel.description}</p>
 
@@ -204,7 +224,7 @@ function HelpdeskQueue() {
                 <div className="space-y-3 rounded-2xl border p-3">
                   <label htmlFor="hd-note" className="text-sm font-medium">
                     {sel.status === "awaiting_approval" ? "Committee decision" : "Note to resident"}
-                    <span className="font-normal text-muted-foreground"> (required to reject)</span>
+                    <span className="font-normal text-muted-foreground"> (required to reject or hold)</span>
                   </label>
                   <Textarea id="hd-note" value={note} onChange={(e) => setNote(e.target.value)} rows={3} maxLength={2000} className="rounded-xl" placeholder="Shown on the resident's timeline" />
                   {sel.status === "awaiting_approval" ? (
@@ -220,7 +240,7 @@ function HelpdeskQueue() {
                     <div className="grid grid-cols-2 gap-2">
                       {NEXT[sel.status].map((n) => (
                         <Button key={n.to} variant={n.to === "rejected" ? "outline" : n.to === "resolved" ? "default" : "secondary"}
-                          className="min-h-11 rounded-xl" disabled={busy || (n.to === "rejected" && note.trim().length < 3)}
+                          className="min-h-11 rounded-xl" disabled={busy || ((n.to === "rejected" || n.to === "on_hold") && note.trim().length < 3)}
                           onClick={() => update.mutate({ status: n.to })}>
                           {n.label}
                         </Button>
@@ -233,6 +253,9 @@ function HelpdeskQueue() {
                 </div>
               )}
 
+              <TicketOpsPanel ticketId={sel.id} staffId={sel.staff_id} vendorId={sel.vendor_id} assetId={sel.asset_id}
+                escalationLevel={sel.escalation_level} closed={["closed", "rejected", "cancelled"].includes(sel.status)} />
+              <TicketEvidence ticketId={sel.id} canUpload={!["closed", "rejected", "cancelled"].includes(sel.status)} />
               <TicketTimeline ticketId={sel.id} canComment={!["closed", "cancelled"].includes(sel.status)} />
             </div>
           )}

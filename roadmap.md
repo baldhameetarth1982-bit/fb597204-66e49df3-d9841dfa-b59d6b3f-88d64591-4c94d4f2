@@ -87,3 +87,10 @@
 - [ ] Implement every safe in-platform gap without duplicate society, finance, visitor, notification, AI, migration, or export systems.
 - [ ] Complete focused security, role/plan, finance, offline, accessibility, responsive, and release verification.
 - [ ] Report external hardware/provider and owner-only release dependencies honestly.
+
+## Workstream 2 — Resident, unit & tenant lifecycle
+- [x] Derived lifecycle states, renew / move-out / early end / archive with server checks and audit
+- [x] No-Dues-gated move-out with reasoned override; scheduled move-outs end access via daily job
+- [x] Idempotent renewal reminders on the existing scheduler; configurable warning days
+- [x] Flat 360 occupancy panel, residents Tenancies tabs, resident Easy view
+- [x] Live checks (self-rolled-back, QA Demo Society)

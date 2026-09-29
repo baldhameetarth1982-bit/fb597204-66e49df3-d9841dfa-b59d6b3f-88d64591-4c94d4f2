@@ -11,6 +11,7 @@ const CODES: Record<string, string> = {
   not_authorized: "You don't have permission to manage tenancies here.",
   not_tenant: "This person is not a tenant.",
   tenancy_ended: "This tenancy has already ended.",
+  move_out_scheduled: "A move-out is already scheduled for this tenant.",
   invalid_lease_dates: "Choose a new end date later than the current one.",
   already_moved_out: "This person has already moved out.",
   invalid_move_out_date: "Choose a valid move-out date.",

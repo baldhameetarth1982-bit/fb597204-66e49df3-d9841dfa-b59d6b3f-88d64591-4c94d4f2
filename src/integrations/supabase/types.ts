@@ -5679,6 +5679,10 @@ export type Database = {
         Returns: string
       }
       _amenity_admin: { Args: { _society_id: string }; Returns: boolean }
+      _authorize_membership_internal: {
+        Args: { _society_id: string; _user_id: string }
+        Returns: boolean
+      }
       _bank_line_candidates: {
         Args: { _days: number; _line_id: string }
         Returns: {

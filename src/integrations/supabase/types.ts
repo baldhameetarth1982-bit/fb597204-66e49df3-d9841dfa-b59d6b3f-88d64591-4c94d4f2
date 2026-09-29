@@ -6450,6 +6450,7 @@ export type Database = {
         Args: { _request_id: string; _society_id: string }
         Returns: Json
       }
+      expire_stale_amenity_waitlist: { Args: never; Returns: number }
       expire_stale_tenancies: { Args: never; Returns: number }
       explorer_flat_dues_summary: {
         Args: { _society_id: string }

@@ -89,7 +89,7 @@ export const ConversationScrollButton = ({
           className
         )}
         onClick={handleScrollToBottom}
-        size="icon"
+        size="icon" aria-label="Scroll to bottom"
         type="button"
         variant="outline"
         {...props}
@@ -157,7 +157,7 @@ export const ConversationDownload = ({
         className
       )}
       onClick={handleDownload}
-      size="icon"
+      size="icon" aria-label="Download conversation"
       type="button"
       variant="outline"
       {...props}

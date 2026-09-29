@@ -38,7 +38,7 @@ function EmergencyPage() {
   return (
     <div className="px-5 py-6 space-y-6 pb-24">
       <header className="flex items-center gap-3">
-        <Button asChild variant="ghost" size="icon" className="rounded-xl">
+        <Button asChild variant="ghost" size="icon" className="rounded-xl" aria-label="Back to dashboard">
           <Link to="/app/dashboard"><ArrowLeft className="h-5 w-5" /></Link>
         </Button>
         <div>

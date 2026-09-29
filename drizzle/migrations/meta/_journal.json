@@ -687,6 +687,13 @@
       "when": 1790640665503,
       "tag": "0097_complete_tenant_lifecycle_contracts",
       "breakpoints": true
+    },
+    {
+      "idx": 98,
+      "version": "7",
+      "when": 1790641227491,
+      "tag": "0098_stabilize_tenancy_and_amenity_access",
+      "breakpoints": true
     }
   ]
 }

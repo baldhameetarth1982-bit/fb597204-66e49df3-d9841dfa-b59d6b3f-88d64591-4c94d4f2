@@ -245,7 +245,7 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
                             {!l.active && <Badge variant="secondary">archived</Badge>}
                             {l.active && (
                               <Button
-                                size="icon" variant="ghost" className="h-7 w-7"
+                                size="icon" variant="ghost" className="h-9 w-9" aria-label="Archive line"
                                 onClick={async () => {
                                   try { await archLine({ data: { societyId, id: l.id } }); toast.success("Line archived"); void refreshLines(activeTpl.id); }
                                   catch (e: any) { toast.error(userMessage(e, "Archive failed")); }

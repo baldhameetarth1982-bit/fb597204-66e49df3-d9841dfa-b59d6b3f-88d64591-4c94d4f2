@@ -82,7 +82,8 @@
 - [ ] Super admin: needs owner approval to grant super admin to test account
 
 ## Society OS complete expansion (requested 2026-09-28)
-- [ ] Reconcile the uploaded 53-module brief against current canonical systems and approved product decisions.
+- [x] Reconcile the uploaded 53-module brief against current canonical systems and approved product decisions.
+- [ ] Stabilize Amenities and tenant/society-switch foundations with authorization, expiry, concurrency, and failure-state verification.
 - [ ] Implement every safe in-platform gap without duplicate society, finance, visitor, notification, AI, migration, or export systems.
 - [ ] Complete focused security, role/plan, finance, offline, accessibility, responsive, and release verification.
 - [ ] Report external hardware/provider and owner-only release dependencies honestly.

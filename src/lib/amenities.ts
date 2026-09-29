@@ -68,6 +68,7 @@ export function amenityError(error: unknown) {
   const raw = String((error as { message?: string })?.message ?? "").toLowerCase();
   if (raw.includes("tenant_not_allowed")) return "This amenity is not available to tenants.";
   if (raw.includes("owner_not_allowed")) return "This amenity is not available to owners.";
+  if (raw.includes("dues_restricted")) return "This amenity is unavailable while your home has overdue maintenance.";
   if (raw.includes("weekly_limit")) return "Your household has reached this amenity's weekly booking limit.";
   if (raw.includes("blocked_date")) return "This amenity is unavailable on that date.";
   if (raw.includes("cancellation_closed")) return "The cancellation window for this booking has closed.";

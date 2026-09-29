@@ -783,7 +783,7 @@ function FlatDetailPage() {
           <OccupancySection snapshot={snapshot} />
           <BasicFinancialSection snapshot={snapshot} />
         </div>
-        {snapshot.viewer.canManage !== false && <FlatLifecyclePanel flatId={id} />}
+        <FlatLifecyclePanel flatId={id} />
 
         {/* Basic locked experience */}
         {!canViewAdvanced && (

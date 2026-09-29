@@ -13,6 +13,45 @@ import { TenancyStateBadge } from "./TenancyStateBadge";
 import {
   archiveTenancy, getFlatOccupancy, moveOutResident, renewTenancy, type FlatOccupancy,
 } from "@/lib/tenancy.functions";
+import { endResidentUnitRelationship } from "@/lib/residents-admin.functions";
+
+const CORRECTION_ERRORS: Record<string, string> = {
+  correction_blocked_dues: "This flat has dues outstanding. Use Move out instead — it handles dues properly.",
+  correction_reason_required: "Write a correction reason of at least 10 characters.",
+  already_moved_out: "This person has already left this flat.",
+  forbidden: "You don't have permission to correct records here.",
+  rate_limited: "Too many changes. Please wait a few minutes.",
+};
+
+function CorrectionDialog({ rel, societyId, flatId, onClose }: { rel: Rel; societyId: string; flatId: string; onClose: () => void }) {
+  const [reason, setReason] = useState("");
+  const end = useServerFn(endResidentUnitRelationship);
+  const qc = useQueryClient();
+  const m = useMutation({
+    mutationFn: () => end({ data: { societyId, flatResidentId: rel.id, reason: reason.trim() } }),
+    onSuccess: () => { toast.success("Record corrected"); invalidate(qc, flatId); onClose(); },
+    onError: (e: Error) => toast.error(CORRECTION_ERRORS[e.message] ?? "Could not correct the record."),
+  });
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Remove record (admin correction)</DialogTitle>
+          <DialogDescription>
+            Only for fixing a mistaken assignment of {rel.name ?? "this person"}. For someone actually leaving, use Move out.
+            Bills, payments and history are kept, and this is recorded in the activity history.
+          </DialogDescription></DialogHeader>
+        <div className="space-y-1"><Label htmlFor="corr-reason">Correction reason (at least 10 characters)</Label>
+          <Textarea id="corr-reason" maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} /></div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} className="min-h-11">Cancel</Button>
+          <Button variant="destructive" className="min-h-11" disabled={reason.trim().length < 10 || m.isPending} onClick={() => m.mutate()}>
+            {m.isPending ? "Saving…" : "Remove record"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 type Rel = FlatOccupancy["relationships"][number];
 const today = () => new Date().toISOString().slice(0, 10);
@@ -25,6 +64,7 @@ export function FlatLifecyclePanel({ flatId }: { flatId: string }) {
   const q = useQuery({ queryKey: ["flat-occupancy", flatId], queryFn: () => load({ data: { flatId } }), staleTime: 15_000, retry: false });
   const [renewing, setRenewing] = useState<Rel | null>(null);
   const [leaving, setLeaving] = useState<{ rel: Rel; early: boolean } | null>(null);
+  const [correcting, setCorrecting] = useState<Rel | null>(null);
   const qc = useQueryClient();
   const archive = useServerFn(archiveTenancy);
   const archiveM = useMutation({
@@ -83,6 +123,9 @@ export function FlatLifecyclePanel({ flatId }: { flatId: string }) {
                 <Button size="sm" variant="outline" className="min-h-11 rounded-xl" onClick={() => setLeaving({ rel: r, early: false })}>
                   <LogOut className="h-4 w-4 mr-1" aria-hidden />Move out
                 </Button>
+                <Button size="sm" variant="ghost" className="min-h-11 rounded-xl text-muted-foreground" onClick={() => setCorrecting(r)}>
+                  Remove (admin correction)
+                </Button>
               </div>
             </li>
           ))}
@@ -114,6 +157,7 @@ export function FlatLifecyclePanel({ flatId }: { flatId: string }) {
       </CardContent>
       {renewing && <RenewDialog rel={renewing} flatId={flatId} onClose={() => setRenewing(null)} />}
       {leaving && <MoveOutDialog rel={leaving.rel} early={leaving.early} flatId={flatId} onClose={() => setLeaving(null)} />}
+      {correcting && <CorrectionDialog rel={correcting} societyId={occ.society_id} flatId={flatId} onClose={() => setCorrecting(null)} />}
     </Card>
   );
 }

@@ -281,7 +281,7 @@ function FlatsPage() {
         />
       ) : (
         <>
-          <div className="rounded-2xl border border-border bg-background overflow-x-auto">
+          <div className="rounded-2xl border border-border bg-background overflow-x-auto" tabIndex={0} role="region" aria-label="Units table">
             <Table>
               <TableHeader>
                 <TableRow>

@@ -24,6 +24,14 @@ export interface AuthProfile {
   theme?: string | null;
 }
 
+export interface AuthSociety {
+  society_id: string;
+  society_name: string;
+  roles: string[];
+  is_current: boolean;
+  tenancy_ends_on: string | null;
+}
+
 export interface AuthState {
   isLoading: boolean;
   isCheckingProfile: boolean;
@@ -33,6 +41,8 @@ export interface AuthState {
   profile: AuthProfile | null;
   roles: Role[];
   primaryRole: Role | null;
+  societies: AuthSociety[];
+  switchSociety: (societyId: string) => Promise<void>;
   hasRole: (role: Role) => boolean;
   hasAnyRole: (roles: Role[]) => boolean;
   signOut: () => Promise<void>;
@@ -58,12 +68,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<AuthProfile | null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
+  const [societies, setSocieties] = useState<AuthSociety[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const loadSeq = useRef(0);
 
   const loadUserContext = useCallback(async (nextUser: User | null) => {
     if (!nextUser) {
-      return { profile: null, roles: [] as Role[] };
+      return { profile: null, roles: [] as Role[], societies: [] as AuthSociety[] };
     }
 
     const uid = nextUser.id;
@@ -91,7 +102,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             aadhaar_uploaded_at: null,
             theme: null,
           };
-      return { profile: resolvedProfile, roles: resolvedRoles };
+      const { data: societyRows } = await supabase.rpc("list_my_societies");
+      return { profile: resolvedProfile, roles: resolvedRoles, societies: (societyRows ?? []) as AuthSociety[] };
     }
 
     if (rpcError) {
@@ -143,7 +155,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           theme: null,
         };
 
-    return { profile: resolvedProfile, roles: resolvedRoles };
+    const { data: societyRows } = await supabase.rpc("list_my_societies");
+    return { profile: resolvedProfile, roles: resolvedRoles, societies: (societyRows ?? []) as AuthSociety[] };
   }, []);
 
   useEffect(() => {
@@ -160,6 +173,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(nextUser);
           setProfile(nextContext.profile);
           setRoles(nextContext.roles);
+          setSocieties(nextContext.societies);
         }
       } finally {
         if (mounted && seq === loadSeq.current) setIsLoading(false);
@@ -197,6 +211,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profile,
       roles,
       primaryRole,
+      societies,
+      switchSociety: async (societyId) => {
+        const { error } = await supabase.rpc("switch_active_society", { _society_id: societyId });
+        if (error) throw error;
+        const seq = ++loadSeq.current;
+        const nextContext = await loadUserContext(user);
+        if (seq === loadSeq.current) {
+          setProfile(nextContext.profile);
+          setRoles(nextContext.roles);
+          setSocieties(nextContext.societies);
+        }
+      },
       hasRole: (r) => roles.includes(r),
       hasAnyRole: (rs) => rs.some((r) => roles.includes(r)),
       signOut: async () => {
@@ -206,6 +232,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         setProfile(null);
         setRoles([]);
+        setSocieties([]);
         await supabase.auth.signOut();
         setIsLoading(false);
       },
@@ -217,13 +244,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (seq === loadSeq.current) {
             setProfile(nextContext.profile);
             setRoles(nextContext.roles);
+              setSocieties(nextContext.societies);
           }
         } finally {
           if (seq === loadSeq.current) setIsLoading(false);
         }
       },
     };
-  }, [isLoading, session, user, profile, roles, loadUserContext]);
+  }, [isLoading, session, user, profile, roles, societies, loadUserContext]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

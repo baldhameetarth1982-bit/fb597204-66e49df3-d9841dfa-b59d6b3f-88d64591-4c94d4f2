@@ -111,7 +111,7 @@ function Section({ title, icon: Icon, list, onDelete, canEdit }: { title: string
                 {c.notes && <p className="text-xs text-muted-foreground truncate">{c.notes}</p>}
               </div>
               {c.phone && <a href={`tel:${c.phone}`}><Button size="sm" variant="outline"><Phone className="h-4 w-4 mr-1" />{c.phone}</Button></a>}
-              {canEdit && <Button size="icon" variant="ghost" onClick={() => onDelete(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>}
+              {canEdit && <Button size="icon" variant="ghost" aria-label={`Delete ${c.name}`} onClick={() => onDelete(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>}
             </CardContent>
           </Card>
         ))}

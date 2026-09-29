@@ -220,7 +220,7 @@ function CustomFieldsPage() {
                       {f.field_type} • {f.visibility.replace("_", " ")} {f.required && " • required"}
                     </p>
                   </div>
-                  <Button variant="ghost" size="icon" onClick={() => remove(f.id)}
+                  <Button variant="ghost" size="icon" aria-label={`Remove ${f.label}`} onClick={() => remove(f.id)}
                     className="text-destructive hover:text-destructive">
                     <Trash2 className="h-4 w-4" />
                   </Button>

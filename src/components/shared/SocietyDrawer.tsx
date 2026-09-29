@@ -4,7 +4,7 @@ import {
   Building2, Car, DoorOpen, LayoutDashboard, Megaphone, Menu, Receipt,
   ShieldCheck, Trophy, UserCheck, Users, Vote, Wallet, Wand2, Sparkles,
   Calculator, BadgeCheck, LogOut, Settings, ListChecks, Wrench, CalendarRange,
-  BarChart3, Compass, Grid3x3, Upload, BookOpen, PhoneCall, Landmark,
+  BarChart3, Compass, Grid3x3, Upload, BookOpen, PhoneCall, Landmark, ChevronsUpDown, Check,
 } from "lucide-react";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose,
@@ -78,7 +78,7 @@ const GROUPS: Group[] = [
 export function SocietyDrawer() {
   const [open, setOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { profile, user, signOut } = useAuth();
+  const { profile, user, signOut, societies, switchSociety } = useAuth();
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -102,6 +102,31 @@ export function SocietyDrawer() {
             </div>
           </div>
         </SheetHeader>
+
+        {societies.length > 1 && (
+          <div className="border-b px-3 py-3">
+            <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Current society</p>
+            <div className="space-y-1">
+              {societies.map((society) => (
+                <Button
+                  key={society.society_id}
+                  type="button"
+                  variant="ghost"
+                  className="min-h-11 w-full justify-start rounded-xl px-3"
+                  disabled={society.is_current}
+                  onClick={async () => {
+                    await switchSociety(society.society_id);
+                    setOpen(false);
+                    window.location.assign("/");
+                  }}
+                >
+                  {society.is_current ? <Check className="mr-2 h-4 w-4 text-primary" /> : <ChevronsUpDown className="mr-2 h-4 w-4" />}
+                  <span className="truncate">{society.society_name}</span>
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-4 pb-24 space-y-5">
           {GROUPS.map((group) => (

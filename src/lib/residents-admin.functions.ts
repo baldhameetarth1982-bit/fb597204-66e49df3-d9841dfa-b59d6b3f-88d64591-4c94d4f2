@@ -65,6 +65,13 @@ const endInput = z.object({
   movedOutAt: z.string().datetime().optional(),
   reason: z.string().trim().max(200).optional().nullable(),
 });
+const tenancyInput = z.object({
+  societyId: uuid,
+  flatResidentId: uuid,
+  leaseStartsOn: z.string().date().optional().nullable(),
+  leaseEndsOn: z.string().date().optional().nullable(),
+  noticeGivenOn: z.string().date().optional().nullable(),
+});
 const nameSchema = z.string().trim().min(1).max(80).regex(/^[^<>]+$/, "invalid_name");
 const phoneSchema = z.string().trim().max(20).regex(/^[+\d\s\-()]*$/, "invalid_phone").optional().nullable();
 const familyUpsertInput = z.object({
@@ -133,6 +140,11 @@ const privateRelationshipSchema = z
     moved_in_at: z.string().nullable(),
     moved_out_at: z.string().nullable(),
     ended_reason: z.string().nullable(),
+    lease_starts_on: z.string().nullable(),
+    lease_ends_on: z.string().nullable(),
+    notice_given_on: z.string().nullable(),
+    termination_kind: z.string().nullable(),
+    access_expires_at: z.string().nullable(),
     created_at: z.string(),
   })
   .strict();
@@ -279,6 +291,21 @@ export const endResidentUnitRelationship = createServerFn({ method: "POST" })
       _flat_resident_id: data.flatResidentId,
       _moved_out_at: data.movedOutAt ?? new Date().toISOString(),
       _reason: data.reason ?? undefined,
+    });
+    if (error) throw safeError(error);
+    return { ok: true };
+  });
+
+export const setTenantLeaseTerms = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: z.input<typeof tenancyInput>) => tenancyInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.rpc("admin_set_tenancy_terms", {
+      _society_id: data.societyId,
+      _flat_resident_id: data.flatResidentId,
+      _lease_starts_on: data.leaseStartsOn ?? undefined,
+      _lease_ends_on: data.leaseEndsOn ?? undefined,
+      _notice_given_on: data.noticeGivenOn ?? undefined,
     });
     if (error) throw safeError(error);
     return { ok: true };

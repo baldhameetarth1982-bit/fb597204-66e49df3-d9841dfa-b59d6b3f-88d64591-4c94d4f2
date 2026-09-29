@@ -4,7 +4,7 @@ import {
   Search, Star, Clock, Lock, ChevronRight, X, LayoutGrid,
   Activity, Building2, Building, Home, Users, Receipt, TrendingDown,
   BookOpen, Wallet, BarChart3, UsersRound, Car, Sparkles, UserCheck,
-  ShieldCheck, MessageSquare, FileCheck2,
+  ShieldCheck, MessageSquare, FileCheck2, CalendarDays,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
 const ICON_MAP: Record<string, any> = {
   Activity, Building2, Building, Home, Users, Receipt, TrendingDown, BookOpen,
   Wallet, BarChart3, UsersRound, Car, Sparkles, UserCheck, ShieldCheck,
-  MessageSquare, LayoutGrid, FileCheck2,
+  MessageSquare, LayoutGrid, FileCheck2, CalendarDays,
 };
 
 const FAVORITES_KEY_PREFIX = "sociohub:feature-favorites:";

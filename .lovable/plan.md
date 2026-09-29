@@ -1,76 +1,103 @@
-# Complete the SociyoHub Society OS expansion
+# Society OS expansion: audited delivery plan
 
-## Goal
-Complete the safely implementable gaps in the uploaded 53-module Society OS brief by extending existing SociyoHub domains, without replacing canonical systems or weakening security, finance, pricing, payment, or tenant boundaries.
+## Scope and current-state truth
 
-## Current audit outcome
-- Preserve and extend: authentication, role permissions, Flat 360, billing/ledger/payments, reconciliation, No-Dues, visitors, notifications, Services & Discovery, Surveys, Auditor Pack, migration, AI retrieval, scheduler, privacy, exports, and subscriptions.
-- Newly completed foundation: society-scoped Amenities setup, resident booking/history, blocked dates, capacity-safe confirmation/waitlists, cancellations, no-shows, fairness reporting, audit events, RLS, server authorization, rate limits, and navigation.
-- Genuine remaining gaps: tenant lifecycle, safe gate offline replay and deeper visitor operations, meetings/governance, staff/vendor/assets/procurement/budgets, document lifecycle/privacy requests, role-aware search and exception dashboards, and cross-module accessibility/performance closure.
-- Externally blocked or deferred: unsupported gate hardware integrations, Play Store/Firebase/hosting owner operations, and online maintenance gateway payments.
+The 53-module brief is a release program, not a single feature. Existing canonical systems will be extended rather than duplicated.
 
-## Delivery plan
+### Preserve as implemented foundations
 
-### 1. Reconcile product truth and shared foundations
-- Produce one requirement-to-implementation matrix from routes, RPCs, migrations, Feature Directory, roadmap, and the uploaded brief.
-- Correct stale documentation to the approved Starter ₹8, Growth ₹10, Pro ₹12 per active flat/month model, with custom pricing above 300 flats.
-- Keep server-derived society, role, permission, and plan authorization as the only access boundary.
+- Auth, RLS, society/role permissions, audit logging, Flat 360 and resident relationships
+- Canonical bills, ledger, cash/bank-transfer maintenance payments, expenses, reversals and reconciliation
+- Razorpay for SociyoHub SaaS subscriptions only; ₹8/₹10/₹12 per active flat/month, custom above 300
+- Visitors/gate state machine, parking/vehicles, notifications, helpdesk, notices and SOS
+- Surveys, Services & Discovery, Smart QR, AI retrieval, scheduler, Auditor Pack, exports and migration
+- Privacy controls, Custom Branding as Partial, Pro ad-free, and no interstitial advertising
 
-### 2. Unit, occupancy, and tenant lifecycle
-- Extend Flat 360 and existing resident relationships for invitations, lease dates, renewals, warnings, early termination, move-in/out, No-Dues checks, and automatic access expiry.
-- Add safe multi-society switching that re-resolves access server-side.
-- Add an optional accessible elder-mode resident home with high-frequency actions and no ads.
+### Started but not yet release-verified
 
-### 3. Gate, visitor, parking, and safety completion
-- Extend the existing visitor state machine for recurring visitors, deliveries, movers/vendors, overstay, blacklist review, staff movement, incidents, and auditable overrides.
-- Add a bounded, idempotent offline guard queue only for replay-safe actions, with explicit conflict and failure states.
-- Extend temporary/visitor parking using existing parking and vehicle records.
-- Keep hardware provider-neutral with manual fallback; never claim unsupported ANPR/RFID/biometric integrations.
+- Amenities foundation: setup, availability, booking/history, waitlist, cancellation, no-show and fairness reporting
+- Tenant lifecycle and safe society switching: lease dates/expiry, authorized switching, resident assignment/detail UI
 
-### 4. Facilities, helpdesk, staff, vendors, and assets
-- Extend helpdesk with assignment, SLA, waiting/escalation states, evidence, ratings, reopening, and recurring-issue evidence.
-- Add constrained staff profiles, shifts, attendance/leave, and assigned-work views.
-- Add canonical vendors, contracts/AMCs, assets, service history, QR references, and lightweight inventory thresholds.
-- Link tickets, assets, vendors, and approved expenses instead of creating parallel systems.
+These were started before this checkpoint was presented. The first implementation step will audit and stabilize them; they will not be called complete until authorization, function signatures, expiry behavior and focused source/SQL validation pass.
 
-### 5. Procurement and budgets through canonical finance
-- Add request, quotations, approval, order, invoice, and authorized payment-reference stages.
-- Post financial effects only through the existing ledger and reversal model.
-- Add budget-versus-actual and auditor views over canonical records; never create a second ledger or gateway.
+## Genuine implementation workstreams
 
-### 6. Governance, documents, and privacy
-- Extend notices with targeting, scheduling, expiry, priority, acknowledgement, and truthful delivery/open states.
-- Add meetings, agenda, RSVP, attendance, minutes, actions, resolutions, and server-enforced voting eligibility/privacy.
-- Extend the existing Polls/Surveys system rather than duplicating it.
-- Add a versioned private document vault and explicit resident export/delete-request workflows while preserving required finance, audit, and security records.
+### 1. Stabilize current foundations
 
-### 7. Finance and migration depth
-- Extend billing previews, exceptions, approvals, arrears/interest, and immutable adjustment/reversal handling where genuinely missing.
-- Expand Auditor Pack/export only with validated schemas; do not claim unsupported statutory or Tally compatibility.
-- Extend migration staging, mappings, conflicts, retries, and dual-run comparison without forcing totals or overwriting canonical records.
-- Keep maintenance payments Cash and Bank Transfer only; Razorpay remains SaaS subscriptions only.
+- Resolve tenant expiry semantics where active `user_roles` could outlive an expired occupancy.
+- Verify and remove unsafe/ambiguous resident-assignment RPC overloads.
+- Verify society-switch authorization, current-society role filtering, audit behavior and client failure states.
+- Close Amenities policy gaps such as defaulter eligibility and plan/role enforcement.
 
-### 8. Intelligence, automation, search, and role homes
-- Extend permission-aware AI only for explainable drafts, summaries, suggestions, and exception explanations requiring human confirmation.
-- Extend the existing scheduler with idempotency, duplicate-run protection, retries, failure states, and audit.
-- Add server-authorized cross-domain search and deterministic “Needs attention” views per role.
-- Reuse the unified notification store; external channels remain delivery adapters, not systems of record.
+### 2. Resident, unit and tenant lifecycle
 
-### 9. Accessibility, responsive quality, and performance
-- Preserve the existing navy/teal design system and shared components; no broad redesign.
-- Enforce 44px targets, keyboard/focus support, screen-reader status, reduced motion, safe areas, responsive tables, and unclipped INR values.
-- Add honest loading, empty, denied, locked, offline, retry, conflict, and partial-success states.
-- Use server pagination and measured indexes for large histories and exports.
+- Extend Flat 360 with invitations, renewal warnings, early termination, move-in/out and No-Dues-aware transitions.
+- Add expiring-tenancy administration and automatic expiry through the existing scheduler.
+- Add optional accessible elder mode without creating another resident app.
 
-### 10. Verification and release closure
-- Validate signed-out, wrong-role, wrong-plan, and cross-society denial using authorized synthetic/demo fixtures only.
-- Verify financial immutability, booking concurrency, tenant expiry, vote uniqueness/privacy, offline replay, export exclusions, scheduler idempotency, and AI boundaries.
-- Run focused tests, TypeScript, database security checks, secret scan, and production build.
-- Browser-check critical role flows at mobile, tablet, and desktop widths using authorized demo access only.
-- Update Feature Directory and documentation from verified truth, and report external dependencies honestly.
+### 3. Gate, visitor, parking and safety
 
-## Hard boundaries
+- Extend the existing visitor domain for recurring visitors, deliveries, movers/vendors, overstays, blacklist review, incidents and audited overrides.
+- Add only a narrowly whitelisted, idempotent offline queue for replay-safe operations.
+- Keep entry approval, SOS and security-sensitive transitions fail-closed offline.
+- Reuse existing vehicle and parking records; hardware integrations remain provider/owner dependent.
+
+### 4. Operations and facilities
+
+- Extend helpdesk with assignment, SLA, waiting/escalation, evidence, ratings and reopen states.
+- Add canonical staff, shifts, attendance/leave, vendors/contracts, assets/service history and inventory thresholds.
+- Link tickets, assets, vendors and Smart QR rather than introducing parallel records.
+
+### 5. Procurement and budgets
+
+- Add request, quotation, approval, order and invoice states.
+- Post authorized financial effects only through canonical expenses and ledger functions.
+- Add budget-versus-actual and auditor views without a second accounting model.
+
+### 6. Governance, documents and privacy
+
+- Extend notices with targeting, scheduling, expiry, priority and truthful acknowledgement/delivery states.
+- Add meetings, agendas, RSVP, attendance, minutes, actions and resolutions.
+- Reuse Surveys for voting with server-enforced eligibility, uniqueness and privacy.
+- Add versioned private documents plus export/deletion-request workflows that preserve mandatory finance, security and audit retention.
+
+### 7. Finance, migration and builder handover depth
+
+- Add billing preview/exception/approval depth and immutable adjustment/reversal workflows only where missing.
+- Extend validated Auditor Pack and export schemas without unsupported statutory claims.
+- Extend migration staging, mappings, conflicts, retries, dual-run comparison and handover evidence without overwriting canonical records.
+
+### 8. Intelligence, automation and role homes
+
+- Add server-authorized cross-domain search and deterministic “Needs attention” views.
+- Extend AI only for permission-aware, explainable drafts/summaries/suggestions with human confirmation.
+- Harden scheduler idempotency, retries and observable failure states.
+- Reuse the notification store; external channels remain adapters.
+
+### 9. Accessibility, responsive quality and performance
+
+- Fix identified unlabeled controls and enforce keyboard/focus, screen-reader status, reduced-motion and 44px touch targets.
+- Improve responsive tables, safe areas and unclipped INR values without redesigning the product.
+- Measure before changing bundles/queries; lazy-load heavy libraries and add indexes/pagination only where evidence supports them.
+
+### 10. Release closure
+
+- Run focused TypeScript, source-contract, SQL authorization/tenant-boundary, concurrency, financial-integrity and secret checks.
+- Use only authorized synthetic/demo fixtures; never the protected production society.
+- Do not create unsafe accounts to fill unavailable roles; report unavailable live verification separately.
+- Update Feature Directory, roadmap and documentation only from verified truth.
+
+## Deferred or externally blocked
+
+- Online maintenance gateway payments remain excluded; Cash and Bank Transfer only.
+- ANPR/RFID/biometric hardware remains provider-dependent with manual fallback.
+- Play Store, Firebase/domain and hosting-owner actions require owner credentials.
+- Custom Branding stays Partial until authorized live resident checks are available.
+
+## Non-negotiable boundaries
+
 - Never touch `src/lib/utils.ts`.
-- Never access or use the protected production society.
-- No duplicate domain systems, destructive migration, fake evidence, real payment, interstitial ads, maintenance gateway, or unsupported hardware claims.
-- Preserve append-only financial history, RLS, tenant isolation, server-authoritative permissions, current pricing, and existing feature availability unless an approved gate explicitly changes it.
+- Never query or use the protected production society.
+- No duplicate finance, visitor, notification, AI, migration, export or permission systems.
+- Preserve strict auth, RLS, tenant isolation, append-only financial history and server-authoritative plan/permission checks.
+- No fake evidence, real Razorpay charge, interstitial ads, unsupported claims or broad redesign.

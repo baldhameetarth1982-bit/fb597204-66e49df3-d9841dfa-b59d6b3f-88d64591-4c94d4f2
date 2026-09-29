@@ -3884,6 +3884,227 @@ export type Database = {
         }
         Relationships: []
       }
+      procurement_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          from_status: string | null
+          id: string
+          note: string | null
+          request_id: string
+          society_id: string
+          to_status: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          note?: string | null
+          request_id: string
+          society_id: string
+          to_status: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          note?: string | null
+          request_id?: string
+          society_id?: string
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "procurement_events_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "procurement_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "procurement_events_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      procurement_quotations: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string
+          id: string
+          notes: string | null
+          quote_ref: string | null
+          request_id: string
+          society_id: string
+          valid_until: string | null
+          vendor_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by: string
+          id?: string
+          notes?: string | null
+          quote_ref?: string | null
+          request_id: string
+          society_id: string
+          valid_until?: string | null
+          vendor_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string
+          id?: string
+          notes?: string | null
+          quote_ref?: string | null
+          request_id?: string
+          society_id?: string
+          valid_until?: string | null
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "procurement_quotations_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "procurement_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "procurement_quotations_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "procurement_quotations_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "finance_vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      procurement_requests: {
+        Row: {
+          approved_amount: number | null
+          cancel_reason: string | null
+          category: string
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          description: string | null
+          estimated_amount: number | null
+          expense_id: string | null
+          fy_start: number
+          id: string
+          invoice_amount: number | null
+          invoice_date: string | null
+          invoice_ref: string | null
+          needed_by: string | null
+          order_ref: string | null
+          ordered_at: string | null
+          payment_ref: string | null
+          request_no: number
+          requested_by: string
+          selected_quotation_id: string | null
+          society_id: string
+          status: string
+          title: string
+          updated_at: string
+          vendor_id: string | null
+        }
+        Insert: {
+          approved_amount?: number | null
+          cancel_reason?: string | null
+          category: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          description?: string | null
+          estimated_amount?: number | null
+          expense_id?: string | null
+          fy_start: number
+          id?: string
+          invoice_amount?: number | null
+          invoice_date?: string | null
+          invoice_ref?: string | null
+          needed_by?: string | null
+          order_ref?: string | null
+          ordered_at?: string | null
+          payment_ref?: string | null
+          request_no?: never
+          requested_by: string
+          selected_quotation_id?: string | null
+          society_id: string
+          status?: string
+          title: string
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Update: {
+          approved_amount?: number | null
+          cancel_reason?: string | null
+          category?: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          description?: string | null
+          estimated_amount?: number | null
+          expense_id?: string | null
+          fy_start?: number
+          id?: string
+          invoice_amount?: number | null
+          invoice_date?: string | null
+          invoice_ref?: string | null
+          needed_by?: string | null
+          order_ref?: string | null
+          ordered_at?: string | null
+          payment_ref?: string | null
+          request_no?: never
+          requested_by?: string
+          selected_quotation_id?: string | null
+          society_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "procurement_requests_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "procurement_requests_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "procurement_requests_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "finance_vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           aadhaar_last4: string | null
@@ -4988,6 +5209,101 @@ export type Database = {
             foreignKeyName: "society_branding_society_id_fkey"
             columns: ["society_id"]
             isOneToOne: true
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      society_budget_revisions: {
+        Row: {
+          actor_id: string
+          budget_id: string
+          created_at: string
+          id: string
+          new_amount: number
+          old_amount: number | null
+          reason: string | null
+          society_id: string
+        }
+        Insert: {
+          actor_id: string
+          budget_id: string
+          created_at?: string
+          id?: string
+          new_amount: number
+          old_amount?: number | null
+          reason?: string | null
+          society_id: string
+        }
+        Update: {
+          actor_id?: string
+          budget_id?: string
+          created_at?: string
+          id?: string
+          new_amount?: number
+          old_amount?: number | null
+          reason?: string | null
+          society_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "society_budget_revisions_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "society_budgets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "society_budget_revisions_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      society_budgets: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          created_by: string
+          fy_start: number
+          id: string
+          notes: string | null
+          society_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string
+          created_by: string
+          fy_start: number
+          id?: string
+          notes?: string | null
+          society_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          created_by?: string
+          fy_start?: number
+          id?: string
+          notes?: string | null
+          society_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "society_budgets_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
             referencedRelation: "societies"
             referencedColumns: ["id"]
           },
@@ -6669,6 +6985,58 @@ export type Database = {
         Returns: undefined
       }
       _ops_admin: { Args: { _sid: string }; Returns: string }
+      _proc_auth: { Args: { _sid: string }; Returns: string }
+      _proc_clean: { Args: { _max: number; _t: string }; Returns: string }
+      _proc_lock: {
+        Args: { _id: string }
+        Returns: {
+          approved_amount: number | null
+          cancel_reason: string | null
+          category: string
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          description: string | null
+          estimated_amount: number | null
+          expense_id: string | null
+          fy_start: number
+          id: string
+          invoice_amount: number | null
+          invoice_date: string | null
+          invoice_ref: string | null
+          needed_by: string | null
+          order_ref: string | null
+          ordered_at: string | null
+          payment_ref: string | null
+          request_no: number
+          requested_by: string
+          selected_quotation_id: string | null
+          society_id: string
+          status: string
+          title: string
+          updated_at: string
+          vendor_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "procurement_requests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      _proc_log: {
+        Args: {
+          _action: string
+          _from: string
+          _note: string
+          _r: Database["public"]["Tables"]["procurement_requests"]["Row"]
+          _to: string
+          _uid: string
+        }
+        Returns: undefined
+      }
+      _proc_money: { Args: { _v: number }; Returns: number }
       _rate_hit: {
         Args: {
           _bucket: string
@@ -7181,6 +7549,16 @@ export type Database = {
           status: string
         }[]
       }
+      budget_set: {
+        Args: {
+          _amount: number
+          _category: string
+          _fy_start: number
+          _notes: string
+          _reason: string
+        }
+        Returns: string
+      }
       bulk_approve_join_requests: {
         Args: { _request_ids: string[]; _society_id: string }
         Returns: number
@@ -7627,6 +8005,19 @@ export type Database = {
         Returns: Json
       }
       get_bill_payment_summary: { Args: { _bill_id: string }; Returns: Json }
+      get_budget_vs_actual: {
+        Args: { _fy_start: number }
+        Returns: {
+          actual: number
+          approved_amount: number
+          budget_id: string
+          category: string
+          notes: string
+          original_amount: number
+          revision_count: number
+          variance: number
+        }[]
+      }
       get_current_auth_context: {
         Args: never
         Returns: {
@@ -7668,6 +8059,26 @@ export type Database = {
       get_payment_receipt_lifecycle: {
         Args: { _payment_id: string }
         Returns: Json
+      }
+      get_procurement_report: {
+        Args: { _fy_start: number }
+        Returns: {
+          approved_amount: number
+          category: string
+          created_at: string
+          decided_at: string
+          expense_amount: number
+          expense_id: string
+          expense_status: string
+          id: string
+          invoice_amount: number
+          invoice_ref: string
+          payment_ref: string
+          request_no: number
+          status: string
+          title: string
+          vendor_name: string
+        }[]
       }
       get_public_pricing_settings: {
         Args: never
@@ -8479,6 +8890,66 @@ export type Database = {
         Returns: Json
       }
       preview_finance_backfill: { Args: { _society_id: string }; Returns: Json }
+      proc_add_quotation: {
+        Args: {
+          _amount: number
+          _notes: string
+          _quote_ref: string
+          _request: string
+          _valid_until: string
+          _vendor: string
+        }
+        Returns: string
+      }
+      proc_cancel: {
+        Args: { _reason: string; _request: string }
+        Returns: undefined
+      }
+      proc_create: {
+        Args: {
+          _category: string
+          _description: string
+          _estimated: number
+          _fy_start: number
+          _needed_by: string
+          _title: string
+        }
+        Returns: string
+      }
+      proc_decide: {
+        Args: { _approve: boolean; _note: string; _request: string }
+        Returns: undefined
+      }
+      proc_link_expense: {
+        Args: { _expense: string; _request: string }
+        Returns: undefined
+      }
+      proc_mark_ordered: {
+        Args: { _order_ref: string; _request: string }
+        Returns: undefined
+      }
+      proc_record_invoice: {
+        Args: {
+          _amount: number
+          _invoice_date: string
+          _invoice_ref: string
+          _request: string
+        }
+        Returns: undefined
+      }
+      proc_record_payment_ref: {
+        Args: { _payment_ref: string; _request: string }
+        Returns: undefined
+      }
+      proc_request_approval: {
+        Args: { _quotation: string; _request: string }
+        Returns: undefined
+      }
+      proc_submit: { Args: { _request: string }; Returns: undefined }
+      procurement_transition_allowed: {
+        Args: { _from: string; _to: string }
+        Returns: boolean
+      }
       recheck_no_dues_request_internal: {
         Args: { _actor_id: string; _request_id: string }
         Returns: {

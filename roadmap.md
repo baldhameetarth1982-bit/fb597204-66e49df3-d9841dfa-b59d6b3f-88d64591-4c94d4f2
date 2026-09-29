@@ -104,3 +104,10 @@
 - [ ] Live guard-account check — blocked: no legitimate guard account exists
 
 - [x] Workstream 4 Operations & Facilities — built, server-tested and preview-checked; attachment click-through unavailable because the authorized demo society has no Helpdesk ticket and no supported safe attachment-deletion path; resident/staff previews unavailable without legitimate accounts
+
+## Workstream 5 — Procurement & Budgets
+- [x] Procurement workflow + server transitions, separation of duties, audit (rollback-tested)
+- [x] Budgets with revision history; actuals from posted expenses (rollback-tested)
+- [x] Auditor Pack procurement/budget section + CSV
+- [ ] Quotation/invoice file attachments — not yet built
+- [x] Preview check of Purchases/Budgets screens (phone + desktop, no errors/overflow)

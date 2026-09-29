@@ -7,6 +7,8 @@ import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { AccountsCenterTabs } from "@/components/nav/AccountsCenterTabs";
 import { MobileHero } from "@/components/shared/MobileHero";
 import { SectionCard } from "@/components/shared/SectionCard";
+import { ProcurementAuditSection, fyLabel } from "@/features/procurement/procurement";
+const fyOf = (d: string) => { const [y, m] = d.split("-").map(Number); return (m ?? 4) >= 4 ? (y || new Date().getFullYear()) : (y || new Date().getFullYear()) - 1; };
 import { ListCard, ListCardGroup } from "@/components/shared/ListCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -79,6 +81,10 @@ function AuditorPackPage() {
           </Button>
         </div>
         {busy && <p className="mt-3 text-sm text-muted-foreground" aria-live="polite">Gathering records… large periods can take a few seconds.</p>}
+      </SectionCard>
+
+      <SectionCard title="Procurement & budget" description={`Budget vs actual and purchase requests for ${fyLabel(fyOf(from))}. Read-only.`} bodyClassName="p-0">
+        {societyId && <ProcurementAuditSection fy={fyOf(from)} />}
       </SectionCard>
 
       {run.isError && !busy && <SectionCard icon={AlertCircle} title="Pack unavailable">

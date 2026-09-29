@@ -20,10 +20,12 @@ export const Route = createFileRoute("/_society/society/budgets")({
 
 function BudgetsPage() {
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 pb-24 pt-2">
-      <AccountsCenterTabs />
+    <div className="pb-[calc(96px+env(safe-area-inset-bottom))]">
       <MobileHero eyebrow="Accounts Center" title="Budgets" subtitle="Approved budgets, revisions and actual spending from posted expenses." icon={PiggyBank} variant="teal" />
-      <div className="mt-4"><BudgetsPanel /></div>
+      <div className="px-4 pt-4 space-y-4 max-w-5xl mx-auto md:px-8">
+        <AccountsCenterTabs />
+        <BudgetsPanel />
+      </div>
     </div>
   );
 }

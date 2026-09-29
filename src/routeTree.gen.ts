@@ -84,6 +84,7 @@ import { Route as SocietySocietyContactsRouteImport } from './routes/_society/so
 import { Route as SocietySocietyCommunicationRouteImport } from './routes/_society/society.communication'
 import { Route as SocietySocietyBylawsRouteImport } from './routes/_society/society.bylaws'
 import { Route as SocietySocietyBusinessProfileRouteImport } from './routes/_society/society.business-profile'
+import { Route as SocietySocietyBudgetsRouteImport } from './routes/_society/society.budgets'
 import { Route as SocietySocietyBrandingRouteImport } from './routes/_society/society.branding'
 import { Route as SocietySocietyBlocksRouteImport } from './routes/_society/society.blocks'
 import { Route as SocietySocietyBillingSettingsRouteImport } from './routes/_society/society.billing-settings'
@@ -562,6 +563,11 @@ const SocietySocietyBusinessProfileRoute =
     path: '/society/business-profile',
     getParentRoute: () => SocietyRoute,
   } as any)
+const SocietySocietyBudgetsRoute = SocietySocietyBudgetsRouteImport.update({
+  id: '/society/budgets',
+  path: '/society/budgets',
+  getParentRoute: () => SocietyRoute,
+} as any)
 const SocietySocietyBrandingRoute = SocietySocietyBrandingRouteImport.update({
   id: '/society/branding',
   path: '/society/branding',
@@ -1121,6 +1127,7 @@ export interface FileRoutesByFullPath {
   '/society/billing-settings': typeof SocietySocietyBillingSettingsRoute
   '/society/blocks': typeof SocietySocietyBlocksRoute
   '/society/branding': typeof SocietySocietyBrandingRoute
+  '/society/budgets': typeof SocietySocietyBudgetsRoute
   '/society/business-profile': typeof SocietySocietyBusinessProfileRoute
   '/society/bylaws': typeof SocietySocietyBylawsRoute
   '/society/communication': typeof SocietySocietyCommunicationRoute
@@ -1282,6 +1289,7 @@ export interface FileRoutesByTo {
   '/society/billing-settings': typeof SocietySocietyBillingSettingsRoute
   '/society/blocks': typeof SocietySocietyBlocksRoute
   '/society/branding': typeof SocietySocietyBrandingRoute
+  '/society/budgets': typeof SocietySocietyBudgetsRoute
   '/society/business-profile': typeof SocietySocietyBusinessProfileRoute
   '/society/bylaws': typeof SocietySocietyBylawsRoute
   '/society/communication': typeof SocietySocietyCommunicationRoute
@@ -1449,6 +1457,7 @@ export interface FileRoutesById {
   '/_society/society/billing-settings': typeof SocietySocietyBillingSettingsRoute
   '/_society/society/blocks': typeof SocietySocietyBlocksRoute
   '/_society/society/branding': typeof SocietySocietyBrandingRoute
+  '/_society/society/budgets': typeof SocietySocietyBudgetsRoute
   '/_society/society/business-profile': typeof SocietySocietyBusinessProfileRoute
   '/_society/society/bylaws': typeof SocietySocietyBylawsRoute
   '/_society/society/communication': typeof SocietySocietyCommunicationRoute
@@ -1613,6 +1622,7 @@ export interface FileRouteTypes {
     | '/society/billing-settings'
     | '/society/blocks'
     | '/society/branding'
+    | '/society/budgets'
     | '/society/business-profile'
     | '/society/bylaws'
     | '/society/communication'
@@ -1774,6 +1784,7 @@ export interface FileRouteTypes {
     | '/society/billing-settings'
     | '/society/blocks'
     | '/society/branding'
+    | '/society/budgets'
     | '/society/business-profile'
     | '/society/bylaws'
     | '/society/communication'
@@ -1940,6 +1951,7 @@ export interface FileRouteTypes {
     | '/_society/society/billing-settings'
     | '/_society/society/blocks'
     | '/_society/society/branding'
+    | '/_society/society/budgets'
     | '/_society/society/business-profile'
     | '/_society/society/bylaws'
     | '/_society/society/communication'
@@ -2578,6 +2590,13 @@ declare module '@tanstack/react-router' {
       path: '/society/business-profile'
       fullPath: '/society/business-profile'
       preLoaderRoute: typeof SocietySocietyBusinessProfileRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/budgets': {
+      id: '/_society/society/budgets'
+      path: '/society/budgets'
+      fullPath: '/society/budgets'
+      preLoaderRoute: typeof SocietySocietyBudgetsRouteImport
       parentRoute: typeof SocietyRoute
     }
     '/_society/society/branding': {
@@ -3354,6 +3373,7 @@ interface SocietyRouteChildren {
   SocietySocietyBillingSettingsRoute: typeof SocietySocietyBillingSettingsRoute
   SocietySocietyBlocksRoute: typeof SocietySocietyBlocksRoute
   SocietySocietyBrandingRoute: typeof SocietySocietyBrandingRoute
+  SocietySocietyBudgetsRoute: typeof SocietySocietyBudgetsRoute
   SocietySocietyBusinessProfileRoute: typeof SocietySocietyBusinessProfileRoute
   SocietySocietyBylawsRoute: typeof SocietySocietyBylawsRoute
   SocietySocietyCommunicationRoute: typeof SocietySocietyCommunicationRoute
@@ -3423,6 +3443,7 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyBillingSettingsRoute: SocietySocietyBillingSettingsRoute,
   SocietySocietyBlocksRoute: SocietySocietyBlocksRoute,
   SocietySocietyBrandingRoute: SocietySocietyBrandingRoute,
+  SocietySocietyBudgetsRoute: SocietySocietyBudgetsRoute,
   SocietySocietyBusinessProfileRoute: SocietySocietyBusinessProfileRoute,
   SocietySocietyBylawsRoute: SocietySocietyBylawsRoute,
   SocietySocietyCommunicationRoute: SocietySocietyCommunicationRoute,

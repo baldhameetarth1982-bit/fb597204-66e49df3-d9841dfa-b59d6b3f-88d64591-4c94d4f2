@@ -61,11 +61,11 @@ function AdminAmenities() {
 
   async function save(e: React.FormEvent) {
     e.preventDefault(); if (!societyId || saving) return; setSaving(true);
-    const { error } = await supabase.rpc("admin_upsert_amenity", {
-      _id: form.id ?? undefined, _society_id: societyId, _name: form.name, _description: form.description,
+    const { error } = await (supabase as any).rpc("admin_upsert_amenity", {
+      _id: form.id, _society_id: societyId, _name: form.name, _description: form.description,
       _amenity_type: form.amenity_type, _opens_at: form.opens_at, _closes_at: form.closes_at,
       _slot_minutes: form.slot_minutes, _capacity: form.capacity, _advance_days: form.advance_days,
-      _cancellation_hours: form.cancellation_hours, _weekly_household_limit: form.weekly_household_limit ? Number(form.weekly_household_limit) : undefined,
+      _cancellation_hours: form.cancellation_hours, _weekly_household_limit: form.weekly_household_limit ? Number(form.weekly_household_limit) : null,
       _owner_allowed: form.owner_allowed, _tenant_allowed: form.tenant_allowed, _defaulters_allowed: form.defaulters_allowed,
       _deposit_amount: form.deposit_amount, _fee_amount: form.fee_amount, _is_active: form.is_active,
     });

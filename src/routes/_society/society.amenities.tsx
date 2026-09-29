@@ -22,6 +22,7 @@ export const Route = createFileRoute("/_society/society/amenities")({
 });
 
 type FairnessRow = { flat_id: string; flat_label: string; bookings: number; cancellations: number; no_shows: number; peak_bookings: number; waitlisted: number };
+type BlockedDate = { id: string; amenity_id: string; blocked_date: string; reason: string | null };
 const blank = { id: null as string | null, name: "", description: "", amenity_type: "clubhouse" as AmenityType, opens_at: "06:00", closes_at: "22:00", slot_minutes: 60, capacity: 1, advance_days: 30, cancellation_hours: 2, weekly_household_limit: "", owner_allowed: true, tenant_allowed: true, deposit_amount: 0, fee_amount: 0, is_active: true };
 const statusTone = (s: AmenityStatus) => s === "confirmed" || s === "completed" ? "success" : s === "waitlisted" ? "warning" : "muted";
 
@@ -30,6 +31,7 @@ function AdminAmenities() {
   const [amenities, setAmenities] = useState<Amenity[]>([]);
   const [bookings, setBookings] = useState<AmenityBooking[]>([]);
   const [fairness, setFairness] = useState<FairnessRow[]>([]);
+  const [blockedDates, setBlockedDates] = useState<BlockedDate[]>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [open, setOpen] = useState(false);
@@ -43,12 +45,13 @@ function AdminAmenities() {
     if (!societyId) return;
     setLoading(true); setFailed(false);
     const from = new Date(); from.setDate(from.getDate() - 90);
-    const [a, b, f] = await Promise.all([
+    const [a, b, f, d] = await Promise.all([
       supabase.from("amenities").select("id,society_id,name,description,amenity_type,opens_at,closes_at,slot_minutes,capacity,advance_days,cancellation_hours,weekly_household_limit,owner_allowed,tenant_allowed,defaulters_allowed,deposit_amount,fee_amount,is_active").eq("society_id", societyId).order("name"),
       supabase.from("amenity_bookings").select("id,amenity_id,flat_id,starts_at,ends_at,attendees,status,cancellation_reason,amenities(name)").eq("society_id", societyId).order("starts_at", { ascending: false }).limit(200),
       supabase.rpc("get_amenity_fairness", { _society_id: societyId, _from: from.toISOString().slice(0,10), _to: new Date().toISOString().slice(0,10) }),
+      supabase.from("amenity_blocked_dates").select("id,amenity_id,blocked_date,reason").eq("society_id", societyId).gte("blocked_date", new Date().toISOString().slice(0,10)).order("blocked_date").limit(100),
     ]);
-    if (a.error || b.error || f.error) setFailed(true); else { setAmenities((a.data ?? []) as Amenity[]); setBookings((b.data ?? []) as unknown as AmenityBooking[]); setFairness((f.data ?? []) as unknown as FairnessRow[]); }
+    if (a.error || b.error || f.error || d.error) setFailed(true); else { setAmenities((a.data ?? []) as Amenity[]); setBookings((b.data ?? []) as unknown as AmenityBooking[]); setFairness((f.data ?? []) as unknown as FairnessRow[]); setBlockedDates((d.data ?? []) as BlockedDate[]); }
     setLoading(false);
   }
   useEffect(() => { void load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [societyId]);
@@ -74,7 +77,12 @@ function AdminAmenities() {
     e.preventDefault(); if (!blockAmenity || !blockDate) return;
     const { error } = await supabase.rpc("admin_set_amenity_block", { _amenity_id: blockAmenity, _blocked_date: blockDate, _reason: blockReason, _blocked: true });
     if (error) return toast.error(amenityError(error));
-    toast.success("Date blocked"); setBlockDate(""); setBlockReason("");
+    toast.success("Date blocked"); setBlockDate(""); setBlockReason(""); void load();
+  }
+
+  async function unblock(d: BlockedDate) {
+    const { error } = await supabase.rpc("admin_set_amenity_block", { _amenity_id: d.amenity_id, _blocked_date: d.blocked_date, _reason: d.reason ?? "", _blocked: false });
+    if (error) return toast.error(amenityError(error)); toast.success("Date reopened"); void load();
   }
 
   async function mark(id: string, status: "completed" | "no_show") {
@@ -94,6 +102,7 @@ function AdminAmenities() {
       <TabsContent value="amenities" className="space-y-5">
         {amenities.length === 0 ? <ListEmpty icon={CalendarDays} title="No amenities yet">Add the first shared space and its booking rules.</ListEmpty> : <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{amenities.map((a)=><li key={a.id}><button type="button" onClick={()=>edit(a)} className="h-full min-h-11 w-full rounded-2xl border bg-card p-4 text-left hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><div className="flex justify-between gap-2"><div><p className="font-semibold">{a.name}</p><p className="text-xs text-muted-foreground">{AMENITY_TYPE_LABELS[a.amenity_type]}</p></div><StatusChip tone={a.is_active?"success":"muted"}>{a.is_active?"Active":"Paused"}</StatusChip></div><p className="mt-3 text-sm">{a.opens_at.slice(0,5)}–{a.closes_at.slice(0,5)} · {a.slot_minutes} min · capacity {a.capacity}</p><p className="mt-1 text-xs text-muted-foreground">Book {a.advance_days} days ahead · cancel {a.cancellation_hours} hours before</p></button></li>)}</ul>}
         <form onSubmit={blockDateSubmit} className="grid gap-3 rounded-2xl border bg-card p-4 md:grid-cols-[1fr_180px_1fr_auto] md:items-end"><div><Label>Block an amenity</Label><Select value={blockAmenity} onValueChange={setBlockAmenity}><SelectTrigger className="h-11"><SelectValue placeholder="Choose amenity" /></SelectTrigger><SelectContent>{amenities.filter((a)=>a.is_active).map((a)=><SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}</SelectContent></Select></div><div><Label htmlFor="block-date">Date</Label><Input id="block-date" type="date" className="h-11" min={new Date().toISOString().slice(0,10)} value={blockDate} onChange={(e)=>setBlockDate(e.target.value)} required /></div><div><Label htmlFor="block-reason">Reason</Label><Input id="block-reason" className="h-11" maxLength={300} placeholder="Maintenance" value={blockReason} onChange={(e)=>setBlockReason(e.target.value)} /></div><Button className="min-h-11" type="submit">Block date</Button></form>
+        {blockedDates.length>0&&<div><h2 className="mb-2 text-sm font-semibold">Upcoming blocked dates</h2><ul className="divide-y overflow-hidden rounded-2xl border bg-card">{blockedDates.map((d)=><li key={d.id} className="flex items-center gap-3 px-4 py-3"><div className="min-w-0 flex-1"><p className="font-medium">{amenities.find((a)=>a.id===d.amenity_id)?.name ?? "Amenity"}</p><p className="text-sm text-muted-foreground">{new Date(`${d.blocked_date}T00:00:00`).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}{d.reason?` · ${d.reason}`:""}</p></div><Button variant="outline" className="min-h-11" onClick={()=>void unblock(d)}>Reopen</Button></li>)}</ul></div>}
       </TabsContent>
       <TabsContent value="bookings">{bookings.length===0?<ListEmpty icon={CalendarDays} title="No bookings yet" />:<ul className="divide-y overflow-hidden rounded-2xl border bg-card">{bookings.map((b)=><li key={b.id} className="flex flex-col gap-3 px-4 py-3 md:flex-row md:items-center"><div className="min-w-0 flex-1"><div className="flex flex-wrap gap-2"><p className="font-medium">{b.amenities?.name ?? "Amenity"}</p><StatusChip tone={statusTone(b.status)}>{AMENITY_STATUS_LABELS[b.status]}</StatusChip></div><p className="text-sm text-muted-foreground">{localDateTime(b.starts_at)} · {b.attendees} people</p></div>{b.status==="confirmed"&&new Date(b.ends_at)<new Date()&&<div className="flex gap-2"><Button variant="outline" className="min-h-11" onClick={()=>void mark(b.id,"no_show")}>No-show</Button><Button className="min-h-11" onClick={()=>void mark(b.id,"completed")}>Complete</Button></div>}</li>)}</ul>}</TabsContent>
       <TabsContent value="fairness"><div className="mb-4 rounded-2xl bg-info-container p-4 text-sm text-info-container-foreground"><BarChart3 className="mb-2 h-5 w-5" />This 90-day view highlights booking distribution, cancellations, no-shows, peak demand, and waitlists. It never restricts or penalizes a household automatically.</div>{fairness.length===0?<ListEmpty icon={BarChart3} title="No booking patterns yet" />:<div className="overflow-x-auto rounded-2xl border"><table className="w-full min-w-[680px] text-sm"><thead className="bg-muted text-left"><tr><th className="p-3">House</th><th className="p-3">Bookings</th><th className="p-3">Peak</th><th className="p-3">Waitlisted</th><th className="p-3">Cancelled</th><th className="p-3">No-shows</th></tr></thead><tbody className="divide-y bg-card">{fairness.map((r)=><tr key={r.flat_id}><td className="p-3 font-medium">{r.flat_label}</td><td className="p-3 tabular-nums">{r.bookings}</td><td className="p-3 tabular-nums">{r.peak_bookings}</td><td className="p-3 tabular-nums">{r.waitlisted}</td><td className="p-3 tabular-nums">{r.cancellations}</td><td className="p-3 tabular-nums">{r.no_shows}</td></tr>)}</tbody></table></div>}</TabsContent>

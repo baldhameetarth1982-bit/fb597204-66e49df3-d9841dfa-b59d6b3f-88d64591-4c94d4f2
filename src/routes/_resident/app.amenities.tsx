@@ -35,6 +35,7 @@ function AmenitiesPage() {
   const [startsAt, setStartsAt] = useState("");
   const [attendees, setAttendees] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [requestKey, setRequestKey] = useState(() => crypto.randomUUID());
 
   async function load() {
     setLoading(true); setFailed(false);
@@ -59,13 +60,13 @@ function AmenitiesPage() {
       _amenity_id: selected.id,
       _starts_at: new Date(startsAt).toISOString(),
       _attendees: attendees,
-      _idempotency_key: crypto.randomUUID(),
+      _idempotency_key: requestKey,
     });
     setSaving(false);
     if (error) return toast.error(amenityError(error));
     const status = data?.[0]?.status;
     toast.success(status === "waitlisted" ? "Added to the waitlist" : "Booking confirmed");
-    setSelected(null); setStartsAt(""); setAttendees(1); void load();
+    setSelected(null); setStartsAt(""); setAttendees(1); setRequestKey(crypto.randomUUID()); void load();
   }
 
   async function cancel(id: string) {
@@ -95,7 +96,7 @@ function AmenitiesPage() {
             <div className="flex items-start justify-between gap-2"><div><h2 className="font-semibold">{a.name}</h2><p className="text-xs text-muted-foreground">{AMENITY_TYPE_LABELS[a.amenity_type]}</p></div><StatusChip tone="success">Open</StatusChip></div>
             {a.description && <p className="mt-3 text-sm text-muted-foreground line-clamp-2">{a.description}</p>}
             <dl className="mt-4 grid grid-cols-2 gap-2 text-sm"><div><dt className="text-xs text-muted-foreground">Hours</dt><dd className="flex items-center gap-1"><Clock3 className="h-3.5 w-3.5" />{a.opens_at.slice(0,5)}–{a.closes_at.slice(0,5)}</dd></div><div><dt className="text-xs text-muted-foreground">Capacity</dt><dd className="flex items-center gap-1"><Users className="h-3.5 w-3.5" />{a.capacity}</dd></div></dl>
-            <Button className="mt-4 min-h-11 w-full" onClick={() => setSelected(a)}>Book</Button>
+            <Button className="mt-4 min-h-11 w-full" onClick={() => { setSelected(a); setRequestKey(crypto.randomUUID()); }}>Book</Button>
           </article>)}</div></section>}
       {upcoming.length > 0 && <section><SectionLabel count={upcoming.length}>My upcoming bookings</SectionLabel>{bookingList(upcoming, true)}</section>}
       {history.length > 0 && <section><SectionLabel count={history.length}>History</SectionLabel>{bookingList(history, false)}</section>}
@@ -105,7 +106,7 @@ function AmenitiesPage() {
       <DialogContent><DialogHeader><DialogTitle>Book {selected?.name}</DialogTitle></DialogHeader>
         {selected && <form className="space-y-4" onSubmit={book}>
           <p className="text-sm text-muted-foreground">{selected.slot_minutes} minutes · up to {selected.capacity} people · book up to {selected.advance_days} days ahead.</p>
-          <div className="space-y-1.5"><Label htmlFor="amenity-start">Start time</Label><Input id="amenity-start" type="datetime-local" className="h-11" required value={startsAt} min={new Date(Date.now() + 60_000).toISOString().slice(0,16)} onChange={(e) => setStartsAt(e.target.value)} /></div>
+          <div className="space-y-1.5"><Label htmlFor="amenity-start">Start time</Label><Input id="amenity-start" type="datetime-local" className="h-11" required step={selected.slot_minutes * 60} value={startsAt} onChange={(e) => setStartsAt(e.target.value)} /><p className="text-xs text-muted-foreground">Choose a {selected.slot_minutes}-minute slot starting from {selected.opens_at.slice(0,5)}.</p></div>
           <div className="space-y-1.5"><Label htmlFor="amenity-attendees">People attending</Label><Input id="amenity-attendees" type="number" className="h-11" min={1} max={selected.capacity} required value={attendees} onChange={(e) => setAttendees(Number(e.target.value))} /></div>
           {(selected.fee_amount > 0 || selected.deposit_amount > 0) && <p className="rounded-xl bg-warning-container p-3 text-sm text-warning-container-foreground">Configured fee: ₹{selected.fee_amount}. Refundable deposit: ₹{selected.deposit_amount}. This booking does not collect or record a payment.</p>}
           <Button type="submit" className="h-12 w-full" disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Confirm booking</Button>

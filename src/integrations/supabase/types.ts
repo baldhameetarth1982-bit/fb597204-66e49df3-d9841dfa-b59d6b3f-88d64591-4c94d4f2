@@ -1986,6 +1986,33 @@ export type Database = {
           },
         ]
       }
+      gate_offline_ops: {
+        Row: {
+          actor_id: string
+          created_at: string
+          kind: string
+          op_id: string
+          result: Json
+          society_id: string
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          kind: string
+          op_id: string
+          result: Json
+          society_id: string
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          kind?: string
+          op_id?: string
+          result?: Json
+          society_id?: string
+        }
+        Relationships: []
+      }
       hierarchy_nodes: {
         Row: {
           code: string | null
@@ -4213,6 +4240,66 @@ export type Database = {
           },
         ]
       }
+      security_incidents: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          note: string
+          reported_by: string
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          society_id: string
+          status: string
+          visitor_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          note: string
+          reported_by: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          society_id: string
+          status?: string
+          visitor_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          note?: string
+          reported_by?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          society_id?: string
+          status?: string
+          visitor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "security_incidents_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "security_incidents_visitor_id_fkey"
+            columns: ["visitor_id"]
+            isOneToOne: false
+            referencedRelation: "visitors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_categories: {
         Row: {
           active: boolean
@@ -5083,6 +5170,63 @@ export type Database = {
           },
         ]
       }
+      sos_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          created_at: string
+          flat_id: string | null
+          id: string
+          note: string | null
+          raised_by: string
+          resolved_at: string | null
+          resolved_by: string | null
+          society_id: string
+          status: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          created_at?: string
+          flat_id?: string | null
+          id?: string
+          note?: string | null
+          raised_by: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          society_id: string
+          status?: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          created_at?: string
+          flat_id?: string | null
+          id?: string
+          note?: string | null
+          raised_by?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          society_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sos_alerts_flat_id_fkey"
+            columns: ["flat_id"]
+            isOneToOne: false
+            referencedRelation: "flats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sos_alerts_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       support_ticket_events: {
         Row: {
           actor_id: string | null
@@ -5586,6 +5730,119 @@ export type Database = {
           },
         ]
       }
+      visitor_recurring_passes: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string
+          days: number[]
+          end_time: string
+          flat_id: string
+          id: string
+          phone: string | null
+          society_id: string
+          start_time: string
+          status: string
+          updated_at: string
+          valid_from: string
+          valid_until: string
+          visitor_name: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          created_by: string
+          days: number[]
+          end_time: string
+          flat_id: string
+          id?: string
+          phone?: string | null
+          society_id: string
+          start_time: string
+          status?: string
+          updated_at?: string
+          valid_from?: string
+          valid_until: string
+          visitor_name: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string
+          days?: number[]
+          end_time?: string
+          flat_id?: string
+          id?: string
+          phone?: string | null
+          society_id?: string
+          start_time?: string
+          status?: string
+          updated_at?: string
+          valid_from?: string
+          valid_until?: string
+          visitor_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visitor_recurring_passes_flat_id_fkey"
+            columns: ["flat_id"]
+            isOneToOne: false
+            referencedRelation: "flats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitor_recurring_passes_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      visitor_restrictions: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean
+          phone: string | null
+          reason: string
+          society_id: string
+          updated_at: string
+          visitor_name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          is_active?: boolean
+          phone?: string | null
+          reason: string
+          society_id: string
+          updated_at?: string
+          visitor_name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean
+          phone?: string | null
+          reason?: string
+          society_id?: string
+          updated_at?: string
+          visitor_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visitor_restrictions_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       visitors: {
         Row: {
           approved_by: string | null
@@ -5601,9 +5858,14 @@ export type Database = {
           id: string
           logged_by: string
           notes: string | null
+          override_reason: string | null
+          overstay_notified_at: string | null
+          parking_slot_id: string | null
           phone: string | null
           pre_approved: boolean
           purpose: string | null
+          recurring_pass_id: string | null
+          restriction_id: string | null
           society_id: string
           status: string
           valid_until: string | null
@@ -5624,9 +5886,14 @@ export type Database = {
           id?: string
           logged_by: string
           notes?: string | null
+          override_reason?: string | null
+          overstay_notified_at?: string | null
+          parking_slot_id?: string | null
           phone?: string | null
           pre_approved?: boolean
           purpose?: string | null
+          recurring_pass_id?: string | null
+          restriction_id?: string | null
           society_id: string
           status?: string
           valid_until?: string | null
@@ -5647,16 +5914,29 @@ export type Database = {
           id?: string
           logged_by?: string
           notes?: string | null
+          override_reason?: string | null
+          overstay_notified_at?: string | null
+          parking_slot_id?: string | null
           phone?: string | null
           pre_approved?: boolean
           purpose?: string | null
+          recurring_pass_id?: string | null
+          restriction_id?: string | null
           society_id?: string
           status?: string
           valid_until?: string | null
           vehicle_number?: string | null
           visitor_name?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "visitors_parking_slot_id_fkey"
+            columns: ["parking_slot_id"]
+            isOneToOne: false
+            referencedRelation: "parking_slots"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       withdrawals: {
         Row: {
@@ -5800,6 +6080,7 @@ export type Database = {
         Args: { _actor_id: string; _society_id: string }
         Returns: undefined
       }
+      _gate_admin_society: { Args: never; Returns: string }
       _gate_society: { Args: never; Returns: string }
       _helpdesk_is_admin: { Args: { _sid: string }; Returns: boolean }
       _knowledge_admin_society: { Args: never; Returns: string }
@@ -5827,6 +6108,17 @@ export type Database = {
           _kind: string
           _link: string
           _society: string
+          _title: string
+        }
+        Returns: undefined
+      }
+      _notify_gate_staff: {
+        Args: {
+          _admins_only?: boolean
+          _body: string
+          _kind: string
+          _link: string
+          _sid: string
           _title: string
         }
         Returns: undefined
@@ -5862,6 +6154,10 @@ export type Database = {
       }
       _visitor_clean: { Args: { _max: number; _t: string }; Returns: string }
       _visitor_new_code: { Args: { _society: string }; Returns: string }
+      _visitor_restriction_match: {
+        Args: { _name: string; _phone: string; _sid: string }
+        Returns: string
+      }
       activate_society_plan: {
         Args: { _months?: number; _plan_id: string; _society_id: string }
         Returns: undefined
@@ -6205,6 +6501,20 @@ export type Database = {
           _type?: string
         }
         Returns: string
+      }
+      admin_upsert_visitor_restriction: {
+        Args: {
+          _active: boolean
+          _id: string
+          _name: string
+          _phone: string
+          _reason: string
+        }
+        Returns: string
+      }
+      admin_visitor_decide: {
+        Args: { _action: string; _id: string; _reason: string }
+        Returns: undefined
       }
       apply_overdue_point_decay: { Args: never; Returns: number }
       apply_referral_for_current_user: {
@@ -6620,9 +6930,36 @@ export type Database = {
           pending: number
         }[]
       }
+      gate_assign_visitor_parking: {
+        Args: { _slot_id: string; _visitor_id: string }
+        Returns: undefined
+      }
+      gate_override: {
+        Args: { _action: string; _id: string; _reason: string }
+        Returns: undefined
+      }
+      gate_sos_open: {
+        Args: never
+        Returns: {
+          created_at: string
+          flat_label: string
+          id: string
+          note: string
+          status: string
+        }[]
+      }
       gate_transition_allowed: {
         Args: { _from: string; _to: string }
         Returns: boolean
+      }
+      gate_visitor_parking_list: {
+        Args: never
+        Returns: {
+          id: string
+          label: string
+          occupied: boolean
+          visitor_name: string
+        }[]
       }
       generate_flat_bill: {
         Args: {
@@ -6867,6 +7204,7 @@ export type Database = {
           visitor_name: string
         }[]
       }
+      guard_checkin_recurring: { Args: { _pass_id: string }; Returns: string }
       guard_gate_list: {
         Args: { _q?: string; _scope?: string }
         Returns: {
@@ -6897,6 +7235,24 @@ export type Database = {
         }
         Returns: string
       }
+      guard_offline_replay: {
+        Args: { _kind: string; _op_id: string; _payload: Json }
+        Returns: Json
+      }
+      guard_recurring_list: {
+        Args: { _q?: string }
+        Returns: {
+          category: string
+          end_time: string
+          flat_label: string
+          id: string
+          inside: boolean
+          phone_last4: string
+          start_time: string
+          valid_now: boolean
+          visitor_name: string
+        }[]
+      }
       guard_verify_vehicle: {
         Args: { _plate: string }
         Returns: {
@@ -6911,6 +7267,16 @@ export type Database = {
       guard_visitor_action: {
         Args: { _action: string; _id: string }
         Returns: undefined
+      }
+      guard_visitor_flags: {
+        Args: { _ids: string[] }
+        Returns: {
+          id: string
+          needs_committee: boolean
+          overridden: boolean
+          parking_label: string
+          restricted: boolean
+        }[]
       }
       has_role: {
         Args: {
@@ -7002,6 +7368,19 @@ export type Database = {
           _society_id: string
         }
         Returns: Json
+      }
+      incident_create: {
+        Args: {
+          _kind: string
+          _note: string
+          _severity: string
+          _visitor_id: string
+        }
+        Returns: string
+      }
+      incident_resolve: {
+        Args: { _id: string; _note: string }
+        Returns: undefined
       }
       is_active_society_plan: {
         Args: { _society_id: string }
@@ -7317,6 +7696,7 @@ export type Database = {
         }[]
       }
       mark_aadhaar_verified: { Args: { _last4: string }; Returns: undefined }
+      mark_visitor_overstays: { Args: never; Returns: number }
       migration_begin_upload: {
         Args: {
           _actor: string
@@ -7458,6 +7838,23 @@ export type Database = {
         Returns: string
       }
       reset_own_kyc: { Args: never; Returns: undefined }
+      resident_set_recurring_pass_status: {
+        Args: { _id: string; _status: string }
+        Returns: undefined
+      }
+      resident_upsert_recurring_pass: {
+        Args: {
+          _category: string
+          _days: number[]
+          _end: string
+          _id: string
+          _name: string
+          _phone: string
+          _start: string
+          _until: string
+        }
+        Returns: string
+      }
       resolve_financial_visibility: {
         Args: { _society_id: string }
         Returns: string
@@ -7654,6 +8051,8 @@ export type Database = {
         }[]
       }
       society_payout_active: { Args: { _society_id: string }; Returns: boolean }
+      sos_raise: { Args: { _note: string }; Returns: string }
+      sos_update: { Args: { _action: string; _id: string }; Returns: undefined }
       start_society_trial: { Args: { _society_id: string }; Returns: string }
       start_trial_for_society: {
         Args: { _society_id: string }
@@ -7845,6 +8244,7 @@ export type Database = {
         Returns: undefined
       }
       verify_scheduler_token: { Args: { _token: string }; Returns: boolean }
+      visitor_allowed_minutes: { Args: { _cat: string }; Returns: number }
       visitor_invite: {
         Args: {
           _category: string

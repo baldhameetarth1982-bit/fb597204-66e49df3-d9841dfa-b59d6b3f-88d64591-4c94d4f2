@@ -83,7 +83,7 @@
 
 ## Society OS complete expansion (requested 2026-09-28)
 - [x] Reconcile the uploaded 53-module brief against current canonical systems and approved product decisions.
-- [ ] Stabilize Amenities and tenant/society-switch foundations with authorization, expiry, concurrency, and failure-state verification.
+- [x] Stabilize Amenities and tenant/society-switch foundations (Workstream 1 closed; guard live check external).
 - [ ] Implement every safe in-platform gap without duplicate society, finance, visitor, notification, AI, migration, or export systems.
 - [ ] Complete focused security, role/plan, finance, offline, accessibility, responsive, and release verification.
 - [ ] Report external hardware/provider and owner-only release dependencies honestly.

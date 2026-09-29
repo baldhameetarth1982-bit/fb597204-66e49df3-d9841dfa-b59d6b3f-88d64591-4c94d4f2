@@ -97,7 +97,7 @@ export function PurchasesTab() {
     },
   });
   if (q.isLoading) return <ListSkeleton />;
-  if (q.isError) return <LoadError message={procErrorMessage(q.error)} onRetry={() => q.refetch()} />;
+  if (q.isError) return <LoadError title={procErrorMessage(q.error)} onRetry={() => q.refetch()} />;
   const data = q.data!;
   const list = data.reqs.filter((r) => filter === "all" || OPEN.includes(r.status));
   const current = data.reqs.find((r) => r.id === open) ?? null;
@@ -111,7 +111,7 @@ export function PurchasesTab() {
         </div>
         <Button className="min-h-11" onClick={() => setCreating(true)}><Plus className="mr-1 h-4 w-4" />New request</Button>
       </div>
-      {list.length === 0 ? <ListEmpty icon={ShoppingCart} title="No purchase requests" description="Raise a request to collect quotations and get committee approval." /> : (
+      {list.length === 0 ? <ListEmpty icon={ShoppingCart} title="No purchase requests">Raise a request to collect quotations and get committee approval.</ListEmpty> : (
         <ul className="space-y-2">
           {list.map((r) => {
             const [label, tone] = STATUS[r.status] ?? [r.status, "muted"];
@@ -345,7 +345,7 @@ export function BudgetsPanel() {
           <SelectContent>{[0, 1, 2, -1].map((d) => currentFy() - d).map((y) => <SelectItem key={y} value={String(y)}>{fyLabel(y)}</SelectItem>)}</SelectContent></Select>
         <p className="text-xs text-muted-foreground">Actuals = posted Expenses (Apr–Mar)</p>
       </div>
-      {q.isLoading ? <ListSkeleton /> : q.isError ? <LoadError message={procErrorMessage(q.error)} onRetry={() => q.refetch()} /> : (
+      {q.isLoading ? <ListSkeleton /> : q.isError ? <LoadError title={procErrorMessage(q.error)} onRetry={() => q.refetch()} /> : (
         <>
           <div className="grid grid-cols-3 gap-2 text-center">
             {[["Budget", tot.b], ["Actual", tot.a], ["Remaining", tot.b - tot.a]].map(([l, v]) => (

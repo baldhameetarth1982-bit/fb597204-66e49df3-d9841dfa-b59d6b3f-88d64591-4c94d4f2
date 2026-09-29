@@ -62,7 +62,7 @@ function AdminAmenities() {
       _id: form.id as string, _society_id: societyId, _name: form.name, _description: form.description,
       _amenity_type: form.amenity_type, _opens_at: form.opens_at, _closes_at: form.closes_at,
       _slot_minutes: form.slot_minutes, _capacity: form.capacity, _advance_days: form.advance_days,
-      _cancellation_hours: form.cancellation_hours, _weekly_household_limit: form.weekly_household_limit ? Number(form.weekly_household_limit) : null,
+      _cancellation_hours: form.cancellation_hours, _weekly_household_limit: (form.weekly_household_limit ? Number(form.weekly_household_limit) : null) as unknown as number,
       _owner_allowed: form.owner_allowed, _tenant_allowed: form.tenant_allowed, _defaulters_allowed: true,
       _deposit_amount: form.deposit_amount, _fee_amount: form.fee_amount, _is_active: form.is_active,
     });

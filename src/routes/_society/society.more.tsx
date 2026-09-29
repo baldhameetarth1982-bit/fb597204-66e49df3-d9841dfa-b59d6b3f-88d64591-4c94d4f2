@@ -3,7 +3,7 @@ import {
   Building2, Home, Car, Users, UserCheck, ShieldCheck, MessageSquare,
   Receipt, Wallet, BarChart3, TrendingDown, BookOpen,
   Settings2, UsersRound, Activity, LifeBuoy, Sparkles, KeyRound, Building, Lock,
-  LayoutGrid, Compass, FileCheck2, Trophy, Palette,
+  LayoutGrid, Compass, FileCheck2, Trophy, Palette, CalendarDays,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { MobileHero } from "@/components/shared/MobileHero";
@@ -32,6 +32,7 @@ const MANAGEMENT: Tile[] = [
   { to: "/society/visitors", label: "Visitors", icon: UsersRound, feature: "visitors" },
   { to: "/society/vehicles", label: "Vehicles", icon: Car, feature: "vehicles" },
   { to: "/society/parking", label: "Parking", icon: Car, feature: "vehicles" },
+  { to: "/society/amenities", label: "Amenities", icon: CalendarDays, feature: "amenities" },
   { to: "/society/maintenance", label: "Maintenance", icon: BookOpen },
   { to: "/society/communication", label: "Communication", icon: MessageSquare },
   { to: "/society/polls", label: "Polls", icon: Sparkles, feature: "polls" },

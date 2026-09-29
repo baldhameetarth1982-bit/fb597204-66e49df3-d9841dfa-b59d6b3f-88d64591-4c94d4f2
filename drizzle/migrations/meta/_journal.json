@@ -666,6 +666,13 @@
       "when": 1790640071599,
       "tag": "0094_harden_amenity_booking_slots",
       "breakpoints": true
+    },
+    {
+      "idx": 95,
+      "version": "7",
+      "when": 1790640106526,
+      "tag": "0095_correct_amenity_slot_alignment",
+      "breakpoints": true
     }
   ]
 }

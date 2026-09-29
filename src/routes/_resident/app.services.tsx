@@ -10,6 +10,7 @@ import {
   Users,
   ScanLine,
   Siren,
+  CalendarDays,
 } from "lucide-react";
 import { ServiceDirectory } from "@/components/discovery/ServiceDirectory";
 import { Card, CardContent } from "@/components/ui/card";
@@ -33,6 +34,7 @@ function ServicesScreen() {
     roles.includes("block_admin" as never);
 
   const primary = [
+    { to: "/app/amenities", title: "Amenities", desc: "Book shared spaces and track waitlists", icon: CalendarDays, accent: "bg-primary/10 text-primary" },
     { to: "/app/visitors", title: "My Visitors", desc: "See who came to your flat", icon: Users, accent: "bg-primary/10 text-primary" },
     { to: "/app/vehicles", title: "Vehicles", desc: "Register cars & two-wheelers", icon: Car, accent: "bg-primary/10 text-primary" },
     { to: "/app/helpdesk", title: "Complaints", desc: "Raise & track society issues", icon: AlertCircle, accent: "bg-destructive/10 text-destructive" },

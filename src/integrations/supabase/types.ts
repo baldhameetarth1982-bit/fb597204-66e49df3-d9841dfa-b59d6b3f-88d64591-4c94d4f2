@@ -1795,52 +1795,67 @@ export type Database = {
       flat_residents: {
         Row: {
           access_expires_at: string | null
+          archived_at: string | null
           created_at: string
           ended_reason: string | null
           flat_id: string
           id: string
+          invited_at: string | null
           is_active: boolean
           is_primary: boolean
           lease_ends_on: string | null
           lease_starts_on: string | null
+          move_out_override_reason: string | null
           moved_in_at: string | null
           moved_out_at: string | null
           notice_given_on: string | null
           relationship: string
+          renewal_count: number
+          renewed_at: string | null
           termination_kind: string | null
           user_id: string
         }
         Insert: {
           access_expires_at?: string | null
+          archived_at?: string | null
           created_at?: string
           ended_reason?: string | null
           flat_id: string
           id?: string
+          invited_at?: string | null
           is_active?: boolean
           is_primary?: boolean
           lease_ends_on?: string | null
           lease_starts_on?: string | null
+          move_out_override_reason?: string | null
           moved_in_at?: string | null
           moved_out_at?: string | null
           notice_given_on?: string | null
           relationship?: string
+          renewal_count?: number
+          renewed_at?: string | null
           termination_kind?: string | null
           user_id: string
         }
         Update: {
           access_expires_at?: string | null
+          archived_at?: string | null
           created_at?: string
           ended_reason?: string | null
           flat_id?: string
           id?: string
+          invited_at?: string | null
           is_active?: boolean
           is_primary?: boolean
           lease_ends_on?: string | null
           lease_starts_on?: string | null
+          move_out_override_reason?: string | null
           moved_in_at?: string | null
           moved_out_at?: string | null
           notice_given_on?: string | null
           relationship?: string
+          renewal_count?: number
+          renewed_at?: string | null
           termination_kind?: string | null
           user_id?: string
         }
@@ -3643,6 +3658,7 @@ export type Database = {
           accepted_terms_at: string | null
           avatar_url: string | null
           created_at: string
+          elder_mode: boolean
           email: string | null
           full_name: string | null
           id: string
@@ -3670,6 +3686,7 @@ export type Database = {
           accepted_terms_at?: string | null
           avatar_url?: string | null
           created_at?: string
+          elder_mode?: boolean
           email?: string | null
           full_name?: string | null
           id: string
@@ -3697,6 +3714,7 @@ export type Database = {
           accepted_terms_at?: string | null
           avatar_url?: string | null
           created_at?: string
+          elder_mode?: boolean
           email?: string | null
           full_name?: string | null
           id?: string
@@ -4979,6 +4997,7 @@ export type Database = {
           society_id: string
           state: string | null
           structure_type: string
+          tenancy_warning_days: number
           updated_at: string
           wizard_state: Json
           wizard_step: number
@@ -5013,6 +5032,7 @@ export type Database = {
           society_id: string
           state?: string | null
           structure_type?: string
+          tenancy_warning_days?: number
           updated_at?: string
           wizard_state?: Json
           wizard_step?: number
@@ -5047,6 +5067,7 @@ export type Database = {
           society_id?: string
           state?: string | null
           structure_type?: string
+          tenancy_warning_days?: number
           updated_at?: string
           wizard_state?: Json
           wizard_step?: number
@@ -5247,6 +5268,35 @@ export type Database = {
             columns: ["poll_id"]
             isOneToOne: false
             referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenancy_reminders_sent: {
+        Row: {
+          flat_resident_id: string
+          id: string
+          sent_at: string
+          window_key: string
+        }
+        Insert: {
+          flat_resident_id: string
+          id?: string
+          sent_at?: string
+          window_key: string
+        }
+        Update: {
+          flat_resident_id?: string
+          id?: string
+          sent_at?: string
+          window_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenancy_reminders_sent_flat_resident_id_fkey"
+            columns: ["flat_resident_id"]
+            isOneToOne: false
+            referencedRelation: "flat_residents"
             referencedColumns: ["id"]
           },
         ]
@@ -5723,6 +5773,10 @@ export type Database = {
         Returns: boolean
       }
       _can_manage_polls: { Args: { _society_id: string }; Returns: boolean }
+      _deactivate_resident_role_if_homeless: {
+        Args: { _society: string; _user: string }
+        Returns: undefined
+      }
       _finance_plan_enabled: { Args: { _society_id: string }; Returns: boolean }
       _finance_post_entry: {
         Args: {
@@ -5802,6 +5856,10 @@ export type Database = {
         Args: { _bill_id: string }
         Returns: undefined
       }
+      _tenancy_row_society: {
+        Args: { _flat_resident_id: string }
+        Returns: string
+      }
       _visitor_clean: { Args: { _max: number; _t: string }; Returns: string }
       _visitor_new_code: { Args: { _society: string }; Returns: string }
       activate_society_plan: {
@@ -5814,6 +5872,10 @@ export type Database = {
             Args: { _custom_plan_id: string; _reason: string }
             Returns: boolean
           }
+      admin_archive_tenancy: {
+        Args: { _flat_resident_id: string }
+        Returns: undefined
+      }
       admin_assign_resident_to_flat:
         | {
             Args: {
@@ -5963,6 +6025,16 @@ export type Database = {
           society_name: string
         }[]
       }
+      admin_move_out_resident: {
+        Args: {
+          _early_termination?: boolean
+          _flat_resident_id: string
+          _moved_out_on: string
+          _override_reason?: string
+          _reason: string
+        }
+        Returns: Json
+      }
       admin_parking_archive: { Args: { _id: string }; Returns: undefined }
       admin_parking_upsert: {
         Args: {
@@ -5985,6 +6057,10 @@ export type Database = {
           trialing_societies: number
           unpaid_bill_total: number
         }[]
+      }
+      admin_renew_tenancy: {
+        Args: { _flat_resident_id: string; _new_lease_ends_on: string }
+        Returns: undefined
       }
       admin_reset_society_branding: {
         Args: { _society_id: string }
@@ -6053,6 +6129,10 @@ export type Database = {
           _notice_given_on?: string
           _society_id: string
         }
+        Returns: undefined
+      }
+      admin_set_tenancy_warning_days: {
+        Args: { _days: number; _society_id: string }
         Returns: undefined
       }
       admin_society_overview: { Args: { _society_id: string }; Returns: Json }
@@ -6607,6 +6687,7 @@ export type Database = {
         Args: { _from: string; _society_id: string; _to: string }
         Returns: Json
       }
+      get_flat_occupancy: { Args: { _flat_id: string }; Returns: Json }
       get_outstanding_dues: {
         Args: { _society_id: string }
         Returns: {
@@ -7217,6 +7298,24 @@ export type Database = {
         }
         Returns: Json
       }
+      list_tenancies: {
+        Args: { _filter?: string; _society_id: string }
+        Returns: {
+          days_remaining: number
+          flat_id: string
+          flat_number: string
+          flat_resident_id: string
+          lease_ends_on: string
+          lease_starts_on: string
+          moved_in_at: string
+          moved_out_at: string
+          notice_given_on: string
+          relationship: string
+          resident_name: string
+          state: string
+          user_id: string
+        }[]
+      }
       mark_aadhaar_verified: { Args: { _last4: string }; Returns: undefined }
       migration_begin_upload: {
         Args: {
@@ -7484,6 +7583,7 @@ export type Database = {
         }[]
       }
       seed_finance_accounts: { Args: { _society_id: string }; Returns: Json }
+      send_tenancy_renewal_reminders: { Args: never; Returns: number }
       set_society_block_active: {
         Args: { _active: boolean; _block_id: string }
         Returns: Json
@@ -7623,6 +7723,21 @@ export type Database = {
       switch_active_society: {
         Args: { _society_id: string }
         Returns: undefined
+      }
+      tenancy_state: {
+        Args: {
+          _access_expires_at: string
+          _archived_at: string
+          _invited_at: string
+          _is_active: boolean
+          _lease_ends_on: string
+          _moved_in_at: string
+          _moved_out_at: string
+          _notice: string
+          _termination_kind: string
+          _warn: number
+        }
+        Returns: string
       }
       touch_rate_limit: {
         Args: {

@@ -1,3 +1,4 @@
+import { ElderModeToggle } from "@/components/resident/ElderMode";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { userMessage } from "@/lib/user-error";
 import { useEffect, useState, type ComponentType, type ReactNode } from "react";

@@ -3,6 +3,7 @@ import { userMessage } from "@/lib/user-error";
 import { Loader2, Home, Search, CheckCircle2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -31,12 +32,16 @@ export function AssignFlatDialog({ open, onOpenChange, societyId, userId, userNa
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [relationship, setRelationship] = useState<"owner" | "tenant" | "family">("owner");
+  const [leaseStartsOn, setLeaseStartsOn] = useState("");
+  const [leaseEndsOn, setLeaseEndsOn] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!open || !societyId) return;
     setSelected(null);
     setQ("");
+    setLeaseStartsOn("");
+    setLeaseEndsOn("");
     setLoading(true);
     supabase.rpc("list_society_flats_public", { _society_id: societyId }).then(({ data, error }) => {
       if (error) toast.error(userMessage(error));
@@ -59,6 +64,8 @@ export function AssignFlatDialog({ open, onOpenChange, societyId, userId, userNa
       _user_id: userId,
       _relationship: relationship,
       _is_primary: false,
+      _lease_starts_on: relationship === "tenant" && leaseStartsOn ? leaseStartsOn : undefined,
+      _lease_ends_on: relationship === "tenant" && leaseEndsOn ? leaseEndsOn : undefined,
     });
     setSubmitting(false);
     if (error) {
@@ -96,6 +103,20 @@ export function AssignFlatDialog({ open, onOpenChange, societyId, userId, userNa
               <SelectItem value="family">Family member</SelectItem>
             </SelectContent>
           </Select>
+
+          {relationship === "tenant" && (
+            <div className="grid grid-cols-2 gap-3 rounded-xl border border-border p-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="lease-start">Lease starts</Label>
+                <Input id="lease-start" type="date" value={leaseStartsOn} onChange={(e) => setLeaseStartsOn(e.target.value)} className="h-11 rounded-xl" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="lease-end">Lease ends</Label>
+                <Input id="lease-end" type="date" min={leaseStartsOn || undefined} value={leaseEndsOn} onChange={(e) => setLeaseEndsOn(e.target.value)} className="h-11 rounded-xl" />
+              </div>
+              <p className="col-span-2 text-xs text-muted-foreground">Access expires automatically after the lease end date. Leave blank for an open-ended tenancy.</p>
+            </div>
+          )}
 
           {loading ? (
             <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>

@@ -133,6 +133,11 @@ const privateRelationshipSchema = z
     moved_in_at: z.string().nullable(),
     moved_out_at: z.string().nullable(),
     ended_reason: z.string().nullable(),
+    lease_starts_on: z.string().nullable(),
+    lease_ends_on: z.string().nullable(),
+    notice_given_on: z.string().nullable(),
+    termination_kind: z.string().nullable(),
+    access_expires_at: z.string().nullable(),
     created_at: z.string(),
   })
   .strict();

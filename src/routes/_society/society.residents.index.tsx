@@ -20,6 +20,7 @@ import { AssignFlatDialog } from "@/components/society/AssignFlatDialog";
 import { listSocietyResidents } from "@/lib/residents.functions";
 import { getResidentDirectoryOverview, listResidentsPage } from "@/lib/residents-admin.functions";
 import { cn } from "@/lib/utils";
+import { TenanciesPanel } from "@/components/tenancy/TenanciesPanel";
 
 export const Route = createFileRoute("/_society/society/residents/")({
   head: () => ({ meta: [{ title: "Residents — SociyoHub" }, { name: "description", content: "Search and manage every resident, owner and tenant in your society." }] }),
@@ -203,6 +204,9 @@ function ResidentsPage() {
           </DropdownMenu>
         }
       />
+
+      {societyId && <TenanciesPanel societyId={societyId} />}
+
 
       <SummaryStrip
         items={[

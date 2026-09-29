@@ -42,6 +42,7 @@ import type { UnitSummary } from "@/lib/unit-summary";
 import { AISummarySlot, type AISummaryUiState } from "@/components/flat360/AISummarySlot";
 import { UpgradePrompt } from "@/components/subscription/UpgradePrompt";
 import { isAIAllowedRoute } from "@/lib/flat360-types";
+import { FlatLifecyclePanel } from "@/components/tenancy/FlatLifecyclePanel";
 
 export const Route = createFileRoute("/_society/society/flats/$id")({
   head: () => ({ meta: [{ title: "Flat 360 — SociyoHub" }] }),
@@ -782,6 +783,7 @@ function FlatDetailPage() {
           <OccupancySection snapshot={snapshot} />
           <BasicFinancialSection snapshot={snapshot} />
         </div>
+        {snapshot.viewer.canManage !== false && <FlatLifecyclePanel flatId={id} />}
 
         {/* Basic locked experience */}
         {!canViewAdvanced && (

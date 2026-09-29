@@ -182,15 +182,12 @@ function RequestSheet({ req, vendors, me, onClose }: { req: Req; vendors: { id: 
   const extra = useQuery({
     queryKey: ["procurement", "detail", req.id],
     queryFn: async () => {
-      const [qq, ev, ex] = await Promise.all([
+      const [qq, ev] = await Promise.all([
         supabase.from("procurement_quotations").select("id, request_id, vendor_id, amount, quote_ref, valid_until, notes").eq("request_id", req.id).order("amount"),
         supabase.from("procurement_events").select("id, from_status, to_status, note, created_at").eq("request_id", req.id).order("created_at"),
-        ["invoice_received", "payment_ref_recorded"].includes(req.status)
-          ? supabase.from("expenses").select("id, amount, spent_on, note, category").eq("society_id", req.society_id_placeholder ?? "").limit(0)
-          : Promise.resolve({ data: [], error: null }),
       ]);
       if (qq.error) throw qq.error;
-      return { quotes: (qq.data ?? []) as Quote[], events: (ev.data ?? []) as { id: string; from_status: string | null; to_status: string; note: string | null; created_at: string }[], _ex: ex };
+      return { quotes: (qq.data ?? []) as Quote[], events: (ev.data ?? []) as { id: string; from_status: string | null; to_status: string; note: string | null; created_at: string }[] };
     },
   });
   const expenses = useQuery({

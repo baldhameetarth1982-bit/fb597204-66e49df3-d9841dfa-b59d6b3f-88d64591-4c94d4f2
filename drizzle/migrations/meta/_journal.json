@@ -715,6 +715,13 @@
       "when": 1790644127866,
       "tag": "0101_authorize_membership_caller_scope",
       "breakpoints": true
+    },
+    {
+      "idx": 102,
+      "version": "7",
+      "when": 1790644289589,
+      "tag": "0102_fix_switch_society_rate_limit",
+      "breakpoints": true
     }
   ]
 }

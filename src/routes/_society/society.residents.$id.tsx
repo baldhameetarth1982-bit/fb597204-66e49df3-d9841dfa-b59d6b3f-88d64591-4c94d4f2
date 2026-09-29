@@ -560,9 +560,9 @@ function ResidentDetailPage() {
                   </div>
                 ) : (
                   <dl className="space-y-2 pt-3">
-                    <Row label="Lease starts" value={a.lease_starts_on ? fmtDate(a.lease_starts_on) : null} />
-                    <Row label="Lease ends" value={a.lease_ends_on ? fmtDate(a.lease_ends_on) : null} />
-                    <Row label="Notice given" value={a.notice_given_on ? fmtDate(a.notice_given_on) : null} />
+                    <Row label="Lease starts" value={a.lease_starts_on ? new Date(a.lease_starts_on).toLocaleDateString("en-IN") : null} />
+                    <Row label="Lease ends" value={a.lease_ends_on ? new Date(a.lease_ends_on).toLocaleDateString("en-IN") : null} />
+                    <Row label="Notice given" value={a.notice_given_on ? new Date(a.notice_given_on).toLocaleDateString("en-IN") : null} />
                     <Button size="sm" variant="outline" className="mt-2 min-h-11" onClick={() => {
                       setLeaseForm({ starts: a.lease_starts_on ?? "", ends: a.lease_ends_on ?? "", notice: a.notice_given_on ?? "" });
                       setLeaseEditing(true);

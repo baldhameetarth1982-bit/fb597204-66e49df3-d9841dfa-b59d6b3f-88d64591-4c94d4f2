@@ -69,7 +69,7 @@ function SupportPage() {
   return (
     <div className="flex flex-col h-[100dvh] max-w-[420px] mx-auto bg-background">
       <header className="flex items-center gap-2 px-4 py-3 border-b border-border">
-        <Button variant="ghost" size="icon" onClick={() => history.back()} className="rounded-xl">
+        <Button variant="ghost" size="icon" aria-label="Go back" onClick={() => history.back()} className="rounded-xl">
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary grid place-items-center">

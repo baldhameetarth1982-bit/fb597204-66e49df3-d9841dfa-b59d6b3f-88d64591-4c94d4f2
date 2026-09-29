@@ -110,4 +110,4 @@
 - [x] Budgets with revision history; actuals from posted expenses (rollback-tested)
 - [x] Auditor Pack procurement/budget section + CSV
 - [ ] Quotation/invoice file attachments — not yet built
-- [ ] Preview check of Purchases/Budgets screens
+- [x] Preview check of Purchases/Budgets screens (phone + desktop, no errors/overflow)

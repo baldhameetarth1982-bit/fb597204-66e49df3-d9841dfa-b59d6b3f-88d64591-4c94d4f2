@@ -817,7 +817,7 @@ function DocumentsPanel({
                   variant="ghost"
                   className="h-8 w-8"
                   onClick={() => openDoc(f.name)}
-                  title="Open"
+                  aria-label="Open document"
                 >
                   <Download className="h-3.5 w-3.5" />
                 </Button>
@@ -826,7 +826,7 @@ function DocumentsPanel({
                   variant="ghost"
                   className="h-8 w-8 text-destructive"
                   onClick={() => deleteDoc(f.name)}
-                  title="Delete"
+                  aria-label="Delete document"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>

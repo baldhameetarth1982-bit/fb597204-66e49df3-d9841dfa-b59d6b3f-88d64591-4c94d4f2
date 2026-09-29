@@ -27,6 +27,11 @@ const KNOWN_CODES = new Set([
   "invalid_plate",
   "moved_out_before_moved_in",
   "relationship_not_found",
+  "correction_reason_required",
+  "correction_blocked_dues",
+  "already_moved_out",
+  "reason_too_long",
+  "rate_limited",
   "family_member_not_found",
   "vehicle_not_found",
 ]);
@@ -63,7 +68,8 @@ const assignInput = z.object({
 const endInput = z.object({
   societyId: uuid, flatResidentId: uuid,
   movedOutAt: z.string().datetime().optional(),
-  reason: z.string().trim().max(200).optional().nullable(),
+  // Administrative correction only: an explicit reason is mandatory.
+  reason: z.string().trim().min(10).max(300),
 });
 const tenancyInput = z.object({
   societyId: uuid,
@@ -290,7 +296,7 @@ export const endResidentUnitRelationship = createServerFn({ method: "POST" })
       _society_id: data.societyId,
       _flat_resident_id: data.flatResidentId,
       _moved_out_at: data.movedOutAt ?? new Date().toISOString(),
-      _reason: data.reason ?? undefined,
+      _reason: data.reason,
     });
     if (error) throw safeError(error);
     return { ok: true };

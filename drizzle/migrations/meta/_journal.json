@@ -743,6 +743,20 @@
       "when": 1790645200553,
       "tag": "0105_tenancy_renew_block_expired",
       "breakpoints": true
+    },
+    {
+      "idx": 106,
+      "version": "7",
+      "when": 1790718038589,
+      "tag": "0106_tenancy_reentry_and_correction",
+      "breakpoints": true
+    },
+    {
+      "idx": 107,
+      "version": "7",
+      "when": 1790718208421,
+      "tag": "0107_fix_assign_resident_reentry",
+      "breakpoints": true
     }
   ]
 }

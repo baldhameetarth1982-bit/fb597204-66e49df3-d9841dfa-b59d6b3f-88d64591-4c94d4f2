@@ -94,3 +94,7 @@
 - [x] Idempotent renewal reminders on the existing scheduler; configurable warning days
 - [x] Flat 360 occupancy panel, residents Tenancies tabs, resident Easy view
 - [x] Live checks (self-rolled-back, QA Demo Society)
+- [x] Legacy "End relationship" limited to audited admin correction (reason, permission, dues-blocked)
+- [x] Returning to the same flat creates a new record; overlapping active occupancy blocked
+- [x] Preview look at Flat occupancy panel and Residents → Tenancies (QA admin, read-only)
+- [ ] Guard live check — blocked: no legitimate guard account

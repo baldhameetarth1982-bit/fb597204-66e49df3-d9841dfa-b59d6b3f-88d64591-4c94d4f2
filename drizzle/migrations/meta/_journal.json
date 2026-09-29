@@ -694,6 +694,13 @@
       "when": 1790641227491,
       "tag": "0098_stabilize_tenancy_and_amenity_access",
       "breakpoints": true
+    },
+    {
+      "idx": 99,
+      "version": "7",
+      "when": 1790641670200,
+      "tag": "0099_fix_auth_context_and_amenity_admin_reads",
+      "breakpoints": true
     }
   ]
 }

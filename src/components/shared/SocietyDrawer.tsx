@@ -10,6 +10,7 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { Logo } from "@/components/shared/Logo";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
@@ -77,6 +78,7 @@ const GROUPS: Group[] = [
 
 export function SocietyDrawer() {
   const [open, setOpen] = useState(false);
+  const [switchingTo, setSwitchingTo] = useState<string | null>(null);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { profile, user, signOut, societies, switchSociety } = useAuth();
 
@@ -113,11 +115,17 @@ export function SocietyDrawer() {
                   type="button"
                   variant="ghost"
                   className="min-h-11 w-full justify-start rounded-xl px-3"
-                  disabled={society.is_current}
+                  disabled={society.is_current || switchingTo !== null}
                   onClick={async () => {
-                    await switchSociety(society.society_id);
-                    setOpen(false);
-                    window.location.assign("/");
+                    setSwitchingTo(society.society_id);
+                    try {
+                      await switchSociety(society.society_id);
+                      setOpen(false);
+                      window.location.assign("/");
+                    } catch {
+                      toast.error("Could not switch society. Please try again.");
+                      setSwitchingTo(null);
+                    }
                   }}
                 >
                   {society.is_current ? <Check className="mr-2 h-4 w-4 text-primary" /> : <ChevronsUpDown className="mr-2 h-4 w-4" />}

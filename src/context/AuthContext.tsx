@@ -138,9 +138,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("Failed to load roles", roleResult.error);
     }
 
-    const roleRows = roleResult.data ?? [];
+    const activeSocietyId = profileData?.society_id ?? null;
+    const roleRows = (roleResult.data ?? []).filter(
+      (row) => row.role === ROLES.SUPER_ADMIN || (activeSocietyId !== null && row.society_id === activeSocietyId),
+    );
     const resolvedRoles = Array.from(new Set(roleRows.map((r) => r.role).filter(isKnownRole))) as Role[];
-    const societyIdFromRole = (roleRows.find((r: any) => r.society_id)?.society_id as string | undefined) ?? null;
+    const societyIdFromRole = activeSocietyId;
     const resolvedProfile: AuthProfile = profileData
       ? { ...profileData, society_id: profileData.society_id ?? societyIdFromRole }
       : {

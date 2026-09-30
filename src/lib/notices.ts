@@ -14,6 +14,7 @@ export function noticeCategory(v: string | null | undefined) {
 export interface NoticeRow {
   id: string; title: string; body: string; category: string; audience: string; block_id: string | null;
   status: string; publish_at: string | null; published_at: string | null; created_at: string; edited_at: string | null;
+  priority?: string; expires_at?: string | null; requires_ack?: boolean; notified_at?: string | null;
 }
 
 export function liveAt(n: Pick<NoticeRow, "publish_at" | "published_at">) {
@@ -33,6 +34,9 @@ const MSG: Record<string, string> = {
   poll_closed: "This poll has closed.",
   already_voted: "You've already voted in this poll.",
   invalid_option: "That option isn't part of this poll.",
+  invalid_expiry: "Expiry must be after the notice goes live, within a year.",
+  ack_locked: "Residents have already acknowledged this notice, so acknowledgement can't be turned off.",
+  ack_not_required: "This notice doesn't need acknowledgement.",
 };
 export function commErrorMessage(err: unknown) {
   const raw = String((err as { message?: string })?.message ?? "");

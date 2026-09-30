@@ -869,6 +869,20 @@
       "when": 1790804199612,
       "tag": "0123_ws7_fix_compare_diff_array",
       "breakpoints": true
+    },
+    {
+      "idx": 124,
+      "version": "7",
+      "when": 1790804824469,
+      "tag": "0124_ws8_search_attention_scheduler_notifications",
+      "breakpoints": true
+    },
+    {
+      "idx": 125,
+      "version": "7",
+      "when": 1790805153319,
+      "tag": "0125_ws8_fix_permission_overload",
+      "breakpoints": true
     }
   ]
 }

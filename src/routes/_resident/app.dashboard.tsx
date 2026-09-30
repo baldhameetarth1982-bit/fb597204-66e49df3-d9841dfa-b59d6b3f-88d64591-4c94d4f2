@@ -1,3 +1,4 @@
+import { NeedsAttention } from "@/components/shared/NeedsAttention";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -158,6 +159,7 @@ function ResidentDashboard() {
         <HomeRow to="/app/comm" icon={Megaphone} label="Notices"
           value={notices.isError ? "—" : unread.length ? `${unread.length} new` : "Up to date"} hint="From your committee" />
         </div>
+        <div className="mt-3"><NeedsAttention emptyText="No overdue bills or pending acknowledgements." /></div>
       </section>
 
       {/* AI Secretary */}

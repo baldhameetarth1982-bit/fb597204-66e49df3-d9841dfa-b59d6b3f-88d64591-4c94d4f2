@@ -1,192 +1,108 @@
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Search, Loader2, User, Home, FileText, Bell, UserCheck } from "lucide-react";
+import {
+  Search, Loader2, User, Home, FileText, Bell, UserCheck, Car, LifeBuoy, Wallet,
+  CalendarDays, FolderOpen, Truck, Wrench, ShoppingCart,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 
 type Scope = "society" | "resident";
+type Hit = { kind: string; id: string; title: string; subtitle: string | null; link: string };
 
-interface Hit {
-  id: string;
-  type: "resident" | "flat" | "bill" | "visitor" | "post";
-  title: string;
-  subtitle?: string;
-  href: string;
-  icon: typeof User;
-}
+const META: Record<string, { label: string; icon: typeof User }> = {
+  flat: { label: "Flats", icon: Home },
+  resident: { label: "Residents", icon: User },
+  vehicle: { label: "Vehicles", icon: Car },
+  visitor: { label: "Visitors", icon: UserCheck },
+  ticket: { label: "Helpdesk", icon: LifeBuoy },
+  bill: { label: "Bills", icon: FileText },
+  payment: { label: "Payments", icon: Wallet },
+  notice: { label: "Notices", icon: Bell },
+  meeting: { label: "Meetings", icon: CalendarDays },
+  document: { label: "Documents", icon: FolderOpen },
+  vendor: { label: "Vendors", icon: Truck },
+  asset: { label: "Assets", icon: Wrench },
+  purchase: { label: "Purchases", icon: ShoppingCart },
+};
 
-export function GlobalSearch({ societyId, scope }: { societyId: string; scope: Scope }) {
+/**
+ * Unified search. Results come only from the server `global_search` RPC, which derives the
+ * society and role from the signed-in user and applies RLS — the props are display hints only.
+ */
+export function GlobalSearch({ scope }: { societyId: string; scope: Scope }) {
   const [q, setQ] = useState("");
-  const [hits, setHits] = useState<Hit[]>([]);
-  const [busy, setBusy] = useState(false);
-  const query = q.trim();
-
+  const [debounced, setDebounced] = useState("");
   useEffect(() => {
-    if (query.length < 2) {
-      setHits([]);
-      return;
-    }
-    const ctl = new AbortController();
-    setBusy(true);
-    const run = async () => {
-      const like = `%${query}%`;
-      const admin = scope === "society";
-      const results: Hit[] = [];
+    const t = setTimeout(() => setDebounced(q.trim().slice(0, 80)), 250);
+    return () => clearTimeout(t);
+  }, [q]);
 
-      // Residents / profiles
-      if (admin) {
-        const { data: prof } = await supabase
-          .from("profiles")
-          .select("id, full_name, phone")
-          .or(`full_name.ilike.${like},phone.ilike.${like}`)
-          .limit(6);
-        (prof ?? []).forEach((p: { id: string; full_name: string | null; phone: string | null }) =>
-          results.push({
-            id: `p-${p.id}`,
-            type: "resident",
-            title: p.full_name ?? "Resident",
-            subtitle: p.phone ?? "",
-            href: `/society/residents`,
-            icon: User,
-          }),
-        );
-      }
-
-      // Flats
-      const { data: flats } = await supabase
-        .from("flats")
-        .select("id, flat_number, block_id")
-        .eq("society_id", societyId)
-        .ilike("flat_number", like)
-        .limit(6);
-      (flats ?? []).forEach((f: { id: string; flat_number: string }) =>
-        results.push({
-          id: `f-${f.id}`,
-          type: "flat",
-          title: `Flat ${f.flat_number}`,
-          href: admin ? `/society/flats` : `/app/dashboard`,
-          icon: Home,
-        }),
-      );
-
-      // Bills (admin) — by bill_number
-      if (admin) {
-        const { data: bills } = await supabase
-          .from("bills")
-          .select("id, bill_number, status, amount")
-          .eq("society_id", societyId)
-          .ilike("bill_number", like)
-          .limit(6);
-        (bills ?? []).forEach((b) =>
-          results.push({
-            id: `b-${b.id}`,
-            type: "bill",
-            title: b.bill_number ?? b.id.slice(0, 8),
-            subtitle: `${b.status ?? "issued"} · ₹${b.amount ?? 0}`,
-            href: `/society/billing`,
-            icon: FileText,
-          }),
-        );
-      }
-
-      // Visitors
-      const { data: vis } = await supabase
-        .from("visitors")
-        .select("id, visitor_name, phone, flat_number")
-        .eq("society_id", societyId)
-        .or(`visitor_name.ilike.${like},phone.ilike.${like}`)
-        .order("entry_at", { ascending: false })
-        .limit(6);
-      (vis ?? []).forEach((v) =>
-        results.push({
-          id: `v-${v.id}`,
-          type: "visitor",
-          title: v.visitor_name,
-          subtitle: [v.flat_number, v.phone].filter(Boolean).join(" · "),
-          href: admin ? `/society/visitors` : `/app/visitors`,
-          icon: UserCheck,
-        }),
-      );
-
-      // Posts / announcements — search by body
-      const { data: posts } = await supabase
-        .from("posts")
-        .select("id, body, created_at")
-        .eq("society_id", societyId)
-        .ilike("body", like)
-        .order("created_at", { ascending: false })
-        .limit(6);
-      (posts ?? []).forEach((p) =>
-        results.push({
-          id: `n-${p.id}`,
-          type: "post",
-          title: (p.body ?? "").slice(0, 60) || "Post",
-          subtitle: new Date(p.created_at).toLocaleDateString(),
-          href: admin ? `/society/announcements` : `/app/comm`,
-          icon: Bell,
-        }),
-      );
-
-      if (!ctl.signal.aborted) setHits(results);
-      setBusy(false);
-    };
-    const t = setTimeout(run, 250);
-    return () => {
-      clearTimeout(t);
-      ctl.abort();
-      setBusy(false);
-    };
-  }, [query, societyId, scope]);
+  const res = useQuery({
+    queryKey: ["global-search", debounced],
+    enabled: debounced.length >= 2,
+    staleTime: 30_000,
+    placeholderData: (prev) => prev,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("global_search", { _q: debounced, _limit: 5 });
+      if (error) throw error;
+      return (data ?? []) as Hit[];
+    },
+  });
 
   const grouped = useMemo(() => {
     const g: Record<string, Hit[]> = {};
-    hits.forEach((h) => {
-      (g[h.type] ||= []).push(h);
-    });
+    for (const h of res.data ?? []) (g[h.kind] ||= []).push(h);
     return g;
-  }, [hits]);
+  }, [res.data]);
 
-  const LABELS: Record<string, string> = {
-    resident: "Residents",
-    flat: "Flats",
-    bill: "Bills",
-    visitor: "Visitors",
-    post: "Notices & Posts",
-  };
+  const active = debounced.length >= 2;
+  const busy = active && res.isFetching;
+  const hits = active ? res.data ?? [] : [];
 
   return (
     <div className="space-y-4">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden />
         <Input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search residents, flats, bills, visitors, notices…"
-          className="pl-9"
+          placeholder={scope === "society" ? "Search flats, residents, bills, requests, documents…" : "Search your bills, requests, notices, documents…"}
+          className="pl-9 h-11"
+          aria-label="Search"
+          maxLength={80}
           autoFocus
         />
-        {busy && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
+        {busy && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground motion-reduce:animate-none" aria-hidden />}
       </div>
+      <p className="sr-only" role="status" aria-live="polite">
+        {active && !busy ? `${hits.length} results` : ""}
+      </p>
 
-      {query.length >= 2 && hits.length === 0 && !busy && (
-        <p className="text-sm text-muted-foreground text-center py-8">No results for "{query}"</p>
+      {active && res.isError && (
+        <p className="text-sm text-destructive text-center py-6">Search isn't available right now. Please try again.</p>
+      )}
+      {active && !res.isError && !busy && hits.length === 0 && (
+        <p className="text-sm text-muted-foreground text-center py-8">No results for "{debounced}"</p>
       )}
 
-      {Object.entries(grouped).map(([type, list]) => (
-        <div key={type}>
-          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-            {LABELS[type]} <Badge variant="secondary" className="ml-1">{list.length}</Badge>
-          </div>
-          <div className="space-y-1.5">
-            {list.map((h) => {
-              const Icon = h.icon;
-              return (
-                <Link key={h.id} to={h.href} className="block">
+      {Object.entries(grouped).map(([kind, list]) => {
+        const m = META[kind] ?? { label: kind, icon: Search };
+        const Icon = m.icon;
+        return (
+          <div key={kind}>
+            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+              {m.label} <Badge variant="secondary" className="ml-1">{list.length}</Badge>
+            </div>
+            <div className="space-y-1.5">
+              {list.map((h) => (
+                <Link key={`${kind}-${h.id}`} to={h.link} className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                   <Card className="hover:bg-accent transition-colors">
-                    <CardContent className="p-3 flex items-center gap-3">
-                      <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <CardContent className="p-3 min-h-11 flex items-center gap-3">
+                      <Icon className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden />
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium truncate">{h.title}</div>
                         {h.subtitle && <div className="text-xs text-muted-foreground truncate">{h.subtitle}</div>}
@@ -194,11 +110,11 @@ export function GlobalSearch({ societyId, scope }: { societyId: string; scope: S
                     </CardContent>
                   </Card>
                 </Link>
-              );
-            })}
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

@@ -124,3 +124,13 @@
 - [x] Migration: partial success, opening-balance (unverified) import, compare-only dual-run, XLSX→CSV
 - [x] Auditor Pack: adjustments + procurement/budget sections
 - [x] Rollback QA + previews; then mark complete
+
+## Workstream 8 — Intelligence, Automation, Search & Role Homes (in progress)
+- [x] Server-authorized cross-domain search (global_search) + search UI
+- [x] Deterministic Needs Attention (committee + resident homes)
+- [x] Scheduler run log, duplicate/stale protection on billing + reminder hooks; Super Admin job card
+- [x] Notification priority + dedupe helper
+- [x] Security rollback QA (search/attention/scheduler/notifications)
+- [ ] AI summaries (helpdesk/meeting/exception explanations) on existing AI boundary
+- [ ] Guard home attention; log in-database scheduled jobs (tenancy expiry, notices) to the run log
+- [ ] Move existing reminder senders onto _notify_user_once; show priority in notification list

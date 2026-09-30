@@ -1,3 +1,4 @@
+import { NeedsAttention } from "@/components/shared/NeedsAttention";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -283,6 +284,11 @@ function SocietyDashboard() {
               )}
             </section>
           )}
+
+          <section aria-labelledby="exceptions-h">
+            <h2 id="exceptions-h" className="mb-2 text-sm font-semibold">Exceptions</h2>
+            <NeedsAttention exclude={["payments_verify", "join_pending"]} emptyText="No overdue, expiring or security exceptions." />
+          </section>
 
           {societyId && (
             <section aria-label="Society setup checklist">

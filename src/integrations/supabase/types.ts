@@ -5324,6 +5324,45 @@ export type Database = {
           },
         ]
       }
+      scheduler_job_runs: {
+        Row: {
+          attempts: number
+          error: string | null
+          failed: number
+          finished_at: string | null
+          id: string
+          job: string
+          processed: number
+          run_key: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          attempts?: number
+          error?: string | null
+          failed?: number
+          finished_at?: string | null
+          id?: string
+          job: string
+          processed?: number
+          run_key: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          attempts?: number
+          error?: string | null
+          failed?: number
+          finished_at?: string | null
+          id?: string
+          job?: string
+          processed?: number
+          run_key?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       security_incidents: {
         Row: {
           created_at: string
@@ -7052,9 +7091,11 @@ export type Database = {
         Row: {
           body: string | null
           created_at: string
+          dedupe_key: string | null
           id: string
           kind: string
           link: string | null
+          priority: string
           read_at: string | null
           society_id: string | null
           title: string
@@ -7063,9 +7104,11 @@ export type Database = {
         Insert: {
           body?: string | null
           created_at?: string
+          dedupe_key?: string | null
           id?: string
           kind: string
           link?: string | null
+          priority?: string
           read_at?: string | null
           society_id?: string | null
           title: string
@@ -7074,9 +7117,11 @@ export type Database = {
         Update: {
           body?: string | null
           created_at?: string
+          dedupe_key?: string | null
           id?: string
           kind?: string
           link?: string | null
+          priority?: string
           read_at?: string | null
           society_id?: string | null
           title?: string
@@ -7737,6 +7782,19 @@ export type Database = {
           _user: string
         }
         Returns: undefined
+      }
+      _notify_user_once: {
+        Args: {
+          _body: string
+          _dedupe_key: string
+          _kind: string
+          _link: string
+          _priority?: string
+          _society: string
+          _title: string
+          _user: string
+        }
+        Returns: boolean
       }
       _ops_admin: { Args: { _sid: string }; Returns: string }
       _proc_att_state_ok: {
@@ -8841,6 +8899,16 @@ export type Database = {
       }
       get_flat_occupancy: { Args: { _flat_id: string }; Returns: Json }
       get_handover_summary: { Args: { _society_id: string }; Returns: Json }
+      get_needs_attention: {
+        Args: never
+        Returns: {
+          item_count: number
+          key: string
+          link: string
+          priority: number
+          reason: string
+        }[]
+      }
       get_outstanding_dues: {
         Args: { _society_id: string }
         Returns: {
@@ -9028,6 +9096,16 @@ export type Database = {
       }
       get_survey_results: { Args: { _poll_id: string }; Returns: Json }
       get_user_society_id: { Args: { _user_id: string }; Returns: string }
+      global_search: {
+        Args: { _limit?: number; _q: string }
+        Returns: {
+          id: string
+          kind: string
+          link: string
+          subtitle: string
+          title: string
+        }[]
+      }
       guard_checkin_by_code: {
         Args: { _code: string; _society_id: string }
         Returns: string
@@ -10031,6 +10109,20 @@ export type Database = {
       }
       save_wizard_draft: {
         Args: { _society_id: string; _state: Json }
+        Returns: undefined
+      }
+      scheduler_run_begin: {
+        Args: { _job: string; _run_key: string }
+        Returns: string
+      }
+      scheduler_run_finish: {
+        Args: {
+          _error: string
+          _failed: number
+          _id: string
+          _processed: number
+          _status: string
+        }
         Returns: undefined
       }
       search_societies_by_name: {

@@ -14,6 +14,8 @@ export const EXPORT_SECTIONS = [
   { key: "bills", label: "Bills" },
   { key: "bill_lines", label: "Bill lines" },
   { key: "bill_adjustments", label: "Bill adjustments" },
+  { key: "opening_balances", label: "Opening balances (imported)" },
+  { key: "bill_run_approvals", label: "Bill-run approvals" },
   { key: "payments", label: "Payments" },
   { key: "receipts", label: "Receipts" },
   { key: "income", label: "Other income" },

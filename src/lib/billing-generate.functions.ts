@@ -52,6 +52,8 @@ export function mapBillingError(msg: string): string {
   if (m.includes("duplicate_bills_for_cycle"))
     return "Bills for this cycle already exist. Cancel them first if you want to regenerate.";
   if (m.includes("invalid_request_id")) return "Please retry the request.";
+  if (m.includes("approval_required")) return "This bill run needs a second committee member's approval first.";
+  if (m.includes("run_changed_since_approval")) return "Something changed after approval. Ask for approval again.";
   if (m.includes("bill_not_found")) return "Bill not found.";
   if (m.includes("already_cancelled")) return "This bill is already cancelled.";
   if (m.includes("bill_has_payments"))

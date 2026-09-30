@@ -20,19 +20,20 @@ export type KnowledgeItem = {
   statusReason: string | null;
   textChars: number;
   version: number;
+  category: string;
   updatedAt: string;
 };
 
 type Ok<T> = { ok: true } & T;
 type Fail = { ok: false; message: string };
 
-const COLS = "id,kind,title,audience,faq_answer,file_name,size_bytes,status,status_reason,text_chars,version,updated_at";
+const COLS = "id,kind,title,audience,faq_answer,file_name,size_bytes,status,status_reason,text_chars,version,category,updated_at";
 
 function mapRow(r: any): KnowledgeItem {
   return {
     id: r.id, kind: r.kind, title: r.title, audience: r.audience, faqAnswer: r.faq_answer ?? null,
     fileName: r.file_name ?? null, sizeBytes: r.size_bytes ?? null, status: r.status, statusReason: r.status_reason ?? null,
-    textChars: r.text_chars ?? 0, version: r.version, updatedAt: r.updated_at,
+    textChars: r.text_chars ?? 0, version: r.version, category: r.category ?? "records", updatedAt: r.updated_at,
   };
 }
 
@@ -43,6 +44,7 @@ function friendly(err: unknown): string {
   if (m.includes("invalid_transition")) return "This document can't be changed from its current state.";
   if (m.includes("limit_reached")) return "You've reached the limit of 200 knowledge items. Archive or remove some first.";
   if (m.includes("invalid_file")) return "Only PDF, TXT and Markdown files are supported.";
+  if (m.includes("use_archive")) return "Documents are archived, not deleted, so their history is kept.";
   if (m.includes("invalid_input")) return "Please check the details and try again.";
   return "Something went wrong. Please try again.";
 }
@@ -120,7 +122,8 @@ export const uploadKnowledgeDocument = createServerFn({ method: "POST" })
       await finish("failed", null, "The file couldn't be stored. Please upload it again.");
       return { ok: true, status: "failed", reason: "The file couldn't be stored. Please upload it again." };
     }
-    if (oldPath && oldPath !== path) await supabaseAdmin.storage.from(BUCKET).remove([oldPath]);
+    // Previous files are kept as archived versions (never deleted on replace).
+    void oldPath;
 
     const result = await extractKnowledgeText(kind, bytes);
     const fin = result.status === "ready" ? await finish("ready", result.text, null) : await finish(result.status, null, result.reason);
@@ -210,4 +213,46 @@ export const listResidentKnowledge = createServerFn({ method: "POST" })
       sizeBytes: r.kind === "document" ? r.size_bytes ?? null : null,
       updatedAt: r.updated_at,
     })) };
+  });
+
+export const DOC_CATEGORIES = ["bylaws", "rules", "notices", "minutes", "resolutions", "policies", "records"] as const;
+
+export const setDocumentCategory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: uuid, category: z.enum(DOC_CATEGORIES) }).parse(d))
+  .handler(async ({ data, context }): Promise<Ok<{}> | Fail> => {
+    const supabase = context.supabase as any;
+    const scope = await adminScope(supabase, context.userId);
+    if ("ok" in scope) return scope;
+    const { error } = await supabase.rpc("knowledge_set_category", { _id: data.id, _category: data.category });
+    if (error) return { ok: false, message: friendly(error) };
+    return { ok: true };
+  });
+
+export type DocVersion = { id: string; version: number; fileName: string | null; sizeBytes: number | null; supersededAt: string };
+
+/** Committee-only version history (RLS: society admins only). */
+export const listDocumentVersions = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: uuid }).parse(d))
+  .handler(async ({ data, context }): Promise<Ok<{ versions: DocVersion[] }> | Fail> => {
+    const supabase = context.supabase as any;
+    const { data: rows, error } = await supabase.from("society_document_versions").select("id,version,file_name,size_bytes,superseded_at")
+      .eq("source_id", data.id).order("version", { ascending: false }).limit(100);
+    if (error) return { ok: false, message: "Couldn't load version history." };
+    return { ok: true, versions: (rows ?? []).map((r: any) => ({ id: r.id, version: r.version, fileName: r.file_name, sizeBytes: r.size_bytes, supersededAt: r.superseded_at })) };
+  });
+
+export const openDocumentVersion = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: uuid }).parse(d))
+  .handler(async ({ data, context }): Promise<Ok<{ url: string }> | Fail> => {
+    const supabase = context.supabase as any;
+    if (!(await limit("knowledge_open_user", context.userId, 120))) return { ok: false, message: "Too many requests. Please try again later." };
+    const { data: path, error } = await supabase.rpc("knowledge_version_path", { _version_id: data.id });
+    if (error || !path) return { ok: false, message: "This version isn't available." };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: signed, error: sErr } = await supabaseAdmin.storage.from(BUCKET).createSignedUrl(path as string, 300);
+    if (sErr || !signed?.signedUrl) return { ok: false, message: "This version isn't available right now." };
+    return { ok: true, url: signed.signedUrl };
   });

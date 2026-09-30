@@ -157,6 +157,8 @@ function KnowledgeAdmin() {
                               {i.status === "ready" && <CheckCircle2 className="h-3 w-3 mr-1" />}
                               {st.label}
                             </StatusChip>
+                            {i.kind === "document" && <StatusChip tone="muted"><span className="capitalize">{i.category}</span></StatusChip>}
+                            {i.kind === "document" && i.version > 1 && <StatusChip tone="muted">v{i.version}</StatusChip>}
                             {i.audience === "committee" && <StatusChip tone="muted"><Lock className="h-3 w-3 mr-1" />Committee only</StatusChip>}
                           </div>
                           <p className="mt-1 font-medium leading-snug break-words">{i.title}</p>
@@ -186,8 +188,9 @@ function KnowledgeAdmin() {
                               )}
                               {i.status === "ready" && <DropdownMenuItem className="min-h-11" disabled={archive.isPending} onSelect={() => archive.mutate({ id: i.id, archived: true })}><Archive className="h-4 w-4 mr-2" /> Archive</DropdownMenuItem>}
                               {i.status === "archived" && <DropdownMenuItem className="min-h-11" disabled={archive.isPending} onSelect={() => archive.mutate({ id: i.id, archived: false })}><ArchiveRestore className="h-4 w-4 mr-2" /> Restore</DropdownMenuItem>}
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className="min-h-11 text-destructive focus:text-destructive" onSelect={() => setRemoving(i)}><Trash2 className="h-4 w-4 mr-2" /> Remove…</DropdownMenuItem>
+                              {i.kind === "document" && <DropdownMenuItem className="min-h-11" onSelect={() => setVersionsFor(i)}><History className="h-4 w-4 mr-2" /> Category & versions</DropdownMenuItem>}
+                              {i.kind === "faq" && <><DropdownMenuSeparator />
+                              <DropdownMenuItem className="min-h-11 text-destructive focus:text-destructive" onSelect={() => setRemoving(i)}><Trash2 className="h-4 w-4 mr-2" /> Remove…</DropdownMenuItem></>}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
@@ -201,13 +204,14 @@ function KnowledgeAdmin() {
         )}
       </div>
 
+      {versionsFor && <VersionsDialog item={versionsFor} onClose={() => setVersionsFor(null)} onDone={refresh} />}
       {uploadFor && <UploadDialog target={uploadFor} onClose={() => setUploadFor(null)} onDone={refresh} />}
       {faqFor && <FaqDialog target={faqFor} onClose={() => setFaqFor(null)} onDone={refresh} />}
       <AlertDialog open={!!removing} onOpenChange={(o) => !o && setRemoving(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Remove “{removing?.title}”?</AlertDialogTitle>
-            <AlertDialogDescription>AI Secretary will stop using it immediately and the file will be deleted. Archive instead if you may need it later.</AlertDialogDescription>
+            <AlertDialogDescription>AI Secretary will stop using this FAQ immediately.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -284,7 +288,7 @@ function UploadDialog({ target, onClose, onDone }: { target: KnowledgeItem | "ne
           <Button type="button" variant="outline" className="w-full min-h-11 justify-start" onClick={() => inputRef.current?.click()}>
             <Upload className="h-4 w-4 mr-2" />{file ? `${file.name} · ${fmtSize(file.size)}` : "Choose file"}
           </Button>
-          {existing && <p className="text-xs text-muted-foreground">The old version stops being used as soon as the replacement starts processing.</p>}
+          {existing && <p className="text-xs text-muted-foreground">The current file is kept in version history; only the new file is shown to residents and AI Secretary.</p>}
           {m.isPending && <p className="text-sm text-muted-foreground flex items-center gap-2" role="status"><Loader2 className="h-4 w-4 animate-spin" /> Uploading and reading text…</p>}
           {error && <p className="text-sm rounded-lg bg-destructive/10 text-destructive px-3 py-2" role="alert">{error}</p>}
         </div>

@@ -106,12 +106,12 @@ export const listOpeningBalances = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const sb = (context as unknown as { supabase: { from: (t: string) => any } }).supabase;
     const { data: rows, error } = await sb.from("opening_balances")
-      .select("id,amount,as_of,status,source_ref,created_at,reviewed_at,review_note,flats(flat_number,blocks(name))")
+      .select("id,amount,as_of,status,source_ref,created_at,reviewed_at,review_note,carried_bill_id,flats(flat_number,blocks(name))")
       .eq("society_id", data.societyId).order("created_at", { ascending: false }).limit(500);
     if (error) throw safe(error.message);
     return (rows ?? []).map((r: any) => ({
       id: r.id as string, amount: Number(r.amount), as_of: r.as_of as string, status: r.status as string,
-      source_ref: r.source_ref as string | null, review_note: r.review_note as string | null,
+      source_ref: r.source_ref as string | null, review_note: r.review_note as string | null, carried: !!r.carried_bill_id,
       unit: [r.flats?.blocks?.name, r.flats?.flat_number].filter(Boolean).join(" · "),
     }));
   });

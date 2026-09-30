@@ -65,13 +65,13 @@ function OpeningBalancesPage() {
     onError: (e: Error) => toast.error(e.message),
   });
   const reviewM = useMutation({
-    mutationFn: (v: { id: string; confirm: boolean }) => review({ data: v }),
+    mutationFn: (v: { id: string; confirm: boolean; note?: string }) => review({ data: v }),
     onSuccess: () => { toast.success("Saved"); qc.invalidateQueries({ queryKey: key }); },
     onError: (e: Error) => toast.error(e.message),
   });
 
   return (<div className="pb-24">
-    <MobileHero eyebrow="Migration" title="Opening balances" subtitle="Old dues from your previous records, kept as evidence. They never create payments, receipts or bills." icon={Landmark} variant="teal" />
+    <MobileHero eyebrow="Migration" title="Opening balances" subtitle="Old dues from your previous records. Unverified rows never count. Confirmed rows count as dues and are added once to the next bill." icon={Landmark} variant="teal" />
     <div className="max-w-3xl space-y-4 px-4 pt-4 md:px-6">
       <SectionCard title="Import" description="CSV or Excel, up to 5,000 rows">
         <p className="mb-3 text-sm text-muted-foreground">Columns: Block, Flat, Amount, As of (YYYY-MM-DD). Values only — formulas are never run.</p>
@@ -86,12 +86,12 @@ function OpeningBalancesPage() {
       </SectionCard>
 
       <SectionCard title="Imported rows" description="Review against your old records" bodyClassName="p-0">
-        <p className="px-4 pt-3 text-xs text-muted-foreground">Confirmed rows still stay separate from SociyoHub bills and payments.</p>
+        <p className="px-4 pt-3 text-xs text-muted-foreground">Confirmed rows appear in dues ageing and No-Dues, then move onto the house's next bill as previous dues. No payment or receipt is ever created.</p>
         {q.isLoading && <p className="flex items-center gap-2 p-4 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Loading…</p>}
         {q.isError && <div className="p-4"><p className="flex items-center gap-2 text-sm text-destructive"><AlertCircle className="h-4 w-4" />{(q.error as Error).message}</p>
           <Button className="mt-3 min-h-11" variant="outline" onClick={() => q.refetch()}>Retry</Button></div>}
         {q.data && q.data.length === 0 && <p className="p-4 text-sm text-muted-foreground">Nothing imported yet.</p>}
-        {q.data && q.data.length > 0 && <ul className="divide-y">{q.data.map((r: { id: string; amount: number; as_of: string; status: string; source_ref: string | null; unit: string }) => {
+        {q.data && q.data.length > 0 && <ul className="divide-y">{q.data.map((r: { id: string; amount: number; as_of: string; status: string; source_ref: string | null; unit: string; carried?: boolean }) => {
           const st = STATUS[r.status] ?? { label: r.status, tone: "warning" as const };
           return <li key={r.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
             <div className="min-w-0 flex-1">
@@ -100,9 +100,10 @@ function OpeningBalancesPage() {
             </div>
             <span className="text-sm font-semibold tabular-nums">{inr(r.amount)}</span>
             <StatusChip tone={st.tone}>{st.label}</StatusChip>
+            {r.carried && <StatusChip tone="neutral">On a bill</StatusChip>}
             {r.status === "imported_unverified" && <div className="flex gap-2">
               <Button size="sm" className="min-h-11" disabled={reviewM.isPending} onClick={() => reviewM.mutate({ id: r.id, confirm: true })}>Confirm</Button>
-              <Button size="sm" variant="outline" className="min-h-11" disabled={reviewM.isPending} onClick={() => reviewM.mutate({ id: r.id, confirm: false })}>Reject</Button>
+              <Button size="sm" variant="outline" className="min-h-11" disabled={reviewM.isPending} onClick={() => { const note = window.prompt("Reason for rejecting (required)")?.trim(); if (note) reviewM.mutate({ id: r.id, confirm: false, note: note.slice(0, 500) }); }}>Reject</Button>
             </div>}
           </li>;
         })}</ul>}

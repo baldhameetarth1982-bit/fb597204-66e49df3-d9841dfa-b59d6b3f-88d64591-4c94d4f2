@@ -61,6 +61,10 @@ export function blockerTitle(b: EligibilityBlocker): string {
       return b.method === "cash" ? "Cash payment pending verification" : "Offline payment pending verification";
     case "financial_data_inconsistency":
       return "Payment records need admin review";
+    case "opening_balance_due":
+      return "Old dues from previous records";
+    case "opening_balance_under_review":
+      return "Old dues awaiting committee review";
     default:
       return "Outstanding item";
   }
@@ -70,7 +74,7 @@ export function blockerSubtitle(b: EligibilityBlocker): string {
   const parts: string[] = [];
   if (b.bill_number) parts.push(`Bill ${b.bill_number}`);
   if (b.due_date) parts.push(`Due ${new Date(b.due_date).toLocaleDateString()}`);
-  if (b.remaining_amount != null) parts.push(formatCurrency(b.remaining_amount));
+  if (b.remaining_amount != null && b.type !== "opening_balance_under_review") parts.push(formatCurrency(b.remaining_amount));
   if (b.type === "pending_offline_payment" && b.amount != null) parts.push(formatCurrency(b.amount));
   return parts.join(" · ");
 }
@@ -85,6 +89,10 @@ export function blockerResolution(b: EligibilityBlocker): string {
       return "Awaiting society admin to verify your payment. Contact your admin if this has been pending for long.";
     case "financial_data_inconsistency":
       return "This bill's records need administrator review. Please contact your society admin.";
+    case "opening_balance_due":
+      return "These confirmed old dues will be added to your next bill. Please settle them to proceed.";
+    case "opening_balance_under_review":
+      return "The committee must confirm or reject imported old dues before a certificate can be issued.";
     default:
       return "";
   }

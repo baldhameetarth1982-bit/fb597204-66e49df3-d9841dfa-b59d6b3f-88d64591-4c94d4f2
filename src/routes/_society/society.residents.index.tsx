@@ -4,9 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Users, Search, AlertTriangle, Link2, Download, ChevronRight, Home } from "lucide-react";
-import { writeSafeWorkbook } from "@/lib/spreadsheet-safety";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import { toast } from "sonner";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { EmptyState, PageHeader, PageShell } from "@/components/shared/PageHeader";
@@ -101,7 +98,8 @@ function ResidentsPage() {
     });
   }, [residents, q, filter]);
 
-  function exportExcel() {
+  async function exportExcel() {
+    const { writeSafeWorkbook } = await import("@/lib/spreadsheet-safety");
     const src = filter === "vacant"
       ? vacantFlats.map((f) => ({ Block: f.block_name ?? "—", Unit: f.flat_number, Status: "Vacant" }))
       : filtered.map((r) => ({
@@ -121,7 +119,8 @@ function ResidentsPage() {
     toast.success(`Exported ${src.length} row${src.length === 1 ? "" : "s"}`);
   }
 
-  function exportPDF() {
+  async function exportPDF() {
+    const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([import("jspdf"), import("jspdf-autotable")]);
     const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
     doc.setFontSize(14);
     doc.text("Residents", 40, 40);
@@ -198,8 +197,8 @@ function ResidentsPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={exportExcel}>Excel (.xlsx)</DropdownMenuItem>
-              <DropdownMenuItem onClick={exportPDF}>PDF</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportExcel().catch(() => toast.error("Couldn't prepare the export. Please try again."))}>Excel (.xlsx)</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportPDF().catch(() => toast.error("Couldn't prepare the export. Please try again."))}>PDF</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         }

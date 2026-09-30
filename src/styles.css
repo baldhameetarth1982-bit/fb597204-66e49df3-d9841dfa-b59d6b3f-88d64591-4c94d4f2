@@ -106,7 +106,7 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.22 0.06 260);
 
-  --primary: oklch(0.59 0.105 177);
+  --primary: oklch(0.52 0.1 177); /* WCAG AA with white text and on light surfaces */
   --primary-foreground: oklch(1 0 0);
 
   --secondary: oklch(0.95 0.018 175);
@@ -125,7 +125,7 @@
 
   --border: oklch(0.88 0.014 180);
   --input: oklch(0.86 0.016 180);
-  --ring: oklch(0.59 0.105 177);
+  --ring: oklch(0.52 0.1 177);
 
   --chart-1: oklch(0.66 0.11 180);
   --chart-2: oklch(0.68 0.15 160);

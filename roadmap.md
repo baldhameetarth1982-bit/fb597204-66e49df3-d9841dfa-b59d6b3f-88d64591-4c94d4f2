@@ -112,3 +112,5 @@
 - [x] Quotation/invoice file attachments — private storage, stage-locked, reasoned soft-remove, audit (rollback-tested); live file click-through not done (no genuine demo record)
 - Workstream 5 COMPLETE. Workstream 6 not started.
 - [x] Preview check of Purchases/Budgets screens (phone + desktop, no errors/overflow)
+
+- [x] Workstream 6 — Governance, documents & privacy: notices (priority/expiry/ack/truthful counts), meetings, formal votes, versioned document vault, privacy requests. 52/52 rollback tests passed. Resident-only screens and a second-committee reviewer not preview-tested (no legitimate accounts).

@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   Archive, ArchiveRestore, CheckCircle2, ExternalLink, FileText, HelpCircle, Loader2, Lock, MoreHorizontal, Pencil, Plus, RefreshCw, Trash2, Upload,
+  History,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, PageShell } from "@/components/shared/PageHeader";
@@ -19,7 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  deleteKnowledge, listKnowledgeAdmin, openKnowledgeDocument, saveKnowledgeFaq, setKnowledgeArchived, uploadKnowledgeDocument, type KnowledgeItem,
+  deleteKnowledge, listKnowledgeAdmin, listDocumentVersions, openDocumentVersion, setDocumentCategory, DOC_CATEGORIES, openKnowledgeDocument, saveKnowledgeFaq, setKnowledgeArchived, uploadKnowledgeDocument, type KnowledgeItem,
 } from "@/lib/society-knowledge.functions";
 
 export const Route = createFileRoute("/_society/society/knowledge")({
@@ -60,6 +61,7 @@ function KnowledgeAdmin() {
   const [uploadFor, setUploadFor] = useState<KnowledgeItem | "new" | null>(null);
   const [faqFor, setFaqFor] = useState<KnowledgeItem | "new" | null>(null);
   const [removing, setRemoving] = useState<KnowledgeItem | null>(null);
+  const [versionsFor, setVersionsFor] = useState<KnowledgeItem | null>(null);
 
   const q = useQuery({ queryKey: ["society-knowledge"], queryFn: () => list(), staleTime: 15_000 });
   const refresh = () => qc.invalidateQueries({ queryKey: ["society-knowledge"] });
@@ -157,6 +159,8 @@ function KnowledgeAdmin() {
                               {i.status === "ready" && <CheckCircle2 className="h-3 w-3 mr-1" />}
                               {st.label}
                             </StatusChip>
+                            {i.kind === "document" && <StatusChip tone="muted"><span className="capitalize">{i.category}</span></StatusChip>}
+                            {i.kind === "document" && i.version > 1 && <StatusChip tone="muted">v{i.version}</StatusChip>}
                             {i.audience === "committee" && <StatusChip tone="muted"><Lock className="h-3 w-3 mr-1" />Committee only</StatusChip>}
                           </div>
                           <p className="mt-1 font-medium leading-snug break-words">{i.title}</p>
@@ -186,8 +190,9 @@ function KnowledgeAdmin() {
                               )}
                               {i.status === "ready" && <DropdownMenuItem className="min-h-11" disabled={archive.isPending} onSelect={() => archive.mutate({ id: i.id, archived: true })}><Archive className="h-4 w-4 mr-2" /> Archive</DropdownMenuItem>}
                               {i.status === "archived" && <DropdownMenuItem className="min-h-11" disabled={archive.isPending} onSelect={() => archive.mutate({ id: i.id, archived: false })}><ArchiveRestore className="h-4 w-4 mr-2" /> Restore</DropdownMenuItem>}
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className="min-h-11 text-destructive focus:text-destructive" onSelect={() => setRemoving(i)}><Trash2 className="h-4 w-4 mr-2" /> Remove…</DropdownMenuItem>
+                              {i.kind === "document" && <DropdownMenuItem className="min-h-11" onSelect={() => setVersionsFor(i)}><History className="h-4 w-4 mr-2" /> Category & versions</DropdownMenuItem>}
+                              {i.kind === "faq" && <><DropdownMenuSeparator />
+                              <DropdownMenuItem className="min-h-11 text-destructive focus:text-destructive" onSelect={() => setRemoving(i)}><Trash2 className="h-4 w-4 mr-2" /> Remove…</DropdownMenuItem></>}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
@@ -201,13 +206,14 @@ function KnowledgeAdmin() {
         )}
       </div>
 
+      {versionsFor && <VersionsDialog item={versionsFor} onClose={() => setVersionsFor(null)} onDone={refresh} />}
       {uploadFor && <UploadDialog target={uploadFor} onClose={() => setUploadFor(null)} onDone={refresh} />}
       {faqFor && <FaqDialog target={faqFor} onClose={() => setFaqFor(null)} onDone={refresh} />}
       <AlertDialog open={!!removing} onOpenChange={(o) => !o && setRemoving(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Remove “{removing?.title}”?</AlertDialogTitle>
-            <AlertDialogDescription>AI Secretary will stop using it immediately and the file will be deleted. Archive instead if you may need it later.</AlertDialogDescription>
+            <AlertDialogDescription>AI Secretary will stop using this FAQ immediately.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -284,7 +290,7 @@ function UploadDialog({ target, onClose, onDone }: { target: KnowledgeItem | "ne
           <Button type="button" variant="outline" className="w-full min-h-11 justify-start" onClick={() => inputRef.current?.click()}>
             <Upload className="h-4 w-4 mr-2" />{file ? `${file.name} · ${fmtSize(file.size)}` : "Choose file"}
           </Button>
-          {existing && <p className="text-xs text-muted-foreground">The old version stops being used as soon as the replacement starts processing.</p>}
+          {existing && <p className="text-xs text-muted-foreground">The current file is kept in version history; only the new file is shown to residents and AI Secretary.</p>}
           {m.isPending && <p className="text-sm text-muted-foreground flex items-center gap-2" role="status"><Loader2 className="h-4 w-4 animate-spin" /> Uploading and reading text…</p>}
           {error && <p className="text-sm rounded-lg bg-destructive/10 text-destructive px-3 py-2" role="alert">{error}</p>}
         </div>
@@ -333,6 +339,52 @@ function FaqDialog({ target, onClose, onDone }: { target: KnowledgeItem | "new";
           <Button variant="ghost" onClick={onClose} disabled={m.isPending}>Cancel</Button>
           <Button onClick={() => { setError(null); m.mutate(); }} disabled={!valid || m.isPending}>{m.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} Save</Button>
         </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function VersionsDialog({ item, onClose, onDone }: { item: KnowledgeItem; onClose: () => void; onDone: () => void }) {
+  const list = useServerFn(listDocumentVersions);
+  const openV = useServerFn(openDocumentVersion);
+  const setCat = useServerFn(setDocumentCategory);
+  const [category, setCategory] = useState(item.category);
+  const q = useQuery({ queryKey: ["doc-versions", item.id], queryFn: () => list({ data: { id: item.id } }) });
+  const save = useMutation({
+    mutationFn: () => setCat({ data: { id: item.id, category: category as (typeof DOC_CATEGORIES)[number] } }),
+    onSuccess: (r) => { if (!r.ok) return toast.error(r.message); toast.success("Category saved"); onDone(); },
+    onError: () => toast.error("Couldn't save. Please try again."),
+  });
+  async function view(id: string) {
+    const r = await openV({ data: { id } }).catch(() => null);
+    if (!r?.ok) return toast.error(r?.message ?? "This version isn't available.");
+    window.open(r.url, "_blank", "noopener,noreferrer");
+  }
+  const res = q.data;
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogHeader><DialogTitle>{item.title}</DialogTitle><DialogDescription>Current version v{item.version}. Earlier versions are kept for the committee and never shown to residents or AI Secretary.</DialogDescription></DialogHeader>
+        <div className="space-y-2">
+          <Label>Category</Label>
+          <div className="flex gap-2">
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger className="h-11 flex-1"><SelectValue /></SelectTrigger>
+              <SelectContent>{DOC_CATEGORIES.map((c) => <SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>)}</SelectContent>
+            </Select>
+            <Button className="min-h-11" disabled={save.isPending || category === item.category} onClick={() => save.mutate()}>Save</Button>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <p className="text-sm font-medium">Earlier versions</p>
+          {q.isLoading ? <ListSkeleton rows={2} /> : !res?.ok ? <p className="text-sm text-destructive">{res?.message ?? "Couldn't load versions."}</p>
+            : res.versions.length === 0 ? <p className="text-sm text-muted-foreground">No earlier versions.</p>
+            : <ul className="divide-y rounded-xl border">{res.versions.map((v) => (
+                <li key={v.id} className="flex items-center gap-3 px-3 py-2 text-sm">
+                  <span className="min-w-0 flex-1"><span className="block font-medium">v{v.version} · {v.fileName}</span><span className="block text-xs text-muted-foreground">Replaced {new Date(v.supersededAt).toLocaleDateString("en-IN")}</span></span>
+                  <Button size="sm" variant="outline" className="min-h-11" onClick={() => view(v.id)}>View</Button>
+                </li>))}</ul>}
+        </div>
       </DialogContent>
     </Dialog>
   );

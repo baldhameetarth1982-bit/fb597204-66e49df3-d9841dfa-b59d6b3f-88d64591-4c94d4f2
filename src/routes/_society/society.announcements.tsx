@@ -36,7 +36,23 @@ const FLOW: { key: Tab; label: string; hint: string }[] = [
   { key: "published", label: "Published", hint: "Live for residents. Editing is allowed for 7 days after publishing." },
   { key: "archived", label: "Archived", hint: "Removed from residents' view; kept for your records." },
 ];
-const EMPTY = { id: null as string | null, title: "", body: "", category: "general", audience: "all", block_id: "", schedule: "" };
+const EMPTY = { id: null as string | null, title: "", body: "", category: "general", audience: "all", block_id: "", schedule: "", priority: "normal", expires: "", requires_ack: false };
+type Stats = { audience: number; notified: number; opened: number; acknowledged: number };
+
+const toLocal = (iso: string) => { const d = new Date(iso); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16); };
+
+/** Only counts we have evidence for. Phone delivery is never claimed. */
+function StatsLine({ s, ack, notified }: { s?: Stats; ack: boolean; notified: boolean }) {
+  if (!s) return <p className="flex items-center gap-1"><Eye className="h-3.5 w-3.5" />Counts unavailable</p>;
+  return (
+    <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 tabular-nums">
+      <Eye className="h-3.5 w-3.5" aria-hidden />
+      <span>{notified ? `${s.notified} notified in app` : "Notification pending"}</span>
+      <span>· {s.opened}/{s.audience} opened</span>
+      {ack && <span>· {s.acknowledged} acknowledged, {Math.max(0, s.audience - s.acknowledged)} pending</span>}
+    </p>
+  );
+}
 
 function NoticesAdmin() {
   const { societyId } = useSocietyId();
@@ -51,13 +67,16 @@ function NoticesAdmin() {
     enabled: !!societyId,
     queryFn: async () => {
       const [n, b, r] = await Promise.all([
-        supabase.from("notices").select("id, title, body, category, audience, block_id, status, publish_at, published_at, created_at, edited_at")
+        supabase.from("notices").select("id, title, body, category, audience, block_id, status, publish_at, published_at, created_at, edited_at, priority, expires_at, requires_ack, notified_at")
           .eq("society_id", societyId!).order("created_at", { ascending: false }).limit(200),
         supabase.from("blocks").select("id, name").eq("society_id", societyId!).order("name"),
         supabase.rpc("notice_read_counts"),
       ]);
       if (n.error) throw n.error;
+      const ids = (n.data ?? []).map((x) => x.id);
+      const st = ids.length ? await supabase.rpc("notice_delivery_stats", { _ids: ids }) : { data: [] as any[] };
       return {
+        stats: new Map(((st.data ?? []) as any[]).map((x) => [x.notice_id as string, { audience: Number(x.audience), notified: Number(x.notified), opened: Number(x.opened), acknowledged: Number(x.acknowledged) } as Stats])),
         notices: (n.data ?? []) as NoticeRow[],
         blocks: (b.data ?? []) as { id: string; name: string }[],
         reads: new Map(((r.data ?? []) as { notice_id: string; reads: number }[]).map((x) => [x.notice_id, Number(x.reads)])),
@@ -67,7 +86,7 @@ function NoticesAdmin() {
 
   const now = Date.now();
   const bucket = (n: NoticeRow): Tab =>
-    n.status === "archived" ? "archived" : n.status === "draft" ? "draft" : new Date(liveAt(n) ?? n.created_at).getTime() > now ? "scheduled" : "published";
+    n.status === "archived" ? "archived" : n.status === "draft" ? "draft" : n.expires_at && new Date(n.expires_at).getTime() <= now ? "archived" : new Date(liveAt(n) ?? n.created_at).getTime() > now ? "scheduled" : "published";
   const all = q.data?.notices ?? [];
   const rows = all.filter((n) => bucket(n) === tab);
   const count = (t: Tab) => all.filter((n) => bucket(n) === t).length;
@@ -75,7 +94,7 @@ function NoticesAdmin() {
 
   function edit(n: NoticeRow) {
     const sched = n.publish_at && new Date(n.publish_at).getTime() > now ? n.publish_at.slice(0, 16) : "";
-    setForm({ id: n.id, title: n.title, body: n.body, category: n.category, audience: n.audience, block_id: n.block_id ?? "", schedule: sched });
+    setForm({ id: n.id, title: n.title, body: n.body, category: n.category, audience: n.audience, block_id: n.block_id ?? "", schedule: sched, priority: n.priority ?? "normal", expires: n.expires_at ? toLocal(n.expires_at) : "", requires_ack: !!n.requires_ack });
     setOpen(true);
   }
 
@@ -83,14 +102,19 @@ function NoticesAdmin() {
     if (saving) return;
     if (publish && form.category === "emergency" && !confirm("Publish this emergency notice to residents now?")) return;
     setSaving(publish ? "publish" : "draft");
-    const { error } = await supabase.rpc("notice_save", {
+    const { data: nid, error } = await supabase.rpc("notice_save", {
       _id: form.id as string, _title: form.title, _body: form.body, _category: form.category, _audience: form.audience,
       _block_id: (form.audience === "block" ? form.block_id || null : null) as string, _publish: publish,
       _publish_at: (form.schedule ? new Date(form.schedule).toISOString() : null) as string,
     });
+    if (error) { setSaving(null); return toast.error(commErrorMessage(error)); } // form kept for retry
+    const ctl = await supabase.rpc("notice_set_controls", {
+      _id: nid as string, _priority: form.priority, _requires_ack: form.requires_ack,
+      _expires_at: (form.expires ? new Date(form.expires).toISOString() : null) as string,
+    });
     setSaving(null);
-    if (error) return toast.error(commErrorMessage(error)); // form kept for retry
-    toast.success(!publish ? "Draft saved" : form.schedule ? "Notice scheduled" : "Notice published — residents will see it in Notices and Notifications");
+    if (ctl.error) { toast.error(`Notice saved, but ${commErrorMessage(ctl.error).toLowerCase()}`); setForm({ ...form, id: nid as string }); qc.invalidateQueries({ queryKey: ["admin-notices"] }); return; }
+    toast.success(!publish ? "Draft saved" : form.schedule ? "Notice scheduled" : "Notice published — residents are notified within the hour");
     setOpen(false);
     setForm(EMPTY);
     qc.invalidateQueries({ queryKey: ["admin-notices"] });
@@ -145,6 +169,9 @@ function NoticesAdmin() {
                     {em && <Siren className="h-3.5 w-3.5 text-destructive" aria-hidden />}
                     <span className={cn("rounded px-1.5 py-0.5 font-medium", c.className)}>{c.label}</span>
                     <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" aria-hidden />{n.audience === "block" ? `Block ${blockName(n.block_id) ?? ""}` : "All residents"}</span>
+                    {n.priority && n.priority !== "normal" && <span className={cn("rounded px-1.5 py-0.5 font-medium", n.priority === "urgent" ? "bg-destructive/15 text-destructive" : "bg-warning/15 text-warning-foreground")}>{n.priority === "urgent" ? "Urgent" : "High priority"}</span>}
+                    {n.requires_ack && <span className="rounded bg-primary/10 px-1.5 py-0.5 font-medium text-primary">Needs acknowledgement</span>}
+                    {n.expires_at && <span>{new Date(n.expires_at).getTime() <= now ? "Expired" : `Expires ${new Date(n.expires_at).toLocaleDateString()}`}</span>}
                     {n.edited_at && <span>· edited</span>}
                   </p>
                   <p className="mt-0.5 truncate font-medium">{n.title}</p>
@@ -152,7 +179,7 @@ function NoticesAdmin() {
                 </div>
                 <div className="text-xs text-muted-foreground md:text-sm">
                   {tab === "scheduled" && <p className="flex items-center gap-1 font-medium text-foreground"><Clock className="h-3.5 w-3.5" />Goes live {new Date(liveAt(n)!).toLocaleString(undefined, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}</p>}
-                  {tab === "published" && <><p>Published {new Date(liveAt(n) ?? n.created_at).toLocaleDateString()}</p><p className="flex items-center gap-1"><Eye className="h-3.5 w-3.5" />{q.data?.reads.has(n.id) ? `${q.data.reads.get(n.id)} read` : "Reads unavailable"}</p></>}
+                  {tab === "published" && <><p>Published {new Date(liveAt(n) ?? n.created_at).toLocaleDateString()}</p><StatsLine s={q.data?.stats.get(n.id)} ack={!!n.requires_ack} notified={!!n.notified_at} /></>}
                   {tab === "draft" && <p>Not visible to residents</p>}
                   {tab === "archived" && <p>Hidden from residents</p>}
                 </div>
@@ -201,6 +228,19 @@ function NoticesAdmin() {
             {form.category !== "emergency" && !isLive && (
               <div><Label htmlFor="n-sched">Schedule (optional)</Label><Input id="n-sched" type="datetime-local" className="h-11" value={form.schedule} onChange={(e) => setForm({ ...form, schedule: e.target.value })} /></div>
             )}
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div><Label>Priority</Label>
+                <Select value={form.priority} onValueChange={(v) => setForm({ ...form, priority: v })}>
+                  <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="normal">Normal</SelectItem><SelectItem value="high">High</SelectItem><SelectItem value="urgent">Urgent</SelectItem></SelectContent>
+                </Select>
+              </div>
+              <div><Label htmlFor="n-exp">Expires (optional)</Label><Input id="n-exp" type="datetime-local" className="h-11" value={form.expires} onChange={(e) => setForm({ ...form, expires: e.target.value })} /></div>
+            </div>
+            <label className="flex min-h-11 items-center gap-3 rounded-xl border px-3 text-sm">
+              <input type="checkbox" className="h-5 w-5" checked={form.requires_ack} onChange={(e) => setForm({ ...form, requires_ack: e.target.checked })} />
+              <span><span className="block font-medium">Ask residents to acknowledge</span><span className="block text-xs text-muted-foreground">You'll see who has confirmed reading it.</span></span>
+            </label>
             {form.category === "emergency" && <p className="text-xs text-destructive">Emergency notices publish immediately and are pinned at the top for residents. They appear in the app — phone push delivery isn't guaranteed.</p>}
             <div className="flex gap-2">
               {!isLive && <Button variant="outline" className="flex-1 h-12 rounded-xl" disabled={!!saving} onClick={() => save(false)}>{saving === "draft" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save draft"}</Button>}

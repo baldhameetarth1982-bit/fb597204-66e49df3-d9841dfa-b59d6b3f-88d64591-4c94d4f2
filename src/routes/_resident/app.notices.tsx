@@ -1,12 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Megaphone, Siren, ChevronRight } from "lucide-react";
+import { Megaphone, Siren, ChevronRight, CheckCircle2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { commErrorMessage } from "@/lib/notices";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 import { NOTICE_CATEGORIES, liveAt, noticeCategory, type NoticeRow } from "@/lib/notices";
-import { useResidentNotices, markNoticeRead } from "@/hooks/useResidentNotices";
+import { useResidentNotices, markNoticeRead, acknowledgeNotice } from "@/hooks/useResidentNotices";
 import { SearchField, ListSkeleton, LoadError, ListEmpty } from "@/components/people/PeopleUI";
 import { CommPage, CommHeader, SectionLabel, CommRow, RowList } from "@/components/comm/CommUI";
 
@@ -34,6 +37,14 @@ function NoticesPage() {
 
   const notices = q.data?.notices ?? [];
   const read = q.data?.read ?? new Set<string>();
+  const acked = q.data?.acked ?? new Set<string>();
+  const [acking, setAcking] = useState(false);
+  async function ack(id: string) {
+    setAcking(true);
+    try { await acknowledgeNotice(id); toast.success("Thanks — acknowledgement recorded"); await qc.invalidateQueries({ queryKey: ["resident-notices"] }); }
+    catch (e) { toast.error(commErrorMessage(e)); }
+    finally { setAcking(false); }
+  }
   const emergencies = notices.filter((n) => n.category === "emergency" && Date.now() - new Date(liveAt(n) ?? n.created_at).getTime() < 3 * 864e5);
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
@@ -57,7 +68,7 @@ function NoticesPage() {
           iconTone={em ? "danger" : "default"}
           edge={em ? "danger" : !read.has(n.id) ? "primary" : "none"}
           unread={!read.has(n.id)}
-          meta={<><span className={cn("rounded px-1.5 py-0.5 font-medium", c.className)}>{c.label}</span><span>{fmt(n)}</span></>}
+          meta={<><span className={cn("rounded px-1.5 py-0.5 font-medium", c.className)}>{c.label}</span>{n.priority === "urgent" && <span className="rounded bg-destructive/15 px-1.5 py-0.5 font-medium text-destructive">Urgent</span>}{n.requires_ack && <span className="rounded bg-primary/10 px-1.5 py-0.5 font-medium text-primary">{acked.has(n.id) ? "Acknowledged" : "Please acknowledge"}</span>}<span>{fmt(n)}</span></>}
           title={n.title}
           body={n.body}
           trailing={<ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />}
@@ -126,6 +137,10 @@ function NoticesPage() {
                 <SheetTitle className="text-left text-xl">{open.title}</SheetTitle>
               </SheetHeader>
               <p className="py-3 text-sm leading-relaxed whitespace-pre-wrap">{open.body}</p>
+              {open.requires_ack && (acked.has(open.id)
+                ? <p className="flex items-center gap-2 rounded-xl bg-success/10 p-3 text-sm text-success"><CheckCircle2 className="h-4 w-4" aria-hidden />You acknowledged this notice.</p>
+                : <Button className="h-12 w-full rounded-xl" disabled={acking} onClick={() => ack(open.id)}>{acking ? <Loader2 className="h-4 w-4 animate-spin" /> : "I have read this"}</Button>)}
+              {open.expires_at && <p className="pt-2 text-xs text-muted-foreground">Visible until {new Date(open.expires_at).toLocaleString()}</p>}
             </>
           )}
         </SheetContent>

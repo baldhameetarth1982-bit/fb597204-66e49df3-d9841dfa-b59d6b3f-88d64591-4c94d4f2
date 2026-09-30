@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { recordSchedulerRun } from "@/lib/scheduler-runs.server";
 
 /**
  * Maintenance reminder scheduler.
@@ -70,6 +71,7 @@ export const Route = createFileRoute("/api/public/hooks/maintenance-reminders")(
           return new Response("Bad Request", { status: 400 });
         }
 
+        return recordSchedulerRun(supabaseAdmin as never, "maintenance-reminders", `${new Date().toISOString().slice(0, 10)}:${onlySociety ?? "all"}`, async () => {
         const today = new Date();
         const todayIso = today.toISOString().slice(0, 10);
 
@@ -193,6 +195,7 @@ export const Route = createFileRoute("/api/public/hooks/maintenance-reminders")(
           }),
           { headers: { "Content-Type": "application/json" } },
         );
+        });
       },
     },
   },

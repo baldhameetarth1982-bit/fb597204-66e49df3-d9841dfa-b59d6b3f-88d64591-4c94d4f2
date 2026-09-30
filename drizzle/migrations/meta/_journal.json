@@ -813,6 +813,13 @@
       "when": 1790735448414,
       "tag": "0115_bill_adjustments_revoke_writes",
       "breakpoints": true
+    },
+    {
+      "idx": 116,
+      "version": "7",
+      "when": 1790802813535,
+      "tag": "0116_workstream7_billrun_latefee_openingbal",
+      "breakpoints": true
     }
   ]
 }

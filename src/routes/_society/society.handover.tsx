@@ -49,7 +49,7 @@ function HandoverPage() {
     { ok: s.flats > 0, label: "Flats / units", detail: `${s.flats} active units`, to: "/society/flats" },
     { ok: s.occupied_flats > 0, label: "Residents & occupancy", detail: `${s.occupied_flats} of ${s.flats} units occupied`, to: "/society/residents" },
     { ok: s.admins > 0, label: "Committee admins assigned", detail: `${s.admins} admins`, to: "/society/team" },
-    { ok: s.open_imports === 0 && s.failed_imports === 0, label: "Imports resolved", detail: `${s.completed_imports} completed · ${s.open_imports} open · ${s.failed_imports} failed${s.import_conflict_rows ? ` · ${s.import_conflict_rows} rows need review` : ""}`, to: "/society/migration" },
+    { ok: s.open_imports === 0 && s.failed_imports === 0, label: "Imports resolved", detail: `${s.completed_imports} completed · ${s.open_imports} open · ${s.failed_imports} failed${s.import_conflict_rows ? ` · ${s.import_conflict_rows} rows need review` : ""}`, to: "/society/import" },
     { ok: s.opening_balance_set, label: "Opening cash & bank balances", detail: s.opening_balance_set ? "Set" : "Not set", to: "/society/accounts" },
     { ok: s.documents > 0, label: "Handover documents uploaded", detail: `${s.documents} documents`, to: "/society/knowledge" },
     { ok: s.setup_completed, label: "Setup wizard completed", detail: s.setup_completed ? "Done" : "Pending", to: "/society/dashboard" },

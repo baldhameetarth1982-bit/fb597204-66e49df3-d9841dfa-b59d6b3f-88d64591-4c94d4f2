@@ -73,7 +73,8 @@ function OpeningBalancesPage() {
   return (<div className="pb-24">
     <MobileHero eyebrow="Migration" title="Opening balances" subtitle="Old dues from your previous records, kept as evidence. They never create payments, receipts or bills." icon={Landmark} variant="teal" />
     <div className="max-w-3xl space-y-4 px-4 pt-4 md:px-6">
-      <SectionCard title="Import" description="CSV or Excel with columns Block, Flat, Amount, As of (YYYY-MM-DD). Values only; up to 5,000 rows.">
+      <SectionCard title="Import" description="CSV or Excel, up to 5,000 rows">
+        <p className="mb-3 text-sm text-muted-foreground">Columns: Block, Flat, Amount, As of (YYYY-MM-DD). Values only — formulas are never run.</p>
         <label className="inline-flex">
           <input type="file" accept=".csv,.xlsx" className="hidden" disabled={!societyId || importM.isPending}
             onChange={(e) => { const f = e.target.files?.[0]; if (f) importM.mutate(f); e.target.value = ""; }} />
@@ -84,7 +85,8 @@ function OpeningBalancesPage() {
         {msg && <p className="mt-3 text-sm">{msg}</p>}
       </SectionCard>
 
-      <SectionCard title="Imported rows" description="Confirm after checking against your old records. Confirmed rows still stay separate from SociyoHub bills." bodyClassName="p-0">
+      <SectionCard title="Imported rows" description="Review against your old records" bodyClassName="p-0">
+        <p className="px-4 pt-3 text-xs text-muted-foreground">Confirmed rows still stay separate from SociyoHub bills and payments.</p>
         {q.isLoading && <p className="flex items-center gap-2 p-4 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Loading…</p>}
         {q.isError && <div className="p-4"><p className="flex items-center gap-2 text-sm text-destructive"><AlertCircle className="h-4 w-4" />{(q.error as Error).message}</p>
           <Button className="mt-3 min-h-11" variant="outline" onClick={() => q.refetch()}>Retry</Button></div>}

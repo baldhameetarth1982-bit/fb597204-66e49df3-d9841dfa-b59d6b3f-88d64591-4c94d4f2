@@ -1,0 +1,1 @@
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.bill_adjustments FROM authenticated, anon;

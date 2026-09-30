@@ -89,7 +89,7 @@ function OpeningBalancesPage() {
         {q.isError && <div className="p-4"><p className="flex items-center gap-2 text-sm text-destructive"><AlertCircle className="h-4 w-4" />{(q.error as Error).message}</p>
           <Button className="mt-3 min-h-11" variant="outline" onClick={() => q.refetch()}>Retry</Button></div>}
         {q.data && q.data.length === 0 && <p className="p-4 text-sm text-muted-foreground">Nothing imported yet.</p>}
-        {q.data && q.data.length > 0 && <ul className="divide-y">{q.data.map((r) => {
+        {q.data && q.data.length > 0 && <ul className="divide-y">{q.data.map((r: { id: string; amount: number; as_of: string; status: string; source_ref: string | null; unit: string }) => {
           const st = STATUS[r.status] ?? { label: r.status, tone: "warning" as const };
           return <li key={r.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
             <div className="min-w-0 flex-1">

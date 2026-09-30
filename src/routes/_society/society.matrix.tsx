@@ -188,10 +188,10 @@ function MatrixPage() {
             <Button asChild variant="outline" size="sm" className="rounded-xl">
               <Link to="/society/matrix-import"><Upload className="h-4 w-4 mr-1" /> Import</Link>
             </Button>
-            <Button variant="outline" size="sm" onClick={exportExcel} className="rounded-xl">
+            <Button variant="outline" size="sm" onClick={() => exportExcel().catch(() => toast.error("Couldn't prepare the export. Please try again."))} className="rounded-xl">
               <Download className="h-4 w-4 mr-1" /> Excel
             </Button>
-            <Button variant="outline" size="sm" onClick={exportPDF} className="rounded-xl">
+            <Button variant="outline" size="sm" onClick={() => exportPDF().catch(() => toast.error("Couldn't prepare the export. Please try again."))} className="rounded-xl">
               <Download className="h-4 w-4 mr-1" /> PDF
             </Button>
           </div>

@@ -197,8 +197,8 @@ function ResidentsPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={exportExcel}>Excel (.xlsx)</DropdownMenuItem>
-              <DropdownMenuItem onClick={exportPDF}>PDF</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportExcel().catch(() => toast.error("Couldn't prepare the export. Please try again."))}>Excel (.xlsx)</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportPDF().catch(() => toast.error("Couldn't prepare the export. Please try again."))}>PDF</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         }

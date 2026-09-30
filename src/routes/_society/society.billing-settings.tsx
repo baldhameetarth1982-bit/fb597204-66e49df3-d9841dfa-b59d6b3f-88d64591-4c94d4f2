@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { ErrorState } from "@/components/system/ErrorState";
 import { toSafeFinanceMessage } from "@/lib/finance-safe-error";
 import { getBillingSchedule, saveBillingSchedule, runBillingNow } from "@/lib/billing.functions";
+import { getBillingControls, setBillingControls } from "@/lib/workstream7.functions";
 
 export const Route = createFileRoute("/_society/society/billing-settings")({
   head: () => ({ meta: [{ title: "Billing Settings — SociyoHub" }] }),
@@ -436,6 +437,39 @@ function AutoBillingSection({ societyId }: { societyId: string }) {
           </Button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* Late-fee switch and optional second approver: saved through an audited server action. */
+function BillingControls({ societyId, policyDirty }: { societyId: string; policyDirty: boolean }) {
+  const get = useServerFn(getBillingControls);
+  const put = useServerFn(setBillingControls);
+  const [state, setState] = useState<{ lateFeeEnabled: boolean; approvalRequired: boolean } | null>(null);
+  const [err, setErr] = useState(false);
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    get({ data: { societyId } }).then((c) => setState({ lateFeeEnabled: c.lateFeeEnabled, approvalRequired: c.approvalRequired })).catch(() => setErr(true));
+  }, [societyId]);
+  async function change(next: { lateFeeEnabled: boolean; approvalRequired: boolean }) {
+    if (policyDirty && next.lateFeeEnabled && !state?.lateFeeEnabled) return toast.error("Save the late fee amount first, then turn it on.");
+    setSaving(true);
+    try { await put({ data: { societyId, ...next } }); setState(next); toast.success("Saved"); }
+    catch (e) { toast.error((e as Error).message); }
+    finally { setSaving(false); }
+  }
+  if (err) return <p className="mt-3 text-xs text-destructive">Couldn't load late fee and approval switches.</p>;
+  if (!state) return <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-3.5 w-3.5 animate-spin" />Loading…</p>;
+  return (
+    <div className="mt-4 space-y-2">
+      <label className="flex min-h-14 items-center justify-between gap-3 rounded-xl border border-border p-3">
+        <span><span className="block text-sm font-medium">Charge late fees</span><span className="block text-xs text-muted-foreground">Shown per house in the bill review before anything is created. Reverse with a bill adjustment.</span></span>
+        <Switch checked={state.lateFeeEnabled} disabled={saving} onCheckedChange={(v) => change({ ...state, lateFeeEnabled: v })} aria-label="Charge late fees" />
+      </label>
+      <label className="flex min-h-14 items-center justify-between gap-3 rounded-xl border border-border p-3">
+        <span><span className="block text-sm font-medium">Require a second approver for bill runs</span><span className="block text-xs text-muted-foreground">A different committee member must approve before bills are created.</span></span>
+        <Switch checked={state.approvalRequired} disabled={saving} onCheckedChange={(v) => change({ ...state, approvalRequired: v })} aria-label="Require second approver" />
+      </label>
     </div>
   );
 }

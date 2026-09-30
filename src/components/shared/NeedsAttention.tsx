@@ -9,7 +9,7 @@ type Item = { key: string; priority: number; reason: string; item_count: number;
  * Deterministic "Needs attention" list from the server `get_needs_attention` RPC.
  * Counts come straight from canonical records under the caller's role; no AI, no cached counters.
  */
-export function NeedsAttention({ max = 6 }: { max?: number }) {
+export function NeedsAttention({ max = 6, exclude = [], emptyText = "{emptyText}" }: { max?: number; exclude?: string[]; emptyText?: string }) {
   const q = useQuery({
     queryKey: ["needs-attention"],
     staleTime: 60_000,
@@ -26,11 +26,11 @@ export function NeedsAttention({ max = 6 }: { max?: number }) {
   if (q.isError) {
     return <p className="text-sm text-muted-foreground">Couldn't load items that need attention. Pull to refresh or try again.</p>;
   }
-  const items = q.data ?? [];
+  const items = (q.data ?? []).filter((i) => !exclude.includes(i.key));
   if (items.length === 0) {
     return (
       <p className="flex items-center gap-2 text-sm text-muted-foreground" role="status">
-        <CheckCircle2 className="h-4 w-4 text-primary" aria-hidden /> Nothing needs attention right now.
+        <CheckCircle2 className="h-4 w-4 text-primary" aria-hidden /> {emptyText}
       </p>
     );
   }

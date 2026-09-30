@@ -24,7 +24,7 @@ export async function recordSchedulerRun(
   let processed = 0;
   try {
     const j = (await res.clone().json()) as Record<string, unknown>;
-    processed = Number(j.reminded ?? j.generated ?? j.inserted ?? j.count ?? 0) || 0;
+    processed = Number(j.reminded ?? j.totalGenerated ?? j.generated ?? j.inserted ?? j.count ?? 0) || 0;
   } catch { /* non-JSON response */ }
   await admin.rpc("scheduler_run_finish", {
     _id: runId,

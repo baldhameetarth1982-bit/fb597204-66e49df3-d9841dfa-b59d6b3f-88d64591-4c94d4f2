@@ -236,7 +236,7 @@ function SocietyDashboard() {
           { k: "Visitors today", v: data ? String(data.visitorsToday) : "—", to: "/society/visitors" },
         ].map((m) => (
           <li key={m.k}>
-            <Link to={m.to as "/society/billing"} className="block px-4 py-3.5 hover:bg-muted/50 focus-visible:outline-none focus-visible:bg-muted/60 md:px-5 md:py-4">
+            <Link to={m.to as "/society/billing"} className="block px-4 py-3.5 hover:bg-muted/50 focus-visible:outline-none focus-visible:bg-muted/60 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring md:px-5 md:py-4">
               <span className="block text-xs text-muted-foreground">{m.k}</span>
               <span className="mt-1 block text-xl font-semibold tabular-nums tracking-tight md:text-2xl">
                 {isLoading ? <Skeleton className="h-7 w-20" /> : m.v}

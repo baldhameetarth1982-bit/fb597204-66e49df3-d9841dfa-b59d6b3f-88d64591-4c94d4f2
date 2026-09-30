@@ -84,8 +84,8 @@ export function SocietyFinanceChart({ societyId }: { societyId: string }) {
         <div
           className={[
             "px-3 py-1.5 rounded-xl text-sm font-semibold flex items-center gap-1.5",
-            tone === "growth" ? "bg-emerald-500/10 text-emerald-500"
-              : tone === "loss" ? "bg-red-500/10 text-red-500"
+            tone === "growth" ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+              : tone === "loss" ? "bg-red-500/10 text-red-700 dark:text-red-400"
               : "bg-muted text-foreground",
           ].join(" ")}
         >
@@ -127,7 +127,7 @@ export function SocietyFinanceChart({ societyId }: { societyId: string }) {
           </div>
           <div className={`rounded-xl p-3 ${profit > 0 ? "bg-emerald-500/5" : profit < 0 ? "bg-red-500/5" : "bg-muted"}`}>
             <p className="text-xs text-muted-foreground">Net</p>
-            <p className={`font-semibold ${profit > 0 ? "text-emerald-500" : profit < 0 ? "text-red-500" : "text-foreground"}`}>
+            <p className={`font-semibold ${profit > 0 ? "text-emerald-700 dark:text-emerald-400" : profit < 0 ? "text-red-700 dark:text-red-400" : "text-foreground"}`}>
               {INR.format(profit)}
             </p>
           </div>

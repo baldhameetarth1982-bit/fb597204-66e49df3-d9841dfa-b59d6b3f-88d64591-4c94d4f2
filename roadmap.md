@@ -109,5 +109,6 @@
 - [x] Procurement workflow + server transitions, separation of duties, audit (rollback-tested)
 - [x] Budgets with revision history; actuals from posted expenses (rollback-tested)
 - [x] Auditor Pack procurement/budget section + CSV
-- [ ] Quotation/invoice file attachments — not yet built
+- [x] Quotation/invoice file attachments — private storage, stage-locked, reasoned soft-remove, audit (rollback-tested); live file click-through not done (no genuine demo record)
+- Workstream 5 COMPLETE. Workstream 6 not started.
 - [x] Preview check of Purchases/Budgets screens (phone + desktop, no errors/overflow)

@@ -7,6 +7,7 @@ import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { AccountsCenterTabs } from "@/components/nav/AccountsCenterTabs";
 import { MobileHero } from "@/components/shared/MobileHero";
 import { SectionCard } from "@/components/shared/SectionCard";
+import { AuditorExtrasSection } from "@/components/billing/AuditorExtrasSection";
 import { ProcurementAuditSection, fyLabel } from "@/features/procurement/procurement";
 const fyOf = (d: string) => { const [y, m] = d.split("-").map(Number); return (m ?? 4) >= 4 ? (y || new Date().getFullYear()) : (y || new Date().getFullYear()) - 1; };
 import { ListCard, ListCardGroup } from "@/components/shared/ListCard";
@@ -85,6 +86,10 @@ function AuditorPackPage() {
 
       <SectionCard title="Procurement & budget" description={`Budget vs actual and purchase requests for ${fyLabel(fyOf(from))}. Read-only.`} bodyClassName="p-0">
         {societyId && <ProcurementAuditSection fy={fyOf(from)} />}
+      </SectionCard>
+
+      <SectionCard title="Adjustments, opening balances & resolutions" description="For the selected period. Read-only; downloads are built on your device." bodyClassName="p-0">
+        {societyId && <AuditorExtrasSection societyId={societyId} from={from} to={to} />}
       </SectionCard>
 
       {run.isError && !busy && <SectionCard icon={AlertCircle} title="Pack unavailable">

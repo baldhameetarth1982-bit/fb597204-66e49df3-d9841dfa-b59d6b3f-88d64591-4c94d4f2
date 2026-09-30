@@ -51,6 +51,9 @@ function HandoverPage() {
     { ok: s.admins > 0, label: "Committee admins assigned", detail: `${s.admins} admins`, to: "/society/team" },
     { ok: s.open_imports === 0 && s.failed_imports === 0, label: "Imports resolved", detail: `${s.completed_imports} completed · ${s.open_imports} open · ${s.failed_imports} failed${s.import_conflict_rows ? ` · ${s.import_conflict_rows} rows need review` : ""}`, to: "/society/import" },
     { ok: s.opening_balance_set, label: "Opening cash & bank balances", detail: s.opening_balance_set ? "Set" : "Not set", to: "/society/accounts" },
+    { ok: s.held_import_rows === 0, label: "Held import rows reviewed", detail: s.held_import_rows ? `${s.held_import_rows} rows kept aside for review` : "None held", to: "/society/import" },
+    { ok: s.opening_balances_unverified === 0, label: "Imported past dues reviewed", detail: `${s.opening_balances_confirmed} confirmed · ${s.opening_balances_unverified} awaiting review`, to: "/society/opening-balances" },
+    { ok: s.pending_bill_run_approvals === 0, label: "Bill runs awaiting approval", detail: s.pending_bill_run_approvals ? `${s.pending_bill_run_approvals} waiting` : "None", to: "/society/bill-studio/generate" },
     { ok: s.documents > 0, label: "Handover documents uploaded", detail: `${s.documents} documents`, to: "/society/knowledge" },
     { ok: s.setup_completed, label: "Setup wizard completed", detail: s.setup_completed ? "Done" : "Pending", to: "/society/dashboard" },
   ] : [];

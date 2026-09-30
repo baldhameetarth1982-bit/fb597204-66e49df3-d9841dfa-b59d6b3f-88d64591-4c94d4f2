@@ -6,6 +6,7 @@ import { Loader2, FileText, PlayCircle, ShieldAlert, Receipt } from "lucide-reac
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { BillRunReviewPanel } from "@/components/billing/BillRunReviewPanel";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useSocietyId } from "@/hooks/useSocietyId";
@@ -101,6 +102,7 @@ function GenerateBillsPage() {
     }
   }
 
+  const [gate, setGate] = useState<{ ok: boolean; reason?: string }>({ ok: false });
   const blockers: string[] = [];
   if (previewData) {
     if (previewData.existing_bill_count > 0) blockers.push(`${previewData.existing_bill_count} bill(s) already exist for this cycle — cancel individual bills instead of regenerating.`);
@@ -195,7 +197,11 @@ function GenerateBillsPage() {
               {otherWarnings.length > 0 && (
                 <p className="rounded-xl bg-warning/10 p-3 text-xs">Warnings: {otherWarnings.join(", ")}</p>
               )}
-              <Button className="min-h-12 w-full" disabled={busy || blockers.length > 0} onClick={() => setConfirmOpen(true)}>
+              {societyId && selected && blockers.length === 0 && (
+                <BillRunReviewPanel societyId={societyId} cycleId={selected} onGate={(ok, reason) => setGate({ ok, reason })} />
+              )}
+              {blockers.length === 0 && !gate.ok && gate.reason && <p className="text-xs text-muted-foreground">{gate.reason}</p>}
+              <Button className="min-h-12 w-full" disabled={busy || blockers.length > 0 || !gate.ok} onClick={() => setConfirmOpen(true)}>
                 Create {previewData.unit_count} bills
               </Button>
             </div>

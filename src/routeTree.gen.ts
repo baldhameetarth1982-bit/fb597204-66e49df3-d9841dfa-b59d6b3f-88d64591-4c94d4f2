@@ -65,6 +65,7 @@ import { Route as SocietySocietyPayoutsRouteImport } from './routes/_society/soc
 import { Route as SocietySocietyPaymentsRouteImport } from './routes/_society/society.payments'
 import { Route as SocietySocietyParkingRouteImport } from './routes/_society/society.parking'
 import { Route as SocietySocietyOperationsRouteImport } from './routes/_society/society.operations'
+import { Route as SocietySocietyOpeningBalancesRouteImport } from './routes/_society/society.opening-balances'
 import { Route as SocietySocietyMoreRouteImport } from './routes/_society/society.more'
 import { Route as SocietySocietyMeetingsRouteImport } from './routes/_society/society.meetings'
 import { Route as SocietySocietyMatrixImportRouteImport } from './routes/_society/society.matrix-import'
@@ -466,6 +467,12 @@ const SocietySocietyOperationsRoute =
   SocietySocietyOperationsRouteImport.update({
     id: '/society/operations',
     path: '/society/operations',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyOpeningBalancesRoute =
+  SocietySocietyOpeningBalancesRouteImport.update({
+    id: '/society/opening-balances',
+    path: '/society/opening-balances',
     getParentRoute: () => SocietyRoute,
   } as any)
 const SocietySocietyMoreRoute = SocietySocietyMoreRouteImport.update({
@@ -1198,6 +1205,7 @@ export interface FileRoutesByFullPath {
   '/society/matrix-import': typeof SocietySocietyMatrixImportRoute
   '/society/meetings': typeof SocietySocietyMeetingsRoute
   '/society/more': typeof SocietySocietyMoreRoute
+  '/society/opening-balances': typeof SocietySocietyOpeningBalancesRoute
   '/society/operations': typeof SocietySocietyOperationsRoute
   '/society/parking': typeof SocietySocietyParkingRoute
   '/society/payments': typeof SocietySocietyPaymentsRoute
@@ -1367,6 +1375,7 @@ export interface FileRoutesByTo {
   '/society/matrix-import': typeof SocietySocietyMatrixImportRoute
   '/society/meetings': typeof SocietySocietyMeetingsRoute
   '/society/more': typeof SocietySocietyMoreRoute
+  '/society/opening-balances': typeof SocietySocietyOpeningBalancesRoute
   '/society/operations': typeof SocietySocietyOperationsRoute
   '/society/parking': typeof SocietySocietyParkingRoute
   '/society/payments': typeof SocietySocietyPaymentsRoute
@@ -1542,6 +1551,7 @@ export interface FileRoutesById {
   '/_society/society/matrix-import': typeof SocietySocietyMatrixImportRoute
   '/_society/society/meetings': typeof SocietySocietyMeetingsRoute
   '/_society/society/more': typeof SocietySocietyMoreRoute
+  '/_society/society/opening-balances': typeof SocietySocietyOpeningBalancesRoute
   '/_society/society/operations': typeof SocietySocietyOperationsRoute
   '/_society/society/parking': typeof SocietySocietyParkingRoute
   '/_society/society/payments': typeof SocietySocietyPaymentsRoute
@@ -1714,6 +1724,7 @@ export interface FileRouteTypes {
     | '/society/matrix-import'
     | '/society/meetings'
     | '/society/more'
+    | '/society/opening-balances'
     | '/society/operations'
     | '/society/parking'
     | '/society/payments'
@@ -1883,6 +1894,7 @@ export interface FileRouteTypes {
     | '/society/matrix-import'
     | '/society/meetings'
     | '/society/more'
+    | '/society/opening-balances'
     | '/society/operations'
     | '/society/parking'
     | '/society/payments'
@@ -2057,6 +2069,7 @@ export interface FileRouteTypes {
     | '/_society/society/matrix-import'
     | '/_society/society/meetings'
     | '/_society/society/more'
+    | '/_society/society/opening-balances'
     | '/_society/society/operations'
     | '/_society/society/parking'
     | '/_society/society/payments'
@@ -2543,6 +2556,13 @@ declare module '@tanstack/react-router' {
       path: '/society/operations'
       fullPath: '/society/operations'
       preLoaderRoute: typeof SocietySocietyOperationsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/opening-balances': {
+      id: '/_society/society/opening-balances'
+      path: '/society/opening-balances'
+      fullPath: '/society/opening-balances'
+      preLoaderRoute: typeof SocietySocietyOpeningBalancesRouteImport
       parentRoute: typeof SocietyRoute
     }
     '/_society/society/more': {
@@ -3538,6 +3558,7 @@ interface SocietyRouteChildren {
   SocietySocietyMatrixImportRoute: typeof SocietySocietyMatrixImportRoute
   SocietySocietyMeetingsRoute: typeof SocietySocietyMeetingsRoute
   SocietySocietyMoreRoute: typeof SocietySocietyMoreRoute
+  SocietySocietyOpeningBalancesRoute: typeof SocietySocietyOpeningBalancesRoute
   SocietySocietyOperationsRoute: typeof SocietySocietyOperationsRoute
   SocietySocietyParkingRoute: typeof SocietySocietyParkingRoute
   SocietySocietyPaymentsRoute: typeof SocietySocietyPaymentsRoute
@@ -3612,6 +3633,7 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyMatrixImportRoute: SocietySocietyMatrixImportRoute,
   SocietySocietyMeetingsRoute: SocietySocietyMeetingsRoute,
   SocietySocietyMoreRoute: SocietySocietyMoreRoute,
+  SocietySocietyOpeningBalancesRoute: SocietySocietyOpeningBalancesRoute,
   SocietySocietyOperationsRoute: SocietySocietyOperationsRoute,
   SocietySocietyParkingRoute: SocietySocietyParkingRoute,
   SocietySocietyPaymentsRoute: SocietySocietyPaymentsRoute,

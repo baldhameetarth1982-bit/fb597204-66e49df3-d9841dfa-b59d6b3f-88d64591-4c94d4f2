@@ -660,6 +660,7 @@ export type Database = {
       }
       bill_generation_batches: {
         Row: {
+          approval_id: string | null
           bills_created: number
           created_at: string
           created_by: string | null
@@ -673,6 +674,7 @@ export type Database = {
           total_amount: number
         }
         Insert: {
+          approval_id?: string | null
           bills_created?: number
           created_at?: string
           created_by?: string | null
@@ -686,6 +688,7 @@ export type Database = {
           total_amount?: number
         }
         Update: {
+          approval_id?: string | null
           bills_created?: number
           created_at?: string
           created_by?: string | null
@@ -798,6 +801,69 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "bill_number_sequences_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bill_run_approvals: {
+        Row: {
+          consumed_batch_id: string | null
+          cycle_config_id: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          fingerprint: string
+          id: string
+          requested_at: string
+          requested_by: string
+          society_id: string
+          status: string
+          total_amount: number
+          unit_count: number
+        }
+        Insert: {
+          consumed_batch_id?: string | null
+          cycle_config_id: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          fingerprint: string
+          id?: string
+          requested_at?: string
+          requested_by: string
+          society_id: string
+          status?: string
+          total_amount?: number
+          unit_count?: number
+        }
+        Update: {
+          consumed_batch_id?: string | null
+          cycle_config_id?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          fingerprint?: string
+          id?: string
+          requested_at?: string
+          requested_by?: string
+          society_id?: string
+          status?: string
+          total_amount?: number
+          unit_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bill_run_approvals_cycle_config_id_fkey"
+            columns: ["cycle_config_id"]
+            isOneToOne: false
+            referencedRelation: "billing_cycle_configs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bill_run_approvals_society_id_fkey"
             columns: ["society_id"]
             isOneToOne: false
             referencedRelation: "societies"
@@ -3011,6 +3077,9 @@ export type Database = {
           created_at: string
           entity_type: Database["public"]["Enums"]["migration_entity_type"]
           error_codes: string[]
+          held_action: string | null
+          held_for_review: boolean
+          held_status: string | null
           id: string
           job_id: string
           mapped_json: Json
@@ -3029,6 +3098,9 @@ export type Database = {
           created_at?: string
           entity_type: Database["public"]["Enums"]["migration_entity_type"]
           error_codes?: string[]
+          held_action?: string | null
+          held_for_review?: boolean
+          held_status?: string | null
           id?: string
           job_id: string
           mapped_json?: Json
@@ -3047,6 +3119,9 @@ export type Database = {
           created_at?: string
           entity_type?: Database["public"]["Enums"]["migration_entity_type"]
           error_codes?: string[]
+          held_action?: string | null
+          held_for_review?: boolean
+          held_status?: string | null
           id?: string
           job_id?: string
           mapped_json?: Json
@@ -3557,6 +3632,72 @@ export type Database = {
           },
           {
             foreignKeyName: "offline_residents_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      opening_balances: {
+        Row: {
+          amount: number
+          as_of: string
+          created_at: string
+          created_by: string
+          flat_id: string
+          id: string
+          request_id: string
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          society_id: string
+          source: string
+          source_ref: string | null
+          status: string
+        }
+        Insert: {
+          amount: number
+          as_of: string
+          created_at?: string
+          created_by: string
+          flat_id: string
+          id?: string
+          request_id: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          society_id: string
+          source?: string
+          source_ref?: string | null
+          status?: string
+        }
+        Update: {
+          amount?: number
+          as_of?: string
+          created_at?: string
+          created_by?: string
+          flat_id?: string
+          id?: string
+          request_id?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          society_id?: string
+          source?: string
+          source_ref?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opening_balances_flat_id_fkey"
+            columns: ["flat_id"]
+            isOneToOne: false
+            referencedRelation: "flats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opening_balances_society_id_fkey"
             columns: ["society_id"]
             isOneToOne: false
             referencedRelation: "societies"
@@ -6207,6 +6348,7 @@ export type Database = {
       society_settings: {
         Row: {
           address: string | null
+          bill_run_approval_required: boolean
           bylaws_html: string | null
           bylaws_pdf_path: string | null
           city: string | null
@@ -6221,6 +6363,7 @@ export type Database = {
           handover_updated_at: string | null
           handover_updated_by: string | null
           late_fee_amount: number
+          late_fee_enabled: boolean
           late_fee_type: string
           maintenance_due_day: number
           maintenance_frequency: string
@@ -6246,6 +6389,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          bill_run_approval_required?: boolean
           bylaws_html?: string | null
           bylaws_pdf_path?: string | null
           city?: string | null
@@ -6260,6 +6404,7 @@ export type Database = {
           handover_updated_at?: string | null
           handover_updated_by?: string | null
           late_fee_amount?: number
+          late_fee_enabled?: boolean
           late_fee_type?: string
           maintenance_due_day?: number
           maintenance_frequency?: string
@@ -6285,6 +6430,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          bill_run_approval_required?: boolean
           bylaws_html?: string | null
           bylaws_pdf_path?: string | null
           city?: string | null
@@ -6299,6 +6445,7 @@ export type Database = {
           handover_updated_at?: string | null
           handover_updated_by?: string | null
           late_fee_amount?: number
+          late_fee_enabled?: boolean
           late_fee_type?: string
           maintenance_due_day?: number
           maintenance_frequency?: string
@@ -7435,6 +7582,25 @@ export type Database = {
         Args: { _society_id: string }
         Returns: number
       }
+      _bill_run_fingerprint: {
+        Args: { _cycle_config_id: string; _society_id: string }
+        Returns: string
+      }
+      _bill_run_rows: {
+        Args: { _cycle_config_id: string; _society_id: string }
+        Returns: {
+          area_sqft: number
+          current_charges: number
+          flat_id: string
+          flat_number: string
+          late_fee: number
+          overdue_balance: number
+          previous_balance: number
+          problems: string[]
+          total: number
+          unit_type: string
+        }[]
+      }
       _billing_audit: {
         Args: {
           _action: string
@@ -7901,6 +8067,14 @@ export type Database = {
         Args: { _booking_id: string; _status: string }
         Returns: undefined
       }
+      admin_set_billing_controls: {
+        Args: {
+          _approval_required: boolean
+          _late_fee_enabled: boolean
+          _society_id: string
+        }
+        Returns: Json
+      }
       admin_set_handover_status: {
         Args: { _note?: string; _society_id: string; _status: string }
         Returns: Json
@@ -8233,6 +8407,10 @@ export type Database = {
         Args: { _payload: Json; _society_id: string }
         Returns: undefined
       }
+      compare_migration_units: {
+        Args: { _rows: Json; _society_id: string }
+        Returns: Json
+      }
       complete_saas_subscription_order: {
         Args: { _razorpay_order_id: string; _request_record_id: string }
         Returns: string
@@ -8419,6 +8597,10 @@ export type Database = {
       deactivate_flat_resident: {
         Args: { _flat_resident_id: string; _reason?: string }
         Returns: undefined
+      }
+      decide_bill_run_approval: {
+        Args: { _approval_id: string; _approve: boolean; _note: string }
+        Returns: Json
       }
       duplicate_society_block_internal: {
         Args: { _actor_id: string; _block_id: string; _new_name: string }
@@ -8612,7 +8794,15 @@ export type Database = {
         }
         Returns: Json
       }
+      get_auditor_pack_extras: {
+        Args: { _from: string; _society_id: string; _to: string }
+        Returns: Json
+      }
       get_bill_payment_summary: { Args: { _bill_id: string }; Returns: Json }
+      get_bill_run_review: {
+        Args: { _cycle_config_id: string; _society_id: string }
+        Returns: Json
+      }
       get_budget_vs_actual: {
         Args: { _fy_start: number }
         Returns: {
@@ -9071,6 +9261,15 @@ export type Database = {
         }
         Returns: Json
       }
+      import_opening_balances: {
+        Args: {
+          _request_id: string
+          _rows: Json
+          _society_id: string
+          _source_ref: string
+        }
+        Returns: Json
+      }
       incident_create: {
         Args: {
           _kind: string
@@ -9498,6 +9697,7 @@ export type Database = {
         }
         Returns: Json
       }
+      migration_hold_problem_rows: { Args: { _job_id: string }; Returns: Json }
       migration_replace_staging: {
         Args: { _job_id: string; _rows: Json; _totals: Json }
         Returns: Json
@@ -9712,6 +9912,10 @@ export type Database = {
         Args: { _payment_id: string; _reason: string }
         Returns: undefined
       }
+      request_bill_run_approval: {
+        Args: { _cycle_config_id: string; _society_id: string }
+        Returns: Json
+      }
       request_join_flat: {
         Args: { _flat_id: string; _relationship: string }
         Returns: string
@@ -9761,6 +9965,10 @@ export type Database = {
       reverse_offline_payment: {
         Args: { _payment_id: string; _reason: string }
         Returns: undefined
+      }
+      review_opening_balance: {
+        Args: { _confirm: boolean; _id: string; _note: string }
+        Returns: Json
       }
       revoke_no_dues_certificate_internal: {
         Args: { _actor_id: string; _certificate_id: string; _reason: string }

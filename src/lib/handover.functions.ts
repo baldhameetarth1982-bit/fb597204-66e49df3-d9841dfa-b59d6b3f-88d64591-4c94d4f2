@@ -12,6 +12,8 @@ const summary = z.object({
   blocks: z.number(), flats: z.number(), occupied_flats: z.number(), admins: z.number(), documents: z.number(),
   completed_imports: z.number(), open_imports: z.number(), failed_imports: z.number(), import_conflict_rows: z.number(),
   opening_balance_set: z.boolean(), bills: z.number(), setup_completed: z.boolean(),
+  held_import_rows: z.number().default(0), opening_balances_unverified: z.number().default(0),
+  opening_balances_confirmed: z.number().default(0), pending_bill_run_approvals: z.number().default(0),
 });
 export type HandoverSummary = z.infer<typeof summary>;
 

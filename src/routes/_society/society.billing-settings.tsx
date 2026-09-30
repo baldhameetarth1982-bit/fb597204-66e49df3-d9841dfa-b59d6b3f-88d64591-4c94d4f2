@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { ErrorState } from "@/components/system/ErrorState";
 import { toSafeFinanceMessage } from "@/lib/finance-safe-error";
 import { getBillingSchedule, saveBillingSchedule, runBillingNow } from "@/lib/billing.functions";
+import { getBillingControls, setBillingControls } from "@/lib/workstream7.functions";
 
 export const Route = createFileRoute("/_society/society/billing-settings")({
   head: () => ({ meta: [{ title: "Billing Settings — SociyoHub" }] }),
@@ -204,15 +205,15 @@ function BillingSettingsPage() {
           </div>
         </SettingsSection>
 
-        <SettingsSection title="Late fee" description="Applied only after the grace period ends.">
+        <SettingsSection title="Late fee" description="Added to the next bill for dues still unpaid after the grace period. Off until you turn it on.">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="bs-lft">Late fee type</Label>
               <Select value={form.late_fee_type} onValueChange={(v) => setForm({ ...form, late_fee_type: v })}>
                 <SelectTrigger id="bs-lft" className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="flat">Flat amount (₹)</SelectItem>
-                  <SelectItem value="percent">Percent of bill (%)</SelectItem>
+                  <SelectItem value="flat">Flat amount (₹) per bill</SelectItem>
+                  <SelectItem value="percent">Percent of overdue dues (%)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -221,6 +222,7 @@ function BillingSettingsPage() {
               <Input id="bs-lfa" type="number" min={0} step="0.01" value={form.late_fee_amount} onChange={(e) => setForm({ ...form, late_fee_amount: Number(e.target.value) })} className="h-11 rounded-xl" />
             </div>
           </div>
+          {societyId && <BillingControls societyId={societyId} policyDirty={dirty} />}
         </SettingsSection>
 
         <SaveBar dirty={dirty} saving={saving} saveLabel="Save policy" onSave={save} onDiscard={() => baseline && setForm(baseline)} />
@@ -413,23 +415,7 @@ function AutoBillingSection({ societyId }: { societyId: string }) {
             <Label className="text-xs">Due after (days)</Label>
             <Input type="number" min={0} max={60} value={dueOffsetDays} onChange={(e) => setDueOffsetDays(e.target.value)} className="rounded-xl" />
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Late fee</Label>
-            <Select value={lateFeeType} onValueChange={(v: any) => setLateFeeType(v)}>
-              <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                <SelectItem value="flat">Flat ₹ / day</SelectItem>
-                <SelectItem value="percent">% / day</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          {lateFeeType !== "none" && (
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label className="text-xs">Late fee value</Label>
-              <Input type="number" min={0} value={lateFeeValue} onChange={(e) => setLateFeeValue(e.target.value)} className="rounded-xl" />
-            </div>
-          )}
+          <p className="self-end text-xs text-muted-foreground sm:col-span-1">Late fees are set once under Billing policy → Late fee and shown in the review before bills are created.</p>
         </div>
 
         <div className="flex items-center justify-between rounded-xl border border-border p-4">
@@ -451,6 +437,39 @@ function AutoBillingSection({ societyId }: { societyId: string }) {
           </Button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* Late-fee switch and optional second approver: saved through an audited server action. */
+function BillingControls({ societyId, policyDirty }: { societyId: string; policyDirty: boolean }) {
+  const get = useServerFn(getBillingControls);
+  const put = useServerFn(setBillingControls);
+  const [state, setState] = useState<{ lateFeeEnabled: boolean; approvalRequired: boolean } | null>(null);
+  const [err, setErr] = useState(false);
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    get({ data: { societyId } }).then((c) => setState({ lateFeeEnabled: c.lateFeeEnabled, approvalRequired: c.approvalRequired })).catch(() => setErr(true));
+  }, [societyId]);
+  async function change(next: { lateFeeEnabled: boolean; approvalRequired: boolean }) {
+    if (policyDirty && next.lateFeeEnabled && !state?.lateFeeEnabled) return toast.error("Save the late fee amount first, then turn it on.");
+    setSaving(true);
+    try { await put({ data: { societyId, ...next } }); setState(next); toast.success("Saved"); }
+    catch (e) { toast.error((e as Error).message); }
+    finally { setSaving(false); }
+  }
+  if (err) return <p className="mt-3 text-xs text-destructive">Couldn't load late fee and approval switches.</p>;
+  if (!state) return <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-3.5 w-3.5 animate-spin" />Loading…</p>;
+  return (
+    <div className="mt-4 space-y-2">
+      <label className="flex min-h-14 items-center justify-between gap-3 rounded-xl border border-border p-3">
+        <span><span className="block text-sm font-medium">Charge late fees</span><span className="block text-xs text-muted-foreground">Shown per house in the bill review before anything is created. Reverse with a bill adjustment.</span></span>
+        <Switch checked={state.lateFeeEnabled} disabled={saving} onCheckedChange={(v) => change({ ...state, lateFeeEnabled: v })} aria-label="Charge late fees" />
+      </label>
+      <label className="flex min-h-14 items-center justify-between gap-3 rounded-xl border border-border p-3">
+        <span><span className="block text-sm font-medium">Require a second approver for bill runs</span><span className="block text-xs text-muted-foreground">A different committee member must approve before bills are created.</span></span>
+        <Switch checked={state.approvalRequired} disabled={saving} onCheckedChange={(v) => change({ ...state, approvalRequired: v })} aria-label="Require second approver" />
+      </label>
     </div>
   );
 }

@@ -813,6 +813,27 @@
       "when": 1790735448414,
       "tag": "0115_bill_adjustments_revoke_writes",
       "breakpoints": true
+    },
+    {
+      "idx": 116,
+      "version": "7",
+      "when": 1790802813535,
+      "tag": "0116_workstream7_billrun_latefee_openingbal",
+      "breakpoints": true
+    },
+    {
+      "idx": 117,
+      "version": "7",
+      "when": 1790802839361,
+      "tag": "0117_fix_auditor_extras_meeting_date",
+      "breakpoints": true
+    },
+    {
+      "idx": 118,
+      "version": "7",
+      "when": 1790803206963,
+      "tag": "0118_ws7_read_grants",
+      "breakpoints": true
     }
   ]
 }

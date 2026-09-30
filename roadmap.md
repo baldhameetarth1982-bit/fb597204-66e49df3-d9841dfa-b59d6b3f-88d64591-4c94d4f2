@@ -114,3 +114,13 @@
 - [x] Preview check of Purchases/Budgets screens (phone + desktop, no errors/overflow)
 
 - [x] Workstream 6 — Governance, documents & privacy: notices (priority/expiry/ack/truthful counts), meetings, formal votes, versioned document vault, privacy requests. 52/52 rollback tests passed. Resident-only screens and a second-committee reviewer not preview-tested (no legitimate accounts).
+
+## Workstream 7 — Finance, Migration & Handover (in progress)
+- [x] Immutable bill adjustments (counter-entry corrections) + ageing includes them
+- [x] Handover checklist + audited status
+- [x] Export: adjustments, procurement, budgets, meetings, resolutions, documents, staff, assets, inventory, import history
+- [ ] Bill-run exceptions list + optional second-approver
+- [ ] Late fee: apply safely or hide the dead setting
+- [ ] Migration: partial success, opening-balance (unverified) import, compare-only dual-run, XLSX→CSV
+- [ ] Auditor Pack: adjustments + procurement/budget sections
+- [ ] Rollback QA + previews; then mark complete

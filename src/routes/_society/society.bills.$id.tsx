@@ -18,6 +18,8 @@ import { toast } from "sonner";
 import { toSafeFinanceError } from "@/lib/finance-safe-error";
 import { shareBillAsImage } from "@/components/billing/BillCardImage";
 import { formatDate } from "@/utils/format";
+import { BillAdjustmentsPanel } from "@/components/billing/BillAdjustmentsPanel";
+import { useSocietyId } from "@/hooks/useSocietyId";
 
 export const Route = createFileRoute("/_society/society/bills/$id")({
   head: () => ({ meta: [{ title: "Bill Detail — SociyoHub" }] }),
@@ -35,6 +37,7 @@ export const Route = createFileRoute("/_society/society/bills/$id")({
  */
 function BillDetailPage() {
   const { id } = Route.useParams();
+  const { societyId } = useSocietyId();
   const { user, hasRole } = useAuth();
   const loadDetail = useServerFn(getAdminBillDetail);
   const cancelBillFn = useServerFn(cancelBill);
@@ -198,6 +201,9 @@ function BillDetailPage() {
               <p className="flex items-start gap-2 rounded-xl bg-muted/40 p-3 text-xs text-muted-foreground"><Info className="h-4 w-4 shrink-0" />Payments for this bill are verified on the Payments page. Verified payments issue receipts; pending ones don't change the bill.</p>
             </div>
           </details>
+          {isAdmin && societyId && !bill.cancelled_at && (
+            <div className="mt-4"><BillAdjustmentsPanel societyId={societyId} billId={id} canAdjust={state.code !== "cancelled"} /></div>
+          )}
         </article>
 
         <aside className="space-y-2" aria-label="Bill actions">

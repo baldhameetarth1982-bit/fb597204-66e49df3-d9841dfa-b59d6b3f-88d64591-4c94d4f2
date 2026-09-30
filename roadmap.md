@@ -115,7 +115,7 @@
 
 - [x] Workstream 6 — Governance, documents & privacy: notices (priority/expiry/ack/truthful counts), meetings, formal votes, versioned document vault, privacy requests. 52/52 rollback tests passed. Resident-only screens and a second-committee reviewer not preview-tested (no legitimate accounts).
 
-## Workstream 7 — Finance, Migration & Handover (in progress)
+## Workstream 7 — Finance, Migration & Handover (complete — validated 2026-09-30; Workstream 8 not started)
 - [x] Immutable bill adjustments (counter-entry corrections) + ageing includes them
 - [x] Handover checklist + audited status
 - [x] Export: adjustments, procurement, budgets, meetings, resolutions, documents, staff, assets, inventory, import history

@@ -134,6 +134,10 @@ function suggestedMapping(headers: string[], entity: EntityType, source: SourceT
 
 
 
+import { MigrationCompare } from "@/components/migration/MigrationCompare";
+import { xlsxToCsvFile } from "@/lib/sheet-rows";
+import { holdMigrationProblemRows } from "@/lib/workstream7.functions";
+
 export const Route = createFileRoute("/_society/society/import")({
   head: () => ({ meta: [{ title: "Bulk Import — SociyoHub" }] }),
   component: () => (
@@ -212,25 +216,42 @@ function ImportPage() {
 
   const canValidate = useMemo(() => headers.length > 0 && Object.keys(mapping).length > 0, [headers, mapping]);
   const canCommit = totals !== null && totals.errors === 0 && commitStatus !== "completed";
+  const holdRows = useServerFn(holdMigrationProblemRows);
+  async function doHoldProblems() {
+    if (!jobId || !totals) return;
+    setBusy("commit");
+    try {
+      const r = await holdRows({ data: { jobId } });
+      toast.success(`${r.held ?? totals.errors} problem rows set aside for review. The rest can be imported.`);
+      setTotals({ ...totals, errors: 0, valid: totals.total - (r.held ?? totals.errors) });
+    } catch (e) { toast.error((e as Error).message); }
+    finally { setBusy(null); }
+  }
 
   async function doUploadAndFinalize() {
     if (!societyId || !file) return;
     setBusy("upload");
     try {
+      let file_ = file;
+      if (/\.xlsx$/i.test(file.name)) {
+        const c = await xlsxToCsvFile(file);
+        if (!c.ok) { toast.error(c.error); return; }
+        file_ = c.file;
+      }
       const init = await initUpload({
         data: {
           society_id: societyId,
           source_type: sourceType,
-          filename: file.name,
-          declared_size: file.size,
-          declared_mime: file.type || null,
+          filename: file_.name,
+          declared_size: file_.size,
+          declared_mime: file_.type || null,
           // structure mode is derived server-side from the society
         },
       });
       const uploadRes = await fetch(init.upload_url, {
         method: "PUT",
-        headers: { "content-type": file.type || "application/octet-stream" },
-        body: file,
+        headers: { "content-type": file_.type || "application/octet-stream" },
+        body: file_,
       });
       if (!uploadRes.ok) throw new Error("upload_failed");
 
@@ -477,8 +498,8 @@ function ImportPage() {
             <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground flex items-start gap-2">
               <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
               <div className="space-y-1">
-                <p>Only <code>.csv</code> files are accepted in this release. Files up to 10&nbsp;MB and 5,000 rows.</p>
-                <p>Macros, archives, and XLSX are rejected server-side. Uploads are private per society.</p>
+                <p>Upload <code>.csv</code> or <code>.xlsx</code>. Excel files are converted to CSV on your device (values only, first sheet, up to 5&nbsp;MB and 5,000 rows).</p>
+                <p>Formulas and macros are never run. Uploads are private per society.</p>
               </div>
             </div>
 
@@ -486,14 +507,14 @@ function ImportPage() {
               <label className="inline-flex">
                 <input
                   type="file"
-                  accept=".csv,text/csv"
+                  accept=".csv,text/csv,.xlsx"
                   className="hidden"
                   onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                 />
                 <Button asChild variant="outline" className="rounded-xl">
                   <span>
                     <Upload className="h-4 w-4 mr-1.5" />
-                    {file ? file.name : "Choose CSV"}
+                    {file ? file.name : "Choose CSV or Excel"}
                   </span>
                 </Button>
               </label>
@@ -565,6 +586,11 @@ function ImportPage() {
                     <StatusChip tone="danger">{totals.errors} errors</StatusChip>
                   )}
                 </div>
+                {totals.errors > 0 && totals.valid > 0 && commitStatus !== "completed" && (
+                  <Button variant="outline" onClick={doHoldProblems} disabled={busy !== null} className="rounded-xl">
+                    Import valid rows, keep problems aside
+                  </Button>
+                )}
                 <Button
                   onClick={() => setConfirmMode(true)}
                   disabled={!canCommit || busy !== null}
@@ -726,6 +752,7 @@ function ImportPage() {
           </Card>
         )}
       </div>
+      {societyId && <MigrationCompare societyId={societyId} />}
     </div>
   );
 }

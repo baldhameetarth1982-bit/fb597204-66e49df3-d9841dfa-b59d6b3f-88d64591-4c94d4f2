@@ -1,10 +1,9 @@
-import {
-  Gavel, CalendarDays, createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Building2, Home, Car, Users, UserCheck, ShieldCheck, MessageSquare,
   Receipt, Wallet, BarChart3, TrendingDown, BookOpen,
   Settings2, UsersRound, Activity, LifeBuoy, Sparkles, KeyRound, Building, Lock,
-  LayoutGrid, Compass, FileCheck2, Trophy, Palette, CalendarDays,
+  LayoutGrid, Compass, FileCheck2, Trophy, Palette, CalendarDays, Gavel,
   Wrench,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";

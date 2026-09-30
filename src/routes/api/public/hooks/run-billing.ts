@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { recordSchedulerRun } from "@/lib/scheduler-runs.server";
 
 /**
  * Daily billing cron hook.
@@ -78,6 +79,7 @@ export const Route = createFileRoute("/api/public/hooks/run-billing")({
           return new Response("Bad Request", { status: 400 });
         }
 
+        return recordSchedulerRun(supabaseAdmin as never, "run-billing", `${new Date().toISOString().slice(0, 13)}:${onlySociety ?? "all"}`, async () => {
         const nowIso = new Date().toISOString();
         let schQuery = supabaseAdmin
           .from("billing_schedules")
@@ -225,6 +227,7 @@ export const Route = createFileRoute("/api/public/hooks/run-billing")({
           totalGenerated,
           societiesProcessed,
           societiesSkipped,
+        });
         });
       },
     },

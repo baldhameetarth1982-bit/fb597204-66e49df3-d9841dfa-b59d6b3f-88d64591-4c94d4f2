@@ -119,11 +119,11 @@ export function SocietyFinanceChart({ societyId }: { societyId: string }) {
         <div className="grid grid-cols-3 gap-3 mt-4 text-center text-sm">
           <div className="rounded-xl bg-emerald-500/5 p-3">
             <p className="text-xs text-muted-foreground">Income</p>
-            <p className="font-semibold text-emerald-500">{INR.format(totalIncome)}</p>
+            <p className="font-semibold text-emerald-700 dark:text-emerald-400">{INR.format(totalIncome)}</p>
           </div>
           <div className="rounded-xl bg-red-500/5 p-3">
             <p className="text-xs text-muted-foreground">Expense</p>
-            <p className="font-semibold text-red-500">{INR.format(totalExpense)}</p>
+            <p className="font-semibold text-red-700 dark:text-red-400">{INR.format(totalExpense)}</p>
           </div>
           <div className={`rounded-xl p-3 ${profit > 0 ? "bg-emerald-500/5" : profit < 0 ? "bg-red-500/5" : "bg-muted"}`}>
             <p className="text-xs text-muted-foreground">Net</p>

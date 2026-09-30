@@ -228,23 +228,23 @@ function SocietyDashboard() {
       </header>
 
       {/* Key money figures — one strip, not three hero cards */}
-      <dl aria-busy={isLoading} className="mt-5 grid grid-cols-2 overflow-hidden rounded-xl border border-border bg-card lg:grid-cols-4 [&>div]:border-border [&>div:nth-child(odd)]:border-r lg:[&>div]:border-r lg:[&>div:last-child]:border-r-0 [&>div:nth-child(-n+2)]:border-b lg:[&>div]:border-b-0">
+      <ul aria-label="Key money figures" aria-busy={isLoading} className="mt-5 grid grid-cols-2 overflow-hidden rounded-xl border border-border bg-card lg:grid-cols-4 [&>li]:border-border [&>li:nth-child(odd)]:border-r lg:[&>li]:border-r lg:[&>li:last-child]:border-r-0 [&>li:nth-child(-n+2)]:border-b lg:[&>li]:border-b-0">
         {[
           { k: "Collected this month", v: collectedLabel, to: "/society/payments" },
           { k: "Outstanding", v: outstandingLabel, to: "/society/billing" },
           { k: "Collection rate", v: collectionLabel, to: "/society/billing" },
           { k: "Visitors today", v: data ? String(data.visitorsToday) : "—", to: "/society/visitors" },
         ].map((m) => (
-          <div key={m.k}>
+          <li key={m.k}>
             <Link to={m.to as "/society/billing"} className="block px-4 py-3.5 hover:bg-muted/50 focus-visible:outline-none focus-visible:bg-muted/60 md:px-5 md:py-4">
-              <dt className="text-xs text-muted-foreground">{m.k}</dt>
-              <dd className="mt-1 text-xl font-semibold tabular-nums tracking-tight md:text-2xl">
+              <span className="block text-xs text-muted-foreground">{m.k}</span>
+              <span className="mt-1 block text-xl font-semibold tabular-nums tracking-tight md:text-2xl">
                 {isLoading ? <Skeleton className="h-7 w-20" /> : m.v}
-              </dd>
+              </span>
             </Link>
-          </div>
+          </li>
         ))}
-      </dl>
+      </ul>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-12">
         {/* Primary column */}

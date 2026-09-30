@@ -1,3 +1,4 @@
+import { AISummaryCard } from "@/components/shared/AISummaryCard";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -116,6 +117,7 @@ function ResidentMeetings() {
                 {open.meeting_link && <a href={open.meeting_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 break-all text-primary underline"><Link2 className="h-4 w-4 shrink-0" aria-hidden />Join link</a>}
                 {open.cancel_reason && <p className="text-destructive">Cancelled: {open.cancel_reason}</p>}
               </div>
+              <AISummaryCard key={open.id} target={{ kind: "meeting", id: open.id }} />
               {open.agenda && <div><h3 className="text-sm font-semibold">Agenda</h3><p className="whitespace-pre-wrap text-sm text-muted-foreground">{open.agenda}</p></div>}
               {open.status === "scheduled" && new Date(open.starts_at) > new Date() && (
                 <div role="radiogroup" aria-label="Will you attend?" className="grid grid-cols-3 gap-2">

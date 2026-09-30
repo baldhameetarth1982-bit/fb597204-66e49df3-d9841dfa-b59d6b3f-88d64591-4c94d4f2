@@ -5332,8 +5332,11 @@ export type Database = {
           finished_at: string | null
           id: string
           job: string
+          last_skipped_at: string | null
           processed: number
+          recovered_count: number
           run_key: string
+          skip_count: number
           started_at: string
           status: string
         }
@@ -5344,8 +5347,11 @@ export type Database = {
           finished_at?: string | null
           id?: string
           job: string
+          last_skipped_at?: string | null
           processed?: number
+          recovered_count?: number
           run_key: string
+          skip_count?: number
           started_at?: string
           status?: string
         }
@@ -5356,8 +5362,11 @@ export type Database = {
           finished_at?: string | null
           id?: string
           job?: string
+          last_skipped_at?: string | null
           processed?: number
+          recovered_count?: number
           run_key?: string
+          skip_count?: number
           started_at?: string
           status?: string
         }
@@ -7706,6 +7715,16 @@ export type Database = {
       _gate_society: { Args: never; Returns: string }
       _gov_admin_society: { Args: never; Returns: string }
       _gov_member_society: { Args: never; Returns: string }
+      _guard_attention_counts: {
+        Args: never
+        Returns: {
+          incidents: number
+          overstay: number
+          pending: number
+          restricted: number
+          sos: number
+        }[]
+      }
       _helpdesk_is_admin: { Args: { _sid: string }; Returns: boolean }
       _helpdesk_sla_hours: { Args: { _priority: string }; Returns: number }
       _knowledge_admin_society: { Args: never; Returns: string }
@@ -7751,6 +7770,19 @@ export type Database = {
         }
         Returns: undefined
       }
+      _notify_flat_once: {
+        Args: {
+          _body: string
+          _flat: string
+          _key: string
+          _kind: string
+          _link: string
+          _priority?: string
+          _sid: string
+          _title: string
+        }
+        Returns: number
+      }
       _notify_gate_staff: {
         Args: {
           _admins_only?: boolean
@@ -7762,6 +7794,18 @@ export type Database = {
         }
         Returns: undefined
       }
+      _notify_gate_staff_once: {
+        Args: {
+          _body: string
+          _key: string
+          _kind: string
+          _link: string
+          _priority?: string
+          _sid: string
+          _title: string
+        }
+        Returns: number
+      }
       _notify_society_admins: {
         Args: {
           _body: string
@@ -7771,6 +7815,18 @@ export type Database = {
           _title: string
         }
         Returns: undefined
+      }
+      _notify_society_admins_once: {
+        Args: {
+          _body: string
+          _key: string
+          _kind: string
+          _link: string
+          _priority?: string
+          _sid: string
+          _title: string
+        }
+        Returns: number
       }
       _notify_user: {
         Args: {
@@ -10062,6 +10118,7 @@ export type Database = {
         Args: { _actor_id: string; _certificate_id: string; _reason: string }
         Returns: undefined
       }
+      run_logged_db_job: { Args: { _job: string }; Returns: string }
       saas_subscription_quote: {
         Args: { _plan_id: string; _society_id: string }
         Returns: Json
@@ -10111,6 +10168,7 @@ export type Database = {
         Args: { _society_id: string; _state: Json }
         Returns: undefined
       }
+      scheduler_prune_runs: { Args: never; Returns: number }
       scheduler_run_begin: {
         Args: { _job: string; _run_key: string }
         Returns: string

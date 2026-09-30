@@ -1,3 +1,4 @@
+import { AISummaryCard } from "@/components/shared/AISummaryCard";
 import { NeedsAttention } from "@/components/shared/NeedsAttention";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
@@ -288,6 +289,7 @@ function SocietyDashboard() {
           <section aria-labelledby="exceptions-h">
             <h2 id="exceptions-h" className="mb-2 text-sm font-semibold">Exceptions</h2>
             <NeedsAttention exclude={["payments_verify", "join_pending"]} emptyText="No overdue, expiring or security exceptions." />
+            <div className="mt-2"><AISummaryCard target={{ kind: "attention" }} label="Explain these exceptions with AI" /></div>
           </section>
 
           {societyId && (

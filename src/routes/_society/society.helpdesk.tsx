@@ -1,3 +1,4 @@
+import { AISummaryCard } from "@/components/shared/AISummaryCard";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useDeferredValue, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -203,6 +204,7 @@ function HelpdeskQueue() {
                 {sel.parent_ticket_id && <p className="text-xs text-muted-foreground">Follow-up of an earlier request</p>}
                 {sel.rating && <p className="text-xs text-muted-foreground">Resident rating: {sel.rating}/5</p>}
               </SheetHeader>
+              <AISummaryCard key={sel.id} target={{ kind: "ticket", id: sel.id }} />
               <p className="whitespace-pre-wrap break-words text-sm">{sel.description}</p>
 
               <div className="space-y-1.5">

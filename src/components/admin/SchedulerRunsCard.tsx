@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-type Run = { id: string; job: string; status: string; started_at: string; attempts: number; processed: number };
+type Run = { id: string; job: string; status: string; started_at: string; attempts: number; processed: number; skip_count: number; recovered_count: number; error: string | null };
 
 /** Super Admin view of the shared scheduler run log (RLS: super admins only). */
 export function SchedulerRunsCard() {
@@ -11,9 +11,9 @@ export function SchedulerRunsCard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("scheduler_job_runs")
-        .select("id,job,status,started_at,attempts,processed")
+        .select("id,job,status,started_at,attempts,processed,skip_count,recovered_count,error")
         .order("started_at", { ascending: false })
-        .limit(8);
+        .limit(12);
       if (error) throw error;
       return (data ?? []) as Run[];
     },
@@ -31,8 +31,9 @@ export function SchedulerRunsCard() {
               <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
                 <span className="min-w-0 truncate">{r.job} <span className="text-xs text-muted-foreground">{new Date(r.started_at).toLocaleString()}</span></span>
                 <span className={r.status === "failed" || stale(r) ? "text-destructive" : "text-muted-foreground"}>
-                  {stale(r) ? "stalled" : r.status}{r.attempts > 1 ? ` · try ${r.attempts}` : ""}{r.status === "succeeded" ? ` · ${r.processed}` : ""}
+                  {stale(r) ? "stalled" : r.status}{r.attempts > 1 ? ` · try ${r.attempts}` : ""}{r.status === "succeeded" ? ` · ${r.processed} done` : ""}{r.recovered_count > 0 ? " · recovered" : ""}{r.skip_count > 0 ? ` · ${r.skip_count} duplicate skipped` : ""}
                 </span>
+                {r.status === "failed" && r.error && <span className="w-full truncate text-xs text-muted-foreground">{r.error}</span>}
               </li>
             ))}
           </ul>

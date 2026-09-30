@@ -12,70 +12,21 @@ export type AskSecretaryResult =
   | { ok: true; data: import("./ai-secretary.server").SecretaryAnswer }
   | { ok: false; code: "not_member" | "plan_locked" | "rate_limited" | "ai_unavailable" | "retrieval_failed"; message: string };
 
+const SECRETARY_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["found", "conflict", "answer", "cited"],
+  properties: {
+    found: { type: "boolean" },
+    conflict: { type: "boolean" },
+    answer: { type: "string" },
+    cited: { type: "array", items: { type: "string" } },
+  },
+};
+
 async function callResponses(system: string, user: string) {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) throw new Error("ai_config");
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Lovable-API-Key": key, "X-Lovable-AIG-SDK": "fetch" },
-    body: JSON.stringify({
-      model: "openai/gpt-6-astra",
-      stream: true,
-      store: false,
-      reasoning: { effort: "low" },
-      instructions: system,
-      input: user,
-      text: {
-        format: {
-          type: "json_schema",
-          name: "secretary_answer",
-          strict: true,
-          schema: {
-            type: "object",
-            additionalProperties: false,
-            required: ["found", "conflict", "answer", "cited"],
-            properties: {
-              found: { type: "boolean" },
-              conflict: { type: "boolean" },
-              answer: { type: "string" },
-              cited: { type: "array", items: { type: "string" } },
-            },
-          },
-        },
-      },
-    }),
-  });
-  if (!res.ok || !res.body) throw Object.assign(new Error("ai_http"), { status: res.status });
-  const reader = res.body.getReader();
-  const dec = new TextDecoder();
-  let buf = "";
-  let out = "";
-  let refused = false;
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buf += dec.decode(value, { stream: true });
-    let i;
-    while ((i = buf.indexOf("\n\n")) >= 0) {
-      const frame = buf.slice(0, i);
-      buf = buf.slice(i + 2);
-      for (const line of frame.split("\n")) {
-        if (!line.startsWith("data:")) continue;
-        const d = line.slice(5).trim();
-        if (!d || d === "[DONE]") continue;
-        try {
-          const ev = JSON.parse(d);
-          if (ev.type === "response.output_text.delta") out += ev.delta ?? "";
-          if (ev.type === "response.refusal.delta") refused = true;
-          if (ev.type === "response.failed" || ev.type === "error") throw new Error("ai_failed");
-        } catch (e) {
-          if ((e as Error).message === "ai_failed") throw e;
-        }
-      }
-    }
-  }
-  if (refused) return "";
-  return out;
+  const { callResponsesJson } = await import("@/lib/ai-responses.server");
+  return callResponsesJson(system, user, "secretary_answer", SECRETARY_SCHEMA);
 }
 
 export const askSecretary = createServerFn({ method: "POST" })

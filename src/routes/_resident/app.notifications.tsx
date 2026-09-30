@@ -27,7 +27,7 @@ export const Route = createFileRoute("/_resident/app/notifications")({
 type Cat = "all" | "notices" | "billing" | "visitors" | "helpdesk" | "parking";
 interface Item {
   key: string; cat: Exclude<Cat, "all">; title: string; body: string | null; at: string; unread: boolean;
-  to: string; icon: typeof Bell; emergency?: boolean; source: "personal" | "notice" | "bill"; refId: string;
+  to: string; icon: typeof Bell; emergency?: boolean; priority?: "high" | "urgent"; source: "personal" | "notice" | "bill"; refId: string;
 }
 const TABS: { v: Cat; label: string }[] = [
   { v: "all", label: "All" }, { v: "notices", label: "Notices" }, { v: "billing", label: "Bills" },
@@ -53,7 +53,7 @@ function NotificationCenter() {
     enabled: !!user, queryKey: ["user-notifications", user?.id], staleTime: 15_000,
     queryFn: async () => {
       const { data, error } = await supabase.from("user_notifications")
-        .select("id, kind, title, body, created_at, read_at").order("created_at", { ascending: false }).limit(100);
+        .select("id, kind, title, body, created_at, read_at, priority").order("created_at", { ascending: false }).limit(100);
       if (error) throw error;
       return data ?? [];
     },
@@ -87,7 +87,7 @@ function NotificationCenter() {
     const out: Item[] = [];
     for (const n of personal.data ?? []) {
       const m = PERSONAL[n.kind] ?? { cat: "helpdesk" as const, icon: Bell, to: "/app/dashboard" };
-      out.push({ key: `p-${n.id}`, cat: m.cat, title: n.title, body: n.body, at: n.created_at, unread: !n.read_at, to: m.to, icon: m.icon, source: "personal", refId: n.id });
+      out.push({ key: `p-${n.id}`, cat: m.cat, title: n.title, body: n.body, at: n.created_at, unread: !n.read_at, to: m.to, icon: m.icon, source: "personal", refId: n.id, emergency: n.priority === "urgent", priority: n.priority === "urgent" || n.priority === "high" ? n.priority : undefined });
     }
     const read = notices.data?.read ?? new Set<string>();
     for (const n of notices.data?.notices ?? []) {
@@ -159,7 +159,10 @@ function NotificationCenter() {
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-xs text-muted-foreground">{TABS.find((t) => t.v === i.cat)?.label} · {new Date(i.at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}</span>
-          <span className={cn("block truncate text-sm", i.unread ? "font-semibold" : "font-medium")}>{i.title}</span>
+          <span className="flex min-w-0 items-center gap-1.5">
+            {i.priority && <span className={cn("shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase", i.priority === "urgent" ? "bg-destructive text-destructive-foreground" : "bg-warning/15 text-warning-foreground")}>{i.priority === "urgent" ? "Urgent" : "Important"}</span>}
+            <span className={cn("block truncate text-sm", i.unread ? "font-semibold" : "font-medium")}>{i.title}</span>
+          </span>
           {i.body && <span className="block truncate text-xs text-muted-foreground">{i.body}</span>}
         </span>
         {i.unread && <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-primary" aria-label="Unread" />}

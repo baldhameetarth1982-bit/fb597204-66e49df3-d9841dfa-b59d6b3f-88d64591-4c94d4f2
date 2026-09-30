@@ -1,3 +1,4 @@
+import { AISummaryCard } from "@/components/shared/AISummaryCard";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -184,6 +185,7 @@ function MeetingDetail({ m, societyId, onChanged, onEdit }: { m: Meeting; societ
         <span className={cn("w-fit rounded px-1.5 py-0.5 text-xs font-medium", MEETING_STATUS[m.status]?.className)}>{MEETING_STATUS[m.status]?.label}</span>
         <SheetTitle className="text-left text-xl">{m.title}</SheetTitle>
       </SheetHeader>
+      <AISummaryCard key={m.id} target={{ kind: "meeting", id: m.id }} />
       <div className="space-y-1 text-sm">
         <p className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-muted-foreground" aria-hidden />{fmtDateTime(m.starts_at)}</p>
         {m.location && <p className="flex items-center gap-2"><MapPin className="h-4 w-4 text-muted-foreground" aria-hidden />{m.location}</p>}

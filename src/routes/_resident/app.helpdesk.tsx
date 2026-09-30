@@ -1,3 +1,4 @@
+import { AISummaryCard } from "@/components/shared/AISummaryCard";
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
@@ -298,6 +299,7 @@ function HelpdeskPage() {
                 <span className={`w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusMeta(current.status).tone}`}>{statusMeta(current.status).label}</span>
               </SheetHeader>
               <p className="whitespace-pre-wrap break-words text-sm">{current.description}</p>
+              <AISummaryCard key={current.id} target={{ kind: "ticket", id: current.id }} />
               {current.resolution_note && (
                 <div className="rounded-xl bg-muted/60 p-3 text-sm">
                   <p className="text-xs font-semibold text-muted-foreground">{current.status === "rejected" ? "Reason" : "Resolution"}</p>

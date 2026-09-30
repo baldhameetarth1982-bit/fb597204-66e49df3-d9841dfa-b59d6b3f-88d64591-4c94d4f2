@@ -9,7 +9,7 @@ type Item = { key: string; priority: number; reason: string; item_count: number;
  * Deterministic "Needs attention" list from the server `get_needs_attention` RPC.
  * Counts come straight from canonical records under the caller's role; no AI, no cached counters.
  */
-export function NeedsAttention({ max = 6, exclude = [], emptyText = "{emptyText}" }: { max?: number; exclude?: string[]; emptyText?: string }) {
+export function NeedsAttention({ max = 6, exclude = [], emptyText = "Nothing needs attention right now." }: { max?: number; exclude?: string[]; emptyText?: string }) {
   const q = useQuery({
     queryKey: ["needs-attention"],
     staleTime: 60_000,

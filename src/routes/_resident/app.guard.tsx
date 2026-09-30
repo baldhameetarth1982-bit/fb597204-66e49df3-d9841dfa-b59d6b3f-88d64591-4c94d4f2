@@ -1,3 +1,4 @@
+import { NeedsAttention } from "@/components/shared/NeedsAttention";
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
@@ -158,6 +159,10 @@ function GuardDashboard() {
       </header>
 
       <SosAlertsCard />
+      <section aria-labelledby="guard-attn-h" className="space-y-2">
+        <h2 id="guard-attn-h" className="text-sm font-semibold">Needs attention</h2>
+        <NeedsAttention emptyText="No gate or security items need attention." />
+      </section>
       <OfflineQueuePanel onSynced={refresh} />
 
       <Card className="rounded-2xl border-primary/30 bg-primary/5">

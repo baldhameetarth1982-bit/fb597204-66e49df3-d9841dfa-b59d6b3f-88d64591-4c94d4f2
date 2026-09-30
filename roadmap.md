@@ -125,12 +125,13 @@
 - [x] Auditor Pack: adjustments + procurement/budget sections
 - [x] Rollback QA + previews; then mark complete
 
-## Workstream 8 — Intelligence, Automation, Search & Role Homes (in progress)
+## Workstream 8 — Intelligence, Automation, Search & Role Homes (complete — validated 2026-09-30; Workstream 9 not started)
 - [x] Server-authorized cross-domain search (global_search) + search UI
 - [x] Deterministic Needs Attention (committee + resident homes)
 - [x] Scheduler run log, duplicate/stale protection on billing + reminder hooks; Super Admin job card
 - [x] Notification priority + dedupe helper
 - [x] Security rollback QA (search/attention/scheduler/notifications)
-- [ ] AI summaries (helpdesk/meeting/exception explanations) on existing AI boundary
-- [ ] Guard home attention; log in-database scheduled jobs (tenancy expiry, notices) to the run log
-- [ ] Move existing reminder senders onto _notify_user_once; show priority in notification list
+- [x] AI summaries (helpdesk/meeting/exception explanations) on existing AI boundary
+- [x] Guard home attention; log in-database scheduled jobs (tenancy expiry, notices) to the run log
+- [x] Move existing reminder senders onto _notify_user_once; show priority in notification list
+- [ ] Live guard/resident preview — blocked: no legitimate guard or resident account

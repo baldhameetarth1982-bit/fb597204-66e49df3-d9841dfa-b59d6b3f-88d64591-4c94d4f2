@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import {
+  Gavel, CalendarDays, createFileRoute, Link } from "@tanstack/react-router";
 import {
   Building2, Home, Car, Users, UserCheck, ShieldCheck, MessageSquare,
   Receipt, Wallet, BarChart3, TrendingDown, BookOpen,
@@ -39,6 +40,8 @@ const MANAGEMENT: Tile[] = [
   { to: "/society/communication", label: "Communication", icon: MessageSquare },
   { to: "/society/polls", label: "Polls", icon: Sparkles, feature: "polls" },
   { to: "/society/surveys", label: "Surveys", icon: Sparkles, feature: "polls" },
+  { to: "/society/votes", label: "Formal votes", icon: Gavel, feature: "polls" },
+  { to: "/society/meetings", label: "Meetings", icon: CalendarDays },
   { to: "/society/data-export", label: "Data export", icon: FileCheck2 },
 ];
 
@@ -67,6 +70,7 @@ const OTHER: Tile[] = [
   { to: "/society/subscription", label: "Subscription", icon: Wallet },
   { to: "/society/team", label: "Team & roles", icon: Users, feature: "team_roles" },
   { to: "/society/privacy-settings", label: "Privacy", icon: ShieldCheck, feature: "privacy_controls" },
+  { to: "/society/privacy-requests", label: "Privacy requests", icon: ShieldCheck },
   { to: "/society/branding", label: "Branding", icon: Palette, feature: "custom_branding" },
   { to: "/society/import", label: "Resident import", icon: Users, feature: "resident_import" },
   { to: "/society/bill-studio", label: "Bill templates", icon: Receipt, feature: "bill_templates" },

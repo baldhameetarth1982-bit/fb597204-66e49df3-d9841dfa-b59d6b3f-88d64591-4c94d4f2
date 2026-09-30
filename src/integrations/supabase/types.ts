@@ -600,6 +600,64 @@ export type Database = {
           },
         ]
       }
+      bill_adjustments: {
+        Row: {
+          amount: number
+          bill_id: string
+          counter_of: string | null
+          created_at: string
+          created_by: string
+          id: string
+          reason: string
+          request_id: string
+          society_id: string
+        }
+        Insert: {
+          amount: number
+          bill_id: string
+          counter_of?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          reason: string
+          request_id: string
+          society_id: string
+        }
+        Update: {
+          amount?: number
+          bill_id?: string
+          counter_of?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          reason?: string
+          request_id?: string
+          society_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bill_adjustments_bill_id_fkey"
+            columns: ["bill_id"]
+            isOneToOne: false
+            referencedRelation: "bills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bill_adjustments_counter_of_fkey"
+            columns: ["counter_of"]
+            isOneToOne: false
+            referencedRelation: "bill_adjustments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bill_adjustments_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bill_generation_batches: {
         Row: {
           bills_created: number
@@ -6158,6 +6216,10 @@ export type Database = {
           financial_year_label: string | null
           financial_year_start_month: number
           grace_days: number
+          handover_note: string | null
+          handover_status: string
+          handover_updated_at: string | null
+          handover_updated_by: string | null
           late_fee_amount: number
           late_fee_type: string
           maintenance_due_day: number
@@ -6193,6 +6255,10 @@ export type Database = {
           financial_year_label?: string | null
           financial_year_start_month?: number
           grace_days?: number
+          handover_note?: string | null
+          handover_status?: string
+          handover_updated_at?: string | null
+          handover_updated_by?: string | null
           late_fee_amount?: number
           late_fee_type?: string
           maintenance_due_day?: number
@@ -6228,6 +6294,10 @@ export type Database = {
           financial_year_label?: string | null
           financial_year_start_month?: number
           grace_days?: number
+          handover_note?: string | null
+          handover_status?: string
+          handover_updated_at?: string | null
+          handover_updated_by?: string | null
           late_fee_amount?: number
           late_fee_type?: string
           maintenance_due_day?: number
@@ -7599,6 +7669,17 @@ export type Database = {
         }
         Returns: string
       }
+      admin_add_bill_adjustment: {
+        Args: {
+          _amount: number
+          _bill_id: string
+          _counter_of?: string
+          _reason: string
+          _request_id: string
+          _society_id: string
+        }
+        Returns: Json
+      }
       admin_adjust_inventory: {
         Args: { _delta: number; _item: string; _reason: string }
         Returns: number
@@ -7819,6 +7900,10 @@ export type Database = {
       admin_set_amenity_booking_status: {
         Args: { _booking_id: string; _status: string }
         Returns: undefined
+      }
+      admin_set_handover_status: {
+        Args: { _note?: string; _society_id: string; _status: string }
+        Returns: Json
       }
       admin_set_society_automation: {
         Args: {
@@ -8555,6 +8640,7 @@ export type Database = {
         Returns: Json
       }
       get_flat_occupancy: { Args: { _flat_id: string }; Returns: Json }
+      get_handover_summary: { Args: { _society_id: string }; Returns: Json }
       get_outstanding_dues: {
         Args: { _society_id: string }
         Returns: {

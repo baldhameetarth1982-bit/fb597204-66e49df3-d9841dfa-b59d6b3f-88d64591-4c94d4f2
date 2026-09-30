@@ -19,7 +19,8 @@ export function sniffSpreadsheet(bytes: Uint8Array): "xlsx" | "xls" | "csv" | "u
 }
 
 /** Values-only, bounded parse of the first sheet. Formulas, HTML and macros are never evaluated. */
-export function readFirstSheetSafely(buf: ArrayBuffer, filename: string): SheetReadResult {
+/** textValues: keep CSV cells as typed text and read Excel dates as dates (no number/date guessing). */
+export function readFirstSheetSafely(buf: ArrayBuffer, filename: string, opts: { textValues?: boolean } = {}): SheetReadResult {
   if (buf.byteLength === 0) return { ok: false, error: "empty" };
   if (buf.byteLength > SHEET_MAX_BYTES) return { ok: false, error: "too_large" };
   const bytes = new Uint8Array(buf);
@@ -31,6 +32,7 @@ export function readFirstSheetSafely(buf: ArrayBuffer, filename: string): SheetR
     const wb = XLSX.read(bytes, {
       type: "array", cellFormula: false, cellHTML: false, cellStyles: false, bookVBA: false,
       bookFiles: false, sheetRows: SHEET_MAX_ROWS + 2, dense: true, WTF: false,
+      ...(opts.textValues ? { raw: kind === "csv", cellDates: true } : {}),
     });
     const name = wb.SheetNames[0];
     const sheet = name ? wb.Sheets[name] : undefined;

@@ -3643,6 +3643,7 @@ export type Database = {
         Row: {
           amount: number
           as_of: string
+          carried_bill_id: string | null
           created_at: string
           created_by: string
           flat_id: string
@@ -3659,6 +3660,7 @@ export type Database = {
         Insert: {
           amount: number
           as_of: string
+          carried_bill_id?: string | null
           created_at?: string
           created_by: string
           flat_id: string
@@ -3675,6 +3677,7 @@ export type Database = {
         Update: {
           amount?: number
           as_of?: string
+          carried_bill_id?: string | null
           created_at?: string
           created_by?: string
           flat_id?: string
@@ -3689,6 +3692,13 @@ export type Database = {
           status?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "opening_balances_carried_bill_id_fkey"
+            columns: ["carried_bill_id"]
+            isOneToOne: false
+            referencedRelation: "bills"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "opening_balances_flat_id_fkey"
             columns: ["flat_id"]

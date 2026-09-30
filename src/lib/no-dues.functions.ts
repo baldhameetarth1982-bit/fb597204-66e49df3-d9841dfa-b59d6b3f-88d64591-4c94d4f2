@@ -62,7 +62,7 @@ function logServerError(scope: string, e: unknown) {
 /* -------------------------------------------------------------------- */
 
 export type EligibilityBlocker = {
-  type: "bill_due" | "pending_offline_payment" | "financial_data_inconsistency";
+  type: "bill_due" | "pending_offline_payment" | "financial_data_inconsistency" | "opening_balance_due" | "opening_balance_under_review";
   bill_id?: string;
   bill_number?: string | null;
   due_date?: string | null;

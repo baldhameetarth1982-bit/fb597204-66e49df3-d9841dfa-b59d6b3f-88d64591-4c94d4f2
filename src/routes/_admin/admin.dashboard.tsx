@@ -1,3 +1,4 @@
+import { SchedulerRunsCard } from "@/components/admin/SchedulerRunsCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -123,6 +124,7 @@ function AdminDashboard() {
               </button>
             </div>
           )}
+          <SchedulerRunsCard />
           <section aria-labelledby="pulse-h">
             <h2 id="pulse-h" className="mb-2 text-sm font-semibold">Needs your attention</h2>
             <ul className="divide-y overflow-hidden rounded-xl border border-border bg-card">

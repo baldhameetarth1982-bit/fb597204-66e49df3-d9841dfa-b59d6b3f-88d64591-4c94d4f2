@@ -98,7 +98,9 @@ function GenerateBillsPage() {
     const { error } = await supabase.from("bills").insert(payload);
     setGenerating(false);
     if (error) {
-      const message = toSafeFinanceMessage(error, "Could not generate bills. Please try again.");
+      const message = error.message?.includes("approval_required")
+        ? "This society requires a second approver. Create bills from Bill Studio → Generate so the run can be reviewed and approved."
+        : toSafeFinanceMessage(error, "Could not generate bills. Please try again.");
       setResult({ ok: false, message });
       return toast.error(message);
     }

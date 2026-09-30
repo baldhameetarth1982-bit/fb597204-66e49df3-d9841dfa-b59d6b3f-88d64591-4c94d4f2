@@ -2442,6 +2442,266 @@ export type Database = {
           },
         ]
       }
+      meeting_action_items: {
+        Row: {
+          created_at: string
+          created_by: string
+          due_on: string | null
+          id: string
+          meeting_id: string
+          owner_name: string | null
+          society_id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          due_on?: string | null
+          id?: string
+          meeting_id: string
+          owner_name?: string | null
+          society_id: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          due_on?: string | null
+          id?: string
+          meeting_id?: string
+          owner_name?: string | null
+          society_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_action_items_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_attendance: {
+        Row: {
+          meeting_id: string
+          present: boolean
+          recorded_at: string
+          recorded_by: string
+          user_id: string
+        }
+        Insert: {
+          meeting_id: string
+          present: boolean
+          recorded_at?: string
+          recorded_by: string
+          user_id: string
+        }
+        Update: {
+          meeting_id?: string
+          present?: boolean
+          recorded_at?: string
+          recorded_by?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_attendance_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_documents: {
+        Row: {
+          added_at: string
+          added_by: string
+          meeting_id: string
+          source_id: string
+        }
+        Insert: {
+          added_at?: string
+          added_by: string
+          meeting_id: string
+          source_id: string
+        }
+        Update: {
+          added_at?: string
+          added_by?: string
+          meeting_id?: string
+          source_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_documents_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_documents_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "society_knowledge_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_resolutions: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          meeting_id: string
+          outcome: string
+          poll_id: string | null
+          seq: number
+          society_id: string
+          text: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          meeting_id: string
+          outcome: string
+          poll_id?: string | null
+          seq: number
+          society_id: string
+          text: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          meeting_id?: string
+          outcome?: string
+          poll_id?: string | null
+          seq?: number
+          society_id?: string
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_resolutions_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_resolutions_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_rsvps: {
+        Row: {
+          meeting_id: string
+          response: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          meeting_id: string
+          response: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          meeting_id?: string
+          response?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_rsvps_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meetings: {
+        Row: {
+          agenda: string
+          audience: string
+          cancel_reason: string | null
+          created_at: string
+          created_by: string
+          ends_at: string | null
+          id: string
+          location: string | null
+          meeting_link: string | null
+          minutes: string | null
+          reminded_at: string | null
+          society_id: string
+          starts_at: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          agenda?: string
+          audience?: string
+          cancel_reason?: string | null
+          created_at?: string
+          created_by: string
+          ends_at?: string | null
+          id?: string
+          location?: string | null
+          meeting_link?: string | null
+          minutes?: string | null
+          reminded_at?: string | null
+          society_id: string
+          starts_at: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          agenda?: string
+          audience?: string
+          cancel_reason?: string | null
+          created_at?: string
+          created_by?: string
+          ends_at?: string | null
+          id?: string
+          location?: string | null
+          meeting_link?: string | null
+          minutes?: string | null
+          reminded_at?: string | null
+          society_id?: string
+          starts_at?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meetings_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       migration_commit_requests: {
         Row: {
           completed_at: string | null
@@ -3062,6 +3322,32 @@ export type Database = {
           },
         ]
       }
+      notice_acks: {
+        Row: {
+          acked_at: string
+          notice_id: string
+          user_id: string
+        }
+        Insert: {
+          acked_at?: string
+          notice_id: string
+          user_id: string
+        }
+        Update: {
+          acked_at?: string
+          notice_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notice_acks_notice_id_fkey"
+            columns: ["notice_id"]
+            isOneToOne: false
+            referencedRelation: "notices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notice_reads: {
         Row: {
           notice_id: string
@@ -3097,9 +3383,14 @@ export type Database = {
           created_at: string
           created_by: string
           edited_at: string | null
+          expires_at: string | null
           id: string
+          notified_at: string | null
+          notified_count: number
+          priority: string
           publish_at: string | null
           published_at: string | null
+          requires_ack: boolean
           society_id: string
           status: string
           title: string
@@ -3113,9 +3404,14 @@ export type Database = {
           created_at?: string
           created_by: string
           edited_at?: string | null
+          expires_at?: string | null
           id?: string
+          notified_at?: string | null
+          notified_count?: number
+          priority?: string
           publish_at?: string | null
           published_at?: string | null
+          requires_ack?: boolean
           society_id: string
           status?: string
           title: string
@@ -3129,9 +3425,14 @@ export type Database = {
           created_at?: string
           created_by?: string
           edited_at?: string | null
+          expires_at?: string | null
           id?: string
+          notified_at?: string | null
+          notified_count?: number
+          priority?: string
           publish_at?: string | null
           published_at?: string | null
+          requires_ack?: boolean
           society_id?: string
           status?: string
           title?: string
@@ -3673,6 +3974,7 @@ export type Database = {
       poll_votes: {
         Row: {
           created_at: string
+          flat_id: string | null
           id: string
           option_id: string
           poll_id: string
@@ -3680,6 +3982,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          flat_id?: string | null
           id?: string
           option_id: string
           poll_id: string
@@ -3687,6 +3990,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          flat_id?: string | null
           id?: string
           option_id?: string
           poll_id?: string
@@ -3711,36 +4015,48 @@ export type Database = {
       }
       polls: {
         Row: {
+          closed_at: string | null
           closes_at: string | null
           created_at: string
           created_by: string
           description: string | null
+          eligibility: string | null
+          frozen_at: string | null
           id: string
           kind: string
+          secret_ballot: boolean
           society_id: string
           status: string
           title: string
           updated_at: string
         }
         Insert: {
+          closed_at?: string | null
           closes_at?: string | null
           created_at?: string
           created_by: string
           description?: string | null
+          eligibility?: string | null
+          frozen_at?: string | null
           id?: string
           kind?: string
+          secret_ballot?: boolean
           society_id: string
           status?: string
           title: string
           updated_at?: string
         }
         Update: {
+          closed_at?: string | null
           closes_at?: string | null
           created_at?: string
           created_by?: string
           description?: string | null
+          eligibility?: string | null
+          frozen_at?: string | null
           id?: string
           kind?: string
+          secret_ballot?: boolean
           society_id?: string
           status?: string
           title?: string
@@ -3883,6 +4199,59 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: []
+      }
+      privacy_requests: {
+        Row: {
+          created_at: string
+          details: string
+          id: string
+          kind: string
+          outcome: string | null
+          retained: Json
+          reviewed_at: string | null
+          reviewed_by: string | null
+          society_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          details?: string
+          id?: string
+          kind: string
+          outcome?: string | null
+          retained?: Json
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          society_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          details?: string
+          id?: string
+          kind?: string
+          outcome?: string | null
+          retained?: Json
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          society_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "privacy_requests_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       procurement_attachments: {
         Row: {
@@ -5429,6 +5798,53 @@ export type Database = {
           },
         ]
       }
+      society_document_versions: {
+        Row: {
+          file_name: string | null
+          id: string
+          mime_type: string | null
+          size_bytes: number | null
+          society_id: string
+          source_id: string
+          storage_path: string
+          superseded_at: string
+          superseded_by: string
+          version: number
+        }
+        Insert: {
+          file_name?: string | null
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          society_id: string
+          source_id: string
+          storage_path: string
+          superseded_at?: string
+          superseded_by: string
+          version: number
+        }
+        Update: {
+          file_name?: string | null
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          society_id?: string
+          source_id?: string
+          storage_path?: string
+          superseded_at?: string
+          superseded_by?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "society_document_versions_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "society_knowledge_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       society_income_categories: {
         Row: {
           category_group: string | null
@@ -5654,6 +6070,7 @@ export type Database = {
         Row: {
           archived_at: string | null
           audience: string
+          category: string
           created_at: string
           created_by: string | null
           extracted_text: string | null
@@ -5676,6 +6093,7 @@ export type Database = {
         Insert: {
           archived_at?: string | null
           audience?: string
+          category?: string
           created_at?: string
           created_by?: string | null
           extracted_text?: string | null
@@ -5698,6 +6116,7 @@ export type Database = {
         Update: {
           archived_at?: string | null
           audience?: string
+          category?: string
           created_at?: string
           created_by?: string | null
           extracted_text?: string | null
@@ -6994,9 +7413,19 @@ export type Database = {
       }
       _gate_admin_society: { Args: never; Returns: string }
       _gate_society: { Args: never; Returns: string }
+      _gov_admin_society: { Args: never; Returns: string }
+      _gov_member_society: { Args: never; Returns: string }
       _helpdesk_is_admin: { Args: { _sid: string }; Returns: boolean }
       _helpdesk_sla_hours: { Args: { _priority: string }; Returns: number }
       _knowledge_admin_society: { Args: never; Returns: string }
+      _meeting_audience: {
+        Args: { _m: Database["public"]["Tables"]["meetings"]["Row"] }
+        Returns: {
+          user_id: string
+        }[]
+      }
+      _meeting_is_admin: { Args: { _meeting: string }; Returns: boolean }
+      _meeting_visible: { Args: { _meeting: string }; Returns: boolean }
       _migration_link_or_conflict: {
         Args: {
           _canonical_entity_id: string
@@ -7010,6 +7439,12 @@ export type Database = {
         Returns: undefined
       }
       _notice_admin_society: { Args: never; Returns: string }
+      _notice_audience: {
+        Args: { _n: Database["public"]["Tables"]["notices"]["Row"] }
+        Returns: {
+          user_id: string
+        }[]
+      }
       _notice_visible: {
         Args: { _n: Database["public"]["Tables"]["notices"]["Row"] }
         Returns: boolean
@@ -7137,6 +7572,16 @@ export type Database = {
       _visitor_restriction_match: {
         Args: { _name: string; _phone: string; _sid: string }
         Returns: string
+      }
+      _vote_eligible_flat: {
+        Args: {
+          _p: Database["public"]["Tables"]["polls"]["Row"]
+          _user: string
+        }
+        Returns: {
+          eligible: boolean
+          flat_id: string
+        }[]
       }
       activate_society_plan: {
         Args: { _months?: number; _plan_id: string; _society_id: string }
@@ -7690,6 +8135,7 @@ export type Database = {
         }
         Returns: Json
       }
+      close_expired_votes: { Args: never; Returns: number }
       commit_migration_job: {
         Args: {
           _expected_checksum: string
@@ -8619,6 +9065,10 @@ export type Database = {
         Args: { _archived: boolean; _id: string }
         Returns: Json
       }
+      knowledge_set_category: {
+        Args: { _category: string; _id: string }
+        Returns: undefined
+      }
       knowledge_upsert_faq: {
         Args: {
           _answer: string
@@ -8628,6 +9078,7 @@ export type Database = {
         }
         Returns: Json
       }
+      knowledge_version_path: { Args: { _version_id: string }; Returns: string }
       list_bank_line_candidates: { Args: { _line_id: string }; Returns: Json }
       list_bank_statement_lines: {
         Args: {
@@ -8867,6 +9318,66 @@ export type Database = {
       }
       mark_aadhaar_verified: { Args: { _last4: string }; Returns: undefined }
       mark_visitor_overstays: { Args: never; Returns: number }
+      meeting_add_action: {
+        Args: { _due: string; _meeting: string; _owner: string; _title: string }
+        Returns: string
+      }
+      meeting_add_resolution: {
+        Args: {
+          _meeting: string
+          _outcome: string
+          _poll: string
+          _text: string
+        }
+        Returns: string
+      }
+      meeting_link_document: {
+        Args: { _linked: boolean; _meeting: string; _source: string }
+        Returns: undefined
+      }
+      meeting_member_roster: {
+        Args: { _id: string }
+        Returns: {
+          full_name: string
+          homes: string
+          present: boolean
+          rsvp: string
+          user_id: string
+        }[]
+      }
+      meeting_record_attendance: {
+        Args: { _id: string; _present: boolean; _user: string }
+        Returns: undefined
+      }
+      meeting_rsvp: {
+        Args: { _id: string; _response: string }
+        Returns: undefined
+      }
+      meeting_save: {
+        Args: {
+          _agenda: string
+          _audience: string
+          _ends_at: string
+          _id: string
+          _link: string
+          _location: string
+          _starts_at: string
+          _title: string
+        }
+        Returns: string
+      }
+      meeting_save_minutes: {
+        Args: { _id: string; _minutes: string }
+        Returns: undefined
+      }
+      meeting_set_action_status: {
+        Args: { _id: string; _status: string }
+        Returns: undefined
+      }
+      meeting_set_status: {
+        Args: { _id: string; _reason: string; _status: string }
+        Returns: undefined
+      }
       migration_begin_upload: {
         Args: {
           _actor: string
@@ -8914,7 +9425,18 @@ export type Database = {
         Args: { _actor_id: string; _society_id: string }
         Returns: string
       }
+      notice_acknowledge: { Args: { _id: string }; Returns: undefined }
       notice_archive: { Args: { _id: string }; Returns: undefined }
+      notice_delivery_stats: {
+        Args: { _ids: string[] }
+        Returns: {
+          acknowledged: number
+          audience: number
+          notice_id: string
+          notified: number
+          opened: number
+        }[]
+      }
       notice_read_counts: {
         Args: never
         Returns: {
@@ -8934,6 +9456,15 @@ export type Database = {
           _title: string
         }
         Returns: string
+      }
+      notice_set_controls: {
+        Args: {
+          _expires_at: string
+          _id: string
+          _priority: string
+          _requires_ack: boolean
+        }
+        Returns: undefined
       }
       ops_daily_reminders: { Args: never; Returns: undefined }
       poll_cast_vote: {
@@ -8967,6 +9498,16 @@ export type Database = {
         Returns: Json
       }
       preview_finance_backfill: { Args: { _society_id: string }; Returns: Json }
+      privacy_personal_export: { Args: never; Returns: Json }
+      privacy_request_create: {
+        Args: { _details: string; _kind: string }
+        Returns: string
+      }
+      privacy_request_review: {
+        Args: { _id: string; _outcome: string; _status: string }
+        Returns: undefined
+      }
+      privacy_request_withdraw: { Args: { _id: string }; Returns: undefined }
       proc_add_quotation: {
         Args: {
           _amount: number
@@ -9047,6 +9588,7 @@ export type Database = {
         Args: { _from: string; _to: string }
         Returns: boolean
       }
+      publish_due_notices: { Args: never; Returns: number }
       recheck_no_dues_request_internal: {
         Args: { _actor_id: string; _request_id: string }
         Returns: {
@@ -9231,6 +9773,7 @@ export type Database = {
         }[]
       }
       seed_finance_accounts: { Args: { _society_id: string }; Returns: Json }
+      send_meeting_reminders: { Args: never; Returns: number }
       send_tenancy_renewal_reminders: { Args: never; Returns: number }
       set_society_block_active: {
         Args: { _active: boolean; _block_id: string }
@@ -9515,6 +10058,45 @@ export type Database = {
       visitor_resident_action: {
         Args: { _action: string; _id: string }
         Returns: undefined
+      }
+      vote_cast: {
+        Args: { _option: string; _poll: string }
+        Returns: undefined
+      }
+      vote_create: {
+        Args: {
+          _closes_at: string
+          _description: string
+          _eligibility: string
+          _options: string[]
+          _secret: boolean
+          _title: string
+        }
+        Returns: string
+      }
+      vote_results: {
+        Args: { _poll: string }
+        Returns: {
+          eligible_count: number
+          label: string
+          option_id: string
+          total_cast: number
+          visible: boolean
+          votes: number
+        }[]
+      }
+      vote_set_status: {
+        Args: { _id: string; _status: string }
+        Returns: undefined
+      }
+      vote_status_for_me: {
+        Args: { _poll_ids: string[] }
+        Returns: {
+          eligible: boolean
+          my_option: string
+          poll_id: string
+          voted: boolean
+        }[]
       }
     }
     Enums: {

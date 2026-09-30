@@ -33,7 +33,7 @@ const META: Record<string, { label: string; icon: typeof User }> = {
  * Unified search. Results come only from the server `global_search` RPC, which derives the
  * society and role from the signed-in user and applies RLS — the props are display hints only.
  */
-export function GlobalSearch({ scope }: { societyId: string; scope: Scope }) {
+export function GlobalSearch({ societyId, scope }: { societyId: string; scope: Scope }) {
   const [q, setQ] = useState("");
   const [debounced, setDebounced] = useState("");
   useEffect(() => {
@@ -42,7 +42,7 @@ export function GlobalSearch({ scope }: { societyId: string; scope: Scope }) {
   }, [q]);
 
   const res = useQuery({
-    queryKey: ["global-search", debounced],
+    queryKey: ["global-search", societyId, scope, debounced],
     enabled: debounced.length >= 2,
     staleTime: 30_000,
     placeholderData: (prev) => prev,
@@ -83,7 +83,7 @@ export function GlobalSearch({ scope }: { societyId: string; scope: Scope }) {
       </p>
 
       {active && res.isError && (
-        <p className="text-sm text-destructive text-center py-6">Search isn't available right now. Please try again.</p>
+        <p role="alert" className="text-sm text-destructive text-center py-6">Search isn't available right now. Please try again.</p>
       )}
       {active && !res.isError && !busy && hits.length === 0 && (
         <p className="text-sm text-muted-foreground text-center py-8">No results for "{debounced}"</p>

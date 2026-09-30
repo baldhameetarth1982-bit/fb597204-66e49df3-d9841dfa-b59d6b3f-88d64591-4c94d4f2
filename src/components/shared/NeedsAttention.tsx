@@ -21,10 +21,10 @@ export function NeedsAttention({ max = 6, exclude = [], emptyText = "Nothing nee
   });
 
   if (q.isLoading) {
-    return <div className="space-y-2" aria-busy="true">{[0, 1].map((i) => <div key={i} className="h-12 rounded-xl bg-muted animate-pulse motion-reduce:animate-none" />)}</div>;
+    return <div className="space-y-2" aria-busy="true"><span className="sr-only" role="status">Loading items that need attention…</span>{[0, 1].map((i) => <div key={i} className="h-12 rounded-xl bg-muted animate-pulse motion-reduce:animate-none" />)}</div>;
   }
   if (q.isError) {
-    return <p className="text-sm text-muted-foreground">Couldn't load items that need attention. Pull to refresh or try again.</p>;
+    return <p role="alert" className="text-sm text-muted-foreground">Couldn't load items that need attention. Pull to refresh or try again.</p>;
   }
   const items = (q.data ?? []).filter((i) => !exclude.includes(i.key));
   if (items.length === 0) {

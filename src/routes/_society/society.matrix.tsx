@@ -14,9 +14,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { writeSafeWorkbook } from "@/lib/spreadsheet-safety";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import { societyMaintenanceSummary } from "@/lib/residents.functions";
 
 export const Route = createFileRoute("/_society/society/matrix")({
@@ -123,7 +120,8 @@ function MatrixPage() {
     });
   }, [flats, q, blockFilter, statusFilter, periods, year]);
 
-  function exportExcel() {
+  async function exportExcel() {
+    const { writeSafeWorkbook } = await import("@/lib/spreadsheet-safety");
     const rows = filtered.map((f) => {
       const row: Record<string, string> = { Block: f.block_name, Unit: f.flat_number };
       for (let m = 0; m < 12; m++) row[MONTH_NAMES[m]] = cell(f.id, m).label;
@@ -132,7 +130,8 @@ function MatrixPage() {
     writeSafeWorkbook(rows, `Matrix ${year}`, `maintenance-matrix-${year}.xlsx`);
   }
 
-  function exportPDF() {
+  async function exportPDF() {
+    const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([import("jspdf"), import("jspdf-autotable")]);
     const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
     doc.setFontSize(14);
     doc.text(`Maintenance Matrix ${year}`, 40, 40);

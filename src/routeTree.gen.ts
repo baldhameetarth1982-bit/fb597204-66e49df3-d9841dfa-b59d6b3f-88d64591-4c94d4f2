@@ -45,6 +45,7 @@ import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } fr
 import { Route as Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRouteImport } from './routes/[.well-known]/assetlinks[.]json'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as VerifyNoDuesTokenRouteImport } from './routes/verify.no-dues.$token'
+import { Route as SocietySocietyVotesRouteImport } from './routes/_society/society.votes'
 import { Route as SocietySocietyVisitorsRouteImport } from './routes/_society/society.visitors'
 import { Route as SocietySocietyVerificationsRouteImport } from './routes/_society/society.verifications'
 import { Route as SocietySocietyVehiclesRouteImport } from './routes/_society/society.vehicles'
@@ -57,6 +58,7 @@ import { Route as SocietySocietyReportsRouteImport } from './routes/_society/soc
 import { Route as SocietySocietyReconciliationRouteImport } from './routes/_society/society.reconciliation'
 import { Route as SocietySocietyReceiptsRouteImport } from './routes/_society/society.receipts'
 import { Route as SocietySocietyPrivacySettingsRouteImport } from './routes/_society/society.privacy-settings'
+import { Route as SocietySocietyPrivacyRequestsRouteImport } from './routes/_society/society.privacy-requests'
 import { Route as SocietySocietyPollsRouteImport } from './routes/_society/society.polls'
 import { Route as SocietySocietyPlanRequiredRouteImport } from './routes/_society/society.plan-required'
 import { Route as SocietySocietyPayoutsRouteImport } from './routes/_society/society.payouts'
@@ -64,6 +66,7 @@ import { Route as SocietySocietyPaymentsRouteImport } from './routes/_society/so
 import { Route as SocietySocietyParkingRouteImport } from './routes/_society/society.parking'
 import { Route as SocietySocietyOperationsRouteImport } from './routes/_society/society.operations'
 import { Route as SocietySocietyMoreRouteImport } from './routes/_society/society.more'
+import { Route as SocietySocietyMeetingsRouteImport } from './routes/_society/society.meetings'
 import { Route as SocietySocietyMatrixImportRouteImport } from './routes/_society/society.matrix-import'
 import { Route as SocietySocietyMatrixRouteImport } from './routes/_society/society.matrix'
 import { Route as SocietySocietyMaintenanceRouteImport } from './routes/_society/society.maintenance'
@@ -354,6 +357,11 @@ const VerifyNoDuesTokenRoute = VerifyNoDuesTokenRouteImport.update({
   path: '/verify/no-dues/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SocietySocietyVotesRoute = SocietySocietyVotesRouteImport.update({
+  id: '/society/votes',
+  path: '/society/votes',
+  getParentRoute: () => SocietyRoute,
+} as any)
 const SocietySocietyVisitorsRoute = SocietySocietyVisitorsRouteImport.update({
   id: '/society/visitors',
   path: '/society/visitors',
@@ -418,6 +426,12 @@ const SocietySocietyPrivacySettingsRoute =
     path: '/society/privacy-settings',
     getParentRoute: () => SocietyRoute,
   } as any)
+const SocietySocietyPrivacyRequestsRoute =
+  SocietySocietyPrivacyRequestsRouteImport.update({
+    id: '/society/privacy-requests',
+    path: '/society/privacy-requests',
+    getParentRoute: () => SocietyRoute,
+  } as any)
 const SocietySocietyPollsRoute = SocietySocietyPollsRouteImport.update({
   id: '/society/polls',
   path: '/society/polls',
@@ -453,6 +467,11 @@ const SocietySocietyOperationsRoute =
 const SocietySocietyMoreRoute = SocietySocietyMoreRouteImport.update({
   id: '/society/more',
   path: '/society/more',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyMeetingsRoute = SocietySocietyMeetingsRouteImport.update({
+  id: '/society/meetings',
+  path: '/society/meetings',
   getParentRoute: () => SocietyRoute,
 } as any)
 const SocietySocietyMatrixImportRoute =
@@ -1148,6 +1167,7 @@ export interface FileRoutesByFullPath {
   '/society/maintenance': typeof SocietySocietyMaintenanceRoute
   '/society/matrix': typeof SocietySocietyMatrixRoute
   '/society/matrix-import': typeof SocietySocietyMatrixImportRoute
+  '/society/meetings': typeof SocietySocietyMeetingsRoute
   '/society/more': typeof SocietySocietyMoreRoute
   '/society/operations': typeof SocietySocietyOperationsRoute
   '/society/parking': typeof SocietySocietyParkingRoute
@@ -1155,6 +1175,7 @@ export interface FileRoutesByFullPath {
   '/society/payouts': typeof SocietySocietyPayoutsRoute
   '/society/plan-required': typeof SocietySocietyPlanRequiredRoute
   '/society/polls': typeof SocietySocietyPollsRoute
+  '/society/privacy-requests': typeof SocietySocietyPrivacyRequestsRoute
   '/society/privacy-settings': typeof SocietySocietyPrivacySettingsRoute
   '/society/receipts': typeof SocietySocietyReceiptsRoute
   '/society/reconciliation': typeof SocietySocietyReconciliationRoute
@@ -1167,6 +1188,7 @@ export interface FileRoutesByFullPath {
   '/society/vehicles': typeof SocietySocietyVehiclesRoute
   '/society/verifications': typeof SocietySocietyVerificationsRoute
   '/society/visitors': typeof SocietySocietyVisitorsRoute
+  '/society/votes': typeof SocietySocietyVotesRoute
   '/verify/no-dues/$token': typeof VerifyNoDuesTokenRoute
   '/admin/societies/$id': typeof AdminAdminSocietiesIdRoute
   '/app/bills/$id': typeof ResidentAppBillsIdRoute
@@ -1310,6 +1332,7 @@ export interface FileRoutesByTo {
   '/society/maintenance': typeof SocietySocietyMaintenanceRoute
   '/society/matrix': typeof SocietySocietyMatrixRoute
   '/society/matrix-import': typeof SocietySocietyMatrixImportRoute
+  '/society/meetings': typeof SocietySocietyMeetingsRoute
   '/society/more': typeof SocietySocietyMoreRoute
   '/society/operations': typeof SocietySocietyOperationsRoute
   '/society/parking': typeof SocietySocietyParkingRoute
@@ -1317,6 +1340,7 @@ export interface FileRoutesByTo {
   '/society/payouts': typeof SocietySocietyPayoutsRoute
   '/society/plan-required': typeof SocietySocietyPlanRequiredRoute
   '/society/polls': typeof SocietySocietyPollsRoute
+  '/society/privacy-requests': typeof SocietySocietyPrivacyRequestsRoute
   '/society/privacy-settings': typeof SocietySocietyPrivacySettingsRoute
   '/society/receipts': typeof SocietySocietyReceiptsRoute
   '/society/reconciliation': typeof SocietySocietyReconciliationRoute
@@ -1329,6 +1353,7 @@ export interface FileRoutesByTo {
   '/society/vehicles': typeof SocietySocietyVehiclesRoute
   '/society/verifications': typeof SocietySocietyVerificationsRoute
   '/society/visitors': typeof SocietySocietyVisitorsRoute
+  '/society/votes': typeof SocietySocietyVotesRoute
   '/verify/no-dues/$token': typeof VerifyNoDuesTokenRoute
   '/admin/societies/$id': typeof AdminAdminSocietiesIdRoute
   '/app/bills/$id': typeof ResidentAppBillsIdRoute
@@ -1478,6 +1503,7 @@ export interface FileRoutesById {
   '/_society/society/maintenance': typeof SocietySocietyMaintenanceRoute
   '/_society/society/matrix': typeof SocietySocietyMatrixRoute
   '/_society/society/matrix-import': typeof SocietySocietyMatrixImportRoute
+  '/_society/society/meetings': typeof SocietySocietyMeetingsRoute
   '/_society/society/more': typeof SocietySocietyMoreRoute
   '/_society/society/operations': typeof SocietySocietyOperationsRoute
   '/_society/society/parking': typeof SocietySocietyParkingRoute
@@ -1485,6 +1511,7 @@ export interface FileRoutesById {
   '/_society/society/payouts': typeof SocietySocietyPayoutsRoute
   '/_society/society/plan-required': typeof SocietySocietyPlanRequiredRoute
   '/_society/society/polls': typeof SocietySocietyPollsRoute
+  '/_society/society/privacy-requests': typeof SocietySocietyPrivacyRequestsRoute
   '/_society/society/privacy-settings': typeof SocietySocietyPrivacySettingsRoute
   '/_society/society/receipts': typeof SocietySocietyReceiptsRoute
   '/_society/society/reconciliation': typeof SocietySocietyReconciliationRoute
@@ -1497,6 +1524,7 @@ export interface FileRoutesById {
   '/_society/society/vehicles': typeof SocietySocietyVehiclesRoute
   '/_society/society/verifications': typeof SocietySocietyVerificationsRoute
   '/_society/society/visitors': typeof SocietySocietyVisitorsRoute
+  '/_society/society/votes': typeof SocietySocietyVotesRoute
   '/verify/no-dues/$token': typeof VerifyNoDuesTokenRoute
   '/_admin/admin/societies/$id': typeof AdminAdminSocietiesIdRoute
   '/_resident/app/bills/$id': typeof ResidentAppBillsIdRoute
@@ -1643,6 +1671,7 @@ export interface FileRouteTypes {
     | '/society/maintenance'
     | '/society/matrix'
     | '/society/matrix-import'
+    | '/society/meetings'
     | '/society/more'
     | '/society/operations'
     | '/society/parking'
@@ -1650,6 +1679,7 @@ export interface FileRouteTypes {
     | '/society/payouts'
     | '/society/plan-required'
     | '/society/polls'
+    | '/society/privacy-requests'
     | '/society/privacy-settings'
     | '/society/receipts'
     | '/society/reconciliation'
@@ -1662,6 +1692,7 @@ export interface FileRouteTypes {
     | '/society/vehicles'
     | '/society/verifications'
     | '/society/visitors'
+    | '/society/votes'
     | '/verify/no-dues/$token'
     | '/admin/societies/$id'
     | '/app/bills/$id'
@@ -1805,6 +1836,7 @@ export interface FileRouteTypes {
     | '/society/maintenance'
     | '/society/matrix'
     | '/society/matrix-import'
+    | '/society/meetings'
     | '/society/more'
     | '/society/operations'
     | '/society/parking'
@@ -1812,6 +1844,7 @@ export interface FileRouteTypes {
     | '/society/payouts'
     | '/society/plan-required'
     | '/society/polls'
+    | '/society/privacy-requests'
     | '/society/privacy-settings'
     | '/society/receipts'
     | '/society/reconciliation'
@@ -1824,6 +1857,7 @@ export interface FileRouteTypes {
     | '/society/vehicles'
     | '/society/verifications'
     | '/society/visitors'
+    | '/society/votes'
     | '/verify/no-dues/$token'
     | '/admin/societies/$id'
     | '/app/bills/$id'
@@ -1972,6 +2006,7 @@ export interface FileRouteTypes {
     | '/_society/society/maintenance'
     | '/_society/society/matrix'
     | '/_society/society/matrix-import'
+    | '/_society/society/meetings'
     | '/_society/society/more'
     | '/_society/society/operations'
     | '/_society/society/parking'
@@ -1979,6 +2014,7 @@ export interface FileRouteTypes {
     | '/_society/society/payouts'
     | '/_society/society/plan-required'
     | '/_society/society/polls'
+    | '/_society/society/privacy-requests'
     | '/_society/society/privacy-settings'
     | '/_society/society/receipts'
     | '/_society/society/reconciliation'
@@ -1991,6 +2027,7 @@ export interface FileRouteTypes {
     | '/_society/society/vehicles'
     | '/_society/society/verifications'
     | '/_society/society/visitors'
+    | '/_society/society/votes'
     | '/verify/no-dues/$token'
     | '/_admin/admin/societies/$id'
     | '/_resident/app/bills/$id'
@@ -2319,6 +2356,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VerifyNoDuesTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_society/society/votes': {
+      id: '/_society/society/votes'
+      path: '/society/votes'
+      fullPath: '/society/votes'
+      preLoaderRoute: typeof SocietySocietyVotesRouteImport
+      parentRoute: typeof SocietyRoute
+    }
     '/_society/society/visitors': {
       id: '/_society/society/visitors'
       path: '/society/visitors'
@@ -2403,6 +2447,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SocietySocietyPrivacySettingsRouteImport
       parentRoute: typeof SocietyRoute
     }
+    '/_society/society/privacy-requests': {
+      id: '/_society/society/privacy-requests'
+      path: '/society/privacy-requests'
+      fullPath: '/society/privacy-requests'
+      preLoaderRoute: typeof SocietySocietyPrivacyRequestsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
     '/_society/society/polls': {
       id: '/_society/society/polls'
       path: '/society/polls'
@@ -2450,6 +2501,13 @@ declare module '@tanstack/react-router' {
       path: '/society/more'
       fullPath: '/society/more'
       preLoaderRoute: typeof SocietySocietyMoreRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/meetings': {
+      id: '/_society/society/meetings'
+      path: '/society/meetings'
+      fullPath: '/society/meetings'
+      preLoaderRoute: typeof SocietySocietyMeetingsRouteImport
       parentRoute: typeof SocietyRoute
     }
     '/_society/society/matrix-import': {
@@ -3394,6 +3452,7 @@ interface SocietyRouteChildren {
   SocietySocietyMaintenanceRoute: typeof SocietySocietyMaintenanceRoute
   SocietySocietyMatrixRoute: typeof SocietySocietyMatrixRoute
   SocietySocietyMatrixImportRoute: typeof SocietySocietyMatrixImportRoute
+  SocietySocietyMeetingsRoute: typeof SocietySocietyMeetingsRoute
   SocietySocietyMoreRoute: typeof SocietySocietyMoreRoute
   SocietySocietyOperationsRoute: typeof SocietySocietyOperationsRoute
   SocietySocietyParkingRoute: typeof SocietySocietyParkingRoute
@@ -3401,6 +3460,7 @@ interface SocietyRouteChildren {
   SocietySocietyPayoutsRoute: typeof SocietySocietyPayoutsRoute
   SocietySocietyPlanRequiredRoute: typeof SocietySocietyPlanRequiredRoute
   SocietySocietyPollsRoute: typeof SocietySocietyPollsRoute
+  SocietySocietyPrivacyRequestsRoute: typeof SocietySocietyPrivacyRequestsRoute
   SocietySocietyPrivacySettingsRoute: typeof SocietySocietyPrivacySettingsRoute
   SocietySocietyReceiptsRoute: typeof SocietySocietyReceiptsRoute
   SocietySocietyReconciliationRoute: typeof SocietySocietyReconciliationRoute
@@ -3413,6 +3473,7 @@ interface SocietyRouteChildren {
   SocietySocietyVehiclesRoute: typeof SocietySocietyVehiclesRoute
   SocietySocietyVerificationsRoute: typeof SocietySocietyVerificationsRoute
   SocietySocietyVisitorsRoute: typeof SocietySocietyVisitorsRoute
+  SocietySocietyVotesRoute: typeof SocietySocietyVotesRoute
   SocietySocietyBillStudioGenerateRoute: typeof SocietySocietyBillStudioGenerateRoute
   SocietySocietyBillingGenerateRoute: typeof SocietySocietyBillingGenerateRoute
   SocietySocietyBillsIdRoute: typeof SocietySocietyBillsIdRoute
@@ -3464,6 +3525,7 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyMaintenanceRoute: SocietySocietyMaintenanceRoute,
   SocietySocietyMatrixRoute: SocietySocietyMatrixRoute,
   SocietySocietyMatrixImportRoute: SocietySocietyMatrixImportRoute,
+  SocietySocietyMeetingsRoute: SocietySocietyMeetingsRoute,
   SocietySocietyMoreRoute: SocietySocietyMoreRoute,
   SocietySocietyOperationsRoute: SocietySocietyOperationsRoute,
   SocietySocietyParkingRoute: SocietySocietyParkingRoute,
@@ -3471,6 +3533,7 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyPayoutsRoute: SocietySocietyPayoutsRoute,
   SocietySocietyPlanRequiredRoute: SocietySocietyPlanRequiredRoute,
   SocietySocietyPollsRoute: SocietySocietyPollsRoute,
+  SocietySocietyPrivacyRequestsRoute: SocietySocietyPrivacyRequestsRoute,
   SocietySocietyPrivacySettingsRoute: SocietySocietyPrivacySettingsRoute,
   SocietySocietyReceiptsRoute: SocietySocietyReceiptsRoute,
   SocietySocietyReconciliationRoute: SocietySocietyReconciliationRoute,
@@ -3483,6 +3546,7 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyVehiclesRoute: SocietySocietyVehiclesRoute,
   SocietySocietyVerificationsRoute: SocietySocietyVerificationsRoute,
   SocietySocietyVisitorsRoute: SocietySocietyVisitorsRoute,
+  SocietySocietyVotesRoute: SocietySocietyVotesRoute,
   SocietySocietyBillStudioGenerateRoute: SocietySocietyBillStudioGenerateRoute,
   SocietySocietyBillingGenerateRoute: SocietySocietyBillingGenerateRoute,
   SocietySocietyBillsIdRoute: SocietySocietyBillsIdRoute,

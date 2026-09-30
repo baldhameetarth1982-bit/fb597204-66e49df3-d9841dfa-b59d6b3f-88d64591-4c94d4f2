@@ -42,6 +42,7 @@ const MANAGEMENT: Tile[] = [
   { to: "/society/votes", label: "Formal votes", icon: Gavel, feature: "polls" },
   { to: "/society/meetings", label: "Meetings", icon: CalendarDays },
   { to: "/society/data-export", label: "Data export", icon: FileCheck2 },
+  { to: "/society/handover", label: "Handover", icon: FileCheck2 },
 ];
 
 const FINANCE: Tile[] = [

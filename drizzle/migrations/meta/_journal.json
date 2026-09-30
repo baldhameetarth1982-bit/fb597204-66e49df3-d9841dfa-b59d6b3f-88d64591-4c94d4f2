@@ -820,6 +820,13 @@
       "when": 1790802813535,
       "tag": "0116_workstream7_billrun_latefee_openingbal",
       "breakpoints": true
+    },
+    {
+      "idx": 117,
+      "version": "7",
+      "when": 1790802839361,
+      "tag": "0117_fix_auditor_extras_meeting_date",
+      "breakpoints": true
     }
   ]
 }

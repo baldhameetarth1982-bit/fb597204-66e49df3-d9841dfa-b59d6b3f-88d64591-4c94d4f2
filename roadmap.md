@@ -125,7 +125,7 @@
 - [x] Auditor Pack: adjustments + procurement/budget sections
 - [x] Rollback QA + previews; then mark complete
 
-## Workstream 8 — Intelligence, Automation, Search & Role Homes (complete — validated 2026-09-30; Workstream 9 not started)
+## Workstream 8 — Intelligence, Automation, Search & Role Homes (complete — validated 2026-09-30; Workstream 9 in progress (a11y contrast, list semantics, lazy exports, scoped search cache done))
 - [x] Server-authorized cross-domain search (global_search) + search UI
 - [x] Deterministic Needs Attention (committee + resident homes)
 - [x] Scheduler run log, duplicate/stale protection on billing + reminder hooks; Super Admin job card

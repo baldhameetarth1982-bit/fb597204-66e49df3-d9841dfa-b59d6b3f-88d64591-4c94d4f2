@@ -101,7 +101,7 @@ export function AppHeader({
                 className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <Avatar className="h-10 w-10 ring-1 ring-border">
-                  <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                  <AvatarFallback className="bg-primary-container text-primary-container-foreground font-semibold">
                     {initials(profile?.full_name, user?.email)}
                   </AvatarFallback>
                 </Avatar>

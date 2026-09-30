@@ -119,8 +119,8 @@
 - [x] Immutable bill adjustments (counter-entry corrections) + ageing includes them
 - [x] Handover checklist + audited status
 - [x] Export: adjustments, procurement, budgets, meetings, resolutions, documents, staff, assets, inventory, import history
-- [ ] Bill-run exceptions list + optional second-approver
-- [ ] Late fee: apply safely or hide the dead setting
-- [ ] Migration: partial success, opening-balance (unverified) import, compare-only dual-run, XLSX→CSV
-- [ ] Auditor Pack: adjustments + procurement/budget sections
-- [ ] Rollback QA + previews; then mark complete
+- [x] Bill-run exceptions list + optional second-approver
+- [x] Late fee: apply safely or hide the dead setting
+- [x] Migration: partial success, opening-balance (unverified) import, compare-only dual-run, XLSX→CSV
+- [x] Auditor Pack: adjustments + procurement/budget sections
+- [x] Rollback QA + previews; then mark complete

@@ -15,6 +15,7 @@ import { ListSkeleton, LoadError, ListEmpty } from "@/components/people/PeopleUI
 import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { cn } from "@/lib/utils";
+import { ProcurementFiles, useProcurementEvidence, fileErrorMessage } from "./ProcurementFiles";
 
 export const CATEGORIES = [["cleaning", "Cleaning"], ["security", "Security"], ["electricity", "Electricity"], ["repair", "Repair"], ["water", "Water"], ["salary", "Salary"], ["other", "Other"]] as const;
 const catLabel = (c: string) => CATEGORIES.find((x) => x[0] === c)?.[1] ?? c;
@@ -190,6 +191,7 @@ function RequestSheet({ req, vendors, me, onClose }: { req: Req; vendors: { id: 
       return { quotes: (qq.data ?? []) as Quote[], events: (ev.data ?? []) as { id: string; from_status: string | null; to_status: string; note: string | null; created_at: string }[] };
     },
   });
+  const files = useProcurementEvidence(req.id);
   const expenses = useQuery({
     queryKey: ["procurement", "expenses", req.id], enabled: ["invoice_received", "payment_ref_recorded"].includes(req.status),
     queryFn: async () => {
@@ -229,6 +231,14 @@ function RequestSheet({ req, vendors, me, onClose }: { req: Req; vendors: { id: 
           {req.cancel_reason && <div className="col-span-2"><dt className="text-xs text-muted-foreground">Cancel reason</dt><dd>{req.cancel_reason}</dd></div>}
         </dl>
         {req.invoice_amount != null && req.approved_amount != null && req.invoice_amount > req.approved_amount && <p className="mt-2 text-xs text-destructive">Invoice is higher than the approved amount.</p>}
+        {files.isError && <p className="mt-2 text-xs text-destructive">{fileErrorMessage(files.error)}</p>}
+        {["ordered", "invoice_received", "payment_ref_recorded", "completed", "cancelled"].includes(req.status) && (files.data?.some((f) => f.kind === "invoice") || ["ordered", "invoice_received", "payment_ref_recorded"].includes(req.status)) && (
+          <section className="mt-4">
+            <h3 className="text-sm font-semibold">Vendor invoice files</h3>
+            <p className="text-xs text-muted-foreground">Evidence only — attaching a file never records a payment or expense.</p>
+            <ProcurementFiles requestId={req.id} quotationId={null} kind="invoice" rows={files.data ?? []} editable={["ordered", "invoice_received", "payment_ref_recorded"].includes(req.status)} label="Attach invoice file" />
+          </section>
+        )}
 
         <section className="mt-4 space-y-2">
           <h3 className="text-sm font-semibold">Quotations</h3>
@@ -243,6 +253,7 @@ function RequestSheet({ req, vendors, me, onClose }: { req: Req; vendors: { id: 
                     <span className="tabular-nums font-semibold">{inr(qt.amount)}</span>
                     {i === 0 && quotes.length > 1 && <Chip tone="ok">Lowest</Chip>}
                   </label>
+                  <ProcurementFiles requestId={req.id} quotationId={qt.id} kind="quotation" rows={files.data ?? []} editable={["draft", "quotation_pending"].includes(req.status)} label="Attach quotation file" />
                 </li>
               ))}
             </ul>

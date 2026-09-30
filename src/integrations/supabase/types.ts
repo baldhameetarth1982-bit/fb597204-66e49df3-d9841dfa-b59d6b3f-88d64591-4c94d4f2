@@ -3884,6 +3884,79 @@ export type Database = {
         }
         Relationships: []
       }
+      procurement_attachments: {
+        Row: {
+          created_at: string
+          file_name: string
+          id: string
+          kind: string
+          mime: string
+          path: string
+          quotation_id: string | null
+          remove_reason: string | null
+          removed_at: string | null
+          removed_by: string | null
+          request_id: string
+          size_bytes: number
+          society_id: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          id?: string
+          kind: string
+          mime: string
+          path: string
+          quotation_id?: string | null
+          remove_reason?: string | null
+          removed_at?: string | null
+          removed_by?: string | null
+          request_id: string
+          size_bytes: number
+          society_id: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          id?: string
+          kind?: string
+          mime?: string
+          path?: string
+          quotation_id?: string | null
+          remove_reason?: string | null
+          removed_at?: string | null
+          removed_by?: string | null
+          request_id?: string
+          size_bytes?: number
+          society_id?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "procurement_attachments_quotation_id_fkey"
+            columns: ["quotation_id"]
+            isOneToOne: false
+            referencedRelation: "procurement_quotations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "procurement_attachments_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "procurement_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "procurement_attachments_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       procurement_events: {
         Row: {
           actor_id: string | null
@@ -6985,6 +7058,10 @@ export type Database = {
         Returns: undefined
       }
       _ops_admin: { Args: { _sid: string }; Returns: string }
+      _proc_att_state_ok: {
+        Args: { _kind: string; _status: string }
+        Returns: boolean
+      }
       _proc_auth: { Args: { _sid: string }; Returns: string }
       _proc_clean: { Args: { _max: number; _t: string }; Returns: string }
       _proc_lock: {
@@ -8901,6 +8978,10 @@ export type Database = {
         }
         Returns: string
       }
+      proc_attachment_target: {
+        Args: { _kind: string; _quotation: string; _request: string }
+        Returns: string
+      }
       proc_cancel: {
         Args: { _reason: string; _request: string }
         Returns: undefined
@@ -8928,6 +9009,18 @@ export type Database = {
         Args: { _order_ref: string; _request: string }
         Returns: undefined
       }
+      proc_record_attachment: {
+        Args: {
+          _kind: string
+          _mime: string
+          _name: string
+          _path: string
+          _quotation: string
+          _request: string
+          _size: number
+        }
+        Returns: string
+      }
       proc_record_invoice: {
         Args: {
           _amount: number
@@ -8939,6 +9032,10 @@ export type Database = {
       }
       proc_record_payment_ref: {
         Args: { _payment_ref: string; _request: string }
+        Returns: undefined
+      }
+      proc_remove_attachment: {
+        Args: { _attachment: string; _reason: string }
         Returns: undefined
       }
       proc_request_approval: {

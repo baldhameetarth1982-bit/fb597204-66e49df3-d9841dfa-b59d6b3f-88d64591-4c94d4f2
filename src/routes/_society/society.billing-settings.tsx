@@ -204,15 +204,15 @@ function BillingSettingsPage() {
           </div>
         </SettingsSection>
 
-        <SettingsSection title="Late fee" description="Applied only after the grace period ends.">
+        <SettingsSection title="Late fee" description="Added to the next bill for dues still unpaid after the grace period. Off until you turn it on.">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="bs-lft">Late fee type</Label>
               <Select value={form.late_fee_type} onValueChange={(v) => setForm({ ...form, late_fee_type: v })}>
                 <SelectTrigger id="bs-lft" className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="flat">Flat amount (₹)</SelectItem>
-                  <SelectItem value="percent">Percent of bill (%)</SelectItem>
+                  <SelectItem value="flat">Flat amount (₹) per bill</SelectItem>
+                  <SelectItem value="percent">Percent of overdue dues (%)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -221,6 +221,7 @@ function BillingSettingsPage() {
               <Input id="bs-lfa" type="number" min={0} step="0.01" value={form.late_fee_amount} onChange={(e) => setForm({ ...form, late_fee_amount: Number(e.target.value) })} className="h-11 rounded-xl" />
             </div>
           </div>
+          {societyId && <BillingControls societyId={societyId} policyDirty={dirty} />}
         </SettingsSection>
 
         <SaveBar dirty={dirty} saving={saving} saveLabel="Save policy" onSave={save} onDiscard={() => baseline && setForm(baseline)} />
@@ -413,23 +414,7 @@ function AutoBillingSection({ societyId }: { societyId: string }) {
             <Label className="text-xs">Due after (days)</Label>
             <Input type="number" min={0} max={60} value={dueOffsetDays} onChange={(e) => setDueOffsetDays(e.target.value)} className="rounded-xl" />
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Late fee</Label>
-            <Select value={lateFeeType} onValueChange={(v: any) => setLateFeeType(v)}>
-              <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                <SelectItem value="flat">Flat ₹ / day</SelectItem>
-                <SelectItem value="percent">% / day</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          {lateFeeType !== "none" && (
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label className="text-xs">Late fee value</Label>
-              <Input type="number" min={0} value={lateFeeValue} onChange={(e) => setLateFeeValue(e.target.value)} className="rounded-xl" />
-            </div>
-          )}
+          <p className="self-end text-xs text-muted-foreground sm:col-span-1">Late fees are set once under Billing policy → Late fee and shown in the review before bills are created.</p>
         </div>
 
         <div className="flex items-center justify-between rounded-xl border border-border p-4">

@@ -95,7 +95,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" },
       { name: "theme-color", content: "#123047" },
       { title: "SociyoHub — Society management, simplified" },
       { name: "description", content: "Collect maintenance, share notices and manage your housing society — all in one beautiful app." },
@@ -167,18 +167,20 @@ function RootComponent() {
 }
 
 function AccountDataBoundary() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const queryClient = useQueryClient();
   const previousUserId = useRef<string | null | undefined>(undefined);
 
+  // Scope = account + active society. Any change wipes cached tenant data so
+  // a previous society's records can never render after switching.
   useEffect(() => {
-    const nextUserId = user?.id ?? null;
+    const nextUserId = user ? `${user.id}:${profile?.society_id ?? ""}` : null;
     if (previousUserId.current !== undefined && previousUserId.current !== nextUserId) {
       void queryClient.cancelQueries();
       queryClient.clear();
     }
     previousUserId.current = nextUserId;
-  }, [queryClient, user?.id]);
+  }, [queryClient, user, profile?.society_id]);
 
   return null;
 }

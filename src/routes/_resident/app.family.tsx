@@ -102,7 +102,7 @@ function FamilyPage() {
                 <div className="grid gap-2"><Label htmlFor="fm-name">Full name</Label><Input id="fm-name" maxLength={80} required value={name} onChange={(e) => setName(e.target.value)} className="h-11" /></div>
                 <div className="grid gap-2"><Label>Relation</Label>
                   <Select value={relation} onValueChange={setRelation}>
-                    <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                    <SelectTrigger aria-label="Relation" className="h-11"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {Object.entries(RELATION_LABELS).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
                     </SelectContent>

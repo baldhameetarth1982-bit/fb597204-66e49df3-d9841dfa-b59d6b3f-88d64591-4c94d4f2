@@ -116,7 +116,7 @@ function MeetingsAdmin() {
             </div>
             <div><Label>Who is invited</Label>
               <Select value={form.audience} onValueChange={(v) => setForm({ ...form, audience: v })}>
-                <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                <SelectTrigger aria-label="Who is invited" className="h-11"><SelectValue /></SelectTrigger>
                 <SelectContent><SelectItem value="all">All residents</SelectItem><SelectItem value="committee">Committee only</SelectItem></SelectContent>
               </Select>
             </div>

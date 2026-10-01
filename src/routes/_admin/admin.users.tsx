@@ -152,7 +152,7 @@ function UsersPage() {
             <div className="space-y-1.5">
               <Label>Plan</Label>
               <Select value={planId} onValueChange={setPlanId}>
-                <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                <SelectTrigger aria-label="Plan" className="h-11"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {(plansQ.data ?? []).map((p) => (
                     <SelectItem key={p.id} value={p.id}>{p.name}{Number(p.price_per_flat_inr) > 0 ? ` — ₹${Number(p.price_per_flat_inr)}/flat/mo` : ""}</SelectItem>

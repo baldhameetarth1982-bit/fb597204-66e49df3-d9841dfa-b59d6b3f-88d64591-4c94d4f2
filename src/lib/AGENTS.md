@@ -35,3 +35,4 @@
 - In-database cron jobs run only via run_logged_db_job (whitelisted job names) so every run is logged in scheduler_job_runs with skip/retry/recovery counts; scheduled reminders send only via _notify_*_once with stable event dedupe keys; users may change only read_at on user_notifications (trigger), so priority stays server-set.
 - Heavy export libraries (jspdf, jspdf-autotable, xlsx via spreadsheet-safety) are dynamically imported inside export handlers, never statically on page routes; keeps ordinary screens light.
 - Client query keys for society-scoped search include the society id so cached results never show after a society switch.
+- Member-only SECURITY DEFINER RPCs are never executable by anon; only asset_qr_lookup, get_applicable_plans, get_public_pricing_settings and smart_qr_public_* are public, so signed-out callers cannot reach governance/privacy actions.

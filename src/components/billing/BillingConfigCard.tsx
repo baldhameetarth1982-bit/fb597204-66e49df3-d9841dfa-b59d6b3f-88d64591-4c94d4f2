@@ -386,9 +386,9 @@ function ChargeHeadDialog({ open, onOpenChange, onSave }: { open: boolean; onOpe
       <DialogContent className="rounded-2xl">
         <DialogHeader><DialogTitle>New charge head</DialogTitle></DialogHeader>
         <div className="space-y-3">
-          <div><Label>Name</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Maintenance" /></div>
-          <div><Label>Category</Label><Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="general" /></div>
-          <div><Label>Default amount (optional)</Label><Input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" /></div>
+          <div><Label>Name</Label><Input aria-label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Maintenance" /></div>
+          <div><Label>Category</Label><Input aria-label="Category" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="general" /></div>
+          <div><Label>Default amount (optional)</Label><Input aria-label="Default amount (optional)" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" /></div>
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
@@ -413,8 +413,8 @@ function TemplateDialog({ open, onOpenChange, onSave }: { open: boolean; onOpenC
       <DialogContent className="rounded-2xl">
         <DialogHeader><DialogTitle>New billing template</DialogTitle></DialogHeader>
         <div className="space-y-3">
-          <div><Label>Name</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="FY 2026-27 Monthly" /></div>
-          <div><Label>Effective from</Label><Input type="date" value={effectiveFrom} onChange={(e) => setEffectiveFrom(e.target.value)} /></div>
+          <div><Label>Name</Label><Input aria-label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="FY 2026-27 Monthly" /></div>
+          <div><Label>Effective from</Label><Input aria-label="Effective from" type="date" value={effectiveFrom} onChange={(e) => setEffectiveFrom(e.target.value)} /></div>
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
@@ -464,13 +464,13 @@ function LineDialog({ open, onOpenChange, heads, onSave }: {
             </select>
           </div>
           {(ruleType === "fixed_per_unit" || ruleType === "unit_type_amount") && (
-            <div><Label>Amount (₹)</Label><Input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
+            <div><Label>Amount (₹)</Label><Input aria-label="Amount (₹)" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
           )}
           {ruleType === "unit_type_amount" && (
-            <div><Label>Unit type</Label><Input value={unitType} onChange={(e) => setUnitType(e.target.value)} placeholder="2BHK" /></div>
+            <div><Label>Unit type</Label><Input aria-label="Unit type" value={unitType} onChange={(e) => setUnitType(e.target.value)} placeholder="2BHK" /></div>
           )}
           {ruleType === "area_based" && (
-            <div><Label>Rate per sqft (₹)</Label><Input inputMode="decimal" value={ratePerArea} onChange={(e) => setRatePerArea(e.target.value)} /></div>
+            <div><Label>Rate per sqft (₹)</Label><Input aria-label="Rate per sqft (₹)" inputMode="decimal" value={ratePerArea} onChange={(e) => setRatePerArea(e.target.value)} /></div>
           )}
         </div>
         <DialogFooter>
@@ -584,12 +584,12 @@ function CycleDialog({ open, onOpenChange, templates, onSave }: {
               {templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
           </div>
-          <div><Label>Cycle name</Label><Input value={cycleName} onChange={(e) => setCycleName(e.target.value)} placeholder="July 2026" /></div>
+          <div><Label>Cycle name</Label><Input aria-label="Cycle name" value={cycleName} onChange={(e) => setCycleName(e.target.value)} placeholder="July 2026" /></div>
           <div className="grid grid-cols-2 gap-2">
-            <div><Label>Period start</Label><Input type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} /></div>
-            <div><Label>Period end</Label><Input type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} /></div>
+            <div><Label>Period start</Label><Input aria-label="Period start" type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} /></div>
+            <div><Label>Period end</Label><Input aria-label="Period end" type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} /></div>
           </div>
-          <div><Label>Due date</Label><Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></div>
+          <div><Label>Due date</Label><Input aria-label="Due date" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></div>
           <div>
             <Label>Status</Label>
             <select

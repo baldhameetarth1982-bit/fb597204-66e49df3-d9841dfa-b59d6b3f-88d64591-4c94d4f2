@@ -137,7 +137,7 @@ function NoticesAdmin() {
         description="Official announcements for residents"
         actions={<Button className="rounded-xl min-h-11" onClick={() => { setForm(EMPTY); setOpen(true); }}><Plus className="h-4 w-4 mr-2" />New notice</Button>}
       />
-      <nav aria-label="Notice workflow" className="-mx-1 mb-2 flex gap-1 overflow-x-auto px-1">
+      <div role="tablist" aria-label="Notice workflow" className="-mx-1 mb-2 flex gap-1 overflow-x-auto px-1">
         {FLOW.map((f, i) => (
           <button key={f.key} role="tab" aria-selected={tab === f.key} onClick={() => setTab(f.key)}
             className={cn("flex min-h-14 shrink-0 items-center gap-2 rounded-xl border px-3 text-left text-sm transition-colors",
@@ -146,7 +146,7 @@ function NoticesAdmin() {
             <span><span className="block font-medium">{f.label}</span><span className="block text-xs tabular-nums opacity-80">{q.data ? count(f.key) : "—"}</span></span>
           </button>
         ))}
-      </nav>
+      </div>
       <p className="mb-4 px-1 text-xs text-muted-foreground">{FLOW.find((f) => f.key === tab)!.hint}</p>
 
       {q.isLoading ? <ListSkeleton rows={4} />
@@ -212,14 +212,14 @@ function NoticesAdmin() {
             <div className="grid sm:grid-cols-2 gap-3">
               <div><Label>Who should see it</Label>
                 <Select value={form.audience} onValueChange={(v) => setForm({ ...form, audience: v })}>
-                  <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                  <SelectTrigger aria-label="Who should see it" className="h-11"><SelectValue /></SelectTrigger>
                   <SelectContent><SelectItem value="all">All residents</SelectItem>{(q.data?.blocks.length ?? 0) > 0 && <SelectItem value="block">One block</SelectItem>}</SelectContent>
                 </Select>
               </div>
               {form.audience === "block" && (
                 <div><Label>Block</Label>
                   <Select value={form.block_id} onValueChange={(v) => setForm({ ...form, block_id: v })}>
-                    <SelectTrigger className="h-11"><SelectValue placeholder="Choose block" /></SelectTrigger>
+                    <SelectTrigger aria-label="Block" className="h-11"><SelectValue placeholder="Choose block" /></SelectTrigger>
                     <SelectContent>{q.data?.blocks.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
@@ -231,7 +231,7 @@ function NoticesAdmin() {
             <div className="grid sm:grid-cols-2 gap-3">
               <div><Label>Priority</Label>
                 <Select value={form.priority} onValueChange={(v) => setForm({ ...form, priority: v })}>
-                  <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                  <SelectTrigger aria-label="Priority" className="h-11"><SelectValue /></SelectTrigger>
                   <SelectContent><SelectItem value="normal">Normal</SelectItem><SelectItem value="high">High</SelectItem><SelectItem value="urgent">Urgent</SelectItem></SelectContent>
                 </Select>
               </div>

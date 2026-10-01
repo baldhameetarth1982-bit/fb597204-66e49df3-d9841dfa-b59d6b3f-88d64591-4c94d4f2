@@ -425,7 +425,7 @@ function DetailsStep(props: {
         <div>
           <Label className="text-xs">Category</Label>
           <Select value={form.categoryId} onValueChange={(v) => set("categoryId", v)}>
-            <SelectTrigger className="min-h-[44px]">
+            <SelectTrigger aria-label="Category" className="min-h-[44px]">
               <SelectValue placeholder="Select a category" />
             </SelectTrigger>
             <SelectContent>
@@ -466,7 +466,7 @@ function DetailsStep(props: {
             value={form.payerKind}
             onValueChange={(v) => set("payerKind", v as PayerKind)}
           >
-            <SelectTrigger className="min-h-[44px]">
+            <SelectTrigger aria-label="Payer" className="min-h-[44px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -480,7 +480,7 @@ function DetailsStep(props: {
           <div>
             <Label className="text-xs">Select payer</Label>
             <Select value={form.payerId} onValueChange={(v) => set("payerId", v)}>
-              <SelectTrigger className="min-h-[44px]">
+              <SelectTrigger aria-label="Select payer" className="min-h-[44px]">
                 <SelectValue placeholder="Select a payer" />
               </SelectTrigger>
               <SelectContent>
@@ -566,7 +566,7 @@ function DetailsStep(props: {
             value={form.method}
             onValueChange={(v) => set("method", v as PaymentMethod)}
           >
-            <SelectTrigger className="min-h-[44px]">
+            <SelectTrigger aria-label="Payment method" className="min-h-[44px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

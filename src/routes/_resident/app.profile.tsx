@@ -265,8 +265,8 @@ function WithdrawDialog({ available, onClose }: { available: number; onClose: (r
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-2 col-span-2"><Label>Account number</Label><Input value={acct} onChange={(e) => setAcct(e.target.value)} /></div>
-              <div className="space-y-2 col-span-2"><Label>IFSC</Label><Input value={ifsc} onChange={(e) => setIfsc(e.target.value.toUpperCase())} /></div>
+              <div className="space-y-2 col-span-2"><Label>Account number</Label><Input aria-label="Account number" value={acct} onChange={(e) => setAcct(e.target.value)} /></div>
+              <div className="space-y-2 col-span-2"><Label>IFSC</Label><Input aria-label="IFSC" value={ifsc} onChange={(e) => setIfsc(e.target.value.toUpperCase())} /></div>
             </div>
           )}
           <div className="flex gap-2 pt-2">

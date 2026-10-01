@@ -399,7 +399,7 @@ function AssignDialog({
           <div className="space-y-2">
             <Label>Member</Label>
             <Select value={selUser} onValueChange={setSelUser}>
-              <SelectTrigger className="rounded-xl min-h-11"><SelectValue placeholder={loadingC ? "Loading…" : "Pick a member"} /></SelectTrigger>
+              <SelectTrigger aria-label="Member" className="rounded-xl min-h-11"><SelectValue placeholder={loadingC ? "Loading…" : "Pick a member"} /></SelectTrigger>
               <SelectContent>
                 {candidates.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
@@ -412,7 +412,7 @@ function AssignDialog({
           <div className="space-y-2">
             <Label>Role</Label>
             <Select value={selRole} onValueChange={(v) => { setSelRole(v as TeamRole); setSelBlocks([]); }}>
-              <SelectTrigger className="rounded-xl min-h-11"><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label="Role" className="rounded-xl min-h-11"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {roleOptions.map((r) => (
                   <SelectItem key={r} value={r}>{ROLE_LABELS[r as Role]}</SelectItem>

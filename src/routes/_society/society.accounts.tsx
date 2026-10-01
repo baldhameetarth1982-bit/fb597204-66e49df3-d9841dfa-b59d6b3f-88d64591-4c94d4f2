@@ -79,7 +79,7 @@ function AccountsPage() {
     <div className="px-4 pt-4 space-y-4 max-w-5xl mx-auto md:px-8">
       <AccountsCenterTabs />
       <SectionCard title="Reporting period" description="Canonical journal only">
-        <div className="grid grid-cols-2 gap-3"><div><Label>From</Label><Input type="date" value={from} onChange={e=>setFrom(e.target.value)}/></div><div><Label>To</Label><Input type="date" value={to} onChange={e=>setTo(e.target.value)}/></div></div>
+        <div className="grid grid-cols-2 gap-3"><div><Label>From</Label><Input aria-label="From" type="date" value={from} onChange={e=>setFrom(e.target.value)}/></div><div><Label>To</Label><Input aria-label="To" type="date" value={to} onChange={e=>setTo(e.target.value)}/></div></div>
       </SectionCard>
       {safeError ? <SectionCard title={safeError.title}><p className="text-sm text-muted-foreground" role="alert">{safeError.message}</p><div className="mt-3 flex gap-2">{canInitialize&&<Button className="min-h-11" disabled={initializing} onClick={initialize}>{initializing ? "Initializing…" : "Initialize accounts"}</Button>}{safeError.retryable&&<Button variant="outline" className="min-h-11" disabled={overview.isFetching||bookQ.isFetching} onClick={()=>void Promise.all([overview.refetch(),bookQ.refetch()])}>Retry</Button>}</div></SectionCard> : <>
         <div className="grid grid-cols-2 gap-3"><SectionCard icon={Wallet} title="Cash balance"><p className="text-2xl font-bold">{heroValue(o?.cash_balance)}</p></SectionCard><SectionCard icon={Landmark} title="Bank balance"><p className="text-2xl font-bold">{heroValue(o?.bank_balance)}</p></SectionCard></div>

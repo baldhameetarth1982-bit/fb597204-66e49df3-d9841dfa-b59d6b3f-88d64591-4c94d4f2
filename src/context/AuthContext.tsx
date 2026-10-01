@@ -71,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [societies, setSocieties] = useState<AuthSociety[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const loadSeq = useRef(0);
+  const loadedUserId = useRef<string | null>(null);
 
   const loadUserContext = useCallback(async (nextUser: User | null) => {
     if (!nextUser) {
@@ -165,8 +166,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    async function applySession(nextSession: Session | null) {
+    async function applySession(nextSession: Session | null, force = false) {
+      // The restored session arrives via both getSession() and a SIGNED_IN event; load once per user.
+      const nextId = nextSession?.user.id ?? null;
+      if (!force && nextId && nextId === loadedUserId.current) {
+        if (mounted) setSession(nextSession);
+        return;
+      }
       const seq = ++loadSeq.current;
+      loadedUserId.current = nextSession?.user.id ?? null;
       setIsLoading(true);
       try {
         const nextUser = nextSession?.user ?? null;
@@ -184,10 +192,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // 1. Subscribe FIRST (per Supabase guidance)
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      // getSession() below already loads the initial context; a token refresh keeps the same
+      // user, so only swap the session instead of re-fetching roles/societies (was 3x per load).
+      if (event === "INITIAL_SESSION") return;
+      if (event === "TOKEN_REFRESHED") {
+        if (mounted) setSession(nextSession);
+        return;
+      }
       // Defer DB calls to avoid deadlock with auth listener
       setTimeout(() => {
-        void applySession(nextSession);
+        void applySession(nextSession, event === "USER_UPDATED");
       }, 0);
     });
 

@@ -145,7 +145,7 @@ function CustomFieldsPage() {
               <form onSubmit={createField} className="space-y-3">
                 <div className="space-y-1.5">
                   <Label>Label</Label>
-                  <Input value={form.label} required maxLength={60}
+                  <Input aria-label="Label" value={form.label} required maxLength={60}
                     onChange={(e) => setForm({ ...form, label: e.target.value })}
                     placeholder="e.g. Vehicle registration number" />
                 </div>
@@ -153,7 +153,7 @@ function CustomFieldsPage() {
                   <div className="space-y-1.5">
                     <Label>Type</Label>
                     <Select value={form.field_type} onValueChange={(v) => setForm({ ...form, field_type: v as any })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger aria-label="Type"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {TYPES.map((t) => <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}
                       </SelectContent>
@@ -162,7 +162,7 @@ function CustomFieldsPage() {
                   <div className="space-y-1.5">
                     <Label>Visibility</Label>
                     <Select value={form.visibility} onValueChange={(v) => setForm({ ...form, visibility: v as any })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger aria-label="Visibility"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="resident_editable">Resident can edit</SelectItem>
                         <SelectItem value="admin_only">Admin only</SelectItem>
@@ -174,7 +174,7 @@ function CustomFieldsPage() {
                 {form.field_type === "dropdown" && (
                   <div className="space-y-1.5">
                     <Label>Options (one per line)</Label>
-                    <Textarea rows={4} value={form.options}
+                    <Textarea aria-label="Options (one per line)" rows={4} value={form.options}
                       onChange={(e) => setForm({ ...form, options: e.target.value })}
                       placeholder={"Owner\nTenant\nFamily"} />
                   </div>

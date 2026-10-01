@@ -159,7 +159,7 @@ export function TwoFactorCard() {
             </div>
             <div className="grid gap-2 max-w-xs">
               <Label>6-digit code</Label>
-              <Input
+              <Input aria-label="6-digit code"
                 inputMode="numeric"
                 maxLength={6}
                 value={code}

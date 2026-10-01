@@ -116,7 +116,7 @@
   --accent: oklch(0.91 0.035 175);
   --accent-foreground: oklch(1 0 0);
 
-  --destructive: oklch(0.6 0.22 15);               /* #E11D48 */
+  --destructive: oklch(0.56 0.22 15);              /* darker rose for AA text */
   --destructive-foreground: oklch(1 0 0);
   --success: oklch(0.68 0.15 160);                 /* #10B981 */
   --success-foreground: oklch(1 0 0);

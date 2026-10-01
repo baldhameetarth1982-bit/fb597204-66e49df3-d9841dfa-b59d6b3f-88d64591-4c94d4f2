@@ -190,16 +190,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // getSession() below already loads the initial context; a token refresh keeps the same
       // user, so only swap the session instead of re-fetching roles/societies (was 3x per load).
       if (event === "INITIAL_SESSION") return;
-      // supabase-js also emits SIGNED_IN for an already-restored session; same user → no reload.
-      if (
-        event === "TOKEN_REFRESHED" ||
-        (event === "SIGNED_IN" && nextSession?.user.id && nextSession.user.id === loadedUserId.current)
-      ) {
+      if (event === "TOKEN_REFRESHED") {
         if (mounted) setSession(nextSession);
         return;
       }
       // Defer DB calls to avoid deadlock with auth listener
       setTimeout(() => {
+        // supabase-js also emits SIGNED_IN for an already-restored session; same user → no reload.
+        if (event === "SIGNED_IN" && nextSession?.user.id && nextSession.user.id === loadedUserId.current) {
+          if (mounted) setSession(nextSession);
+          return;
+        }
         void applySession(nextSession);
       }, 0);
     });

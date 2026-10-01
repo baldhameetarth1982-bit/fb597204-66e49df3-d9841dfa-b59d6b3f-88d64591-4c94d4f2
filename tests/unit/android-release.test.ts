@@ -56,7 +56,10 @@ describe("Stage 18 app discoverability", () => {
       expect(read(`src/routes/${f}.tsx`)).toContain("noindex, nofollow");
     }
     const home = read("src/routes/index.tsx");
-    expect(home).toContain('"MobileApplication"');
-    expect(home).not.toMatch(/aggregateRating|ratingValue/);
+    expect(home).toContain("structuredDataScript");
+    const ld = read("src/lib/structured-data.ts");
+    expect(ld).toContain('"SoftwareApplication"');
+    expect(ld).toMatch(/operatingSystem: "Web, Android"/);
+    expect(home + ld).not.toMatch(/aggregateRating|ratingValue/);
   });
 });

@@ -61,7 +61,7 @@ export function MobileHero({
                 {title}
               </h1>
               {subtitle && (
-                <p className="mt-1 text-sm opacity-85 leading-snug">{subtitle}</p>
+                <p className="mt-1 text-sm opacity-95 leading-snug">{subtitle}</p>
               )}
             </div>
           </div>

@@ -37,3 +37,4 @@
 - Client query keys for society-scoped search include the society id so cached results never show after a society switch.
 - Member-only SECURITY DEFINER RPCs are never executable by anon; only asset_qr_lookup, get_applicable_plans, get_public_pricing_settings and smart_qr_public_* are public, so signed-out callers cannot reach governance/privacy actions.
 - Offline support is one static, data-free /offline.html served by the existing push service worker for failed navigations only; never cache API or society data in the worker.
+- Occupancy boundary (reviewed): `global_search` is SECURITY INVOKER (table RLS also applies) and every resident branch requires an active `flat_residents` row; Flat 360 + its AI summary are admin/block-admin/super-admin only; No-Dues creation needs active occupancy, and past requesters see only their own request/certificate snapshot, never live eligibility. Keep these when editing.

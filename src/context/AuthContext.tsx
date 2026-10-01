@@ -166,8 +166,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    async function applySession(nextSession: Session | null) {
-      console.log("WS_TRACE applySession", new Error().stack?.split("\n")[2]);
+    async function applySession(nextSession: Session | null, force = false) {
+      // The restored session arrives via both getSession() and a SIGNED_IN event; load once per user.
+      const nextId = nextSession?.user.id ?? null;
+      if (!force && nextId && nextId === loadedUserId.current) {
+        if (mounted) setSession(nextSession);
+        return;
+      }
       const seq = ++loadSeq.current;
       loadedUserId.current = nextSession?.user.id ?? null;
       setIsLoading(true);
@@ -197,12 +202,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       // Defer DB calls to avoid deadlock with auth listener
       setTimeout(() => {
-        // supabase-js also emits SIGNED_IN for an already-restored session; same user → no reload.
-        if (event === "SIGNED_IN" && nextSession?.user.id && nextSession.user.id === loadedUserId.current) {
-          if (mounted) setSession(nextSession);
-          return;
-        }
-        void applySession(nextSession);
+        void applySession(nextSession, event === "USER_UPDATED");
       }, 0);
     });
 

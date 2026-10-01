@@ -1,0 +1,1 @@
+ALTER FUNCTION public._helpdesk_sla_hours(text) SET search_path = public;

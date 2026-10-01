@@ -280,7 +280,7 @@ function BlocksPage() {
             </p>
             <div className="space-y-2">
               <Label>New block name</Label>
-              <Input value={dupName} onChange={(e) => setDupName(e.target.value)} placeholder="e.g. Block B" />
+              <Input aria-label="New block name" value={dupName} onChange={(e) => setDupName(e.target.value)} placeholder="e.g. Block B" />
             </div>
           </div>
           <DialogFooter>
@@ -301,7 +301,7 @@ function BlocksPage() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Describe your society</Label>
-              <Textarea
+              <Textarea aria-label="Describe your society"
                 rows={4}
                 placeholder="e.g. 3 towers A B C, each 10 floors with 4 flats per floor. Plus 20 bungalows numbered V-1 to V-20."
                 value={aiText}

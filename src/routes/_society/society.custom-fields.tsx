@@ -145,7 +145,7 @@ function CustomFieldsPage() {
               <form onSubmit={createField} className="space-y-3">
                 <div className="space-y-1.5">
                   <Label>Label</Label>
-                  <Input value={form.label} required maxLength={60}
+                  <Input aria-label="Label" value={form.label} required maxLength={60}
                     onChange={(e) => setForm({ ...form, label: e.target.value })}
                     placeholder="e.g. Vehicle registration number" />
                 </div>
@@ -174,7 +174,7 @@ function CustomFieldsPage() {
                 {form.field_type === "dropdown" && (
                   <div className="space-y-1.5">
                     <Label>Options (one per line)</Label>
-                    <Textarea rows={4} value={form.options}
+                    <Textarea aria-label="Options (one per line)" rows={4} value={form.options}
                       onChange={(e) => setForm({ ...form, options: e.target.value })}
                       placeholder={"Owner\nTenant\nFamily"} />
                   </div>

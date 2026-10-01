@@ -137,7 +137,7 @@ function NoticesAdmin() {
         description="Official announcements for residents"
         actions={<Button className="rounded-xl min-h-11" onClick={() => { setForm(EMPTY); setOpen(true); }}><Plus className="h-4 w-4 mr-2" />New notice</Button>}
       />
-      <nav aria-label="Notice workflow" className="-mx-1 mb-2 flex gap-1 overflow-x-auto px-1">
+      <nav role="tablist" aria-label="Notice workflow" className="-mx-1 mb-2 flex gap-1 overflow-x-auto px-1">
         {FLOW.map((f, i) => (
           <button key={f.key} role="tab" aria-selected={tab === f.key} onClick={() => setTab(f.key)}
             className={cn("flex min-h-14 shrink-0 items-center gap-2 rounded-xl border px-3 text-left text-sm transition-colors",

@@ -76,9 +76,9 @@ function ContactsPage() {
                     <SelectContent>{(form.category === "committee" ? COMMITTEE_ROLES : SERVICE_ROLES).map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div><Label>Name</Label><Input value={form.name ?? ""} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-                <div><Label>Phone</Label><Input value={form.phone ?? ""} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
-                <div><Label>Notes</Label><Input value={form.notes ?? ""} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
+                <div><Label>Name</Label><Input aria-label="Name" value={form.name ?? ""} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
+                <div><Label>Phone</Label><Input aria-label="Phone" value={form.phone ?? ""} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
+                <div><Label>Notes</Label><Input aria-label="Notes" value={form.notes ?? ""} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
                 <Button className="w-full" onClick={save}>Save</Button>
               </div>
             </DialogContent>

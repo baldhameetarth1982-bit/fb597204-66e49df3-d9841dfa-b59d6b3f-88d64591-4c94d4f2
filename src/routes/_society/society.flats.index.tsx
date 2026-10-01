@@ -254,7 +254,7 @@ function FlatsPage() {
               if (societyId) void refresh(societyId, { offset: 0, blockId: v });
             }}
           >
-            <SelectTrigger className="w-44 min-h-11"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-44 min-h-11" aria-label="Filter by block"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All blocks</SelectItem>
               {blocks.map((b) => (

@@ -141,6 +141,10 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   useEffect(() => {
     installGlobalErrorLogger();
+    // Offline page for navigations (static, data-free). Same worker as push.
+    if (import.meta.env.PROD && "serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/firebase-messaging-sw.js").catch(() => {});
+    }
   }, []);
   return (
     <RootErrorBoundary>

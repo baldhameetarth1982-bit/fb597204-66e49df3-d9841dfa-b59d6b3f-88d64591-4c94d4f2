@@ -18,6 +18,7 @@ import { AdminSidebar } from "@/components/shared/AdminSidebar";
 import { AppHeader } from "@/components/shared/AppHeader";
 
 import { SocietyFab } from "@/components/shared/SocietyFab";
+import { KeyboardFieldVisibility } from "@/components/system/KeyboardFieldVisibility";
 import { ResidentBottomNav } from "@/components/nav/ResidentBottomNav";
 import { SocietyAdminBottomNav } from "@/components/nav/SocietyAdminBottomNav";
 import { GuardBottomNav } from "@/components/nav/GuardBottomNav";
@@ -160,6 +161,7 @@ function RootComponent() {
           <ShellSwitcher />
           <Toaster richColors closeButton position="top-right" />
           <OfflineBanner />
+          <KeyboardFieldVisibility />
         </AuthProvider>
       </QueryClientProvider>
     </RootErrorBoundary>

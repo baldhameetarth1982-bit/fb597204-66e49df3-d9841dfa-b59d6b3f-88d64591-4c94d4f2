@@ -53,11 +53,11 @@ export function MobileHero({
             )}
             <div className="min-w-0">
               {eyebrow && (
-                 <p className="text-[11px] font-semibold uppercase opacity-80">
+                 <p className="text-[11px] font-semibold uppercase opacity-95">
                   {eyebrow}
                 </p>
               )}
-               <h1 className="font-display text-2xl font-bold leading-tight sm:text-3xl">
+               <h1 className="[color:inherit] font-display text-2xl font-bold leading-tight sm:text-3xl">
                 {title}
               </h1>
               {subtitle && (

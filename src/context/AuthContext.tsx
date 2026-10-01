@@ -167,6 +167,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let mounted = true;
 
     async function applySession(nextSession: Session | null) {
+      console.log("WS_TRACE applySession", new Error().stack?.split("\n")[2]);
       const seq = ++loadSeq.current;
       loadedUserId.current = nextSession?.user.id ?? null;
       setIsLoading(true);

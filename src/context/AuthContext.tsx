@@ -184,7 +184,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // 1. Subscribe FIRST (per Supabase guidance)
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      // getSession() below already loads the initial context; a token refresh keeps the same
+      // user, so only swap the session instead of re-fetching roles/societies (was 3x per load).
+      if (event === "INITIAL_SESSION") return;
+      if (event === "TOKEN_REFRESHED") {
+        if (mounted) setSession(nextSession);
+        return;
+      }
       // Defer DB calls to avoid deadlock with auth listener
       setTimeout(() => {
         void applySession(nextSession);

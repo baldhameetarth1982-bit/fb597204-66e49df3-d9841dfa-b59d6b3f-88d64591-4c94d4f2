@@ -36,3 +36,4 @@
 - Heavy export libraries (jspdf, jspdf-autotable, xlsx via spreadsheet-safety) are dynamically imported inside export handlers, never statically on page routes; keeps ordinary screens light.
 - Client query keys for society-scoped search include the society id so cached results never show after a society switch.
 - Member-only SECURITY DEFINER RPCs are never executable by anon; only asset_qr_lookup, get_applicable_plans, get_public_pricing_settings and smart_qr_public_* are public, so signed-out callers cannot reach governance/privacy actions.
+- Offline support is one static, data-free /offline.html served by the existing push service worker for failed navigations only; never cache API or society data in the worker.

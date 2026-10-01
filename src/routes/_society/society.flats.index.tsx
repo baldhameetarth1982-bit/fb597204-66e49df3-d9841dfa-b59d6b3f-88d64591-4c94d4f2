@@ -189,7 +189,7 @@ function FlatsPage() {
                   <div className="space-y-2">
                     <Label>Block</Label>
                     <Select value={blockId} onValueChange={setBlockId}>
-                      <SelectTrigger className="min-h-11"><SelectValue placeholder="Select block" /></SelectTrigger>
+                      <SelectTrigger aria-label="Block" className="min-h-11"><SelectValue placeholder="Select block" /></SelectTrigger>
                       <SelectContent>
                         {blocks.map((b) => (
                           <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
@@ -213,7 +213,7 @@ function FlatsPage() {
                 <div className="space-y-2">
                   <Label>Type</Label>
                   <Select value={type} onValueChange={setType}>
-                    <SelectTrigger className="min-h-11"><SelectValue /></SelectTrigger>
+                    <SelectTrigger aria-label="Type" className="min-h-11"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {["1RK", "1BHK", "2BHK", "3BHK", "4BHK", "Penthouse", "House", "Shop"].map((t) => (
                         <SelectItem key={t} value={t}>{t}</SelectItem>

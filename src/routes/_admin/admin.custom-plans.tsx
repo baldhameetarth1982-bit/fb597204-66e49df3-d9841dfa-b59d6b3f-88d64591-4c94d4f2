@@ -243,7 +243,7 @@ function CustomPlansPage() {
             <div className="space-y-1.5">
               <Label>Society</Label>
               <Select value={societyId} onValueChange={setSocietyId}>
-                <SelectTrigger className="h-11">
+                <SelectTrigger aria-label="Society" className="h-11">
                   <SelectValue placeholder="Pick a society" />
                 </SelectTrigger>
                 <SelectContent>

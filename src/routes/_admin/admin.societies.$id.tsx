@@ -570,7 +570,7 @@ function ActionSheet({
                   <div className="space-y-1.5">
                     <Label htmlFor="plan">Plan</Label>
                     <Select value={planId} onValueChange={setPlanId}>
-                      <SelectTrigger id="plan" className="min-h-11">
+                      <SelectTrigger aria-label="Plan" id="plan" className="min-h-11">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -585,7 +585,7 @@ function ActionSheet({
                   <div className="space-y-1.5">
                     <Label htmlFor="months">Duration</Label>
                     <Select value={months} onValueChange={setMonths}>
-                      <SelectTrigger id="months" className="min-h-11">
+                      <SelectTrigger aria-label="Duration" id="months" className="min-h-11">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -603,7 +603,7 @@ function ActionSheet({
                 <div className="space-y-1.5">
                   <Label htmlFor="days">Extra days</Label>
                   <Select value={days} onValueChange={setDays}>
-                    <SelectTrigger id="days" className="min-h-11">
+                    <SelectTrigger aria-label="Extra days" id="days" className="min-h-11">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

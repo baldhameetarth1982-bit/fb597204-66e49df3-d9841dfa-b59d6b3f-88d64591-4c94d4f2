@@ -312,7 +312,7 @@ function IncomePage({ societyId }: { societyId: string }) {
           <div className="min-w-[160px]">
             <Label className="text-xs">Period</Label>
             <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
-              <SelectTrigger className="min-h-[44px]">
+              <SelectTrigger aria-label="Period" className="min-h-[44px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -357,7 +357,7 @@ function IncomePage({ societyId }: { societyId: string }) {
           <div className="min-w-[160px]">
             <Label className="text-xs">Category</Label>
             <Select value={categoryId} onValueChange={setCategoryId}>
-              <SelectTrigger className="min-h-[44px]">
+              <SelectTrigger aria-label="Category" className="min-h-[44px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -374,7 +374,7 @@ function IncomePage({ societyId }: { societyId: string }) {
           <div className="min-w-[160px]">
             <Label className="text-xs">Payer</Label>
             <Select value={kind} onValueChange={(v) => setKind(v as typeof kind)}>
-              <SelectTrigger className="min-h-[44px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label="Payer" className="min-h-[44px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {KIND_OPTIONS.map((o) => (
                   <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
@@ -386,7 +386,7 @@ function IncomePage({ societyId }: { societyId: string }) {
           <div className="min-w-[160px]">
             <Label className="text-xs">Method</Label>
             <Select value={method} onValueChange={(v) => setMethod(v as typeof method)}>
-              <SelectTrigger className="min-h-[44px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label="Method" className="min-h-[44px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {METHOD_OPTIONS.map((o) => (
                   <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
@@ -398,7 +398,7 @@ function IncomePage({ societyId }: { societyId: string }) {
           <div className="min-w-[160px]">
             <Label className="text-xs">Verification</Label>
             <Select value={verif} onValueChange={(v) => setVerif(v as typeof verif)}>
-              <SelectTrigger className="min-h-[44px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label="Verification" className="min-h-[44px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {VERIF_OPTIONS.map((o) => (
                   <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
@@ -410,7 +410,7 @@ function IncomePage({ societyId }: { societyId: string }) {
           <div className="min-w-[160px]">
             <Label className="text-xs">Reconciliation</Label>
             <Select value={recon} onValueChange={(v) => setRecon(v as typeof recon)}>
-              <SelectTrigger className="min-h-[44px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label="Reconciliation" className="min-h-[44px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {RECON_OPTIONS.map((o) => (
                   <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
@@ -422,7 +422,7 @@ function IncomePage({ societyId }: { societyId: string }) {
           <div className="min-w-[160px]">
             <Label className="text-xs">Sort</Label>
             <Select value={sort} onValueChange={(v) => setSort(v as IncomeSort)}>
-              <SelectTrigger className="min-h-[44px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label="Sort" className="min-h-[44px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {SORT_OPTIONS.map((o) => (
                   <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>

@@ -139,7 +139,7 @@ function VehiclesPage() {
                 <div>
                   <Label htmlFor="vehicle-type">Type</Label>
                   <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
-                    <SelectTrigger id="vehicle-type">
+                    <SelectTrigger aria-label="Type" id="vehicle-type">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

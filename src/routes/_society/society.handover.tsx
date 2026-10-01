@@ -77,7 +77,7 @@ function HandoverPage() {
           <div className="space-y-3">
             <div><Label htmlFor="ho-status">Status</Label>
               <Select value={status} onValueChange={(v) => setStatus(v as HandoverStatus)}>
-                <SelectTrigger id="ho-status" className="min-h-11"><SelectValue /></SelectTrigger>
+                <SelectTrigger aria-label="Status" id="ho-status" className="min-h-11"><SelectValue /></SelectTrigger>
                 <SelectContent>{HANDOVER_STATUSES.map((k) => <SelectItem key={k} value={k}>{LABEL[k]}</SelectItem>)}</SelectContent>
               </Select></div>
             <div><Label htmlFor="ho-note">Note {status === "handed_over" && "(required)"}</Label>

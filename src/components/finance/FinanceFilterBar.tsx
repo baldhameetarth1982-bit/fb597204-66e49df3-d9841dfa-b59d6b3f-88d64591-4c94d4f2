@@ -53,7 +53,7 @@ export function FinanceFilterBar({ value, onChange, categories, statuses }: {
         {categories && (
           <div className="grid gap-1"><Label className="text-xs">Category</Label>
             <Select value={value.category} onValueChange={(v) => onChange({ ...value, category: v })}>
-              <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label="Category" className="h-11"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All categories</SelectItem>
                 {categories.map((c) => <SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>)}
@@ -62,7 +62,7 @@ export function FinanceFilterBar({ value, onChange, categories, statuses }: {
         )}
         <div className="grid gap-1"><Label className="text-xs">Status</Label>
           <Select value={value.status} onValueChange={(v) => onChange({ ...value, status: v })}>
-            <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+            <SelectTrigger aria-label="Status" className="h-11"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All statuses</SelectItem>
               {statuses.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}

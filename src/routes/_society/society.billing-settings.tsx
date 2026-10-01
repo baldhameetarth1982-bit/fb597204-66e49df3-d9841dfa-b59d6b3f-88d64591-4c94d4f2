@@ -172,7 +172,7 @@ function BillingSettingsPage() {
             <div className="space-y-1.5">
               <Label htmlFor="bs-freq">Billing frequency</Label>
               <Select value={form.maintenance_frequency} onValueChange={(v) => setForm({ ...form, maintenance_frequency: v })}>
-                <SelectTrigger id="bs-freq" className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectTrigger aria-label="Billing frequency" id="bs-freq" className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="monthly">Monthly</SelectItem>
                   <SelectItem value="quarterly">Quarterly</SelectItem>
@@ -194,7 +194,7 @@ function BillingSettingsPage() {
             <div className="space-y-1.5">
               <Label htmlFor="bs-fy">Financial year starts</Label>
               <Select value={String(form.financial_year_start_month)} onValueChange={(v) => setForm({ ...form, financial_year_start_month: Number(v) })}>
-                <SelectTrigger id="bs-fy" className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectTrigger aria-label="Financial year starts" id="bs-fy" className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {["January","February","March","April","May","June","July","August","September","October","November","December"].map((m, i) => (
                     <SelectItem key={m} value={String(i + 1)}>{m}</SelectItem>
@@ -210,7 +210,7 @@ function BillingSettingsPage() {
             <div className="space-y-1.5">
               <Label htmlFor="bs-lft">Late fee type</Label>
               <Select value={form.late_fee_type} onValueChange={(v) => setForm({ ...form, late_fee_type: v })}>
-                <SelectTrigger id="bs-lft" className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectTrigger aria-label="Late fee type" id="bs-lft" className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="flat">Flat amount (₹) per bill</SelectItem>
                   <SelectItem value="percent">Percent of overdue dues (%)</SelectItem>
@@ -384,7 +384,7 @@ function AutoBillingSection({ societyId }: { societyId: string }) {
           <div className="space-y-1.5">
             <Label className="text-xs">Amount mode</Label>
             <Select value={mode} onValueChange={(v: any) => setMode(v)}>
-              <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label="Amount mode" className="rounded-xl"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="flat">Flat ₹ per unit</SelectItem>
                 <SelectItem value="per_sqft">₹ × sqft</SelectItem>
@@ -399,7 +399,7 @@ function AutoBillingSection({ societyId }: { societyId: string }) {
           <div className="space-y-1.5">
             <Label className="text-xs">Cycle</Label>
             <Select value={cycle} onValueChange={(v: any) => setCycle(v)}>
-              <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label="Cycle" className="rounded-xl"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="weekly">Weekly</SelectItem>
                 <SelectItem value="monthly">Monthly</SelectItem>

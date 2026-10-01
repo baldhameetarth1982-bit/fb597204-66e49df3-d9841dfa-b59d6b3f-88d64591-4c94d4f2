@@ -279,7 +279,7 @@ function UploadDialog({ target, onClose, onDone }: { target: KnowledgeItem | "ne
           <div className="space-y-1.5">
             <Label>Who can see it</Label>
             <Select value={audience} onValueChange={(v) => setAudience(v as typeof audience)}>
-              <SelectTrigger className="min-h-11"><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label="Who can see it" className="min-h-11"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="residents">All residents</SelectItem>
                 <SelectItem value="committee">Committee only</SelectItem>
@@ -329,7 +329,7 @@ function FaqDialog({ target, onClose, onDone }: { target: KnowledgeItem | "new";
           <div className="space-y-1.5">
             <Label>Who can see it</Label>
             <Select value={audience} onValueChange={(v) => setAudience(v as typeof audience)}>
-              <SelectTrigger className="min-h-11"><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label="Who can see it" className="min-h-11"><SelectValue /></SelectTrigger>
               <SelectContent><SelectItem value="residents">All residents</SelectItem><SelectItem value="committee">Committee only</SelectItem></SelectContent>
             </Select>
           </div>
@@ -369,7 +369,7 @@ function VersionsDialog({ item, onClose, onDone }: { item: KnowledgeItem; onClos
           <Label>Category</Label>
           <div className="flex gap-2">
             <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="h-11 flex-1"><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label="Category" className="h-11 flex-1"><SelectValue /></SelectTrigger>
               <SelectContent>{DOC_CATEGORIES.map((c) => <SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>)}</SelectContent>
             </Select>
             <Button className="min-h-11" disabled={save.isPending || category === item.category} onClick={() => save.mutate()}>Save</Button>

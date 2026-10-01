@@ -153,7 +153,7 @@ function CustomFieldsPage() {
                   <div className="space-y-1.5">
                     <Label>Type</Label>
                     <Select value={form.field_type} onValueChange={(v) => setForm({ ...form, field_type: v as any })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger aria-label="Type"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {TYPES.map((t) => <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}
                       </SelectContent>
@@ -162,7 +162,7 @@ function CustomFieldsPage() {
                   <div className="space-y-1.5">
                     <Label>Visibility</Label>
                     <Select value={form.visibility} onValueChange={(v) => setForm({ ...form, visibility: v as any })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger aria-label="Visibility"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="resident_editable">Resident can edit</SelectItem>
                         <SelectItem value="admin_only">Admin only</SelectItem>

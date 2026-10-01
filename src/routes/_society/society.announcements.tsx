@@ -212,14 +212,14 @@ function NoticesAdmin() {
             <div className="grid sm:grid-cols-2 gap-3">
               <div><Label>Who should see it</Label>
                 <Select value={form.audience} onValueChange={(v) => setForm({ ...form, audience: v })}>
-                  <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                  <SelectTrigger aria-label="Who should see it" className="h-11"><SelectValue /></SelectTrigger>
                   <SelectContent><SelectItem value="all">All residents</SelectItem>{(q.data?.blocks.length ?? 0) > 0 && <SelectItem value="block">One block</SelectItem>}</SelectContent>
                 </Select>
               </div>
               {form.audience === "block" && (
                 <div><Label>Block</Label>
                   <Select value={form.block_id} onValueChange={(v) => setForm({ ...form, block_id: v })}>
-                    <SelectTrigger className="h-11"><SelectValue placeholder="Choose block" /></SelectTrigger>
+                    <SelectTrigger aria-label="Block" className="h-11"><SelectValue placeholder="Choose block" /></SelectTrigger>
                     <SelectContent>{q.data?.blocks.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
@@ -231,7 +231,7 @@ function NoticesAdmin() {
             <div className="grid sm:grid-cols-2 gap-3">
               <div><Label>Priority</Label>
                 <Select value={form.priority} onValueChange={(v) => setForm({ ...form, priority: v })}>
-                  <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                  <SelectTrigger aria-label="Priority" className="h-11"><SelectValue /></SelectTrigger>
                   <SelectContent><SelectItem value="normal">Normal</SelectItem><SelectItem value="high">High</SelectItem><SelectItem value="urgent">Urgent</SelectItem></SelectContent>
                 </Select>
               </div>

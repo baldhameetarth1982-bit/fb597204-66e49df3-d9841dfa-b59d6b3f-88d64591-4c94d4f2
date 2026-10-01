@@ -66,13 +66,13 @@ function ContactsPage() {
               <div className="space-y-3">
                 <div><Label>Category</Label>
                   <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v as any, role_label: v === "committee" ? "Chairman" : "Plumber" })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger aria-label="Category"><SelectValue /></SelectTrigger>
                     <SelectContent><SelectItem value="committee">Committee</SelectItem><SelectItem value="service">Service</SelectItem></SelectContent>
                   </Select>
                 </div>
                 <div><Label>Role</Label>
                   <Select value={form.role_label} onValueChange={(v) => setForm({ ...form, role_label: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger aria-label="Role"><SelectValue /></SelectTrigger>
                     <SelectContent>{(form.category === "committee" ? COMMITTEE_ROLES : SERVICE_ROLES).map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>

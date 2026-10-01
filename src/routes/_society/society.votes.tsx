@@ -121,7 +121,7 @@ function VotesAdmin() {
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div><Label>Who can vote</Label>
-                <Select value={form.eligibility} onValueChange={(v) => setForm({ ...form, eligibility: v })}><SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                <Select value={form.eligibility} onValueChange={(v) => setForm({ ...form, eligibility: v })}><SelectTrigger aria-label="Who can vote" className="h-11"><SelectValue /></SelectTrigger>
                   <SelectContent>{Object.entries(ELIGIBILITY).map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent></Select>
               </div>
               <div><Label htmlFor="v-close">Voting closes *</Label><Input id="v-close" type="datetime-local" className="h-11" value={form.closes} onChange={(e) => setForm({ ...form, closes: e.target.value })} /></div>

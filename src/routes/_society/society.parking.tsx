@@ -158,20 +158,20 @@ function ParkingPage() {
               <div><Label htmlFor="p-label">Slot name *</Label><Input id="p-label" className="h-11" value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value.toUpperCase() })} placeholder="P-12" maxLength={20} required /></div>
               <div><Label>Type</Label>
                 <Select value={form.slot_type} onValueChange={(v) => setForm({ ...form, slot_type: v })}>
-                  <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                  <SelectTrigger aria-label="Type" className="h-11"><SelectValue /></SelectTrigger>
                   <SelectContent>{["car", "bike", "visitor", "other"].map((t) => <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>
             <div><Label>Allotted to house</Label>
               <Select value={form.flat_id} onValueChange={(v) => setForm({ ...form, flat_id: v, vehicle_id: NONE })}>
-                <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                <SelectTrigger aria-label="Allotted to house" className="h-11"><SelectValue /></SelectTrigger>
                 <SelectContent><SelectItem value={NONE}>Not allotted</SelectItem>{(data.data?.flats ?? []).map((f) => <SelectItem key={f.id} value={f.id}>{f.flat_number}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div><Label>Vehicle (optional)</Label>
               <Select value={form.vehicle_id} onValueChange={(v) => setForm({ ...form, vehicle_id: v })}>
-                <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                <SelectTrigger aria-label="Vehicle (optional)" className="h-11"><SelectValue /></SelectTrigger>
                 <SelectContent><SelectItem value={NONE}>Any vehicle of the house</SelectItem>{vehOptions.map((v) => <SelectItem key={v.id} value={v.id}>{v.plate_number}</SelectItem>)}</SelectContent>
               </Select>
             </div>

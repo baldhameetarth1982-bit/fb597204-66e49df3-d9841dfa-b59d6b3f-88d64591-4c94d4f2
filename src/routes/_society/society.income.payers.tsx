@@ -636,7 +636,7 @@ function PayerDialog(props: {
                 value={form.payer_type}
                 onValueChange={(v) => set("payer_type", v as PayerType)}
               >
-                <SelectTrigger className="min-h-[44px] rounded-[14px] border-border">
+                <SelectTrigger aria-label="Type" className="min-h-[44px] rounded-[14px] border-border">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

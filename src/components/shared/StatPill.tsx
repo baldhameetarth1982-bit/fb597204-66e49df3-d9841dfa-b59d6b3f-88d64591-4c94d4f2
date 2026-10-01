@@ -20,7 +20,7 @@ export function StatPill({
         className,
       )}
     >
-      <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase opacity-80">
+      <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase opacity-95">
         {Icon && <Icon className="h-3 w-3" />}
         <span className="truncate">{label}</span>
       </div>

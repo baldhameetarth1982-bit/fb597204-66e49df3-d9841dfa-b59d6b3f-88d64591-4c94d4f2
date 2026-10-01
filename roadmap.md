@@ -1,5 +1,14 @@
 # Active roadmap
 
+## Workstream 10 — Verification and release closure
+
+- [x] Full automated suite: 2647 checks pass; one outdated home-page listing check updated to the shared listing source.
+- [x] Database security review: only intended public functions (pricing, plans, Smart QR, asset QR token) open signed-out; helpdesk SLA helper search path pinned.
+- [x] Secret scan of app code and public files: clean. Type check and build: clean.
+- [ ] Signed-in Resident/Guard/Super Admin browser checks — blocked: no legitimate role test accounts.
+- [ ] Real-phone keyboard check — blocked: no physical device.
+- [ ] Live 11-case disposable-database run — blocked: needs external runner.
+
 ## Stage 17 — Security hardening
 
 - [x] Inventory and threat-model authentication, public endpoints, uploads, AI, webhooks, financial/admin mutations, and exposed database functions.

@@ -946,6 +946,13 @@
       "when": 1790889210701,
       "tag": "0134_role_helpers_require_active",
       "breakpoints": true
+    },
+    {
+      "idx": 135,
+      "version": "7",
+      "when": 1790889476292,
+      "tag": "0135_block_admin_helpers_require_active",
+      "breakpoints": true
     }
   ]
 }

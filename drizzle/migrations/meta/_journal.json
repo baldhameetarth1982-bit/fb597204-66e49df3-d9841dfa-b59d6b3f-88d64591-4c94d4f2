@@ -897,6 +897,13 @@
       "when": 1790834059887,
       "tag": "0127_revoke_anon_member_rpcs",
       "breakpoints": true
+    },
+    {
+      "idx": 128,
+      "version": "7",
+      "when": 1790834076308,
+      "tag": "0128_restore_meeting_helper_grants",
+      "breakpoints": true
     }
   ]
 }

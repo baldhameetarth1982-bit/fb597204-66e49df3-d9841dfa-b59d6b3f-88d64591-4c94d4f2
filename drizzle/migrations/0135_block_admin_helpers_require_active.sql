@@ -1,0 +1,8 @@
+CREATE OR REPLACE FUNCTION public.get_admin_block_ids(_user_id uuid) RETURNS SETOF uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public'
+AS $f$ SELECT block_id FROM public.user_roles WHERE user_id=_user_id AND role='block_admin'::public.app_role AND block_id IS NOT NULL AND COALESCE(is_active,true) $f$;
+CREATE OR REPLACE FUNCTION public.get_admin_society_ids(_user_id uuid) RETURNS SETOF uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public'
+AS $f$ SELECT society_id FROM public.user_roles WHERE user_id=_user_id AND role='society_admin'::public.app_role AND society_id IS NOT NULL AND COALESCE(is_active,true) $f$;
+CREATE OR REPLACE FUNCTION public.is_block_admin(_user_id uuid, _block_id uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public'
+AS $f$ SELECT EXISTS (SELECT 1 FROM public.user_roles WHERE user_id=_user_id AND role='block_admin' AND block_id=_block_id AND COALESCE(is_active,true)) $f$;
+CREATE OR REPLACE FUNCTION public.is_block_admin_for_flat_internal(_actor_id uuid, _flat_id uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public'
+AS $f$ SELECT EXISTS (SELECT 1 FROM public.user_roles ur JOIN public.flats f ON f.id=_flat_id WHERE ur.user_id=_actor_id AND ur.role='block_admin'::public.app_role AND ur.society_id=f.society_id AND ur.block_id=f.block_id AND COALESCE(ur.is_active,true)) $f$;

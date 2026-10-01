@@ -47,6 +47,7 @@ function CreateSocietyWizardPage() {
         .select("society_id")
         .eq("user_id", user.id)
         .eq("role", "society_admin")
+        .eq("is_active", true)
         .not("society_id", "is", null)
         .limit(1)
         .maybeSingle();

@@ -20,6 +20,7 @@ export const generateCommunityDigest = createServerFn({ method: "POST" })
       .eq("user_id", context.userId)
       .eq("society_id", data.societyId)
       .in("role", ["society_admin", "super_admin"])
+      .eq("is_active", true)
       .maybeSingle();
     if (!roleCheck) {
       throw new Error("Forbidden: society admin only.");

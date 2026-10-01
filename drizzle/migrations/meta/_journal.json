@@ -925,6 +925,13 @@
       "when": 1790837463141,
       "tag": "0131_occupancy_boundary_definer_functions",
       "breakpoints": true
+    },
+    {
+      "idx": 132,
+      "version": "7",
+      "when": 1790838357488,
+      "tag": "0132_flats_public_active_occupancy",
+      "breakpoints": true
     }
   ]
 }

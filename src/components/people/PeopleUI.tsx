@@ -54,7 +54,7 @@ export function SummaryStrip({ items }: { items: Array<{ label: string; value: R
         <div key={i.label} className="bg-card px-4 py-3">
           <dt className="text-xs text-muted-foreground">{i.label}</dt>
           <dd className="mt-0.5 text-xl font-semibold tabular-nums">{i.value}</dd>
-          {i.hint && <p className="text-xs text-muted-foreground">{i.hint}</p>}
+          {i.hint && <dd className="text-xs text-muted-foreground">{i.hint}</dd>}
         </div>
       ))}
     </dl>

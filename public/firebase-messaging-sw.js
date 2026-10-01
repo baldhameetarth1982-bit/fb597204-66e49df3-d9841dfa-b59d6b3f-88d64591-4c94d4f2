@@ -53,3 +53,23 @@ self.addEventListener("notificationclick", (event) => {
     }),
   );
 });
+
+/* Offline shell: only a static, data-free offline page is cached.
+   Navigations are network-first; on failure the offline page is shown
+   instead of the browser's error screen. No API or society data is cached. */
+const OFFLINE_CACHE = "sociyohub-offline-v1";
+const OFFLINE_URL = "/offline.html";
+self.addEventListener("install", (event) => {
+  event.waitUntil(caches.open(OFFLINE_CACHE).then((c) => c.add(new Request(OFFLINE_URL, { cache: "reload" }))));
+  self.skipWaiting();
+});
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) => Promise.all(keys.filter((k) => k.startsWith("sociyohub-offline-") && k !== OFFLINE_CACHE).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim()),
+  );
+});
+self.addEventListener("fetch", (event) => {
+  if (event.request.mode !== "navigate") return;
+  event.respondWith(fetch(event.request).catch(() => caches.match(OFFLINE_URL)));
+});

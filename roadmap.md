@@ -7,8 +7,9 @@
 - [x] Secret scan of app code and public files: clean. Type check and build: clean.
 - [x] Resident/Guard/Super Admin access verified with rolled-back role simulation in the QA Demo Society; fixed deactivated roles still granting access.
 - [ ] Signed-in Resident/Guard/Super Admin browser screens — needs real role test accounts.
-- [ ] Real-phone keyboard check — blocked: no physical device.
-- [ ] Live 11-case disposable-database run — needs the Docker-based CI runner (scripts/run-stage3d-live.sh) outside this environment.
+- [x] Removed-role regression: block-admin and admin-list role checks also fixed to ignore removed roles; app-side admin checks (digest, onboarding resume) filter active roles.
+- [ ] Manual real-phone check (external): open Add Expense, Record Payment, Helpdesk ticket, Visitor walk-in, No-Dues request; focus text/amount/date/reason fields; confirm the field stays visible above the keyboard, Save/Submit and errors stay reachable, long pop-up forms scroll, bottom edge clears the phone's home bar, and motion is calm with reduced motion on.
+- [ ] External money test (Razorpay test mode + Docker CI runner, scripts/run-stage3d-live.sh): order price = active flats × plan rate, no platform fee; tampered amount rejected; payment confirmed only after server check; webhook with bad signature rejected; replayed webhook/order creates no duplicate payment, receipt or plan change; plan activates once and expiry works; Super Admin refund recorded and audited; maintenance still shows Cash/Bank Transfer only; ledger history never deleted.
 
 ## Stage 17 — Security hardening
 

@@ -1,3 +1,4 @@
+import { LoadError } from "@/components/people/PeopleUI";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -28,45 +29,48 @@ function CommunicationCenter() {
   const [q, setQ] = useState("");
   const [tab, setTab] = useState("notices");
 
-  const { data: notices = [] } = useQuery({
+  const { data: notices = [], isError: noticesErr, refetch: refetchNotices } = useQuery({
     enabled: !!societyId,
     queryKey: ["comm-notices", societyId],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("posts")
         .select("id, body, created_at")
         .eq("society_id", societyId!)
         .order("created_at", { ascending: false })
         .limit(50);
+      if (error) throw error;
       return data ?? [];
     },
   });
 
-  const { data: complaints = [] } = useQuery({
+  const { data: complaints = [], isError: complaintsErr, refetch: refetchComplaints } = useQuery({
     enabled: !!societyId && !!profile?.id,
     queryKey: ["comm-complaints", societyId, profile?.id],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("support_tickets")
         .select("id, subject, status, priority, created_at, category")
         .eq("society_id", societyId!)
         .eq("user_id", profile!.id)
         .order("created_at", { ascending: false })
         .limit(50);
+      if (error) throw error;
       return data ?? [];
     },
   });
 
-  const { data: contacts = [] } = useQuery({
+  const { data: contacts = [], isError: contactsErr, refetch: refetchContacts } = useQuery({
     enabled: !!societyId,
     queryKey: ["comm-contacts", societyId],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("society_contacts")
         .select("id, name, role_label, category, phone")
         .eq("society_id", societyId!)
         .order("category")
         .limit(200);
+      if (error) throw error;
       return data ?? [];
     },
   });
@@ -138,7 +142,9 @@ function CommunicationCenter() {
         </TabsList>
 
         <TabsContent value="notices" className="mt-4 space-y-2">
-          {filteredNotices.length === 0 ? (
+          {noticesErr ? (
+            <LoadError title="Couldn't load notices" onRetry={() => refetchNotices()} />
+          ) : filteredNotices.length === 0 ? (
             <EmptyBlock icon={Inbox} title="No notices yet"
               description="Society announcements will show up here." />
           ) : (
@@ -163,7 +169,9 @@ function CommunicationCenter() {
         </TabsContent>
 
         <TabsContent value="complaints" className="mt-4 space-y-2">
-          {filteredComplaints.length === 0 ? (
+          {complaintsErr ? (
+            <LoadError title="Couldn't load your complaints" onRetry={() => refetchComplaints()} />
+          ) : filteredComplaints.length === 0 ? (
             <EmptyBlock icon={LifeBuoy} title="No complaints filed"
               description="Raise a helpdesk ticket if something needs the committee's attention."
               action={<Button asChild size="sm" className="rounded-xl"><Link to="/app/helpdesk">Raise a complaint</Link></Button>} />
@@ -214,7 +222,9 @@ function CommunicationCenter() {
         </TabsContent>
 
         <TabsContent value="contacts" className="mt-4 space-y-3">
-          {Object.keys(contactsByCategory).length === 0 ? (
+          {contactsErr ? (
+            <LoadError title="Couldn't load contacts" onRetry={() => refetchContacts()} />
+          ) : Object.keys(contactsByCategory).length === 0 ? (
             <EmptyBlock icon={Phone} title="No contacts published"
               description="Committee, security, and utility contacts will appear here." />
           ) : (

@@ -1,3 +1,4 @@
+import { LoadError } from "@/components/people/PeopleUI";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -39,18 +40,19 @@ function ActivityScreen() {
   const { profile } = useAuth();
   const societyId = profile?.society_id;
 
-  const { data: recent = [] } = useQuery({
+  const { data: recent = [], isError: recentErr, refetch: refetchRecent } = useQuery({
     enabled: !!societyId,
     queryKey: ["activity-recent", societyId],
     staleTime: 30_000,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("audit_log")
         .select("id, action, created_at")
         .eq("society_id", societyId!)
         .in("action", Object.keys(ACTION_LABELS))
         .order("created_at", { ascending: false })
         .limit(6);
+      if (error) throw error;
       return data ?? [];
     },
   });
@@ -99,7 +101,9 @@ function ActivityScreen() {
         </div>
         <Card className="rounded-2xl">
           <CardContent className="p-2">
-            {recent.length === 0 ? (
+            {recentErr ? (
+              <LoadError title="Couldn't load recent activity" onRetry={() => refetchRecent()} />
+            ) : recent.length === 0 ? (
               <p className="p-4 text-center text-xs text-muted-foreground">No recent activity yet.</p>
             ) : (
               <ul className="divide-y divide-border">

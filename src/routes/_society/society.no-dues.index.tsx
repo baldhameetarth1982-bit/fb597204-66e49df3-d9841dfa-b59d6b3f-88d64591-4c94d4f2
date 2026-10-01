@@ -1,3 +1,4 @@
+import { LoadError } from "@/components/people/PeopleUI";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -37,7 +38,7 @@ function NoDuesAdmin() {
 function NoDuesAdminInner() {
   const { societyId } = useSocietyId();
   const list = useServerFn(listSocietyNoDuesRequests);
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     enabled: !!societyId,
     queryKey: ["society-no-dues", societyId],
     queryFn: () => list({ data: { societyId: societyId! } }),
@@ -51,7 +52,8 @@ function NoDuesAdminInner() {
       />
       <div className="px-4 space-y-3">
         {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
-        {!isLoading && (data ?? []).length === 0 && (
+        {isError && <LoadError title="Couldn't load No-Dues requests" onRetry={() => refetch()} />}
+        {!isLoading && !isError && (data ?? []).length === 0 && (
           <SectionCard>
             <p className="text-sm text-muted-foreground">No requests yet.</p>
           </SectionCard>

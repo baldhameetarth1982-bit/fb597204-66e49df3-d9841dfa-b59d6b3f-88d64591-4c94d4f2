@@ -12,6 +12,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { HardwareNote, IncidentSheet, OfflineQueuePanel, ParkingSheet, ReasonSheet, RecurringSheet, SosAlertsCard, useOnline } from "@/components/gate/GateOps";
+import { GuardSessionGate } from "@/components/gate/GuardSession";
+import { GateHardwareCard, GateSafetyAlerts, GuardPatrolCard } from "@/components/gate/GuardSecurityOps";
+import { useSocietyId } from "@/hooks/useSocietyId";
 import { enqueue } from "@/lib/gate-offline";
 import { cn } from "@/lib/utils";
 import { GATE_CATEGORIES as VISITOR_CATEGORIES, categoryLabel, fmtTime, gateErrorMessage, statusMeta } from "@/lib/visitors";
@@ -23,7 +26,7 @@ export const Route = createFileRoute("/_resident/app/guard")({
       { name: "description", content: "Fast visitor check-in, check-out and vehicle checks for society guards." },
     ],
   }),
-  component: GuardDashboard,
+  component: GuardPage,
 });
 
 type Scope = "today" | "expected" | "inside" | "overstay" | "history";
@@ -41,8 +44,16 @@ const SCOPES: { v: Scope; label: string }[] = [
 ];
 const EMPTY = { flat: "", name: "", phone: "", category: "guest", purpose: "", vehicle: "" };
 
+// Guards need a live shift session (enforced on the server); committee admins act on their role.
+function GuardPage() {
+  const { roles } = useAuth();
+  const isAdmin = roles.includes("society_admin" as never) || roles.includes("block_admin" as never) || !roles.includes("security" as never);
+  return <GuardSessionGate isAdmin={isAdmin}><GuardDashboard /></GuardSessionGate>;
+}
+
 function GuardDashboard() {
   const { roles, isLoading } = useAuth();
+  const { societyId } = useSocietyId();
   const qc = useQueryClient();
   const [scope, setScope] = useState<Scope>("today");
   const [q, setQ] = useState("");
@@ -159,6 +170,9 @@ function GuardDashboard() {
       </header>
 
       <SosAlertsCard />
+      <GateSafetyAlerts />
+      <GuardPatrolCard />
+      <GateHardwareCard societyId={societyId} />
       <section aria-labelledby="guard-attn-h" className="space-y-2">
         <h2 id="guard-attn-h" className="text-sm font-semibold">Needs attention</h2>
         <NeedsAttention emptyText="No gate or security items need attention." />

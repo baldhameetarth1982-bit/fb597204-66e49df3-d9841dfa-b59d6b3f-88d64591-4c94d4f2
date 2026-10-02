@@ -1016,6 +1016,13 @@
       "when": 1790923655731,
       "tag": "0144_parking_evidence_tighten_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 145,
+      "version": "7",
+      "when": 1790925203418,
+      "tag": "0145_governance_elections_agm",
+      "breakpoints": true
     }
   ]
 }

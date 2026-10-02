@@ -171,3 +171,98 @@ export function RecurringPasses() {
     </section>
   );
 }
+
+/* ---------- Child / elder safety alert (resident household only) ---------- */
+interface MyAlert { id: string; kind: string; status: string; subject_name: string | null; created_at: string }
+interface Contact { id: string; name: string; relation: string | null; phone: string; is_active: boolean }
+export function SafetyAlertPanel({ online }: { online: boolean }) {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState<"child" | "elder" | null>(null);
+  const [form, setForm] = useState({ subject: "", lastSeen: "", note: "" });
+  const [contact, setContact] = useState({ name: "", relation: "", phone: "" });
+  const [busy, setBusy] = useState(false);
+  const q = useQuery({
+    queryKey: ["my-safety"],
+    refetchInterval: 20_000,
+    queryFn: async () => {
+      const [a, c] = await Promise.all([
+        supabase.from("safety_alerts").select("id, kind, status, subject_name, created_at").neq("status", "resolved").order("created_at", { ascending: false }).limit(5),
+        supabase.from("safety_contacts").select("id, name, relation, phone, is_active").eq("is_active", true).order("created_at"),
+      ]);
+      if (a.error) throw a.error;
+      if (c.error) throw c.error;
+      return { alerts: (a.data ?? []) as MyAlert[], contacts: (c.data ?? []) as Contact[] };
+    },
+  });
+  const refresh = () => qc.invalidateQueries({ queryKey: ["my-safety"] });
+  async function raise() {
+    if (!open || busy) return;
+    setBusy(true);
+    const { error } = await supabase.rpc("safety_alert_raise", { _kind: open, _subject: form.subject, _note: form.note, _last_seen: form.lastSeen });
+    setBusy(false);
+    if (error) return toast.error(`${gateErrorMessage(error)} Call 112 or the guard directly.`);
+    toast.success("Guards and the committee have been alerted");
+    setOpen(null); setForm({ subject: "", lastSeen: "", note: "" }); refresh();
+  }
+  return (
+    <Card className="rounded-2xl"><CardContent className="p-4 sm:p-4 space-y-3">
+      <div>
+        <p className="font-semibold">Child or elder missing?</p>
+        <p className="text-sm text-muted-foreground">Alerts the guards and committee of your society only. Your contacts are shown to guards only while an alert is open.</p>
+      </div>
+      {!online && <p className="text-sm text-warning-foreground" role="status">You're offline. Call 112 or the gate directly.</p>}
+      {q.data?.alerts.map((a) => (
+        <div key={a.id} className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="font-medium capitalize">{a.kind} alert{a.subject_name ? ` · ${a.subject_name}` : ""}</p>
+            <p className="text-xs text-muted-foreground">{a.status === "acknowledged" ? "A guard is responding" : "Waiting for a guard"}</p>
+          </div>
+          <Button size="sm" variant="outline" className="min-h-11" disabled={busy} onClick={async () => {
+            const { error } = await supabase.rpc("safety_alert_update", { _id: a.id, _action: "resolve", _note: "Found safe (family)" });
+            if (error) toast.error(gateErrorMessage(error)); else { toast.success("Marked safe"); refresh(); }
+          }}>Found safe</Button>
+        </div>
+      ))}
+      <div className="grid grid-cols-2 gap-2">
+        <Button variant="destructive" className="h-12 rounded-xl" disabled={!online} onClick={() => setOpen("child")}>Child alert</Button>
+        <Button variant="destructive" className="h-12 rounded-xl" disabled={!online} onClick={() => setOpen("elder")}>Elder alert</Button>
+      </div>
+      <details className="rounded-xl border p-3">
+        <summary className="cursor-pointer min-h-11 flex items-center text-sm font-medium">Safety contacts ({q.data?.contacts.length ?? 0}/5)</summary>
+        <ul className="space-y-1 mt-2">
+          {q.data?.contacts.map((c) => (
+            <li key={c.id} className="flex items-center gap-2 text-sm min-h-11">
+              <span className="flex-1">{c.name}{c.relation ? ` (${c.relation})` : ""} · ••{c.phone.slice(-4)}</span>
+              <Button size="sm" variant="ghost" className="min-h-11" onClick={async () => {
+                const { error } = await supabase.rpc("resident_set_safety_contact", { _id: c.id, _name: c.name, _relation: c.relation ?? "", _phone: c.phone, _active: false });
+                if (error) toast.error(gateErrorMessage(error)); else refresh();
+              }}>Remove</Button>
+            </li>
+          ))}
+        </ul>
+        <div className="grid grid-cols-2 gap-2 mt-2">
+          <div><Label htmlFor="sc-name">Name</Label><Input id="sc-name" className="h-11" maxLength={80} value={contact.name} onChange={(e) => setContact({ ...contact, name: e.target.value })} /></div>
+          <div><Label htmlFor="sc-rel">Relation</Label><Input id="sc-rel" className="h-11" maxLength={40} value={contact.relation} onChange={(e) => setContact({ ...contact, relation: e.target.value })} /></div>
+          <div className="col-span-2"><Label htmlFor="sc-phone">Phone</Label><Input id="sc-phone" className="h-11" inputMode="tel" value={contact.phone} onChange={(e) => setContact({ ...contact, phone: e.target.value })} /></div>
+        </div>
+        <Button className="min-h-11 mt-2" disabled={contact.name.trim().length < 2 || !/^\+?[0-9]{10,13}$/.test(contact.phone.replace(/[\s-]/g, ""))} onClick={async () => {
+          const { error } = await supabase.rpc("resident_set_safety_contact", { _id: null as unknown as string, _name: contact.name, _relation: contact.relation, _phone: contact.phone, _active: true });
+          if (error) return toast.error(gateErrorMessage(error));
+          setContact({ name: "", relation: "", phone: "" }); refresh();
+        }}><Plus className="h-4 w-4 mr-1" />Add contact</Button>
+      </details>
+      <Sheet open={!!open} onOpenChange={(o) => !o && setOpen(null)}>
+        <SheetContent side="bottom" className="rounded-t-3xl">
+          <SheetHeader><SheetTitle>{open === "child" ? "Child safety alert" : "Elder safety alert"}</SheetTitle></SheetHeader>
+          <div className="space-y-3 py-3">
+            <div><Label htmlFor="sa-name">Name</Label><Input id="sa-name" className="h-11" maxLength={80} value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} /></div>
+            <div><Label htmlFor="sa-seen">Last seen where?</Label><Input id="sa-seen" className="h-11" maxLength={120} value={form.lastSeen} onChange={(e) => setForm({ ...form, lastSeen: e.target.value })} placeholder="Near the park, 10 min ago" /></div>
+            <div><Label htmlFor="sa-note">What are they wearing?</Label><Input id="sa-note" className="h-11" maxLength={300} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} /></div>
+            <Button variant="destructive" className="w-full h-12 rounded-xl" disabled={busy || !online} onClick={raise}>{busy ? <Loader2 className="h-5 w-5 animate-spin" /> : "Alert guards now"}</Button>
+            <p className="text-xs text-muted-foreground">If this fails, call 112 and the gate directly.</p>
+          </div>
+        </SheetContent>
+      </Sheet>
+    </CardContent></Card>
+  );
+}

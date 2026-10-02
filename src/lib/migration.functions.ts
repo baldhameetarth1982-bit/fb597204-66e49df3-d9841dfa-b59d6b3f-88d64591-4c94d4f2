@@ -567,11 +567,20 @@ export const validateMigrationJob = createServerFn({ method: "POST" })
       throw new MigrationError((repStatus as SafeErrorCode) || "operation_failed");
     }
 
+    // Dry-run breakdown: nothing above touched canonical records.
+    const count = (fn: (r: Record<string, unknown>) => boolean) => stagingRows.filter(fn).length;
     return {
       total: parsedRows.length,
       valid,
       warnings,
       errors,
+      dry_run: {
+        new_records: count((r) => r.action === "create" && r.status !== "error"),
+        matched_existing: count((r) => r.action === "match_existing"),
+        skipped_existing: count((r) => r.action === "skip"),
+        duplicates: count((r) => (r.error_codes as string[]).includes("duplicate_source_key_in_file")),
+        needs_fixing: count((r) => r.status === "error"),
+      },
       by_entity: { [entity]: parsedRows.length } as Record<string, number>,
     };
   });
@@ -596,7 +605,7 @@ export const listMigrationJobs = createServerFn({ method: "POST" })
     const { data: rows, error } = await supabase
       .from("migration_jobs")
       .select(
-        "id, source_type, source_filename, status, total_rows, valid_rows, error_rows, committed_rows, created_at, committed_at",
+        "id, source_type, source_filename, status, total_rows, valid_rows, warning_rows, error_rows, committed_rows, created_at, committed_at, retry_of_job_id, rolled_back_at, rollback_reason, rollback_summary",
       )
       .eq("society_id", data.society_id)
       .order("created_at", { ascending: false })

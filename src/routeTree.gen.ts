@@ -123,6 +123,7 @@ import { Route as ResidentAppGuardRouteImport } from './routes/_resident/app.gua
 import { Route as ResidentAppFeaturesRouteImport } from './routes/_resident/app.features'
 import { Route as ResidentAppFamilyRouteImport } from './routes/_resident/app.family'
 import { Route as ResidentAppEmergencyRouteImport } from './routes/_resident/app.emergency'
+import { Route as ResidentAppElectionsRouteImport } from './routes/_resident/app.elections'
 import { Route as ResidentAppDuesRouteImport } from './routes/_resident/app.dues'
 import { Route as ResidentAppDocumentsRouteImport } from './routes/_resident/app.documents'
 import { Route as ResidentAppDashboardRouteImport } from './routes/_resident/app.dashboard'
@@ -777,6 +778,11 @@ const ResidentAppEmergencyRoute = ResidentAppEmergencyRouteImport.update({
   path: '/app/emergency',
   getParentRoute: () => ResidentRoute,
 } as any)
+const ResidentAppElectionsRoute = ResidentAppElectionsRouteImport.update({
+  id: '/app/elections',
+  path: '/app/elections',
+  getParentRoute: () => ResidentRoute,
+} as any)
 const ResidentAppDuesRoute = ResidentAppDuesRouteImport.update({
   id: '/app/dues',
   path: '/app/dues',
@@ -1169,6 +1175,7 @@ export interface FileRoutesByFullPath {
   '/app/dashboard': typeof ResidentAppDashboardRoute
   '/app/documents': typeof ResidentAppDocumentsRoute
   '/app/dues': typeof ResidentAppDuesRoute
+  '/app/elections': typeof ResidentAppElectionsRoute
   '/app/emergency': typeof ResidentAppEmergencyRoute
   '/app/family': typeof ResidentAppFamilyRoute
   '/app/features': typeof ResidentAppFeaturesRoute
@@ -1342,6 +1349,7 @@ export interface FileRoutesByTo {
   '/app/dashboard': typeof ResidentAppDashboardRoute
   '/app/documents': typeof ResidentAppDocumentsRoute
   '/app/dues': typeof ResidentAppDuesRoute
+  '/app/elections': typeof ResidentAppElectionsRoute
   '/app/emergency': typeof ResidentAppEmergencyRoute
   '/app/family': typeof ResidentAppFamilyRoute
   '/app/features': typeof ResidentAppFeaturesRoute
@@ -1521,6 +1529,7 @@ export interface FileRoutesById {
   '/_resident/app/dashboard': typeof ResidentAppDashboardRoute
   '/_resident/app/documents': typeof ResidentAppDocumentsRoute
   '/_resident/app/dues': typeof ResidentAppDuesRoute
+  '/_resident/app/elections': typeof ResidentAppElectionsRoute
   '/_resident/app/emergency': typeof ResidentAppEmergencyRoute
   '/_resident/app/family': typeof ResidentAppFamilyRoute
   '/_resident/app/features': typeof ResidentAppFeaturesRoute
@@ -1697,6 +1706,7 @@ export interface FileRouteTypes {
     | '/app/dashboard'
     | '/app/documents'
     | '/app/dues'
+    | '/app/elections'
     | '/app/emergency'
     | '/app/family'
     | '/app/features'
@@ -1870,6 +1880,7 @@ export interface FileRouteTypes {
     | '/app/dashboard'
     | '/app/documents'
     | '/app/dues'
+    | '/app/elections'
     | '/app/emergency'
     | '/app/family'
     | '/app/features'
@@ -2048,6 +2059,7 @@ export interface FileRouteTypes {
     | '/_resident/app/dashboard'
     | '/_resident/app/documents'
     | '/_resident/app/dues'
+    | '/_resident/app/elections'
     | '/_resident/app/emergency'
     | '/_resident/app/family'
     | '/_resident/app/features'
@@ -3002,6 +3014,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResidentAppEmergencyRouteImport
       parentRoute: typeof ResidentRoute
     }
+    '/_resident/app/elections': {
+      id: '/_resident/app/elections'
+      path: '/app/elections'
+      fullPath: '/app/elections'
+      preLoaderRoute: typeof ResidentAppElectionsRouteImport
+      parentRoute: typeof ResidentRoute
+    }
     '/_resident/app/dues': {
       id: '/_resident/app/dues'
       path: '/app/dues'
@@ -3509,6 +3528,7 @@ interface ResidentRouteChildren {
   ResidentAppDashboardRoute: typeof ResidentAppDashboardRoute
   ResidentAppDocumentsRoute: typeof ResidentAppDocumentsRoute
   ResidentAppDuesRoute: typeof ResidentAppDuesRoute
+  ResidentAppElectionsRoute: typeof ResidentAppElectionsRoute
   ResidentAppEmergencyRoute: typeof ResidentAppEmergencyRoute
   ResidentAppFamilyRoute: typeof ResidentAppFamilyRoute
   ResidentAppFeaturesRoute: typeof ResidentAppFeaturesRoute
@@ -3549,6 +3569,7 @@ const ResidentRouteChildren: ResidentRouteChildren = {
   ResidentAppDashboardRoute: ResidentAppDashboardRoute,
   ResidentAppDocumentsRoute: ResidentAppDocumentsRoute,
   ResidentAppDuesRoute: ResidentAppDuesRoute,
+  ResidentAppElectionsRoute: ResidentAppElectionsRoute,
   ResidentAppEmergencyRoute: ResidentAppEmergencyRoute,
   ResidentAppFamilyRoute: ResidentAppFamilyRoute,
   ResidentAppFeaturesRoute: ResidentAppFeaturesRoute,

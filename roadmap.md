@@ -146,3 +146,7 @@
 - [x] Guard home attention; log in-database scheduled jobs (tenancy expiry, notices) to the run log
 - [x] Move existing reminder senders onto _notify_user_once; show priority in notification list
 - [ ] Live guard/resident preview — blocked: no legitimate guard or resident account
+
+## Gap area — Parking & Vehicles
+- [x] Slot assignment, release/reallocation with history, temporary slots with server-side expiry, live capacity, violations (no charges), manual EV charging (no invented readings), reports + CSV (36/36 rollback checks in QA Demo Society)
+- [ ] Hands-on: real EV charger provider (none connected; manual mode only); violation photo evidence not added

@@ -97,8 +97,39 @@ const MESSAGES: Record<string, string> = {
   invalid_status: "Pick a valid device status.",
 };
 
+/** Parking messages are checked first so longer codes win over generic ones. */
+const PARKING_MESSAGES: Record<string, string> = {
+  slot_already_allocated: "This slot is already assigned. Release it or use Reallocate.",
+  slot_temporarily_allocated: "This slot has an active temporary allocation for another home.",
+  overlapping_allocation: "Another temporary allocation overlaps that time on this slot.",
+  visitor_slot_not_assignable: "Visitor slots stay for visitors and can't be assigned to homes.",
+  slot_unavailable: "This slot is marked unavailable.",
+  slot_has_allocation: "Release this slot's allocations first.",
+  slot_in_use_by_visitor: "A visitor is parked in this slot right now.",
+  slot_has_charger: "Remove the EV charger from this slot first.",
+  slot_not_ev_capable: "Pick a slot marked as EV-capable.",
+  vehicle_flat_mismatch: "That vehicle belongs to a different home.",
+  no_current_occupant: "That home has no current resident, so parking can't be authorised.",
+  holder_required: "Pick a home or a vehicle.",
+  invalid_window: "The end time must be in the future and after the start.",
+  window_too_long: "Temporary parking can last up to 30 days and start within 60 days.",
+  invalid_purpose: "Pick why this temporary slot is needed.",
+  invalid_effective_date: "The release date must be today or within the last 90 days.",
+  slot_or_plate_required: "Pick a slot or enter the number plate.",
+  already_closed: "This violation is already closed.",
+  charger_unavailable: "This charger is offline, disabled or not set up.",
+  charger_in_use: "This charger already has a charging session.",
+  vehicle_already_charging: "This vehicle is already charging elsewhere.",
+  invalid_energy: "Enter energy between 0 and 1000 kWh, or leave it empty.",
+  invalid_range: "Pick a date range of up to one year.",
+  block_not_found: "That block isn't in this society.",
+  invalid_availability: "Pick a valid slot status.",
+  vehicle_not_found: "That vehicle isn't registered in this society.",
+};
+
 export function gateErrorMessage(err: unknown): string {
   const raw = String((err as { message?: string })?.message ?? "");
+  for (const k of Object.keys(PARKING_MESSAGES)) if (raw.includes(k)) return PARKING_MESSAGES[k];
   for (const k of Object.keys(MESSAGES)) if (raw.includes(k)) return MESSAGES[k];
   if (/duplicate|unique/i.test(raw)) return "That already exists. Use a different name.";
   if (/fetch|network/i.test(raw)) return "You seem to be offline. Check your connection and retry.";

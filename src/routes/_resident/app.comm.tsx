@@ -215,6 +215,8 @@ function CommunicationCenter() {
                 <Button asChild size="sm" variant="outline" className="rounded-xl min-h-11"><Link to="/app/documents">Documents & FAQs</Link></Button>
                 <Button asChild size="sm" variant="outline" className="rounded-xl min-h-11"><Link to="/app/meetings">Meetings</Link></Button>
                 <Button asChild size="sm" variant="outline" className="rounded-xl min-h-11"><Link to="/app/votes">Votes</Link></Button>
+                <Button asChild size="sm" variant="outline" className="rounded-xl min-h-11"><Link to="/app/elections">Elections</Link></Button>
+                <Button asChild size="sm" variant="outline" className="rounded-xl min-h-11"><Link to="/app/agm">AGM</Link></Button>
                 <Button asChild size="sm" variant="outline" className="rounded-xl min-h-11"><Link to="/app/privacy-requests">My privacy requests</Link></Button>
               </div>
             </CardContent>

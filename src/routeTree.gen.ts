@@ -100,6 +100,7 @@ import { Route as SocietySocietyAuditorPackRouteImport } from './routes/_society
 import { Route as SocietySocietyApprovalsRouteImport } from './routes/_society/society.approvals'
 import { Route as SocietySocietyAnnouncementsRouteImport } from './routes/_society/society.announcements'
 import { Route as SocietySocietyAmenitiesRouteImport } from './routes/_society/society.amenities'
+import { Route as SocietySocietyAgmRouteImport } from './routes/_society/society.agm'
 import { Route as SocietySocietyAccountsRouteImport } from './routes/_society/society.accounts'
 import { Route as ResidentAppVotesRouteImport } from './routes/_resident/app.votes'
 import { Route as ResidentAppVisitorsRouteImport } from './routes/_resident/app.visitors'
@@ -131,6 +132,7 @@ import { Route as ResidentAppContactsRouteImport } from './routes/_resident/app.
 import { Route as ResidentAppCommRouteImport } from './routes/_resident/app.comm'
 import { Route as ResidentAppBylawsRouteImport } from './routes/_resident/app.bylaws'
 import { Route as ResidentAppAmenitiesRouteImport } from './routes/_resident/app.amenities'
+import { Route as ResidentAppAgmRouteImport } from './routes/_resident/app.agm'
 import { Route as ResidentAppActivityRouteImport } from './routes/_resident/app.activity'
 import { Route as ResidentAppAchievementsRouteImport } from './routes/_resident/app.achievements'
 import { Route as AdminAdminWithdrawalsRouteImport } from './routes/_admin/admin.withdrawals'
@@ -661,6 +663,11 @@ const SocietySocietyAmenitiesRoute = SocietySocietyAmenitiesRouteImport.update({
   path: '/society/amenities',
   getParentRoute: () => SocietyRoute,
 } as any)
+const SocietySocietyAgmRoute = SocietySocietyAgmRouteImport.update({
+  id: '/society/agm',
+  path: '/society/agm',
+  getParentRoute: () => SocietyRoute,
+} as any)
 const SocietySocietyAccountsRoute = SocietySocietyAccountsRouteImport.update({
   id: '/society/accounts',
   path: '/society/accounts',
@@ -816,6 +823,11 @@ const ResidentAppBylawsRoute = ResidentAppBylawsRouteImport.update({
 const ResidentAppAmenitiesRoute = ResidentAppAmenitiesRouteImport.update({
   id: '/app/amenities',
   path: '/app/amenities',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppAgmRoute = ResidentAppAgmRouteImport.update({
+  id: '/app/agm',
+  path: '/app/agm',
   getParentRoute: () => ResidentRoute,
 } as any)
 const ResidentAppActivityRoute = ResidentAppActivityRouteImport.update({
@@ -1168,6 +1180,7 @@ export interface FileRoutesByFullPath {
   '/admin/withdrawals': typeof AdminAdminWithdrawalsRoute
   '/app/achievements': typeof ResidentAppAchievementsRoute
   '/app/activity': typeof ResidentAppActivityRoute
+  '/app/agm': typeof ResidentAppAgmRoute
   '/app/amenities': typeof ResidentAppAmenitiesRoute
   '/app/bylaws': typeof ResidentAppBylawsRoute
   '/app/comm': typeof ResidentAppCommRoute
@@ -1199,6 +1212,7 @@ export interface FileRoutesByFullPath {
   '/app/visitors': typeof ResidentAppVisitorsRoute
   '/app/votes': typeof ResidentAppVotesRoute
   '/society/accounts': typeof SocietySocietyAccountsRoute
+  '/society/agm': typeof SocietySocietyAgmRoute
   '/society/amenities': typeof SocietySocietyAmenitiesRoute
   '/society/announcements': typeof SocietySocietyAnnouncementsRoute
   '/society/approvals': typeof SocietySocietyApprovalsRoute
@@ -1342,6 +1356,7 @@ export interface FileRoutesByTo {
   '/admin/withdrawals': typeof AdminAdminWithdrawalsRoute
   '/app/achievements': typeof ResidentAppAchievementsRoute
   '/app/activity': typeof ResidentAppActivityRoute
+  '/app/agm': typeof ResidentAppAgmRoute
   '/app/amenities': typeof ResidentAppAmenitiesRoute
   '/app/bylaws': typeof ResidentAppBylawsRoute
   '/app/comm': typeof ResidentAppCommRoute
@@ -1373,6 +1388,7 @@ export interface FileRoutesByTo {
   '/app/visitors': typeof ResidentAppVisitorsRoute
   '/app/votes': typeof ResidentAppVotesRoute
   '/society/accounts': typeof SocietySocietyAccountsRoute
+  '/society/agm': typeof SocietySocietyAgmRoute
   '/society/amenities': typeof SocietySocietyAmenitiesRoute
   '/society/announcements': typeof SocietySocietyAnnouncementsRoute
   '/society/approvals': typeof SocietySocietyApprovalsRoute
@@ -1522,6 +1538,7 @@ export interface FileRoutesById {
   '/_admin/admin/withdrawals': typeof AdminAdminWithdrawalsRoute
   '/_resident/app/achievements': typeof ResidentAppAchievementsRoute
   '/_resident/app/activity': typeof ResidentAppActivityRoute
+  '/_resident/app/agm': typeof ResidentAppAgmRoute
   '/_resident/app/amenities': typeof ResidentAppAmenitiesRoute
   '/_resident/app/bylaws': typeof ResidentAppBylawsRoute
   '/_resident/app/comm': typeof ResidentAppCommRoute
@@ -1553,6 +1570,7 @@ export interface FileRoutesById {
   '/_resident/app/visitors': typeof ResidentAppVisitorsRoute
   '/_resident/app/votes': typeof ResidentAppVotesRoute
   '/_society/society/accounts': typeof SocietySocietyAccountsRoute
+  '/_society/society/agm': typeof SocietySocietyAgmRoute
   '/_society/society/amenities': typeof SocietySocietyAmenitiesRoute
   '/_society/society/announcements': typeof SocietySocietyAnnouncementsRoute
   '/_society/society/approvals': typeof SocietySocietyApprovalsRoute
@@ -1699,6 +1717,7 @@ export interface FileRouteTypes {
     | '/admin/withdrawals'
     | '/app/achievements'
     | '/app/activity'
+    | '/app/agm'
     | '/app/amenities'
     | '/app/bylaws'
     | '/app/comm'
@@ -1730,6 +1749,7 @@ export interface FileRouteTypes {
     | '/app/visitors'
     | '/app/votes'
     | '/society/accounts'
+    | '/society/agm'
     | '/society/amenities'
     | '/society/announcements'
     | '/society/approvals'
@@ -1873,6 +1893,7 @@ export interface FileRouteTypes {
     | '/admin/withdrawals'
     | '/app/achievements'
     | '/app/activity'
+    | '/app/agm'
     | '/app/amenities'
     | '/app/bylaws'
     | '/app/comm'
@@ -1904,6 +1925,7 @@ export interface FileRouteTypes {
     | '/app/visitors'
     | '/app/votes'
     | '/society/accounts'
+    | '/society/agm'
     | '/society/amenities'
     | '/society/announcements'
     | '/society/approvals'
@@ -2052,6 +2074,7 @@ export interface FileRouteTypes {
     | '/_admin/admin/withdrawals'
     | '/_resident/app/achievements'
     | '/_resident/app/activity'
+    | '/_resident/app/agm'
     | '/_resident/app/amenities'
     | '/_resident/app/bylaws'
     | '/_resident/app/comm'
@@ -2083,6 +2106,7 @@ export interface FileRouteTypes {
     | '/_resident/app/visitors'
     | '/_resident/app/votes'
     | '/_society/society/accounts'
+    | '/_society/society/agm'
     | '/_society/society/amenities'
     | '/_society/society/announcements'
     | '/_society/society/approvals'
@@ -2853,6 +2877,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SocietySocietyAmenitiesRouteImport
       parentRoute: typeof SocietyRoute
     }
+    '/_society/society/agm': {
+      id: '/_society/society/agm'
+      path: '/society/agm'
+      fullPath: '/society/agm'
+      preLoaderRoute: typeof SocietySocietyAgmRouteImport
+      parentRoute: typeof SocietyRoute
+    }
     '/_society/society/accounts': {
       id: '/_society/society/accounts'
       path: '/society/accounts'
@@ -3068,6 +3099,13 @@ declare module '@tanstack/react-router' {
       path: '/app/amenities'
       fullPath: '/app/amenities'
       preLoaderRoute: typeof ResidentAppAmenitiesRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/agm': {
+      id: '/_resident/app/agm'
+      path: '/app/agm'
+      fullPath: '/app/agm'
+      preLoaderRoute: typeof ResidentAppAgmRouteImport
       parentRoute: typeof ResidentRoute
     }
     '/_resident/app/activity': {
@@ -3521,6 +3559,7 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 interface ResidentRouteChildren {
   ResidentAppAchievementsRoute: typeof ResidentAppAchievementsRoute
   ResidentAppActivityRoute: typeof ResidentAppActivityRoute
+  ResidentAppAgmRoute: typeof ResidentAppAgmRoute
   ResidentAppAmenitiesRoute: typeof ResidentAppAmenitiesRoute
   ResidentAppBylawsRoute: typeof ResidentAppBylawsRoute
   ResidentAppCommRoute: typeof ResidentAppCommRoute
@@ -3562,6 +3601,7 @@ interface ResidentRouteChildren {
 const ResidentRouteChildren: ResidentRouteChildren = {
   ResidentAppAchievementsRoute: ResidentAppAchievementsRoute,
   ResidentAppActivityRoute: ResidentAppActivityRoute,
+  ResidentAppAgmRoute: ResidentAppAgmRoute,
   ResidentAppAmenitiesRoute: ResidentAppAmenitiesRoute,
   ResidentAppBylawsRoute: ResidentAppBylawsRoute,
   ResidentAppCommRoute: ResidentAppCommRoute,
@@ -3606,6 +3646,7 @@ const ResidentRouteWithChildren = ResidentRoute._addFileChildren(
 
 interface SocietyRouteChildren {
   SocietySocietyAccountsRoute: typeof SocietySocietyAccountsRoute
+  SocietySocietyAgmRoute: typeof SocietySocietyAgmRoute
   SocietySocietyAmenitiesRoute: typeof SocietySocietyAmenitiesRoute
   SocietySocietyAnnouncementsRoute: typeof SocietySocietyAnnouncementsRoute
   SocietySocietyApprovalsRoute: typeof SocietySocietyApprovalsRoute
@@ -3683,6 +3724,7 @@ interface SocietyRouteChildren {
 
 const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyAccountsRoute: SocietySocietyAccountsRoute,
+  SocietySocietyAgmRoute: SocietySocietyAgmRoute,
   SocietySocietyAmenitiesRoute: SocietySocietyAmenitiesRoute,
   SocietySocietyAnnouncementsRoute: SocietySocietyAnnouncementsRoute,
   SocietySocietyApprovalsRoute: SocietySocietyApprovalsRoute,

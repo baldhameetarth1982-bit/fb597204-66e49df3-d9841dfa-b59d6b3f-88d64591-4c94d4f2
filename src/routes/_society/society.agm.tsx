@@ -36,7 +36,7 @@ type Agm = { id: string; meeting_id: string; title: string; financial_year: stri
 type Meeting = { id: string; starts_at: string; location: string | null; meeting_link: string | null; agenda: string | null };
 type Roster = { user_id: string; full_name: string; homes: string; present: boolean | null };
 
-const fyNow = () => { const d = new Date(); const y = d.getMonth() >= 3 ? d.getFullYear() - 1 : d.getFullYear() - 1; return `${y}-${String((y + 1) % 100).padStart(2, "0")}`; };
+const fyNow = () => { const d = new Date(); const y = d.getMonth() >= 3 ? d.getFullYear() - 1 : d.getFullYear() - 2; return `${y}-${String((y + 1) % 100).padStart(2, "0")}`; };
 const EMPTY = { title: "", fy: fyNow(), starts: "", location: "", link: "", agenda: "", basis: "home", qtype: "percent", qvalue: "33" };
 const EMPTY_ITEM = { id: null as string | null, title: "", description: "", kind: "discussion", poll: "none", election: "none", source: "none" };
 

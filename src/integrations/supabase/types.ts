@@ -1537,6 +1537,99 @@ export type Database = {
           },
         ]
       }
+      expense_tax_calculations: {
+        Row: {
+          amount_includes_gst: boolean
+          calc_version: number
+          calculated_at: string
+          calculated_by: string
+          cgst: number | null
+          expense_id: string
+          gross_amount: number
+          gst_rate: number | null
+          id: string
+          igst: number | null
+          inputs: Json
+          missing: string[]
+          net_payable: number | null
+          sgst: number | null
+          society_id: string
+          status: string
+          supply_type: string | null
+          taxable_amount: number | null
+          tds_amount: number | null
+          tds_applicable: boolean | null
+          tds_rate: number | null
+          tds_section: string | null
+          total_gst: number | null
+        }
+        Insert: {
+          amount_includes_gst?: boolean
+          calc_version?: number
+          calculated_at?: string
+          calculated_by: string
+          cgst?: number | null
+          expense_id: string
+          gross_amount: number
+          gst_rate?: number | null
+          id?: string
+          igst?: number | null
+          inputs: Json
+          missing?: string[]
+          net_payable?: number | null
+          sgst?: number | null
+          society_id: string
+          status: string
+          supply_type?: string | null
+          taxable_amount?: number | null
+          tds_amount?: number | null
+          tds_applicable?: boolean | null
+          tds_rate?: number | null
+          tds_section?: string | null
+          total_gst?: number | null
+        }
+        Update: {
+          amount_includes_gst?: boolean
+          calc_version?: number
+          calculated_at?: string
+          calculated_by?: string
+          cgst?: number | null
+          expense_id?: string
+          gross_amount?: number
+          gst_rate?: number | null
+          id?: string
+          igst?: number | null
+          inputs?: Json
+          missing?: string[]
+          net_payable?: number | null
+          sgst?: number | null
+          society_id?: string
+          status?: string
+          supply_type?: string | null
+          taxable_amount?: number | null
+          tds_amount?: number | null
+          tds_applicable?: boolean | null
+          tds_rate?: number | null
+          tds_section?: string | null
+          total_gst?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_tax_calculations_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: true
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_tax_calculations_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expenses: {
         Row: {
           amount: number
@@ -1817,12 +1910,70 @@ export type Database = {
           },
         ]
       }
+      finance_fiscal_years: {
+        Row: {
+          close_snapshot: Json | null
+          closed_at: string | null
+          closed_by: string | null
+          created_at: string
+          fy_end: string
+          fy_start: string
+          id: string
+          reopen_reason: string | null
+          reopened_at: string | null
+          reopened_by: string | null
+          society_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          close_snapshot?: Json | null
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          fy_end: string
+          fy_start: string
+          id?: string
+          reopen_reason?: string | null
+          reopened_at?: string | null
+          reopened_by?: string | null
+          society_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          close_snapshot?: Json | null
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          fy_end?: string
+          fy_start?: string
+          id?: string
+          reopen_reason?: string | null
+          reopened_at?: string | null
+          reopened_by?: string | null
+          society_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_fiscal_years_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       finance_journal_entries: {
         Row: {
+          cancel_reason: string | null
           created_at: string
           created_by: string
           description: string
           id: string
+          journal_no: string | null
           posted_at: string | null
           reference: string | null
           reversal_of: string | null
@@ -1834,10 +1985,12 @@ export type Database = {
           transaction_date: string
         }
         Insert: {
+          cancel_reason?: string | null
           created_at?: string
           created_by: string
           description: string
           id?: string
+          journal_no?: string | null
           posted_at?: string | null
           reference?: string | null
           reversal_of?: string | null
@@ -1849,10 +2002,12 @@ export type Database = {
           transaction_date: string
         }
         Update: {
+          cancel_reason?: string | null
           created_at?: string
           created_by?: string
           description?: string
           id?: string
+          journal_no?: string | null
           posted_at?: string | null
           reference?: string | null
           reversal_of?: string | null
@@ -1934,6 +2089,86 @@ export type Database = {
             columns: ["society_id"]
             isOneToOne: false
             referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_journal_sequences: {
+        Row: {
+          fy_start: string
+          last_no: number
+          society_id: string
+        }
+        Insert: {
+          fy_start: string
+          last_no?: number
+          society_id: string
+        }
+        Update: {
+          fy_start?: string
+          last_no?: number
+          society_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_journal_sequences_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_vendor_tax: {
+        Row: {
+          gst_rate: number | null
+          gstin: string | null
+          pan: string | null
+          society_id: string
+          state_code: string | null
+          tds_rate: number | null
+          tds_section: string | null
+          updated_at: string
+          updated_by: string | null
+          vendor_id: string
+        }
+        Insert: {
+          gst_rate?: number | null
+          gstin?: string | null
+          pan?: string | null
+          society_id: string
+          state_code?: string | null
+          tds_rate?: number | null
+          tds_section?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          vendor_id: string
+        }
+        Update: {
+          gst_rate?: number | null
+          gstin?: string | null
+          pan?: string | null
+          society_id?: string
+          state_code?: string | null
+          tds_rate?: number | null
+          tds_section?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_vendor_tax_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_vendor_tax_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: true
+            referencedRelation: "finance_vendors"
             referencedColumns: ["id"]
           },
         ]
@@ -6596,6 +6831,44 @@ export type Database = {
           },
         ]
       }
+      society_tax_settings: {
+        Row: {
+          gst_registered: boolean
+          gst_state_code: string | null
+          society_id: string
+          tan: string | null
+          tds_deductor: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          gst_registered?: boolean
+          gst_state_code?: string | null
+          society_id: string
+          tan?: string | null
+          tds_deductor?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          gst_registered?: boolean
+          gst_state_code?: string | null
+          society_id?: string
+          tan?: string | null
+          tds_deductor?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "society_tax_settings_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: true
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sos_alerts: {
         Row: {
           acknowledged_at: string | null
@@ -7688,6 +7961,23 @@ export type Database = {
         Args: { _society: string; _user: string }
         Returns: undefined
       }
+      _fin_bs_section: {
+        Args: { _as_of: string; _society_id: string }
+        Returns: Json
+      }
+      _fin_ie_section: {
+        Args: { _from: string; _society_id: string; _to: string }
+        Returns: Json
+      }
+      _fin_manual_balanced: { Args: { _entry: string }; Returns: boolean }
+      _fin_period_open: {
+        Args: { _d: string; _society_id: string }
+        Returns: boolean
+      }
+      _fin_write_manual_lines: {
+        Args: { _entry: string; _lines: Json; _society_id: string }
+        Returns: undefined
+      }
       _finance_plan_enabled: { Args: { _society_id: string }; Returns: boolean }
       _finance_post_entry: {
         Args: {
@@ -8005,6 +8295,17 @@ export type Database = {
             }
             Returns: string
           }
+      admin_calculate_expense_tax: {
+        Args: {
+          _expense_id: string
+          _gst_rate?: number
+          _includes_gst?: boolean
+          _supply_type?: string
+          _tds_rate?: number
+          _tds_section?: string
+        }
+        Returns: Json
+      }
       admin_cancel_society_plan: {
         Args: { _reason: string; _society_id: string }
         Returns: Json
@@ -8237,6 +8538,16 @@ export type Database = {
         Args: { _reason: string; _society_id: string; _status: string }
         Returns: Json
       }
+      admin_set_society_tax_settings: {
+        Args: {
+          _gst_registered: boolean
+          _gst_state_code: string
+          _society_id: string
+          _tan: string
+          _tds_deductor: boolean
+        }
+        Returns: undefined
+      }
       admin_set_survey_status: {
         Args: { _poll_id: string; _status: string }
         Returns: undefined
@@ -8267,6 +8578,18 @@ export type Database = {
           _type: string
           _value: number
           _vendor: string
+        }
+        Returns: undefined
+      }
+      admin_set_vendor_tax: {
+        Args: {
+          _gst_rate: number
+          _gstin: string
+          _pan: string
+          _state_code: string
+          _tds_rate: number
+          _tds_section: string
+          _vendor_id: string
         }
         Returns: undefined
       }
@@ -8769,6 +9092,96 @@ export type Database = {
       fail_saas_subscription_refund: {
         Args: { _failure_code: string; _refund_record_id: string }
         Returns: undefined
+      }
+      fin_balance_sheet: {
+        Args: { _as_of: string; _cmp_as_of?: string; _society_id: string }
+        Returns: Json
+      }
+      fin_close_year: {
+        Args: { _confirm: string; _fy_start: string; _society_id: string }
+        Returns: Json
+      }
+      fin_compute_tax: {
+        Args: {
+          _amount: number
+          _gst_rate: number
+          _includes_gst: boolean
+          _supply_type: string
+          _tds_rate: number
+        }
+        Returns: Json
+      }
+      fin_create_account: {
+        Args: {
+          _account_type: string
+          _code: string
+          _name: string
+          _society_id: string
+        }
+        Returns: string
+      }
+      fin_fy_start: { Args: { _d: string }; Returns: string }
+      fin_income_expenditure: {
+        Args: {
+          _cmp_from?: string
+          _cmp_to?: string
+          _from: string
+          _society_id: string
+          _to: string
+        }
+        Returns: Json
+      }
+      fin_list_accounts: { Args: { _society_id: string }; Returns: Json }
+      fin_list_manual_journals: {
+        Args: {
+          _limit: number
+          _offset: number
+          _society_id: string
+          _status: string
+        }
+        Returns: Json
+      }
+      fin_reopen_year: {
+        Args: { _fy_start: string; _reason: string; _society_id: string }
+        Returns: Json
+      }
+      fin_save_manual_journal: {
+        Args: {
+          _description: string
+          _journal_id: string
+          _lines: Json
+          _reference: string
+          _request_id: string
+          _society_id: string
+          _transaction_date: string
+        }
+        Returns: string
+      }
+      fin_tally_export: {
+        Args: { _from: string; _society_id: string; _to: string }
+        Returns: Json
+      }
+      fin_tax_report: {
+        Args: { _from: string; _society_id: string; _to: string }
+        Returns: Json
+      }
+      fin_transition_manual_journal: {
+        Args: {
+          _action: string
+          _journal_id: string
+          _reason?: string
+          _request_id?: string
+          _reversal_date?: string
+        }
+        Returns: Json
+      }
+      fin_trial_balance: {
+        Args: { _from: string; _society_id: string; _to: string }
+        Returns: Json
+      }
+      fin_year_status: {
+        Args: { _fy_start: string; _society_id: string }
+        Returns: Json
       }
       finalize_bill_batch: {
         Args: {

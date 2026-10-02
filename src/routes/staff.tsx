@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Boxes, CalendarClock, ClipboardList, FileText, LogOut, Phone, Wrench } from "lucide-react";
+import { Boxes, CalendarClock, DoorOpen, Hammer, ClipboardList, FileText, LogOut, Phone, Wrench } from "lucide-react";
 import { RoleShell, Loading, ErrorRow, errText } from "@/components/roles/RoleShell";
 import { TicketEvidence } from "@/components/helpdesk/TicketEvidence";
 import { SectionCard } from "@/components/shared/SectionCard";
@@ -17,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/context/AuthContext";
 import {
   consumeStaffInventory, getStaffContext, getStaffTimeline, listStaffAssets, listStaffDocuments, listStaffInventory,
-  listStaffTickets, listStaffVendors, logStaffAssetService, openStaffDocument, updateStaffTicket, type StaffTicket,
+  listStaffTickets, listStaffVendors, listStaffMaintenance, updateStaffMaintenance, listStaffGateInside, type StaffMaintenance, logStaffAssetService, openStaffDocument, updateStaffTicket, type StaffTicket,
 } from "@/lib/role-access.functions";
 
 export const Route = createFileRoute("/staff")({
@@ -44,10 +44,12 @@ function StaffWorkspace({ permissions }: { permissions: string[] }) {
   const has = (p: string) => permissions.includes(p);
   const tabs = [
     has("staff.helpdesk") && { v: "work", label: "My work" },
+    has("staff.operations") && { v: "maint", label: "Maintenance" },
     has("staff.assets") && { v: "assets", label: "Assets" },
     has("staff.inventory") && { v: "inventory", label: "Inventory" },
     has("staff.vendors") && { v: "vendors", label: "Vendors" },
     has("staff.documents") && { v: "docs", label: "Documents" },
+    has("staff.gate") && { v: "gate", label: "Gate" },
     { v: "shift", label: "Shift" },
   ].filter(Boolean) as { v: string; label: string }[];
 
@@ -69,6 +71,8 @@ function StaffWorkspace({ permissions }: { permissions: string[] }) {
           <TabsList className="mb-4 min-w-max">{tabs.map((t) => <TabsTrigger key={t.v} value={t.v}>{t.label}</TabsTrigger>)}</TabsList>
         </div>
         {has("staff.helpdesk") && <TabsContent value="work"><WorkTab /></TabsContent>}
+        {has("staff.operations") && <TabsContent value="maint"><MaintenanceTab /></TabsContent>}
+        {has("staff.gate") && <TabsContent value="gate"><GateTab /></TabsContent>}
         {has("staff.assets") && <TabsContent value="assets"><AssetsTab /></TabsContent>}
         {has("staff.inventory") && <TabsContent value="inventory"><InventoryTab /></TabsContent>}
         {has("staff.vendors") && <TabsContent value="vendors"><VendorsTab /></TabsContent>}
@@ -262,6 +266,72 @@ function DocsTab() {
           <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 p-3 text-sm">
             <div><p className="font-medium">{d.title}</p><p className="capitalize text-muted-foreground">{d.category ?? "Document"}</p></div>
             <Button size="sm" variant="outline" className="min-h-11" disabled={m.isPending} onClick={() => m.mutate(d.id)}>Open</Button>
+          </li>
+        ))}</ul>
+      )}
+    </SectionCard>
+  );
+}
+
+const M_LABEL: Record<string, string> = { scheduled: "Scheduled", in_progress: "In progress", paused: "Paused", done: "Done", cancelled: "Cancelled" };
+
+function MaintenanceTab() {
+  const fn = useServerFn(listStaffMaintenance);
+  const [done, setDone] = useState(false);
+  const q = useQuery({ queryKey: ["staff-maint", done], queryFn: () => fn({ data: { includeDone: done } }), retry: false, placeholderData: (p) => p });
+  return (
+    <SectionCard title="Scheduled maintenance" description="Only jobs the committee assigned to you." icon={Hammer}>
+      <div className="mb-3"><Button size="sm" variant="outline" className="min-h-11" onClick={() => setDone(!done)}>{done ? "Hide finished" : "Show finished"}</Button></div>
+      {q.error ? <ErrorRow error={q.error} onRetry={() => q.refetch()} /> : !q.data ? <Loading /> : q.data.length === 0 ? <EmptyState icon={Hammer} title="No maintenance assigned" /> : (
+        <ul className="space-y-3">{q.data.map((m) => <MaintItem key={m.id} m={m} />)}</ul>
+      )}
+    </SectionCard>
+  );
+}
+
+function MaintItem({ m }: { m: StaffMaintenance }) {
+  const fn = useServerFn(updateStaffMaintenance);
+  const qc = useQueryClient();
+  const [note, setNote] = useState("");
+  const mut = useMutation({ ...mutOpts,
+    mutationFn: (status: "in_progress" | "paused" | "done") => fn({ data: { id: m.id, status, note: note || undefined } }),
+    onSuccess: () => { toast.success("Updated"); setNote(""); qc.invalidateQueries({ queryKey: ["staff-maint"] }); },
+    onError: (e) => toast.error(errText(e)) });
+  const actions: Array<["in_progress" | "paused" | "done", string]> =
+    m.status === "scheduled" ? [["in_progress", "Start"]] : m.status === "in_progress" ? [["paused", "Pause"], ["done", "Complete"]] : m.status === "paused" ? [["in_progress", "Resume"], ["done", "Complete"]] : [];
+  return (
+    <li className="rounded-lg border p-3 text-sm">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0"><p className="font-medium">{m.title}</p>
+          <p className="text-muted-foreground">Due {m.due_on}{m.asset_name ? ` · ${m.asset_name}${m.asset_location ? `, ${m.asset_location}` : ""}` : ""}</p></div>
+        <Badge variant="outline">{M_LABEL[m.status] ?? m.status}</Badge>
+      </div>
+      {m.instructions && <p className="mt-2 whitespace-pre-wrap">{m.instructions}</p>}
+      {m.staff_note && <p className="mt-2 text-muted-foreground">Your note: {m.staff_note}</p>}
+      {actions.length > 0 && (
+        <div className="mt-3 space-y-2">
+          <Label htmlFor={`mn-${m.id}`}>Note (needed to pause or complete)</Label>
+          <Textarea id={`mn-${m.id}`} value={note} maxLength={1000} onChange={(e) => setNote(e.target.value)} />
+          <div className="flex flex-wrap gap-2">{actions.map(([s, l]) => (
+            <Button key={s} size="sm" className="min-h-11" disabled={mut.isPending || (s !== "in_progress" && note.trim().length < 3)} onClick={() => mut.mutate(s)}>{l}</Button>
+          ))}</div>
+          <p className="text-xs text-muted-foreground">Completing a job adds it to the asset's service history. It never creates a charge.</p>
+        </div>
+      )}
+    </li>
+  );
+}
+
+function GateTab() {
+  const fn = useServerFn(listStaffGateInside);
+  const q = useQuery({ queryKey: ["staff-gate"], queryFn: () => fn(), retry: false, refetchInterval: 60_000 });
+  return (
+    <SectionCard title="Inside now" description="View only. Check-ins, approvals and alerts stay with the guards." icon={DoorOpen}>
+      {q.error ? <ErrorRow error={q.error} onRetry={() => q.refetch()} /> : !q.data ? <Loading /> : q.data.length === 0 ? <EmptyState icon={DoorOpen} title="No visitors inside" /> : (
+        <ul className="divide-y rounded-lg border">{q.data.map((v, i) => (
+          <li key={i} className="flex flex-wrap justify-between gap-2 p-3 text-sm">
+            <span className="font-medium">{v.visitor} <span className="font-normal capitalize text-muted-foreground">· {(v.category ?? "guest").replace(/_/g, " ")}</span></span>
+            <span className="text-muted-foreground">{v.flat_number ?? "—"}{v.entry_at ? ` · ${new Date(v.entry_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}` : ""}</span>
           </li>
         ))}</ul>
       )}

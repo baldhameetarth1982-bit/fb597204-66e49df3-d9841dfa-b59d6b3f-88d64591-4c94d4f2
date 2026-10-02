@@ -13,15 +13,17 @@ type Ctx = { supabase: unknown };
 type RpcClient = { rpc: (n: string, a?: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }> };
 
 export const STAFF_PERMISSIONS = [
-  "staff.helpdesk", "staff.assets", "staff.inventory", "staff.vendors", "staff.documents", "finance.read",
+  "staff.helpdesk", "staff.operations", "staff.assets", "staff.inventory", "staff.vendors", "staff.documents", "staff.gate", "finance.read",
 ] as const;
 export type StaffPermission = (typeof STAFF_PERMISSIONS)[number];
 export const STAFF_PERMISSION_LABELS: Record<StaffPermission, string> = {
   "staff.helpdesk": "Assigned helpdesk work",
-  "staff.assets": "Assets & service log",
+  "staff.operations": "Scheduled maintenance assigned to them",
+  "staff.assets": "Assets linked to their work",
   "staff.inventory": "Inventory (use stock)",
   "staff.vendors": "Vendor contacts",
   "staff.documents": "Resident-facing documents",
+  "staff.gate": "Gate: who is inside (view only)",
   "finance.read": "Finance (read-only)",
 };
 
@@ -84,7 +86,7 @@ export const listRoleAccess = auth().handler(async ({ context }) => AccessSchema
 export const inviteRole = auth().inputValidator(z.object({
   role: z.enum(["auditor", "staff"]), phone: z.string().trim().min(10).max(16),
   name: z.string().trim().max(80).optional(), staffId: uuid.optional(),
-  permissions: z.array(z.enum(STAFF_PERMISSIONS)).max(6).default([]),
+  permissions: z.array(z.enum(STAFF_PERMISSIONS)).max(8).default([]),
 })).handler(async ({ data, context }) => {
   await rpc(context, "admin_invite_role", { _role: data.role, _phone: data.phone, _name: data.name || null, _staff: data.staffId ?? null, _permissions: data.permissions });
   return { ok: true };
@@ -96,7 +98,7 @@ export const cancelRoleInvite = auth().inputValidator(z.object({ id: uuid, reaso
 export const setRoleAccess = auth().inputValidator(z.object({ roleId: uuid, active: z.boolean(), reason: z.string().trim().max(300).optional() }))
   .handler(async ({ data, context }) => { await rpc(context, "admin_set_role_access", { _role_id: data.roleId, _active: data.active, _reason: data.reason ?? null }); return { ok: true }; });
 
-export const setStaffPermissions = auth().inputValidator(z.object({ roleId: uuid, permissions: z.array(z.enum(STAFF_PERMISSIONS)).max(6) }))
+export const setStaffPermissions = auth().inputValidator(z.object({ roleId: uuid, permissions: z.array(z.enum(STAFF_PERMISSIONS)).max(8) }))
   .handler(async ({ data, context }) => { await rpc(context, "admin_set_staff_permissions", { _role_id: data.roleId, _permissions: data.permissions }); return { ok: true }; });
 
 /* ---------------- Invitee ---------------- */
@@ -185,3 +187,31 @@ export const openStaffDocument = auth().inputValidator(z.object({ id: uuid })).h
   if (error || !signed?.signedUrl) throw new Error("The document could not be opened.");
   return { url: signed.signedUrl };
 });
+
+/* ---------------- Scheduled maintenance ---------------- */
+
+const MaintSchema = z.object({
+  id: uuid, title: z.string(), instructions: z.string().nullable(), due_on: z.string(), status: z.string(), staff_note: z.string().nullable(),
+  asset_name: z.string().nullable(), asset_location: z.string().nullable(), started_at: z.string().nullable(), completed_at: z.string().nullable(),
+});
+export type StaffMaintenance = z.infer<typeof MaintSchema>;
+export const listStaffMaintenance = auth().inputValidator(z.object({ includeDone: z.boolean().default(false) }))
+  .handler(async ({ data, context }) => z.array(MaintSchema).parse((await rpc(context, "staff_my_maintenance", { _include_done: data.includeDone })) ?? []));
+export const updateStaffMaintenance = auth().inputValidator(z.object({ id: uuid, status: z.enum(["in_progress", "paused", "done"]), note: z.string().trim().max(1000).optional() }))
+  .handler(async ({ data, context }) => { await rpc(context, "staff_update_maintenance", { _id: data.id, _status: data.status, _note: data.note ?? null }); return { ok: true }; });
+
+export const scheduleMaintenance = auth().inputValidator(z.object({
+  staffId: uuid, assetId: uuid.nullable(), title: z.string().trim().min(3).max(120),
+  due: date, instructions: z.string().trim().max(1000).optional(),
+})).handler(async ({ data, context }) => {
+  await rpc(context, "admin_schedule_maintenance", { _asset: data.assetId, _staff: data.staffId, _title: data.title, _due: data.due, _instructions: data.instructions || null });
+  return { ok: true };
+});
+export const cancelMaintenance = auth().inputValidator(z.object({ id: uuid, reason: z.string().trim().min(5).max(300) }))
+  .handler(async ({ data, context }) => { await rpc(context, "admin_cancel_maintenance", { _id: data.id, _reason: data.reason }); return { ok: true }; });
+
+/* ---------------- Gate (view only) ---------------- */
+
+export const listStaffGateInside = auth().handler(async ({ context }) => z.array(z.object({
+  visitor: z.string(), category: z.string().nullable(), flat_number: z.string().nullable(), entry_at: z.string().nullable(),
+})).parse((await rpc(context, "staff_gate_inside")) ?? []));

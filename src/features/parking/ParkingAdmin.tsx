@@ -218,7 +218,7 @@ export function SlotsTab({ d, onAdd }: { d: PData; onAdd: number }) {
                   <span className="text-sm">{a?.flat_id ? `House ${names.flat.get(a.flat_id) ?? "—"}` : <span className="text-muted-foreground">{s.slot_type === "visitor" ? "For visitors" : "Not assigned"}</span>}</span>
                   <span className="font-mono text-sm">{a?.vehicle_id ? names.plate.get(a.vehicle_id) ?? "—" : <span className="font-sans text-muted-foreground">{a ? "Any vehicle of the house" : "—"}</span>}</span>
                   <span className="flex flex-wrap gap-1">
-                    {s.availability === "unavailable" ? <StatusChip tone="danger">Unavailable</StatusChip>
+                    {s.availability === "unavailable" ? <StatusChip tone="warning">Unavailable</StatusChip>
                       : a ? <StatusChip tone="primary">Assigned</StatusChip>
                       : tempNow.has(s.id) ? <StatusChip tone="warning">Temporary</StatusChip>
                       : s.availability === "reserved" ? <StatusChip tone="info">Reserved</StatusChip>
@@ -454,7 +454,7 @@ export function ViolationsTab({ d, societyId }: { d: PData; societyId: string })
                   <b>{label(VIOLATION_TYPES, v.violation_type)}</b>
                   <span className="flex gap-1">
                     {v.plate_text && (counts.get(v.plate_text) ?? 0) > 1 && <StatusChip tone="warning">Repeat ×{counts.get(v.plate_text)}</StatusChip>}
-                    <StatusChip tone={v.status === "open" ? "danger" : v.status === "warned" ? "warning" : "neutral"}><span className="capitalize">{v.status}</span></StatusChip>
+                    <StatusChip tone={v.status === "open" ? "warning" : v.status === "warned" ? "warning" : "neutral"}><span className="capitalize">{v.status}</span></StatusChip>
                   </span>
                 </div>
                 <p className="text-muted-foreground">{[v.plate_text && <span key="p" className="font-mono">{v.plate_text}</span>, v.slot_id && `Slot ${names.slot.get(v.slot_id) ?? ""}`, v.flat_id && `House ${names.flat.get(v.flat_id) ?? ""}`, v.location, fmtTime(v.occurred_at)].filter(Boolean).map((x, i) => <span key={i}>{i > 0 && " · "}{x}</span>)}</p>

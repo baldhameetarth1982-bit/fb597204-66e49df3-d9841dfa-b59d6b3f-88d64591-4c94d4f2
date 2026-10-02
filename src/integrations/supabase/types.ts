@@ -3901,6 +3901,82 @@ export type Database = {
           },
         ]
       }
+      maintenance_tasks: {
+        Row: {
+          asset_id: string | null
+          cancel_reason: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          due_on: string
+          id: string
+          instructions: string | null
+          society_id: string
+          staff_id: string
+          staff_note: string | null
+          started_at: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          asset_id?: string | null
+          cancel_reason?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          due_on: string
+          id?: string
+          instructions?: string | null
+          society_id: string
+          staff_id: string
+          staff_note?: string | null
+          started_at?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          asset_id?: string | null
+          cancel_reason?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          due_on?: string
+          id?: string
+          instructions?: string | null
+          society_id?: string
+          staff_id?: string
+          staff_note?: string | null
+          started_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_tasks_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "society_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_tasks_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_tasks_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "society_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_action_items: {
         Row: {
           created_at: string
@@ -10195,6 +10271,12 @@ export type Database = {
       }
       _roles_admin_society: { Args: never; Returns: string }
       _sec_admin_society: { Args: never; Returns: string }
+      _staff_asset_ids: {
+        Args: { _society: string; _staff: string }
+        Returns: {
+          asset_id: string
+        }[]
+      }
       _staff_assigned_ticket: { Args: { _ticket: string }; Returns: boolean }
       _staff_ctx: { Args: { _cap: string }; Returns: Record<string, unknown> }
       _staff_permission_valid: { Args: { _perms: string[] }; Returns: boolean }
@@ -10296,6 +10378,10 @@ export type Database = {
           _tds_section?: string
         }
         Returns: Json
+      }
+      admin_cancel_maintenance: {
+        Args: { _id: string; _reason: string }
+        Returns: undefined
       }
       admin_cancel_patrol_round: {
         Args: { _id: string; _reason: string }
@@ -10599,6 +10685,16 @@ export type Database = {
         Returns: Json
       }
       admin_revoke_rfid: { Args: { _id: string }; Returns: undefined }
+      admin_schedule_maintenance: {
+        Args: {
+          _asset: string
+          _due: string
+          _instructions: string
+          _staff: string
+          _title: string
+        }
+        Returns: string
+      }
       admin_schedule_patrol_rounds: {
         Args: {
           _days?: number
@@ -13162,6 +13258,15 @@ export type Database = {
       sos_raise: { Args: { _note: string }; Returns: string }
       sos_update: { Args: { _action: string; _id: string }; Returns: undefined }
       staff_document_path: { Args: { _id: string }; Returns: string }
+      staff_gate_inside: {
+        Args: never
+        Returns: {
+          category: string
+          entry_at: string
+          flat_number: string
+          visitor: string
+        }[]
+      }
       staff_list_assets: {
         Args: never
         Returns: {
@@ -13211,6 +13316,21 @@ export type Database = {
         Returns: string
       }
       staff_my_context: { Args: never; Returns: Json }
+      staff_my_maintenance: {
+        Args: { _include_done?: boolean }
+        Returns: {
+          asset_location: string
+          asset_name: string
+          completed_at: string
+          due_on: string
+          id: string
+          instructions: string
+          staff_note: string
+          started_at: string
+          status: string
+          title: string
+        }[]
+      }
       staff_my_tickets: {
         Args: { _include_done?: boolean }
         Returns: {
@@ -13239,6 +13359,10 @@ export type Database = {
           kind: string
           to_status: string
         }[]
+      }
+      staff_update_maintenance: {
+        Args: { _id: string; _note: string; _status: string }
+        Returns: undefined
       }
       staff_update_ticket: {
         Args: { _note: string; _status: string; _ticket: string }

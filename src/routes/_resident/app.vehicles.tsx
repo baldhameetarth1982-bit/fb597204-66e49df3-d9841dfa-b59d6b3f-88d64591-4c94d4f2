@@ -196,38 +196,55 @@ function VehiclesPage() {
 }
 
 function MyParking() {
-  const [slots, setSlots] = useState<
-    { id: string; label: string; slot_type: string; notes: string | null }[] | null
-  >(null);
+  type Row = { id: string; kind: string; ends_at: string | null; starts_at: string; slot: { label: string; slot_type: string; floor: string | null; notes: string | null } | null };
+  type Viol = { id: string; violation_type: string; status: string; occurred_at: string; resolution_note: string | null };
+  const [rows, setRows] = useState<Row[] | null>(null);
+  const [viols, setViols] = useState<Viol[]>([]);
+  const [failed, setFailed] = useState(false);
   useEffect(() => {
-    // RLS limits this to parking allotted to the resident's own active home.
-    void supabase
-      .from("parking_slots")
-      .select("id, label, slot_type, notes")
-      .eq("is_active", true)
-      .order("label")
-      .then(({ data }) => setSlots(data ?? []));
+    // RLS limits both reads to the resident's own current home.
+    void Promise.all([
+      supabase.from("parking_allocations").select("id, kind, starts_at, ends_at, slot:parking_slots(label, slot_type, floor, notes)").eq("status", "active").order("starts_at"),
+      supabase.from("parking_violations").select("id, violation_type, status, occurred_at, resolution_note").order("occurred_at", { ascending: false }).limit(10),
+    ]).then(([a, v]) => {
+      if (a.error) { setFailed(true); setRows([]); return; }
+      const now = Date.now();
+      setRows(((a.data ?? []) as unknown as Row[]).filter((r) => !r.ends_at || new Date(r.ends_at).getTime() > now));
+      setViols((v.data ?? []) as Viol[]);
+    });
   }, []);
-  if (slots === null) return <div className="h-16 rounded-2xl bg-muted animate-pulse" />;
+  if (rows === null) return <div className="h-16 rounded-2xl bg-muted animate-pulse" />;
   return (
     <Card className="rounded-2xl">
-      <CardContent className="p-4">
+      <CardContent className="p-4 space-y-3">
         <p className="text-sm font-semibold">Your parking</p>
-        {slots.length === 0 ? (
-          <p className="text-sm text-muted-foreground mt-1">
-            No parking slot allotted yet. Your committee assigns parking.
-          </p>
+        {failed ? (
+          <p role="alert" className="text-sm text-muted-foreground">Couldn't load your parking. Pull to refresh or try again later.</p>
+        ) : rows.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No parking slot allotted yet. Your committee assigns parking.</p>
         ) : (
-          <div className="flex flex-wrap gap-2 mt-2">
-            {slots.map((s) => (
-              <span
-                key={s.id}
-                className="rounded-xl bg-primary/10 text-primary px-3 py-2 text-sm font-medium"
-              >
-                {s.label} <span className="capitalize text-xs opacity-80">· {s.slot_type}</span>
-                {s.notes ? <span className="text-xs opacity-80"> · {s.notes}</span> : null}
+          <div className="flex flex-wrap gap-2">
+            {rows.map((r) => (
+              <span key={r.id} className="rounded-xl bg-primary/10 text-primary px-3 py-2 text-sm font-medium">
+                {r.slot?.label ?? "Slot"} <span className="capitalize text-xs opacity-80">· {r.slot?.slot_type}</span>
+                {r.slot?.floor ? <span className="text-xs opacity-80"> · Floor {r.slot.floor}</span> : null}
+                {r.kind === "temporary" && r.ends_at ? <span className="text-xs opacity-80"> · temporary until {new Date(r.ends_at).toLocaleString([], { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}</span> : null}
               </span>
             ))}
+          </div>
+        )}
+        {viols.length > 0 && (
+          <div>
+            <p className="text-sm font-semibold">Parking notices for your home</p>
+            <ul className="mt-1 space-y-1 text-sm">
+              {viols.map((v) => (
+                <li key={v.id} className="text-muted-foreground">
+                  <span className="capitalize text-foreground">{v.violation_type.replace(/_/g, " ")}</span> · {v.status} · {new Date(v.occurred_at).toLocaleDateString()}
+                  {v.resolution_note ? ` · ${v.resolution_note}` : ""}
+                </li>
+              ))}
+            </ul>
+            <p className="text-xs text-muted-foreground mt-1">Notices are records only and never add charges to your bill.</p>
           </div>
         )}
       </CardContent>

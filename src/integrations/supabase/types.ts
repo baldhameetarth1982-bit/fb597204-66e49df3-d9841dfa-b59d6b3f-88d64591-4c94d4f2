@@ -2525,6 +2525,81 @@ export type Database = {
           },
         ]
       }
+      historical_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string
+          flat_id: string
+          id: string
+          method: string
+          payment_date: string
+          receipt_ref: string | null
+          reference_no: string | null
+          request_id: string
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          row_number: number
+          society_id: string
+          source_ref: string | null
+          status: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by: string
+          flat_id: string
+          id?: string
+          method: string
+          payment_date: string
+          receipt_ref?: string | null
+          reference_no?: string | null
+          request_id: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          row_number: number
+          society_id: string
+          source_ref?: string | null
+          status?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string
+          flat_id?: string
+          id?: string
+          method?: string
+          payment_date?: string
+          receipt_ref?: string | null
+          reference_no?: string | null
+          request_id?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          row_number?: number
+          society_id?: string
+          source_ref?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historical_payments_flat_id_fkey"
+            columns: ["flat_id"]
+            isOneToOne: false
+            referencedRelation: "flats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "historical_payments_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory_items: {
         Row: {
           created_at: string
@@ -3185,6 +3260,11 @@ export type Database = {
           id: string
           idempotency_key: string | null
           mapping_json: Json
+          retry_of_job_id: string | null
+          rollback_reason: string | null
+          rollback_summary: Json | null
+          rolled_back_at: string | null
+          rolled_back_by: string | null
           society_id: string
           source_filename: string
           source_type: string
@@ -3209,6 +3289,11 @@ export type Database = {
           id?: string
           idempotency_key?: string | null
           mapping_json?: Json
+          retry_of_job_id?: string | null
+          rollback_reason?: string | null
+          rollback_summary?: Json | null
+          rolled_back_at?: string | null
+          rolled_back_by?: string | null
           society_id: string
           source_filename: string
           source_type: string
@@ -3233,6 +3318,11 @@ export type Database = {
           id?: string
           idempotency_key?: string | null
           mapping_json?: Json
+          retry_of_job_id?: string | null
+          rollback_reason?: string | null
+          rollback_summary?: Json | null
+          rolled_back_at?: string | null
+          rolled_back_by?: string | null
           society_id?: string
           source_filename?: string
           source_type?: string
@@ -3246,6 +3336,13 @@ export type Database = {
           warning_rows?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "migration_jobs_retry_of_job_id_fkey"
+            columns: ["retry_of_job_id"]
+            isOneToOne: false
+            referencedRelation: "migration_jobs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "migration_jobs_society_id_fkey"
             columns: ["society_id"]
@@ -8017,6 +8114,12 @@ export type Database = {
       }
       _helpdesk_is_admin: { Args: { _sid: string }; Returns: boolean }
       _helpdesk_sla_hours: { Args: { _priority: string }; Returns: number }
+      _import_find_flat: {
+        Args: { _block: string; _society_id: string; _unit: string }
+        Returns: Record<string, unknown>
+      }
+      _import_parse_amount: { Args: { _v: string }; Returns: number }
+      _import_parse_date: { Args: { _v: string }; Returns: string }
       _knowledge_admin_society: { Args: never; Returns: string }
       _meeting_audience: {
         Args: { _m: Database["public"]["Tables"]["meetings"]["Row"] }
@@ -9818,8 +9921,28 @@ export type Database = {
         }
         Returns: Json
       }
+      import_historical_payments: {
+        Args: {
+          _dry_run: boolean
+          _request_id: string
+          _rows: Json
+          _society_id: string
+          _source_ref: string
+        }
+        Returns: Json
+      }
       import_opening_balances: {
         Args: {
+          _request_id: string
+          _rows: Json
+          _society_id: string
+          _source_ref: string
+        }
+        Returns: Json
+      }
+      import_opening_balances_v2: {
+        Args: {
+          _dry_run: boolean
           _request_id: string
           _rows: Json
           _society_id: string
@@ -9982,6 +10105,10 @@ export type Database = {
           status: string
           transaction_date: string
         }[]
+      }
+      list_finance_import_batches: {
+        Args: { _society_id: string }
+        Returns: Json
       }
       list_finance_workspace: {
         Args: {
@@ -10259,6 +10386,14 @@ export type Database = {
         Args: { _job_id: string; _rows: Json; _totals: Json }
         Returns: Json
       }
+      migration_rollback_job: {
+        Args: { _job_id: string; _reason: string }
+        Returns: Json
+      }
+      migration_set_retry_of: {
+        Args: { _job_id: string; _retry_of: string }
+        Returns: Json
+      }
       migration_setup_checklist: {
         Args: { _society_id: string }
         Returns: Json
@@ -10523,6 +10658,10 @@ export type Database = {
         Args: { _payment_id: string; _reason: string }
         Returns: undefined
       }
+      review_historical_payment: {
+        Args: { _confirm: boolean; _id: string; _note: string }
+        Returns: Json
+      }
       review_opening_balance: {
         Args: { _confirm: boolean; _id: string; _note: string }
         Returns: Json
@@ -10530,6 +10669,14 @@ export type Database = {
       revoke_no_dues_certificate_internal: {
         Args: { _actor_id: string; _certificate_id: string; _reason: string }
         Returns: undefined
+      }
+      rollback_historical_payment_batch: {
+        Args: { _reason: string; _request_id: string; _society_id: string }
+        Returns: Json
+      }
+      rollback_opening_balance_batch: {
+        Args: { _reason: string; _request_id: string; _society_id: string }
+        Returns: Json
       }
       run_logged_db_job: { Args: { _job: string }; Returns: string }
       saas_subscription_quote: {

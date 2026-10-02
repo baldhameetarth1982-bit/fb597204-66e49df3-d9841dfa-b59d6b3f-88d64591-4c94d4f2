@@ -82,6 +82,19 @@ const MESSAGES: Record<string, string> = {
   invalid_days: "Pick at least one day.",
   invalid_time: "End time must be after start time.",
   vehicle_not_found: "That vehicle isn't registered in this society.",
+  reauth_required: "The committee signed out your gate session. Scan a new QR from them to continue.",
+  session_unbound: "Please sign out and sign in again, then start your shift.",
+  not_assigned: "This patrol round isn't assigned to you.",
+  wrong_checkpoint_code: "That checkpoint code doesn't match. Check the sign at the checkpoint.",
+  invalid_incident: "Pick a severity and add a short note (at least 5 characters).",
+  invalid_schedule: "Check the start time, window (10–720 min) and number of days (1–14).",
+  guard_not_in_society: "That guard isn't active in this society.",
+  invalid_checkpoints: "Add between 1 and 30 checkpoints.",
+  too_many_contacts: "You can save up to 5 safety contacts.",
+  invalid_credential: "Enter the tag number (6–64 letters or digits).",
+  already_registered: "That tag is already registered.",
+  device_key_required: "Rotate the device key before activating.",
+  invalid_status: "Pick a valid device status.",
 };
 
 export function gateErrorMessage(err: unknown): string {

@@ -86,3 +86,55 @@ export const PRIVACY_KIND: Record<string, string> = { export: "Copy of my data",
 export const ELIGIBILITY: Record<string, string> = { person: "One vote per resident", home: "One vote per home", committee: "Committee only" };
 
 export const fmtDateTime = (iso: string) => new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
+
+export const ELECTION_STATUS: Record<string, { label: string; className: string }> = {
+  draft: { label: "Draft", className: "bg-muted text-foreground" },
+  nomination_open: { label: "Nominations open", className: "bg-primary/10 text-primary" },
+  nomination_review: { label: "Reviewing nominations", className: "bg-warning/15 text-warning-foreground" },
+  voting_open: { label: "Voting open", className: "bg-primary/10 text-primary" },
+  voting_closed: { label: "Voting closed", className: "bg-secondary text-secondary-foreground" },
+  results_published: { label: "Results published", className: "bg-success/15 text-success" },
+  archived: { label: "Archived", className: "bg-muted text-muted-foreground" },
+};
+
+export const NOMINATION_STATUS: Record<string, { label: string; className: string }> = {
+  pending: { label: "Pending review", className: "bg-warning/15 text-warning-foreground" },
+  approved: { label: "Approved", className: "bg-success/15 text-success" },
+  rejected: { label: "Not accepted", className: "bg-destructive/10 text-destructive" },
+  withdrawn: { label: "Withdrawn", className: "bg-muted text-muted-foreground" },
+};
+
+export const ELECTION_ELIGIBILITY: Record<string, string> = { home: "One vote per home", person: "One vote per resident" };
+
+export const AGM_STATUS: Record<string, { label: string; className: string }> = {
+  draft: { label: "Draft", className: "bg-muted text-foreground" },
+  notice_published: { label: "Notice published", className: "bg-primary/10 text-primary" },
+  scheduled: { label: "Scheduled", className: "bg-primary/10 text-primary" },
+  in_progress: { label: "In progress", className: "bg-warning/15 text-warning-foreground" },
+  completed: { label: "Completed", className: "bg-secondary text-secondary-foreground" },
+  minutes_pending: { label: "Minutes in review", className: "bg-warning/15 text-warning-foreground" },
+  minutes_published: { label: "Minutes published", className: "bg-success/15 text-success" },
+  archived: { label: "Archived", className: "bg-muted text-muted-foreground" },
+};
+
+export const RESOLUTION_STATUS: Record<string, { label: string; className: string }> = {
+  proposed: { label: "Proposed", className: "bg-muted text-foreground" },
+  passed: { label: "Passed", className: "bg-success/15 text-success" },
+  rejected: { label: "Rejected", className: "bg-destructive/10 text-destructive" },
+  deferred: { label: "Deferred", className: "bg-secondary text-secondary-foreground" },
+  withdrawn: { label: "Withdrawn", className: "bg-muted text-muted-foreground" },
+};
+
+export type ElectionCandidate = { nomination_id: string; name: string; votes: number; rank: number; outcome: "elected" | "tied" | "unresolved" | "not_elected" };
+export type ElectionPostResult = { post_id: string; post: string; seats: number; valid_votes: number; state: "decided" | "unresolved"; candidates: ElectionCandidate[] };
+export type ElectionResults = { published: boolean; hidden?: boolean; eligible?: number | null; participated?: number | null; posts?: ElectionPostResult[]; hash?: string; published_at?: string };
+export type Quorum = { basis: string; eligible: number; present: number; required: number; met: boolean; frozen: boolean; corrected?: boolean };
+
+/** datetime-local value → ISO; empty → null. */
+export const localToIso = (v: string) => (v ? new Date(v).toISOString() : null);
+/** ISO → datetime-local value in the device's timezone. */
+export const isoToLocal = (iso: string | null | undefined) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+};

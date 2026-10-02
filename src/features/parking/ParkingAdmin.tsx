@@ -485,6 +485,7 @@ export function ViolationsTab({ d, societyId }: { d: PData; societyId: string })
                 <p className="text-muted-foreground">{[v.plate_text && <span key="p" className="font-mono">{v.plate_text}</span>, v.slot_id && `Slot ${names.slot.get(v.slot_id) ?? ""}`, v.flat_id && `House ${names.flat.get(v.flat_id) ?? ""}`, v.location, fmtTime(v.occurred_at)].filter(Boolean).map((x, i) => <span key={i}>{i > 0 && " · "}{x}</span>)}</p>
                 {v.description && <p>{v.description}</p>}
                 {v.resolution_note && <p className="text-xs text-muted-foreground">Committee: {v.resolution_note}</p>}
+                <ViolationEvidence violationId={v.id} canAdd={["open", "warned"].includes(v.status)} canRemove />
                 {["open", "warned"].includes(v.status) && (
                   <div className="flex flex-wrap gap-2 pt-1">
                     {v.status === "open" && <Button size="sm" variant="outline" className="min-h-11" onClick={() => void act(v.id, "warned")}>Warn</Button>}

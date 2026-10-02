@@ -182,7 +182,7 @@ function OpeningBalancesPage() {
             <p className="px-4 pt-3 text-xs text-muted-foreground">Unverified or rejected rows never count. Confirmed rows appear in dues ageing and No-Dues, then move once onto the house's next bill as previous dues. No payment or receipt is ever created.</p>
             {loadState(obQ)}
             {obQ.data && obQ.data.length === 0 && <p className="p-4 text-sm text-muted-foreground">Nothing imported yet.</p>}
-            {obQ.data && obQ.data.length > 0 && <ul className="divide-y">{obQ.data.map((r) => {
+            {obQ.data && obQ.data.length > 0 && <ul className="divide-y">{(obQ.data as { id: string; amount: number; as_of: string; status: string; source_ref: string | null; review_note: string | null; carried: boolean; unit: string }[]).map((r) => {
               const st = r.review_note?.startsWith("Import undone:") ? STATUS.reversed : STATUS[r.status] ?? { label: r.status, tone: "warning" as const };
               return <li key={r.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
                 <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{r.unit || "—"}</p>
@@ -202,7 +202,7 @@ function OpeningBalancesPage() {
             <p className="px-4 pt-3 text-xs text-muted-foreground">Past payments are a record of your old books. They never create receipts, notifications or new income, and never change dues or your accounts — your confirmed opening balance is the starting point. Confirmed rows are shown to the flat's current residents as payment history.</p>
             {loadState(hpQ)}
             {hpQ.data && hpQ.data.items.length === 0 && <p className="p-4 text-sm text-muted-foreground">Nothing imported yet.</p>}
-            {hpQ.data && hpQ.data.items.length > 0 && <ul className="divide-y">{hpQ.data.items.map((r) => {
+            {hpQ.data && hpQ.data.items.length > 0 && <ul className="divide-y">{(hpQ.data.items as { id: string; amount: number; payment_date: string; method: string; reference_no: string | null; receipt_ref: string | null; status: string; review_note: string | null; unit: string }[]).map((r) => {
               const st = STATUS[r.status] ?? { label: r.status, tone: "warning" as const };
               return <li key={r.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
                 <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{r.unit || "—"}</p>

@@ -203,6 +203,7 @@ function ImportPage() {
   const [failureCode, setFailureCode] = useState<string | null>(null);
   const [jobsList, setJobsList] = useState<JobListItem[]>([]);
   const [jobsError, setJobsError] = useState<string | null>(null);
+  const [jobsTick, setJobsTick] = useState(0);
 
   // Recovery UX — always fetch the recent-jobs list for this society so admins
   // can see in-flight or failed jobs, resume, and retry with a new request id.
@@ -227,11 +228,10 @@ function ImportPage() {
   const problems = useServerFn(getMigrationProblemRows);
   const [retryOf, setRetryOf] = useState<string | null>(null);
   const [dryRun, setDryRun] = useState<null | { new_records: number; matched_existing: number; skipped_existing: number; duplicates: number; needs_fixing: number }>(null);
-  const [jobsTick, setJobsTick] = useState(0);
 
   async function downloadProblems(j: JobListItem) {
     try {
-      const rows = await problems({ data: { jobId: j.id } });
+      const rows = (await problems({ data: { jobId: j.id } })) as { row: number; values: Record<string, string>; reasons: string[] }[];
       if (!rows.length) { toast.info("No problem rows left in this import."); return; }
       const headers = Array.from(new Set(rows.flatMap((r) => Object.keys(r.values))));
       writeSafeWorkbook(rows.map((r) => {

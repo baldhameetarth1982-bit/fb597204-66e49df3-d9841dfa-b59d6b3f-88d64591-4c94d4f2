@@ -25,6 +25,7 @@ import { Route as LegalRouteImport } from './routes/legal'
 import { Route as GdprRouteImport } from './routes/gdpr'
 import { Route as FoundersRouteImport } from './routes/founders'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as AuditorRouteImport } from './routes/auditor'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as SocietyRouteImport } from './routes/_society'
 import { Route as ResidentRouteImport } from './routes/_resident'
@@ -267,6 +268,11 @@ const FoundersRoute = FoundersRouteImport.update({
 const ContactRoute = ContactRouteImport.update({
   id: '/contact',
   path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuditorRoute = AuditorRouteImport.update({
+  id: '/auditor',
+  path: '/auditor',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -1128,6 +1134,7 @@ const ApiPublicVerifyNoDuesTokenRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/auditor': typeof AuditorRoute
   '/contact': typeof ContactRoute
   '/founders': typeof FoundersRoute
   '/gdpr': typeof GdprRoute
@@ -1305,6 +1312,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/auditor': typeof AuditorRoute
   '/contact': typeof ContactRoute
   '/founders': typeof FoundersRoute
   '/gdpr': typeof GdprRoute
@@ -1486,6 +1494,7 @@ export interface FileRoutesById {
   '/_resident': typeof ResidentRouteWithChildren
   '/_society': typeof SocietyRouteWithChildren
   '/about': typeof AboutRoute
+  '/auditor': typeof AuditorRoute
   '/contact': typeof ContactRoute
   '/founders': typeof FoundersRoute
   '/gdpr': typeof GdprRoute
@@ -1665,6 +1674,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
+    | '/auditor'
     | '/contact'
     | '/founders'
     | '/gdpr'
@@ -1842,6 +1852,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
+    | '/auditor'
     | '/contact'
     | '/founders'
     | '/gdpr'
@@ -2022,6 +2033,7 @@ export interface FileRouteTypes {
     | '/_resident'
     | '/_society'
     | '/about'
+    | '/auditor'
     | '/contact'
     | '/founders'
     | '/gdpr'
@@ -2204,6 +2216,7 @@ export interface RootRouteChildren {
   ResidentRoute: typeof ResidentRouteWithChildren
   SocietyRoute: typeof SocietyRouteWithChildren
   AboutRoute: typeof AboutRoute
+  AuditorRoute: typeof AuditorRoute
   ContactRoute: typeof ContactRoute
   FoundersRoute: typeof FoundersRoute
   GdprRoute: typeof GdprRoute
@@ -2350,6 +2363,13 @@ declare module '@tanstack/react-router' {
       path: '/contact'
       fullPath: '/contact'
       preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auditor': {
+      id: '/auditor'
+      path: '/auditor'
+      fullPath: '/auditor'
+      preLoaderRoute: typeof AuditorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about': {
@@ -3830,6 +3850,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResidentRoute: ResidentRouteWithChildren,
   SocietyRoute: SocietyRouteWithChildren,
   AboutRoute: AboutRoute,
+  AuditorRoute: AuditorRoute,
   ContactRoute: ContactRoute,
   FoundersRoute: FoundersRoute,
   GdprRoute: GdprRoute,

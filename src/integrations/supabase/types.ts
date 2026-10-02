@@ -4691,6 +4691,63 @@ export type Database = {
           },
         ]
       }
+      parking_violation_evidence: {
+        Row: {
+          created_at: string
+          id: string
+          mime: string
+          path: string
+          remove_reason: string | null
+          removed_at: string | null
+          removed_by: string | null
+          size_bytes: number
+          society_id: string
+          uploaded_by: string
+          violation_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mime: string
+          path: string
+          remove_reason?: string | null
+          removed_at?: string | null
+          removed_by?: string | null
+          size_bytes: number
+          society_id: string
+          uploaded_by: string
+          violation_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mime?: string
+          path?: string
+          remove_reason?: string | null
+          removed_at?: string | null
+          removed_by?: string | null
+          size_bytes?: number
+          society_id?: string
+          uploaded_by?: string
+          violation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parking_violation_evidence_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parking_violation_evidence_violation_id_fkey"
+            columns: ["violation_id"]
+            isOneToOne: false
+            referencedRelation: "parking_violations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parking_violations: {
         Row: {
           created_at: string
@@ -11733,6 +11790,20 @@ export type Database = {
         Returns: undefined
       }
       ops_daily_reminders: { Args: never; Returns: undefined }
+      parking_evidence_target: { Args: { _violation: string }; Returns: string }
+      parking_record_evidence: {
+        Args: {
+          _mime: string
+          _path: string
+          _size: number
+          _violation: string
+        }
+        Returns: string
+      }
+      parking_remove_evidence: {
+        Args: { _id: string; _reason: string }
+        Returns: undefined
+      }
       parking_sweep: { Args: { _sid?: string }; Returns: number }
       parking_violation_report: {
         Args: {

@@ -149,4 +149,5 @@
 
 ## Gap area — Parking & Vehicles
 - [x] Slot assignment, release/reallocation with history, temporary slots with server-side expiry, live capacity, violations (no charges), manual EV charging (no invented readings), reports + CSV (36/36 rollback checks in QA Demo Society)
-- [ ] Hands-on: real EV charger provider (none connected; manual mode only); violation photo evidence not added
+- [x] Violation photo evidence: private storage, camera/gallery, preview, retry, remove-with-reason history (15/15 rollback checks)
+- [ ] External only: real EV charger provider (none connected; manual mode only)

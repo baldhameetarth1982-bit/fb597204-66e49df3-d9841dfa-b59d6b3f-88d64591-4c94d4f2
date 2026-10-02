@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StatusChip, SummaryStrip, ListSkeleton, LoadError, ListEmpty, SegmentedFilter, SearchField } from "@/components/people/PeopleUI";
 import { gateErrorMessage, fmtTime } from "@/lib/visitors";
 import { allocationState, label, TEMP_PURPOSES, toCsv, VIOLATION_TYPES } from "./parking";
+import { PhotoPicker, usePhotoQueue, useEvidenceUploader, ViolationEvidence, type Pending } from "./ViolationEvidence";
 
 const NONE = "__none";
 const n = (v: string) => (v === NONE || v === "" ? null : v);
@@ -384,20 +385,38 @@ interface Viol { id: string; violation_type: string; slot_id: string | null; veh
 export function ViolationReportForm({ slots, onDone }: { slots: { id: string; label: string }[]; onDone?: () => void }) {
   const [f, setF] = useState({ type: "wrong_slot", slot: NONE, plate: "", location: "", description: "" });
   const [busy, setBusy] = useState(false);
+  // Set once the violation is saved but some photos failed: the form stays put for retry.
+  const [savedId, setSavedId] = useState<string | null>(null);
+  const photos = usePhotoQueue();
+  const runUpload = useEvidenceUploader();
+  function finish() {
+    setF({ type: "wrong_slot", slot: NONE, plate: "", location: "", description: "" });
+    photos.clear(); setSavedId(null); onDone?.();
+  }
+  async function uploadFor(id: string, only?: Pending[]) {
+    const failed = await runUpload(id, photos, only);
+    if (failed) { setSavedId(id); toast.error(`${failed} photo${failed > 1 ? "s" : ""} didn't upload. Retry or remove ${failed > 1 ? "them" : "it"}.`); return; }
+    toast.success("Violation recorded with photos. The committee has been told.");
+    finish();
+  }
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
+    if (savedId) { setBusy(true); await uploadFor(savedId); setBusy(false); return; }
     if (f.slot === NONE && f.plate.replace(/[^a-z0-9]/gi, "").length < 3) return toast.error("Pick a slot or enter the number plate.");
     setBusy(true);
-    const { error } = await rpc("parking_violation_report", { _type: f.type, _slot_id: n(f.slot), _plate: f.plate || null, _location: f.location || null, _description: f.description || null, _occurred_at: null });
+    const { data, error } = await rpc("parking_violation_report", { _type: f.type, _slot_id: n(f.slot), _plate: f.plate || null, _location: f.location || null, _description: f.description || null, _occurred_at: null });
+    if (error) { setBusy(false); return toast.error(gateErrorMessage(error)); }
+    if (photos.items.length && typeof data === "string") { await uploadFor(data); setBusy(false); return; }
     setBusy(false);
-    if (error) return toast.error(gateErrorMessage(error));
     toast.success("Violation recorded. The committee has been told.");
-    setF({ type: "wrong_slot", slot: NONE, plate: "", location: "", description: "" });
-    onDone?.();
+    finish();
   }
+  const locked = !!savedId;
+  const pendingLeft = photos.items.some((p) => p.state !== "done");
   return (
     <form onSubmit={submit} className="space-y-3" aria-label="Report a parking violation">
+      <fieldset disabled={locked} className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-2">
         <div><Label>Type</Label>
           <Select value={f.type} onValueChange={(v) => setF({ ...f, type: v })}><SelectTrigger aria-label="Violation type" className="h-11"><SelectValue /></SelectTrigger>
@@ -411,7 +430,13 @@ export function ViolationReportForm({ slots, onDone }: { slots: { id: string; la
         <div><Label htmlFor="v-loc">Location</Label><Input id="v-loc" className="h-11" value={f.location} onChange={(e) => setF({ ...f, location: e.target.value })} maxLength={120} placeholder="e.g. Ramp to B1" /></div>
       </div>
       <div><Label htmlFor="v-desc">What happened</Label><Textarea id="v-desc" value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} maxLength={500} rows={2} /></div>
-      <Button type="submit" className="min-h-11 w-full rounded-xl" disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Record violation"}</Button>
+      </fieldset>
+      <div><Label>Photos (optional)</Label><PhotoPicker q={photos} disabled={busy} onRetry={savedId ? (p) => { setBusy(true); void uploadFor(savedId, [p]).finally(() => setBusy(false)); } : undefined} /></div>
+      {locked && <p role="status" className="text-xs">Violation saved. {pendingLeft ? "Retry the failed photos, or remove them and finish." : ""}</p>}
+      <div className="flex gap-2">
+        <Button type="submit" className="min-h-11 flex-1 rounded-xl" disabled={busy || (locked && !pendingLeft)}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : locked ? "Retry photos" : "Record violation"}</Button>
+        {locked && <Button type="button" variant="outline" className="min-h-11 rounded-xl" disabled={busy} onClick={finish}>Finish</Button>}
+      </div>
       <p className="text-xs text-muted-foreground">A violation is a record only. It never adds a charge to anyone's bill.</p>
     </form>
   );
@@ -460,6 +485,7 @@ export function ViolationsTab({ d, societyId }: { d: PData; societyId: string })
                 <p className="text-muted-foreground">{[v.plate_text && <span key="p" className="font-mono">{v.plate_text}</span>, v.slot_id && `Slot ${names.slot.get(v.slot_id) ?? ""}`, v.flat_id && `House ${names.flat.get(v.flat_id) ?? ""}`, v.location, fmtTime(v.occurred_at)].filter(Boolean).map((x, i) => <span key={i}>{i > 0 && " · "}{x}</span>)}</p>
                 {v.description && <p>{v.description}</p>}
                 {v.resolution_note && <p className="text-xs text-muted-foreground">Committee: {v.resolution_note}</p>}
+                <ViolationEvidence violationId={v.id} canAdd={["open", "warned"].includes(v.status)} canRemove />
                 {["open", "warned"].includes(v.status) && (
                   <div className="flex flex-wrap gap-2 pt-1">
                     {v.status === "open" && <Button size="sm" variant="outline" className="min-h-11" onClick={() => void act(v.id, "warned")}>Warn</Button>}

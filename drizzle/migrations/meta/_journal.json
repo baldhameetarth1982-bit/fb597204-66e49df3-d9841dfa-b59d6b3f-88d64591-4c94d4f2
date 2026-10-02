@@ -974,6 +974,13 @@
       "when": 1790919081581,
       "tag": "0138_data_import_dry_run_retry_rollback_history_payments",
       "breakpoints": true
+    },
+    {
+      "idx": 139,
+      "version": "7",
+      "when": 1790919362758,
+      "tag": "0139_fix_migration_rollback_blockers",
+      "breakpoints": true
     }
   ]
 }

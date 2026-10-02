@@ -13,6 +13,7 @@ import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as VerifyPhoneRouteImport } from './routes/verify-phone'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SupportRouteImport } from './routes/support'
+import { Route as StaffRouteImport } from './routes/staff'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
@@ -208,6 +209,11 @@ const TermsRoute = TermsRouteImport.update({
 const SupportRoute = SupportRouteImport.update({
   id: '/support',
   path: '/support',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StaffRoute = StaffRouteImport.update({
+  id: '/staff',
+  path: '/staff',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -1147,6 +1153,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/staff': typeof StaffRoute
   '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
   '/verify-phone': typeof VerifyPhoneRoute
@@ -1324,6 +1331,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/staff': typeof StaffRoute
   '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
   '/verify-phone': typeof VerifyPhoneRoute
@@ -1507,6 +1515,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/staff': typeof StaffRoute
   '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
   '/verify-phone': typeof VerifyPhoneRoute
@@ -1687,6 +1696,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/settings'
     | '/sitemap.xml'
+    | '/staff'
     | '/support'
     | '/terms'
     | '/verify-phone'
@@ -1864,6 +1874,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/settings'
     | '/sitemap.xml'
+    | '/staff'
     | '/support'
     | '/terms'
     | '/verify-phone'
@@ -2046,6 +2057,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/settings'
     | '/sitemap.xml'
+    | '/staff'
     | '/support'
     | '/terms'
     | '/verify-phone'
@@ -2229,6 +2241,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SettingsRoute: typeof SettingsRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  StaffRoute: typeof StaffRoute
   SupportRoute: typeof SupportRoute
   TermsRoute: typeof TermsRoute
   VerifyPhoneRoute: typeof VerifyPhoneRoute
@@ -2279,6 +2292,13 @@ declare module '@tanstack/react-router' {
       path: '/support'
       fullPath: '/support'
       preLoaderRoute: typeof SupportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/staff': {
+      id: '/staff'
+      path: '/staff'
+      fullPath: '/staff'
+      preLoaderRoute: typeof StaffRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sitemap.xml': {
@@ -3863,6 +3883,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SettingsRoute: SettingsRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  StaffRoute: StaffRoute,
   SupportRoute: SupportRoute,
   TermsRoute: TermsRoute,
   VerifyPhoneRoute: VerifyPhoneRoute,

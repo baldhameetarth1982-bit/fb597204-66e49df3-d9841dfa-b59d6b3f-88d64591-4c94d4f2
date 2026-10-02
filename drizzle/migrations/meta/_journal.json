@@ -981,6 +981,13 @@
       "when": 1790919362758,
       "tag": "0139_fix_migration_rollback_blockers",
       "breakpoints": true
+    },
+    {
+      "idx": 140,
+      "version": "7",
+      "when": 1790920433029,
+      "tag": "0140_gate_security_sessions_patrol_safety_hardware",
+      "breakpoints": true
     }
   ]
 }

@@ -600,6 +600,63 @@ export type Database = {
           },
         ]
       }
+      barrier_commands: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          device_id: string
+          id: string
+          provider_message: string | null
+          reason: string
+          request_id: string
+          requested_by: string
+          society_id: string
+          status: string
+          visitor_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          device_id: string
+          id?: string
+          provider_message?: string | null
+          reason: string
+          request_id: string
+          requested_by: string
+          society_id: string
+          status: string
+          visitor_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          device_id?: string
+          id?: string
+          provider_message?: string | null
+          reason?: string
+          request_id?: string
+          requested_by?: string
+          society_id?: string
+          status?: string
+          visitor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "barrier_commands_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "gate_devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "barrier_commands_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bill_adjustments: {
         Row: {
           amount: number
@@ -2438,6 +2495,131 @@ export type Database = {
           },
         ]
       }
+      gate_devices: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          gate_label: string | null
+          id: string
+          key_hash: string | null
+          kind: string
+          last_error: string | null
+          last_seen_at: string | null
+          name: string
+          provider: string | null
+          society_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          gate_label?: string | null
+          id?: string
+          key_hash?: string | null
+          kind: string
+          last_error?: string | null
+          last_seen_at?: string | null
+          name: string
+          provider?: string | null
+          society_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          gate_label?: string | null
+          id?: string
+          key_hash?: string | null
+          kind?: string
+          last_error?: string | null
+          last_seen_at?: string | null
+          name?: string
+          provider?: string | null
+          society_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gate_devices_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gate_hardware_events: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          device_id: string
+          external_event_id: string
+          id: string
+          kind: string
+          occurred_at: string
+          plate: string | null
+          result: string
+          review_decision: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          rfid_credential_id: string | null
+          society_id: string
+          vehicle_id: string | null
+          visitor_id: string | null
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          device_id: string
+          external_event_id: string
+          id?: string
+          kind: string
+          occurred_at: string
+          plate?: string | null
+          result: string
+          review_decision?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          rfid_credential_id?: string | null
+          society_id: string
+          vehicle_id?: string | null
+          visitor_id?: string | null
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          device_id?: string
+          external_event_id?: string
+          id?: string
+          kind?: string
+          occurred_at?: string
+          plate?: string | null
+          result?: string
+          review_decision?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          rfid_credential_id?: string | null
+          society_id?: string
+          vehicle_id?: string | null
+          visitor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gate_hardware_events_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "gate_devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gate_hardware_events_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gate_offline_ops: {
         Row: {
           actor_id: string
@@ -2464,6 +2646,144 @@ export type Database = {
           society_id?: string
         }
         Relationships: []
+      }
+      guard_entry_tokens: {
+        Row: {
+          created_at: string
+          created_by: string
+          expires_at: string
+          guard_user_id: string
+          id: string
+          revoked_at: string | null
+          society_id: string
+          token_hash: string
+          used_at: string | null
+          used_session_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          expires_at: string
+          guard_user_id: string
+          id?: string
+          revoked_at?: string | null
+          society_id: string
+          token_hash: string
+          used_at?: string | null
+          used_session_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          guard_user_id?: string
+          id?: string
+          revoked_at?: string | null
+          society_id?: string
+          token_hash?: string
+          used_at?: string | null
+          used_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guard_entry_tokens_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      guard_reauth_blocks: {
+        Row: {
+          set_at: string
+          set_by: string | null
+          society_id: string
+          user_id: string
+        }
+        Insert: {
+          set_at?: string
+          set_by?: string | null
+          society_id: string
+          user_id: string
+        }
+        Update: {
+          set_at?: string
+          set_by?: string | null
+          society_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guard_reauth_blocks_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      guard_sessions: {
+        Row: {
+          auth_session_id: string
+          device_label: string | null
+          ended_at: string | null
+          entry_token_id: string | null
+          expires_at: string
+          id: string
+          last_seen_at: string
+          method: string
+          revoke_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          society_id: string
+          started_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          auth_session_id: string
+          device_label?: string | null
+          ended_at?: string | null
+          entry_token_id?: string | null
+          expires_at?: string
+          id?: string
+          last_seen_at?: string
+          method: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          society_id: string
+          started_at?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          auth_session_id?: string
+          device_label?: string | null
+          ended_at?: string | null
+          entry_token_id?: string | null
+          expires_at?: string
+          id?: string
+          last_seen_at?: string
+          method?: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          society_id?: string
+          started_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guard_sessions_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       hierarchy_nodes: {
         Row: {
@@ -4129,6 +4449,206 @@ export type Database = {
           },
         ]
       }
+      patrol_checkpoints: {
+        Row: {
+          code_hash: string | null
+          id: string
+          is_active: boolean
+          name: string
+          position: number
+          route_id: string
+          society_id: string
+        }
+        Insert: {
+          code_hash?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          position: number
+          route_id: string
+          society_id: string
+        }
+        Update: {
+          code_hash?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          position?: number
+          route_id?: string
+          society_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patrol_checkpoints_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "patrol_routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patrol_checkpoints_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patrol_round_checkpoints: {
+        Row: {
+          checkpoint_id: string
+          completed_at: string | null
+          completed_by: string | null
+          incident_id: string | null
+          location_evidence: Json | null
+          note: string | null
+          position: number
+          round_id: string
+          society_id: string
+          status: string
+          verification: string | null
+        }
+        Insert: {
+          checkpoint_id: string
+          completed_at?: string | null
+          completed_by?: string | null
+          incident_id?: string | null
+          location_evidence?: Json | null
+          note?: string | null
+          position: number
+          round_id: string
+          society_id: string
+          status?: string
+          verification?: string | null
+        }
+        Update: {
+          checkpoint_id?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          incident_id?: string | null
+          location_evidence?: Json | null
+          note?: string | null
+          position?: number
+          round_id?: string
+          society_id?: string
+          status?: string
+          verification?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patrol_round_checkpoints_checkpoint_id_fkey"
+            columns: ["checkpoint_id"]
+            isOneToOne: false
+            referencedRelation: "patrol_checkpoints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patrol_round_checkpoints_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "patrol_rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patrol_rounds: {
+        Row: {
+          assigned_guard: string
+          created_at: string
+          created_by: string | null
+          due_by: string
+          finished_at: string | null
+          id: string
+          missed_notified_at: string | null
+          note: string | null
+          route_id: string
+          scheduled_start: string
+          society_id: string
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          assigned_guard: string
+          created_at?: string
+          created_by?: string | null
+          due_by: string
+          finished_at?: string | null
+          id?: string
+          missed_notified_at?: string | null
+          note?: string | null
+          route_id: string
+          scheduled_start: string
+          society_id: string
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          assigned_guard?: string
+          created_at?: string
+          created_by?: string | null
+          due_by?: string
+          finished_at?: string | null
+          id?: string
+          missed_notified_at?: string | null
+          note?: string | null
+          route_id?: string
+          scheduled_start?: string
+          society_id?: string
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patrol_rounds_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "patrol_routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patrol_rounds_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patrol_routes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          name: string
+          society_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          society_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          society_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patrol_routes_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_receipt_month_sequences: {
         Row: {
           next_number: number
@@ -5277,6 +5797,73 @@ export type Database = {
         }
         Relationships: []
       }
+      rfid_credentials: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          credential_hash: string
+          flat_id: string | null
+          id: string
+          label: string | null
+          last4: string
+          revoked_at: string | null
+          revoked_by: string | null
+          society_id: string
+          status: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          credential_hash: string
+          flat_id?: string | null
+          id?: string
+          label?: string | null
+          last4: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          society_id: string
+          status?: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          credential_hash?: string
+          flat_id?: string | null
+          id?: string
+          label?: string | null
+          last4?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          society_id?: string
+          status?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rfid_credentials_flat_id_fkey"
+            columns: ["flat_id"]
+            isOneToOne: false
+            referencedRelation: "flats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rfid_credentials_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rfid_credentials_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saas_payment_events: {
         Row: {
           attempt_count: number
@@ -5656,6 +6243,129 @@ export type Database = {
           },
         ]
       }
+      safety_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          created_at: string
+          escalated_at: string | null
+          flat_id: string
+          id: string
+          kind: string
+          last_seen: string | null
+          note: string | null
+          raised_by: string
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          society_id: string
+          status: string
+          subject_name: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          created_at?: string
+          escalated_at?: string | null
+          flat_id: string
+          id?: string
+          kind: string
+          last_seen?: string | null
+          note?: string | null
+          raised_by: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          society_id: string
+          status?: string
+          subject_name?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          created_at?: string
+          escalated_at?: string | null
+          flat_id?: string
+          id?: string
+          kind?: string
+          last_seen?: string | null
+          note?: string | null
+          raised_by?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          society_id?: string
+          status?: string
+          subject_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "safety_alerts_flat_id_fkey"
+            columns: ["flat_id"]
+            isOneToOne: false
+            referencedRelation: "flats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "safety_alerts_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      safety_contacts: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          flat_id: string
+          id: string
+          is_active: boolean
+          name: string
+          phone: string
+          relation: string | null
+          society_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          flat_id: string
+          id?: string
+          is_active?: boolean
+          name: string
+          phone: string
+          relation?: string | null
+          society_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          flat_id?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          phone?: string
+          relation?: string | null
+          society_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "safety_contacts_flat_id_fkey"
+            columns: ["flat_id"]
+            isOneToOne: false
+            referencedRelation: "flats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "safety_contacts_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scheduler_job_runs: {
         Row: {
           attempts: number
@@ -5710,6 +6420,7 @@ export type Database = {
           id: string
           kind: string
           note: string
+          patrol_round_id: string | null
           reported_by: string
           resolution_note: string | null
           resolved_at: string | null
@@ -5724,6 +6435,7 @@ export type Database = {
           id?: string
           kind: string
           note: string
+          patrol_round_id?: string | null
           reported_by: string
           resolution_note?: string | null
           resolved_at?: string | null
@@ -5738,6 +6450,7 @@ export type Database = {
           id?: string
           kind?: string
           note?: string
+          patrol_round_id?: string | null
           reported_by?: string
           resolution_note?: string | null
           resolved_at?: string | null
@@ -5748,6 +6461,13 @@ export type Database = {
           visitor_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "security_incidents_patrol_round_id_fkey"
+            columns: ["patrol_round_id"]
+            isOneToOne: false
+            referencedRelation: "patrol_rounds"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "security_incidents_society_id_fkey"
             columns: ["society_id"]
@@ -7991,6 +8711,7 @@ export type Database = {
         Returns: string
       }
       _amenity_admin: { Args: { _society_id: string }; Returns: boolean }
+      _auth_session_id: { Args: never; Returns: string }
       _authorize_membership_internal: {
         Args: { _society_id: string; _user_id: string }
         Returns: boolean
@@ -8112,6 +8833,12 @@ export type Database = {
           sos: number
         }[]
       }
+      _guard_open_session: {
+        Args: { _device: string; _method: string; _sid: string; _token: string }
+        Returns: string
+      }
+      _guard_role_society: { Args: never; Returns: string }
+      _guard_session_ok: { Args: { _sid: string }; Returns: boolean }
       _helpdesk_is_admin: { Args: { _sid: string }; Returns: boolean }
       _helpdesk_sla_hours: { Args: { _priority: string }; Returns: number }
       _import_find_flat: {
@@ -8141,6 +8868,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      _my_active_flat: {
+        Args: never
+        Returns: {
+          flat_id: string
+          flat_number: string
+          society_id: string
+        }[]
+      }
+      _norm_plate: { Args: { _p: string }; Returns: string }
       _notice_admin_society: { Args: never; Returns: string }
       _notice_audience: {
         Args: { _n: Database["public"]["Tables"]["notices"]["Row"] }
@@ -8311,6 +9047,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      _sec_admin_society: { Args: never; Returns: string }
       _survey_notify: { Args: { _poll_id: string }; Returns: undefined }
       _sync_bill_payment_state: {
         Args: { _bill_id: string }
@@ -8409,6 +9146,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_cancel_patrol_round: {
+        Args: { _id: string; _reason: string }
+        Returns: undefined
+      }
       admin_cancel_society_plan: {
         Args: { _reason: string; _society_id: string }
         Returns: Json
@@ -8479,6 +9220,25 @@ export type Database = {
           standard_paid_societies: number
           subscription_mrr: number
           total_revenue: number
+        }[]
+      }
+      admin_issue_guard_entry_token: {
+        Args: { _guard_user_id: string }
+        Returns: Json
+      }
+      admin_list_gate_guards: {
+        Args: never
+        Returns: {
+          active_session_id: string
+          blocked: boolean
+          device_label: string
+          expires_at: string
+          full_name: string
+          last_seen_at: string
+          method: string
+          phone_last4: string
+          started_at: string
+          user_id: string
         }[]
       }
       admin_list_societies: {
@@ -8559,6 +9319,7 @@ export type Database = {
         }
         Returns: string
       }
+      admin_patrol_overview: { Args: { _days?: number }; Returns: Json }
       admin_platform_summary: {
         Args: never
         Returns: {
@@ -8574,6 +9335,15 @@ export type Database = {
         Args: { _day: string; _note: string; _staff: string; _status: string }
         Returns: undefined
       }
+      admin_register_rfid: {
+        Args: {
+          _flat_id: string
+          _label: string
+          _raw: string
+          _vehicle_id: string
+        }
+        Returns: string
+      }
       admin_renew_tenancy: {
         Args: { _flat_resident_id: string; _new_lease_ends_on: string }
         Returns: undefined
@@ -8581,6 +9351,21 @@ export type Database = {
       admin_reset_society_branding: {
         Args: { _society_id: string }
         Returns: Json
+      }
+      admin_revoke_guard_access: {
+        Args: { _guard_user_id: string; _reason: string }
+        Returns: Json
+      }
+      admin_revoke_rfid: { Args: { _id: string }; Returns: undefined }
+      admin_schedule_patrol_rounds: {
+        Args: {
+          _days?: number
+          _first_start: string
+          _guard: string
+          _route_id: string
+          _window_minutes: number
+        }
+        Returns: number
       }
       admin_set_amenity_block: {
         Args: {
@@ -8752,6 +9537,18 @@ export type Database = {
         }
         Returns: string
       }
+      admin_upsert_gate_device: {
+        Args: {
+          _gate_label: string
+          _id: string
+          _kind: string
+          _name: string
+          _provider: string
+          _rotate_key?: boolean
+          _status: string
+        }
+        Returns: Json
+      }
       admin_upsert_inventory_item: {
         Args: {
           _active: boolean
@@ -8760,6 +9557,15 @@ export type Database = {
           _name: string
           _reorder: number
           _unit: string
+        }
+        Returns: string
+      }
+      admin_upsert_patrol_route: {
+        Args: {
+          _active?: boolean
+          _checkpoints: Json
+          _id: string
+          _name: string
         }
         Returns: string
       }
@@ -9152,6 +9958,10 @@ export type Database = {
         Args: { _approval_id: string; _approve: boolean; _note: string }
         Returns: Json
       }
+      device_ingest_event: {
+        Args: { _device_id: string; _event: Json; _key: string }
+        Returns: Json
+      }
       duplicate_society_block_internal: {
         Args: { _actor_id: string; _block_id: string; _new_name: string }
         Returns: Json
@@ -9362,6 +10172,20 @@ export type Database = {
         Args: { _action: string; _id: string; _reason: string }
         Returns: undefined
       }
+      gate_request_barrier_open: {
+        Args: {
+          _device_id: string
+          _reason: string
+          _request_id: string
+          _visitor_id?: string
+        }
+        Returns: Json
+      }
+      gate_review_hardware_event: {
+        Args: { _decision: string; _id: string }
+        Returns: undefined
+      }
+      gate_safety_alerts: { Args: never; Returns: Json }
       gate_sos_open: {
         Args: never
         Returns: {
@@ -9691,6 +10515,7 @@ export type Database = {
         }[]
       }
       guard_checkin_recurring: { Args: { _pass_id: string }; Returns: string }
+      guard_end_session: { Args: never; Returns: undefined }
       guard_gate_list: {
         Args: { _q?: string; _scope?: string }
         Returns: {
@@ -9725,6 +10550,22 @@ export type Database = {
         Args: { _kind: string; _op_id: string; _payload: Json }
         Returns: Json
       }
+      guard_patrol_checkpoint: {
+        Args: {
+          _checkpoint_id: string
+          _code?: string
+          _incident_severity?: string
+          _note?: string
+          _round_id: string
+        }
+        Returns: Json
+      }
+      guard_patrol_finish: {
+        Args: { _note?: string; _round_id: string }
+        Returns: string
+      }
+      guard_patrol_list: { Args: never; Returns: Json }
+      guard_patrol_start: { Args: { _round_id: string }; Returns: undefined }
       guard_recurring_list: {
         Args: { _q?: string }
         Returns: {
@@ -9739,6 +10580,12 @@ export type Database = {
           visitor_name: string
         }[]
       }
+      guard_redeem_entry_token: {
+        Args: { _device?: string; _token: string }
+        Returns: Json
+      }
+      guard_session_status: { Args: never; Returns: Json }
+      guard_start_session: { Args: { _device?: string }; Returns: string }
       guard_verify_vehicle: {
         Args: { _plate: string }
         Returns: {
@@ -10445,6 +11292,7 @@ export type Database = {
         Returns: undefined
       }
       ops_daily_reminders: { Args: never; Returns: undefined }
+      patrol_sweep: { Args: { _sid: string }; Returns: undefined }
       poll_cast_vote: {
         Args: { _option: string; _poll: string }
         Returns: undefined
@@ -10617,6 +11465,16 @@ export type Database = {
         Args: { _id: string; _status: string }
         Returns: undefined
       }
+      resident_set_safety_contact: {
+        Args: {
+          _active?: boolean
+          _id: string
+          _name: string
+          _phone: string
+          _relation: string
+        }
+        Returns: string
+      }
       resident_upsert_recurring_pass: {
         Args: {
           _category: string
@@ -10682,6 +11540,19 @@ export type Database = {
       saas_subscription_quote: {
         Args: { _plan_id: string; _society_id: string }
         Returns: Json
+      }
+      safety_alert_raise: {
+        Args: {
+          _kind: string
+          _last_seen: string
+          _note: string
+          _subject: string
+        }
+        Returns: string
+      }
+      safety_alert_update: {
+        Args: { _action: string; _id: string; _note?: string }
+        Returns: undefined
       }
       save_billing_template: {
         Args: {

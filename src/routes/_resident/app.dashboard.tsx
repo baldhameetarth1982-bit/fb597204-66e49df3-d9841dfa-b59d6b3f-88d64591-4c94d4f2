@@ -1,3 +1,4 @@
+import { PendingRoleInvites } from "@/components/roles/PendingRoleInvites";
 import { NeedsAttention } from "@/components/shared/NeedsAttention";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -79,6 +80,7 @@ function ResidentDashboard() {
 
   return (
     <div className="px-4 py-5 md:py-8 max-w-3xl mx-auto space-y-6">
+      <PendingRoleInvites />
       <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border pb-5">
         <div className="min-w-0">
           <p className="text-sm text-muted-foreground">Welcome back</p>

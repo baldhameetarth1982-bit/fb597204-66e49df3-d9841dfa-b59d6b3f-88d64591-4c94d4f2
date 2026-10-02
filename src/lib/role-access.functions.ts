@@ -74,7 +74,7 @@ const InviteSchema = z.object({
 const AccessSchema = z.object({
   members: z.array(MemberSchema),
   invitations: z.array(InviteSchema),
-  history: z.array(z.object({ action: z.string(), at: z.string(), metadata: z.record(z.string(), z.unknown()).nullable() })),
+  history: z.array(z.object({ action: z.string(), at: z.string(), metadata: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()]).catch(null)).nullable() })),
   staff_options: z.array(z.object({ id: uuid, full_name: z.string(), job_type: z.string() })),
 });
 export type RoleAccess = z.infer<typeof AccessSchema>;
@@ -122,7 +122,7 @@ const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 export const getAuditorHistory = auth().inputValidator(z.object({ from: date, to: date, offset: z.number().int().min(0).max(100000).default(0) }))
   .handler(async ({ data, context }) => z.array(z.object({
     at: z.string(), action: z.string(), target_table: z.string().nullable(), target_id: z.string().nullable(),
-    actor_name: z.string(), metadata: z.record(z.string(), z.unknown()).nullable(),
+    actor_name: z.string(), metadata: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()]).catch(null)).nullable(),
   })).parse((await rpc(context, "auditor_finance_history", { _from: data.from, _to: data.to, _limit: 50, _offset: data.offset })) ?? []));
 
 /* ---------------- Staff ---------------- */

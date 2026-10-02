@@ -1594,6 +1594,143 @@ export type Database = {
           },
         ]
       }
+      ev_chargers: {
+        Row: {
+          connector: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          provider: string
+          rated_kw: number | null
+          slot_id: string | null
+          society_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          connector?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          provider?: string
+          rated_kw?: number | null
+          slot_id?: string | null
+          society_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          connector?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          provider?: string
+          rated_kw?: number | null
+          slot_id?: string | null
+          society_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ev_chargers_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "parking_slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ev_chargers_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ev_charging_sessions: {
+        Row: {
+          charger_id: string
+          created_at: string
+          ended_at: string | null
+          ended_by: string | null
+          energy_kwh: number | null
+          energy_source: string | null
+          flat_id: string | null
+          id: string
+          note: string | null
+          society_id: string
+          started_at: string
+          started_by: string
+          status: string
+          vehicle_id: string
+        }
+        Insert: {
+          charger_id: string
+          created_at?: string
+          ended_at?: string | null
+          ended_by?: string | null
+          energy_kwh?: number | null
+          energy_source?: string | null
+          flat_id?: string | null
+          id?: string
+          note?: string | null
+          society_id: string
+          started_at?: string
+          started_by: string
+          status?: string
+          vehicle_id: string
+        }
+        Update: {
+          charger_id?: string
+          created_at?: string
+          ended_at?: string | null
+          ended_by?: string | null
+          energy_kwh?: number | null
+          energy_source?: string | null
+          flat_id?: string | null
+          id?: string
+          note?: string | null
+          society_id?: string
+          started_at?: string
+          started_by?: string
+          status?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ev_charging_sessions_charger_id_fkey"
+            columns: ["charger_id"]
+            isOneToOne: false
+            referencedRelation: "ev_chargers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ev_charging_sessions_flat_id_fkey"
+            columns: ["flat_id"]
+            isOneToOne: false
+            referencedRelation: "flats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ev_charging_sessions_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ev_charging_sessions_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expense_tax_calculations: {
         Row: {
           amount_includes_gst: boolean
@@ -4388,10 +4525,100 @@ export type Database = {
         }
         Relationships: []
       }
-      parking_slots: {
+      parking_allocations: {
         Row: {
           created_at: string
+          ends_at: string | null
           flat_id: string | null
+          id: string
+          issued_by: string | null
+          kind: string
+          reason: string | null
+          release_reason: string | null
+          released_at: string | null
+          released_by: string | null
+          slot_id: string
+          society_id: string
+          starts_at: string
+          status: string
+          temp_purpose: string | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          ends_at?: string | null
+          flat_id?: string | null
+          id?: string
+          issued_by?: string | null
+          kind: string
+          reason?: string | null
+          release_reason?: string | null
+          released_at?: string | null
+          released_by?: string | null
+          slot_id: string
+          society_id: string
+          starts_at?: string
+          status?: string
+          temp_purpose?: string | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string | null
+          flat_id?: string | null
+          id?: string
+          issued_by?: string | null
+          kind?: string
+          reason?: string | null
+          release_reason?: string | null
+          released_at?: string | null
+          released_by?: string | null
+          slot_id?: string
+          society_id?: string
+          starts_at?: string
+          status?: string
+          temp_purpose?: string | null
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parking_allocations_flat_id_fkey"
+            columns: ["flat_id"]
+            isOneToOne: false
+            referencedRelation: "flats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parking_allocations_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "parking_slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parking_allocations_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parking_allocations_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parking_slots: {
+        Row: {
+          availability: string
+          block_id: string | null
+          created_at: string
+          ev_capable: boolean
+          flat_id: string | null
+          floor: string | null
           id: string
           is_active: boolean
           label: string
@@ -4402,8 +4629,12 @@ export type Database = {
           vehicle_id: string | null
         }
         Insert: {
+          availability?: string
+          block_id?: string | null
           created_at?: string
+          ev_capable?: boolean
           flat_id?: string | null
+          floor?: string | null
           id?: string
           is_active?: boolean
           label: string
@@ -4414,8 +4645,12 @@ export type Database = {
           vehicle_id?: string | null
         }
         Update: {
+          availability?: string
+          block_id?: string | null
           created_at?: string
+          ev_capable?: boolean
           flat_id?: string | null
+          floor?: string | null
           id?: string
           is_active?: boolean
           label?: string
@@ -4426,6 +4661,13 @@ export type Database = {
           vehicle_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "parking_slots_block_id_fkey"
+            columns: ["block_id"]
+            isOneToOne: false
+            referencedRelation: "blocks"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "parking_slots_flat_id_fkey"
             columns: ["flat_id"]
@@ -4442,6 +4684,95 @@ export type Database = {
           },
           {
             foreignKeyName: "parking_slots_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parking_violations: {
+        Row: {
+          created_at: string
+          description: string | null
+          flat_id: string | null
+          id: string
+          location: string | null
+          occurred_at: string
+          plate_text: string | null
+          reported_by: string
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          slot_id: string | null
+          society_id: string
+          status: string
+          updated_at: string
+          vehicle_id: string | null
+          violation_type: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          flat_id?: string | null
+          id?: string
+          location?: string | null
+          occurred_at?: string
+          plate_text?: string | null
+          reported_by: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          slot_id?: string | null
+          society_id: string
+          status?: string
+          updated_at?: string
+          vehicle_id?: string | null
+          violation_type: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          flat_id?: string | null
+          id?: string
+          location?: string | null
+          occurred_at?: string
+          plate_text?: string | null
+          reported_by?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          slot_id?: string | null
+          society_id?: string
+          status?: string
+          updated_at?: string
+          vehicle_id?: string | null
+          violation_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parking_violations_flat_id_fkey"
+            columns: ["flat_id"]
+            isOneToOne: false
+            referencedRelation: "flats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parking_violations_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "parking_slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parking_violations_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parking_violations_vehicle_id_fkey"
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
@@ -8819,6 +9150,7 @@ export type Database = {
         Args: { _actor_id: string; _society_id: string }
         Returns: undefined
       }
+      _flat_has_current_occupant: { Args: { _flat: string }; Returns: boolean }
       _gate_admin_society: { Args: never; Returns: string }
       _gate_society: { Args: never; Returns: string }
       _gov_admin_society: { Args: never; Returns: string }
@@ -8982,6 +9314,30 @@ export type Database = {
         Returns: boolean
       }
       _ops_admin: { Args: { _sid: string }; Returns: string }
+      _parking_admin_society: { Args: never; Returns: string }
+      _parking_audit: {
+        Args: {
+          _action: string
+          _id: string
+          _meta: Json
+          _sid: string
+          _target: string
+        }
+        Returns: undefined
+      }
+      _parking_release_internal: {
+        Args: { _alloc: string; _effective: string; _reason: string }
+        Returns: Record<string, unknown>
+      }
+      _parking_resolve_holder: {
+        Args: {
+          _flat: string
+          _require_occupant: boolean
+          _sid: string
+          _vehicle: string
+        }
+        Returns: string
+      }
       _proc_att_state_ok: {
         Args: { _kind: string; _status: string }
         Returns: boolean
@@ -9057,6 +9413,7 @@ export type Database = {
         Args: { _flat_resident_id: string }
         Returns: string
       }
+      _vehicle_authorized_slots: { Args: { _vehicle: string }; Returns: string }
       _visitor_clean: { Args: { _max: number; _t: string }; Returns: string }
       _visitor_new_code: { Args: { _society: string }; Returns: string }
       _visitor_restriction_match: {
@@ -9172,6 +9529,19 @@ export type Database = {
       admin_delete_vehicle: {
         Args: { _id: string; _society_id: string }
         Returns: undefined
+      }
+      admin_ev_charger_retire: { Args: { _id: string }; Returns: undefined }
+      admin_ev_charger_save: {
+        Args: {
+          _connector: string
+          _id: string
+          _name: string
+          _provider: string
+          _rated_kw: number
+          _slot_id: string
+          _status: string
+        }
+        Returns: string
       }
       admin_extend_trial: {
         Args: { _days: number; _reason: string; _society_id: string }
@@ -9308,6 +9678,65 @@ export type Database = {
         Returns: Json
       }
       admin_parking_archive: { Args: { _id: string }; Returns: undefined }
+      admin_parking_assign: {
+        Args: {
+          _flat_id: string
+          _reason: string
+          _slot_id: string
+          _vehicle_id: string
+        }
+        Returns: string
+      }
+      admin_parking_capacity: {
+        Args: { _block_id?: string; _floor?: string; _slot_type?: string }
+        Returns: Json
+      }
+      admin_parking_reallocate: {
+        Args: {
+          _flat_id: string
+          _reason: string
+          _slot_id: string
+          _vehicle_id: string
+        }
+        Returns: string
+      }
+      admin_parking_release: {
+        Args: {
+          _allocation_id: string
+          _effective_at?: string
+          _reason: string
+        }
+        Returns: undefined
+      }
+      admin_parking_report: {
+        Args: { _from: string; _to: string }
+        Returns: Json
+      }
+      admin_parking_slot_save: {
+        Args: {
+          _availability: string
+          _block_id: string
+          _ev_capable: boolean
+          _floor: string
+          _id: string
+          _label: string
+          _notes: string
+          _slot_type: string
+        }
+        Returns: string
+      }
+      admin_parking_temp_allocate: {
+        Args: {
+          _ends_at: string
+          _flat_id: string
+          _purpose: string
+          _reason: string
+          _slot_id: string
+          _starts_at: string
+          _vehicle_id: string
+        }
+        Returns: string
+      }
       admin_parking_upsert: {
         Args: {
           _flat_id: string
@@ -9318,6 +9747,10 @@ export type Database = {
           _vehicle_id: string
         }
         Returns: string
+      }
+      admin_parking_violation_update: {
+        Args: { _id: string; _note: string; _status: string }
+        Returns: undefined
       }
       admin_patrol_overview: { Args: { _days?: number }; Returns: Json }
       admin_platform_summary: {
@@ -9982,6 +10415,14 @@ export type Database = {
           _flat_id: string
           _period_start: string
         }
+        Returns: string
+      }
+      ev_session_end: {
+        Args: { _energy_kwh?: number; _note?: string; _session_id: string }
+        Returns: undefined
+      }
+      ev_session_start: {
+        Args: { _charger_id: string; _plate: string }
         Returns: string
       }
       execute_finance_backfill: {
@@ -11292,6 +11733,18 @@ export type Database = {
         Returns: undefined
       }
       ops_daily_reminders: { Args: never; Returns: undefined }
+      parking_sweep: { Args: { _sid?: string }; Returns: number }
+      parking_violation_report: {
+        Args: {
+          _description: string
+          _location: string
+          _occurred_at?: string
+          _plate: string
+          _slot_id: string
+          _type: string
+        }
+        Returns: string
+      }
       patrol_sweep: { Args: { _sid: string }; Returns: undefined }
       poll_cast_vote: {
         Args: { _option: string; _poll: string }

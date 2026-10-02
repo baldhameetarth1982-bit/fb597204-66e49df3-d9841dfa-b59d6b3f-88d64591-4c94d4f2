@@ -13,6 +13,7 @@ import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as VerifyPhoneRouteImport } from './routes/verify-phone'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SupportRouteImport } from './routes/support'
+import { Route as StaffRouteImport } from './routes/staff'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
@@ -25,6 +26,7 @@ import { Route as LegalRouteImport } from './routes/legal'
 import { Route as GdprRouteImport } from './routes/gdpr'
 import { Route as FoundersRouteImport } from './routes/founders'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as AuditorRouteImport } from './routes/auditor'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as SocietyRouteImport } from './routes/_society'
 import { Route as ResidentRouteImport } from './routes/_resident'
@@ -209,6 +211,11 @@ const SupportRoute = SupportRouteImport.update({
   path: '/support',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StaffRoute = StaffRouteImport.update({
+  id: '/staff',
+  path: '/staff',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
@@ -267,6 +274,11 @@ const FoundersRoute = FoundersRouteImport.update({
 const ContactRoute = ContactRouteImport.update({
   id: '/contact',
   path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuditorRoute = AuditorRouteImport.update({
+  id: '/auditor',
+  path: '/auditor',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -1128,6 +1140,7 @@ const ApiPublicVerifyNoDuesTokenRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/auditor': typeof AuditorRoute
   '/contact': typeof ContactRoute
   '/founders': typeof FoundersRoute
   '/gdpr': typeof GdprRoute
@@ -1140,6 +1153,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/staff': typeof StaffRoute
   '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
   '/verify-phone': typeof VerifyPhoneRoute
@@ -1305,6 +1319,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/auditor': typeof AuditorRoute
   '/contact': typeof ContactRoute
   '/founders': typeof FoundersRoute
   '/gdpr': typeof GdprRoute
@@ -1316,6 +1331,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/staff': typeof StaffRoute
   '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
   '/verify-phone': typeof VerifyPhoneRoute
@@ -1486,6 +1502,7 @@ export interface FileRoutesById {
   '/_resident': typeof ResidentRouteWithChildren
   '/_society': typeof SocietyRouteWithChildren
   '/about': typeof AboutRoute
+  '/auditor': typeof AuditorRoute
   '/contact': typeof ContactRoute
   '/founders': typeof FoundersRoute
   '/gdpr': typeof GdprRoute
@@ -1498,6 +1515,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/staff': typeof StaffRoute
   '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
   '/verify-phone': typeof VerifyPhoneRoute
@@ -1665,6 +1683,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
+    | '/auditor'
     | '/contact'
     | '/founders'
     | '/gdpr'
@@ -1677,6 +1696,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/settings'
     | '/sitemap.xml'
+    | '/staff'
     | '/support'
     | '/terms'
     | '/verify-phone'
@@ -1842,6 +1862,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
+    | '/auditor'
     | '/contact'
     | '/founders'
     | '/gdpr'
@@ -1853,6 +1874,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/settings'
     | '/sitemap.xml'
+    | '/staff'
     | '/support'
     | '/terms'
     | '/verify-phone'
@@ -2022,6 +2044,7 @@ export interface FileRouteTypes {
     | '/_resident'
     | '/_society'
     | '/about'
+    | '/auditor'
     | '/contact'
     | '/founders'
     | '/gdpr'
@@ -2034,6 +2057,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/settings'
     | '/sitemap.xml'
+    | '/staff'
     | '/support'
     | '/terms'
     | '/verify-phone'
@@ -2204,6 +2228,7 @@ export interface RootRouteChildren {
   ResidentRoute: typeof ResidentRouteWithChildren
   SocietyRoute: typeof SocietyRouteWithChildren
   AboutRoute: typeof AboutRoute
+  AuditorRoute: typeof AuditorRoute
   ContactRoute: typeof ContactRoute
   FoundersRoute: typeof FoundersRoute
   GdprRoute: typeof GdprRoute
@@ -2216,6 +2241,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SettingsRoute: typeof SettingsRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  StaffRoute: typeof StaffRoute
   SupportRoute: typeof SupportRoute
   TermsRoute: typeof TermsRoute
   VerifyPhoneRoute: typeof VerifyPhoneRoute
@@ -2266,6 +2292,13 @@ declare module '@tanstack/react-router' {
       path: '/support'
       fullPath: '/support'
       preLoaderRoute: typeof SupportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/staff': {
+      id: '/staff'
+      path: '/staff'
+      fullPath: '/staff'
+      preLoaderRoute: typeof StaffRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sitemap.xml': {
@@ -2350,6 +2383,13 @@ declare module '@tanstack/react-router' {
       path: '/contact'
       fullPath: '/contact'
       preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auditor': {
+      id: '/auditor'
+      path: '/auditor'
+      fullPath: '/auditor'
+      preLoaderRoute: typeof AuditorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about': {
@@ -3830,6 +3870,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResidentRoute: ResidentRouteWithChildren,
   SocietyRoute: SocietyRouteWithChildren,
   AboutRoute: AboutRoute,
+  AuditorRoute: AuditorRoute,
   ContactRoute: ContactRoute,
   FoundersRoute: FoundersRoute,
   GdprRoute: GdprRoute,
@@ -3842,6 +3883,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SettingsRoute: SettingsRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  StaffRoute: StaffRoute,
   SupportRoute: SupportRoute,
   TermsRoute: TermsRoute,
   VerifyPhoneRoute: VerifyPhoneRoute,

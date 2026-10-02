@@ -1,3 +1,4 @@
+import { PendingRoleInvites } from "@/components/roles/PendingRoleInvites";
 import { Link, Navigate, createFileRoute, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Building2, ArrowRight, Loader2 } from "lucide-react";
@@ -58,6 +59,7 @@ function OnboardingChoice() {
           Choose one to continue. You can always switch later.
         </p>
       </header>
+      <PendingRoleInvites />
 
       <div className="space-y-4">
         <Link to="/onboarding/create" className="block group">

@@ -1,3 +1,4 @@
+import { RoleAccessPanel } from "@/components/roles/RoleAccessPanel";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useEffect, useMemo, useState } from "react";
@@ -271,6 +272,7 @@ function TeamPage() {
         <RolePermissionPreview />
       </SettingsDisclosure>
     </SettingsShell>
+    <RoleAccessPanel />
 
       <AlertDialog open={!!confirmTarget} onOpenChange={(o) => !o && !busyRoleId && setConfirmTarget(null)}>
         <AlertDialogContent>

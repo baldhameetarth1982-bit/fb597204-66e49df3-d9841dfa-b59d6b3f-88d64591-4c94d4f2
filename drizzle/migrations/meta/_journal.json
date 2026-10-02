@@ -1023,6 +1023,13 @@
       "when": 1790925203418,
       "tag": "0145_governance_elections_agm",
       "breakpoints": true
+    },
+    {
+      "idx": 146,
+      "version": "7",
+      "when": 1790925907344,
+      "tag": "0146_agm_save_agenda_fallback",
+      "breakpoints": true
     }
   ]
 }

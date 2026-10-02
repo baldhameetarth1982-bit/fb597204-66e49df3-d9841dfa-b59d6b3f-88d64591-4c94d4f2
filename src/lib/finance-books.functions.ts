@@ -114,8 +114,8 @@ export const yearStatusSchema = z.object({
   reopen_reason: z.string().nullable(), year_ended: z.boolean(),
   blockers: z.object({ manual_drafts: n, payments_unposted: n, income_unposted: n, expenses_unposted: n, trial_balance_unbalanced: z.boolean() }),
   warnings: z.object({ bank_lines_unreconciled: n, tax_needs_configuration: n }),
-  totals: z.object({ closing_debit: n, closing_credit: n }).passthrough(),
-}).passthrough();
+  totals: z.object({ closing_debit: n, closing_credit: n }),
+});
 export type YearStatus = z.infer<typeof yearStatusSchema>;
 export const getYearStatus = base().inputValidator(z.object({ societyId: uuid, fyStart: date })).handler(async ({ data, context }) =>
   yearStatusSchema.parse(await rpc(context, "fin_year_status", { _society_id: data.societyId, _fy_start: data.fyStart })));
@@ -162,5 +162,5 @@ export const setVendorTax = base().inputValidator(z.object({
 
 export const calculateExpenseTax = base().inputValidator(z.object({
   expenseId: uuid, includesGst: z.boolean(), gstRate: z.number().nullable(), supplyType: z.enum(["intra", "inter", "none"]).nullable(), tdsSection: z.string().trim().toUpperCase().max(8).nullable(), tdsRate: z.number().min(0).max(30).nullable(),
-})).handler(async ({ data, context }) => z.object({ status: z.enum(["calculated", "needs_configuration"]), missing: z.array(z.string()) }).passthrough().parse(
+})).handler(async ({ data, context }) => z.object({ status: z.enum(["calculated", "needs_configuration"]), missing: z.array(z.string()) }).parse(
   await rpc(context, "admin_calculate_expense_tax", { _expense_id: data.expenseId, _includes_gst: data.includesGst, _gst_rate: data.gstRate, _supply_type: data.supplyType, _tds_section: data.tdsSection || null, _tds_rate: data.tdsRate })));

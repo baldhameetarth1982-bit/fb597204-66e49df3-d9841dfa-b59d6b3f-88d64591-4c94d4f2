@@ -1,0 +1,149 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import {
+  Building2, Home, Car, Users, UserCheck, ShieldCheck, MessageSquare,
+  Receipt, Wallet, BarChart3, TrendingDown, BookOpen,
+  Settings2, UsersRound, Activity, LifeBuoy, Sparkles, KeyRound, Building, Lock,
+  LayoutGrid, Compass, FileCheck2, Trophy, Palette, CalendarDays, Gavel,
+  Wrench,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { MobileHero } from "@/components/shared/MobileHero";
+import { SectionCard } from "@/components/shared/SectionCard";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { FEATURE_MIN_PLAN, PLAN_LABELS, type FeatureKey } from "@/lib/plan-features";
+
+export const Route = createFileRoute("/_society/society/more")({
+  head: () => ({ meta: [{ title: "More — SociyoHub" }] }),
+  component: MoreDirectory,
+});
+
+type Tile = { to: string; label: string; icon: any; feature?: FeatureKey };
+
+const DISCOVER: Tile[] = [
+  { to: "/society/features", label: "Feature Directory", icon: Compass },
+];
+
+const MANAGEMENT: Tile[] = [
+  { to: "/society/residents", label: "Residents", icon: Users },
+  { to: "/society/flats", label: "Houses", icon: Home },
+  { to: "/society/blocks", label: "Blocks", icon: Building },
+  { to: "/society/helpdesk", label: "Helpdesk", icon: LifeBuoy },
+  { to: "/society/operations", label: "Operations", icon: Wrench },
+  { to: "/society/approvals", label: "Approvals", icon: UserCheck },
+  { to: "/society/verifications", label: "Verifications", icon: ShieldCheck },
+  { to: "/society/visitors", label: "Visitors", icon: UsersRound, feature: "visitors" },
+  { to: "/society/vehicles", label: "Vehicles", icon: Car, feature: "vehicles" },
+  { to: "/society/parking", label: "Parking", icon: Car, feature: "vehicles" },
+  { to: "/society/amenities", label: "Amenities", icon: CalendarDays, feature: "amenities" },
+  { to: "/society/maintenance", label: "Maintenance", icon: BookOpen },
+  { to: "/society/communication", label: "Communication", icon: MessageSquare },
+  { to: "/society/polls", label: "Polls", icon: Sparkles, feature: "polls" },
+  { to: "/society/surveys", label: "Surveys", icon: Sparkles, feature: "polls" },
+  { to: "/society/votes", label: "Formal votes", icon: Gavel, feature: "polls" },
+  { to: "/society/meetings", label: "Meetings", icon: CalendarDays },
+  { to: "/society/agm", label: "AGM", icon: CalendarDays },
+  { to: "/society/elections", label: "Elections", icon: Gavel },
+  { to: "/society/data-export", label: "Data export", icon: FileCheck2 },
+  { to: "/society/handover", label: "Handover", icon: FileCheck2 },
+];
+
+const FINANCE: Tile[] = [
+  { to: "/society/billing", label: "Billing", icon: Receipt },
+  { to: "/society/accounts", label: "Accounts", icon: Wallet, feature: "ledger" },
+  { to: "/society/expenses", label: "Expenses", icon: TrendingDown, feature: "expenses" },
+  { to: "/society/reports", label: "Reports", icon: BarChart3, feature: "advanced_reports" },
+  { to: "/society/auditor-pack", label: "Auditor pack", icon: FileCheck2, feature: "advanced_reports" },
+  { to: "/society/income", label: "Other income", icon: Wallet, feature: "non_member_payments" },
+  { to: "/society/qr", label: "QR collections", icon: Wallet, feature: "smart_qr_collections" },
+  { to: "/society/reconciliation", label: "Reconciliation", icon: Wallet, feature: "reconciliation" },
+  { to: "/society/digest", label: "AI Digest", icon: Sparkles, feature: "ai_digest" },
+];
+
+const COMMUNITY: Tile[] = [
+  { to: "/society/leaderboard", label: "Leaderboard", icon: Trophy, feature: "leaderboard" },
+];
+
+const CERTIFICATES: Tile[] = [
+  { to: "/society/no-dues", label: "No-Dues", icon: FileCheck2, feature: "no_dues" },
+];
+
+const OTHER: Tile[] = [
+  { to: "/society/business-profile", label: "Society profile", icon: Building2 },
+  { to: "/society/subscription", label: "Subscription", icon: Wallet },
+  { to: "/society/team", label: "Team & roles", icon: Users, feature: "team_roles" },
+  { to: "/society/privacy-settings", label: "Privacy", icon: ShieldCheck, feature: "privacy_controls" },
+  { to: "/society/privacy-requests", label: "Privacy requests", icon: ShieldCheck },
+  { to: "/society/branding", label: "Branding", icon: Palette, feature: "custom_branding" },
+  { to: "/society/import", label: "Resident import", icon: Users, feature: "resident_import" },
+  { to: "/society/bill-studio", label: "Bill templates", icon: Receipt, feature: "bill_templates" },
+  { to: "/society/automations", label: "Automations", icon: Activity, feature: "advanced_automation" },
+  { to: "/society/knowledge", label: "AI Secretary", icon: Sparkles, feature: "ai_secretary" },
+  { to: "/society/custom-fields", label: "Custom fields", icon: Settings2 },
+  { to: "/society/setup", label: "Setup wizard", icon: Activity },
+  { to: "/society/explorer", label: "Explorer", icon: KeyRound },
+  { to: "/support", label: "Help & support", icon: LifeBuoy },
+];
+
+function TileGrid({ tiles }: { tiles: Tile[] }) {
+  const { hasFeature } = useFeatureAccess();
+  return (
+    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
+      {tiles.map((t) => {
+        const locked = t.feature ? !hasFeature(t.feature) : false;
+        const required = t.feature ? FEATURE_MIN_PLAN[t.feature] : null;
+        return (
+          <Link
+            key={t.to}
+            to={locked ? "/society/subscription" : (t.to as any)}
+            className="group relative rounded-2xl border bg-card hover:bg-primary/5 hover:border-primary/40 active:scale-[0.98] transition p-3 flex flex-col items-center justify-center gap-1.5 text-center min-h-[96px]"
+          >
+            <div className={`h-10 w-10 rounded-2xl grid place-items-center ${locked ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"}`}>
+              <t.icon className="h-4.5 w-4.5" />
+            </div>
+            <span className="text-[11px] sm:text-xs font-medium leading-tight">{t.label}</span>
+            {locked && required && (
+              <Badge variant="secondary" className="absolute top-1.5 right-1.5 rounded-full px-1.5 h-4 text-[9px] gap-0.5">
+                <Lock className="h-2.5 w-2.5" />
+                {PLAN_LABELS[required]}
+              </Badge>
+            )}
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
+function MoreDirectory() {
+  return (
+    <div className="pb-24">
+      <MobileHero
+        eyebrow="Operations directory"
+        title="More"
+        subtitle="Every society module in one place. Locked modules show the plan needed to unlock."
+        icon={LayoutGrid}
+        variant="teal"
+      />
+      <div className="px-4 pt-4 space-y-4">
+        <SectionCard title="Discover" description="Every feature in one searchable place">
+          <TileGrid tiles={DISCOVER} />
+        </SectionCard>
+        <SectionCard title="Management" description={`${MANAGEMENT.length} modules`}>
+          <TileGrid tiles={MANAGEMENT} />
+        </SectionCard>
+        <SectionCard title="Finance" description={`${FINANCE.length} modules`}>
+          <TileGrid tiles={FINANCE} />
+        </SectionCard>
+        <SectionCard title="Community" description={`${COMMUNITY.length} modules`}>
+          <TileGrid tiles={COMMUNITY} />
+        </SectionCard>
+        <SectionCard title="Certificates" description={`${CERTIFICATES.length} modules`}>
+          <TileGrid tiles={CERTIFICATES} />
+        </SectionCard>
+        <SectionCard title="Other" description={`${OTHER.length} modules`}>
+          <TileGrid tiles={OTHER} />
+        </SectionCard>
+      </div>
+    </div>
+  );
+}

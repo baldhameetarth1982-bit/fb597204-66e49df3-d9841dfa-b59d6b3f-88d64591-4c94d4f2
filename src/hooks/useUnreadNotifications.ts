@@ -1,0 +1,86 @@
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
+
+const TRACKED_ACTIONS = [
+  "payment_captured",
+  "payment_failed",
+  "bill_generated",
+  "maintenance_reminder_sent",
+  "visitor_entered",
+  "visitor_exited",
+  "notice_published",
+  "complaint_updated",
+  "document_uploaded",
+];
+
+const STORAGE_KEY = "sh:notif:last_seen";
+
+function storageKey(userId?: string) {
+  return userId ? `${STORAGE_KEY}:${userId}` : STORAGE_KEY;
+}
+
+export function getLastSeen(userId?: string): string {
+  try {
+    return localStorage.getItem(storageKey(userId)) || new Date(Date.now() - 7 * 864e5).toISOString();
+  } catch {
+    return new Date(Date.now() - 7 * 864e5).toISOString();
+  }
+}
+
+export function markNotificationsSeen(userId?: string) {
+  try {
+    localStorage.setItem(storageKey(userId), new Date().toISOString());
+    window.dispatchEvent(new Event("sh:notif:seen"));
+  } catch {}
+}
+
+/** Unread count of the signed-in user's own notifications. Realtime + polls. */
+export function useUnreadNotifications() {
+  const { user } = useAuth();
+  const uid = user?.id;
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    const handler = () => setTick((t) => t + 1);
+    window.addEventListener("sh:notif:seen", handler);
+    return () => window.removeEventListener("sh:notif:seen", handler);
+  }, []);
+
+  const query = useQuery({
+    enabled: !!uid,
+    queryKey: ["notifications-unread", uid, tick],
+    staleTime: 15_000,
+    refetchInterval: 60_000,
+    queryFn: async () => {
+      const since = getLastSeen(uid);
+      const [personal, notices, reads] = await Promise.all([
+        supabase.from("user_notifications").select("id", { count: "exact", head: true }).is("read_at", null).gt("created_at", since),
+        // RLS limits notices to those meant for this resident.
+        supabase.from("notices").select("id").eq("status", "published").gt("publish_at", since).lte("publish_at", new Date().toISOString()).limit(50),
+        supabase.from("notice_reads").select("notice_id").gt("read_at", since),
+      ]);
+      const readSet = new Set((reads.data ?? []).map((r) => r.notice_id as string));
+      const unreadNotices = (notices.data ?? []).filter((n) => !readSet.has(n.id as string)).length;
+      return (personal.count ?? 0) + unreadNotices;
+    },
+  });
+
+  useEffect(() => {
+    if (!uid) return;
+    const channel = supabase
+      .channel(`notif-unread-${uid}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "user_notifications", filter: `user_id=eq.${uid}` },
+        () => setTick((t) => t + 1),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [uid]);
+
+  return query.data ?? 0;
+}

@@ -1,0 +1,174 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { createClient } from "@supabase/supabase-js";
+import { convertToModelMessages, streamText, stepCountIs, tool, type UIMessage } from "ai";
+import { z } from "zod";
+import type { Database } from "@/integrations/supabase/types";
+
+const SYSTEM = `You are SociyoHub Support, a crisp AI assistant for residents, society admins, and guards using the SociyoHub housing society app.
+
+You can help with maintenance bills, payments, invite codes, creating or joining societies, referral partner earnings, withdrawals, visitors, polls, notices, offline emergency contacts, and app navigation.
+
+If you cannot solve the issue, if a payment/account/bug needs human action, or if the user explicitly asks for a human, call the create_support_ticket tool with a short subject and actionable description. After tool success, tell the user the ticket was created. Keep normal answers short and practical.`;
+
+type ChatRequestBody = { messages?: unknown };
+
+const chatMessageSchema = z
+  .object({
+    id: z.string().max(200).optional(),
+    role: z.enum(["user", "assistant"]),
+    parts: z
+      .array(
+        z
+          .object({
+            type: z.string().max(50),
+            text: z.string().max(8_000).optional(),
+          })
+          .passthrough(),
+      )
+      .max(40),
+  })
+  .passthrough();
+
+function getAuthedClient(request: Request) {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_PUBLISHABLE_KEY;
+  const authHeader = request.headers.get("authorization") ?? "";
+  if (!url || !key) throw new Response("Backend auth is not configured", { status: 500 });
+  if (!authHeader.startsWith("Bearer "))
+    throw new Response("Please sign in to use support", { status: 401 });
+  return createClient<Database>(url, key, {
+    global: { headers: { Authorization: authHeader } },
+    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+  });
+}
+
+export const Route = createFileRoute("/api/support-chat")({
+  server: {
+    handlers: {
+      POST: async ({ request }) => {
+        let body: ChatRequestBody;
+        try {
+          body = (await request.json()) as ChatRequestBody;
+        } catch {
+          return new Response("Invalid request", { status: 400 });
+        }
+        const parsedMessages = z.array(chatMessageSchema).max(50).safeParse(body.messages);
+        if (!parsedMessages.success) {
+          return new Response("Messages are required", { status: 400 });
+        }
+        // Only plain text parts are accepted from the client; forged tool-call,
+        // tool-result, file or reasoning parts are dropped so history cannot
+        // impersonate tool output or smuggle extra payloads to the model.
+        const messages = parsedMessages.data.map((m) => ({
+          ...(m.id ? { id: m.id } : {}),
+          role: m.role,
+          parts: m.parts
+            .filter((p) => p.type === "text" && typeof p.text === "string")
+            .map((p) => ({ type: "text" as const, text: p.text as string })),
+        }));
+        const MAX_MESSAGES = 50;
+        const MAX_TOTAL_CHARS = 40_000;
+        const MAX_MESSAGE_CHARS = 8_000;
+        if (messages.length > MAX_MESSAGES) {
+          return new Response("Too many messages", { status: 400 });
+        }
+        let totalChars = 0;
+        for (const m of messages) {
+          const len = JSON.stringify(m ?? "").length;
+          if (len > MAX_MESSAGE_CHARS) {
+            return new Response("Message too long", { status: 413 });
+          }
+          totalChars += len;
+        }
+        if (totalChars > MAX_TOTAL_CHARS) {
+          return new Response("Payload too large", { status: 413 });
+        }
+
+        const lovableApiKey = process.env.LOVABLE_API_KEY;
+        if (!lovableApiKey) {
+          return new Response("AI support is not configured", { status: 500 });
+        }
+
+        const supabase = getAuthedClient(request);
+        const token = request.headers.get("authorization")!.replace("Bearer ", "");
+        const { data: claims, error: authError } = await supabase.auth.getClaims(token);
+        if (authError || !claims?.claims?.sub) {
+          return new Response("Please sign in to use support", { status: 401 });
+        }
+        const userId = claims.claims.sub;
+
+        // Rate limit: 20 AI support requests per user per minute (prevents billing abuse)
+        try {
+          const { checkRateLimit } = await import("@/lib/rate-limit.server");
+          await checkRateLimit({ bucket: "support.chat", subject: userId, limit: 20 });
+          await checkRateLimit({ bucket: "support.chat.daily", subject: userId, limit: 200, windowSec: 86_400 });
+        } catch (error) {
+          const { RateLimitedError } = await import("@/lib/rate-limit.server");
+          if (error instanceof RateLimitedError) {
+            return new Response("Too many requests. Please try again shortly.", { status: 429 });
+          }
+          console.error("[support] rate-limit check failed");
+          return new Response("Support is temporarily unavailable", { status: 503 });
+        }
+
+        const {
+          createLovableAiGatewayProvider,
+          getLovableAiGatewayResponseHeaders,
+          getLovableAiGatewayRunId,
+          withLovableAiGatewayRunIdHeader,
+        } = await import("@/lib/ai-gateway.server");
+        const initialRunId = getLovableAiGatewayRunId(request);
+        const gateway = createLovableAiGatewayProvider(lovableApiKey, initialRunId);
+        const result = streamText({
+          model: gateway("google/gemini-3-flash-preview"),
+          system: SYSTEM,
+          messages: await convertToModelMessages(messages as UIMessage[]),
+          stopWhen: stepCountIs(50),
+          tools: {
+            create_support_ticket: tool({
+              description:
+                "Create a human support ticket when the SociyoHub AI cannot solve the user's issue directly.",
+              inputSchema: z.object({
+                subject: z.string().min(3).max(120),
+                description: z.string().min(10).max(1200),
+              }),
+              execute: async ({ subject, description }) => {
+                const { data: profile } = await supabase
+                  .from("profiles")
+                  .select("society_id")
+                  .eq("id", userId)
+                  .maybeSingle();
+                const { data: row, error } = await supabase
+                  .from("support_tickets")
+                  .insert({
+                    user_id: userId,
+                    society_id: profile?.society_id ?? null,
+                    subject,
+                    description,
+                    ai_transcript:
+                      messages as Database["public"]["Tables"]["support_tickets"]["Insert"]["ai_transcript"],
+                  })
+                  .select("id")
+                  .single();
+                if (error) {
+                  console.error("[support] ticket creation failed", error.code);
+                  throw new Error("Ticket creation failed");
+                }
+                return { ticketId: row.id, shortId: row.id.slice(0, 8), status: "created" };
+              },
+            }),
+          },
+        });
+
+        const response = result.toUIMessageStreamResponse({
+          originalMessages: messages as UIMessage[],
+          headers: getLovableAiGatewayResponseHeaders(undefined, {
+            ...(initialRunId ? { "X-Lovable-AIG-Run-ID": initialRunId } : {}),
+          }),
+        });
+
+        return withLovableAiGatewayRunIdHeader(response, gateway);
+      },
+    },
+  },
+});

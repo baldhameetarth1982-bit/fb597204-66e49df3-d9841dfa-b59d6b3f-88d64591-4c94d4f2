@@ -6820,6 +6820,107 @@ export type Database = {
           },
         ]
       }
+      role_invitations: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          cancelled_reason: string | null
+          created_at: string
+          display_name: string | null
+          expires_at: string
+          id: string
+          invited_by: string
+          permissions: string[]
+          phone_digits: string
+          role: Database["public"]["Enums"]["app_role"]
+          society_id: string
+          staff_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          cancelled_reason?: string | null
+          created_at?: string
+          display_name?: string | null
+          expires_at?: string
+          id?: string
+          invited_by: string
+          permissions?: string[]
+          phone_digits: string
+          role: Database["public"]["Enums"]["app_role"]
+          society_id: string
+          staff_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          cancelled_reason?: string | null
+          created_at?: string
+          display_name?: string | null
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          permissions?: string[]
+          phone_digits?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          society_id?: string
+          staff_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_invitations_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "role_invitations_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "society_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      role_sessions: {
+        Row: {
+          device: string | null
+          last_seen_at: string
+          role_id: string
+          society_id: string
+          user_id: string
+        }
+        Insert: {
+          device?: string | null
+          last_seen_at?: string
+          role_id: string
+          society_id: string
+          user_id: string
+        }
+        Update: {
+          device?: string | null
+          last_seen_at?: string
+          role_id?: string
+          society_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_sessions_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: true
+            referencedRelation: "user_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saas_payment_events: {
         Row: {
           attempt_count: number
@@ -9281,6 +9382,8 @@ export type Database = {
           deactivated_by: string | null
           id: string
           is_active: boolean
+          permissions: string[]
+          revoked_reason: string | null
           role: Database["public"]["Enums"]["app_role"]
           society_id: string | null
           updated_at: string
@@ -9294,6 +9397,8 @@ export type Database = {
           deactivated_by?: string | null
           id?: string
           is_active?: boolean
+          permissions?: string[]
+          revoked_reason?: string | null
           role: Database["public"]["Enums"]["app_role"]
           society_id?: string | null
           updated_at?: string
@@ -9307,6 +9412,8 @@ export type Database = {
           deactivated_by?: string | null
           id?: string
           is_active?: boolean
+          permissions?: string[]
+          revoked_reason?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           society_id?: string | null
           updated_at?: string
@@ -9742,6 +9849,7 @@ export type Database = {
         Args: { _society_id: string }
         Returns: boolean
       }
+      _caller_phone_digits: { Args: never; Returns: string }
       _can_manage_polls: { Args: { _society_id: string }; Returns: boolean }
       _deactivate_resident_role_if_homeless: {
         Args: { _society: string; _user: string }
@@ -9814,7 +9922,12 @@ export type Database = {
         }
         Returns: string
       }
+      _finance_reader_for: { Args: { _society_id: string }; Returns: boolean }
       _finance_require_admin: { Args: { _society_id: string }; Returns: string }
+      _finance_require_reader: {
+        Args: { _society_id: string }
+        Returns: string
+      }
       _finance_seed_accounts: {
         Args: { _actor_id: string; _society_id: string }
         Returns: undefined
@@ -10080,7 +10193,11 @@ export type Database = {
         }
         Returns: undefined
       }
+      _roles_admin_society: { Args: never; Returns: string }
       _sec_admin_society: { Args: never; Returns: string }
+      _staff_assigned_ticket: { Args: { _ticket: string }; Returns: boolean }
+      _staff_ctx: { Args: { _cap: string }; Returns: Record<string, unknown> }
+      _staff_permission_valid: { Args: { _perms: string[] }; Returns: boolean }
       _survey_notify: { Args: { _poll_id: string }; Returns: undefined }
       _sync_bill_payment_state: {
         Args: { _bill_id: string }
@@ -10184,6 +10301,10 @@ export type Database = {
         Args: { _id: string; _reason: string }
         Returns: undefined
       }
+      admin_cancel_role_invitation: {
+        Args: { _id: string; _reason: string }
+        Returns: undefined
+      }
       admin_cancel_society_plan: {
         Args: { _reason: string; _society_id: string }
         Returns: Json
@@ -10269,6 +10390,16 @@ export type Database = {
           total_revenue: number
         }[]
       }
+      admin_invite_role: {
+        Args: {
+          _name: string
+          _permissions: string[]
+          _phone: string
+          _role: string
+          _staff: string
+        }
+        Returns: string
+      }
       admin_issue_guard_entry_token: {
         Args: { _guard_user_id: string }
         Returns: Json
@@ -10288,6 +10419,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_list_role_access: { Args: never; Returns: Json }
       admin_list_societies: {
         Args: never
         Returns: {
@@ -10502,6 +10634,10 @@ export type Database = {
         Args: { _note?: string; _society_id: string; _status: string }
         Returns: Json
       }
+      admin_set_role_access: {
+        Args: { _active: boolean; _reason: string; _role_id: string }
+        Returns: undefined
+      }
       admin_set_society_automation: {
         Args: {
           _config?: Json
@@ -10544,6 +10680,10 @@ export type Database = {
           _tan: string
           _tds_deductor: boolean
         }
+        Returns: undefined
+      }
+      admin_set_staff_permissions: {
+        Args: { _permissions: string[]; _role_id: string }
         Returns: undefined
       }
       admin_set_survey_status: {
@@ -10835,6 +10975,17 @@ export type Database = {
           _user_id: string
         }
         Returns: string
+      }
+      auditor_finance_history: {
+        Args: { _from: string; _limit?: number; _offset?: number; _to: string }
+        Returns: {
+          action: string
+          actor_name: string
+          at: string
+          metadata: Json
+          target_id: string
+          target_table: string
+        }[]
       }
       authorize_membership: {
         Args: { _society_id: string; _user_id: string }
@@ -12202,6 +12353,17 @@ export type Database = {
         }
         Returns: Json
       }
+      list_my_role_invitations: {
+        Args: never
+        Returns: {
+          expires_at: string
+          id: string
+          job_type: string
+          permissions: string[]
+          role: string
+          society_name: string
+        }[]
+      }
       list_my_societies: {
         Args: never
         Returns: {
@@ -12482,6 +12644,7 @@ export type Database = {
         Returns: Json
       }
       migration_upload_path_ok: { Args: { _name: string }; Returns: boolean }
+      my_role_access: { Args: never; Returns: Json }
       next_no_dues_cert_number_internal: {
         Args: { _actor_id: string; _society_id: string }
         Returns: string
@@ -12766,6 +12929,10 @@ export type Database = {
         Args: { _approve: boolean; _reason?: string; _request_id: string }
         Returns: undefined
       }
+      respond_role_invitation: {
+        Args: { _accept: boolean; _id: string }
+        Returns: string
+      }
       reupload_own_kyc: {
         Args: { _aadhaar_last4: string; _aadhaar_url: string }
         Returns: undefined
@@ -12994,6 +13161,93 @@ export type Database = {
       society_payout_active: { Args: { _society_id: string }; Returns: boolean }
       sos_raise: { Args: { _note: string }; Returns: string }
       sos_update: { Args: { _action: string; _id: string }; Returns: undefined }
+      staff_document_path: { Args: { _id: string }; Returns: string }
+      staff_list_assets: {
+        Args: never
+        Returns: {
+          amc_until: string
+          category: string
+          id: string
+          last_service: string
+          location: string
+          name: string
+          status: string
+          warranty_until: string
+        }[]
+      }
+      staff_list_documents: {
+        Args: never
+        Returns: {
+          category: string
+          file_name: string
+          id: string
+          title: string
+          updated_at: string
+        }[]
+      }
+      staff_list_inventory: {
+        Args: never
+        Returns: {
+          id: string
+          location: string
+          name: string
+          quantity: number
+          reorder_level: number
+          unit: string
+        }[]
+      }
+      staff_list_vendors: {
+        Args: never
+        Returns: {
+          category: string
+          contract_end: string
+          id: string
+          name: string
+          phone: string
+        }[]
+      }
+      staff_log_asset_service: {
+        Args: { _asset: string; _kind: string; _notes: string }
+        Returns: string
+      }
+      staff_my_context: { Args: never; Returns: Json }
+      staff_my_tickets: {
+        Args: { _include_done?: boolean }
+        Returns: {
+          asset_location: string
+          asset_name: string
+          category: string
+          created_at: string
+          description: string
+          flat_label: string
+          hold_reason: string
+          id: string
+          priority: string
+          sla_due_at: string
+          status: string
+          subject: string
+          ticket_no: number
+        }[]
+      }
+      staff_ticket_timeline: {
+        Args: { _ticket: string }
+        Returns: {
+          actor_kind: string
+          body: string
+          created_at: string
+          from_status: string
+          kind: string
+          to_status: string
+        }[]
+      }
+      staff_update_ticket: {
+        Args: { _note: string; _status: string; _ticket: string }
+        Returns: undefined
+      }
+      staff_use_inventory: {
+        Args: { _item: string; _qty: number; _reason: string }
+        Returns: number
+      }
       start_society_trial: { Args: { _society_id: string }; Returns: string }
       start_trial_for_society: {
         Args: { _society_id: string }
@@ -13253,6 +13507,8 @@ export type Database = {
         | "resident"
         | "block_admin"
         | "security"
+        | "auditor"
+        | "staff"
       hierarchy_kind: "society" | "structure" | "floor" | "unit"
       migration_entity_type:
         | "structure"
@@ -13421,6 +13677,8 @@ export const Constants = {
         "resident",
         "block_admin",
         "security",
+        "auditor",
+        "staff",
       ],
       hierarchy_kind: ["society", "structure", "floor", "unit"],
       migration_entity_type: [

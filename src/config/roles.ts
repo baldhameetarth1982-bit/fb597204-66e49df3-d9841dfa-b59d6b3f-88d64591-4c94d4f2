@@ -8,6 +8,8 @@ export const ROLES = {
   BLOCK_ADMIN: "block_admin",
   SECURITY: "security",
   RESIDENT: "resident",
+  AUDITOR: "auditor",
+  STAFF: "staff",
 } as const;
 
 export type Role = (typeof ROLES)[keyof typeof ROLES];
@@ -18,4 +20,6 @@ export const ROLE_HOME: Record<Role, string> = {
   [ROLES.BLOCK_ADMIN]: "/society/dashboard",
   [ROLES.SECURITY]: "/app/guard",
   [ROLES.RESIDENT]: "/app/dashboard",
+  [ROLES.AUDITOR]: "/auditor",
+  [ROLES.STAFF]: "/staff",
 };

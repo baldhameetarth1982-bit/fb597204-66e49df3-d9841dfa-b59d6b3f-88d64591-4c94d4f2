@@ -209,7 +209,7 @@ export function DevicesAdmin({ societyId }: { societyId: string }) {
     },
   });
   const refresh = () => qc.invalidateQueries({ queryKey: ["admin-devices"] });
-  async function upsert(d: Partial<Dev> & { id: string | null }, status: string, rotate = false) {
+  async function upsert(d: Omit<Partial<Dev>, "id"> & { id: string | null }, status: string, rotate = false) {
     setBusy(true);
     const { data, error } = await supabase.rpc("admin_upsert_gate_device", { _id: d.id as string, _kind: d.kind!, _name: d.name!, _gate_label: d.gate_label ?? "", _provider: d.provider ?? "", _status: status, _rotate_key: rotate });
     setBusy(false);

@@ -151,6 +151,281 @@ export type Database = {
           },
         ]
       }
+      agm_agenda_items: {
+        Row: {
+          agm_id: string
+          description: string | null
+          election_id: string | null
+          id: string
+          kind: string
+          poll_id: string | null
+          seq: number
+          society_id: string
+          source_id: string | null
+          title: string
+        }
+        Insert: {
+          agm_id: string
+          description?: string | null
+          election_id?: string | null
+          id?: string
+          kind?: string
+          poll_id?: string | null
+          seq: number
+          society_id: string
+          source_id?: string | null
+          title: string
+        }
+        Update: {
+          agm_id?: string
+          description?: string | null
+          election_id?: string | null
+          id?: string
+          kind?: string
+          poll_id?: string | null
+          seq?: number
+          society_id?: string
+          source_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agm_agenda_items_agm_id_fkey"
+            columns: ["agm_id"]
+            isOneToOne: false
+            referencedRelation: "agms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agm_agenda_items_election_id_fkey"
+            columns: ["election_id"]
+            isOneToOne: false
+            referencedRelation: "elections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agm_agenda_items_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agm_agenda_items_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agm_agenda_items_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "society_knowledge_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agm_minutes_versions: {
+        Row: {
+          agm_id: string
+          body: string
+          correction_reason: string | null
+          created_at: string
+          created_by: string
+          id: string
+          published_at: string | null
+          published_by: string | null
+          society_id: string
+          status: string
+          version: number
+        }
+        Insert: {
+          agm_id: string
+          body: string
+          correction_reason?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          published_at?: string | null
+          published_by?: string | null
+          society_id: string
+          status?: string
+          version: number
+        }
+        Update: {
+          agm_id?: string
+          body?: string
+          correction_reason?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          published_at?: string | null
+          published_by?: string | null
+          society_id?: string
+          status?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agm_minutes_versions_agm_id_fkey"
+            columns: ["agm_id"]
+            isOneToOne: false
+            referencedRelation: "agms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agm_minutes_versions_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agm_resolutions: {
+        Row: {
+          agenda_item_id: string | null
+          agm_id: string
+          body: string
+          created_at: string
+          created_by: string
+          decided_at: string | null
+          id: string
+          poll_id: string | null
+          seq: number
+          society_id: string
+          status: string
+          title: string
+        }
+        Insert: {
+          agenda_item_id?: string | null
+          agm_id: string
+          body: string
+          created_at?: string
+          created_by: string
+          decided_at?: string | null
+          id?: string
+          poll_id?: string | null
+          seq: number
+          society_id: string
+          status?: string
+          title: string
+        }
+        Update: {
+          agenda_item_id?: string | null
+          agm_id?: string
+          body?: string
+          created_at?: string
+          created_by?: string
+          decided_at?: string | null
+          id?: string
+          poll_id?: string | null
+          seq?: number
+          society_id?: string
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agm_resolutions_agenda_item_id_fkey"
+            columns: ["agenda_item_id"]
+            isOneToOne: false
+            referencedRelation: "agm_agenda_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agm_resolutions_agm_id_fkey"
+            columns: ["agm_id"]
+            isOneToOne: false
+            referencedRelation: "agms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agm_resolutions_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agm_resolutions_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agms: {
+        Row: {
+          archive_reason: string | null
+          created_at: string
+          created_by: string
+          financial_year: string
+          id: string
+          meeting_id: string
+          notice_date: string | null
+          quorum_basis: string
+          quorum_snapshot: Json | null
+          quorum_type: string
+          quorum_value: number
+          society_id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          archive_reason?: string | null
+          created_at?: string
+          created_by: string
+          financial_year: string
+          id?: string
+          meeting_id: string
+          notice_date?: string | null
+          quorum_basis?: string
+          quorum_snapshot?: Json | null
+          quorum_type?: string
+          quorum_value: number
+          society_id: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          archive_reason?: string | null
+          created_at?: string
+          created_by?: string
+          financial_year?: string
+          id?: string
+          meeting_id?: string
+          notice_date?: string | null
+          quorum_basis?: string
+          quorum_snapshot?: Json | null
+          quorum_type?: string
+          quorum_value?: number
+          society_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agms_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: true
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agms_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       amenities: {
         Row: {
           advance_days: number
@@ -1587,6 +1862,299 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "custom_plans_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      election_ballot_choices: {
+        Row: {
+          election_id: string
+          id: string
+          nomination_id: string
+          open_voter_id: string | null
+          post_id: string
+        }
+        Insert: {
+          election_id: string
+          id?: string
+          nomination_id: string
+          open_voter_id?: string | null
+          post_id: string
+        }
+        Update: {
+          election_id?: string
+          id?: string
+          nomination_id?: string
+          open_voter_id?: string | null
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "election_ballot_choices_election_id_fkey"
+            columns: ["election_id"]
+            isOneToOne: false
+            referencedRelation: "elections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "election_ballot_choices_nomination_id_fkey"
+            columns: ["nomination_id"]
+            isOneToOne: false
+            referencedRelation: "election_nominations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "election_ballot_choices_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "election_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      election_nominations: {
+        Row: {
+          candidate_id: string
+          candidate_name: string
+          created_at: string
+          election_id: string
+          id: string
+          post_id: string
+          review_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          society_id: string
+          statement: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          candidate_id: string
+          candidate_name: string
+          created_at?: string
+          election_id: string
+          id?: string
+          post_id: string
+          review_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          society_id: string
+          statement?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          candidate_id?: string
+          candidate_name?: string
+          created_at?: string
+          election_id?: string
+          id?: string
+          post_id?: string
+          review_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          society_id?: string
+          statement?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "election_nominations_election_id_fkey"
+            columns: ["election_id"]
+            isOneToOne: false
+            referencedRelation: "elections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "election_nominations_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "election_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "election_nominations_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      election_posts: {
+        Row: {
+          candidate_rule: string
+          description: string | null
+          election_id: string
+          id: string
+          name: string
+          requirements: string | null
+          seats: number
+          seq: number
+          society_id: string
+        }
+        Insert: {
+          candidate_rule?: string
+          description?: string | null
+          election_id: string
+          id?: string
+          name: string
+          requirements?: string | null
+          seats?: number
+          seq?: number
+          society_id: string
+        }
+        Update: {
+          candidate_rule?: string
+          description?: string | null
+          election_id?: string
+          id?: string
+          name?: string
+          requirements?: string | null
+          seats?: number
+          seq?: number
+          society_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "election_posts_election_id_fkey"
+            columns: ["election_id"]
+            isOneToOne: false
+            referencedRelation: "elections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "election_posts_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      election_voters: {
+        Row: {
+          election_id: string
+          flat_id: string | null
+          request_id: string
+          user_id: string
+          voted_on: string
+        }
+        Insert: {
+          election_id: string
+          flat_id?: string | null
+          request_id: string
+          user_id: string
+          voted_on?: string
+        }
+        Update: {
+          election_id?: string
+          flat_id?: string | null
+          request_id?: string
+          user_id?: string
+          voted_on?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "election_voters_election_id_fkey"
+            columns: ["election_id"]
+            isOneToOne: false
+            referencedRelation: "elections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      elections: {
+        Row: {
+          agm_id: string | null
+          archive_reason: string | null
+          created_at: string
+          created_by: string
+          eligibility: string
+          id: string
+          instructions: string | null
+          nomination_closes_at: string
+          nomination_opens_at: string
+          purpose: string
+          results: Json | null
+          results_hash: string | null
+          results_published_at: string | null
+          rules_source_id: string | null
+          secret_ballot: boolean
+          society_id: string
+          status: string
+          title: string
+          updated_at: string
+          voting_closes_at: string
+          voting_opens_at: string
+        }
+        Insert: {
+          agm_id?: string | null
+          archive_reason?: string | null
+          created_at?: string
+          created_by: string
+          eligibility?: string
+          id?: string
+          instructions?: string | null
+          nomination_closes_at: string
+          nomination_opens_at: string
+          purpose?: string
+          results?: Json | null
+          results_hash?: string | null
+          results_published_at?: string | null
+          rules_source_id?: string | null
+          secret_ballot?: boolean
+          society_id: string
+          status?: string
+          title: string
+          updated_at?: string
+          voting_closes_at: string
+          voting_opens_at: string
+        }
+        Update: {
+          agm_id?: string | null
+          archive_reason?: string | null
+          created_at?: string
+          created_by?: string
+          eligibility?: string
+          id?: string
+          instructions?: string | null
+          nomination_closes_at?: string
+          nomination_opens_at?: string
+          purpose?: string
+          results?: Json | null
+          results_hash?: string | null
+          results_published_at?: string | null
+          rules_source_id?: string | null
+          secret_ballot?: boolean
+          society_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          voting_closes_at?: string
+          voting_opens_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "elections_agm_fk"
+            columns: ["agm_id"]
+            isOneToOne: false
+            referencedRelation: "agms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "elections_rules_source_id_fkey"
+            columns: ["rules_source_id"]
+            isOneToOne: false
+            referencedRelation: "society_knowledge_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "elections_society_id_fkey"
             columns: ["society_id"]
             isOneToOne: false
             referencedRelation: "societies"
@@ -9082,6 +9650,18 @@ export type Database = {
       }
     }
     Functions: {
+      _agm_audit: {
+        Args: {
+          _a: Database["public"]["Tables"]["agms"]["Row"]
+          _action: string
+          _meta: Json
+        }
+        Returns: undefined
+      }
+      _agm_quorum: {
+        Args: { _a: Database["public"]["Tables"]["agms"]["Row"] }
+        Returns: Json
+      }
       _allocate_bill_number: {
         Args: { _period_start: string; _prefix?: string; _society_id: string }
         Returns: string
@@ -9167,6 +9747,38 @@ export type Database = {
         Args: { _society: string; _user: string }
         Returns: undefined
       }
+      _election_audit: {
+        Args: {
+          _action: string
+          _e: Database["public"]["Tables"]["elections"]["Row"]
+          _meta: Json
+        }
+        Returns: undefined
+      }
+      _election_eligible_count: {
+        Args: { _e: Database["public"]["Tables"]["elections"]["Row"] }
+        Returns: number
+      }
+      _election_eligible_users: {
+        Args: { _sid: string }
+        Returns: {
+          user_id: string
+        }[]
+      }
+      _election_notify: {
+        Args: {
+          _body: string
+          _e: Database["public"]["Tables"]["elections"]["Row"]
+          _key: string
+          _only_non_voters?: boolean
+          _title: string
+        }
+        Returns: number
+      }
+      _election_tally: {
+        Args: { _e: Database["public"]["Tables"]["elections"]["Row"] }
+        Returns: Json
+      }
       _fin_bs_section: {
         Args: { _as_of: string; _society_id: string }
         Returns: Json
@@ -9210,6 +9822,14 @@ export type Database = {
       _flat_has_current_occupant: { Args: { _flat: string }; Returns: boolean }
       _gate_admin_society: { Args: never; Returns: string }
       _gate_society: { Args: never; Returns: string }
+      _gov_active_owner: {
+        Args: { _sid: string; _user: string }
+        Returns: boolean
+      }
+      _gov_active_resident: {
+        Args: { _sid: string; _user: string }
+        Returns: boolean
+      }
       _gov_admin_society: { Args: never; Returns: string }
       _gov_member_society: { Args: never; Returns: string }
       _guard_attention_counts: {
@@ -10118,6 +10738,71 @@ export type Database = {
         Args: { _action: string; _id: string; _reason: string }
         Returns: undefined
       }
+      agm_agenda_move: {
+        Args: { _dir: number; _item: string }
+        Returns: undefined
+      }
+      agm_agenda_remove: { Args: { _item: string }; Returns: undefined }
+      agm_agenda_save: {
+        Args: {
+          _agm: string
+          _description: string
+          _election: string
+          _item: string
+          _kind: string
+          _poll: string
+          _source: string
+          _title: string
+        }
+        Returns: string
+      }
+      agm_minutes_save: {
+        Args: { _agm: string; _body: string; _correction_reason: string }
+        Returns: string
+      }
+      agm_quorum: { Args: { _agm: string }; Returns: Json }
+      agm_record_attendance: {
+        Args: {
+          _agm: string
+          _present: boolean
+          _reason: string
+          _user: string
+        }
+        Returns: undefined
+      }
+      agm_resolution_add: {
+        Args: {
+          _agenda_item: string
+          _agm: string
+          _body: string
+          _poll: string
+          _title: string
+        }
+        Returns: string
+      }
+      agm_resolution_decide: {
+        Args: { _resolution: string; _status: string }
+        Returns: undefined
+      }
+      agm_save: {
+        Args: {
+          _agenda: string
+          _basis: string
+          _fy: string
+          _id: string
+          _link: string
+          _location: string
+          _qtype: string
+          _qvalue: number
+          _starts: string
+          _title: string
+        }
+        Returns: string
+      }
+      agm_set_status: {
+        Args: { _id: string; _reason: string; _status: string }
+        Returns: undefined
+      }
       apply_overdue_point_decay: { Args: never; Returns: number }
       apply_referral_for_current_user: {
         Args: { _code: string }
@@ -10455,6 +11140,59 @@ export type Database = {
       duplicate_society_block_internal: {
         Args: { _actor_id: string; _block_id: string; _new_name: string }
         Returns: Json
+      }
+      election_cast_ballot: {
+        Args: { _choices: string[]; _election: string; _request: string }
+        Returns: string
+      }
+      election_my_state: { Args: { _election: string }; Returns: Json }
+      election_nominate: {
+        Args: { _post: string; _statement: string }
+        Returns: string
+      }
+      election_post_remove: { Args: { _post: string }; Returns: undefined }
+      election_post_save: {
+        Args: {
+          _description: string
+          _election: string
+          _name: string
+          _post: string
+          _requirements: string
+          _rule: string
+          _seats: number
+        }
+        Returns: string
+      }
+      election_reminders: { Args: never; Returns: number }
+      election_results: { Args: { _election: string }; Returns: Json }
+      election_review_nomination: {
+        Args: { _approve: boolean; _nomination: string; _reason: string }
+        Returns: undefined
+      }
+      election_save: {
+        Args: {
+          _agm: string
+          _eligibility: string
+          _id: string
+          _instructions: string
+          _nom_close: string
+          _nom_open: string
+          _purpose: string
+          _rules_source: string
+          _secret: boolean
+          _title: string
+          _vote_close: string
+          _vote_open: string
+        }
+        Returns: string
+      }
+      election_set_status: {
+        Args: { _id: string; _reason: string; _status: string }
+        Returns: undefined
+      }
+      election_withdraw_nomination: {
+        Args: { _nomination: string }
+        Returns: undefined
       }
       end_resident_unit_relationship: {
         Args: {

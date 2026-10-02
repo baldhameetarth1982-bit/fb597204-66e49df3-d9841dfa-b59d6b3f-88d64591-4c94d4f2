@@ -953,6 +953,13 @@
       "when": 1790889476292,
       "tag": "0135_block_admin_helpers_require_active",
       "breakpoints": true
+    },
+    {
+      "idx": 136,
+      "version": "7",
+      "when": 1790916868137,
+      "tag": "0136_finance_books_journals_close_tax",
+      "breakpoints": true
     }
   ]
 }

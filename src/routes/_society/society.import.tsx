@@ -137,6 +137,8 @@ function suggestedMapping(headers: string[], entity: EntityType, source: SourceT
 import { MigrationCompare } from "@/components/migration/MigrationCompare";
 import { xlsxToCsvFile } from "@/lib/sheet-rows";
 import { holdMigrationProblemRows } from "@/lib/workstream7.functions";
+import { getMigrationProblemRows, markMigrationRetry, rollbackMigrationJob } from "@/lib/data-import.functions";
+import { writeSafeWorkbook } from "@/lib/spreadsheet-safety";
 
 export const Route = createFileRoute("/_society/society/import")({
   head: () => ({ meta: [{ title: "Bulk Import — SociyoHub" }] }),
@@ -169,6 +171,9 @@ type JobListItem = {
   committed_rows: number | null;
   created_at: string;
   committed_at: string | null;
+  retry_of_job_id: string | null;
+  rolled_back_at: string | null;
+  rollback_reason: string | null;
 };
 
 function ImportPage() {
@@ -210,13 +215,51 @@ function ImportPage() {
       .catch((e) => { if (!cancelled) setJobsError(importErrorText(e)); })
       .finally(() => { if (!cancelled) setBusy((b) => (b === "jobs" ? null : b)); });
     return () => { cancelled = true; };
-  }, [societyId, listJobs, commitStatus]);
+  }, [societyId, listJobs, commitStatus, jobsTick]);
 
   const step: 1 | 2 | 3 | 4 = totals ? 4 : previewRows.length || headers.length ? 3 : jobId ? 2 : 1;
 
   const canValidate = useMemo(() => headers.length > 0 && Object.keys(mapping).length > 0, [headers, mapping]);
   const canCommit = totals !== null && totals.errors === 0 && commitStatus !== "completed";
   const holdRows = useServerFn(holdMigrationProblemRows);
+  const markRetry = useServerFn(markMigrationRetry);
+  const rollback = useServerFn(rollbackMigrationJob);
+  const problems = useServerFn(getMigrationProblemRows);
+  const [retryOf, setRetryOf] = useState<string | null>(null);
+  const [dryRun, setDryRun] = useState<null | { new_records: number; matched_existing: number; skipped_existing: number; duplicates: number; needs_fixing: number }>(null);
+  const [jobsTick, setJobsTick] = useState(0);
+
+  async function downloadProblems(j: JobListItem) {
+    try {
+      const rows = await problems({ data: { jobId: j.id } });
+      if (!rows.length) { toast.info("No problem rows left in this import."); return; }
+      const headers = Array.from(new Set(rows.flatMap((r) => Object.keys(r.values))));
+      writeSafeWorkbook(rows.map((r) => {
+        const o: Record<string, string | number> = { "Original row": r.row, "Problem": r.reasons.join(", ") };
+        for (const h of headers) o[h] = String(r.values[h] ?? "");
+        return o;
+      }), "Problem rows", `problem-rows-${(j.source_filename ?? "import").replace(/\.[^.]+$/, "")}.xlsx`);
+      setRetryOf(j.id);
+      setSourceType(j.source_type as SourceType);
+      toast.success("Problem rows downloaded. Fix them, delete the two first columns, and upload the file below. Rows already imported are never duplicated.");
+    } catch (e) { toast.error(importErrorText(e)); }
+  }
+
+  async function undoJob(j: JobListItem) {
+    const reason = window.prompt("Undo this import? Only records this import created are removed, and only if nothing else depends on them. Reason (required):")?.trim();
+    if (!reason) return;
+    if (reason.length < 5) { toast.error("Add a short reason (at least 5 characters)."); return; }
+    setBusy("commit");
+    try {
+      const r = await rollback({ data: { jobId: j.id, reason: reason.slice(0, 400) } });
+      if (r.status === "ok") toast.success(`Import undone: ${r.units} houses, ${r.residents} residents, ${r.family} family members, ${r.vehicles} vehicles, ${r.structures} blocks removed.`);
+      else if (r.status === "blocked_by_dependents") toast.error(`Can't undo safely — these records are already in use: ${r.blockers.map((b) => b.replace(/_/g, " ")).join(", ")}. Correct individual records instead.`);
+      else if (r.status === "already_rolled_back") toast.info("This import was already undone.");
+      else toast.error("You don't have permission to undo this import.");
+      setJobsTick((t) => t + 1);
+    } catch (e) { toast.error((e as Error).message); }
+    finally { setBusy(null); }
+  }
   async function doHoldProblems() {
     if (!jobId || !totals) return;
     setBusy("commit");
@@ -255,6 +298,7 @@ function ImportPage() {
       });
       if (!uploadRes.ok) throw new Error("upload_failed");
 
+      if (retryOf) await markRetry({ data: { jobId: init.job_id, retryOf } }).catch(() => undefined);
       const fin = await finalize({ data: { job_id: init.job_id } });
       setJobId(init.job_id);
       setChecksum(fin.checksum);
@@ -280,6 +324,7 @@ function ImportPage() {
         },
       });
       setTotals({ total: res.total, valid: res.valid, errors: res.errors });
+      setDryRun(res.dry_run);
       const p = await preview({
         data: { job_id: jobId, society_id: societyId, limit: 100, offset: 0 },
       });
@@ -439,19 +484,31 @@ function ImportPage() {
                     j.status === "mapping" ||
                     j.status === "committing";
                   return (
-                    <div key={j.id} className="p-3 flex items-center gap-3 text-xs">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
+                    <div key={j.id} className="p-3 flex flex-wrap items-center gap-3 text-xs">
+                      <div className="flex-1 min-w-[12rem]">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-medium truncate">{j.source_filename ?? j.id}</span>
-                          <StatusChip tone={isCompleted ? "success" : isBlocked ? "warning" : "info"} className="text-[10px]">
-                            {j.status}
+                          <StatusChip tone={j.rolled_back_at ? "neutral" : isCompleted ? "success" : isBlocked ? "warning" : "info"} className="text-[10px]">
+                            {j.rolled_back_at ? "undone" : isCompleted && (j.error_rows ?? 0) > 0 ? "partly imported" : j.status}
                           </StatusChip>
+                          {j.retry_of_job_id && <StatusChip tone="info" className="text-[10px]">retry</StatusChip>}
                         </div>
                         <div className="text-muted-foreground truncate">
-                          {j.source_type} · {j.total_rows ?? 0} rows · {j.valid_rows ?? 0} valid · {j.error_rows ?? 0} errors
+                          {j.source_type} · {j.total_rows ?? 0} rows · {j.valid_rows ?? 0} valid · {j.error_rows ?? 0} problems
                           {j.committed_rows != null && ` · ${j.committed_rows} committed`}
                         </div>
+                        {j.rolled_back_at && <div className="text-muted-foreground truncate">Undone: {j.rollback_reason}</div>}
                       </div>
+                      {(j.error_rows ?? 0) > 0 && !j.rolled_back_at && (
+                        <Button size="sm" variant="outline" className="rounded-xl min-h-9" onClick={() => downloadProblems(j)}>
+                          Fix & retry problems
+                        </Button>
+                      )}
+                      {isCompleted && !j.rolled_back_at && (
+                        <Button size="sm" variant="outline" className="rounded-xl min-h-9" onClick={() => undoJob(j)} disabled={busy !== null}>
+                          Undo import
+                        </Button>
+                      )}
                       {!isCompleted && (
                         <Button size="sm" variant="outline" className="rounded-xl h-8" onClick={() => resumeJob(j)}>
                           Resume
@@ -578,6 +635,19 @@ function ImportPage() {
         {totals && (
           <Card className="rounded-2xl">
             <CardContent className="p-5 space-y-3">
+              {dryRun && commitStatus !== "completed" && (
+                <div className="rounded-xl border bg-muted/40 p-3 text-xs">
+                  <p className="font-semibold text-sm">Dry run — nothing has been saved yet</p>
+                  <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-5">
+                    {([
+                      ["Total rows", totals.total], ["New records", dryRun.new_records], ["Already exist (skipped)", dryRun.skipped_existing],
+                      ["Duplicates in file", dryRun.duplicates], ["Need fixing", dryRun.needs_fixing],
+                    ] as const).map(([l, v]) => (
+                      <div key={l} className="rounded-lg border bg-card p-2"><div className="text-muted-foreground">{l}</div><div className="font-semibold tabular-nums">{v}</div></div>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-semibold">Server preview</p>

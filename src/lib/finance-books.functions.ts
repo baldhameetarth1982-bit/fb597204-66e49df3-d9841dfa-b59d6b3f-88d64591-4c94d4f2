@@ -51,20 +51,19 @@ async function rpc(context: Ctx, name: string, args: Record<string, unknown>) {
   return data;
 }
 
-const base = () => createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]);
 
-export const listFinanceAccounts = base().inputValidator(z.object({ societyId: uuid })).handler(async ({ data, context }) =>
+export const listFinanceAccounts = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({ societyId: uuid })).handler(async ({ data, context }) =>
   z.array(z.object({ id: uuid, code: z.string(), name: z.string(), account_type: z.string(), is_system: z.boolean(), is_active: z.boolean() }))
     .parse(await rpc(context, "fin_list_accounts", { _society_id: data.societyId })));
 
-export const createFinanceAccount = base().inputValidator(z.object({
+export const createFinanceAccount = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({
   societyId: uuid, code: z.string().trim().toUpperCase().regex(/^[A-Z0-9_-]{2,24}$/), name: z.string().trim().min(2).max(100),
   accountType: z.enum(["asset", "liability", "equity", "income", "expense"]),
 })).handler(async ({ data, context }) => ({ id: uuid.parse(await rpc(context, "fin_create_account", { _society_id: data.societyId, _code: data.code, _name: data.name, _account_type: data.accountType })) }));
 
 const lineSchema = z.object({ account_id: uuid, debit: money, credit: money, description: z.string().trim().max(200).optional() });
 
-export const saveManualJournal = base().inputValidator(z.object({
+export const saveManualJournal = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({
   societyId: uuid, journalId: uuid.nullable(), transactionDate: date, description: z.string().trim().min(2).max(500),
   reference: z.string().trim().max(120).optional(), lines: z.array(lineSchema).min(2).max(50), requestId: uuid,
 })).handler(async ({ data, context }) => ({ id: uuid.parse(await rpc(context, "fin_save_manual_journal", {
@@ -72,7 +71,7 @@ export const saveManualJournal = base().inputValidator(z.object({
   _reference: data.reference || null, _lines: data.lines, _request_id: data.requestId,
 })) }));
 
-export const transitionManualJournal = base().inputValidator(z.object({
+export const transitionManualJournal = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({
   journalId: uuid, action: z.enum(["submit", "post", "cancel", "reverse"]), reason: z.string().trim().max(500).optional(),
   reversalDate: date.optional(), requestId: uuid.optional(),
 })).handler(async ({ data, context }) => z.object({ status: z.string(), journal_id: uuid, journal_no: z.string().optional() }).parse(
@@ -86,7 +85,7 @@ export const journalSchema = z.object({
 });
 export type ManualJournal = z.infer<typeof journalSchema>;
 
-export const listManualJournals = base().inputValidator(z.object({
+export const listManualJournals = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({
   societyId: uuid, status: z.enum(["all", "draft", "in_review", "posted", "reversed", "cancelled"]), limit: z.number().int().min(1).max(100), offset: z.number().int().min(0),
 })).handler(async ({ data, context }) => z.array(journalSchema).parse(await rpc(context, "fin_list_manual_journals", { _society_id: data.societyId, _status: data.status, _limit: data.limit, _offset: data.offset })));
 
@@ -95,18 +94,18 @@ const tbRow = z.object({ code: z.string(), name: z.string(), account_type: z.str
 export const trialBalanceSchema = z.object({ from: z.string(), to: z.string(), fy_start: z.string(), rows: z.array(tbRow), totals: z.object({ opening_debit: n, opening_credit: n, period_debit: n, period_credit: n, closing_debit: n, closing_credit: n }) });
 export type TrialBalance = z.infer<typeof trialBalanceSchema>;
 
-export const getTrialBalance = base().inputValidator(z.object({ societyId: uuid, from: date, to: date })).handler(async ({ data, context }) =>
+export const getTrialBalance = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({ societyId: uuid, from: date, to: date })).handler(async ({ data, context }) =>
   trialBalanceSchema.parse(await rpc(context, "fin_trial_balance", { _society_id: data.societyId, _from: data.from, _to: data.to })));
 
 const amountRow = z.object({ code: z.string(), name: z.string(), amount: n });
 const ieSection = z.object({ from: z.string(), to: z.string(), income: z.array(amountRow), expenditure: z.array(amountRow), total_income: n, total_expenditure: n, surplus: n });
 export type IESection = z.infer<typeof ieSection>;
-export const getIncomeExpenditure = base().inputValidator(z.object({ societyId: uuid, from: date, to: date, cmpFrom: date.optional(), cmpTo: date.optional() })).handler(async ({ data, context }) =>
+export const getIncomeExpenditure = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({ societyId: uuid, from: date, to: date, cmpFrom: date.optional(), cmpTo: date.optional() })).handler(async ({ data, context }) =>
   z.object({ current: ieSection, comparative: ieSection.nullable() }).parse(await rpc(context, "fin_income_expenditure", { _society_id: data.societyId, _from: data.from, _to: data.to, _cmp_from: data.cmpFrom ?? null, _cmp_to: data.cmpTo ?? null })));
 
 const bsSection = z.object({ as_of: z.string(), assets: z.array(amountRow), liabilities: z.array(amountRow), funds: z.array(amountRow), prior_surplus: n, current_surplus: n, total_assets: n, total_liabilities: n, total_funds: n });
 export type BSSection = z.infer<typeof bsSection>;
-export const getBalanceSheet = base().inputValidator(z.object({ societyId: uuid, asOf: date, cmpAsOf: date.optional() })).handler(async ({ data, context }) =>
+export const getBalanceSheet = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({ societyId: uuid, asOf: date, cmpAsOf: date.optional() })).handler(async ({ data, context }) =>
   z.object({ current: bsSection, comparative: bsSection.nullable() }).parse(await rpc(context, "fin_balance_sheet", { _society_id: data.societyId, _as_of: data.asOf, _cmp_as_of: data.cmpAsOf ?? null })));
 
 export const yearStatusSchema = z.object({
@@ -117,13 +116,13 @@ export const yearStatusSchema = z.object({
   totals: z.object({ closing_debit: n, closing_credit: n }),
 });
 export type YearStatus = z.infer<typeof yearStatusSchema>;
-export const getYearStatus = base().inputValidator(z.object({ societyId: uuid, fyStart: date })).handler(async ({ data, context }) =>
+export const getYearStatus = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({ societyId: uuid, fyStart: date })).handler(async ({ data, context }) =>
   yearStatusSchema.parse(await rpc(context, "fin_year_status", { _society_id: data.societyId, _fy_start: data.fyStart })));
 
-export const closeFinancialYear = base().inputValidator(z.object({ societyId: uuid, fyStart: date, confirm: z.string().max(40) })).handler(async ({ data, context }) =>
+export const closeFinancialYear = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({ societyId: uuid, fyStart: date, confirm: z.string().max(40) })).handler(async ({ data, context }) =>
   z.object({ status: z.string(), fy_start: z.string() }).parse(await rpc(context, "fin_close_year", { _society_id: data.societyId, _fy_start: data.fyStart, _confirm: data.confirm })));
 
-export const reopenFinancialYear = base().inputValidator(z.object({ societyId: uuid, fyStart: date, reason: z.string().trim().min(10).max(500) })).handler(async ({ data, context }) =>
+export const reopenFinancialYear = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({ societyId: uuid, fyStart: date, reason: z.string().trim().min(10).max(500) })).handler(async ({ data, context }) =>
   z.object({ status: z.string(), fy_start: z.string() }).parse(await rpc(context, "fin_reopen_year", { _society_id: data.societyId, _fy_start: data.fyStart, _reason: data.reason })));
 
 export const tallyExportSchema = z.object({
@@ -133,7 +132,7 @@ export const tallyExportSchema = z.object({
     lines: z.array(z.object({ ledger: z.string(), debit: n, credit: n })) })),
 });
 export type TallyExport = z.infer<typeof tallyExportSchema>;
-export const getTallyExport = base().inputValidator(z.object({ societyId: uuid, from: date, to: date })).handler(async ({ data, context }) =>
+export const getTallyExport = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({ societyId: uuid, from: date, to: date })).handler(async ({ data, context }) =>
   tallyExportSchema.parse(await rpc(context, "fin_tally_export", { _society_id: data.societyId, _from: data.from, _to: data.to })));
 
 const nn = z.coerce.number().nullable();
@@ -146,21 +145,21 @@ export const taxReportSchema = z.object({
   filing_status: z.string(),
 });
 export type TaxReport = z.infer<typeof taxReportSchema>;
-export const getTaxReport = base().inputValidator(z.object({ societyId: uuid, from: date, to: date })).handler(async ({ data, context }) =>
+export const getTaxReport = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({ societyId: uuid, from: date, to: date })).handler(async ({ data, context }) =>
   taxReportSchema.parse(await rpc(context, "fin_tax_report", { _society_id: data.societyId, _from: data.from, _to: data.to })));
 
-export const setSocietyTaxSettings = base().inputValidator(z.object({
+export const setSocietyTaxSettings = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({
   societyId: uuid, gstRegistered: z.boolean(), gstStateCode: z.string().regex(/^\d{2}$/).or(z.literal("")), tdsDeductor: z.boolean(), tan: z.string().trim().toUpperCase().regex(/^[A-Z]{4}\d{5}[A-Z]$/).or(z.literal("")),
 })).handler(async ({ data, context }) => { await rpc(context, "admin_set_society_tax_settings", { _society_id: data.societyId, _gst_registered: data.gstRegistered, _gst_state_code: data.gstStateCode || null, _tds_deductor: data.tdsDeductor, _tan: data.tan || null }); return { ok: true as const }; });
 
 export const GST_RATES = [0, 0.25, 3, 5, 12, 18, 28, 40] as const;
 
-export const setVendorTax = base().inputValidator(z.object({
+export const setVendorTax = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({
   vendorId: uuid, gstin: z.string().trim().toUpperCase().regex(/^\d{2}[A-Z0-9]{13}$/).or(z.literal("")), pan: z.string().trim().toUpperCase().regex(/^[A-Z]{5}\d{4}[A-Z]$/).or(z.literal("")),
   stateCode: z.string().regex(/^\d{2}$/).or(z.literal("")), gstRate: z.number().nullable(), tdsSection: z.string().trim().toUpperCase().regex(/^[0-9A-Z]{2,8}$/).or(z.literal("")), tdsRate: z.number().min(0).max(30).nullable(),
 })).handler(async ({ data, context }) => { await rpc(context, "admin_set_vendor_tax", { _vendor_id: data.vendorId, _gstin: data.gstin || null, _pan: data.pan || null, _state_code: data.stateCode || null, _gst_rate: data.gstRate, _tds_section: data.tdsSection || null, _tds_rate: data.tdsRate }); return { ok: true as const }; });
 
-export const calculateExpenseTax = base().inputValidator(z.object({
+export const calculateExpenseTax = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({
   expenseId: uuid, includesGst: z.boolean(), gstRate: z.number().nullable(), supplyType: z.enum(["intra", "inter", "none"]).nullable(), tdsSection: z.string().trim().toUpperCase().max(8).nullable(), tdsRate: z.number().min(0).max(30).nullable(),
 })).handler(async ({ data, context }) => z.object({ status: z.enum(["calculated", "needs_configuration"]), missing: z.array(z.string()) }).parse(
   await rpc(context, "admin_calculate_expense_tax", { _expense_id: data.expenseId, _includes_gst: data.includesGst, _gst_rate: data.gstRate, _supply_type: data.supplyType, _tds_section: data.tdsSection || null, _tds_rate: data.tdsRate })));

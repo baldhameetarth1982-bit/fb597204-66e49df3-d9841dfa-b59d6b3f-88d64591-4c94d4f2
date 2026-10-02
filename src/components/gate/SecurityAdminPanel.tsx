@@ -12,24 +12,32 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { categoryLabel, fmtTime, gateErrorMessage } from "@/lib/visitors";
 import { HardwareNote, ReasonSheet, SosAlertsCard } from "./GateOps";
+import { GateSafetyAlerts } from "./GuardSecurityOps";
+import { DevicesAdmin, GuardsAdmin, PatrolAdmin, SafetyAlertHistory } from "./SecurityAdminExtras";
 
-type Tab = "review" | "restricted" | "incidents";
+type Tab = "review" | "guards" | "patrol" | "restricted" | "incidents" | "safety" | "devices";
+const TABS: [Tab, string][] = [["review", "Decisions"], ["guards", "Guards"], ["patrol", "Patrol"], ["restricted", "Restricted"], ["incidents", "Incidents"], ["safety", "Safety"], ["devices", "Devices"]];
 
 export function SecurityAdminPanel({ societyId, onChanged }: { societyId: string; onChanged: () => void }) {
   const [tab, setTab] = useState<Tab>("review");
   return (
     <section aria-label="Security" className="space-y-3">
       <SosAlertsCard />
-      <div role="tablist" className="grid grid-cols-3 gap-1 rounded-2xl bg-muted p-1">
-        {([["review", "Decisions"], ["restricted", "Restricted list"], ["incidents", "Incidents"]] as const).map(([k, l]) => (
+      <GateSafetyAlerts />
+      <div role="tablist" className="flex gap-1 overflow-x-auto rounded-2xl bg-muted p-1">
+        {TABS.map(([k, l]) => (
           <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
-            className={cn("min-h-11 rounded-xl text-sm font-medium", tab === k ? "bg-background shadow-sm" : "text-muted-foreground")}>{l}</button>
+            className={cn("min-h-11 shrink-0 px-3 rounded-xl text-sm font-medium", tab === k ? "bg-background shadow-sm" : "text-muted-foreground")}>{l}</button>
         ))}
       </div>
       {tab === "review" && <ReviewList societyId={societyId} onChanged={onChanged} />}
+      {tab === "guards" && <GuardsAdmin />}
+      {tab === "patrol" && <PatrolAdmin />}
       {tab === "restricted" && <RestrictedList societyId={societyId} />}
       {tab === "incidents" && <IncidentList societyId={societyId} />}
-      <HardwareNote />
+      {tab === "safety" && <SafetyAlertHistory societyId={societyId} />}
+      {tab === "devices" && <DevicesAdmin societyId={societyId} />}
+      {tab !== "devices" && <HardwareNote />}
     </section>
   );
 }

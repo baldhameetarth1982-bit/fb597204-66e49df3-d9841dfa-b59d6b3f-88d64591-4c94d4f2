@@ -329,7 +329,7 @@ export function HardwareNote() {
   return (
     <div className="rounded-2xl border border-dashed p-3 flex gap-2 text-xs text-muted-foreground">
       <Cpu className="h-4 w-4 shrink-0" />
-      <p>Number-plate cameras, RFID tags, boom barriers and smart locks need a hardware provider and aren't connected. Use manual check-in and plate lookup.</p>
+      <p>Number-plate cameras, RFID readers and boom barriers work only once a real device is added under Devices and sends data. Smart locks aren't supported. Manual check-in and plate lookup always keep working.</p>
     </div>
   );
 }

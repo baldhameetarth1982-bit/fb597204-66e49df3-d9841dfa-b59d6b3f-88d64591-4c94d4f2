@@ -241,7 +241,7 @@ function ImportPage() {
       }), "Problem rows", `problem-rows-${(j.source_filename ?? "import").replace(/\.[^.]+$/, "")}.xlsx`);
       setRetryOf(j.id);
       setSourceType(j.source_type as SourceType);
-      toast.success("Problem rows downloaded. Fix them and upload the file below (the extra "Original row" and "Problem" columns are ignored if left unmapped). Rows already imported are never duplicated.");
+      toast.success("Problem rows downloaded. Fix them and upload the file below (leave the extra Original row and Problem columns unmapped). Rows already imported are never duplicated.");
     } catch (e) { toast.error(importErrorText(e)); }
   }
 

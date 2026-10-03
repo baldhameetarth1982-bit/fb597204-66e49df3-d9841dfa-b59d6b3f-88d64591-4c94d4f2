@@ -6,7 +6,6 @@ import {
   Calculator, BadgeCheck, LogOut, Settings, ListChecks, Wrench, CalendarRange,
   BarChart3, Compass, Grid3x3, Upload, BookOpen, PhoneCall, Landmark, ChevronsUpDown, Check,
   Gauge,
-  Users,
   CalendarDays,
 } from "lucide-react";
 import {

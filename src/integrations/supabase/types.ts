@@ -5013,6 +5013,136 @@ export type Database = {
         }
         Relationships: []
       }
+      maintenance_payment_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          failure_code: string | null
+          id: string
+          order_id: string | null
+          payload_sha256: string
+          processed_at: string | null
+          processing_status: string
+          provider_event_id: string
+          society_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          failure_code?: string | null
+          id?: string
+          order_id?: string | null
+          payload_sha256: string
+          processed_at?: string | null
+          processing_status?: string
+          provider_event_id: string
+          society_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          failure_code?: string | null
+          id?: string
+          order_id?: string | null
+          payload_sha256?: string
+          processed_at?: string | null
+          processing_status?: string
+          provider_event_id?: string
+          society_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_payment_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_payment_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maintenance_payment_orders: {
+        Row: {
+          amount_paise: number
+          bill_id: string
+          created_at: string
+          currency: string
+          failure_code: string | null
+          flat_id: string
+          id: string
+          payment_id: string | null
+          razorpay_order_id: string | null
+          razorpay_payment_id: string | null
+          request_id: string
+          society_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_paise: number
+          bill_id: string
+          created_at?: string
+          currency?: string
+          failure_code?: string | null
+          flat_id: string
+          id?: string
+          payment_id?: string | null
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          request_id: string
+          society_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_paise?: number
+          bill_id?: string
+          created_at?: string
+          currency?: string
+          failure_code?: string | null
+          flat_id?: string
+          id?: string
+          payment_id?: string | null
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          request_id?: string
+          society_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_payment_orders_bill_id_fkey"
+            columns: ["bill_id"]
+            isOneToOne: false
+            referencedRelation: "bills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_payment_orders_flat_id_fkey"
+            columns: ["flat_id"]
+            isOneToOne: false
+            referencedRelation: "flats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_payment_orders_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: true
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_payment_orders_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       maintenance_periods: {
         Row: {
           amount_due: number
@@ -11652,6 +11782,7 @@ export type Database = {
         Args: { _society_id: string }
         Returns: number
       }
+      _bill_outstanding: { Args: { _bill_id: string }; Returns: number }
       _bill_run_fingerprint: {
         Args: { _cycle_config_id: string; _society_id: string }
         Returns: string
@@ -12022,6 +12153,10 @@ export type Database = {
           _title: string
           _user: string
         }
+        Returns: boolean
+      }
+      _online_maintenance_enabled: {
+        Args: { _society_id: string }
         Returns: boolean
       }
       _ops_admin: { Args: { _sid: string }; Returns: string }
@@ -13117,6 +13252,10 @@ export type Database = {
         }
         Returns: string
       }
+      attach_maintenance_razorpay_order: {
+        Args: { _order_id: string; _razorpay_order_id: string }
+        Returns: undefined
+      }
       auditor_finance_history: {
         Args: { _from: string; _limit?: number; _offset?: number; _to: string }
         Returns: {
@@ -13199,6 +13338,10 @@ export type Database = {
       cancel_material_pass: { Args: { _pass_id: string }; Returns: undefined }
       check_in_class: { Args: { _class_id: string }; Returns: undefined }
       check_in_class_qr: { Args: { _token: string }; Returns: string }
+      claim_maintenance_payment_order: {
+        Args: { _bill_id: string; _request_id: string }
+        Returns: Json
+      }
       claim_saas_subscription_order: {
         Args: {
           _amount_paise: number
@@ -13579,6 +13722,10 @@ export type Database = {
           status_rank: number
         }[]
       }
+      fail_maintenance_payment_order: {
+        Args: { _code: string; _razorpay_order_id: string }
+        Returns: undefined
+      }
       fail_saas_subscription_order: {
         Args: { _failure_code: string; _request_record_id: string }
         Returns: undefined
@@ -13683,6 +13830,15 @@ export type Database = {
           _prefix?: string
           _request_id: string
           _society_id: string
+        }
+        Returns: Json
+      }
+      finalize_maintenance_online_payment: {
+        Args: {
+          _amount_paise: number
+          _currency: string
+          _razorpay_order_id: string
+          _razorpay_payment_id: string
         }
         Returns: Json
       }

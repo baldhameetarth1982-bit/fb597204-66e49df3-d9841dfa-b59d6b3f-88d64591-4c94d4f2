@@ -6,9 +6,9 @@ import { createHash } from "node:crypto";
  *
  * SECURITY (Prompt #91): Razorpay is used ONLY for SociyoHub SaaS
  * subscriptions, which are confirmed server-side by the checkout
- * verification flow. Society maintenance is Cash / Bank Transfer only,
- * so this endpoint must never mark bills paid, create payments, apply
- * platform fees or post ledger entries. After signature verification it
+ * verification flow. Online maintenance orders (maintenance_payment_orders)
+ * are finalized only via finalize_maintenance_online_payment, which is
+ * idempotent and fee-free; no other path marks bills paid. After signature verification it
  * recovers subscription activation from signed captured-payment events.
  */
 export const Route = createFileRoute("/api/public/hooks/razorpay")({
@@ -41,6 +41,47 @@ export const Route = createFileRoute("/api/public/hooks/razorpay")({
         const payment = payload?.payload?.payment?.entity;
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+        // Online maintenance orders: separate event log + canonical finalizer.
+        const orderRef = typeof payment?.order_id === "string" ? payment.order_id : null;
+        if (orderRef) {
+          const { data: mOrder } = await supabaseAdmin.from("maintenance_payment_orders")
+            .select("id,society_id").eq("razorpay_order_id", orderRef).maybeSingle();
+          if (mOrder) {
+            const { data: prior } = await supabaseAdmin.from("maintenance_payment_events")
+              .select("id,processing_status,payload_sha256").eq("provider_event_id", eventId).maybeSingle();
+            if (prior && prior.payload_sha256 !== payloadHash) return new Response("Event conflict", { status: 409 });
+            if (prior && prior.processing_status !== "failed" && prior.processing_status !== "received") return new Response("ok");
+            let evId = prior?.id;
+            if (!evId) {
+              const { data: ev, error: evErr } = await supabaseAdmin.from("maintenance_payment_events").insert({
+                provider_event_id: eventId, event_type: event, payload_sha256: payloadHash, order_id: mOrder.id, society_id: mOrder.society_id,
+              }).select("id").single();
+              if (evErr || !ev) return new Response("Event persistence failed", { status: 500 });
+              evId = ev.id;
+            }
+            try {
+              let outcome: "processed" | "ignored" = "ignored";
+              if (event === "payment.captured" && typeof paymentId === "string" && payment?.status === "captured") {
+                const { error: finErr } = await supabaseAdmin.rpc("finalize_maintenance_online_payment", {
+                  _razorpay_order_id: orderRef, _razorpay_payment_id: paymentId,
+                  _amount_paise: Number(payment.amount), _currency: String(payment.currency ?? ""),
+                });
+                if (finErr) throw finErr;
+                outcome = "processed";
+              } else if (event === "payment.failed") {
+                await supabaseAdmin.rpc("fail_maintenance_payment_order", { _razorpay_order_id: orderRef, _code: "provider_failed" });
+                outcome = "processed";
+              }
+              await supabaseAdmin.from("maintenance_payment_events").update({ processing_status: outcome, processed_at: new Date().toISOString() }).eq("id", evId);
+              return new Response("ok");
+            } catch (error) {
+              console.error("[rzp webhook] maintenance finalize failed", error instanceof Error ? error.message : error);
+              await supabaseAdmin.from("maintenance_payment_events").update({ processing_status: "failed", failure_code: "finalize_failed" }).eq("id", evId);
+              return new Response("Maintenance confirmation failed", { status: 500 });
+            }
+          }
+        }
         const { data: priorEvent } = await supabaseAdmin
           .from("saas_payment_events")
           .select("id,processing_status,payload_sha256,attempt_count")

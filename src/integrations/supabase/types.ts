@@ -773,6 +773,51 @@ export type Database = {
           },
         ]
       }
+      amenity_class_checkin_codes: {
+        Row: {
+          class_id: string
+          created_at: string
+          created_by: string
+          expires_at: string
+          session_date: string
+          society_id: string
+          token_hash: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          created_by: string
+          expires_at: string
+          session_date: string
+          society_id: string
+          token_hash: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          session_date?: string
+          society_id?: string
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "amenity_class_checkin_codes_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "amenity_classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "amenity_class_checkin_codes_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       amenity_class_enrollments: {
         Row: {
           cancel_reason: string | null
@@ -12273,6 +12318,10 @@ export type Database = {
         }
         Returns: string
       }
+      admin_issue_class_checkin_code: {
+        Args: { _class_id: string }
+        Returns: Json
+      }
       admin_issue_guard_entry_token: {
         Args: { _guard_user_id: string }
         Returns: Json
@@ -13082,6 +13131,7 @@ export type Database = {
           }
       cancel_material_pass: { Args: { _pass_id: string }; Returns: undefined }
       check_in_class: { Args: { _class_id: string }; Returns: undefined }
+      check_in_class_qr: { Args: { _token: string }; Returns: string }
       claim_saas_subscription_order: {
         Args: {
           _amount_paise: number

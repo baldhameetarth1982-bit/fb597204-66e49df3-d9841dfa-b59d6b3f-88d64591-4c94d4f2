@@ -1,3 +1,4 @@
+import { supabase } from "@/integrations/supabase/client";
 import { SchedulerRunsCard } from "@/components/admin/SchedulerRunsCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -39,6 +40,10 @@ function alertsFor(o: PlatformOverview): Alert[] {
 
 function AdminDashboard() {
   const q = useQuery(platformOverviewQuery);
+  const ap = useQuery({ queryKey: ["admin-active-people"], staleTime: 60_000, queryFn: async () => {
+    const { data, error } = await (supabase.rpc as any)("admin_active_people");
+    if (error) throw error; return data as { active_1d: number; active_7d: number; active_30d: number; tracking_since: string | null };
+  } });
   const o = q.data;
   const gp = o ? grossProfit(o) : null;
   const loading = q.isLoading;
@@ -47,7 +52,7 @@ function AdminDashboard() {
 
   const metrics: { k: string; v: string; hint?: string }[] = o && gp ? [
     { k: "Active societies", v: String(o.societies.active), hint: `${o.societies.total} total` },
-    { k: "Active people", v: o.people.users.toLocaleString("en-IN"), hint: `${o.people.active_30d} active in 30 days` },
+    { k: "Signed-in people (7 days)", v: ap.data ? ap.data.active_7d.toLocaleString("en-IN") : "—", hint: ap.data?.tracking_since ? `${o.people.users} accounts · tracked since ${new Date(ap.data.tracking_since).toLocaleDateString("en-IN")}` : `${o.people.users} accounts · tracking just started` },
     { k: "Paid subscriptions", v: String(o.societies.paid) },
     { k: "Trials", v: String(o.societies.trial) },
     { k: "MRR (estimate)", v: inr(o.subscriptions.mrr_estimate_inr), hint: "Paid plans × active homes" },
@@ -159,7 +164,7 @@ function AdminDashboard() {
                 ["Guards", String(o.people.guards)],
                 ["Staff", String(o.people.staff)],
                 ["Auditors", String(o.people.auditors)],
-                ["Active in 7 / 30 days", `${o.people.active_7d} / ${o.people.active_30d}`],
+                ["Opened the app in 1 / 7 / 30 days", ap.data ? `${ap.data.active_1d} / ${ap.data.active_7d} / ${ap.data.active_30d}` : "—"],
               ]} />
             </Section>
             <Section title="Platform health" link={{ to: "/admin/health", label: "Details" }}>

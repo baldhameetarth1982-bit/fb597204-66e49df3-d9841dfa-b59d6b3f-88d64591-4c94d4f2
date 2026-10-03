@@ -1100,6 +1100,13 @@
       "when": 1791034693847,
       "tag": "0156_super_admin_platform_center",
       "breakpoints": true
+    },
+    {
+      "idx": 157,
+      "version": "7",
+      "when": 1791036409275,
+      "tag": "0157_platform_activity_messaging",
+      "breakpoints": true
     }
   ]
 }

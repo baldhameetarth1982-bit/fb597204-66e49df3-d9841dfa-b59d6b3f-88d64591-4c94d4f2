@@ -4872,6 +4872,101 @@ export type Database = {
           },
         ]
       }
+      message_deliveries: {
+        Row: {
+          attempts: number
+          body: string
+          channel: string
+          created_at: string
+          dedupe_key: string
+          id: string
+          last_error: string | null
+          next_attempt_at: string
+          provider_message_id: string | null
+          society_id: string | null
+          source_id: string | null
+          source_kind: string
+          status: string
+          subject: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          body: string
+          channel: string
+          created_at?: string
+          dedupe_key: string
+          id?: string
+          last_error?: string | null
+          next_attempt_at?: string
+          provider_message_id?: string | null
+          society_id?: string | null
+          source_id?: string | null
+          source_kind: string
+          status?: string
+          subject: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          body?: string
+          channel?: string
+          created_at?: string
+          dedupe_key?: string
+          id?: string
+          last_error?: string | null
+          next_attempt_at?: string
+          provider_message_id?: string | null
+          society_id?: string | null
+          source_id?: string | null
+          source_kind?: string
+          status?: string
+          subject?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_deliveries_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messaging_channels: {
+        Row: {
+          channel: string
+          enabled: boolean
+          last_error: string | null
+          last_health_at: string | null
+          last_health_ok: boolean | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          channel: string
+          enabled?: boolean
+          last_error?: string | null
+          last_health_at?: string | null
+          last_health_ok?: boolean | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          channel?: string
+          enabled?: boolean
+          last_error?: string | null
+          last_health_at?: string | null
+          last_health_ok?: boolean | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       migration_commit_requests: {
         Row: {
           completed_at: string | null
@@ -10025,6 +10120,21 @@ export type Database = {
           },
         ]
       }
+      user_last_active: {
+        Row: {
+          last_active_at: string
+          user_id: string
+        }
+        Insert: {
+          last_active_at?: string
+          user_id: string
+        }
+        Update: {
+          last_active_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_notifications: {
         Row: {
           body: string | null
@@ -10759,6 +10869,18 @@ export type Database = {
         Args: { _e: Database["public"]["Tables"]["elections"]["Row"] }
         Returns: Json
       }
+      _enqueue_message: {
+        Args: {
+          _body: string
+          _channel: string
+          _kind: string
+          _soc: string
+          _src: string
+          _subject: string
+          _user: string
+        }
+        Returns: undefined
+      }
       _fin_bs_section: {
         Args: { _as_of: string; _society_id: string }
         Returns: Json
@@ -11170,6 +11292,7 @@ export type Database = {
         Args: { _months?: number; _plan_id: string; _society_id: string }
         Returns: undefined
       }
+      admin_active_people: { Args: never; Returns: Json }
       admin_add_asset_service: {
         Args: {
           _asset: string
@@ -11422,6 +11545,7 @@ export type Database = {
           society_name: string
         }[]
       }
+      admin_messaging_overview: { Args: never; Returns: Json }
       admin_moderate_vendor_rating: {
         Args: { _hide: boolean; _id: string; _reason: string }
         Returns: undefined
@@ -11558,6 +11682,10 @@ export type Database = {
         Args: { _society_id: string }
         Returns: Json
       }
+      admin_retry_failed_messages: {
+        Args: { _channel: string; _reason: string }
+        Returns: number
+      }
       admin_revoke_guard_access: {
         Args: { _guard_user_id: string; _reason: string }
         Returns: Json
@@ -11615,6 +11743,10 @@ export type Database = {
       admin_set_handover_status: {
         Args: { _note?: string; _society_id: string; _status: string }
         Returns: Json
+      }
+      admin_set_messaging_channel: {
+        Args: { _channel: string; _enabled: boolean; _reason: string }
+        Returns: undefined
       }
       admin_set_role_access: {
         Args: { _active: boolean; _reason: string; _role_id: string }
@@ -14632,6 +14764,7 @@ export type Database = {
         }
         Returns: string
       }
+      touch_last_active: { Args: never; Returns: undefined }
       touch_rate_limit: {
         Args: {
           _bucket: string

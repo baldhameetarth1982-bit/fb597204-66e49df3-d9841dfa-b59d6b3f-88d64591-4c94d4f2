@@ -5479,6 +5479,44 @@ export type Database = {
           },
         ]
       }
+      meeting_minutes_corrections: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string
+          id: string
+          meeting_id: string
+          reason: string
+          society_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by: string
+          id?: string
+          meeting_id: string
+          reason: string
+          society_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          meeting_id?: string
+          reason?: string
+          society_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_minutes_corrections_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_resolutions: {
         Row: {
           created_at: string
@@ -15189,6 +15227,10 @@ export type Database = {
       }
       meeting_add_action: {
         Args: { _due: string; _meeting: string; _owner: string; _title: string }
+        Returns: string
+      }
+      meeting_add_minutes_correction: {
+        Args: { _body: string; _id: string; _reason: string }
         Returns: string
       }
       meeting_add_resolution: {

@@ -91,7 +91,7 @@ export function ReceiptList({ societyId, showHome }: { societyId?: string | null
       <EmptyState
         icon={Receipt}
         title="No receipts yet"
-        description="A receipt is issued only after the committee verifies a Cash or Bank Transfer payment. Pending payments don't have receipts."
+        description="A receipt is issued only after a payment is confirmed — by the committee for Cash, Bank Transfer and UPI QR, or by the payment provider for online Pay now. Pending payments don't have receipts."
       />
     );
   }

@@ -4,7 +4,7 @@ import {
   Receipt, Wallet, BarChart3, TrendingDown, BookOpen,
   Settings2, UsersRound, Activity, LifeBuoy, Sparkles, KeyRound, Building, Lock,
   LayoutGrid, Compass, FileCheck2, Trophy, Palette, CalendarDays, Gavel,
-  Wrench,
+  Wrench, Siren, Store,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { MobileHero } from "@/components/shared/MobileHero";

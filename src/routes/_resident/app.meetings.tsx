@@ -1,3 +1,4 @@
+import { MinutesCorrections } from "@/components/meetings/MinutesCorrections";
 import { AISummaryCard } from "@/components/shared/AISummaryCard";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";

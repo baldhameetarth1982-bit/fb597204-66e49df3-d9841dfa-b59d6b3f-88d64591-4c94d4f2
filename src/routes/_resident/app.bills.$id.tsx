@@ -11,6 +11,7 @@ import { getResidentBillDetail } from "@/lib/billing-generate.functions";
 import { getBillDisplayStatus } from "@/lib/bill-display-status";
 import { formatDate } from "@/utils/format";
 import { OfflinePaymentSubmitCard } from "@/components/billing/OfflinePaymentSubmitCard";
+import { OnlinePayCard } from "@/components/billing/OnlinePayCard";
 import { toast } from "sonner";
 import { toSafeFinanceError } from "@/lib/finance-safe-error";
 
@@ -36,6 +37,7 @@ type Bill = {
   amount: number | null;
   status: string;
   cancelled_at: string | null;
+  society_id?: string | null;
 };
 
 type Line = { id: string; kind: string | null; description: string | null; amount: number | null };
@@ -187,8 +189,9 @@ function ResidentBillDetail() {
 
       {open && (
         <section aria-labelledby="pay-h" className="space-y-3">
+          {bill.society_id && <OnlinePayCard billId={bill.id} societyId={bill.society_id} onPaid={() => setReloadKey((k) => k + 1)} />}
           <div>
-            <h2 id="pay-h" className="font-semibold">Paid this bill?</h2>
+            <h2 id="pay-h" className="font-semibold">Paid by Cash or Bank Transfer?</h2>
             <p className="text-sm text-muted-foreground">Tell the committee about your Cash or Bank Transfer payment. The bill stays unpaid until they verify it and issue a receipt.</p>
           </div>
           <OfflinePaymentSubmitCard billId={bill.id} billAmount={amount} billStatus={bill.status} cancelled={!!bill.cancelled_at} />

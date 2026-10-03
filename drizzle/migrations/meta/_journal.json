@@ -1156,6 +1156,13 @@
       "when": 1791042020128,
       "tag": "0164_petty_cash_register",
       "breakpoints": true
+    },
+    {
+      "idx": 165,
+      "version": "7",
+      "when": 1791042642394,
+      "tag": "0165_asset_depreciation",
+      "breakpoints": true
     }
   ]
 }

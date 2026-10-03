@@ -783,6 +783,60 @@ export type Database = {
           },
         ]
       }
+      asset_depreciation_settings: {
+        Row: {
+          asset_id: string
+          cost: number
+          life_years: number | null
+          method: string
+          salvage: number
+          society_id: string
+          start_date: string
+          updated_at: string
+          updated_by: string | null
+          wdv_rate: number | null
+        }
+        Insert: {
+          asset_id: string
+          cost: number
+          life_years?: number | null
+          method: string
+          salvage?: number
+          society_id: string
+          start_date: string
+          updated_at?: string
+          updated_by?: string | null
+          wdv_rate?: number | null
+        }
+        Update: {
+          asset_id?: string
+          cost?: number
+          life_years?: number | null
+          method?: string
+          salvage?: number
+          society_id?: string
+          start_date?: string
+          updated_at?: string
+          updated_by?: string | null
+          wdv_rate?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_depreciation_settings_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: true
+            referencedRelation: "society_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_depreciation_settings_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       asset_service_log: {
         Row: {
           asset_id: string
@@ -12267,6 +12321,18 @@ export type Database = {
         Args: { _amenity_id: string; _household_allowed: boolean }
         Returns: undefined
       }
+      admin_set_asset_depreciation: {
+        Args: {
+          _asset_id: string
+          _cost: number
+          _life_years: number
+          _method: string
+          _salvage: number
+          _start_date: string
+          _wdv_rate: number
+        }
+        Returns: undefined
+      }
       admin_set_billing_controls: {
         Args: {
           _approval_required: boolean
@@ -14150,6 +14216,16 @@ export type Database = {
           _status?: string
         }
         Returns: Json
+      }
+      list_depreciation_assets: {
+        Args: { _society_id: string }
+        Returns: {
+          asset_id: string
+          category: string
+          name: string
+          purchase_date: string
+          status: string
+        }[]
       }
       list_discovery_items: {
         Args: { _kind?: string; _placement?: string }

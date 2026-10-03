@@ -18,6 +18,7 @@ import { ErrorState } from "@/components/system/ErrorState";
 import { toast } from "sonner";
 import { listFamily, addFamily, deleteFamily } from "@/lib/family.functions";
 import { PetsSection } from "@/components/resident/PetsSection";
+import { TemporaryOccupantsSection } from "@/components/resident/TemporaryOccupantsSection";
 
 export const Route = createFileRoute("/_resident/app/family")({
   head: () => ({ meta: [{ title: "Family — SociyoHub" }] }),
@@ -181,6 +182,7 @@ function FamilyPage() {
       )}
 
       <PetsSection />
+      <TemporaryOccupantsSection />
 
       <AlertDialog open={!!removeTarget} onOpenChange={(o) => { if (!o && !delMut.isPending) setRemoveTarget(null); }}>
         <AlertDialogContent>

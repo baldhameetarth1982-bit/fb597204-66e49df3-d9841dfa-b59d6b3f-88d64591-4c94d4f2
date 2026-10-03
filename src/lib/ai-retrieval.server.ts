@@ -33,8 +33,9 @@ export async function retrieveSocietySources(supabase: ScopedClient, societyId: 
       .eq("society_id", societyId).eq("status", "published").lte("publish_at", nowIso)
       .order("publish_at", { ascending: false }).limit(40),
     // RLS: residents see only ready, resident-audience items; archived/processing never included.
+    // Lease agreements are personal tenancy records and are never AI Secretary sources.
     supabase.from("society_knowledge_sources").select("kind,title,extracted_text,updated_at")
-      .eq("society_id", societyId).eq("status", "ready")
+      .eq("society_id", societyId).eq("status", "ready").or("category.is.null,category.neq.lease")
       .order("updated_at", { ascending: false }).limit(60),
   ]);
   if (settings.error && contacts.error && notices.error && knowledge.error) throw new RetrievalFailed();

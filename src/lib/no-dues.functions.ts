@@ -804,3 +804,34 @@ export const recheckAndResubmitNoDues = createServerFn({ method: "POST" })
       eligibility: (row?.eligibility ?? null) as Eligibility | null,
     };
   });
+
+/* -------------------------------------------------------------------- */
+/*  Flat 360: latest request/certificate for one flat (committee view)   */
+/*  Reads the canonical tables through the caller's RLS; never decides  */
+/*  eligibility itself.                                                  */
+/* -------------------------------------------------------------------- */
+
+export const getFlatNoDuesActivity = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { flatId: string }) => z.object({ flatId: uuid }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as any;
+    await assertCanManageFlat(userId, data.flatId);
+    const [req, cert] = await Promise.all([
+      supabase.from("no_dues_requests").select("id,status,submitted_at").eq("flat_id", data.flatId)
+        .order("submitted_at", { ascending: false }).limit(1).maybeSingle(),
+      supabase.from("no_dues_certificates").select("id,certificate_number,issued_at,valid_until,revoked_at").eq("flat_id", data.flatId)
+        .order("issued_at", { ascending: false }).limit(1).maybeSingle(),
+    ]);
+    if (req.error || cert.error) {
+      logServerError("flatActivity", req.error ?? cert.error);
+      throw new NoDuesError("INVALID_REQUEST");
+    }
+    return {
+      latestRequest: req.data ? { id: req.data.id as string, status: req.data.status as string, submittedAt: req.data.submitted_at as string } : null,
+      latestCertificate: cert.data ? {
+        id: cert.data.id as string, number: cert.data.certificate_number as string, issuedAt: cert.data.issued_at as string,
+        validUntil: (cert.data.valid_until as string | null) ?? null, revoked: !!cert.data.revoked_at,
+      } : null,
+    };
+  });

@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   Archive, ArchiveRestore, CheckCircle2, ExternalLink, FileText, HelpCircle, Loader2, Lock, MoreHorizontal, Pencil, Plus, RefreshCw, Trash2, Upload,
-  History, CalendarClock,
+  History, CalendarClock, KeyRound,
 } from "lucide-react";
 import { toast } from "sonner";
 import { DocumentExpiryDialog, ExpiryChip } from "@/components/documents/DocumentExpiry";
@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  deleteKnowledge, listKnowledgeAdmin, listDocumentVersions, openDocumentVersion, setDocumentCategory, DOC_CATEGORIES, openKnowledgeDocument, saveKnowledgeFaq, setKnowledgeArchived, uploadKnowledgeDocument, type KnowledgeItem,
+  deleteKnowledge, listKnowledgeAdmin, listDocumentVersions, openDocumentVersion, setDocumentCategory, DOC_CATEGORIES, listLeaseCandidates, linkLeaseDocument, openKnowledgeDocument, saveKnowledgeFaq, setKnowledgeArchived, uploadKnowledgeDocument, type KnowledgeItem,
 } from "@/lib/society-knowledge.functions";
 
 export const Route = createFileRoute("/_society/society/knowledge")({
@@ -63,6 +63,7 @@ function KnowledgeAdmin() {
   const [faqFor, setFaqFor] = useState<KnowledgeItem | "new" | null>(null);
   const [removing, setRemoving] = useState<KnowledgeItem | null>(null);
   const [versionsFor, setVersionsFor] = useState<KnowledgeItem | null>(null);
+  const [leaseFor, setLeaseFor] = useState<KnowledgeItem | null>(null);
   const [expiryFor, setExpiryFor] = useState<KnowledgeItem | null>(null);
 
   const q = useQuery({ queryKey: ["society-knowledge"], queryFn: () => list(), staleTime: 15_000 });
@@ -161,7 +162,7 @@ function KnowledgeAdmin() {
                               {i.status === "ready" && <CheckCircle2 className="h-3 w-3 mr-1" />}
                               {st.label}
                             </StatusChip>
-                            {i.kind === "document" && <StatusChip tone="muted"><span className="capitalize">{i.category}</span></StatusChip>}
+                            {i.kind === "document" && <StatusChip tone={i.category === "lease" ? "info" : "muted"}><span className="capitalize">{i.category === "lease" ? "Lease agreement" : i.category}</span></StatusChip>}
                             {i.kind === "document" && i.version > 1 && <StatusChip tone="muted">v{i.version}</StatusChip>}
                             {i.audience === "committee" && <StatusChip tone="muted"><Lock className="h-3 w-3 mr-1" />Committee only</StatusChip>}
                             {i.kind === "document" && <ExpiryChip expiresOn={i.expiresOn} />}
@@ -194,6 +195,7 @@ function KnowledgeAdmin() {
                               {i.status === "ready" && <DropdownMenuItem className="min-h-11" disabled={archive.isPending} onSelect={() => archive.mutate({ id: i.id, archived: true })}><Archive className="h-4 w-4 mr-2" /> Archive</DropdownMenuItem>}
                               {i.status === "archived" && <DropdownMenuItem className="min-h-11" disabled={archive.isPending} onSelect={() => archive.mutate({ id: i.id, archived: false })}><ArchiveRestore className="h-4 w-4 mr-2" /> Restore</DropdownMenuItem>}
                               {i.kind === "document" && <DropdownMenuItem className="min-h-11" onSelect={() => setExpiryFor(i)}><CalendarClock className="h-4 w-4 mr-2" /> Expiry & reminders</DropdownMenuItem>}
+                              {i.kind === "document" && <DropdownMenuItem className="min-h-11" onSelect={() => setLeaseFor(i)}><KeyRound className="h-4 w-4 mr-2" /> {i.leaseTenancyId ? "Change lease tenancy" : "Mark as lease…"}</DropdownMenuItem>}
                               {i.kind === "document" && <DropdownMenuItem className="min-h-11" onSelect={() => setVersionsFor(i)}><History className="h-4 w-4 mr-2" /> Category & versions</DropdownMenuItem>}
                               {i.kind === "faq" && <><DropdownMenuSeparator />
                               <DropdownMenuItem className="min-h-11 text-destructive focus:text-destructive" onSelect={() => setRemoving(i)}><Trash2 className="h-4 w-4 mr-2" /> Remove…</DropdownMenuItem></>}
@@ -211,6 +213,7 @@ function KnowledgeAdmin() {
       </div>
 
       {expiryFor && <DocumentExpiryDialog item={expiryFor} onClose={() => setExpiryFor(null)} onDone={refresh} />}
+      {leaseFor && <LeaseDialog item={leaseFor} onClose={() => setLeaseFor(null)} onDone={refresh} />}
       {versionsFor && <VersionsDialog item={versionsFor} onClose={() => setVersionsFor(null)} onDone={refresh} />}
       {uploadFor && <UploadDialog target={uploadFor} onClose={() => setUploadFor(null)} onDone={refresh} />}
       {faqFor && <FaqDialog target={faqFor} onClose={() => setFaqFor(null)} onDone={refresh} />}
@@ -390,6 +393,42 @@ function VersionsDialog({ item, onClose, onDone }: { item: KnowledgeItem; onClos
                   <Button size="sm" variant="outline" className="min-h-11" onClick={() => view(v.id)}>View</Button>
                 </li>))}</ul>}
         </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function LeaseDialog({ item, onClose, onDone }: { item: KnowledgeItem; onClose: () => void; onDone: () => void }) {
+  const list = useServerFn(listLeaseCandidates);
+  const link = useServerFn(linkLeaseDocument);
+  const [pick, setPick] = useState<string>(item.leaseTenancyId ?? "");
+  const q = useQuery({ queryKey: ["lease-candidates"], queryFn: () => list() });
+  const m = useMutation({
+    mutationFn: () => link({ data: { id: item.id, flatResidentId: pick } }),
+    onSuccess: (r) => { if (!r.ok) return toast.error(r.message); toast.success("Saved as lease agreement"); onDone(); onClose(); },
+    onError: () => toast.error("Couldn't save. Please try again."),
+  });
+  const res = q.data;
+  return (
+    <Dialog open onOpenChange={(o) => !o && !m.isPending && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Lease agreement</DialogTitle>
+          <DialogDescription>Link “{item.title}” to a tenancy. Leases are always committee-only, never used by AI Secretary, and only the tenant of that current tenancy can open it. Replacing the file keeps earlier versions.</DialogDescription>
+        </DialogHeader>
+        {q.isLoading ? <ListSkeleton rows={2} /> : !res?.ok ? <p className="text-sm text-destructive">{res?.message ?? "Couldn't load tenancies."}</p>
+          : res.items.length === 0 ? <p className="text-sm text-muted-foreground">No tenancies with lease details yet. Add lease dates to a resident first.</p>
+          : <div className="space-y-1"><Label>Tenancy</Label>
+              <Select value={pick} onValueChange={setPick}>
+                <SelectTrigger aria-label="Tenancy" className="h-11"><SelectValue placeholder="Choose a tenancy" /></SelectTrigger>
+                <SelectContent>{res.items.map((c) => <SelectItem key={c.flatResidentId} value={c.flatResidentId}>
+                  {c.label || "Unit"} · {c.residentName ?? "Resident"} · {c.relationship}{c.leaseEndsOn ? ` · ends ${c.leaseEndsOn}` : ""}{c.isCurrent ? "" : " (past)"}
+                </SelectItem>)}</SelectContent>
+              </Select></div>}
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose} disabled={m.isPending}>Cancel</Button>
+          <Button onClick={() => m.mutate()} disabled={!pick || m.isPending || pick === item.leaseTenancyId}>{m.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} Save</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

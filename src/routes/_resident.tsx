@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ROLES, ROLE_HOME } from "@/config/roles";
 import { AskAIFab } from "@/components/resident/AskAIFab";
 import { EmergencyBroadcastBanner } from "@/components/emergency/EmergencyBroadcasts";
+import { HomeSwitcher } from "@/components/resident/HomeSwitcher";
 
 /** Resident layout. All `/app/*` routes require an authenticated user and an active society plan. */
 export const Route = createFileRoute("/_resident")({
@@ -57,6 +58,7 @@ function ResidentGuard() {
     <>
       <ElderModeSync />
       <EmergencyBroadcastBanner />
+      {primaryRole === ROLES.RESIDENT && <HomeSwitcher />}
       <Outlet />
       <AskAIFab />
     </>

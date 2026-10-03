@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ListEmpty, ListSkeleton, LoadError, SearchField, SegmentedFilter } from "@/components/people/PeopleUI";
 import { SectionLabel } from "@/components/comm/CommUI";
-import { listResidentKnowledge, openKnowledgeDocument } from "@/lib/society-knowledge.functions";
+import { listResidentKnowledge, openKnowledgeDocument, listMyLeases, openMyLease } from "@/lib/society-knowledge.functions";
 
 export const Route = createFileRoute("/_resident/app/documents")({
   head: () => ({
@@ -86,6 +86,8 @@ function DocumentsScreen() {
         </div>
       </header>
 
+      <MyLeaseSection />
+
       {q.isLoading ? (
         <ListSkeleton rows={4} />
       ) : q.isError || (res && !res.ok) ? (
@@ -151,5 +153,41 @@ function DocumentsScreen() {
         </>
       )}
     </div>
+  );
+}
+
+function MyLeaseSection() {
+  const list = useServerFn(listMyLeases);
+  const openFn = useServerFn(openMyLease);
+  const [opening, setOpening] = useState<string | null>(null);
+  const q = useQuery({ queryKey: ["my-leases"], queryFn: () => list(), staleTime: 60_000 });
+  const items = q.data?.ok ? q.data.items : [];
+  if (items.length === 0) return null;
+  async function open(id: string) {
+    setOpening(id);
+    const r = await openFn({ data: { id } }).catch(() => null);
+    setOpening(null);
+    if (!r?.ok) return toast.error(r?.message ?? "This lease isn't available.");
+    window.open(r.url, "_blank", "noopener,noreferrer");
+  }
+  return (
+    <section aria-labelledby="my-lease">
+      <SectionLabel id="my-lease">My lease agreement</SectionLabel>
+      <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
+        {items.map((l) => (
+          <li key={l.id} className="flex items-center gap-3 px-4 py-3">
+            <FileText className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
+            <div className="min-w-0 flex-1">
+              <p className="font-medium break-words">{l.title}</p>
+              <p className="text-xs text-muted-foreground">{[l.flatNumber && `Home ${l.flatNumber}`, `v${l.version}`, l.expiresOn && `Ends ${new Date(l.expiresOn).toLocaleDateString("en-IN")}`].filter(Boolean).join(" · ")}</p>
+            </div>
+            <Button variant="outline" className="min-h-11" disabled={opening === l.id} onClick={() => open(l.id)}>
+              {opening === l.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4 mr-1" />}Open
+            </Button>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-xs text-muted-foreground">Only you and your committee can open this.</p>
+    </section>
   );
 }

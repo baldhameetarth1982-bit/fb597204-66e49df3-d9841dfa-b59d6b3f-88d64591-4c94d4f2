@@ -1079,6 +1079,13 @@
       "when": 1790988357170,
       "tag": "0153_invoice_ai_extraction",
       "breakpoints": true
+    },
+    {
+      "idx": 154,
+      "version": "7",
+      "when": 1790991492701,
+      "tag": "0154_residents_amenities_multi_home_lease_waitlist",
+      "breakpoints": true
     }
   ]
 }

@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/context/AuthContext";
 import { AdBanner } from "@/components/shared/AdBanner";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchCurrentHomeId } from "@/components/resident/HomeSwitcher";
 import { useResidentNotices } from "@/hooks/useResidentNotices";
 import { ResidentBrandBand } from "@/components/branding/ResidentBrandBand";
 
@@ -46,9 +47,9 @@ function ResidentDashboard() {
     staleTime: 30_000,
     queryFn: async () => {
       const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
-      const { data: flatRows, error: fErr } = await supabase.from("flat_residents").select("flat_id").eq("user_id", userId!);
-      if (fErr) throw fErr;
-      const flatIds = (flatRows ?? []).map((r: any) => r.flat_id).filter(Boolean);
+      // Selected current home only; former homes and other homes never count here.
+      const homeId = await fetchCurrentHomeId();
+      const flatIds = homeId ? [homeId] : [];
       const [bills, tickets, visitors] = await Promise.all([
         flatIds.length
           ? supabase.from("bills").select("id, amount, total_payable, due_date, period_label, status")

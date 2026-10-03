@@ -489,6 +489,7 @@ export type Database = {
           deposit_amount: number
           description: string | null
           fee_amount: number
+          household_allowed: boolean
           id: string
           is_active: boolean
           name: string
@@ -512,6 +513,7 @@ export type Database = {
           deposit_amount?: number
           description?: string | null
           fee_amount?: number
+          household_allowed?: boolean
           id?: string
           is_active?: boolean
           name: string
@@ -535,6 +537,7 @@ export type Database = {
           deposit_amount?: number
           description?: string | null
           fee_amount?: number
+          household_allowed?: boolean
           id?: string
           is_active?: boolean
           name?: string
@@ -667,6 +670,71 @@ export type Database = {
           },
           {
             foreignKeyName: "amenity_bookings_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      amenity_waitlist_events: {
+        Row: {
+          actor_id: string | null
+          amenity_id: string
+          candidate_booking_id: string | null
+          created_at: string
+          freed_booking_id: string | null
+          id: string
+          outcome: string
+          reason: string | null
+          society_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          amenity_id: string
+          candidate_booking_id?: string | null
+          created_at?: string
+          freed_booking_id?: string | null
+          id?: string
+          outcome: string
+          reason?: string | null
+          society_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          amenity_id?: string
+          candidate_booking_id?: string | null
+          created_at?: string
+          freed_booking_id?: string | null
+          id?: string
+          outcome?: string
+          reason?: string | null
+          society_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "amenity_waitlist_events_amenity_id_fkey"
+            columns: ["amenity_id"]
+            isOneToOne: false
+            referencedRelation: "amenities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "amenity_waitlist_events_candidate_booking_id_fkey"
+            columns: ["candidate_booking_id"]
+            isOneToOne: false
+            referencedRelation: "amenity_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "amenity_waitlist_events_freed_booking_id_fkey"
+            columns: ["freed_booking_id"]
+            isOneToOne: false
+            referencedRelation: "amenity_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "amenity_waitlist_events_society_id_fkey"
             columns: ["society_id"]
             isOneToOne: false
             referencedRelation: "societies"
@@ -7177,6 +7245,7 @@ export type Database = {
           aadhaar_verified_at: string | null
           aadhaar_verified_by: string | null
           accepted_terms_at: string | null
+          active_flat_id: string | null
           avatar_url: string | null
           created_at: string
           elder_mode: boolean
@@ -7205,6 +7274,7 @@ export type Database = {
           aadhaar_verified_at?: string | null
           aadhaar_verified_by?: string | null
           accepted_terms_at?: string | null
+          active_flat_id?: string | null
           avatar_url?: string | null
           created_at?: string
           elder_mode?: boolean
@@ -7233,6 +7303,7 @@ export type Database = {
           aadhaar_verified_at?: string | null
           aadhaar_verified_by?: string | null
           accepted_terms_at?: string | null
+          active_flat_id?: string | null
           avatar_url?: string | null
           created_at?: string
           elder_mode?: boolean
@@ -7252,6 +7323,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_active_flat_id_fkey"
+            columns: ["active_flat_id"]
+            isOneToOne: false
+            referencedRelation: "flats"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_referred_by_fkey"
             columns: ["referred_by"]
@@ -9045,6 +9123,7 @@ export type Database = {
           extracted_text: string | null
           faq_answer: string | null
           file_name: string | null
+          flat_resident_id: string | null
           id: string
           kind: string
           mime_type: string | null
@@ -9071,6 +9150,7 @@ export type Database = {
           extracted_text?: string | null
           faq_answer?: string | null
           file_name?: string | null
+          flat_resident_id?: string | null
           id?: string
           kind: string
           mime_type?: string | null
@@ -9097,6 +9177,7 @@ export type Database = {
           extracted_text?: string | null
           faq_answer?: string | null
           file_name?: string | null
+          flat_resident_id?: string | null
           id?: string
           kind?: string
           mime_type?: string | null
@@ -9114,6 +9195,13 @@ export type Database = {
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "society_knowledge_sources_flat_resident_id_fkey"
+            columns: ["flat_resident_id"]
+            isOneToOne: false
+            referencedRelation: "flat_residents"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "society_knowledge_sources_society_id_fkey"
             columns: ["society_id"]
@@ -10397,6 +10485,14 @@ export type Database = {
         Returns: string
       }
       _amenity_admin: { Args: { _society_id: string }; Returns: boolean }
+      _amenity_eligibility: {
+        Args: { _amenity_id: string; _flat: string; _uid: string }
+        Returns: string
+      }
+      _amenity_revalidate_booking: {
+        Args: { _booking_id: string }
+        Returns: boolean
+      }
       _auth_session_id: { Args: never; Returns: string }
       _authorize_membership_internal: {
         Args: { _society_id: string; _user_id: string }
@@ -10575,6 +10671,10 @@ export type Database = {
       _guard_session_ok: { Args: { _sid: string }; Returns: boolean }
       _helpdesk_is_admin: { Args: { _sid: string }; Returns: boolean }
       _helpdesk_sla_hours: { Args: { _priority: string }; Returns: number }
+      _home_link_valid: {
+        Args: { _flat: string; _uid: string }
+        Returns: boolean
+      }
       _import_find_flat: {
         Args: { _block: string; _society_id: string; _unit: string }
         Returns: Record<string, unknown>
@@ -10800,6 +10900,10 @@ export type Database = {
         Returns: undefined
       }
       _proc_money: { Args: { _v: number }; Returns: number }
+      _promote_amenity_waitlist: {
+        Args: { _actor: string; _freed_id: string }
+        Returns: number
+      }
       _rate_hit: {
         Args: {
           _bucket: string
@@ -11256,6 +11360,10 @@ export type Database = {
       }
       admin_set_amenity_booking_status: {
         Args: { _booking_id: string; _status: string }
+        Returns: undefined
+      }
+      admin_set_amenity_household_policy: {
+        Args: { _amenity_id: string; _household_allowed: boolean }
         Returns: undefined
       }
       admin_set_billing_controls: {
@@ -11882,6 +11990,7 @@ export type Database = {
           id: string
         }[]
       }
+      current_home_flat_id: { Args: never; Returns: string }
       current_user_can_admin_migrations: {
         Args: { _society_id: string }
         Returns: boolean
@@ -12983,6 +13092,23 @@ export type Database = {
         }
         Returns: Json
       }
+      knowledge_lease_candidates: {
+        Args: never
+        Returns: {
+          block_name: string
+          flat_number: string
+          flat_resident_id: string
+          is_current: boolean
+          lease_ends_on: string
+          lease_starts_on: string
+          relationship: string
+          resident_name: string
+        }[]
+      }
+      knowledge_link_lease: {
+        Args: { _flat_resident_id: string; _id: string }
+        Returns: undefined
+      }
       knowledge_set_archived: {
         Args: { _archived: boolean; _id: string }
         Returns: Json
@@ -13108,6 +13234,30 @@ export type Database = {
           message: string
           state: string
           title: string
+        }[]
+      }
+      list_my_homes: {
+        Args: never
+        Returns: {
+          block_name: string
+          flat_id: string
+          flat_number: string
+          is_active_home: boolean
+          relationship: string
+          society_id: string
+          society_name: string
+        }[]
+      }
+      list_my_lease_documents: {
+        Args: never
+        Returns: {
+          expires_on: string
+          file_name: string
+          flat_number: string
+          id: string
+          title: string
+          updated_at: string
+          version: number
         }[]
       }
       list_my_role_invitations: {
@@ -13440,6 +13590,7 @@ export type Database = {
         Returns: Json
       }
       migration_upload_path_ok: { Args: { _name: string }; Returns: boolean }
+      my_lease_document_path: { Args: { _id: string }; Returns: string }
       my_role_access: { Args: never; Returns: Json }
       next_no_dues_cert_number_internal: {
         Args: { _actor_id: string; _society_id: string }
@@ -13737,6 +13888,7 @@ export type Database = {
         Args: { _aadhaar_last4: string; _aadhaar_url: string }
         Returns: undefined
       }
+      revalidate_amenity_bookings: { Args: never; Returns: number }
       reverse_finance_expense: {
         Args: { _expense_id: string; _reason: string }
         Returns: Json
@@ -14146,6 +14298,7 @@ export type Database = {
         Args: { _answers: Json; _poll_id: string }
         Returns: undefined
       }
+      switch_active_home: { Args: { _flat_id: string }; Returns: Json }
       switch_active_society: {
         Args: { _society_id: string }
         Returns: undefined

@@ -1128,6 +1128,13 @@
       "when": 1791038820394,
       "tag": "0160_utility_meters",
       "breakpoints": true
+    },
+    {
+      "idx": 161,
+      "version": "7",
+      "when": 1791039518904,
+      "tag": "0161_community_events",
+      "breakpoints": true
     }
   ]
 }

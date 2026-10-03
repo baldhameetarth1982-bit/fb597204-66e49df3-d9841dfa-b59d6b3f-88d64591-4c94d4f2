@@ -1135,6 +1135,13 @@
       "when": 1791039518904,
       "tag": "0161_community_events",
       "breakpoints": true
+    },
+    {
+      "idx": 162,
+      "version": "7",
+      "when": 1791040208120,
+      "tag": "0162_community_groups",
+      "breakpoints": true
     }
   ]
 }

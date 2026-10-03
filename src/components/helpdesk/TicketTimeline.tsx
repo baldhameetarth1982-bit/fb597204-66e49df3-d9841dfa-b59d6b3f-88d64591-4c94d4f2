@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
+import { AiDraftButton } from "@/components/helpdesk/AiDraftButton";
 import { describeEvent, fetchTimeline, fmtDate, helpdeskErrorMessage } from "@/lib/helpdesk";
 
-export function TicketTimeline({ ticketId, canComment }: { ticketId: string; canComment: boolean }) {
+export function TicketTimeline({ ticketId, canComment, aiDraft = false }: { ticketId: string; canComment: boolean; aiDraft?: boolean }) {
   const qc = useQueryClient();
   const [body, setBody] = useState("");
   const q = useQuery({
@@ -54,6 +55,7 @@ export function TicketTimeline({ ticketId, canComment }: { ticketId: string; can
           ))}
         </ol>
       )}
+      {canComment && aiDraft && <AiDraftButton ticketId={ticketId} onDraft={setBody} />}
       {canComment && (
         <form
           className="flex items-end gap-2"

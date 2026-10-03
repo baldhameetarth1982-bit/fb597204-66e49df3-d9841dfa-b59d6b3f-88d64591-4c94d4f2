@@ -258,7 +258,7 @@ function HelpdeskQueue() {
               <TicketOpsPanel ticketId={sel.id} staffId={sel.staff_id} vendorId={sel.vendor_id} assetId={sel.asset_id}
                 escalationLevel={sel.escalation_level} closed={["closed", "rejected", "cancelled"].includes(sel.status)} />
               <TicketEvidence ticketId={sel.id} canUpload={!["closed", "rejected", "cancelled"].includes(sel.status)} />
-              <TicketTimeline ticketId={sel.id} canComment={!["closed", "cancelled"].includes(sel.status)} />
+              <TicketTimeline ticketId={sel.id} canComment={!["closed", "cancelled"].includes(sel.status)} aiDraft />
             </div>
           )}
         </SheetContent>

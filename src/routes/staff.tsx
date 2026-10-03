@@ -1,3 +1,4 @@
+import { AiDraftButton } from "@/components/helpdesk/AiDraftButton";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -150,6 +151,7 @@ function TicketItem({ t, open, onToggle }: { t: StaffTicket; open: boolean; onTo
           <TicketEvidence ticketId={t.id} canUpload={!finished} />
           {!finished && (
             <div className="space-y-2">
+              <AiDraftButton ticketId={t.id} onDraft={setNote} />
               <Label htmlFor={`n-${t.id}`}>Note (needed to pause or finish)</Label>
               <Textarea id={`n-${t.id}`} value={note} maxLength={2000} onChange={(e) => setNote(e.target.value)} />
               <div className="flex flex-wrap gap-2">

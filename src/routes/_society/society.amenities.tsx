@@ -23,7 +23,7 @@ export const Route = createFileRoute("/_society/society/amenities")({
 
 type FairnessRow = { flat_id: string; flat_label: string; bookings: number; cancellations: number; no_shows: number; peak_bookings: number; waitlisted: number };
 type BlockedDate = { id: string; amenity_id: string; blocked_date: string; reason: string | null };
-const blank = { id: null as string | null, name: "", description: "", amenity_type: "clubhouse" as AmenityType, opens_at: "06:00", closes_at: "22:00", slot_minutes: 60, capacity: 1, advance_days: 30, cancellation_hours: 2, weekly_household_limit: "", owner_allowed: true, tenant_allowed: true, defaulters_allowed: true, deposit_amount: 0, fee_amount: 0, is_active: true };
+const blank = { id: null as string | null, name: "", description: "", amenity_type: "clubhouse" as AmenityType, opens_at: "06:00", closes_at: "22:00", slot_minutes: 60, capacity: 1, advance_days: 30, cancellation_hours: 2, weekly_household_limit: "", owner_allowed: true, tenant_allowed: true, household_allowed: true, defaulters_allowed: true, deposit_amount: 0, fee_amount: 0, is_active: true };
 const statusTone = (s: AmenityStatus) => s === "confirmed" || s === "completed" ? "success" : s === "waitlisted" ? "warning" : "muted";
 
 function AdminAmenities() {
@@ -46,7 +46,7 @@ function AdminAmenities() {
     setLoading(true); setFailed(false);
     const from = new Date(); from.setDate(from.getDate() - 90);
     const [a, b, f, d] = await Promise.all([
-      supabase.from("amenities").select("id,society_id,name,description,amenity_type,opens_at,closes_at,slot_minutes,capacity,advance_days,cancellation_hours,weekly_household_limit,owner_allowed,tenant_allowed,defaulters_allowed,deposit_amount,fee_amount,is_active").eq("society_id", societyId).order("name"),
+      supabase.from("amenities").select("id,society_id,name,description,amenity_type,opens_at,closes_at,slot_minutes,capacity,advance_days,cancellation_hours,weekly_household_limit,owner_allowed,tenant_allowed,household_allowed,defaulters_allowed,deposit_amount,fee_amount,is_active").eq("society_id", societyId).order("name"),
       supabase.from("amenity_bookings").select("id,amenity_id,flat_id,starts_at,ends_at,attendees,status,cancellation_reason,amenities(name)").eq("society_id", societyId).order("starts_at", { ascending: false }).limit(200),
       supabase.rpc("get_amenity_fairness", { _society_id: societyId, _from: from.toISOString().slice(0,10), _to: new Date().toISOString().slice(0,10) }),
       supabase.from("amenity_blocked_dates").select("id,amenity_id,blocked_date,reason").eq("society_id", societyId).gte("blocked_date", new Date().toISOString().slice(0,10)).order("blocked_date").limit(100),
@@ -61,7 +61,7 @@ function AdminAmenities() {
 
   async function save(e: React.FormEvent) {
     e.preventDefault(); if (!societyId || saving) return; setSaving(true);
-    const { error } = await (supabase as any).rpc("admin_upsert_amenity", {
+    const { data: savedId, error } = await (supabase as any).rpc("admin_upsert_amenity", {
       _id: form.id, _society_id: societyId, _name: form.name, _description: form.description,
       _amenity_type: form.amenity_type, _opens_at: form.opens_at, _closes_at: form.closes_at,
       _slot_minutes: form.slot_minutes, _capacity: form.capacity, _advance_days: form.advance_days,
@@ -69,7 +69,13 @@ function AdminAmenities() {
       _owner_allowed: form.owner_allowed, _tenant_allowed: form.tenant_allowed, _defaulters_allowed: form.defaulters_allowed,
       _deposit_amount: form.deposit_amount, _fee_amount: form.fee_amount, _is_active: form.is_active,
     });
-    setSaving(false); if (error) return toast.error(amenityError(error));
+    if (error) { setSaving(false); return toast.error(amenityError(error)); }
+    const amenityId = form.id ?? (typeof savedId === "string" ? savedId : (savedId as any)?.id ?? null);
+    if (amenityId) {
+      const { error: pErr } = await (supabase as any).rpc("admin_set_amenity_household_policy", { _amenity_id: amenityId, _household_allowed: form.household_allowed });
+      if (pErr) { setSaving(false); return toast.error(amenityError(pErr)); }
+    }
+    setSaving(false);
     toast.success(form.id ? "Amenity updated" : "Amenity created"); setOpen(false); setForm(blank); void load();
   }
 
@@ -91,7 +97,7 @@ function AdminAmenities() {
   }
 
   function edit(a: Amenity) {
-    setForm({ id:a.id,name:a.name,description:a.description ?? "",amenity_type:a.amenity_type,opens_at:a.opens_at.slice(0,5),closes_at:a.closes_at.slice(0,5),slot_minutes:a.slot_minutes,capacity:a.capacity,advance_days:a.advance_days,cancellation_hours:a.cancellation_hours,weekly_household_limit:a.weekly_household_limit?.toString() ?? "",owner_allowed:a.owner_allowed,tenant_allowed:a.tenant_allowed,defaulters_allowed:a.defaulters_allowed,deposit_amount:Number(a.deposit_amount),fee_amount:Number(a.fee_amount),is_active:a.is_active }); setOpen(true);
+    setForm({ id:a.id,name:a.name,description:a.description ?? "",amenity_type:a.amenity_type,opens_at:a.opens_at.slice(0,5),closes_at:a.closes_at.slice(0,5),slot_minutes:a.slot_minutes,capacity:a.capacity,advance_days:a.advance_days,cancellation_hours:a.cancellation_hours,weekly_household_limit:a.weekly_household_limit?.toString() ?? "",owner_allowed:a.owner_allowed,tenant_allowed:a.tenant_allowed,household_allowed:a.household_allowed ?? true,defaulters_allowed:a.defaulters_allowed,deposit_amount:Number(a.deposit_amount),fee_amount:Number(a.fee_amount),is_active:a.is_active }); setOpen(true);
   }
 
   return <PageShell>
@@ -118,7 +124,7 @@ function AdminAmenities() {
       <div><Label htmlFor="am-limit">Weekly household limit <span className="font-normal text-muted-foreground">(optional)</span></Label><Input id="am-limit" type="number" className="h-11" min={1} max={100} value={form.weekly_household_limit} onChange={(e)=>setForm({...form,weekly_household_limit:e.target.value})} /></div>
       <div className="grid grid-cols-2 gap-3"><Num id="am-fee" label="Configured fee (₹)" value={form.fee_amount} min={0} max={10000000} onChange={(v)=>setForm({...form,fee_amount:v})} /><Num id="am-deposit" label="Deposit (₹)" value={form.deposit_amount} min={0} max={10000000} onChange={(v)=>setForm({...form,deposit_amount:v})} /></div>
       <p className="text-xs text-muted-foreground">Fees and deposits are informational configuration only. Amenity booking does not create a payment or ledger entry.</p>
-      <div className="grid gap-2"><Toggle label="Owners may book" checked={form.owner_allowed} onChange={(v)=>setForm({...form,owner_allowed:v})} /><Toggle label="Tenants may book" checked={form.tenant_allowed} onChange={(v)=>setForm({...form,tenant_allowed:v})} /><Toggle label="Homes with overdue maintenance may book" checked={form.defaulters_allowed} onChange={(v)=>setForm({...form,defaulters_allowed:v})} /><Toggle label="Open for booking" checked={form.is_active} onChange={(v)=>setForm({...form,is_active:v})} /></div>
+      <div className="grid gap-2"><Toggle label="Owners may book" checked={form.owner_allowed} onChange={(v)=>setForm({...form,owner_allowed:v})} /><Toggle label="Tenants may book (active tenancy only)" checked={form.tenant_allowed} onChange={(v)=>setForm({...form,tenant_allowed:v})} /><Toggle label="Family members living in the home may book" checked={form.household_allowed} onChange={(v)=>setForm({...form,household_allowed:v})} /><Toggle label="Homes with overdue maintenance may book" checked={form.defaulters_allowed} onChange={(v)=>setForm({...form,defaulters_allowed:v})} /><Toggle label="Open for booking" checked={form.is_active} onChange={(v)=>setForm({...form,is_active:v})} /></div>
       <Button type="submit" className="h-12 w-full" disabled={saving}>{saving?<Loader2 className="h-4 w-4 animate-spin" />:<><Settings2 className="mr-2 h-4 w-4" />Save amenity</>}</Button>
     </form></DialogContent></Dialog>
   </PageShell>;

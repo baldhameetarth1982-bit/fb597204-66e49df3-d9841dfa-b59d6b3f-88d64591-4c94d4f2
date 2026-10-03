@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { getFlat360 } from "@/lib/flat360.functions";
+import { getFlatNoDuesActivity } from "@/lib/no-dues.functions";
 import { generateFlat360AISummaryFn } from "@/lib/flat360-ai.functions";
 import type {
   Flat360Snapshot,
@@ -495,7 +496,16 @@ function VehiclesSection({ state }: { state: SectionState<VehicleItem[]> }) {
   );
 }
 
-function NoDuesSection({ state }: { state: SectionState<SafeNoDuesSection> }) {
+function NoDuesSection({ state, flatId }: { state: SectionState<SafeNoDuesSection>; flatId: string }) {
+  const loadActivity = useServerFn(getFlatNoDuesActivity);
+  const activity = useQuery({
+    queryKey: ["flat-no-dues-activity", flatId],
+    enabled: state.status === "available",
+    staleTime: 30_000,
+    queryFn: () => loadActivity({ data: { flatId } }),
+  });
+  const req = activity.data?.latestRequest ?? null;
+  const cert = activity.data?.latestCertificate ?? null;
   return (
     <CardShell
       title="No-Dues"
@@ -539,6 +549,20 @@ function NoDuesSection({ state }: { state: SectionState<SafeNoDuesSection> }) {
                 </ul>
               </div>
             )}
+            <div className="rounded-xl border bg-muted/30 p-3 text-xs space-y-1">
+              {activity.isLoading ? <p className="text-muted-foreground">Loading No-Dues history…</p>
+                : activity.isError ? <p className="text-destructive">Couldn't load No-Dues history.</p>
+                : <>
+                    <p>{req ? <>Latest request: <span className="font-medium capitalize">{req.status.replace(/_/g, " ")}</span> · {new Date(req.submittedAt).toLocaleDateString("en-IN")}</> : "No No-Dues request from this home yet."}</p>
+                    {cert && <p>Certificate {cert.number}{cert.revoked ? " · revoked" : ""} · issued {new Date(cert.issuedAt).toLocaleDateString("en-IN")}</p>}
+                  </>}
+              <p className="text-muted-foreground">Eligibility above comes from the same server check used for every No-Dues request.</p>
+            </div>
+            <Button asChild size="sm" className="min-h-11 w-full rounded-xl">
+              {req
+                ? <Link to="/society/no-dues/$id" params={{ id: req.id }}>{["submitted", "pending", "under_review", "blocked_by_dues"].includes(req.status) ? "Review No-Dues request" : "Open No-Dues request"}</Link>
+                : <Link to="/society/no-dues">Go to No-Dues</Link>}
+            </Button>
           </div>
         ),
       )}
@@ -830,7 +854,7 @@ function FlatDetailPage() {
             <VehiclesSection state={snapshot.vehicles} />
           </div>
           <div className="min-w-0 space-y-3">
-            <NoDuesSection state={snapshot.noDues} />
+            <NoDuesSection state={snapshot.noDues} flatId={id} />
             <DeterministicSummaryCard state={snapshot.deterministicSummary} />
             <AISummaryTrigger onMount={() => setAiTriggered(true)} />
             <AISummarySlot

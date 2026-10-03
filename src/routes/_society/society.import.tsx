@@ -312,6 +312,7 @@ function ImportPage() {
       setHeaders(fin.headers);
       setRowCount(fin.row_count);
       setMapping(suggestedMapping(fin.headers, entityType, sourceType));
+      setMappingChecked(false);
       const guess = detectSourceType(fin.headers, entityType);
       if (guess && guess.source !== sourceType) toast.info(`These columns look like a ${SOURCE_LABELS[guess.source]}. Change Source and re-upload if that's right.`);
       const mappedCount = Object.keys(suggestedMapping(fin.headers, entityType, sourceType)).length;

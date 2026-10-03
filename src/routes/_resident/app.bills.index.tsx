@@ -158,7 +158,7 @@ function BillsScreen() {
           </p>
           <p className="mt-3 flex items-start gap-2 border-t border-current/15 pt-3 text-xs opacity-80">
             <Info className="h-4 w-4 shrink-0" />
-            Open a bill to pay by Cash, Bank Transfer or — where your society offers it — UPI QR or online Pay now. A bill is marked paid only after the payment is confirmed.
+            Open a bill to pay by Cash, Bank Transfer or — where your society offers it — UPI QR or online. A bill is marked paid only after the payment is confirmed.
           </p>
         </section>
       )}

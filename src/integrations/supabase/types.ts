@@ -1880,6 +1880,91 @@ export type Database = {
         }
         Relationships: []
       }
+      community_event_rsvps: {
+        Row: {
+          created_at: string
+          event_id: string
+          guests: number
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          guests?: number
+          status: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          guests?: number
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_event_rsvps_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "community_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_events: {
+        Row: {
+          cancel_reason: string | null
+          capacity: number | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          ends_at: string | null
+          id: string
+          society_id: string
+          starts_at: string
+          status: string
+          title: string
+          venue: string | null
+        }
+        Insert: {
+          cancel_reason?: string | null
+          capacity?: number | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          society_id: string
+          starts_at: string
+          status?: string
+          title: string
+          venue?: string | null
+        }
+        Update: {
+          cancel_reason?: string | null
+          capacity?: number | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          society_id?: string
+          starts_at?: string
+          status?: string
+          title?: string
+          venue?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_events_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       community_listing_categories: {
         Row: {
           active: boolean
@@ -11537,6 +11622,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_cancel_event: {
+        Args: { _event_id: string; _reason: string }
+        Returns: undefined
+      }
       admin_cancel_maintenance: {
         Args: { _id: string; _reason: string }
         Returns: undefined
@@ -11552,6 +11641,18 @@ export type Database = {
       admin_cancel_society_plan: {
         Args: { _reason: string; _society_id: string }
         Returns: Json
+      }
+      admin_create_event: {
+        Args: {
+          _capacity: number
+          _description: string
+          _ends_at: string
+          _society_id: string
+          _starts_at: string
+          _title: string
+          _venue: string
+        }
+        Returns: string
       }
       admin_create_survey: {
         Args: {
@@ -12742,6 +12843,18 @@ export type Database = {
       }
       ev_session_start: {
         Args: { _charger_id: string; _plate: string }
+        Returns: string
+      }
+      event_counts: {
+        Args: { _event_ids: string[] }
+        Returns: {
+          event_id: string
+          going: number
+          waitlist: number
+        }[]
+      }
+      event_rsvp: {
+        Args: { _event_id: string; _going: boolean }
         Returns: string
       }
       execute_finance_backfill: {

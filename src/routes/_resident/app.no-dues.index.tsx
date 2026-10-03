@@ -12,6 +12,7 @@ import { StatusChip } from "@/components/system/StatusChip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchCurrentHomeId } from "@/components/resident/HomeSwitcher";
 import {
   listMyNoDuesRequests,
   submitNoDuesRequest,
@@ -45,15 +46,11 @@ function ResidentNoDues() {
   const { data: myFlat } = useQuery({
     queryKey: ["my-active-flat"],
     queryFn: async () => {
-      const { data: auth } = await supabase.auth.getUser();
-      if (!auth.user) return null;
-      const { data } = await supabase
-        .from("flat_residents")
-        .select("flat_id,flats(id,society_id,flat_number)")
-        .eq("user_id", auth.user.id)
-        .eq("is_active", true)
-        .maybeSingle();
-      return (data as any)?.flats ?? null;
+      // Server-selected current home; eligibility is still re-checked on the server.
+      const homeId = await fetchCurrentHomeId();
+      if (!homeId) return null;
+      const { data } = await supabase.from("flats").select("id,society_id,flat_number").eq("id", homeId).maybeSingle();
+      return (data as any) ?? null;
     },
   });
 

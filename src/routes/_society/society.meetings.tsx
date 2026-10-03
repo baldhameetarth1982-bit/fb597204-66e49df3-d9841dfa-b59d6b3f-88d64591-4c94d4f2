@@ -252,7 +252,7 @@ function MeetingDetail({ m, societyId, onChanged, onEdit }: { m: Meeting; societ
             {d.data?.actions.map((a) => (
               <li key={a.id} className="flex items-center gap-3 px-3 py-2 text-sm">
                 <span className="min-w-0 flex-1"><span className={cn("block font-medium", a.status !== "open" && "line-through text-muted-foreground")}>{a.title}</span><span className="block text-xs text-muted-foreground">{[a.owner_name, a.due_on && `due ${a.due_on}`].filter(Boolean).join(" · ") || "No owner"}</span>
-                  {a.status === "open" && a.due_on && a.due_on < new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" }) && <span className="mt-1 inline-block rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">Overdue</span>}
+                  {isOverdue(a.due_on, a.status === "open") && <span className="mt-1 inline-block rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">Overdue</span>}
                 </span>
                 {a.status === "open" ? <Button size="sm" variant="outline" className="min-h-11" disabled={!!busy} onClick={() => run(a.id, "meeting_set_action_status", { _id: a.id, _status: "done" }, "Marked done")}><CheckCircle2 className="h-4 w-4 mr-1" />Done</Button>
                   : <span className="text-xs capitalize">{a.status}</span>}

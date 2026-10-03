@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { cancelMaintenance, scheduleMaintenance } from "@/lib/role-access.functions";
+import { isOverdue } from "@/lib/overdue";
 
 const LABEL: Record<string, string> = { scheduled: "Scheduled", in_progress: "In progress", paused: "Paused", done: "Done", cancelled: "Cancelled" };
 const mutOpts = { networkMode: "always" as const, retry: false };
@@ -83,7 +84,7 @@ export function MaintenanceScheduleTab() {
               <div className="min-w-0"><p className="font-medium">{m.title}</p>
                 <p className="text-muted-foreground">{staffName(m.staff_id)} · due {m.due_on}{assetName(m.asset_id) ? ` · ${assetName(m.asset_id)}` : ""}</p>
                 {(m.staff_note || m.cancel_reason) && <p className="text-muted-foreground">{m.cancel_reason ?? m.staff_note}</p>}</div>
-              <div className="flex items-center gap-2"><Badge variant="outline">{LABEL[m.status] ?? m.status}</Badge>
+              <div className="flex items-center gap-2">{isOverdue(m.due_on, !["done", "cancelled"].includes(m.status)) && <Badge variant="destructive">Overdue</Badge>}<Badge variant="outline">{LABEL[m.status] ?? m.status}</Badge>
                 {!["done", "cancelled"].includes(m.status) && (
                   <Button size="sm" variant="outline" className="min-h-11" disabled={stop.isPending} onClick={() => {
                     const reason = window.prompt("Reason for cancelling (at least 5 characters)")?.trim();

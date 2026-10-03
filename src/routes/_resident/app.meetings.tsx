@@ -13,6 +13,7 @@ import { CommPage, CommHeader, SectionLabel } from "@/components/comm/CommUI";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
+import { isOverdue } from "@/lib/overdue";
 import { govRpc, govError, MEETING_STATUS, fmtDateTime } from "@/lib/governance";
 import { openKnowledgeDocument } from "@/lib/society-knowledge.functions";
 
@@ -135,7 +136,7 @@ function ResidentMeetings() {
               )}
               {(detail.data?.actions.length ?? 0) > 0 && (
                 <div><h3 className="text-sm font-semibold">Action items</h3>
-                  <ul className="space-y-1 text-sm">{detail.data!.actions.map((a) => <li key={a.id} className={cn(a.status !== "open" && "line-through text-muted-foreground")}>{a.title}{a.owner_name ? ` — ${a.owner_name}` : ""}</li>)}</ul>
+                  <ul className="space-y-1 text-sm">{detail.data!.actions.map((a) => <li key={a.id} className={cn(a.status !== "open" && "line-through text-muted-foreground")}>{a.title}{a.owner_name ? ` — ${a.owner_name}` : ""}{a.due_on ? ` · due ${a.due_on}` : ""}{isOverdue(a.due_on, a.status === "open") && <span className="ml-2 rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">Overdue</span>}</li>)}</ul>
                 </div>
               )}
               {(detail.data?.docs.length ?? 0) > 0 && (

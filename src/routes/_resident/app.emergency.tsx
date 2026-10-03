@@ -12,6 +12,7 @@ import {
 } from "@/lib/emergency-contacts";
 import { isOnline } from "@/lib/offline-cache";
 import { SafetyAlertPanel, SosButton } from "@/components/gate/ResidentSafety";
+import { EmergencyBroadcastHistory } from "@/components/emergency/EmergencyBroadcasts";
 
 export const Route = createFileRoute("/_resident/app/emergency")({
   head: () => ({ meta: [{ title: "Emergency & SOS — SociyoHub" }, { name: "description", content: "Send an SOS to your society security and call emergency numbers." }] }),
@@ -47,6 +48,7 @@ function EmergencyPage() {
           <p className="text-sm text-muted-foreground">Works offline — saved on your device</p>
         </div>
       </header>
+      <EmergencyBroadcastHistory />
 
       {!online && (
         <Card className="rounded-2xl border-warning/40 bg-warning/10">

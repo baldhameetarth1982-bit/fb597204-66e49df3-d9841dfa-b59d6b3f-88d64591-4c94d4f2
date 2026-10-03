@@ -11,6 +11,7 @@ import {
   ScanLine,
   Siren,
   CalendarDays,
+  Store,
 } from "lucide-react";
 import { ServiceDirectory } from "@/components/discovery/ServiceDirectory";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,6 +39,7 @@ function ServicesScreen() {
     { to: "/app/visitors", title: "My Visitors", desc: "See who came to your flat", icon: Users, accent: "bg-primary/10 text-primary" },
     { to: "/app/vehicles", title: "Vehicles", desc: "Register cars & two-wheelers", icon: Car, accent: "bg-primary/10 text-primary" },
     { to: "/app/helpdesk", title: "Complaints", desc: "Raise & track society issues", icon: AlertCircle, accent: "bg-destructive/10 text-destructive" },
+    { to: "/app/community", title: "Community", desc: "Offer or find help from neighbours", icon: Store, accent: "bg-primary/10 text-primary" },
     { to: "/app/emergency", title: "Emergency", desc: "SOS and emergency contacts", icon: Siren, accent: "bg-destructive/10 text-destructive" },
   ] as const;
 

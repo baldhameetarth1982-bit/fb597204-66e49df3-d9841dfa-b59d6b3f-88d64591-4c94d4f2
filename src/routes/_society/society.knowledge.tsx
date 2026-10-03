@@ -4,9 +4,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   Archive, ArchiveRestore, CheckCircle2, ExternalLink, FileText, HelpCircle, Loader2, Lock, MoreHorizontal, Pencil, Plus, RefreshCw, Trash2, Upload,
-  History,
+  History, CalendarClock,
 } from "lucide-react";
 import { toast } from "sonner";
+import { DocumentExpiryDialog, ExpiryChip } from "@/components/documents/DocumentExpiry";
 import { PageHeader, PageShell } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,6 +63,7 @@ function KnowledgeAdmin() {
   const [faqFor, setFaqFor] = useState<KnowledgeItem | "new" | null>(null);
   const [removing, setRemoving] = useState<KnowledgeItem | null>(null);
   const [versionsFor, setVersionsFor] = useState<KnowledgeItem | null>(null);
+  const [expiryFor, setExpiryFor] = useState<KnowledgeItem | null>(null);
 
   const q = useQuery({ queryKey: ["society-knowledge"], queryFn: () => list(), staleTime: 15_000 });
   const refresh = () => qc.invalidateQueries({ queryKey: ["society-knowledge"] });
@@ -162,6 +164,7 @@ function KnowledgeAdmin() {
                             {i.kind === "document" && <StatusChip tone="muted"><span className="capitalize">{i.category}</span></StatusChip>}
                             {i.kind === "document" && i.version > 1 && <StatusChip tone="muted">v{i.version}</StatusChip>}
                             {i.audience === "committee" && <StatusChip tone="muted"><Lock className="h-3 w-3 mr-1" />Committee only</StatusChip>}
+                            {i.kind === "document" && <ExpiryChip expiresOn={i.expiresOn} />}
                           </div>
                           <p className="mt-1 font-medium leading-snug break-words">{i.title}</p>
                           <p className="text-xs text-muted-foreground break-all">
@@ -190,6 +193,7 @@ function KnowledgeAdmin() {
                               )}
                               {i.status === "ready" && <DropdownMenuItem className="min-h-11" disabled={archive.isPending} onSelect={() => archive.mutate({ id: i.id, archived: true })}><Archive className="h-4 w-4 mr-2" /> Archive</DropdownMenuItem>}
                               {i.status === "archived" && <DropdownMenuItem className="min-h-11" disabled={archive.isPending} onSelect={() => archive.mutate({ id: i.id, archived: false })}><ArchiveRestore className="h-4 w-4 mr-2" /> Restore</DropdownMenuItem>}
+                              {i.kind === "document" && <DropdownMenuItem className="min-h-11" onSelect={() => setExpiryFor(i)}><CalendarClock className="h-4 w-4 mr-2" /> Expiry & reminders</DropdownMenuItem>}
                               {i.kind === "document" && <DropdownMenuItem className="min-h-11" onSelect={() => setVersionsFor(i)}><History className="h-4 w-4 mr-2" /> Category & versions</DropdownMenuItem>}
                               {i.kind === "faq" && <><DropdownMenuSeparator />
                               <DropdownMenuItem className="min-h-11 text-destructive focus:text-destructive" onSelect={() => setRemoving(i)}><Trash2 className="h-4 w-4 mr-2" /> Remove…</DropdownMenuItem></>}
@@ -206,6 +210,7 @@ function KnowledgeAdmin() {
         )}
       </div>
 
+      {expiryFor && <DocumentExpiryDialog item={expiryFor} onClose={() => setExpiryFor(null)} onDone={refresh} />}
       {versionsFor && <VersionsDialog item={versionsFor} onClose={() => setVersionsFor(null)} onDone={refresh} />}
       {uploadFor && <UploadDialog target={uploadFor} onClose={() => setUploadFor(null)} onDone={refresh} />}
       {faqFor && <FaqDialog target={faqFor} onClose={() => setFaqFor(null)} onDone={refresh} />}

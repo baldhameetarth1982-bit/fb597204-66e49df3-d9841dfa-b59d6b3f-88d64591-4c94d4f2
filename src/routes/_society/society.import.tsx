@@ -222,7 +222,12 @@ function ImportPage() {
 
   const step: 1 | 2 | 3 | 4 = totals ? 4 : previewRows.length || headers.length ? 3 : jobId ? 2 : 1;
 
-  const canValidate = useMemo(() => headers.length > 0 && Object.keys(mapping).length > 0, [headers, mapping]);
+  const [mappingChecked, setMappingChecked] = useState(false);
+  const needsMappingCheck = sourceType === "mygate" || sourceType === "adda" || sourceType === "nobrokerhood";
+  const canValidate = useMemo(
+    () => headers.length > 0 && Object.keys(mapping).length > 0 && (!needsMappingCheck || mappingChecked),
+    [headers, mapping, needsMappingCheck, mappingChecked],
+  );
   const canCommit = totals !== null && totals.errors === 0 && commitStatus !== "completed";
   const holdRows = useServerFn(holdMigrationProblemRows);
   const markRetry = useServerFn(markMigrationRetry);
@@ -619,20 +624,34 @@ function ImportPage() {
                   Validate
                 </Button>
               </div>
+              <p className="text-xs text-muted-foreground">
+                {headers.filter((h) => !mapping[h]).length} of {headers.length} column(s) not matched — unmatched columns are skipped, never guessed.
+              </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {headers.map((h) => (
                   <div key={h} className="flex items-center gap-2 text-sm">
-                    <div className="flex-1 truncate rounded-lg bg-muted px-2 py-1.5">{h}</div>
-                    <span className="text-muted-foreground">→</span>
-                    <input
-                      className="flex-1 rounded-lg border border-border bg-background px-2 py-1.5 text-xs"
-                      placeholder="canonical field (leave blank to skip)"
+                    <div className={`flex-1 truncate rounded-lg px-2 py-1.5 ${mapping[h] ? "bg-muted" : "border border-dashed border-border text-muted-foreground"}`}>{h}</div>
+                    <span className="text-muted-foreground" aria-hidden>→</span>
+                    <select
+                      aria-label={`Field for column ${h}`}
+                      className="min-h-11 flex-1 rounded-lg border border-border bg-background px-2 text-xs"
                       value={mapping[h] ?? ""}
-                      onChange={(e) => updateMapping(h, e.target.value.trim())}
-                    />
+                      onChange={(e) => { updateMapping(h, e.target.value); setMappingChecked(false); }}
+                    >
+                      <option value="">Skip this column</option>
+                      {Object.keys(ROW_SCHEMAS[entityType].shape).map((f) => (
+                        <option key={f} value={f}>{f.replace(/_/g, " ")}</option>
+                      ))}
+                    </select>
                   </div>
                 ))}
               </div>
+              {needsMappingCheck && (
+                <label className="flex min-h-11 items-start gap-2 rounded-xl border border-warning/40 bg-warning/10 p-3 text-xs">
+                  <input type="checkbox" className="mt-0.5 h-4 w-4" checked={mappingChecked} onChange={(e) => setMappingChecked(e.target.checked)} />
+                  <span>The {SOURCE_LABELS[sourceType]} column matches are an unverified preset. I have checked each match above before validating.</span>
+                </label>
+              )}
             </CardContent>
           </Card>
         )}

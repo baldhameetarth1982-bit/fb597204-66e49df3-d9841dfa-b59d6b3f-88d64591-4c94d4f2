@@ -10385,6 +10385,124 @@ export type Database = {
           },
         ]
       }
+      utility_meter_readings: {
+        Row: {
+          created_at: string
+          id: string
+          is_abnormal: boolean
+          meter_id: string
+          note: string | null
+          reading: number
+          reading_date: string
+          recorded_by: string | null
+          society_id: string
+          units: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_abnormal?: boolean
+          meter_id: string
+          note?: string | null
+          reading: number
+          reading_date: string
+          recorded_by?: string | null
+          society_id: string
+          units?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_abnormal?: boolean
+          meter_id?: string
+          note?: string | null
+          reading?: number
+          reading_date?: string
+          recorded_by?: string | null
+          society_id?: string
+          units?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "utility_meter_readings_meter_id_fkey"
+            columns: ["meter_id"]
+            isOneToOne: false
+            referencedRelation: "utility_meters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "utility_meter_readings_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      utility_meters: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          flat_id: string | null
+          id: string
+          installed_on: string
+          label: string | null
+          meter_number: string
+          replaced_by: string | null
+          society_id: string
+          status: string
+          utility: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          flat_id?: string | null
+          id?: string
+          installed_on?: string
+          label?: string | null
+          meter_number: string
+          replaced_by?: string | null
+          society_id: string
+          status?: string
+          utility: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          flat_id?: string | null
+          id?: string
+          installed_on?: string
+          label?: string | null
+          meter_number?: string
+          replaced_by?: string | null
+          society_id?: string
+          status?: string
+          utility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "utility_meters_flat_id_fkey"
+            columns: ["flat_id"]
+            isOneToOne: false
+            referencedRelation: "flats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "utility_meters_replaced_by_fkey"
+            columns: ["replaced_by"]
+            isOneToOne: false
+            referencedRelation: "utility_meters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "utility_meters_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vehicles: {
         Row: {
           color: string | null
@@ -11713,6 +11831,15 @@ export type Database = {
         Args: { _day: string; _note: string; _staff: string; _status: string }
         Returns: undefined
       }
+      admin_record_meter_reading: {
+        Args: {
+          _meter_id: string
+          _note: string
+          _reading: number
+          _reading_date: string
+        }
+        Returns: Json
+      }
       admin_record_platform_cost: {
         Args: {
           _amount: number
@@ -11721,6 +11848,17 @@ export type Database = {
           _period: string
         }
         Returns: Json
+      }
+      admin_register_meter: {
+        Args: {
+          _flat_id: string
+          _label: string
+          _meter_number: string
+          _replaces?: string
+          _society_id: string
+          _utility: string
+        }
+        Returns: string
       }
       admin_register_rfid: {
         Args: {

@@ -1219,6 +1219,13 @@
       "when": 1791054123535,
       "tag": "0173_upi_qr_maintenance_payments",
       "breakpoints": true
+    },
+    {
+      "idx": 174,
+      "version": "7",
+      "when": 1791054181635,
+      "tag": "0174_upi_qr_rate_limit_fix",
+      "breakpoints": true
     }
   ]
 }

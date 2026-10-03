@@ -1163,6 +1163,13 @@
       "when": 1791042642394,
       "tag": "0165_asset_depreciation",
       "breakpoints": true
+    },
+    {
+      "idx": 166,
+      "version": "7",
+      "when": 1791043726399,
+      "tag": "0166_society_registers",
+      "breakpoints": true
     }
   ]
 }

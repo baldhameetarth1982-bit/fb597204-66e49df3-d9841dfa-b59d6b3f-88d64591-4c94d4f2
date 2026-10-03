@@ -260,3 +260,56 @@ export const openDocumentVersion = createServerFn({ method: "POST" })
     if (sErr || !signed?.signedUrl) return { ok: false, message: "This version isn't available right now." };
     return { ok: true, url: signed.signedUrl };
   });
+
+/* ---------------- Lease documents (same vault, linked to a tenancy) ---------------- */
+
+export type LeaseCandidate = { flatResidentId: string; label: string; residentName: string | null; relationship: string; leaseEndsOn: string | null; isCurrent: boolean };
+
+export const listLeaseCandidates = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<Ok<{ items: LeaseCandidate[] }> | Fail> => {
+    const supabase = context.supabase as any;
+    const scope = await adminScope(supabase, context.userId);
+    if ("ok" in scope) return scope;
+    const { data, error } = await supabase.rpc("knowledge_lease_candidates");
+    if (error) return { ok: false, message: friendly(error) };
+    return { ok: true, items: (data ?? []).map((r: any) => ({
+      flatResidentId: r.flat_resident_id, label: [r.block_name, r.flat_number].filter(Boolean).join(" · "),
+      residentName: r.resident_name ?? null, relationship: r.relationship, leaseEndsOn: r.lease_ends_on ?? null, isCurrent: !!r.is_current,
+    })) };
+  });
+
+export const linkLeaseDocument = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: uuid, flatResidentId: uuid }).parse(d))
+  .handler(async ({ data, context }): Promise<Ok<{}> | Fail> => {
+    const supabase = context.supabase as any;
+    const scope = await adminScope(supabase, context.userId);
+    if ("ok" in scope) return scope;
+    const { error } = await supabase.rpc("knowledge_link_lease", { _id: data.id, _flat_resident_id: data.flatResidentId });
+    if (error) return { ok: false, message: String(error.message).includes("invalid_tenancy") ? "That tenancy isn't in your society." : friendly(error) };
+    return { ok: true };
+  });
+
+export type MyLease = { id: string; title: string; version: number; fileName: string | null; updatedAt: string; expiresOn: string | null; flatNumber: string | null };
+
+/** Resident: leases of their own current tenancy only (database-enforced). */
+export const listMyLeases = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<Ok<{ items: MyLease[] }> | Fail> => {
+    const { data, error } = await (context.supabase as any).rpc("list_my_lease_documents");
+    if (error) return { ok: false, message: "Couldn't load your lease." };
+    return { ok: true, items: (data ?? []).map((r: any) => ({ id: r.id, title: r.title, version: r.version, fileName: r.file_name ?? null, updatedAt: r.updated_at, expiresOn: r.expires_on ?? null, flatNumber: r.flat_number ?? null })) };
+  });
+
+export const openMyLease = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: uuid }).parse(d))
+  .handler(async ({ data, context }): Promise<Ok<{ url: string }> | Fail> => {
+    const { data: path, error } = await (context.supabase as any).rpc("my_lease_document_path", { _id: data.id });
+    if (error || !path) return { ok: false, message: "This lease isn't available." };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: signed, error: sErr } = await supabaseAdmin.storage.from(BUCKET).createSignedUrl(path as string, 120);
+    if (sErr || !signed?.signedUrl) return { ok: false, message: "This lease isn't available right now." };
+    return { ok: true, url: signed.signedUrl };
+  });

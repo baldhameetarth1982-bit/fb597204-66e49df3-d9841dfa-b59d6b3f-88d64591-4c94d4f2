@@ -70,7 +70,7 @@ const esc = (s: unknown) => String(s ?? "—").replace(/[&<>"']/g, (c) => ({ "&"
 
 /** Printable purchase order built only from the approved, ordered request already shown. Nothing is stored. */
 function printPurchaseOrder(req: Req, vendor: string, quoteRef: string | null) {
-  const w = window.open("", "_blank", "noopener=no,width=800,height=900");
+  const w = window.open("", "_blank", "width=800,height=900");
   if (!w) { toast.error("Allow pop-ups to print the purchase order."); return; }
   const rows: [string, unknown][] = [["PO / order ref", req.order_ref], ["Request", `#${req.request_no} ${req.title}`], ["Vendor", vendor], ["Category", `${catLabel(req.category)} · ${fyLabel(req.fy_start)}`], ["Quotation ref", quoteRef], ["Approved amount", inr(req.approved_amount)], ["Needed by", req.needed_by], ["Approval note", req.decision_note]];
   w.document.write(`<!doctype html><html><head><title>Purchase order ${esc(req.order_ref)}</title><style>body{font-family:system-ui,sans-serif;margin:40px;color:#0B2545}h1{font-size:22px}table{border-collapse:collapse;width:100%;margin-top:16px}td{border:1px solid #ccc;padding:8px;vertical-align:top}td:first-child{width:35%;font-weight:600}p{white-space:pre-wrap}.sig{margin-top:64px;display:flex;justify-content:space-between}</style></head><body><h1>Purchase order</h1><table>${rows.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</table>${req.description ? `<h3>Scope</h3><p>${esc(req.description)}</p>` : ""}<div class="sig"><span>Authorised signatory</span><span>Vendor acceptance</span></div><script>window.onload=()=>window.print()</script></body></html>`);

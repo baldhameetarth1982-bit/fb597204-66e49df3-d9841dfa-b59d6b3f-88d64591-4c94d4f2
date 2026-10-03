@@ -12,6 +12,7 @@ import { ListSkeleton, LoadError, ListEmpty } from "@/components/people/PeopleUI
 import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { cn } from "@/lib/utils";
+import { useVendorPerformance, perfLabel, VendorPerformancePanel } from "./VendorRatings";
 
 const inr = (n: number) => `₹${Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 const today = () => new Date().toISOString().slice(0, 10);
@@ -139,6 +140,7 @@ interface VendorRow { id: string; name: string; category: string | null; phone: 
 export function VendorsTab() {
   const sid = useSid(); const qc = useQueryClient();
   const [edit, setEdit] = useState<VendorRow | null>(null);
+  const perf = useVendorPerformance(sid);
   const q = useQuery({
     queryKey: ["ops", "vendors", sid], enabled: !!sid,
     queryFn: async () => {
@@ -178,7 +180,7 @@ export function VendorsTab() {
                   {v.contract_type !== "none" && <Chip tone={v.contract_end && within30(v.contract_end) ? (new Date(v.contract_end) < new Date() ? "bad" : "warn") : "ok"}>{v.contract_type === "amc" ? "AMC" : "Contract"}{v.contract_end ? ` till ${v.contract_end}` : ""}</Chip>}
                   {!v.is_active && <Chip tone="muted">Inactive</Chip>}
                 </p>
-                <p className="text-xs text-muted-foreground">{v.category ?? "General"} · {q.data.tickets[v.id] ?? 0} requests · {q.data.assets[v.id] ?? 0} assets · {inr(q.data.spend[v.id] ?? 0)} spent</p>
+                <p className="text-xs text-muted-foreground">{v.category ?? "General"} · {q.data.tickets[v.id] ?? 0} requests · {q.data.assets[v.id] ?? 0} assets · {inr(q.data.spend[v.id] ?? 0)} spent · {perf.isError ? "Ratings unavailable" : perfLabel(perf.data?.[v.id])}</p>
               </button>
             </li>
           ))}
@@ -205,6 +207,7 @@ export function VendorsTab() {
               <Button type="submit" className="h-12 w-full rounded-xl" disabled={save.isPending}>{save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}</Button>
             </form>
           )}
+          {edit && <VendorPerformancePanel vendorId={edit.id} perf={perf.data?.[edit.id]} />}
         </SheetContent>
       </Sheet>
     </section>

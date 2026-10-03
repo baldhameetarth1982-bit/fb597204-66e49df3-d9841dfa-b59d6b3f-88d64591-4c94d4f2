@@ -1177,6 +1177,13 @@
       "when": 1791043800135,
       "tag": "0167_society_registers_owner_fix",
       "breakpoints": true
+    },
+    {
+      "idx": 168,
+      "version": "7",
+      "when": 1791044840732,
+      "tag": "0168_amenity_classes_instructors",
+      "breakpoints": true
     }
   ]
 }

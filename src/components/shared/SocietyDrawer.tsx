@@ -62,6 +62,7 @@ const GROUPS: Group[] = [
     items: [
       { label: "Vehicles", to: "/society/vehicles", icon: Car },
       { label: "Utility meters", to: "/society/meters", icon: Gauge },
+      { label: "Passes & lift", to: "/society/passes", icon: Car },
       { label: "Parking", to: "/society/parking", icon: Car },
       { label: "Visitors", to: "/society/visitors", icon: UserCheck },
     ],

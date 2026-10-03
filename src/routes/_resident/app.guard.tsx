@@ -15,6 +15,7 @@ import { HardwareNote, IncidentSheet, OfflineQueuePanel, ParkingSheet, ReasonShe
 import { GuardSessionGate } from "@/components/gate/GuardSession";
 import { GateHardwareCard, GateSafetyAlerts, GuardPatrolCard } from "@/components/gate/GuardSecurityOps";
 import { GuardParkingCard } from "@/features/parking/GuardParkingCard";
+import { GuardPassesCard } from "@/features/passes/MaterialPasses";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { enqueue } from "@/lib/gate-offline";
 import { cn } from "@/lib/utils";
@@ -175,6 +176,7 @@ function GuardDashboard() {
       <GuardPatrolCard />
       <GateHardwareCard societyId={societyId} />
       <GuardParkingCard societyId={societyId} />
+      <GuardPassesCard societyId={societyId} />
       <section aria-labelledby="guard-attn-h" className="space-y-2">
         <h2 id="guard-attn-h" className="text-sm font-semibold">Needs attention</h2>
         <NeedsAttention emptyText="No gate or security items need attention." />

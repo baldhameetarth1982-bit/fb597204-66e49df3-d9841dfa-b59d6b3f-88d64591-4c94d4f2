@@ -65,6 +65,7 @@ import { Route as SocietySocietyPollsRouteImport } from './routes/_society/socie
 import { Route as SocietySocietyPlanRequiredRouteImport } from './routes/_society/society.plan-required'
 import { Route as SocietySocietyPayoutsRouteImport } from './routes/_society/society.payouts'
 import { Route as SocietySocietyPaymentsRouteImport } from './routes/_society/society.payments'
+import { Route as SocietySocietyPassesRouteImport } from './routes/_society/society.passes'
 import { Route as SocietySocietyParkingRouteImport } from './routes/_society/society.parking'
 import { Route as SocietySocietyOperationsRouteImport } from './routes/_society/society.operations'
 import { Route as SocietySocietyOpeningBalancesRouteImport } from './routes/_society/society.opening-balances'
@@ -122,6 +123,7 @@ import { Route as ResidentAppProfileRouteImport } from './routes/_resident/app.p
 import { Route as ResidentAppPrivacyRequestsRouteImport } from './routes/_resident/app.privacy-requests'
 import { Route as ResidentAppPollsRouteImport } from './routes/_resident/app.polls'
 import { Route as ResidentAppPlanRequiredRouteImport } from './routes/_resident/app.plan-required'
+import { Route as ResidentAppPassesRouteImport } from './routes/_resident/app.passes'
 import { Route as ResidentAppNotificationsRouteImport } from './routes/_resident/app.notifications'
 import { Route as ResidentAppNoticesRouteImport } from './routes/_resident/app.notices'
 import { Route as ResidentAppMeetingsRouteImport } from './routes/_resident/app.meetings'
@@ -489,6 +491,11 @@ const SocietySocietyPaymentsRoute = SocietySocietyPaymentsRouteImport.update({
   path: '/society/payments',
   getParentRoute: () => SocietyRoute,
 } as any)
+const SocietySocietyPassesRoute = SocietySocietyPassesRouteImport.update({
+  id: '/society/passes',
+  path: '/society/passes',
+  getParentRoute: () => SocietyRoute,
+} as any)
 const SocietySocietyParkingRoute = SocietySocietyParkingRouteImport.update({
   id: '/society/parking',
   path: '/society/parking',
@@ -787,6 +794,11 @@ const ResidentAppPollsRoute = ResidentAppPollsRouteImport.update({
 const ResidentAppPlanRequiredRoute = ResidentAppPlanRequiredRouteImport.update({
   id: '/app/plan-required',
   path: '/app/plan-required',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppPassesRoute = ResidentAppPassesRouteImport.update({
+  id: '/app/passes',
+  path: '/app/passes',
   getParentRoute: () => ResidentRoute,
 } as any)
 const ResidentAppNotificationsRoute =
@@ -1298,6 +1310,7 @@ export interface FileRoutesByFullPath {
   '/app/meetings': typeof ResidentAppMeetingsRoute
   '/app/notices': typeof ResidentAppNoticesRoute
   '/app/notifications': typeof ResidentAppNotificationsRoute
+  '/app/passes': typeof ResidentAppPassesRoute
   '/app/plan-required': typeof ResidentAppPlanRequiredRoute
   '/app/polls': typeof ResidentAppPollsRoute
   '/app/privacy-requests': typeof ResidentAppPrivacyRequestsRoute
@@ -1355,6 +1368,7 @@ export interface FileRoutesByFullPath {
   '/society/opening-balances': typeof SocietySocietyOpeningBalancesRoute
   '/society/operations': typeof SocietySocietyOperationsRoute
   '/society/parking': typeof SocietySocietyParkingRoute
+  '/society/passes': typeof SocietySocietyPassesRoute
   '/society/payments': typeof SocietySocietyPaymentsRoute
   '/society/payouts': typeof SocietySocietyPayoutsRoute
   '/society/plan-required': typeof SocietySocietyPlanRequiredRoute
@@ -1489,6 +1503,7 @@ export interface FileRoutesByTo {
   '/app/meetings': typeof ResidentAppMeetingsRoute
   '/app/notices': typeof ResidentAppNoticesRoute
   '/app/notifications': typeof ResidentAppNotificationsRoute
+  '/app/passes': typeof ResidentAppPassesRoute
   '/app/plan-required': typeof ResidentAppPlanRequiredRoute
   '/app/polls': typeof ResidentAppPollsRoute
   '/app/privacy-requests': typeof ResidentAppPrivacyRequestsRoute
@@ -1546,6 +1561,7 @@ export interface FileRoutesByTo {
   '/society/opening-balances': typeof SocietySocietyOpeningBalancesRoute
   '/society/operations': typeof SocietySocietyOperationsRoute
   '/society/parking': typeof SocietySocietyParkingRoute
+  '/society/passes': typeof SocietySocietyPassesRoute
   '/society/payments': typeof SocietySocietyPaymentsRoute
   '/society/payouts': typeof SocietySocietyPayoutsRoute
   '/society/plan-required': typeof SocietySocietyPlanRequiredRoute
@@ -1686,6 +1702,7 @@ export interface FileRoutesById {
   '/_resident/app/meetings': typeof ResidentAppMeetingsRoute
   '/_resident/app/notices': typeof ResidentAppNoticesRoute
   '/_resident/app/notifications': typeof ResidentAppNotificationsRoute
+  '/_resident/app/passes': typeof ResidentAppPassesRoute
   '/_resident/app/plan-required': typeof ResidentAppPlanRequiredRoute
   '/_resident/app/polls': typeof ResidentAppPollsRoute
   '/_resident/app/privacy-requests': typeof ResidentAppPrivacyRequestsRoute
@@ -1743,6 +1760,7 @@ export interface FileRoutesById {
   '/_society/society/opening-balances': typeof SocietySocietyOpeningBalancesRoute
   '/_society/society/operations': typeof SocietySocietyOperationsRoute
   '/_society/society/parking': typeof SocietySocietyParkingRoute
+  '/_society/society/passes': typeof SocietySocietyPassesRoute
   '/_society/society/payments': typeof SocietySocietyPaymentsRoute
   '/_society/society/payouts': typeof SocietySocietyPayoutsRoute
   '/_society/society/plan-required': typeof SocietySocietyPlanRequiredRoute
@@ -1880,6 +1898,7 @@ export interface FileRouteTypes {
     | '/app/meetings'
     | '/app/notices'
     | '/app/notifications'
+    | '/app/passes'
     | '/app/plan-required'
     | '/app/polls'
     | '/app/privacy-requests'
@@ -1937,6 +1956,7 @@ export interface FileRouteTypes {
     | '/society/opening-balances'
     | '/society/operations'
     | '/society/parking'
+    | '/society/passes'
     | '/society/payments'
     | '/society/payouts'
     | '/society/plan-required'
@@ -2071,6 +2091,7 @@ export interface FileRouteTypes {
     | '/app/meetings'
     | '/app/notices'
     | '/app/notifications'
+    | '/app/passes'
     | '/app/plan-required'
     | '/app/polls'
     | '/app/privacy-requests'
@@ -2128,6 +2149,7 @@ export interface FileRouteTypes {
     | '/society/opening-balances'
     | '/society/operations'
     | '/society/parking'
+    | '/society/passes'
     | '/society/payments'
     | '/society/payouts'
     | '/society/plan-required'
@@ -2267,6 +2289,7 @@ export interface FileRouteTypes {
     | '/_resident/app/meetings'
     | '/_resident/app/notices'
     | '/_resident/app/notifications'
+    | '/_resident/app/passes'
     | '/_resident/app/plan-required'
     | '/_resident/app/polls'
     | '/_resident/app/privacy-requests'
@@ -2324,6 +2347,7 @@ export interface FileRouteTypes {
     | '/_society/society/opening-balances'
     | '/_society/society/operations'
     | '/_society/society/parking'
+    | '/_society/society/passes'
     | '/_society/society/payments'
     | '/_society/society/payouts'
     | '/_society/society/plan-required'
@@ -2816,6 +2840,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SocietySocietyPaymentsRouteImport
       parentRoute: typeof SocietyRoute
     }
+    '/_society/society/passes': {
+      id: '/_society/society/passes'
+      path: '/society/passes'
+      fullPath: '/society/passes'
+      preLoaderRoute: typeof SocietySocietyPassesRouteImport
+      parentRoute: typeof SocietyRoute
+    }
     '/_society/society/parking': {
       id: '/_society/society/parking'
       path: '/society/parking'
@@ -3213,6 +3244,13 @@ declare module '@tanstack/react-router' {
       path: '/app/plan-required'
       fullPath: '/app/plan-required'
       preLoaderRoute: typeof ResidentAppPlanRequiredRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/passes': {
+      id: '/_resident/app/passes'
+      path: '/app/passes'
+      fullPath: '/app/passes'
+      preLoaderRoute: typeof ResidentAppPassesRouteImport
       parentRoute: typeof ResidentRoute
     }
     '/_resident/app/notifications': {
@@ -3877,6 +3915,7 @@ interface ResidentRouteChildren {
   ResidentAppMeetingsRoute: typeof ResidentAppMeetingsRoute
   ResidentAppNoticesRoute: typeof ResidentAppNoticesRoute
   ResidentAppNotificationsRoute: typeof ResidentAppNotificationsRoute
+  ResidentAppPassesRoute: typeof ResidentAppPassesRoute
   ResidentAppPlanRequiredRoute: typeof ResidentAppPlanRequiredRoute
   ResidentAppPollsRoute: typeof ResidentAppPollsRoute
   ResidentAppPrivacyRequestsRoute: typeof ResidentAppPrivacyRequestsRoute
@@ -3922,6 +3961,7 @@ const ResidentRouteChildren: ResidentRouteChildren = {
   ResidentAppMeetingsRoute: ResidentAppMeetingsRoute,
   ResidentAppNoticesRoute: ResidentAppNoticesRoute,
   ResidentAppNotificationsRoute: ResidentAppNotificationsRoute,
+  ResidentAppPassesRoute: ResidentAppPassesRoute,
   ResidentAppPlanRequiredRoute: ResidentAppPlanRequiredRoute,
   ResidentAppPollsRoute: ResidentAppPollsRoute,
   ResidentAppPrivacyRequestsRoute: ResidentAppPrivacyRequestsRoute,
@@ -3992,6 +4032,7 @@ interface SocietyRouteChildren {
   SocietySocietyOpeningBalancesRoute: typeof SocietySocietyOpeningBalancesRoute
   SocietySocietyOperationsRoute: typeof SocietySocietyOperationsRoute
   SocietySocietyParkingRoute: typeof SocietySocietyParkingRoute
+  SocietySocietyPassesRoute: typeof SocietySocietyPassesRoute
   SocietySocietyPaymentsRoute: typeof SocietySocietyPaymentsRoute
   SocietySocietyPayoutsRoute: typeof SocietySocietyPayoutsRoute
   SocietySocietyPlanRequiredRoute: typeof SocietySocietyPlanRequiredRoute
@@ -4075,6 +4116,7 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyOpeningBalancesRoute: SocietySocietyOpeningBalancesRoute,
   SocietySocietyOperationsRoute: SocietySocietyOperationsRoute,
   SocietySocietyParkingRoute: SocietySocietyParkingRoute,
+  SocietySocietyPassesRoute: SocietySocietyPassesRoute,
   SocietySocietyPaymentsRoute: SocietySocietyPaymentsRoute,
   SocietySocietyPayoutsRoute: SocietySocietyPayoutsRoute,
   SocietySocietyPlanRequiredRoute: SocietySocietyPlanRequiredRoute,

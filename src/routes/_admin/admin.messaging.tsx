@@ -89,7 +89,7 @@ function MessagingPage() {
             })}
           </div>
           <Button className="min-h-11" disabled={run.isPending} onClick={() => run.mutate()}>{run.isPending ? "Sending…" : "Send waiting messages now"}</Button>
-          <p className="text-xs text-muted-foreground">Credentials are set on the server only (Resend for email, Twilio for SMS/WhatsApp). Without them, messages are marked "Provider not connected" and people still get the in-app notification. Emergency broadcasts are queued here automatically.</p>
+          <p className="text-xs text-muted-foreground">Credentials are set on the server only (Resend for email, Twilio for SMS/WhatsApp). Without them, messages are marked "Provider not connected" and people still get the in-app notification. Emergency broadcasts are queued here automatically. Waiting messages send right away when queued; failed ones retry with growing gaps, checked every hour.</p>
         </div>
       )}
     </PageShell>

@@ -1191,6 +1191,13 @@
       "when": 1791046571446,
       "tag": "0169_class_reminders_qr_checkin",
       "breakpoints": true
+    },
+    {
+      "idx": 170,
+      "version": "7",
+      "when": 1791049280183,
+      "tag": "0170_temporary_occupants",
+      "breakpoints": true
     }
   ]
 }

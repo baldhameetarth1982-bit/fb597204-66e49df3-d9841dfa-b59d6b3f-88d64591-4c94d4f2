@@ -15,6 +15,7 @@ export function EventsBoard({ societyId, mode }: { societyId: string; mode: "adm
   const qc = useQueryClient();
   const [creating, setCreating] = useState(false);
   const [cancelFor, setCancelFor] = useState<Ev | null>(null);
+  const [peopleFor, setPeopleFor] = useState<Ev | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const key = ["community-events", societyId];
 
@@ -73,6 +74,7 @@ export function EventsBoard({ societyId, mode }: { societyId: string; mode: "adm
                       mine ? <Button variant="outline" className="min-h-11" disabled={busy === e.id} onClick={() => rsvp(e, false)}>{mine === "waitlist" ? "Leave waitlist" : "Not going"}</Button>
                         : <Button className="min-h-11" disabled={busy === e.id} onClick={() => rsvp(e, true)}>I'm going</Button>
                     )}
+                    {mode === "admin" && <Button variant="outline" className="min-h-11" onClick={() => setPeopleFor(e)}>Attendees</Button>}
                     {mode === "admin" && !cancelled && !past && <Button variant="outline" className="min-h-11" onClick={() => setCancelFor(e)}>Cancel event</Button>}
                   </div>
                   {mine && <p className="mt-2 text-sm font-medium text-primary">{mine === "going" ? "You're going" : "You're on the waitlist"}</p>}
@@ -83,7 +85,46 @@ export function EventsBoard({ societyId, mode }: { societyId: string; mode: "adm
         )}
       {creating && <CreateDialog societyId={societyId} onClose={() => setCreating(false)} onDone={() => qc.invalidateQueries({ queryKey: key })} />}
       {cancelFor && <CancelDialog ev={cancelFor} onClose={() => setCancelFor(null)} onDone={() => qc.invalidateQueries({ queryKey: key })} />}
+      {peopleFor && <AttendeesDialog ev={peopleFor} onClose={() => setPeopleFor(null)} />}
     </div>
+  );
+}
+
+function AttendeesDialog({ ev, onClose }: { ev: Ev; onClose: () => void }) {
+  const q = useQuery({
+    queryKey: ["event-attendees", ev.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("admin_event_attendees", { _event_id: ev.id });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  function download() {
+    const cell = (x: unknown) => { let s = x == null ? "" : String(x); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return `"${s.replace(/"/g, '""')}"`; };
+    const rows = [["Name", "House", "Status", "Guests", "Responded"], ...(q.data ?? []).map((r) => [r.full_name, r.homes, r.status, r.guests, new Date(r.created_at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })])];
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([rows.map((r) => r.map(cell).join(",")).join("\n")], { type: "text/csv" }));
+    a.download = `attendees-${ev.title.replace(/[^\w-]+/g, "_").slice(0, 40)}.csv`;
+    a.click(); URL.revokeObjectURL(a.href);
+  }
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[85vh] overflow-y-auto">
+        <DialogHeader><DialogTitle>Attendees · {ev.title}</DialogTitle></DialogHeader>
+        {q.isLoading ? <p className="text-sm text-muted-foreground">Loading…</p>
+          : q.isError ? <div><p className="text-sm">Couldn't load attendees.</p><Button variant="outline" className="mt-2 min-h-11" onClick={() => q.refetch()}>Try again</Button></div>
+          : q.data!.length === 0 ? <p className="text-sm text-muted-foreground">No one has responded yet.</p>
+          : <ul className="divide-y rounded-lg border text-sm" aria-label="Attendees">
+              {q.data!.map((r, i) => (
+                <li key={i} className="flex items-center justify-between gap-2 p-3">
+                  <span className="min-w-0"><b>{r.full_name || "Resident"}</b>{r.homes && <span className="text-muted-foreground"> · House {r.homes}</span>}{r.guests > 0 && <span className="text-muted-foreground"> · +{r.guests}</span>}</span>
+                  <span className={r.status === "going" ? "text-primary" : "text-muted-foreground"}>{r.status === "going" ? "Going" : "Waitlist"}</span>
+                </li>
+              ))}
+            </ul>}
+        <DialogFooter><Button variant="outline" className="min-h-11" disabled={!q.data?.length} onClick={download}>Download list</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

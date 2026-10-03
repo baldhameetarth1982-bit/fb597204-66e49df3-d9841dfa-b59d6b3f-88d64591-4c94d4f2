@@ -84,6 +84,14 @@ export const Route = createFileRoute("/api/support-chat")({
           return new Response("Payload too large", { status: 413 });
         }
 
+        {
+          const { isBlockedRequest } = await import("@/lib/platform-assistant.server");
+          const userText = messages.filter((m) => m.role === "user").map((m) => m.parts.map((p) => p.text).join(" ")).join("\n");
+          if (isBlockedRequest(userText)) {
+            return new Response("I can't help with secrets, credentials or getting around SociyoHub's security.", { status: 400 });
+          }
+        }
+
         const lovableApiKey = process.env.LOVABLE_API_KEY;
         if (!lovableApiKey) {
           return new Response("AI support is not configured", { status: 500 });

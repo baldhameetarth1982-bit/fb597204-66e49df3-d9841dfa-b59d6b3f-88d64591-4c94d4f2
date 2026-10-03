@@ -26,6 +26,7 @@ export interface Amenity {
   weekly_household_limit: number | null;
   owner_allowed: boolean;
   tenant_allowed: boolean;
+  household_allowed?: boolean;
   defaulters_allowed: boolean;
   deposit_amount: number;
   fee_amount: number;
@@ -68,6 +69,8 @@ export function amenityError(error: unknown) {
   const raw = String((error as { message?: string })?.message ?? "").toLowerCase();
   if (raw.includes("tenant_not_allowed")) return "This amenity is not available to tenants.";
   if (raw.includes("owner_not_allowed")) return "This amenity is not available to owners.";
+  if (raw.includes("household_not_allowed")) return "This amenity is only for the registered owner or tenant of a home.";
+  if (raw.includes("tenancy_expired")) return "Your tenancy has ended, so you can't book this amenity.";
   if (raw.includes("dues_restricted")) return "This amenity is unavailable while your home has overdue maintenance.";
   if (raw.includes("weekly_limit")) return "Your household has reached this amenity's weekly booking limit.";
   if (raw.includes("blocked_date")) return "This amenity is unavailable on that date.";

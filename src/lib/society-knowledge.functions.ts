@@ -25,12 +25,13 @@ export type KnowledgeItem = {
   expiresOn: string | null;
   reminderDays: number[];
   reminderAudience: "committee" | "committee_and_staff";
+  leaseTenancyId: string | null;
 };
 
 type Ok<T> = { ok: true } & T;
 type Fail = { ok: false; message: string };
 
-const COLS = "id,kind,title,audience,faq_answer,file_name,size_bytes,status,status_reason,text_chars,version,category,updated_at,expires_on,reminder_days,reminder_audience";
+const COLS = "id,kind,title,audience,faq_answer,file_name,size_bytes,status,status_reason,text_chars,version,category,updated_at,expires_on,reminder_days,reminder_audience,flat_resident_id";
 
 function mapRow(r: any): KnowledgeItem {
   return {
@@ -38,6 +39,7 @@ function mapRow(r: any): KnowledgeItem {
     fileName: r.file_name ?? null, sizeBytes: r.size_bytes ?? null, status: r.status, statusReason: r.status_reason ?? null,
     textChars: r.text_chars ?? 0, version: r.version, category: r.category ?? "records", updatedAt: r.updated_at,
     expiresOn: r.expires_on ?? null, reminderDays: r.reminder_days ?? [], reminderAudience: r.reminder_audience ?? "committee",
+    leaseTenancyId: r.flat_resident_id ?? null,
   };
 }
 

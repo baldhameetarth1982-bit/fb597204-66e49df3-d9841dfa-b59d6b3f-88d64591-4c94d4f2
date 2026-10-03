@@ -62,6 +62,56 @@ export type Database = {
         }
         Relationships: []
       }
+      ad_event_daily: {
+        Row: {
+          ad_id: string
+          clicks: number
+          cta: number
+          day: string
+          placement: string
+          views: number
+        }
+        Insert: {
+          ad_id: string
+          clicks?: number
+          cta?: number
+          day: string
+          placement: string
+          views?: number
+        }
+        Update: {
+          ad_id?: string
+          clicks?: number
+          cta?: number
+          day?: string
+          placement?: string
+          views?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_event_daily_ad_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "ads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ad_event_dedupe: {
+        Row: {
+          created_at: string
+          k: string
+        }
+        Insert: {
+          created_at?: string
+          k: string
+        }
+        Update: {
+          created_at?: string
+          k?: string
+        }
+        Relationships: []
+      }
       ads: {
         Row: {
           active: boolean
@@ -1721,6 +1771,198 @@ export type Database = {
         }
         Relationships: []
       }
+      community_listing_categories: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          label: string
+          society_id: string | null
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          label: string
+          society_id?: string | null
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          label?: string
+          society_id?: string | null
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_listing_categories_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_listing_events: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          id: number
+          listing_id: string
+          reason: string | null
+          society_id: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          id?: number
+          listing_id: string
+          reason?: string | null
+          society_id: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          id?: number
+          listing_id?: string
+          reason?: string | null
+          society_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_listing_events_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "community_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_listing_reports: {
+        Row: {
+          created_at: string
+          id: string
+          listing_id: string
+          reason: string
+          reporter_id: string
+          society_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          listing_id: string
+          reason: string
+          reporter_id: string
+          society_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          listing_id?: string
+          reason?: string
+          reporter_id?: string
+          society_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_listing_reports_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "community_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_listings: {
+        Row: {
+          category_id: string | null
+          contact_link: string | null
+          contact_method: string
+          contact_phone: string | null
+          created_at: string
+          description: string | null
+          expires_at: string | null
+          id: string
+          image_path: string | null
+          kind: string
+          owner_id: string
+          price_inr: number | null
+          removed_by: string | null
+          removed_reason: string | null
+          report_count: number
+          society_id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category_id?: string | null
+          contact_link?: string | null
+          contact_method?: string
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          image_path?: string | null
+          kind?: string
+          owner_id: string
+          price_inr?: number | null
+          removed_by?: string | null
+          removed_reason?: string | null
+          report_count?: number
+          society_id: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string | null
+          contact_link?: string | null
+          contact_method?: string
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          image_path?: string | null
+          kind?: string
+          owner_id?: string
+          price_inr?: number | null
+          removed_by?: string | null
+          removed_reason?: string | null
+          report_count?: number
+          society_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_listings_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "community_listing_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_listings_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_field_values: {
         Row: {
           created_at: string
@@ -1865,6 +2107,44 @@ export type Database = {
             columns: ["society_id"]
             isOneToOne: false
             referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_expiry_reminders: {
+        Row: {
+          expires_on: string
+          id: string
+          recipients: number
+          sent_at: string
+          society_id: string
+          source_id: string
+          threshold: string
+        }
+        Insert: {
+          expires_on: string
+          id?: string
+          recipients?: number
+          sent_at?: string
+          society_id: string
+          source_id: string
+          threshold: string
+        }
+        Update: {
+          expires_on?: string
+          id?: string
+          recipients?: number
+          sent_at?: string
+          society_id?: string
+          source_id?: string
+          threshold?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_expiry_reminders_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "society_knowledge_sources"
             referencedColumns: ["id"]
           },
         ]
@@ -2155,6 +2435,158 @@ export type Database = {
           },
           {
             foreignKeyName: "elections_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      emergency_broadcast_recipients: {
+        Row: {
+          acknowledged_at: string | null
+          broadcast_id: string
+          notified: boolean
+          user_id: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          broadcast_id: string
+          notified?: boolean
+          user_id: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          broadcast_id?: string
+          notified?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emergency_broadcast_recipients_broadcast_id_fkey"
+            columns: ["broadcast_id"]
+            isOneToOne: false
+            referencedRelation: "emergency_broadcasts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      emergency_broadcasts: {
+        Row: {
+          audience: string
+          block_id: string | null
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          category_id: string | null
+          category_label: string
+          channel_status: Json
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          in_app_delivered: number
+          message: string
+          recipient_count: number
+          request_id: string
+          society_id: string
+          sos_alert_id: string | null
+          title: string
+        }
+        Insert: {
+          audience: string
+          block_id?: string | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          category_id?: string | null
+          category_label: string
+          channel_status?: Json
+          created_at?: string
+          created_by: string
+          expires_at: string
+          id?: string
+          in_app_delivered?: number
+          message: string
+          recipient_count?: number
+          request_id: string
+          society_id: string
+          sos_alert_id?: string | null
+          title: string
+        }
+        Update: {
+          audience?: string
+          block_id?: string | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          category_id?: string | null
+          category_label?: string
+          channel_status?: Json
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          in_app_delivered?: number
+          message?: string
+          recipient_count?: number
+          request_id?: string
+          society_id?: string
+          sos_alert_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emergency_broadcasts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "emergency_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emergency_broadcasts_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emergency_broadcasts_sos_alert_id_fkey"
+            columns: ["sos_alert_id"]
+            isOneToOne: false
+            referencedRelation: "sos_alerts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      emergency_categories: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          label: string
+          society_id: string | null
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          label: string
+          society_id?: string | null
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          label?: string
+          society_id?: string | null
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emergency_categories_society_id_fkey"
             columns: ["society_id"]
             isOneToOne: false
             referencedRelation: "societies"
@@ -8515,12 +8947,15 @@ export type Database = {
           category: string
           created_at: string
           created_by: string | null
+          expires_on: string | null
           extracted_text: string | null
           faq_answer: string | null
           file_name: string | null
           id: string
           kind: string
           mime_type: string | null
+          reminder_audience: string
+          reminder_days: number[]
           size_bytes: number | null
           society_id: string
           status: string
@@ -8538,12 +8973,15 @@ export type Database = {
           category?: string
           created_at?: string
           created_by?: string | null
+          expires_on?: string | null
           extracted_text?: string | null
           faq_answer?: string | null
           file_name?: string | null
           id?: string
           kind: string
           mime_type?: string | null
+          reminder_audience?: string
+          reminder_days?: number[]
           size_bytes?: number | null
           society_id: string
           status?: string
@@ -8561,12 +8999,15 @@ export type Database = {
           category?: string
           created_at?: string
           created_by?: string | null
+          expires_on?: string | null
           extracted_text?: string | null
           faq_answer?: string | null
           file_name?: string | null
           id?: string
           kind?: string
           mime_type?: string | null
+          reminder_audience?: string
+          reminder_days?: number[]
           size_bytes?: number | null
           society_id?: string
           status?: string
@@ -9927,6 +10368,7 @@ export type Database = {
       }
       _caller_phone_digits: { Args: never; Returns: string }
       _can_manage_polls: { Args: { _society_id: string }; Returns: boolean }
+      _community_member_society: { Args: never; Returns: string }
       _deactivate_resident_role_if_homeless: {
         Args: { _society: string; _user: string }
         Returns: undefined
@@ -10046,6 +10488,10 @@ export type Database = {
       _import_parse_amount: { Args: { _v: string }; Returns: number }
       _import_parse_date: { Args: { _v: string }; Returns: string }
       _knowledge_admin_society: { Args: never; Returns: string }
+      _market_log: {
+        Args: { _action: string; _l: string; _reason: string; _soc: string }
+        Returns: undefined
+      }
       _meeting_audience: {
         Args: { _m: Database["public"]["Tables"]["meetings"]["Row"] }
         Returns: {
@@ -11384,6 +11830,15 @@ export type Database = {
         Args: { _device_id: string; _event: Json; _key: string }
         Returns: Json
       }
+      doc_set_expiry: {
+        Args: {
+          _audience: string
+          _expires_on: string
+          _id: string
+          _reminder_days: number[]
+        }
+        Returns: undefined
+      }
       duplicate_society_block_internal: {
         Args: { _actor_id: string; _block_id: string; _new_name: string }
         Returns: Json
@@ -11440,6 +11895,28 @@ export type Database = {
       election_withdraw_nomination: {
         Args: { _nomination: string }
         Returns: undefined
+      }
+      emergency_acknowledge: { Args: { _id: string }; Returns: undefined }
+      emergency_broadcast_cancel: {
+        Args: { _id: string; _reason: string }
+        Returns: undefined
+      }
+      emergency_broadcast_send: {
+        Args: {
+          _audience: string
+          _block_id: string
+          _category_id: string
+          _expires_minutes: number
+          _message: string
+          _request_id: string
+          _sos_alert_id: string
+          _title: string
+        }
+        Returns: string
+      }
+      emergency_set_category: {
+        Args: { _active: boolean; _id: string; _label: string }
+        Returns: string
       }
       end_resident_unit_relationship: {
         Args: {
@@ -11704,6 +12181,22 @@ export type Database = {
       }
       generate_referral_code: { Args: never; Returns: string }
       generate_society_code: { Args: never; Returns: string }
+      get_ad_report: {
+        Args: { _from: string; _to: string }
+        Returns: {
+          active: boolean
+          ad_id: string
+          clicks: number
+          cta: number
+          kind: string
+          placement: string
+          target_cities: string[]
+          target_plans: string[]
+          target_society_count: number
+          title: string
+          views: number
+        }[]
+      }
       get_admin_block_ids: { Args: { _user_id: string }; Returns: string[] }
       get_admin_society_ids: { Args: { _user_id: string }; Returns: string[] }
       get_amenity_fairness: {
@@ -12449,6 +12942,40 @@ export type Database = {
         }
         Returns: Json
       }
+      list_market_listings: {
+        Args: { _category_id?: string }
+        Returns: {
+          category_id: string
+          contact_link: string
+          contact_method: string
+          contact_phone: string
+          created_at: string
+          description: string
+          expires_at: string
+          id: string
+          image_path: string
+          is_mine: boolean
+          kind: string
+          owner_name: string
+          price_inr: number
+          title: string
+        }[]
+      }
+      list_my_emergency_broadcasts: {
+        Args: never
+        Returns: {
+          acknowledged_at: string
+          cancel_reason: string
+          cancelled_at: string
+          category_label: string
+          created_at: string
+          expires_at: string
+          id: string
+          message: string
+          state: string
+          title: string
+        }[]
+      }
       list_my_role_invitations: {
         Args: never
         Returns: {
@@ -12628,6 +13155,45 @@ export type Database = {
       }
       mark_aadhaar_verified: { Args: { _last4: string }; Returns: undefined }
       mark_visitor_overstays: { Args: never; Returns: number }
+      market_contact: {
+        Args: { _id: string; _message: string }
+        Returns: undefined
+      }
+      market_moderate: {
+        Args: { _action: string; _id: string; _reason: string }
+        Returns: undefined
+      }
+      market_report: {
+        Args: { _id: string; _reason: string }
+        Returns: undefined
+      }
+      market_save_listing: {
+        Args: {
+          _category_id: string
+          _contact_link: string
+          _contact_method: string
+          _contact_phone: string
+          _description: string
+          _expires_days: number
+          _id: string
+          _kind: string
+          _price_inr: number
+          _title: string
+        }
+        Returns: string
+      }
+      market_set_category: {
+        Args: { _active: boolean; _id: string; _label: string }
+        Returns: string
+      }
+      market_set_image: {
+        Args: { _id: string; _path: string }
+        Returns: undefined
+      }
+      market_set_status: {
+        Args: { _id: string; _status: string }
+        Returns: undefined
+      }
       meeting_add_action: {
         Args: { _due: string; _meeting: string; _owner: string; _title: string }
         Returns: string
@@ -12943,6 +13509,10 @@ export type Database = {
           new_status: string
         }[]
       }
+      record_ad_event: {
+        Args: { _ad_id: string; _event: string; _placement: string }
+        Returns: boolean
+      }
       record_auditor_pack_failure: {
         Args: {
           _format: string
@@ -13183,6 +13753,10 @@ export type Database = {
         }[]
       }
       seed_finance_accounts: { Args: { _society_id: string }; Returns: Json }
+      send_document_expiry_reminders: {
+        Args: { _today?: string }
+        Returns: number
+      }
       send_meeting_reminders: { Args: never; Returns: number }
       send_tenancy_renewal_reminders: { Args: never; Returns: number }
       set_society_block_active: {

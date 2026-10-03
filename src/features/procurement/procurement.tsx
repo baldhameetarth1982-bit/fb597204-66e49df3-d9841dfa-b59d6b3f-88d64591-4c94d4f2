@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, Plus, ShoppingCart } from "lucide-react";
+import { Loader2, Plus, Printer, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -65,6 +65,17 @@ function Field({ id, label, children }: { id: string; label: string; children: R
   return <div className="space-y-1"><Label htmlFor={id}>{label}</Label>{children}</div>;
 }
 const mut = { networkMode: "always" as const, retry: false as const };
+
+const esc = (s: unknown) => String(s ?? "—").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+
+/** Printable purchase order built only from the approved, ordered request already shown. Nothing is stored. */
+function printPurchaseOrder(req: Req, vendor: string, quoteRef: string | null) {
+  const w = window.open("", "_blank", "width=800,height=900");
+  if (!w) { toast.error("Allow pop-ups to print the purchase order."); return; }
+  const rows: [string, unknown][] = [["PO / order ref", req.order_ref], ["Request", `#${req.request_no} ${req.title}`], ["Vendor", vendor], ["Category", `${catLabel(req.category)} · ${fyLabel(req.fy_start)}`], ["Quotation ref", quoteRef], ["Approved amount", inr(req.approved_amount)], ["Needed by", req.needed_by], ["Approval note", req.decision_note]];
+  w.document.write(`<!doctype html><html><head><title>Purchase order ${esc(req.order_ref)}</title><style>body{font-family:system-ui,sans-serif;margin:40px;color:#0B2545}h1{font-size:22px}table{border-collapse:collapse;width:100%;margin-top:16px}td{border:1px solid #ccc;padding:8px;vertical-align:top}td:first-child{width:35%;font-weight:600}p{white-space:pre-wrap}.sig{margin-top:64px;display:flex;justify-content:space-between}</style></head><body><h1>Purchase order</h1><table>${rows.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</table>${req.description ? `<h3>Scope</h3><p>${esc(req.description)}</p>` : ""}<div class="sig"><span>Authorised signatory</span><span>Vendor acceptance</span></div><script>window.onload=()=>window.print()</script></body></html>`);
+  w.document.close();
+}
 
 interface Req {
   id: string; request_no: number; title: string; description: string | null; category: string; fy_start: number; needed_by: string | null;
@@ -231,6 +242,11 @@ function RequestSheet({ req, vendors, me, onClose }: { req: Req; vendors: { id: 
           {req.cancel_reason && <div className="col-span-2"><dt className="text-xs text-muted-foreground">Cancel reason</dt><dd>{req.cancel_reason}</dd></div>}
         </dl>
         {req.invoice_amount != null && req.approved_amount != null && req.invoice_amount > req.approved_amount && <p className="mt-2 text-xs text-destructive">Invoice is higher than the approved amount.</p>}
+        {req.order_ref && ["ordered", "invoice_received", "payment_ref_recorded", "completed"].includes(req.status) && (
+          <Button type="button" variant="outline" className="mt-3 min-h-11 w-full" onClick={() => printPurchaseOrder(req, vName(req.vendor_id), quotes.find((q) => q.id === req.selected_quotation_id)?.quote_ref ?? null)}>
+            <Printer className="mr-2 h-4 w-4" aria-hidden />Print purchase order
+          </Button>
+        )}
         {files.isError && <p className="mt-2 text-xs text-destructive">{fileErrorMessage(files.error)}</p>}
         {["ordered", "invoice_received", "payment_ref_recorded", "completed", "cancelled"].includes(req.status) && (files.data?.some((f) => f.kind === "invoice") || ["ordered", "invoice_received", "payment_ref_recorded"].includes(req.status)) && (
           <section className="mt-4">

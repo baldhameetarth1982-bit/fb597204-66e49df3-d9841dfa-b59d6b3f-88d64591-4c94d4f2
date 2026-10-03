@@ -32,10 +32,12 @@ export const Route = createFileRoute("/welcome")({
 });
 
 const capabilities = [
-  { icon: Wallet, title: "Maintenance billing", body: "Generate bills, record Cash and Bank Transfer payments, and see exactly who is outstanding." },
-  { icon: Bell, title: "Notices & polls", body: "Share announcements and run polls that every resident actually sees." },
-  { icon: Users, title: "Residents & flats", body: "Wings, flats, owners, tenants and families — organised and searchable." },
-  { icon: FileText, title: "Documents & AI Secretary", body: "Bylaws and FAQs in one place, with answers drawn only from your society's documents." },
+  { icon: Wallet, title: "Billing, payments & accounts", body: "Bills and dues, Cash, Bank Transfer, UPI QR and online payments, receipts, books, budgets and procurement." },
+  { icon: Users, title: "Residents & households", body: "Owners, tenants, family, pets, temporary occupants, vehicles, parking and move-in/move-out history." },
+  { icon: ShieldCheck, title: "Gate, guards & safety", body: "Visitors, passes, guard shifts, patrol rounds, SOS and emergency broadcasts." },
+  { icon: Building2, title: "Amenities & operations", body: "Amenity booking, classes, helpdesk, staff, assets and inventory." },
+  { icon: Bell, title: "Governance & community", body: "Notices, meetings, AGM, elections, polls, groups, events, services and marketplace." },
+  { icon: FileText, title: "Documents, AI & migration", body: "Private document vault, an AI Secretary that answers only from your documents, and guided import from spreadsheets or other apps." },
 ];
 
 const workflows = [

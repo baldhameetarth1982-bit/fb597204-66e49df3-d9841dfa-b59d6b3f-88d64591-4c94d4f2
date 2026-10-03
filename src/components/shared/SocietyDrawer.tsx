@@ -5,6 +5,7 @@ import {
   ShieldCheck, Trophy, UserCheck, Users, Vote, Wallet, Wand2, Sparkles,
   Calculator, BadgeCheck, LogOut, Settings, ListChecks, Wrench, CalendarRange,
   BarChart3, Compass, Grid3x3, Upload, BookOpen, PhoneCall, Landmark, ChevronsUpDown, Check,
+  Gauge,
 } from "lucide-react";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose,

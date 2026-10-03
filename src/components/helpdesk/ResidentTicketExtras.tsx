@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { helpdeskErrorMessage } from "@/lib/helpdesk";
 import { TicketEvidence } from "./TicketEvidence";
+import { ResidentVendorRating } from "@/components/operations/VendorRatings";
 
 export function ResidentTicketExtras({ ticketId, status }: { ticketId: string; status: string }) {
   const qc = useQueryClient();
@@ -66,6 +67,7 @@ export function ResidentTicketExtras({ ticketId, status }: { ticketId: string; s
           )}
         </div>
       )}
+      {done && <ResidentVendorRating ticketId={ticketId} />}
       {status === "closed" && (
         <div className="space-y-2 rounded-2xl border p-3">
           <p className="text-sm font-medium">Problem came back?</p>

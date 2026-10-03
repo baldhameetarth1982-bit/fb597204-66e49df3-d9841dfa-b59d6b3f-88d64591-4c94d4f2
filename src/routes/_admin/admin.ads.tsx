@@ -14,6 +14,7 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { AdReport } from "@/components/admin/AdReport";
 import { ErrorState } from "@/components/system/ErrorState";
 import { PageHeader, PageShell } from "@/components/shared/PageHeader";
 import { IMAGE_TYPES, MAX_IMAGE_BYTES, normalizePhone, safeHttpsUrl, validateListing, type ListingDraft } from "@/lib/discovery";
@@ -125,6 +126,7 @@ function AdsPage() {
           <Button className="min-h-11 rounded-xl" onClick={() => setEditing("new")}><Plus className="h-4 w-4 mr-2" />New</Button>
         </div>
       </header>
+      <AdReport />
 
       <div className="flex gap-1 overflow-x-auto" role="tablist" aria-label="Type">
         {[{ id: "all", label: "All" }, ...KINDS].map((k) => (

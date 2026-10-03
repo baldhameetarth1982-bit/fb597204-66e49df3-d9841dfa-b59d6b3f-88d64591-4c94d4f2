@@ -4827,6 +4827,81 @@ export type Database = {
           },
         ]
       }
+      material_passes: {
+        Row: {
+          checked_in_at: string | null
+          checked_out_at: string | null
+          contractor_name: string | null
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_reason: string | null
+          description: string
+          flat_id: string
+          id: string
+          kind: string
+          lift_required: boolean
+          requested_by: string
+          society_id: string
+          status: string
+          valid_from: string
+          valid_until: string
+        }
+        Insert: {
+          checked_in_at?: string | null
+          checked_out_at?: string | null
+          contractor_name?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_reason?: string | null
+          description: string
+          flat_id: string
+          id?: string
+          kind: string
+          lift_required?: boolean
+          requested_by: string
+          society_id: string
+          status?: string
+          valid_from: string
+          valid_until: string
+        }
+        Update: {
+          checked_in_at?: string | null
+          checked_out_at?: string | null
+          contractor_name?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_reason?: string | null
+          description?: string
+          flat_id?: string
+          id?: string
+          kind?: string
+          lift_required?: boolean
+          requested_by?: string
+          society_id?: string
+          status?: string
+          valid_from?: string
+          valid_until?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_passes_flat_id_fkey"
+            columns: ["flat_id"]
+            isOneToOne: false
+            referencedRelation: "flats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_passes_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_action_items: {
         Row: {
           created_at: string
@@ -12584,6 +12659,7 @@ export type Database = {
             Args: { _bill_id: string; _reason: string; _society_id: string }
             Returns: Json
           }
+      cancel_material_pass: { Args: { _pass_id: string }; Returns: undefined }
       claim_saas_subscription_order: {
         Args: {
           _amount_paise: number
@@ -12813,6 +12889,10 @@ export type Database = {
       decide_bill_run_approval: {
         Args: { _approval_id: string; _approve: boolean; _note: string }
         Returns: Json
+      }
+      decide_material_pass: {
+        Args: { _approve: boolean; _pass_id: string; _reason: string }
+        Returns: undefined
       }
       device_ingest_event: {
         Args: { _device_id: string; _event: Json; _key: string }
@@ -13533,6 +13613,10 @@ export type Database = {
           _vehicle: string
         }
         Returns: string
+      }
+      guard_mark_material_pass: {
+        Args: { _action: string; _pass_id: string }
+        Returns: undefined
       }
       guard_offline_replay: {
         Args: { _kind: string; _op_id: string; _payload: Json }
@@ -14687,6 +14771,18 @@ export type Database = {
       }
       request_join_flat: {
         Args: { _flat_id: string; _relationship: string }
+        Returns: string
+      }
+      request_material_pass: {
+        Args: {
+          _contractor: string
+          _description: string
+          _flat_id: string
+          _from: string
+          _kind: string
+          _lift: boolean
+          _until: string
+        }
         Returns: string
       }
       reset_own_kyc: { Args: never; Returns: undefined }

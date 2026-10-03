@@ -1142,6 +1142,13 @@
       "when": 1791040208120,
       "tag": "0162_community_groups",
       "breakpoints": true
+    },
+    {
+      "idx": 163,
+      "version": "7",
+      "when": 1791041038943,
+      "tag": "0163_material_passes_lift_booking",
+      "breakpoints": true
     }
   ]
 }

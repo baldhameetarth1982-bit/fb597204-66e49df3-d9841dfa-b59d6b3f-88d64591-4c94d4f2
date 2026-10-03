@@ -144,6 +144,7 @@ function ProfilePage() {
       <Group title="Activity">
         <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
           <NavRow to="/app/activity" icon={History} label="Activity" hint="Your recent actions" />
+          <NavRow to="/app/household-history" icon={Home} label="Home history" hint="Who has lived in your home" />
           <NavRow to="/app/trust" icon={ShieldCheck} label="Financial trust" />
           <NavRow to="/app/achievements" icon={Trophy} label="Points & leaderboard" />
         </ul>

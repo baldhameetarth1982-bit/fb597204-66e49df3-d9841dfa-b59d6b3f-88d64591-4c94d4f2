@@ -15341,6 +15341,18 @@ export type Database = {
         Returns: Json
       }
       migration_upload_path_ok: { Args: { _name: string }; Returns: boolean }
+      my_household_history: {
+        Args: never
+        Returns: {
+          ended_reason: string
+          flat_number: string
+          full_name: string
+          is_you: boolean
+          moved_in_at: string
+          moved_out_at: string
+          relationship: string
+        }[]
+      }
       my_lease_document_path: { Args: { _id: string }; Returns: string }
       my_role_access: { Args: never; Returns: Json }
       next_no_dues_cert_number_internal: {

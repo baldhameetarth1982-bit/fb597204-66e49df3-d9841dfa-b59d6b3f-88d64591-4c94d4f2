@@ -132,6 +132,7 @@ import { Route as ResidentAppNotificationsRouteImport } from './routes/_resident
 import { Route as ResidentAppNoticesRouteImport } from './routes/_resident/app.notices'
 import { Route as ResidentAppMeetingsRouteImport } from './routes/_resident/app.meetings'
 import { Route as ResidentAppLedgerRouteImport } from './routes/_resident/app.ledger'
+import { Route as ResidentAppHouseholdHistoryRouteImport } from './routes/_resident/app.household-history'
 import { Route as ResidentAppHelpdeskRouteImport } from './routes/_resident/app.helpdesk'
 import { Route as ResidentAppGuardRouteImport } from './routes/_resident/app.guard'
 import { Route as ResidentAppGroupsRouteImport } from './routes/_resident/app.groups'
@@ -848,6 +849,12 @@ const ResidentAppLedgerRoute = ResidentAppLedgerRouteImport.update({
   path: '/app/ledger',
   getParentRoute: () => ResidentRoute,
 } as any)
+const ResidentAppHouseholdHistoryRoute =
+  ResidentAppHouseholdHistoryRouteImport.update({
+    id: '/app/household-history',
+    path: '/app/household-history',
+    getParentRoute: () => ResidentRoute,
+  } as any)
 const ResidentAppHelpdeskRoute = ResidentAppHelpdeskRouteImport.update({
   id: '/app/helpdesk',
   path: '/app/helpdesk',
@@ -1338,6 +1345,7 @@ export interface FileRoutesByFullPath {
   '/app/groups': typeof ResidentAppGroupsRoute
   '/app/guard': typeof ResidentAppGuardRoute
   '/app/helpdesk': typeof ResidentAppHelpdeskRoute
+  '/app/household-history': typeof ResidentAppHouseholdHistoryRoute
   '/app/ledger': typeof ResidentAppLedgerRoute
   '/app/meetings': typeof ResidentAppMeetingsRoute
   '/app/notices': typeof ResidentAppNoticesRoute
@@ -1536,6 +1544,7 @@ export interface FileRoutesByTo {
   '/app/groups': typeof ResidentAppGroupsRoute
   '/app/guard': typeof ResidentAppGuardRoute
   '/app/helpdesk': typeof ResidentAppHelpdeskRoute
+  '/app/household-history': typeof ResidentAppHouseholdHistoryRoute
   '/app/ledger': typeof ResidentAppLedgerRoute
   '/app/meetings': typeof ResidentAppMeetingsRoute
   '/app/notices': typeof ResidentAppNoticesRoute
@@ -1740,6 +1749,7 @@ export interface FileRoutesById {
   '/_resident/app/groups': typeof ResidentAppGroupsRoute
   '/_resident/app/guard': typeof ResidentAppGuardRoute
   '/_resident/app/helpdesk': typeof ResidentAppHelpdeskRoute
+  '/_resident/app/household-history': typeof ResidentAppHouseholdHistoryRoute
   '/_resident/app/ledger': typeof ResidentAppLedgerRoute
   '/_resident/app/meetings': typeof ResidentAppMeetingsRoute
   '/_resident/app/notices': typeof ResidentAppNoticesRoute
@@ -1941,6 +1951,7 @@ export interface FileRouteTypes {
     | '/app/groups'
     | '/app/guard'
     | '/app/helpdesk'
+    | '/app/household-history'
     | '/app/ledger'
     | '/app/meetings'
     | '/app/notices'
@@ -2139,6 +2150,7 @@ export interface FileRouteTypes {
     | '/app/groups'
     | '/app/guard'
     | '/app/helpdesk'
+    | '/app/household-history'
     | '/app/ledger'
     | '/app/meetings'
     | '/app/notices'
@@ -2342,6 +2354,7 @@ export interface FileRouteTypes {
     | '/_resident/app/groups'
     | '/_resident/app/guard'
     | '/_resident/app/helpdesk'
+    | '/_resident/app/household-history'
     | '/_resident/app/ledger'
     | '/_resident/app/meetings'
     | '/_resident/app/notices'
@@ -3370,6 +3383,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResidentAppLedgerRouteImport
       parentRoute: typeof ResidentRoute
     }
+    '/_resident/app/household-history': {
+      id: '/_resident/app/household-history'
+      path: '/app/household-history'
+      fullPath: '/app/household-history'
+      preLoaderRoute: typeof ResidentAppHouseholdHistoryRouteImport
+      parentRoute: typeof ResidentRoute
+    }
     '/_resident/app/helpdesk': {
       id: '/_resident/app/helpdesk'
       path: '/app/helpdesk'
@@ -4008,6 +4028,7 @@ interface ResidentRouteChildren {
   ResidentAppGroupsRoute: typeof ResidentAppGroupsRoute
   ResidentAppGuardRoute: typeof ResidentAppGuardRoute
   ResidentAppHelpdeskRoute: typeof ResidentAppHelpdeskRoute
+  ResidentAppHouseholdHistoryRoute: typeof ResidentAppHouseholdHistoryRoute
   ResidentAppLedgerRoute: typeof ResidentAppLedgerRoute
   ResidentAppMeetingsRoute: typeof ResidentAppMeetingsRoute
   ResidentAppNoticesRoute: typeof ResidentAppNoticesRoute
@@ -4055,6 +4076,7 @@ const ResidentRouteChildren: ResidentRouteChildren = {
   ResidentAppGroupsRoute: ResidentAppGroupsRoute,
   ResidentAppGuardRoute: ResidentAppGuardRoute,
   ResidentAppHelpdeskRoute: ResidentAppHelpdeskRoute,
+  ResidentAppHouseholdHistoryRoute: ResidentAppHouseholdHistoryRoute,
   ResidentAppLedgerRoute: ResidentAppLedgerRoute,
   ResidentAppMeetingsRoute: ResidentAppMeetingsRoute,
   ResidentAppNoticesRoute: ResidentAppNoticesRoute,

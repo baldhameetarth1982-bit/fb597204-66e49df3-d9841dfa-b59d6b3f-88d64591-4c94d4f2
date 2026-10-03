@@ -69,6 +69,7 @@ import { Route as SocietySocietyParkingRouteImport } from './routes/_society/soc
 import { Route as SocietySocietyOperationsRouteImport } from './routes/_society/society.operations'
 import { Route as SocietySocietyOpeningBalancesRouteImport } from './routes/_society/society.opening-balances'
 import { Route as SocietySocietyMoreRouteImport } from './routes/_society/society.more'
+import { Route as SocietySocietyMetersRouteImport } from './routes/_society/society.meters'
 import { Route as SocietySocietyMeetingsRouteImport } from './routes/_society/society.meetings'
 import { Route as SocietySocietyMatrixImportRouteImport } from './routes/_society/society.matrix-import'
 import { Route as SocietySocietyMatrixRouteImport } from './routes/_society/society.matrix'
@@ -504,6 +505,11 @@ const SocietySocietyOpeningBalancesRoute =
 const SocietySocietyMoreRoute = SocietySocietyMoreRouteImport.update({
   id: '/society/more',
   path: '/society/more',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyMetersRoute = SocietySocietyMetersRouteImport.update({
+  id: '/society/meters',
+  path: '/society/meters',
   getParentRoute: () => SocietyRoute,
 } as any)
 const SocietySocietyMeetingsRoute = SocietySocietyMeetingsRouteImport.update({
@@ -1316,6 +1322,7 @@ export interface FileRoutesByFullPath {
   '/society/matrix': typeof SocietySocietyMatrixRoute
   '/society/matrix-import': typeof SocietySocietyMatrixImportRoute
   '/society/meetings': typeof SocietySocietyMeetingsRoute
+  '/society/meters': typeof SocietySocietyMetersRoute
   '/society/more': typeof SocietySocietyMoreRoute
   '/society/opening-balances': typeof SocietySocietyOpeningBalancesRoute
   '/society/operations': typeof SocietySocietyOperationsRoute
@@ -1502,6 +1509,7 @@ export interface FileRoutesByTo {
   '/society/matrix': typeof SocietySocietyMatrixRoute
   '/society/matrix-import': typeof SocietySocietyMatrixImportRoute
   '/society/meetings': typeof SocietySocietyMeetingsRoute
+  '/society/meters': typeof SocietySocietyMetersRoute
   '/society/more': typeof SocietySocietyMoreRoute
   '/society/opening-balances': typeof SocietySocietyOpeningBalancesRoute
   '/society/operations': typeof SocietySocietyOperationsRoute
@@ -1694,6 +1702,7 @@ export interface FileRoutesById {
   '/_society/society/matrix': typeof SocietySocietyMatrixRoute
   '/_society/society/matrix-import': typeof SocietySocietyMatrixImportRoute
   '/_society/society/meetings': typeof SocietySocietyMeetingsRoute
+  '/_society/society/meters': typeof SocietySocietyMetersRoute
   '/_society/society/more': typeof SocietySocietyMoreRoute
   '/_society/society/opening-balances': typeof SocietySocietyOpeningBalancesRoute
   '/_society/society/operations': typeof SocietySocietyOperationsRoute
@@ -1883,6 +1892,7 @@ export interface FileRouteTypes {
     | '/society/matrix'
     | '/society/matrix-import'
     | '/society/meetings'
+    | '/society/meters'
     | '/society/more'
     | '/society/opening-balances'
     | '/society/operations'
@@ -2069,6 +2079,7 @@ export interface FileRouteTypes {
     | '/society/matrix'
     | '/society/matrix-import'
     | '/society/meetings'
+    | '/society/meters'
     | '/society/more'
     | '/society/opening-balances'
     | '/society/operations'
@@ -2260,6 +2271,7 @@ export interface FileRouteTypes {
     | '/_society/society/matrix'
     | '/_society/society/matrix-import'
     | '/_society/society/meetings'
+    | '/_society/society/meters'
     | '/_society/society/more'
     | '/_society/society/opening-balances'
     | '/_society/society/operations'
@@ -2782,6 +2794,13 @@ declare module '@tanstack/react-router' {
       path: '/society/more'
       fullPath: '/society/more'
       preLoaderRoute: typeof SocietySocietyMoreRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/meters': {
+      id: '/_society/society/meters'
+      path: '/society/meters'
+      fullPath: '/society/meters'
+      preLoaderRoute: typeof SocietySocietyMetersRouteImport
       parentRoute: typeof SocietyRoute
     }
     '/_society/society/meetings': {
@@ -3886,6 +3905,7 @@ interface SocietyRouteChildren {
   SocietySocietyMatrixRoute: typeof SocietySocietyMatrixRoute
   SocietySocietyMatrixImportRoute: typeof SocietySocietyMatrixImportRoute
   SocietySocietyMeetingsRoute: typeof SocietySocietyMeetingsRoute
+  SocietySocietyMetersRoute: typeof SocietySocietyMetersRoute
   SocietySocietyMoreRoute: typeof SocietySocietyMoreRoute
   SocietySocietyOpeningBalancesRoute: typeof SocietySocietyOpeningBalancesRoute
   SocietySocietyOperationsRoute: typeof SocietySocietyOperationsRoute
@@ -3966,6 +3986,7 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyMatrixRoute: SocietySocietyMatrixRoute,
   SocietySocietyMatrixImportRoute: SocietySocietyMatrixImportRoute,
   SocietySocietyMeetingsRoute: SocietySocietyMeetingsRoute,
+  SocietySocietyMetersRoute: SocietySocietyMetersRoute,
   SocietySocietyMoreRoute: SocietySocietyMoreRoute,
   SocietySocietyOpeningBalancesRoute: SocietySocietyOpeningBalancesRoute,
   SocietySocietyOperationsRoute: SocietySocietyOperationsRoute,

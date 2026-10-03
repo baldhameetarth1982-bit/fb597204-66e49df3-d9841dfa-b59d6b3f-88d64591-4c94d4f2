@@ -1,7 +1,7 @@
 # Domain architecture rules (backend, finance, gate, governance)
 
 - Security service integration uses deterministic synthetic Society A/B adapters; Flat 360 role decisions use authenticated self-check RPCs, while only canonical eligibility uses the trusted server client.
-- Razorpay SaaS payments use one server-only provider module, atomic request/event/refund records, and canonical database finalizers; maintenance remains Cash and Bank Transfer only to prevent duplicate payment domains.
+- Razorpay uses one server-only provider module for both SaaS subscriptions and online maintenance; maintenance orders live in maintenance_payment_orders/events, are claimed only via claim_maintenance_payment_order (server-resolved amount, plan entitlement) and recorded only by finalize_maintenance_online_payment into canonical payments/receipts/ledger, so there is no second payment domain. Cash and Bank Transfer stay available.
 - Android releases use the pinned Bubblewrap manifest and release script; generated Gradle output and signing material stay outside source control.
 - Public ingress uses strict bounded schemas, redacted failures, and the shared atomic HMAC-fingerprinted limiter; this prevents amplification and race-prone local throttles.
 - Vulnerable transitive runtime packages are pinned via package.json overrides to in-major patched releases; this fixes advisories without forcing breaking upgrades.

@@ -90,6 +90,7 @@ import { Route as SocietySocietyEventsRouteImport } from './routes/_society/soci
 import { Route as SocietySocietyEmergencyRouteImport } from './routes/_society/society.emergency'
 import { Route as SocietySocietyElectionsRouteImport } from './routes/_society/society.elections'
 import { Route as SocietySocietyDigestRouteImport } from './routes/_society/society.digest'
+import { Route as SocietySocietyDepreciationRouteImport } from './routes/_society/society.depreciation'
 import { Route as SocietySocietyDefaultersRouteImport } from './routes/_society/society.defaulters'
 import { Route as SocietySocietyDataExportRouteImport } from './routes/_society/society.data-export'
 import { Route as SocietySocietyDashboardRouteImport } from './routes/_society/society.dashboard'
@@ -622,6 +623,12 @@ const SocietySocietyDigestRoute = SocietySocietyDigestRouteImport.update({
   path: '/society/digest',
   getParentRoute: () => SocietyRoute,
 } as any)
+const SocietySocietyDepreciationRoute =
+  SocietySocietyDepreciationRouteImport.update({
+    id: '/society/depreciation',
+    path: '/society/depreciation',
+    getParentRoute: () => SocietyRoute,
+  } as any)
 const SocietySocietyDefaultersRoute =
   SocietySocietyDefaultersRouteImport.update({
     id: '/society/defaulters',
@@ -1351,6 +1358,7 @@ export interface FileRoutesByFullPath {
   '/society/dashboard': typeof SocietySocietyDashboardRoute
   '/society/data-export': typeof SocietySocietyDataExportRoute
   '/society/defaulters': typeof SocietySocietyDefaultersRoute
+  '/society/depreciation': typeof SocietySocietyDepreciationRoute
   '/society/digest': typeof SocietySocietyDigestRoute
   '/society/elections': typeof SocietySocietyElectionsRoute
   '/society/emergency': typeof SocietySocietyEmergencyRoute
@@ -1545,6 +1553,7 @@ export interface FileRoutesByTo {
   '/society/dashboard': typeof SocietySocietyDashboardRoute
   '/society/data-export': typeof SocietySocietyDataExportRoute
   '/society/defaulters': typeof SocietySocietyDefaultersRoute
+  '/society/depreciation': typeof SocietySocietyDepreciationRoute
   '/society/digest': typeof SocietySocietyDigestRoute
   '/society/elections': typeof SocietySocietyElectionsRoute
   '/society/emergency': typeof SocietySocietyEmergencyRoute
@@ -1745,6 +1754,7 @@ export interface FileRoutesById {
   '/_society/society/dashboard': typeof SocietySocietyDashboardRoute
   '/_society/society/data-export': typeof SocietySocietyDataExportRoute
   '/_society/society/defaulters': typeof SocietySocietyDefaultersRoute
+  '/_society/society/depreciation': typeof SocietySocietyDepreciationRoute
   '/_society/society/digest': typeof SocietySocietyDigestRoute
   '/_society/society/elections': typeof SocietySocietyElectionsRoute
   '/_society/society/emergency': typeof SocietySocietyEmergencyRoute
@@ -1942,6 +1952,7 @@ export interface FileRouteTypes {
     | '/society/dashboard'
     | '/society/data-export'
     | '/society/defaulters'
+    | '/society/depreciation'
     | '/society/digest'
     | '/society/elections'
     | '/society/emergency'
@@ -2136,6 +2147,7 @@ export interface FileRouteTypes {
     | '/society/dashboard'
     | '/society/data-export'
     | '/society/defaulters'
+    | '/society/depreciation'
     | '/society/digest'
     | '/society/elections'
     | '/society/emergency'
@@ -2335,6 +2347,7 @@ export interface FileRouteTypes {
     | '/_society/society/dashboard'
     | '/_society/society/data-export'
     | '/_society/society/defaulters'
+    | '/_society/society/depreciation'
     | '/_society/society/digest'
     | '/_society/society/elections'
     | '/_society/society/emergency'
@@ -3025,6 +3038,13 @@ declare module '@tanstack/react-router' {
       path: '/society/digest'
       fullPath: '/society/digest'
       preLoaderRoute: typeof SocietySocietyDigestRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/depreciation': {
+      id: '/_society/society/depreciation'
+      path: '/society/depreciation'
+      fullPath: '/society/depreciation'
+      preLoaderRoute: typeof SocietySocietyDepreciationRouteImport
       parentRoute: typeof SocietyRoute
     }
     '/_society/society/defaulters': {
@@ -4028,6 +4048,7 @@ interface SocietyRouteChildren {
   SocietySocietyDashboardRoute: typeof SocietySocietyDashboardRoute
   SocietySocietyDataExportRoute: typeof SocietySocietyDataExportRoute
   SocietySocietyDefaultersRoute: typeof SocietySocietyDefaultersRoute
+  SocietySocietyDepreciationRoute: typeof SocietySocietyDepreciationRoute
   SocietySocietyDigestRoute: typeof SocietySocietyDigestRoute
   SocietySocietyElectionsRoute: typeof SocietySocietyElectionsRoute
   SocietySocietyEmergencyRoute: typeof SocietySocietyEmergencyRoute
@@ -4113,6 +4134,7 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyDashboardRoute: SocietySocietyDashboardRoute,
   SocietySocietyDataExportRoute: SocietySocietyDataExportRoute,
   SocietySocietyDefaultersRoute: SocietySocietyDefaultersRoute,
+  SocietySocietyDepreciationRoute: SocietySocietyDepreciationRoute,
   SocietySocietyDigestRoute: SocietySocietyDigestRoute,
   SocietySocietyElectionsRoute: SocietySocietyElectionsRoute,
   SocietySocietyEmergencyRoute: SocietySocietyEmergencyRoute,

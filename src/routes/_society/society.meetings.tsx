@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { cn } from "@/lib/utils";
 import { govRpc, govError, MEETING_STATUS, fmtDateTime } from "@/lib/governance";
+import { isOverdue } from "@/lib/overdue";
 
 export const Route = createFileRoute("/_society/society/meetings")({
   head: () => ({

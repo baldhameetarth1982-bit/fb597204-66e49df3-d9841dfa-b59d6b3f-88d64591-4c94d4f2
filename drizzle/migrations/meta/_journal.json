@@ -1086,6 +1086,13 @@
       "when": 1790991492701,
       "tag": "0154_residents_amenities_multi_home_lease_waitlist",
       "breakpoints": true
+    },
+    {
+      "idx": 155,
+      "version": "7",
+      "when": 1791030196057,
+      "tag": "0155_operations_vendor_ratings_helpdesk_reports",
+      "breakpoints": true
     }
   ]
 }

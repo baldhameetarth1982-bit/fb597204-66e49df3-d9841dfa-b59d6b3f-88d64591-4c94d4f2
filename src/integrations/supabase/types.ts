@@ -10194,6 +10194,86 @@ export type Database = {
           },
         ]
       }
+      vendor_ratings: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          moderated_at: string | null
+          moderated_by: string | null
+          moderation_reason: string | null
+          rater_id: string
+          rater_kind: string
+          rating: number
+          service_log_id: string | null
+          society_id: string
+          status: string
+          ticket_id: string | null
+          vendor_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          moderated_at?: string | null
+          moderated_by?: string | null
+          moderation_reason?: string | null
+          rater_id: string
+          rater_kind: string
+          rating: number
+          service_log_id?: string | null
+          society_id: string
+          status?: string
+          ticket_id?: string | null
+          vendor_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          moderated_at?: string | null
+          moderated_by?: string | null
+          moderation_reason?: string | null
+          rater_id?: string
+          rater_kind?: string
+          rating?: number
+          service_log_id?: string | null
+          society_id?: string
+          status?: string
+          ticket_id?: string | null
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_ratings_service_log_id_fkey"
+            columns: ["service_log_id"]
+            isOneToOne: true
+            referencedRelation: "asset_service_log"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_ratings_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_ratings_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: true
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_ratings_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "finance_vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       visitor_recurring_passes: {
         Row: {
           category: string
@@ -10557,6 +10637,7 @@ export type Database = {
         Returns: boolean
       }
       _caller_phone_digits: { Args: never; Returns: string }
+      _caller_society: { Args: never; Returns: string }
       _can_manage_polls: { Args: { _society_id: string }; Returns: boolean }
       _community_member_society: { Args: never; Returns: string }
       _deactivate_resident_role_if_homeless: {
@@ -10670,6 +10751,58 @@ export type Database = {
       _guard_role_society: { Args: never; Returns: string }
       _guard_session_ok: { Args: { _sid: string }; Returns: boolean }
       _helpdesk_is_admin: { Args: { _sid: string }; Returns: boolean }
+      _helpdesk_report_scope: { Args: never; Returns: Record<string, unknown> }
+      _helpdesk_report_tickets: {
+        Args: {
+          _asset: string
+          _category: string
+          _flag: string
+          _from: string
+          _priority: string
+          _sid: string
+          _staff: string
+          _staff_scope: string
+          _status: string
+          _to: string
+          _vendor: string
+        }
+        Returns: {
+          ai_transcript: Json | null
+          approval_status: string | null
+          asset_id: string | null
+          assigned_to: string | null
+          category: string
+          closed_at: string | null
+          created_at: string
+          description: string
+          escalation_level: number
+          escalation_reason: string | null
+          hold_reason: string | null
+          id: string
+          last_activity_at: string
+          parent_ticket_id: string | null
+          priority: string
+          reopened_count: number
+          requires_approval: boolean
+          resolution_note: string | null
+          resolved_at: string | null
+          sla_due_at: string | null
+          society_id: string | null
+          staff_id: string | null
+          status: string
+          subject: string
+          ticket_no: number
+          updated_at: string
+          user_id: string
+          vendor_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "support_tickets"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       _helpdesk_sla_hours: { Args: { _priority: string }; Returns: number }
       _home_link_valid: {
         Args: { _flat: string; _uid: string }
@@ -11206,6 +11339,10 @@ export type Database = {
           society_name: string
         }[]
       }
+      admin_moderate_vendor_rating: {
+        Args: { _hide: boolean; _id: string; _reason: string }
+        Returns: undefined
+      }
       admin_move_out_resident: {
         Args: {
           _early_termination?: boolean
@@ -11302,6 +11439,10 @@ export type Database = {
           trialing_societies: number
           unpaid_bill_total: number
         }[]
+      }
+      admin_rate_vendor_service: {
+        Args: { _comment: string; _log: string; _rating: number }
+        Returns: string
       }
       admin_record_attendance: {
         Args: { _day: string; _note: string; _staff: string; _status: string }
@@ -12909,6 +13050,50 @@ export type Database = {
         Args: { _note: string; _ticket: string }
         Returns: string
       }
+      helpdesk_report: {
+        Args: {
+          _asset?: string
+          _category?: string
+          _flag?: string
+          _from?: string
+          _priority?: string
+          _staff?: string
+          _status?: string
+          _to?: string
+          _vendor?: string
+        }
+        Returns: Json
+      }
+      helpdesk_report_rows: {
+        Args: {
+          _asset?: string
+          _category?: string
+          _flag?: string
+          _from?: string
+          _priority?: string
+          _staff?: string
+          _status?: string
+          _to?: string
+          _vendor?: string
+        }
+        Returns: {
+          asset_name: string
+          category: string
+          created_at: string
+          escalation_level: number
+          overdue: boolean
+          priority: string
+          rating: number
+          reopened_count: number
+          resolved_at: string
+          sla_due_at: string
+          staff_name: string
+          status: string
+          subject: string
+          ticket_no: number
+          vendor_name: string
+        }[]
+      }
       helpdesk_resident_action: {
         Args: { _action: string; _note?: string; _ticket: string }
         Returns: undefined
@@ -14414,6 +14599,59 @@ export type Database = {
       user_has_verified_phone_internal: {
         Args: { _user_id: string }
         Returns: boolean
+      }
+      vendor_performance: {
+        Args: never
+        Returns: {
+          avg_rating: number
+          last_service: string
+          rating_count: number
+          recent_avg: number
+          recent_count: number
+          service_visits: number
+          tickets_open: number
+          tickets_overdue: number
+          tickets_total: number
+          vendor_id: string
+        }[]
+      }
+      vendor_rate_ticket: {
+        Args: { _comment: string; _rating: number; _ticket: string }
+        Returns: string
+      }
+      vendor_rating_history: {
+        Args: { _vendor: string }
+        Returns: {
+          asset_name: string
+          comment: string
+          created_at: string
+          id: string
+          moderation_reason: string
+          rater_label: string
+          rating: number
+          service_kind: string
+          source: string
+          status: string
+          ticket_no: number
+        }[]
+      }
+      vendor_rating_status: {
+        Args: { _ticket: string }
+        Returns: {
+          eligible: boolean
+          my_rating: number
+          rated: boolean
+          vendor_name: string
+        }[]
+      }
+      vendor_service_log_unrated: {
+        Args: { _vendor: string }
+        Returns: {
+          asset_name: string
+          id: string
+          kind: string
+          service_date: string
+        }[]
       }
       verify_offline_payment: {
         Args: { _notes: string; _payment_id: string }

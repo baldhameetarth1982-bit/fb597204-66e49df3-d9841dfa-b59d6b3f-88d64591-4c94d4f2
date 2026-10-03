@@ -44,6 +44,12 @@ function AdminDashboard() {
     const { data, error } = await (supabase.rpc as any)("admin_active_people");
     if (error) throw error; return data as { active_1d: number; active_7d: number; active_30d: number; tracking_since: string | null };
   } });
+  const mq = useQuery({ queryKey: ["admin-messaging"], staleTime: 60_000, queryFn: async () => {
+    const { data, error } = await (supabase.rpc as any)("admin_messaging_overview");
+    if (error) throw error; return data as { channels?: Array<{ channel: string; enabled: boolean; counts?: Record<string, number> }> };
+  } });
+  const msgSum = (k: string) => (mq.data?.channels ?? []).reduce((t, c) => t + Number(c.counts?.[k] ?? 0), 0);
+  const msgOn = (mq.data?.channels ?? []).filter((c) => c.enabled).length;
   const o = q.data;
   const gp = o ? grossProfit(o) : null;
   const loading = q.isLoading;
@@ -174,7 +180,7 @@ function AdminDashboard() {
                 <HealthRow label="Razorpay" ok={o.health.razorpay_configured} text={o.health.razorpay_configured ? "Configured" : "Not configured"} />
                 <HealthRow label="AI provider (month)" ok={!(o.ai.month_total > 20 && o.ai.month_failed / o.ai.month_total > 0.2)} text={o.ai.month_total ? `${Math.round((o.ai.month_ok / o.ai.month_total) * 100)}% succeeded` : "No requests yet"} />
                 <HealthRow label="App errors (24h)" ok={o.health.app_errors_24h <= Math.max(10, o.health.app_errors_prev_24h * 2)} text={`${o.health.app_errors_24h} (previous day ${o.health.app_errors_prev_24h})`} />
-                <HealthRow label="Messaging providers" ok={null} text="Not connected" />
+                <HealthRow label="Messaging (7d)" ok={mq.isError || !mq.data ? null : msgSum("failed") === 0} text={mq.isError ? "Couldn't load" : !mq.data ? "Loading…" : `${msgOn} channel(s) on · ${msgSum("sent")} sent · ${msgSum("failed")} failed · ${msgSum("not_connected")} provider not connected`} />
                 <HealthRow label="Backups" ok={null} text="Managed by the cloud host — not reported here" />
               </ul>
             </Section>

@@ -12537,6 +12537,16 @@ export type Database = {
         }
         Returns: string
       }
+      admin_event_attendees: {
+        Args: { _event_id: string }
+        Returns: {
+          created_at: string
+          full_name: string
+          guests: number
+          homes: string
+          status: string
+        }[]
+      }
       admin_extend_trial: {
         Args: { _days: number; _reason: string; _society_id: string }
         Returns: Json

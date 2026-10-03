@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PaymentProofButton } from "@/components/billing/PaymentProofButton";
+import { UpiSettingsCard } from "@/components/billing/UpiSettingsCard";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Card, CardContent } from "@/components/ui/card";
@@ -171,11 +173,12 @@ function SocietyPaymentsRoute() {
     reversed: { title: "Reversed", hint: "Receipts voided and bill balances re-opened. History is kept.", empty: "No reversed payments.", bar: "bg-muted-foreground" },
   };
   const meta = TAB_META[tab];
-  const methodLabel = (m: string) => (m === "bank_transfer" ? "Bank Transfer" : m === "cash" ? "Cash" : m);
+  const methodLabel = (m: string) => (m === "upi_qr" ? "UPI QR" : m === "razorpay" ? "Online (Razorpay)" : m === "bank_transfer" ? "Bank Transfer" : m === "cash" ? "Cash" : m);
 
   return (
     <PageShell>
-      <PageHeader title="Payments" description="Cash and Bank Transfer payments. A receipt is issued only after you verify a payment." />
+      <PageHeader title="Payments" description="Cash, Bank Transfer and UPI QR payments. A receipt is issued only after you verify a payment." />
+      {societyId && <UpiSettingsCard societyId={societyId} />}
       <div className="mb-5 rounded-2xl border border-border bg-card"><BillingCenterTabs /></div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
@@ -224,6 +227,7 @@ function SocietyPaymentsRoute() {
                           <dt>Reference</dt><dd className="truncate text-foreground">{p.reference_no ?? "None"}</dd>
                           {p.submitted_at && (<><dt>Submitted</dt><dd>{formatDate(p.submitted_at)}{p.source ? ` · ${p.source.replace("_", " ")}` : ""}</dd></>)}
                         </dl>
+                        {p.method === "upi_qr" && <div className="mt-2"><PaymentProofButton paymentId={p.id} /></div>}
                         {p.notes && <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">“{p.notes}”</p>}
                       </div>
                       <StatusChip tone={p.status === "verified" ? "success" : p.status === "pending" ? "warning" : p.status === "rejected" ? "danger" : "neutral"}

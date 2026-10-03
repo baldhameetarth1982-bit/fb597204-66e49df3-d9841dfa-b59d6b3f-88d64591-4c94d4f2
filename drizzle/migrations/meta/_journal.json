@@ -1149,6 +1149,13 @@
       "when": 1791041038943,
       "tag": "0163_material_passes_lift_booking",
       "breakpoints": true
+    },
+    {
+      "idx": 164,
+      "version": "7",
+      "when": 1791042020128,
+      "tag": "0164_petty_cash_register",
+      "breakpoints": true
     }
   ]
 }

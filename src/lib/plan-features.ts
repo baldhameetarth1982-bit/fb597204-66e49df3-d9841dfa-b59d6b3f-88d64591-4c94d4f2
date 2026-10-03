@@ -687,7 +687,7 @@ const CATALOG: FeatureCatalogEntry[] = [
   {
     key: "resident_bills",
     label: "My Bills & Dues",
-    shortDescription: "View maintenance bills, pay via Cash or Bank Transfer.",
+    shortDescription: "View maintenance bills and pay by Cash, Bank Transfer, UPI QR or online (where the plan allows).",
     category: "billing_finance",
     minPlan: "basic",
     roles: ["resident"],

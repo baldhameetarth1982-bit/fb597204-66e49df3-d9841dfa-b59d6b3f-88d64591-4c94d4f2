@@ -169,8 +169,8 @@ function CheckoutPage() {
                     {quote!.flat_count} flats × ₹{quote!.price_per_flat_inr} per flat
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Razorpay is used only for this SociyoHub subscription. Maintenance payments
-                    remain Cash or Bank Transfer with no platform fee.
+                    This SociyoHub subscription is billed separately from society maintenance.
+                    Maintenance payments go to the society, with no SociyoHub platform fee.
                   </p>
                 </div>
               )}

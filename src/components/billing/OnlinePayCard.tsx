@@ -17,7 +17,7 @@ const MESSAGES: Record<string, string> = {
   bill_cancelled: "This bill was cancelled.",
   nothing_due: "Nothing is due on this bill.",
   payment_in_progress: "Someone in your home is already paying this bill. Try again in 30 minutes.",
-  offline_payment_pending: "A Cash or Bank Transfer payment is waiting for the committee to check it.",
+  offline_payment_pending: "Another payment for this bill is waiting for the committee to check it.",
   rate_limited: "Too many tries. Please wait a while and try again.",
   provider_unavailable: "Online payment is unavailable right now. Please try later.",
 };
@@ -40,7 +40,7 @@ export function OnlinePayCard({ billId, societyId, onPaid }: { billId: string; s
     return (
       <div className="rounded-2xl border border-border p-4 flex gap-3">
         <Lock className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
-        <p className="text-sm text-muted-foreground">Online payment is available when your society is on the Pro plan. You can still pay by Cash or Bank Transfer below.</p>
+        <p className="text-sm text-muted-foreground">Online payment is available when your society is on the Pro plan. You can still use the other payment options on this page.</p>
       </div>
     );
   }

@@ -355,7 +355,7 @@ function AutoBillingSection({ societyId }: { societyId: string }) {
         <div className="flex items-center justify-between rounded-xl border border-border p-4">
           <div>
             <p className="text-sm font-medium">Auto-generate every cycle</p>
-            <p className="text-xs text-muted-foreground">Bills are created automatically each cycle and stay unpaid until a Cash or Bank Transfer payment is verified.</p>
+            <p className="text-xs text-muted-foreground">Bills are created automatically each cycle and stay unpaid until a payment is confirmed.</p>
           </div>
           <Switch checked={enabled} onCheckedChange={setEnabled} aria-label="Auto-generate every cycle" />
         </div>

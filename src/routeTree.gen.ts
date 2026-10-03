@@ -83,6 +83,7 @@ import { Route as SocietySocietyHandoverRouteImport } from './routes/_society/so
 import { Route as SocietySocietyFeaturesRouteImport } from './routes/_society/society.features'
 import { Route as SocietySocietyExplorerRouteImport } from './routes/_society/society.explorer'
 import { Route as SocietySocietyExpensesRouteImport } from './routes/_society/society.expenses'
+import { Route as SocietySocietyEventsRouteImport } from './routes/_society/society.events'
 import { Route as SocietySocietyEmergencyRouteImport } from './routes/_society/society.emergency'
 import { Route as SocietySocietyElectionsRouteImport } from './routes/_society/society.elections'
 import { Route as SocietySocietyDigestRouteImport } from './routes/_society/society.digest'
@@ -128,6 +129,7 @@ import { Route as ResidentAppHelpdeskRouteImport } from './routes/_resident/app.
 import { Route as ResidentAppGuardRouteImport } from './routes/_resident/app.guard'
 import { Route as ResidentAppFeaturesRouteImport } from './routes/_resident/app.features'
 import { Route as ResidentAppFamilyRouteImport } from './routes/_resident/app.family'
+import { Route as ResidentAppEventsRouteImport } from './routes/_resident/app.events'
 import { Route as ResidentAppEmergencyRouteImport } from './routes/_resident/app.emergency'
 import { Route as ResidentAppElectionsRouteImport } from './routes/_resident/app.elections'
 import { Route as ResidentAppDuesRouteImport } from './routes/_resident/app.dues'
@@ -580,6 +582,11 @@ const SocietySocietyExpensesRoute = SocietySocietyExpensesRouteImport.update({
   path: '/society/expenses',
   getParentRoute: () => SocietyRoute,
 } as any)
+const SocietySocietyEventsRoute = SocietySocietyEventsRouteImport.update({
+  id: '/society/events',
+  path: '/society/events',
+  getParentRoute: () => SocietyRoute,
+} as any)
 const SocietySocietyEmergencyRoute = SocietySocietyEmergencyRouteImport.update({
   id: '/society/emergency',
   path: '/society/emergency',
@@ -814,6 +821,11 @@ const ResidentAppFeaturesRoute = ResidentAppFeaturesRouteImport.update({
 const ResidentAppFamilyRoute = ResidentAppFamilyRouteImport.update({
   id: '/app/family',
   path: '/app/family',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppEventsRoute = ResidentAppEventsRouteImport.update({
+  id: '/app/events',
+  path: '/app/events',
   getParentRoute: () => ResidentRoute,
 } as any)
 const ResidentAppEmergencyRoute = ResidentAppEmergencyRouteImport.update({
@@ -1264,6 +1276,7 @@ export interface FileRoutesByFullPath {
   '/app/dues': typeof ResidentAppDuesRoute
   '/app/elections': typeof ResidentAppElectionsRoute
   '/app/emergency': typeof ResidentAppEmergencyRoute
+  '/app/events': typeof ResidentAppEventsRoute
   '/app/family': typeof ResidentAppFamilyRoute
   '/app/features': typeof ResidentAppFeaturesRoute
   '/app/guard': typeof ResidentAppGuardRoute
@@ -1309,6 +1322,7 @@ export interface FileRoutesByFullPath {
   '/society/digest': typeof SocietySocietyDigestRoute
   '/society/elections': typeof SocietySocietyElectionsRoute
   '/society/emergency': typeof SocietySocietyEmergencyRoute
+  '/society/events': typeof SocietySocietyEventsRoute
   '/society/expenses': typeof SocietySocietyExpensesRoute
   '/society/explorer': typeof SocietySocietyExplorerRoute
   '/society/features': typeof SocietySocietyFeaturesRoute
@@ -1451,6 +1465,7 @@ export interface FileRoutesByTo {
   '/app/dues': typeof ResidentAppDuesRoute
   '/app/elections': typeof ResidentAppElectionsRoute
   '/app/emergency': typeof ResidentAppEmergencyRoute
+  '/app/events': typeof ResidentAppEventsRoute
   '/app/family': typeof ResidentAppFamilyRoute
   '/app/features': typeof ResidentAppFeaturesRoute
   '/app/guard': typeof ResidentAppGuardRoute
@@ -1496,6 +1511,7 @@ export interface FileRoutesByTo {
   '/society/digest': typeof SocietySocietyDigestRoute
   '/society/elections': typeof SocietySocietyElectionsRoute
   '/society/emergency': typeof SocietySocietyEmergencyRoute
+  '/society/events': typeof SocietySocietyEventsRoute
   '/society/expenses': typeof SocietySocietyExpensesRoute
   '/society/explorer': typeof SocietySocietyExplorerRoute
   '/society/features': typeof SocietySocietyFeaturesRoute
@@ -1644,6 +1660,7 @@ export interface FileRoutesById {
   '/_resident/app/dues': typeof ResidentAppDuesRoute
   '/_resident/app/elections': typeof ResidentAppElectionsRoute
   '/_resident/app/emergency': typeof ResidentAppEmergencyRoute
+  '/_resident/app/events': typeof ResidentAppEventsRoute
   '/_resident/app/family': typeof ResidentAppFamilyRoute
   '/_resident/app/features': typeof ResidentAppFeaturesRoute
   '/_resident/app/guard': typeof ResidentAppGuardRoute
@@ -1689,6 +1706,7 @@ export interface FileRoutesById {
   '/_society/society/digest': typeof SocietySocietyDigestRoute
   '/_society/society/elections': typeof SocietySocietyElectionsRoute
   '/_society/society/emergency': typeof SocietySocietyEmergencyRoute
+  '/_society/society/events': typeof SocietySocietyEventsRoute
   '/_society/society/expenses': typeof SocietySocietyExpensesRoute
   '/_society/society/explorer': typeof SocietySocietyExplorerRoute
   '/_society/society/features': typeof SocietySocietyFeaturesRoute
@@ -1834,6 +1852,7 @@ export interface FileRouteTypes {
     | '/app/dues'
     | '/app/elections'
     | '/app/emergency'
+    | '/app/events'
     | '/app/family'
     | '/app/features'
     | '/app/guard'
@@ -1879,6 +1898,7 @@ export interface FileRouteTypes {
     | '/society/digest'
     | '/society/elections'
     | '/society/emergency'
+    | '/society/events'
     | '/society/expenses'
     | '/society/explorer'
     | '/society/features'
@@ -2021,6 +2041,7 @@ export interface FileRouteTypes {
     | '/app/dues'
     | '/app/elections'
     | '/app/emergency'
+    | '/app/events'
     | '/app/family'
     | '/app/features'
     | '/app/guard'
@@ -2066,6 +2087,7 @@ export interface FileRouteTypes {
     | '/society/digest'
     | '/society/elections'
     | '/society/emergency'
+    | '/society/events'
     | '/society/expenses'
     | '/society/explorer'
     | '/society/features'
@@ -2213,6 +2235,7 @@ export interface FileRouteTypes {
     | '/_resident/app/dues'
     | '/_resident/app/elections'
     | '/_resident/app/emergency'
+    | '/_resident/app/events'
     | '/_resident/app/family'
     | '/_resident/app/features'
     | '/_resident/app/guard'
@@ -2258,6 +2281,7 @@ export interface FileRouteTypes {
     | '/_society/society/digest'
     | '/_society/society/elections'
     | '/_society/society/emergency'
+    | '/_society/society/events'
     | '/_society/society/expenses'
     | '/_society/society/explorer'
     | '/_society/society/features'
@@ -2894,6 +2918,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SocietySocietyExpensesRouteImport
       parentRoute: typeof SocietyRoute
     }
+    '/_society/society/events': {
+      id: '/_society/society/events'
+      path: '/society/events'
+      fullPath: '/society/events'
+      preLoaderRoute: typeof SocietySocietyEventsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
     '/_society/society/emergency': {
       id: '/_society/society/emergency'
       path: '/society/emergency'
@@ -3207,6 +3238,13 @@ declare module '@tanstack/react-router' {
       path: '/app/family'
       fullPath: '/app/family'
       preLoaderRoute: typeof ResidentAppFamilyRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/events': {
+      id: '/_resident/app/events'
+      path: '/app/events'
+      fullPath: '/app/events'
+      preLoaderRoute: typeof ResidentAppEventsRouteImport
       parentRoute: typeof ResidentRoute
     }
     '/_resident/app/emergency': {
@@ -3791,6 +3829,7 @@ interface ResidentRouteChildren {
   ResidentAppDuesRoute: typeof ResidentAppDuesRoute
   ResidentAppElectionsRoute: typeof ResidentAppElectionsRoute
   ResidentAppEmergencyRoute: typeof ResidentAppEmergencyRoute
+  ResidentAppEventsRoute: typeof ResidentAppEventsRoute
   ResidentAppFamilyRoute: typeof ResidentAppFamilyRoute
   ResidentAppFeaturesRoute: typeof ResidentAppFeaturesRoute
   ResidentAppGuardRoute: typeof ResidentAppGuardRoute
@@ -3834,6 +3873,7 @@ const ResidentRouteChildren: ResidentRouteChildren = {
   ResidentAppDuesRoute: ResidentAppDuesRoute,
   ResidentAppElectionsRoute: ResidentAppElectionsRoute,
   ResidentAppEmergencyRoute: ResidentAppEmergencyRoute,
+  ResidentAppEventsRoute: ResidentAppEventsRoute,
   ResidentAppFamilyRoute: ResidentAppFamilyRoute,
   ResidentAppFeaturesRoute: ResidentAppFeaturesRoute,
   ResidentAppGuardRoute: ResidentAppGuardRoute,
@@ -3892,6 +3932,7 @@ interface SocietyRouteChildren {
   SocietySocietyDigestRoute: typeof SocietySocietyDigestRoute
   SocietySocietyElectionsRoute: typeof SocietySocietyElectionsRoute
   SocietySocietyEmergencyRoute: typeof SocietySocietyEmergencyRoute
+  SocietySocietyEventsRoute: typeof SocietySocietyEventsRoute
   SocietySocietyExpensesRoute: typeof SocietySocietyExpensesRoute
   SocietySocietyExplorerRoute: typeof SocietySocietyExplorerRoute
   SocietySocietyFeaturesRoute: typeof SocietySocietyFeaturesRoute
@@ -3973,6 +4014,7 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyDigestRoute: SocietySocietyDigestRoute,
   SocietySocietyElectionsRoute: SocietySocietyElectionsRoute,
   SocietySocietyEmergencyRoute: SocietySocietyEmergencyRoute,
+  SocietySocietyEventsRoute: SocietySocietyEventsRoute,
   SocietySocietyExpensesRoute: SocietySocietyExpensesRoute,
   SocietySocietyExplorerRoute: SocietySocietyExplorerRoute,
   SocietySocietyFeaturesRoute: SocietySocietyFeaturesRoute,

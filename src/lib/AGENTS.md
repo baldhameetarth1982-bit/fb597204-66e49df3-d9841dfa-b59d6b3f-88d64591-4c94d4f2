@@ -57,3 +57,4 @@
 - Pets live in flat_pets (home-scoped, soft-removed) written only via resident_add_pet / resident_remove_pet with audit; readable by the current home and its committee, never a person-level record.
 - Utility meters: utility_meters + append-only utility_meter_readings, written only via admin_register_meter / admin_record_meter_reading (monotonic readings, replacement instead of edits, audited); no utility billing until rates are explicitly configured.
 - Community events: community_events + community_event_rsvps written only via admin_create_event / admin_cancel_event / event_rsvp (server society, capacity, FIFO waitlist promotion with notification, audited); kept separate from official notices.
+- Community groups: community_groups + community_group_members written only via admin_save_group / admin_group_action / group_membership (server society, open or approval joining, audited); discussions stay in the existing feed.

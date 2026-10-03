@@ -1965,6 +1965,79 @@ export type Database = {
           },
         ]
       }
+      community_group_members: {
+        Row: {
+          created_at: string
+          group_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          status: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "community_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_groups: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          join_policy: string
+          kind: string
+          name: string
+          society_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          join_policy?: string
+          kind?: string
+          name: string
+          society_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          join_policy?: string
+          kind?: string
+          name?: string
+          society_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_groups_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       community_listing_categories: {
         Row: {
           active: boolean
@@ -11722,6 +11795,10 @@ export type Database = {
             }
             Returns: undefined
           }
+      admin_group_action: {
+        Args: { _action: string; _group_id: string; _user_id?: string }
+        Returns: undefined
+      }
       admin_income_summary: {
         Args: never
         Returns: {
@@ -11987,6 +12064,16 @@ export type Database = {
         Returns: Json
       }
       admin_revoke_rfid: { Args: { _id: string }; Returns: undefined }
+      admin_save_group: {
+        Args: {
+          _description: string
+          _join_policy: string
+          _kind: string
+          _name: string
+          _society_id: string
+        }
+        Returns: string
+      }
       admin_schedule_maintenance: {
         Args: {
           _asset: string
@@ -13390,6 +13477,18 @@ export type Database = {
           subtitle: string
           title: string
         }[]
+      }
+      group_counts: {
+        Args: { _ids: string[] }
+        Returns: {
+          group_id: string
+          members: number
+          pending: number
+        }[]
+      }
+      group_membership: {
+        Args: { _group_id: string; _join: boolean }
+        Returns: string
       }
       guard_checkin_by_code: {
         Args: { _code: string; _society_id: string }

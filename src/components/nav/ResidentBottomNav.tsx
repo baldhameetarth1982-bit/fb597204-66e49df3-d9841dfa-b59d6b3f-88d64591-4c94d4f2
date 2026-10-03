@@ -37,6 +37,7 @@ const TABS = [
       "/app/vehicles",
       "/app/services",
       "/app/events",
+      "/app/groups",
       "/app/trust",
       "/app/achievements",
       "/app/activity",

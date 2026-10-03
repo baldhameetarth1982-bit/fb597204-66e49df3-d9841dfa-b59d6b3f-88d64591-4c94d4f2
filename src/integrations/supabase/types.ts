@@ -3547,6 +3547,63 @@ export type Database = {
           },
         ]
       }
+      flat_pets: {
+        Row: {
+          added_by: string
+          breed: string | null
+          created_at: string
+          flat_id: string
+          id: string
+          is_active: boolean
+          name: string
+          removed_at: string | null
+          society_id: string
+          species: string
+          vaccinated_until: string | null
+        }
+        Insert: {
+          added_by: string
+          breed?: string | null
+          created_at?: string
+          flat_id: string
+          id?: string
+          is_active?: boolean
+          name: string
+          removed_at?: string | null
+          society_id: string
+          species: string
+          vaccinated_until?: string | null
+        }
+        Update: {
+          added_by?: string
+          breed?: string | null
+          created_at?: string
+          flat_id?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          removed_at?: string | null
+          society_id?: string
+          species?: string
+          vaccinated_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flat_pets_flat_id_fkey"
+            columns: ["flat_id"]
+            isOneToOne: false
+            referencedRelation: "flats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flat_pets_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       flat_residents: {
         Row: {
           access_expires_at: string | null
@@ -14283,6 +14340,16 @@ export type Database = {
         Returns: string
       }
       reset_own_kyc: { Args: never; Returns: undefined }
+      resident_add_pet: {
+        Args: {
+          _breed: string
+          _name: string
+          _species: string
+          _vaccinated_until: string
+        }
+        Returns: string
+      }
+      resident_remove_pet: { Args: { _id: string }; Returns: undefined }
       resident_set_recurring_pass_status: {
         Args: { _id: string; _status: string }
         Returns: undefined

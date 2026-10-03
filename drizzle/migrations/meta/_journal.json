@@ -1114,6 +1114,13 @@
       "when": 1791037082751,
       "tag": "0158_messaging_dispatch_wake",
       "breakpoints": true
+    },
+    {
+      "idx": 159,
+      "version": "7",
+      "when": 1791038090753,
+      "tag": "0159_resident_pet_register",
+      "breakpoints": true
     }
   ]
 }

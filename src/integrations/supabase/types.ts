@@ -10435,6 +10435,44 @@ export type Database = {
           },
         ]
       }
+      society_upi_settings: {
+        Row: {
+          enabled: boolean
+          payee_name: string
+          qr_path: string | null
+          society_id: string
+          updated_at: string
+          updated_by: string | null
+          upi_vpa: string
+        }
+        Insert: {
+          enabled?: boolean
+          payee_name: string
+          qr_path?: string | null
+          society_id: string
+          updated_at?: string
+          updated_by?: string | null
+          upi_vpa: string
+        }
+        Update: {
+          enabled?: boolean
+          payee_name?: string
+          qr_path?: string | null
+          society_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          upi_vpa?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "society_upi_settings_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: true
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sos_alerts: {
         Row: {
           acknowledged_at: string | null
@@ -12273,6 +12311,10 @@ export type Database = {
         Args: { _flat_resident_id: string }
         Returns: string
       }
+      _upi_rate_ok: {
+        Args: { _bucket: string; _limit: number; _subject: string }
+        Returns: undefined
+      }
       _vehicle_authorized_slots: { Args: { _vehicle: string }; Returns: string }
       _visitor_clean: { Args: { _max: number; _t: string }; Returns: string }
       _visitor_new_code: { Args: { _society: string }; Returns: string }
@@ -12461,6 +12503,7 @@ export type Database = {
         Args: { _days: number; _reason: string; _society_id: string }
         Returns: Json
       }
+      admin_get_society_upi: { Args: { _society_id: string }; Returns: Json }
       admin_global_metrics: {
         Args: never
         Returns: {
@@ -12923,6 +12966,17 @@ export type Database = {
           _society_id: string
           _tan: string
           _tds_deductor: boolean
+        }
+        Returns: undefined
+      }
+      admin_set_society_upi: {
+        Args: {
+          _enabled: boolean
+          _keep_qr: boolean
+          _payee_name: string
+          _qr_path: string
+          _society_id: string
+          _upi_vpa: string
         }
         Returns: undefined
       }
@@ -14020,6 +14074,7 @@ export type Database = {
         Args: { _cycle_config_id: string; _society_id: string }
         Returns: Json
       }
+      get_bill_upi_details: { Args: { _bill_id: string }; Returns: Json }
       get_budget_vs_actual: {
         Args: { _fy_start: number }
         Returns: {
@@ -14082,6 +14137,7 @@ export type Database = {
         }[]
       }
       get_payment_detail: { Args: { _payment_id: string }; Returns: Json }
+      get_payment_proof_path: { Args: { _payment_id: string }; Returns: string }
       get_payment_receipt_lifecycle: {
         Args: { _payment_id: string }
         Returns: Json
@@ -15973,6 +16029,15 @@ export type Database = {
       submit_survey_response: {
         Args: { _answers: Json; _poll_id: string }
         Returns: undefined
+      }
+      submit_upi_qr_payment: {
+        Args: {
+          _bill_id: string
+          _idempotency_key: string
+          _proof_path: string
+          _reference_no: string
+        }
+        Returns: string
       }
       switch_active_home: { Args: { _flat_id: string }; Returns: Json }
       switch_active_society: {

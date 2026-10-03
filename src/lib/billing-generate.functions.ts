@@ -426,7 +426,7 @@ export const getResidentBills = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     // Derive resident's active flats server-side.
     // Only the server-selected current home (multi-home residents switch explicitly).
-    const { data: homeId, error: linkErr } = await (context.supabase as any).rpc("current_home_flat_id");
+    const { data: homeId, error: linkErr } = await context.supabase.rpc("current_home_flat_id");
     if (linkErr) throw new Error(mapBillingError("operation_failed"));
     const flatIds = homeId ? [homeId as string] : [];
     // `hasLinkedFlat` lets the resident UI distinguish "no flat linked yet"

@@ -148,11 +148,12 @@ function BillingSettingsPage() {
     >
       <div className="rounded-2xl border bg-card"><BillingCenterTabs /></div>
 
-      <SettingsSection title="How residents pay" icon={ShieldCheck} trailing={<StatusChip tone="success">Cash + Bank Transfer</StatusChip>}>
+      <SettingsSection title="How residents pay" icon={ShieldCheck} trailing={<StatusChip tone="success">Cash · Bank · UPI · Online</StatusChip>}>
         <p className="text-sm text-muted-foreground">
-          Residents pay by <b className="text-foreground">Cash</b> or <b className="text-foreground">Bank Transfer</b>. Each payment stays
-          "Awaiting verification" until a committee member confirms it, and a receipt is issued only after that.
-          This can't be changed here.
+          Residents can always pay by <b className="text-foreground">Cash</b> or <b className="text-foreground">Bank Transfer</b>, and by
+          <b className="text-foreground"> UPI QR</b> once you add your society's UPI details. These stay "Awaiting verification" until a
+          committee member confirms them. <b className="text-foreground">Pay now</b> (online by UPI, card or netbanking) is available on
+          plans that include it and is confirmed automatically by the payment provider. A receipt is issued only after a payment is confirmed.
         </p>
       </SettingsSection>
 

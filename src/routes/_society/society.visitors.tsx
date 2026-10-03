@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, UserCheck, Plus, Check, X, LogOut } from "lucide-react";
+import { Loader2, UserCheck, Plus, Check, X, LogOut, Download } from "lucide-react";
 import {
   StatusChip,
   SummaryStrip,
@@ -191,6 +191,39 @@ function SocietyVisitors() {
     void load();
   }
 
+  const [code, setCode] = useState("");
+  const [codeBusy, setCodeBusy] = useState(false);
+  async function checkinByCode() {
+    if (!societyId || !/^\d{6}$/.test(code)) return toast.error("Enter the 6-digit pass code.");
+    setCodeBusy(true);
+    const { error } = await supabase.rpc("guard_checkin_by_code", { _society_id: societyId, _code: code });
+    setCodeBusy(false);
+    if (error) return toast.error(gateErrorMessage(error));
+    toast.success("Visitor checked in");
+    setCode("");
+    void load();
+  }
+
+  function exportCsv() {
+    // Prefix cells that a spreadsheet could treat as a formula.
+    const cell = (x: unknown) => {
+      let s = x == null ? "" : String(x);
+      if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+      return `"${s.replace(/"/g, '""')}"`;
+    };
+    const t = (d: string | null) => (d ? new Date(d).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }) : "");
+    const rows = [
+      ["Visitor", "Phone", "Vehicle", "Purpose", "House", "Status", "Entry", "Exit"],
+      ...shown.map((v) => [v.visitor_name, v.phone, v.vehicle_number, v.purpose, v.flat_number, v.status, t(v.entry_at), t(v.exit_at)]),
+    ];
+    const blob = new Blob([rows.map((r) => r.map(cell).join(",")).join("\n")], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `visitor-log-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
   const [term, setTerm] = useState("");
   const shown = useMemo(() => {
     const s = term.trim().toLowerCase();
@@ -313,6 +346,29 @@ function SocietyVisitors() {
         title="Visitors"
         description="Today's gate activity · refreshes every 30 seconds"
         actions={
+          <div className="flex flex-wrap items-center gap-2">
+          <form
+            className="flex items-center gap-2"
+            aria-label="Check in by pass code"
+            onSubmit={(e) => { e.preventDefault(); void checkinByCode(); }}
+          >
+            <Label htmlFor="pass-code" className="sr-only">Pass code</Label>
+            <Input
+              id="pass-code"
+              inputMode="numeric"
+              maxLength={6}
+              placeholder="6-digit code"
+              className="h-11 w-32 font-mono"
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+            />
+            <Button type="submit" variant="outline" className="h-11 rounded-xl" disabled={codeBusy || code.length !== 6}>
+              {codeBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Check in"}
+            </Button>
+          </form>
+          <Button variant="outline" className="h-11 rounded-xl" onClick={exportCsv} disabled={shown.length === 0}>
+            <Download className="mr-2 h-4 w-4" /> Download
+          </Button>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button className="h-11 rounded-xl">
@@ -382,6 +438,7 @@ function SocietyVisitors() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          </div>
         }
       />
 

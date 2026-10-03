@@ -12,6 +12,7 @@ import { useAuth } from "@/context/AuthContext";
 import { listDiscovery, type DiscoveryItem } from "@/lib/discovery.functions";
 import { safeHttpsUrl, telHref, whatsappHref } from "@/lib/discovery";
 import { cn } from "@/lib/utils";
+import { recordAdEvent, useAdImpression } from "@/lib/ad-events";
 
 const ICONS: Record<string, typeof Wrench> = {
   zap: Zap, droplets: Droplets, hammer: Hammer, snowflake: Snowflake, refrigerator: Refrigerator, sparkles: Sparkles,
@@ -129,8 +130,9 @@ function Thumb({ item, className }: { item: DiscoveryItem; className?: string })
 }
 
 function Card({ item, onOpen, cat, wide }: { item: DiscoveryItem; onOpen: () => void; cat: string | null; wide?: boolean }) {
+  const viewRef = useAdImpression(item.id, item.placement, item.sponsored);
   return (
-    <button type="button" onClick={onOpen}
+    <button ref={viewRef as any} type="button" onClick={() => { if (item.sponsored) recordAdEvent(item.id, "click", item.placement); onOpen(); }}
       className={cn("flex w-full items-center gap-3 rounded-2xl border bg-card p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", wide && "w-72 shrink-0")}>
       <Thumb item={item} className="h-16 w-16 shrink-0 rounded-xl" />
       <span className="min-w-0 flex-1">
@@ -149,8 +151,9 @@ function Details({ item, cat }: { item: DiscoveryItem; cat: string | null }) {
   const tel = telHref(item.phone);
   const wa = whatsappHref(item.whatsapp);
   const link = safeHttpsUrl(item.link_url);
+  const cta = () => { if (item.sponsored) recordAdEvent(item.id, "cta", item.placement); };
   return (
-    <div className="space-y-4 pb-4">
+    <div className="space-y-4 pb-4" onClickCapture={(e) => { if ((e.target as HTMLElement).closest("a")) cta(); }}>
       <Thumb item={item} className="aspect-[16/7] w-full rounded-2xl" />
       <SheetHeader className="text-left">
         <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">

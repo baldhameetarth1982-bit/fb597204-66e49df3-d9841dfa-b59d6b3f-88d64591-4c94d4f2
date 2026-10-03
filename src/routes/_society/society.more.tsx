@@ -4,7 +4,7 @@ import {
   Receipt, Wallet, BarChart3, TrendingDown, BookOpen,
   Settings2, UsersRound, Activity, LifeBuoy, Sparkles, KeyRound, Building, Lock,
   LayoutGrid, Compass, FileCheck2, Trophy, Palette, CalendarDays, Gavel,
-  Wrench,
+  Wrench, Siren, Store,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { MobileHero } from "@/components/shared/MobileHero";
@@ -37,6 +37,8 @@ const MANAGEMENT: Tile[] = [
   { to: "/society/amenities", label: "Amenities", icon: CalendarDays, feature: "amenities" },
   { to: "/society/maintenance", label: "Maintenance", icon: BookOpen },
   { to: "/society/communication", label: "Communication", icon: MessageSquare },
+  { to: "/society/emergency", label: "Emergency broadcast", icon: Siren },
+  { to: "/society/community", label: "Community marketplace", icon: Store },
   { to: "/society/polls", label: "Polls", icon: Sparkles, feature: "polls" },
   { to: "/society/surveys", label: "Surveys", icon: Sparkles, feature: "polls" },
   { to: "/society/votes", label: "Formal votes", icon: Gavel, feature: "polls" },

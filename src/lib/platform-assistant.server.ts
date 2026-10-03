@@ -67,9 +67,30 @@ const BLOCKED: RegExp[] = [
   /\b(system prompt|hidden prompt|your instructions|developer message)\b/i,
 ];
 
+const LEET: Record<string, string> = { "0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "7": "t", "@": "a", $: "s" };
+
+/** Readable variants of a message so encoded or obfuscated requests hit the same rules. */
+function variants(text: string): string[] {
+  const base = text.normalize("NFKC").replace(/[\u200b-\u200f\u2060\ufeff]/g, "");
+  const out = [base];
+  // "p a s s w o r d" / "p.a.s.s" → "password"
+  out.push(base.replace(/\b(?:\w[\s.\-_*]){3,}\w\b/g, (m) => m.replace(/[\s.\-_*]/g, "")));
+  out.push(base.replace(/[013457@$]/g, (c) => LEET[c] ?? c));
+  for (const chunk of base.match(/[A-Za-z0-9+/]{16,}={0,2}/g) ?? []) {
+    try {
+      const decoded = atob(chunk);
+      if (/^[\x20-\x7e\s]+$/.test(decoded)) out.push(decoded);
+    } catch { /* not base64 */ }
+  }
+  for (const chunk of base.match(/(?:[0-9a-f]{2}){8,}/gi) ?? []) {
+    const decoded = chunk.replace(/../g, (h) => String.fromCharCode(parseInt(h, 16)));
+    if (/^[\x20-\x7e\s]+$/.test(decoded)) out.push(decoded);
+  }
+  return out;
+}
+
 export function isBlockedRequest(text: string): boolean {
-  const t = text.normalize("NFKC").replace(/[\u200b-\u200f]/g, "");
-  return BLOCKED.some((r) => r.test(t));
+  return variants(text).some((t) => BLOCKED.some((r) => r.test(t)));
 }
 
 export const REFUSAL =

@@ -150,6 +150,7 @@ import { Route as AdminAdminRevenueRouteImport } from './routes/_admin/admin.rev
 import { Route as AdminAdminReportBuilderRouteImport } from './routes/_admin/admin.report-builder'
 import { Route as AdminAdminRazorpayRouteImport } from './routes/_admin/admin.razorpay'
 import { Route as AdminAdminPlansRouteImport } from './routes/_admin/admin.plans'
+import { Route as AdminAdminMessagingRouteImport } from './routes/_admin/admin.messaging'
 import { Route as AdminAdminIncomeRouteImport } from './routes/_admin/admin.income'
 import { Route as AdminAdminHealthRouteImport } from './routes/_admin/admin.health'
 import { Route as AdminAdminExecutiveRouteImport } from './routes/_admin/admin.executive'
@@ -177,6 +178,7 @@ import { Route as ResidentAppBillsIndexRouteImport } from './routes/_resident/ap
 import { Route as AdminAdminSocietiesIndexRouteImport } from './routes/_admin/admin.societies.index'
 import { Route as ApiPublicHooksRunBillingRouteImport } from './routes/api/public/hooks/run-billing'
 import { Route as ApiPublicHooksRazorpayRouteImport } from './routes/api/public/hooks/razorpay'
+import { Route as ApiPublicHooksMessagingDispatchRouteImport } from './routes/api/public/hooks/messaging-dispatch'
 import { Route as ApiPublicHooksMaintenanceRemindersRouteImport } from './routes/api/public/hooks/maintenance-reminders'
 import { Route as ApiPublicGateDeviceEventRouteImport } from './routes/api/public/gate/device-event'
 import { Route as ApiPublicAuthFirebaseSessionRouteImport } from './routes/api/public/auth/firebase-session'
@@ -924,6 +926,11 @@ const AdminAdminPlansRoute = AdminAdminPlansRouteImport.update({
   path: '/admin/plans',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAdminMessagingRoute = AdminAdminMessagingRouteImport.update({
+  id: '/admin/messaging',
+  path: '/admin/messaging',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAdminIncomeRoute = AdminAdminIncomeRouteImport.update({
   id: '/admin/income',
   path: '/admin/income',
@@ -1068,6 +1075,12 @@ const ApiPublicHooksRazorpayRoute = ApiPublicHooksRazorpayRouteImport.update({
   path: '/api/public/hooks/razorpay',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksMessagingDispatchRoute =
+  ApiPublicHooksMessagingDispatchRouteImport.update({
+    id: '/api/public/hooks/messaging-dispatch',
+    path: '/api/public/hooks/messaging-dispatch',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksMaintenanceRemindersRoute =
   ApiPublicHooksMaintenanceRemindersRouteImport.update({
     id: '/api/public/hooks/maintenance-reminders',
@@ -1221,6 +1234,7 @@ export interface FileRoutesByFullPath {
   '/admin/executive': typeof AdminAdminExecutiveRoute
   '/admin/health': typeof AdminAdminHealthRoute
   '/admin/income': typeof AdminAdminIncomeRoute
+  '/admin/messaging': typeof AdminAdminMessagingRoute
   '/admin/plans': typeof AdminAdminPlansRoute
   '/admin/razorpay': typeof AdminAdminRazorpayRoute
   '/admin/report-builder': typeof AdminAdminReportBuilderRoute
@@ -1343,6 +1357,7 @@ export interface FileRoutesByFullPath {
   '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
   '/api/public/gate/device-event': typeof ApiPublicGateDeviceEventRoute
   '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
+  '/api/public/hooks/messaging-dispatch': typeof ApiPublicHooksMessagingDispatchRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
   '/admin/societies/': typeof AdminAdminSocietiesIndexRoute
@@ -1405,6 +1420,7 @@ export interface FileRoutesByTo {
   '/admin/executive': typeof AdminAdminExecutiveRoute
   '/admin/health': typeof AdminAdminHealthRoute
   '/admin/income': typeof AdminAdminIncomeRoute
+  '/admin/messaging': typeof AdminAdminMessagingRoute
   '/admin/plans': typeof AdminAdminPlansRoute
   '/admin/razorpay': typeof AdminAdminRazorpayRoute
   '/admin/report-builder': typeof AdminAdminReportBuilderRoute
@@ -1527,6 +1543,7 @@ export interface FileRoutesByTo {
   '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
   '/api/public/gate/device-event': typeof ApiPublicGateDeviceEventRoute
   '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
+  '/api/public/hooks/messaging-dispatch': typeof ApiPublicHooksMessagingDispatchRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
   '/admin/societies': typeof AdminAdminSocietiesIndexRoute
@@ -1595,6 +1612,7 @@ export interface FileRoutesById {
   '/_admin/admin/executive': typeof AdminAdminExecutiveRoute
   '/_admin/admin/health': typeof AdminAdminHealthRoute
   '/_admin/admin/income': typeof AdminAdminIncomeRoute
+  '/_admin/admin/messaging': typeof AdminAdminMessagingRoute
   '/_admin/admin/plans': typeof AdminAdminPlansRoute
   '/_admin/admin/razorpay': typeof AdminAdminRazorpayRoute
   '/_admin/admin/report-builder': typeof AdminAdminReportBuilderRoute
@@ -1717,6 +1735,7 @@ export interface FileRoutesById {
   '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
   '/api/public/gate/device-event': typeof ApiPublicGateDeviceEventRoute
   '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
+  '/api/public/hooks/messaging-dispatch': typeof ApiPublicHooksMessagingDispatchRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-billing': typeof ApiPublicHooksRunBillingRoute
   '/_admin/admin/societies/': typeof AdminAdminSocietiesIndexRoute
@@ -1782,6 +1801,7 @@ export interface FileRouteTypes {
     | '/admin/executive'
     | '/admin/health'
     | '/admin/income'
+    | '/admin/messaging'
     | '/admin/plans'
     | '/admin/razorpay'
     | '/admin/report-builder'
@@ -1904,6 +1924,7 @@ export interface FileRouteTypes {
     | '/api/public/auth/firebase-session'
     | '/api/public/gate/device-event'
     | '/api/public/hooks/maintenance-reminders'
+    | '/api/public/hooks/messaging-dispatch'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
     | '/admin/societies/'
@@ -1966,6 +1987,7 @@ export interface FileRouteTypes {
     | '/admin/executive'
     | '/admin/health'
     | '/admin/income'
+    | '/admin/messaging'
     | '/admin/plans'
     | '/admin/razorpay'
     | '/admin/report-builder'
@@ -2088,6 +2110,7 @@ export interface FileRouteTypes {
     | '/api/public/auth/firebase-session'
     | '/api/public/gate/device-event'
     | '/api/public/hooks/maintenance-reminders'
+    | '/api/public/hooks/messaging-dispatch'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
     | '/admin/societies'
@@ -2155,6 +2178,7 @@ export interface FileRouteTypes {
     | '/_admin/admin/executive'
     | '/_admin/admin/health'
     | '/_admin/admin/income'
+    | '/_admin/admin/messaging'
     | '/_admin/admin/plans'
     | '/_admin/admin/razorpay'
     | '/_admin/admin/report-builder'
@@ -2277,6 +2301,7 @@ export interface FileRouteTypes {
     | '/api/public/auth/firebase-session'
     | '/api/public/gate/device-event'
     | '/api/public/hooks/maintenance-reminders'
+    | '/api/public/hooks/messaging-dispatch'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-billing'
     | '/_admin/admin/societies/'
@@ -2331,6 +2356,7 @@ export interface RootRouteChildren {
   ApiPublicAuthFirebaseSessionRoute: typeof ApiPublicAuthFirebaseSessionRoute
   ApiPublicGateDeviceEventRoute: typeof ApiPublicGateDeviceEventRoute
   ApiPublicHooksMaintenanceRemindersRoute: typeof ApiPublicHooksMaintenanceRemindersRoute
+  ApiPublicHooksMessagingDispatchRoute: typeof ApiPublicHooksMessagingDispatchRoute
   ApiPublicHooksRazorpayRoute: typeof ApiPublicHooksRazorpayRoute
   ApiPublicHooksRunBillingRoute: typeof ApiPublicHooksRunBillingRoute
   ApiPublicVerifyNoDuesTokenRoute: typeof ApiPublicVerifyNoDuesTokenRoute
@@ -3325,6 +3351,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminPlansRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/admin/messaging': {
+      id: '/_admin/admin/messaging'
+      path: '/admin/messaging'
+      fullPath: '/admin/messaging'
+      preLoaderRoute: typeof AdminAdminMessagingRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_admin/admin/income': {
       id: '/_admin/admin/income'
       path: '/admin/income'
@@ -3514,6 +3547,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksRazorpayRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/messaging-dispatch': {
+      id: '/api/public/hooks/messaging-dispatch'
+      path: '/api/public/hooks/messaging-dispatch'
+      fullPath: '/api/public/hooks/messaging-dispatch'
+      preLoaderRoute: typeof ApiPublicHooksMessagingDispatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/maintenance-reminders': {
       id: '/api/public/hooks/maintenance-reminders'
       path: '/api/public/hooks/maintenance-reminders'
@@ -3663,6 +3703,7 @@ interface AdminRouteChildren {
   AdminAdminExecutiveRoute: typeof AdminAdminExecutiveRoute
   AdminAdminHealthRoute: typeof AdminAdminHealthRoute
   AdminAdminIncomeRoute: typeof AdminAdminIncomeRoute
+  AdminAdminMessagingRoute: typeof AdminAdminMessagingRoute
   AdminAdminPlansRoute: typeof AdminAdminPlansRoute
   AdminAdminRazorpayRoute: typeof AdminAdminRazorpayRoute
   AdminAdminReportBuilderRoute: typeof AdminAdminReportBuilderRoute
@@ -3690,6 +3731,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAdminExecutiveRoute: AdminAdminExecutiveRoute,
   AdminAdminHealthRoute: AdminAdminHealthRoute,
   AdminAdminIncomeRoute: AdminAdminIncomeRoute,
+  AdminAdminMessagingRoute: AdminAdminMessagingRoute,
   AdminAdminPlansRoute: AdminAdminPlansRoute,
   AdminAdminRazorpayRoute: AdminAdminRazorpayRoute,
   AdminAdminReportBuilderRoute: AdminAdminReportBuilderRoute,
@@ -4030,6 +4072,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicGateDeviceEventRoute: ApiPublicGateDeviceEventRoute,
   ApiPublicHooksMaintenanceRemindersRoute:
     ApiPublicHooksMaintenanceRemindersRoute,
+  ApiPublicHooksMessagingDispatchRoute: ApiPublicHooksMessagingDispatchRoute,
   ApiPublicHooksRazorpayRoute: ApiPublicHooksRazorpayRoute,
   ApiPublicHooksRunBillingRoute: ApiPublicHooksRunBillingRoute,
   ApiPublicVerifyNoDuesTokenRoute: ApiPublicVerifyNoDuesTokenRoute,

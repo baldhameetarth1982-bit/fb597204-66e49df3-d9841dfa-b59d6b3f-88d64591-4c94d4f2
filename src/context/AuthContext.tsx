@@ -187,6 +187,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setProfile(nextContext.profile);
           setRoles(nextContext.roles);
           setSocieties(nextContext.societies);
+          // Privacy-minimised last-active stamp (server throttles to once per 15 min).
+          if (nextUser) void (supabase.rpc as any)("touch_last_active").then(() => {}, () => {});
         }
       } finally {
         if (mounted && seq === loadSeq.current) setIsLoading(false);

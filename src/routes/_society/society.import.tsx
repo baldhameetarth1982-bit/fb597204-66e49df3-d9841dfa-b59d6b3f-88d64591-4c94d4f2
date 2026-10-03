@@ -28,6 +28,8 @@ import {
   SOURCE_TYPES,
   ENTITY_TYPES,
   SOURCE_PRESETS,
+  SOURCE_LABELS,
+  detectSourceType,
   ROW_SCHEMAS,
   type SourceType,
   type EntityType,
@@ -305,6 +307,10 @@ function ImportPage() {
       setHeaders(fin.headers);
       setRowCount(fin.row_count);
       setMapping(suggestedMapping(fin.headers, entityType, sourceType));
+      const guess = detectSourceType(fin.headers, entityType);
+      if (guess && guess.source !== sourceType) toast.info(`These columns look like a ${SOURCE_LABELS[guess.source]}. Change Source and re-upload if that's right.`);
+      const mappedCount = Object.keys(suggestedMapping(fin.headers, entityType, sourceType)).length;
+      if (mappedCount < fin.headers.length) toast.message(`${fin.headers.length - mappedCount} column(s) not matched — map them below or leave them unmapped.`);
       toast.success(`Uploaded ${fin.row_count} rows`);
     } catch (e) {
       toast.error(importErrorText(e));
@@ -535,7 +541,7 @@ function ImportPage() {
                   onChange={(e) => setSourceType(e.target.value as SourceType)}
                 >
                   {SOURCE_TYPES.map((s) => (
-                    <option key={s} value={s}>{s}</option>
+                    <option key={s} value={s}>{SOURCE_LABELS[s]}</option>
                   ))}
                 </select>
               </label>

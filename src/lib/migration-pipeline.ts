@@ -275,6 +275,27 @@ export function detectMapping(
   return mapping;
 }
 
+/** Human labels; app presets are header-alias guesses until verified against a real export sample. */
+export const SOURCE_LABELS: Record<SourceType, string> = {
+  sociyohub: "SociyoHub template",
+  generic: "Other / generic spreadsheet",
+  mygate: "MyGate export (unverified preset)",
+  adda: "ADDA export (unverified preset)",
+  nobrokerhood: "NoBrokerHood export (unverified preset)",
+};
+
+/** Suggests the source whose preset aliases match the most headers. Never auto-applies; admin confirms. */
+export function detectSourceType(headers: readonly string[], entity: EntityType): { source: SourceType; matched: number } | null {
+  const keys = headers.map((h) => h.trim().toLowerCase());
+  let best: { source: SourceType; matched: number } | null = null;
+  for (const s of ["mygate", "adda", "nobrokerhood"] as const) {
+    const preset = SOURCE_PRESETS[entity][s] ?? {};
+    const matched = keys.filter((k) => preset[k]).length;
+    if (matched > 0 && (!best || matched > best.matched)) best = { source: s, matched };
+  }
+  return best;
+}
+
 /** Registration plate normalization (strip spaces/hyphens, upper-case). */
 export function normalizePlate(v: string | null | undefined): string {
   return String(v ?? "").replace(/[\s-]+/g, "").toUpperCase();

@@ -218,7 +218,7 @@ describe("Forbidden key wrapper is truly immutable", () => {
 describe("PRIVACY-12 payer keys are grounded in generated types", () => {
   it("every forbidden payer key is declared on payments Row", () => {
     // Slice the `payments:` block from generated types.
-    const startIdx = GENERATED_TYPES_SRC.indexOf("payments: {");
+    const startIdx = GENERATED_TYPES_SRC.search(/\n {6}payments: \{/);
     expect(startIdx).toBeGreaterThan(-1);
     const paymentsBlock = GENERATED_TYPES_SRC.slice(startIdx, startIdx + 4000);
     for (const key of STAGE3C_FORBIDDEN_PAYER_KEYS) {

@@ -60,7 +60,7 @@ export function InvoiceAiCard({ societyId, vendors }: { societyId: string; vendo
     setBusy(true);
     try {
       const r = await extract({ data: { societyId, fileName: file.name, fileBase64: await toB64(file) } });
-      const rows = await qc.fetchQuery({ queryKey: ["invoice-ai", societyId], queryFn: () => listFn({ data: { societyId } }) });
+      const rows: InvoiceExtractionRow[] = await qc.fetchQuery({ queryKey: ["invoice-ai", societyId], queryFn: () => listFn({ data: { societyId } }) });
       if (r.ok) { setReview(rows.find((x) => x.id === r.id) ?? null); }
       else setError({ text: r.message, retry: ["ai_unavailable", "timeout", "rate_limited"].includes(r.code) });
     } catch {
@@ -97,7 +97,7 @@ export function InvoiceAiCard({ societyId, vendors }: { societyId: string; vendo
               return (
                 <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 p-3 text-sm">
                   <div className="min-w-0">
-                    <p className="truncate font-medium">{(r.extracted?.vendor_name as string) || r.original_name}</p>
+                    <p className="truncate font-medium">{String(r.extracted?.vendor_name ?? "") || r.original_name}</p>
                     <p className="text-xs text-muted-foreground">{[r.invoice_number && `#${r.invoice_number}`, new Date(r.created_at).toLocaleDateString("en-IN")].filter(Boolean).join(" · ")}</p>
                   </div>
                   <div className="flex items-center gap-2">

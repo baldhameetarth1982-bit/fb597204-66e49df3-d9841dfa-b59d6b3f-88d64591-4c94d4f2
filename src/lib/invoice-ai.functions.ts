@@ -132,7 +132,7 @@ export const extractInvoice = createServerFn({ method: "POST" })
 
 const RowSchema = z.object({
   id: uuid, status: z.string(), original_name: z.string(), file_mime: z.string(), created_at: z.string(),
-  extracted: z.record(z.string(), z.unknown()).nullable(), notes: z.array(z.string()), error_code: z.string().nullable(),
+  extracted: z.record(z.string(), z.any()).nullable(), notes: z.array(z.string()), error_code: z.string().nullable(),
   invoice_number: z.string().nullable(), expense_id: uuid.nullable(), procurement_request_id: uuid.nullable(),
   reject_reason: z.string().nullable(), decided_at: z.string().nullable(),
 });
@@ -177,7 +177,7 @@ export const confirmInvoiceExtraction = createServerFn({ method: "POST" })
       _invoice_number: data.invoiceNumber || null, _procurement_request_id: data.procurementRequestId,
     });
     if (error) throw safeError(error);
-    return z.object({ status: z.string(), expense_id: uuid }).passthrough().parse(res);
+    return z.object({ status: z.string(), expense_id: uuid }).parse(res);
   });
 
 export const rejectInvoiceExtraction = createServerFn({ method: "POST" })

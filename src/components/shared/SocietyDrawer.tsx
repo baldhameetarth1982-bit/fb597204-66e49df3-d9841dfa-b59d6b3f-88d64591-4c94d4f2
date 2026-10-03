@@ -6,6 +6,7 @@ import {
   Calculator, BadgeCheck, LogOut, Settings, ListChecks, Wrench, CalendarRange,
   BarChart3, Compass, Grid3x3, Upload, BookOpen, PhoneCall, Landmark, ChevronsUpDown, Check,
   Gauge,
+  CalendarDays,
 } from "lucide-react";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose,
@@ -72,6 +73,7 @@ const GROUPS: Group[] = [
       { label: "Notices & By-Laws", to: "/society/bylaws", icon: BookOpen },
       { label: "Contacts", to: "/society/contacts", icon: PhoneCall },
       { label: "Polls", to: "/society/polls", icon: Vote },
+      { label: "Events", to: "/society/events", icon: CalendarDays },
       { label: "Leaderboard", to: "/society/leaderboard", icon: Trophy },
       { label: "AI Digest", to: "/society/digest", icon: Sparkles },
     ],

@@ -1,0 +1,146 @@
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { CalendarDays, MapPin, Plus, Users } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
+type Ev = { id: string; title: string; description: string | null; venue: string | null; starts_at: string; ends_at: string | null; capacity: number | null; status: string; cancel_reason: string | null };
+
+export function EventsBoard({ societyId, mode }: { societyId: string; mode: "admin" | "resident" }) {
+  const qc = useQueryClient();
+  const [creating, setCreating] = useState(false);
+  const [cancelFor, setCancelFor] = useState<Ev | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const key = ["community-events", societyId];
+
+  const q = useQuery({
+    queryKey: key,
+    queryFn: async () => {
+      const since = new Date(Date.now() - 30 * 864e5).toISOString();
+      const { data: evs, error } = await supabase.from("community_events")
+        .select("id,title,description,venue,starts_at,ends_at,capacity,status,cancel_reason")
+        .eq("society_id", societyId).gte("starts_at", since).order("starts_at").limit(200);
+      if (error) throw error;
+      const ids = (evs ?? []).map((e) => e.id);
+      const [c, mine] = await Promise.all([
+        ids.length ? supabase.rpc("event_counts", { _event_ids: ids }) : Promise.resolve({ data: [], error: null }),
+        mode === "resident" && ids.length ? supabase.from("community_event_rsvps").select("event_id,status").in("event_id", ids) : Promise.resolve({ data: [], error: null }),
+      ]);
+      if (c.error) throw c.error; if (mine.error) throw mine.error;
+      const counts = new Map((c.data ?? []).map((r: { event_id: string; going: number; waitlist: number }) => [r.event_id, r]));
+      const my = new Map((mine.data ?? []).map((r: { event_id: string; status: string }) => [r.event_id, r.status]));
+      return { evs: evs as Ev[], counts, my };
+    },
+  });
+
+  async function rsvp(e: Ev, going: boolean) {
+    if (busy) return; setBusy(e.id);
+    const { data, error } = await supabase.rpc("event_rsvp", { _event_id: e.id, _going: going });
+    setBusy(null);
+    if (error) return toast.error(error.message);
+    toast.success(data === "going" ? "You're going" : data === "waitlist" ? "Event is full — you're on the waitlist" : "RSVP removed");
+    qc.invalidateQueries({ queryKey: key });
+  }
+
+  const now = Date.now();
+  return (
+    <div>
+      {mode === "admin" && <div className="mb-4 flex justify-end"><Button className="min-h-11" onClick={() => setCreating(true)}><Plus className="mr-1 h-4 w-4" />New event</Button></div>}
+      {q.isLoading ? <p className="text-muted-foreground">Loading events…</p>
+        : q.isError ? <div className="rounded-lg border p-4"><p>Couldn't load events.</p><Button variant="outline" className="mt-2" onClick={() => q.refetch()}>Try again</Button></div>
+        : q.data!.evs.length === 0 ? <div className="rounded-lg border p-8 text-center text-muted-foreground"><CalendarDays className="mx-auto mb-2 h-6 w-6" />No upcoming events.</div>
+        : (
+          <ul className="space-y-3">
+            {q.data!.evs.map((e) => {
+              const c = q.data!.counts.get(e.id); const mine = q.data!.my.get(e.id);
+              const past = new Date(e.starts_at).getTime() < now; const cancelled = e.status === "cancelled";
+              return (
+                <li key={e.id} className="rounded-lg border p-4">
+                  <div className="flex flex-wrap items-start gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium">{e.title}{cancelled && <span className="ml-2 text-sm text-destructive">Cancelled</span>}{past && !cancelled && <span className="ml-2 text-sm text-muted-foreground">Past</span>}</p>
+                      <p className="text-sm text-muted-foreground"><CalendarDays className="mr-1 inline h-3 w-3" />{new Date(e.starts_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}{e.venue && <><MapPin className="ml-2 mr-1 inline h-3 w-3" />{e.venue}</>}</p>
+                      <p className="text-sm text-muted-foreground"><Users className="mr-1 inline h-3 w-3" />{c?.going ?? 0} going{e.capacity ? ` of ${e.capacity}` : ""}{c?.waitlist ? ` · ${c.waitlist} waiting` : ""}</p>
+                      {e.description && <p className="mt-2 whitespace-pre-line text-sm">{e.description}</p>}
+                      {cancelled && e.cancel_reason && <p className="mt-1 text-sm text-muted-foreground">Reason: {e.cancel_reason}</p>}
+                    </div>
+                    {mode === "resident" && !cancelled && !past && (
+                      mine ? <Button variant="outline" className="min-h-11" disabled={busy === e.id} onClick={() => rsvp(e, false)}>{mine === "waitlist" ? "Leave waitlist" : "Not going"}</Button>
+                        : <Button className="min-h-11" disabled={busy === e.id} onClick={() => rsvp(e, true)}>I'm going</Button>
+                    )}
+                    {mode === "admin" && !cancelled && !past && <Button variant="outline" className="min-h-11" onClick={() => setCancelFor(e)}>Cancel event</Button>}
+                  </div>
+                  {mine && <p className="mt-2 text-sm font-medium text-primary">{mine === "going" ? "You're going" : "You're on the waitlist"}</p>}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      {creating && <CreateDialog societyId={societyId} onClose={() => setCreating(false)} onDone={() => qc.invalidateQueries({ queryKey: key })} />}
+      {cancelFor && <CancelDialog ev={cancelFor} onClose={() => setCancelFor(null)} onDone={() => qc.invalidateQueries({ queryKey: key })} />}
+    </div>
+  );
+}
+
+function CreateDialog({ societyId, onClose, onDone }: { societyId: string; onClose: () => void; onDone: () => void }) {
+  const [f, setF] = useState({ title: "", description: "", venue: "", start: "", end: "", capacity: "" });
+  const [busy, setBusy] = useState(false);
+  const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
+  async function save() {
+    if (f.title.trim().length < 3 || !f.start || busy) return toast.error("Add a title and start time");
+    setBusy(true);
+    const { error } = await supabase.rpc("admin_create_event", {
+      _society_id: societyId, _title: f.title, _description: f.description, _venue: f.venue,
+      _starts_at: new Date(f.start).toISOString(), _ends_at: (f.end ? new Date(f.end).toISOString() : null) as string,
+      _capacity: (f.capacity ? Number(f.capacity) : null) as number,
+    });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("Event created"); onDone(); onClose();
+  }
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>New event</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <div><Label htmlFor="et">Title</Label><Input id="et" maxLength={120} value={f.title} onChange={set("title")} /></div>
+          <div className="grid grid-cols-2 gap-2">
+            <div><Label htmlFor="es">Starts</Label><Input id="es" type="datetime-local" value={f.start} onChange={set("start")} /></div>
+            <div><Label htmlFor="ee">Ends (optional)</Label><Input id="ee" type="datetime-local" value={f.end} onChange={set("end")} /></div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div><Label htmlFor="ev">Venue</Label><Input id="ev" maxLength={120} value={f.venue} onChange={set("venue")} /></div>
+            <div><Label htmlFor="ec">Capacity (optional)</Label><Input id="ec" inputMode="numeric" value={f.capacity} onChange={set("capacity")} /></div>
+          </div>
+          <div><Label htmlFor="ed">Details</Label><Textarea id="ed" maxLength={2000} value={f.description} onChange={set("description")} /></div>
+        </div>
+        <DialogFooter><Button variant="outline" onClick={onClose}>Close</Button><Button disabled={busy} onClick={save}>{busy ? "Saving…" : "Create"}</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function CancelDialog({ ev, onClose, onDone }: { ev: Ev; onClose: () => void; onDone: () => void }) {
+  const [reason, setReason] = useState(""); const [busy, setBusy] = useState(false);
+  async function save() {
+    if (reason.trim().length < 3 || busy) return; setBusy(true);
+    const { error } = await supabase.rpc("admin_cancel_event", { _event_id: ev.id, _reason: reason });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("Event cancelled"); onDone(); onClose();
+  }
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Cancel “{ev.title}”?</DialogTitle></DialogHeader>
+        <div><Label htmlFor="cr">Reason (shown to residents)</Label><Input id="cr" maxLength={200} value={reason} onChange={(e) => setReason(e.target.value)} /></div>
+        <DialogFooter><Button variant="outline" onClick={onClose}>Keep event</Button><Button variant="destructive" disabled={busy || reason.trim().length < 3} onClick={save}>Cancel event</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

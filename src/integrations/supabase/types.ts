@@ -718,6 +718,239 @@ export type Database = {
           },
         ]
       }
+      amenity_class_attendance: {
+        Row: {
+          class_id: string
+          created_at: string
+          enrollment_id: string
+          id: string
+          marked_by: string | null
+          method: string
+          session_date: string
+          society_id: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          enrollment_id: string
+          id?: string
+          marked_by?: string | null
+          method: string
+          session_date: string
+          society_id: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          enrollment_id?: string
+          id?: string
+          marked_by?: string | null
+          method?: string
+          session_date?: string
+          society_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "amenity_class_attendance_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "amenity_classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "amenity_class_attendance_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "amenity_class_enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "amenity_class_attendance_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      amenity_class_enrollments: {
+        Row: {
+          cancel_reason: string | null
+          class_id: string
+          created_at: string
+          flat_id: string
+          id: string
+          society_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cancel_reason?: string | null
+          class_id: string
+          created_at?: string
+          flat_id: string
+          id?: string
+          society_id: string
+          status: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cancel_reason?: string | null
+          class_id?: string
+          created_at?: string
+          flat_id?: string
+          id?: string
+          society_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "amenity_class_enrollments_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "amenity_classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "amenity_class_enrollments_flat_id_fkey"
+            columns: ["flat_id"]
+            isOneToOne: false
+            referencedRelation: "flats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "amenity_class_enrollments_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      amenity_classes: {
+        Row: {
+          amenity_id: string
+          cancel_reason: string | null
+          capacity: number
+          created_at: string
+          created_by: string | null
+          description: string | null
+          duration_minutes: number
+          ends_on: string | null
+          id: string
+          instructor_id: string | null
+          society_id: string
+          start_time: string
+          starts_on: string
+          status: string
+          title: string
+          weekdays: number[]
+        }
+        Insert: {
+          amenity_id: string
+          cancel_reason?: string | null
+          capacity: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          duration_minutes: number
+          ends_on?: string | null
+          id?: string
+          instructor_id?: string | null
+          society_id: string
+          start_time: string
+          starts_on: string
+          status?: string
+          title: string
+          weekdays: number[]
+        }
+        Update: {
+          amenity_id?: string
+          cancel_reason?: string | null
+          capacity?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          duration_minutes?: number
+          ends_on?: string | null
+          id?: string
+          instructor_id?: string | null
+          society_id?: string
+          start_time?: string
+          starts_on?: string
+          status?: string
+          title?: string
+          weekdays?: number[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "amenity_classes_amenity_id_fkey"
+            columns: ["amenity_id"]
+            isOneToOne: false
+            referencedRelation: "amenities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "amenity_classes_instructor_id_fkey"
+            columns: ["instructor_id"]
+            isOneToOne: false
+            referencedRelation: "amenity_instructors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "amenity_classes_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      amenity_instructors: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          name: string
+          phone: string | null
+          society_id: string
+          specialty: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          phone?: string | null
+          society_id: string
+          specialty?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          phone?: string | null
+          society_id?: string
+          specialty?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "amenity_instructors_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       amenity_waitlist_events: {
         Row: {
           actor_id: string | null
@@ -11357,6 +11590,13 @@ export type Database = {
       _caller_phone_digits: { Args: never; Returns: string }
       _caller_society: { Args: never; Returns: string }
       _can_manage_polls: { Args: { _society_id: string }; Returns: boolean }
+      _class_runs_on: {
+        Args: {
+          _d: string
+          c: Database["public"]["Tables"]["amenity_classes"]["Row"]
+        }
+        Returns: boolean
+      }
       _community_member_society: { Args: never; Returns: string }
       _deactivate_resident_role_if_homeless: {
         Args: { _society: string; _user: string }
@@ -11887,6 +12127,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_cancel_class: {
+        Args: { _class_id: string; _reason: string }
+        Returns: undefined
+      }
       admin_cancel_event: {
         Args: { _event_id: string; _reason: string }
         Returns: undefined
@@ -11906,6 +12150,21 @@ export type Database = {
       admin_cancel_society_plan: {
         Args: { _reason: string; _society_id: string }
         Returns: Json
+      }
+      admin_create_class: {
+        Args: {
+          _amenity_id: string
+          _capacity: number
+          _description: string
+          _duration: number
+          _ends_on: string
+          _instructor_id: string
+          _start_time: string
+          _starts_on: string
+          _title: string
+          _weekdays: number[]
+        }
+        Returns: string
       }
       admin_create_event: {
         Args: {
@@ -12089,6 +12348,14 @@ export type Database = {
           society_id: string
           society_name: string
         }[]
+      }
+      admin_mark_class_attendance: {
+        Args: {
+          _class_id: string
+          _enrollment_ids: string[]
+          _session_date: string
+        }
+        Returns: number
       }
       admin_messaging_overview: { Args: never; Returns: Json }
       admin_moderate_vendor_rating: {
@@ -12277,6 +12544,17 @@ export type Database = {
           _kind: string
           _name: string
           _society_id: string
+        }
+        Returns: string
+      }
+      admin_save_instructor: {
+        Args: {
+          _active: boolean
+          _id: string
+          _name: string
+          _phone: string
+          _society_id: string
+          _specialty: string
         }
         Returns: string
       }
@@ -12803,6 +13081,7 @@ export type Database = {
             Returns: Json
           }
       cancel_material_pass: { Args: { _pass_id: string }; Returns: undefined }
+      check_in_class: { Args: { _class_id: string }; Returns: undefined }
       claim_saas_subscription_order: {
         Args: {
           _amount_paise: number
@@ -13138,6 +13417,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      enroll_class: { Args: { _class_id: string }; Returns: string }
       ensure_maintenance_period: {
         Args: {
           _amount: number
@@ -14211,6 +14491,7 @@ export type Database = {
         Returns: Json
       }
       knowledge_version_path: { Args: { _version_id: string }; Returns: string }
+      leave_class: { Args: { _class_id: string }; Returns: undefined }
       list_bank_line_candidates: { Args: { _line_id: string }; Returns: Json }
       list_bank_statement_lines: {
         Args: {
@@ -15159,6 +15440,7 @@ export type Database = {
         }[]
       }
       seed_finance_accounts: { Args: { _society_id: string }; Returns: Json }
+      send_class_reminders: { Args: never; Returns: number }
       send_document_expiry_reminders: {
         Args: { _today?: string }
         Returns: number

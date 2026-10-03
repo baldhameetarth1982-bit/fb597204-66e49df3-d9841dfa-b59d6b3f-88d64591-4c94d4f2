@@ -41,7 +41,7 @@ function HouseholdHistory() {
         Owners see everyone who has lived here. Tenants see people who lived here during their own stay.
       </p>
       {q.isError ? (
-        <LoadError onRetry={() => q.refetch()} />
+        <LoadError title="Couldn't load your home history" onRetry={() => void q.refetch()} />
       ) : q.isLoading ? (
         <div className="h-32 animate-pulse rounded-2xl bg-muted" />
       ) : q.data!.length === 0 ? (

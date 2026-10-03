@@ -155,9 +155,12 @@ import { Route as AdminAdminHealthRouteImport } from './routes/_admin/admin.heal
 import { Route as AdminAdminExecutiveRouteImport } from './routes/_admin/admin.executive'
 import { Route as AdminAdminDashboardRouteImport } from './routes/_admin/admin.dashboard'
 import { Route as AdminAdminCustomPlansRouteImport } from './routes/_admin/admin.custom-plans'
+import { Route as AdminAdminCostsRouteImport } from './routes/_admin/admin.costs'
 import { Route as AdminAdminBrandingRouteImport } from './routes/_admin/admin.branding'
 import { Route as AdminAdminBiRouteImport } from './routes/_admin/admin.bi'
 import { Route as AdminAdminAuditRouteImport } from './routes/_admin/admin.audit'
+import { Route as AdminAdminAssistantRouteImport } from './routes/_admin/admin.assistant'
+import { Route as AdminAdminAiUsageRouteImport } from './routes/_admin/admin.ai-usage'
 import { Route as AdminAdminAdsRouteImport } from './routes/_admin/admin.ads'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
@@ -946,6 +949,11 @@ const AdminAdminCustomPlansRoute = AdminAdminCustomPlansRouteImport.update({
   path: '/admin/custom-plans',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAdminCostsRoute = AdminAdminCostsRouteImport.update({
+  id: '/admin/costs',
+  path: '/admin/costs',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAdminBrandingRoute = AdminAdminBrandingRouteImport.update({
   id: '/admin/branding',
   path: '/admin/branding',
@@ -959,6 +967,16 @@ const AdminAdminBiRoute = AdminAdminBiRouteImport.update({
 const AdminAdminAuditRoute = AdminAdminAuditRouteImport.update({
   id: '/admin/audit',
   path: '/admin/audit',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminAssistantRoute = AdminAdminAssistantRouteImport.update({
+  id: '/admin/assistant',
+  path: '/admin/assistant',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminAiUsageRoute = AdminAdminAiUsageRouteImport.update({
+  id: '/admin/ai-usage',
+  path: '/admin/ai-usage',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminAdminAdsRoute = AdminAdminAdsRouteImport.update({
@@ -1192,9 +1210,12 @@ export interface FileRoutesByFullPath {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/ads': typeof AdminAdminAdsRoute
+  '/admin/ai-usage': typeof AdminAdminAiUsageRoute
+  '/admin/assistant': typeof AdminAdminAssistantRoute
   '/admin/audit': typeof AdminAdminAuditRoute
   '/admin/bi': typeof AdminAdminBiRoute
   '/admin/branding': typeof AdminAdminBrandingRoute
+  '/admin/costs': typeof AdminAdminCostsRoute
   '/admin/custom-plans': typeof AdminAdminCustomPlansRoute
   '/admin/dashboard': typeof AdminAdminDashboardRoute
   '/admin/executive': typeof AdminAdminExecutiveRoute
@@ -1373,9 +1394,12 @@ export interface FileRoutesByTo {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/ads': typeof AdminAdminAdsRoute
+  '/admin/ai-usage': typeof AdminAdminAiUsageRoute
+  '/admin/assistant': typeof AdminAdminAssistantRoute
   '/admin/audit': typeof AdminAdminAuditRoute
   '/admin/bi': typeof AdminAdminBiRoute
   '/admin/branding': typeof AdminAdminBrandingRoute
+  '/admin/costs': typeof AdminAdminCostsRoute
   '/admin/custom-plans': typeof AdminAdminCustomPlansRoute
   '/admin/dashboard': typeof AdminAdminDashboardRoute
   '/admin/executive': typeof AdminAdminExecutiveRoute
@@ -1560,9 +1584,12 @@ export interface FileRoutesById {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_admin/admin/ads': typeof AdminAdminAdsRoute
+  '/_admin/admin/ai-usage': typeof AdminAdminAiUsageRoute
+  '/_admin/admin/assistant': typeof AdminAdminAssistantRoute
   '/_admin/admin/audit': typeof AdminAdminAuditRoute
   '/_admin/admin/bi': typeof AdminAdminBiRoute
   '/_admin/admin/branding': typeof AdminAdminBrandingRoute
+  '/_admin/admin/costs': typeof AdminAdminCostsRoute
   '/_admin/admin/custom-plans': typeof AdminAdminCustomPlansRoute
   '/_admin/admin/dashboard': typeof AdminAdminDashboardRoute
   '/_admin/admin/executive': typeof AdminAdminExecutiveRoute
@@ -1744,9 +1771,12 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/ads'
+    | '/admin/ai-usage'
+    | '/admin/assistant'
     | '/admin/audit'
     | '/admin/bi'
     | '/admin/branding'
+    | '/admin/costs'
     | '/admin/custom-plans'
     | '/admin/dashboard'
     | '/admin/executive'
@@ -1925,9 +1955,12 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/ads'
+    | '/admin/ai-usage'
+    | '/admin/assistant'
     | '/admin/audit'
     | '/admin/bi'
     | '/admin/branding'
+    | '/admin/costs'
     | '/admin/custom-plans'
     | '/admin/dashboard'
     | '/admin/executive'
@@ -2111,9 +2144,12 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/_admin/admin/ads'
+    | '/_admin/admin/ai-usage'
+    | '/_admin/admin/assistant'
     | '/_admin/admin/audit'
     | '/_admin/admin/bi'
     | '/_admin/admin/branding'
+    | '/_admin/admin/costs'
     | '/_admin/admin/custom-plans'
     | '/_admin/admin/dashboard'
     | '/_admin/admin/executive'
@@ -3324,6 +3360,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminCustomPlansRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/admin/costs': {
+      id: '/_admin/admin/costs'
+      path: '/admin/costs'
+      fullPath: '/admin/costs'
+      preLoaderRoute: typeof AdminAdminCostsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_admin/admin/branding': {
       id: '/_admin/admin/branding'
       path: '/admin/branding'
@@ -3343,6 +3386,20 @@ declare module '@tanstack/react-router' {
       path: '/admin/audit'
       fullPath: '/admin/audit'
       preLoaderRoute: typeof AdminAdminAuditRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/assistant': {
+      id: '/_admin/admin/assistant'
+      path: '/admin/assistant'
+      fullPath: '/admin/assistant'
+      preLoaderRoute: typeof AdminAdminAssistantRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/ai-usage': {
+      id: '/_admin/admin/ai-usage'
+      path: '/admin/ai-usage'
+      fullPath: '/admin/ai-usage'
+      preLoaderRoute: typeof AdminAdminAiUsageRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_admin/admin/ads': {
@@ -3595,9 +3652,12 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminAdminAdsRoute: typeof AdminAdminAdsRoute
+  AdminAdminAiUsageRoute: typeof AdminAdminAiUsageRoute
+  AdminAdminAssistantRoute: typeof AdminAdminAssistantRoute
   AdminAdminAuditRoute: typeof AdminAdminAuditRoute
   AdminAdminBiRoute: typeof AdminAdminBiRoute
   AdminAdminBrandingRoute: typeof AdminAdminBrandingRoute
+  AdminAdminCostsRoute: typeof AdminAdminCostsRoute
   AdminAdminCustomPlansRoute: typeof AdminAdminCustomPlansRoute
   AdminAdminDashboardRoute: typeof AdminAdminDashboardRoute
   AdminAdminExecutiveRoute: typeof AdminAdminExecutiveRoute
@@ -3619,9 +3679,12 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAdminAdsRoute: AdminAdminAdsRoute,
+  AdminAdminAiUsageRoute: AdminAdminAiUsageRoute,
+  AdminAdminAssistantRoute: AdminAdminAssistantRoute,
   AdminAdminAuditRoute: AdminAdminAuditRoute,
   AdminAdminBiRoute: AdminAdminBiRoute,
   AdminAdminBrandingRoute: AdminAdminBrandingRoute,
+  AdminAdminCostsRoute: AdminAdminCostsRoute,
   AdminAdminCustomPlansRoute: AdminAdminCustomPlansRoute,
   AdminAdminDashboardRoute: AdminAdminDashboardRoute,
   AdminAdminExecutiveRoute: AdminAdminExecutiveRoute,

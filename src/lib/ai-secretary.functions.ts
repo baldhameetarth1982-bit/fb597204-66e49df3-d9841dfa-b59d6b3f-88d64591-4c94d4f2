@@ -24,9 +24,9 @@ const SECRETARY_SCHEMA = {
   },
 };
 
-async function callResponses(system: string, user: string) {
+async function callResponses(system: string, user: string, societyId: string) {
   const { callResponsesJson } = await import("@/lib/ai-responses.server");
-  return callResponsesJson(system, user, "secretary_answer", SECRETARY_SCHEMA);
+  return callResponsesJson(system, user, "secretary_answer", SECRETARY_SCHEMA, { feature: "ai_secretary", societyId });
 }
 
 export const askSecretary = createServerFn({ method: "POST" })
@@ -68,7 +68,7 @@ export const askSecretary = createServerFn({ method: "POST" })
             throw e;
           }
         },
-        callModel: async (system, user) => parseModelJson(await callResponses(system, user)),
+        callModel: async (system, user) => parseModelJson(await callResponses(system, user, societyId)),
       }, data.history ?? []);
       return { ok: true, data: result };
     } catch (e) {

@@ -124,6 +124,14 @@ export const Route = createFileRoute("/api/support-chat")({
           system: SYSTEM,
           messages: await convertToModelMessages(messages as UIMessage[]),
           stopWhen: stepCountIs(50),
+          onFinish: async ({ totalUsage }) => {
+            const { logAiUsage } = await import("@/lib/ai-usage.server");
+            await logAiUsage({ feature: "support_chat" }, "ok", undefined, { input: totalUsage?.inputTokens, output: totalUsage?.outputTokens });
+          },
+          onError: async () => {
+            const { logAiUsage } = await import("@/lib/ai-usage.server");
+            await logAiUsage({ feature: "support_chat" }, "failed");
+          },
           tools: {
             create_support_ticket: tool({
               description:

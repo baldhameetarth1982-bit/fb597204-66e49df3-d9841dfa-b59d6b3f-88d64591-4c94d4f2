@@ -31,6 +31,9 @@ const items = [
   { title: "Withdrawals", url: "/admin/withdrawals", icon: Banknote },
   { title: "Audit", url: "/admin/audit", icon: ScrollText },
   { title: "Security", url: "/admin/security", icon: ShieldCheck },
+  { title: "Revenue & Costs", url: "/admin/costs", icon: Banknote },
+  { title: "AI Usage", url: "/admin/ai-usage", icon: Sparkles },
+  { title: "Assistant", url: "/admin/assistant", icon: Sparkles },
   { title: "Settings", url: "/admin/settings", icon: Settings },
 ] as const;
 

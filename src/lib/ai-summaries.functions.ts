@@ -78,7 +78,7 @@ export const summarizeRecord = createServerFn({ method: "POST" })
 
     try {
       const { callResponsesJson } = await import("@/lib/ai-responses.server");
-      const raw = await callResponsesJson(SYSTEM, `<record title="${ctx.title.replace(/"/g, "'")}">\n${ctx.text}\n</record>`, "record_summary", SCHEMA);
+      const raw = await callResponsesJson(SYSTEM, `<record title="${ctx.title.replace(/"/g, "'")}">\n${ctx.text}\n</record>`, "record_summary", SCHEMA, { feature: "ai_summary", societyId });
       if (!raw) return { ok: false, code: "ai_unavailable", message: "AI couldn't summarise this record." };
       const j = JSON.parse(raw) as { summary?: unknown; points?: unknown; incomplete?: unknown };
       const summary = String(j.summary ?? "").slice(0, 800).trim();

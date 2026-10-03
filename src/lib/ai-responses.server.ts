@@ -1,8 +1,21 @@
+import { logAiUsage, type AiUsageMeta } from "@/lib/ai-usage.server";
 /**
  * Shared streaming caller for the Lovable AI Gateway Responses API (server only).
  * Returns the accumulated JSON text, or "" when the model refuses. Throws on HTTP/stream failure.
  */
-export async function callResponsesJson(system: string, user: string, schemaName: string, schema: Record<string, unknown>): Promise<string> {
+export async function callResponsesJson(system: string, user: string, schemaName: string, schema: Record<string, unknown>, meta?: AiUsageMeta): Promise<string> {
+  const t0 = Date.now();
+  try {
+    const out = await streamResponsesJson(system, user, schemaName, schema);
+    if (meta) await logAiUsage(meta, out ? "ok" : "refused", t0);
+    return out;
+  } catch (e) {
+    if (meta) await logAiUsage(meta, (e as { status?: number }).status === 429 ? "rate_limited" : "failed", t0);
+    throw e;
+  }
+}
+
+async function streamResponsesJson(system: string, user: string, schemaName: string, schema: Record<string, unknown>): Promise<string> {
   const key = process.env.LOVABLE_API_KEY;
   if (!key) throw new Error("ai_config");
   const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {

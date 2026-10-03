@@ -105,7 +105,7 @@ export const draftHelpdeskReply = createServerFn({ method: "POST" })
     try {
       const { callResponsesJson } = await import("@/lib/ai-responses.server");
       const raw = await Promise.race([
-        callResponsesJson(SYSTEM, `<request>\n${requestText}\n</request>\n<rules>\n${rules || "No matching society rules."}\n</rules>`, "helpdesk_draft", SCHEMA),
+        callResponsesJson(SYSTEM, `<request>\n${requestText}\n</request>\n<rules>\n${rules || "No matching society rules."}\n</rules>`, "helpdesk_draft", SCHEMA, { feature: "helpdesk_draft", societyId }),
         new Promise<never>((_, rej) => setTimeout(() => rej(Object.assign(new Error("timeout"), { timeout: true })), 40_000)),
       ]);
       if (!raw) return { ok: false, code: "ai_unavailable", message: "AI couldn't draft a reply for this request." };

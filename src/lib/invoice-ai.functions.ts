@@ -87,6 +87,9 @@ export const extractInvoice = createServerFn({ method: "POST" })
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 45_000);
     let raw: unknown;
+    const { logAiUsage } = await import("@/lib/ai-usage.server");
+    const aiMeta = { feature: "invoice_extraction", societyId: data.societyId };
+    const t0 = Date.now();
     try {
       const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -105,6 +108,7 @@ export const extractInvoice = createServerFn({ method: "POST" })
         }),
       });
       if (!res.ok) {
+        await logAiUsage(aiMeta, res.status === 429 ? "rate_limited" : "failed", t0);
         console.error("invoice_ai_http", res.status);
         await record("failed", null, [], res.status === 429 ? "rate_limited" : "ai_unavailable", null, null);
         return { ok: false, code: res.status === 429 ? "rate_limited" : "ai_unavailable", message: "Invoice reading is unavailable right now. You can still add the expense by hand.", id };
@@ -112,7 +116,9 @@ export const extractInvoice = createServerFn({ method: "POST" })
       const payload = await res.json();
       const text = String(payload?.choices?.[0]?.message?.content ?? "").replace(/^```(?:json)?\s*|\s*```$/g, "");
       raw = JSON.parse(text);
+      await logAiUsage(aiMeta, "ok", t0, { input: payload?.usage?.prompt_tokens, output: payload?.usage?.completion_tokens });
     } catch (e) {
+      if (raw === undefined) await logAiUsage(aiMeta, "failed", t0);
       const timeout = (e as Error)?.name === "AbortError";
       await record("failed", null, [], timeout ? "timeout" : "invalid_document", null, null);
       return timeout

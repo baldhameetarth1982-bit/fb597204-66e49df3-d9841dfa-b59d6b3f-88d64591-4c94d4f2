@@ -63,6 +63,7 @@ import { Route as SocietySocietyPrivacySettingsRouteImport } from './routes/_soc
 import { Route as SocietySocietyPrivacyRequestsRouteImport } from './routes/_society/society.privacy-requests'
 import { Route as SocietySocietyPollsRouteImport } from './routes/_society/society.polls'
 import { Route as SocietySocietyPlanRequiredRouteImport } from './routes/_society/society.plan-required'
+import { Route as SocietySocietyPettyCashRouteImport } from './routes/_society/society.petty-cash'
 import { Route as SocietySocietyPayoutsRouteImport } from './routes/_society/society.payouts'
 import { Route as SocietySocietyPaymentsRouteImport } from './routes/_society/society.payments'
 import { Route as SocietySocietyPassesRouteImport } from './routes/_society/society.passes'
@@ -481,6 +482,11 @@ const SocietySocietyPlanRequiredRoute =
     path: '/society/plan-required',
     getParentRoute: () => SocietyRoute,
   } as any)
+const SocietySocietyPettyCashRoute = SocietySocietyPettyCashRouteImport.update({
+  id: '/society/petty-cash',
+  path: '/society/petty-cash',
+  getParentRoute: () => SocietyRoute,
+} as any)
 const SocietySocietyPayoutsRoute = SocietySocietyPayoutsRouteImport.update({
   id: '/society/payouts',
   path: '/society/payouts',
@@ -1371,6 +1377,7 @@ export interface FileRoutesByFullPath {
   '/society/passes': typeof SocietySocietyPassesRoute
   '/society/payments': typeof SocietySocietyPaymentsRoute
   '/society/payouts': typeof SocietySocietyPayoutsRoute
+  '/society/petty-cash': typeof SocietySocietyPettyCashRoute
   '/society/plan-required': typeof SocietySocietyPlanRequiredRoute
   '/society/polls': typeof SocietySocietyPollsRoute
   '/society/privacy-requests': typeof SocietySocietyPrivacyRequestsRoute
@@ -1564,6 +1571,7 @@ export interface FileRoutesByTo {
   '/society/passes': typeof SocietySocietyPassesRoute
   '/society/payments': typeof SocietySocietyPaymentsRoute
   '/society/payouts': typeof SocietySocietyPayoutsRoute
+  '/society/petty-cash': typeof SocietySocietyPettyCashRoute
   '/society/plan-required': typeof SocietySocietyPlanRequiredRoute
   '/society/polls': typeof SocietySocietyPollsRoute
   '/society/privacy-requests': typeof SocietySocietyPrivacyRequestsRoute
@@ -1763,6 +1771,7 @@ export interface FileRoutesById {
   '/_society/society/passes': typeof SocietySocietyPassesRoute
   '/_society/society/payments': typeof SocietySocietyPaymentsRoute
   '/_society/society/payouts': typeof SocietySocietyPayoutsRoute
+  '/_society/society/petty-cash': typeof SocietySocietyPettyCashRoute
   '/_society/society/plan-required': typeof SocietySocietyPlanRequiredRoute
   '/_society/society/polls': typeof SocietySocietyPollsRoute
   '/_society/society/privacy-requests': typeof SocietySocietyPrivacyRequestsRoute
@@ -1959,6 +1968,7 @@ export interface FileRouteTypes {
     | '/society/passes'
     | '/society/payments'
     | '/society/payouts'
+    | '/society/petty-cash'
     | '/society/plan-required'
     | '/society/polls'
     | '/society/privacy-requests'
@@ -2152,6 +2162,7 @@ export interface FileRouteTypes {
     | '/society/passes'
     | '/society/payments'
     | '/society/payouts'
+    | '/society/petty-cash'
     | '/society/plan-required'
     | '/society/polls'
     | '/society/privacy-requests'
@@ -2350,6 +2361,7 @@ export interface FileRouteTypes {
     | '/_society/society/passes'
     | '/_society/society/payments'
     | '/_society/society/payouts'
+    | '/_society/society/petty-cash'
     | '/_society/society/plan-required'
     | '/_society/society/polls'
     | '/_society/society/privacy-requests'
@@ -2824,6 +2836,13 @@ declare module '@tanstack/react-router' {
       path: '/society/plan-required'
       fullPath: '/society/plan-required'
       preLoaderRoute: typeof SocietySocietyPlanRequiredRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/petty-cash': {
+      id: '/_society/society/petty-cash'
+      path: '/society/petty-cash'
+      fullPath: '/society/petty-cash'
+      preLoaderRoute: typeof SocietySocietyPettyCashRouteImport
       parentRoute: typeof SocietyRoute
     }
     '/_society/society/payouts': {
@@ -4035,6 +4054,7 @@ interface SocietyRouteChildren {
   SocietySocietyPassesRoute: typeof SocietySocietyPassesRoute
   SocietySocietyPaymentsRoute: typeof SocietySocietyPaymentsRoute
   SocietySocietyPayoutsRoute: typeof SocietySocietyPayoutsRoute
+  SocietySocietyPettyCashRoute: typeof SocietySocietyPettyCashRoute
   SocietySocietyPlanRequiredRoute: typeof SocietySocietyPlanRequiredRoute
   SocietySocietyPollsRoute: typeof SocietySocietyPollsRoute
   SocietySocietyPrivacyRequestsRoute: typeof SocietySocietyPrivacyRequestsRoute
@@ -4119,6 +4139,7 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyPassesRoute: SocietySocietyPassesRoute,
   SocietySocietyPaymentsRoute: SocietySocietyPaymentsRoute,
   SocietySocietyPayoutsRoute: SocietySocietyPayoutsRoute,
+  SocietySocietyPettyCashRoute: SocietySocietyPettyCashRoute,
   SocietySocietyPlanRequiredRoute: SocietySocietyPlanRequiredRoute,
   SocietySocietyPollsRoute: SocietySocietyPollsRoute,
   SocietySocietyPrivacyRequestsRoute: SocietySocietyPrivacyRequestsRoute,

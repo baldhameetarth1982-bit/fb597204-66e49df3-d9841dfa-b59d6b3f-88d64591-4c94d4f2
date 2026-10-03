@@ -6950,6 +6950,69 @@ export type Database = {
           },
         ]
       }
+      petty_cash_entries: {
+        Row: {
+          amount: number
+          balance_after: number
+          created_at: string
+          entry_date: string
+          id: string
+          kind: string
+          paid_to: string | null
+          purpose: string
+          recorded_by: string | null
+          request_id: string
+          reverses: string | null
+          society_id: string
+          voucher_no: string | null
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          created_at?: string
+          entry_date: string
+          id?: string
+          kind: string
+          paid_to?: string | null
+          purpose: string
+          recorded_by?: string | null
+          request_id: string
+          reverses?: string | null
+          society_id: string
+          voucher_no?: string | null
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          created_at?: string
+          entry_date?: string
+          id?: string
+          kind?: string
+          paid_to?: string | null
+          purpose?: string
+          recorded_by?: string | null
+          request_id?: string
+          reverses?: string | null
+          society_id?: string
+          voucher_no?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "petty_cash_entries_reverses_fkey"
+            columns: ["reverses"]
+            isOneToOne: false
+            referencedRelation: "petty_cash_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "petty_cash_entries_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       phone_verifications: {
         Row: {
           created_at: string
@@ -12064,6 +12127,20 @@ export type Database = {
         Returns: undefined
       }
       admin_patrol_overview: { Args: { _days?: number }; Returns: Json }
+      admin_petty_cash_entry: {
+        Args: {
+          _amount: number
+          _entry_date: string
+          _kind: string
+          _paid_to: string
+          _purpose: string
+          _request_id: string
+          _reverses: string
+          _society_id: string
+          _voucher_no: string
+        }
+        Returns: Json
+      }
       admin_platform_overview: { Args: never; Returns: Json }
       admin_platform_summary: {
         Args: never

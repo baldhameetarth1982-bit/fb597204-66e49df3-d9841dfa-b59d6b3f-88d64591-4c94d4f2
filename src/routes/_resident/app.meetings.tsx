@@ -1,3 +1,4 @@
+import { MinutesCorrections } from "@/components/meetings/MinutesCorrections";
 import { AISummaryCard } from "@/components/shared/AISummaryCard";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
@@ -126,7 +127,7 @@ function ResidentMeetings() {
                   ))}
                 </div>
               )}
-              {open.status === "minutes_published" && open.minutes && <div><h3 className="text-sm font-semibold">Minutes</h3><p className="whitespace-pre-wrap text-sm text-muted-foreground">{open.minutes}</p></div>}
+              {open.status === "minutes_published" && open.minutes && <div className="space-y-2"><h3 className="text-sm font-semibold">Minutes</h3><p className="whitespace-pre-wrap text-sm text-muted-foreground">{open.minutes}</p><MinutesCorrections meetingId={open.id} /></div>}
               {(detail.data?.resolutions.length ?? 0) > 0 && (
                 <div><h3 className="text-sm font-semibold">Resolutions</h3>
                   <ol className="space-y-1 text-sm">{detail.data!.resolutions.map((r) => <li key={r.id}><span className="font-medium">R{r.seq}.</span> {r.text} <span className="text-xs capitalize text-muted-foreground">— {r.outcome}</span></li>)}</ol>

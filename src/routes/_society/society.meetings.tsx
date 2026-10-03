@@ -1,3 +1,4 @@
+import { MinutesCorrections } from "@/components/meetings/MinutesCorrections";
 import { AISummaryCard } from "@/components/shared/AISummaryCard";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
@@ -235,7 +236,12 @@ function MeetingDetail({ m, societyId, onChanged, onEdit }: { m: Meeting; societ
                 <Button className="min-h-11 rounded-xl" disabled={!!busy || !m.minutes} onClick={() => confirm("Publish minutes? They can't be edited afterwards.") && status("minutes_published", "Minutes published — invitees are notified")}>Publish minutes</Button>
               </div>
             </>
-          ) : <p className="whitespace-pre-wrap text-sm text-muted-foreground">{m.minutes}</p>}
+          ) : (
+            <>
+              <p className="whitespace-pre-wrap text-sm text-muted-foreground">{m.minutes}</p>
+              <MinutesCorrections meetingId={m.id} canAdd />
+            </>
+          )}
         </section>
       )}
 

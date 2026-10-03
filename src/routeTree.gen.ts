@@ -146,6 +146,7 @@ import { Route as ResidentAppDashboardRouteImport } from './routes/_resident/app
 import { Route as ResidentAppContactsRouteImport } from './routes/_resident/app.contacts'
 import { Route as ResidentAppCommunityRouteImport } from './routes/_resident/app.community'
 import { Route as ResidentAppCommRouteImport } from './routes/_resident/app.comm'
+import { Route as ResidentAppClassesRouteImport } from './routes/_resident/app.classes'
 import { Route as ResidentAppBylawsRouteImport } from './routes/_resident/app.bylaws'
 import { Route as ResidentAppAmenitiesRouteImport } from './routes/_resident/app.amenities'
 import { Route as ResidentAppAgmRouteImport } from './routes/_resident/app.agm'
@@ -917,6 +918,11 @@ const ResidentAppCommRoute = ResidentAppCommRouteImport.update({
   path: '/app/comm',
   getParentRoute: () => ResidentRoute,
 } as any)
+const ResidentAppClassesRoute = ResidentAppClassesRouteImport.update({
+  id: '/app/classes',
+  path: '/app/classes',
+  getParentRoute: () => ResidentRoute,
+} as any)
 const ResidentAppBylawsRoute = ResidentAppBylawsRouteImport.update({
   id: '/app/bylaws',
   path: '/app/bylaws',
@@ -1317,6 +1323,7 @@ export interface FileRoutesByFullPath {
   '/app/agm': typeof ResidentAppAgmRoute
   '/app/amenities': typeof ResidentAppAmenitiesRoute
   '/app/bylaws': typeof ResidentAppBylawsRoute
+  '/app/classes': typeof ResidentAppClassesRoute
   '/app/comm': typeof ResidentAppCommRoute
   '/app/community': typeof ResidentAppCommunityRoute
   '/app/contacts': typeof ResidentAppContactsRoute
@@ -1514,6 +1521,7 @@ export interface FileRoutesByTo {
   '/app/agm': typeof ResidentAppAgmRoute
   '/app/amenities': typeof ResidentAppAmenitiesRoute
   '/app/bylaws': typeof ResidentAppBylawsRoute
+  '/app/classes': typeof ResidentAppClassesRoute
   '/app/comm': typeof ResidentAppCommRoute
   '/app/community': typeof ResidentAppCommunityRoute
   '/app/contacts': typeof ResidentAppContactsRoute
@@ -1717,6 +1725,7 @@ export interface FileRoutesById {
   '/_resident/app/agm': typeof ResidentAppAgmRoute
   '/_resident/app/amenities': typeof ResidentAppAmenitiesRoute
   '/_resident/app/bylaws': typeof ResidentAppBylawsRoute
+  '/_resident/app/classes': typeof ResidentAppClassesRoute
   '/_resident/app/comm': typeof ResidentAppCommRoute
   '/_resident/app/community': typeof ResidentAppCommunityRoute
   '/_resident/app/contacts': typeof ResidentAppContactsRoute
@@ -1917,6 +1926,7 @@ export interface FileRouteTypes {
     | '/app/agm'
     | '/app/amenities'
     | '/app/bylaws'
+    | '/app/classes'
     | '/app/comm'
     | '/app/community'
     | '/app/contacts'
@@ -2114,6 +2124,7 @@ export interface FileRouteTypes {
     | '/app/agm'
     | '/app/amenities'
     | '/app/bylaws'
+    | '/app/classes'
     | '/app/comm'
     | '/app/community'
     | '/app/contacts'
@@ -2316,6 +2327,7 @@ export interface FileRouteTypes {
     | '/_resident/app/agm'
     | '/_resident/app/amenities'
     | '/_resident/app/bylaws'
+    | '/_resident/app/classes'
     | '/_resident/app/comm'
     | '/_resident/app/community'
     | '/_resident/app/contacts'
@@ -3456,6 +3468,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResidentAppCommRouteImport
       parentRoute: typeof ResidentRoute
     }
+    '/_resident/app/classes': {
+      id: '/_resident/app/classes'
+      path: '/app/classes'
+      fullPath: '/app/classes'
+      preLoaderRoute: typeof ResidentAppClassesRouteImport
+      parentRoute: typeof ResidentRoute
+    }
     '/_resident/app/bylaws': {
       id: '/_resident/app/bylaws'
       path: '/app/bylaws'
@@ -3974,6 +3993,7 @@ interface ResidentRouteChildren {
   ResidentAppAgmRoute: typeof ResidentAppAgmRoute
   ResidentAppAmenitiesRoute: typeof ResidentAppAmenitiesRoute
   ResidentAppBylawsRoute: typeof ResidentAppBylawsRoute
+  ResidentAppClassesRoute: typeof ResidentAppClassesRoute
   ResidentAppCommRoute: typeof ResidentAppCommRoute
   ResidentAppCommunityRoute: typeof ResidentAppCommunityRoute
   ResidentAppContactsRoute: typeof ResidentAppContactsRoute
@@ -4020,6 +4040,7 @@ const ResidentRouteChildren: ResidentRouteChildren = {
   ResidentAppAgmRoute: ResidentAppAgmRoute,
   ResidentAppAmenitiesRoute: ResidentAppAmenitiesRoute,
   ResidentAppBylawsRoute: ResidentAppBylawsRoute,
+  ResidentAppClassesRoute: ResidentAppClassesRoute,
   ResidentAppCommRoute: ResidentAppCommRoute,
   ResidentAppCommunityRoute: ResidentAppCommunityRoute,
   ResidentAppContactsRoute: ResidentAppContactsRoute,

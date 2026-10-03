@@ -10,7 +10,7 @@ const Input = z.object({
 
 export type AskSecretaryResult =
   | { ok: true; data: import("./ai-secretary.server").SecretaryAnswer }
-  | { ok: false; code: "not_member" | "plan_locked" | "rate_limited" | "ai_unavailable" | "retrieval_failed"; message: string };
+  | { ok: false; code: "not_member" | "plan_locked" | "rate_limited" | "ai_unavailable" | "retrieval_failed" | "refused"; message: string };
 
 const SECRETARY_SCHEMA = {
   type: "object",
@@ -45,6 +45,12 @@ export const askSecretary = createServerFn({ method: "POST" })
     if (!soc) return { ok: false, code: "not_member", message: "Join a society to use AI Secretary." };
     if (!hasFeature(planFromSocietyRow(soc as any), "ai_secretary")) {
       return { ok: false, code: "plan_locked", message: "AI Secretary is available on the Pro plan." };
+    }
+
+    // Shared pre-model guard: bypass/secret/impersonation requests never reach the model.
+    const { isBlockedRequest } = await import("@/lib/platform-assistant.server");
+    if (isBlockedRequest(data.question) || (data.history ?? []).some(isBlockedRequest)) {
+      return { ok: false, code: "refused", message: "I can't help with getting around SociyoHub's security, logins or other people's data. Ask about your society's rules, notices or documents instead." };
     }
 
     const { checkRateLimit } = await import("@/lib/rate-limit.server");

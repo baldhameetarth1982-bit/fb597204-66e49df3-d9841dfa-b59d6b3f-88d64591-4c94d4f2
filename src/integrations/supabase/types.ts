@@ -4155,6 +4155,100 @@ export type Database = {
           },
         ]
       }
+      invoice_extractions: {
+        Row: {
+          corrections: Json | null
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          error_code: string | null
+          expense_id: string | null
+          extracted: Json | null
+          file_mime: string
+          file_path: string
+          file_size: number
+          id: string
+          invoice_number: string | null
+          notes: string[]
+          original_name: string
+          procurement_request_id: string | null
+          reject_reason: string | null
+          society_id: string
+          status: string
+          updated_at: string
+          uploaded_by: string
+          vendor_gstin: string | null
+        }
+        Insert: {
+          corrections?: Json | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          error_code?: string | null
+          expense_id?: string | null
+          extracted?: Json | null
+          file_mime: string
+          file_path: string
+          file_size: number
+          id?: string
+          invoice_number?: string | null
+          notes?: string[]
+          original_name: string
+          procurement_request_id?: string | null
+          reject_reason?: string | null
+          society_id: string
+          status?: string
+          updated_at?: string
+          uploaded_by: string
+          vendor_gstin?: string | null
+        }
+        Update: {
+          corrections?: Json | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          error_code?: string | null
+          expense_id?: string | null
+          extracted?: Json | null
+          file_mime?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          invoice_number?: string | null
+          notes?: string[]
+          original_name?: string
+          procurement_request_id?: string | null
+          reject_reason?: string | null
+          society_id?: string
+          status?: string
+          updated_at?: string
+          uploaded_by?: string
+          vendor_gstin?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_extractions_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_extractions_procurement_request_id_fkey"
+            columns: ["procurement_request_id"]
+            isOneToOne: false
+            referencedRelation: "procurement_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_extractions_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       join_requests: {
         Row: {
           created_at: string
@@ -12784,6 +12878,46 @@ export type Database = {
       }
       incident_resolve: {
         Args: { _id: string; _note: string }
+        Returns: undefined
+      }
+      invoice_ai_confirm: {
+        Args: {
+          _amount: number
+          _category: string
+          _description: string
+          _expense_date: string
+          _id: string
+          _invoice_number: string
+          _payment_method: string
+          _procurement_request_id: string
+          _request_id: string
+          _vendor_id: string
+        }
+        Returns: Json
+      }
+      invoice_ai_record_result: {
+        Args: {
+          _error: string
+          _extracted: Json
+          _id: string
+          _invoice_number: string
+          _notes: string[]
+          _status: string
+          _vendor_gstin: string
+        }
+        Returns: undefined
+      }
+      invoice_ai_register: {
+        Args: {
+          _mime: string
+          _name: string
+          _size: number
+          _society_id: string
+        }
+        Returns: Json
+      }
+      invoice_ai_reject: {
+        Args: { _id: string; _reason: string }
         Returns: undefined
       }
       is_active_society_plan: {

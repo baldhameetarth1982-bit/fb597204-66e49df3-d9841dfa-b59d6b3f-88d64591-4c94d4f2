@@ -47,13 +47,11 @@ const INR = (v: number | null | undefined) =>
   `₹${Number(v ?? 0).toLocaleString("en-IN")}`;
 
 /**
- * Resident bill detail — Stage 3B read-only.
- *
- * NEVER exposes a payment button, gateway order, or "coming soon" payment
- * copy. Ownership is enforced server-side by getResidentBillDetail via the
- * caller's active flat_residents link; unauthorized reads surface as
- * "Bill not found". Display status is derived only from canonical bill
- * fields via `getBillDisplayStatus`.
+ * Resident bill detail. Payment options (online, UPI QR, Cash/Bank) are
+ * server-gated; amounts come only from the server. Ownership is enforced
+ * server-side by getResidentBillDetail via the caller's active
+ * flat_residents link; unauthorized reads surface as "Bill not found".
+ * Display status is derived only from canonical bill fields.
  */
 function ResidentBillDetail() {
   const { id } = Route.useParams();

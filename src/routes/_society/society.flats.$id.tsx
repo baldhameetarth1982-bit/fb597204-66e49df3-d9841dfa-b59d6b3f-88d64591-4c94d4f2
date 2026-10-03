@@ -560,7 +560,7 @@ function NoDuesSection({ state, flatId }: { state: SectionState<SafeNoDuesSectio
             </div>
             <Button asChild size="sm" className="min-h-11 w-full rounded-xl">
               {req
-                ? <Link to="/society/no-dues/$id" params={{ id: req.id }}>{["submitted", "pending", "under_review", "blocked_by_dues"].includes(req.status) ? "Review No-Dues request" : "Open No-Dues request"}</Link>
+                ? <Link to="/society/no-dues/$id" params={{ id: req.id }}>{["submitted", "under_review", "blocked_by_dues"].includes(req.status) ? "Review No-Dues request" : "Open No-Dues request"}</Link>
                 : <Link to="/society/no-dues">Go to No-Dues</Link>}
             </Button>
           </div>

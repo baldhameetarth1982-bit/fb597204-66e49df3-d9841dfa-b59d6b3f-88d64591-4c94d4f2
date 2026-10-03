@@ -1184,6 +1184,13 @@
       "when": 1791044840732,
       "tag": "0168_amenity_classes_instructors",
       "breakpoints": true
+    },
+    {
+      "idx": 169,
+      "version": "7",
+      "when": 1791046571446,
+      "tag": "0169_class_reminders_qr_checkin",
+      "breakpoints": true
     }
   ]
 }

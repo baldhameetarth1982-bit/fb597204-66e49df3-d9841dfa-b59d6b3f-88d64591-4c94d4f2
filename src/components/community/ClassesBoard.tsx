@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { GraduationCap, Loader2, UserPlus, X, CheckCircle2 } from "lucide-react";
+import { GraduationCap, Loader2, UserPlus, X, CheckCircle2, QrCode } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ function classError(e: unknown) {
   const m = String((e as { message?: string })?.message ?? "");
   if (m.includes("already_enrolled")) return "You're already in this class.";
   if (m.includes("checkin_closed")) return "Check-in opens 15 minutes before the class and closes when it ends.";
+  if (m.includes("invalid_code")) return "This check-in code has expired or isn't valid. Ask for a fresh one.";
   if (m.includes("reason_required")) return "Please give a reason.";
   if (m.includes("invalid_instructor")) return "Choose an active instructor.";
   return amenityError(e);
@@ -38,6 +40,7 @@ export function ClassesBoard({ societyId, mode }: { societyId: string | null; mo
   const [addInstr, setAddInstr] = useState(false);
   const [attFor, setAttFor] = useState<Cls | null>(null);
   const [uid, setUid] = useState<string | null>(null);
+  const [qr, setQr] = useState<{ token: string; expires: string; title: string } | null>(null);
 
   async function load() {
     setLoading(true); setFailed(false);
@@ -55,6 +58,23 @@ export function ClassesBoard({ societyId, mode }: { societyId: string | null; mo
     setLoading(false);
   }
   useEffect(() => { void load(); }, [societyId]);
+
+  // Resident arrived by scanning a class check-in QR: the server decides class, society and session.
+  useEffect(() => {
+    if (mode !== "resident") return;
+    const url = new URL(window.location.href);
+    const tok = url.searchParams.get("ci");
+    if (!tok) return;
+    url.searchParams.delete("ci");
+    window.history.replaceState(null, "", url.pathname + url.search);
+    void (async () => {
+      const { data, error } = await supabase.rpc("check_in_class_qr", { _token: tok });
+      if (error) return void toast.error(classError(error));
+      const [state, ...t] = String(data).split(":");
+      toast.success(state === "already_checked_in" ? `You're already checked in to ${t.join(":")}` : `Checked in to ${t.join(":")}`);
+      void load();
+    })();
+  }, [mode]);
 
   const amenName = useMemo(() => Object.fromEntries(amen.map((a) => [a.id, a.name])), [amen]);
   const instrName = useMemo(() => Object.fromEntries(instr.map((a) => [a.id, a.name])), [instr]);
@@ -127,6 +147,14 @@ export function ClassesBoard({ societyId, mode }: { societyId: string | null; mo
                 </>}
                 {mode === "admin" && c.status === "active" && <>
                   <Button variant="outline" className="min-h-11" onClick={() => setAttFor(c)} disabled={enrolled.length === 0}>Attendance</Button>
+                  <Button variant="outline" className="min-h-11" disabled={busy === c.id + "qr"} onClick={async () => {
+                    setBusy(c.id + "qr");
+                    const { data, error } = await supabase.rpc("admin_issue_class_checkin_code", { _class_id: c.id });
+                    setBusy(null);
+                    if (error) return void toast.error(classError(error));
+                    const d = data as { token: string; expires_at: string };
+                    setQr({ token: d.token, expires: d.expires_at, title: c.title });
+                  }}><QrCode className="mr-1 h-4 w-4" />Check-in QR</Button>
                   <Button variant="ghost" className="min-h-11 text-destructive" disabled={busy === c.id} onClick={() => {
                     const r = window.prompt("Reason for cancelling this class (residents will see it)");
                     if (r) void run(c.id, () => supabase.rpc("admin_cancel_class", { _class_id: c.id, _reason: r }), "Class cancelled");
@@ -142,6 +170,15 @@ export function ClassesBoard({ societyId, mode }: { societyId: string | null; mo
         <CreateClassDialog open={creating} onClose={() => setCreating(false)} amen={amen} instr={instr.filter((i) => i.is_active)} onDone={() => { setCreating(false); void load(); }} />
         <InstructorDialog open={addInstr} onClose={() => setAddInstr(false)} societyId={societyId} onDone={() => { setAddInstr(false); void load(); }} />
         <AttendanceDialog cls={attFor} onClose={() => setAttFor(null)} enrolled={enr.filter((e) => e.class_id === attFor?.id && e.status === "enrolled")} att={att} onDone={() => { setAttFor(null); void load(); }} />
+        <Dialog open={!!qr} onOpenChange={(o) => { if (!o) { setQr(null); void load(); } }}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Check-in code · {qr?.title}</DialogTitle></DialogHeader>
+            {qr && <div className="flex flex-col items-center gap-3">
+              <div className="rounded-xl bg-background p-3"><QRCodeSVG value={`${window.location.origin}/app/classes?ci=${qr.token}`} size={240} /></div>
+              <p className="text-center text-sm text-muted-foreground">Enrolled residents scan this with their phone camera. It works for today's session only and expires at {new Date(qr.expires).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}.</p>
+            </div>}
+          </DialogContent>
+        </Dialog>
       </>}
     </div>
   );

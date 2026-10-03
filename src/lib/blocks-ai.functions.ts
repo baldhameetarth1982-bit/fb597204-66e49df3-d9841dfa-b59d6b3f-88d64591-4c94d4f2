@@ -58,13 +58,14 @@ export const planSocietyFromText = createServerFn({ method: "POST" })
     const { createLovableAiGatewayProvider } = await import("@/lib/ai-gateway.server");
     const gateway = createLovableAiGatewayProvider(apiKey);
 
-    const { experimental_output } = await generateText({
+    const { trackAi } = await import("@/lib/ai-usage.server");
+    const { experimental_output } = await trackAi({ feature: "structure_plan", societyId: profile.society_id }, () => generateText({
       model: gateway("google/gemini-3-flash-preview"),
       system:
         "You convert plain-English society descriptions into structured block plans for an Indian housing community app. Output ONLY valid JSON matching the schema. Examples of input: '3 towers, 10 floors, 4 flats per floor' or '20 bungalows + 1 commercial block of 8 shops'. Use unit_type=bungalow/villa for standalone houses, flat for apartments, shop/office for commercial. Set floors=0 for bungalows. Use naming_pattern A-101 for apartments, Plain for bungalows (just numbered 1,2,3).",
       prompt: data.text,
       experimental_output: Output.object({ schema: PlanSchema }),
-    });
+    }));
 
     return { plan: experimental_output };
   });

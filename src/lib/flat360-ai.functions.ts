@@ -125,7 +125,8 @@ function realProvider(): AIProviderAdapter {
       if (!apiKey) throw new Error("provider_unavailable");
       const { createLovableAiGatewayProvider } = await import("@/lib/ai-gateway.server");
       const gateway = createLovableAiGatewayProvider(apiKey);
-      const { text } = await generateText({
+      const { trackAi } = await import("@/lib/ai-usage.server");
+      const { text } = await trackAi({ feature: "flat360_summary" }, () => generateText({
         model: gateway("google/gemini-3.5-flash"),
         system: AI_SYSTEM_PROMPT,
         prompt: [
@@ -137,7 +138,7 @@ function realProvider(): AIProviderAdapter {
           "Return only the JSON object.",
         ].join("\n\n"),
         temperature: 0.2,
-      });
+      }), (r) => ({ input: r.usage?.inputTokens, output: r.usage?.outputTokens }));
       return text;
     },
   };

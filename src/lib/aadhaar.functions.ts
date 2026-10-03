@@ -67,6 +67,8 @@ export const verifyAadhaarPhoto = createServerFn({ method: "POST" })
     const dataUrl = `data:${mime};base64,${buf.toString("base64")}`;
 
     // Call Lovable AI Gateway (Gemini Vision) for OCR
+    const { logAiUsage } = await import("@/lib/ai-usage.server");
+    const aiT0 = Date.now();
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -93,6 +95,7 @@ export const verifyAadhaarPhoto = createServerFn({ method: "POST" })
       }),
     });
 
+    await logAiUsage({ feature: "id_check" }, aiResp.ok ? "ok" : aiResp.status === 429 ? "rate_limited" : "failed", aiT0);
     if (aiResp.status === 429)
       return { ok: false, reason: "Too many attempts. Try again in a minute." } as const;
     if (aiResp.status === 402)

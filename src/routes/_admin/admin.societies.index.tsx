@@ -19,12 +19,30 @@ export const Route = createFileRoute("/_admin/admin/societies/")({
 type Row = {
   id: string; name: string; city: string | null; plan_id: string | null; plan_status: string | null;
   plan_expires_at: string | null; trial_ends_at: string | null; status: string | null; created_at: string;
-  unit_count: number; member_count: number; admin_count: number;
+  flats: number; declared_units: number | null; residents: number; admins: number; guards: number; staff: number;
+  pending_joins: number; open_tickets: number; overdue_tickets: number; open_incidents: number; failed_payments: number;
+  ai_requests_30d: number; last_activity_at: string | null;
 };
+
+/** Short list of problems shown on each row; the society page explains who fixes each. */
+function problemsOf(r: Row, st: SaasState): string[] {
+  const p: string[] = [];
+  if (st.key === "suspended") p.push("Suspended");
+  if (st.key === "trial_expired" || st.key === "plan_expired") p.push(st.label);
+  if (r.admins === 0) p.push("No admin");
+  if (r.flats === 0) p.push("No homes set up");
+  if (r.failed_payments > 0) p.push(`${r.failed_payments} failed plan payment(s)`);
+  if (r.overdue_tickets > 0) p.push(`${r.overdue_tickets} request(s) open > 7 days`);
+  if (r.open_incidents > 0) p.push(`${r.open_incidents} security incident(s)`);
+  if (r.pending_joins > 0) p.push(`${r.pending_joins} waiting to join`);
+  if (!r.last_activity_at || Date.now() - new Date(r.last_activity_at).getTime() > 30 * 86_400_000) p.push("No activity in 30 days");
+  return p;
+}
 type Filter = "all" | "paid" | "trial" | "attention" | "suspended";
 
-function bucket(st: SaasState): Filter {
+function bucket(st: SaasState, problems: string[] = []): Filter {
   if (st.key === "suspended") return "suspended";
+  if (problems.length > 0) return "attention";
   if (st.key === "active") return "paid";
   if (st.key === "trial") return "trial";
   return "attention";
@@ -34,11 +52,11 @@ function SocietiesPage() {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const query = useQuery({
-    queryKey: ["admin-societies-v2"],
+    queryKey: ["admin-society-health"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("admin_list_societies_v2");
+      const { data, error } = await supabase.rpc("admin_society_health_list" as any);
       if (error) throw new Error("load_failed");
-      return ((data ?? []) as Row[]).map((r) => ({ ...r, st: saasState(r) }));
+      return ((data ?? []) as unknown as Row[]).map((r) => { const st = saasState(r); return { ...r, st, problems: problemsOf(r, st) }; });
     },
     staleTime: 30_000,
   });
@@ -46,14 +64,14 @@ function SocietiesPage() {
 
   const counts = useMemo(() => {
     const c: Record<Filter, number> = { all: rows.length, paid: 0, trial: 0, attention: 0, suspended: 0 };
-    for (const r of rows) c[bucket(r.st)]++;
+    for (const r of rows) c[bucket(r.st, r.problems)]++;
     return c;
   }, [rows]);
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
     return rows.filter((r) =>
-      (filter === "all" || bucket(r.st) === filter) &&
+      (filter === "all" || bucket(r.st, r.problems) === filter) &&
       (!s || r.name.toLowerCase().includes(s) || (r.city ?? "").toLowerCase().includes(s)),
     );
   }, [rows, q, filter]);
@@ -65,7 +83,7 @@ function SocietiesPage() {
 
   return (
     <PageShell>
-      <PageHeader title="Societies" description="Plans, trials and lifecycle for every society on SociyoHub. Open a society to extend, grant, cancel, suspend or restore." />
+      <PageHeader title="Society health" description="Every society, its plan and what needs attention. Open a society to see what is wrong and who should fix it." />
       <div className="space-y-4">
         <MetricGroup title="Overview" cols={4} items={[
           { label: "Total", value: query.isLoading ? "—" : counts.all },
@@ -121,11 +139,16 @@ function SocietiesPage() {
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
                         <span>Plan <span className="font-medium text-foreground">{planName(r.plan_id)}</span></span>
-                        <span className="inline-flex items-center gap-1"><Home className="h-3 w-3" />{r.unit_count} units</span>
-                        <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" />{r.member_count} members</span>
+                        <span className="inline-flex items-center gap-1"><Home className="h-3 w-3" />{r.flats} homes</span>
+                        <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" />{r.residents} residents · {r.admins} admins · {r.guards + r.staff} guards/staff</span>
                         {r.city && <span>{r.city}</span>}
-                        {r.admin_count === 0 && <span className="font-medium text-warning">No admin</span>}
+                        <span>{r.open_tickets} open requests</span>
+                        <span>AI {r.ai_requests_30d}/30d</span>
+                        <span>Last active {r.last_activity_at ? new Date(r.last_activity_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "never"}</span>
                       </div>
+                      {r.problems.length > 0 && (
+                        <p className="mt-1 text-xs font-medium text-warning">{r.problems.slice(0, 3).join(" · ")}{r.problems.length > 3 ? ` · +${r.problems.length - 3} more` : ""}</p>
+                      )}
                     </div>
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </Link>

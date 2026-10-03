@@ -37,7 +37,7 @@ const TABS = [
     to: "/admin/settings",
     label: "More",
     icon: MoreHorizontal,
-    match: ["/admin/settings", "/admin/security", "/admin/ads", "/admin/branding"],
+    match: ["/admin/settings", "/admin/security", "/admin/ads", "/admin/branding", "/admin/costs", "/admin/ai-usage", "/admin/assistant"],
   },
 ] as const;
 

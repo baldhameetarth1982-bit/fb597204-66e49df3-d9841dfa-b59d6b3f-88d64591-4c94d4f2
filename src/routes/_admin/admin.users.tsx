@@ -67,7 +67,7 @@ function UsersPage() {
     onSuccess: () => {
       toast.success("Plan granted. Recorded in the audit history.");
       qc.invalidateQueries({ queryKey: ["admin-users-all"] });
-      qc.invalidateQueries({ queryKey: ["admin-societies-v2"] });
+      qc.invalidateQueries({ queryKey: ["admin-society-health"] });
       setTarget(null);
     },
     onError: (e: Error) => toast.error(userMessage(e)),

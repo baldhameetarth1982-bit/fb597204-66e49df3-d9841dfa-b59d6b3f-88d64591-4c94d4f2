@@ -92,12 +92,13 @@ export const generateCommunityDigest = createServerFn({ method: "POST" })
     const gateway = createLovableAiGatewayProvider(apiKey);
     let summary = "";
     try {
-      const result = await generateText({
+      const { trackAi } = await import("@/lib/ai-usage.server");
+      const result = await trackAi({ feature: "community_digest", societyId: data.societyId }, () => generateText({
         model: gateway("google/gemini-2.5-flash"),
         system:
           "You are the SociyoHub community editor. Summarize a society's weekly discussions and announcements into a friendly, neutral 4-6 sentence digest. Highlight the top themes, any decisions reached, and any questions still open. Use plain language. Never invent names or events not in the source. If the source says the community was quiet, write a warm 2-3 sentence note inviting more participation.",
         prompt: corpus.slice(0, 8000),
-      });
+      }), (r) => ({ input: r.usage?.inputTokens, output: r.usage?.outputTokens }));
       summary = result.text?.trim() ?? "";
     } catch (e: any) {
       throw new Error(`AI service error: ${e?.message ?? "unknown"}`);

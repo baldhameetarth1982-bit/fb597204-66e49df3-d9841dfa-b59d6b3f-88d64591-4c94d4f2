@@ -476,6 +476,47 @@ export type Database = {
           },
         ]
       }
+      ai_usage_events: {
+        Row: {
+          created_at: string
+          feature: string
+          id: string
+          input_tokens: number | null
+          latency_ms: number | null
+          output_tokens: number | null
+          society_id: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          feature: string
+          id?: string
+          input_tokens?: number | null
+          latency_ms?: number | null
+          output_tokens?: number | null
+          society_id?: string | null
+          status: string
+        }
+        Update: {
+          created_at?: string
+          feature?: string
+          id?: string
+          input_tokens?: number | null
+          latency_ms?: number | null
+          output_tokens?: number | null
+          society_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_events_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       amenities: {
         Row: {
           advance_days: number
@@ -6593,12 +6634,52 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_cost_entries: {
+        Row: {
+          amount_inr: number
+          category: string
+          created_at: string
+          created_by: string
+          id: string
+          note: string | null
+          period_month: string
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
+        }
+        Insert: {
+          amount_inr: number
+          category: string
+          created_at?: string
+          created_by: string
+          id?: string
+          note?: string | null
+          period_month: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Update: {
+          amount_inr?: number
+          category?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          note?: string | null
+          period_month?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Relationships: []
+      }
       platform_settings: {
         Row: {
           ads_banner_enabled: boolean
           ads_banner_placements: string[]
           ads_interstitial_enabled: boolean
           ads_interstitial_seconds: number
+          ai_cost_per_request_inr: number | null
           id: number
           maintenance_fee_percent: number
           razorpay_configured: boolean
@@ -6610,6 +6691,7 @@ export type Database = {
           ads_banner_placements?: string[]
           ads_interstitial_enabled?: boolean
           ads_interstitial_seconds?: number
+          ai_cost_per_request_inr?: number | null
           id?: number
           maintenance_fee_percent?: number
           razorpay_configured?: boolean
@@ -6621,6 +6703,7 @@ export type Database = {
           ads_banner_placements?: string[]
           ads_interstitial_enabled?: boolean
           ads_interstitial_seconds?: number
+          ai_cost_per_request_inr?: number | null
           id?: number
           maintenance_fee_percent?: number
           razorpay_configured?: boolean
@@ -11429,6 +11512,7 @@ export type Database = {
         Returns: undefined
       }
       admin_patrol_overview: { Args: { _days?: number }; Returns: Json }
+      admin_platform_overview: { Args: never; Returns: Json }
       admin_platform_summary: {
         Args: never
         Returns: {
@@ -11447,6 +11531,15 @@ export type Database = {
       admin_record_attendance: {
         Args: { _day: string; _note: string; _staff: string; _status: string }
         Returns: undefined
+      }
+      admin_record_platform_cost: {
+        Args: {
+          _amount: number
+          _category: string
+          _note: string
+          _period: string
+        }
+        Returns: Json
       }
       admin_register_rfid: {
         Args: {
@@ -11489,6 +11582,10 @@ export type Database = {
           _window_minutes: number
         }
         Returns: number
+      }
+      admin_set_ai_cost_rate: {
+        Args: { _rate: number; _reason: string }
+        Returns: Json
       }
       admin_set_amenity_block: {
         Args: {
@@ -11615,6 +11712,34 @@ export type Database = {
           _vendor_id: string
         }
         Returns: undefined
+      }
+      admin_society_diagnose: { Args: { _society_id: string }; Returns: Json }
+      admin_society_health_list: {
+        Args: never
+        Returns: {
+          admins: number
+          ai_requests_30d: number
+          city: string
+          created_at: string
+          declared_units: number
+          failed_payments: number
+          flats: number
+          guards: number
+          id: string
+          last_activity_at: string
+          name: string
+          open_incidents: number
+          open_tickets: number
+          overdue_tickets: number
+          pending_joins: number
+          plan_expires_at: string
+          plan_id: string
+          plan_status: string
+          residents: number
+          staff: number
+          status: string
+          trial_ends_at: string
+        }[]
       }
       admin_society_overview: { Args: { _society_id: string }; Returns: Json }
       admin_transition_withdrawal: {
@@ -11762,6 +11887,10 @@ export type Database = {
       admin_visitor_decide: {
         Args: { _action: string; _id: string; _reason: string }
         Returns: undefined
+      }
+      admin_void_platform_cost: {
+        Args: { _id: string; _reason: string }
+        Returns: Json
       }
       agm_agenda_move: {
         Args: { _dir: number; _item: string }

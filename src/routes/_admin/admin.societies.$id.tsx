@@ -38,6 +38,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StatusChip } from "@/components/system/StatusChip";
+import { SocietyDiagnosis } from "@/components/admin/SocietyDiagnosis";
 import { saasState, planName, fmtDate, ACTION_MESSAGES, humanAction } from "@/lib/super-admin-ui";
 
 export const Route = createFileRoute("/_admin/admin/societies/$id")({
@@ -98,7 +99,8 @@ function SocietyDetailPage() {
   });
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["admin-society", id] });
-    qc.invalidateQueries({ queryKey: ["admin-societies-v2"] });
+    qc.invalidateQueries({ queryKey: ["admin-society-diagnose", id] });
+    qc.invalidateQueries({ queryKey: ["admin-society-health"] });
   };
 
   const back = (
@@ -161,17 +163,6 @@ function SocietyDetailPage() {
   });
   const suspended = s.lifecycle === "suspended";
 
-  const attention: string[] = [];
-  if (admins.length === 0)
-    attention.push("No active admin — the society can't be managed until someone is assigned.");
-  if (counts.pending_joins > 0)
-    attention.push(
-      `${counts.pending_joins} join request${counts.pending_joins === 1 ? "" : "s"} waiting for the committee.`,
-    );
-  if (counts.open_tickets > 0)
-    attention.push(
-      `${counts.open_tickets} open helpdesk ticket${counts.open_tickets === 1 ? "" : "s"}.`,
-    );
   const isTrial = st.key.startsWith("trial");
 
   return (
@@ -208,22 +199,10 @@ function SocietyDetailPage() {
         </div>
       </header>
 
-      {attention.length > 0 && (
-        <section
-          className="rounded-2xl border border-warning/40 bg-warning/10 p-4"
-          aria-label="Needs attention"
-        >
-          <p className="mb-1 flex items-center gap-1.5 text-sm font-semibold">
-            <AlertCircle className="h-4 w-4" />
-            Needs attention
-          </p>
-          <ul className="space-y-0.5 text-sm">
-            {attention.map((a) => (
-              <li key={a}>{a}</li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <SocietyDiagnosis
+        societyId={s.id}
+        onFix={(fix) => setAction(fix === "restore" ? (suspended ? "restore" : null) : fix)}
+      />
 
       <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border lg:grid-cols-4">
         <Kv k="Plan" v={planName(s.plan_id)} />

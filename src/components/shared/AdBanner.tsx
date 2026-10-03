@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/context/AuthContext";
 import { listDiscovery } from "@/lib/discovery.functions";
 import { safeHttpsUrl } from "@/lib/discovery";
+import { recordAdEvent, useAdImpression } from "@/lib/ad-events";
 
 /**
  * Sponsored banner for a placement. The server decides what may be shown
@@ -28,6 +29,7 @@ export function AdBanner({ placement = "dashboard_bottom" }: { placement?: strin
     return () => clearInterval(t);
   }, [ads.length]);
   const ad = ads[idx % Math.max(ads.length, 1)];
+  const viewRef = useAdImpression(ad?.id, placement, !!ad);
   if (!ad) return null;
   const href = safeHttpsUrl(ad.link_url);
   const body = (
@@ -40,9 +42,9 @@ export function AdBanner({ placement = "dashboard_bottom" }: { placement?: strin
     </>
   );
   return (
-    <div className="w-full flex justify-center py-3" aria-label="Sponsored">
+    <div ref={viewRef} className="w-full flex justify-center py-3" aria-label="Sponsored">
       {href ? (
-        <a href={href} target="_blank" rel="noopener noreferrer sponsored" className="block w-full max-w-md rounded-2xl overflow-hidden border bg-muted/40 hover:opacity-95 transition">{body}</a>
+        <a href={href} onClick={() => recordAdEvent(ad.id, "click", placement)} target="_blank" rel="noopener noreferrer sponsored" className="block w-full max-w-md rounded-2xl overflow-hidden border bg-muted/40 hover:opacity-95 transition">{body}</a>
       ) : (
         <div className="block w-full max-w-md rounded-2xl overflow-hidden border bg-muted/40">{body}</div>
       )}

@@ -13685,6 +13685,10 @@ export type Database = {
           privacy_vehicles: string
         }[]
       }
+      get_society_register: {
+        Args: { _offset?: number; _search?: string; _section: string }
+        Returns: Json
+      }
       get_society_structure_overview: {
         Args: { _society_id: string }
         Returns: Json
@@ -14526,6 +14530,10 @@ export type Database = {
           state: string
           user_id: string
         }[]
+      }
+      log_register_export: {
+        Args: { _rows: number; _section: string }
+        Returns: undefined
       }
       mark_aadhaar_verified: { Args: { _last4: string }; Returns: undefined }
       mark_visitor_overstays: { Args: never; Returns: number }

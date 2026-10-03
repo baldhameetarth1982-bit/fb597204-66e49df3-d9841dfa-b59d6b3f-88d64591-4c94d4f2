@@ -10655,6 +10655,63 @@ export type Database = {
           },
         ]
       }
+      temporary_occupants: {
+        Row: {
+          created_at: string
+          created_by: string
+          ended_at: string | null
+          flat_id: string
+          full_name: string
+          id: string
+          phone: string | null
+          relation: string
+          society_id: string
+          stay_from: string
+          stay_until: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          ended_at?: string | null
+          flat_id: string
+          full_name: string
+          id?: string
+          phone?: string | null
+          relation: string
+          society_id: string
+          stay_from: string
+          stay_until: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          ended_at?: string | null
+          flat_id?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          relation?: string
+          society_id?: string
+          stay_from?: string
+          stay_until?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "temporary_occupants_flat_id_fkey"
+            columns: ["flat_id"]
+            isOneToOne: false
+            referencedRelation: "flats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "temporary_occupants_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenancy_reminders_sent: {
         Row: {
           flat_resident_id: string
@@ -12102,6 +12159,16 @@ export type Database = {
         Args: { _months?: number; _plan_id: string; _society_id: string }
         Returns: undefined
       }
+      add_temporary_occupant: {
+        Args: {
+          _from: string
+          _name: string
+          _phone: string
+          _relation: string
+          _until: string
+        }
+        Returns: string
+      }
       admin_active_people: { Args: never; Returns: Json }
       admin_add_asset_service: {
         Args: {
@@ -13467,6 +13534,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      end_temporary_occupant: { Args: { _id: string }; Returns: undefined }
       enroll_class: { Args: { _class_id: string }; Returns: string }
       ensure_maintenance_period: {
         Args: {

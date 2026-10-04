@@ -13,6 +13,8 @@ import {
 import { isOnline } from "@/lib/offline-cache";
 import { SafetyAlertPanel, SosButton } from "@/components/gate/ResidentSafety";
 import { EmergencyBroadcastHistory } from "@/components/emergency/EmergencyBroadcasts";
+import { supabase } from "@/integrations/supabase/client";
+import { useSocietyId } from "@/hooks/useSocietyId";
 
 export const Route = createFileRoute("/_resident/app/emergency")({
   head: () => ({ meta: [{ title: "Emergency & SOS — SociyoHub" }, { name: "description", content: "Send an SOS to your society security and call emergency numbers." }] }),
@@ -22,10 +24,34 @@ export const Route = createFileRoute("/_resident/app/emergency")({
 function EmergencyPage() {
   const [contacts, setContacts] = useState<EmergencyContact[]>([]);
   const [online, setOnline] = useState(true);
+  const { societyId } = useSocietyId();
+
+  // Society-entered numbers (committee/service contacts) join the national list
+  // and are cached on the device so the page still works offline.
+  useEffect(() => {
+    if (!societyId || !isOnline()) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("society_contacts")
+        .select("role_label,name,phone")
+        .eq("society_id", societyId)
+        .not("phone", "is", null)
+        .order("sort_order")
+        .limit(50);
+      if (cancelled || error) return;
+      const society: EmergencyContact[] = (data ?? [])
+        .filter((c) => c.phone)
+        .map((c) => ({ label: `${c.role_label} — ${c.name}`, number: String(c.phone), category: "society" }));
+      const merged = [...DEFAULT_EMERGENCY_CONTACTS, ...society];
+      saveEmergencyContacts(merged);
+      setContacts(merged);
+    })();
+    return () => { cancelled = true; };
+  }, [societyId]);
 
   useEffect(() => {
     setContacts(loadEmergencyContacts());
-    saveEmergencyContacts(DEFAULT_EMERGENCY_CONTACTS);
     setOnline(isOnline());
     const on = () => setOnline(true);
     const off = () => setOnline(false);

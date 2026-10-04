@@ -1,6 +1,7 @@
 import { issueBill } from "@/lib/accounts-documents.functions";
-import { toSafeFinanceMessage as __tsfm } from "@/lib/finance-safe-error";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { toSafeFinanceMessage } from "@/lib/finance-safe-error";
+import { Receipt as ReceiptIcon } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import type { LucideIcon } from "lucide-react";

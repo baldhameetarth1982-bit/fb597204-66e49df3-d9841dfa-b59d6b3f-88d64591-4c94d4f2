@@ -316,10 +316,16 @@ function SetupWizardPage() {
               {overview && (
                 <div className="rounded-2xl bg-muted/40 p-3 text-xs text-muted-foreground">
                   <div>
-                    Current mode:{" "}
-                    <b className="text-foreground">
-                      {overview.structure_mode ?? "not configured"}
+                    Status:{" "}
+                    <b className={overview.structure_mode && overview.active_units > 0 ? "text-foreground" : "text-amber-600"}>
+                      {overview.structure_mode && overview.active_units > 0 ? "Configured" : "Needs setup"}
                     </b>
+                    {overview.structure_mode && (
+                      <> · {overview.structure_mode === "structured" ? "Blocks with houses" : "Houses only, no blocks"}</>
+                    )}
+                    {overview.structure_mode && overview.active_units === 0 && (
+                      <div className="mt-1">Add your houses so residents can pick theirs when joining.</div>
+                    )}
                   </div>
                   <div>
                     Structures: <b className="text-foreground">{overview.total_structures}</b>

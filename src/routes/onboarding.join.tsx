@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { OnboardingStepper } from "@/components/system/OnboardingStepper";
-import { searchSocietiesPublic, submitJoinRequest, getJoinStructure, submitJoinRequestForUnit, type JoinStructure } from "@/lib/onboarding.functions";
+import { searchSocietiesPublic, getJoinStructure, submitJoinRequestForUnit, type JoinStructure } from "@/lib/onboarding.functions";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/onboarding/join")({
@@ -128,21 +128,13 @@ function JoinFlow() {
     }
     setSubmitting(true);
     try {
-      if (hasUnits && selectedUnit) {
-        await submitJoinRequestForUnit({
-          societyId: society.id,
-          code: code.trim(),
-          fullName: fullName.trim(),
-          blockId: selectedUnit.block_id,
-          flatId: selectedUnit.id,
-          mobile: verifiedPhone || null,
-          ownerOrTenant: role,
-        });
-      } else await submitJoinRequest({
+      if (!selectedUnit) throw new Error("Please choose your house");
+      await submitJoinRequestForUnit({
         societyId: society.id,
         code: code.trim(),
         fullName: fullName.trim(),
-        flatNumber: flatNumber.trim(),
+        blockId: selectedUnit.block_id,
+        flatId: selectedUnit.id,
         mobile: verifiedPhone || null,
         ownerOrTenant: role,
       });
@@ -336,16 +328,11 @@ function JoinFlow() {
                   )}
                 </>
               ) : (
-                <div className="space-y-2">
-                  <Label htmlFor="flat">House / flat number</Label>
-                  <Input
-                    id="flat"
-                    value={flatNumber}
-                    onChange={(e) => setFlatNumber(e.target.value)}
-                    className="h-11 rounded-2xl"
-                    placeholder="A-1204"
-                  />
-                  <p className="text-xs text-muted-foreground">Your society hasn't listed its houses yet, so your admin will match this by hand.</p>
+                <div role="status" className="rounded-2xl border border-amber-500/40 bg-amber-500/5 p-3 text-sm">
+                  <p className="font-medium">Society setup isn't finished</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Your society hasn't added its houses yet, so you can't pick yours. Ask your Society Admin to finish adding houses, then try again.
+                  </p>
                 </div>
               )}
               <div className="space-y-2">

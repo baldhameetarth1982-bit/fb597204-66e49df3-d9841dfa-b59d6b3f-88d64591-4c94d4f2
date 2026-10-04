@@ -1457,6 +1457,13 @@
       "when": 1791152251913,
       "tag": "0207_join_request_structured_unit_selection",
       "breakpoints": true
+    },
+    {
+      "idx": 208,
+      "version": "7",
+      "when": 1791153444249,
+      "tag": "0208_retire_free_text_join_request",
+      "breakpoints": true
     }
   ]
 }

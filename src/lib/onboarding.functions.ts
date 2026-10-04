@@ -47,26 +47,6 @@ export async function searchSocietiesPublic(q: string) {
   }>;
 }
 
-export async function submitJoinRequest(input: {
-  societyId: string;
-  code: string;
-  fullName: string;
-  flatNumber: string;
-  mobile?: string | null;
-  ownerOrTenant: "owner" | "tenant";
-}) {
-  const { data, error } = await supabase.rpc("submit_join_request", {
-    _society_id: input.societyId,
-    _code: input.code,
-    _full_name: input.fullName,
-    _flat_number: input.flatNumber,
-    _mobile: (input.mobile ?? "") as any,
-    _owner_or_tenant: input.ownerOrTenant,
-  });
-  if (error) throw new Error(error.message);
-  return data as string;
-}
-
 export interface JoinStructure {
   mode: "structured" | "serial" | null;
   blocks: Array<{ id: string; name: string }>;

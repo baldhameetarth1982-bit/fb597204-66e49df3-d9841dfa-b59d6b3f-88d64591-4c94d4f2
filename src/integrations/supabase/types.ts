@@ -13802,6 +13802,19 @@ export type Database = {
         }
         Returns: Json
       }
+      create_income_with_bill: {
+        Args: {
+          _amount: number
+          _category_id: string
+          _creation_request_id: string
+          _description: string
+          _payment_date: string
+          _payment_method: string
+          _reference_number: string
+          _society_id: string
+        }
+        Returns: Json
+      }
       create_non_member_income_record: {
         Args: {
           _amount: number

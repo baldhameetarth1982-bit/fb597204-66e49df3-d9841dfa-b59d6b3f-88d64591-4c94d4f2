@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { getFinanceOverview, getReceivablesAgeing } from "@/lib/finance-stage3d.functions";
+import { getAccountsDocumentTotals } from "@/lib/accounts-documents.functions";
 
 export const Route = createFileRoute("/_society/society/reports")({
   head: () => ({ meta: [
@@ -40,6 +41,9 @@ function ReportsPage() {
   const [to, setTo] = useState(initialDate.toISOString().slice(0, 10));
   const overview = useQuery({ queryKey: ["finance-report", societyId, from, to], enabled: !!societyId, queryFn: () => overviewFn({ data: { societyId: societyId!, from, to } }), retry: false });
   const ageing = useQuery({ queryKey: ["finance-ageing", societyId, to], enabled: !!societyId, queryFn: () => ageingFn({ data: { societyId: societyId!, asOf: to } }), retry: false });
+  const totalsFn = useServerFn(getAccountsDocumentTotals);
+  const rangeOk = !!from && !!to && from <= to;
+  const totals = useQuery({ queryKey: ["accounts-doc-totals", societyId, from, to], enabled: !!societyId && rangeOk, retry: false, queryFn: () => totalsFn({ data: { societyId: societyId!, from, to } }) });
   const o = overview.data;
   const heroValue = (value: number | undefined) => overview.isSuccess && value !== undefined ? INR.format(value) : "—";
 
@@ -49,10 +53,24 @@ function ReportsPage() {
       <AccountsCenterTabs/>
       <SectionCard title="Report period" description="Maximum two years"><div className="grid grid-cols-2 gap-3"><div><Label>From</Label><Input aria-label="From" type="date" value={from} onChange={e=>setFrom(e.target.value)}/></div><div><Label>To</Label><Input aria-label="To" type="date" value={to} onChange={e=>setTo(e.target.value)}/></div></div></SectionCard>
       {(overview.isLoading || (!o && !overview.error)) ? <div className="p-10 grid place-items-center" aria-label="Loading financial report"><Loader2 className="animate-spin"/></div> : overview.error ? <SectionCard title="Report unavailable"><p className="text-sm text-destructive">{toSafeFinanceMessage(overview.error,"The report couldn't load. Please try again.")}</p><Button className="mt-3" variant="outline" onClick={()=>void overview.refetch()}>Retry</Button></SectionCard> : <div className="grid sm:grid-cols-2 gap-3"><SectionCard title="Cash"><p className="text-2xl font-bold">{INR.format(o!.cash_balance)}</p></SectionCard><SectionCard title="Bank"><p className="text-2xl font-bold">{INR.format(o!.bank_balance)}</p></SectionCard></div>}
+      <SectionCard title="Income, expense, bills & vouchers" description={rangeOk ? `${from} to ${to} · verified income and posted expenses, by payment mode` : "Choose a valid date range"} bodyClassName="p-0">
+        {!rangeOk ? null : totals.isLoading ? <div className="p-8 grid place-items-center"><Loader2 className="animate-spin" aria-label="Loading totals"/></div>
+          : totals.error ? <div className="p-5"><p className="text-sm text-destructive" role="alert">These totals couldn't load. Please try again.</p><Button className="mt-3" variant="outline" onClick={()=>void totals.refetch()}>Retry</Button></div>
+          : <ListCardGroup>
+            <ListCard title="Income — cash" trailing={<span className="font-semibold tabular-nums whitespace-nowrap">{INR.format(totals.data!.income.cash)}</span>}/>
+            <ListCard title="Income — bank transfer" trailing={<span className="font-semibold tabular-nums whitespace-nowrap">{INR.format(totals.data!.income.bank)}</span>}/>
+            <ListCard title="Income — total" trailing={<span className="font-bold tabular-nums whitespace-nowrap">{INR.format(totals.data!.income.total)}</span>}/>
+            <ListCard title="Expense — cash" trailing={<span className="font-semibold tabular-nums whitespace-nowrap">{INR.format(totals.data!.expense.cash)}</span>}/>
+            <ListCard title="Expense — bank transfer" trailing={<span className="font-semibold tabular-nums whitespace-nowrap">{INR.format(totals.data!.expense.bank)}</span>}/>
+            <ListCard title="Expense — total" trailing={<span className="font-bold tabular-nums whitespace-nowrap">{INR.format(totals.data!.expense.total)}</span>}/>
+            <ListCard title="Income bills issued" subtitle={`${totals.data!.bills.count} bills · a bill is not a payment`} trailing={<span className="font-semibold tabular-nums whitespace-nowrap">{INR.format(totals.data!.bills.amount)}</span>}/>
+            <ListCard title="Expense vouchers issued" subtitle={`${totals.data!.vouchers.count} vouchers`} trailing={<span className="font-semibold tabular-nums whitespace-nowrap">{INR.format(totals.data!.vouchers.amount)}</span>}/>
+          </ListCardGroup>}
+      </SectionCard>
       <SectionCard icon={AlertCircle} title="Receivables ageing" description={`Outstanding bills as of ${to}`} bodyClassName="p-0">
         {ageing.isLoading ? <div className="p-8 grid place-items-center" aria-label="Loading receivables ageing"><Loader2 className="animate-spin"/></div> : ageing.error ? <div className="p-5"><p className="text-sm text-destructive">{toSafeFinanceMessage(ageing.error,"Ageing couldn't load. Please try again.")}</p><Button className="mt-3" variant="outline" onClick={()=>void ageing.refetch()}>Retry</Button></div> : <ListCardGroup>{["current","1_30","31_60","61_90","90_plus"].map(bucket=>{const row=ageing.data?.rows.find(x=>x.bucket===bucket);return <ListCard key={bucket} title={bucket==="current"?"Current":bucket.replace("_","–")+" days"} subtitle={`${row?.bill_count??0} bills`} trailing={<span className="font-semibold">{INR.format(row?.amount??0)}</span>}/>})}</ListCardGroup>}
       </SectionCard>
-      <Button variant="outline" className="w-full min-h-11 sm:w-auto" disabled={!overview.isSuccess || !ageing.isSuccess} onClick={()=>{
+      <Button variant="outline" className="w-full min-h-11 sm:w-auto" disabled={!overview.isSuccess || !ageing.isSuccess || !totals.isSuccess} onClick={()=>{
         const rows: Record<string, string | number>[] = [
           { Section: "Period", Item: `${from} to ${to}`, "Bills": "", "Amount (Rs.)": "" },
           { Section: "Totals", Item: "Income", "Bills": "", "Amount (Rs.)": o!.income },
@@ -60,6 +78,12 @@ function ReportsPage() {
           { Section: "Totals", Item: "Net movement", "Bills": "", "Amount (Rs.)": o!.net_movement },
           { Section: "Balances", Item: "Cash", "Bills": "", "Amount (Rs.)": o!.cash_balance },
           { Section: "Balances", Item: "Bank", "Bills": "", "Amount (Rs.)": o!.bank_balance },
+          { Section: "By mode", Item: "Income cash", "Bills": "", "Amount (Rs.)": totals.data!.income.cash },
+          { Section: "By mode", Item: "Income bank transfer", "Bills": "", "Amount (Rs.)": totals.data!.income.bank },
+          { Section: "By mode", Item: "Expense cash", "Bills": "", "Amount (Rs.)": totals.data!.expense.cash },
+          { Section: "By mode", Item: "Expense bank transfer", "Bills": "", "Amount (Rs.)": totals.data!.expense.bank },
+          { Section: "Documents", Item: "Income bills", "Bills": totals.data!.bills.count, "Amount (Rs.)": totals.data!.bills.amount },
+          { Section: "Documents", Item: "Expense vouchers", "Bills": totals.data!.vouchers.count, "Amount (Rs.)": totals.data!.vouchers.amount },
           ...["current","1_30","31_60","61_90","90_plus"].map(bucket=>{const r=ageing.data?.rows.find(x=>x.bucket===bucket);return { Section: "Receivables ageing", Item: bucket==="current"?"Current":bucket.replace("_","-")+" days", "Bills": r?.bill_count??0, "Amount (Rs.)": r?.amount??0 };}),
         ];
         writeSafeWorkbook(rows, "Report", `financial-report-${from}-to-${to}.xlsx`);

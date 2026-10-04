@@ -24,8 +24,8 @@ export const Route = createFileRoute("/_admin/admin/messaging")({
 });
 
 const LABEL: Record<string, string> = { email: "Email", sms: "SMS", whatsapp: "WhatsApp" };
-const STATUS_LABEL: Record<string, string> = { queued: "Waiting", sending: "Sending", sent: "Sent", failed: "Failed", not_connected: "Provider not connected", disabled: "Channel off", no_address: "No phone/email" };
-const ERR: Record<string, string> = { reason_required: "Please give a reason (at least 5 characters).", not_authorized: "Only Super Admins can do this." };
+const STATUS_LABEL: Record<string, string> = { queued: "Waiting", sending: "Sending", sent: "Sent", failed: "Failed", not_connected: "Provider not connected", disabled: "Channel off", no_address: "No phone/email", unconfirmed: "Not confirmed (check before resending)" };
+const ERR: Record<string, string> = { reason_required: "Please give a reason (at least 5 characters).", not_authorized: "Only Super Admins can do this.", rate_limited: "Too many resends. Try again in an hour." };
 const msg = (e: unknown) => { const m = e instanceof Error ? e.message : ""; return Object.entries(ERR).find(([k]) => m.includes(k))?.[1] ?? "Something went wrong. Please try again."; };
 
 function MessagingPage() {
@@ -52,6 +52,12 @@ function MessagingPage() {
       if (error) throw error; return data as number;
     },
     onSuccess: (n) => { toast.success(`${n} message(s) queued again`); setReason(""); refresh(); }, onError: (e) => toast.error(msg(e)) });
+  const resend = useMutation({ networkMode: "always", retry: false,
+    mutationFn: async (channel: string) => {
+      const { data, error } = await (supabase.rpc as any)("admin_resend_unconfirmed_messages", { _channel: channel, _reason: reason });
+      if (error) throw error; return data as number;
+    },
+    onSuccess: (n) => { toast.success(`${n} unconfirmed message(s) queued again`); setReason(""); refresh(); }, onError: (e) => toast.error(msg(e)) });
   const run = useMutation({ networkMode: "always", retry: false, mutationFn: () => dispatch({ data: {} }),
     onSuccess: (s) => { toast.success(`Processed ${s.processed}: ${s.sent} sent, ${s.failed} failed, ${s.skipped} skipped`); refresh(); },
     onError: (e) => toast.error(msg(e)) });
@@ -84,12 +90,18 @@ function MessagingPage() {
                       : Object.entries(c.counts).map(([k, n]) => <li key={k} className="flex justify-between"><span>{STATUS_LABEL[k] ?? k}</span><span className="tabular-nums">{String(n)}</span></li>)}
                   </ul>
                   <Button variant="outline" className="min-h-11 w-full" disabled={retry.isPending} onClick={() => retry.mutate(c.channel)}>Retry failed (last 3 days)</Button>
+                  {Number(c.counts?.unconfirmed ?? 0) > 0 && (
+                    <Button variant="outline" className="min-h-11 w-full" disabled={resend.isPending}
+                      onClick={() => { if (window.confirm("These messages may already have reached people. Resend anyway?")) resend.mutate(c.channel); }}>
+                      Resend unconfirmed
+                    </Button>
+                  )}
                 </section>
               );
             })}
           </div>
           <Button className="min-h-11" disabled={run.isPending} onClick={() => run.mutate()}>{run.isPending ? "Sending…" : "Send waiting messages now"}</Button>
-          <p className="text-xs text-muted-foreground">Credentials are set on the server only (Resend for email, Twilio for SMS/WhatsApp). Without them, messages are marked "Provider not connected" and people still get the in-app notification. Emergency broadcasts are queued here automatically. Waiting messages send right away when queued; failed ones retry with growing gaps, checked every hour.</p>
+          <p className="text-xs text-muted-foreground">Credentials are set on the server only (Resend for email, Twilio for SMS/WhatsApp). Without them, messages are marked "Provider not connected" and people still get the in-app notification. Emergency broadcasts are queued here automatically. Waiting messages send right away when queued; failed ones retry with growing gaps, checked every hour. If a send is interrupted, it is never resent blindly: email reuses the same delivery key so the provider drops duplicates, SMS/WhatsApp are checked with the provider first, and anything that can't be confirmed is marked "Not confirmed" for you to decide.</p>
         </div>
       )}
     </PageShell>

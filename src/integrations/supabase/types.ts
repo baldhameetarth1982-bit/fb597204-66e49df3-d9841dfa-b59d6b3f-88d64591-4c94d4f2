@@ -5685,6 +5685,7 @@ export type Database = {
           last_error: string | null
           next_attempt_at: string
           provider_message_id: string | null
+          send_started_at: string | null
           society_id: string | null
           source_id: string | null
           source_kind: string
@@ -5703,6 +5704,7 @@ export type Database = {
           last_error?: string | null
           next_attempt_at?: string
           provider_message_id?: string | null
+          send_started_at?: string | null
           society_id?: string | null
           source_id?: string | null
           source_kind: string
@@ -5721,6 +5723,7 @@ export type Database = {
           last_error?: string | null
           next_attempt_at?: string
           provider_message_id?: string | null
+          send_started_at?: string | null
           society_id?: string | null
           source_id?: string | null
           source_kind?: string
@@ -12952,6 +12955,10 @@ export type Database = {
       admin_renew_tenancy: {
         Args: { _flat_resident_id: string; _new_lease_ends_on: string }
         Returns: undefined
+      }
+      admin_resend_unconfirmed_messages: {
+        Args: { _channel: string; _reason: string }
+        Returns: number
       }
       admin_reset_society_branding: {
         Args: { _society_id: string }

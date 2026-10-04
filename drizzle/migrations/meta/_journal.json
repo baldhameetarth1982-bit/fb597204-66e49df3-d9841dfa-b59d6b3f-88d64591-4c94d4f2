@@ -1317,6 +1317,20 @@
       "when": 1791140770869,
       "tag": "0187_super_admin_reason_required_legacy",
       "breakpoints": true
+    },
+    {
+      "idx": 188,
+      "version": "7",
+      "when": 1791142192126,
+      "tag": "0188_messaging_crash_safe_delivery",
+      "breakpoints": true
+    },
+    {
+      "idx": 189,
+      "version": "7",
+      "when": 1791142266332,
+      "tag": "0189_messaging_resend_unconfirmed_rate_limit_fix",
+      "breakpoints": true
     }
   ]
 }

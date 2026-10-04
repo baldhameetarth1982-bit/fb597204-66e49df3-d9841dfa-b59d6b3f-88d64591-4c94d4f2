@@ -1345,6 +1345,13 @@
       "when": 1791143629926,
       "tag": "0191_invite_code_audit_and_rate_limit",
       "breakpoints": true
+    },
+    {
+      "idx": 192,
+      "version": "7",
+      "when": 1791143675704,
+      "tag": "0192_revoke_anon_internal_rpcs",
+      "breakpoints": true
     }
   ]
 }

@@ -54,7 +54,7 @@ Legend:
 | leaderboard | Leaderboard | Community & Gamification | Pro | built | /society/leaderboard |
 | ai_digest | AI Digest & Insights | AI & Insights | Premium | built | /society/digest |
 | custom_branding | Custom Branding | Settings & Admin | Premium | built | /society/branding |
-| advanced_automation | Advanced Automation | Settings & Admin | Premium | partial | /society/automations |
+| advanced_automation | Advanced Automation | Settings & Admin | Premium | built | /society/automations |
 
 ## Audit findings
 

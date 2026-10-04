@@ -1268,6 +1268,20 @@
       "when": 1791131671378,
       "tag": "0180_material_pass_expiry_and_request_audit",
       "breakpoints": true
+    },
+    {
+      "idx": 181,
+      "version": "7",
+      "when": 1791134043721,
+      "tag": "0181_guard_checkin_by_code_safe",
+      "breakpoints": true
+    },
+    {
+      "idx": 182,
+      "version": "7",
+      "when": 1791134077781,
+      "tag": "0182_sos_notify_committee",
+      "breakpoints": true
     }
   ]
 }

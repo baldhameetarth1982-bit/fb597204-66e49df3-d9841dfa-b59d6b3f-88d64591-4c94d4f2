@@ -1359,6 +1359,13 @@
       "when": 1791143833324,
       "tag": "0193_former_member_lockout_amenities",
       "breakpoints": true
+    },
+    {
+      "idx": 194,
+      "version": "7",
+      "when": 1791144199501,
+      "tag": "0194_former_member_lockout_billing_schedule",
+      "breakpoints": true
     }
   ]
 }

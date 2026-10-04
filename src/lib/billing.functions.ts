@@ -156,7 +156,9 @@ export const runBillingNow = createServerFn({ method: "POST" })
     const { error: insErr } = await supabase.from("bills").insert(rows);
     if (insErr) throw new Error(insErr.message.includes("approval_required")
       ? "This society requires a second approver. Create bills from Bill Studio → Generate so the run can be reviewed and approved."
-      : insErr.message);
+      : insErr.message.includes("duplicate_bill_for_period")
+        ? "Another billing run just created bills for this month. Refresh to see them; nothing was billed twice."
+        : "Bills could not be created. Please try again.");
 
     const total = rows.reduce((s, r) => s + r.amount, 0);
     const nextRun = computeNextRun(sch.cycle as any, sch.anchor_day as number).toISOString();

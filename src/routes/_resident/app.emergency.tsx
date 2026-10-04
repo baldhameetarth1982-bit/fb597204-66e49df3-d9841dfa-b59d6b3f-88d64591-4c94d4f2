@@ -108,7 +108,7 @@ function EmergencyPage() {
           All numbers
         </h2>
         {contacts.map((c) => (
-          <Card key={c.label} className="rounded-2xl">
+          <Card key={`${c.label}-${c.number}`} className="rounded-2xl">
             <CardContent className="p-4 flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl grid place-items-center bg-destructive/10 text-destructive">
                 <Phone className="h-4 w-4" />

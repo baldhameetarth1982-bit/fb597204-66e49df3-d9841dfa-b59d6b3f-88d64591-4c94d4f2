@@ -32,12 +32,18 @@ export const Route = createFileRoute("/welcome")({
 });
 
 const capabilities = [
-  { icon: Wallet, title: "Billing, payments & accounts", body: "Bills and dues, Cash, Bank Transfer, UPI QR and online payments, receipts, books, budgets and procurement." },
-  { icon: Users, title: "Residents & households", body: "Owners, tenants, family, pets, temporary occupants, vehicles, parking and move-in/move-out history." },
-  { icon: ShieldCheck, title: "Gate, guards & safety", body: "Visitors, passes, guard shifts, patrol rounds, SOS and emergency broadcasts." },
-  { icon: Building2, title: "Amenities & operations", body: "Amenity booking, classes, helpdesk, staff, assets and inventory." },
-  { icon: Bell, title: "Governance & community", body: "Notices, meetings, AGM, elections, polls, groups, events, services and marketplace." },
-  { icon: FileText, title: "Documents, AI & migration", body: "Private document vault, an AI Secretary that answers only from your documents, and guided import from spreadsheets or other apps." },
+  { icon: Users, title: "Residents & households", body: "Owners, tenants, family, pets, domestic help, temporary occupants, multiple homes, home history and No-Dues." },
+  { icon: Users, title: "Owner & tenant lifecycle", body: "Move-in, lease agreements, renewals, reminders and move-out — with history that is never overwritten." },
+  { icon: Wallet, title: "Bills & dues", body: "Recurring and one-off bills, arrears, late fees and defaulters. Pay by Cash, Bank Transfer, UPI QR or online Pay now." },
+  { icon: Wallet, title: "Finance & accounting", body: "Receipts, income, expenses, ledger, journals, trial balance, balance sheet, GST/TDS, year close, Auditor Pack and Tally export." },
+  { icon: Building2, title: "Procurement & budgets", body: "Requests, quotations, approvals, purchase orders, vendor invoices and budgets linked to real expenses." },
+  { icon: ShieldCheck, title: "Gate, visitors & security", body: "Visitor approvals, pass codes, guard shifts, patrol rounds, SOS, child/elder safety and emergency broadcasts." },
+  { icon: ShieldCheck, title: "Parking & EV", body: "Slots, vehicles, violations with photos and EV charging sessions." },
+  { icon: Building2, title: "Amenities & classes", body: "Booking, eligibility rules, waitlists, classes, instructors, QR check-in and reminders." },
+  { icon: Building2, title: "Operations, helpdesk & staff", body: "Helpdesk with SLAs, staff attendance, vendors and ratings, assets, maintenance schedules and inventory." },
+  { icon: Bell, title: "Governance", body: "Notices with acknowledgements, meetings and minutes, AGM, secret-ballot elections, votes and surveys." },
+  { icon: Bell, title: "Community", body: "Groups, events with RSVP, marketplace, and Services & Discovery." },
+  { icon: FileText, title: "Documents, AI & importing", body: "Private document vault, an AI Secretary that answers only from your society's documents, and guided import from spreadsheets, MyGate, ADDA or NoBrokerHood." },
 ];
 
 const workflows = [
@@ -99,7 +105,7 @@ function Landing() {
           </div>
           <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border lg:col-span-4 lg:grid-cols-1">
             {[
-              ["Billing", "Cash & Bank Transfer"],
+              ["Payments", "Cash, Bank, UPI QR, Online"],
               ["Access", "Role-based committee"],
               ["Records", "Append-only ledger"],
               ["Platform fee", "None"],

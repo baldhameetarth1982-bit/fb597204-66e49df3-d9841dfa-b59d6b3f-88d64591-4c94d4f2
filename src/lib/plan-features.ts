@@ -636,7 +636,7 @@ const CATALOG: FeatureCatalogEntry[] = [
     route: "/society/branding",
     keywords: ["brand", "logo", "white label"],
     icon: "Sparkles",
-    status: "partial",
+    status: "available",
     backendReady: true,
     navigationGroup: "Administration",
   },

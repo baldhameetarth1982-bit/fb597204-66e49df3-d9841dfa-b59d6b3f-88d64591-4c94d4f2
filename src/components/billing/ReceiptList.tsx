@@ -154,7 +154,7 @@ export function ReceiptList({ societyId, showHome }: { societyId?: string | null
                   <p className={`font-mono text-sm font-semibold break-all ${voided ? "line-through text-muted-foreground" : ""}`}>{r.receipt_number}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     {[showHome && r.home ? `House ${r.home}` : null, r.bill_number_snapshot ? `Bill ${r.bill_number_snapshot}` : null,
-                      r.method_snapshot ? (METHOD[r.method_snapshot] ?? r.method_snapshot) : null, r.issued_at ? formatDate(r.issued_at) : null].filter(Boolean).join(" · ")}
+                      r.method_snapshot ? methodLabel(r.method_snapshot) : null, r.issued_at ? formatDate(r.issued_at) : null].filter(Boolean).join(" · ")}
                   </p>
                   {r.reference_snapshot && <p className="text-xs text-muted-foreground break-all">Ref {r.reference_snapshot}</p>}
                   {voided && (
@@ -164,7 +164,7 @@ export function ReceiptList({ societyId, showHome }: { societyId?: string | null
                 <div className="text-right">
                   <p className={`font-semibold tabular-nums ${voided ? "line-through text-muted-foreground" : ""}`}>{r.amount_snapshot != null ? INR(Number(r.amount_snapshot)) : "—"}</p>
                   <StatusChip tone={voided ? "neutral" : "success"} className="mt-1">{voided ? "Voided" : "Verified"}</StatusChip>
-                  <Button size="sm" variant="ghost" className="mt-1 min-h-11 px-2" aria-label={`Download receipt ${r.receipt_number}`} onClick={() => void downloadReceipt(r, voided)}>
+                  <Button size="sm" variant="ghost" className="mt-1 min-h-11 px-2" aria-label={`Download receipt ${r.receipt_number}`} onClick={() => void downloadReceipt(r, voided, societyName)}>
                     <Download className="h-4 w-4" />
                   </Button>
                 </div>

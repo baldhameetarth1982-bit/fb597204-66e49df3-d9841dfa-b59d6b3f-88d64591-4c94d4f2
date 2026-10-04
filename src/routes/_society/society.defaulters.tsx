@@ -12,21 +12,29 @@ import { StatusChip } from "@/components/system/StatusChip";
 import { toSafeFinanceError } from "@/lib/finance-safe-error";
 import { formatDate } from "@/utils/format";
 import { cn } from "@/lib/utils";
+import { isOverdue, todayIST } from "@/lib/overdue";
 
 export const Route = createFileRoute("/_society/society/defaulters")({
   head: () => ({
     meta: [
       { title: "Outstanding dues — SociyoHub" },
       { name: "description", content: "Homes with unpaid and overdue society bills." },
+      { property: "og:title", content: "Outstanding dues — SociyoHub" },
+      { property: "og:description", content: "Homes with unpaid and overdue society bills." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: DefaultersPage,
 });
 
-type OpenBill = { id: string; period: string; due: string | null; outstanding: number; overdue: boolean };
+type OpenBill = { id: string; period: string; due: string | null; outstanding: number; overdue: boolean; daysOverdue: number };
 type Home = { flatId: string; label: string; bills: OpenBill[]; total: number; overdueCount: number; oldestDue: string | null };
+type Filter = "all" | "overdue" | "90";
 
 const INR = (v: number) => `₹${v.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+const daysBetween = (from: string, to: string) => Math.max(0, Math.round((Date.parse(to) - Date.parse(from)) / 86400000));
+const maxDays = (h: Home) => h.bills.reduce((m, b) => Math.max(m, b.daysOverdue), 0);
 
 /**
  * Defaulters — committee only. Amounts come from the get_outstanding_dues
@@ -41,7 +49,7 @@ function DefaultersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState("");
-  const [onlyOverdue, setOnlyOverdue] = useState(false);
+  const [filter, setFilter] = useState<Filter>("all");
 
   async function load() {
     if (!societyId) { setLoading(false); return; }
@@ -53,14 +61,14 @@ function DefaultersPage() {
       const { data, error: rErr } = await supabase.rpc("get_outstanding_dues", { _society_id: societyId });
       if (rErr) throw rErr;
       const list = data ?? [];
-      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const today = todayIST();
       const map = new Map<string, Home>();
       for (const b of list) {
         const outstanding = Math.round(Number(b.outstanding) * 100) / 100;
         if (!b.flat_id || !Number.isFinite(outstanding) || outstanding <= 0) continue;
-        const overdue = !!b.due_date && new Date(b.due_date) < today;
+        const overdue = isOverdue(b.due_date, true);
         const h = map.get(b.flat_id) ?? { flatId: b.flat_id, label: b.flat_label ?? "Home", bills: [], total: 0, overdueCount: 0, oldestDue: null };
-        h.bills.push({ id: b.bill_id, period: b.period_label ?? "Bill", due: b.due_date, outstanding, overdue });
+        h.bills.push({ id: b.bill_id, period: b.period_label ?? "Bill", due: b.due_date, outstanding, overdue, daysOverdue: overdue ? daysBetween(b.due_date!, today) : 0 });
         h.total += outstanding;
         if (overdue) h.overdueCount++;
         if (b.due_date && (!h.oldestDue || b.due_date < h.oldestDue)) h.oldestDue = b.due_date;
@@ -78,13 +86,15 @@ function DefaultersPage() {
   useEffect(() => { void load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [societyId]);
 
   const filtered = useMemo(() => homes.filter((h) => {
-    if (onlyOverdue && h.overdueCount === 0) return false;
+    if (filter === "overdue" && h.overdueCount === 0) return false;
+    if (filter === "90" && maxDays(h) <= 90) return false;
     return !q.trim() || h.label.toLowerCase().includes(q.trim().toLowerCase());
-  }), [homes, q, onlyOverdue]);
+  }), [homes, q, filter]);
 
   const ready = !sidLoading && !loading && !error;
   const totalDue = homes.reduce((s, h) => s + h.total, 0);
   const overdueHomes = homes.filter((h) => h.overdueCount > 0).length;
+  const longOverdue = homes.filter((h) => maxDays(h) > 90).length;
 
   return (
     <PageShell>
@@ -108,15 +118,16 @@ function DefaultersPage() {
         <>
           <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center">
             <SearchField label="Search by house" placeholder="Search by house" value={q} onChange={setQ} />
-            <SegmentedFilter<"all" | "overdue"> label="Dues filter" value={onlyOverdue ? "overdue" : "all"} onChange={(k) => setOnlyOverdue(k === "overdue")} options={[
+            <SegmentedFilter<Filter> label="Dues filter" value={filter} onChange={setFilter} options={[
               { key: "all", label: "All homes", count: homes.length },
-              { key: "overdue", label: "Overdue only", count: overdueHomes },
+              { key: "overdue", label: "Overdue", count: overdueHomes },
+              { key: "90", label: "90+ days", count: longOverdue },
             ]} />
             <Button variant="outline" className="min-h-11 md:ml-auto" disabled={filtered.length === 0}
               onClick={() => writeSafeWorkbook(
                 filtered.flatMap((h) => h.bills.map((b) => ({
                   Home: h.label, Bill: b.period, "Due date": b.due ?? "",
-                  Status: b.overdue ? "Overdue" : "Due", "Outstanding (Rs.)": b.outstanding,
+                  Status: b.overdue ? "Overdue" : "Due", "Days overdue": b.daysOverdue, "Outstanding (Rs.)": b.outstanding,
                 }))),
                 "Outstanding dues", `outstanding-dues-${new Date().toISOString().slice(0, 10)}.xlsx`,
               )}>
@@ -149,7 +160,7 @@ function DefaultersPage() {
                             <span className="truncate">{b.period}</span>
                             <span className="text-right font-medium tabular-nums sm:order-last">{INR(b.outstanding)}</span>
                             <span className={cn("col-span-2 text-xs sm:col-span-1", b.overdue ? "text-destructive" : "text-muted-foreground")}>
-                              {b.due ? `${b.overdue ? "Overdue since" : "Due"} ${formatDate(b.due)}` : "No due date"}
+                              {b.due ? `${b.overdue ? "Overdue since" : "Due"} ${formatDate(b.due)}${b.overdue ? ` · ${b.daysOverdue} day${b.daysOverdue === 1 ? "" : "s"}` : ""}` : "No due date"}
                             </span>
                           </Link>
                         </li>

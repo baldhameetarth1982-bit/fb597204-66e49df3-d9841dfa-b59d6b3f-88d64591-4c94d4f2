@@ -15870,6 +15870,7 @@ export type Database = {
         Args: { _society_id: string; _state: Json }
         Returns: undefined
       }
+      scheduler_mark_stalled: { Args: never; Returns: number }
       scheduler_prune_runs: { Args: never; Returns: number }
       scheduler_run_begin: {
         Args: { _job: string; _run_key: string }

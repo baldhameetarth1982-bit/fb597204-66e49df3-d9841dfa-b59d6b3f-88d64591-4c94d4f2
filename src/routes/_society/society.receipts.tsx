@@ -18,7 +18,7 @@ function SocietyReceiptsPage() {
   const { societyId, loading } = useSocietyId();
   return (
     <PageShell>
-      <PageHeader title="Receipts" description="Issued only for verified Cash and Bank Transfer payments. Voided receipts stay listed for the record." />
+      <PageHeader title="Receipts" description="Issued only for confirmed payments — Cash, Bank Transfer, UPI QR or online. Voided receipts stay listed for the record." />
       <div className="mb-5 rounded-2xl border border-border bg-card"><BillingCenterTabs /></div>
       {loading ? (
         <div className="h-20 rounded-2xl bg-muted animate-pulse" aria-busy="true" aria-label="Loading" />

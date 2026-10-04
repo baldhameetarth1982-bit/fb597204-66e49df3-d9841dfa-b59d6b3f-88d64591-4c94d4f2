@@ -47,9 +47,9 @@ function AboutPage() {
           </p>
           <p>
             Our product values are calm design, honest pricing and reliable
-            fundamentals. Cash and Bank Transfer are first-class options for
-            maintenance collection — no forced online gateway, no hidden
-            platform fee.
+            fundamentals. Maintenance can be collected by Cash, Bank Transfer, UPI QR or
+            online Pay Now where the plan allows — every payment is confirmed
+            before a receipt is issued, with no platform fee.
           </p>
         </section>
 

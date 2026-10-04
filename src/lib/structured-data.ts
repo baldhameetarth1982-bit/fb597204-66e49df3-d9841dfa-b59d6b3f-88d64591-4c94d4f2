@@ -57,7 +57,7 @@ function baseGraph() {
       "@id": LD_IDS.product,
       name: BRAND.name,
       description:
-        "Society management app for Indian apartment and residential societies: maintenance billing with Cash and Bank Transfer records, society accounts and expenses, notices, help-desk complaints, visitor and gate management, and resident communication.",
+        "Society management app for Indian apartment and residential societies: maintenance billing with Cash, Bank Transfer, UPI QR and online payment records, society accounts and expenses, notices, help-desk complaints, visitor and gate management, and resident communication.",
       url: `${SITE}/`,
       operatingSystem: "Web, Android",
       applicationCategory: "BusinessApplication",

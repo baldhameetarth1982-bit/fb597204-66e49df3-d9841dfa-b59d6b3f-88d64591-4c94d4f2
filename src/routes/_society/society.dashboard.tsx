@@ -198,7 +198,7 @@ function SocietyDashboard() {
   const outstandingLabel = data?.summaryOk ? INR.format(data.outstandingAmount) : "—";
   const collectedLabel = data && data.collectedThisMonth !== null ? INR.format(data.collectedThisMonth) : "—";
   const attention = data ? [
-    { to: "/society/payments", icon: BadgeCheck, tone: "warning" as const, label: "Payments to verify", hint: "Cash & bank transfers awaiting a check", count: data.paymentsToVerify },
+    { to: "/society/payments", icon: BadgeCheck, tone: "warning" as const, label: "Payments to verify", hint: "Cash, bank and UPI payments awaiting a check", count: data.paymentsToVerify },
     { to: "/society/approvals", icon: UserCheck, tone: "primary" as const, label: "Residents to approve", hint: "Join requests waiting", count: data.pendingApprovals },
     { to: "/society/helpdesk", icon: LifeBuoy, tone: "info" as const, label: "Open requests", hint: "Complaints & repairs", count: data.openRequests },
     { to: "/society/helpdesk", icon: FileText, tone: "primary" as const, label: "Requests needing approval", hint: "Renovation, events, NOC", count: data.ticketApprovals },

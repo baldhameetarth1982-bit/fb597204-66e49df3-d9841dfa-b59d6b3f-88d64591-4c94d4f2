@@ -640,7 +640,6 @@ const CATALOG: FeatureCatalogEntry[] = [
     backendReady: true,
     navigationGroup: "Administration",
   },
-
   {
     key: "advanced_automation",
     label: "Advanced Automation",

@@ -47,6 +47,7 @@ import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } fr
 import { Route as Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRouteImport } from './routes/[.well-known]/assetlinks[.]json'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as VerifyNoDuesTokenRouteImport } from './routes/verify.no-dues.$token'
+import { Route as SocietySocietyVouchersRouteImport } from './routes/_society/society.vouchers'
 import { Route as SocietySocietyVotesRouteImport } from './routes/_society/society.votes'
 import { Route as SocietySocietyVisitorsRouteImport } from './routes/_society/society.visitors'
 import { Route as SocietySocietyVerificationsRouteImport } from './routes/_society/society.verifications'
@@ -400,6 +401,11 @@ const VerifyNoDuesTokenRoute = VerifyNoDuesTokenRouteImport.update({
   id: '/verify/no-dues/$token',
   path: '/verify/no-dues/$token',
   getParentRoute: () => rootRouteImport,
+} as any)
+const SocietySocietyVouchersRoute = SocietySocietyVouchersRouteImport.update({
+  id: '/society/vouchers',
+  path: '/society/vouchers',
+  getParentRoute: () => SocietyRoute,
 } as any)
 const SocietySocietyVotesRoute = SocietySocietyVotesRouteImport.update({
   id: '/society/votes',
@@ -1431,6 +1437,7 @@ export interface FileRoutesByFullPath {
   '/society/verifications': typeof SocietySocietyVerificationsRoute
   '/society/visitors': typeof SocietySocietyVisitorsRoute
   '/society/votes': typeof SocietySocietyVotesRoute
+  '/society/vouchers': typeof SocietySocietyVouchersRoute
   '/verify/no-dues/$token': typeof VerifyNoDuesTokenRoute
   '/admin/societies/$id': typeof AdminAdminSocietiesIdRoute
   '/app/bills/$id': typeof ResidentAppBillsIdRoute
@@ -1630,6 +1637,7 @@ export interface FileRoutesByTo {
   '/society/verifications': typeof SocietySocietyVerificationsRoute
   '/society/visitors': typeof SocietySocietyVisitorsRoute
   '/society/votes': typeof SocietySocietyVotesRoute
+  '/society/vouchers': typeof SocietySocietyVouchersRoute
   '/verify/no-dues/$token': typeof VerifyNoDuesTokenRoute
   '/admin/societies/$id': typeof AdminAdminSocietiesIdRoute
   '/app/bills/$id': typeof ResidentAppBillsIdRoute
@@ -1835,6 +1843,7 @@ export interface FileRoutesById {
   '/_society/society/verifications': typeof SocietySocietyVerificationsRoute
   '/_society/society/visitors': typeof SocietySocietyVisitorsRoute
   '/_society/society/votes': typeof SocietySocietyVotesRoute
+  '/_society/society/vouchers': typeof SocietySocietyVouchersRoute
   '/verify/no-dues/$token': typeof VerifyNoDuesTokenRoute
   '/_admin/admin/societies/$id': typeof AdminAdminSocietiesIdRoute
   '/_resident/app/bills/$id': typeof ResidentAppBillsIdRoute
@@ -2037,6 +2046,7 @@ export interface FileRouteTypes {
     | '/society/verifications'
     | '/society/visitors'
     | '/society/votes'
+    | '/society/vouchers'
     | '/verify/no-dues/$token'
     | '/admin/societies/$id'
     | '/app/bills/$id'
@@ -2236,6 +2246,7 @@ export interface FileRouteTypes {
     | '/society/verifications'
     | '/society/visitors'
     | '/society/votes'
+    | '/society/vouchers'
     | '/verify/no-dues/$token'
     | '/admin/societies/$id'
     | '/app/bills/$id'
@@ -2440,6 +2451,7 @@ export interface FileRouteTypes {
     | '/_society/society/verifications'
     | '/_society/society/visitors'
     | '/_society/society/votes'
+    | '/_society/society/vouchers'
     | '/verify/no-dues/$token'
     | '/_admin/admin/societies/$id'
     | '/_resident/app/bills/$id'
@@ -2787,6 +2799,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/verify/no-dues/$token'
       preLoaderRoute: typeof VerifyNoDuesTokenRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_society/society/vouchers': {
+      id: '/_society/society/vouchers'
+      path: '/society/vouchers'
+      fullPath: '/society/vouchers'
+      preLoaderRoute: typeof SocietySocietyVouchersRouteImport
+      parentRoute: typeof SocietyRoute
     }
     '/_society/society/votes': {
       id: '/_society/society/votes'
@@ -4175,6 +4194,7 @@ interface SocietyRouteChildren {
   SocietySocietyVerificationsRoute: typeof SocietySocietyVerificationsRoute
   SocietySocietyVisitorsRoute: typeof SocietySocietyVisitorsRoute
   SocietySocietyVotesRoute: typeof SocietySocietyVotesRoute
+  SocietySocietyVouchersRoute: typeof SocietySocietyVouchersRoute
   SocietySocietyBillStudioGenerateRoute: typeof SocietySocietyBillStudioGenerateRoute
   SocietySocietyBillingGenerateRoute: typeof SocietySocietyBillingGenerateRoute
   SocietySocietyBillsIdRoute: typeof SocietySocietyBillsIdRoute
@@ -4263,6 +4283,7 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyVerificationsRoute: SocietySocietyVerificationsRoute,
   SocietySocietyVisitorsRoute: SocietySocietyVisitorsRoute,
   SocietySocietyVotesRoute: SocietySocietyVotesRoute,
+  SocietySocietyVouchersRoute: SocietySocietyVouchersRoute,
   SocietySocietyBillStudioGenerateRoute: SocietySocietyBillStudioGenerateRoute,
   SocietySocietyBillingGenerateRoute: SocietySocietyBillingGenerateRoute,
   SocietySocietyBillsIdRoute: SocietySocietyBillsIdRoute,

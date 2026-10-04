@@ -51,7 +51,7 @@ export const createCategorizedExpense = createServerFn({ method: "POST" })
       _society_id: data.societyId, _category_id: data.categoryId, _vendor_id: data.vendorId, _amount: data.amount,
       _expense_date: data.expenseDate, _payment_method: data.paymentMethod, _description: data.description ?? null, _request_id: data.requestId,
     });
-    return z.object({ expense_id: uuid, journal_entry_id: uuid, document_no: z.string().optional() }).passthrough().parse(res);
+    return z.object({ expense_id: uuid, journal_entry_id: uuid, document_no: z.string().optional() }).parse(res);
   });
 
 export const issueVoucher = createServerFn({ method: "POST" })

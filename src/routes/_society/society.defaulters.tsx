@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, ChevronRight } from "lucide-react";
+import { AlertTriangle, ChevronRight, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { writeSafeWorkbook } from "@/lib/spreadsheet-safety";
 import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { PageHeader, PageShell } from "@/components/shared/PageHeader";
@@ -110,6 +112,16 @@ function DefaultersPage() {
               { key: "all", label: "All homes", count: homes.length },
               { key: "overdue", label: "Overdue only", count: overdueHomes },
             ]} />
+            <Button variant="outline" className="min-h-11 md:ml-auto" disabled={filtered.length === 0}
+              onClick={() => writeSafeWorkbook(
+                filtered.flatMap((h) => h.bills.map((b) => ({
+                  Home: h.label, Bill: b.period, "Due date": b.due ?? "",
+                  Status: b.overdue ? "Overdue" : "Due", "Outstanding (Rs.)": b.outstanding,
+                }))),
+                "Outstanding dues", `outstanding-dues-${new Date().toISOString().slice(0, 10)}.xlsx`,
+              )}>
+              <Download className="mr-1 h-4 w-4" aria-hidden />Download list
+            </Button>
           </div>
           {filtered.length === 0 ? (
             <ListEmpty icon={AlertTriangle} title="No matching homes">Try another house or clear the overdue filter.</ListEmpty>

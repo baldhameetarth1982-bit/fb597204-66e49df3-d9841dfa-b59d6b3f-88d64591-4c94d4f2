@@ -45,3 +45,6 @@ reports/
 android/app/
 android/*.aab
 android/*.apk
+
+# Local Netlify folder
+.netlify

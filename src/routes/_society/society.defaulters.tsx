@@ -49,7 +49,7 @@ function DefaultersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState("");
-  const [onlyOverdue, setOnlyOverdue] = useState(false);
+  const [filter, setFilter] = useState<Filter>("all");
 
   async function load() {
     if (!societyId) { setLoading(false); return; }
@@ -86,13 +86,15 @@ function DefaultersPage() {
   useEffect(() => { void load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [societyId]);
 
   const filtered = useMemo(() => homes.filter((h) => {
-    if (onlyOverdue && h.overdueCount === 0) return false;
+    if (filter === "overdue" && h.overdueCount === 0) return false;
+    if (filter === "90" && maxDays(h) <= 90) return false;
     return !q.trim() || h.label.toLowerCase().includes(q.trim().toLowerCase());
-  }), [homes, q, onlyOverdue]);
+  }), [homes, q, filter]);
 
   const ready = !sidLoading && !loading && !error;
   const totalDue = homes.reduce((s, h) => s + h.total, 0);
   const overdueHomes = homes.filter((h) => h.overdueCount > 0).length;
+  const longOverdue = homes.filter((h) => maxDays(h) > 90).length;
 
   return (
     <PageShell>
@@ -116,15 +118,16 @@ function DefaultersPage() {
         <>
           <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center">
             <SearchField label="Search by house" placeholder="Search by house" value={q} onChange={setQ} />
-            <SegmentedFilter<"all" | "overdue"> label="Dues filter" value={onlyOverdue ? "overdue" : "all"} onChange={(k) => setOnlyOverdue(k === "overdue")} options={[
+            <SegmentedFilter<Filter> label="Dues filter" value={filter} onChange={setFilter} options={[
               { key: "all", label: "All homes", count: homes.length },
-              { key: "overdue", label: "Overdue only", count: overdueHomes },
+              { key: "overdue", label: "Overdue", count: overdueHomes },
+              { key: "90", label: "90+ days", count: longOverdue },
             ]} />
             <Button variant="outline" className="min-h-11 md:ml-auto" disabled={filtered.length === 0}
               onClick={() => writeSafeWorkbook(
                 filtered.flatMap((h) => h.bills.map((b) => ({
                   Home: h.label, Bill: b.period, "Due date": b.due ?? "",
-                  Status: b.overdue ? "Overdue" : "Due", "Outstanding (Rs.)": b.outstanding,
+                  Status: b.overdue ? "Overdue" : "Due", "Days overdue": b.daysOverdue, "Outstanding (Rs.)": b.outstanding,
                 }))),
                 "Outstanding dues", `outstanding-dues-${new Date().toISOString().slice(0, 10)}.xlsx`,
               )}>
@@ -157,7 +160,7 @@ function DefaultersPage() {
                             <span className="truncate">{b.period}</span>
                             <span className="text-right font-medium tabular-nums sm:order-last">{INR(b.outstanding)}</span>
                             <span className={cn("col-span-2 text-xs sm:col-span-1", b.overdue ? "text-destructive" : "text-muted-foreground")}>
-                              {b.due ? `${b.overdue ? "Overdue since" : "Due"} ${formatDate(b.due)}` : "No due date"}
+                              {b.due ? `${b.overdue ? "Overdue since" : "Due"} ${formatDate(b.due)}${b.overdue ? ` · ${b.daysOverdue} day${b.daysOverdue === 1 ? "" : "s"}` : ""}` : "No due date"}
                             </span>
                           </Link>
                         </li>

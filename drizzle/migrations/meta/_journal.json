@@ -1303,6 +1303,13 @@
       "when": 1791139720930,
       "tag": "0185_event_cancel_notify_attendees",
       "breakpoints": true
+    },
+    {
+      "idx": 186,
+      "version": "7",
+      "when": 1791140657340,
+      "tag": "0186_community_former_member_lockout",
+      "breakpoints": true
     }
   ]
 }

@@ -11854,6 +11854,7 @@ export type Database = {
       }
     }
     Functions: {
+      _active_member_society_id: { Args: never; Returns: string }
       _agm_audit: {
         Args: {
           _a: Database["public"]["Tables"]["agms"]["Row"]

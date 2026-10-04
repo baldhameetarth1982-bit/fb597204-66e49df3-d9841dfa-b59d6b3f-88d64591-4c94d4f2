@@ -640,19 +640,7 @@ const CATALOG: FeatureCatalogEntry[] = [
     backendReady: true,
     navigationGroup: "Administration",
   },
-  {
-    key: "online_gateway_request",
-    label: "Online Gateway Request",
-    shortDescription: "Request enablement of an online maintenance payment gateway.",
-    category: "integrations",
-    minPlan: "premium",
-    roles: ["society_admin"],
-    keywords: ["gateway", "razorpay", "online"],
-    icon: "Wallet",
-    status: "planned",
-    backendReady: false,
-    navigationGroup: "Integrations",
-  },
+
   {
     key: "advanced_automation",
     label: "Advanced Automation",

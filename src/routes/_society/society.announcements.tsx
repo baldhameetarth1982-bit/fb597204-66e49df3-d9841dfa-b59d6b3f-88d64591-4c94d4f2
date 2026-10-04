@@ -17,6 +17,7 @@ import { useSocietyId } from "@/hooks/useSocietyId";
 import { cn } from "@/lib/utils";
 import { NOTICE_CATEGORIES, commErrorMessage, liveAt, noticeCategory, type NoticeRow } from "@/lib/notices";
 import { NoticeRosterDialog } from "@/components/notices/NoticeRosterDialog";
+import { NoticeVersionsDialog } from "@/components/notices/NoticeVersionsDialog";
 
 export const Route = createFileRoute("/_society/society/announcements")({
   head: () => ({
@@ -187,6 +188,7 @@ function NoticesAdmin() {
                 {n.status !== "archived" && (
                   <div className="flex gap-2">
                     {tab === "published" && <NoticeRosterDialog noticeId={n.id} title={n.title} requiresAck={!!n.requires_ack} />}
+                    {n.edited_at && <NoticeVersionsDialog noticeId={n.id} title={n.title} />}
                     {editable && <Button variant={tab === "draft" ? "default" : "outline"} className="h-11 flex-1 rounded-xl md:flex-none" onClick={() => edit(n)}>{tab === "draft" ? "Continue" : "Edit"}</Button>}
                     <Button variant="ghost" className="h-11 rounded-xl text-muted-foreground" aria-label={`Archive ${n.title}`} onClick={() => archive(n.id)}><Archive className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Archive</span></Button>
                   </div>

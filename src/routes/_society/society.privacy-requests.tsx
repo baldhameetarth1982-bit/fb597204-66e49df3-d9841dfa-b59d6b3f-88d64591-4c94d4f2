@@ -102,11 +102,11 @@ function PrivacyRequestsAdmin() {
               {open.kind === "correction" && <p className="text-sm text-muted-foreground">Make the correction through the resident's normal record, then record what was changed.</p>}
               {["pending", "under_review"].includes(open.status) ? (
                 <>
-                  <div><Label htmlFor="pr-out">Decision note (shared with the resident)</Label><Textarea id="pr-out" rows={4} maxLength={3000} value={outcome} onChange={(e) => setOutcome(e.target.value)} /></div>
+                  <div><Label htmlFor="pr-out">Decision note (shared with the resident)</Label><Textarea id="pr-out" rows={4} maxLength={3000} value={outcome} onChange={(e) => setOutcome(e.target.value)} aria-describedby="pr-out-hint" /><p id="pr-out-hint" className="mt-1 text-xs text-muted-foreground">{outcome.trim().length < 10 ? "Write at least 10 characters to complete or decline." : "The resident will see this note."}</p></div>
                   <div className="flex flex-wrap gap-2">
                     {open.status === "pending" && <Button variant="outline" className="min-h-11 rounded-xl" disabled={busy} onClick={() => review("under_review")}>Start review</Button>}
-                    <Button className="min-h-11 rounded-xl" disabled={busy} onClick={() => review("completed")}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : open.kind === "deletion" ? "Complete (keep required records)" : "Complete"}</Button>
-                    <Button variant="ghost" className="min-h-11 rounded-xl text-destructive" disabled={busy} onClick={() => review("declined")}>Decline</Button>
+                    <Button className="min-h-11 rounded-xl" disabled={busy || outcome.trim().length < 10} onClick={() => review("completed")}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : open.kind === "deletion" ? "Complete (keep required records)" : "Complete"}</Button>
+                    <Button variant="ghost" className="min-h-11 rounded-xl text-destructive" disabled={busy || outcome.trim().length < 10} onClick={() => review("declined")}>Decline</Button>
                   </div>
                 </>
               ) : (

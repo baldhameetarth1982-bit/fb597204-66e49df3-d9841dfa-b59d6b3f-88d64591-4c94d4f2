@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Gauge, AlertTriangle, Plus, Replace } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { todayIST } from "@/lib/overdue";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { PageHeader, PageShell } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -56,9 +57,10 @@ function MetersPage() {
     for (const r of q.data?.readings ?? []) if (!map.has(r.meter_id)) map.set(r.meter_id, r);
     return map;
   }, [q.data]);
-  const monthStart = new Date(); monthStart.setDate(1);
+  // India calendar month, compared as YYYY-MM-DD strings (a reading on the 1st counts).
+  const monthStart = todayIST().slice(0, 8) + "01";
   const meters = (q.data?.meters ?? []).filter((m) => m.status === "active" && (filter === "all" || m.utility === filter));
-  const missing = meters.filter((m) => { const l = latest.get(m.id); return !l || new Date(l.reading_date) < monthStart; }).length;
+  const missing = meters.filter((m) => { const l = latest.get(m.id); return !l || l.reading_date < monthStart; }).length;
   const abnormal = meters.filter((m) => latest.get(m.id)?.is_abnormal).length;
   const refresh = () => qc.invalidateQueries({ queryKey: ["meters", societyId] });
 

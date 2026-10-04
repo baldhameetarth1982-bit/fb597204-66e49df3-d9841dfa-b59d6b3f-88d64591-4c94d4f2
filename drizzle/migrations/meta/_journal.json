@@ -1296,6 +1296,13 @@
       "when": 1791138830440,
       "tag": "0184_finance_governance_integrity_batch",
       "breakpoints": true
+    },
+    {
+      "idx": 185,
+      "version": "7",
+      "when": 1791139720930,
+      "tag": "0185_event_cancel_notify_attendees",
+      "breakpoints": true
     }
   ]
 }

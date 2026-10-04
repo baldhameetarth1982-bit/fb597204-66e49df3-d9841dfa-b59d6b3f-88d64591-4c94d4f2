@@ -12714,6 +12714,15 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_notice_ack_roster: {
+        Args: { _notice_id: string }
+        Returns: {
+          acked_at: string
+          full_name: string
+          homes: string
+          opened_at: string
+        }[]
+      }
       admin_parking_archive: { Args: { _id: string }; Returns: undefined }
       admin_parking_assign: {
         Args: {

@@ -1,3 +1,5 @@
+import { issueBill } from "@/lib/accounts-documents.functions";
+import { toSafeFinanceMessage as __tsfm } from "@/lib/finance-safe-error";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
@@ -291,6 +293,7 @@ function RecordView({
         title={r.category?.display_name ?? "Income record"}
         subtitle={`${fmtPaymentDate(r.payment_date)} · ${r.payment_method.replace(/_/g, " ")}`}
       />
+      {r.verification_status !== "rejected" && r.verification_status !== "reversed" && <IssueBillCard incomeRecordId={r.id} />}
       <SectionCard title="Details">
         <div className="grid sm:grid-cols-2 gap-3 text-sm">
           <Field label="Amount">
@@ -837,4 +840,22 @@ function ReconcileDialog({
       </DialogContent>
     </Dialog>
   );
+}
+
+function IssueBillCard({ incomeRecordId }: { incomeRecordId: string }) {
+  const issue = useServerFn(issueBill);
+  const navigate = useNavigate();
+  const [busy, setBusy] = useState(false);
+  async function go() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const r = await issue({ data: { incomeRecordId } });
+      toast.success(r.status === "existing" ? `Bill ${r.document_no} already exists` : `Bill ${r.document_no} issued`);
+      void navigate({ to: "/society/document/$id", params: { id: r.document_id } });
+    } catch (e) { toast.error(toSafeFinanceMessage(e)); } finally { setBusy(false); }
+  }
+  return <SectionCard title="Income bill" description="One numbered bill per income entry. A bill is not proof of payment.">
+    <Button className="min-h-11" disabled={busy} onClick={go}>{busy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Receipt className="h-4 w-4 mr-1" />}Issue bill / open bill</Button>
+  </SectionCard>;
 }

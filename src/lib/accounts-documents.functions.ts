@@ -156,7 +156,7 @@ export const getMaintenanceBoard = createServerFn({ method: "POST" })
     const today = indiaToday();
     const blockName = new Map<string, string>((blocks.data ?? []).map((b: any) => [b.id, b.name]));
     const byFlat = new Map<string, any>((periods.data ?? []).map((p: any) => [p.flat_id, p]));
-    const rows = (flats.data ?? []).filter((f: any) => f.is_active !== false).map((f: any): { flat_id: string; label: string; block_id: string | null; block: string | null; amount_due: number | null; has_period: boolean; status: import("./maintenance-status").MaintenanceStatus } => {
+    const rows: Array<{ flat_id: string; label: string; block_id: string | null; block: string | null; amount_due: number | null; has_period: boolean; status: import("./maintenance-status").MaintenanceStatus }> = (flats.data ?? []).filter((f: any) => f.is_active !== false).map((f: any): { flat_id: string; label: string; block_id: string | null; block: string | null; amount_due: number | null; has_period: boolean; status: import("./maintenance-status").MaintenanceStatus } => {
       const p = byFlat.get(f.id);
       const paid = p?.status === "paid";
       return { flat_id: f.id, label: f.flat_number as string, block_id: f.block_id as string | null, block: f.block_id ? blockName.get(f.block_id) ?? null : null,

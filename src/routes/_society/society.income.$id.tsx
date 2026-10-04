@@ -857,6 +857,6 @@ function IssueBillCard({ incomeRecordId }: { incomeRecordId: string }) {
     } catch (e) { toast.error(toSafeFinanceMessage(e)); } finally { setBusy(false); }
   }
   return <SectionCard title="Income bill" description="One numbered bill per income entry. A bill is not proof of payment.">
-    <Button className="min-h-11" disabled={busy} onClick={go}>{busy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Receipt className="h-4 w-4 mr-1" />}Issue bill / open bill</Button>
+    <Button className="min-h-11" disabled={busy} onClick={go}>{busy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <ReceiptIcon className="h-4 w-4 mr-1" />}Issue bill / open bill</Button>
   </SectionCard>;
 }

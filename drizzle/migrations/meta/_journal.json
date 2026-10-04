@@ -1450,6 +1450,13 @@
       "when": 1791151397880,
       "tag": "0206_create_unit_infers_structure_mode_fix_audit",
       "breakpoints": true
+    },
+    {
+      "idx": 207,
+      "version": "7",
+      "when": 1791152251913,
+      "tag": "0207_join_request_structured_unit_selection",
+      "breakpoints": true
     }
   ]
 }

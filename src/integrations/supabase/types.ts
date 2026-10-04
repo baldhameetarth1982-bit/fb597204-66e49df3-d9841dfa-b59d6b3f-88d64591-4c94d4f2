@@ -14246,6 +14246,10 @@ export type Database = {
       }
       get_flat_occupancy: { Args: { _flat_id: string }; Returns: Json }
       get_handover_summary: { Args: { _society_id: string }; Returns: Json }
+      get_join_structure: {
+        Args: { _code: string; _society_id: string }
+        Returns: Json
+      }
       get_needs_attention: {
         Args: never
         Returns: {
@@ -16159,6 +16163,18 @@ export type Database = {
           _society_id: string
         }
         Returns: string
+      }
+      submit_join_request_unit: {
+        Args: {
+          _block_id: string
+          _code: string
+          _flat_id: string
+          _full_name: string
+          _mobile: string
+          _owner_or_tenant: string
+          _society_id: string
+        }
+        Returns: Json
       }
       submit_no_dues_request_internal: {
         Args: {

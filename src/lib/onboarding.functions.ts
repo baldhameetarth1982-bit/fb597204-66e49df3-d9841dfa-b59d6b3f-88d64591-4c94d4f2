@@ -66,3 +66,39 @@ export async function submitJoinRequest(input: {
   if (error) throw new Error(error.message);
   return data as string;
 }
+
+export interface JoinStructure {
+  mode: "structured" | "serial" | null;
+  blocks: Array<{ id: string; name: string }>;
+  units: Array<{ id: string; label: string; floor: number | null; block_id: string | null }>;
+}
+
+export async function getJoinStructure(societyId: string, code: string): Promise<JoinStructure> {
+  const { data, error } = await (supabase.rpc as any)("get_join_structure", { _society_id: societyId, _code: code });
+  if (error) throw new Error("Could not load houses. Please try again.");
+  if (!data?.ok) throw new Error("That code doesn't match this society");
+  return { mode: data.mode ?? null, blocks: data.blocks ?? [], units: data.units ?? [] };
+}
+
+const JOIN_REASONS: Record<string, string> = {
+  invalid_code: "That code doesn't match this society",
+  already_member: "You already belong to a society",
+  invalid_unit: "That house isn't available in the selected block. Please choose again.",
+  already_linked: "You're already linked to this house.",
+  unit_unavailable: "This house can't be claimed here. Ask your Society Admin for help.",
+  name_required: "Please enter your full name",
+  role_required: "Choose owner or tenant",
+};
+
+export async function submitJoinRequestForUnit(input: {
+  societyId: string; code: string; fullName: string; blockId: string | null; flatId: string;
+  mobile?: string | null; ownerOrTenant: "owner" | "tenant";
+}) {
+  const { data, error } = await (supabase.rpc as any)("submit_join_request_unit", {
+    _society_id: input.societyId, _code: input.code, _full_name: input.fullName,
+    _block_id: input.blockId, _flat_id: input.flatId, _mobile: input.mobile ?? "", _owner_or_tenant: input.ownerOrTenant,
+  });
+  if (error) throw new Error("Could not submit your request. Please try again.");
+  if (!data?.ok) throw new Error(JOIN_REASONS[data?.reason] ?? "Could not submit your request.");
+  return data.id as string;
+}

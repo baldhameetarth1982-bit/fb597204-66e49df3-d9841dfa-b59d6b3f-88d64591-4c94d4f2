@@ -161,7 +161,7 @@ function AutomationsPage() {
           title="Unpaid dues reminders"
           icon={BellRing}
           trailing={<Badge variant={s.reminders.enabled ? "default" : "secondary"}>{s.reminders.enabled ? "On" : "Off"}</Badge>}
-          description="Every morning, records a reminder for each unit with unpaid maintenance past its due date."
+          description="Every morning, sends the main resident of each home with unpaid maintenance past its due date an in-app reminder. A home is never reminded twice on the same day."
         >
           <div className="space-y-4">
             <dl className="grid grid-cols-2 gap-3 text-sm">

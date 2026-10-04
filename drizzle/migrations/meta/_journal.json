@@ -1422,6 +1422,13 @@
       "when": 1791146839021,
       "tag": "0202_payment_notify_admin_recorded",
       "breakpoints": true
+    },
+    {
+      "idx": 203,
+      "version": "7",
+      "when": 1791147991849,
+      "tag": "0203_six_role_direct_write_closure",
+      "breakpoints": true
     }
   ]
 }

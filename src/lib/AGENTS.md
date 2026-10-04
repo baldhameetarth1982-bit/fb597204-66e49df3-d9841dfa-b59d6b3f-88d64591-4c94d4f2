@@ -66,3 +66,5 @@
 - Invite-code changes (regenerate/custom/enable) are audited and share one rate limit, applied before the uniqueness check so other societies' codes can't be probed.
 - Resident document links are signed only after the stored object's type is re-checked server-side (signed upload URLs let the browser pick it), are forced to download, and every open/delete writes audit_log; resident finance visibility requires a current, non-expired home.
 - Trials start only via start_society_trial (one per society, audited, refused while suspended or on a paid plan, never changes society status); the legacy start_trial_for_society is revoked.
+- Every DB-side cron job runs through public.run_logged_db_job (allow-listed job names, per-window idempotency, failures recorded); an hourly scheduler-stall-check marks runs with no finish after 2 hours as failed so stuck jobs surface on the Super Admin card.
+- Manual payment notifications (pending → admins; verified/rejected/reversed → payer) come only from trigger trg_payment_status_notify using dedupe keys and never block the payment write; Razorpay rows are skipped because finalize_maintenance_online_payment notifies them.

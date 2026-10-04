@@ -3,7 +3,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { toSafeFinanceMessage } from "@/lib/finance-safe-error";
 import { useState } from "react";
-import { AlertCircle, BarChart3, Loader2, TrendingDown, TrendingUp } from "lucide-react";
+import { AlertCircle, BarChart3, Download, Loader2, TrendingDown, TrendingUp } from "lucide-react";
+import { writeSafeWorkbook } from "@/lib/spreadsheet-safety";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { AccountsCenterTabs } from "@/components/nav/AccountsCenterTabs";
 import { MobileHero } from "@/components/shared/MobileHero";
@@ -51,6 +52,18 @@ function ReportsPage() {
       <SectionCard icon={AlertCircle} title="Receivables ageing" description={`Outstanding bills as of ${to}`} bodyClassName="p-0">
         {ageing.isLoading ? <div className="p-8 grid place-items-center" aria-label="Loading receivables ageing"><Loader2 className="animate-spin"/></div> : ageing.error ? <div className="p-5"><p className="text-sm text-destructive">{toSafeFinanceMessage(ageing.error,"Ageing couldn't load. Please try again.")}</p><Button className="mt-3" variant="outline" onClick={()=>void ageing.refetch()}>Retry</Button></div> : <ListCardGroup>{["current","1_30","31_60","61_90","90_plus"].map(bucket=>{const row=ageing.data?.rows.find(x=>x.bucket===bucket);return <ListCard key={bucket} title={bucket==="current"?"Current":bucket.replace("_","–")+" days"} subtitle={`${row?.bill_count??0} bills`} trailing={<span className="font-semibold">{INR.format(row?.amount??0)}</span>}/>})}</ListCardGroup>}
       </SectionCard>
+      <Button variant="outline" className="w-full min-h-11 sm:w-auto" disabled={!overview.isSuccess || !ageing.isSuccess} onClick={()=>{
+        const rows: Record<string, string | number>[] = [
+          { Section: "Period", Item: `${from} to ${to}`, "Bills": "", "Amount (Rs.)": "" },
+          { Section: "Totals", Item: "Income", "Bills": "", "Amount (Rs.)": o!.income },
+          { Section: "Totals", Item: "Expense", "Bills": "", "Amount (Rs.)": o!.expense },
+          { Section: "Totals", Item: "Net movement", "Bills": "", "Amount (Rs.)": o!.net_movement },
+          { Section: "Balances", Item: "Cash", "Bills": "", "Amount (Rs.)": o!.cash_balance },
+          { Section: "Balances", Item: "Bank", "Bills": "", "Amount (Rs.)": o!.bank_balance },
+          ...["current","1_30","31_60","61_90","90_plus"].map(bucket=>{const r=ageing.data?.rows.find(x=>x.bucket===bucket);return { Section: "Receivables ageing", Item: bucket==="current"?"Current":bucket.replace("_","-")+" days", "Bills": r?.bill_count??0, "Amount (Rs.)": r?.amount??0 };}),
+        ];
+        writeSafeWorkbook(rows, "Report", `financial-report-${from}-to-${to}.xlsx`);
+      }}><Download className="h-4 w-4"/>Download report</Button>
       <p className="text-xs text-muted-foreground">Legacy ledger rows are intentionally excluded until explicitly reconciled.</p>
     </div>
   </div>;

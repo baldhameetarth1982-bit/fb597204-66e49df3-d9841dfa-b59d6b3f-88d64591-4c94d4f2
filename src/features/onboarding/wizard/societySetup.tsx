@@ -134,7 +134,7 @@ function StepInfo({ state, patch }: StepProps<WizardState>) {
           <Upload className="h-4 w-4" />
           {uploading ? "Uploading…" : "Upload logo (optional)"}
           <input
-            type="file" accept="image/*" className="hidden"
+            type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
             onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])}
           />
         </label>

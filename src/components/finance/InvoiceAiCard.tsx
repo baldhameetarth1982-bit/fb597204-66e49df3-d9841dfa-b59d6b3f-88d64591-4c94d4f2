@@ -25,6 +25,9 @@ const ERR: Record<string, string> = {
   vendor_not_found: "That vendor isn't active in this society.",
   invalid_invoice_number: "Invoice number can use letters, numbers and / - _ . # only.",
   period_closed: "That date is in a closed financial year.",
+  procurement_already_closed: "That purchase request is already completed or closed.",
+  procurement_not_approved: "That purchase request hasn't been approved yet.",
+  procurement_already_invoiced: "Another invoice is already confirmed for that purchase request.",
 };
 const msg = (e: unknown) => ERR[(e as Error)?.message] ?? "Something went wrong. Please try again.";
 const STATUS: Record<string, { label: string; variant: "secondary" | "outline" | "destructive" | "default" }> = {

@@ -47,6 +47,9 @@ export function procErrorMessage(err: unknown): string {
   if (raw.includes("invalid_amount")) return "Enter a positive amount with up to 2 decimals.";
   if (raw.includes("reason_required")) return "Please add a reason (at least 5 characters).";
   if (raw.includes("reference_required")) return "Please enter the reference.";
+  if (raw.includes("order_ref_locked") || raw.includes("invoice_locked") || raw.includes("payment_ref_locked"))
+    return "This reference is already recorded and can't be changed.";
+  if (raw.includes("locked_after_approval")) return "The approved vendor and amount can't be changed.";
   if (raw.includes("invalid_date")) return "Choose a valid date (not in the future).";
   if (raw.includes("check") || raw.includes("23514") || raw.includes("22023")) return "Some details aren't valid. Check the fields and try again.";
   return "Something went wrong. Please try again.";

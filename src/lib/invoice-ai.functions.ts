@@ -15,7 +15,8 @@ const MAX = 5 * 1024 * 1024;
 const uuid = z.string().uuid();
 const KNOWN = ["not_authorized", "plan_required", "rate_limited", "invalid_file", "invalid_state", "duplicate_invoice", "not_found",
   "invalid_amount", "invalid_date", "invalid_method", "invalid_category", "invalid_description", "vendor_not_found", "idempotency_conflict",
-  "invalid_invoice_number", "reason_required", "period_closed"];
+  "invalid_invoice_number", "reason_required", "period_closed", "procurement_already_closed", "procurement_not_approved",
+  "procurement_already_invoiced"];
 function safeError(e: unknown): Error {
   const msg = (e as { message?: string } | null)?.message ?? "";
   for (const k of KNOWN) if (msg.includes(k)) return new Error(k);
@@ -201,6 +202,6 @@ export const listLinkableProcurement = createServerFn({ method: "POST" })
   .inputValidator((raw: unknown) => z.object({ societyId: uuid }).parse(raw))
   .handler(async ({ data, context }) => {
     const { data: rows } = await (context.supabase as any).from("procurement_requests").select("id,request_no,title,status")
-      .eq("society_id", data.societyId).in("status", ["approved", "ordered", "invoiced", "delivered"]).order("created_at", { ascending: false }).limit(50);
+      .eq("society_id", data.societyId).in("status", ["approved", "ordered", "invoice_received", "payment_ref_recorded"]).is("expense_id", null).order("created_at", { ascending: false }).limit(50);
     return z.array(z.object({ id: uuid, request_no: z.coerce.number(), title: z.string(), status: z.string() })).catch([]).parse(rows ?? []);
   });

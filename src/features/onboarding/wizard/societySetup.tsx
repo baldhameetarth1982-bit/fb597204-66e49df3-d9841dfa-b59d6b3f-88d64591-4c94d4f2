@@ -102,7 +102,7 @@ function StepInfo({ state, patch }: StepProps<WizardState>) {
       if (file.size > MAX_BYTES) {
         throw new Error("Image must be 2MB or smaller");
       }
-      const ext = file.name.split(".").pop()?.toLowerCase() ?? "img";
+      const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
       const path = `logos/${crypto.randomUUID()}.${ext}`;
       const { error } = await supabase.storage
         .from("public-assets")

@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Wallet, BookOpen, BarChart3, TrendingDown, Coins, QrCode, FileCheck2, PiggyBank, Scale } from "lucide-react";
+import { Wallet, BookOpen, BarChart3, TrendingDown, Coins, QrCode, FileCheck2, PiggyBank, Scale, Receipt } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -17,6 +17,7 @@ const TABS = [
   { to: "/society/auditor-pack", label: "Auditor pack", icon: FileCheck2, match: ["/society/auditor-pack"] },
   { to: "/society/budgets", label: "Budgets", icon: PiggyBank, match: ["/society/budgets"] },
   { to: "/society/expenses", label: "Expenses", icon: TrendingDown, match: ["/society/expenses"] },
+  { to: "/society/vouchers", label: "Bills & Vouchers", icon: Receipt, match: ["/society/vouchers"] },
 ] as const;
 
 export function AccountsCenterTabs() {

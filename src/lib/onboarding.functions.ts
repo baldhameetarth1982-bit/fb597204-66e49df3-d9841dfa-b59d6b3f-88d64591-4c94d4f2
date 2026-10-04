@@ -68,6 +68,7 @@ const JOIN_REASONS: Record<string, string> = {
   unit_unavailable: "This house can't be claimed here. Ask your Society Admin for help.",
   name_required: "Please enter your full name",
   role_required: "Choose owner or tenant",
+  pending_elsewhere: "You already have a request waiting at another society. Ask that society's admin to approve or decline it first.",
 };
 
 export async function submitJoinRequestForUnit(input: {

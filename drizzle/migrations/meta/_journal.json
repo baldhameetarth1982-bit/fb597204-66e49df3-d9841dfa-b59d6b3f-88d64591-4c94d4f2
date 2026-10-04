@@ -1471,6 +1471,13 @@
       "when": 1791154256861,
       "tag": "0209_join_request_pending_elsewhere_reason",
       "breakpoints": true
+    },
+    {
+      "idx": 210,
+      "version": "7",
+      "when": 1791156469276,
+      "tag": "0210_accounts_categories_and_documents",
+      "breakpoints": true
     }
   ]
 }

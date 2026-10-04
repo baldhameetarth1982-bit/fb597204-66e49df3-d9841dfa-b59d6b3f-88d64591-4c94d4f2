@@ -3427,6 +3427,7 @@ export type Database = {
         Row: {
           amount: number
           category: string
+          category_id: string | null
           created_at: string
           created_by: string | null
           id: string
@@ -3447,6 +3448,7 @@ export type Database = {
         Insert: {
           amount: number
           category: string
+          category_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -3467,6 +3469,7 @@ export type Database = {
         Update: {
           amount?: number
           category?: string
+          category_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -3485,6 +3488,13 @@ export type Database = {
           vendor_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "expenses_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "finance_expense_categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "expenses_journal_entry_id_fkey"
             columns: ["journal_entry_id"]
@@ -3696,6 +3706,134 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "finance_backfill_requests_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_document_sequences: {
+        Row: {
+          fy_start: number
+          kind: string
+          last_no: number
+          society_id: string
+        }
+        Insert: {
+          fy_start: number
+          kind: string
+          last_no?: number
+          society_id: string
+        }
+        Update: {
+          fy_start?: number
+          kind?: string
+          last_no?: number
+          society_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_document_sequences_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_documents: {
+        Row: {
+          document_no: string
+          expense_id: string | null
+          id: string
+          income_record_id: string | null
+          issued_at: string
+          issued_by: string | null
+          kind: string
+          society_id: string
+        }
+        Insert: {
+          document_no: string
+          expense_id?: string | null
+          id?: string
+          income_record_id?: string | null
+          issued_at?: string
+          issued_by?: string | null
+          kind: string
+          society_id: string
+        }
+        Update: {
+          document_no?: string
+          expense_id?: string | null
+          id?: string
+          income_record_id?: string | null
+          issued_at?: string
+          issued_by?: string | null
+          kind?: string
+          society_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_documents_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_documents_income_record_id_fkey"
+            columns: ["income_record_id"]
+            isOneToOne: false
+            referencedRelation: "society_income_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_documents_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_expense_categories: {
+        Row: {
+          base_kind: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          name: string
+          society_id: string
+          updated_at: string
+        }
+        Insert: {
+          base_kind?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name: string
+          society_id: string
+          updated_at?: string
+        }
+        Update: {
+          base_kind?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name?: string
+          society_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_expense_categories_society_id_fkey"
             columns: ["society_id"]
             isOneToOne: false
             referencedRelation: "societies"
@@ -10326,6 +10464,7 @@ export type Database = {
           late_fee_type: string
           maintenance_due_day: number
           maintenance_frequency: string
+          maintenance_timing: string
           opening_balance_date: string | null
           opening_bank: number
           opening_cash: number
@@ -10367,6 +10506,7 @@ export type Database = {
           late_fee_type?: string
           maintenance_due_day?: number
           maintenance_frequency?: string
+          maintenance_timing?: string
           opening_balance_date?: string | null
           opening_bank?: number
           opening_cash?: number
@@ -10408,6 +10548,7 @@ export type Database = {
           late_fee_type?: string
           maintenance_due_day?: number
           maintenance_frequency?: string
+          maintenance_timing?: string
           opening_balance_date?: string | null
           opening_bank?: number
           opening_cash?: number
@@ -11872,6 +12013,10 @@ export type Database = {
       }
       _allocate_bill_number: {
         Args: { _period_start: string; _prefix?: string; _society_id: string }
+        Returns: string
+      }
+      _allocate_finance_document_no: {
+        Args: { _d: string; _kind: string; _society_id: string }
         Returns: string
       }
       _allocate_receipt_number: {
@@ -13618,10 +13763,36 @@ export type Database = {
         }
         Returns: Json
       }
+      create_expense_with_voucher: {
+        Args: {
+          _amount: number
+          _category_id: string
+          _description: string
+          _expense_date: string
+          _payment_method: string
+          _request_id: string
+          _society_id: string
+          _vendor_id: string
+        }
+        Returns: Json
+      }
       create_finance_expense: {
         Args: {
           _amount: number
           _category: string
+          _description: string
+          _expense_date: string
+          _payment_method: string
+          _request_id: string
+          _society_id: string
+          _vendor_id: string
+        }
+        Returns: Json
+      }
+      create_finance_expense_categorized: {
+        Args: {
+          _amount: number
+          _category_id: string
           _description: string
           _expense_date: string
           _payment_method: string
@@ -13875,6 +14046,10 @@ export type Database = {
       }
       end_temporary_occupant: { Args: { _id: string }; Returns: undefined }
       enroll_class: { Args: { _class_id: string }; Returns: string }
+      ensure_default_account_categories: {
+        Args: { _society_id: string }
+        Returns: Json
+      }
       ensure_maintenance_period: {
         Args: {
           _amount: number
@@ -14908,6 +15083,8 @@ export type Database = {
       }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       is_super_admin_internal: { Args: { _actor_id: string }; Returns: boolean }
+      issue_finance_bill: { Args: { _income_record_id: string }; Returns: Json }
+      issue_finance_voucher: { Args: { _expense_id: string }; Returns: Json }
       join_society_with_code: { Args: { _code: string }; Returns: string }
       knowledge_begin_document: {
         Args: {
@@ -15941,6 +16118,10 @@ export type Database = {
       }
       send_meeting_reminders: { Args: never; Returns: number }
       send_tenancy_renewal_reminders: { Args: never; Returns: number }
+      set_maintenance_timing: {
+        Args: { _society_id: string; _timing: string }
+        Returns: undefined
+      }
       set_society_block_active: {
         Args: { _active: boolean; _block_id: string }
         Returns: Json
@@ -16312,6 +16493,16 @@ export type Database = {
           _unit_type?: string
         }
         Returns: Json
+      }
+      upsert_finance_expense_category: {
+        Args: {
+          _base_kind: string
+          _category_id: string
+          _is_active: boolean
+          _name: string
+          _society_id: string
+        }
+        Returns: string
       }
       upsert_finance_vendor: {
         Args: {

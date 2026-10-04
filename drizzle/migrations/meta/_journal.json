@@ -1289,6 +1289,13 @@
       "when": 1791136607635,
       "tag": "0183_bills_schedule_run_idempotency",
       "breakpoints": true
+    },
+    {
+      "idx": 184,
+      "version": "7",
+      "when": 1791138830440,
+      "tag": "0184_finance_governance_integrity_batch",
+      "breakpoints": true
     }
   ]
 }

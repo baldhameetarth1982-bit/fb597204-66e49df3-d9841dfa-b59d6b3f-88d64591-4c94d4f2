@@ -6472,6 +6472,53 @@ export type Database = {
           },
         ]
       }
+      notice_versions: {
+        Row: {
+          audience: string | null
+          block_id: string | null
+          body: string
+          category: string | null
+          id: string
+          notice_id: string
+          replaced_at: string
+          replaced_by: string | null
+          society_id: string
+          title: string
+        }
+        Insert: {
+          audience?: string | null
+          block_id?: string | null
+          body: string
+          category?: string | null
+          id?: string
+          notice_id: string
+          replaced_at?: string
+          replaced_by?: string | null
+          society_id: string
+          title: string
+        }
+        Update: {
+          audience?: string | null
+          block_id?: string | null
+          body?: string
+          category?: string | null
+          id?: string
+          notice_id?: string
+          replaced_at?: string
+          replaced_by?: string | null
+          society_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notice_versions_notice_id_fkey"
+            columns: ["notice_id"]
+            isOneToOne: false
+            referencedRelation: "notices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notices: {
         Row: {
           audience: string

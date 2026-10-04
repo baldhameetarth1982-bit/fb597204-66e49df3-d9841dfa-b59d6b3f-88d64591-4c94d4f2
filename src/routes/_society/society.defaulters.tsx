@@ -12,21 +12,29 @@ import { StatusChip } from "@/components/system/StatusChip";
 import { toSafeFinanceError } from "@/lib/finance-safe-error";
 import { formatDate } from "@/utils/format";
 import { cn } from "@/lib/utils";
+import { isOverdue, todayIST } from "@/lib/overdue";
 
 export const Route = createFileRoute("/_society/society/defaulters")({
   head: () => ({
     meta: [
       { title: "Outstanding dues — SociyoHub" },
       { name: "description", content: "Homes with unpaid and overdue society bills." },
+      { property: "og:title", content: "Outstanding dues — SociyoHub" },
+      { property: "og:description", content: "Homes with unpaid and overdue society bills." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: DefaultersPage,
 });
 
-type OpenBill = { id: string; period: string; due: string | null; outstanding: number; overdue: boolean };
+type OpenBill = { id: string; period: string; due: string | null; outstanding: number; overdue: boolean; daysOverdue: number };
 type Home = { flatId: string; label: string; bills: OpenBill[]; total: number; overdueCount: number; oldestDue: string | null };
+type Filter = "all" | "overdue" | "90";
 
 const INR = (v: number) => `₹${v.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+const daysBetween = (from: string, to: string) => Math.max(0, Math.round((Date.parse(to) - Date.parse(from)) / 86400000));
+const maxDays = (h: Home) => h.bills.reduce((m, b) => Math.max(m, b.daysOverdue), 0);
 
 /**
  * Defaulters — committee only. Amounts come from the get_outstanding_dues
@@ -53,14 +61,14 @@ function DefaultersPage() {
       const { data, error: rErr } = await supabase.rpc("get_outstanding_dues", { _society_id: societyId });
       if (rErr) throw rErr;
       const list = data ?? [];
-      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const today = todayIST();
       const map = new Map<string, Home>();
       for (const b of list) {
         const outstanding = Math.round(Number(b.outstanding) * 100) / 100;
         if (!b.flat_id || !Number.isFinite(outstanding) || outstanding <= 0) continue;
-        const overdue = !!b.due_date && new Date(b.due_date) < today;
+        const overdue = isOverdue(b.due_date, true);
         const h = map.get(b.flat_id) ?? { flatId: b.flat_id, label: b.flat_label ?? "Home", bills: [], total: 0, overdueCount: 0, oldestDue: null };
-        h.bills.push({ id: b.bill_id, period: b.period_label ?? "Bill", due: b.due_date, outstanding, overdue });
+        h.bills.push({ id: b.bill_id, period: b.period_label ?? "Bill", due: b.due_date, outstanding, overdue, daysOverdue: overdue ? daysBetween(b.due_date!, today) : 0 });
         h.total += outstanding;
         if (overdue) h.overdueCount++;
         if (b.due_date && (!h.oldestDue || b.due_date < h.oldestDue)) h.oldestDue = b.due_date;

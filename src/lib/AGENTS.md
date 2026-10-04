@@ -64,3 +64,5 @@
 - Message dispatch requeues deliveries stuck in "sending" for over 15 minutes instead of marking them sent, so a crashed run never reports false delivery.
 - Storage buckets carry server-side size limits plus MIME/extension checks in storage.objects INSERT/UPDATE policies (logos PNG/JPEG/WEBP only, no SVG); app-side checks are UX only.
 - Invite-code changes (regenerate/custom/enable) are audited and share one rate limit, applied before the uniqueness check so other societies' codes can't be probed.
+- Resident document links are signed only after the stored object's type is re-checked server-side (signed upload URLs let the browser pick it), are forced to download, and every open/delete writes audit_log; resident finance visibility requires a current, non-expired home.
+- Trials start only via start_society_trial (one per society, audited, refused while suspended or on a paid plan, never changes society status); the legacy start_trial_for_society is revoked.

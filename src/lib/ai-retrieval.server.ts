@@ -13,9 +13,15 @@ import type { SecretarySource } from "./ai-secretary.server";
 // Structural type so callers can pass the request-scoped Supabase client.
 type ScopedClient = { from: (table: string) => any };
 
-export async function resolveCallerSociety(supabase: ScopedClient, userId: string): Promise<string | null> {
-  const { data } = await supabase.from("profiles").select("society_id").eq("id", userId).maybeSingle();
-  return (data?.society_id as string | undefined) ?? null;
+/**
+ * Society the caller currently belongs to. Uses the active-role check, so former
+ * residents / expired tenants (whose profile still remembers the society) get null.
+ */
+export async function resolveCallerSociety(supabase: ScopedClient, _userId: string): Promise<string | null> {
+  const client = supabase as ScopedClient & { rpc: (fn: string) => any };
+  const { data, error } = await client.rpc("_active_member_society_id");
+  if (error) return null;
+  return typeof data === "string" && data ? data : null;
 }
 
 export class RetrievalFailed extends Error {

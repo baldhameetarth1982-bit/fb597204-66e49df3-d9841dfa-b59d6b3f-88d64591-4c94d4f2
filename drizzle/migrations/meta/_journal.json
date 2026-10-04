@@ -1373,6 +1373,13 @@
       "when": 1791144332056,
       "tag": "0195_former_member_lockout_blocks",
       "breakpoints": true
+    },
+    {
+      "idx": 196,
+      "version": "7",
+      "when": 1791144475194,
+      "tag": "0196_former_member_lockout_flats",
+      "breakpoints": true
     }
   ]
 }

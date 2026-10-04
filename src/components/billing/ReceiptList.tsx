@@ -7,6 +7,8 @@ import { StatusChip } from "@/components/system/StatusChip";
 import { EmptyState } from "@/components/shared/PageHeader";
 import { toSafeFinanceError } from "@/lib/finance-safe-error";
 import { formatDate } from "@/utils/format";
+import { useSocietyBranding } from "@/hooks/useSocietyBranding";
+import { useSocietyId } from "@/hooks/useSocietyId";
 
 type Row = {
   id: string;
@@ -24,22 +26,27 @@ type Row = {
 };
 
 const INR = (v: number) => `₹${v.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
-const METHOD: Record<string, string> = { cash: "Cash", bank_transfer: "Bank Transfer" };
+const METHOD: Record<string, string> = {
+  cash: "Cash", bank_transfer: "Bank Transfer", bank: "Bank Transfer", neft: "Bank Transfer", imps: "Bank Transfer",
+  upi_manual: "UPI QR", upi_qr: "UPI QR", upi: "UPI", online: "Online (Pay now)", razorpay: "Online (Pay now)", netbanking: "Online (Pay now)",
+};
+const methodLabel = (m: string | null) => (m ? METHOD[m] ?? m.replace(/_/g, " ") : "-");
 
 /** Builds a one-page receipt PDF on the device from the already-verified row; nothing is stored. */
-async function downloadReceipt(r: Row, voided: boolean) {
+async function downloadReceipt(r: Row, voided: boolean, societyName: string | null) {
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF();
   // Built-in PDF fonts lack the rupee sign, so amounts use "Rs."
   const amt = r.amount_snapshot != null ? `Rs. ${Number(r.amount_snapshot).toLocaleString("en-IN", { maximumFractionDigits: 2 })}` : "-";
   doc.setFontSize(18);
   doc.text("Payment receipt", 20, 25);
+  if (societyName) { doc.setFontSize(12); doc.text(societyName.slice(0, 60), 20, 33); }
   doc.setFontSize(11);
   const lines: [string, string][] = [
     ["Receipt number", r.receipt_number],
     ["Status", voided ? "VOIDED (payment reversed)" : "Verified"],
     ["Amount", amt],
-    ["Method", r.method_snapshot ? METHOD[r.method_snapshot] ?? r.method_snapshot : "-"],
+    ["Method", methodLabel(r.method_snapshot)],
     ["Bill", r.bill_number_snapshot ?? "-"],
     ["Reference", r.reference_snapshot ?? "-"],
     ["House", r.home ?? "-"],
@@ -65,6 +72,9 @@ export function ReceiptList({ societyId, showHome }: { societyId?: string | null
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState("");
+  const own = useSocietyId();
+  const brand = useSocietyBranding(societyId ?? own.societyId);
+  const societyName = brand.data?.entitled && brand.data.custom ? brand.data.display_name ?? null : null;
 
   async function load() {
     setLoading(true);

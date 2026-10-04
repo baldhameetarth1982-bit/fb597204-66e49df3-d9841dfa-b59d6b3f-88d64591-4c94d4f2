@@ -1387,6 +1387,13 @@
       "when": 1791145622338,
       "tag": "0197_listing_categories_active_member",
       "breakpoints": true
+    },
+    {
+      "idx": 198,
+      "version": "7",
+      "when": 1791145963550,
+      "tag": "0198_fin_visibility_current_home_only",
+      "breakpoints": true
     }
   ]
 }

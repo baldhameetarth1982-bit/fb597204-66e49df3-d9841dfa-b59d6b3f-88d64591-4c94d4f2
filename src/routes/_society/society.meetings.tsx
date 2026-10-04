@@ -4,7 +4,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { CalendarDays, Loader2, Plus, MapPin, Link2, CheckCircle2, FileText } from "lucide-react";
+import { CalendarDays, Loader2, Plus, MapPin, Link2, CheckCircle2, FileText, Download } from "lucide-react";
+import { writeSafeWorkbook } from "@/lib/spreadsheet-safety";
 import { ListSkeleton, LoadError, ListEmpty } from "@/components/people/PeopleUI";
 import { PageHeader, PageShell } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -206,7 +207,15 @@ function MeetingDetail({ m, societyId, onChanged, onEdit }: { m: Meeting; societ
       {m.status !== "draft" && m.status !== "cancelled" && (
         <section>
           <h3 className="text-sm font-semibold">RSVP & attendance</h3>
-          <p className="text-xs text-muted-foreground tabular-nums">{rsvpCount("yes")} yes · {rsvpCount("maybe")} maybe · {rsvpCount("no")} no · {(d.data?.roster.length ?? 0) - rsvpCount("yes") - rsvpCount("maybe") - rsvpCount("no")} no reply</p>
+          <p className="text-xs text-muted-foreground tabular-nums">{rsvpCount("yes")} yes · {rsvpCount("maybe")} maybe · {rsvpCount("no")} no · {(d.data?.roster.length ?? 0) - rsvpCount("yes") - rsvpCount("maybe") - rsvpCount("no")} no reply
+            {["held", "minutes_published"].includes(m.status) && <> · {d.data?.roster.filter((r) => r.present).length ?? 0} present</>}</p>
+          {(d.data?.roster.length ?? 0) > 0 && (
+            <Button variant="outline" size="sm" className="mt-2 min-h-11 rounded-xl" onClick={() => writeSafeWorkbook(
+              (d.data?.roster ?? []).map((r) => ({ Name: r.full_name, Home: r.homes, RSVP: r.rsvp ?? "No reply", Attendance: r.present ? "Present" : r.present === false ? "Absent" : "Not recorded" })),
+              "Attendance", `attendance-${m.title.replace(/[^a-z0-9]+/gi, "-").slice(0, 40)}.xlsx`)}>
+              <Download className="mr-1 h-4 w-4" aria-hidden />Download attendance sheet
+            </Button>
+          )}
           {d.isLoading ? <Loader2 className="mt-2 h-4 w-4 animate-spin" /> : (
             <ul className="mt-2 max-h-72 divide-y overflow-y-auto rounded-xl border">
               {d.data?.roster.map((r) => (

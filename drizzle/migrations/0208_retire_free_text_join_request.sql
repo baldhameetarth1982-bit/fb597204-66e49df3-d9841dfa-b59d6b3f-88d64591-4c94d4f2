@@ -1,0 +1,2 @@
+REVOKE EXECUTE ON FUNCTION public.submit_join_request(uuid, text, text, text, text, text) FROM PUBLIC, anon, authenticated;
+COMMENT ON FUNCTION public.submit_join_request(uuid, text, text, text, text, text) IS 'DEPRECATED: free-text house numbers retired; residents must use submit_join_request_unit with a canonical unit.';

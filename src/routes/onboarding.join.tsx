@@ -128,21 +128,13 @@ function JoinFlow() {
     }
     setSubmitting(true);
     try {
-      if (hasUnits && selectedUnit) {
-        await submitJoinRequestForUnit({
-          societyId: society.id,
-          code: code.trim(),
-          fullName: fullName.trim(),
-          blockId: selectedUnit.block_id,
-          flatId: selectedUnit.id,
-          mobile: verifiedPhone || null,
-          ownerOrTenant: role,
-        });
-      } else await submitJoinRequest({
+      if (!selectedUnit) throw new Error("Please choose your house");
+      await submitJoinRequestForUnit({
         societyId: society.id,
         code: code.trim(),
         fullName: fullName.trim(),
-        flatNumber: flatNumber.trim(),
+        blockId: selectedUnit.block_id,
+        flatId: selectedUnit.id,
         mobile: verifiedPhone || null,
         ownerOrTenant: role,
       });

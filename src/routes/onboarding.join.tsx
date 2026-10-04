@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { OnboardingStepper } from "@/components/system/OnboardingStepper";
-import { searchSocietiesPublic, submitJoinRequest, getJoinStructure, submitJoinRequestForUnit, type JoinStructure } from "@/lib/onboarding.functions";
+import { searchSocietiesPublic, getJoinStructure, submitJoinRequestForUnit, type JoinStructure } from "@/lib/onboarding.functions";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/onboarding/join")({

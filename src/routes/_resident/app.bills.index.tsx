@@ -95,7 +95,7 @@ function BillsScreen() {
       window.removeEventListener("online", sync);
       window.removeEventListener("offline", sync);
     };
-  }, [profile?.id, profile?.society_id, listMyBills, reloadKey]);
+  }, [profile?.id, profile?.society_id, societyId, listMyBills, reloadKey]);
 
   if (loading) {
     return (

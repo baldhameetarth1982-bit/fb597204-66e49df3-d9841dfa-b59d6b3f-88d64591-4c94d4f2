@@ -183,7 +183,31 @@ export const Route = createFileRoute("/api/public/hooks/maintenance-reminders")(
         // Chunk inserts.
         const chunk = 500;
         for (let i = 0; i < rows.length; i += chunk) {
-          await supabaseAdmin.from("audit_log").insert(rows.slice(i, i + chunk));
+          const { error: insErr } = await supabaseAdmin.from("audit_log").insert(rows.slice(i, i + chunk));
+          if (insErr) return new Response("Internal error", { status: 500 });
+        }
+
+        // In-app notice to the primary resident, once per period per day (dedupe key),
+        // so a retried run never notifies twice. Failures are counted, not fatal.
+        const dayKey = new Date(dayStartMs).toISOString().slice(0, 10);
+        let notified = 0;
+        let notifyFailed = 0;
+        for (const p of toRemind) {
+          const uid = primaryByFlat.get(p.flat_id);
+          if (!uid) continue;
+          const amount = Number(p.amount_due ?? 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
+          const { data: sent, error: nErr } = await supabaseAdmin.rpc("_notify_user_once", {
+            _user: uid,
+            _society: p.society_id,
+            _kind: "billing",
+            _title: "Maintenance payment due",
+            _body: `₹${amount} for ${p.period_label ?? "maintenance"} was due on ${p.due_date}.`,
+            _link: "/app/dues",
+            _dedupe_key: `dues_reminder:${p.id}:${dayKey}`,
+            _priority: "normal",
+          });
+          if (nErr) notifyFailed++;
+          else if (sent) notified++;
         }
 
         return new Response(
@@ -192,6 +216,8 @@ export const Route = createFileRoute("/api/public/hooks/maintenance-reminders")(
             reminded: rows.length,
             skipped: periods.length - rows.length,
             users: userIds.length,
+            notified,
+            notify_failed: notifyFailed,
           }),
           { headers: { "Content-Type": "application/json" } },
         );

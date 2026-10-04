@@ -95,9 +95,9 @@ function StepInfo({ state, patch }: StepProps<WizardState>) {
     setUploading(true);
     try {
       const MAX_BYTES = 2 * 1024 * 1024; // 2MB
-      const ALLOWED = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
+      const ALLOWED = ["image/png", "image/jpeg", "image/webp"];
       if (!ALLOWED.includes(file.type)) {
-        throw new Error("Only PNG, JPEG, WEBP, or SVG images are allowed");
+        throw new Error("Only PNG, JPEG or WEBP images are allowed");
       }
       if (file.size > MAX_BYTES) {
         throw new Error("Image must be 2MB or smaller");

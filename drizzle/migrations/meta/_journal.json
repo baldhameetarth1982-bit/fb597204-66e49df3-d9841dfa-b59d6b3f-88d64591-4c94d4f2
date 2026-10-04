@@ -1247,6 +1247,13 @@
       "when": 1791068502685,
       "tag": "0177_event_attendees",
       "breakpoints": true
+    },
+    {
+      "idx": 178,
+      "version": "7",
+      "when": 1791077690554,
+      "tag": "0178_notice_ack_roster",
+      "breakpoints": true
     }
   ]
 }

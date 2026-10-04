@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Minus, Undo2 } from "lucide-react";
+import { Plus, Minus, Undo2, Download } from "lucide-react";
+import { writeSafeWorkbook } from "@/lib/spreadsheet-safety";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
@@ -88,6 +89,7 @@ function PettyCashPage() {
       <div className="mb-4 flex flex-wrap gap-2">
         <Button className="min-h-11" onClick={() => open("top_up")}><Plus className="mr-1 h-4 w-4" />Add cash</Button>
         <Button variant="outline" className="min-h-11" onClick={() => open("spend")}><Minus className="mr-1 h-4 w-4" />Record spend</Button>
+        <Button variant="outline" className="min-h-11" disabled={!q.isSuccess || rows.length === 0} onClick={() => writeSafeWorkbook([...rows].reverse().map((r) => ({ Date: r.entry_date, Type: r.kind === "top_up" ? "Cash added" : r.kind === "spend" ? "Spend" : "Reversal", Purpose: r.purpose, Voucher: r.voucher_no ?? "", "Paid to": r.paid_to ?? "", "Amount (Rs.)": Number(r.amount), "Balance after (Rs.)": Number(r.balance_after), Status: reversed.has(r.id) ? "Reversed" : "" })), "Petty cash", `petty-cash-${today()}.xlsx`)}><Download className="mr-1 h-4 w-4" />Download register</Button>
       </div>
       {q.isLoading ? <p className="text-muted-foreground">Loading register…</p>
         : q.isError ? <div className="rounded-lg border p-4"><p>Couldn't load petty cash.</p><Button variant="outline" className="mt-2 min-h-11" onClick={() => q.refetch()}>Try again</Button></div>

@@ -4,7 +4,8 @@ import {
 import { createFileRoute } from "@tanstack/react-router";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useMemo, useState } from "react";
-import { Car, Bike, Power, Home, User } from "lucide-react";
+import { Car, Bike, Power, Home, User, Download } from "lucide-react";
+import { writeSafeWorkbook } from "@/lib/spreadsheet-safety";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useSocietyId } from "@/hooks/useSocietyId";
@@ -87,6 +88,7 @@ function SocietyVehicles() {
           { key: "active", label: "Active" },
           { key: "history", label: "Include history" },
         ]} />
+        <Button variant="outline" className="min-h-11" disabled={loading || isError || filtered.length === 0} onClick={() => writeSafeWorkbook(filtered.map((r) => ({ Plate: r.plate_number, Type: r.type === "car" ? "Car" : "Two-wheeler", Model: r.make_model ?? "", Colour: r.color ?? "", House: r.flat_number ? `${r.block_name ? `${r.block_name}-` : ""}${r.flat_number}` : "", Owner: r.owner_name ?? "", Status: r.is_active ? "Active" : "Inactive" })), "Vehicles", `vehicles-${new Date().toISOString().slice(0, 10)}.xlsx`)}><Download className="mr-1 h-4 w-4" />Download list</Button>
       </div>
 
       {loading ? (

@@ -5072,6 +5072,10 @@ export type Database = {
           payment_id: string | null
           razorpay_order_id: string | null
           razorpay_payment_id: string | null
+          refund_note: string | null
+          refund_reference: string | null
+          refund_resolved_at: string | null
+          refund_resolved_by: string | null
           request_id: string
           society_id: string
           status: string
@@ -5089,6 +5093,10 @@ export type Database = {
           payment_id?: string | null
           razorpay_order_id?: string | null
           razorpay_payment_id?: string | null
+          refund_note?: string | null
+          refund_reference?: string | null
+          refund_resolved_at?: string | null
+          refund_resolved_by?: string | null
           request_id: string
           society_id: string
           status?: string
@@ -5106,6 +5114,10 @@ export type Database = {
           payment_id?: string | null
           razorpay_order_id?: string | null
           razorpay_payment_id?: string | null
+          refund_note?: string | null
+          refund_reference?: string | null
+          refund_resolved_at?: string | null
+          refund_resolved_by?: string | null
           request_id?: string
           society_id?: string
           status?: string
@@ -12634,6 +12646,20 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_list_refund_needed_orders: {
+        Args: { _society_id: string }
+        Returns: {
+          amount_paise: number
+          created_at: string
+          failure_code: string
+          flat_number: string
+          id: string
+          razorpay_payment_id: string
+          refund_note: string
+          refund_reference: string
+          refund_resolved_at: string
+        }[]
+      }
       admin_list_role_access: { Args: never; Returns: Json }
       admin_list_societies: {
         Args: never
@@ -12698,6 +12724,10 @@ export type Database = {
           _session_date: string
         }
         Returns: number
+      }
+      admin_mark_order_refunded: {
+        Args: { _note: string; _order_id: string; _reference: string }
+        Returns: undefined
       }
       admin_messaging_overview: { Args: never; Returns: Json }
       admin_moderate_vendor_rating: {

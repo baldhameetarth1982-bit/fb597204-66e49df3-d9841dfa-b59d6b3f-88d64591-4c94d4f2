@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PaymentProofButton } from "@/components/billing/PaymentProofButton";
 import { UpiSettingsCard } from "@/components/billing/UpiSettingsCard";
+import { RefundNeededCard } from "@/components/billing/RefundNeededCard";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Card, CardContent } from "@/components/ui/card";
@@ -179,6 +180,7 @@ function SocietyPaymentsRoute() {
     <PageShell>
       <PageHeader title="Payments" description="Cash, Bank Transfer and UPI QR payments. A receipt is issued only after you verify a payment." />
       {societyId && <UpiSettingsCard societyId={societyId} />}
+      {societyId && <RefundNeededCard societyId={societyId} />}
       <div className="mb-5 rounded-2xl border border-border bg-card"><BillingCenterTabs /></div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">

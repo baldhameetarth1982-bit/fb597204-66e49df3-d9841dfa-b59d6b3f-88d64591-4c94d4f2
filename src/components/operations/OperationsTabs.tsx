@@ -2,7 +2,8 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Boxes, Copy, HardHat, Loader2, Package, Plus, Truck, Wrench } from "lucide-react";
+import { Boxes, Copy, Download, HardHat, History, Loader2, Package, Plus, Truck, Wrench } from "lucide-react";
+import { writeSafeWorkbook } from "@/lib/spreadsheet-safety";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -407,11 +408,54 @@ function AssetDetail({ sid, asset, vendors, onClose, onEdit }: { sid: string; as
 
 /* ---------------- Inventory ---------------- */
 interface ItemRow { id: string; name: string; location: string | null; unit: string; quantity: number; reorder_level: number; is_active: boolean }
+const isLow = (i: ItemRow) => i.is_active && Number(i.reorder_level) > 0 && Number(i.quantity) <= Number(i.reorder_level);
+function exportInventory(rows: ItemRow[]) {
+  writeSafeWorkbook(rows.map((i) => ({
+    Item: i.name, Location: i.location ?? "", Unit: i.unit, Quantity: Number(i.quantity),
+    "Reorder at": Number(i.reorder_level), Status: !i.is_active ? "Inactive" : isLow(i) ? "Low stock" : "OK",
+  })), "Inventory", `inventory-${today()}.xlsx`);
+}
+function StockHistorySheet({ item, onClose }: { item: ItemRow | null; onClose: () => void }) {
+  const sid = useSid();
+  const q = useQuery({
+    queryKey: ["ops", "inventory-moves", item?.id], enabled: !!item && !!sid,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("inventory_movements").select("id, delta, resulting_qty, reason, created_at").eq("society_id", sid!).eq("item_id", item!.id).order("created_at", { ascending: false }).limit(100);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  return (
+    <Sheet open={!!item} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-lg">
+        <SheetHeader><SheetTitle>Stock history · {item?.name}</SheetTitle></SheetHeader>
+        <div className="py-4">
+          {q.isPending ? <ListSkeleton rows={4} /> : q.isError ? <LoadError title="Couldn't load stock history." onRetry={() => q.refetch()} />
+            : !q.data.length ? <ListEmpty icon={History} title="No changes yet">Stock changes will show here.</ListEmpty> : (
+            <ul className="divide-y rounded-2xl border bg-card">
+              {q.data.map((m) => (
+                <li key={m.id} className="flex items-start justify-between gap-3 p-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">{m.reason}</p>
+                    <p className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" })} · left {Number(m.resulting_qty)} {item?.unit}</p>
+                  </div>
+                  <span className={cn("shrink-0 text-sm font-semibold tabular-nums", Number(m.delta) < 0 ? "text-destructive" : "text-success")}>{Number(m.delta) > 0 ? "+" : ""}{Number(m.delta)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
 export function InventoryTab() {
   const sid = useSid(); const qc = useQueryClient();
   const [adding, setAdding] = useState(false);
   const [nf, setNf] = useState({ name: "", location: "", unit: "pcs", reorder: "0" });
   const [adj, setAdj] = useState<{ item: ItemRow; delta: string; reason: string } | null>(null);
+  const [lowOnly, setLowOnly] = useState(false);
+  const [hist, setHist] = useState<ItemRow | null>(null);
   const q = useQuery({
     queryKey: ["ops", "inventory", sid], enabled: !!sid,
     queryFn: async () => {
@@ -420,6 +464,8 @@ export function InventoryTab() {
       return (data ?? []) as ItemRow[];
     },
   });
+  const lowCount = (q.data ?? []).filter(isLow).length;
+  const shown = (q.data ?? []).filter((i) => !lowOnly || isLow(i));
   const create = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.rpc("admin_upsert_inventory_item", { _id: null as unknown as string, _name: nf.name, _location: nf.location, _unit: nf.unit, _reorder: Number(nf.reorder) || 0, _active: true });
@@ -438,25 +484,33 @@ export function InventoryTab() {
   });
   return (
     <section className="space-y-3">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">Quantities only. Record purchases as expenses.</p>
-        <Button className="min-h-11 rounded-xl" onClick={() => setAdding(true)}><Plus className="mr-1 h-4 w-4" />Add item</Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant={lowOnly ? "default" : "outline"} className="min-h-11 rounded-xl" aria-pressed={lowOnly} onClick={() => setLowOnly((v) => !v)}>Low stock{lowCount ? ` (${lowCount})` : ""}</Button>
+          <Button variant="outline" className="min-h-11 rounded-xl" disabled={!q.data?.length} onClick={() => q.data && exportInventory(q.data)}><Download className="mr-1 h-4 w-4" />Download</Button>
+          <Button className="min-h-11 rounded-xl" onClick={() => setAdding(true)}><Plus className="mr-1 h-4 w-4" />Add item</Button>
+        </div>
       </div>
       {!sid || q.isPending ? <ListSkeleton rows={4} /> : q.isError ? <LoadError title="Couldn't load inventory." onRetry={() => q.refetch()} />
-        : !q.data.length ? <ListEmpty icon={Boxes} title="No items yet">Track bulbs, cleaning supplies, spares and more.</ListEmpty> : (
+        : !q.data.length ? <ListEmpty icon={Boxes} title="No items yet">Track bulbs, cleaning supplies, spares and more.</ListEmpty>
+        : !shown.length ? <ListEmpty icon={Boxes} title="Nothing is low on stock">Every item is above its reorder level.</ListEmpty> : (
         <ul className="divide-y rounded-2xl border bg-card">
-          {q.data.map((i) => (
+          {shown.map((i) => (
             <li key={i.id} className={cn("flex items-center gap-3 p-3", !i.is_active && "opacity-60")}>
               <Package className="h-5 w-5 shrink-0 text-muted-foreground" />
               <div className="min-w-0 flex-1">
-                <p className="flex flex-wrap items-center gap-2 font-medium">{i.name}{i.reorder_level > 0 && i.quantity <= i.reorder_level && <Chip tone="bad">Low stock</Chip>}</p>
+                <p className="flex flex-wrap items-center gap-2 font-medium">{i.name}{isLow(i) && <Chip tone="bad">Low stock</Chip>}</p>
                 <p className="text-xs text-muted-foreground">{Number(i.quantity)} {i.unit}{i.location ? ` · ${i.location}` : ""} · reorder at {Number(i.reorder_level)}</p>
               </div>
+              <Button variant="ghost" className="min-h-11 rounded-xl" onClick={() => setHist(i)} aria-label={`Stock history for ${i.name}`}><History className="h-4 w-4" /></Button>
               <Button variant="outline" className="min-h-11 rounded-xl" onClick={() => setAdj({ item: i, delta: "", reason: "" })}>Adjust</Button>
             </li>
           ))}
         </ul>
       )}
+      <StockHistorySheet item={hist} onClose={() => setHist(null)} />
+
       <Sheet open={adding} onOpenChange={(o) => !o && !create.isPending && setAdding(false)}>
         <SheetContent side="bottom" className="mx-auto max-w-lg rounded-t-3xl">
           <SheetHeader><SheetTitle>Add item</SheetTitle></SheetHeader>

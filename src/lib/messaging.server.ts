@@ -54,6 +54,9 @@ function normalisePhone(p: string | null): string | null {
 export async function dispatchMessages(limit = 50) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const db = supabaseAdmin as any;
+  // Recover rows a crashed run left in "sending": requeue for a later attempt, never mark them sent.
+  await db.from("message_deliveries").update({ status: "queued", last_error: "Recovered after an interrupted send", updated_at: new Date().toISOString() })
+    .eq("status", "sending").lt("updated_at", new Date(Date.now() - 15 * 60_000).toISOString());
   const { data: chans } = await db.from("messaging_channels").select("channel, enabled");
   const enabled = new Map<string, boolean>((chans ?? []).map((c: any) => [c.channel, c.enabled]));
   const { data: due } = await db.from("message_deliveries").select("id, user_id, channel, subject, body, attempts")

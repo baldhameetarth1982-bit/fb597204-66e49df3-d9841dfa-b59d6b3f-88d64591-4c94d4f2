@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { OnboardingStepper } from "@/components/system/OnboardingStepper";
-import { searchSocietiesPublic, submitJoinRequest } from "@/lib/onboarding.functions";
+import { searchSocietiesPublic, submitJoinRequest, getJoinStructure, submitJoinRequestForUnit, type JoinStructure } from "@/lib/onboarding.functions";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/onboarding/join")({
@@ -40,6 +40,16 @@ function JoinFlow() {
   const [flatNumber, setFlatNumber] = useState("");
   const [role, setRole] = useState<"owner" | "tenant" | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [structure, setStructure] = useState<JoinStructure | null>(null);
+  const [blockId, setBlockId] = useState<string | null>(null);
+  const [unitId, setUnitId] = useState<string | null>(null);
+  const hasUnits = !!structure && structure.units.length > 0;
+  const usesBlocks = hasUnits && structure!.blocks.length > 0;
+  const visibleUnits = hasUnits ? structure!.units.filter((u) => (usesBlocks ? u.block_id === blockId : true)) : [];
+  const selectedUnit = hasUnits ? structure!.units.find((u) => u.id === unitId) ?? null : null;
+  const selectedBlock = usesBlocks ? structure!.blocks.find((b) => b.id === blockId) ?? null : null;
+  const unitLabel = selectedUnit ? (selectedBlock ? `${selectedBlock.name} - ${selectedUnit.label}` : selectedUnit.label) : flatNumber;
+  const unitReady = hasUnits ? !!selectedUnit : !!flatNumber.trim();
 
   const verifiedPhone = useMemo(() => profile?.phone ?? "", [profile?.phone]);
 
@@ -98,6 +108,10 @@ function JoinFlow() {
         toast.error("That code doesn't match this society");
         return;
       }
+      const st = await getJoinStructure(society.id, trimmed);
+      setStructure(st);
+      setBlockId(null);
+      setUnitId(null);
       setStep("details");
     } catch (e: any) {
       toast.error(userMessage(e, "Could not verify code"));
@@ -108,13 +122,23 @@ function JoinFlow() {
 
   async function submit() {
     if (!society || !role || submitting) return;
-    if (!fullName.trim() || !flatNumber.trim()) {
+    if (!fullName.trim() || !unitReady) {
       toast.error("Please fill in all fields");
       return;
     }
     setSubmitting(true);
     try {
-      await submitJoinRequest({
+      if (hasUnits && selectedUnit) {
+        await submitJoinRequestForUnit({
+          societyId: society.id,
+          code: code.trim(),
+          fullName: fullName.trim(),
+          blockId: selectedUnit.block_id,
+          flatId: selectedUnit.id,
+          mobile: verifiedPhone || null,
+          ownerOrTenant: role,
+        });
+      } else await submitJoinRequest({
         societyId: society.id,
         code: code.trim(),
         fullName: fullName.trim(),
@@ -260,16 +284,70 @@ function JoinFlow() {
                   placeholder="Priya Sharma"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="flat">House / flat number</Label>
-                <Input
-                  id="flat"
-                  value={flatNumber}
-                  onChange={(e) => setFlatNumber(e.target.value)}
-                  className="h-11 rounded-2xl"
-                  placeholder="A-1204"
-                />
-              </div>
+              {hasUnits ? (
+                <>
+                  {usesBlocks && (
+                    <div className="space-y-2">
+                      <Label>Select block</Label>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2" role="radiogroup" aria-label="Block">
+                        {structure!.blocks.map((b) => (
+                          <button
+                            key={b.id}
+                            type="button"
+                            role="radio"
+                            aria-checked={blockId === b.id}
+                            onClick={() => { setBlockId(b.id); setUnitId(null); }}
+                            className={cn(
+                              "min-h-11 rounded-2xl border px-3 text-sm font-medium truncate transition-colors",
+                              blockId === b.id ? "border-primary bg-primary/5 text-primary" : "border-border",
+                            )}
+                          >
+                            {b.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {(!usesBlocks || blockId) && (
+                    <div className="space-y-2">
+                      <Label>Select house</Label>
+                      {visibleUnits.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No houses are set up here yet. Ask your Society Admin.</p>
+                      ) : (
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-64 overflow-y-auto pr-1" role="radiogroup" aria-label="House">
+                          {visibleUnits.map((u) => (
+                            <button
+                              key={u.id}
+                              type="button"
+                              role="radio"
+                              aria-checked={unitId === u.id}
+                              onClick={() => setUnitId(u.id)}
+                              className={cn(
+                                "min-h-11 rounded-xl border px-2 text-sm font-medium truncate transition-colors",
+                                unitId === u.id ? "border-primary bg-primary/5 text-primary" : "border-border",
+                              )}
+                            >
+                              {u.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="flat">House / flat number</Label>
+                  <Input
+                    id="flat"
+                    value={flatNumber}
+                    onChange={(e) => setFlatNumber(e.target.value)}
+                    className="h-11 rounded-2xl"
+                    placeholder="A-1204"
+                  />
+                  <p className="text-xs text-muted-foreground">Your society hasn't listed its houses yet, so your admin will match this by hand.</p>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>Owner or tenant?</Label>
                 <div className="grid grid-cols-2 gap-2">
@@ -304,7 +382,7 @@ function JoinFlow() {
           </Card>
           <Button
             onClick={() => setStep("submit")}
-            disabled={!fullName.trim() || !flatNumber.trim() || !role}
+            disabled={!fullName.trim() || !unitReady || !role}
             className="w-full h-12 rounded-2xl"
           >
             Continue
@@ -321,7 +399,7 @@ function JoinFlow() {
           <Card className="rounded-2xl">
             <CardContent className="p-5 space-y-3">
               <Row label="Society" value={society.name} />
-              <Row label="Flat" value={flatNumber} />
+              <Row label="House" value={unitLabel} />
               <Row label="Name" value={fullName} />
               <Row label="Role" value={role[0].toUpperCase() + role.slice(1)} />
               <Row label="Mobile" value={verifiedPhone || "—"} />

@@ -53,8 +53,7 @@ Legend:
 | payment_points | Payment Points | Community & Gamification | Pro | partial | — |
 | leaderboard | Leaderboard | Community & Gamification | Pro | built | /society/leaderboard |
 | ai_digest | AI Digest & Insights | AI & Insights | Premium | built | /society/digest |
-| custom_branding | Custom Branding | Settings & Admin | Premium | partial | /society/branding |
-| online_gateway_request | Online Gateway Request | Integrations | Premium | planned | — |
+| custom_branding | Custom Branding | Settings & Admin | Premium | built | /society/branding |
 | advanced_automation | Advanced Automation | Settings & Admin | Premium | partial | /society/automations |
 
 ## Audit findings
@@ -124,3 +123,7 @@ These stay untouched — they're settings/utility routes, not "features" in the 
 | Canonical commit | ⏳ remaining Stage 2D work |
 | Commit idempotency records | ⏳ remaining Stage 2D work |
 | Real provenance IDs | ⏳ remaining Stage 2D work |
+
+## Retired keys
+
+- `online_gateway_request` — removed; superseded by Online Pay Now (Razorpay maintenance payments) available to eligible plans.

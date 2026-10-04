@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { AuthShell } from "@/components/shared/AuthShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -61,12 +62,12 @@ function ResetPasswordPage() {
             <Label htmlFor="new-pw" className="flex items-center gap-1.5 text-sm">
               <Lock className="h-4 w-4 text-primary" /> New password
             </Label>
-            <Input id="new-pw" type="password" minLength={6} required autoComplete="new-password"
+            <PasswordInput id="new-pw"  minLength={6} required autoComplete="new-password"
               value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="confirm-pw" className="text-sm">Confirm password</Label>
-            <Input id="confirm-pw" type="password" minLength={6} required autoComplete="new-password"
+            <PasswordInput id="confirm-pw"  minLength={6} required autoComplete="new-password"
               value={confirm} onChange={(e) => setConfirm(e.target.value)} />
           </div>
           <Button type="submit" disabled={busy} className="w-full min-h-11">

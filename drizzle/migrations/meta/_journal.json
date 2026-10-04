@@ -1436,6 +1436,20 @@
       "when": 1791148016128,
       "tag": "0204_society_settings_protect_insert_default",
       "breakpoints": true
+    },
+    {
+      "idx": 205,
+      "version": "7",
+      "when": 1791151366611,
+      "tag": "0205_create_unit_infers_structure_mode",
+      "breakpoints": true
+    },
+    {
+      "idx": 206,
+      "version": "7",
+      "when": 1791151397880,
+      "tag": "0206_create_unit_infers_structure_mode_fix_audit",
+      "breakpoints": true
     }
   ]
 }

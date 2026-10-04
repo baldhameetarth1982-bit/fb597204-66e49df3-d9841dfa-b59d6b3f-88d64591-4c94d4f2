@@ -53,7 +53,7 @@ function NotificationCenter() {
     enabled: !!user, queryKey: ["user-notifications", user?.id], staleTime: 15_000,
     queryFn: async () => {
       const { data, error } = await supabase.from("user_notifications")
-        .select("id, kind, title, body, created_at, read_at, priority").order("created_at", { ascending: false }).limit(100);
+        .select("id, kind, title, body, link, created_at, read_at, priority").order("created_at", { ascending: false }).limit(100);
       if (error) throw error;
       return data ?? [];
     },
@@ -86,8 +86,10 @@ function NotificationCenter() {
   const items = useMemo<Item[]>(() => {
     const out: Item[] = [];
     for (const n of personal.data ?? []) {
-      const m = PERSONAL[n.kind] ?? { cat: "helpdesk" as const, icon: Bell, to: "/app/dashboard" };
-      out.push({ key: `p-${n.id}`, cat: m.cat, title: n.title, body: n.body, at: n.created_at, unread: !n.read_at, to: m.to, icon: m.icon, source: "personal", refId: n.id, emergency: n.priority === "urgent", priority: n.priority === "urgent" || n.priority === "high" ? n.priority : undefined });
+      const m = PERSONAL[n.kind] ?? { cat: n.kind === "notice" ? "notices" as const : n.kind === "bill" || n.kind === "payment" ? "billing" as const : "helpdesk" as const, icon: Bell, to: "/app/notifications" };
+      // Prefer the notification's own destination when it is a safe in-app resident path; never fall back to Dashboard.
+      const link = typeof n.link === "string" && /^\/app\/[A-Za-z0-9/_\-?=&.]*$/.test(n.link) && !n.link.includes("//") ? n.link : m.to;
+      out.push({ key: `p-${n.id}`, cat: m.cat, title: n.title, body: n.body, at: n.created_at, unread: !n.read_at, to: link, icon: m.icon, source: "personal", refId: n.id, emergency: n.priority === "urgent", priority: n.priority === "urgent" || n.priority === "high" ? n.priority : undefined });
     }
     const read = notices.data?.read ?? new Set<string>();
     for (const n of notices.data?.notices ?? []) {

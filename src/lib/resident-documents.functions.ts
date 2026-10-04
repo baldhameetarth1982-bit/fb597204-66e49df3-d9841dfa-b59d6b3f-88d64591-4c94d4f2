@@ -26,6 +26,22 @@ function pathFor(residentUserId: string, itemKey: string) {
   return `residents/${residentUserId}/${itemKey}`;
 }
 
+/** Stored type of an object, read server-side (the signed upload URL lets the browser choose it). */
+async function storedMime(admin: any, residentUserId: string, itemKey: string): Promise<string | null> {
+  const { data } = await admin.storage.from(BUCKET).list(`residents/${residentUserId}`, { limit: 1, search: itemKey });
+  const row = (data ?? []).find((r: { name: string }) => r.name === itemKey);
+  const mime = (row?.metadata as { mimetype?: string } | null)?.mimetype;
+  return typeof mime === "string" ? mime.toLowerCase() : null;
+}
+
+async function audit(admin: any, actorId: string, societyId: string, action: string, residentUserId: string, itemKey: string) {
+  const { error } = await admin.from("audit_log").insert({
+    actor_id: actorId, action, target_table: "resident_documents", target_id: residentUserId, society_id: societyId,
+    metadata: { key: itemKey.slice(0, 160) },
+  });
+  if (error) console.error("resident_document_audit_failed");
+}
+
 export const listResidentDocuments = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => baseInput.parse(input))
@@ -48,6 +64,7 @@ export const listResidentDocuments = createServerFn({ method: "POST" })
     if (error) throw new Error("documents_unavailable");
     return (rows ?? [])
       .filter((row) => key.safeParse(row.name).success)
+      .filter((row) => allowedMime.has(String((row.metadata as { mimetype?: string } | null)?.mimetype ?? "").toLowerCase()))
       .map((row) => ({
         name: row.name,
         size: Number((row.metadata as { size?: number } | null)?.size ?? 0),
@@ -103,10 +120,17 @@ export const openResidentDocument = createServerFn({ method: "POST" })
       windowSec: 3600,
     });
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Never hand out a link to a file whose stored type isn't an allowed document type.
+    const mime = await storedMime(supabaseAdmin, data.residentUserId, data.key);
+    if (!mime || !allowedMime.has(mime)) {
+      if (mime) await supabaseAdmin.storage.from(BUCKET).remove([pathFor(data.residentUserId, data.key)]);
+      throw new Error("document_unavailable");
+    }
     const { data: signed, error } = await supabaseAdmin.storage
       .from(BUCKET)
-      .createSignedUrl(pathFor(data.residentUserId, data.key), 300);
+      .createSignedUrl(pathFor(data.residentUserId, data.key), 300, { download: true });
     if (error || !signed?.signedUrl) throw new Error("document_unavailable");
+    await audit(supabaseAdmin, context.userId, data.societyId, "resident_document.opened", data.residentUserId, data.key);
     return { url: signed.signedUrl };
   });
 
@@ -127,5 +151,6 @@ export const deleteResidentDocument = createServerFn({ method: "POST" })
       .from(BUCKET)
       .remove([pathFor(data.residentUserId, data.key)]);
     if (error) throw new Error("delete_failed");
+    await audit(supabaseAdmin, context.userId, data.societyId, "resident_document.deleted", data.residentUserId, data.key);
     return { ok: true };
   });

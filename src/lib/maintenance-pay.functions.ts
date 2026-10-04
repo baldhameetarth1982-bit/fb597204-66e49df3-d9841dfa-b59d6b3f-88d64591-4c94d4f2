@@ -15,6 +15,6 @@ export const createMaintenanceOrder = createServerFn({ method: "POST" })
   .inputValidator((i) => z.object({ billId: z.string().uuid() }).parse(i))
   .handler(async () => {
     throw new Error(
-      "Online maintenance payments are not available. Please record your payment offline (Cash or Bank Transfer) and wait for admin verification.",
+      "Online maintenance payments are not available. Please use Pay Now on the bill, pay by UPI QR, or record a Cash or Bank Transfer payment and wait for admin verification.",
     );
   });

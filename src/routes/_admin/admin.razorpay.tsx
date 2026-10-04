@@ -80,7 +80,7 @@ function RazorpayPage() {
     <PageShell>
       <PageHeader
         title="Payment gateway"
-        description="Razorpay collects SociyoHub plan payments only. Society maintenance stays Cash and Bank Transfer, with no platform fee."
+        description="Plan (subscription) payments are kept fully separate from society maintenance. Maintenance supports Cash, Bank Transfer, UPI QR and online Pay Now, with no platform fee."
       />
 
       {loading ? (

@@ -16,6 +16,7 @@ import { useSocietyId } from "@/hooks/useSocietyId";
 import { cn } from "@/lib/utils";
 import { govRpc, govError, fmtDateTime, ELECTION_STATUS, NOMINATION_STATUS, ELECTION_ELIGIBILITY, localToIso, isoToLocal } from "@/lib/governance";
 import { ElectionResultsView } from "@/components/governance/ElectionResultsView";
+import { CommitteeHistory } from "@/components/governance/CommitteeHistory";
 
 export const Route = createFileRoute("/_society/society/elections")({
   head: () => ({
@@ -169,6 +170,7 @@ function ElectionsAdmin() {
             ))}
           </ul>
         )}
+      {list.data && <CommitteeHistory elections={list.data} />}
 
       {/* Create / edit (draft only) */}
       <Sheet open={formOpen} onOpenChange={setFormOpen}>

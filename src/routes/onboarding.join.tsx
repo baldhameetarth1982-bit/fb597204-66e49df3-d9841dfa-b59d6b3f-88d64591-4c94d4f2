@@ -336,16 +336,11 @@ function JoinFlow() {
                   )}
                 </>
               ) : (
-                <div className="space-y-2">
-                  <Label htmlFor="flat">House / flat number</Label>
-                  <Input
-                    id="flat"
-                    value={flatNumber}
-                    onChange={(e) => setFlatNumber(e.target.value)}
-                    className="h-11 rounded-2xl"
-                    placeholder="A-1204"
-                  />
-                  <p className="text-xs text-muted-foreground">Your society hasn't listed its houses yet, so your admin will match this by hand.</p>
+                <div role="status" className="rounded-2xl border border-amber-500/40 bg-amber-500/5 p-3 text-sm">
+                  <p className="font-medium">Society setup isn't finished</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Your society hasn't added its houses yet, so you can't pick yours. Ask your Society Admin to finish adding houses, then try again.
+                  </p>
                 </div>
               )}
               <div className="space-y-2">

@@ -91,14 +91,30 @@ export const runBillingNow = createServerFn({ method: "POST" })
     if (!flats?.length) throw new Error("Add blocks and assigned units before generating bills.");
 
     const flatIds = (flats as any[]).map((f) => f.id);
+    // Only current occupants count; homes whose residents moved out are not billed.
     const { data: assignedResidents, error: arErr } = await supabase
       .from("flat_residents")
       .select("flat_id")
-      .in("flat_id", flatIds);
+      .in("flat_id", flatIds)
+      .eq("is_active", true)
+      .is("moved_out_at", null);
     if (arErr) throw new Error(arErr.message);
     const assignedFlatIds = new Set((assignedResidents ?? []).map((r: any) => r.flat_id));
-    const billableFlats = (flats as any[]).filter((f) => assignedFlatIds.has(f.id));
-    if (!billableFlats.length) throw new Error("Assign residents to units before generating bills.");
+    const occupiedFlats = (flats as any[]).filter((f) => assignedFlatIds.has(f.id));
+    if (!occupiedFlats.length) throw new Error("Assign residents to units before generating bills.");
+
+    // Idempotency: never bill a home twice for the same month (double-click, retry, cron overlap).
+    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
+    const { data: existing, error: exErr } = await supabase
+      .from("bills")
+      .select("flat_id")
+      .eq("society_id", data.societyId)
+      .eq("period_start", monthStart)
+      .neq("status", "cancelled");
+    if (exErr) throw new Error(exErr.message);
+    const alreadyBilled = new Set((existing ?? []).map((b: any) => b.flat_id));
+    const billableFlats = occupiedFlats.filter((f) => !alreadyBilled.has(f.id));
+    if (!billableFlats.length) throw new Error("Bills for this month already exist for every occupied home.");
 
     const { data: overrides } = await supabase
       .from("unit_billing_overrides")

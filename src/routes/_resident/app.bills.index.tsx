@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Receipt, Clock, CheckCircle2, Home, Info, ChevronRight, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cacheSet, cacheGet } from "@/lib/offline-cache";
+import { useSocietyId } from "@/hooks/useSocietyId";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { ClaimFlatSheet } from "@/components/resident/ClaimFlatSheet";
@@ -35,6 +36,7 @@ interface BillRow {
  */
 function BillsScreen() {
   const { profile } = useAuth();
+  const { societyId } = useSocietyId();
   const listMyBills = useServerFn(getResidentBills);
   const [visibleBills, setVisibleBills] = useState<BillRow[]>([]);
   const [online, setOnline] = useState(true);
@@ -50,7 +52,7 @@ function BillsScreen() {
       const isNowOnline = typeof navigator !== "undefined" ? navigator.onLine : true;
       setOnline(isNowOnline);
       setLoadError(null);
-      const cacheKey = profile?.id ? `bills:${profile.id}` : "bills";
+      const cacheKey = profile?.id ? `bills:${profile.id}:${societyId ?? "none"}` : "bills";
       if (isNowOnline) {
         if (!profile?.id) {
           setVisibleBills([]);
@@ -93,7 +95,7 @@ function BillsScreen() {
       window.removeEventListener("online", sync);
       window.removeEventListener("offline", sync);
     };
-  }, [profile?.id, profile?.society_id, listMyBills, reloadKey]);
+  }, [profile?.id, profile?.society_id, societyId, listMyBills, reloadKey]);
 
   if (loading) {
     return (

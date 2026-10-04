@@ -1,3 +1,4 @@
+import { cacheClearAll } from "@/lib/offline-cache";
 import {
   createContext,
   useCallback,
@@ -255,6 +256,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setProfile(null);
         setRoles([]);
         setSocieties([]);
+        cacheClearAll();
         await supabase.auth.signOut();
         setIsLoading(false);
       },

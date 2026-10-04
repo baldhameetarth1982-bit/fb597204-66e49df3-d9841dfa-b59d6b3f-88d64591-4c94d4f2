@@ -19,6 +19,16 @@ export function cacheGet<T>(key: string, maxAgeMs = 7 * 24 * 60 * 60 * 1000): T 
   }
 }
 
+/** Remove every cached entry (called on sign-out so the next user never sees stale data). */
+export function cacheClearAll() {
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(PREFIX)) localStorage.removeItem(k);
+    }
+  } catch { /* disabled */ }
+}
+
 export function isOnline() {
   return typeof navigator === "undefined" ? true : navigator.onLine;
 }

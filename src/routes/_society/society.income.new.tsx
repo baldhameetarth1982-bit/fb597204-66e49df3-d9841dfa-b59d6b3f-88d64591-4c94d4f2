@@ -450,12 +450,12 @@ function DetailsStep(props: {
               )}
             </SelectContent>
           </Select>
-          {!catsError && !catsLoading && activeCats.length === 0 && (
+          {!catsError && !catsLoading && (
             <Link
               to="/society/income/categories"
-              className="text-xs text-primary underline mt-1 inline-block min-h-[32px]"
+              className="text-xs text-primary underline mt-1 inline-flex items-center min-h-[44px]"
             >
-              Manage categories
+              + Create new category
             </Link>
           )}
         </div>

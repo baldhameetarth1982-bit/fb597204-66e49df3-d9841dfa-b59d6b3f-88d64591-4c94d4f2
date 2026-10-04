@@ -1331,6 +1331,13 @@
       "when": 1791142266332,
       "tag": "0189_messaging_resend_unconfirmed_rate_limit_fix",
       "breakpoints": true
+    },
+    {
+      "idx": 190,
+      "version": "7",
+      "when": 1791143544699,
+      "tag": "0190_storage_upload_type_restrictions",
+      "breakpoints": true
     }
   ]
 }

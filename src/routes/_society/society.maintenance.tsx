@@ -19,6 +19,12 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { societyMaintenanceSummary } from "@/lib/residents.functions";
+import { getMaintenanceBoard, setMaintenanceTiming } from "@/lib/accounts-documents.functions";
+import { useQueryClient } from "@tanstack/react-query";
+import { Input } from "@/components/ui/input";
+import { toSafeFinanceMessage } from "@/lib/finance-safe-error";
+import { toast } from "sonner";
+import type { MaintenanceStatus, MaintenanceTiming } from "@/lib/maintenance-status";
 
 export const Route = createFileRoute("/_society/society/maintenance")({
   head: () => ({ meta: [{ title: "Maintenance — SociyoHub" }] }),
@@ -184,6 +190,8 @@ function MaintenancePage() {
         </CardContent>
       </Card>
 
+      {societyId && <MaintenanceBoard societyId={societyId} year={year} month={month === "all" ? now.getMonth() : month} blockId={blockId} />}
+
       {/* KPIs — only when we have real data */}
       {hasAnyData && summary && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -327,5 +335,71 @@ function Kpi({
         <div className="text-sm font-semibold truncate">{value}</div>
       </div>
     </Card>
+  );
+}
+
+const STATUS_UI: Record<MaintenanceStatus, { label: string; cls: string }> = {
+  upcoming: { label: "Upcoming", cls: "bg-muted text-muted-foreground" },
+  pending: { label: "Pending", cls: "bg-secondary text-secondary-foreground" },
+  due: { label: "Due", cls: "bg-accent text-accent-foreground" },
+  overdue: { label: "Overdue", cls: "bg-destructive/15 text-destructive" },
+  paid: { label: "Paid", cls: "bg-primary/15 text-primary" },
+  advance: { label: "Paid ahead", cls: "bg-primary/10 text-primary" },
+};
+const TIMING_HELP: Record<MaintenanceTiming, string> = {
+  post: "Post: October maintenance is collected in November.",
+  current: "Current: October maintenance is collected in October.",
+  pre: "Pre: October maintenance is collected in September.",
+};
+
+function MaintenanceBoard({ societyId, year, month, blockId }: { societyId: string; year: number; month: number; blockId: string }) {
+  const boardFn = useServerFn(getMaintenanceBoard), saveTiming = useServerFn(setMaintenanceTiming);
+  const qc = useQueryClient();
+  const [status, setStatus] = useState<"all" | MaintenanceStatus>("all");
+  const [search, setSearch] = useState("");
+  const [saving, setSaving] = useState(false);
+  const q = useQuery({ queryKey: ["maintenance-board", societyId, year, month], retry: false, placeholderData: (p) => p, queryFn: () => boardFn({ data: { societyId, year, month } }) });
+  const rows = useMemo(() => (q.data?.rows ?? []).filter((r) =>
+    (blockId === "all" || r.block_id === blockId) && (status === "all" || r.status === status) &&
+    (!search.trim() || `${r.block ?? ""} ${r.label}`.toLowerCase().includes(search.trim().toLowerCase()))), [q.data, blockId, status, search]);
+  const counts = useMemo(() => { const c: Record<string, number> = {}; for (const r of q.data?.rows ?? []) c[r.status] = (c[r.status] ?? 0) + 1; return c; }, [q.data]);
+
+  async function changeTiming(t: MaintenanceTiming) {
+    if (saving || t === q.data?.timing) return;
+    setSaving(true);
+    try { await saveTiming({ data: { societyId, timing: t } }); await qc.invalidateQueries({ queryKey: ["maintenance-board", societyId] }); toast.success("Maintenance timing saved"); }
+    catch (e) { toast.error(toSafeFinanceMessage(e)); } finally { setSaving(false); }
+  }
+
+  return (
+    <SectionCard title={`House status · ${MONTHS[month]} ${year}`} description="Within the collection month: 1st–10th Pending, 11th–month end Due, from the next month Overdue.">
+      {q.isLoading ? <div className="p-6 grid place-items-center"><Loader2 className="h-5 w-5 animate-spin" aria-label="Loading house status" /></div>
+        : q.error ? <div className="space-y-2"><p className="text-sm text-destructive" role="alert">House status couldn't load.</p><Button size="sm" variant="outline" className="min-h-11" onClick={() => q.refetch()}>Retry</Button></div>
+        : <div className="space-y-3">
+          <div>
+            <p className="text-xs font-medium mb-1.5">Maintenance timing</p>
+            <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Maintenance timing">
+              {(["post", "current", "pre"] as const).map((t) => (
+                <Button key={t} role="radio" aria-checked={q.data!.timing === t} variant={q.data!.timing === t ? "default" : "outline"} className="min-h-11 capitalize" disabled={saving} onClick={() => changeTiming(t)}>{t}</Button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1.5">{TIMING_HELP[q.data!.timing]}</p>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
+              <SelectTrigger className="rounded-xl min-h-11" aria-label="Status"><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="all">All statuses</SelectItem>{(Object.keys(STATUS_UI) as MaintenanceStatus[]).map((k) => <SelectItem key={k} value={k}>{STATUS_UI[k].label} ({counts[k] ?? 0})</SelectItem>)}</SelectContent>
+            </Select>
+            <Input aria-label="Search house" placeholder="Search house" className="min-h-11" value={search} onChange={(e) => setSearch(e.target.value)} />
+          </div>
+          {rows.length === 0 ? <p className="text-sm text-muted-foreground py-4 text-center">{(q.data?.rows.length ?? 0) === 0 ? "No houses set up yet." : "No houses match these filters."}</p>
+            : <ul className="divide-y rounded-xl border max-h-[28rem] overflow-y-auto">{rows.map((r) => (
+              <li key={r.flat_id} className="flex items-center justify-between gap-2 px-3 py-2.5 min-h-11">
+                <div className="min-w-0"><p className="text-sm font-medium truncate">{r.block ? `${r.block} · ` : ""}{r.label}</p>
+                  <p className="text-xs text-muted-foreground tabular-nums">{r.amount_due != null ? `₹${r.amount_due.toLocaleString("en-IN")}` : "No maintenance entry"}</p></div>
+                <span className={cn("shrink-0 rounded-full px-2.5 py-1 text-xs font-medium", STATUS_UI[r.status].cls)}>{STATUS_UI[r.status].label}</span>
+              </li>))}</ul>}
+        </div>}
+    </SectionCard>
   );
 }

@@ -1,8 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { FileText, Loader2, Plus, Receipt, Tags } from "lucide-react";
+import { FileText, Loader2, Plus, Printer, Receipt, Tags, TrendingUp } from "lucide-react";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { AccountsCenterTabs } from "@/components/nav/AccountsCenterTabs";
 import { MobileHero } from "@/components/shared/MobileHero";
@@ -16,8 +16,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { toSafeFinanceMessage } from "@/lib/finance-safe-error";
-import { createCategorizedExpense, ensureDefaultAccountCategories, listExpenseCategories, listFinanceDocuments, saveExpenseCategory } from "@/lib/accounts-documents.functions";
+import { createIncomeWithBill, createCategorizedExpense, ensureDefaultAccountCategories, listExpenseCategories, listFinanceDocuments, saveExpenseCategory } from "@/lib/accounts-documents.functions";
 import { indiaToday } from "@/lib/maintenance-status";
+import { listIncomeCategoriesFn } from "@/lib/non-member-income.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_society/society/vouchers")({
@@ -46,6 +47,19 @@ function VouchersPage() {
   const [requestId, setRequestId] = useState(() => crypto.randomUUID()), [busy, setBusy] = useState(false);
   const [catOpen, setCatOpen] = useState(false), [editing, setEditing] = useState<{ id: string | null; name: string; kind: Kind; active: boolean }>({ id: null, name: "", kind: "other", active: true });
   const pageSize = 30;
+  const listIncCats = useServerFn(listIncomeCategoriesFn), createBill = useServerFn(createIncomeWithBill);
+  const incCats = useQuery({ queryKey: ["income-categories-select", societyId], enabled: !!societyId, retry: false, queryFn: () => listIncCats({ data: { societyId: societyId! } }) });
+  const [bill, setBill] = useState({ categoryId: "", amount: "", method: "bank_transfer" as "cash" | "bank_transfer", date: indiaToday(), reference: "", desc: "" });
+  const [billReq, setBillReq] = useState(() => crypto.randomUUID());
+  const createIncomeBill = () => run(async () => {
+    const value = Number(bill.amount);
+    if (!societyId || !bill.categoryId) throw new Error("Choose a category");
+    if (!Number.isFinite(value) || value <= 0) throw new Error("Enter a valid amount");
+    const r = await createBill({ data: { societyId, categoryId: bill.categoryId, amount: value, paymentMethod: bill.method, paymentDate: bill.date, reference: bill.reference || undefined, description: bill.desc || undefined, requestId: billReq } });
+    setBillReq(crypto.randomUUID()); setBill((b) => ({ ...b, amount: "", reference: "", desc: "" }));
+    await Promise.all([refresh(), qc.invalidateQueries({ queryKey: ["income"] })]);
+    toast.message(`Bill ${r.document_no} ${r.status === "existing" ? "already existed" : "issued"} — payment not yet verified`);
+  }, "Income entry and bill saved");
 
   const cats = useQuery({ queryKey: ["expense-categories", societyId], enabled: !!societyId, retry: false, queryFn: () => listCats({ data: { societyId: societyId! } }) });
   const docs = useQuery({ queryKey: ["finance-documents", societyId, from, to, offset], enabled: !!societyId && !(from && to && from > to), retry: false, placeholderData: (p) => p,
@@ -96,7 +110,24 @@ function VouchersPage() {
           <div className="sm:col-span-2"><Label>Description / reference</Label><Input aria-label="Description" maxLength={500} value={desc} onChange={(e) => setDesc(e.target.value)} /></div>
           <Button className="sm:col-span-2 min-h-11" disabled={busy || !categoryId} onClick={() => { if (!busy) void createVoucher(); }}>{busy ? <Loader2 className="animate-spin mr-2" /> : <Plus className="mr-2" />}Create voucher</Button>
         </div>
-        <p className="mt-3 text-xs text-muted-foreground">Income bills are issued from a verified record on the Income page (“Issue bill”). Existing expenses get a voucher from the Expenses page.</p>
+        <p className="mt-3 text-xs text-muted-foreground">Income bills can also be issued from an income record on the Income page (“Issue bill”). Existing expenses get a voucher from the Expenses page.</p>
+      </SectionCard>
+
+      <SectionCard icon={TrendingUp} title="New income bill" description="Creates the income entry and its numbered bill together. The payment still needs verification on the Income page.">
+        <div className="grid sm:grid-cols-2 gap-3">
+          <div><Label>Income category</Label>
+            <Select value={bill.categoryId} onValueChange={(v) => setBill({ ...bill, categoryId: v })}>
+              <SelectTrigger aria-label="Income category"><SelectValue placeholder={incCats.error ? "Categories unavailable" : "Choose a category"} /></SelectTrigger>
+              <SelectContent>{(incCats.data?.items ?? []).filter((c: any) => c.is_active).map((c: any) => <SelectItem key={c.id} value={c.id}>{c.display_name}</SelectItem>)}</SelectContent>
+            </Select>
+            <Link to="/society/income/categories" className="text-xs text-primary underline inline-flex items-center min-h-11">+ Create new category</Link></div>
+          <div><Label>Received by</Label><Select value={bill.method} onValueChange={(v) => setBill({ ...bill, method: v as "cash" | "bank_transfer" })}><SelectTrigger aria-label="Received by"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="cash">Cash</SelectItem><SelectItem value="bank_transfer">Bank transfer</SelectItem></SelectContent></Select></div>
+          <div><Label>Amount (₹)</Label><Input aria-label="Income amount (₹)" type="number" inputMode="decimal" min="0.01" step="0.01" value={bill.amount} onChange={(e) => setBill({ ...bill, amount: e.target.value })} /></div>
+          <div><Label>Date</Label><Input aria-label="Income date" type="date" max={indiaToday()} value={bill.date} onChange={(e) => setBill({ ...bill, date: e.target.value })} /></div>
+          <div><Label>Reference (optional)</Label><Input aria-label="Reference" maxLength={120} value={bill.reference} onChange={(e) => setBill({ ...bill, reference: e.target.value })} /></div>
+          <div><Label>Description</Label><Input aria-label="Income description" maxLength={500} value={bill.desc} onChange={(e) => setBill({ ...bill, desc: e.target.value })} /></div>
+          <Button className="sm:col-span-2 min-h-11" disabled={busy || !bill.categoryId} onClick={() => { if (!busy) void createIncomeBill(); }}>{busy ? <Loader2 className="animate-spin mr-2" /> : <Plus className="mr-2" />}Create income bill</Button>
+        </div>
       </SectionCard>
 
       <SectionCard title="Issued documents" bodyClassName="p-0">
@@ -109,8 +140,8 @@ function VouchersPage() {
               const amt = d.kind === "voucher" ? e?.amount : i?.amount;
               const cat = d.kind === "voucher" ? e?.finance_expense_categories?.name ?? e?.note ?? "Expense" : i?.society_income_categories?.display_name ?? "Income";
               const state = d.kind === "voucher" ? (e?.status === "reversed" ? "Reversed" : "Posted") : (i?.verification_status === "verified" ? "Verified" : "Not yet verified");
-              return <ListCard key={d.id} title={<span className="break-all">{d.document_no}</span>} subtitle={`${d.kind === "bill" ? "Bill" : "Voucher"} · ${cat} · ${new Date(d.issued_at).toLocaleDateString("en-IN")}`} meta={state}
-                trailing={<span className="font-semibold tabular-nums whitespace-nowrap">{amt != null ? INR.format(Number(amt)) : "—"}</span>} />;
+              return <ListCard key={d.id} title={<span className="break-all">{d.document_no}</span>} subtitle={`${d.kind === "bill" ? "Income bill" : "Expense voucher"} · ${cat} · ${new Date(d.issued_at).toLocaleDateString("en-IN")}`} meta={state}
+                trailing={<div className="flex items-center gap-2"><span className="font-semibold tabular-nums whitespace-nowrap">{amt != null ? INR.format(Number(amt)) : "—"}</span><Button asChild size="icon" variant="outline" className="h-11 w-11"><Link to="/society/document/$id" params={{ id: d.id }} aria-label={`Open ${d.document_no}`}><Printer className="h-4 w-4" /></Link></Button></div>} />;
             })}</ListCardGroup>
             <div className="flex items-center justify-between border-t p-3"><Button size="sm" variant="outline" disabled={offset === 0} onClick={() => setOffset((v) => Math.max(0, v - pageSize))}>Previous</Button><span className="text-xs text-muted-foreground">{offset + 1}–{offset + docs.data.rows.length} of {docs.data.total}</span><Button size="sm" variant="outline" disabled={offset + docs.data.rows.length >= docs.data.total} onClick={() => setOffset((v) => v + pageSize)}>Next</Button></div></>}
       </SectionCard>

@@ -6,6 +6,7 @@ import { ROLE_HOME, ROLES } from "@/config/roles";
 import { AuthShell } from "@/components/shared/AuthShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -281,8 +282,8 @@ function LoginPage() {
               <Label htmlFor="auth-password" className="flex items-center gap-1.5 text-sm">
                 <Lock className="h-4 w-4 text-primary" /> Password
               </Label>
-              <Input
-                type="password"
+              <PasswordInput
+                
                 id="auth-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

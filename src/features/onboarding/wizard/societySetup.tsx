@@ -95,14 +95,14 @@ function StepInfo({ state, patch }: StepProps<WizardState>) {
     setUploading(true);
     try {
       const MAX_BYTES = 2 * 1024 * 1024; // 2MB
-      const ALLOWED = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
+      const ALLOWED = ["image/png", "image/jpeg", "image/webp"];
       if (!ALLOWED.includes(file.type)) {
-        throw new Error("Only PNG, JPEG, WEBP, or SVG images are allowed");
+        throw new Error("Only PNG, JPEG or WEBP images are allowed");
       }
       if (file.size > MAX_BYTES) {
         throw new Error("Image must be 2MB or smaller");
       }
-      const ext = file.name.split(".").pop()?.toLowerCase() ?? "img";
+      const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
       const path = `logos/${crypto.randomUUID()}.${ext}`;
       const { error } = await supabase.storage
         .from("public-assets")
@@ -134,7 +134,7 @@ function StepInfo({ state, patch }: StepProps<WizardState>) {
           <Upload className="h-4 w-4" />
           {uploading ? "Uploading…" : "Upload logo (optional)"}
           <input
-            type="file" accept="image/*" className="hidden"
+            type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
             onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])}
           />
         </label>

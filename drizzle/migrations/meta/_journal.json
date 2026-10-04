@@ -1331,6 +1331,34 @@
       "when": 1791142266332,
       "tag": "0189_messaging_resend_unconfirmed_rate_limit_fix",
       "breakpoints": true
+    },
+    {
+      "idx": 190,
+      "version": "7",
+      "when": 1791143544699,
+      "tag": "0190_storage_upload_type_restrictions",
+      "breakpoints": true
+    },
+    {
+      "idx": 191,
+      "version": "7",
+      "when": 1791143629926,
+      "tag": "0191_invite_code_audit_and_rate_limit",
+      "breakpoints": true
+    },
+    {
+      "idx": 192,
+      "version": "7",
+      "when": 1791143675704,
+      "tag": "0192_revoke_anon_internal_rpcs",
+      "breakpoints": true
+    },
+    {
+      "idx": 193,
+      "version": "7",
+      "when": 1791143833324,
+      "tag": "0193_former_member_lockout_amenities",
+      "breakpoints": true
     }
   ]
 }

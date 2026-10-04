@@ -62,3 +62,5 @@
 - Published-notice edits keep the prior wording in append-only notice_versions via trigger trg_notice_keep_version (covers every write path, committee-read only); procurement order/invoice/payment references are immutable once recorded (_procurement_guard).
 - Community content (feed, comments, reactions, polls, surveys, digests, nominations, post images) is scoped by public._active_member_society_id(), which needs an active role, never profiles.society_id alone; poll_votes/survey_responses re-check active membership in a BEFORE INSERT trigger, so former members lose access even though their profile keeps the society.
 - Message dispatch requeues deliveries stuck in "sending" for over 15 minutes instead of marking them sent, so a crashed run never reports false delivery.
+- Storage buckets carry server-side size limits plus MIME/extension checks in storage.objects INSERT/UPDATE policies (logos PNG/JPEG/WEBP only, no SVG); app-side checks are UX only.
+- Invite-code changes (regenerate/custom/enable) are audited and share one rate limit, applied before the uniqueness check so other societies' codes can't be probed.

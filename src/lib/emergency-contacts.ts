@@ -17,10 +17,14 @@ export const DEFAULT_EMERGENCY_CONTACTS: EmergencyContact[] = [
 
 const KEY = "emergency-contacts";
 
-export function loadEmergencyContacts(): EmergencyContact[] {
-  return cacheGet<EmergencyContact[]>(KEY) ?? DEFAULT_EMERGENCY_CONTACTS;
+// Society numbers are cached per society so switching societies never shows
+// another society's contacts.
+const keyFor = (societyId?: string | null) => (societyId ? `${KEY}:${societyId}` : KEY);
+
+export function loadEmergencyContacts(societyId?: string | null): EmergencyContact[] {
+  return (societyId ? cacheGet<EmergencyContact[]>(keyFor(societyId)) : null) ?? DEFAULT_EMERGENCY_CONTACTS;
 }
 
-export function saveEmergencyContacts(list: EmergencyContact[]) {
-  cacheSet(KEY, list);
+export function saveEmergencyContacts(list: EmergencyContact[], societyId?: string | null) {
+  cacheSet(keyFor(societyId), list);
 }

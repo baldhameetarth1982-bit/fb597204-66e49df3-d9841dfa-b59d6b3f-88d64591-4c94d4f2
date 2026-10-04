@@ -44,14 +44,17 @@ function EmergencyPage() {
         .filter((c) => c.phone)
         .map((c) => ({ label: `${c.role_label} — ${c.name}`, number: String(c.phone), category: "society" }));
       const merged = [...DEFAULT_EMERGENCY_CONTACTS, ...society];
-      saveEmergencyContacts(merged);
+      saveEmergencyContacts(merged, societyId);
       setContacts(merged);
     })();
     return () => { cancelled = true; };
   }, [societyId]);
 
   useEffect(() => {
-    setContacts(loadEmergencyContacts());
+    setContacts(loadEmergencyContacts(societyId));
+  }, [societyId]);
+
+  useEffect(() => {
     setOnline(isOnline());
     const on = () => setOnline(true);
     const off = () => setOnline(false);

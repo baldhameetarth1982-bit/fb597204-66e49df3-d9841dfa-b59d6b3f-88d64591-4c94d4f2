@@ -16,7 +16,10 @@ import {
   ChevronRight,
   Plus,
   Tags,
+  Download,
 } from "lucide-react";
+import { toast } from "sonner";
+import { writeSafeWorkbook } from "@/lib/spreadsheet-safety";
 import { IncomeAccessBoundary } from "@/components/subscription/IncomeAccessBoundary";
 
 import { incomeKeys } from "@/lib/income-query-keys";
@@ -269,6 +272,43 @@ function IncomePage({ societyId }: { societyId: string }) {
     total === null ? null : Math.max(1, Math.ceil(total / PAGE_SIZE));
   const hasNext = total === null ? items.length === PAGE_SIZE : page + 1 < (totalPages ?? 1);
 
+  const [exporting, setExporting] = useState(false);
+  const exportRecords = async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const all: typeof items = [];
+      for (let offset = 0; offset < 10000; offset += 200) {
+        const res = await listRecords({ data: {
+          societyId, from_date: range.from, to_date: range.to,
+          verification_status: verif === "all" ? undefined : verif,
+          reconciliation_status: recon === "all" ? undefined : recon,
+          payment_method: method === "all" ? undefined : method,
+          payer_kind: kind === "all" ? undefined : kind,
+          category_id: categoryId === "all" ? undefined : categoryId,
+          sort, limit: 200, offset,
+        } });
+        all.push(...res.items);
+        if (res.items.length < 200) break;
+      }
+      if (!all.length) { toast.info("No records match these filters."); return; }
+      writeSafeWorkbook(all.map((r) => ({
+        Date: r.payment_date,
+        Category: r.category_display_name ?? "",
+        Payer: r.payer_kind === "anonymous" ? "Anonymous" : r.payer_display_name ?? "",
+        "Payer type": r.payer_kind.replace(/_/g, " "),
+        "Amount (Rs.)": Number(r.amount),
+        Method: r.payment_method.replace(/_/g, " "),
+        Verification: r.verification_status.replace(/_/g, " "),
+        Reconciliation: r.reconciliation_status.replace(/_/g, " "),
+        "Reference (last digits)": r.reference_suffix ?? "",
+      })), "Income", `income-${range.from ?? "all"}-to-${range.to ?? "all"}.xlsx`);
+      toast.success(`Downloaded ${all.length} record${all.length === 1 ? "" : "s"}.`);
+    } catch {
+      toast.error("Couldn't download the income list. Please try again.");
+    } finally { setExporting(false); }
+  };
+
   const resetFilters = () => {
     setPeriod("this_month");
     setVerif("all");
@@ -304,6 +344,9 @@ function IncomePage({ societyId }: { societyId: string }) {
           <Link to="/society/income/payers">
             <Users className="h-4 w-4 mr-1" /> Payers
           </Link>
+        </Button>
+        <Button variant="outline" className="min-h-[44px]" disabled={exporting || !dateRangeValid} onClick={() => void exportRecords()}>
+          {exporting ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Download className="h-4 w-4 mr-1" />} Download list
         </Button>
       </div>
 

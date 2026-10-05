@@ -24,11 +24,12 @@ const method = (m: string | null) => m === "bank_transfer" ? "Bank transfer" : m
 function DocumentPage() {
   const { id } = Route.useParams();
   const fetchDoc = useServerFn(getFinanceDocument);
-  const q = useQuery({ queryKey: ["finance-document", id], queryFn: () => fetchDoc({ data: { documentId: id } }), retry: false });
+  const validId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  const q = useQuery({ queryKey: ["finance-document", id], queryFn: () => fetchDoc({ data: { documentId: id } }), retry: false, enabled: validId });
 
-  if (q.isLoading) return <div className="grid min-h-[50vh] place-items-center"><Loader2 className="animate-spin" aria-label="Loading document" /></div>;
-  if (q.error || !q.data) return <div className="mx-auto max-w-md space-y-3 p-6 text-center">
-    <p className="text-sm" role="alert">{q.error ? "This document couldn't load. Please try again." : "Document not found, or you don't have access to it."}</p>
+  if (validId && q.isLoading) return <div className="grid min-h-[50vh] place-items-center"><Loader2 className="animate-spin" aria-label="Loading document" /></div>;
+  if (!validId || q.error || !q.data) return <div className="mx-auto max-w-md space-y-3 p-6 text-center">
+    <p className="text-sm" role="alert">{validId && q.error ? "This document couldn't load. Please try again." : "Document not found, or you don't have access to it."}</p>
     <div className="flex justify-center gap-2">{q.error && <Button variant="outline" onClick={() => q.refetch()}>Retry</Button>}<Button asChild variant="outline"><Link to="/society/vouchers">Back</Link></Button></div>
   </div>;
 

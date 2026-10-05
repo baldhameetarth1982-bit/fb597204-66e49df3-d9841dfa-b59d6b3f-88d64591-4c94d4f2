@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+import { localeTag } from "@/lib/i18n";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -38,6 +40,8 @@ const WHEN = [
 const EMPTY = { name: "", phone: "", category: "guest", purpose: "", vehicle: "", when: "today" as (typeof WHEN)[number]["v"] };
 
 function MyVisitors() {
+  const { t } = useTranslation();
+  const catLabel = (c: string) => (c === "other" ? t("cm.other") : t(`vs.cat.${c}`, { defaultValue: categoryLabel(c) }));
   const { user } = useAuth();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -85,7 +89,7 @@ function MyVisitors() {
     if (error) return toast.error(gateErrorMessage(error));
     const r = (data as { gate_pass_code: string | null }[])?.[0];
     if (r?.gate_pass_code) setIssued({ code: r.gate_pass_code, name: form.name });
-    else toast.success("Sent to the committee for approval. You'll be notified.");
+    else toast.success(t("vs.sentForApproval"));
     setForm(EMPTY);
     setOpen(false);
     refresh();
@@ -97,42 +101,42 @@ function MyVisitors() {
     const { error } = await supabase.rpc("visitor_resident_action", { _id: id, _action: action });
     setBusyId(null);
     if (error) toast.error(gateErrorMessage(error));
-    else toast.success(action === "approve" ? "Guard told to let them in" : action === "deny" ? "Entry denied" : "Invite cancelled");
+    else toast.success(action === "approve" ? t("vs.approvedToast") : action === "deny" ? t("vs.deniedToast") : t("vs.cancelledToast"));
     refresh();
   }
 
   function share(code: string, name: string) {
-    const text = `Hi ${name}, your gate pass code is ${code}. Show it to the guard at the gate.`;
+    const text = t("vs.shareText", { name, code });
     if (navigator.share) navigator.share({ text }).catch(() => undefined);
-    else void navigator.clipboard.writeText(text).then(() => toast.success("Copied"), () => toast.error("Couldn't copy"));
+    else void navigator.clipboard.writeText(text).then(() => toast.success(t("vs.copied")), () => toast.error(t("rpr.copyFailed")));
   }
 
   return (
     <div className="px-4 py-5 space-y-4 pb-28 max-w-xl mx-auto">
       <header className="flex items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Visitors</h1>
-          <p className="text-sm text-muted-foreground">Invite guests and approve people at the gate</p>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("vs.title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("vs.subtitle")}</p>
         </div>
-        <Button className="min-h-11 rounded-xl" onClick={() => setOpen(true)}><Plus className="h-4 w-4 mr-1" />Invite</Button>
+        <Button className="min-h-11 rounded-xl" onClick={() => setOpen(true)}><Plus className="h-4 w-4 mr-1" />{t("vs.invite")}</Button>
       </header>
 
       {waiting.length > 0 && (
-        <section aria-label="Waiting at the gate" className="space-y-2">
+        <section aria-label={t("vs.waiting")} className="space-y-2">
           {waiting.filter((v) => v.category !== "mover").map((v) => (
             <Card key={v.id} className="rounded-2xl border-warning/50 bg-warning/10">
               <CardContent className="p-4 space-y-3">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-warning-foreground">At the gate now</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-warning-foreground">{t("vs.atGate")}</p>
                   <p className="font-semibold">{v.visitor_name}</p>
-                  <p className="text-sm text-muted-foreground">{v.purpose || categoryLabel(v.category)} · {fmtTime(v.created_at)}</p>
+                  <p className="text-sm text-muted-foreground">{v.purpose || catLabel(v.category)} · {fmtTime(v.created_at)}</p>
                 </div>
                 <div className="flex gap-2">
                   <Button className="flex-1 h-12 rounded-xl" disabled={busyId === v.id} onClick={() => act(v.id, "approve")}>
-                    {busyId === v.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Check className="h-4 w-4 mr-1" />Approve</>}
+                    {busyId === v.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Check className="h-4 w-4 mr-1" />{t("vs.approve")}</>}
                   </Button>
                   <Button variant="outline" className="flex-1 h-12 rounded-xl" disabled={busyId === v.id} onClick={() => act(v.id, "deny")}>
-                    <X className="h-4 w-4 mr-1" />Deny
+                    <X className="h-4 w-4 mr-1" />{t("vs.deny")}
                   </Button>
                 </div>
               </CardContent>
@@ -144,10 +148,10 @@ function MyVisitors() {
       <RecurringPasses />
 
       <div role="tablist" className="grid grid-cols-2 gap-1 rounded-2xl bg-muted p-1">
-        {(["active", "history"] as const).map((t) => (
-          <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}
-            className={cn("min-h-11 rounded-xl text-sm font-medium", tab === t ? "bg-background shadow-sm" : "text-muted-foreground")}>
-            {t === "active" ? `Upcoming & inside (${active.length - waiting.length})` : "History"}
+        {(["active", "history"] as const).map((k) => (
+          <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
+            className={cn("min-h-11 rounded-xl text-sm font-medium", tab === k ? "bg-background shadow-sm" : "text-muted-foreground")}>
+            {k === "active" ? t("vs.upcoming", { count: active.length - waiting.length }) : t("billingTabs.history")}
           </button>
         ))}
       </div>
@@ -157,12 +161,12 @@ function MyVisitors() {
       ) : q.isError && rows.length === 0 ? (
         <Card className="rounded-2xl"><CardContent className="p-6 text-center space-y-3">
           <p className="text-sm">{gateErrorMessage(q.error)}</p>
-          <Button variant="outline" className="min-h-11 rounded-xl" onClick={() => q.refetch()}>Retry</Button>
+          <Button variant="outline" className="min-h-11 rounded-xl" onClick={() => q.refetch()}>{t("common.retry")}</Button>
         </CardContent></Card>
       ) : shown.length === 0 ? (
         <Card className="rounded-2xl"><CardContent className="p-8 text-center">
           <UsersRound className="h-8 w-8 mx-auto text-muted-foreground" />
-          <p className="mt-2 text-sm text-muted-foreground">{tab === "active" ? "No upcoming visitors. Tap Invite to create a gate pass." : "No past visitors yet."}</p>
+          <p className="mt-2 text-sm text-muted-foreground">{tab === "active" ? t("vs.noneUpcoming") : t("vs.nonePast")}</p>
         </CardContent></Card>
       ) : (
         <ul className="space-y-2">
@@ -173,18 +177,18 @@ function MyVisitors() {
               <li key={v.id}><Card className="rounded-2xl"><CardContent className="p-4 space-y-2">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-semibold truncate">{v.visitor_name}</p>
-                  <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium", m.className)}>{m.label}</span>
+                  <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium", m.className)}>{t(`vs.st.${v.eff === "pending" ? "expected" : v.eff === "rejected" ? "denied" : v.eff === "cancelled" ? "x" : v.eff}`, { defaultValue: v.eff === "cancelled" ? t("rbills.cancelled") : v.eff === "expired" ? t("cm.st.expired") : m.label })}</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {v.purpose || categoryLabel(v.category)}{v.vehicle_number ? ` · ${v.vehicle_number}` : ""}
+                  {v.purpose || catLabel(v.category)}{v.vehicle_number ? ` · ${v.vehicle_number}` : ""}
                   {" · "}
-                  {v.exit_at ? `In ${fmtTime(v.entry_at)} · Out ${fmtTime(v.exit_at)}` : v.eff === "inside" ? `In since ${fmtTime(v.entry_at)}` : v.valid_until ? `Valid till ${fmtTime(v.valid_until)}` : fmtTime(v.created_at)}
+                  {v.exit_at ? t("vs.inOut", { in: fmtTime(v.entry_at), out: fmtTime(v.exit_at) }) : v.eff === "inside" ? t("vs.inSince", { time: fmtTime(v.entry_at) }) : v.valid_until ? t("vs.validTill", { time: fmtTime(v.valid_until) }) : fmtTime(v.created_at)}
                 </p>
                 {hasCode && (
                   <div className="flex items-center gap-2 pt-1">
                     <span className="font-mono text-lg tracking-[0.3em] font-semibold">{v.gate_pass_code}</span>
-                    <Button size="sm" variant="ghost" className="min-h-11 ml-auto" onClick={() => share(v.gate_pass_code!, v.visitor_name)}><Share2 className="h-4 w-4 mr-1" />Share</Button>
-                    <Button size="sm" variant="ghost" className="min-h-11" disabled={busyId === v.id} onClick={() => act(v.id, "cancel")}>Cancel</Button>
+                    <Button size="sm" variant="ghost" className="min-h-11 ml-auto" onClick={() => share(v.gate_pass_code!, v.visitor_name)}><Share2 className="h-4 w-4 mr-1" />{t("prof.share")}</Button>
+                    <Button size="sm" variant="ghost" className="min-h-11" disabled={busyId === v.id} onClick={() => act(v.id, "cancel")}>{t("common.cancel")}</Button>
                   </div>
                 )}
               </CardContent></Card></li>
@@ -195,35 +199,35 @@ function MyVisitors() {
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="bottom" className="rounded-t-3xl max-h-[92vh] overflow-y-auto">
-          <SheetHeader><SheetTitle>Invite a visitor</SheetTitle></SheetHeader>
+          <SheetHeader><SheetTitle>{t("vs.inviteTitle")}</SheetTitle></SheetHeader>
           <form onSubmit={invite} className="space-y-4 py-4">
             <div className="flex flex-wrap gap-2">
               {VISITOR_CATEGORIES.map((c) => (
                 <button type="button" key={c.value} onClick={() => setForm({ ...form, category: c.value })}
                   className={cn("min-h-11 px-4 rounded-full border text-sm font-medium", form.category === c.value ? "bg-primary text-primary-foreground border-primary" : "border-border")}>
-                  {c.label}
+                  {catLabel(c.value)}
                 </button>
               ))}
             </div>
-            <div><Label htmlFor="i-name">Name *</Label><Input id="i-name" className="h-12" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required /></div>
+            <div><Label htmlFor="i-name">{t("vs.nameReq")}</Label><Input id="i-name" className="h-12" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label htmlFor="i-phone">Phone</Label><Input id="i-phone" className="h-12" inputMode="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
-              <div><Label htmlFor="i-veh">Vehicle</Label><Input id="i-veh" className="h-12" value={form.vehicle} onChange={(e) => setForm({ ...form, vehicle: e.target.value })} /></div>
+              <div><Label htmlFor="i-phone">{t("st.phone")}</Label><Input id="i-phone" className="h-12" inputMode="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
+              <div><Label htmlFor="i-veh">{t("vs.vehicle")}</Label><Input id="i-veh" className="h-12" value={form.vehicle} onChange={(e) => setForm({ ...form, vehicle: e.target.value })} /></div>
             </div>
-            <div><Label htmlFor="i-purpose">Note for guard</Label><Input id="i-purpose" className="h-12" value={form.purpose} onChange={(e) => setForm({ ...form, purpose: e.target.value })} placeholder="e.g. Dinner guest" /></div>
+            <div><Label htmlFor="i-purpose">{t("vs.note")}</Label><Input id="i-purpose" className="h-12" value={form.purpose} onChange={(e) => setForm({ ...form, purpose: e.target.value })} placeholder={t("vs.notePh")} /></div>
             <div>
-              <Label>Valid for</Label>
+              <Label>{t("vs.validFor")}</Label>
               <div className="grid grid-cols-3 gap-2 mt-1">
                 {WHEN.map((w) => (
                   <button type="button" key={w.v} onClick={() => setForm({ ...form, when: w.v })}
                     className={cn("min-h-11 rounded-xl border text-sm", form.when === w.v ? "bg-primary text-primary-foreground border-primary" : "border-border")}>
-                    {w.label}
+                    {w.v === "today" ? t("common.today") : t(w.v === "tomorrow" ? "vs.tomorrow" : "vs.week")}
                   </button>
                 ))}
               </div>
             </div>
             <Button type="submit" className="w-full h-14 rounded-xl text-base" disabled={saving}>
-              {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : "Create gate pass"}
+              {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : t("vs.create")}
             </Button>
           </form>
         </SheetContent>
@@ -231,14 +235,14 @@ function MyVisitors() {
 
       <Sheet open={!!issued} onOpenChange={(o) => !o && setIssued(null)}>
         <SheetContent side="bottom" className="rounded-t-3xl">
-          <SheetHeader><SheetTitle>Gate pass ready</SheetTitle></SheetHeader>
+          <SheetHeader><SheetTitle>{t("vs.ready")}</SheetTitle></SheetHeader>
           {issued && (
             <div className="py-6 text-center space-y-4">
-              <p className="text-sm text-muted-foreground">Share this code with {issued.name}. It works once.</p>
+              <p className="text-sm text-muted-foreground">{t("vs.shareCode", { name: issued.name })}</p>
               <p className="font-mono text-4xl font-bold tracking-[0.4em]">{issued.code}</p>
               <div className="flex gap-2">
-                <Button className="flex-1 h-12 rounded-xl" onClick={() => share(issued.code, issued.name)}><Share2 className="h-4 w-4 mr-2" />Share</Button>
-                <Button variant="outline" className="flex-1 h-12 rounded-xl" onClick={() => void navigator.clipboard.writeText(issued.code).then(() => toast.success("Copied"), () => toast.error("Couldn't copy"))}><Copy className="h-4 w-4 mr-2" />Copy</Button>
+                <Button className="flex-1 h-12 rounded-xl" onClick={() => share(issued.code, issued.name)}><Share2 className="h-4 w-4 mr-2" />{t("prof.share")}</Button>
+                <Button variant="outline" className="flex-1 h-12 rounded-xl" onClick={() => void navigator.clipboard.writeText(issued.code).then(() => toast.success(t("vs.copied")), () => toast.error(t("rpr.copyFailed")))}><Copy className="h-4 w-4 mr-2" />{t("sd.copy")}</Button>
               </div>
             </div>
           )}

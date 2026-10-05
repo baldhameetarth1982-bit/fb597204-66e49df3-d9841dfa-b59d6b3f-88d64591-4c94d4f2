@@ -1492,6 +1492,13 @@
       "when": 1791159208000,
       "tag": "0212_maintenance_timing_create_settings_row",
       "breakpoints": true
+    },
+    {
+      "idx": 213,
+      "version": "7",
+      "when": 1791160373549,
+      "tag": "0213_income_category_audit",
+      "breakpoints": true
     }
   ]
 }

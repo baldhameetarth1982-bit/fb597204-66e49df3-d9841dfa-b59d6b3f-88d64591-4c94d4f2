@@ -3,6 +3,7 @@ import { userMessage } from "@/lib/user-error";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { Megaphone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
@@ -51,6 +52,7 @@ function Row({
 
 function SettingsPage() {
   const qc = useQueryClient();
+  const { t } = useTranslation();
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["platform-settings"],
     queryFn: async () => {
@@ -81,7 +83,7 @@ function SettingsPage() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Settings saved");
+      toast.success(t("ps.saved"));
       qc.invalidateQueries({ queryKey: ["platform-settings"] });
     },
     onError: (e: Error) => toast.error(userMessage(e)),
@@ -90,8 +92,8 @@ function SettingsPage() {
   return (
     <PageShell>
       <PageHeader
-        title="Platform Settings"
-        description="Global switches that affect every society on SociyoHub."
+        title={t("ps.title")}
+        description={t("ps.subtitle")}
       />
       {isLoading ? (
         <MetricsSkeleton />
@@ -100,14 +102,14 @@ function SettingsPage() {
       ) : (
         <div className="mx-auto max-w-3xl space-y-5">
           <SettingsSection
-            title="Advertisements"
+            title={t("ps.ads")}
             icon={Megaphone}
-            description="Shown only to societies on plans that include ads."
+            description={t("ps.adsDesc")}
           >
             <div className="divide-y divide-border">
-              <Row label="Banner ads" hint="Banners inside resident feed and dashboards.">
+              <Row label={t("ps.banner")} hint={t("ps.bannerHint")}>
                 <Switch
-                  aria-label="Banner ads"
+                  aria-label={t("ps.banner")}
                   checked={state.ads_banner_enabled}
                   onCheckedChange={(v) => set({ ads_banner_enabled: v })}
                 />

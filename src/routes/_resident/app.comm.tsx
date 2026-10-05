@@ -6,6 +6,8 @@ import {
   Megaphone, LifeBuoy, FileText, Phone, Search, ArrowRight, Inbox,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useTranslation } from "react-i18next";
+import { localeTag } from "@/lib/i18n";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,6 +27,7 @@ export const Route = createFileRoute("/_resident/app/comm")({
 
 function CommunicationCenter() {
   const { profile } = useAuth();
+  const { t } = useTranslation();
   const societyId = profile?.society_id;
   const [q, setQ] = useState("");
   const [tab, setTab] = useState("notices");
@@ -100,18 +103,18 @@ function CommunicationCenter() {
   const contactsByCategory = useMemo(() => {
     const map: Record<string, any[]> = {};
     for (const c of filteredContacts) {
-      const k = (c as any).category || "Other";
+      const k = (c as any).category || t("vch.kind.other");
       (map[k] ??= []).push(c);
     }
     return map;
-  }, [filteredContacts]);
+  }, [filteredContacts, t]);
 
   return (
     <div className="px-4 md:px-8 py-6 md:py-10 max-w-3xl mx-auto space-y-5">
       <header>
-        <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Society</h1>
+        <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">{t("nav.society")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Notices, complaints, documents and contacts — all in one place.
+          {t("comm.subtitle")}
         </p>
       </header>
 
@@ -119,7 +122,7 @@ function CommunicationCenter() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           className="pl-9 rounded-xl h-11"
-          placeholder="Search notices, complaints, contacts…"
+          placeholder={t("comm.searchPh")}
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
@@ -128,25 +131,25 @@ function CommunicationCenter() {
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="grid grid-cols-4 w-full rounded-xl h-11">
           <TabsTrigger value="notices" className="rounded-lg">
-            <Megaphone className="h-4 w-4 mr-1.5" /> Notices
+            <Megaphone className="h-4 w-4 mr-1.5" /> {t("notif.tab.notices")}
           </TabsTrigger>
           <TabsTrigger value="complaints" className="rounded-lg">
-            <LifeBuoy className="h-4 w-4 mr-1.5" /> Complaints
+            <LifeBuoy className="h-4 w-4 mr-1.5" /> {t("home.qa.complaints")}
           </TabsTrigger>
           <TabsTrigger value="documents" className="rounded-lg">
-            <FileText className="h-4 w-4 mr-1.5" /> Docs
+            <FileText className="h-4 w-4 mr-1.5" /> {t("comm.docs")}
           </TabsTrigger>
           <TabsTrigger value="contacts" className="rounded-lg">
-            <Phone className="h-4 w-4 mr-1.5" /> Contacts
+            <Phone className="h-4 w-4 mr-1.5" /> {t("comm.contacts")}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="notices" className="mt-4 space-y-2">
           {noticesErr ? (
-            <LoadError title="Couldn't load notices" onRetry={() => refetchNotices()} />
+            <LoadError title={t("comm.noticesErr")} onRetry={() => refetchNotices()} />
           ) : filteredNotices.length === 0 ? (
-            <EmptyBlock icon={Inbox} title="No notices yet"
-              description="Society announcements will show up here." />
+            <EmptyBlock icon={Inbox} title={t("home.noNotices")}
+              description={t("comm.noticesEmptyDesc")} />
           ) : (
             filteredNotices.map((n: any) => (
               <Card key={n.id} className="rounded-2xl">
@@ -155,7 +158,7 @@ function CommunicationCenter() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm whitespace-pre-line">{(n.body ?? "").slice(0, 240)}</p>
                       <p className="mt-1.5 text-[11px] text-muted-foreground">
-                        {new Date(n.created_at).toLocaleString()}
+                        {new Date(n.created_at).toLocaleString(localeTag())}
                       </p>
                     </div>
                   </div>
@@ -164,17 +167,17 @@ function CommunicationCenter() {
             ))
           )}
           <Button asChild variant="ghost" size="sm" className="w-full rounded-lg mt-2">
-            <Link to="/app/notices">Open full notice board <ArrowRight className="h-4 w-4 ml-1" /></Link>
+            <Link to="/app/notices">{t("comm.openBoard")} <ArrowRight className="h-4 w-4 ml-1" /></Link>
           </Button>
         </TabsContent>
 
         <TabsContent value="complaints" className="mt-4 space-y-2">
           {complaintsErr ? (
-            <LoadError title="Couldn't load your complaints" onRetry={() => refetchComplaints()} />
+            <LoadError title={t("comm.complaintsErr")} onRetry={() => refetchComplaints()} />
           ) : filteredComplaints.length === 0 ? (
-            <EmptyBlock icon={LifeBuoy} title="No complaints filed"
-              description="Raise a helpdesk ticket if something needs the committee's attention."
-              action={<Button asChild size="sm" className="rounded-xl"><Link to="/app/helpdesk">Raise a complaint</Link></Button>} />
+            <EmptyBlock icon={LifeBuoy} title={t("comm.complaintsEmpty")}
+              description={t("comm.complaintsEmptyDesc")}
+              action={<Button asChild size="sm" className="rounded-xl"><Link to="/app/helpdesk">{t("comm.raise")}</Link></Button>} />
           ) : (
             <>
               {filteredComplaints.map((c: any) => (
@@ -187,13 +190,13 @@ function CommunicationCenter() {
                       </Badge>
                     </div>
                     <p className="mt-1 text-[11px] text-muted-foreground">
-                      {c.category ?? "General"} · {new Date(c.created_at).toLocaleDateString()}
+                      {c.category ?? t("comm.general")} · {new Date(c.created_at).toLocaleDateString(localeTag())}
                     </p>
                   </CardContent>
                 </Card>
               ))}
               <Button asChild variant="ghost" size="sm" className="w-full rounded-lg mt-2">
-                <Link to="/app/helpdesk">Manage complaints <ArrowRight className="h-4 w-4 ml-1" /></Link>
+                <Link to="/app/helpdesk">{t("comm.manage")} <ArrowRight className="h-4 w-4 ml-1" /></Link>
               </Button>
             </>
           )}
@@ -203,21 +206,21 @@ function CommunicationCenter() {
           <Card className="rounded-2xl">
             <CardContent className="p-5 text-center">
               <FileText className="h-8 w-8 mx-auto text-muted-foreground opacity-60" />
-              <p className="mt-2 font-medium">Society documents</p>
-              <p className="text-xs text-muted-foreground">By-laws, forms, minutes, certificates.</p>
+              <p className="mt-2 font-medium">{t("comm.docsTitle")}</p>
+              <p className="text-xs text-muted-foreground">{t("comm.docsDesc")}</p>
               <div className="mt-3 flex flex-wrap justify-center gap-2">
                 <Button asChild size="sm" className="rounded-xl min-h-11">
-                  <Link to="/app/bylaws">Open document centre</Link>
+                  <Link to="/app/bylaws">{t("comm.openDocs")}</Link>
                 </Button>
                 <Button asChild size="sm" variant="outline" className="rounded-xl min-h-11">
-                  <Link to="/app/secretary">Ask AI Secretary</Link>
+                  <Link to="/app/secretary">{t("home.askAi")}</Link>
                 </Button>
-                <Button asChild size="sm" variant="outline" className="rounded-xl min-h-11"><Link to="/app/documents">Documents & FAQs</Link></Button>
-                <Button asChild size="sm" variant="outline" className="rounded-xl min-h-11"><Link to="/app/meetings">Meetings</Link></Button>
-                <Button asChild size="sm" variant="outline" className="rounded-xl min-h-11"><Link to="/app/votes">Votes</Link></Button>
-                <Button asChild size="sm" variant="outline" className="rounded-xl min-h-11"><Link to="/app/elections">Elections</Link></Button>
-                <Button asChild size="sm" variant="outline" className="rounded-xl min-h-11"><Link to="/app/agm">AGM</Link></Button>
-                <Button asChild size="sm" variant="outline" className="rounded-xl min-h-11"><Link to="/app/privacy-requests">My privacy requests</Link></Button>
+                <Button asChild size="sm" variant="outline" className="rounded-xl min-h-11"><Link to="/app/documents">{t("section.knowledge")}</Link></Button>
+                <Button asChild size="sm" variant="outline" className="rounded-xl min-h-11"><Link to="/app/meetings">{t("mod.meetings")}</Link></Button>
+                <Button asChild size="sm" variant="outline" className="rounded-xl min-h-11"><Link to="/app/votes">{t("mod.votes")}</Link></Button>
+                <Button asChild size="sm" variant="outline" className="rounded-xl min-h-11"><Link to="/app/elections">{t("mod.elections")}</Link></Button>
+                <Button asChild size="sm" variant="outline" className="rounded-xl min-h-11"><Link to="/app/agm">{t("mod.agm")}</Link></Button>
+                <Button asChild size="sm" variant="outline" className="rounded-xl min-h-11"><Link to="/app/privacy-requests">{t("comm.myPrivacy")}</Link></Button>
               </div>
             </CardContent>
           </Card>
@@ -225,10 +228,10 @@ function CommunicationCenter() {
 
         <TabsContent value="contacts" className="mt-4 space-y-3">
           {contactsErr ? (
-            <LoadError title="Couldn't load contacts" onRetry={() => refetchContacts()} />
+            <LoadError title={t("comm.contactsErr")} onRetry={() => refetchContacts()} />
           ) : Object.keys(contactsByCategory).length === 0 ? (
-            <EmptyBlock icon={Phone} title="No contacts published"
-              description="Committee, security, and utility contacts will appear here." />
+            <EmptyBlock icon={Phone} title={t("comm.contactsEmpty")}
+              description={t("comm.contactsEmptyDesc")} />
           ) : (
             Object.entries(contactsByCategory).map(([cat, list]) => (
               <div key={cat}>
@@ -248,7 +251,7 @@ function CommunicationCenter() {
                         </div>
                         {c.phone && (
                           <Button asChild size="sm" variant="outline" className="rounded-xl">
-                            <a href={`tel:${c.phone}`}>Call</a>
+                            <a href={`tel:${c.phone}`}>{t("comm.call")}</a>
                           </Button>
                         )}
                       </CardContent>

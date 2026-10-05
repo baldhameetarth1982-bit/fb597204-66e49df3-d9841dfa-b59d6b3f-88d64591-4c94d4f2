@@ -1,6 +1,5 @@
 import { useTranslation } from "react-i18next";
 import { localeTag } from "@/lib/i18n";
-import type { Lang } from "@/locales/types";
 
 /** Plain-date strings (YYYY-MM-DD) are treated as India-local noon so they never shift a day. */
 function toDate(v: string | Date) {
@@ -15,7 +14,7 @@ function toDate(v: string | Date) {
  */
 export function useLocaleFormat() {
   const { i18n } = useTranslation();
-  const lang = (i18n.language?.slice(0, 2) ?? "en") as Lang;
+  const lang = i18n.language ?? "en";
   const tag = localeTag(lang);
   return {
     tag,

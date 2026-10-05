@@ -6,13 +6,14 @@ import { auth } from "@/locales/auth";
 import { notifications } from "@/locales/notifications";
 import { accounts } from "@/locales/accounts";
 import { settings } from "@/locales/settings";
+import { resident } from "@/locales/resident";
 
 /**
  * The single SociyoHub localisation system (i18next). Catalogs keep the three
  * languages side by side so a key can't exist in one language only.
  * Language is a per-device, per-user display preference — never authority.
  */
-const CATALOGS: Catalog[] = [core, auth, notifications, accounts, settings];
+const CATALOGS: Catalog[] = [core, auth, notifications, accounts, settings, resident];
 
 function build(lang: Lang) {
   const out: Record<string, string> = {};

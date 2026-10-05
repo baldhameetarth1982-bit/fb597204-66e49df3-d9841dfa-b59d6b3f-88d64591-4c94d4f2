@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+import { useLocaleFormat } from "@/lib/i18n-format";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Receipt, Clock, CheckCircle2, Home, Info, ChevronRight, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -45,6 +47,8 @@ function BillsScreen() {
   const [claimOpen, setClaimOpen] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const { t } = useTranslation();
+  const fmt = useLocaleFormat();
 
   useEffect(() => {
     let cancelled = false;
@@ -63,9 +67,9 @@ function BillsScreen() {
           const res = await listMyBills({ data: { limit: 24 } });
           const rows: BillRow[] = (res.bills ?? []).map((b) => ({
             id: b.id as string,
-            title: (b.period_label as string) ?? "Society bill",
+            title: (b.period_label as string) ?? t("rbills.societyBill"),
             amount: Number((b.total_payable as number | null) ?? (b.amount as number | null) ?? 0),
-            due: b.due_date ? new Date(b.due_date as string).toLocaleDateString() : "—",
+            due: b.due_date ? fmt.date(b.due_date as string) : "—",
             due_date: (b.due_date as string | null) ?? null,
             status: (b.status as string) ?? "unpaid",
             cancelled_at: (b.cancelled_at as string | null) ?? null,
@@ -99,7 +103,7 @@ function BillsScreen() {
 
   if (loading) {
     return (
-      <div className="px-5 py-6 space-y-3" aria-busy="true" aria-label="Loading bills">
+      <div className="px-5 py-6 space-y-3" aria-busy="true" aria-label={t("rbills.loading")}>
         <div className="h-8 w-32 rounded-lg bg-muted animate-pulse" />
         <div className="h-24 rounded-2xl bg-muted animate-pulse" />
         {[0, 1, 2].map((i) => (
@@ -121,20 +125,20 @@ function BillsScreen() {
   const paidBills = visibleBills.filter((b) => getBillDisplayStatus(b).isPaid);
   const cancelledBills = visibleBills.filter((b) => getBillDisplayStatus(b).isCancelled);
   const groups = [
-    { key: "open", title: "Open bills", rows: openBills },
-    { key: "paid", title: "Paid", rows: paidBills },
-    { key: "cancelled", title: "Cancelled", rows: cancelledBills },
+    { key: "open", title: t("rbills.open"), rows: openBills },
+    { key: "paid", title: t("rbills.paid"), rows: paidBills },
+    { key: "cancelled", title: t("rbills.cancelled"), rows: cancelledBills },
   ];
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-6 space-y-6">
       <header className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight">Bills</h1>
-          <p className="text-sm text-muted-foreground">What you owe and what's already paid{online ? "" : " · saved copy (offline)"}</p>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("rbills.title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("rbills.subtitle")}{online ? "" : t("rbills.offline")}</p>
         </div>
         <Button asChild variant="outline" className="min-h-11 rounded-xl">
-          <Link to="/app/receipts"><Receipt className="h-4 w-4 mr-1" />Receipts</Link>
+          <Link to="/app/receipts"><Receipt className="h-4 w-4 mr-1" />{t("rbills.receipts")}</Link>
         </Button>
       </header>
 
@@ -142,9 +146,9 @@ function BillsScreen() {
         <section className="flex items-start gap-3 rounded-2xl bg-warning-container p-4 text-warning-container-foreground">
           <Home className="h-5 w-5 shrink-0 mt-0.5" />
           <div className="min-w-0 flex-1">
-            <p className="font-medium text-sm">You're not linked to a house yet</p>
-            <p className="text-sm opacity-80 mt-0.5">Pick your house so bills can reach you. Your society admin will approve it.</p>
-            <Button className="mt-3 min-h-11 rounded-xl" onClick={() => setClaimOpen(true)}>Pick my house</Button>
+            <p className="font-medium text-sm">{t("rbills.notLinked")}</p>
+            <p className="text-sm opacity-80 mt-0.5">{t("rbills.notLinkedHint")}</p>
+            <Button className="mt-3 min-h-11 rounded-xl" onClick={() => setClaimOpen(true)}>{t("rbills.pick")}</Button>
           </div>
         </section>
       )}
@@ -152,31 +156,31 @@ function BillsScreen() {
       {/* Primary answer: amount owed */}
       {showSummary && (
         <section aria-labelledby="owed-h" className={`rounded-2xl border p-5 ${overdueCount > 0 ? "border-destructive/40 bg-danger-container text-danger-container-foreground" : "border-border bg-card"}`}>
-          <p id="owed-h" className="text-sm opacity-80">{openBills.length === 0 ? "Nothing to pay" : "You owe"}</p>
+          <p id="owed-h" className="text-sm opacity-80">{openBills.length === 0 ? t("rbills.nothing") : t("rbills.owe")}</p>
           <p className="mt-1 text-4xl font-semibold tabular-nums tracking-tight break-words">₹{outstanding.toLocaleString("en-IN")}</p>
           <p className="mt-2 text-sm">
-            {openBills.length === 0 ? "All your bills are settled." : `${openBills.length} open bill${openBills.length > 1 ? "s" : ""}`}
-            {overdueCount > 0 && <span className="font-semibold"> · {overdueCount} overdue</span>}
+            {openBills.length === 0 ? t("rbills.settled") : t("rbills.openCount", { count: openBills.length })}
+            {overdueCount > 0 && <span className="font-semibold">{t("rbills.overdueCount", { count: overdueCount })}</span>}
           </p>
           <p className="mt-3 flex items-start gap-2 border-t border-current/15 pt-3 text-xs opacity-80">
             <Info className="h-4 w-4 shrink-0" />
-            Open a bill to pay by Cash, Bank Transfer or — where your society offers it — UPI QR or online. A bill is marked paid only after the payment is confirmed.
+            {t("rbills.howToPay")}
           </p>
         </section>
       )}
 
       {loadError && (
         <div role="alert" className="flex items-center justify-between gap-3 rounded-2xl border border-destructive/30 bg-card p-4">
-          <p className="text-sm text-muted-foreground">{loadError}{visibleBills.length > 0 ? " Showing your last saved bills." : ""}</p>
-          <Button variant="outline" className="min-h-11 shrink-0 rounded-xl" onClick={() => setReloadKey((k) => k + 1)}>Retry</Button>
+          <p className="text-sm text-muted-foreground">{loadError}{visibleBills.length > 0 ? t("rbills.lastSaved") : ""}</p>
+          <Button variant="outline" className="min-h-11 shrink-0 rounded-xl" onClick={() => setReloadKey((k) => k + 1)}>{t("common.retry")}</Button>
         </div>
       )}
 
       {visibleBills.length === 0 && !loadError && !noFlat && (
         <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center">
           <Receipt className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-          <p className="font-medium">No bills yet</p>
-          <p className="text-sm text-muted-foreground">Bills from your society will appear here.</p>
+          <p className="font-medium">{t("rbills.none")}</p>
+          <p className="text-sm text-muted-foreground">{t("rbills.noneHint")}</p>
         </div>
       )}
 
@@ -199,11 +203,11 @@ function BillsScreen() {
                     <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${tone}`}><Icon className="h-5 w-5" /></span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-medium">{b.title}</span>
-                      <span className="block text-xs text-muted-foreground">Due {b.due}</span>
+                      <span className="block text-xs text-muted-foreground">{t("rbills.due", { date: b.due })}</span>
                     </span>
                     <span className="shrink-0 text-right">
                       <span className={`block font-semibold tabular-nums ${state.code === "cancelled" ? "line-through text-muted-foreground" : ""}`}>₹{b.amount.toLocaleString("en-IN")}</span>
-                      <span className={`mt-1 inline-block rounded-md px-1.5 py-0.5 text-[11px] font-medium ${tone}`}>{state.label}</span>
+                      <span className={`mt-1 inline-block rounded-md px-1.5 py-0.5 text-[11px] font-medium ${tone}`}>{t(`billStatus.${state.code}`)}</span>
                     </span>
                     <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                   </Link>

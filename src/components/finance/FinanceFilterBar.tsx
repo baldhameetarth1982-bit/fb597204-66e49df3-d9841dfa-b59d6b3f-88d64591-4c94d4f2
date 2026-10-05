@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,9 +18,9 @@ function presets() {
   const lastEnd = new Date(now.getFullYear(), now.getMonth(), 0);
   const fyYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
   return [
-    { label: "This month", from: ymd(monthStart), to: ymd(now) },
-    { label: "Last month", from: ymd(lastStart), to: ymd(lastEnd) },
-    { label: "This FY", from: `${fyYear}-04-01`, to: ymd(now) },
+    { label: "ff.thisMonth", from: ymd(monthStart), to: ymd(now) },
+    { label: "ff.lastMonth", from: ymd(lastStart), to: ymd(lastEnd) },
+    { label: "ff.thisFy", from: `${fyYear}-04-01`, to: ymd(now) },
   ];
 }
 
@@ -29,6 +30,7 @@ export function FinanceFilterBar({ value, onChange, categories, statuses }: {
   categories?: readonly string[];
   statuses: { value: string; label: string }[];
 }) {
+  const { t } = useTranslation();
   const count = activeFilterCount(value);
   const rangeInvalid = !!value.from && !!value.to && value.from > value.to;
   return (
@@ -40,40 +42,40 @@ export function FinanceFilterBar({ value, onChange, categories, statuses }: {
             <button key={p.label} type="button" aria-pressed={on}
               onClick={() => onChange({ ...value, from: on ? "" : p.from, to: on ? "" : p.to })}
               className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-2 text-xs font-medium transition ${on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground hover:text-foreground"}`}>
-              {p.label}
+              {t(p.label)}
             </button>
           );
         })}
       </div>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <div className="grid gap-1"><Label htmlFor="ff-from" className="text-xs">From</Label>
+        <div className="grid gap-1"><Label htmlFor="ff-from" className="text-xs">{t("common.from")}</Label>
           <Input id="ff-from" type="date" className="h-11" value={value.from} max={value.to || undefined} onChange={(e) => onChange({ ...value, from: e.target.value })} /></div>
-        <div className="grid gap-1"><Label htmlFor="ff-to" className="text-xs">To</Label>
+        <div className="grid gap-1"><Label htmlFor="ff-to" className="text-xs">{t("common.to")}</Label>
           <Input id="ff-to" type="date" className="h-11" value={value.to} min={value.from || undefined} onChange={(e) => onChange({ ...value, to: e.target.value })} /></div>
         {categories && (
-          <div className="grid gap-1"><Label className="text-xs">Category</Label>
+          <div className="grid gap-1"><Label className="text-xs">{t("common.category")}</Label>
             <Select value={value.category} onValueChange={(v) => onChange({ ...value, category: v })}>
-              <SelectTrigger aria-label="Category" className="h-11"><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label={t("common.category")} className="h-11"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All categories</SelectItem>
-                {categories.map((c) => <SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>)}
+                <SelectItem value="all">{t("ff.allCategories")}</SelectItem>
+                {categories.map((c) => <SelectItem key={c} value={c} className="capitalize">{t(`vch.kind.${c}`, { defaultValue: c })}</SelectItem>)}
               </SelectContent>
             </Select></div>
         )}
-        <div className="grid gap-1"><Label className="text-xs">Status</Label>
+        <div className="grid gap-1"><Label className="text-xs">{t("common.status")}</Label>
           <Select value={value.status} onValueChange={(v) => onChange({ ...value, status: v })}>
-            <SelectTrigger aria-label="Status" className="h-11"><SelectValue /></SelectTrigger>
+            <SelectTrigger aria-label={t("common.status")} className="h-11"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="all">{t("ff.allStatuses")}</SelectItem>
               {statuses.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
             </SelectContent>
           </Select></div>
       </div>
-      {rangeInvalid && <p className="text-xs text-destructive">"From" date must be on or before "To" date.</p>}
+      {rangeInvalid && <p className="text-xs text-destructive">{t("ff.rangeInvalid")}</p>}
       {count > 0 && (
         <div className="flex items-center justify-between gap-2 rounded-xl bg-muted/60 px-3 py-2">
-          <span className="text-xs text-muted-foreground">{count} filter{count === 1 ? "" : "s"} applied</span>
-          <Button size="sm" variant="ghost" className="h-9" onClick={() => onChange(EMPTY_FILTERS)}><X className="h-3.5 w-3.5 mr-1" />Clear filters</Button>
+          <span className="text-xs text-muted-foreground">{t("ff.applied", { count })}</span>
+          <Button size="sm" variant="ghost" className="h-9" onClick={() => onChange(EMPTY_FILTERS)}><X className="h-3.5 w-3.5 mr-1" />{t("exp.clearFilters")}</Button>
         </div>
       )}
     </div>

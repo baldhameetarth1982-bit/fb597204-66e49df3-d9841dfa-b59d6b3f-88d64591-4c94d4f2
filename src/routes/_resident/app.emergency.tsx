@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Phone, ShieldAlert, ArrowLeft, WifiOff } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -22,6 +23,7 @@ export const Route = createFileRoute("/_resident/app/emergency")({
 });
 
 function EmergencyPage() {
+  const { t } = useTranslation();
   const [contacts, setContacts] = useState<EmergencyContact[]>([]);
   const [online, setOnline] = useState(true);
   const { societyId } = useSocietyId();
@@ -69,12 +71,12 @@ function EmergencyPage() {
   return (
     <div className="px-5 py-6 space-y-6 pb-24">
       <header className="flex items-center gap-3">
-        <Button asChild variant="ghost" size="icon" className="rounded-xl" aria-label="Back to dashboard">
+        <Button asChild variant="ghost" size="icon" className="rounded-xl" aria-label={t("re.back")}>
           <Link to="/app/dashboard"><ArrowLeft className="h-5 w-5" /></Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Emergency</h1>
-          <p className="text-sm text-muted-foreground">Works offline — saved on your device</p>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("re.title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("re.offlineReady")}</p>
         </div>
       </header>
       <EmergencyBroadcastHistory />
@@ -82,7 +84,7 @@ function EmergencyPage() {
       {!online && (
         <Card className="rounded-2xl border-warning/40 bg-warning/10">
           <CardContent className="p-3 flex items-center gap-2 text-xs">
-            <WifiOff className="h-4 w-4 text-warning" /> You're offline. Showing cached contacts.
+            <WifiOff className="h-4 w-4 text-warning" /> {t("re.offline")}
           </CardContent>
         </Card>
       )}
@@ -94,21 +96,21 @@ function EmergencyPage() {
         <CardContent className="p-6">
           <div className="flex items-center gap-2 mb-1 opacity-90">
             <ShieldAlert className="h-4 w-4" />
-            <p className="text-xs uppercase tracking-wider">In an emergency</p>
+            <p className="text-xs uppercase tracking-wider">{t("re.inEmergency")}</p>
           </div>
-          <p className="text-3xl font-semibold">Dial 112</p>
+          <p className="text-3xl font-semibold">{t("re.dial")}</p>
           <Button
             asChild
             className="mt-4 w-full h-12 rounded-xl bg-background text-destructive hover:bg-background/90 font-semibold"
           >
-            <a href="tel:112"><Phone className="h-4 w-4 mr-2" /> Call now</a>
+            <a href="tel:112"><Phone className="h-4 w-4 mr-2" /> {t("re.callNow")}</a>
           </Button>
         </CardContent>
       </Card>
 
       <section className="space-y-2">
         <h2 className="px-1 text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-          All numbers
+          {t("re.all")}
         </h2>
         {contacts.map((c) => (
           <Card key={`${c.label}-${c.number}`} className="rounded-2xl">
@@ -119,7 +121,7 @@ function EmergencyPage() {
               <div className="flex-1 min-w-0">
                 <p className="font-medium">{c.label}</p>
                 <p className="text-xs text-muted-foreground">
-                  {c.category === "national" ? "National" : "Society"}
+                  {c.category === "national" ? t("re.national") : t("nav.society")}
                 </p>
               </div>
               <Badge variant="secondary" className="rounded-full font-mono">{c.number}</Badge>

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -16,6 +17,7 @@ export const Route = createFileRoute("/_resident/app/plan-required")({
 });
 
 function PlanRequiredResident() {
+  const { t } = useTranslation();
   const { signOut } = useAuth();
   const { societyId } = useSocietyId();
   const navigate = useNavigate();
@@ -55,9 +57,9 @@ function PlanRequiredResident() {
     };
   }, [qc, societyId]);
 
-  const adminMsg = "Our SociyoHub plan has ended. Please renew it from the committee dashboard so we can use visitors, dues, polls and notices again.";
+  const adminMsg = t("rpr.adminMsg");
   async function copyMsg() {
-    try { await navigator.clipboard.writeText(adminMsg); toast.success("Message copied"); } catch { toast.error("Couldn't copy"); }
+    try { await navigator.clipboard.writeText(adminMsg); toast.success(t("rpr.copied")); } catch { toast.error(t("rpr.copyFailed")); }
   }
 
   return (
@@ -67,22 +69,22 @@ function PlanRequiredResident() {
           <div className="grid h-12 w-12 place-items-center rounded-2xl bg-warning/15 text-warning">
             <Rocket className="h-6 w-6" />
           </div>
-          <Badge variant="outline" className="rounded-full">Society plan paused</Badge>
-          <h1 className="text-2xl font-semibold tracking-tight">Your society's plan needs renewing</h1>
+          <Badge variant="outline" className="rounded-full">{t("rpr.paused")}</Badge>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("rpr.title")}</h1>
           <p className="text-sm text-muted-foreground">
-            Only your committee can renew it. Until then, most features are paused for everyone. Nothing has been deleted.
+            {t("rpr.body")}
           </p>
         </header>
 
         <Card className="space-y-3 rounded-2xl p-4">
-          <p className="text-sm font-semibold">1. Ask your committee to renew</p>
+          <p className="text-sm font-semibold">{t("rpr.step1")}</p>
           <p className="rounded-xl bg-muted p-3 text-sm text-muted-foreground">"{adminMsg}"</p>
-          <Button onClick={copyMsg} variant="outline" className="min-h-11 w-full">Copy message</Button>
+          <Button onClick={copyMsg} variant="outline" className="min-h-11 w-full">{t("rpr.copy")}</Button>
         </Card>
 
         <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
-          <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><ShieldCheck className="h-4 w-4" /> Your data is safe.</p>
-          <Button variant="ghost" onClick={() => signOut()} className="min-h-11 text-sm">Sign out</Button>
+          <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><ShieldCheck className="h-4 w-4" /> {t("rpr.safe")}</p>
+          <Button variant="ghost" onClick={() => signOut()} className="min-h-11 text-sm">{t("common.signOut")}</Button>
         </div>
       </div>
     </main>

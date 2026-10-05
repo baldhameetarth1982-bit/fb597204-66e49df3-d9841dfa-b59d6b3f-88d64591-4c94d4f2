@@ -10,14 +10,15 @@ import { CommHeader, CommPage, SectionLabel } from "@/components/comm/CommUI";
 import { ListEmpty, ListSkeleton, LoadError, StatusChip } from "@/components/people/PeopleUI";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  AMENITY_STATUS_LABELS,
-  AMENITY_TYPE_LABELS,
+  amenityStatusLabel,
+  amenityTypeLabel,
   amenityError,
   localDateTime,
   type Amenity,
   type AmenityBooking,
   type AmenityStatus,
 } from "@/lib/amenities";
+import { useTranslation } from "react-i18next";
 
 export const Route = createFileRoute("/_resident/app/amenities")({
   head: () => ({ meta: [{ title: "Amenities — SociyoHub" }, { name: "description", content: "Book your society amenities and review your bookings." }] }),
@@ -27,6 +28,7 @@ export const Route = createFileRoute("/_resident/app/amenities")({
 const statusTone = (status: AmenityStatus) => status === "confirmed" || status === "completed" ? "success" : status === "waitlisted" ? "warning" : "muted";
 
 function AmenitiesPage() {
+  const { t } = useTranslation();
   const [amenities, setAmenities] = useState<Amenity[]>([]);
   const [bookings, setBookings] = useState<AmenityBooking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,51 +67,51 @@ function AmenitiesPage() {
     setSaving(false);
     if (error) return toast.error(amenityError(error));
     const status = data?.[0]?.status;
-    toast.success(status === "waitlisted" ? "Added to the waitlist" : "Booking confirmed");
+    toast.success(status === "waitlisted" ? t("am.t.waitlisted") : t("am.t.confirmed"));
     setSelected(null); setStartsAt(""); setAttendees(1); setRequestKey(crypto.randomUUID()); void load();
   }
 
   async function cancel(id: string) {
     const { error } = await supabase.rpc("cancel_amenity_booking", { _booking_id: id, _reason: "Cancelled by resident" });
     if (error) return toast.error(amenityError(error));
-    toast.success("Booking cancelled"); void load();
+    toast.success(t("am.t.cancelled")); void load();
   }
 
   const bookingList = (rows: AmenityBooking[], canCancel: boolean) => (
     <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
       {rows.map((b) => <li key={b.id} className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center">
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2"><p className="font-medium">{b.amenities?.name ?? "Amenity"}</p><StatusChip tone={statusTone(b.status)}>{AMENITY_STATUS_LABELS[b.status]}</StatusChip></div>
-          <p className="mt-1 text-sm text-muted-foreground">{localDateTime(b.starts_at)} · {b.attendees} {b.attendees === 1 ? "person" : "people"}</p>
+          <div className="flex flex-wrap items-center gap-2"><p className="font-medium">{b.amenities?.name ?? t("am.amenity")}</p><StatusChip tone={statusTone(b.status)}>{amenityStatusLabel(b.status)}</StatusChip></div>
+          <p className="mt-1 text-sm text-muted-foreground">{localDateTime(b.starts_at)} · {b.attendees === 1 ? t("am.person") : t("am.people", { count: b.attendees })}</p>
         </div>
-        {canCancel && <Button variant="outline" className="min-h-11" onClick={() => void cancel(b.id)}>Cancel</Button>}
+        {canCancel && <Button variant="outline" className="min-h-11" onClick={() => void cancel(b.id)}>{t("common.cancel")}</Button>}
       </li>)}
     </ul>
   );
 
   return <CommPage wide>
-    <CommHeader title="Amenities" subtitle="Book shared spaces with clear capacity and waitlist status" />
-    {loading ? <ListSkeleton rows={4} /> : failed ? <LoadError title="We couldn't load amenities." onRetry={() => void load()} /> : <>
-      {amenities.length === 0 ? <ListEmpty icon={CalendarDays} title="No amenities available">Your committee has not opened any amenities for booking yet.</ListEmpty> :
-        <section aria-labelledby="available-amenities"><SectionLabel id="available-amenities" count={amenities.length}>Available</SectionLabel>
+    <CommHeader title={t("mod.amenities")} subtitle={t("am.subtitle")} />
+    {loading ? <ListSkeleton rows={4} /> : failed ? <LoadError title={t("am.loadFailed")} onRetry={() => void load()} /> : <>
+      {amenities.length === 0 ? <ListEmpty icon={CalendarDays} title={t("am.none")}>{t("am.noneHint")}</ListEmpty> :
+        <section aria-labelledby="available-amenities"><SectionLabel id="available-amenities" count={amenities.length}>{t("am.available")}</SectionLabel>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{amenities.map((a) => <article key={a.id} className="rounded-2xl border bg-card p-4">
-            <div className="flex items-start justify-between gap-2"><div><h2 className="font-semibold">{a.name}</h2><p className="text-xs text-muted-foreground">{AMENITY_TYPE_LABELS[a.amenity_type]}</p></div><StatusChip tone="success">Open</StatusChip></div>
+            <div className="flex items-start justify-between gap-2"><div><h2 className="font-semibold">{a.name}</h2><p className="text-xs text-muted-foreground">{amenityTypeLabel(a.amenity_type)}</p></div><StatusChip tone="success">{t("am.open")}</StatusChip></div>
             {a.description && <p className="mt-3 text-sm text-muted-foreground line-clamp-2">{a.description}</p>}
-            <dl className="mt-4 grid grid-cols-2 gap-2 text-sm"><div><dt className="text-xs text-muted-foreground">Hours</dt><dd className="flex items-center gap-1"><Clock3 className="h-3.5 w-3.5" />{a.opens_at.slice(0,5)}–{a.closes_at.slice(0,5)}</dd></div><div><dt className="text-xs text-muted-foreground">Capacity</dt><dd className="flex items-center gap-1"><Users className="h-3.5 w-3.5" />{a.capacity}</dd></div></dl>
-            <Button className="mt-4 min-h-11 w-full" onClick={() => { setSelected(a); setRequestKey(crypto.randomUUID()); }}>Book</Button>
+            <dl className="mt-4 grid grid-cols-2 gap-2 text-sm"><div><dt className="text-xs text-muted-foreground">{t("am.hours")}</dt><dd className="flex items-center gap-1"><Clock3 className="h-3.5 w-3.5" />{a.opens_at.slice(0,5)}–{a.closes_at.slice(0,5)}</dd></div><div><dt className="text-xs text-muted-foreground">{t("am.capacity")}</dt><dd className="flex items-center gap-1"><Users className="h-3.5 w-3.5" />{a.capacity}</dd></div></dl>
+            <Button className="mt-4 min-h-11 w-full" onClick={() => { setSelected(a); setRequestKey(crypto.randomUUID()); }}>{t("am.book")}</Button>
           </article>)}</div></section>}
-      {upcoming.length > 0 && <section><SectionLabel count={upcoming.length}>My upcoming bookings</SectionLabel>{bookingList(upcoming, true)}</section>}
-      {history.length > 0 && <section><SectionLabel count={history.length}>History</SectionLabel>{bookingList(history, false)}</section>}
+      {upcoming.length > 0 && <section><SectionLabel count={upcoming.length}>{t("am.upcoming")}</SectionLabel>{bookingList(upcoming, true)}</section>}
+      {history.length > 0 && <section><SectionLabel count={history.length}>{t("billingTabs.history")}</SectionLabel>{bookingList(history, false)}</section>}
     </>}
 
     <Dialog open={!!selected} onOpenChange={(open) => !saving && !open && setSelected(null)}>
-      <DialogContent><DialogHeader><DialogTitle>Book {selected?.name}</DialogTitle></DialogHeader>
+      <DialogContent><DialogHeader><DialogTitle>{t("am.bookName", { name: selected?.name ?? "" })}</DialogTitle></DialogHeader>
         {selected && <form className="space-y-4" onSubmit={book}>
-          <p className="text-sm text-muted-foreground">{selected.slot_minutes} minutes · up to {selected.capacity} people · book up to {selected.advance_days} days ahead.</p>
-          <div className="space-y-1.5"><Label htmlFor="amenity-start">Start time</Label><Input id="amenity-start" type="datetime-local" className="h-11" required step={selected.slot_minutes * 60} value={startsAt} onChange={(e) => setStartsAt(e.target.value)} /><p className="text-xs text-muted-foreground">Choose a {selected.slot_minutes}-minute slot starting from {selected.opens_at.slice(0,5)}.</p></div>
-          <div className="space-y-1.5"><Label htmlFor="amenity-attendees">People attending</Label><Input id="amenity-attendees" type="number" className="h-11" min={1} max={selected.capacity} required value={attendees} onChange={(e) => setAttendees(Number(e.target.value))} /></div>
-          {(selected.fee_amount > 0 || selected.deposit_amount > 0) && <p className="rounded-xl bg-warning-container p-3 text-sm text-warning-container-foreground">Configured fee: ₹{selected.fee_amount}. Refundable deposit: ₹{selected.deposit_amount}. This booking does not collect or record a payment.</p>}
-          <Button type="submit" className="h-12 w-full" disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Confirm booking</Button>
+          <p className="text-sm text-muted-foreground">{t("am.rules", { minutes: selected.slot_minutes, capacity: selected.capacity, days: selected.advance_days })}</p>
+          <div className="space-y-1.5"><Label htmlFor="amenity-start">{t("am.start")}</Label><Input id="amenity-start" type="datetime-local" className="h-11" required step={selected.slot_minutes * 60} value={startsAt} onChange={(e) => setStartsAt(e.target.value)} /><p className="text-xs text-muted-foreground">{t("am.slotHint", { minutes: selected.slot_minutes, time: selected.opens_at.slice(0,5) })}</p></div>
+          <div className="space-y-1.5"><Label htmlFor="amenity-attendees">{t("am.attendees")}</Label><Input id="amenity-attendees" type="number" className="h-11" min={1} max={selected.capacity} required value={attendees} onChange={(e) => setAttendees(Number(e.target.value))} /></div>
+          {(selected.fee_amount > 0 || selected.deposit_amount > 0) && <p className="rounded-xl bg-warning-container p-3 text-sm text-warning-container-foreground">{t("am.fee", { fee: selected.fee_amount, deposit: selected.deposit_amount })}</p>}
+          <Button type="submit" className="h-12 w-full" disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{t("am.confirm")}</Button>
         </form>}
       </DialogContent>
     </Dialog>

@@ -15,10 +15,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { useTranslation } from "react-i18next";
 import { TicketTimeline } from "@/components/helpdesk/TicketTimeline";
 import { ResidentTicketExtras } from "@/components/helpdesk/ResidentTicketExtras";
 import {
-  CATEGORY_HINT, CATEGORY_LABEL, PRIORITY_LABEL, fmtDate, helpdeskErrorMessage, statusMeta,
+  PRIORITY_LABEL, categoryHint, categoryLabel, priorityLabel, fmtDate, helpdeskErrorMessage, statusMeta,
   type TicketCategory, type TicketPriority,
 } from "@/lib/helpdesk";
 
@@ -54,6 +55,7 @@ const DONE = ["closed", "rejected", "cancelled"];
 
 function HelpdeskPage() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const navigate = useNavigate();
   const search = useSearch({ from: "/_resident/app/helpdesk" });
@@ -89,10 +91,10 @@ function HelpdeskPage() {
   });
 
   const list = useMemo(
-    () => (q.data ?? []).filter((t) => (tab === "done" ? DONE.includes(t.status) : !DONE.includes(t.status))),
+    () => (q.data ?? []).filter((x) => (tab === "done" ? DONE.includes(x.status) : !DONE.includes(x.status))),
     [q.data, tab],
   );
-  const current = q.data?.find((t) => t.id === selected) ?? null;
+  const current = q.data?.find((x) => x.id === selected) ?? null;
 
   const create = useMutation({
     mutationFn: async () => {
@@ -103,7 +105,7 @@ function HelpdeskPage() {
       return data as string;
     },
     onSuccess: () => {
-      toast.success(form.category === "approval" ? "Sent to the committee for approval" : "Request raised — the society office can see it now");
+      toast.success(form.category === "approval" ? t("hd.t.sentApproval") : t("hd.t.raised"));
       setOpenNew(false);
       setForm((f) => ({ ...f, subject: "", description: "", priority: "normal" }));
       setTab("active");
@@ -118,7 +120,7 @@ function HelpdeskPage() {
       if (error) throw error;
     },
     onSuccess: (_d, v) => {
-      toast.success(v.action === "cancel" ? "Request cancelled" : v.action === "confirm" ? "Thanks — marked as closed" : "Request reopened");
+      toast.success(v.action === "cancel" ? t("hd.t.cancelled") : v.action === "confirm" ? t("hd.t.closed") : t("hd.t.reopened"));
       qc.invalidateQueries({ queryKey: ["helpdesk"] });
     },
     onError: (e) => toast.error(helpdeskErrorMessage(e)),
@@ -132,18 +134,18 @@ function HelpdeskPage() {
   const subjectOk = form.subject.trim().length >= 3;
   const descOk = form.description.trim().length >= 5;
 
-  const attention = tab === "active" ? list.filter((t) => t.status === "resolved") : [];
-  const approvals = tab === "active" ? list.filter((t) => t.status !== "resolved" && t.category === "approval") : [];
-  const others = tab === "active" ? list.filter((t) => t.status !== "resolved" && t.category !== "approval") : list;
+  const attention = tab === "active" ? list.filter((x) => x.status === "resolved") : [];
+  const approvals = tab === "active" ? list.filter((x) => x.status !== "resolved" && x.category === "approval") : [];
+  const others = tab === "active" ? list.filter((x) => x.status !== "resolved" && x.category !== "approval") : list;
 
+  const tr = t;
   const row = (t: Ticket) => {
     const s = statusMeta(t.status);
     const Icon = ICONS[t.category] ?? LifeBuoy;
     const urgent = t.priority === "high" || t.priority === "urgent";
     const isApproval = t.category === "approval";
-    const next = t.status === "resolved" ? "Confirm it's fixed" : t.status === "awaiting_approval" ? "Waiting for committee decision"
-      : t.status === "open" ? "Waiting for the office to pick up" : t.status === "in_progress" ? "Being worked on"
-      : t.status === "on_hold" ? "On hold — the office will update you" : t.status === "reopened" ? "Reopened — waiting for the office" : null;
+    const NEXT: Record<string, string> = { resolved: "hd.n.resolved", awaiting_approval: "hd.n.approval", open: "hd.n.open", in_progress: "hd.n.progress", on_hold: "hd.n.hold", reopened: "hd.n.reopened" };
+    const next = NEXT[t.status] ? tr(NEXT[t.status]) : null;
     return (
       <li key={t.id}>
         <button type="button" onClick={() => setSelected(t.id)}
@@ -152,11 +154,11 @@ function HelpdeskPage() {
           <span className="min-w-0 flex-1">
             <span className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
               <span className={`rounded px-1.5 py-0.5 font-semibold ${s.tone}`}>{s.label}</span>
-              {urgent && <span className="rounded bg-destructive/10 px-1.5 py-0.5 font-semibold text-destructive">{PRIORITY_LABEL[t.priority as TicketPriority]}</span>}
-              <span>{CATEGORY_LABEL[t.category] ?? "Request"} · #{t.ticket_no}</span>
+              {urgent && <span className="rounded bg-destructive/10 px-1.5 py-0.5 font-semibold text-destructive">{priorityLabel(t.priority)}</span>}
+              <span>{categoryLabel(t.category)} · #{t.ticket_no}</span>
             </span>
             <span className="mt-0.5 block truncate text-sm font-medium">{t.subject}</span>
-            <span className="block text-xs text-muted-foreground">{next ? `${next} · ` : ""}updated {fmtDate(t.last_activity_at)}</span>
+            <span className="block text-xs text-muted-foreground">{next ? `${next} · ` : ""}{tr("hd.updated", { date: fmtDate(t.last_activity_at) })}</span>
           </span>
           <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
         </button>
@@ -175,20 +177,20 @@ function HelpdeskPage() {
     <div className="mx-auto max-w-3xl px-4 pb-28 pt-5">
       <header className="mb-5 flex items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Helpdesk</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Your complaints, service requests and approvals</p>
+          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{t("hd.title")}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t("hd.subtitle")}</p>
         </div>
         <Button onClick={() => startNew(initialCat)} className="min-h-11 shrink-0 rounded-xl">
-          <Plus className="mr-1 h-4 w-4" /> New request
+          <Plus className="mr-1 h-4 w-4" /> {t("hd.new")}
         </Button>
       </header>
 
-      <section aria-label="My requests">
+      <section aria-label={t("hd.mine")}>
         <div role="tablist" className="inline-flex rounded-xl bg-secondary p-1">
-          {(["active", "done"] as Tab[]).map((t) => (
-            <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}
-              className={`min-h-11 rounded-lg px-4 text-sm font-medium ${tab === t ? "bg-background shadow-sm" : "text-muted-foreground"}`}>
-              {t === "active" ? "Active" : "Past"}
+          {(["active", "done"] as Tab[]).map((k) => (
+            <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
+              className={`min-h-11 rounded-lg px-4 text-sm font-medium ${tab === k ? "bg-background shadow-sm" : "text-muted-foreground"}`}>
+              {k === "active" ? t("hd.tab.active") : t("hd.tab.past")}
             </button>
           ))}
         </div>
@@ -197,29 +199,29 @@ function HelpdeskPage() {
           <div className="mt-4 space-y-2">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-16 w-full rounded-2xl" />)}</div>
         ) : q.isError ? (
           <div role="alert" className="mt-4 rounded-2xl border border-dashed bg-card p-6 text-center">
-            <p className="font-semibold">Couldn't load your requests</p>
+            <p className="font-semibold">{t("hd.loadFailed")}</p>
             <p className="mt-1 text-sm text-muted-foreground">{helpdeskErrorMessage(q.error)}</p>
             <Button variant="outline" className="mt-3 min-h-11" onClick={() => q.refetch()} disabled={q.isFetching}>
-              <RefreshCw className={`mr-2 h-4 w-4 ${q.isFetching ? "animate-spin" : ""}`} /> Try again
+              <RefreshCw className={`mr-2 h-4 w-4 ${q.isFetching ? "animate-spin" : ""}`} /> {t("common.tryAgain")}
             </Button>
           </div>
         ) : list.length === 0 ? (
           <div className="mt-4 rounded-2xl border border-dashed bg-card p-8 text-center">
             <LifeBuoy className="mx-auto h-8 w-8 text-muted-foreground" />
-            <p className="mt-2 text-sm font-medium">{tab === "active" ? "Nothing open right now" : "No past requests"}</p>
-            <p className="text-xs text-muted-foreground">{tab === "active" ? "Start a request below." : "Closed and cancelled requests appear here."}</p>
+            <p className="mt-2 text-sm font-medium">{tab === "active" ? t("hd.emptyActive") : t("hd.emptyPast")}</p>
+            <p className="text-xs text-muted-foreground">{tab === "active" ? t("hd.emptyActiveHint") : t("hd.emptyPastHint")}</p>
           </div>
         ) : (
           <>
-            {group("Needs your attention", attention, "The office marked these resolved — confirm or reopen.")}
-            {group("Approval requests", approvals, "Decided by the committee.")}
-            {group(tab === "active" ? "Open requests" : "Past requests", others)}
+            {group(t("hd.g.attention"), attention, t("hd.g.attentionHint"))}
+            {group(t("hd.g.approvals"), approvals, t("hd.g.approvalsHint"))}
+            {group(tab === "active" ? t("hd.g.open") : t("hd.g.past"), others)}
           </>
         )}
       </section>
 
-      <section aria-label="Start a request" className="mt-8">
-        <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Start a request</h2>
+      <section aria-label={t("hd.start")} className="mt-8">
+        <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("hd.start")}</h2>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {CATS.map((c) => {
             const Icon = ICONS[c];
@@ -228,8 +230,8 @@ function HelpdeskPage() {
                 className="flex min-h-14 items-center gap-3 rounded-2xl border bg-card p-3 text-left transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-muted"><Icon className="h-5 w-5" /></span>
                 <span className="min-w-0">
-                  <span className="block text-sm font-semibold">{CATEGORY_LABEL[c]}</span>
-                  <span className="block truncate text-xs text-muted-foreground">{CATEGORY_HINT[c]}</span>
+                  <span className="block text-sm font-semibold">{categoryLabel(c)}</span>
+                  <span className="block truncate text-xs text-muted-foreground">{categoryHint(c)}</span>
                 </span>
               </button>
             );
@@ -241,48 +243,48 @@ function HelpdeskPage() {
       {/* New request */}
       <Sheet open={openNew} onOpenChange={(o) => !create.isPending && setOpenNew(o)}>
         <SheetContent side="bottom" className="mx-auto max-h-[92dvh] max-w-lg overflow-y-auto rounded-t-3xl pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <SheetHeader><SheetTitle>New request</SheetTitle></SheetHeader>
+          <SheetHeader><SheetTitle>{t("hd.new")}</SheetTitle></SheetHeader>
           <form className="mt-4 space-y-4" onSubmit={(e) => { e.preventDefault(); if (subjectOk && descOk && !create.isPending) create.mutate(); }}>
             <fieldset className="space-y-2">
-              <legend className="text-sm font-medium">Type</legend>
+              <legend className="text-sm font-medium">{t("cm.type")}</legend>
               <div className="flex flex-wrap gap-2">
                 {CATS.map((c) => (
                   <button key={c} type="button" onClick={() => setForm({ ...form, category: c })} aria-pressed={form.category === c}
                     className={`min-h-10 rounded-full border px-3 text-sm ${form.category === c ? "border-primary bg-primary text-primary-foreground" : "bg-background"}`}>
-                    {CATEGORY_LABEL[c]}
+                    {categoryLabel(c)}
                   </button>
                 ))}
               </div>
               {form.category === "approval" && (
-                <p className="text-xs text-muted-foreground">This goes straight to the committee. You'll see their decision here.</p>
+                <p className="text-xs text-muted-foreground">{t("hd.approvalNote")}</p>
               )}
             </fieldset>
             <div className="space-y-1.5">
-              <Label htmlFor="hd-subject">Title</Label>
+              <Label htmlFor="hd-subject">{t("cm.fTitle")}</Label>
               <Input id="hd-subject" value={form.subject} maxLength={120} className="min-h-11 rounded-xl"
-                placeholder="e.g. Lift not working in B-wing" onChange={(e) => setForm({ ...form, subject: e.target.value })} />
+                placeholder={t("hd.subjectPh")} onChange={(e) => setForm({ ...form, subject: e.target.value })} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="hd-desc">Details</Label>
+              <Label htmlFor="hd-desc">{t("hd.details")}</Label>
               <Textarea id="hd-desc" value={form.description} rows={4} maxLength={2000} className="rounded-xl"
-                placeholder="Where, since when, anything that helps the team act faster"
+                placeholder={t("hd.descPh")}
                 onChange={(e) => setForm({ ...form, description: e.target.value })} />
               <p className="text-right text-[11px] text-muted-foreground">{form.description.length}/2000</p>
             </div>
             <fieldset className="space-y-2">
-              <legend className="text-sm font-medium">Priority</legend>
+              <legend className="text-sm font-medium">{t("hd.priority")}</legend>
               <div className="grid grid-cols-4 gap-2">
                 {(Object.keys(PRIORITY_LABEL) as TicketPriority[]).map((p) => (
                   <button key={p} type="button" aria-pressed={form.priority === p} onClick={() => setForm({ ...form, priority: p })}
                     className={`min-h-11 rounded-xl border text-sm ${form.priority === p ? "border-primary bg-primary/10 font-semibold text-primary" : ""}`}>
-                    {PRIORITY_LABEL[p]}
+                    {priorityLabel(p)}
                   </button>
                 ))}
               </div>
             </fieldset>
             <Button type="submit" className="min-h-12 w-full rounded-xl" disabled={!subjectOk || !descOk || create.isPending}>
               {create.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {form.category === "approval" ? "Send for approval" : "Submit request"}
+              {form.category === "approval" ? t("hd.sendApproval") : t("hd.submit")}
             </Button>
           </form>
         </SheetContent>
@@ -294,7 +296,7 @@ function HelpdeskPage() {
           {current && (
             <div className="space-y-5">
               <SheetHeader className="text-left">
-                <p className="text-xs text-muted-foreground">#{current.ticket_no} · {CATEGORY_LABEL[current.category]}</p>
+                <p className="text-xs text-muted-foreground">#{current.ticket_no} · {categoryLabel(current.category)}</p>
                 <SheetTitle className="break-words">{current.subject}</SheetTitle>
                 <span className={`w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusMeta(current.status).tone}`}>{statusMeta(current.status).label}</span>
               </SheetHeader>
@@ -302,19 +304,19 @@ function HelpdeskPage() {
               <AISummaryCard key={current.id} target={{ kind: "ticket", id: current.id }} />
               {current.resolution_note && (
                 <div className="rounded-xl bg-muted/60 p-3 text-sm">
-                  <p className="text-xs font-semibold text-muted-foreground">{current.status === "rejected" ? "Reason" : "Resolution"}</p>
+                  <p className="text-xs font-semibold text-muted-foreground">{current.status === "rejected" ? t("cm.reason") : t("hd.resolution")}</p>
                   <p className="mt-1 whitespace-pre-wrap break-words">{current.resolution_note}</p>
                 </div>
               )}
               {current.status === "resolved" && (
                 <div className="flex gap-2">
-                  <Button className="min-h-11 flex-1 rounded-xl" disabled={act.isPending} onClick={() => act.mutate({ id: current.id, action: "confirm" })}>It's fixed</Button>
-                  <Button variant="outline" className="min-h-11 flex-1 rounded-xl" disabled={act.isPending} onClick={() => act.mutate({ id: current.id, action: "reopen" })}>Still an issue</Button>
+                  <Button className="min-h-11 flex-1 rounded-xl" disabled={act.isPending} onClick={() => act.mutate({ id: current.id, action: "confirm" })}>{t("hd.fixed")}</Button>
+                  <Button variant="outline" className="min-h-11 flex-1 rounded-xl" disabled={act.isPending} onClick={() => act.mutate({ id: current.id, action: "reopen" })}>{t("hd.stillIssue")}</Button>
                 </div>
               )}
               {(current.status === "open" || current.status === "awaiting_approval") && (
                 <Button variant="ghost" className="min-h-11 w-full rounded-xl text-destructive" disabled={act.isPending}
-                  onClick={() => act.mutate({ id: current.id, action: "cancel" })}>Cancel request</Button>
+                  onClick={() => act.mutate({ id: current.id, action: "cancel" })}>{t("hd.cancelReq")}</Button>
               )}
               <ResidentTicketExtras ticketId={current.id} status={current.status} />
               <TicketTimeline ticketId={current.id} canComment={!["closed", "cancelled"].includes(current.status)} />

@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
+import { useTranslation } from "react-i18next";
 import { AiDraftButton } from "@/components/helpdesk/AiDraftButton";
 import { describeEvent, fetchTimeline, fmtDate, helpdeskErrorMessage } from "@/lib/helpdesk";
 
 export function TicketTimeline({ ticketId, canComment, aiDraft = false }: { ticketId: string; canComment: boolean; aiDraft?: boolean }) {
   const qc = useQueryClient();
+  const { t } = useTranslation();
   const [body, setBody] = useState("");
   const q = useQuery({
     queryKey: ["helpdesk", "timeline", ticketId],
@@ -30,15 +32,15 @@ export function TicketTimeline({ ticketId, canComment, aiDraft = false }: { tick
   });
 
   return (
-    <section aria-label="Updates" className="space-y-3">
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Updates</h3>
+    <section aria-label={t("hd.updates")} className="space-y-3">
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("hd.updates")}</h3>
       {q.isPending ? (
         <Skeleton className="h-20 w-full rounded-xl" />
       ) : q.isError ? (
         <div role="alert" className="rounded-xl border p-3 text-sm">
           <p>{helpdeskErrorMessage(q.error)}</p>
           <Button variant="outline" size="sm" className="mt-2 min-h-11" onClick={() => q.refetch()} disabled={q.isFetching}>
-            <RefreshCw className="mr-2 h-4 w-4" /> Try again
+            <RefreshCw className="mr-2 h-4 w-4" /> {t("common.tryAgain")}
           </Button>
         </div>
       ) : (
@@ -61,17 +63,17 @@ export function TicketTimeline({ ticketId, canComment, aiDraft = false }: { tick
           className="flex items-end gap-2"
           onSubmit={(ev) => { ev.preventDefault(); if (body.trim() && !send.isPending) send.mutate(); }}
         >
-          <label htmlFor={`c-${ticketId}`} className="sr-only">Add a comment</label>
+          <label htmlFor={`c-${ticketId}`} className="sr-only">{t("hd.addComment")}</label>
           <Textarea
             id={`c-${ticketId}`}
             value={body}
             onChange={(e) => setBody(e.target.value)}
             rows={2}
             maxLength={2000}
-            placeholder="Add a comment…"
+            placeholder={t("hd.addComment")}
             className="min-h-11 flex-1 resize-none rounded-xl"
           />
-          <Button type="submit" size="icon" className="h-11 w-11 shrink-0 rounded-xl" disabled={!body.trim() || send.isPending} aria-label="Send comment">
+          <Button type="submit" size="icon" className="h-11 w-11 shrink-0 rounded-xl" disabled={!body.trim() || send.isPending} aria-label={t("hd.sendComment")}>
             {send.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
         </form>

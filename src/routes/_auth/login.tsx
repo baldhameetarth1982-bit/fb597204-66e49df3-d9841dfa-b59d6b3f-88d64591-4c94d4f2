@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useMemo, useState } from "react";
 import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
 import { Loader2, Mail, Lock, ShieldCheck, FileCheck2, Phone, ArrowLeft } from "lucide-react";
@@ -24,6 +25,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { assertLoginAllowed } from "@/lib/login-guard.functions";
 import { emailSignIn, emailSignUp } from "@/lib/email-auth.functions";
 import { Clock } from "lucide-react";
+import { LanguageSelector } from "@/components/shared/LanguageSelector";
 
 export const Route = createFileRoute("/_auth/login")({
   head: () => ({
@@ -65,6 +67,7 @@ function LoginPage() {
   const assertAllowed = useServerFn(assertLoginAllowed);
   const signInFn = useServerFn(emailSignIn);
   const signUpFn = useServerFn(emailSignUp);
+  const { t } = useTranslation();
 
   if (isLoading) {
     return (
@@ -104,7 +107,7 @@ function LoginPage() {
       if (mode === "signup") {
         const r = await signUpFn({ data: { email: addr, password, fullName: fullName.trim() || undefined, next } });
         if (!r.ok) { if (r.reason === "limited") setLimited(r.message); else toast.error(r.message); return; }
-        toast.success("Account created. Check your email if confirmation is required.");
+        toast.success(t("auth.toast.created"));
       } else {
         const r = await signInFn({ data: { email: addr, password } });
         if (!r.ok) { if (r.reason === "limited") setLimited(r.message); else toast.error(r.message); return; }
@@ -112,7 +115,7 @@ function LoginPage() {
         if (error) throw error;
       }
     } catch {
-      toast.error(mode === "signup" ? "Couldn't create the account. Please try again." : "Couldn't sign in. Please try again.");
+      toast.error(mode === "signup" ? t("auth.toast.createFailed") : t("auth.toast.signInFailed"));
     } finally {
       setBusy(null);
     }
@@ -121,7 +124,7 @@ function LoginPage() {
   async function sendReset() {
     const addr = email.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(addr)) {
-      toast.error("Enter your email above first, then tap Forgot password.");
+      toast.error(t("auth.toast.enterEmailFirst"));
       return;
     }
     setBusy("email");
@@ -130,9 +133,9 @@ function LoginPage() {
         redirectTo: `${window.location.origin}/reset-password`,
       });
       // Same message either way so account existence isn't revealed.
-      toast.success("If an account exists for this email, a reset link is on its way.");
+      toast.success(t("auth.toast.resetSent"));
     } catch {
-      toast.error("Couldn't send the reset email. Please try again.");
+      toast.error(t("auth.toast.resetFailed"));
     } finally {
       setBusy(null);
     }
@@ -143,17 +146,17 @@ function LoginPage() {
     setLimited(null);
     try {
       const gate = await assertAllowed({ data: {} }).catch(() => null);
-      if (!gate) { toast.error("Couldn't reach SociyoHub. Check your connection and try again."); return; }
+      if (!gate) { toast.error(t("auth.toast.unreachable")); return; }
       if (!gate.ok) { setLimited(gate.message); return; }
       const r = await signInWithGoogleFirebase();
       if (!r.ok) {
         if (/temporarily limited|too many/i.test(r.error ?? "")) setLimited(r.error!);
-        else toast.error(r.error ?? "Google sign-in failed. Please try again.");
+        else toast.error(r.error ?? t("auth.toast.googleFailed"));
         return;
       }
       goNext(next, () => navigate({ to: "/" }));
     } catch {
-      toast.error("Google sign-in failed. Please try again.");
+      toast.error(t("auth.toast.googleFailed"));
     } finally {
       setBusy(null);
     }
@@ -163,7 +166,7 @@ function LoginPage() {
     setBusy("truecaller");
     try {
       const r = await startTruecallerAuth();
-      if (!r.ok) toast.error(r.error ?? "Truecaller sign-in unavailable");
+      if (!r.ok) toast.error(r.error ?? t("auth.toast.truecallerUnavailable"));
     } finally {
       setBusy(null);
     }
@@ -179,27 +182,30 @@ function LoginPage() {
           onClick={() => setStep("choose")}
           className="mb-3 -ml-2"
         >
-          <ArrowLeft className="h-4 w-4" /> Back
+          <ArrowLeft className="h-4 w-4" /> {t("auth.back")}
         </Button>
       )}
 
       <h1 className="type-headline text-center">
         {step === "email"
-          ? mode === "signin" ? "Sign in with email" : "Create your account"
+          ? mode === "signin" ? t("auth.title.emailSignIn") : t("auth.title.createAccount")
           : step === "phone"
-            ? "Continue with phone"
-            : "Welcome to SociyoHub"}
+            ? t("auth.title.phone")
+            : t("auth.title.welcome")}
       </h1>
       <p className="mt-2 text-sm text-muted-foreground text-center">
-        Society management, simplified.
+        {t("auth.tagline")}
       </p>
+      <div className="mt-3 flex justify-center">
+        <LanguageSelector compact />
+      </div>
 
       {limited && (
         <div role="alert" className="mt-5 flex gap-3 rounded-2xl border border-warning/40 bg-warning/10 p-4 text-sm">
           <Clock className="h-5 w-5 shrink-0 text-warning" aria-hidden />
           <div>
-            <p className="font-medium text-foreground">Please wait before trying again</p>
-            <p className="mt-0.5 text-muted-foreground">{limited} This limit is temporary.</p>
+            <p className="font-medium text-foreground">{t("auth.limited.title")}</p>
+            <p className="mt-0.5 text-muted-foreground">{limited} {t("auth.limited.temporary")}</p>
           </div>
         </div>
       )}
@@ -213,7 +219,7 @@ function LoginPage() {
             onClick={() => setStep("phone")}
             className="w-full"
           >
-            <Phone className="h-4 w-4" /> Continue with Phone
+            <Phone className="h-4 w-4" /> {t("auth.continuePhone")}
           </Button>
           {caps.truecaller && (
             <TruecallerButton onClick={withTruecaller} loading={busy === "truecaller"} />
@@ -224,7 +230,7 @@ function LoginPage() {
             onClick={() => setStep("email")}
             className="w-full"
           >
-            <Mail className="h-4 w-4" /> Continue with Email
+            <Mail className="h-4 w-4" /> {t("auth.continueEmail")}
           </Button>
         </div>
       )}
@@ -232,19 +238,19 @@ function LoginPage() {
       {step === "phone" && (
         <div className="mt-6">
           <PhoneOtpForm
-            submitLabel="Verify & sign in"
+            submitLabel={t("auth.verifySignIn")}
             onVerified={async ({ phone, firebaseIdToken }) => {
               const r = await signInWithVerifiedPhone({ phone, firebaseIdToken });
               if (!r.ok) {
-                toast.error(r.error ?? "Could not sign in");
+                toast.error(r.error ?? t("auth.toast.couldNotSignIn"));
                 return;
               }
-              toast.success("Signed in");
+              toast.success(t("auth.toast.signedIn"));
               goNext(next, () => navigate({ to: "/" }));
             }}
           />
           <p className="mt-4 text-[11px] text-muted-foreground text-center">
-            We'll create your account automatically if this is your first time.
+            {t("auth.autoCreate")}
           </p>
         </div>
       )}
@@ -254,19 +260,19 @@ function LoginPage() {
           <form onSubmit={submitEmail} className="mt-6 space-y-3">
             {mode === "signup" && (
               <div className="space-y-1.5">
-                <Label htmlFor="auth-name" className="text-sm">Full name</Label>
+                <Label htmlFor="auth-name" className="text-sm">{t("auth.fullName")}</Label>
                 <Input
                   id="auth-name"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Your name"
+                  placeholder={t("auth.yourName")}
                   autoComplete="name"
                 />
               </div>
             )}
             <div className="space-y-1.5">
               <Label htmlFor="auth-email" className="flex items-center gap-1.5 text-sm">
-                <Mail className="h-4 w-4 text-primary" /> Email
+                <Mail className="h-4 w-4 text-primary" /> {t("auth.email")}
               </Label>
               <Input
                 type="email"
@@ -280,7 +286,7 @@ function LoginPage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="auth-password" className="flex items-center gap-1.5 text-sm">
-                <Lock className="h-4 w-4 text-primary" /> Password
+                <Lock className="h-4 w-4 text-primary" /> {t("auth.password")}
               </Label>
               <PasswordInput
                 
@@ -299,7 +305,7 @@ function LoginPage() {
               className="w-full"
             >
               {busy === "email" && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {mode === "signin" ? "Sign in" : "Create account"}
+              {mode === "signin" ? t("auth.signIn") : t("auth.createAccount")}
             </Button>
           </form>
           {mode === "signin" && (
@@ -310,7 +316,7 @@ function LoginPage() {
               onClick={sendReset}
               className="mt-2 w-full min-h-11 text-primary"
             >
-              Forgot password?
+              {t("auth.forgot")}
             </Button>
           )}
           <Button
@@ -319,26 +325,26 @@ function LoginPage() {
             onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
             className="mt-4 w-full text-muted-foreground"
           >
-            {mode === "signin" ? "New here? Create an account" : "Already have an account? Sign in"}
+            {mode === "signin" ? t("auth.toSignUp") : t("auth.toSignIn")}
           </Button>
         </>
       )}
 
       <div className="mt-6 rounded-lg border border-border bg-secondary/60 p-4 space-y-2">
         <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-          <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Your data is safe with SociyoHub
+          <ShieldCheck className="h-3.5 w-3.5 text-primary" /> {t("auth.safe.title")}
         </p>
         <ul className="text-[11px] text-muted-foreground space-y-1.5">
           <li className="flex gap-1.5">
-            <Lock className="h-3 w-3 mt-0.5 text-primary" /> Sign-in attempts are checked before they proceed
+            <Lock className="h-3 w-3 mt-0.5 text-primary" /> {t("auth.safe.checked")}
           </li>
           <li className="flex gap-1.5">
-            <FileCheck2 className="h-3 w-3 mt-0.5 text-primary" /> Access follows your assigned society role
+            <FileCheck2 className="h-3 w-3 mt-0.5 text-primary" /> {t("auth.safe.role")}
           </li>
         </ul>
         <p className="text-[10px] text-muted-foreground pt-1">
-          <Link to="/terms" className="underline">Terms</Link> ·{" "}
-          <Link to="/privacy" className="underline">Privacy</Link>
+          <Link to="/terms" className="underline">{t("auth.terms")}</Link> ·{" "}
+          <Link to="/privacy" className="underline">{t("auth.privacy")}</Link>
         </p>
       </div>
     </AuthShell>

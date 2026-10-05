@@ -51,7 +51,7 @@ export function ResidentBottomNav() {
   const { t } = useTranslation();
   return (
     <nav
-      aria-label="Resident navigation"
+      aria-label={t("nav.residentNav")}
       className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl"
     >
       <ul className="mx-auto grid grid-cols-5 max-w-[480px] px-1">

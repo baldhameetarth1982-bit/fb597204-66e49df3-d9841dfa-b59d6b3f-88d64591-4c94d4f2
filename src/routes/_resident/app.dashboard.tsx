@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+import { useLocaleFormat } from "@/lib/i18n-format";
 import { PendingRoleInvites } from "@/components/roles/PendingRoleInvites";
 import { NeedsAttention } from "@/components/shared/NeedsAttention";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -31,12 +33,14 @@ export const Route = createFileRoute("/_resident/app/dashboard")({
 });
 
 const INR = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
-const DATE = (d: string) => new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 const ACTIVE_TICKETS = ["open", "in_progress", "awaiting_approval", "resolved"];
 
 function ResidentDashboard() {
   const { profile, user } = useAuth();
-  const firstName = profile?.full_name?.split(" ")[0] ?? "there";
+  const { t } = useTranslation();
+  const fmt = useLocaleFormat();
+  const DATE = (v: string) => fmt.date(v, { day: "numeric", month: "short" });
+  const firstName = profile?.full_name?.split(" ")[0] ?? t("home.there");
   const societyId = profile?.society_id;
   const userId = profile?.id;
 
@@ -84,13 +88,13 @@ function ResidentDashboard() {
       <PendingRoleInvites />
       <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border pb-5">
         <div className="min-w-0">
-          <p className="text-sm text-muted-foreground">Welcome back</p>
-          <h1 className="mt-0.5 text-2xl md:text-[28px] md:leading-[34px] font-semibold tracking-tight truncate">Hi {firstName}</h1>
+          <p className="text-sm text-muted-foreground">{t("home.welcome")}</p>
+          <h1 className="mt-0.5 text-2xl md:text-[28px] md:leading-[34px] font-semibold tracking-tight truncate">{t("home.hi", { name: firstName })}</h1>
         </div>
         <Link
           to="/app/notifications"
           className="relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border bg-background hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          aria-label={unread.length ? `Notifications, ${unread.length} unread notices` : "Notifications"}
+          aria-label={unread.length ? t("home.notifUnread", { count: unread.length }) : t("common.notifications")}
         >
           <Bell className="h-5 w-5" />
           {unread.length > 0 && <span className="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-destructive ring-2 ring-background" aria-hidden />}
@@ -104,10 +108,10 @@ function ResidentDashboard() {
         <CardContent className="p-5 md:p-7" aria-busy={home.isLoading}>
           {home.isError && !d ? (
             <div role="alert" className="space-y-3">
-              <p className="font-semibold">We couldn't load your dues</p>
-              <p className="text-sm opacity-80">Your bills are safe — this is only a loading problem.</p>
+              <p className="font-semibold">{t("home.duesFailed")}</p>
+              <p className="text-sm opacity-80">{t("home.duesSafe")}</p>
               <Button onClick={() => home.refetch()} className="h-11 rounded-xl bg-background text-primary hover:bg-background/90">
-                <RotateCcw className="h-4 w-4 mr-2" /> Try again
+                <RotateCcw className="h-4 w-4 mr-2" /> {t("common.tryAgain")}
               </Button>
             </div>
           ) : !d ? (
@@ -118,32 +122,32 @@ function ResidentDashboard() {
             </div>
           ) : !d.hasHome ? (
             <div className="space-y-2">
-              <p className="font-semibold">No home linked yet</p>
-              <p className="text-sm opacity-80">Once the committee links your flat, your bills will appear here.</p>
+              <p className="font-semibold">{t("home.noHome")}</p>
+              <p className="text-sm opacity-80">{t("home.noHomeHint")}</p>
             </div>
           ) : d.dueCount === 0 ? (
             <div className="flex items-center gap-3">
               <CheckCircle2 className="h-9 w-9 shrink-0 opacity-90" />
               <div className="min-w-0">
-                <p className="text-lg font-semibold">No dues right now</p>
-                <p className="text-sm opacity-80">You're all caught up.</p>
+                <p className="text-lg font-semibold">{t("home.noDues")}</p>
+                <p className="text-sm opacity-80">{t("home.caughtUp")}</p>
               </div>
             </div>
           ) : (
             <>
               <div className="flex items-center justify-between gap-2">
-                <p className="text-sm opacity-80">Amount due</p>
-                {d.overdue && <span className="rounded-full bg-destructive text-destructive-foreground px-2.5 py-0.5 text-xs font-semibold">Overdue</span>}
+                <p className="text-sm opacity-80">{t("home.amountDue")}</p>
+                {d.overdue && <span className="rounded-full bg-destructive text-destructive-foreground px-2.5 py-0.5 text-xs font-semibold">{t("bills.overdue")}</span>}
               </div>
               <p className="mt-1 text-4xl md:text-5xl font-semibold tabular-nums break-all">{INR.format(d.dueTotal)}</p>
               <p className="mt-1 text-sm opacity-80">
-                {d.dueCount > 1 ? `${d.dueCount} bills · ` : ""}
-                {d.nextBill?.label}{d.nextBill?.due_date ? ` · due ${DATE(d.nextBill.due_date)}` : ""}
+                {d.dueCount > 1 ? t("home.billsCount", { count: d.dueCount }) : ""}
+                {d.nextBill?.label}{d.nextBill?.due_date ? t("home.dueOn", { date: DATE(d.nextBill.due_date) }) : ""}
               </p>
               <Button asChild size="lg" className="mt-5 w-full md:w-auto h-12 rounded-xl bg-background text-primary hover:bg-background/90 font-semibold">
                 {d.dueCount === 1 && d.nextBill
-                  ? <Link to="/app/bills/$id" params={{ id: d.nextBill.id }}><Receipt className="h-4 w-4 mr-2" /> View bill <ArrowRight className="h-4 w-4 ml-1" /></Link>
-                  : <Link to="/app/bills"><Receipt className="h-4 w-4 mr-2" /> View bills <ArrowRight className="h-4 w-4 ml-1" /></Link>}
+                  ? <Link to="/app/bills/$id" params={{ id: d.nextBill.id }}><Receipt className="h-4 w-4 mr-2" /> {t("home.viewBill")} <ArrowRight className="h-4 w-4 ml-1" /></Link>
+                  : <Link to="/app/bills"><Receipt className="h-4 w-4 mr-2" /> {t("home.viewBills")} <ArrowRight className="h-4 w-4 ml-1" /></Link>}
               </Button>
             </>
           )}
@@ -152,25 +156,25 @@ function ResidentDashboard() {
 
       {/* Your activity */}
       <section aria-labelledby="activity-h">
-        <h2 id="activity-h" className="mb-2 text-sm font-semibold">Needs your attention</h2>
+        <h2 id="activity-h" className="mb-2 text-sm font-semibold">{t("home.attention")}</h2>
         <div className="rounded-xl border bg-card divide-y overflow-hidden">
-        <HomeRow to="/app/helpdesk" icon={LifeBuoy} label="My requests"
-          value={d?.openTickets == null ? "—" : d.openTickets === 0 ? "None open" : `${d.openTickets} open`}
-          hint={d?.resolvedToConfirm ? `${d.resolvedToConfirm} resolved — please confirm` : "Complaints & repairs"} />
-        <HomeRow to="/app/visitors" icon={ShieldCheck} label="My visitors today"
-          value={d?.visitorsToday == null ? "—" : String(d.visitorsToday)} hint="Passes & gate entries" />
-        <HomeRow to="/app/comm" icon={Megaphone} label="Notices"
-          value={notices.isError ? "—" : unread.length ? `${unread.length} new` : "Up to date"} hint="From your committee" />
+        <HomeRow to="/app/helpdesk" icon={LifeBuoy} label={t("home.myRequests")}
+          value={d?.openTickets == null ? "—" : d.openTickets === 0 ? t("home.noneOpen") : t("home.open", { count: d.openTickets })}
+          hint={d?.resolvedToConfirm ? t("home.resolvedConfirm", { count: d.resolvedToConfirm }) : t("home.complaints")} />
+        <HomeRow to="/app/visitors" icon={ShieldCheck} label={t("home.visitorsToday")}
+          value={d?.visitorsToday == null ? "—" : String(d.visitorsToday)} hint={t("home.passes")} />
+        <HomeRow to="/app/comm" icon={Megaphone} label={t("home.notices")}
+          value={notices.isError ? "—" : unread.length ? t("home.new", { count: unread.length }) : t("home.upToDate")} hint={t("home.fromCommittee")} />
         </div>
-        <div className="mt-3"><NeedsAttention emptyText="No overdue bills or pending acknowledgements." /></div>
+        <div className="mt-3"><NeedsAttention emptyText={t("home.noAttention")} /></div>
       </section>
 
       {/* AI Secretary */}
       <Link to="/app/secretary" className="group flex items-center gap-4 rounded-xl border border-primary/25 bg-primary/5 p-4 hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
         <span className="h-11 w-11 shrink-0 rounded-xl bg-primary text-primary-foreground grid place-items-center"><Bot className="h-5 w-5" /></span>
         <span className="min-w-0 flex-1">
-          <span className="block font-semibold">Ask AI Secretary</span>
-          <span className="block text-sm text-muted-foreground truncate">Rules, notices, contacts — answered with sources</span>
+          <span className="block font-semibold">{t("home.askAi")}</span>
+          <span className="block text-sm text-muted-foreground truncate">{t("home.askAiHint")}</span>
         </span>
         <ChevronRight className="h-5 w-5 text-primary shrink-0 transition-transform group-hover:translate-x-0.5" />
       </Link>
@@ -180,25 +184,25 @@ function ResidentDashboard() {
       <Card className="rounded-xl">
         <CardContent className="p-5">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold">Recent notices</h2>
-            <Link to="/app/comm" className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:underline">View all <ArrowRight className="h-4 w-4 ml-1" /></Link>
+            <h2 className="text-sm font-semibold">{t("home.recentNotices")}</h2>
+            <Link to="/app/comm" className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:underline">{t("home.viewAll")} <ArrowRight className="h-4 w-4 ml-1" /></Link>
           </div>
           {notices.isLoading ? (
             <div className="space-y-2">{[0, 1].map((i) => <Skeleton key={i} className="h-12 rounded-lg" />)}</div>
           ) : notices.isError ? (
-            <p className="py-4 text-sm text-muted-foreground">Notices couldn't load. <button className="text-primary underline min-h-0" onClick={() => notices.refetch()}>Try again</button></p>
+            <p className="py-4 text-sm text-muted-foreground">{t("home.noticesFailed")} <button className="text-primary underline min-h-0" onClick={() => notices.refetch()}>{t("common.tryAgain")}</button></p>
           ) : latest.length === 0 ? (
             <div className="py-6 text-center text-sm text-muted-foreground">
-              <Inbox className="h-5 w-5 mx-auto mb-1.5 opacity-60" /> No notices yet
+              <Inbox className="h-5 w-5 mx-auto mb-1.5 opacity-60" /> {t("home.noNotices")}
             </div>
           ) : (
             <ul className="divide-y divide-border">
               {latest.map((n) => (
                 <li key={n.id}>
                   <Link to="/app/comm" className="flex items-start gap-3 py-3">
-                    {!notices.data?.read.has(n.id) && <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" aria-label="Unread" />}
+                    {!notices.data?.read.has(n.id) && <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" aria-label={t("common.unread")} />}
                     <span className="min-w-0 flex-1">
-                      <span className="block font-medium line-clamp-1">{n.title || "Notice"}</span>
+                      <span className="block font-medium line-clamp-1">{n.title || t("home.notice")}</span>
                       <span className="block text-sm text-muted-foreground line-clamp-1">{String(n.body ?? "").replace(/\s+/g, " ")}</span>
                     </span>
                     <span className="text-xs text-muted-foreground shrink-0 pt-0.5">{DATE(n.publish_at ?? n.created_at)}</span>
@@ -211,7 +215,7 @@ function ResidentDashboard() {
       </Card>
 
       <Button asChild variant="outline" className="w-full h-12 rounded-xl border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive">
-        <Link to="/app/emergency"><ShieldAlert className="h-4 w-4 mr-2" /> Emergency contacts (works offline)</Link>
+        <Link to="/app/emergency"><ShieldAlert className="h-4 w-4 mr-2" /> {t("home.emergency")}</Link>
       </Button>
 
       <AdBanner />
@@ -234,17 +238,18 @@ function HomeRow({ to, icon: Icon, label, value, hint }: { to: "/app/helpdesk" |
 }
 
 const QUICK_ACTIONS: Array<{ to: string; label: string; icon: any; tone: string }> = [
-  { to: "/app/bills", label: "Bills", icon: Receipt, tone: "bg-primary/10 text-primary" },
-  { to: "/app/visitors", label: "Visitors", icon: ShieldCheck, tone: "bg-primary/10 text-primary" },
-  { to: "/app/helpdesk", label: "Complaints", icon: LifeBuoy, tone: "bg-primary/10 text-primary" },
-  { to: "/app/notices", label: "Notices", icon: Megaphone, tone: "bg-primary/10 text-primary" },
-  { to: "/app/documents", label: "Documents", icon: FileText, tone: "bg-primary/10 text-primary" },
+  { to: "/app/bills", label: "home.qa.bills", icon: Receipt, tone: "bg-primary/10 text-primary" },
+  { to: "/app/visitors", label: "home.qa.visitors", icon: ShieldCheck, tone: "bg-primary/10 text-primary" },
+  { to: "/app/helpdesk", label: "home.qa.complaints", icon: LifeBuoy, tone: "bg-primary/10 text-primary" },
+  { to: "/app/notices", label: "home.qa.notices", icon: Megaphone, tone: "bg-primary/10 text-primary" },
+  { to: "/app/documents", label: "home.qa.documents", icon: FileText, tone: "bg-primary/10 text-primary" },
 ];
 
 function QuickActions() {
+  const { t } = useTranslation();
   return (
     <section aria-labelledby="shortcuts-h">
-      <h2 id="shortcuts-h" className="mb-2 text-sm font-semibold">Shortcuts</h2>
+      <h2 id="shortcuts-h" className="mb-2 text-sm font-semibold">{t("home.shortcuts")}</h2>
       <nav className="grid grid-cols-2 overflow-hidden rounded-xl border border-border bg-card">
         {QUICK_ACTIONS.map((a, i) => {
           const Icon = a.icon;
@@ -256,7 +261,7 @@ function QuickActions() {
               className={`flex min-h-[52px] items-center gap-2.5 border-border px-3.5 text-sm font-medium hover:bg-muted/50 focus-visible:outline-none focus-visible:bg-muted/60 ${i % 2 === 0 ? "border-r" : ""} ${lastRow ? "" : "border-b"}`}
             >
               <Icon className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-              <span className="truncate">{a.label}</span>
+              <span className="truncate">{t(a.label)}</span>
             </Link>
           );
         })}

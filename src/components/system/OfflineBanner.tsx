@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { RotateCw, WifiOff } from "lucide-react";
@@ -10,6 +11,7 @@ import { RotateCw, WifiOff } from "lucide-react";
 export function OfflineBanner() {
   const qc = useQueryClient();
   const [offline, setOffline] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     const sync = () => setOffline(!navigator.onLine);
@@ -25,10 +27,10 @@ export function OfflineBanner() {
     <div role="status" aria-live="polite"
       className="fixed inset-x-0 top-0 z-[60] flex items-center justify-center gap-2 bg-foreground px-4 pb-2 pt-[calc(0.5rem+env(safe-area-inset-top))] text-sm text-background shadow-md motion-safe:animate-in motion-safe:slide-in-from-top">
       <WifiOff className="h-4 w-4 shrink-0" aria-hidden />
-      <span>You're offline. Showing saved data — changes can't be sent until you reconnect.</span>
+      <span>{t("shell.offline.banner")}</span>
       <button type="button" onClick={() => window.location.reload()}
         className="ml-1 inline-flex min-h-9 items-center gap-1 rounded-md px-2 underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2">
-        <RotateCw className="h-3.5 w-3.5" aria-hidden /> Retry
+        <RotateCw className="h-3.5 w-3.5" aria-hidden /> {t("common.retry")}
       </button>
     </div>
   );

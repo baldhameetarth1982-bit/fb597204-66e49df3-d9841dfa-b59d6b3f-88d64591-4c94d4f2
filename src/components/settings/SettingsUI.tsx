@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, ChevronDown, Loader2, Save } from "lucide-react";
 import type { ReactNode } from "react";
@@ -14,13 +15,14 @@ export function SettingsShell({
   action?: ReactNode;
   children: ReactNode;
 }) {
+  const { t } = useTranslation();
   return (
     <main className="mx-auto w-full max-w-3xl px-4 pt-4 pb-[calc(112px+env(safe-area-inset-bottom))] md:px-6 md:pt-6 space-y-5">
       <Link
         to="/settings"
         className="inline-flex min-h-11 items-center gap-1 rounded-lg text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <ArrowLeft className="h-4 w-4" aria-hidden /> Settings
+        <ArrowLeft className="h-4 w-4" aria-hidden /> {t("common.settings")}
       </Link>
       <header className="flex flex-wrap items-start gap-3 border-b pb-4">
         {Icon && (
@@ -32,7 +34,7 @@ export function SettingsShell({
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
             {scope && (
-              <span className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">{scope}</span>
+              <span className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">{scope === "Whole society" ? t("settings.wholeSociety") : t("settings.onlyYou")}</span>
             )}
           </div>
           {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
@@ -88,10 +90,11 @@ export function SettingsDisclosure({
 
 /** Save/discard row; sticks above the bottom navigation while there are unsaved changes. */
 export function SaveBar({
-  dirty, saving, onSave, onDiscard, saveLabel = "Save changes", disabled,
+  dirty, saving, onSave, onDiscard, saveLabel, disabled,
 }: {
   dirty: boolean; saving: boolean; onSave: () => void; onDiscard: () => void; saveLabel?: string; disabled?: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <div
       className={
@@ -101,17 +104,17 @@ export function SaveBar({
     >
       <p role="status" className="mr-auto text-sm">
         {dirty ? (
-          <span className="font-medium text-amber-700 dark:text-amber-400">Unsaved changes</span>
+          <span className="font-medium text-amber-700 dark:text-amber-400">{t("common.unsavedChanges")}</span>
         ) : (
-          <span className="text-muted-foreground">All changes saved</span>
+          <span className="text-muted-foreground">{t("common.allSaved")}</span>
         )}
       </p>
       <Button variant="ghost" onClick={onDiscard} disabled={!dirty || saving} className="h-11 rounded-xl">
-        Discard
+        {t("common.discard")}
       </Button>
       <Button onClick={onSave} disabled={!dirty || saving || disabled} className="h-11 rounded-xl">
         {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-        {saveLabel}
+        {saveLabel ?? t("common.saveChanges")}
       </Button>
     </div>
   );

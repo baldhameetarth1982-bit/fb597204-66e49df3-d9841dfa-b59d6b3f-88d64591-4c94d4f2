@@ -1,12 +1,13 @@
+import { useTranslation } from "react-i18next";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { LayoutDashboard, Receipt, Users, Wrench, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TABS = [
-  { to: "/society/dashboard", label: "Dashboard", icon: LayoutDashboard, match: ["/society/dashboard"] },
+  { to: "/society/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard, match: ["/society/dashboard"] },
   {
     to: "/society/billing",
-    label: "Billing",
+    labelKey: "nav.billing",
     icon: Receipt,
     match: [
       "/society/billing",
@@ -21,7 +22,7 @@ const TABS = [
   },
   {
     to: "/society/residents",
-    label: "Residents",
+    labelKey: "nav.residents",
     icon: Users,
     match: [
       "/society/residents",
@@ -34,7 +35,7 @@ const TABS = [
   },
   {
     to: "/society/matrix",
-    label: "Operations",
+    labelKey: "nav.operations",
     icon: Wrench,
     match: [
       "/society/matrix",
@@ -52,7 +53,7 @@ const TABS = [
   },
   {
     to: "/society/more",
-    label: "More",
+    labelKey: "nav.more",
     icon: MoreHorizontal,
     match: [
       "/society/more",
@@ -68,9 +69,10 @@ const TABS = [
 
 export function SocietyAdminBottomNav() {
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const { t } = useTranslation();
   return (
     <nav
-      aria-label="Society admin navigation"
+      aria-label={t("nav.adminNav")}
       className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden"
     >
       <ul className="mx-auto grid grid-cols-5 max-w-[480px] px-1">
@@ -95,7 +97,7 @@ export function SocietyAdminBottomNav() {
                 >
                   <Icon className={cn("h-5 w-5", active && "stroke-[2.5]")} />
                 </span>
-                <span className="leading-none">{it.label}</span>
+                <span className="leading-none">{t(it.labelKey)}</span>
               </Link>
             </li>
           );

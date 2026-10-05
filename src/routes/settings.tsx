@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+import { LanguageSelector } from "@/components/shared/LanguageSelector";
 import { createFileRoute, Navigate, Link } from "@tanstack/react-router";
 import { userMessage } from "@/lib/user-error";
 import { useEffect, useState } from "react";
@@ -62,6 +64,7 @@ function SettingsPage() {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
+  const { t } = useTranslation();
   const preferencesKey = user?.id ? `sociohub:prefs:${user.id}` : null;
 
   // local-only preferences
@@ -100,7 +103,7 @@ function SettingsPage() {
       .eq("id", user.id);
     setSaving(false);
     if (error) return toast.error(userMessage(error));
-    toast.success("Profile updated");
+    toast.success(t("st.profileUpdated"));
     if (typeof refresh === "function") await refresh();
   }
 
@@ -115,23 +118,23 @@ function SettingsPage() {
   }
 
   const sections = [
-    { value: "profile", label: "Profile", icon: UserIcon },
-    ...(!isSecurity ? [{ value: "notifications", label: "Alerts", icon: Bell }] : []),
-    ...(!isSecurity ? [{ value: "privacy", label: "Privacy", icon: Lock }] : []),
-    { value: "security", label: "Security", icon: ShieldCheck },
-    ...(isSocietyAdmin ? [{ value: "society", label: "Society", icon: Building2 }] : []),
-    { value: "more", label: "More", icon: HelpCircle },
+    { value: "profile", label: t("st.tab.profile"), icon: UserIcon },
+    ...(!isSecurity ? [{ value: "notifications", label: t("st.tab.alerts"), icon: Bell }] : []),
+    ...(!isSecurity ? [{ value: "privacy", label: t("st.tab.privacy"), icon: Lock }] : []),
+    { value: "security", label: t("st.tab.security"), icon: ShieldCheck },
+    ...(isSocietyAdmin ? [{ value: "society", label: t("st.tab.society"), icon: Building2 }] : []),
+    { value: "more", label: t("st.tab.more"), icon: HelpCircle },
   ];
 
   return (
     <PageShell>
       <PageHeader
-        title="Settings"
-        description="Your own account first. Whole-society settings are kept separate."
+        title={t("st.title")}
+        description={t("st.desc")}
       />
 
       {/* Identity */}
-      <section aria-label="Your account" className="mb-6 flex items-center gap-4 rounded-2xl border bg-card p-4">
+      <section aria-label={t("st.yourAccount")} className="mb-6 flex items-center gap-4 rounded-2xl border bg-card p-4">
         <Avatar className="h-14 w-14">
           <AvatarFallback className="bg-primary/15 text-primary text-lg font-semibold">
             {initials(profile?.full_name, user?.email)}
@@ -140,18 +143,18 @@ function SettingsPage() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <p className="font-semibold text-lg truncate">
-              {profile?.full_name || "Add your name"}
+              {profile?.full_name || t("st.addName")}
             </p>
             {aadhaarVerified ? (
               <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 gap-1">
-                <BadgeCheck className="h-3 w-3" /> Verified
+                <BadgeCheck className="h-3 w-3" /> {t("st.verified")}
               </Badge>
             ) : aadhaarUploaded ? (
-              <Badge variant="secondary">Verification pending</Badge>
+              <Badge variant="secondary">{t("st.verifPending")}</Badge>
             ) : (
-              <Badge variant="outline">Unverified</Badge>
+              <Badge variant="outline">{t("st.unverified")}</Badge>
             )}
-            {isSocietyAdmin && <Badge variant="outline">Committee admin</Badge>}
+            {isSocietyAdmin && <Badge variant="outline">{t("st.committeeAdmin")}</Badge>}
           </div>
           <p className="text-sm text-muted-foreground truncate">{user?.email}</p>
         </div>
@@ -159,7 +162,7 @@ function SettingsPage() {
 
       <Tabs defaultValue="profile" orientation="vertical" className="w-full md:grid md:grid-cols-[200px_1fr] md:gap-6">
         <TabsList
-          aria-label="Settings sections"
+          aria-label={t("st.sections")}
           className="mb-5 flex h-auto w-full justify-start gap-1 overflow-x-auto rounded-2xl bg-muted/60 p-1 md:mb-0 md:flex-col md:items-stretch md:self-start md:bg-transparent md:p-0"
         >
           {sections.map((s) => (
@@ -177,31 +180,31 @@ function SettingsPage() {
         <div className="min-w-0">
         {/* PROFILE */}
         <TabsContent value="profile" className="mt-0">
-          <SettingsGroup title="Personal information" scope="Only you" icon={UserIcon}>
+          <SettingsGroup title={t("st.personal")} scope={t("settings.onlyYou")} icon={UserIcon}>
             <div className="space-y-4">
               <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t("st.email")}</Label>
                 <Input id="email" value={user?.email ?? ""} disabled className="h-11" />
-                <p className="text-xs text-muted-foreground">Your sign-in email can't be changed here.</p>
+                <p className="text-xs text-muted-foreground">{t("st.emailFixed")}</p>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="name">Full name</Label>
-                <Input id="name" className="h-11" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your name" />
+                <Label htmlFor="name">{t("st.fullName")}</Label>
+                <Input id="name" className="h-11" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder={t("st.yourName")} />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="phone">Phone</Label>
+                <Label htmlFor="phone">{t("st.phone")}</Label>
                 <Input id="phone" className="h-11" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91 ..." />
               </div>
               <div className="flex flex-wrap items-center gap-3 border-t pt-4">
                 <p role="status" className="mr-auto text-sm text-muted-foreground">
-                  {dirty ? <span className="font-medium text-amber-700 dark:text-amber-400">Unsaved changes</span> : "All changes saved"}
+                  {dirty ? <span className="font-medium text-amber-700 dark:text-amber-400">{t("st.unsaved")}</span> : t("st.allSaved")}
                 </p>
                 <Button variant="ghost" onClick={discard} disabled={!dirty || saving} className="h-11 rounded-xl">
-                  Discard
+                  {t("st.discard")}
                 </Button>
                 <Button onClick={save} disabled={!dirty || saving} className="h-11 rounded-xl">
                   {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-                  Save changes
+                  {t("st.saveChanges")}
                 </Button>
               </div>
             </div>
@@ -210,71 +213,71 @@ function SettingsPage() {
 
         {/* NOTIFICATIONS */}
         <TabsContent value="notifications" className="mt-0">
-          <SettingsGroup title="Notification preferences" scope="This device" icon={Bell}
-            hint="Changes apply straight away and are remembered on this device.">
-            <Row label="Announcements" desc="Push when society admin posts an update" checked={prefs.pushAnnouncements} onChange={(v) => setPrefs({ ...prefs, pushAnnouncements: v })} />
+          <SettingsGroup title={t("st.notifPrefs")} scope={t("st.thisDevice")} icon={Bell}
+            hint={t("st.deviceHint")}>
+            <Row label={t("st.n.ann")} desc={t("st.n.annD")} checked={prefs.pushAnnouncements} onChange={(v) => setPrefs({ ...prefs, pushAnnouncements: v })} />
             <Separator />
-            <Row label="Visitor approvals" desc="Alert when a guest is at the gate" checked={prefs.pushVisitors} onChange={(v) => setPrefs({ ...prefs, pushVisitors: v })} />
+            <Row label={t("st.n.vis")} desc={t("st.n.visD")} checked={prefs.pushVisitors} onChange={(v) => setPrefs({ ...prefs, pushVisitors: v })} />
             <Separator />
-            <Row label="Bills & dues" desc="Reminders for maintenance and society bills" checked={prefs.pushBills} onChange={(v) => setPrefs({ ...prefs, pushBills: v })} />
+            <Row label={t("st.n.bills")} desc={t("st.n.billsD")} checked={prefs.pushBills} onChange={(v) => setPrefs({ ...prefs, pushBills: v })} />
             <Separator />
-            <Row label="Weekly email digest" desc="Sunday recap of society activity" checked={prefs.emailDigest} onChange={(v) => setPrefs({ ...prefs, emailDigest: v })} />
+            <Row label={t("st.n.digest")} desc={t("st.n.digestD")} checked={prefs.emailDigest} onChange={(v) => setPrefs({ ...prefs, emailDigest: v })} />
           </SettingsGroup>
         </TabsContent>
 
         {/* PRIVACY */}
         <TabsContent value="privacy" className="mt-0">
-          <SettingsGroup title="Privacy controls" scope="This device" icon={Lock}
-            hint="Changes apply straight away and are remembered on this device.">
-            <Row label="Show my phone to neighbors" desc="Other residents can call you from the directory" checked={prefs.showPhoneToNeighbors} onChange={(v) => setPrefs({ ...prefs, showPhoneToNeighbors: v })} />
+          <SettingsGroup title={t("st.privacy")} scope={t("st.thisDevice")} icon={Lock}
+            hint={t("st.deviceHint")}>
+            <Row label={t("st.p.phone")} desc={t("st.p.phoneD")} checked={prefs.showPhoneToNeighbors} onChange={(v) => setPrefs({ ...prefs, showPhoneToNeighbors: v })} />
             <Separator />
-            <Row label="Show flat number to visitors" desc="Gate will display your flat when announcing a visitor" checked={prefs.showFlatToVisitors} onChange={(v) => setPrefs({ ...prefs, showFlatToVisitors: v })} />
+            <Row label={t("st.p.flat")} desc={t("st.p.flatD")} checked={prefs.showFlatToVisitors} onChange={(v) => setPrefs({ ...prefs, showFlatToVisitors: v })} />
             <Separator />
-            <Row label="Marketing emails" desc="Product updates and tips from SociyoHub" checked={prefs.marketingEmails} onChange={(v) => setPrefs({ ...prefs, marketingEmails: v })} />
+            <Row label={t("st.p.mkt")} desc={t("st.p.mktD")} checked={prefs.marketingEmails} onChange={(v) => setPrefs({ ...prefs, marketingEmails: v })} />
           </SettingsGroup>
         </TabsContent>
 
         {/* SECURITY */}
         <TabsContent value="security" className="mt-0 space-y-5">
-          {!isSecurity && <SettingsGroup title="Identity verification" scope="Only you" icon={ShieldCheck}>
+          {!isSecurity && <SettingsGroup title={t("st.idv")} scope={t("settings.onlyYou")} icon={ShieldCheck}>
             {aadhaarVerified ? (
               <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 flex items-center gap-3">
                 <BadgeCheck className="h-5 w-5 text-emerald-600" />
                 <div>
-                  <p className="font-medium">Your identity is verified</p>
-                  <p className="text-sm text-muted-foreground">Your society admin has approved your Aadhaar.</p>
+                  <p className="font-medium">{t("st.idvDone")}</p>
+                  <p className="text-sm text-muted-foreground">{t("st.idvDoneD")}</p>
                 </div>
               </div>
             ) : aadhaarUploaded ? (
               <div className="rounded-xl border bg-muted/40 p-4">
-                <p className="font-medium">Verification pending</p>
-                <p className="text-sm text-muted-foreground">Your society admin will review your Aadhaar shortly.</p>
+                <p className="font-medium">{t("st.verifPending")}</p>
+                <p className="text-sm text-muted-foreground">{t("st.idvPendD")}</p>
               </div>
             ) : (
               <div className="rounded-xl border border-dashed p-4">
-                <p className="font-medium">Upload your Aadhaar to get verified</p>
-                <p className="text-sm text-muted-foreground mb-3">Verification builds trust with your society and unlocks visitor approvals.</p>
+                <p className="font-medium">{t("st.idvUpload")}</p>
+                <p className="text-sm text-muted-foreground mb-3">{t("st.idvUploadD")}</p>
                 <Button asChild className="rounded-xl h-11">
-                  <Link to="/onboarding/join">Start verification</Link>
+                  <Link to="/onboarding/join">{t("st.idvStart")}</Link>
                 </Button>
               </div>
             )}
           </SettingsGroup>}
 
-          <SettingsGroup title="Sign-in" scope="Only you" icon={Lock}>
+          <SettingsGroup title={t("st.signin")} scope={t("settings.onlyYou")} icon={Lock}>
             <ActionRow
               icon={Lock}
-              label="Change password"
-              desc="We'll email you a secure reset link"
+              label={t("st.changePw")}
+              desc={t("st.changePwD")}
               onClick={async () => {
                 if (!user?.email) return;
                 const { error } = await supabase.auth.resetPasswordForEmail(user.email, { redirectTo: `${window.location.origin}/login` });
                 if (error) return toast.error(userMessage(error));
-                toast.success("Password reset email sent");
+                toast.success(t("st.pwSent"));
               }}
             />
             <Separator />
-            <ActionRow icon={Smartphone} label="Active sessions" desc="You're signed in on this device" />
+            <ActionRow icon={Smartphone} label={t("st.sessions")} desc={t("st.sessionsD")} />
           </SettingsGroup>
 
           <TwoFactorCard />
@@ -283,15 +286,15 @@ function SettingsPage() {
         {/* SOCIETY (committee only — each page enforces its own permissions) */}
         {isSocietyAdmin && (
           <TabsContent value="society" className="mt-0">
-            <SettingsGroup title="Society administration" scope="Whole society" icon={Building2}
-              hint="These change settings for every resident. Each page checks your committee role again before saving.">
-              <LinkRow to="/society/business-profile" icon={Building2} label="Society information" desc="Name, address and business details" />
+            <SettingsGroup title={t("st.socAdmin")} scope={t("settings.wholeSociety")} icon={Building2}
+              hint={t("st.socAdminHint")}>
+              <LinkRow to="/society/business-profile" icon={Building2} label={t("st.socInfo")} desc={t("st.socInfoD")} />
               <Separator />
-              <LinkRow to="/society/team" icon={UsersIcon} label="Team & roles" desc="Committee members and what they can do" />
+              <LinkRow to="/society/team" icon={UsersIcon} label={t("st.team")} desc={t("st.teamD")} />
               <Separator />
-              <LinkRow to="/society/billing-settings" icon={Receipt} label="Billing settings" desc="Bill defaults, due dates and payment details" />
+              <LinkRow to="/society/billing-settings" icon={Receipt} label={t("st.billing")} desc={t("st.billingD")} />
               <Separator />
-              <LinkRow to="/society/subscription" icon={CreditCard} label="Subscription" desc="Your SociyoHub plan" />
+              <LinkRow to="/society/subscription" icon={CreditCard} label={t("st.sub")} desc={t("st.subD")} />
             </SettingsGroup>
           </TabsContent>
         )}
@@ -306,25 +309,25 @@ function SettingsPage() {
             onChanged={() => refresh?.()}
           />}
 
-          {!isSecurity && <SettingsGroup title="Household & language" scope="Only you" icon={UsersIcon}>
-            <LinkRow to="/app/family" icon={UsersIcon} label="Family members" />
-            <Separator />
+          <SettingsGroup title={t("settings.householdLanguage")} scope={t("settings.onlyYou")} icon={UsersIcon}>
+            {!isSecurity && <><LinkRow to="/app/family" icon={UsersIcon} label={t("settings.family")} />
+            <Separator /></>}
             <LanguageRow />
-          </SettingsGroup>}
+          </SettingsGroup>
 
-          <SettingsGroup title="Support & legal" icon={HelpCircle}>
-            <LinkRow to="/support" icon={HelpCircle} label="Help & support" />
+          <SettingsGroup title={t("settings.supportLegal")} icon={HelpCircle}>
+            <LinkRow to="/support" icon={HelpCircle} label={t("settings.help")} />
             <Separator />
-            <LinkRow to="/terms" icon={ShieldCheck} label="Terms & privacy" />
+            <LinkRow to="/terms" icon={ShieldCheck} label={t("settings.terms")} />
             <Separator />
             {!isSecurity && <>
               <Separator />
-              <LinkRow to="/pricing" icon={ShieldCheck} label="Plans & pricing" />
+              <LinkRow to="/pricing" icon={ShieldCheck} label={t("settings.pricing")} />
             </>}
           </SettingsGroup>
 
           <section aria-labelledby="danger-zone" className="rounded-2xl border border-destructive/30 p-2">
-            <h2 id="danger-zone" className="px-2 pt-2 text-xs font-semibold uppercase tracking-wide text-destructive">Sign out & account removal</h2>
+            <h2 id="danger-zone" className="px-2 pt-2 text-xs font-semibold uppercase tracking-wide text-destructive">{t("settings.danger")}</h2>
             <SignOutRow onSignOut={signOut} />
             <Separator />
             <DeleteAccountRow email={user?.email ?? null} onSignOut={signOut} />
@@ -355,22 +358,23 @@ function SettingsGroup({
 }
 
 function SignOutRow({ onSignOut }: { onSignOut?: () => Promise<void> }) {
+  const { t } = useTranslation();
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <button className="w-full min-h-11 flex items-center gap-3 px-2 py-3 rounded-xl hover:bg-muted/50 transition text-left">
           <LogOut className="h-5 w-5 shrink-0" />
-          <span className="flex-1 font-medium">Sign out</span>
+          <span className="flex-1 font-medium">{t("common.signOut")}</span>
         </button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Sign out?</AlertDialogTitle>
-          <AlertDialogDescription>You'll need to sign in again to use SociyoHub on this device.</AlertDialogDescription>
+          <AlertDialogTitle>{t("signout.title")}</AlertDialogTitle>
+          <AlertDialogDescription>{t("signout.body")}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Stay signed in</AlertDialogCancel>
-          <AlertDialogAction onClick={() => onSignOut?.()}>Sign out</AlertDialogAction>
+          <AlertDialogCancel>{t("signout.stay")}</AlertDialogCancel>
+          <AlertDialogAction onClick={() => onSignOut?.()}>{t("common.signOut")}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
@@ -378,42 +382,21 @@ function SignOutRow({ onSignOut }: { onSignOut?: () => Promise<void> }) {
 }
 
 function LanguageRow() {
-  const [lang, setLang] = useState<string>(() => {
-    try { return localStorage.getItem("sociohub:lang") ?? "en"; } catch { return "en"; }
-  });
-  const [open, setOpen] = useState(false);
-  const label = { en: "English", hi: "हिन्दी (Hindi)", mr: "मराठी (Marathi)", ta: "தமிழ் (Tamil)" }[lang] ?? "English";
-
+  const { t } = useTranslation();
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <button className="w-full flex items-center gap-3 px-2 py-3 rounded-xl hover:bg-muted/50 transition text-left">
-          <Globe className="h-5 w-5 shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="font-medium">Language</p>
-            <p className="text-sm text-muted-foreground">{label}</p>
-          </div>
-          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-        </button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader><DialogTitle>Choose language</DialogTitle></DialogHeader>
-        <Select value={lang} onValueChange={(v) => { setLang(v); try { localStorage.setItem("sociohub:lang", v); } catch {} toast.success("Language updated"); setOpen(false); }}>
-          <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="en">English</SelectItem>
-            <SelectItem value="hi">हिन्दी (Hindi)</SelectItem>
-            <SelectItem value="mr">मराठी (Marathi)</SelectItem>
-            <SelectItem value="ta">தமிழ் (Tamil)</SelectItem>
-          </SelectContent>
-        </Select>
-        <p className="text-xs text-muted-foreground">Full translations are rolling out — UI currently displays English fallback for missing strings.</p>
-      </DialogContent>
-    </Dialog>
+    <div className="flex flex-wrap items-center gap-3 px-2 py-3">
+      <Globe className="h-5 w-5 shrink-0" aria-hidden />
+      <div className="min-w-0 flex-1">
+        <p className="font-medium">{t("common.language")}</p>
+        <p className="text-sm text-muted-foreground">{t("language.onlyYou")}</p>
+      </div>
+      <LanguageSelector compact />
+    </div>
   );
 }
 
 function DeleteAccountRow({ email, onSignOut }: { email: string | null; onSignOut: () => Promise<void> }) {
+  const { t } = useTranslation();
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   return (
@@ -422,23 +405,22 @@ function DeleteAccountRow({ email, onSignOut }: { email: string | null; onSignOu
         <button className="w-full flex items-center gap-3 px-2 py-3 rounded-xl hover:bg-destructive/10 transition text-left text-destructive">
           <Trash2 className="h-5 w-5 shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="font-medium">Delete account</p>
-            <p className="text-sm text-muted-foreground">Permanently remove your profile and data</p>
+            <p className="font-medium">{t("settings.deleteAccount")}</p>
+            <p className="text-sm text-muted-foreground">{t("settings.deleteAccountDesc")}</p>
           </div>
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
         </button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete your account?</AlertDialogTitle>
+          <AlertDialogTitle>{t("st.delTitle")}</AlertDialogTitle>
           <AlertDialogDescription>
-            This will sign you out and request permanent deletion of your profile, family members and Aadhaar from our records.
-            Society admin will be notified. Type <strong>DELETE</strong> to confirm.
+            {t("st.delBody")} <strong>DELETE</strong>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <Input value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="DELETE" />
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>{t("st.cancel")}</AlertDialogCancel>
           <AlertDialogAction
             disabled={confirm !== "DELETE" || busy}
             onClick={async (e) => {
@@ -453,10 +435,10 @@ function DeleteAccountRow({ email, onSignOut }: { email: string | null; onSignOu
                 } as any).eq("id", user.id);
                 await supabase.from("family_members").delete().eq("user_id", user.id);
               }
-              toast.success("Deletion requested. Support will email " + (email ?? "you") + " within 48h.");
+              toast.success(t("st.delRequested", { email: email ?? t("st.you") }));
               await onSignOut();
             }}
-          >Permanently delete</AlertDialogAction>
+          >{t("st.permDelete")}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
@@ -523,6 +505,7 @@ function LinkRow({
 function AppearanceCard({
   currentTheme, societyId, userId, isSuperAdmin, onChanged,
 }: { currentTheme: string; societyId: string | null; userId: string | null; isSuperAdmin: boolean; onChanged: () => void }) {
+  const { t } = useTranslation();
   const [plan, setPlan] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -542,7 +525,7 @@ function AppearanceCard({
 
   async function setTheme(next: "default" | "neon") {
     if (next === "neon" && !isPremium) {
-      toast.error("Neon theme is included in the Growth and Pro plans");
+      toast.error(t("st.neonPlan"));
       return;
     }
     if (!userId) return;
@@ -550,7 +533,7 @@ function AppearanceCard({
     const { error } = await (supabase as any).from("profiles").update({ theme: next }).eq("id", userId);
     setSaving(false);
     if (error) return toast.error(userMessage(error));
-    toast.success(next === "neon" ? "Neon theme applied" : "Switched to standard theme");
+    toast.success(next === "neon" ? t("st.neonOn") : t("st.stdOn"));
     onChanged();
   }
 
@@ -558,7 +541,7 @@ function AppearanceCard({
     <Card className="rounded-2xl">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
-          <UserIcon className="h-5 w-5 text-primary" /> Appearance
+          <UserIcon className="h-5 w-5 text-primary" /> {t("st.appearance")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -571,8 +554,8 @@ function AppearanceCard({
             }`}
           >
             <div className="h-20 rounded-lg bg-gradient-to-br from-background to-muted border mb-2" />
-            <p className="font-semibold">Standard</p>
-            <p className="text-xs text-muted-foreground">Clean and trustworthy.</p>
+            <p className="font-semibold">{t("st.standard")}</p>
+            <p className="text-xs text-muted-foreground">{t("st.standardD")}</p>
           </button>
           <button
             onClick={() => setTheme("neon")}
@@ -586,17 +569,17 @@ function AppearanceCard({
             <p className="font-semibold flex items-center gap-1">Neon
               {!isPremium && <Badge variant="outline" className="text-[10px] ml-1">Growth+</Badge>}
             </p>
-            <p className="text-xs text-muted-foreground">Advanced premium look.</p>
+            <p className="text-xs text-muted-foreground">{t("st.neonD")}</p>
           </button>
         </div>
         {!isPremium && (
           <p className="text-xs text-muted-foreground">
-            Upgrade to <Link to="/pricing" className="underline">Growth or Pro</Link> to unlock the Neon theme.
+            {t("st.upgradeNeon")} <Link to="/pricing" className="underline">Growth / Pro</Link>
           </p>
         )}
         {isSuperAdmin && (
           <p className="text-xs text-emerald-600 dark:text-emerald-400">
-            Super Admin — all premium features unlocked, no payment needed.
+            {t("st.superAll")}
           </p>
         )}
 
@@ -604,7 +587,7 @@ function AppearanceCard({
         <A11yToggle />
 
         <details className="rounded-xl border p-3">
-          <summary className="cursor-pointer text-sm font-medium">Live Neon preview</summary>
+          <summary className="cursor-pointer text-sm font-medium">{t("st.neonPreview")}</summary>
           <div className="mt-3"><NeonThemePreview /></div>
         </details>
       </CardContent>
@@ -613,6 +596,7 @@ function AppearanceCard({
 }
 
 function A11yToggle() {
+  const { t } = useTranslation();
   const [on, setOn] = useState<boolean>(() => {
     if (typeof document === "undefined") return false;
     return document.documentElement.classList.contains("a11y");
@@ -628,16 +612,16 @@ function A11yToggle() {
     setOn(v);
     document.documentElement.classList.toggle("a11y", v);
     try { localStorage.setItem("sociohub:a11y", v ? "1" : "0"); } catch {}
-    toast.success(v ? "Accessibility mode on — larger text & spacing" : "Accessibility mode off");
+    toast.success(v ? t("st.a11yOn") : t("st.a11yOff"));
   }
   return (
     <div className="rounded-xl border p-3">
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <p className="font-medium">Accessibility mode</p>
-          <p className="text-sm text-muted-foreground">Larger text, looser spacing — easier for elderly residents.</p>
+          <p className="font-medium">{t("st.a11y")}</p>
+          <p className="text-sm text-muted-foreground">{t("st.a11yD")}</p>
         </div>
-        <Switch checked={on} onCheckedChange={toggle} aria-label="Toggle accessibility mode" />
+        <Switch checked={on} onCheckedChange={toggle} aria-label={t("st.a11yToggle")} />
       </div>
     </div>
   );

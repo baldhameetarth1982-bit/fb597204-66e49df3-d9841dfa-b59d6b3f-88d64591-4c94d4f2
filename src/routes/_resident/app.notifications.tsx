@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+import { useLocaleFormat } from "@/lib/i18n-format";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -29,10 +31,7 @@ interface Item {
   key: string; cat: Exclude<Cat, "all">; title: string; body: string | null; at: string; unread: boolean;
   to: string; icon: typeof Bell; emergency?: boolean; priority?: "high" | "urgent"; source: "personal" | "notice" | "bill"; refId: string;
 }
-const TABS: { v: Cat; label: string }[] = [
-  { v: "all", label: "All" }, { v: "notices", label: "Notices" }, { v: "billing", label: "Bills" },
-  { v: "visitors", label: "Visitors" }, { v: "helpdesk", label: "Requests" }, { v: "parking", label: "Parking" },
-];
+const TABS: Cat[] = ["all", "notices", "billing", "visitors", "helpdesk", "parking"];
 // Links only go to pages that re-check access themselves.
 const PERSONAL: Record<string, { cat: Item["cat"]; icon: typeof Bell; to: string }> = {
   visitor_approval: { cat: "visitors", icon: ShieldCheck, to: "/app/visitors" },
@@ -47,6 +46,8 @@ function NotificationCenter() {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
   const [cat, setCat] = useState<Cat>("all");
+  const { t } = useTranslation();
+  const fmt = useLocaleFormat();
   const [lastSeen] = useState(() => getLastSeen(user?.id));
 
   const personal = useQuery({
@@ -94,17 +95,17 @@ function NotificationCenter() {
     const read = notices.data?.read ?? new Set<string>();
     for (const n of notices.data?.notices ?? []) {
       const em = n.category === "emergency";
-      out.push({ key: `n-${n.id}`, cat: "notices", title: n.title, body: `${noticeCategory(n.category).label} notice`, at: liveAt(n) ?? n.created_at,
+      out.push({ key: `n-${n.id}`, cat: "notices", title: n.title, body: t("notif.noticeSuffix", { category: noticeCategory(n.category).label }), at: liveAt(n) ?? n.created_at,
         unread: !read.has(n.id), to: "/app/notices", icon: em ? Siren : Megaphone, emergency: em, source: "notice", refId: n.id });
     }
     for (const b of bills.data ?? []) {
       const at = b.finalized_at ?? b.created_at;
-      out.push({ key: `b-${b.id}`, cat: "billing", title: b.status === "paid" ? "Bill paid" : "New maintenance bill",
-        body: `${b.period_label ?? "Bill"}${b.due_date && b.status !== "paid" ? ` · due ${new Date(b.due_date).toLocaleDateString()}` : ""}`,
+      out.push({ key: `b-${b.id}`, cat: "billing", title: b.status === "paid" ? t("notif.billPaid") : t("notif.newBill"),
+        body: `${b.period_label ?? t("notif.bill")}${b.due_date && b.status !== "paid" ? ` · ${t("notif.due", { date: fmt.date(b.due_date) })}` : ""}`,
         at, unread: at > lastSeen, to: "/app/bills", icon: Receipt, source: "bill", refId: b.id });
     }
     return out.sort((a, b) => b.at.localeCompare(a.at));
-  }, [personal.data, notices.data, bills.data, lastSeen]);
+  }, [personal.data, notices.data, bills.data, lastSeen, t, fmt.tag]);
 
   const shown = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -118,11 +119,11 @@ function NotificationCenter() {
     const yest = new Date(today); yest.setDate(yest.getDate() - 1);
     for (const i of shown) {
       const d = new Date(i.at);
-      const k = d >= today ? "Today" : d >= yest ? "Yesterday" : d.toLocaleDateString();
+      const k = d >= today ? t("common.today") : d >= yest ? t("common.yesterday") : fmt.date(d);
       (g[k] ??= []).push(i);
     }
     return g;
-  }, [shown]);
+  }, [shown, t, fmt.tag]);
 
   async function markAllRead() {
     if (!user) return;
@@ -160,14 +161,14 @@ function NotificationCenter() {
           <i.icon className="h-4 w-4" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-xs text-muted-foreground">{TABS.find((t) => t.v === i.cat)?.label} · {new Date(i.at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}</span>
+          <span className="block text-xs text-muted-foreground">{t(`notif.tab.${i.cat}`)} · {fmt.time(i.at)}</span>
           <span className="flex min-w-0 items-center gap-1.5">
-            {i.priority && <span className={cn("shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase", i.priority === "urgent" ? "bg-destructive text-destructive-foreground" : "bg-warning/15 text-warning-foreground")}>{i.priority === "urgent" ? "Urgent" : "Important"}</span>}
+            {i.priority && <span className={cn("shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase", i.priority === "urgent" ? "bg-destructive text-destructive-foreground" : "bg-warning/15 text-warning-foreground")}>{i.priority === "urgent" ? t("notif.urgent") : t("notif.important")}</span>}
             <span className={cn("block truncate text-sm", i.unread ? "font-semibold" : "font-medium")}>{i.title}</span>
           </span>
           {i.body && <span className="block truncate text-xs text-muted-foreground">{i.body}</span>}
         </span>
-        {i.unread && <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-primary" aria-label="Unread" />}
+        {i.unread && <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-primary" aria-label={t("common.unread")} />}
       </Link>
     </li>
   );
@@ -175,25 +176,25 @@ function NotificationCenter() {
   return (
     <CommPage>
       <CommHeader
-        title="Notifications"
-        subtitle={unreadBy("all") > 0 ? `${unreadBy("all")} unread` : "Notices, bills, visitors, requests and parking"}
-        action={unreadBy("all") > 0 ? <Button variant="outline" className="min-h-11 rounded-xl" onClick={markAllRead}>Mark all read</Button> : undefined}
+        title={t("notif.title")}
+        subtitle={unreadBy("all") > 0 ? t("notif.unreadCount", { count: unreadBy("all") }) : t("notif.subtitle")}
+        action={unreadBy("all") > 0 ? <Button variant="outline" className="min-h-11 rounded-xl" onClick={markAllRead}>{t("notif.markAll")}</Button> : undefined}
       />
 
       <div className="mb-4 space-y-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input aria-label="Search notifications" className="h-11 rounded-xl pl-9" placeholder="Search notifications…" value={q} onChange={(e) => setQ(e.target.value)} />
+          <Input aria-label={t("notif.searchLabel")} className="h-11 rounded-xl pl-9" placeholder={t("notif.searchPlaceholder")} value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
-        <div className="-mx-1 flex gap-1 overflow-x-auto px-1" role="tablist" aria-label="Notification type">
-          {TABS.map((t) => {
-            const n = unreadBy(t.v);
+        <div className="-mx-1 flex gap-1 overflow-x-auto px-1" role="tablist" aria-label={t("notif.typeLabel")}>
+          {TABS.map((tab) => {
+            const n = unreadBy(tab);
             return (
-              <button key={t.v} role="tab" aria-selected={cat === t.v} onClick={() => setCat(t.v)}
+              <button key={tab} role="tab" aria-selected={cat === tab} onClick={() => setCat(tab)}
                 className={cn("inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border px-3 text-sm font-medium",
-                  cat === t.v ? "border-foreground bg-foreground text-background" : "border-border bg-card text-muted-foreground")}>
-                {t.label}
-                {n > 0 && <span className={cn("rounded-full px-1.5 text-xs tabular-nums", cat === t.v ? "bg-background/20" : "bg-primary text-primary-foreground")}>{n}</span>}
+                  cat === tab ? "border-foreground bg-foreground text-background" : "border-border bg-card text-muted-foreground")}>
+                {t(`notif.tab.${tab}`)}
+                {n > 0 && <span className={cn("rounded-full px-1.5 text-xs tabular-nums", cat === tab ? "bg-background/20" : "bg-primary text-primary-foreground")}>{n}</span>}
               </button>
             );
           })}
@@ -202,19 +203,19 @@ function NotificationCenter() {
 
       {partialError && !loading && (
         <div role="alert" className="mb-4 flex items-center justify-between gap-2 rounded-2xl bg-warning-container px-4 py-3 text-sm text-warning-container-foreground">
-          <span>Some updates couldn't load, so this list may be incomplete.</span>
-          <Button size="sm" variant="outline" className="min-h-11 rounded-xl" onClick={() => { void personal.refetch(); void notices.refetch(); void bills.refetch(); }}>Retry</Button>
+          <span>{t("notif.partial")}</span>
+          <Button size="sm" variant="outline" className="min-h-11 rounded-xl" onClick={() => { void personal.refetch(); void notices.refetch(); void bills.refetch(); }}>{t("common.retry")}</Button>
         </div>
       )}
 
       {loading ? <ListSkeleton rows={5} />
         : shown.length === 0 ? (
           partialError ? null : (
-            <ListEmpty icon={Inbox} title={q ? "No matches" : "You're all caught up"}>New notices and updates will show here.</ListEmpty>
+            <ListEmpty icon={Inbox} title={q ? t("common.noMatches") : t("notif.caughtUp")}>{t("notif.emptyBody")}</ListEmpty>
           )
         ) : (
           <>
-            {unreadShown.length > 0 && (<><SectionLabel count={unreadShown.length}>Needs your attention</SectionLabel><RowList>{unreadShown.map(row)}</RowList></>)}
+            {unreadShown.length > 0 && (<><SectionLabel count={unreadShown.length}>{t("notif.attention")}</SectionLabel><RowList>{unreadShown.map(row)}</RowList></>)}
             {Object.entries(readGrouped).map(([k, list]) => (
               <div key={k} className="mt-6 first:mt-0"><SectionLabel>{k}</SectionLabel><RowList>{list.map(row)}</RowList></div>
             ))}

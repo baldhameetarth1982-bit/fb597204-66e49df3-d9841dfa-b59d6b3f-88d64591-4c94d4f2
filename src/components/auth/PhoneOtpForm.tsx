@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Clock, Loader2, Phone, ShieldCheck } from "lucide-react";
@@ -27,6 +28,7 @@ export function PhoneOtpForm({ onVerified, linkToCurrentUser, submitLabel }: Pro
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [limited, setLimited] = useState<string | null>(null);
+  const { t } = useTranslation();
   const assertAllowed = useServerFn(assertLoginAllowed);
   const recordFailure = useServerFn(recordLoginFailure);
 
@@ -37,7 +39,7 @@ export function PhoneOtpForm({ onVerified, linkToCurrentUser, submitLabel }: Pro
     setLimited(null);
     const valid = /^\+[1-9]\d{6,14}$/.test(normalized);
     const r = await assertAllowed({ data: valid ? { phone: normalized } : {} }).catch(() => null);
-    if (!r) { toast.error("Couldn't reach SociyoHub. Check your connection and try again."); return false; }
+    if (!r) { toast.error(t("auth.toast.unreachable")); return false; }
     if (!r.ok) { setLimited(r.message); return false; }
     return true;
   }
@@ -47,9 +49,9 @@ export function PhoneOtpForm({ onVerified, linkToCurrentUser, submitLabel }: Pro
     try {
       if (!(await gate())) return;
       const r = await startPhoneOtp(normalized);
-      if (!r.ok) { toast.error(r.error ?? "Could not send the code. Please try again."); return; }
+      if (!r.ok) { toast.error(r.error ?? t("otp.sendFailed")); return; }
       setStage("code");
-      toast.success("Code sent");
+      toast.success(t("otp.sent"));
     } finally {
       setBusy(false);
     }
@@ -62,12 +64,12 @@ export function PhoneOtpForm({ onVerified, linkToCurrentUser, submitLabel }: Pro
       const r = await verifyPhoneOtp(code);
       if (!r.ok || !r.firebaseUid || !r.firebaseIdToken) {
         await recordFailure({ data: { phone: normalized } }).catch(() => {});
-        toast.error("That code didn't work. Check it and try again.");
+        toast.error(t("otp.wrong"));
         return;
       }
       if (linkToCurrentUser) {
         const link = await linkVerifiedPhoneToCurrentUser(normalized, r.firebaseIdToken);
-        if (!link.ok) { toast.error(link.error ?? "Could not link phone"); return; }
+        if (!link.ok) { toast.error(link.error ?? t("otp.linkFailed")); return; }
       }
       resetOtpState();
       onVerified({ phone: normalized, firebaseUid: r.firebaseUid, firebaseIdToken: r.firebaseIdToken });
@@ -82,8 +84,8 @@ export function PhoneOtpForm({ onVerified, linkToCurrentUser, submitLabel }: Pro
         <div role="alert" className="flex gap-3 rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
           <Clock className="h-5 w-5 shrink-0 text-warning" aria-hidden />
           <div>
-            <p className="font-medium text-foreground">Please wait before trying again</p>
-            <p className="mt-0.5 text-muted-foreground">{limited} This limit is temporary.</p>
+            <p className="font-medium text-foreground">{t("auth.limited.title")}</p>
+            <p className="mt-0.5 text-muted-foreground">{limited} {t("auth.limited.temporary")}</p>
           </div>
         </div>
       )}
@@ -91,7 +93,7 @@ export function PhoneOtpForm({ onVerified, linkToCurrentUser, submitLabel }: Pro
         <>
           <div className="space-y-2">
             <Label htmlFor="phone-number" className="flex items-center gap-1.5 text-sm">
-              <Phone className="h-4 w-4 text-primary" /> Mobile number
+              <Phone className="h-4 w-4 text-primary" /> {t("otp.mobile")}
             </Label>
             <Input
               type="tel"
@@ -104,7 +106,7 @@ export function PhoneOtpForm({ onVerified, linkToCurrentUser, submitLabel }: Pro
               autoFocus
             />
             <p className="text-[11px] text-muted-foreground">
-              Include country code. We'll text you a 6-digit code.
+              {t("otp.hint")}
             </p>
           </div>
           <Button
@@ -113,14 +115,14 @@ export function PhoneOtpForm({ onVerified, linkToCurrentUser, submitLabel }: Pro
             className="w-full"
           >
             {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Send code
+            {t("otp.send")}
           </Button>
         </>
       ) : (
         <>
           <div className="space-y-2">
             <Label htmlFor="phone-code" className="flex items-center gap-1.5 text-sm">
-              <ShieldCheck className="h-4 w-4 text-primary" /> Enter code
+              <ShieldCheck className="h-4 w-4 text-primary" /> {t("otp.enter")}
             </Label>
             <Input
               inputMode="numeric"
@@ -132,7 +134,7 @@ export function PhoneOtpForm({ onVerified, linkToCurrentUser, submitLabel }: Pro
               autoFocus
             />
             <p className="text-[11px] text-muted-foreground">
-              Sent to <span className="text-foreground font-medium">{phone}</span>
+              {t("otp.sentTo", { phone })}
             </p>
           </div>
           <Button
@@ -141,7 +143,7 @@ export function PhoneOtpForm({ onVerified, linkToCurrentUser, submitLabel }: Pro
             className="w-full"
           >
             {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            {submitLabel ?? "Verify"}
+            {submitLabel ?? t("otp.verify")}
           </Button>
           <Button
             type="button"
@@ -152,7 +154,7 @@ export function PhoneOtpForm({ onVerified, linkToCurrentUser, submitLabel }: Pro
             }}
             className="w-full text-muted-foreground"
           >
-            Change number
+            {t("otp.change")}
           </Button>
         </>
       )}

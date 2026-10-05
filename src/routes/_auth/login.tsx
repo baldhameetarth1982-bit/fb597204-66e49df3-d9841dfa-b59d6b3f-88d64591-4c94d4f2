@@ -25,6 +25,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { assertLoginAllowed } from "@/lib/login-guard.functions";
 import { emailSignIn, emailSignUp } from "@/lib/email-auth.functions";
 import { Clock } from "lucide-react";
+import { LanguageSelector } from "@/components/shared/LanguageSelector";
 
 export const Route = createFileRoute("/_auth/login")({
   head: () => ({
@@ -195,6 +196,9 @@ function LoginPage() {
       <p className="mt-2 text-sm text-muted-foreground text-center">
         {t("auth.tagline")}
       </p>
+      <div className="mt-3 flex justify-center">
+        <LanguageSelector compact />
+      </div>
 
       {limited && (
         <div role="alert" className="mt-5 flex gap-3 rounded-2xl border border-warning/40 bg-warning/10 p-4 text-sm">

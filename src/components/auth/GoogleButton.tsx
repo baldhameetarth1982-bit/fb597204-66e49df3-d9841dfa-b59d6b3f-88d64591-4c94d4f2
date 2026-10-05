@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 
@@ -7,7 +8,8 @@ interface Props {
   label?: string;
 }
 
-export function GoogleButton({ onClick, loading, label = "Continue with Google" }: Props) {
+export function GoogleButton({ onClick, loading, label }: Props) {
+  const { t } = useTranslation();
   return (
     <Button
       type="button"
@@ -26,7 +28,7 @@ export function GoogleButton({ onClick, loading, label = "Continue with Google" 
           />
         </svg>
       )}
-      {label}
+      {label ?? t("auth.continueGoogle")}
     </Button>
   );
 }

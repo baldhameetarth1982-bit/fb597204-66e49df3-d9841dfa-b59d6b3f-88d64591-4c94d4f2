@@ -97,4 +97,8 @@ export const settings = {
   "st.a11y": ["Accessibility mode", "सुलभता मोड", "સુલભતા મોડ"],
   "st.a11yD": ["Larger text, looser spacing — easier for elderly residents.", "बड़ा टेक्स्ट, खुली जगह — बुज़ुर्ग निवासियों के लिए आसान।", "મોટું લખાણ, ખુલ્લી જગ્યા — વડીલ રહેવાસીઓ માટે સરળ."],
   "st.a11yToggle": ["Toggle accessibility mode", "सुलभता मोड बदलें", "સુલભતા મોડ બદલો"],
+  "st.delBody": ["This will sign you out and request permanent deletion of your profile, family members and Aadhaar from our records. Society admin will be notified. To confirm, type:", "इससे आप साइन आउट होंगे और आपकी प्रोफ़ाइल, परिवार के सदस्य और आधार को हमारे रिकॉर्ड से स्थायी रूप से हटाने का अनुरोध होगा। सोसाइटी एडमिन को सूचित किया जाएगा। पुष्टि के लिए टाइप करें:", "આનાથી તમે સાઇન આઉટ થશો અને તમારી પ્રોફાઇલ, પરિવારના સભ્યો અને આધારને અમારા રેકોર્ડમાંથી કાયમી રીતે કાઢવાની વિનંતી થશે. સોસાયટી એડમિનને જાણ કરાશે. પુષ્ટિ માટે લખો:"],
+  "st.delRequested": ["Deletion requested. Support will email {{email}} within 48h.", "हटाने का अनुरोध भेजा गया। सहायता टीम 48 घंटे में {{email}} पर ईमेल करेगी।", "કાઢવાની વિનંતી મોકલાઈ. સપોર્ટ ટીમ 48 કલાકમાં {{email}} પર ઈમેલ કરશે."],
+  "st.you": ["you", "आपको", "તમને"],
+  "st.upgradeNeon": ["Neon theme needs a higher plan. Upgrade to:", "नियॉन थीम के लिए ऊँचा प्लान चाहिए। अपग्रेड करें:", "નિયોન થીમ માટે ઊંચો પ્લાન જોઈએ. અપગ્રેડ કરો:"],
 } satisfies Catalog;

@@ -147,7 +147,7 @@ function SettingsPage() {
             </p>
             {aadhaarVerified ? (
               <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 gap-1">
-                <BadgeCheck className="h-3 w-3" /> Verified
+                <BadgeCheck className="h-3 w-3" /> {t("st.verified")}
               </Badge>
             ) : aadhaarUploaded ? (
               <Badge variant="secondary">{t("st.verifPending")}</Badge>
@@ -180,7 +180,7 @@ function SettingsPage() {
         <div className="min-w-0">
         {/* PROFILE */}
         <TabsContent value="profile" className="mt-0">
-          <SettingsGroup title={t("st.personal")} scope="Only you" icon={UserIcon}>
+          <SettingsGroup title={t("st.personal")} scope={t("settings.onlyYou")} icon={UserIcon}>
             <div className="space-y-4">
               <div className="grid gap-2">
                 <Label htmlFor="email">{t("st.email")}</Label>
@@ -239,7 +239,7 @@ function SettingsPage() {
 
         {/* SECURITY */}
         <TabsContent value="security" className="mt-0 space-y-5">
-          {!isSecurity && <SettingsGroup title={t("st.idv")} scope="Only you" icon={ShieldCheck}>
+          {!isSecurity && <SettingsGroup title={t("st.idv")} scope={t("settings.onlyYou")} icon={ShieldCheck}>
             {aadhaarVerified ? (
               <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 flex items-center gap-3">
                 <BadgeCheck className="h-5 w-5 text-emerald-600" />
@@ -264,7 +264,7 @@ function SettingsPage() {
             )}
           </SettingsGroup>}
 
-          <SettingsGroup title={t("st.signin")} scope="Only you" icon={Lock}>
+          <SettingsGroup title={t("st.signin")} scope={t("settings.onlyYou")} icon={Lock}>
             <ActionRow
               icon={Lock}
               label={t("st.changePw")}
@@ -286,7 +286,7 @@ function SettingsPage() {
         {/* SOCIETY (committee only — each page enforces its own permissions) */}
         {isSocietyAdmin && (
           <TabsContent value="society" className="mt-0">
-            <SettingsGroup title={t("st.socAdmin")} scope="Whole society" icon={Building2}
+            <SettingsGroup title={t("st.socAdmin")} scope={t("settings.wholeSociety")} icon={Building2}
               hint={t("st.socAdminHint")}>
               <LinkRow to="/society/business-profile" icon={Building2} label={t("st.socInfo")} desc={t("st.socInfoD")} />
               <Separator />
@@ -415,8 +415,7 @@ function DeleteAccountRow({ email, onSignOut }: { email: string | null; onSignOu
         <AlertDialogHeader>
           <AlertDialogTitle>{t("st.delTitle")}</AlertDialogTitle>
           <AlertDialogDescription>
-            This will sign you out and request permanent deletion of your profile, family members and Aadhaar from our records.
-            Society admin will be notified. Type <strong>DELETE</strong> to confirm.
+            {t("st.delBody")} <strong>DELETE</strong>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <Input value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="DELETE" />
@@ -436,7 +435,7 @@ function DeleteAccountRow({ email, onSignOut }: { email: string | null; onSignOu
                 } as any).eq("id", user.id);
                 await supabase.from("family_members").delete().eq("user_id", user.id);
               }
-              toast.success("Deletion requested. Support will email " + (email ?? "you") + " within 48h.");
+              toast.success(t("st.delRequested", { email: email ?? t("st.you") }));
               await onSignOut();
             }}
           >{t("st.permDelete")}</AlertDialogAction>
@@ -541,7 +540,7 @@ function AppearanceCard({
     <Card className="rounded-2xl">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
-          <UserIcon className="h-5 w-5 text-primary" /> Appearance
+          <UserIcon className="h-5 w-5 text-primary" /> {t("st.appearance")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -574,7 +573,7 @@ function AppearanceCard({
         </div>
         {!isPremium && (
           <p className="text-xs text-muted-foreground">
-            Upgrade to <Link to="/pricing" className="underline">Growth or Pro</Link> to unlock the Neon theme.
+            {t("st.upgradeNeon")} <Link to="/pricing" className="underline">Growth / Pro</Link>
           </p>
         )}
         {isSuperAdmin && (

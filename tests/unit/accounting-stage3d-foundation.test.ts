@@ -102,7 +102,7 @@ describe("Stage 3D canonical accounting foundation", () => {
     for (const file of ["society.accounts.tsx", "society.reports.tsx"]) {
       const source = route(file);
       expect(source).not.toMatch(/INR\.format\(o\?\.[a-z_]+\s*\?\?\s*0\)/);
-      expect(source).toContain("Retry");
+      expect(source).toMatch(/Retry|t\("common\.retry"\)/);
     }
   });
 

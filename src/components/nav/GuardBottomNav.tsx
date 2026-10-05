@@ -25,7 +25,7 @@ export function GuardBottomNav() {
               <Link
                 to={it.to}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 py-2 min-h-[60px] text-[11px] font-medium transition-colors",
+                  "flex min-w-0 flex-col items-center justify-center gap-1 py-2 min-h-[60px] text-[11px] font-medium transition-colors",
                   active ? "text-primary" : "text-muted-foreground hover:text-foreground",
                 )}
               >

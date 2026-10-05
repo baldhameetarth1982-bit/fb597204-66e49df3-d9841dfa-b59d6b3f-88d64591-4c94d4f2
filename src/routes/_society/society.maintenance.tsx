@@ -26,7 +26,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { toSafeFinanceMessage } from "@/lib/finance-safe-error";
 import { toast } from "sonner";
-import type { MaintenanceStatus } from "@/lib/maintenance-status";
+import type { MaintenanceStatus, MaintenanceTiming } from "@/lib/maintenance-status";
 
 export const Route = createFileRoute("/_society/society/maintenance")({
   head: () => ({ meta: [{ title: "Maintenance — SociyoHub" }] }),
@@ -365,10 +365,10 @@ function MaintenanceBoard({ societyId, year, month, blockId }: { societyId: stri
     (!search.trim() || `${r.block ?? ""} ${r.label}`.toLowerCase().includes(search.trim().toLowerCase()))), [q.data, blockId, status, search]);
   const counts = useMemo(() => { const c: Record<string, number> = {}; for (const r of q.data?.rows ?? []) c[r.status] = (c[r.status] ?? 0) + 1; return c; }, [q.data]);
 
-  async function changeTiming(t: MaintenanceTiming) {
-    if (saving || t === q.data?.timing) return;
+  async function changeTiming(next: MaintenanceTiming) {
+    if (saving || next === q.data?.timing) return;
     setSaving(true);
-    try { await saveTiming({ data: { societyId, timing: t } }); await qc.invalidateQueries({ queryKey: ["maintenance-board", societyId] }); toast.success(t("mnt.timingSaved")); }
+    try { await saveTiming({ data: { societyId, timing: next } }); await qc.invalidateQueries({ queryKey: ["maintenance-board", societyId] }); toast.success(t("mnt.timingSaved")); }
     catch (e) { toast.error(toSafeFinanceMessage(e)); } finally { setSaving(false); }
   }
 

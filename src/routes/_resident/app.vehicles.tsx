@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+import { localeTag } from "@/lib/i18n";
 import { createFileRoute } from "@tanstack/react-router";
 import { userMessage } from "@/lib/user-error";
 import { useEffect, useState } from "react";
@@ -20,7 +22,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useSocietyId } from "@/hooks/useSocietyId";
 
 export const Route = createFileRoute("/_resident/app/vehicles")({
-  head: () => ({ meta: [{ title: "My Vehicles — SociyoHub" }] }),
+  head: () => ({ meta: [{ title: "My Vehicles — SociyoHub" }, { name: "description", content: "Add your vehicles so guards can verify you at the gate." }] }),
   component: VehiclesPage,
 });
 
@@ -33,6 +35,7 @@ interface Vehicle {
 }
 
 function VehiclesPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { societyId } = useSocietyId();
   const [list, setList] = useState<Vehicle[]>([]);
@@ -59,10 +62,10 @@ function VehiclesPage() {
   async function add(e: React.FormEvent) {
     e.preventDefault();
     if (!user || !societyId) {
-      toast.error("Join a society first");
+      toast.error(t("vh.joinFirst"));
       return;
     }
-    if (!form.plate_number.trim()) return toast.error("Plate number required");
+    if (!form.plate_number.trim()) return toast.error(t("vh.plateReq"));
     setSubmitting(true);
     const { error } = await supabase.from("vehicles").insert({
       user_id: user.id,
@@ -74,7 +77,7 @@ function VehiclesPage() {
     });
     setSubmitting(false);
     if (error) return toast.error(userMessage(error));
-    toast.success("Vehicle added");
+    toast.success(t("vh.added"));
     setForm({ plate_number: "", make_model: "", color: "", type: "car" });
     setOpen(false);
     void load();
@@ -83,8 +86,8 @@ function VehiclesPage() {
   async function remove(id: string) {
     if (!user) return;
     const { error } = await supabase.from("vehicles").delete().eq("id", id).eq("user_id", user.id);
-    if (error) return toast.error("Couldn't remove this vehicle. Please try again.");
-    toast.success("Removed");
+    if (error) return toast.error(t("vh.removeFailed"));
+    toast.success(t("vh.removed"));
     void load();
   }
 
@@ -92,23 +95,23 @@ function VehiclesPage() {
     <div className="px-5 py-6 space-y-4 pb-24">
       <header className="flex items-end justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">My Vehicles</h1>
-          <p className="text-sm text-muted-foreground">So guards can verify you at the gate</p>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("nav.vehicles")}</h1>
+          <p className="text-sm text-muted-foreground">{t("vh.subtitle")}</p>
         </div>
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
             <Button size="sm">
               <Plus className="h-4 w-4 mr-1" />
-              Add
+              {t("vh.add")}
             </Button>
           </SheetTrigger>
           <SheetContent side="bottom" className="mx-auto max-h-[92dvh] max-w-[480px] overflow-y-auto rounded-t-lg pb-[max(1.25rem,env(safe-area-inset-bottom))]">
             <SheetHeader className="text-left">
-              <SheetTitle>Add vehicle</SheetTitle>
+              <SheetTitle>{t("vh.addTitle")}</SheetTitle>
             </SheetHeader>
             <form onSubmit={add} className="space-y-3">
               <div>
-                <Label htmlFor="vehicle-plate">Plate number *</Label>
+                <Label htmlFor="vehicle-plate">{t("vh.plate")}</Label>
                 <Input
                   id="vehicle-plate"
                   value={form.plate_number}
@@ -118,7 +121,7 @@ function VehiclesPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="vehicle-model">Make & model</Label>
+                <Label htmlFor="vehicle-model">{t("vh.model")}</Label>
                 <Input
                   id="vehicle-model"
                   value={form.make_model}
@@ -128,7 +131,7 @@ function VehiclesPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label htmlFor="vehicle-color">Color</Label>
+                  <Label htmlFor="vehicle-color">{t("vh.color")}</Label>
                   <Input
                     id="vehicle-color"
                     value={form.color}
@@ -137,21 +140,21 @@ function VehiclesPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="vehicle-type">Type</Label>
+                  <Label htmlFor="vehicle-type">{t("cm.type")}</Label>
                   <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
-                    <SelectTrigger aria-label="Type" id="vehicle-type">
+                    <SelectTrigger aria-label={t("cm.type")} id="vehicle-type">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="car">Car</SelectItem>
-                      <SelectItem value="bike">Bike</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                      <SelectItem value="car">{t("vh.car")}</SelectItem>
+                      <SelectItem value="bike">{t("vh.bike")}</SelectItem>
+                      <SelectItem value="other">{t("cm.other")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <Button type="submit" className="w-full" disabled={submitting}>
-                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.save")}
               </Button>
             </form>
           </SheetContent>
@@ -166,7 +169,7 @@ function VehiclesPage() {
       ) : list.length === 0 ? (
         <Card className="rounded-2xl">
           <CardContent className="p-8 text-center text-sm text-muted-foreground">
-            No vehicles yet
+            {t("vh.none")}
           </CardContent>
         </Card>
       ) : (
@@ -180,10 +183,10 @@ function VehiclesPage() {
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold tracking-wide">{v.plate_number}</p>
                   <p className="text-xs text-muted-foreground truncate">
-                    {[v.make_model, v.color, v.type].filter(Boolean).join(" · ") || "—"}
+                    {[v.make_model, v.color, v.type === "car" ? t("vh.car") : v.type === "bike" ? t("vh.bike") : t("cm.other")].filter(Boolean).join(" · ") || "—"}
                   </p>
                 </div>
-                <Button size="icon" variant="ghost" onClick={() => remove(v.id)} aria-label={`Remove ${v.plate_number}`}>
+                <Button size="icon" variant="ghost" onClick={() => remove(v.id)} aria-label={t("vh.removeLabel", { plate: v.plate_number })}>
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
               </CardContent>
@@ -196,6 +199,7 @@ function VehiclesPage() {
 }
 
 function MyParking() {
+  const { t } = useTranslation();
   type Row = { id: string; kind: string; ends_at: string | null; starts_at: string; slot: { label: string; slot_type: string; floor: string | null; notes: string | null } | null };
   type Viol = { id: string; violation_type: string; status: string; occurred_at: string; resolution_note: string | null };
   const [rows, setRows] = useState<Row[] | null>(null);
@@ -217,34 +221,34 @@ function MyParking() {
   return (
     <Card className="rounded-2xl">
       <CardContent className="p-4 space-y-3">
-        <p className="text-sm font-semibold">Your parking</p>
+        <p className="text-sm font-semibold">{t("vh.parking")}</p>
         {failed ? (
-          <p role="alert" className="text-sm text-muted-foreground">Couldn't load your parking. Pull to refresh or try again later.</p>
+          <p role="alert" className="text-sm text-muted-foreground">{t("vh.parkingFailed")}</p>
         ) : rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No parking slot allotted yet. Your committee assigns parking.</p>
+          <p className="text-sm text-muted-foreground">{t("vh.noSlot")}</p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {rows.map((r) => (
               <span key={r.id} className="rounded-xl bg-primary/10 text-primary px-3 py-2 text-sm font-medium">
-                {r.slot?.label ?? "Slot"} <span className="capitalize text-xs opacity-80">· {r.slot?.slot_type}</span>
-                {r.slot?.floor ? <span className="text-xs opacity-80"> · Floor {r.slot.floor}</span> : null}
-                {r.kind === "temporary" && r.ends_at ? <span className="text-xs opacity-80"> · temporary until {new Date(r.ends_at).toLocaleString([], { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}</span> : null}
+                {r.slot?.label ?? t("vh.slot")} <span className="capitalize text-xs opacity-80">· {r.slot?.slot_type}</span>
+                {r.slot?.floor ? <span className="text-xs opacity-80"> · {t("vh.floor", { floor: r.slot.floor })}</span> : null}
+                {r.kind === "temporary" && r.ends_at ? <span className="text-xs opacity-80"> · {t("vh.tempUntil", { date: new Date(r.ends_at).toLocaleString(localeTag(), { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) })}</span> : null}
               </span>
             ))}
           </div>
         )}
         {viols.length > 0 && (
           <div>
-            <p className="text-sm font-semibold">Parking notices for your home</p>
+            <p className="text-sm font-semibold">{t("vh.notices")}</p>
             <ul className="mt-1 space-y-1 text-sm">
               {viols.map((v) => (
                 <li key={v.id} className="text-muted-foreground">
-                  <span className="capitalize text-foreground">{v.violation_type.replace(/_/g, " ")}</span> · {v.status} · {new Date(v.occurred_at).toLocaleDateString()}
+                  <span className="capitalize text-foreground">{v.violation_type.replace(/_/g, " ")}</span> · {v.status} · {new Date(v.occurred_at).toLocaleDateString(localeTag())}
                   {v.resolution_note ? ` · ${v.resolution_note}` : ""}
                 </li>
               ))}
             </ul>
-            <p className="text-xs text-muted-foreground mt-1">Notices are records only and never add charges to your bill.</p>
+            <p className="text-xs text-muted-foreground mt-1">{t("vh.noticesNote")}</p>
           </div>
         )}
       </CardContent>

@@ -6,7 +6,7 @@ import { SociyoHubLogo } from "@/components/shared/SociyoHubLogo";
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
     <main className="relative flex min-h-dvh w-full items-center justify-center overflow-hidden bg-background px-4 py-10">
-      <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-[34%] border-r border-border bg-secondary/45 lg:block" aria-hidden />
+      <div className="pointer-events-none absolute inset-y-0 start-0 hidden w-[34%] border-r border-border bg-secondary/45 lg:block" aria-hidden />
       <div className="relative w-full max-w-md">
         <div className="mb-7 flex flex-col items-center justify-center gap-3">
           <Logo size={52} />

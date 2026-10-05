@@ -40,7 +40,7 @@ export function BillingCenterTabs() {
     <div className="overflow-x-auto">
       <nav className="flex min-w-max items-stretch gap-1 p-1.5" aria-label={t("billingTabs.label")}>
         {GROUPS.map((g, gi) => (
-          <div key={g.label} className={cn("flex items-center gap-1", gi > 0 && "ml-1 border-l border-border pl-2")} role="group" aria-label={t(g.label)}>
+          <div key={g.label} className={cn("flex items-center gap-1", gi > 0 && "ms-1 border-l border-border ps-2")} role="group" aria-label={t(g.label)}>
             <span className="hidden px-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground md:inline">{t(g.label)}</span>
             {g.tabs.map((tab) => {
               // Exact match for History so Generate doesn't also activate it.

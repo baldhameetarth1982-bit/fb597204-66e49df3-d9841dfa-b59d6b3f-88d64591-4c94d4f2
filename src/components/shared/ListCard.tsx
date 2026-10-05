@@ -29,7 +29,7 @@ export function ListCard({
     <Tag
       onClick={onClick}
       className={cn(
-        "w-full grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 text-left transition",
+        "w-full grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 text-start transition",
         onClick && "hover:bg-muted/50 active:bg-muted",
         className,
       )}

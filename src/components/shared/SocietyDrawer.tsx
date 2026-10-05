@@ -138,7 +138,7 @@ export function SocietyDrawer() {
                     }
                   }}
                 >
-                  {society.is_current ? <Check className="mr-2 h-4 w-4 text-primary" /> : <ChevronsUpDown className="mr-2 h-4 w-4" />}
+                  {society.is_current ? <Check className="me-2 h-4 w-4 text-primary" /> : <ChevronsUpDown className="me-2 h-4 w-4" />}
                   <span className="truncate">{society.society_name}</span>
                 </Button>
               ))}

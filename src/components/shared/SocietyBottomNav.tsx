@@ -123,7 +123,7 @@ export function SocietyBottomNav() {
                   side="bottom"
                   className="mx-auto max-w-[420px] rounded-t-3xl border-border px-4 pb-7 pt-5"
                 >
-                  <SheetHeader className="text-left">
+                  <SheetHeader className="text-start">
                     <SheetTitle>{category.label}</SheetTitle>
                     <SheetDescription>Choose a module</SheetDescription>
                   </SheetHeader>
@@ -136,7 +136,7 @@ export function SocietyBottomNav() {
                           <Link
                             to={item.to as any}
                             className={cn(
-                              "min-h-24 rounded-2xl border border-border bg-card p-4 text-left transition-colors hover:bg-secondary",
+                              "min-h-24 rounded-2xl border border-border bg-card p-4 text-start transition-colors hover:bg-secondary",
                               itemActive && "border-primary bg-primary/5 text-primary",
                             )}
                           >

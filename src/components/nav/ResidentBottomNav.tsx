@@ -76,7 +76,7 @@ export function ResidentBottomNav() {
                 >
                   <Icon className={cn("h-5 w-5", active && "stroke-[2.5]")} />
                   {showBadge && (
-                    <span className="absolute -top-0.5 right-2 min-w-[16px] h-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold grid place-items-center leading-none">
+                    <span className="absolute -top-0.5 end-2 min-w-[16px] h-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold grid place-items-center leading-none">
                       {unread > 99 ? "99+" : unread}
                     </span>
                   )}

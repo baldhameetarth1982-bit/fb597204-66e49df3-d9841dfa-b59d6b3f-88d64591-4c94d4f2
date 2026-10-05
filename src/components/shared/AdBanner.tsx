@@ -37,7 +37,7 @@ export function AdBanner({ placement = "dashboard_bottom" }: { placement?: strin
       <img src={ad.image_url!} alt={ad.title} loading="lazy" className="w-full h-auto object-cover aspect-[16/5]" />
       <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground flex items-center justify-between">
         <span>Sponsored</span>
-        <span className="truncate ml-2">{ad.title}</span>
+        <span className="truncate ms-2">{ad.title}</span>
       </div>
     </>
   );

@@ -103,7 +103,7 @@ export function AppSidebar() {
                         className="relative h-11 rounded-md px-3 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:font-semibold data-[active=true]:text-primary"
                       >
                         <Link to={item.url} aria-current={active ? "page" : undefined} className="flex items-center gap-3">
-                          {active && <span aria-hidden className="absolute inset-y-2 left-0 w-[3px] rounded-full bg-primary" />}
+                          {active && <span aria-hidden className="absolute inset-y-2 start-0 w-[3px] rounded-full bg-primary" />}
                           <item.icon className="h-[18px] w-[18px] shrink-0" />
                           {!collapsed && <span className="text-sm">{tr(item.title)}</span>}
                         </Link>

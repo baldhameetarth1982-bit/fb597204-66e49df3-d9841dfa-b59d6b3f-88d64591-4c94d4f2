@@ -66,17 +66,17 @@ export function GlobalSearch({ societyId, scope }: { societyId: string; scope: S
   return (
     <div className="space-y-4">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden />
+        <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden />
         <Input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder={scope === "society" ? "Search flats, residents, bills, requests, documents…" : "Search your bills, requests, notices, documents…"}
-          className="pl-9 h-11"
+          className="ps-9 h-11"
           aria-label="Search"
           maxLength={80}
           autoFocus
         />
-        {busy && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground motion-reduce:animate-none" aria-hidden />}
+        {busy && <Loader2 className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground motion-reduce:animate-none" aria-hidden />}
       </div>
       <p className="sr-only" role="status" aria-live="polite">
         {active && !busy ? `${hits.length} results` : ""}
@@ -95,7 +95,7 @@ export function GlobalSearch({ societyId, scope }: { societyId: string; scope: S
         return (
           <div key={kind}>
             <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-              {m.label} <Badge variant="secondary" className="ml-1">{list.length}</Badge>
+              {m.label} <Badge variant="secondary" className="ms-1">{list.length}</Badge>
             </div>
             <div className="space-y-1.5">
               {list.map((h) => (

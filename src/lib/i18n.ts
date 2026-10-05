@@ -9,6 +9,7 @@ import { settings } from "@/locales/settings";
 import { resident } from "@/locales/resident";
 import { dashboard } from "@/locales/dashboard";
 import { navhub } from "@/locales/navhub";
+import { profile } from "@/locales/profile";
 
 /**
  * The single SociyoHub localisation system (i18next). English, Hindi and
@@ -16,7 +17,7 @@ import { navhub } from "@/locales/navhub";
  * validated JSON bundle in src/locales/extra/, loaded only when chosen.
  * Language is a per-device, per-user display preference — never authority.
  */
-const CATALOGS: Catalog[] = [core, auth, notifications, accounts, settings, resident, dashboard, navhub];
+const CATALOGS: Catalog[] = [core, auth, notifications, accounts, settings, resident, dashboard, navhub, profile];
 
 function build(idx: number) {
   const out: Record<string, string> = {};

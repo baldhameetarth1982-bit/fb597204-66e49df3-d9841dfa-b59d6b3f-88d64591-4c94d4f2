@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -35,6 +36,7 @@ export function ElderModeSync() {
 export function ElderModeToggle() {
   const { data, isLoading } = useElderMode();
   const qc = useQueryClient();
+  const { t } = useTranslation();
   const m = useMutation({
     mutationFn: async (on: boolean) => {
       const { data: u } = await supabase.auth.getUser();
@@ -43,14 +45,14 @@ export function ElderModeToggle() {
       if (error) throw error;
       return on;
     },
-    onSuccess: (on) => { qc.setQueryData(KEY, on); toast.success(on ? "Easy view turned on" : "Easy view turned off"); },
-    onError: () => toast.error("Couldn't save. Please try again."),
+    onSuccess: (on) => { qc.setQueryData(KEY, on); toast.success(on ? t("elder.on") : t("elder.off")); },
+    onError: () => toast.error(t("elder.saveFailed")),
   });
   return (
-    <section aria-label="Display" className="flex items-center justify-between gap-4 rounded-2xl border bg-card p-4">
+    <section aria-label={t("elder.display")} className="flex items-center justify-between gap-4 rounded-2xl border bg-card p-4">
       <div>
-        <Label htmlFor="elder-mode" className="font-semibold">Easy view</Label>
-        <p className="text-sm text-muted-foreground">Larger text and buttons with stronger contrast.</p>
+        <Label htmlFor="elder-mode" className="font-semibold">{t("elder.label")}</Label>
+        <p className="text-sm text-muted-foreground">{t("elder.hint")}</p>
       </div>
       <Switch id="elder-mode" checked={!!data} disabled={isLoading || m.isPending} onCheckedChange={(v) => m.mutate(v)} />
     </section>

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { ElderModeToggle } from "@/components/resident/ElderMode";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { userMessage } from "@/lib/user-error";
@@ -32,8 +33,8 @@ export const Route = createFileRoute("/_resident/app/profile")({
 
 const fmt = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 
-const ROLE_LABEL: Record<string, string> = {
-  resident: "Resident", society_admin: "Committee admin", block_admin: "Block admin", security: "Security", super_admin: "Platform admin",
+const ROLE_KEY: Record<string, string> = {
+  resident: "prof.role.resident", society_admin: "st.committeeAdmin", block_admin: "prof.role.blockAdmin", security: "nav.security", super_admin: "prof.role.platformAdmin",
 };
 
 function NavRow({ to, icon: Icon, label, hint }: { to: string; icon: ComponentType<{ className?: string }>; label: string; hint?: string }) {
@@ -64,6 +65,7 @@ function ProfilePage() {
   const { user, profile, roles, signOut } = useAuth();
   const navigate = useNavigate();
   const loadPartnerSummary = useServerFn(getPartnerSummary);
+  const { t } = useTranslation();
 
   const [code, setCode] = useState<string | null>(null);
   const [earnings, setEarnings] = useState(0);
@@ -100,24 +102,24 @@ function ProfilePage() {
   const money = (n: number) => (loading || loadFailed ? "—" : fmt.format(n));
 
   function copyLink() {
-    void navigator.clipboard.writeText(link).then(() => toast.success("Referral link copied"), () => toast.error("Couldn't copy the link"));
+    void navigator.clipboard.writeText(link).then(() => toast.success(t("prof.linkCopied")), () => toast.error(t("prof.copyFailed")));
   }
   async function shareLink() {
     if (navigator.share) {
-      try { await navigator.share({ title: "Join SociyoHub", url: link }); } catch { /* user cancel */ }
+      try { await navigator.share({ title: t("prof.shareTitle"), url: link }); } catch { /* user cancel */ }
     } else copyLink();
   }
 
-  const name = profile?.full_name || "Unnamed resident";
+  const name = profile?.full_name || t("prof.unnamed");
   const house = (profile as { property_number?: string | null } | null)?.property_number;
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 pt-5 pb-28 space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Account</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">{t("common.account")}</h1>
       <ElderModeToggle />
 
       {/* Identity */}
-      <section aria-label="Your profile" className="flex items-center gap-4 rounded-2xl border bg-card p-4">
+      <section aria-label={t("prof.yourProfile")} className="flex items-center gap-4 rounded-2xl border bg-card p-4">
         <Avatar className="h-14 w-14 ring-1 ring-border">
           <AvatarFallback className="bg-primary-container text-primary-container-foreground font-semibold">
             {(profile?.full_name || user?.email || "U").slice(0, 2).toUpperCase()}
@@ -127,66 +129,66 @@ function ProfilePage() {
           <p className="font-semibold break-words">{name}</p>
           <p className="text-sm text-muted-foreground break-all">{user?.email}</p>
           <div className="mt-1.5 flex flex-wrap gap-1">
-            {house && <StatusChip tone="primary"><Home className="h-3 w-3 mr-1" aria-hidden />House {house}</StatusChip>}
-            {roles.map((r) => <StatusChip key={r} tone="neutral">{ROLE_LABEL[r] ?? r.replace("_", " ")}</StatusChip>)}
+            {house && <StatusChip tone="primary"><Home className="h-3 w-3 mr-1" aria-hidden />{t("prof.house", { house })}</StatusChip>}
+            {roles.map((r) => <StatusChip key={r} tone="neutral">{ROLE_KEY[r] ? t(ROLE_KEY[r]) : r.replace("_", " ")}</StatusChip>)}
           </div>
         </div>
       </section>
 
-      <Group title="Your household">
+      <Group title={t("prof.g.household")}>
         <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
-          <NavRow to="/app/family" icon={Users} label="Family" hint="People living in your home" />
-          <NavRow to="/app/vehicles" icon={Car} label="Vehicles" hint="Registered cars and bikes" />
-          <NavRow to="/app/services" icon={Wrench} label="Services" hint="Help and service providers" />
+          <NavRow to="/app/family" icon={Users} label={t("prof.family")} hint={t("prof.familyHint")} />
+          <NavRow to="/app/vehicles" icon={Car} label={t("nav.vehicles")} hint={t("prof.vehiclesHint")} />
+          <NavRow to="/app/services" icon={Wrench} label={t("prof.services")} hint={t("prof.servicesHint")} />
         </ul>
       </Group>
 
-      <Group title="Activity">
+      <Group title={t("prof.g.activity")}>
         <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
-          <NavRow to="/app/activity" icon={History} label="Activity" hint="Your recent actions" />
-          <NavRow to="/app/household-history" icon={Home} label="Home history" hint="Who has lived in your home" />
-          <NavRow to="/app/trust" icon={ShieldCheck} label="Financial trust" />
-          <NavRow to="/app/achievements" icon={Trophy} label="Points & leaderboard" />
+          <NavRow to="/app/activity" icon={History} label={t("prof.g.activity")} hint={t("prof.activityHint")} />
+          <NavRow to="/app/household-history" icon={Home} label={t("prof.homeHistory")} hint={t("prof.homeHistoryHint")} />
+          <NavRow to="/app/trust" icon={ShieldCheck} label={t("prof.trust")} />
+          <NavRow to="/app/achievements" icon={Trophy} label={t("prof.points")} />
         </ul>
       </Group>
 
-      <Group title="Preferences">
+      <Group title={t("prof.g.preferences")}>
         <div className="flex min-h-14 items-center justify-between gap-3 rounded-2xl border bg-card px-4 py-2.5">
-          <span className="flex items-center gap-3 text-sm font-medium"><Languages className="h-5 w-5 text-primary" aria-hidden />Language</span>
+          <span className="flex items-center gap-3 text-sm font-medium"><Languages className="h-5 w-5 text-primary" aria-hidden />{t("common.language")}</span>
           <LanguageSelector compact />
         </div>
       </Group>
 
-      <Group title="Partner programme">
+      <Group title={t("prof.g.partner")}>
         <div className="space-y-3 rounded-2xl border bg-card p-4">
           {loadFailed ? (
             <div role="alert" className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-sm">Couldn't load your partner earnings.</p>
-              <Button variant="outline" className="min-h-11" onClick={() => void loadSummary()}><RefreshCw className="h-4 w-4 mr-1.5" /> Try again</Button>
+              <p className="text-sm">{t("prof.partnerFailed")}</p>
+              <Button variant="outline" className="min-h-11" onClick={() => void loadSummary()}><RefreshCw className="h-4 w-4 mr-1.5" /> {t("common.tryAgain")}</Button>
             </div>
           ) : (
             <>
               <dl className="grid grid-cols-3 gap-2">
-                <div><dt className="text-xs text-muted-foreground">Total earned</dt><dd className="font-semibold tabular-nums">{money(earnings)}</dd></div>
-                <div><dt className="text-xs text-muted-foreground">Available</dt><dd className="font-semibold tabular-nums">{money(available)}</dd></div>
-                <div><dt className="text-xs text-muted-foreground">Withdrawn</dt><dd className="font-semibold tabular-nums">{money(withdrawn)}</dd></div>
+                <div><dt className="text-xs text-muted-foreground">{t("prof.totalEarned")}</dt><dd className="font-semibold tabular-nums">{money(earnings)}</dd></div>
+                <div><dt className="text-xs text-muted-foreground">{t("prof.available")}</dt><dd className="font-semibold tabular-nums">{money(available)}</dd></div>
+                <div><dt className="text-xs text-muted-foreground">{t("prof.withdrawn")}</dt><dd className="font-semibold tabular-nums">{money(withdrawn)}</dd></div>
               </dl>
-              <div className="rounded-xl bg-muted/60 p-3 break-all font-mono text-xs" aria-label="Your referral link">{loading ? "Loading…" : link || "—"}</div>
+              <div className="rounded-xl bg-muted/60 p-3 break-all font-mono text-xs" aria-label={t("prof.referralLink")}>{loading ? t("common.loading") : link || "—"}</div>
               <div className="grid grid-cols-3 gap-2">
-                <Button onClick={copyLink} variant="outline" className="min-h-11" disabled={!code}><Copy className="h-4 w-4 mr-1" /> Copy</Button>
-                <Button onClick={shareLink} variant="outline" className="min-h-11" disabled={!code}><Share2 className="h-4 w-4 mr-1" /> Share</Button>
-                <Button className="min-h-11" disabled={available <= 0 || loading} onClick={() => setOpenWithdraw(true)}><Wallet className="h-4 w-4 mr-1" /> Withdraw</Button>
+                <Button onClick={copyLink} variant="outline" className="min-h-11" disabled={!code}><Copy className="h-4 w-4 mr-1" /> {t("sd.copy")}</Button>
+                <Button onClick={shareLink} variant="outline" className="min-h-11" disabled={!code}><Share2 className="h-4 w-4 mr-1" /> {t("prof.share")}</Button>
+                <Button className="min-h-11" disabled={available <= 0 || loading} onClick={() => setOpenWithdraw(true)}><Wallet className="h-4 w-4 mr-1" /> {t("prof.withdraw")}</Button>
               </div>
-              <p className="text-xs text-muted-foreground">Earn 10% revenue share on every society that signs up using your link. Higher tiers up to 20% unlock as you refer more.</p>
+              <p className="text-xs text-muted-foreground">{t("prof.partnerInfo")}</p>
             </>
           )}
         </div>
       </Group>
 
-      <Group title="Help & legal">
+      <Group title={t("prof.g.help")}>
         <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
-          <NavRow to="/support" icon={LifeBuoy} label="Help & support" />
-          <NavRow to="/terms" icon={FileText} label="Terms of Service & Privacy" />
+          <NavRow to="/support" icon={LifeBuoy} label={t("settings.help")} />
+          <NavRow to="/terms" icon={FileText} label={t("prof.terms")} />
         </ul>
       </Group>
 
@@ -199,13 +201,13 @@ function ProfilePage() {
       <AlertDialog open={confirmOut} onOpenChange={(o) => !signingOut && setConfirmOut(o)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Sign out of SociyoHub?</AlertDialogTitle>
-            <AlertDialogDescription>You'll need to sign in again to see your bills, notices and requests.</AlertDialogDescription>
+            <AlertDialogTitle>{t("prof.signOutTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("prof.signOutBody")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={signingOut}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={signingOut}>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction disabled={signingOut} onClick={async (e) => { e.preventDefault(); setSigningOut(true); await signOut(); navigate({ to: "/login" }); }}>
-              {signingOut && <Loader2 className="h-4 w-4 mr-1 motion-safe:animate-spin" />} Sign out
+              {signingOut && <Loader2 className="h-4 w-4 mr-1 motion-safe:animate-spin" />} {t("common.signOut")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -226,6 +228,7 @@ function ProfilePage() {
 
 function WithdrawDialog({ available, onClose }: { available: number; onClose: (refresh: boolean) => void }) {
   const submit = useServerFn(requestWithdrawal);
+  const { t } = useTranslation();
   const [method, setMethod] = useState<"upi" | "bank">("upi");
   const [amount, setAmount] = useState<number>(Math.min(500, available));
   const [upi, setUpi] = useState("");
@@ -237,10 +240,10 @@ function WithdrawDialog({ available, onClose }: { available: number; onClose: (r
     setBusy(true);
     try {
       await submit({ data: { amount, method, upi_id: method === "upi" ? upi : undefined, bank_account: method === "bank" ? acct : undefined, bank_ifsc: method === "bank" ? ifsc : undefined } });
-      toast.success("Withdrawal requested");
+      toast.success(t("prof.wd.done"));
       onClose(true);
     } catch (e: any) {
-      toast.error(userMessage(e, "Failed"));
+      toast.error(userMessage(e, t("prof.wd.failed")));
     } finally { setBusy(false); }
   }
 
@@ -248,33 +251,33 @@ function WithdrawDialog({ available, onClose }: { available: number; onClose: (r
     <div role="dialog" aria-modal="true" aria-labelledby="wd-title" className="fixed inset-0 z-50 grid place-items-center bg-foreground/30 px-4">
       <Card className="w-full max-w-sm rounded-3xl">
         <CardContent className="p-6 space-y-4">
-          <h2 id="wd-title" className="text-lg font-semibold">Withdraw commission</h2>
-          <p className="text-xs text-muted-foreground">Available: <strong>{fmt.format(available)}</strong></p>
+          <h2 id="wd-title" className="text-lg font-semibold">{t("prof.wd.title")}</h2>
+          <p className="text-xs text-muted-foreground">{t("prof.wd.available", { amount: fmt.format(available) })}</p>
           <div className="grid grid-cols-2 gap-2">
             <Button variant={method === "upi" ? "default" : "outline"} onClick={() => setMethod("upi")} className="rounded-xl">UPI</Button>
-            <Button variant={method === "bank" ? "default" : "outline"} onClick={() => setMethod("bank")} className="rounded-xl">Bank</Button>
+            <Button variant={method === "bank" ? "default" : "outline"} onClick={() => setMethod("bank")} className="rounded-xl">{t("rep.bank")}</Button>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="wd-amt">Amount</Label>
+            <Label htmlFor="wd-amt">{t("common.amount")}</Label>
             <Input id="wd-amt" type="number" value={amount} max={available} min={1}
               onChange={(e) => setAmount(Math.min(available, Math.max(0, Number(e.target.value))))} />
           </div>
           {method === "upi" ? (
             <div className="space-y-2">
-              <Label htmlFor="wd-upi">UPI ID</Label>
+              <Label htmlFor="wd-upi">{t("prof.wd.upiId")}</Label>
               <Input id="wd-upi" value={upi} onChange={(e) => setUpi(e.target.value)} placeholder="name@bank" />
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-2 col-span-2"><Label>Account number</Label><Input aria-label="Account number" value={acct} onChange={(e) => setAcct(e.target.value)} /></div>
+              <div className="space-y-2 col-span-2"><Label>{t("prof.wd.account")}</Label><Input aria-label={t("prof.wd.account")} value={acct} onChange={(e) => setAcct(e.target.value)} /></div>
               <div className="space-y-2 col-span-2"><Label>IFSC</Label><Input aria-label="IFSC" value={ifsc} onChange={(e) => setIfsc(e.target.value.toUpperCase())} /></div>
             </div>
           )}
           <div className="flex gap-2 pt-2">
-            <Button variant="outline" className="flex-1 rounded-xl" onClick={() => onClose(false)}>Cancel</Button>
+            <Button variant="outline" className="flex-1 rounded-xl" onClick={() => onClose(false)}>{t("common.cancel")}</Button>
             <Button className="flex-1 rounded-xl" onClick={handle} disabled={busy || amount <= 0 || amount > available}>
               {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Request
+              {t("prof.wd.request")}
             </Button>
           </div>
         </CardContent>

@@ -5,6 +5,7 @@
  * `migration_setup_checklist` RPC). No localStorage, no fake ticks.
  * Import remains optional — a missing import never blocks setup completion.
  */
+import { useTranslation } from "react-i18next";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -69,6 +70,7 @@ export function buildChecklistItems(data: ChecklistServerData): ChecklistItem[] 
 }
 
 export function SetupChecklistCard({ societyId }: { societyId: string }) {
+  const { t } = useTranslation();
   const fetchChecklist = useServerFn(getSetupChecklist);
   const { data, isLoading, isError } = useQuery({
     queryKey: ["society-setup-checklist", societyId],
@@ -93,13 +95,19 @@ export function SetupChecklistCard({ societyId }: { societyId: string }) {
     return (
       <Card className="rounded-2xl border-warning/30 bg-warning/5">
         <CardContent className="p-4 flex items-center gap-2 text-sm text-warning">
-          <AlertTriangle className="h-4 w-4" /> Setup checklist unavailable.
+          <AlertTriangle className="h-4 w-4" /> {t("setup.unavailable")}
         </CardContent>
       </Card>
     );
   }
 
-  const items = buildChecklistItems(data);
+  const counts: Record<string, number> = { units: data.flats, residents: data.active_residents, import: data.completed_imports };
+  const hintKey = (k: string) => (k === "import" && data.has_completed_imports ? "setup.import.hintDone" : `setup.${k}.hint`);
+  const items = buildChecklistItems(data).map((it) => ({
+    ...it,
+    label: t(`setup.${it.key}.label`),
+    hint: t(hintKey(it.key), { count: counts[it.key] ?? 0 }),
+  }));
 
   const required = items.filter((i) => !i.optional);
   const doneCount = required.filter((i) => i.done).length;
@@ -113,11 +121,11 @@ export function SetupChecklistCard({ societyId }: { societyId: string }) {
             <ListChecks className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold">Society setup</p>
+            <p className="text-sm font-semibold">{t("setup.title")}</p>
             <p className="text-[11px] text-muted-foreground">
               {complete
-                ? "All required steps complete."
-                : `${doneCount} of ${required.length} required steps done`}
+                ? t("setup.allDone")
+                : t("setup.progress", { done: doneCount, total: required.length })}
             </p>
           </div>
         </div>
@@ -129,15 +137,15 @@ export function SetupChecklistCard({ societyId }: { societyId: string }) {
                 className="flex items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-muted/60 transition"
               >
                 {it.done ? (
-                  <Check className="h-4 w-4 text-success shrink-0" aria-label="done" />
+                  <Check className="h-4 w-4 text-success shrink-0" aria-label={t("setup.done")} />
                 ) : (
-                  <Circle className="h-4 w-4 text-muted-foreground shrink-0" aria-label="pending" />
+                  <Circle className="h-4 w-4 text-muted-foreground shrink-0" aria-label={t("setup.pending")} />
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium truncate">
                     {it.label}
                     {it.optional && (
-                      <span className="ml-1 text-[10px] text-muted-foreground">(optional)</span>
+                      <span className="ms-1 text-[10px] text-muted-foreground">{t("setup.optional")}</span>
                     )}
                   </p>
                   {it.hint && (

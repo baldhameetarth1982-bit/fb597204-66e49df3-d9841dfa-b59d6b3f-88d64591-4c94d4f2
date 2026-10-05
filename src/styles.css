@@ -576,3 +576,8 @@ html.elder-mode :where(button, a, input, select, [role="tab"]):focus-visible { o
 html[dir="rtl"] body {
   line-height: 1.9;
 }
+
+/* Mirror only directional icons in right-to-left languages. */
+[dir="rtl"] :is(.lucide-chevron-right, .lucide-chevron-left, .lucide-arrow-right, .lucide-arrow-left, .lucide-arrow-up-right) {
+  transform: scaleX(-1);
+}

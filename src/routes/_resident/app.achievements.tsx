@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslation } from "react-i18next";
-import { localeTag } from "@/lib/i18n";
+import { useLocaleFormat } from "@/lib/i18n-format";
 import { LeaderboardList, useLeaderboard } from "@/components/gamification/Leaderboard";
 
 export const Route = createFileRoute("/_resident/app/achievements")({
@@ -31,6 +31,7 @@ const REASON_KEY: Record<string, string> = {
 function AchievementsScreen() {
   const { user } = useAuth();
   const { t } = useTranslation();
+  const fmt = useLocaleFormat();
   const board = useLeaderboard(20);
   const me = board.data?.find((r) => r.is_me);
 
@@ -99,7 +100,7 @@ function AchievementsScreen() {
                 {h.reason === "post_created" ? <MessageSquare className="h-4 w-4 text-muted-foreground" /> : <CheckCircle2 className="h-4 w-4 text-success" />}
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{t(REASON_KEY[h.reason] ?? "ach.r.other")}</p>
-                  <p className="text-xs text-muted-foreground">{new Date(h.created_at).toLocaleDateString(localeTag(), { day: "numeric", month: "short", year: "numeric" })}</p>
+                  <p className="text-xs text-muted-foreground">{fmt.date(h.created_at, { day: "numeric", month: "short", year: "numeric" })}</p>
                 </div>
                 <span className={`text-sm font-semibold tabular-nums ${h.points < 0 ? "text-destructive" : ""}`}>{h.points > 0 ? "+" : ""}{h.points}</span>
               </li>

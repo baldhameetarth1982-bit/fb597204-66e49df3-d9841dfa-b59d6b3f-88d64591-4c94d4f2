@@ -1,17 +1,19 @@
+import { useTranslation } from "react-i18next";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { LayoutDashboard, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TABS = [
-  { to: "/app/guard", label: "Dashboard", icon: LayoutDashboard, match: ["/app/guard"] },
-  { to: "/settings", label: "Settings", icon: Settings, match: ["/settings"] },
+  { to: "/app/guard", labelKey: "nav.dashboard", icon: LayoutDashboard, match: ["/app/guard"] },
+  { to: "/settings", labelKey: "nav.settings", icon: Settings, match: ["/settings"] },
 ] as const;
 
 export function GuardBottomNav() {
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const { t } = useTranslation();
   return (
     <nav
-      aria-label="Guard navigation"
+      aria-label={t("nav.guardNav")}
       className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl"
     >
       <ul className="mx-auto grid grid-cols-2 max-w-[480px] px-1">
@@ -35,7 +37,7 @@ export function GuardBottomNav() {
                 >
                   <Icon className={cn("h-5 w-5", active && "stroke-[2.5]")} />
                 </span>
-                <span className="leading-none">{it.label}</span>
+                <span className="leading-none">{t(it.labelKey)}</span>
               </Link>
             </li>
           );

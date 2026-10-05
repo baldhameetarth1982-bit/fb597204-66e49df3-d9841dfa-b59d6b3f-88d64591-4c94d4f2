@@ -571,3 +571,8 @@ html.elder-mode { font-size: 118%; }
 html.elder-mode body { --muted-foreground: var(--foreground); }
 html.elder-mode :where(button, a, [role="tab"], input, select) { min-height: 3.25rem; }
 html.elder-mode :where(button, a, input, select, [role="tab"]):focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+
+/* Perso-Arabic (Urdu, Kashmiri, Sindhi) needs extra line height for Nastaliq. */
+html[dir="rtl"] body {
+  line-height: 1.9;
+}

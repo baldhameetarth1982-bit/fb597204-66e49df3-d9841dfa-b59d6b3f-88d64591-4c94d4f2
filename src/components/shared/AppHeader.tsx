@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Bell, LogOut, Settings, User } from "lucide-react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -27,14 +28,17 @@ function initials(name?: string | null, email?: string | null) {
     .toUpperCase();
 }
 
-const SECTION_LABELS: Record<string, string> = {
-  knowledge: "Documents & FAQs",
+const SECTION_LABEL_KEYS: Record<string, string> = {
+  knowledge: "section.knowledge",
 };
 
-function sectionTitle(pathname: string) {
+function sectionTitle(pathname: string, t: (k: string) => string) {
   const seg = pathname.split("/")[2];
   if (!seg) return null;
-  if (SECTION_LABELS[seg]) return SECTION_LABELS[seg];
+  if (SECTION_LABEL_KEYS[seg]) return t(SECTION_LABEL_KEYS[seg]);
+  const navKey = `nav.${seg.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase())}`;
+  const translated = t(navKey);
+  if (translated !== navKey) return translated;
   const words = seg.replace(/[-_]/g, " ");
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
@@ -54,7 +58,8 @@ export function AppHeader({
   const settingsHref = "/settings";
 
   const pathname = useRouterState({ select: (st) => st.location.pathname });
-  const section = sectionTitle(pathname);
+  const { t } = useTranslation();
+  const section = sectionTitle(pathname, t);
 
   const handleSignOut = async () => {
     await signOut();
@@ -85,7 +90,7 @@ export function AppHeader({
           <Button
             variant="ghost"
             size="icon"
-            aria-label="Notifications"
+            aria-label={t("common.notifications")}
             asChild
             className="relative h-10 w-10 rounded-md text-foreground hover:bg-secondary"
           >
@@ -97,7 +102,7 @@ export function AppHeader({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                aria-label="Account menu"
+                aria-label={t("common.accountMenu")}
                 className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <Avatar className="h-10 w-10 ring-1 ring-border">
@@ -110,21 +115,21 @@ export function AppHeader({
             <DropdownMenuContent align="end" className="w-60 rounded-lg">
               <DropdownMenuLabel className="flex flex-col">
                 <span className="text-sm font-semibold truncate">
-                  {profile?.full_name || "Account"}
+                  {profile?.full_name || t("common.account")}
                 </span>
                 <span className="text-xs text-muted-foreground font-normal truncate">
-                  {user?.email ?? "Not signed in"}
+                  {user?.email ?? t("common.notSignedIn")}
                 </span>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild className="cursor-pointer rounded-md">
                 <Link to={profileHref as any}>
-                  <User className="h-4 w-4 mr-2" /> Profile
+                  <User className="h-4 w-4 mr-2" /> {t("common.profile")}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild className="cursor-pointer rounded-md">
                 <Link to={settingsHref as any}>
-                  <Settings className="h-4 w-4 mr-2" /> Settings
+                  <Settings className="h-4 w-4 mr-2" /> {t("common.settings")}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -132,7 +137,7 @@ export function AppHeader({
                 onClick={handleSignOut}
                 className="cursor-pointer rounded-md text-destructive focus:text-destructive"
               >
-                <LogOut className="h-4 w-4 mr-2" /> Log out
+                <LogOut className="h-4 w-4 mr-2" /> {t("common.logOut")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

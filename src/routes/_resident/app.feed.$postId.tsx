@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+import { localeTag } from "@/lib/i18n";
 import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2, Send, Trash2 } from "lucide-react";
@@ -36,10 +38,11 @@ function initials(n?: string | null) {
 }
 
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+  return new Date(iso).toLocaleString(localeTag(), { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
 }
 
 function PostThread() {
+  const { t } = useTranslation();
   const { postId } = useParams({ from: "/_resident/app/feed/$postId" });
   const navigate = useNavigate();
   const { user, hasAnyRole } = useAuth();
@@ -99,14 +102,14 @@ function PostThread() {
   async function send() {
     const body = text.trim();
     if (!body || !user || sending) return;
-    if (body.length > MAX_COMMENT) { toast.error("Comments can be up to 2,000 characters."); return; }
+    if (body.length > MAX_COMMENT) { toast.error(t("fp.tooLong")); return; }
     setSending(true);
     // Author is always the signed-in user; the database rejects any other user_id or a post outside your society.
     const { error } = await supabase.from("post_comments").insert({ post_id: postId, user_id: user.id, body });
     setSending(false);
     if (error) {
       // Keep the typed text so it can be retried.
-      toast.error("Couldn't add your comment. Your text is still here — please try again.");
+      toast.error(t("fp.sendFailed"));
       return;
     }
     setText("");
@@ -119,10 +122,10 @@ function PostThread() {
     const { data, error } = await supabase.from("post_comments").delete().eq("id", pendingComment.id).select("id");
     setDeleting(false);
     if (error || !data || data.length === 0) {
-      toast.error("Couldn't remove this comment. You can only remove your own comments.");
+      toast.error(t("fp.removeDenied"));
     } else {
       setComments((prev) => prev.filter((c) => c.id !== pendingComment.id));
-      toast.success("Comment removed");
+      toast.success(t("fp.removed"));
     }
     setPendingComment(null);
   }
@@ -134,22 +137,22 @@ function PostThread() {
     setDeleting(false);
     setPendingPostDelete(false);
     if (error || !data || data.length === 0) {
-      toast.error("Couldn't remove this post. You don't have permission to remove it.");
+      toast.error(t("fd.removeDenied"));
       return;
     }
-    toast.success("Post removed");
+    toast.success(t("fd.postRemoved"));
     void navigate({ to: "/app/feed" });
   }
 
   const back = (
     <Link to="/app/feed" className="inline-flex items-center text-sm text-muted-foreground min-h-[44px]">
-      <ArrowLeft className="h-4 w-4 mr-1" /> Back to Community
+      <ArrowLeft className="h-4 w-4 mr-1" /> {t("fp.back")}
     </Link>
   );
 
   if (loading) {
     return (
-      <div className="px-4 py-4 space-y-3" aria-busy="true" aria-label="Loading post">
+      <div className="px-4 py-4 space-y-3" aria-busy="true" aria-label={t("fp.loading")}>
         {back}
         <div className="h-40 rounded-2xl bg-muted/60 animate-pulse" />
         <div className="h-16 rounded-2xl bg-muted/60 animate-pulse" />
@@ -161,7 +164,7 @@ function PostThread() {
     return (
       <div className="px-4 py-4 space-y-3">
         {back}
-        <ErrorState title="Couldn't load this post" description="Check your connection and try again." onRetry={() => void load()} showSupport={false} />
+        <ErrorState title={t("fp.loadFailed")} description={t("fd.checkConn")} onRetry={() => void load()} showSupport={false} />
       </div>
     );
   }
@@ -170,7 +173,7 @@ function PostThread() {
       <div className="px-4 py-4 space-y-3">
         {back}
         <p className="py-10 text-center text-sm text-muted-foreground">
-          This post isn't available. It may have been removed.
+          {t("fp.gone")}
         </p>
       </div>
     );
@@ -184,35 +187,35 @@ function PostThread() {
       {back}
 
       {/* 1. Post context */}
-      <article aria-label="Post" className="mt-3 overflow-hidden rounded-2xl border bg-card">
+      <article aria-label={t("fp.post")} className="mt-3 overflow-hidden rounded-2xl border bg-card">
         <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 pt-4">
           <Avatar className="h-10 w-10 shrink-0">
             {post.author_avatar && <AvatarImage src={post.author_avatar} alt="" />}
             <AvatarFallback className="bg-primary/10 text-xs text-primary">{initials(post.author_name)}</AvatarFallback>
           </Avatar>
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold">{post.author_name ?? "Resident"}{isOwnPost && <span className="font-normal text-muted-foreground"> · you</span>}</p>
-            <p className="text-xs text-muted-foreground">Resident post · {fmtDate(post.created_at)}</p>
+            <p className="truncate text-sm font-semibold">{post.author_name ?? t("fd.resident")}{isOwnPost && <span className="font-normal text-muted-foreground"> · {t("fd.you")}</span>}</p>
+            <p className="text-xs text-muted-foreground">{t("fd.residentPost", { when: fmtDate(post.created_at) })}</p>
           </div>
           {canRemovePost && (
-            <Button variant="ghost" className="h-11 rounded-xl text-muted-foreground" aria-label={isOwnPost ? "Remove your post" : "Remove post (committee)"} onClick={() => setPendingPostDelete(true)}>
-              <Trash2 className="h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">{isOwnPost ? "Remove" : "Moderate"}</span>
+            <Button variant="ghost" className="h-11 rounded-xl text-muted-foreground" aria-label={isOwnPost ? t("fp.removeYours") : t("fd.removeCommittee")} onClick={() => setPendingPostDelete(true)}>
+              <Trash2 className="h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">{isOwnPost ? t("fd.remove") : t("fp.moderate")}</span>
             </Button>
           )}
         </header>
         <p className="whitespace-pre-line break-words px-4 pb-4 pt-3 text-[15px] leading-relaxed">{post.body}</p>
-        {post.image_url && <img src={post.image_url} alt="Photo shared with the post" loading="lazy" className="max-h-96 w-full object-cover" />}
+        {post.image_url && <img src={post.image_url} alt={t("fd.photoAlt")} loading="lazy" className="max-h-96 w-full object-cover" />}
       </article>
 
       {/* 2. Conversation */}
       <section aria-labelledby="comments-h" className="mt-6">
         <h2 id="comments-h" className="mb-2 flex items-center gap-2 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Conversation <span className="rounded-full bg-muted px-1.5 tabular-nums">{comments.length}</span>
+          {t("fp.conversation")} <span className="rounded-full bg-muted px-1.5 tabular-nums">{comments.length}</span>
         </h2>
         {comments.length === 0 ? (
           <div className="rounded-2xl border border-dashed bg-card px-6 py-8 text-center">
-            <p className="text-sm font-medium">No comments yet</p>
-            <p className="mt-1 text-xs text-muted-foreground">Be the first to reply below.</p>
+            <p className="text-sm font-medium">{t("fp.none")}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t("fp.noneHint")}</p>
           </div>
         ) : (
           <ul className="divide-y rounded-2xl border bg-card">
@@ -226,13 +229,13 @@ function PostThread() {
                   </Avatar>
                   <div className="min-w-0">
                     <p className="flex flex-wrap items-baseline gap-x-2 text-sm">
-                      <span className="truncate font-semibold">{c.author_name ?? "Resident"}{mine && <span className="font-normal text-muted-foreground"> · you</span>}</span>
+                      <span className="truncate font-semibold">{c.author_name ?? t("fd.resident")}{mine && <span className="font-normal text-muted-foreground"> · {t("fd.you")}</span>}</span>
                       <span className="text-xs text-muted-foreground">{fmtDate(c.created_at)}</span>
                     </p>
                     <p className="mt-0.5 whitespace-pre-line break-words text-sm leading-relaxed">{c.body}</p>
                   </div>
                   {mine && (
-                    <Button variant="ghost" size="icon" aria-label="Remove your comment" onClick={() => setPendingComment(c)} className="-mr-2 h-11 w-11 rounded-xl text-muted-foreground">
+                    <Button variant="ghost" size="icon" aria-label={t("fp.removeComment")} onClick={() => setPendingComment(c)} className="-mr-2 h-11 w-11 rounded-xl text-muted-foreground">
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   )}
@@ -251,12 +254,12 @@ function PostThread() {
               value={text}
               onChange={(e) => setText(e.target.value.slice(0, MAX_COMMENT))}
               onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void send(); }}
-              placeholder="Write a comment…"
-              aria-label="Write a comment"
+              placeholder={t("fp.write")}
+              aria-label={t("fp.writeLabel")}
               className="max-h-40 min-h-[44px] resize-none rounded-xl"
             />
-            <Button onClick={send} disabled={!text.trim() || sending} aria-label="Send comment" className="h-11 shrink-0 rounded-xl px-4">
-              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Send className="h-4 w-4 sm:mr-1.5" /><span className="hidden sm:inline">Send</span></>}
+            <Button onClick={send} disabled={!text.trim() || sending} aria-label={t("fp.sendLabel")} className="h-11 shrink-0 rounded-xl px-4">
+              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Send className="h-4 w-4 sm:mr-1.5" /><span className="hidden sm:inline">{t("cm.send")}</span></>}
             </Button>
           </div>
           <p className="mt-1 text-right text-xs text-muted-foreground tabular-nums">{text.length > MAX_COMMENT - 200 ? `${text.length}/${MAX_COMMENT}` : " "}</p>
@@ -267,13 +270,13 @@ function PostThread() {
       <AlertDialog open={!!pendingComment} onOpenChange={(o) => !o && !deleting && setPendingComment(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove your comment?</AlertDialogTitle>
-            <AlertDialogDescription>It will disappear for everyone. This can't be undone.</AlertDialogDescription>
+            <AlertDialogTitle>{t("fp.removeCommentQ")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("fp.commentWarn")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Keep</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleting}>{t("fd.keep")}</AlertDialogCancel>
             <AlertDialogAction onClick={(e) => { e.preventDefault(); void confirmDeleteComment(); }} disabled={deleting}>
-              {deleting ? "Removing…" : "Remove"}
+              {deleting ? t("fd.removing") : t("fd.remove")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -282,17 +285,17 @@ function PostThread() {
       <AlertDialog open={pendingPostDelete} onOpenChange={(o) => !o && !deleting && setPendingPostDelete(false)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{isOwnPost ? "Remove this post?" : "Remove this resident's post?"}</AlertDialogTitle>
+            <AlertDialogTitle>{isOwnPost ? t("fd.removeThis") : t("fd.removeOther")}</AlertDialogTitle>
             <AlertDialogDescription>
               {isOwnPost
-                ? "It will disappear from the community feed for everyone, along with its comments. This can't be undone."
-                : "As a Society Admin you can remove posts that break your society's rules. It will disappear from the community feed for everyone, along with its comments. This can't be undone."}
+                ? t("fd.removeWarn")
+                : `${t("fd.adminNote")} ${t("fd.removeWarn")}`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Keep</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleting}>{t("fd.keep")}</AlertDialogCancel>
             <AlertDialogAction onClick={(e) => { e.preventDefault(); void confirmDeletePost(); }} disabled={deleting}>
-              {deleting ? "Removing…" : "Remove post"}
+              {deleting ? t("fd.removing") : t("fp.removePost")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

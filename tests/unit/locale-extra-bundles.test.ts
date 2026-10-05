@@ -7,9 +7,13 @@ import { notifications } from "@/locales/notifications";
 import { accounts } from "@/locales/accounts";
 import { settings } from "@/locales/settings";
 import { resident } from "@/locales/resident";
+import { dashboard } from "@/locales/dashboard";
+import { navhub } from "@/locales/navhub";
+import { profile } from "@/locales/profile";
+import { residentPages } from "@/locales/residentPages";
 
 const en: Record<string, string> = {};
-for (const c of [core, auth, notifications, accounts, settings, resident]) for (const [k, v] of Object.entries(c)) en[k] = v[0];
+for (const c of [core, auth, notifications, accounts, settings, resident, dashboard, navhub, profile, residentPages]) for (const [k, v] of Object.entries(c)) en[k] = v[0];
 
 const dir = join(process.cwd(), "src/locales/extra");
 const files = readdirSync(dir).filter((f) => f.endsWith(".json"));
@@ -28,6 +32,8 @@ describe("validated extra language bundles", () => {
         expect(toks(t[k].replace(PH, ""), /\d+/g), `${f} ${k}`).toBe(toks(en[k].replace(PH, ""), /\d+/g));
         if (en[k].includes("SociyoHub")) expect(t[k]).toContain("SociyoHub");
         expect(t[k]).not.toMatch(/<script|javascript:/i);
+        // An English gloss in brackets ("… (Pause)") means the machine output leaked English.
+        if (!/\)\s*$/.test(en[k])) expect(t[k], `${f} ${k}`).not.toMatch(/\s\([A-Za-z][A-Za-z ]+\)\s*$/);
       }
     });
   }

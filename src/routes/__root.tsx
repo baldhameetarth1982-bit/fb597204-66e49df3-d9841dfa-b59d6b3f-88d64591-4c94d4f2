@@ -165,6 +165,7 @@ function RootComponent() {
           <AccountDataBoundary />
           <SplashScreen />
           <ThemeApplier />
+          <LanguageSync />
           <ReferralCapture />
           <MarketingAnalytics />
           <ShellSwitcher />

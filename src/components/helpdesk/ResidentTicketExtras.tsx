@@ -7,11 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { helpdeskErrorMessage } from "@/lib/helpdesk";
+import { useTranslation } from "react-i18next";
 import { TicketEvidence } from "./TicketEvidence";
 import { ResidentVendorRating } from "@/components/operations/VendorRatings";
 
 export function ResidentTicketExtras({ ticketId, status }: { ticketId: string; status: string }) {
   const qc = useQueryClient();
+  const { t } = useTranslation();
   const [stars, setStars] = useState(0);
   const [comment, setComment] = useState("");
   const [reopenNote, setReopenNote] = useState("");
@@ -30,7 +32,7 @@ export function ResidentTicketExtras({ ticketId, status }: { ticketId: string; s
       const { error } = await supabase.rpc("helpdesk_rate", { _ticket: ticketId, _rating: stars, _comment: comment });
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Thanks for your feedback"); qc.invalidateQueries({ queryKey: ["helpdesk"] }); },
+    onSuccess: () => { toast.success(t("hd.t.feedback")); qc.invalidateQueries({ queryKey: ["helpdesk"] }); },
     onError: (e) => toast.error(helpdeskErrorMessage(e)),
   });
   const reopen = useMutation({
@@ -40,7 +42,7 @@ export function ResidentTicketExtras({ ticketId, status }: { ticketId: string; s
       return data as string;
     },
     onSuccess: (nid) => {
-      toast.success(nid === ticketId ? "Request reopened" : "A follow-up request was raised");
+      toast.success(nid === ticketId ? t("hd.t.reopened") : t("hd.t.followUp"));
       setReopenNote(""); qc.invalidateQueries({ queryKey: ["helpdesk"] });
     },
     onError: (e) => toast.error(helpdeskErrorMessage(e)),
@@ -50,19 +52,19 @@ export function ResidentTicketExtras({ ticketId, status }: { ticketId: string; s
     <div className="space-y-4">
       {done && (
         <div className="space-y-2 rounded-2xl border p-3">
-          <p className="text-sm font-medium">How was it handled?</p>
-          {rating.data ? <p className="text-sm text-muted-foreground">You rated this {rating.data}/5.</p> : (
+          <p className="text-sm font-medium">{t("hd.howHandled")}</p>
+          {rating.data ? <p className="text-sm text-muted-foreground">{t("hd.youRated", { rating: rating.data })}</p> : (
             <>
-              <div className="flex gap-1" role="radiogroup" aria-label="Rating">
+              <div className="flex gap-1" role="radiogroup" aria-label={t("hd.rating")}>
                 {[1, 2, 3, 4, 5].map((n) => (
-                  <button key={n} type="button" role="radio" aria-checked={stars === n} aria-label={`${n} star${n > 1 ? "s" : ""}`}
+                  <button key={n} type="button" role="radio" aria-checked={stars === n} aria-label={t("hd.stars", { count: n })}
                     onClick={() => setStars(n)} className="flex h-11 w-11 items-center justify-center rounded-xl hover:bg-muted">
                     <Star className={`h-6 w-6 ${n <= stars ? "fill-warning text-warning" : "text-muted-foreground"}`} />
                   </button>
                 ))}
               </div>
-              <Textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={2} maxLength={500} className="rounded-xl" placeholder="Optional comment" aria-label="Rating comment" />
-              <Button className="min-h-11 rounded-xl" disabled={!stars || rate.isPending} onClick={() => rate.mutate()}>Submit rating</Button>
+              <Textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={2} maxLength={500} className="rounded-xl" placeholder={t("hd.ratingComment")} aria-label={t("hd.ratingComment")} />
+              <Button className="min-h-11 rounded-xl" disabled={!stars || rate.isPending} onClick={() => rate.mutate()}>{t("hd.submitRating")}</Button>
             </>
           )}
         </div>
@@ -70,10 +72,10 @@ export function ResidentTicketExtras({ ticketId, status }: { ticketId: string; s
       {done && <ResidentVendorRating ticketId={ticketId} />}
       {status === "closed" && (
         <div className="space-y-2 rounded-2xl border p-3">
-          <p className="text-sm font-medium">Problem came back?</p>
-          <Textarea value={reopenNote} onChange={(e) => setReopenNote(e.target.value)} rows={2} maxLength={2000} className="rounded-xl" placeholder="What's still wrong? (min 5 characters)" aria-label="Reopen reason" />
-          <p className="text-xs text-muted-foreground">Within 7 days it reopens this request; after that a linked follow-up is raised.</p>
-          <Button variant="outline" className="min-h-11 rounded-xl" disabled={reopenNote.trim().length < 5 || reopen.isPending} onClick={() => reopen.mutate()}>Reopen</Button>
+          <p className="text-sm font-medium">{t("hd.cameBack")}</p>
+          <Textarea value={reopenNote} onChange={(e) => setReopenNote(e.target.value)} rows={2} maxLength={2000} className="rounded-xl" placeholder={t("hd.reopenPh")} aria-label={t("hd.reopenWhy")} />
+          <p className="text-xs text-muted-foreground">{t("hd.reopenHint")}</p>
+          <Button variant="outline" className="min-h-11 rounded-xl" disabled={reopenNote.trim().length < 5 || reopen.isPending} onClick={() => reopen.mutate()}>{t("hd.reopen")}</Button>
         </div>
       )}
       <TicketEvidence ticketId={ticketId} canUpload={!["closed", "cancelled", "rejected"].includes(status)} />

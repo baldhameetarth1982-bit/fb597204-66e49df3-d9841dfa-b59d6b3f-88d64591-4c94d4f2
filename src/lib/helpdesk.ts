@@ -1,4 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
+import i18n, { localeTag } from "@/lib/i18n";
+
+const tr = (k: string, o?: Record<string, unknown>) => i18n.t(k, o) as string;
 
 export type TicketCategory = "complaint" | "daily_help" | "maintenance" | "lost_found" | "approval";
 export type TicketStatus =
@@ -37,6 +40,12 @@ export const PRIORITY_LABEL: Record<TicketPriority, string> = {
   low: "Low", normal: "Normal", high: "High", urgent: "Urgent",
 };
 
+const STATUS_KEY: Record<string, string> = { cancelled: "billStatus.cancelled", rejected: "inc.st.rejected" };
+/** Translated labels for the current UI language; the English constants above stay as data. */
+export const categoryLabel = (c: string) => (c in CATEGORY_LABEL ? tr(`hd.cat.${c}`) : tr("hd.request"));
+export const categoryHint = (c: TicketCategory) => tr(`hd.hint.${c}`);
+export const priorityLabel = (p: string) => (p === "urgent" ? tr("notif.urgent") : p in PRIORITY_LABEL ? tr(`hd.pr.${p}`) : p);
+
 export const ACTIVE_STATUSES: TicketStatus[] = ["open", "reopened", "in_progress", "on_hold", "awaiting_approval", "resolved"];
 
 /** Server-set SLA due time → plain status. */
@@ -47,29 +56,31 @@ export function slaState(dueIso: string | null | undefined, status: string): "ov
 }
 
 export function statusMeta(s: string) {
-  return STATUS_META[s as TicketStatus] ?? { label: "Updated", tone: "bg-muted text-muted-foreground" };
+  const m = STATUS_META[s as TicketStatus];
+  if (!m) return { label: tr("hd.st.updated"), tone: "bg-muted text-muted-foreground" };
+  return { ...m, label: tr(STATUS_KEY[s] ?? `hd.st.${s}`) };
 }
 
 /** Plain-language messages; raw server text is only used for matching. */
 export function helpdeskErrorMessage(err: unknown): string {
   const raw = String((err as { message?: string })?.message ?? err ?? "").toLowerCase();
-  if (typeof navigator !== "undefined" && !navigator.onLine) return "You're offline. Your text is kept — try again when connected.";
-  if (raw.includes("rate_limited")) return "Too many requests in a short time. Please wait a few minutes.";
-  if (raw.includes("invalid_subject")) return "Please give a short title (3–120 characters).";
-  if (raw.includes("invalid_description")) return "Please describe the issue (at least 5 characters).";
-  if (raw.includes("reason_required")) return "Please add a reason.";
-  if (raw.includes("invalid_transition")) return "This request has already moved on. Refresh to see its latest status.";
-  if (raw.includes("ticket_closed")) return "This request is closed, so it can't take new comments.";
-  if (raw.includes("invalid_assignee")) return "That person isn't on the society team.";
-  if (raw.includes("already_rated")) return "You've already rated this request.";
-  if (raw.includes("invalid_vendor")) return "That vendor isn't active in this society.";
-  if (raw.includes("invalid_asset")) return "That asset isn't in this society.";
-  if (raw.includes("too_many_files")) return "This request already has the maximum of 10 files.";
-  if (raw.includes("invalid_file")) return "Only JPG, PNG, WebP or PDF files up to 5 MB.";
-  if (raw.includes("no_society")) return "Join a society before raising a request.";
-  if (raw.includes("not_authorized") || raw.includes("42501")) return "You don't have permission to do that.";
-  if (raw.includes("not_found")) return "This request couldn't be found.";
-  return "Something went wrong. Please try again.";
+  if (typeof navigator !== "undefined" && !navigator.onLine) return tr("hd.err.offline");
+  if (raw.includes("rate_limited")) return tr("hd.err.rate");
+  if (raw.includes("invalid_subject")) return tr("hd.err.subject");
+  if (raw.includes("invalid_description")) return tr("hd.err.desc");
+  if (raw.includes("reason_required")) return tr("hd.err.reason");
+  if (raw.includes("invalid_transition")) return tr("hd.err.transition");
+  if (raw.includes("ticket_closed")) return tr("hd.err.closed");
+  if (raw.includes("invalid_assignee")) return tr("hd.err.assignee");
+  if (raw.includes("already_rated")) return tr("hd.err.rated");
+  if (raw.includes("invalid_vendor")) return tr("hd.err.vendor");
+  if (raw.includes("invalid_asset")) return tr("hd.err.asset");
+  if (raw.includes("too_many_files")) return tr("hd.err.files");
+  if (raw.includes("invalid_file")) return tr("hd.err.file");
+  if (raw.includes("no_society")) return tr("hd.err.noSociety");
+  if (raw.includes("not_authorized") || raw.includes("42501")) return tr("hd.err.denied");
+  if (raw.includes("not_found")) return tr("hd.err.notFound");
+  return tr("errors.generic");
 }
 
 export interface TimelineEvent {
@@ -85,23 +96,23 @@ export async function fetchTimeline(ticketId: string): Promise<TimelineEvent[]> 
 
 export function describeEvent(e: TimelineEvent): string {
   switch (e.kind) {
-    case "created": return "Request raised";
-    case "comment": return "Comment";
-    case "assigned": return e.body === "Unassigned" ? "Unassigned" : "Assigned to a team member";
-    case "approval_requested": return "Sent for committee approval";
-    case "approved": return "Approved by committee";
-    case "rejected": return "Rejected";
-    case "escalated": return "Escalated";
-    case "on_hold": return "Put on hold";
-    case "reopened": return "Reopened";
-    case "rated": return `Rated ${e.body ?? ""}`;
-    case "evidence": return "File attached";
-    case "linked": return "Staff / vendor / asset updated";
-    case "status": return `Status changed to ${statusMeta(e.to_status ?? "").label}`;
-    default: return "Update";
+    case "created": return tr("hd.ev.created");
+    case "comment": return tr("fd.comment");
+    case "assigned": return e.body === "Unassigned" ? tr("hd.ev.unassigned") : tr("hd.ev.assigned");
+    case "approval_requested": return tr("hd.ev.approvalRequested");
+    case "approved": return tr("hd.ev.approved");
+    case "rejected": return tr("inc.st.rejected");
+    case "escalated": return tr("hd.ev.escalated");
+    case "on_hold": return tr("hd.ev.onHold");
+    case "reopened": return tr("hd.st.reopened");
+    case "rated": return tr("hd.ev.rated", { rating: e.body ?? "" });
+    case "evidence": return tr("hd.t.fileAttached");
+    case "linked": return tr("hd.ev.linked");
+    case "status": return tr("hd.ev.status", { status: statusMeta(e.to_status ?? "").label });
+    default: return tr("hd.ev.update");
   }
 }
 
 export function fmtDate(iso: string) {
-  return new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+  return new Date(iso).toLocaleString(localeTag(), { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
 }

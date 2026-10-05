@@ -71,7 +71,7 @@ describe("Stage 2E — SetupChecklistCard wires getSetupChecklist", () => {
     expect(src).toMatch(/society_id:\s*societyId/);
   });
   it("fails closed (no fake ticks) when the server call errors", () => {
-    expect(src).toMatch(/isError[\s\S]*Setup checklist unavailable/);
+    expect(src).toMatch(/isError[\s\S]*(Setup checklist unavailable|setup\.unavailable)/);
   });
   it("is mounted on the society dashboard", () => {
     const dash = readFileSync(

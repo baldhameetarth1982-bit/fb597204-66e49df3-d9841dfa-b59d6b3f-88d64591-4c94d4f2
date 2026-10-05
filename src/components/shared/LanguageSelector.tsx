@@ -4,10 +4,10 @@ import { toast } from "sonner";
 import { SUPPORTED_LANGS, setLanguage } from "@/lib/i18n";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-/** The one language picker (English / Gujarati / Hindi). Choice is per device, per user. */
+/** The one language picker (validated languages only). Choice is per device, per user. */
 export function LanguageSelector({ compact = false, className = "" }: { compact?: boolean; className?: string }) {
   const { i18n, t } = useTranslation();
-  const current = (i18n.language?.slice(0, 2) ?? "en") as "en" | "hi" | "gu";
+  const current = i18n.language ?? "en";
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       {!compact && (
@@ -20,8 +20,7 @@ export function LanguageSelector({ compact = false, className = "" }: { compact?
         value={current}
         onValueChange={(v) => {
           if (v === current) return;
-          setLanguage(v as "en" | "hi" | "gu");
-          toast.success(t("language.updated", { lng: v }));
+          void setLanguage(v).then(() => toast.success(t("language.updated", { lng: v })));
         }}
       >
         <SelectTrigger className="min-h-11 w-[180px] text-sm" aria-label={t("common.language")}>

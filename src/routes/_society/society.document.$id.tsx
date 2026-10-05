@@ -63,10 +63,10 @@ function DocumentPage() {
         <p className="inline-block rounded-md border-2 border-primary px-4 py-1 text-sm font-bold tracking-widest text-primary">{title}</p>
       </div>
       <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
-        {rows.map(([k, v]) => <div key={k} className="flex justify-between gap-3 border-b border-dashed py-1.5 sm:block sm:border-0"><dt className="text-muted-foreground">{k}</dt><dd className="break-all text-right font-medium sm:text-left">{v}</dd></div>)}
+        {rows.map(([k, v]) => <div key={k} className="flex justify-between gap-3 border-b border-dashed py-1.5 sm:block sm:border-0"><dt className="text-muted-foreground">{k}</dt><dd className="break-words [overflow-wrap:anywhere] text-right font-medium sm:text-left">{v}</dd></div>)}
       </dl>
       <table className="mt-6 w-full table-fixed border-collapse text-sm">
-        <thead><tr className="border-y bg-muted/50"><th className="p-2 text-left font-semibold">Particulars</th><th className="w-36 p-2 text-right font-semibold">Amount</th></tr></thead>
+        <thead><tr className="border-y bg-muted/50"><th className="p-2 text-left font-semibold">Particulars</th><th className="w-28 p-2 text-right font-semibold sm:w-36">Amount</th></tr></thead>
         <tbody><tr className="border-b align-top"><td className="break-words p-2">{d.category ?? (isBill ? "Income" : "Expense")}{d.description && <span className="block text-xs text-muted-foreground">{d.description}</span>}</td><td className="whitespace-nowrap p-2 text-right tabular-nums">{d.amount != null ? INR.format(d.amount) : "—"}</td></tr></tbody>
         <tfoot><tr className="border-b-2"><td className="p-2 text-right font-bold">Total</td><td className="whitespace-nowrap p-2 text-right text-base font-bold tabular-nums">{d.amount != null ? INR.format(d.amount) : "—"}</td></tr></tfoot>
       </table>

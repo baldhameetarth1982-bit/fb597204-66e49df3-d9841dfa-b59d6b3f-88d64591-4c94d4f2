@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+import { useLocaleFormat } from "@/lib/i18n-format";
 import { AISummaryCard } from "@/components/shared/AISummaryCard";
 import { NeedsAttention } from "@/components/shared/NeedsAttention";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -41,11 +43,11 @@ const INR = new Intl.NumberFormat("en-IN", {
   style: "currency", currency: "INR", maximumFractionDigits: 0,
 });
 
-function greeting() {
+function greetingKey() {
   const h = new Date().getHours();
-  if (h < 12) return "Good morning";
-  if (h < 17) return "Good afternoon";
-  return "Good evening";
+  if (h < 12) return "greeting.morning";
+  if (h < 17) return "greeting.afternoon";
+  return "greeting.evening";
 }
 
 function StatusPill({ status }: { status: string }) {
@@ -66,6 +68,8 @@ function StatusPill({ status }: { status: string }) {
 function SocietyDashboard() {
   const { profile } = useAuth();
   const { societyId } = useSocietyId();
+  const { t } = useTranslation();
+  const fmt = useLocaleFormat();
 
   const { data, isError, isLoading, refetch, isFetching } = useQuery({
     enabled: !!societyId,
@@ -158,7 +162,7 @@ function SocietyDashboard() {
         id: `pay-${p.id}`,
         icon: Wallet,
         to: "/society/payments",
-        text: `Payment ${p.status} · ${INR.format(Number(p.amount ?? 0))}`,
+        text: `${t("sd.act.payment", { status: t(`sd.payStatus.${p.status}`, { defaultValue: p.status }) })} · ${INR.format(Number(p.amount ?? 0))}`,
         when,
       });
     }
@@ -167,7 +171,7 @@ function SocietyDashboard() {
         id: `apr-${a.id}`,
         icon: UserCheck,
         to: "/society/residents",
-        text: `Resident approved · ${a.full_name ?? "Unnamed"}`,
+        text: `${t("sd.act.approved")} · ${a.full_name ?? t("sd.unnamed")}`,
         when: a.created_at,
       });
     }
@@ -177,7 +181,7 @@ function SocietyDashboard() {
         id: `post-${post.id}`,
         icon: Megaphone,
         to: "/society/communication",
-        text: `Notice · ${body.slice(0, 60)}${body.length > 60 ? "…" : ""}`,
+        text: `${t("sd.s.notice")} · ${body.slice(0, 60)}${body.length > 60 ? "…" : ""}`,
         when: post.created_at,
       });
     }
@@ -185,24 +189,24 @@ function SocietyDashboard() {
       .filter((i) => !!i.when)
       .sort((a, b) => new Date(b.when).getTime() - new Date(a.when).getTime())
       .slice(0, 6);
-  }, [data]);
+  }, [data, t]);
 
   function copyInvite() {
     if (!data?.inviteCode) return;
-    void navigator.clipboard.writeText(data.inviteCode).then(() => toast.success("Invite code copied"), () => toast.error("Couldn't copy. Long-press the code to copy it."));
+    void navigator.clipboard.writeText(data.inviteCode).then(() => toast.success(t("sd.copied")), () => toast.error(t("sd.copyFail")));
   }
 
-  const displayName = profile?.full_name?.split(" ")[0] ?? "there";
+  const displayName = profile?.full_name?.split(" ")[0] ?? t("home.there");
 
   // Never show a fake ₹0 when data is missing or failed.
   const outstandingLabel = data?.summaryOk ? INR.format(data.outstandingAmount) : "—";
   const collectedLabel = data && data.collectedThisMonth !== null ? INR.format(data.collectedThisMonth) : "—";
   const attention = data ? [
-    { to: "/society/payments", icon: BadgeCheck, tone: "warning" as const, label: "Payments to verify", hint: "Cash, bank and UPI payments awaiting a check", count: data.paymentsToVerify },
-    { to: "/society/approvals", icon: UserCheck, tone: "primary" as const, label: "Residents to approve", hint: "Join requests waiting", count: data.pendingApprovals },
-    { to: "/society/helpdesk", icon: LifeBuoy, tone: "info" as const, label: "Open requests", hint: "Complaints & repairs", count: data.openRequests },
-    { to: "/society/helpdesk", icon: FileText, tone: "primary" as const, label: "Requests needing approval", hint: "Renovation, events, NOC", count: data.ticketApprovals },
-    { to: "/society/billing", icon: AlertTriangle, tone: "warning" as const, label: "Unpaid bills", hint: "Unpaid or overdue", count: data.unpaidBills },
+    { to: "/society/payments", icon: BadgeCheck, tone: "warning" as const, label: t("sd.a.pay"), hint: t("sd.a.payH"), count: data.paymentsToVerify },
+    { to: "/society/approvals", icon: UserCheck, tone: "primary" as const, label: t("sd.a.res"), hint: t("sd.a.resH"), count: data.pendingApprovals },
+    { to: "/society/helpdesk", icon: LifeBuoy, tone: "info" as const, label: t("sd.a.req"), hint: t("sd.a.reqH"), count: data.openRequests },
+    { to: "/society/helpdesk", icon: FileText, tone: "primary" as const, label: t("sd.a.appr"), hint: t("sd.a.apprH"), count: data.ticketApprovals },
+    { to: "/society/billing", icon: AlertTriangle, tone: "warning" as const, label: t("sd.a.unpaid"), hint: t("sd.a.unpaidH"), count: data.unpaidBills },
   ].filter((a) => (a.count ?? 0) > 0) : [];
 
   const collectionLabel = data?.summaryOk ? `${Math.round(data.collectionPercent)}%` : "—";
@@ -212,9 +216,9 @@ function SocietyDashboard() {
       {/* Page header */}
       <header className="flex flex-col gap-4 border-b border-border pb-5 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
-          <p className="text-sm text-muted-foreground">{greeting()}, {displayName}</p>
+          <p className="text-sm text-muted-foreground">{t(greetingKey())}, {displayName}</p>
           <h1 className="mt-0.5 truncate text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">
-            {data?.societyName || (isLoading ? <Skeleton className="h-8 w-56" /> : "Your society")}
+            {data?.societyName || (isLoading ? <Skeleton className="h-8 w-56" /> : t("sd.yourSociety"))}
           </h1>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -228,12 +232,12 @@ function SocietyDashboard() {
       </header>
 
       {/* Key money figures — one strip, not three hero cards */}
-      <ul aria-label="Key money figures" aria-busy={isLoading} className="mt-5 grid grid-cols-2 overflow-hidden rounded-xl border border-border bg-card lg:grid-cols-4 [&>li]:border-border [&>li:nth-child(odd)]:border-r lg:[&>li]:border-r lg:[&>li:last-child]:border-r-0 [&>li:nth-child(-n+2)]:border-b lg:[&>li]:border-b-0">
+      <ul aria-label={t("sd.keyMoney")} aria-busy={isLoading} className="mt-5 grid grid-cols-2 overflow-hidden rounded-xl border border-border bg-card lg:grid-cols-4 [&>li]:border-border [&>li:nth-child(odd)]:border-r lg:[&>li]:border-r lg:[&>li:last-child]:border-r-0 [&>li:nth-child(-n+2)]:border-b lg:[&>li]:border-b-0">
         {[
-          { k: "Collected this month", v: collectedLabel, to: "/society/payments" },
-          { k: "Outstanding", v: outstandingLabel, to: "/society/billing" },
-          { k: "Collection rate", v: collectionLabel, to: "/society/billing" },
-          { k: "Visitors today", v: data ? String(data.visitorsToday) : "—", to: "/society/visitors" },
+          { k: t("sd.m.collected"), v: collectedLabel, to: "/society/payments" },
+          { k: t("sd.m.outstanding"), v: outstandingLabel, to: "/society/billing" },
+          { k: t("sd.m.rate"), v: collectionLabel, to: "/society/billing" },
+          { k: t("sd.m.visitors"), v: data ? String(data.visitorsToday) : "—", to: "/society/visitors" },
         ].map((m) => (
           <li key={m.k}>
             <Link to={m.to as "/society/billing"} className="block px-4 py-3.5 hover:bg-muted/50 focus-visible:outline-none focus-visible:bg-muted/60 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring md:px-5 md:py-4">
@@ -252,8 +256,8 @@ function SocietyDashboard() {
           {isError && !data ? (
             <Card className="rounded-xl">
               <ErrorState
-                title="Dashboard didn't load"
-                description="We couldn't load your society's latest numbers. Nothing has changed — try again."
+                title={t("sd.failTitle")}
+                description={t("sd.failDesc")}
                 onRetry={() => refetch()}
                 showSupport={false}
               />
@@ -261,8 +265,8 @@ function SocietyDashboard() {
           ) : (
             <section aria-labelledby="attention-h" aria-busy={isLoading}>
               <div className="mb-2 flex items-center justify-between">
-                <h2 id="attention-h" className="text-sm font-semibold">Needs your attention</h2>
-                {isFetching && data && <span className="text-xs text-muted-foreground" role="status">Updating…</span>}
+                <h2 id="attention-h" className="text-sm font-semibold">{t("home.attention")}</h2>
+                {isFetching && data && <span className="text-xs text-muted-foreground" role="status">{t("sd.updating")}</span>}
               </div>
               {!data ? (
                 <div className="space-y-2">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-[64px] rounded-xl" />)}</div>
@@ -270,8 +274,8 @@ function SocietyDashboard() {
                 <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4">
                   <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-success/10 text-success"><CheckCircle2 className="h-5 w-5" /></div>
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold">You're all caught up</p>
-                    <p className="text-xs text-muted-foreground">No payments, approvals or requests are waiting.</p>
+                    <p className="text-sm font-semibold">{t("sd.caughtUp")}</p>
+                    <p className="text-xs text-muted-foreground">{t("sd.caughtUpD")}</p>
                   </div>
                 </div>
               ) : (
@@ -287,13 +291,13 @@ function SocietyDashboard() {
           )}
 
           <section aria-labelledby="exceptions-h">
-            <h2 id="exceptions-h" className="mb-2 text-sm font-semibold">Exceptions</h2>
-            <NeedsAttention exclude={["payments_verify", "join_pending"]} emptyText="No overdue, expiring or security exceptions." />
-            <div className="mt-2"><AISummaryCard target={{ kind: "attention" }} label="Explain these exceptions with AI" /></div>
+            <h2 id="exceptions-h" className="mb-2 text-sm font-semibold">{t("sd.exceptions")}</h2>
+            <NeedsAttention exclude={["payments_verify", "join_pending"]} emptyText={t("sd.excEmpty")} />
+            <div className="mt-2"><AISummaryCard target={{ kind: "attention" }} label={t("sd.excAi")} /></div>
           </section>
 
           {societyId && (
-            <section aria-label="Society setup checklist">
+            <section aria-label={t("sd.checklist")}>
               <SetupChecklistCard societyId={societyId} />
             </section>
           )}
@@ -308,17 +312,17 @@ function SocietyDashboard() {
         {/* Secondary column */}
         <aside className="min-w-0 space-y-6 lg:col-span-4">
           <section aria-labelledby="shortcuts-h">
-            <h2 id="shortcuts-h" className="mb-2 text-sm font-semibold">Shortcuts</h2>
+            <h2 id="shortcuts-h" className="mb-2 text-sm font-semibold">{t("home.shortcuts")}</h2>
             <nav className="grid grid-cols-2 overflow-hidden rounded-xl border border-border bg-card">
               {[
-                { to: "/society/payments" as const, label: "Payments", icon: BadgeCheck },
-                { to: "/society/approvals" as const, label: "Approvals", icon: UserCheck },
-                { to: "/society/helpdesk" as const, label: "Helpdesk", icon: LifeBuoy },
-                { to: "/society/announcements" as const, label: "Notice", icon: Megaphone },
-                { to: "/society/income" as const, label: "Income", icon: Wallet },
-                { to: "/society/expenses" as const, label: "Expenses", icon: TrendingUp },
-                { to: "/society/knowledge" as const, label: "Docs & FAQs", icon: FileText },
-                { to: "/society/flats" as const, label: `Houses${data ? ` · ${data.totalFlats}` : ""}`, icon: Building2 },
+                { to: "/society/payments" as const, label: t("sd.s.payments"), icon: BadgeCheck },
+                { to: "/society/approvals" as const, label: t("sd.s.approvals"), icon: UserCheck },
+                { to: "/society/helpdesk" as const, label: t("sd.s.helpdesk"), icon: LifeBuoy },
+                { to: "/society/announcements" as const, label: t("sd.s.notice"), icon: Megaphone },
+                { to: "/society/income" as const, label: t("sd.s.income"), icon: Wallet },
+                { to: "/society/expenses" as const, label: t("sd.s.expenses"), icon: TrendingUp },
+                { to: "/society/knowledge" as const, label: t("sd.s.docs"), icon: FileText },
+                { to: "/society/flats" as const, label: `${t("sd.s.houses")}${data ? ` · ${data.totalFlats}` : ""}`, icon: Building2 },
               ].map((a, i) => (
                 <Link
                   key={a.to}
@@ -335,11 +339,11 @@ function SocietyDashboard() {
           {data?.inviteCode && (
             <section className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-4">
               <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">Invite code for residents</p>
+                <p className="text-xs text-muted-foreground">{t("sd.invite")}</p>
                 <p className="mt-0.5 truncate font-mono text-lg font-semibold tracking-[0.2em]">{data.inviteCode}</p>
               </div>
               <Button onClick={copyInvite} variant="outline" className="h-11 shrink-0">
-                <Copy className="mr-1.5 h-4 w-4" aria-hidden /> Copy
+                <Copy className="mr-1.5 h-4 w-4" aria-hidden /> {t("sd.copy")}
               </Button>
             </section>
           )}
@@ -348,7 +352,7 @@ function SocietyDashboard() {
       <section>
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-sm font-semibold">
-            Recent activity
+            {t("sd.recent")}
           </h2>
           <Link
             to="/society/ledger"
@@ -361,7 +365,7 @@ function SocietyDashboard() {
           <CardContent className="p-0">
             {activity.length === 0 ? (
               <div className="py-10 text-center text-sm text-muted-foreground">
-                {data ? "No recent activity yet" : "Loading activity…"}
+                {data ? t("sd.noActivity") : t("sd.loadingActivity")}
               </div>
             ) : (
               <ul className="divide-y divide-border">
@@ -374,7 +378,7 @@ function SocietyDashboard() {
                     <div className="min-w-0 flex-1">
                       <p className="text-sm truncate">{it.text}</p>
                       <p className="text-[11px] text-muted-foreground">
-                        {new Date(it.when).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}
+                        {fmt.dateTime(it.when, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}
                       </p>
                     </div>
                     <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 self-center" aria-hidden />
@@ -392,12 +396,12 @@ function SocietyDashboard() {
         <Card className="rounded-xl mt-6 border-dashed">
           <CardContent className="p-6 text-center">
             <Building2 className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-            <p className="font-medium">Your society is ready to be set up</p>
+            <p className="font-medium">{t("sd.ready")}</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Start by adding blocks, floors, and flats.
+              {t("sd.readyD")}
             </p>
             <Button asChild className="mt-4 rounded-xl">
-              <Link to="/society/blocks">Add your first block</Link>
+              <Link to="/society/blocks">{t("sd.firstBlock")}</Link>
             </Button>
           </CardContent>
         </Card>

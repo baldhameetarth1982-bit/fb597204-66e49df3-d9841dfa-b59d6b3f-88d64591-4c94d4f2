@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Loader2, Lock } from "lucide-react";
@@ -26,6 +27,7 @@ function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((event) => {
@@ -39,39 +41,39 @@ function ResetPasswordPage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (password.length < 6) return toast.error("Use at least 6 characters.");
-    if (password !== confirm) return toast.error("The two passwords don't match.");
+    if (password.length < 6) return toast.error(t("reset.tooShort"));
+    if (password !== confirm) return toast.error(t("reset.mismatch"));
     setBusy(true);
     const { error } = await supabase.auth.updateUser({ password });
     setBusy(false);
-    if (error) return toast.error("Couldn't update the password. Open the link from your email again.");
-    toast.success("Password updated.");
+    if (error) return toast.error(t("reset.failed"));
+    toast.success(t("reset.done"));
     navigate({ to: "/login" });
   }
 
   return (
     <AuthShell>
-      <h1 className="text-xl font-semibold">Choose a new password</h1>
+      <h1 className="text-xl font-semibold">{t("reset.title")}</h1>
       {!ready ? (
         <p className="mt-4 text-sm text-muted-foreground">
-          Open this page from the reset link in your email. Checking your link…
+          {t("reset.checking")}
         </p>
       ) : (
         <form onSubmit={submit} className="mt-6 space-y-3">
           <div className="space-y-1.5">
             <Label htmlFor="new-pw" className="flex items-center gap-1.5 text-sm">
-              <Lock className="h-4 w-4 text-primary" /> New password
+              <Lock className="h-4 w-4 text-primary" /> {t("reset.new")}
             </Label>
             <PasswordInput id="new-pw"  minLength={6} required autoComplete="new-password"
               value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="confirm-pw" className="text-sm">Confirm password</Label>
+            <Label htmlFor="confirm-pw" className="text-sm">{t("reset.confirm")}</Label>
             <PasswordInput id="confirm-pw"  minLength={6} required autoComplete="new-password"
               value={confirm} onChange={(e) => setConfirm(e.target.value)} />
           </div>
           <Button type="submit" disabled={busy} className="w-full min-h-11">
-            {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Save password
+            {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} {t("reset.save")}
           </Button>
         </form>
       )}

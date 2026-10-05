@@ -154,3 +154,8 @@ export function localeTag(lang: Lang = currentLang()) {
 }
 
 export default i18n;
+
+/** Text direction of a language (rtl for Urdu, Kashmiri, Sindhi). */
+export function langDir(lang: Lang = currentLang()): "ltr" | "rtl" {
+  return META.get(lang)?.dir ?? "ltr";
+}

@@ -104,7 +104,7 @@ function TileGrid({ tiles }: { tiles: Tile[] }) {
             <div className={`h-10 w-10 rounded-2xl grid place-items-center ${locked ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"}`}>
               <t.icon className="h-4.5 w-4.5" />
             </div>
-            <span className="text-[11px] sm:text-xs font-medium leading-tight">{tr(t.label)}</span>
+            <span className="text-[11px] sm:text-xs font-medium leading-tight w-full px-1 break-words hyphens-auto">{tr(t.label)}</span>
             {locked && required && (
               <Badge variant="secondary" className="absolute top-1.5 right-1.5 rounded-full px-1.5 h-4 text-[9px] gap-0.5">
                 <Lock className="h-2.5 w-2.5" />

@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+import { localeTag } from "@/lib/i18n";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -58,12 +60,12 @@ interface DigestRow {
   week_start: string;
 }
 
-function timeAgo(iso: string) {
+function timeAgo(iso: string, t: (k: string, o?: Record<string, unknown>) => string) {
   const s = (Date.now() - new Date(iso).getTime()) / 1000;
-  if (s < 60) return "just now";
-  if (s < 3600) return `${Math.floor(s / 60)}m`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h`;
-  return `${Math.floor(s / 86400)}d`;
+  if (s < 60) return t("fd.justNow");
+  if (s < 3600) return t("fd.min", { n: Math.floor(s / 60) });
+  if (s < 86400) return t("fd.hr", { n: Math.floor(s / 3600) });
+  return t("fd.day", { n: Math.floor(s / 86400) });
 }
 
 function initials(n?: string | null) {
@@ -71,6 +73,7 @@ function initials(n?: string | null) {
 }
 
 function FeedScreen() {
+  const { t } = useTranslation();
   const { user, hasAnyRole } = useAuth();
   // UI hint only — the database only lets Society Admins of the post's society remove others' posts.
   const isSocietyAdmin = hasAnyRole([ROLES.SOCIETY_ADMIN]);
@@ -205,10 +208,10 @@ function FeedScreen() {
       if (imageFile) {
         const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
         if (!allowed.includes(imageFile.type)) {
-          throw new Error("Only JPG, PNG, WEBP, or GIF images are allowed");
+          throw new Error(t("fd.e.type"));
         }
         if (imageFile.size > 8 * 1024 * 1024) {
-          throw new Error("Image must be under 8MB");
+          throw new Error(t("fd.e.size"));
         }
         const extMap: Record<string, string> = {
           "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif",
@@ -228,11 +231,11 @@ function FeedScreen() {
       });
       if (error) throw error;
       setBody(""); pickImage(null); if (fileRef.current) fileRef.current.value = "";
-      toast.success("Posted");
+      toast.success(t("fd.posted"));
       void load();
     } catch (e: any) {
       // Keep the typed text and photo so the resident can retry.
-      toast.error(safeMsg(e, "Couldn't post. Your message is still here — please try again."));
+      toast.error(safeMsg(e, t("fd.postFailed")));
     } finally {
       setPosting(false);
     }
@@ -255,7 +258,7 @@ function FeedScreen() {
     if (error) {
       // Roll back the optimistic change.
       setPosts((prev) => prev.map((x) => (x.id === p.id ? { ...x, liked: p.liked, reactions: p.reactions } : x)));
-      toast.error("Couldn't update your like. Please try again.");
+      toast.error(t("fd.likeFailed"));
     }
     setLikeBusy((s) => { const n = new Set(s); n.delete(p.id); return n; });
   }
@@ -266,10 +269,10 @@ function FeedScreen() {
     const { data, error } = await supabase.from("posts").delete().eq("id", pendingDelete.id).select("id");
     setDeleting(false);
     if (error || !data || data.length === 0) {
-      toast.error("Couldn't remove this post. You don't have permission to remove it.");
+      toast.error(t("fd.removeDenied"));
     } else {
       setPosts((prev) => prev.filter((x) => x.id !== pendingDelete.id));
-      toast.success("Post removed");
+      toast.success(t("fd.postRemoved"));
     }
     setPendingDelete(null);
   }
@@ -277,25 +280,25 @@ function FeedScreen() {
   if (!societyId) {
     return (
       <div className="px-5 py-10 text-center text-sm text-muted-foreground">
-        Join a society to see the community feed.
+        {t("fd.joinFirst")}
       </div>
     );
   }
 
   const composer = (
-    <section aria-label="Write a post" className="rounded-2xl border bg-card p-3">
-      <label htmlFor="feed-compose" className="sr-only">Share something with your neighbours</label>
+    <section aria-label={t("fd.writePost")} className="rounded-2xl border bg-card p-3">
+      <label htmlFor="feed-compose" className="sr-only">{t("fd.share")}</label>
       <Textarea
         id="feed-compose"
         value={body}
         onChange={(e) => setBody(e.target.value.slice(0, 4000))}
-        placeholder="Share something with your neighbours…"
+        placeholder={t("fd.share")}
         className="min-h-[72px] resize-none rounded-xl border-0 px-2 focus-visible:ring-0"
       />
       {imagePreview && (
         <div className="relative mt-2 overflow-hidden rounded-xl">
-          <img src={imagePreview} alt="Selected photo" className="max-h-64 w-full object-cover" />
-          <button type="button" aria-label="Remove photo"
+          <img src={imagePreview} alt={t("fd.selectedPhoto")} className="max-h-64 w-full object-cover" />
+          <button type="button" aria-label={t("fd.removePhoto")}
             onClick={() => { pickImage(null); if (fileRef.current) fileRef.current.value = ""; }}
             className="absolute right-2 top-2 grid h-11 w-11 place-items-center rounded-full bg-background/90">
             <X className="h-4 w-4" />
@@ -305,12 +308,12 @@ function FeedScreen() {
       <div className="mt-2 flex items-center justify-between gap-2 border-t pt-2">
         <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden onChange={(e) => pickImage(e.target.files?.[0] ?? null)} />
         <Button variant="ghost" onClick={() => fileRef.current?.click()} className="h-11 rounded-xl text-muted-foreground">
-          <ImageIcon className="mr-1.5 h-4 w-4" /> Photo
+          <ImageIcon className="mr-1.5 h-4 w-4" /> {t("fd.photo")}
         </Button>
         <span className="ml-auto text-xs tabular-nums text-muted-foreground">{body.length > 3500 ? `${body.length}/4000` : ""}</span>
         <Button onClick={submitPost} disabled={!body.trim() || posting} className="h-11 rounded-xl px-5">
           {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          <span className="ml-1.5">{posting ? "Posting…" : "Post"}</span>
+          <span className="ml-1.5">{posting ? t("fd.posting") : t("fd.post")}</span>
         </Button>
       </div>
     </section>
@@ -319,8 +322,8 @@ function FeedScreen() {
   return (
     <div className="mx-auto w-full max-w-5xl px-4 pb-28 pt-5 md:px-8 md:pt-8">
       <header className="mb-5">
-        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Community</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Conversations between residents of your society</p>
+        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{t("cm.title")}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t("fd.subtitle")}</p>
       </header>
 
       <div className="grid gap-4">
@@ -328,19 +331,19 @@ function FeedScreen() {
           {composer}
 
           {loading && posts.length === 0 ? (
-            <div className="space-y-3" aria-busy="true" aria-label="Loading posts">
+            <div className="space-y-3" aria-busy="true" aria-label={t("fd.loading")}>
               {[0, 1, 2].map((i) => <div key={i} className="h-36 animate-pulse rounded-2xl bg-muted/60" />)}
             </div>
           ) : loadError ? (
-            <ErrorState title="Couldn't load the community feed" description="Check your connection and try again." onRetry={() => void load()} showSupport={false} />
+            <ErrorState title={t("fd.loadFailed")} description={t("fd.checkConn")} onRetry={() => void load()} showSupport={false} />
           ) : posts.length === 0 ? (
             <div className="rounded-2xl border border-dashed bg-card px-6 py-12 text-center">
               <MessageCircle className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
-              <p className="font-medium">No posts yet</p>
-              <p className="mt-1 text-sm text-muted-foreground">Start the conversation — say hello to your neighbours.</p>
+              <p className="font-medium">{t("fd.none")}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{t("fd.noneHint")}</p>
             </div>
           ) : (
-            <ul className="space-y-3" aria-label="Community posts">
+            <ul className="space-y-3" aria-label={t("fd.list")}>
               {posts.map((p) => {
                 const mine = p.author_id === user?.id;
                 const canRemove = mine || isSocietyAdmin;
@@ -353,35 +356,35 @@ function FeedScreen() {
                           <AvatarFallback className="bg-primary/10 text-xs text-primary">{initials(p.author_name)}</AvatarFallback>
                         </Avatar>
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold">{p.author_name ?? "Resident"}{mine && <span className="font-normal text-muted-foreground"> · you</span>}</p>
-                          <p className="text-xs text-muted-foreground">Resident post · {timeAgo(p.created_at)}</p>
+                          <p className="truncate text-sm font-semibold">{p.author_name ?? t("fd.resident")}{mine && <span className="font-normal text-muted-foreground"> · {t("fd.you")}</span>}</p>
+                          <p className="text-xs text-muted-foreground">{t("fd.residentPost", { when: timeAgo(p.created_at, t) })}</p>
                         </div>
                         {canRemove && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-11 w-11 rounded-xl text-muted-foreground" aria-label="Post options">
+                              <Button variant="ghost" size="icon" className="h-11 w-11 rounded-xl text-muted-foreground" aria-label={t("fd.options")}>
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem className="min-h-11 text-destructive focus:text-destructive" onSelect={() => setPendingDelete(p)}>
-                                <Trash2 className="mr-2 h-4 w-4" />{mine ? "Remove my post" : "Remove post (committee)"}
+                                <Trash2 className="mr-2 h-4 w-4" />{mine ? t("fd.removeMine") : t("fd.removeCommittee")}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         )}
                       </header>
                       <p className="whitespace-pre-line break-words px-4 pt-3 text-[15px] leading-relaxed">{p.body}</p>
-                      {p.image_url && <img src={p.image_url} alt="Photo shared with the post" loading="lazy" className="mt-3 max-h-96 w-full object-cover" />}
+                      {p.image_url && <img src={p.image_url} alt={t("fd.photoAlt")} loading="lazy" className="mt-3 max-h-96 w-full object-cover" />}
                       <footer className="mt-2 grid grid-cols-2 border-t">
                         <button type="button" onClick={() => toggleLike(p)} disabled={likeBusy.has(p.id)} aria-pressed={p.liked}
-                          aria-label={`${p.liked ? "Unlike" : "Like"}${p.reactions ? `, ${p.reactions} likes` : ""}`}
+                          aria-label={`${p.liked ? t("fd.unlike") : t("fd.like")}${p.reactions ? `, ${t("fd.likes", { count: p.reactions })}` : ""}`}
                           className={`flex min-h-12 items-center justify-center gap-2 text-sm font-medium transition-colors hover:bg-muted/60 ${p.liked ? "text-destructive" : "text-muted-foreground"}`}>
-                          <Heart className={`h-4 w-4 ${p.liked ? "fill-current" : ""}`} />{p.reactions ? p.reactions : "Like"}
+                          <Heart className={`h-4 w-4 ${p.liked ? "fill-current" : ""}`} />{p.reactions ? p.reactions : t("fd.like")}
                         </button>
                         <Link to="/app/feed/$postId" params={{ postId: p.id }}
                           className="flex min-h-12 items-center justify-center gap-2 border-l text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60">
-                          <MessageCircle className="h-4 w-4" />{p.comments ? `${p.comments} comment${p.comments === 1 ? "" : "s"}` : "Comment"}
+                          <MessageCircle className="h-4 w-4" />{p.comments ? (p.comments === 1 ? t("fd.oneComment") : t("fd.comments", { count: p.comments })) : t("fd.comment")}
                         </Link>
                       </footer>
                     </article>
@@ -392,22 +395,22 @@ function FeedScreen() {
           )}
         </div>
 
-        <aside className="order-first space-y-3" aria-label="From your committee">
+        <aside className="order-first space-y-3" aria-label={t("fd.fromCommittee")}>
           <Link to="/app/notices" className="flex min-h-14 items-center gap-3 rounded-2xl border border-primary/30 bg-primary-container px-4 py-3 text-primary-container-foreground transition-colors hover:opacity-90">
             <Megaphone className="h-5 w-5 shrink-0" />
             <span className="min-w-0 flex-1 text-sm">
-              <span className="block font-semibold">Official notices</span>
-              <span className="block opacity-80">Committee announcements live separately from resident posts.</span>
+              <span className="block font-semibold">{t("fd.official")}</span>
+              <span className="block opacity-80">{t("fd.officialHint")}</span>
             </span>
           </Link>
           {digest && (
             <section className="rounded-2xl border bg-card p-4">
               <p className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                <Sparkles className="h-4 w-4 text-primary" /> Weekly digest
-                <span className="ml-auto font-normal normal-case">{new Date(digest.week_start).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span>
+                <Sparkles className="h-4 w-4 text-primary" /> {t("fd.digest")}
+                <span className="ml-auto font-normal normal-case">{new Date(digest.week_start).toLocaleDateString(localeTag(), { day: "numeric", month: "short" })}</span>
               </p>
               <p className="text-sm leading-relaxed whitespace-pre-line line-clamp-6">{digest.summary}</p>
-              <p className="mt-2 text-xs text-muted-foreground">AI summary of recent posts — may miss details.</p>
+              <p className="mt-2 text-xs text-muted-foreground">{t("fd.digestNote")}</p>
             </section>
           )}
         </aside>
@@ -417,19 +420,19 @@ function FeedScreen() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {pendingDelete && pendingDelete.author_id !== user?.id ? "Remove this resident's post?" : "Remove this post?"}
+              {pendingDelete && pendingDelete.author_id !== user?.id ? t("fd.removeOther") : t("fd.removeThis")}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {pendingDelete && pendingDelete.author_id !== user?.id
-                ? "As a Society Admin you can remove posts that break your society's rules. "
+                ? `${t("fd.adminNote")} `
                 : ""}
-              It will disappear from the community feed for everyone, along with its comments. This can't be undone.
+              {t("fd.removeWarn")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Keep</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleting}>{t("fd.keep")}</AlertDialogCancel>
             <AlertDialogAction onClick={(e) => { e.preventDefault(); void confirmDelete(); }} disabled={deleting}>
-              {deleting ? "Removing…" : "Remove"}
+              {deleting ? t("fd.removing") : t("fd.remove")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

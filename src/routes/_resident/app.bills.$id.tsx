@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
@@ -61,6 +62,7 @@ function ResidentBillDetail() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const { t } = useTranslation();
 
   useEffect(() => {
     let cancelled = false;
@@ -86,7 +88,7 @@ function ResidentBillDetail() {
 
   if (loading) {
     return (
-      <div className="px-5 py-6 space-y-3" aria-busy="true" aria-label="Loading bill">
+      <div className="px-5 py-6 space-y-3" aria-busy="true" aria-label={t("rbd.loading")}>
         <div className="h-8 w-28 rounded-lg bg-muted animate-pulse" />
         <div className="h-40 rounded-2xl bg-muted animate-pulse" />
         <div className="h-28 rounded-2xl bg-muted animate-pulse" />
@@ -101,14 +103,14 @@ function ResidentBillDetail() {
           <div role="alert" className="rounded-2xl border border-destructive/30 p-4 flex items-center justify-between gap-3">
             <p className="text-sm text-muted-foreground">{loadError}</p>
             <Button size="sm" variant="outline" className="min-h-11 shrink-0" onClick={() => setReloadKey((k) => k + 1)}>
-              Try again
+              {t("common.tryAgain")}
             </Button>
           </div>
         ) : (
-          <p className="text-muted-foreground">This bill isn't available for your home.</p>
+          <p className="text-muted-foreground">{t("rbd.unavailable")}</p>
         )}
         <Button asChild variant="ghost" className="min-h-11">
-          <Link to="/app/bills"><ArrowLeft className="h-4 w-4 mr-2" />Back to bills</Link>
+          <Link to="/app/bills"><ArrowLeft className="h-4 w-4 mr-2" />{t("rbd.back")}</Link>
         </Button>
       </div>
     );
@@ -136,51 +138,51 @@ function ResidentBillDetail() {
   return (
     <div className="mx-auto max-w-2xl px-5 py-6 space-y-5">
       <Button asChild variant="ghost" className="-ml-2 min-h-11 rounded-xl">
-        <Link to="/app/bills"><ArrowLeft className="h-4 w-4 mr-1" />Bills</Link>
+        <Link to="/app/bills"><ArrowLeft className="h-4 w-4 mr-1" />{t("rbills.title")}</Link>
       </Button>
 
       <article className="overflow-hidden rounded-2xl border border-border bg-card" aria-labelledby="rb-title">
         <div className={`flex items-center justify-between gap-3 px-5 py-2.5 text-sm font-medium ${band}`}>
-          <span>{state.label}</span><span className="font-mono text-xs opacity-80">{bill.bill_number ?? "Bill"}</span>
+          <span>{t(`billStatus.${state.code}`)}</span><span className="font-mono text-xs opacity-80">{bill.bill_number ?? t("rbd.bill")}</span>
         </div>
         <div className="p-5">
-          <h1 id="rb-title" className="type-section">{bill.period_label ?? "Society bill"}</h1>
-          <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground"><Home className="h-4 w-4" />Your house</p>
+          <h1 id="rb-title" className="type-section">{bill.period_label ?? t("rbills.societyBill")}</h1>
+          <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground"><Home className="h-4 w-4" />{t("rbd.yourHouse")}</p>
           <div className="mt-5 grid grid-cols-2 gap-4 border-t border-border pt-5">
             <div className="min-w-0">
-              <p className="text-xs text-muted-foreground">{open ? "Amount to pay" : "Amount"}</p>
+              <p className="text-xs text-muted-foreground">{open ? t("rbd.toPay") : t("rbd.amount")}</p>
               <p className={`truncate text-3xl font-semibold tabular-nums ${state.isCancelled ? "line-through text-muted-foreground" : ""}`}>₹{amount.toLocaleString("en-IN")}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Due date</p>
+              <p className="text-xs text-muted-foreground">{t("rbd.dueDate")}</p>
               <p className={`flex items-center gap-1 text-lg font-semibold ${state.code === "overdue" ? "text-destructive" : ""}`}><Calendar className="h-4 w-4 opacity-60" />{bill.due_date ? formatDate(bill.due_date) : "—"}</p>
             </div>
           </div>
-          {state.isCancelled && <p className="mt-4 text-sm text-muted-foreground">This bill was cancelled and isn't payable. It stays here for your records.</p>}
-          {state.isPaid && <p className="mt-4 text-sm text-muted-foreground">Payment verified by the committee. Your receipt is in <Link to="/app/receipts" className="font-medium text-foreground underline underline-offset-2">My receipts</Link>.</p>}
+          {state.isCancelled && <p className="mt-4 text-sm text-muted-foreground">{t("rbd.cancelled")}</p>}
+          {state.isPaid && <p className="mt-4 text-sm text-muted-foreground">{t("rbd.verified")} <Link to="/app/receipts" className="font-medium text-foreground underline underline-offset-2">{t("rbd.myReceipts")}</Link></p>}
         </div>
 
         {(showBreakdown || lines.length > 0) && (
           <details className="group border-t border-border">
-            <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-5 text-sm font-medium hover:bg-muted/40">How this amount is made up<span className="text-xs text-muted-foreground group-open:hidden">Show</span></summary>
+            <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-5 text-sm font-medium hover:bg-muted/40">{t("rbd.breakdown")}<span className="text-xs text-muted-foreground group-open:hidden">{t("rbd.show")}</span></summary>
             <div className="space-y-4 px-5 pb-5 text-sm">
               {showBreakdown && (
                 <ul className="space-y-2">
-                  {(bill.current_charges ?? 0) !== 0 && row("Current charges", bill.current_charges)}
-                  {(bill.previous_balance ?? 0) !== 0 && row("Previous balance", bill.previous_balance)}
-                  {(bill.penalties ?? 0) !== 0 && row("Penalties", bill.penalties)}
-                  {(bill.adjustments ?? 0) !== 0 && row(`Adjustments (${Number(bill.adjustments) >= 0 ? "credit" : "debit"})`, bill.adjustments)}
-                  {(bill.tax_amount ?? 0) !== 0 && row("Taxes", bill.tax_amount)}
+                  {(bill.current_charges ?? 0) !== 0 && row(t("rbd.current"), bill.current_charges)}
+                  {(bill.previous_balance ?? 0) !== 0 && row(t("rbd.previous"), bill.previous_balance)}
+                  {(bill.penalties ?? 0) !== 0 && row(t("rbd.penalties"), bill.penalties)}
+                  {(bill.adjustments ?? 0) !== 0 && row(Number(bill.adjustments) >= 0 ? t("rbd.adjCredit") : t("rbd.adjDebit"), bill.adjustments)}
+                  {(bill.tax_amount ?? 0) !== 0 && row(t("rbd.taxes"), bill.tax_amount)}
                 </ul>
               )}
               {lines.length > 0 && (
                 <ul className="divide-y divide-border border-t border-border">
                   {lines.map((l) => (
-                    <li key={l.id} className="flex items-center justify-between gap-3 py-2"><span className="truncate">{l.description ?? l.kind ?? "Charge"}</span><span className="shrink-0 font-medium tabular-nums">{INR(l.amount)}</span></li>
+                    <li key={l.id} className="flex items-center justify-between gap-3 py-2"><span className="truncate">{l.description ?? l.kind ?? t("rbd.charge")}</span><span className="shrink-0 font-medium tabular-nums">{INR(l.amount)}</span></li>
                   ))}
                 </ul>
               )}
-              <div className="flex items-center justify-between border-t border-border pt-3 font-semibold"><span>Total payable</span><span className="tabular-nums">{INR(amount)}</span></div>
+              <div className="flex items-center justify-between border-t border-border pt-3 font-semibold"><span>{t("rbd.total")}</span><span className="tabular-nums">{INR(amount)}</span></div>
             </div>
           </details>
         )}
@@ -191,8 +193,8 @@ function ResidentBillDetail() {
           {bill.society_id && <OnlinePayCard billId={bill.id} societyId={bill.society_id} onPaid={() => setReloadKey((k) => k + 1)} />}
           <UpiQrPayCard billId={bill.id} onSubmitted={() => setReloadKey((k) => k + 1)} />
           <div>
-            <h2 id="pay-h" className="font-semibold">Paid by Cash or Bank Transfer?</h2>
-            <p className="text-sm text-muted-foreground">Tell the committee about your Cash or Bank Transfer payment. The bill stays unpaid until they verify it and issue a receipt.</p>
+            <h2 id="pay-h" className="font-semibold">{t("rbd.offlineQ")}</h2>
+            <p className="text-sm text-muted-foreground">{t("rbd.offlineD")}</p>
           </div>
           <OfflinePaymentSubmitCard billId={bill.id} billAmount={amount} billStatus={bill.status} cancelled={!!bill.cancelled_at} />
         </section>

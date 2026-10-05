@@ -88,10 +88,22 @@ export function toSafeFinanceError(err: unknown, online = true): SafeFinanceErro
 const TECHNICAL =
   /violates|constraint|relation|column|syntax|function\s+\w+\(|rpc|pgrst|sqlstate|duplicate key|\bat\s+\S+:\d+|stack|[0-9a-f]{8}-[0-9a-f]{4}-|_\w+_|\bnull value\b|jwt|supabase|postgres/i;
 
+/** Known server error codes mapped to plain-language copy. */
+const CODE_COPY: Record<string, string> = {
+  category_exists: "A category with this name already exists.",
+  invalid_name: "Please enter a name between 2 and 60 characters.",
+  invalid_category: "Please choose a valid category.",
+  income_not_billable: "A bill can't be issued for a rejected or reversed income entry.",
+};
+
+/** Bare snake_case codes (e.g. "category_exists") are internal identifiers. */
+const BARE_CODE = /^[a-z]+(?:_[a-z0-9]+)+$/;
+
 export function toSafeFinanceMessage(err: unknown, fallback = "Something went wrong. Please try again."): string {
+  const t = rawText(err).trim();
+  if (CODE_COPY[t]) return CODE_COPY[t];
   const kind = classifyFinanceError(err);
   if (kind !== "unavailable") return COPY[kind].message;
-  const t = rawText(err).trim();
-  if (t && t.length <= 160 && !TECHNICAL.test(t)) return t;
+  if (t && t.length <= 160 && !TECHNICAL.test(t) && !BARE_CODE.test(t)) return t;
   return fallback;
 }

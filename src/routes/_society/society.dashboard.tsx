@@ -223,10 +223,10 @@ function SocietyDashboard() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline" className="h-11">
-            <Link to="/society/residents"><Users className="mr-1.5 h-4 w-4" aria-hidden /> Residents</Link>
+            <Link to="/society/residents"><Users className="mr-1.5 h-4 w-4" aria-hidden /> {t("sd.residents")}</Link>
           </Button>
           <Button asChild className="h-11">
-            <Link to="/society/billing"><Receipt className="mr-1.5 h-4 w-4" aria-hidden /> Billing</Link>
+            <Link to="/society/billing"><Receipt className="mr-1.5 h-4 w-4" aria-hidden /> {t("sd.billing")}</Link>
           </Button>
         </div>
       </header>
@@ -358,7 +358,7 @@ function SocietyDashboard() {
             to="/society/ledger"
             className="inline-flex items-center gap-0.5 text-xs font-medium text-primary hover:underline"
           >
-            View all <ArrowUpRight className="h-3 w-3" />
+            {t("home.viewAll")} <ArrowUpRight className="h-3 w-3" />
           </Link>
         </div>
         <Card className="rounded-xl">
@@ -378,7 +378,7 @@ function SocietyDashboard() {
                     <div className="min-w-0 flex-1">
                       <p className="text-sm truncate">{it.text}</p>
                       <p className="text-[11px] text-muted-foreground">
-                        {fmt.dateTime(it.when, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}
+                        {fmt.date(it.when, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}
                       </p>
                     </div>
                     <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 self-center" aria-hidden />

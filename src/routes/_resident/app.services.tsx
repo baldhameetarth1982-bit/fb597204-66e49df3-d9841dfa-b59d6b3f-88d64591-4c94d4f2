@@ -16,6 +16,7 @@ import {
 import { ServiceDirectory } from "@/components/discovery/ServiceDirectory";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
+import { useTranslation } from "react-i18next";
 
 export const Route = createFileRoute("/_resident/app/services")({
   head: () => ({
@@ -29,36 +30,37 @@ export const Route = createFileRoute("/_resident/app/services")({
 
 function ServicesScreen() {
   const { roles } = useAuth();
+  const { t } = useTranslation();
   const isGuard =
     roles.includes("security" as never) ||
     roles.includes("society_admin" as never) ||
     roles.includes("block_admin" as never);
 
   const primary = [
-    { to: "/app/amenities", title: "Amenities", desc: "Book shared spaces and track waitlists", icon: CalendarDays, accent: "bg-primary/10 text-primary" },
-    { to: "/app/visitors", title: "My Visitors", desc: "See who came to your flat", icon: Users, accent: "bg-primary/10 text-primary" },
-    { to: "/app/vehicles", title: "Vehicles", desc: "Register cars & two-wheelers", icon: Car, accent: "bg-primary/10 text-primary" },
-    { to: "/app/helpdesk", title: "Complaints", desc: "Raise & track society issues", icon: AlertCircle, accent: "bg-destructive/10 text-destructive" },
-    { to: "/app/events", title: "Events", desc: "RSVP to society events", icon: CalendarDays, accent: "bg-primary/10 text-primary" },
-    { to: "/app/classes", title: "Classes", desc: "Join classes and check in", icon: CalendarDays, accent: "bg-primary/10 text-primary" },
-    { to: "/app/groups", title: "Groups", desc: "Join clubs and interest groups", icon: Users, accent: "bg-primary/10 text-primary" },
-    { to: "/app/passes", title: "Passes & lift", desc: "Material, move passes and lift booking", icon: CalendarDays, accent: "bg-primary/10 text-primary" },
-    { to: "/app/community", title: "Community", desc: "Offer or find help from neighbours", icon: Store, accent: "bg-primary/10 text-primary" },
-    { to: "/app/emergency", title: "Emergency", desc: "SOS and emergency contacts", icon: Siren, accent: "bg-destructive/10 text-destructive" },
+    { to: "/app/amenities", title: t("mod.amenities"), desc: t("sv.amenitiesDesc"), icon: CalendarDays, accent: "bg-primary/10 text-primary" },
+    { to: "/app/visitors", title: t("sv.myVisitors"), desc: t("sv.myVisitorsDesc"), icon: Users, accent: "bg-primary/10 text-primary" },
+    { to: "/app/vehicles", title: t("nav.vehicles"), desc: t("sv.vehiclesDesc"), icon: Car, accent: "bg-primary/10 text-primary" },
+    { to: "/app/helpdesk", title: t("home.qa.complaints"), desc: t("sv.complaintsDesc"), icon: AlertCircle, accent: "bg-destructive/10 text-destructive" },
+    { to: "/app/events", title: t("sv.events"), desc: t("sv.eventsDesc"), icon: CalendarDays, accent: "bg-primary/10 text-primary" },
+    { to: "/app/classes", title: t("sv.classes"), desc: t("sv.classesDesc"), icon: CalendarDays, accent: "bg-primary/10 text-primary" },
+    { to: "/app/groups", title: t("sv.groups"), desc: t("sv.groupsDesc"), icon: Users, accent: "bg-primary/10 text-primary" },
+    { to: "/app/passes", title: t("sv.passes"), desc: t("sv.passesDesc"), icon: CalendarDays, accent: "bg-primary/10 text-primary" },
+    { to: "/app/community", title: t("cm.title"), desc: t("sv.communityDesc"), icon: Store, accent: "bg-primary/10 text-primary" },
+    { to: "/app/emergency", title: t("re.title"), desc: t("sv.emergencyDesc"), icon: Siren, accent: "bg-destructive/10 text-destructive" },
   ] as const;
 
   const more = [
-    { title: "Daily Help",   icon: Sparkles,      cat: "daily_help" as const },
-    { title: "Maintenance",  icon: Wrench,        cat: "maintenance" as const },
-    { title: "Lost & Found", icon: PackageSearch, cat: "lost_found" as const },
+    { title: t("sv.dailyHelp"), icon: Sparkles,      cat: "daily_help" as const },
+    { title: t("mnt.title"), icon: Wrench,        cat: "maintenance" as const },
+    { title: t("sv.lostFound"), icon: PackageSearch, cat: "lost_found" as const },
   ];
 
   return (
     <div className="px-5 py-6 space-y-6 pb-24">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Services</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("prof.services")}</h1>
         <p className="text-sm text-muted-foreground">
-          Everything your society needs, in one place.
+          {t("sv.subtitle")}
         </p>
       </header>
 
@@ -70,8 +72,8 @@ function ServicesScreen() {
                 <ScanLine className="h-6 w-6" />
               </div>
               <div className="flex-1">
-                <p className="font-semibold">Guard Dashboard</p>
-                <p className="text-xs opacity-90">Log visitors at the gate</p>
+                <p className="font-semibold">{t("sv.guardDash")}</p>
+                <p className="text-xs opacity-90">{t("sv.guardDesc")}</p>
               </div>
               <ChevronRight className="h-5 w-5" />
             </CardContent>
@@ -85,8 +87,8 @@ function ServicesScreen() {
             <CardContent className="p-4 flex items-center gap-4">
               <div className="h-12 w-12 rounded-2xl grid place-items-center bg-primary/10 text-primary"><Shield className="h-6 w-6" /></div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold">Visitors / Guard System</p>
-                <p className="text-xs text-muted-foreground">Approve guests, view gate logs</p>
+                <p className="font-semibold">{t("sv.gate")}</p>
+                <p className="text-xs text-muted-foreground">{t("sv.gateDesc")}</p>
               </div>
               <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </CardContent>
@@ -113,12 +115,12 @@ function ServicesScreen() {
 
       <section>
         <h2 className="px-1 mb-3 text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-          More
+          {t("nav.more")}
         </h2>
         <div className="grid grid-cols-3 gap-3">
           {more.map(({ title, icon: Icon, cat }) => (
             <Link
-              key={title}
+              key={cat}
               to="/app/helpdesk"
               search={{ cat, new: true }}
               className="rounded-2xl bg-secondary/60 hover:bg-secondary p-4 flex flex-col items-center gap-2 active:scale-[0.97] transition-transform"

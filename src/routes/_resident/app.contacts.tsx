@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Phone, ShieldCheck, Wrench, Loader2 } from "lucide-react";
@@ -14,6 +15,7 @@ export const Route = createFileRoute("/_resident/app/contacts")({
 type Contact = { id: string; category: "committee" | "service"; role_label: string; name: string; phone: string | null; notes: string | null };
 
 function ContactsScreen() {
+  const { t } = useTranslation();
   const { societyId } = useSocietyId();
   const [items, setItems] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,15 +35,15 @@ function ContactsScreen() {
   return (
     <div className="px-5 py-6 space-y-6 pb-24">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Contacts</h1>
-        <p className="text-sm text-muted-foreground">Committee members & service providers.</p>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("comm.contacts")}</h1>
+        <p className="text-sm text-muted-foreground">{t("rc.subtitle")}</p>
       </header>
 
       {loading ? <div className="grid place-items-center h-32"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div> : (
         <>
-          <Group title="Committee" icon={ShieldCheck} list={committee} />
-          <Group title="Services" icon={Wrench} list={services} />
-          {items.length === 0 && <p className="text-sm text-muted-foreground">No contacts published yet.</p>}
+          <Group title={t("rc.committee")} icon={ShieldCheck} list={committee} />
+          <Group title={t("prof.services")} icon={Wrench} list={services} />
+          {items.length === 0 && <p className="text-sm text-muted-foreground">{t("rc.none")}</p>}
         </>
       )}
     </div>
@@ -49,6 +51,7 @@ function ContactsScreen() {
 }
 
 function Group({ title, icon: Icon, list }: { title: string; icon: any; list: Contact[] }) {
+  const { t } = useTranslation();
   if (!list.length) return null;
   return (
     <section className="space-y-2">
@@ -60,7 +63,7 @@ function Group({ title, icon: Icon, list }: { title: string; icon: any; list: Co
               <p className="text-xs text-muted-foreground">{c.role_label}</p>
               <p className="font-semibold truncate">{c.name}</p>
             </div>
-            {c.phone && <a href={`tel:${c.phone}`}><Button size="sm"><Phone className="h-4 w-4 mr-1" />Call</Button></a>}
+            {c.phone && <a href={`tel:${c.phone}`}><Button size="sm"><Phone className="h-4 w-4 mr-1" />{t("comm.call")}</Button></a>}
           </CardContent>
         </Card>
       ))}

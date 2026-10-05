@@ -11,6 +11,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { RECURRING_CATEGORIES, categoryLabel, gateErrorMessage } from "@/lib/visitors";
+import { useTranslation } from "react-i18next";
+import { localeTag } from "@/lib/i18n";
 
 interface SosRow { id: string; status: string; created_at: string }
 
@@ -71,10 +73,14 @@ export function SosButton({ online }: { online: boolean }) {
 }
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+// 7 Jan 2024 was a Sunday; weekday names come from the browser in the chosen language.
+const dayName = (i: number) => new Intl.DateTimeFormat(localeTag(), { weekday: "short" }).format(new Date(2024, 0, 7 + i));
+const catKey = (c: string) => (c === "other" ? "cm.other" : `vs.cat.${c}`);
 interface PassRow { id: string; visitor_name: string; category: string; days: number[]; start_time: string; end_time: string; valid_until: string; status: string }
 const EMPTY = { name: "", phone: "", category: "staff", days: [1, 2, 3, 4, 5, 6] as number[], start: "07:00", end: "11:00", until: "" };
 
 export function RecurringPasses() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(EMPTY);
@@ -98,25 +104,25 @@ export function RecurringPasses() {
     });
     setBusy(false);
     if (error) return toast.error(gateErrorMessage(error));
-    toast.success("Regular pass created");
+    toast.success(t("rgp.created"));
     setForm(EMPTY); setOpen(false);
     qc.invalidateQueries({ queryKey: ["my-recurring"] });
   }
   async function setStatus(id: string, status: "active" | "paused" | "revoked") {
     const { error } = await supabase.rpc("resident_set_recurring_pass_status", { _id: id, _status: status });
     if (error) return toast.error(gateErrorMessage(error));
-    toast.success(status === "revoked" ? "Pass removed" : status === "paused" ? "Pass paused" : "Pass resumed");
+    toast.success(status === "revoked" ? t("rgp.removed") : status === "paused" ? t("rgp.paused") : t("rgp.resumed"));
     qc.invalidateQueries({ queryKey: ["my-recurring"] });
   }
   const today = new Date().toISOString().slice(0, 10);
   return (
-    <section aria-label="Regular visitors" className="space-y-2">
+    <section aria-label={t("rgp.title")} className="space-y-2">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold flex items-center gap-2"><Repeat className="h-4 w-4" />Regular visitors</h2>
-        <Button size="sm" variant="outline" className="min-h-11 rounded-xl" onClick={() => setOpen(true)}><Plus className="h-4 w-4 mr-1" />Add</Button>
+        <h2 className="text-sm font-semibold flex items-center gap-2"><Repeat className="h-4 w-4" />{t("rgp.title")}</h2>
+        <Button size="sm" variant="outline" className="min-h-11 rounded-xl" onClick={() => setOpen(true)}><Plus className="h-4 w-4 mr-1" />{t("vh.add")}</Button>
       </div>
       {q.isError ? <p className="text-sm text-destructive">{gateErrorMessage(q.error)}</p> : !q.data?.length ? (
-        <p className="text-xs text-muted-foreground">Add your maid, cook, driver or milkman so the guard can let them in on their days.</p>
+        <p className="text-xs text-muted-foreground">{t("rgp.empty")}</p>
       ) : (
         <ul className="space-y-2">
           {q.data.map((p) => {
@@ -124,11 +130,11 @@ export function RecurringPasses() {
             return (
               <li key={p.id}><Card className="rounded-2xl"><CardContent className="p-3 sm:p-3 flex items-center gap-2">
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium truncate">{p.visitor_name} <span className="text-xs text-muted-foreground">· {categoryLabel(p.category)}</span></p>
-                  <p className="text-xs text-muted-foreground">{p.days.map((d) => DAYS[d]).join(", ")} · {p.start_time.slice(0, 5)}–{p.end_time.slice(0, 5)} · {expired ? "Expired" : p.status === "paused" ? "Paused" : `Till ${p.valid_until}`}</p>
+                  <p className="font-medium truncate">{p.visitor_name} <span className="text-xs text-muted-foreground">· {t(catKey(p.category), { defaultValue: categoryLabel(p.category) })}</span></p>
+                  <p className="text-xs text-muted-foreground">{p.days.map((d) => dayName(d)).join(", ")} · {p.start_time.slice(0, 5)}–{p.end_time.slice(0, 5)} · {expired ? t("cm.st.expired") : p.status === "paused" ? t("cm.st.paused") : t("rgp.till", { date: new Date(`${p.valid_until}T00:00:00`).toLocaleDateString(localeTag(), { day: "numeric", month: "short", year: "numeric", numberingSystem: "latn" }) })}</p>
                 </div>
-                {!expired && <Button size="sm" variant="ghost" className="min-h-11" onClick={() => setStatus(p.id, p.status === "paused" ? "active" : "paused")}>{p.status === "paused" ? "Resume" : "Pause"}</Button>}
-                <Button size="sm" variant="ghost" className="min-h-11" onClick={() => setStatus(p.id, "revoked")}>Remove</Button>
+                {!expired && <Button size="sm" variant="ghost" className="min-h-11" onClick={() => setStatus(p.id, p.status === "paused" ? "active" : "paused")}>{p.status === "paused" ? t("rgp.resume") : t("cm.pause")}</Button>}
+                <Button size="sm" variant="ghost" className="min-h-11" onClick={() => setStatus(p.id, "revoked")}>{t("fd.remove")}</Button>
               </CardContent></Card></li>
             );
           })}
@@ -136,35 +142,35 @@ export function RecurringPasses() {
       )}
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="bottom" className="rounded-t-3xl max-h-[92vh] overflow-y-auto">
-          <SheetHeader><SheetTitle>Regular visitor pass</SheetTitle></SheetHeader>
+          <SheetHeader><SheetTitle>{t("rgp.sheet")}</SheetTitle></SheetHeader>
           <form onSubmit={save} className="space-y-4 py-4">
             <div className="flex flex-wrap gap-2">
               {RECURRING_CATEGORIES.map((c) => (
                 <button type="button" key={c.value} onClick={() => setForm({ ...form, category: c.value })}
-                  className={cn("min-h-11 px-4 rounded-full border text-sm font-medium", form.category === c.value ? "bg-primary text-primary-foreground border-primary" : "border-border")}>{c.label}</button>
+                  className={cn("min-h-11 px-4 rounded-full border text-sm font-medium", form.category === c.value ? "bg-primary text-primary-foreground border-primary" : "border-border")}>{t(catKey(c.value), { defaultValue: c.label })}</button>
               ))}
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label htmlFor="rp-name">Name *</Label><Input id="rp-name" className="h-12" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required /></div>
-              <div><Label htmlFor="rp-phone">Phone</Label><Input id="rp-phone" className="h-12" inputMode="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
+              <div><Label htmlFor="rp-name">{t("vs.nameReq")}</Label><Input id="rp-name" className="h-12" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required /></div>
+              <div><Label htmlFor="rp-phone">{t("exp.phone")}</Label><Input id="rp-phone" className="h-12" inputMode="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
             </div>
             <div>
-              <Label>Days</Label>
+              <Label>{t("rgp.days")}</Label>
               <div className="grid grid-cols-7 gap-1 mt-1">
                 {DAYS.map((d, i) => (
                   <button type="button" key={d} aria-pressed={form.days.includes(i)}
                     onClick={() => setForm({ ...form, days: form.days.includes(i) ? form.days.filter((x) => x !== i) : [...form.days, i] })}
-                    className={cn("min-h-11 rounded-lg border text-xs", form.days.includes(i) ? "bg-primary text-primary-foreground border-primary" : "border-border")}>{d}</button>
+                    className={cn("min-h-11 rounded-lg border text-xs", form.days.includes(i) ? "bg-primary text-primary-foreground border-primary" : "border-border")} aria-label={new Intl.DateTimeFormat(localeTag(), { weekday: "long" }).format(new Date(2024, 0, 7 + i))}>{dayName(i)}</button>
                 ))}
               </div>
             </div>
             <div className="grid grid-cols-3 gap-3">
-              <div><Label htmlFor="rp-s">From</Label><Input id="rp-s" type="time" className="h-12" value={form.start} onChange={(e) => setForm({ ...form, start: e.target.value })} /></div>
-              <div><Label htmlFor="rp-e">To</Label><Input id="rp-e" type="time" className="h-12" value={form.end} onChange={(e) => setForm({ ...form, end: e.target.value })} /></div>
-              <div><Label htmlFor="rp-u">Until</Label><Input id="rp-u" type="date" className="h-12" min={today} value={form.until} onChange={(e) => setForm({ ...form, until: e.target.value })} /></div>
+              <div><Label htmlFor="rp-s">{t("common.from")}</Label><Input id="rp-s" type="time" className="h-12" value={form.start} onChange={(e) => setForm({ ...form, start: e.target.value })} /></div>
+              <div><Label htmlFor="rp-e">{t("common.to")}</Label><Input id="rp-e" type="time" className="h-12" value={form.end} onChange={(e) => setForm({ ...form, end: e.target.value })} /></div>
+              <div><Label htmlFor="rp-u">{t("rgp.until")}</Label><Input id="rp-u" type="date" className="h-12" min={today} value={form.until} onChange={(e) => setForm({ ...form, until: e.target.value })} /></div>
             </div>
-            <p className="text-xs text-muted-foreground">Guards can only let them in on these days and hours. Leave "Until" empty for 90 days.</p>
-            <Button type="submit" className="w-full h-14 rounded-xl text-base" disabled={busy || !form.days.length}>{busy ? <Loader2 className="h-5 w-5 animate-spin" /> : "Create pass"}</Button>
+            <p className="text-xs text-muted-foreground">{t("rgp.hint")}</p>
+            <Button type="submit" className="w-full h-14 rounded-xl text-base" disabled={busy || !form.days.length}>{busy ? <Loader2 className="h-5 w-5 animate-spin" /> : t("rgp.create")}</Button>
           </form>
         </SheetContent>
       </Sheet>

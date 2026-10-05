@@ -97,7 +97,7 @@ export function SocietyAdminBottomNav() {
                 >
                   <Icon className={cn("h-5 w-5", active && "stroke-[2.5]")} />
                 </span>
-                <span className="leading-none">{t(it.labelKey)}</span>
+                <span className="block w-full max-w-full truncate px-0.5 text-center leading-tight">{t(it.labelKey)}</span>
               </Link>
             </li>
           );

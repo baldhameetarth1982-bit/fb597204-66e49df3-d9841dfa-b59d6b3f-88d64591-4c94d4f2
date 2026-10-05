@@ -27,7 +27,7 @@ export function AISummaryCard({ target, label = "Summarise with AI" }: { target:
 
   if (state.status === "idle") {
     return (
-      <Button type="button" variant="outline" className="min-h-11 w-full rounded-xl" onClick={go}>
+      <Button type="button" variant="outline" className="h-auto min-h-11 w-full whitespace-normal rounded-xl py-2 text-center" onClick={go}>
         <Sparkles className="me-2 h-4 w-4 text-primary" aria-hidden /> {label}
       </Button>
     );

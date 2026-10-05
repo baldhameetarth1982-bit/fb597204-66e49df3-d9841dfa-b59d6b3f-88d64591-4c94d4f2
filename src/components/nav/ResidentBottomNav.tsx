@@ -81,7 +81,7 @@ export function ResidentBottomNav() {
                     </span>
                   )}
                 </span>
-                <span className="leading-none">{t(it.labelKey)}</span>
+                <span className="block w-full max-w-full truncate px-0.5 text-center leading-tight">{t(it.labelKey)}</span>
               </Link>
             </li>
           );

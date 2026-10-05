@@ -505,6 +505,7 @@ function LinkRow({
 function AppearanceCard({
   currentTheme, societyId, userId, isSuperAdmin, onChanged,
 }: { currentTheme: string; societyId: string | null; userId: string | null; isSuperAdmin: boolean; onChanged: () => void }) {
+  const { t } = useTranslation();
   const [plan, setPlan] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -595,6 +596,7 @@ function AppearanceCard({
 }
 
 function A11yToggle() {
+  const { t } = useTranslation();
   const [on, setOn] = useState<boolean>(() => {
     if (typeof document === "undefined") return false;
     return document.documentElement.classList.contains("a11y");

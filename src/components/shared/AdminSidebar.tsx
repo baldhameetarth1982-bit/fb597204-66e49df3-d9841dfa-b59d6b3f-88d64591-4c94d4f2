@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { langDir } from "@/lib/i18n";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Building2, Tags, CreditCard, Banknote, Megaphone, ReceiptText,
@@ -43,10 +44,10 @@ export function AdminSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { t: tr } = useTranslation();
+  const { t: tr, i18n: i18nInst } = useTranslation();
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar">
+    <Sidebar side={langDir(i18nInst.language) === "rtl" ? "right" : "left"} collapsible="icon" className="border-sidebar-border bg-sidebar">
       <SidebarHeader className="h-16 justify-center border-b border-sidebar-border px-4">
         <Link to="/admin/dashboard" className="flex items-center gap-2">
           <Logo size={36} />

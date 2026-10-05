@@ -72,7 +72,7 @@ export function AppHeader({
         {leading}
         {withSidebarTrigger && <SidebarTrigger className="hidden md:inline-flex h-10 w-10 rounded-md" />}
 
-        <Link to="/" className="md:hidden flex items-center gap-2 ml-1">
+        <Link to="/" className="md:hidden flex items-center gap-2 ms-1">
           <Logo size={32} />
           <SociyoHubLogo size={18} />
         </Link>
@@ -84,7 +84,7 @@ export function AppHeader({
           </div>
         )}
 
-        <div className="ml-auto flex items-center gap-1 md:gap-2">
+        <div className="ms-auto flex items-center gap-1 md:gap-2">
           <ThemeToggle />
 
           <Button
@@ -124,12 +124,12 @@ export function AppHeader({
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild className="cursor-pointer rounded-md">
                 <Link to={profileHref as any}>
-                  <User className="h-4 w-4 mr-2" /> {t("common.profile")}
+                  <User className="h-4 w-4 me-2" /> {t("common.profile")}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild className="cursor-pointer rounded-md">
                 <Link to={settingsHref as any}>
-                  <Settings className="h-4 w-4 mr-2" /> {t("common.settings")}
+                  <Settings className="h-4 w-4 me-2" /> {t("common.settings")}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -137,7 +137,7 @@ export function AppHeader({
                 onClick={handleSignOut}
                 className="cursor-pointer rounded-md text-destructive focus:text-destructive"
               >
-                <LogOut className="h-4 w-4 mr-2" /> {t("common.logOut")}
+                <LogOut className="h-4 w-4 me-2" /> {t("common.logOut")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -24,14 +24,14 @@ export function SocietyFab() {
       <SheetTrigger asChild>
         <button
           aria-label="Quick actions"
-          className="fixed z-40 right-4 grid h-14 w-14 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition-transform active:scale-95 md:hidden"
+          className="fixed z-40 end-4 grid h-14 w-14 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition-transform active:scale-95 md:hidden"
           style={{ bottom: "calc(80px + env(safe-area-inset-bottom))" }}
         >
           <Plus className="h-6 w-6" />
         </button>
       </SheetTrigger>
       <SheetContent side="bottom" className="mx-auto max-w-[480px] rounded-t-3xl px-4 pb-7 pt-5">
-        <SheetHeader className="text-left">
+        <SheetHeader className="text-start">
           <SheetTitle>Quick actions</SheetTitle>
         </SheetHeader>
         <div className="mt-4 grid grid-cols-2 gap-3">

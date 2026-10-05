@@ -80,12 +80,12 @@ export function SocietyAdminBottomNav() {
           const active = it.match.some((p) => path === p || path.startsWith(p + "/"));
           const Icon = it.icon;
           return (
-            <li key={it.to}>
+            <li key={it.to} className="min-w-0">
               <Link
                 to={it.to}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 py-2 min-h-[60px] text-[11px] font-medium transition-colors",
+                  "flex min-w-0 flex-col items-center justify-center gap-1 py-2 min-h-[60px] text-[11px] font-medium transition-colors",
                   active ? "text-primary" : "text-muted-foreground hover:text-foreground",
                 )}
               >
@@ -97,7 +97,7 @@ export function SocietyAdminBottomNav() {
                 >
                   <Icon className={cn("h-5 w-5", active && "stroke-[2.5]")} />
                 </span>
-                <span className="leading-none">{t(it.labelKey)}</span>
+                <span className="block w-full max-w-full truncate px-0.5 text-center leading-tight">{t(it.labelKey)}</span>
               </Link>
             </li>
           );

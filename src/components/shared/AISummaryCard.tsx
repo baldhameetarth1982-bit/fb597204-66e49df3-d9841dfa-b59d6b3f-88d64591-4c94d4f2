@@ -27,8 +27,8 @@ export function AISummaryCard({ target, label = "Summarise with AI" }: { target:
 
   if (state.status === "idle") {
     return (
-      <Button type="button" variant="outline" className="min-h-11 w-full rounded-xl" onClick={go}>
-        <Sparkles className="mr-2 h-4 w-4 text-primary" aria-hidden /> {label}
+      <Button type="button" variant="outline" className="h-auto min-h-11 w-full whitespace-normal rounded-xl py-2 text-center" onClick={go}>
+        <Sparkles className="me-2 h-4 w-4 text-primary" aria-hidden /> {label}
       </Button>
     );
   }
@@ -51,7 +51,7 @@ export function AISummaryCard({ target, label = "Summarise with AI" }: { target:
         <div className="mt-2 space-y-2">
           <p className="break-words">{state.data.summary}</p>
           {state.data.points.length > 0 && (
-            <ul className="list-disc space-y-1 pl-5 text-muted-foreground">{state.data.points.map((p, i) => <li key={i} className="break-words">{p}</li>)}</ul>
+            <ul className="list-disc space-y-1 ps-5 text-muted-foreground">{state.data.points.map((p, i) => <li key={i} className="break-words">{p}</li>)}</ul>
           )}
           {state.data.incomplete && <p className="text-xs text-muted-foreground">Based on incomplete information — some details aren't recorded.</p>}
           {state.data.refs.length > 0 && (

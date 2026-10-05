@@ -371,4 +371,8 @@ export const accounts = {
   "inc.nextPage": ["Next page", "अगला पेज", "આગળનું પેજ"],
   "inc.noMatchToast": ["No records match these filters.", "इन फ़िल्टर से कोई रिकॉर्ड मेल नहीं खाता।", "આ ફિલ્ટર સાથે કોઈ રેકોર્ડ મેળ ખાતો નથી."],
   "inc.dlFail": ["Couldn't download the income list. Please try again.", "आय सूची डाउनलोड नहीं हो सकी। फिर से कोशिश करें।", "આવક યાદી ડાઉનલોડ થઈ શકી નથી. ફરી પ્રયાસ કરો."],
+  "inc.downloaded_one": ["Downloaded {{count}} record.", "{{count}} रिकॉर्ड डाउनलोड हुआ।", "{{count}} રેકોર્ડ ડાઉનલોડ થયો."],
+  "inc.downloaded_other": ["Downloaded {{count}} records.", "{{count}} रिकॉर्ड डाउनलोड हुए।", "{{count}} રેકોર્ડ ડાઉનલોડ થયા."],
+  "inc.rangeOf": ["{{start}}–{{end}} of {{total}}", "{{total}} में से {{start}}–{{end}}", "{{total}} માંથી {{start}}–{{end}}"],
+  "inc.page": ["Page {{page}}", "पेज {{page}}", "પેજ {{page}}"],
 } satisfies Catalog;

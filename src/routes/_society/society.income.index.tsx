@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -161,6 +162,7 @@ const SORT_OPTIONS: ReadonlyArray<{ value: IncomeSort; label: string }> = [
 ];
 
 function IncomePage({ societyId }: { societyId: string }) {
+  const { t } = useTranslation();
 
 
   const [period, setPeriod] = useState<Period>("this_month");
@@ -303,7 +305,7 @@ function IncomePage({ societyId }: { societyId: string }) {
         Reconciliation: r.reconciliation_status.replace(/_/g, " "),
         "Reference (last digits)": r.reference_suffix ?? "",
       })), "Income", `income-${range.from ?? "all"}-to-${range.to ?? "all"}.xlsx`);
-      toast.success(`Downloaded ${all.length} record${all.length === 1 ? "" : "s"}.`);
+      toast.success(t("inc.downloaded", { count: all.length }));
     } catch {
       toast.error(t("inc.dlFail"));
     } finally { setExporting(false); }
@@ -332,17 +334,17 @@ function IncomePage({ societyId }: { societyId: string }) {
       <div className="flex flex-wrap gap-2">
         <Button asChild className="min-h-[44px]">
           <Link to="/society/income/new">
-            <Plus className="h-4 w-4 mr-1" /> Record income
+            <Plus className="h-4 w-4 mr-1" /> {t("inc.record")}
           </Link>
         </Button>
         <Button asChild variant="outline" className="min-h-[44px]">
           <Link to="/society/income/categories">
-            <Tags className="h-4 w-4 mr-1" /> Categories
+            <Tags className="h-4 w-4 mr-1" /> {t("inc.categories")}
           </Link>
         </Button>
         <Button asChild variant="outline" className="min-h-[44px]">
           <Link to="/society/income/payers">
-            <Users className="h-4 w-4 mr-1" /> Payers
+            <Users className="h-4 w-4 mr-1" /> {t("inc.payers")}
           </Link>
         </Button>
         <Button variant="outline" className="min-h-[44px]" disabled={exporting || !dateRangeValid} onClick={() => void exportRecords()}>
@@ -487,13 +489,13 @@ function IncomePage({ societyId }: { societyId: string }) {
       {reportQ.isError || (reportResp && reportResp.status !== "ok") ? (
         <Card>
           <CardContent className="p-4 flex items-center gap-2 text-sm text-destructive">
-            <AlertCircle className="h-4 w-4" /> Income summary is temporarily unavailable.
+            <AlertCircle className="h-4 w-4" /> {t("inc.sumFail")}
           </CardContent>
         </Card>
       ) : reportQ.isLoading || !report ? (
         <Card>
           <CardContent className="p-4 flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> Loading income summary…
+            <Loader2 className="h-4 w-4 animate-spin" /> {t("inc.sumLoading")}
           </CardContent>
         </Card>
       ) : (
@@ -576,11 +578,11 @@ function IncomePage({ societyId }: { societyId: string }) {
       >
         {listQ.isError ? (
           <div className="p-3 text-sm text-destructive flex items-center gap-2">
-            <AlertCircle className="h-4 w-4" /> Records are temporarily unavailable.
+            <AlertCircle className="h-4 w-4" /> {t("inc.recFail")}
           </div>
         ) : listQ.isLoading ? (
           <div className="p-3 text-sm text-muted-foreground flex items-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin" /> Loading records…
+            <Loader2 className="h-4 w-4 animate-spin" /> {t("inc.recLoading")}
           </div>
         ) : items.length === 0 ? (
           <div className="p-4 text-sm text-muted-foreground">
@@ -591,7 +593,7 @@ function IncomePage({ societyId }: { societyId: string }) {
             {items.map((r) => {
               const payerLabel =
                 r.payer_kind === "anonymous"
-                  ? "Anonymous"
+                  ? t("inc.k.anon")
                   : r.payer_display_name ?? "—";
               return (
                 <Link
@@ -651,13 +653,14 @@ function Pagination(props: {
   onNext: () => void;
 }) {
   const { page, pageSize, total, hasNext, shown, onPrev, onNext } = props;
+  const { t } = useTranslation();
   const start = page * pageSize + (shown > 0 ? 1 : 0);
   const end = page * pageSize + shown;
   const label =
     total !== null
-      ? `${start}–${end} of ${total}`
+      ? t("inc.rangeOf", { start, end, total })
       : shown === 0
-        ? `Page ${page + 1}`
+        ? t("inc.page", { page: page + 1 })
         : `${start}–${end}`;
   const _icon: LucideIcon = ChevronLeft; // keep import used when disabled state
   void _icon;

@@ -123,41 +123,41 @@ function periodRange(
 }
 
 const VERIF_OPTIONS: ReadonlyArray<{ value: "all" | IncomeVerificationStatus; label: string }> = [
-  { value: "all", label: "All verification" },
-  { value: "pending", label: "Pending" },
-  { value: "verified", label: "Verified" },
-  { value: "rejected", label: "Rejected" },
-  { value: "reversed", label: "Reversed" },
+  { value: "all", label: "inc.f.allVerif" },
+  { value: "pending", label: "inc.st.pending" },
+  { value: "verified", label: "inc.st.verified" },
+  { value: "rejected", label: "inc.st.rejected" },
+  { value: "reversed", label: "inc.st.reversed" },
 ];
 
 const RECON_OPTIONS: ReadonlyArray<{ value: "all" | IncomeReconciliationStatus; label: string }> = [
-  { value: "all", label: "All reconciliation" },
-  { value: "unreconciled", label: "Unreconciled" },
-  { value: "matched", label: "Matched" },
-  { value: "partially_matched", label: "Partially matched" },
-  { value: "needs_review", label: "Needs review" },
-  { value: "reversed", label: "Reversed" },
+  { value: "all", label: "inc.f.allRecon" },
+  { value: "unreconciled", label: "inc.rc.unreconciled" },
+  { value: "matched", label: "inc.rc.matched" },
+  { value: "partially_matched", label: "inc.rc.partial" },
+  { value: "needs_review", label: "inc.rc.review" },
+  { value: "reversed", label: "inc.st.reversed" },
 ];
 
 const METHOD_OPTIONS: ReadonlyArray<{ value: "all" | IncomePaymentMethod; label: string }> = [
-  { value: "all", label: "All methods" },
-  { value: "cash", label: "Cash" },
-  { value: "bank_transfer", label: "Bank Transfer" },
-  { value: "other_offline", label: "Other offline" },
+  { value: "all", label: "inc.f.allMethods" },
+  { value: "cash", label: "inc.m.cash" },
+  { value: "bank_transfer", label: "inc.m.bank" },
+  { value: "other_offline", label: "inc.m.other" },
 ];
 
 const KIND_OPTIONS: ReadonlyArray<{ value: "all" | IncomePayerKind; label: string }> = [
-  { value: "all", label: "All payers" },
-  { value: "resident", label: "Resident" },
-  { value: "non_member", label: "Non-member" },
-  { value: "anonymous", label: "Anonymous" },
+  { value: "all", label: "inc.f.allPayers" },
+  { value: "resident", label: "inc.k.resident" },
+  { value: "non_member", label: "inc.k.nonMember" },
+  { value: "anonymous", label: "inc.k.anon" },
 ];
 
 const SORT_OPTIONS: ReadonlyArray<{ value: IncomeSort; label: string }> = [
-  { value: "newest", label: "Newest first" },
-  { value: "oldest", label: "Oldest first" },
-  { value: "amount_desc", label: "Amount: high to low" },
-  { value: "amount_asc", label: "Amount: low to high" },
+  { value: "newest", label: "inc.s.newest" },
+  { value: "oldest", label: "inc.s.oldest" },
+  { value: "amount_desc", label: "inc.s.amtDesc" },
+  { value: "amount_asc", label: "inc.s.amtAsc" },
 ];
 
 function IncomePage({ societyId }: { societyId: string }) {
@@ -291,7 +291,7 @@ function IncomePage({ societyId }: { societyId: string }) {
         all.push(...res.items);
         if (res.items.length < 200) break;
       }
-      if (!all.length) { toast.info("No records match these filters."); return; }
+      if (!all.length) { toast.info(t("inc.noMatchToast")); return; }
       writeSafeWorkbook(all.map((r) => ({
         Date: r.payment_date,
         Category: r.category_display_name ?? "",
@@ -305,7 +305,7 @@ function IncomePage({ societyId }: { societyId: string }) {
       })), "Income", `income-${range.from ?? "all"}-to-${range.to ?? "all"}.xlsx`);
       toast.success(`Downloaded ${all.length} record${all.length === 1 ? "" : "s"}.`);
     } catch {
-      toast.error("Couldn't download the income list. Please try again.");
+      toast.error(t("inc.dlFail"));
     } finally { setExporting(false); }
   };
 
@@ -325,7 +325,7 @@ function IncomePage({ societyId }: { societyId: string }) {
       <AccountsCenterTabs />
       <MobileHero
         icon={Coins}
-        title="Income & Collections"
+        title={t("inc.title")}
         subtitle="Track society income, external payers and offline payment verification."
       />
 
@@ -350,19 +350,19 @@ function IncomePage({ societyId }: { societyId: string }) {
         </Button>
       </div>
 
-      <SectionCard title="Filters" description="Filters reset the record list to the first page.">
+      <SectionCard title={t("inc.filters")} description={t("inc.filtersHint")}>
         <div className="flex flex-wrap items-end gap-2">
           <div className="min-w-[160px]">
-            <Label className="text-xs">Period</Label>
+            <Label className="text-xs">{t("inc.period")}</Label>
             <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
               <SelectTrigger aria-label="Period" className="min-h-[44px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="this_month">This month</SelectItem>
-                <SelectItem value="last_month">Last month</SelectItem>
-                <SelectItem value="last_90">Last 90 days</SelectItem>
-                <SelectItem value="custom">Custom range</SelectItem>
+                <SelectItem value="this_month">{t("ff.thisMonth")}</SelectItem>
+                <SelectItem value="last_month">{t("ff.lastMonth")}</SelectItem>
+                <SelectItem value="last_90">{t("inc.last90")}</SelectItem>
+                <SelectItem value="custom">{t("inc.custom")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -370,7 +370,7 @@ function IncomePage({ societyId }: { societyId: string }) {
           {period === "custom" && (
             <>
               <div className="min-w-[140px]">
-                <Label className="text-xs" htmlFor="from-date">From</Label>
+                <Label className="text-xs" htmlFor="from-date">{t("common.from")}</Label>
                 <Input
                   id="from-date"
                   type="date"
@@ -380,7 +380,7 @@ function IncomePage({ societyId }: { societyId: string }) {
                 />
               </div>
               <div className="min-w-[140px]">
-                <Label className="text-xs" htmlFor="to-date">To</Label>
+                <Label className="text-xs" htmlFor="to-date">{t("common.to")}</Label>
                 <Input
                   id="to-date"
                   type="date"
@@ -391,20 +391,20 @@ function IncomePage({ societyId }: { societyId: string }) {
               </div>
               {!dateRangeValid && (
                 <p className="w-full text-xs text-destructive">
-                  Please enter a valid date range where "From" is on or before "To".
+                  {t("inc.rangeInvalid")}
                 </p>
               )}
             </>
           )}
 
           <div className="min-w-[160px]">
-            <Label className="text-xs">Category</Label>
+            <Label className="text-xs">{t("common.category")}</Label>
             <Select value={categoryId} onValueChange={setCategoryId}>
               <SelectTrigger aria-label="Category" className="min-h-[44px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All categories</SelectItem>
+                <SelectItem value="all">{t("ff.allCategories")}</SelectItem>
                 {((catsQ.data?.items ?? []) as CategoryItem[]).map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.display_name}
@@ -415,60 +415,60 @@ function IncomePage({ societyId }: { societyId: string }) {
           </div>
 
           <div className="min-w-[160px]">
-            <Label className="text-xs">Payer</Label>
+            <Label className="text-xs">{t("inc.payer")}</Label>
             <Select value={kind} onValueChange={(v) => setKind(v as typeof kind)}>
               <SelectTrigger aria-label="Payer" className="min-h-[44px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {KIND_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  <SelectItem key={o.value} value={o.value}>{t(o.label)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
           <div className="min-w-[160px]">
-            <Label className="text-xs">Method</Label>
+            <Label className="text-xs">{t("inc.method")}</Label>
             <Select value={method} onValueChange={(v) => setMethod(v as typeof method)}>
               <SelectTrigger aria-label="Method" className="min-h-[44px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {METHOD_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  <SelectItem key={o.value} value={o.value}>{t(o.label)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
           <div className="min-w-[160px]">
-            <Label className="text-xs">Verification</Label>
+            <Label className="text-xs">{t("inc.verification")}</Label>
             <Select value={verif} onValueChange={(v) => setVerif(v as typeof verif)}>
               <SelectTrigger aria-label="Verification" className="min-h-[44px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {VERIF_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  <SelectItem key={o.value} value={o.value}>{t(o.label)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
           <div className="min-w-[160px]">
-            <Label className="text-xs">Reconciliation</Label>
+            <Label className="text-xs">{t("inc.reconciliation")}</Label>
             <Select value={recon} onValueChange={(v) => setRecon(v as typeof recon)}>
               <SelectTrigger aria-label="Reconciliation" className="min-h-[44px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {RECON_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  <SelectItem key={o.value} value={o.value}>{t(o.label)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
           <div className="min-w-[160px]">
-            <Label className="text-xs">Sort</Label>
+            <Label className="text-xs">{t("inc.sort")}</Label>
             <Select value={sort} onValueChange={(v) => setSort(v as IncomeSort)}>
               <SelectTrigger aria-label="Sort" className="min-h-[44px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {SORT_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  <SelectItem key={o.value} value={o.value}>{t(o.label)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -479,7 +479,7 @@ function IncomePage({ societyId }: { societyId: string }) {
             className="min-h-[44px]"
             onClick={resetFilters}
           >
-            Reset
+            {t("inc.reset")}
           </Button>
         </div>
       </SectionCard>
@@ -499,13 +499,13 @@ function IncomePage({ societyId }: { societyId: string }) {
       ) : (
         <>
           <StatPillRow>
-            <StatPill icon={TrendingUp} label="Verified income" value={inr(report.summary.verified_amount)} />
-            <StatPill icon={Clock} label="Pending" value={String(report.summary.pending_count)} />
-            <StatPill icon={AlertCircle} label="Unreconciled (verified)" value={inr(report.summary.unreconciled_amount)} />
-            <StatPill icon={TrendingUp} label="Reconciled" value={inr(report.summary.reconciled_amount)} />
-            <StatPill icon={XCircle} label="Rejected" value={String(report.summary.rejected_count)} />
-            <StatPill icon={RotateCcw} label="Reversed" value={String(report.summary.reversed_count)} />
-            <StatPill icon={Users} label="Records" value={String(report.summary.record_count)} />
+            <StatPill icon={TrendingUp} label={t("inc.verifiedIncome")} value={inr(report.summary.verified_amount)} />
+            <StatPill icon={Clock} label={t("inc.st.pending")} value={String(report.summary.pending_count)} />
+            <StatPill icon={AlertCircle} label={t("inc.unrecVerified")} value={inr(report.summary.unreconciled_amount)} />
+            <StatPill icon={TrendingUp} label={t("inc.rc.reconciled")} value={inr(report.summary.reconciled_amount)} />
+            <StatPill icon={XCircle} label={t("inc.st.rejected")} value={String(report.summary.rejected_count)} />
+            <StatPill icon={RotateCcw} label={t("inc.st.reversed")} value={String(report.summary.reversed_count)} />
+            <StatPill icon={Users} label={t("inc.records")} value={String(report.summary.record_count)} />
           </StatPillRow>
           <p className="text-[11px] text-muted-foreground">
             Totals aggregated in the database for {report.from_date} → {report.to_date}
@@ -516,8 +516,8 @@ function IncomePage({ societyId }: { societyId: string }) {
 
       {report && report.by_category.length > 0 && (
         <SectionCard
-          title="Verified income by category"
-          description="Excludes pending, rejected and reversed records."
+          title={t("inc.byCat")}
+          description={t("inc.excludes")}
         >
           <div className="grid sm:grid-cols-2 gap-2">
             {report.by_category.map((c) => (
@@ -534,7 +534,7 @@ function IncomePage({ societyId }: { societyId: string }) {
       )}
 
       {report && report.by_method.length > 0 && (
-        <SectionCard title="Verified income by payment method">
+        <SectionCard title={t("inc.byMethod")}>
           <div className="grid sm:grid-cols-3 gap-2">
             {report.by_method.map((m) => (
               <div
@@ -551,7 +551,7 @@ function IncomePage({ societyId }: { societyId: string }) {
 
       {report && report.trend.length > 0 && (
         <SectionCard
-          title="Verified income trend"
+          title={t("inc.trend")}
           description={`Grouped by ${report.trend_bucket}.`}
         >
           <ul className="grid sm:grid-cols-3 gap-2 text-sm">
@@ -571,8 +571,8 @@ function IncomePage({ societyId }: { societyId: string }) {
 
 
       <SectionCard
-        title="Records"
-        description="Income records for the selected filters. Full reference numbers are masked."
+        title={t("inc.records")}
+        description={t("inc.tableDesc")}
       >
         {listQ.isError ? (
           <div className="p-3 text-sm text-destructive flex items-center gap-2">
@@ -584,7 +584,7 @@ function IncomePage({ societyId }: { societyId: string }) {
           </div>
         ) : items.length === 0 ? (
           <div className="p-4 text-sm text-muted-foreground">
-            No records match the selected filters.
+            {t("inc.noMatch")}
           </div>
         ) : (
           <div className="divide-y">
@@ -671,10 +671,10 @@ function Pagination(props: {
           className="min-h-[44px] min-w-[44px]"
           onClick={onPrev}
           disabled={page === 0}
-          aria-label="Previous page"
+          aria-label={t("inc.prevPage")}
         >
           <ChevronLeft className="h-4 w-4" />
-          <span className="ml-1 hidden sm:inline">Previous</span>
+          <span className="ml-1 hidden sm:inline">{t("inc.prev")}</span>
         </Button>
         <Button
           variant="outline"
@@ -682,9 +682,9 @@ function Pagination(props: {
           className="min-h-[44px] min-w-[44px]"
           onClick={onNext}
           disabled={!hasNext}
-          aria-label="Next page"
+          aria-label={t("inc.nextPage")}
         >
-          <span className="mr-1 hidden sm:inline">Next</span>
+          <span className="mr-1 hidden sm:inline">{t("inc.next")}</span>
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>

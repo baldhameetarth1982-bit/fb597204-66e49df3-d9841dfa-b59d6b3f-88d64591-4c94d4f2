@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+import { localeTag } from "@/lib/i18n";
 import { useQuery } from "@tanstack/react-query";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,12 +17,12 @@ function monthKey(d: Date) {
 }
 function monthLabel(k: string) {
   const [y, m] = k.split("-").map(Number);
-  return new Date(y, m - 1, 1).toLocaleString("en-IN", { month: "short" });
+  return new Date(y, m - 1, 1).toLocaleString(localeTag(), { month: "short" });
 }
 
 export function SocietyFinanceChart({ societyId }: { societyId: string }) {
   const { data, isLoading } = useQuery({
-    queryKey: ["society-finance", societyId],
+    queryKey: ["society-finance", societyId, localeTag()],
     queryFn: async () => {
       const since = new Date();
       since.setMonth(since.getMonth() - 5);
@@ -53,6 +55,7 @@ export function SocietyFinanceChart({ societyId }: { societyId: string }) {
     },
   });
 
+  const { t } = useTranslation();
   const series = data ?? [];
   const last = series[series.length - 1];
   const prev = series[series.length - 2];
@@ -76,9 +79,9 @@ export function SocietyFinanceChart({ societyId }: { societyId: string }) {
     <Card className="rounded-2xl">
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <div>
-          <CardTitle className="text-base">Income vs Expenses (last 6 months)</CardTitle>
+          <CardTitle className="text-base">{t("chart.title")}</CardTitle>
           <p className="text-xs text-muted-foreground mt-1">
-            Net this month: <span className="font-medium text-foreground">{INR.format(lastNet)}</span>
+            {t("chart.netMonth")} <span className="font-medium text-foreground">{INR.format(lastNet)}</span>
           </p>
         </div>
         <div
@@ -92,11 +95,11 @@ export function SocietyFinanceChart({ societyId }: { societyId: string }) {
           {tone === "growth" ? <TrendingUp className="h-4 w-4" />
             : tone === "loss" ? <TrendingDown className="h-4 w-4" />
             : <Minus className="h-4 w-4" />}
-          {pct === null ? "New" : pct === 0 ? "0%" : `${pct > 0 ? "+" : ""}${pct.toFixed(1)}%`}
+          {pct === null ? t("chart.new") : pct === 0 ? "0%" : `${pct > 0 ? "+" : ""}${pct.toFixed(1)}%`}
         </div>
       </CardHeader>
       <CardContent>
-        {isLoading ? <div className="h-64 grid place-items-center text-sm text-muted-foreground">Loading…</div>
+        {isLoading ? <div className="h-64 grid place-items-center text-sm text-muted-foreground">{t("chart.loading")}</div>
           : (
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -110,23 +113,23 @@ export function SocietyFinanceChart({ societyId }: { societyId: string }) {
                   contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 12 }}
                 />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="income" name="Income" fill="hsl(142 71% 45%)" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="expense" name="Expense" fill="hsl(0 72% 51%)" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="income" name={t("chart.income")} fill="hsl(142 71% 45%)" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="expense" name={t("chart.expense")} fill="hsl(0 72% 51%)" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         )}
         <div className="grid grid-cols-3 gap-3 mt-4 text-center text-sm">
           <div className="rounded-xl bg-emerald-500/5 p-3">
-            <p className="text-xs text-muted-foreground">Income</p>
+            <p className="text-xs text-muted-foreground">{t("chart.income")}</p>
             <p className="font-semibold text-emerald-700 dark:text-emerald-400">{INR.format(totalIncome)}</p>
           </div>
           <div className="rounded-xl bg-red-500/5 p-3">
-            <p className="text-xs text-muted-foreground">Expense</p>
+            <p className="text-xs text-muted-foreground">{t("chart.expense")}</p>
             <p className="font-semibold text-red-700 dark:text-red-400">{INR.format(totalExpense)}</p>
           </div>
           <div className={`rounded-xl p-3 ${profit > 0 ? "bg-emerald-500/5" : profit < 0 ? "bg-red-500/5" : "bg-muted"}`}>
-            <p className="text-xs text-muted-foreground">Net</p>
+            <p className="text-xs text-muted-foreground">{t("chart.net")}</p>
             <p className={`font-semibold ${profit > 0 ? "text-emerald-700 dark:text-emerald-400" : profit < 0 ? "text-red-700 dark:text-red-400" : "text-foreground"}`}>
               {INR.format(profit)}
             </p>

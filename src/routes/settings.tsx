@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+import { LanguageSelector } from "@/components/shared/LanguageSelector";
 import { createFileRoute, Navigate, Link } from "@tanstack/react-router";
 import { userMessage } from "@/lib/user-error";
 import { useEffect, useState } from "react";
@@ -62,6 +64,7 @@ function SettingsPage() {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
+  const { t } = useTranslation();
   const preferencesKey = user?.id ? `sociohub:prefs:${user.id}` : null;
 
   // local-only preferences
@@ -306,25 +309,25 @@ function SettingsPage() {
             onChanged={() => refresh?.()}
           />}
 
-          {!isSecurity && <SettingsGroup title="Household & language" scope="Only you" icon={UsersIcon}>
-            <LinkRow to="/app/family" icon={UsersIcon} label="Family members" />
-            <Separator />
+          <SettingsGroup title={t("settings.householdLanguage")} scope={t("settings.onlyYou")} icon={UsersIcon}>
+            {!isSecurity && <><LinkRow to="/app/family" icon={UsersIcon} label={t("settings.family")} />
+            <Separator /></>}
             <LanguageRow />
-          </SettingsGroup>}
+          </SettingsGroup>
 
-          <SettingsGroup title="Support & legal" icon={HelpCircle}>
-            <LinkRow to="/support" icon={HelpCircle} label="Help & support" />
+          <SettingsGroup title={t("settings.supportLegal")} icon={HelpCircle}>
+            <LinkRow to="/support" icon={HelpCircle} label={t("settings.help")} />
             <Separator />
-            <LinkRow to="/terms" icon={ShieldCheck} label="Terms & privacy" />
+            <LinkRow to="/terms" icon={ShieldCheck} label={t("settings.terms")} />
             <Separator />
             {!isSecurity && <>
               <Separator />
-              <LinkRow to="/pricing" icon={ShieldCheck} label="Plans & pricing" />
+              <LinkRow to="/pricing" icon={ShieldCheck} label={t("settings.pricing")} />
             </>}
           </SettingsGroup>
 
           <section aria-labelledby="danger-zone" className="rounded-2xl border border-destructive/30 p-2">
-            <h2 id="danger-zone" className="px-2 pt-2 text-xs font-semibold uppercase tracking-wide text-destructive">Sign out & account removal</h2>
+            <h2 id="danger-zone" className="px-2 pt-2 text-xs font-semibold uppercase tracking-wide text-destructive">{t("settings.danger")}</h2>
             <SignOutRow onSignOut={signOut} />
             <Separator />
             <DeleteAccountRow email={user?.email ?? null} onSignOut={signOut} />
@@ -355,22 +358,23 @@ function SettingsGroup({
 }
 
 function SignOutRow({ onSignOut }: { onSignOut?: () => Promise<void> }) {
+  const { t } = useTranslation();
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <button className="w-full min-h-11 flex items-center gap-3 px-2 py-3 rounded-xl hover:bg-muted/50 transition text-left">
           <LogOut className="h-5 w-5 shrink-0" />
-          <span className="flex-1 font-medium">Sign out</span>
+          <span className="flex-1 font-medium">{t("common.signOut")}</span>
         </button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Sign out?</AlertDialogTitle>
-          <AlertDialogDescription>You'll need to sign in again to use SociyoHub on this device.</AlertDialogDescription>
+          <AlertDialogTitle>{t("signout.title")}</AlertDialogTitle>
+          <AlertDialogDescription>{t("signout.body")}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Stay signed in</AlertDialogCancel>
-          <AlertDialogAction onClick={() => onSignOut?.()}>Sign out</AlertDialogAction>
+          <AlertDialogCancel>{t("signout.stay")}</AlertDialogCancel>
+          <AlertDialogAction onClick={() => onSignOut?.()}>{t("common.signOut")}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
@@ -378,42 +382,21 @@ function SignOutRow({ onSignOut }: { onSignOut?: () => Promise<void> }) {
 }
 
 function LanguageRow() {
-  const [lang, setLang] = useState<string>(() => {
-    try { return localStorage.getItem("sociohub:lang") ?? "en"; } catch { return "en"; }
-  });
-  const [open, setOpen] = useState(false);
-  const label = { en: "English", hi: "हिन्दी (Hindi)", mr: "मराठी (Marathi)", ta: "தமிழ் (Tamil)" }[lang] ?? "English";
-
+  const { t } = useTranslation();
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <button className="w-full flex items-center gap-3 px-2 py-3 rounded-xl hover:bg-muted/50 transition text-left">
-          <Globe className="h-5 w-5 shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="font-medium">Language</p>
-            <p className="text-sm text-muted-foreground">{label}</p>
-          </div>
-          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-        </button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader><DialogTitle>Choose language</DialogTitle></DialogHeader>
-        <Select value={lang} onValueChange={(v) => { setLang(v); try { localStorage.setItem("sociohub:lang", v); } catch {} toast.success("Language updated"); setOpen(false); }}>
-          <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="en">English</SelectItem>
-            <SelectItem value="hi">हिन्दी (Hindi)</SelectItem>
-            <SelectItem value="mr">मराठी (Marathi)</SelectItem>
-            <SelectItem value="ta">தமிழ் (Tamil)</SelectItem>
-          </SelectContent>
-        </Select>
-        <p className="text-xs text-muted-foreground">Full translations are rolling out — UI currently displays English fallback for missing strings.</p>
-      </DialogContent>
-    </Dialog>
+    <div className="flex flex-wrap items-center gap-3 px-2 py-3">
+      <Globe className="h-5 w-5 shrink-0" aria-hidden />
+      <div className="min-w-0 flex-1">
+        <p className="font-medium">{t("common.language")}</p>
+        <p className="text-sm text-muted-foreground">{t("language.onlyYou")}</p>
+      </div>
+      <LanguageSelector compact />
+    </div>
   );
 }
 
 function DeleteAccountRow({ email, onSignOut }: { email: string | null; onSignOut: () => Promise<void> }) {
+  const { t } = useTranslation();
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   return (
@@ -422,8 +405,8 @@ function DeleteAccountRow({ email, onSignOut }: { email: string | null; onSignOu
         <button className="w-full flex items-center gap-3 px-2 py-3 rounded-xl hover:bg-destructive/10 transition text-left text-destructive">
           <Trash2 className="h-5 w-5 shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="font-medium">Delete account</p>
-            <p className="text-sm text-muted-foreground">Permanently remove your profile and data</p>
+            <p className="font-medium">{t("settings.deleteAccount")}</p>
+            <p className="text-sm text-muted-foreground">{t("settings.deleteAccountDesc")}</p>
           </div>
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
         </button>

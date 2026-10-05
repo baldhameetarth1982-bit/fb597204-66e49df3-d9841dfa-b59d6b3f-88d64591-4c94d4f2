@@ -194,7 +194,7 @@ function ProfilePage() {
 
       <div className="border-t pt-6">
         <Button variant="outline" className="w-full min-h-12 text-destructive border-destructive/30 hover:bg-destructive/5 hover:text-destructive" onClick={() => setConfirmOut(true)}>
-          <LogOut className="h-4 w-4 mr-2" /> Sign out
+          <LogOut className="h-4 w-4 mr-2" /> {t("common.signOut")}
         </Button>
       </div>
 

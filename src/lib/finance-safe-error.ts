@@ -68,8 +68,8 @@ export function classifyFinanceError(err: unknown, online = true): FinanceErrorK
   const t = rawText(err).toLowerCase();
   if (/pro or premium plan|plan[_ ]locked|upgrade required|not included in (your|the) plan/.test(t)) return "plan_locked";
   if (/accounts are not initialized/.test(t)) return "not_initialized";
-  if (/unauthori[sz]ed|forbidden|not allowed|permission denied|access denied|\b401\b|\b403\b/.test(t)) return "permission_denied";
-  if (/not found|no rows|\b404\b/.test(t)) return "not_found";
+  if (/unauthori[sz]ed|not[_ ]authori[sz]ed|forbidden|not allowed|permission denied|access denied|\b401\b|\b403\b/.test(t)) return "permission_denied";
+  if (/not[_ ]found|no rows|\b404\b/.test(t)) return "not_found";
   if (/failed to fetch|networkerror|network request failed|load failed/.test(t)) return "offline";
   return "unavailable";
 }

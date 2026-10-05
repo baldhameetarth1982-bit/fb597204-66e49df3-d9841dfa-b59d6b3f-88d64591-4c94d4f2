@@ -6,6 +6,8 @@
  * or column names, RPC names, constraint names, stack traces, paths, IDs and
  * secrets can't leak into financial screens.
  */
+import i18n from "@/lib/i18n";
+
 export type FinanceErrorKind =
   | "plan_locked"
   | "permission_denied"
@@ -21,38 +23,23 @@ export interface SafeFinanceError {
   retryable: boolean;
 }
 
-const COPY: Record<FinanceErrorKind, Omit<SafeFinanceError, "kind">> = {
-  plan_locked: {
-    title: "Available on a higher plan",
-    message: "This financial view is included in the Growth or Pro plan.",
-    retryable: false,
-  },
-  permission_denied: {
-    title: "Access restricted",
-    message: "You don't have permission to view this financial information.",
-    retryable: false,
-  },
-  not_initialized: {
-    title: "Accounts not set up yet",
-    message: "The society's chart of accounts hasn't been initialized.",
-    retryable: true,
-  },
-  offline: {
-    title: "You're offline",
-    message: "Reconnect to the internet and try again.",
-    retryable: true,
-  },
-  not_found: {
-    title: "Not found",
-    message: "This record could not be found or is no longer available.",
-    retryable: false,
-  },
-  unavailable: {
-    title: "Couldn't load financial data",
-    message: "Something went wrong on our side. Please try again in a moment.",
-    retryable: true,
-  },
+const RETRYABLE: Record<FinanceErrorKind, boolean> = {
+  plan_locked: false,
+  permission_denied: false,
+  not_initialized: true,
+  offline: true,
+  not_found: false,
+  unavailable: true,
 };
+
+/** Copy is resolved at call time so it follows the user's selected language. */
+function copyFor(kind: FinanceErrorKind): Omit<SafeFinanceError, "kind"> {
+  return {
+    title: i18n.t(`financeErr.${kind}.title`),
+    message: i18n.t(`financeErr.${kind}.message`),
+    retryable: RETRYABLE[kind],
+  };
+}
 
 function rawText(err: unknown): string {
   if (typeof err === "string") return err;
@@ -76,7 +63,7 @@ export function classifyFinanceError(err: unknown, online = true): FinanceErrorK
 
 export function toSafeFinanceError(err: unknown, online = true): SafeFinanceError {
   const kind = classifyFinanceError(err, online);
-  return { kind, ...COPY[kind] };
+  return { kind, ...copyFor(kind) };
 }
 
 /**
@@ -88,22 +75,24 @@ export function toSafeFinanceError(err: unknown, online = true): SafeFinanceErro
 const TECHNICAL =
   /violates|constraint|relation|column|syntax|function\s+\w+\(|rpc|pgrst|sqlstate|duplicate key|\bat\s+\S+:\d+|stack|[0-9a-f]{8}-[0-9a-f]{4}-|_\w+_|\bnull value\b|jwt|supabase|postgres/i;
 
-/** Known server error codes mapped to plain-language copy. */
-const CODE_COPY: Record<string, string> = {
-  category_exists: "A category with this name already exists.",
-  invalid_name: "Please enter a name between 2 and 60 characters.",
-  invalid_category: "Please choose a valid category.",
-  income_not_billable: "A bill can't be issued for a rejected or reversed income entry.",
-};
+/** Known server error codes mapped to translated plain-language copy. */
+const CODE_KEYS = new Set([
+  "category_exists",
+  "invalid_name",
+  "invalid_category",
+  "income_not_billable",
+  "structure_mode_not_configured",
+  "document_not_found",
+]);
 
 /** Bare snake_case codes (e.g. "category_exists") are internal identifiers. */
 const BARE_CODE = /^[a-z]+(?:_[a-z0-9]+)+$/;
 
-export function toSafeFinanceMessage(err: unknown, fallback = "Something went wrong. Please try again."): string {
+export function toSafeFinanceMessage(err: unknown, fallback?: string): string {
   const t = rawText(err).trim();
-  if (CODE_COPY[t]) return CODE_COPY[t];
+  if (CODE_KEYS.has(t)) return i18n.t(`financeErr.code.${t}`);
   const kind = classifyFinanceError(err);
-  if (kind !== "unavailable") return COPY[kind].message;
+  if (kind !== "unavailable") return copyFor(kind).message;
   if (t && t.length <= 160 && !TECHNICAL.test(t) && !BARE_CODE.test(t)) return t;
-  return fallback;
+  return fallback ?? i18n.t("errors.generic");
 }

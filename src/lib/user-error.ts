@@ -1,3 +1,5 @@
+import i18n from "@/lib/i18n";
+
 /**
  * Turns any thrown value into text that is safe to show in a toast.
  * Intentional, human-readable server messages pass through; database,
@@ -8,7 +10,8 @@ const TECHNICAL =
   /violates|constraint|relation "|column "|function |does not exist|duplicate key|syntax error|permission denied for|row-level security|jwt|pgrst|sqlstate|null value|invalid input syntax|\bat [\w.$]+ \(|[0-9a-f]{8}-[0-9a-f]{4}-|[{}<>]|https?:\/\//i;
 const NETWORK = /failed to fetch|networkerror|network request failed|load failed/i;
 
-export function userMessage(err: unknown, fallback = "Something went wrong. Please try again."): string {
+export function userMessage(err: unknown, fallback?: string): string {
+  fallback ??= i18n.t("errors.generic");
   const raw =
     typeof err === "string"
       ? err
@@ -17,7 +20,7 @@ export function userMessage(err: unknown, fallback = "Something went wrong. Plea
         : "";
   const text = raw.trim();
   if (!text) return fallback;
-  if (NETWORK.test(text)) return "You appear to be offline. Check your connection and try again.";
+  if (NETWORK.test(text)) return i18n.t("errors.offline");
   if (text.length > 160 || TECHNICAL.test(text)) return fallback;
   return text;
 }

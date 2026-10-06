@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import {
   listSocietyNoDuesRequests,
 } from "@/lib/no-dues.functions";
-import { statusLabel, formatCurrency } from "@/lib/no-dues-labels";
+import { useTranslation } from "react-i18next";
+import { statusLabel, formatCurrency, ndDateTime } from "@/lib/no-dues-labels";
 import { useSocietyId } from "@/hooks/useSocietyId";
 
 export const Route = createFileRoute("/_society/society/no-dues/")({
@@ -36,6 +37,7 @@ function NoDuesAdmin() {
 }
 
 function NoDuesAdminInner() {
+  const { t } = useTranslation();
   const { societyId } = useSocietyId();
   const list = useServerFn(listSocietyNoDuesRequests);
   const { data, isLoading, isError, refetch } = useQuery({
@@ -47,15 +49,15 @@ function NoDuesAdminInner() {
   return (
     <div className="pb-24">
       <MobileHero
-        title="No-Dues Requests"
-        subtitle="Review, approve, and issue no-dues certificates."
+        title={t("nd.adminTitle")}
+        subtitle={t("nd.adminSub")}
       />
       <div className="px-4 space-y-3">
-        {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
-        {isError && <LoadError title="Couldn't load No-Dues requests" onRetry={() => refetch()} />}
+        {isLoading && <p className="text-sm text-muted-foreground">{t("common.loading")}</p>}
+        {isError && <LoadError title={t("nd.loadFail")} onRetry={() => refetch()} />}
         {!isLoading && !isError && (data ?? []).length === 0 && (
           <SectionCard>
-            <p className="text-sm text-muted-foreground">No requests yet.</p>
+            <p className="text-sm text-muted-foreground">{t("nd.emptyAdmin")}</p>
           </SectionCard>
         )}
         {(data ?? []).map((r: any) => {
@@ -64,30 +66,30 @@ function NoDuesAdminInner() {
             <SectionCard key={r.id}>
               <div className="flex items-center justify-between mb-2">
                 <div>
-                  <p className="font-medium">Request {String(r.id).slice(0, 8)}</p>
+                  <p className="font-medium">{t("nd.reqId", { id: String(r.id).slice(0, 8) })}</p>
                   <p className="text-xs text-muted-foreground">
-                    {new Date(r.submitted_at).toLocaleString()}
+                    {ndDateTime(r.submitted_at)}
                   </p>
                 </div>
                 <StatusChip>{statusLabel(r.status)}</StatusChip>
               </div>
               {r.purpose && (
                 <p className="text-sm mb-2">
-                  <span className="text-muted-foreground">Purpose:</span> {r.purpose}
+                  <span className="text-muted-foreground">{t("nd.purpose")}:</span> {r.purpose}
                 </p>
               )}
               {snap.total_outstanding > 0 && (
                 <p className="text-xs text-destructive mb-2">
-                  Outstanding: {formatCurrency(snap.total_outstanding)} ({(snap.blockers?.length ?? 0)} items)
+                  {t("nd.outstandingItems", { amt: formatCurrency(snap.total_outstanding), n: snap.blockers?.length ?? 0 })}
                 </p>
               )}
               <Button asChild size="sm" variant={r.status === "submitted" || r.status === "under_review" || r.status === "approved" ? "default" : "outline"} className="min-h-11">
                 <Link to="/society/no-dues/$id" params={{ id: r.id }}>
                   {r.status === "submitted" || r.status === "under_review"
-                    ? "Review request"
+                    ? t("nd.reviewReq")
                     : r.status === "approved"
-                      ? "Issue certificate"
-                      : "Open details"}
+                      ? t("nd.issueCert")
+                      : t("nd.openDetails")}
                 </Link>
               </Button>
             </SectionCard>

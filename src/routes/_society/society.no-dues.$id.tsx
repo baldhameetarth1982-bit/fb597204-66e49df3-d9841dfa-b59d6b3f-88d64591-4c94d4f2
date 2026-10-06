@@ -28,8 +28,10 @@ import {
   getCertificateVerificationLink,
 } from "@/lib/no-dues.functions";
 import {
-  statusLabel, auditActionLabel, formatCurrency, blockerTitle, blockerSubtitle,
+  statusLabel, auditActionLabel, formatCurrency, blockerTitle, blockerSubtitle, ndDate, ndDateTime,
 } from "@/lib/no-dues-labels";
+import { useTranslation } from "react-i18next";
+import i18n from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/no-dues/$id")({
   head: () => ({
@@ -47,17 +49,18 @@ export const Route = createFileRoute("/_society/society/no-dues/$id")({
 
 function verifyReasonLabel(reason?: string) {
   switch (reason) {
-    case "legacy_migration_required": return "Verification link unavailable for this legacy certificate. The PDF's original QR remains valid.";
-    case "legacy_token_unavailable": return "Verification link unavailable for this older certificate.";
-    case "encryption_unavailable": return "Verification link temporarily unavailable.";
-    case "integrity_check_failed": return "Verification link failed an integrity check.";
-    case "temporarily_unavailable": return "Verification link temporarily unavailable.";
-    default: return "Verification link unavailable.";
+    case "legacy_migration_required": return i18n.t("nd.vl.legacy");
+    case "legacy_token_unavailable": return i18n.t("nd.vl.older");
+    case "encryption_unavailable": return i18n.t("nd.vl.temp");
+    case "integrity_check_failed": return i18n.t("nd.vl.integrity");
+    case "temporarily_unavailable": return i18n.t("nd.vl.temp");
+    default: return i18n.t("nd.vl.none");
   }
 }
 
 function SocietyNoDuesDetail() {
   const { id } = Route.useParams();
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const detailFn = useServerFn(getNoDuesRequestDetail);
   const reviewFn = useServerFn(reviewNoDuesRequest);
@@ -84,30 +87,30 @@ function SocietyNoDuesDetail() {
   const approve = useMutation({
     mutationFn: () => reviewFn({ data: { requestId: id, decision: "approve", notes: approveNotes || undefined } }),
     onSuccess: (r: any) => {
-      toast.success(r?.status === "blocked_by_dues" ? "Blocked — new dues found" : "Approved");
+      toast.success(r?.status === "blocked_by_dues" ? t("nd.blockedNew") : t("nd.st.approved"));
       setApproveOpen(false); setApproveNotes(""); invalidate();
     },
-    onError: (e: any) => toast.error(userMessage(e, "Failed")),
+    onError: (e: any) => toast.error(userMessage(e, t("nd.failed"))),
   });
 
   const reject = useMutation({
     mutationFn: () => reviewFn({ data: { requestId: id, decision: "reject", reason: rejectReason.trim(), notes: rejectNotes || undefined } }),
     onSuccess: () => {
-      toast.success("Rejected");
+      toast.success(t("nd.st.rejected"));
       setRejectOpen(false); setRejectReason(""); setRejectNotes(""); invalidate();
     },
-    onError: (e: any) => toast.error(userMessage(e, "Failed")),
+    onError: (e: any) => toast.error(userMessage(e, t("nd.failed"))),
   });
 
   const issue = useMutation({
     mutationFn: () => issueFn({ data: { requestId: id, validForDays: 90 } }),
-    onSuccess: () => { toast.success("Certificate issued"); setIssueOpen(false); invalidate(); },
+    onSuccess: () => { toast.success(t("nd.au.issue")); setIssueOpen(false); invalidate(); },
     onError: (e: any) => {
       const m = e?.message;
       const friendly =
-        m === "BLOCKED_BY_DUES" ? "Blocked — dues appeared during issuance" :
-        m === "ISSUE_FAILED" ? "Certificate could not be issued. Please try again." :
-        "Failed to issue certificate";
+        m === "BLOCKED_BY_DUES" ? t("nd.blockedIssue") :
+        m === "ISSUE_FAILED" ? t("nd.issueFail") :
+        t("nd.issueFailGen");
       toast.error(friendly);
     },
   });
@@ -118,8 +121,8 @@ function SocietyNoDuesDetail() {
       if (!cid) throw new Error("No certificate");
       return revokeFn({ data: { certificateId: cid, reason: revokeReason.trim() } });
     },
-    onSuccess: () => { toast.success("Revoked"); setRevokeOpen(false); setRevokeReason(""); invalidate(); },
-    onError: (e: any) => toast.error(userMessage(e, "Failed")),
+    onSuccess: () => { toast.success(t("nd.st.revoked")); setRevokeOpen(false); setRevokeReason(""); invalidate(); },
+    onError: (e: any) => toast.error(userMessage(e, t("nd.failed"))),
   });
 
   const handleDownload = async () => {
@@ -128,7 +131,7 @@ function SocietyNoDuesDetail() {
     try {
       const r = await dlFn({ data: { certificateId: cid } });
       window.open(r.url, "_blank");
-    } catch (e: any) { toast.error(userMessage(e, "Failed")); }
+    } catch (e: any) { toast.error(userMessage(e, t("nd.failed"))); }
   };
 
   const handleCopyVerify = async () => {
@@ -138,14 +141,14 @@ function SocietyNoDuesDetail() {
       const r: any = await linkFn({ data: { certificateId: cid } });
       if (!r?.available) { toast.error(verifyReasonLabel(r?.reason)); return; }
       await navigator.clipboard.writeText(r.url);
-      toast.success("Link copied");
-    } catch { toast.error("Failed to fetch verification link"); }
+      toast.success(t("nd.linkCopied"));
+    } catch { toast.error(t("nd.linkFetchFail")); }
   };
 
   if (isLoading || !data) {
     return (
       <div className="pb-24">
-        <MobileHero title="No-Dues Request" subtitle="Loading…" />
+        <MobileHero title={t("nd.reqTitle")} subtitle={t("common.loading")} />
       </div>
     );
   }
@@ -168,37 +171,37 @@ function SocietyNoDuesDetail() {
   return (
     <div className="pb-24">
       <MobileHero
-        title={`Request · ${flat?.flat_number ?? "—"}`}
-        subtitle={resident?.full_name ?? "Resident"}
+        title={t("nd.reqFor", { unit: flat?.flat_number ?? "—" })}
+        subtitle={resident?.full_name ?? t("nd.resident")}
       />
       <div className="px-4 space-y-3">
         <SectionCard>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-muted-foreground">Status</p>
+              <p className="text-xs text-muted-foreground">{t("common.status")}</p>
               <StatusChip>{statusLabel(req.status)}</StatusChip>
             </div>
-            <div className="text-right">
-              <p className="text-xs text-muted-foreground">Outstanding</p>
+            <div className="text-end">
+              <p className="text-xs text-muted-foreground">{t("nd.outstandingLbl")}</p>
               <p className="font-semibold">{formatCurrency(elig?.total_outstanding)}</p>
             </div>
           </div>
           {req.purpose && (
             <p className="text-sm mt-2">
-              <span className="text-muted-foreground">Purpose: </span>{req.purpose}
+              <span className="text-muted-foreground">{t("nd.purpose")}: </span>{req.purpose}
             </p>
           )}
           {req.rejection_reason && (
-            <p className="text-sm mt-2 text-destructive">Reason: {req.rejection_reason}</p>
+            <p className="text-sm mt-2 text-destructive">{t("nd.reasonV", { v: req.rejection_reason })}</p>
           )}
         </SectionCard>
 
         {blockers.length > 0 && (
           <SectionCard>
-            <p className="text-sm font-medium mb-2">Blockers</p>
+            <p className="text-sm font-medium mb-2">{t("nd.blockers")}</p>
             <ul className="space-y-3">
               {blockers.slice(0, 20).map((b: any, i: number) => (
-                <li key={i} className="border-l-2 border-destructive/40 pl-3">
+                <li key={i} className="border-s-2 border-destructive/40 ps-3">
                   <p className="text-sm font-medium">{blockerTitle(b)}</p>
                   {blockerSubtitle(b) && (
                     <p className="text-xs text-muted-foreground">{blockerSubtitle(b)}</p>
@@ -211,51 +214,50 @@ function SocietyNoDuesDetail() {
 
         {cert && (
           <SectionCard>
-            <p className="text-sm font-medium mb-1">Certificate</p>
-            <p className="text-xs text-muted-foreground">No. {cert.certificate_number}</p>
+            <p className="text-sm font-medium mb-1">{t("nd.cert")}</p>
+            <p className="text-xs text-muted-foreground">{t("nd.certNo", { n: cert.certificate_number })}</p>
             <p className="text-xs text-muted-foreground">
-              Issued {new Date(cert.issued_at).toLocaleDateString()}
-              {cert.valid_until ? ` · valid till ${cert.valid_until}` : ""}
+              {t("nd.issuedOn", { d: ndDate(cert.issued_at) })}
+              {cert.valid_until ? ` · ${t("nd.validTill", { d: cert.valid_until })}` : ""}
             </p>
             {cert.revoked_at && (
-              <p className="text-xs text-destructive">Revoked · {cert.revoke_reason ?? ""}</p>
+              <p className="text-xs text-destructive">{t("nd.revokedV", { v: cert.revoke_reason ?? "" })}</p>
             )}
             <div className="flex gap-2 mt-2 flex-wrap">
-              <Button size="sm" variant="outline" onClick={handleDownload}>Download</Button>
-              <Button size="sm" variant="ghost" onClick={handleCopyVerify}>Copy verify link</Button>
+              <Button size="sm" variant="outline" onClick={handleDownload}>{t("common.download")}</Button>
+              <Button size="sm" variant="ghost" onClick={handleCopyVerify}>{t("nd.copyLink")}</Button>
             </div>
           </SectionCard>
         )}
 
         {(canApprove || canReject) && (
           <SectionCard>
-            <p className="text-sm font-medium mb-2">Review</p>
+            <p className="text-sm font-medium mb-2">{t("nd.review")}</p>
             <div className="flex gap-2 flex-wrap">
               {canApprove && (
                 <Dialog open={approveOpen} onOpenChange={setApproveOpen}>
                   <DialogTrigger asChild>
-                    <Button size="sm">Approve…</Button>
+                    <Button size="sm">{t("nd.approveBtn")}</Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Approve request?</DialogTitle>
+                      <DialogTitle>{t("nd.approveTitle")}</DialogTitle>
                       <DialogDescription>
-                        Eligibility will be rechecked. If new dues appeared, the request
-                        moves to Blocked by Dues instead of being approved.
+                        {t("nd.approveDesc")}
                       </DialogDescription>
                     </DialogHeader>
                     <Textarea
-                      placeholder="Notes (optional)"
+                      placeholder={t("nd.notesOpt")}
                       value={approveNotes}
                       onChange={(e) => setApproveNotes(e.target.value)}
                       maxLength={1000}
                     />
                     <DialogFooter>
                       <DialogClose asChild>
-                        <Button variant="outline" disabled={approve.isPending}>Cancel</Button>
+                        <Button variant="outline" disabled={approve.isPending}>{t("common.cancel")}</Button>
                       </DialogClose>
                       <Button onClick={() => approve.mutate()} disabled={approve.isPending}>
-                        {approve.isPending ? "Approving…" : "Confirm approve"}
+                        {approve.isPending ? t("nd.approving") : t("nd.confirmApprove")}
                       </Button>
                     </DialogFooter>
                   </DialogContent>
@@ -264,17 +266,17 @@ function SocietyNoDuesDetail() {
               {canReject && (
                 <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
                   <DialogTrigger asChild>
-                    <Button size="sm" variant="destructive">Reject…</Button>
+                    <Button size="sm" variant="destructive">{t("nd.rejectBtn")}</Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Reject request?</DialogTitle>
+                      <DialogTitle>{t("nd.rejectTitle")}</DialogTitle>
                       <DialogDescription>
-                        The resident will see this reason. Please be specific.
+                        {t("nd.rejectDesc")}
                       </DialogDescription>
                     </DialogHeader>
                     <Textarea
-                      placeholder="Reason (required, 3–500 chars)"
+                      placeholder={t("nd.reasonPh")}
                       value={rejectReason}
                       onChange={(e) => setRejectReason(e.target.value)}
                       minLength={3}
@@ -282,21 +284,21 @@ function SocietyNoDuesDetail() {
                       className="mb-2"
                     />
                     <Textarea
-                      placeholder="Internal notes (optional)"
+                      placeholder={t("nd.internalNotes")}
                       value={rejectNotes}
                       onChange={(e) => setRejectNotes(e.target.value)}
                       maxLength={1000}
                     />
                     <DialogFooter>
                       <DialogClose asChild>
-                        <Button variant="outline" disabled={reject.isPending}>Cancel</Button>
+                        <Button variant="outline" disabled={reject.isPending}>{t("common.cancel")}</Button>
                       </DialogClose>
                       <Button
                         variant="destructive"
                         onClick={() => reject.mutate()}
                         disabled={reject.isPending || !rejectValid}
                       >
-                        {reject.isPending ? "Rejecting…" : "Confirm reject"}
+                        {reject.isPending ? t("nd.rejecting") : t("nd.confirmReject")}
                       </Button>
                     </DialogFooter>
                   </DialogContent>
@@ -310,22 +312,21 @@ function SocietyNoDuesDetail() {
           <SectionCard>
             <Dialog open={issueOpen} onOpenChange={setIssueOpen}>
               <DialogTrigger asChild>
-                <Button className="w-full">Issue Certificate…</Button>
+                <Button className="w-full">{t("nd.issueBtn")}</Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Issue certificate?</DialogTitle>
+                  <DialogTitle>{t("nd.issueTitle")}</DialogTitle>
                   <DialogDescription>
-                    Final eligibility will be rechecked during issuance. If new dues
-                    appeared the certificate will not be issued. Default validity is 90 days.
+                    {t("nd.issueDesc")}
                   </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
                   <DialogClose asChild>
-                    <Button variant="outline" disabled={issue.isPending}>Cancel</Button>
+                    <Button variant="outline" disabled={issue.isPending}>{t("common.cancel")}</Button>
                   </DialogClose>
                   <Button onClick={() => issue.mutate()} disabled={issue.isPending}>
-                    {issue.isPending ? "Issuing…" : "Confirm issue"}
+                    {issue.isPending ? t("nd.issuing") : t("nd.confirmIssue")}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -337,31 +338,30 @@ function SocietyNoDuesDetail() {
           <SectionCard>
             <AlertDialog open={revokeOpen} onOpenChange={setRevokeOpen}>
               <AlertDialogTrigger asChild>
-                <Button size="sm" variant="destructive">Revoke Certificate…</Button>
+                <Button size="sm" variant="destructive">{t("nd.revokeBtn")}</Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Revoke this certificate?</AlertDialogTitle>
+                  <AlertDialogTitle>{t("nd.revokeTitle")}</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Public verification will show this certificate as <strong>Revoked</strong>.
-                    This cannot be undone. Provide a reason (visible on the audit log).
+                    {t("nd.revokeDesc")}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <Textarea
-                  placeholder="Reason (required, 3–500 chars)"
+                  placeholder={t("nd.reasonPh")}
                   value={revokeReason}
                   onChange={(e) => setRevokeReason(e.target.value)}
                   minLength={3}
                   maxLength={500}
                 />
                 <AlertDialogFooter>
-                  <AlertDialogCancel disabled={revoke.isPending}>Cancel</AlertDialogCancel>
+                  <AlertDialogCancel disabled={revoke.isPending}>{t("common.cancel")}</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={(e) => { e.preventDefault(); revoke.mutate(); }}
                     disabled={revoke.isPending || !revokeValid}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   >
-                    {revoke.isPending ? "Revoking…" : "Confirm revoke"}
+                    {revoke.isPending ? t("nd.revoking") : t("nd.confirmRevoke")}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -370,13 +370,13 @@ function SocietyNoDuesDetail() {
         )}
 
         <SectionCard>
-          <p className="text-sm font-medium mb-2">Timeline</p>
+          <p className="text-sm font-medium mb-2">{t("nd.timeline")}</p>
           <ul className="space-y-2 text-xs">
             {audit.map((a: any) => (
               <li key={a.id} className="flex justify-between">
                 <span>{auditActionLabel(a.action)}</span>
                 <span className="text-muted-foreground">
-                  {new Date(a.created_at).toLocaleString()}
+                  {ndDateTime(a.created_at)}
                 </span>
               </li>
             ))}

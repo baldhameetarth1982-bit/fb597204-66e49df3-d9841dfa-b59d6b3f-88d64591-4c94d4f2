@@ -20,7 +20,8 @@ import {
   getCertificateDownloadUrl,
   getNoDuesRequestDetail,
 } from "@/lib/no-dues.functions";
-import { statusLabel, formatCurrency } from "@/lib/no-dues-labels";
+import { useTranslation } from "react-i18next";
+import { statusLabel, formatCurrency, ndDate } from "@/lib/no-dues-labels";
 
 export const Route = createFileRoute("/_resident/app/no-dues/")({
   head: () => ({
@@ -37,6 +38,7 @@ export const Route = createFileRoute("/_resident/app/no-dues/")({
 });
 
 function ResidentNoDues() {
+  const { t } = useTranslation();
   const list = useServerFn(listMyNoDuesRequests);
   const submit = useServerFn(submitNoDuesRequest);
   const check = useServerFn(checkNoDuesEligibility);
@@ -61,30 +63,30 @@ function ResidentNoDues() {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      if (!myFlat) throw new Error("No active flat");
+      if (!myFlat) throw new Error(t("nd.noHome"));
       return submit({
         data: { societyId: myFlat.society_id, flatId: myFlat.id, purpose: purpose || undefined },
       });
     },
     onSuccess: (r: any) => {
       if (r.status === "blocked_by_dues")
-        toast.warning(`Blocked: ₹${r.snapshot?.total_outstanding ?? 0} outstanding`);
-      else toast.success("Request submitted");
+        toast.warning(t("nd.blockedToast", { amt: formatCurrency(r.snapshot?.total_outstanding ?? 0) }));
+      else toast.success(t("nd.submitted"));
       setPurpose("");
       refetch();
     },
-    onError: (e: any) => toast.error(userMessage(e, "Failed")),
+    onError: (e: any) => toast.error(userMessage(e, t("nd.failed"))),
   });
 
   return (
     <div className="pb-24">
-      <MobileHero title="No-Dues Certificate" subtitle="Request and track a certificate for your home." icon={FileCheck2} />
+      <MobileHero title={t("nd.title")} subtitle={t("nd.subtitle")} icon={FileCheck2} />
       <div className="mx-auto max-w-3xl space-y-4 px-4 pt-4">
-        <SectionCard title="New request" description="The committee checks your current dues before issuing a certificate.">
-          <label htmlFor="no-dues-purpose" className="mb-2 block text-sm font-medium">Purpose</label>
+        <SectionCard title={t("nd.newReq")} description={t("nd.newReqDesc")}>
+          <label htmlFor="no-dues-purpose" className="mb-2 block text-sm font-medium">{t("nd.purpose")}</label>
           <Input
             id="no-dues-purpose"
-            placeholder="Purpose (e.g. society transfer)"
+            placeholder={t("nd.purposePh")}
             value={purpose}
             onChange={(e) => setPurpose(e.target.value)}
             maxLength={500}
@@ -95,29 +97,29 @@ function ResidentNoDues() {
             disabled={!myFlat || mutation.isPending}
             className="w-full"
           >
-            {mutation.isPending ? "Submitting…" : "Submit request"}
+            {mutation.isPending ? t("nd.submitting") : t("nd.submit")}
           </Button>
         </SectionCard>
 
         {(requests ?? []).length === 0 && (
           <div className="border-y border-dashed border-border py-10 text-center">
             <FileCheck2 className="mx-auto h-7 w-7 text-muted-foreground" aria-hidden />
-            <p className="mt-2 text-sm font-medium">No requests yet</p>
-            <p className="mt-1 text-xs text-muted-foreground">Your submitted requests will appear here.</p>
+            <p className="mt-2 text-sm font-medium">{t("nd.empty")}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t("nd.emptyDesc")}</p>
           </div>
         )}
         {(requests ?? []).map((r: any) => (
           <SectionCard key={r.id}>
             <div className="flex items-center justify-between mb-1">
               <p className="text-sm font-medium">
-                {new Date(r.submitted_at).toLocaleDateString()}
+                {ndDate(r.submitted_at)}
               </p>
               <StatusChip>{statusLabel(r.status)}</StatusChip>
             </div>
             {r.purpose && <p className="text-xs text-muted-foreground">{r.purpose}</p>}
             {r.eligibility_snapshot?.total_outstanding > 0 && (
               <p className="text-xs text-destructive mt-1">
-                Outstanding {formatCurrency(r.eligibility_snapshot.total_outstanding)}
+                {t("nd.outstanding", { amt: formatCurrency(r.eligibility_snapshot.total_outstanding) })}
               </p>
             )}
             {r.status === "issued" && (
@@ -136,6 +138,7 @@ function ResidentNoDues() {
  * resolved via the authorized `getNoDuesRequestDetail` server function.
  */
 function CertificateDownload({ requestId, dl }: { requestId: string; dl: any }) {
+  const { t } = useTranslation();
   const detail = useServerFn(getNoDuesRequestDetail);
   const { data: certId, isLoading } = useQuery({
     queryKey: ["cert-for-req", requestId],
@@ -150,7 +153,7 @@ function CertificateDownload({ requestId, dl }: { requestId: string; dl: any }) 
       const r = await dl({ data: { certificateId: certId } });
       window.open(r.url, "_blank");
     } catch (e: any) {
-      toast.error(userMessage(e, "Failed"));
+      toast.error(userMessage(e, t("nd.failed")));
     }
   };
   return (
@@ -161,7 +164,7 @@ function CertificateDownload({ requestId, dl }: { requestId: string; dl: any }) 
       onClick={handle}
       disabled={isLoading || !certId}
     >
-      {isLoading ? "Preparing…" : certId ? "Download Certificate" : "Certificate unavailable"}
+      {isLoading ? t("nd.preparing") : certId ? t("nd.downloadCert") : t("nd.certUnavailable")}
     </Button>
   );
 }

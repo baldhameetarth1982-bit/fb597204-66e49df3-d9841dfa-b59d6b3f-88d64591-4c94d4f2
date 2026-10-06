@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { useTranslation } from "react-i18next";
+import i18n from "@/lib/i18n";
 import { toast } from "sonner";
 import { Camera, ImagePlus, Loader2, RotateCw, X, CheckCircle2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,18 +13,12 @@ export const MAX_PHOTOS = 5;
 const MAX_BYTES = 5 * 1024 * 1024;
 const OK_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
-const MSG: Record<string, string> = {
-  invalid_file: "Only JPG, PNG or WebP photos up to 5 MB.",
-  too_many_files: `A violation can have up to ${MAX_PHOTOS} photos.`,
-  not_authorized: "You can't add photos to this violation.",
-  locked: "This violation is closed; photos can't be added.",
-  rate_limited: "Too many uploads. Try again shortly.",
-  reason_required: "Please give a reason.",
-};
+const MSG_KEYS = ["invalid_file", "too_many_files", "not_authorized", "locked", "rate_limited", "reason_required"] as const;
+const msg = (k: (typeof MSG_KEYS)[number]) => i18n.t(`pk.e.${k}`, { n: MAX_PHOTOS }) as string;
 export function evidenceError(e: unknown) {
   const m = (e as { message?: string } | null)?.message ?? "";
-  for (const k of Object.keys(MSG)) if (m.includes(k)) return MSG[k];
-  return "Upload failed. Check your connection and retry.";
+  for (const k of MSG_KEYS) if (m.includes(k)) return msg(k);
+  return i18n.t("pk.e.upload") as string;
 }
 
 export function toBase64(file: File): Promise<string> {
@@ -45,8 +41,8 @@ export function usePhotoQueue() {
     if (!files) return;
     const next: Pending[] = [];
     for (const f of Array.from(files)) {
-      if (ref.current.length + next.length >= MAX_PHOTOS) { toast.error(MSG.too_many_files); break; }
-      if (!OK_TYPES.includes(f.type) || f.size > MAX_BYTES || f.size < 12) { toast.error(`${f.name}: ${MSG.invalid_file}`); continue; }
+      if (ref.current.length + next.length >= MAX_PHOTOS) { toast.error(msg("too_many_files")); break; }
+      if (!OK_TYPES.includes(f.type) || f.size > MAX_BYTES || f.size < 12) { toast.error(`${f.name}: ${msg("invalid_file")}`); continue; }
       next.push({ key: crypto.randomUUID(), file: f, preview: URL.createObjectURL(f), state: "ready" });
     }
     if (next.length) setItems((s) => [...s, ...next]);
@@ -58,6 +54,7 @@ export function usePhotoQueue() {
 }
 
 export function PhotoPicker({ q, disabled, onRetry }: { q: ReturnType<typeof usePhotoQueue>; disabled?: boolean; onRetry?: (p: Pending) => void }) {
+  const { t } = useTranslation();
   const cam = useRef<HTMLInputElement>(null);
   const lib = useRef<HTMLInputElement>(null);
   const full = q.items.length >= MAX_PHOTOS;
@@ -66,25 +63,25 @@ export function PhotoPicker({ q, disabled, onRetry }: { q: ReturnType<typeof use
       <div className="flex flex-wrap gap-2">
         <input ref={cam} type="file" accept="image/*" capture="environment" className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => { q.add(e.target.files); e.target.value = ""; }} />
         <input ref={lib} type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => { q.add(e.target.files); e.target.value = ""; }} />
-        <Button type="button" variant="outline" className="min-h-11 rounded-xl" disabled={disabled || full} onClick={() => cam.current?.click()}><Camera className="mr-1 h-4 w-4" />Take photo</Button>
-        <Button type="button" variant="outline" className="min-h-11 rounded-xl" disabled={disabled || full} onClick={() => lib.current?.click()}><ImagePlus className="mr-1 h-4 w-4" />Choose photo</Button>
+        <Button type="button" variant="outline" className="min-h-11 rounded-xl" disabled={disabled || full} onClick={() => cam.current?.click()}><Camera className="me-1 h-4 w-4" />{t("pk.takePhoto")}</Button>
+        <Button type="button" variant="outline" className="min-h-11 rounded-xl" disabled={disabled || full} onClick={() => lib.current?.click()}><ImagePlus className="me-1 h-4 w-4" />{t("pk.choosePhoto")}</Button>
       </div>
       {q.items.length > 0 && (
-        <ul className="grid grid-cols-3 gap-2 sm:grid-cols-5" aria-label="Photos to attach">
+        <ul className="grid grid-cols-3 gap-2 sm:grid-cols-5" aria-label={t("pk.photosToAttach")}>
           {q.items.map((p) => (
             <li key={p.key} className="relative aspect-square overflow-hidden rounded-xl border border-border bg-muted">
-              <img src={p.preview} alt="Selected evidence preview" className="h-full w-full object-cover" />
-              {p.state === "uploading" && <span className="absolute inset-0 flex items-center justify-center bg-background/70"><Loader2 className="h-5 w-5 animate-spin" aria-label="Uploading" /></span>}
-              {p.state === "done" && <span className="absolute bottom-1 left-1 rounded-full bg-background/90 p-0.5"><CheckCircle2 className="h-4 w-4 text-primary" aria-label="Attached" /></span>}
+              <img src={p.preview} alt={t("pk.preview")} className="h-full w-full object-cover" />
+              {p.state === "uploading" && <span className="absolute inset-0 flex items-center justify-center bg-background/70"><Loader2 className="h-5 w-5 animate-spin" aria-label={t("pk.uploading")} /></span>}
+              {p.state === "done" && <span className="absolute bottom-1 left-1 rounded-full bg-background/90 p-0.5"><CheckCircle2 className="h-4 w-4 text-primary" aria-label={t("pk.attached")} /></span>}
               {p.state === "failed" && (
                 <span className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-background/85 p-1 text-center">
                   <AlertCircle className="h-4 w-4 text-destructive" aria-hidden />
-                  <span className="text-[10px] leading-tight">{p.error ?? "Failed"}</span>
-                  {onRetry && <Button type="button" size="sm" variant="outline" className="h-8 px-2 text-xs" onClick={() => onRetry(p)}><RotateCw className="mr-1 h-3 w-3" />Retry</Button>}
+                  <span className="text-[10px] leading-tight">{p.error ?? t("go.q.failed")}</span>
+                  {onRetry && <Button type="button" size="sm" variant="outline" className="h-8 px-2 text-xs" onClick={() => onRetry(p)}><RotateCw className="me-1 h-3 w-3" />{t("common.retry")}</Button>}
                 </span>
               )}
               {(p.state === "ready" || p.state === "failed") && (
-                <button type="button" aria-label="Remove photo" onClick={() => q.remove(p.key)} className="absolute right-1 top-1 flex h-8 w-8 items-center justify-center rounded-full bg-background/90 shadow">
+                <button type="button" aria-label={t("fd.removePhoto")} onClick={() => q.remove(p.key)} className="absolute right-1 top-1 flex h-8 w-8 items-center justify-center rounded-full bg-background/90 shadow">
                   <X className="h-4 w-4" />
                 </button>
               )}
@@ -92,7 +89,7 @@ export function PhotoPicker({ q, disabled, onRetry }: { q: ReturnType<typeof use
           ))}
         </ul>
       )}
-      <p className="text-xs text-muted-foreground">Up to {MAX_PHOTOS} photos · JPG, PNG or WebP · 5 MB each. Photos stay private to security and the committee.</p>
+      <p className="text-xs text-muted-foreground">{t("pk.photoRules", { n: MAX_PHOTOS })}</p>
     </div>
   );
 }
@@ -152,7 +149,7 @@ export function ViolationEvidence({ violationId, canAdd, canRemove }: { violatio
                     <img src={e.url} alt="Violation evidence" loading="lazy" className="h-full w-full object-cover" onError={() => void q.refetch()} />
                   </a>
                 ) : <span className="flex h-full items-center justify-center p-1 text-center text-xs text-muted-foreground">Link expired — <button type="button" className="underline" onClick={() => void q.refetch()}>reload</button></span>}
-                {canRemove && <button type="button" aria-label="Remove photo" onClick={() => void removeOne(e.id)} className="absolute right-1 top-1 flex h-8 w-8 items-center justify-center rounded-full bg-background/90 shadow"><X className="h-4 w-4" /></button>}
+                {canRemove && <button type="button" aria-label={t("fd.removePhoto")} onClick={() => void removeOne(e.id)} className="absolute right-1 top-1 flex h-8 w-8 items-center justify-center rounded-full bg-background/90 shadow"><X className="h-4 w-4" /></button>}
               </li>
             ))}
           </ul>

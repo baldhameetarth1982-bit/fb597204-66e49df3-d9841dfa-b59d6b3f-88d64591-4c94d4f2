@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -12,7 +13,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatusChip, SummaryStrip, ListSkeleton, LoadError, ListEmpty, SegmentedFilter, SearchField } from "@/components/people/PeopleUI";
 import { gateErrorMessage, fmtTime } from "@/lib/visitors";
-import { allocationState, label, TEMP_PURPOSES, toCsv, VIOLATION_TYPES } from "./parking";
+import { allocationState, label, TEMP_PURPOSES, toCsv, VIOLATION_TYPES, violationLabel } from "./parking";
 import { PhotoPicker, usePhotoQueue, useEvidenceUploader, ViolationEvidence, type Pending } from "./ViolationEvidence";
 
 const NONE = "__none";
@@ -383,6 +384,7 @@ export function TemporaryTab({ d }: { d: PData }) {
 interface Viol { id: string; violation_type: string; slot_id: string | null; vehicle_id: string | null; flat_id: string | null; plate_text: string | null; location: string | null; description: string | null; occurred_at: string; status: string; resolution_note: string | null }
 
 export function ViolationReportForm({ slots, onDone }: { slots: { id: string; label: string }[]; onDone?: () => void }) {
+  const { t } = useTranslation();
   const [f, setF] = useState({ type: "wrong_slot", slot: NONE, plate: "", location: "", description: "" });
   const [busy, setBusy] = useState(false);
   // Set once the violation is saved but some photos failed: the form stays put for retry.
@@ -395,49 +397,49 @@ export function ViolationReportForm({ slots, onDone }: { slots: { id: string; la
   }
   async function uploadFor(id: string, only?: Pending[]) {
     const failed = await runUpload(id, photos, only);
-    if (failed) { setSavedId(id); toast.error(`${failed} photo${failed > 1 ? "s" : ""} didn't upload. Retry or remove ${failed > 1 ? "them" : "it"}.`); return; }
-    toast.success("Violation recorded with photos. The committee has been told.");
+    if (failed) { setSavedId(id); toast.error(t("pk.photosFailed", { count: failed })); return; }
+    toast.success(t("pk.okPhotos"));
     finish();
   }
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
     if (savedId) { setBusy(true); await uploadFor(savedId); setBusy(false); return; }
-    if (f.slot === NONE && f.plate.replace(/[^a-z0-9]/gi, "").length < 3) return toast.error("Pick a slot or enter the number plate.");
+    if (f.slot === NONE && f.plate.replace(/[^a-z0-9]/gi, "").length < 3) return toast.error(t("pk.needSlot"));
     setBusy(true);
     const { data, error } = await rpc("parking_violation_report", { _type: f.type, _slot_id: n(f.slot), _plate: f.plate || null, _location: f.location || null, _description: f.description || null, _occurred_at: null });
     if (error) { setBusy(false); return toast.error(gateErrorMessage(error)); }
     if (photos.items.length && typeof data === "string") { await uploadFor(data); setBusy(false); return; }
     setBusy(false);
-    toast.success("Violation recorded. The committee has been told.");
+    toast.success(t("pk.ok"));
     finish();
   }
   const locked = !!savedId;
   const pendingLeft = photos.items.some((p) => p.state !== "done");
   return (
-    <form onSubmit={submit} className="space-y-3" aria-label="Report a parking violation">
+    <form onSubmit={submit} className="space-y-3" aria-label={t("pk.report")}>
       <fieldset disabled={locked} className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-2">
-        <div><Label>Type</Label>
-          <Select value={f.type} onValueChange={(v) => setF({ ...f, type: v })}><SelectTrigger aria-label="Violation type" className="h-11"><SelectValue /></SelectTrigger>
-            <SelectContent>{VIOLATION_TYPES.map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent></Select>
+        <div><Label>{t("cm.type")}</Label>
+          <Select value={f.type} onValueChange={(v) => setF({ ...f, type: v })}><SelectTrigger aria-label={t("pk.violationType")} className="h-11"><SelectValue /></SelectTrigger>
+            <SelectContent>{VIOLATION_TYPES.map(([k]) => <SelectItem key={k} value={k}>{violationLabel(k)}</SelectItem>)}</SelectContent></Select>
         </div>
-        <div><Label>Slot</Label>
-          <Select value={f.slot} onValueChange={(v) => setF({ ...f, slot: v })}><SelectTrigger aria-label="Slot" className="h-11"><SelectValue /></SelectTrigger>
-            <SelectContent><SelectItem value={NONE}>Not in a slot</SelectItem>{slots.map((s) => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}</SelectContent></Select>
+        <div><Label>{t("vh.slot")}</Label>
+          <Select value={f.slot} onValueChange={(v) => setF({ ...f, slot: v })}><SelectTrigger aria-label={t("vh.slot")} className="h-11"><SelectValue /></SelectTrigger>
+            <SelectContent><SelectItem value={NONE}>{t("pk.notInSlot")}</SelectItem>{slots.map((s) => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}</SelectContent></Select>
         </div>
-        <div><Label htmlFor="v-plate">Number plate</Label><Input id="v-plate" className="h-11 font-mono uppercase" value={f.plate} onChange={(e) => setF({ ...f, plate: e.target.value })} maxLength={15} placeholder="GJ01AB1234" /></div>
-        <div><Label htmlFor="v-loc">Location</Label><Input id="v-loc" className="h-11" value={f.location} onChange={(e) => setF({ ...f, location: e.target.value })} maxLength={120} placeholder="e.g. Ramp to B1" /></div>
+        <div><Label htmlFor="v-plate">{t("gd.plate")}</Label><Input id="v-plate" className="h-11 font-mono uppercase" value={f.plate} onChange={(e) => setF({ ...f, plate: e.target.value })} maxLength={15} placeholder="GJ01AB1234" /></div>
+        <div><Label htmlFor="v-loc">{t("pk.location")}</Label><Input id="v-loc" className="h-11" value={f.location} onChange={(e) => setF({ ...f, location: e.target.value })} maxLength={120} placeholder={t("pk.locPh")} /></div>
       </div>
-      <div><Label htmlFor="v-desc">What happened</Label><Textarea id="v-desc" value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} maxLength={500} rows={2} /></div>
+      <div><Label htmlFor="v-desc">{t("pk.what")}</Label><Textarea id="v-desc" value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} maxLength={500} rows={2} /></div>
       </fieldset>
-      <div><Label>Photos (optional)</Label><PhotoPicker q={photos} disabled={busy} onRetry={savedId ? (p) => { setBusy(true); void uploadFor(savedId, [p]).finally(() => setBusy(false)); } : undefined} /></div>
-      {locked && <p role="status" className="text-xs">Violation saved. {pendingLeft ? "Retry the failed photos, or remove them and finish." : ""}</p>}
+      <div><Label>{t("pk.photos")}</Label><PhotoPicker q={photos} disabled={busy} onRetry={savedId ? (p) => { setBusy(true); void uploadFor(savedId, [p]).finally(() => setBusy(false)); } : undefined} /></div>
+      {locked && <p role="status" className="text-xs">{t("pk.saved")} {pendingLeft ? t("pk.retryHint") : ""}</p>}
       <div className="flex gap-2">
-        <Button type="submit" className="min-h-11 flex-1 rounded-xl" disabled={busy || (locked && !pendingLeft)}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : locked ? "Retry photos" : "Record violation"}</Button>
-        {locked && <Button type="button" variant="outline" className="min-h-11 rounded-xl" disabled={busy} onClick={finish}>Finish</Button>}
+        <Button type="submit" className="min-h-11 flex-1 rounded-xl" disabled={busy || (locked && !pendingLeft)}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : locked ? t("pk.retryPhotos") : t("pk.record")}</Button>
+        {locked && <Button type="button" variant="outline" className="min-h-11 rounded-xl" disabled={busy} onClick={finish}>{t("pk.finish")}</Button>}
       </div>
-      <p className="text-xs text-muted-foreground">A violation is a record only. It never adds a charge to anyone's bill.</p>
+      <p className="text-xs text-muted-foreground">{t("pk.noCharge")}</p>
     </form>
   );
 }

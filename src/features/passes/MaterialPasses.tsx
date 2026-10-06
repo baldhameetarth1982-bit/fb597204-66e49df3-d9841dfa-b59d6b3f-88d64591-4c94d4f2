@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import i18n, { localeTag } from "@/lib/i18n";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Truck, Plus, Loader2 } from "lucide-react";
@@ -19,23 +21,27 @@ export const KIND_LABEL: Record<string, string> = {
   move_in: "Move in", move_out: "Move out",
 };
 const SEL = "id,flat_id,kind,description,valid_from,valid_until,lift_required,contractor_name,status,decision_reason,flats(flat_number)";
-const fmt = (v: string) => new Date(v).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+const fmt = (v: string) => new Date(v).toLocaleString(localeTag(), { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", numberingSystem: "latn" });
+const tr = (k: string) => i18n.t(k) as string;
+export const kindLabel = (k: string) => (KIND_LABEL[k] ? tr(`mp.k.${k}`) : k);
+const STATUS_KEY: Record<string, string> = { pending: "vs.st.awaiting", approved: "vs.st.approved", in_progress: "hd.st.in_progress", completed: "am.st.completed", rejected: "inc.st.rejected", cancelled: "rbills.cancelled", expired: "cm.st.expired" };
+const statusLabel = (s: string) => (STATUS_KEY[s] ? tr(STATUS_KEY[s]) : s.replace("_", " "));
 const errMsg = (e: { message?: string }) => {
   const m = e.message ?? "";
-  if (m.includes("rate_limited")) return "Too many requests today. Try again tomorrow.";
-  if (m.includes("invalid_transition")) return "This pass has already changed. Refresh and try again.";
-  if (m.includes("42501") || m.includes("Not allowed")) return "You don't have permission to do that.";
-  return m.length < 120 && m ? m : "Something went wrong. Please try again.";
+  if (m.includes("rate_limited")) return tr("mp.e.rate");
+  if (m.includes("invalid_transition")) return tr("mp.e.changed");
+  if (m.includes("42501") || m.includes("Not allowed")) return tr("hd.err.denied");
+  return tr("errors.generic");
 };
 
 function PassRow({ p, actions }: { p: Pass; actions?: React.ReactNode }) {
   return (
     <li className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center">
       <div className="min-w-0 flex-1">
-        <p className="font-medium">{KIND_LABEL[p.kind]}{p.flats?.flat_number ? ` · ${p.flats.flat_number}` : ""} <span className="ml-1 rounded-full bg-muted px-2 py-0.5 text-xs capitalize">{p.status.replace("_", " ")}</span></p>
-        <p className="text-sm text-muted-foreground">{fmt(p.valid_from)} – {fmt(p.valid_until)}{p.lift_required ? " · Service lift booked" : ""}</p>
+        <p className="font-medium">{kindLabel(p.kind)}{p.flats?.flat_number ? ` · ${p.flats.flat_number}` : ""} <span className="ms-1 rounded-full bg-muted px-2 py-0.5 text-xs">{statusLabel(p.status)}</span></p>
+        <p className="text-sm text-muted-foreground">{fmt(p.valid_from)} – {fmt(p.valid_until)}{p.lift_required ? ` · ${tr("mp.lift")}` : ""}</p>
         <p className="text-sm">{p.description}{p.contractor_name ? ` · ${p.contractor_name}` : ""}</p>
-        {p.decision_reason && <p className="text-xs text-muted-foreground">Reason: {p.decision_reason}</p>}
+        {p.decision_reason && <p className="text-xs text-muted-foreground">{tr("cm.reason")}: {p.decision_reason}</p>}
       </div>
       {actions}
     </li>
@@ -169,6 +175,7 @@ export function CommitteePasses({ societyId }: { societyId: string }) {
 }
 
 export function GuardPassesCard({ societyId }: { societyId: string | null }) {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const q = useQuery({
     enabled: !!societyId,
@@ -184,16 +191,16 @@ export function GuardPassesCard({ societyId }: { societyId: string | null }) {
   const mark = async (p: Pass, action: "in" | "done") => {
     const { error } = await supabase.rpc("guard_mark_material_pass", { _pass_id: p.id, _action: action });
     if (error) return toast.error(errMsg(error));
-    toast.success(action === "in" ? "Marked as arrived" : "Marked as finished");
+    toast.success(action === "in" ? t("mp.arrived") : t("mp.done"));
     qc.invalidateQueries({ queryKey: ["guard-passes", societyId] });
   };
   if (!societyId || q.isLoading || !q.data?.length) return null;
   return (
     <section className="space-y-2">
-      <h2 className="flex items-center gap-2 font-semibold"><Truck className="h-4 w-4" />Material &amp; move passes today</h2>
+      <h2 className="flex items-center gap-2 font-semibold"><Truck className="h-4 w-4" />{t("mp.title")}</h2>
       <List rows={q.data} empty="" actions={(p) => p.status === "approved"
-        ? <Button className="min-h-11" onClick={() => void mark(p, "in")}>Let in</Button>
-        : <Button variant="outline" className="min-h-11" onClick={() => void mark(p, "done")}>Finished</Button>} />
+        ? <Button className="min-h-11" onClick={() => void mark(p, "in")}>{t("gd.letIn")}</Button>
+        : <Button variant="outline" className="min-h-11" onClick={() => void mark(p, "done")}>{t("mp.finished")}</Button>} />
     </section>
   );
 }

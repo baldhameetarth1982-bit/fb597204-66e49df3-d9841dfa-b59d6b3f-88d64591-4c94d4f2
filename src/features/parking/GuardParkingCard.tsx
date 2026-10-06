@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { ParkingSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +9,7 @@ import { ViolationReportForm } from "./ParkingAdmin";
 
 /** Guard-side: report a parking violation. Needs a live gate session (enforced server-side). */
 export function GuardParkingCard({ societyId }: { societyId: string | null | undefined }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const slots = useQuery({
     queryKey: ["guard-parking-slots", societyId],
@@ -21,13 +23,13 @@ export function GuardParkingCard({ societyId }: { societyId: string | null | und
   return (
     <>
       <Button variant="outline" className="min-h-11 w-full justify-start rounded-xl" onClick={() => setOpen(true)}>
-        <ParkingSquare className="mr-2 h-4 w-4" />Report a parking violation
+        <ParkingSquare className="me-2 h-4 w-4" />{t("pk.report")}
       </Button>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="bottom" className="max-h-[92vh] overflow-y-auto rounded-t-3xl">
-          <SheetHeader><SheetTitle>Parking violation</SheetTitle></SheetHeader>
+          <SheetHeader><SheetTitle>{t("pk.title")}</SheetTitle></SheetHeader>
           <div className="py-4">
-            {slots.isError ? <p role="alert" className="text-sm">Couldn't load slots. You can still report by number plate.</p> : null}
+            {slots.isError ? <p role="alert" className="text-sm">{t("pk.slotsFailed")}</p> : null}
             <ViolationReportForm slots={slots.data ?? []} onDone={() => setOpen(false)} />
           </div>
         </SheetContent>

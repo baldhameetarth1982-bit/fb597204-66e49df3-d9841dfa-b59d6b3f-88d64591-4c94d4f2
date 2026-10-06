@@ -5174,5 +5174,21 @@
   "op.qr_image_optional_we_can": "QR تصویر (اختیاری — اسہِ ہیٚکو UPI ID سٟتؠ بناونہٕ)",
   "op.current_society_upi_qr": "سوسائٹی ہنٛد موجودہ UPI QR",
   "op.remove_current_qr_image": "موجودہ QR تصویر ہٹٲیو",
-  "op.save_upi_details": "UPI تفصیلات بچٲیو"
+  "op.save_upi_details": "UPI تفصیلات بچٲیو",
+  "op.undo_import": "امپورٹ انڈو کرو",
+  "op.rsvp_attendance": "RSVP تہٕ حاضری",
+  "op.slots_who_holds_them_temporary": "سلاٹس، کُس چھُ یمن ہنٛد مالک، عارضی استعمال، خلاف ورزی، EV چارجنگ تہٕ رپورٹس۔",
+  "op.ev_charging": "EV چارجنگ",
+  "op.cash_bank_transfer_and_upi": "کیش، بینک ٹرانسفر تہٕ UPI QR ادائیگہِ۔ رسید چھِ صرف ادائیگی تصدیق کرنہٕ پتہٕ جاری گژھان۔",
+  "op.residents_appear_here_once_your": "رہائشی چھِ اتھہِ یوان وچھنہٕ ییلہِ تُہہ سوسائٹی تہٕ گھرٕ بنایو۔",
+  "op.annual_general_meeting_notices_and": "سالانہ جنرل میٹنگ نوٹس تہ ریکارڈ",
+  "op.a_purchase_record_is_not": "خریداری ہند ریکارڈ چھنہ ادائیگی ہند ثبوت۔ رقم چھ صرف تلہ ریکارڈ گژھان یلہ تُہی خرچہ درج کَرِتھ اتہ لنک کریو۔",
+  "op.type_2": "قسم 2",
+  "op.add_an_amenity_first_every": "پہلے ایمینیٹی (سہولت) شامل کرو — ہر کلاس چھ ایمینیٹی پؠٹھ چلان تہ سہولتک اصولن پؠٹھ عمل کران۔",
+  "op.annual_general_meeting": "AGM (سالانہ عام اجلاس)",
+  "op.the_due_date_is_in": "آخری تٲریخ گزرِمتھ چھِ۔ یہِ بل فوراً واجب الادا ظٲہر گژھن۔",
+  "op.archived_items_stay_here_and": "آرکائیو شدہ آئٹمز اتہٕ روزان تہٕ AI سیکرٹری یمن اِستِمال چھُنہٕ کران۔",
+  "op.ai_secretary_will_stop_using": "AI سیکرٹری یہِ FAQ فوراً اِستِمال کرُن بند کرِ۔",
+  "op.document_is_ready_for_ai": "ڈاکیومنٹ AI سیکرٹری خٲطرٕ تیار چھُ",
+  "op.the_current_file_is_kept": "موجودہ فائل ورژن ہسٹری مَنٛز تھاونہٕ چھِ یوان؛ صرف نو فائل رہائشن تہٕ AI سیکرٹری سٕنٛز نظرِ یِیہِ۔"
 }

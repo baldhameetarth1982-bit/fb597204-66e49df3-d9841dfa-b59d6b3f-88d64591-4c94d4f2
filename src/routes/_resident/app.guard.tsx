@@ -1,6 +1,7 @@
 import { NeedsAttention } from "@/components/shared/NeedsAttention";
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { LogIn, LogOut, Loader2, KeyRound, UserPlus, Search, Car, X, RefreshCw, Check, Repeat, AlertTriangle, ParkingSquare, ShieldAlert } from "lucide-react";
@@ -19,7 +20,7 @@ import { GuardPassesCard } from "@/features/passes/MaterialPasses";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { enqueue } from "@/lib/gate-offline";
 import { cn } from "@/lib/utils";
-import { GATE_CATEGORIES as VISITOR_CATEGORIES, categoryLabel, fmtTime, gateErrorMessage, statusMeta } from "@/lib/visitors";
+import { GATE_CATEGORIES as VISITOR_CATEGORIES, categoryLabel, fmtTime, gateCategoryLabel, gateErrorMessage, statusMeta } from "@/lib/visitors";
 
 export const Route = createFileRoute("/_resident/app/guard")({
   head: () => ({
@@ -37,12 +38,12 @@ interface GateRow {
   flat_label: string | null; vehicle_number: string | null; status: string; pre_approved: boolean;
   expected_at: string | null; valid_until: string | null; entry_at: string | null; exit_at: string | null; created_at: string;
 }
-const SCOPES: { v: Scope; label: string }[] = [
-  { v: "today", label: "Today" },
-  { v: "expected", label: "Expected" },
-  { v: "inside", label: "Inside" },
-  { v: "overstay", label: "Overstay" },
-  { v: "history", label: "History" },
+const SCOPES: { v: Scope; key: string }[] = [
+  { v: "today", key: "common.today" },
+  { v: "expected", key: "vs.st.expected" },
+  { v: "inside", key: "vs.st.inside" },
+  { v: "overstay", key: "gd.overstay" },
+  { v: "history", key: "billingTabs.history" },
 ];
 const EMPTY = { flat: "", name: "", phone: "", category: "guest", purpose: "", vehicle: "" };
 
@@ -54,6 +55,7 @@ function GuardPage() {
 }
 
 function GuardDashboard() {
+  const { t } = useTranslation();
   const { roles, isLoading } = useAuth();
   const { societyId } = useSocietyId();
   const qc = useQueryClient();
@@ -112,7 +114,7 @@ function GuardDashboard() {
     setCodeBusy(false);
     if (error) return toast.error(gateErrorMessage(error));
     const r = (data as { visitor_name: string; flat_label: string | null }[])?.[0];
-    toast.success(`${r?.visitor_name ?? "Visitor"} checked in${r?.flat_label ? ` · ${r.flat_label}` : ""}`);
+    toast.success(`${t("gd.checkedInName", { name: r?.visitor_name ?? t("gd.visitor") })}${r?.flat_label ? ` · ${r.flat_label}` : ""}`);
     setCode("");
     refresh();
   }
@@ -120,15 +122,15 @@ function GuardDashboard() {
   async function act(id: string, action: "checkin" | "checkout" | "deny", name = "") {
     if (busyId) return;
     if (!online) {
-      if (action !== "checkout") return toast.error("Connection required. Letting people in or denying needs a live check.");
-      enqueue("checkout", name || "Visitor", { visitor_id: id });
-      return toast.message("Saved offline — will be sent when you're back online");
+      if (action !== "checkout") return toast.error(t("gd.needOnline"));
+      enqueue("checkout", name || t("gd.visitor"), { visitor_id: id });
+      return toast.message(t("gd.savedOffline"));
     }
     setBusyId(id);
     const { error } = await supabase.rpc("guard_visitor_action", { _id: id, _action: action });
     setBusyId(null);
     if (error) { toast.error(gateErrorMessage(error)); refresh(); return; }
-    toast.success(action === "checkin" ? "Checked in" : action === "checkout" ? "Checked out" : "Entry denied");
+    toast.success(action === "checkin" ? t("gd.checkedIn") : action === "checkout" ? t("gd.checkedOut") : t("gd.entryDenied"));
     refresh();
   }
 
@@ -139,9 +141,9 @@ function GuardDashboard() {
       try {
         enqueue("walkin", `${walk.name} · ${walk.flat}`, { flat_label: walk.flat, name: walk.name, phone: walk.phone, category: walk.category, purpose: walk.purpose, vehicle: walk.vehicle });
       } catch (err) {
-        return toast.error(String((err as Error).message) === "flat_required_offline" ? "Offline walk-ins need a house number so a resident can approve." : "Offline list is full. Reconnect to continue.");
+        return toast.error(String((err as Error).message) === "flat_required_offline" ? t("gd.offlineNeedsHouse") : t("gd.offlineFull"));
       }
-      toast.message("Saved offline — the resident is asked once you're back online");
+      toast.message(t("gd.savedOfflineWalkin"));
       setWalk(EMPTY); setWalkOpen(false); return;
     }
     setWalkBusy(true);
@@ -151,7 +153,7 @@ function GuardDashboard() {
     });
     setWalkBusy(false);
     if (error) return toast.error(gateErrorMessage(error)); // form kept for retry
-    toast.success(walk.flat || walk.category === "mover" ? "Sent for approval" : "Visitor logged inside");
+    toast.success(walk.flat || walk.category === "mover" ? t("gd.sentForApproval") : t("gd.loggedInside"));
     setWalk(EMPTY);
     setWalkOpen(false);
     refresh();
@@ -163,10 +165,10 @@ function GuardDashboard() {
     <div className="px-4 py-5 space-y-4 pb-28 max-w-xl mx-auto">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Gate</h1>
-          <p className="text-sm text-muted-foreground">Check visitors in and out</p>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("gd.title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("gd.subtitle")}</p>
         </div>
-        <Button variant="ghost" size="icon" className="h-11 w-11" onClick={refresh} aria-label="Refresh">
+        <Button variant="ghost" size="icon" className="h-11 w-11" onClick={refresh} aria-label={t("gd.refresh")}>
           <RefreshCw className={cn("h-5 w-5", list.isFetching && "animate-spin")} />
         </Button>
       </header>
@@ -178,15 +180,15 @@ function GuardDashboard() {
       <GuardParkingCard societyId={societyId} />
       <GuardPassesCard societyId={societyId} />
       <section aria-labelledby="guard-attn-h" className="space-y-2">
-        <h2 id="guard-attn-h" className="text-sm font-semibold">Needs attention</h2>
-        <NeedsAttention emptyText="No gate or security items need attention." />
+        <h2 id="guard-attn-h" className="text-sm font-semibold">{t("gd.needsAttention")}</h2>
+        <NeedsAttention emptyText={t("gd.noAttention")} />
       </section>
       <OfflineQueuePanel onSynced={refresh} />
 
       <Card className="rounded-2xl border-primary/30 bg-primary/5">
         <CardContent className="p-4 space-y-2">
           <Label htmlFor="gate-code" className="flex items-center gap-2 text-sm font-semibold">
-            <KeyRound className="h-4 w-4 text-primary" /> Visitor pass code
+            <KeyRound className="h-4 w-4 text-primary" /> {t("gd.passCode")}
           </Label>
           <div className="flex gap-2">
             <Input
@@ -201,7 +203,7 @@ function GuardDashboard() {
               className="h-14 text-2xl font-mono tracking-[0.4em] text-center"
             />
             <Button onClick={checkinByCode} disabled={codeBusy || code.length !== 6} className="h-14 px-5 rounded-xl">
-              {codeBusy ? <Loader2 className="h-5 w-5 animate-spin" /> : <><LogIn className="h-5 w-5 mr-1" />In</>}
+              {codeBusy ? <Loader2 className="h-5 w-5 animate-spin" /> : <><LogIn className="h-5 w-5 mr-1" />{t("gd.in")}</>}
             </Button>
           </div>
         </CardContent>
@@ -210,22 +212,22 @@ function GuardDashboard() {
       {/* Gate actions stay pinned above the bottom nav on phones for one-thumb reach. */}
       <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-20 -mx-1 grid grid-cols-2 gap-2 rounded-2xl border bg-background/95 p-1 shadow-sm backdrop-blur md:static md:border-0 md:bg-transparent md:p-0 md:shadow-none">
         <Button onClick={() => setWalkOpen(true)} className="h-14 rounded-xl text-base">
-          <UserPlus className="h-5 w-5 mr-2" /> Walk-in
+          <UserPlus className="h-5 w-5 mr-2" /> {t("gd.walkin")}
         </Button>
         <Button onClick={() => setPlateOpen(true)} variant="outline" className="h-14 rounded-xl text-base">
-          <Car className="h-5 w-5 mr-2" /> Check vehicle
+          <Car className="h-5 w-5 mr-2" /> {t("gd.checkVehicle")}
         </Button>
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <Button variant="outline" className="h-12 rounded-xl" disabled={!online} onClick={() => setRecurOpen(true)}><Repeat className="h-4 w-4 mr-2" />Regular visitors</Button>
-        <Button variant="outline" className="h-12 rounded-xl" disabled={!online} onClick={() => setIncident({ open: true })}><AlertTriangle className="h-4 w-4 mr-2" />Report incident</Button>
+        <Button variant="outline" className="h-12 rounded-xl" disabled={!online} onClick={() => setRecurOpen(true)}><Repeat className="h-4 w-4 mr-2 shrink-0" /><span className="truncate">{t("rgp.title")}</span></Button>
+        <Button variant="outline" className="h-12 rounded-xl" disabled={!online} onClick={() => setIncident({ open: true })}><AlertTriangle className="h-4 w-4 mr-2 shrink-0" /><span className="truncate">{t("gd.reportIncident")}</span></Button>
       </div>
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          aria-label="Search visitors"
-          placeholder="Name, house, vehicle or last 4 digits"
+          aria-label={t("gd.searchVisitors")}
+          placeholder={t("gd.searchPh")}
           value={q}
           onChange={(e) => setQ(e.target.value)}
           className="pl-9 h-12 rounded-xl"
@@ -244,7 +246,7 @@ function GuardDashboard() {
               scope === s.v ? "bg-background shadow-sm text-foreground" : "text-muted-foreground",
             )}
           >
-            {s.label}
+            {t(s.key)}
           </button>
         ))}
       </div>
@@ -254,11 +256,11 @@ function GuardDashboard() {
       ) : list.isError && rows.length === 0 ? (
         <Card className="rounded-2xl"><CardContent className="p-6 text-center space-y-3">
           <p className="text-sm">{gateErrorMessage(list.error)}</p>
-          <Button variant="outline" className="min-h-11 rounded-xl" onClick={() => list.refetch()}>Retry</Button>
+          <Button variant="outline" className="min-h-11 rounded-xl" onClick={() => list.refetch()}>{t("common.retry")}</Button>
         </CardContent></Card>
       ) : rows.length === 0 ? (
         <Card className="rounded-2xl"><CardContent className="p-6 text-center text-sm text-muted-foreground">
-          {dq ? "No visitors match your search." : scope === "inside" ? "Nobody is inside right now." : scope === "overstay" ? "Nobody has overstayed." : scope === "expected" ? "No expected visitors." : "No visitors yet today."}
+          {dq ? t("gd.noMatch") : scope === "inside" ? t("gd.noneInside") : scope === "overstay" ? t("gd.noneOverstay") : scope === "expected" ? t("gd.noneExpected") : t("gd.noneToday")}
         </CardContent></Card>
       ) : (
         <ul className="space-y-2">
@@ -279,17 +281,17 @@ function GuardDashboard() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-semibold truncate">{v.visitor_name}</p>
                           <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium", m.className)}>{m.label}</span>
-                          {f?.restricted && <span className="rounded-full px-2 py-0.5 text-[11px] font-medium bg-destructive/10 text-destructive inline-flex items-center gap-1"><ShieldAlert className="h-3 w-3" />{f.overridden ? "Restricted · committee allowed" : "Restricted"}</span>}
-                          {f?.needs_committee && <span className="rounded-full px-2 py-0.5 text-[11px] font-medium bg-warning/15 text-warning-foreground">Committee decision</span>}
+                          {f?.restricted && <span className="rounded-full px-2 py-0.5 text-[11px] font-medium bg-destructive/10 text-destructive inline-flex items-center gap-1"><ShieldAlert className="h-3 w-3" />{f.overridden ? t("gd.restrictedAllowed") : t("gd.restricted")}</span>}
+                          {f?.needs_committee && <span className="rounded-full px-2 py-0.5 text-[11px] font-medium bg-warning/15 text-warning-foreground">{t("gd.committeeDecision")}</span>}
                           {f?.parking_label && <span className="rounded-full px-2 py-0.5 text-[11px] font-medium bg-primary/10 text-primary">P {f.parking_label}</span>}
                         </div>
                         <p className="text-sm text-muted-foreground truncate">
-                          {v.flat_label ? `House ${v.flat_label}` : "No house"} · {v.purpose || categoryLabel(v.category)}
+                          {v.flat_label ? t("gd.house", { house: v.flat_label }) : t("gd.noHouse")} · {v.purpose || categoryLabel(v.category)}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {v.vehicle_number ? `${v.vehicle_number} · ` : ""}
-                          {v.phone_last4 ? `Phone ••${v.phone_last4} · ` : ""}
-                          {v.exit_at ? `Out ${fmtTime(v.exit_at)}` : inside ? `In ${fmtTime(v.entry_at)}` : v.expected_at ? `Expected ${fmtTime(v.expected_at)}` : fmtTime(v.created_at)}
+                          {v.phone_last4 ? `${t("gd.phoneLast4", { last4: v.phone_last4 })} · ` : ""}
+                          {v.exit_at ? t("gd.outAt", { time: fmtTime(v.exit_at) }) : inside ? t("gd.inAt", { time: fmtTime(v.entry_at) }) : v.expected_at ? t("gd.expectedAt", { time: fmtTime(v.expected_at) }) : fmtTime(v.created_at)}
                         </p>
                       </div>
                     </div>
@@ -297,24 +299,24 @@ function GuardDashboard() {
                       <div className="flex gap-2 flex-wrap">
                         {inside && (
                           <Button className="flex-1 h-12 rounded-xl" variant="secondary" disabled={busy} onClick={() => act(v.id, "checkout", v.visitor_name)}>
-                            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><LogOut className="h-4 w-4 mr-2" />Check out</>}
+                            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><LogOut className="h-4 w-4 mr-2" />{t("gd.checkOut")}</>}
                           </Button>
                         )}
                         {canIn && (
                           <Button className="flex-1 h-12 rounded-xl" disabled={busy} onClick={() => act(v.id, "checkin")}>
-                            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Check className="h-4 w-4 mr-2" />Let in</>}
+                            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Check className="h-4 w-4 mr-2" />{t("gd.letIn")}</>}
                           </Button>
                         )}
                         {inside && online && (
                           <>
-                            <Button variant="outline" className="h-12 rounded-xl px-3" aria-label="Visitor parking" onClick={() => setParking({ id: v.id, current: f?.parking_label ?? null })}><ParkingSquare className="h-4 w-4" /></Button>
-                            <Button variant="ghost" className="h-12 rounded-xl px-3 text-xs" onClick={() => setForceExit(v.id)}>Force exit</Button>
+                            <Button variant="outline" className="h-12 rounded-xl px-3" aria-label={t("gd.visitorParking")} onClick={() => setParking({ id: v.id, current: f?.parking_label ?? null })}><ParkingSquare className="h-4 w-4" /></Button>
+                            <Button variant="ghost" className="h-12 rounded-xl px-3 text-xs" onClick={() => setForceExit(v.id)}>{t("gd.forceExit")}</Button>
                           </>
                         )}
-                        {blocked && <p className="w-full text-xs text-destructive">On the restricted list — the committee must decide before entry.</p>}
+                        {blocked && <p className="w-full text-xs text-destructive">{t("gd.blockedHint")}</p>}
                         {canDeny && (
-                          <Button variant="outline" className="h-12 rounded-xl px-4" disabled={busy} onClick={() => act(v.id, "deny")} aria-label="Deny entry">
-                            <X className="h-4 w-4 mr-1" />Deny
+                          <Button variant="outline" className="h-12 rounded-xl px-4" disabled={busy} onClick={() => act(v.id, "deny")} aria-label={t("gd.denyEntry")}>
+                            <X className="h-4 w-4 mr-1" />{t("vs.deny")}
                           </Button>
                         )}
                       </div>
@@ -329,7 +331,7 @@ function GuardDashboard() {
 
       <Sheet open={walkOpen} onOpenChange={setWalkOpen}>
         <SheetContent side="bottom" className="rounded-t-3xl max-h-[92vh] overflow-y-auto">
-          <SheetHeader><SheetTitle>Walk-in visitor</SheetTitle></SheetHeader>
+          <SheetHeader><SheetTitle>{t("gd.walkinTitle")}</SheetTitle></SheetHeader>
           <form onSubmit={submitWalkin} className="space-y-4 py-4">
             <div className="flex flex-wrap gap-2">
               {VISITOR_CATEGORIES.map((c) => (
@@ -342,22 +344,22 @@ function GuardDashboard() {
                     walk.category === c.value ? "bg-primary text-primary-foreground border-primary" : "border-border",
                   )}
                 >
-                  {c.label}
+                  {gateCategoryLabel(c.value)}
                 </button>
               ))}
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label htmlFor="w-flat">House</Label><Input id="w-flat" className="h-12" value={walk.flat} onChange={(e) => setWalk({ ...walk, flat: e.target.value })} placeholder="A-101" autoCapitalize="characters" /></div>
-              <div><Label htmlFor="w-name">Name *</Label><Input id="w-name" className="h-12" value={walk.name} onChange={(e) => setWalk({ ...walk, name: e.target.value })} required /></div>
+              <div><Label htmlFor="w-flat">{t("gd.houseLabel")}</Label><Input id="w-flat" className="h-12" value={walk.flat} onChange={(e) => setWalk({ ...walk, flat: e.target.value })} placeholder="A-101" autoCapitalize="characters" /></div>
+              <div><Label htmlFor="w-name">{t("vs.nameReq")}</Label><Input id="w-name" className="h-12" value={walk.name} onChange={(e) => setWalk({ ...walk, name: e.target.value })} required /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label htmlFor="w-phone">Phone</Label><Input id="w-phone" className="h-12" inputMode="tel" value={walk.phone} onChange={(e) => setWalk({ ...walk, phone: e.target.value })} /></div>
-              <div><Label htmlFor="w-veh">Vehicle</Label><Input id="w-veh" className="h-12" value={walk.vehicle} onChange={(e) => setWalk({ ...walk, vehicle: e.target.value })} autoCapitalize="characters" /></div>
+              <div><Label htmlFor="w-phone">{t("st.phone")}</Label><Input id="w-phone" className="h-12" inputMode="tel" value={walk.phone} onChange={(e) => setWalk({ ...walk, phone: e.target.value })} /></div>
+              <div><Label htmlFor="w-veh">{t("vs.vehicle")}</Label><Input id="w-veh" className="h-12" value={walk.vehicle} onChange={(e) => setWalk({ ...walk, vehicle: e.target.value })} autoCapitalize="characters" /></div>
             </div>
-            <div><Label htmlFor="w-purpose">Purpose</Label><Input id="w-purpose" className="h-12" value={walk.purpose} onChange={(e) => setWalk({ ...walk, purpose: e.target.value })} placeholder="e.g. Amazon parcel" /></div>
-            <p className="text-xs text-muted-foreground">With a house number, the residents get an alert to approve or deny. Movers and restricted people go to the committee. Without a house, the visitor is logged as inside.{!online && " You're offline: this will be saved and sent later."}</p>
+            <div><Label htmlFor="w-purpose">{t("gd.purpose")}</Label><Input id="w-purpose" className="h-12" value={walk.purpose} onChange={(e) => setWalk({ ...walk, purpose: e.target.value })} placeholder={t("gd.purposePh")} /></div>
+            <p className="text-xs text-muted-foreground">{t("gd.walkinHint")}{!online && ` ${t("gd.walkinOffline")}`}</p>
             <Button type="submit" className="w-full h-14 rounded-xl text-base" disabled={walkBusy}>
-              {walkBusy ? <Loader2 className="h-5 w-5 animate-spin" /> : walk.flat ? "Ask resident" : "Log entry"}
+              {walkBusy ? <Loader2 className="h-5 w-5 animate-spin" /> : walk.flat ? t("gd.askResident") : t("gd.logEntry")}
             </Button>
           </form>
         </SheetContent>
@@ -367,12 +369,12 @@ function GuardDashboard() {
       <RecurringSheet open={recurOpen} onOpenChange={setRecurOpen} onDone={refresh} />
       <IncidentSheet open={incident.open} visitorId={incident.visitorId} onOpenChange={(o) => setIncident({ open: o })} />
       <ParkingSheet visitorId={parking?.id ?? null} current={parking?.current ?? null} onOpenChange={(o) => !o && setParking(null)} onDone={refresh} />
-      <ReasonSheet title="Force exit" hint="Use when a visitor left without being checked out. This is recorded separately as an override."
+      <ReasonSheet title={t("gd.forceExit")} hint={t("gd.forceExitHint")}
         open={!!forceExit} onOpenChange={(o) => !o && setForceExit(null)}
         onSubmit={async (reason) => {
           const { error } = await supabase.rpc("gate_override", { _id: forceExit!, _action: "force_exit", _reason: reason });
           if (error) { toast.error(gateErrorMessage(error)); return false; }
-          toast.success("Marked as left"); refresh(); return true;
+          toast.success(t("gd.markedLeft")); refresh(); return true;
         }} />
       <HardwareNote />
     </div>
@@ -382,6 +384,7 @@ function GuardDashboard() {
 interface PlateRow { plate_number: string; vehicle_type: string; make_model: string | null; color: string | null; flat_label: string | null; parking_label: string | null }
 
 function PlateSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+  const { t } = useTranslation();
   const [plate, setPlate] = useState("");
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<PlateRow[] | null>(null);
@@ -399,15 +402,15 @@ function PlateSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (o: b
   return (
     <Sheet open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) { setRes(null); setPlate(""); } }}>
       <SheetContent side="bottom" className="rounded-t-3xl">
-        <SheetHeader><SheetTitle>Check a vehicle</SheetTitle></SheetHeader>
+        <SheetHeader><SheetTitle>{t("gd.checkVehicle")}</SheetTitle></SheetHeader>
         <form onSubmit={check} className="flex gap-2 py-4">
-          <Input aria-label="Number plate" value={plate} onChange={(e) => setPlate(e.target.value.toUpperCase())} placeholder="GJ01AB1234" className="h-14 text-lg font-mono" autoFocus />
+          <Input aria-label={t("gd.plate")} value={plate} onChange={(e) => setPlate(e.target.value.toUpperCase())} placeholder="GJ01AB1234" className="h-14 text-lg font-mono" autoFocus />
           <Button type="submit" className="h-14 rounded-xl px-5" disabled={busy || plate.trim().length < 3}>
-            {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : "Check"}
+            {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : t("gd.check")}
           </Button>
         </form>
         {res && (res.length === 0 ? (
-          <div className="rounded-2xl bg-destructive/10 text-destructive p-4 text-sm font-medium mb-4">Not registered in this society</div>
+          <div className="rounded-2xl bg-destructive/10 text-destructive p-4 text-sm font-medium mb-4">{t("gd.notRegistered")}</div>
         ) : (
           <ul className="space-y-2 pb-4">
             {res.map((r) => (
@@ -416,7 +419,7 @@ function PlateSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (o: b
                 <p className="text-sm text-muted-foreground">
                   {[r.vehicle_type, r.make_model, r.color].filter(Boolean).join(" · ")}
                 </p>
-                <p className="text-sm">{r.flat_label ? `House ${r.flat_label}` : "No house linked"}{r.parking_label ? ` · Parking ${r.parking_label}` : ""}</p>
+                <p className="text-sm">{r.flat_label ? t("gd.house", { house: r.flat_label }) : t("gd.noHouseLinked")}{r.parking_label ? ` · ${t("gd.parkingSlot", { slot: r.parking_label })}` : ""}</p>
               </li>
             ))}
           </ul>

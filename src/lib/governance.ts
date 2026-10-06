@@ -61,7 +61,7 @@ const MSG: Record<string, string> = {
 };
 
 /** Messages with a translation (gv.e.*); the rest stay English until their screens are localized. */
-const LOCALIZED = new Set(["forbidden", "not_found", "invalid_title", "invalid_transition", "reason_required", "already_voted", "home_already_voted", "not_eligible", "rate_limited", "invalid_input", "invalid_window", "posts_required", "pending_nominations", "candidates_required", "nominations_closed", "already_nominated", "candidate_not_eligible", "withdraw_closed", "too_many_choices", "results_locked"]);
+const LOCALIZED = new Set(["forbidden", "not_found", "invalid_title", "invalid_transition", "reason_required", "already_voted", "home_already_voted", "not_eligible", "rate_limited", "invalid_input", "invalid_window", "posts_required", "pending_nominations", "candidates_required", "nominations_closed", "already_nominated", "candidate_not_eligible", "withdraw_closed", "too_many_choices", "results_locked", "rsvp_closed"]);
 
 export function govError(err: unknown) {
   const raw = String((err as { message?: string })?.message ?? "");
@@ -70,12 +70,13 @@ export function govError(err: unknown) {
   return tr("errors.generic");
 }
 
+const meetingStatus = (k: string, className: string) => ({ get label() { return tr(`mt.st.${k}`); }, className });
 export const MEETING_STATUS: Record<string, { label: string; className: string }> = {
-  draft: { label: "Draft", className: "bg-muted text-foreground" },
-  scheduled: { label: "Scheduled", className: "bg-primary/10 text-primary" },
-  held: { label: "Held", className: "bg-secondary text-secondary-foreground" },
-  minutes_published: { label: "Minutes published", className: "bg-success/15 text-success" },
-  cancelled: { label: "Cancelled", className: "bg-destructive/10 text-destructive" },
+  draft: meetingStatus("draft", "bg-muted text-foreground"),
+  scheduled: meetingStatus("scheduled", "bg-primary/10 text-primary"),
+  held: meetingStatus("held", "bg-secondary text-secondary-foreground"),
+  minutes_published: meetingStatus("minutes_published", "bg-success/15 text-success"),
+  cancelled: meetingStatus("cancelled", "bg-destructive/10 text-destructive"),
 };
 
 export const PRIVACY_STATUS: Record<string, { label: string; className: string }> = {

@@ -5229,5 +5229,15 @@
   "op.new_key": "নতুন কি",
   "op.device_key_shown_once": "ডিভাইস কি — একবারই দেখানো হয়",
   "op.give_these_to_your_hardware": "এগুলো আপনার হার্ডওয়্যার ইনস্টলারকে দিন। কি-টি আর দেখানো যাবে না; হারিয়ে গেলে নতুন একটি তৈরি করুন।",
-  "op.device_key": "ডিভাইস কি"
+  "op.device_key": "ডিভাইস কি",
+  "op.acme_signage_pvt_ltd": "ACME Signage Pvt Ltd",
+  "op.91_98xxxxxxx": "+91 98xxxxxxx",
+  "op.csv_or_excel_xlsx_up": "CSV বা Excel (.xlsx), 5,000 সারি পর্যন্ত। প্রথমে একটি ট্রায়াল রান হবে — আপনি নিশ্চিত না করা পর্যন্ত কিছুই সেভ হবে না।",
+  "op.green_park_apartments_chs": "গ্রিন পার্ক অ্যাপার্টমেন্টস সিএইচএস",
+  "op.excel_xlsx": "Excel (.xlsx)",
+  "op.sociyohub": "SociyoHub",
+  "op.soci": "Soci",
+  "op.hub": "Hub",
+  "op.png_jpg_or_webp_up": "PNG, JPG বা WebP, 2 MB পর্যন্ত। এটি 512 px আকারে রিসাইজ করা হয় এবং শুধুমাত্র সেভ করার পরেই আপলোড হয়। এটি কেবল আপনার সোসাইটির সদস্যরা দেখতে পাবেন। আপনার বিলের লোগো বিল টেমপ্লেটে আলাদাভাবে সেট করতে হয়।",
+  "op.enter_a_valid_upi_id": "একটি বৈধ UPI ID লিখুন, যেমন society@bank"
 }

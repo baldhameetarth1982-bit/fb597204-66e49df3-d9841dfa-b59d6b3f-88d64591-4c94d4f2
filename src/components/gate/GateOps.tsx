@@ -317,7 +317,7 @@ export function OfflineQueuePanel({ onSynced }: { onSynced: () => void }) {
             {items.slice().reverse().map((i) => (
               <li key={i.op_id} className="flex items-center gap-2 text-sm">
                 <span className="flex-1 truncate">{i.kind === "walkin" ? t("gd.walkin") : t("gd.checkOut")} · {i.label}</span>
-                <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium", STATE_META[i.state].cls)} title={i.message}>{t(STATE_META[i.state].key)}</span>
+                <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium", STATE_META[i.state].cls)} title={i.message ? (i.state === "failed" ? gateErrorMessage({ message: i.message }) : i.message) : undefined}>{t(STATE_META[i.state].key)}</span>
                 {(i.state === "conflict" || i.state === "failed" || i.state === "sent") && (
                   <button type="button" aria-label={t("go.dismiss")} className="h-11 w-11 grid place-items-center" onClick={() => removeItem(i.op_id)}><Trash2 className="h-4 w-4 text-muted-foreground" /></button>
                 )}

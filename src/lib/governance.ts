@@ -1,4 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
+import i18n, { localeTag } from "@/lib/i18n";
+
+const tr = (k: string) => i18n.t(k) as string;
 
 /** Governance RPC helper — every rule (society, role, eligibility, state) is enforced in the database. */
 export async function govRpc<T = unknown>(fn: string, args: Record<string, unknown>): Promise<T> {
@@ -57,11 +60,14 @@ const MSG: Record<string, string> = {
   use_agm: "This meeting is an AGM. Manage it from the AGM page.",
 };
 
+/** Messages with a translation (gv.e.*); the rest stay English until their screens are localized. */
+const LOCALIZED = new Set(["forbidden", "not_found", "invalid_title", "invalid_transition", "reason_required", "already_voted", "home_already_voted", "not_eligible", "rate_limited", "invalid_input", "invalid_window", "posts_required", "pending_nominations", "candidates_required", "nominations_closed", "already_nominated", "candidate_not_eligible", "withdraw_closed", "too_many_choices", "results_locked"]);
+
 export function govError(err: unknown) {
   const raw = String((err as { message?: string })?.message ?? "");
-  for (const k of Object.keys(MSG)) if (raw.includes(k)) return MSG[k];
-  if (/fetch|network/i.test(raw)) return "You seem to be offline. Check your connection and retry.";
-  return "Something went wrong. Please try again.";
+  for (const k of Object.keys(MSG)) if (raw.includes(k)) return LOCALIZED.has(k) ? tr(`gv.e.${k}`) : MSG[k];
+  if (/fetch|network/i.test(raw)) return tr("ge.network");
+  return tr("errors.generic");
 }
 
 export const MEETING_STATUS: Record<string, { label: string; className: string }> = {
@@ -85,26 +91,30 @@ export const PRIVACY_KIND: Record<string, string> = { export: "Copy of my data",
 
 export const ELIGIBILITY: Record<string, string> = { person: "One vote per resident", home: "One vote per home", committee: "Committee only" };
 
-export const fmtDateTime = (iso: string) => new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
+export const fmtDateTime = (iso: string) => new Date(iso).toLocaleString(localeTag(), { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", numberingSystem: "latn" });
 
 export const ELECTION_STATUS: Record<string, { label: string; className: string }> = {
-  draft: { label: "Draft", className: "bg-muted text-foreground" },
-  nomination_open: { label: "Nominations open", className: "bg-primary/10 text-primary" },
-  nomination_review: { label: "Reviewing nominations", className: "bg-warning/15 text-warning-foreground" },
-  voting_open: { label: "Voting open", className: "bg-primary/10 text-primary" },
-  voting_closed: { label: "Voting closed", className: "bg-secondary text-secondary-foreground" },
-  results_published: { label: "Results published", className: "bg-success/15 text-success" },
-  archived: { label: "Archived", className: "bg-muted text-muted-foreground" },
+  draft: { get label() { return tr("docState.draft"); }, className: "bg-muted text-foreground" },
+  nomination_open: { get label() { return tr("el.st.nomination_open"); }, className: "bg-primary/10 text-primary" },
+  nomination_review: { get label() { return tr("el.st.nomination_review"); }, className: "bg-warning/15 text-warning-foreground" },
+  voting_open: { get label() { return tr("el.st.voting_open"); }, className: "bg-primary/10 text-primary" },
+  voting_closed: { get label() { return tr("el.st.voting_closed"); }, className: "bg-secondary text-secondary-foreground" },
+  results_published: { get label() { return tr("el.st.results_published"); }, className: "bg-success/15 text-success" },
+  archived: { get label() { return tr("cm.st.archived"); }, className: "bg-muted text-muted-foreground" },
 };
 
 export const NOMINATION_STATUS: Record<string, { label: string; className: string }> = {
-  pending: { label: "Pending review", className: "bg-warning/15 text-warning-foreground" },
-  approved: { label: "Approved", className: "bg-success/15 text-success" },
-  rejected: { label: "Not accepted", className: "bg-destructive/10 text-destructive" },
-  withdrawn: { label: "Withdrawn", className: "bg-muted text-muted-foreground" },
+  pending: { get label() { return tr("el.nst.pending"); }, className: "bg-warning/15 text-warning-foreground" },
+  approved: { get label() { return tr("vs.st.approved"); }, className: "bg-success/15 text-success" },
+  rejected: { get label() { return tr("el.nst.rejected"); }, className: "bg-destructive/10 text-destructive" },
+  withdrawn: { get label() { return tr("el.nst.withdrawn"); }, className: "bg-muted text-muted-foreground" },
 };
 
-export const ELECTION_ELIGIBILITY: Record<string, string> = { home: "One vote per home", person: "One vote per resident" };
+export const ELECTION_ELIGIBILITY: Record<string, string> = {} as Record<string, string>;
+Object.defineProperties(ELECTION_ELIGIBILITY, {
+  home: { enumerable: true, get: () => tr("el.elig.home") },
+  person: { enumerable: true, get: () => tr("el.elig.person") },
+});
 
 export const AGM_STATUS: Record<string, { label: string; className: string }> = {
   draft: { label: "Draft", className: "bg-muted text-foreground" },

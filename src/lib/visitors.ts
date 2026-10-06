@@ -1,5 +1,9 @@
 // Shared visitor / gate helpers. Server RPCs are the source of truth; these
 // only map states to labels and turn server errors into safe plain messages.
+// English constants stay as data; labels and messages are shown in the chosen language.
+import i18n, { localeTag } from "@/lib/i18n";
+
+const tr = (k: string, o?: Record<string, unknown>) => i18n.t(k, o) as string;
 
 export type VisitorStatus =
   | "expected" | "pending" | "awaiting" | "approved" | "denied"
@@ -27,8 +31,21 @@ export const RECURRING_CATEGORIES = [
 ] as const;
 
 export function categoryLabel(c: string | null | undefined) {
-  return [...VISITOR_CATEGORIES, ...RECURRING_CATEGORIES].find((x) => x.value === c)?.label ?? "Guest";
+  const en = [...VISITOR_CATEGORIES, ...RECURRING_CATEGORIES].find((x) => x.value === c)?.label ?? "Guest";
+  if (c === "other") return tr("cm.other");
+  return tr(`vs.cat.${c && en !== "Guest" ? c : "guest"}`, { defaultValue: en });
 }
+
+/** Chip label for a gate category (guards log "Staff"; residents see "Home help"). */
+export function gateCategoryLabel(c: string) {
+  return c === "staff" ? tr("gd.catStaff") : categoryLabel(c);
+}
+
+const STATUS_KEY: Record<string, string> = {
+  expected: "vs.st.expected", pending: "vs.st.expected", awaiting: "vs.st.awaiting", approved: "vs.st.approved",
+  inside: "vs.st.inside", overstayed: "vs.st.overstayed", exited: "vs.st.exited", denied: "vs.st.denied",
+  rejected: "vs.st.denied", cancelled: "rbills.cancelled", expired: "cm.st.expired",
+};
 
 const META: Record<string, { label: string; className: string }> = {
   expected: { label: "Expected", className: "bg-primary/10 text-primary" },
@@ -45,7 +62,9 @@ const META: Record<string, { label: string; className: string }> = {
 };
 
 export function statusMeta(s: string | null | undefined) {
-  return META[s ?? "inside"] ?? META.inside;
+  const k = META[s ?? "inside"] ? (s ?? "inside") : "inside";
+  const m = META[k];
+  return { label: tr(STATUS_KEY[k], { defaultValue: m.label }), className: m.className };
 }
 
 /** Effective status for rows read directly (resident / admin views). */
@@ -130,10 +149,10 @@ const PARKING_MESSAGES: Record<string, string> = {
 export function gateErrorMessage(err: unknown): string {
   const raw = String((err as { message?: string })?.message ?? "");
   for (const k of Object.keys(PARKING_MESSAGES)) if (raw.includes(k)) return PARKING_MESSAGES[k];
-  for (const k of Object.keys(MESSAGES)) if (raw.includes(k)) return MESSAGES[k];
-  if (/duplicate|unique/i.test(raw)) return "That already exists. Use a different name.";
-  if (/fetch|network/i.test(raw)) return "You seem to be offline. Check your connection and retry.";
-  return "Something went wrong. Please try again.";
+  for (const k of Object.keys(MESSAGES)) if (raw.includes(k)) return tr(`ge.${k}`, { defaultValue: MESSAGES[k] });
+  if (/duplicate|unique/i.test(raw)) return tr("ge.duplicate");
+  if (/fetch|network/i.test(raw)) return tr("ge.network");
+  return tr("errors.generic");
 }
 
 export function fmtTime(iso: string | null | undefined) {
@@ -142,6 +161,6 @@ export function fmtTime(iso: string | null | undefined) {
   const today = new Date();
   const sameDay = d.toDateString() === today.toDateString();
   return sameDay
-    ? d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
-    : d.toLocaleString([], { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+    ? d.toLocaleTimeString(localeTag(), { hour: "numeric", minute: "2-digit", numberingSystem: "latn" })
+    : d.toLocaleString(localeTag(), { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", numberingSystem: "latn" });
 }

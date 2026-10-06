@@ -3,7 +3,7 @@
 ## Master operational localization (23 languages, Super Admin excluded)
 
 - [x] Inventory: 186 screens, 4,677 fixed text spots, 3,378 distinct sentences (355 reused, 3,023 new `op.*` keys in src/locales/operations.ts); screens read them via tu().
-- [ ] Finish machine translation of the remaining `op.*` keys — blocked: both approved Gemini models hit today's free daily limit; needs a new key via secure input. Resume: translate only keys missing from each bundle (Hindi/Gujarati column still English where missing).
+- [ ] Finish machine translation of the last ~1,007 `op.*` items (about 3% — 10 to 130 per language, mostly short labels, brand names and examples). Blocked: the second key's daily free limit was also used up; needs another key via secure input. Resume by translating only the keys missing from each bundle.
 - [ ] Native-speaker review of all 22 non-English languages for this batch (Hindi/Gujarati this batch are machine-made too).
 - [ ] Visual QA of resident/guard/committee screens — needs an approved test account.
 

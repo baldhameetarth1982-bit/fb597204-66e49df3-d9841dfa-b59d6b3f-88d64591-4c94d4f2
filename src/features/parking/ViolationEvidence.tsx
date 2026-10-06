@@ -149,7 +149,7 @@ export function ViolationEvidence({ violationId, canAdd, canRemove }: { violatio
                     <img src={e.url} alt="Violation evidence" loading="lazy" className="h-full w-full object-cover" onError={() => void q.refetch()} />
                   </a>
                 ) : <span className="flex h-full items-center justify-center p-1 text-center text-xs text-muted-foreground">Link expired — <button type="button" className="underline" onClick={() => void q.refetch()}>reload</button></span>}
-                {canRemove && <button type="button" aria-label={t("fd.removePhoto")} onClick={() => void removeOne(e.id)} className="absolute right-1 top-1 flex h-8 w-8 items-center justify-center rounded-full bg-background/90 shadow"><X className="h-4 w-4" /></button>}
+                {canRemove && <button type="button" aria-label="Remove photo" onClick={() => void removeOne(e.id)} className="absolute right-1 top-1 flex h-8 w-8 items-center justify-center rounded-full bg-background/90 shadow"><X className="h-4 w-4" /></button>}
               </li>
             ))}
           </ul>

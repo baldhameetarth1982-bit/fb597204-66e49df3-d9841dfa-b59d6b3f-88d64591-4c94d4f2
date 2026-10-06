@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { StatusChip, ListSkeleton, LoadError, ListEmpty } from "@/components/people/PeopleUI";
 import { CommPage, CommHeader, SectionLabel } from "@/components/comm/CommUI";
 import { isSurveyOpen, surveyError, type Survey, type SurveyQuestion } from "@/lib/surveys";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_resident/app/surveys")({
   head: () => ({
@@ -70,7 +71,7 @@ function SurveysPage() {
     const { error } = await supabase.rpc("submit_survey_response", { _poll_id: s.id, _answers: mine });
     setSending(null);
     if (error) { setErrors((e) => ({ ...e, [s.id]: surveyError(error) })); return; }
-    toast.success("Thanks — your response was recorded");
+    toast.success(tu("op.thanks_your_response_was_recorded"));
     setDone((d) => new Set(d).add(s.id));
   }
 
@@ -79,36 +80,36 @@ function SurveysPage() {
 
   return (
     <CommPage>
-      <CommHeader title="Surveys" subtitle="Your answers are anonymous in results" />
-      {loading ? <ListSkeleton /> : failed ? <LoadError title="We couldn't load surveys." onRetry={() => void load()} /> : surveys.length === 0 ? (
-        <ListEmpty icon={ClipboardList} title="No surveys yet">When your committee asks for feedback, it will appear here.</ListEmpty>
+      <CommHeader title={tu("mod.surveys")} subtitle={tu("op.your_answers_are_anonymous_in")} />
+      {loading ? <ListSkeleton /> : failed ? <LoadError title={tu("op.we_couldn_t_load_surveys")} onRetry={() => void load()} /> : surveys.length === 0 ? (
+        <ListEmpty icon={ClipboardList} title={tu("op.no_surveys_yet")}>{tu("op.when_your_committee_asks_for")}</ListEmpty>
       ) : (
         <div className="space-y-6">
-          {open.length > 0 && <section><SectionLabel>Open</SectionLabel><div className="space-y-3">{open.map((s) => {
+          {open.length > 0 && <section><SectionLabel>{tu("common.open")}</SectionLabel><div className="space-y-3">{open.map((s) => {
             const qs = questions.filter((q) => q.poll_id === s.id);
             const answered = done.has(s.id);
             return (
               <article key={s.id} className="rounded-2xl border bg-card p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0"><h2 className="font-semibold">{s.title}</h2>{s.description && <p className="mt-1 text-sm text-muted-foreground">{s.description}</p>}
-                    {s.closes_at && <p className="mt-1 text-xs text-muted-foreground">Closes {new Date(s.closes_at).toLocaleString("en-IN")}</p>}</div>
-                  {answered ? <StatusChip tone="success">Answered</StatusChip> : <StatusChip tone="info">{qs.length} questions</StatusChip>}
+                    {s.closes_at && <p className="mt-1 text-xs text-muted-foreground">{tu("op.closes")} {new Date(s.closes_at).toLocaleString("en-IN")}</p>}</div>
+                  {answered ? <StatusChip tone="success">{tu("op.answered_2")}</StatusChip> : <StatusChip tone="info">{qs.length} {tu("op.questions")}</StatusChip>}
                 </div>
-                {answered ? <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground"><CheckCircle2 className="h-4 w-4 text-primary" aria-hidden />You've answered this survey.</p> : (
+                {answered ? <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground"><CheckCircle2 className="h-4 w-4 text-primary" aria-hidden />{tu("op.you_ve_answered_this_survey")}</p> : (
                   <form className="mt-4 space-y-5" onSubmit={(e) => { e.preventDefault(); void submit(s); }}>
                     {qs.map((q, i) => <QuestionField key={q.id} q={q} index={i} value={answers[s.id]?.[q.id]} onChange={(v) => setAns(s.id, q.id, v)} />)}
                     {errors[s.id] && <p role="alert" className="text-sm text-destructive">{errors[s.id]}</p>}
                     <Button type="submit" className="min-h-11 w-full sm:w-auto" disabled={sending === s.id}>
-                      {sending === s.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Submit answers
+                      {sending === s.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{tu("op.submit_answers")}
                     </Button>
                   </form>
                 )}
               </article>
             );
           })}</div></section>}
-          {closed.length > 0 && <section><SectionLabel>Closed</SectionLabel><ul className="divide-y rounded-2xl border bg-card">{closed.map((s) => (
+          {closed.length > 0 && <section><SectionLabel>{tu("hd.st.closed")}</SectionLabel><ul className="divide-y rounded-2xl border bg-card">{closed.map((s) => (
             <li key={s.id} className="flex items-center justify-between gap-3 px-4 py-3"><span className="min-w-0 truncate">{s.title}</span>
-              <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground"><Lock className="h-3 w-3" aria-hidden />{done.has(s.id) ? "Answered" : "Closed"}</span></li>
+              <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground"><Lock className="h-3 w-3" aria-hidden />{done.has(s.id) ? tu("op.answered_2") : tu("hd.st.closed")}</span></li>
           ))}</ul></section>}
         </div>
       )}
@@ -120,7 +121,7 @@ function QuestionField({ q, index, value, onChange }: { q: SurveyQuestion; index
   const id = `q-${q.id}`;
   return (
     <fieldset aria-describedby={`${id}-type`}>
-      <legend className="text-sm font-medium">{index + 1}. {q.prompt}{q.required && <span className="text-destructive" aria-label="required"> *</span>}</legend>
+      <legend className="text-sm font-medium">{index + 1}. {q.prompt}{q.required && <span className="text-destructive" aria-label={tu("op.required_4")}> *</span>}</legend>
       <span id={`${id}-type`} className="sr-only">{q.qtype}</span>
       <div className="mt-2">
         {q.qtype === "single" && <div role="radiogroup" className="grid gap-2">{q.options.map((o, i) => (

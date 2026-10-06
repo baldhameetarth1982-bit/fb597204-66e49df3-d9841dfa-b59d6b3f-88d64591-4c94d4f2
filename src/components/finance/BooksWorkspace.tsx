@@ -21,6 +21,7 @@ import {
   setSocietyTaxSettings, setVendorTax, transitionManualJournal, type BSSection, type IESection, type ManualJournal,
 } from "@/lib/finance-books.functions";
 import { buildLedgersCsv, buildTallyXml, buildTrialBalanceCsv, buildVouchersCsv, fyEndOf, fyLabel, fyStartOf, safeFilePart } from "@/lib/finance-books-export";
+import { tu } from "@/lib/i18n";
 
 
 const INR = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 });
@@ -34,16 +35,16 @@ function ErrorBox({ error, onRetry }: { error: unknown; onRetry?: () => void }) 
     <div role="alert" className="flex flex-wrap items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm">
       <AlertTriangle className="h-4 w-4 text-destructive" aria-hidden />
       <span className="flex-1">{errMsg(error)}</span>
-      {onRetry && <Button size="sm" variant="outline" onClick={onRetry}>Try again</Button>}
+      {onRetry && <Button size="sm" variant="outline" onClick={onRetry}>{tu("common.tryAgain")}</Button>}
     </div>
   );
 }
-const Loading = () => <div className="flex items-center gap-2 p-6 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Loading…</div>;
+const Loading = () => <div className="flex items-center gap-2 p-6 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />{tu("common.loading")}</div>;
 
 function PeriodPicker({ from, to, setFrom, setTo }: { from: string; to: string; setFrom: (v: string) => void; setTo: (v: string) => void }) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:max-w-md">
-      <div><Label htmlFor="pf">From</Label><Input id="pf" type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
+      <div><Label htmlFor="pf">{tu("common.from")}</Label><Input id="pf" type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
       <div><Label htmlFor="pt">To</Label><Input id="pt" type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
     </div>
   );
@@ -61,18 +62,18 @@ export function BooksPage({ readOnly = false }: { readOnly?: boolean }) {
   return (
     <div className="mx-auto max-w-6xl px-4 pb-24 sm:px-6">
       <BooksReadOnly.Provider value={readOnly}>
-      {!readOnly && <MobileHero eyebrow="Accounts Center" title="Books & Tax" subtitle="Formal statements from the posted ledger. Draft entries never count." icon={Scale} variant="teal" />}
+      {!readOnly && <MobileHero eyebrow={tu("accountsTabs.label")} title={tu("accountsTabs.books")} subtitle={tu("op.formal_statements_from_the_posted")} icon={Scale} variant="teal" />}
       {!readOnly && <AccountsCenterTabs />}
       <Tabs defaultValue="journals">
         <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
           <TabsList className="mb-4 min-w-max">
-            <TabsTrigger value="journals">Journals</TabsTrigger>
-            <TabsTrigger value="tb">Trial balance</TabsTrigger>
-            <TabsTrigger value="ie">Income &amp; Expenditure</TabsTrigger>
-            <TabsTrigger value="bs">Balance sheet</TabsTrigger>
-            <TabsTrigger value="close">Year close</TabsTrigger>
+            <TabsTrigger value="journals">{tu("op.journals")}</TabsTrigger>
+            <TabsTrigger value="tb">{tu("op.trial_balance")}</TabsTrigger>
+            <TabsTrigger value="ie">{tu("op.income_expenditure")}</TabsTrigger>
+            <TabsTrigger value="bs">{tu("op.balance_sheet")}</TabsTrigger>
+            <TabsTrigger value="close">{tu("op.year_close")}</TabsTrigger>
             <TabsTrigger value="tax">GST / TDS</TabsTrigger>
-            <TabsTrigger value="export">Tally export</TabsTrigger>
+            <TabsTrigger value="export">{tu("op.tally_export")}</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="journals"><JournalsTab societyId={societyId} /></TabsContent>
@@ -129,7 +130,7 @@ function JournalsTab({ societyId }: { societyId: string }) {
     networkMode: "always", retry: false,
     mutationFn: () => saveFn({ data: { societyId, journalId: editing!.id, transactionDate: date, description: desc, reference: ref || undefined, requestId: editing!.requestId,
       lines: lines.map((l) => ({ account_id: l.account_id, debit: Number(l.debit) || 0, credit: Number(l.credit) || 0, description: l.description || undefined })) } }),
-    onSuccess: () => { toast.success("Draft saved"); setEditing(null); refresh(); },
+    onSuccess: () => { toast.success(tu("op.draft_saved")); setEditing(null); refresh(); },
     onError: (e) => toast.error(errMsg(e)),
   });
   const transition = useMutation({
@@ -145,49 +146,49 @@ function JournalsTab({ societyId }: { societyId: string }) {
 
   return (
     <div className="space-y-4">
-      <SectionCard title="Manual journals" description="Draft → review → post. Posted journals can only be corrected by a reversal." action={!editing && !ro && <Button onClick={startNew} disabled={!accounts.data}><Plus className="mr-1 h-4 w-4" />New journal</Button>}>
+      <SectionCard title={tu("op.manual_journals")} description={tu("op.draft_review_post_posted_journals")} action={!editing && !ro && <Button onClick={startNew} disabled={!accounts.data}><Plus className="mr-1 h-4 w-4" />{tu("op.new_journal")}</Button>}>
         {accounts.error && <ErrorBox error={accounts.error} onRetry={() => accounts.refetch()} />}
         {editing && accounts.data && (
           <form className="space-y-3 rounded-lg border p-3" onSubmit={(e) => { e.preventDefault(); if (canSave) save.mutate(); }}>
             <div className="grid gap-3 sm:grid-cols-3">
-              <div><Label htmlFor="jd">Date</Label><Input id="jd" type="date" max={today()} value={date} onChange={(e) => setDate(e.target.value)} required /></div>
-              <div className="sm:col-span-2"><Label htmlFor="jn">Narration</Label><Input id="jn" value={desc} maxLength={500} onChange={(e) => setDesc(e.target.value)} required /></div>
-              <div className="sm:col-span-3"><Label htmlFor="jr">Reference / document no. (optional)</Label><Input id="jr" value={ref} maxLength={120} onChange={(e) => setRef(e.target.value)} /></div>
+              <div><Label htmlFor="jd">{tu("common.date")}</Label><Input id="jd" type="date" max={today()} value={date} onChange={(e) => setDate(e.target.value)} required /></div>
+              <div className="sm:col-span-2"><Label htmlFor="jn">{tu("op.narration")}</Label><Input id="jn" value={desc} maxLength={500} onChange={(e) => setDesc(e.target.value)} required /></div>
+              <div className="sm:col-span-3"><Label htmlFor="jr">{tu("op.reference_document_no_optional")}</Label><Input id="jr" value={ref} maxLength={120} onChange={(e) => setRef(e.target.value)} /></div>
             </div>
             <div className="space-y-2">
               {lines.map((l, i) => (
                 <div key={i} className="grid grid-cols-2 gap-2 rounded-md bg-muted/40 p-2 sm:grid-cols-[2fr_1fr_1fr_2fr_auto]">
                   <select aria-label={`Line ${i + 1} account`} className={`${selectCls} col-span-2 sm:col-span-1`} value={l.account_id} onChange={(e) => setLines(lines.map((x, k) => k === i ? { ...x, account_id: e.target.value } : x))}>
-                    <option value="">Account…</option>
+                    <option value="">{tu("op.account")}</option>
                     {accounts.data.filter((a) => a.is_active).map((a) => <option key={a.id} value={a.id}>{a.code} · {a.name}</option>)}
                   </select>
-                  <Input aria-label={`Line ${i + 1} debit`} inputMode="decimal" placeholder="Debit" value={l.debit} onChange={(e) => setLines(lines.map((x, k) => k === i ? { ...x, debit: e.target.value, credit: e.target.value ? "" : x.credit } : x))} />
-                  <Input aria-label={`Line ${i + 1} credit`} inputMode="decimal" placeholder="Credit" value={l.credit} onChange={(e) => setLines(lines.map((x, k) => k === i ? { ...x, credit: e.target.value, debit: e.target.value ? "" : x.debit } : x))} />
-                  <Input aria-label={`Line ${i + 1} note`} placeholder="Line note" maxLength={200} value={l.description} onChange={(e) => setLines(lines.map((x, k) => k === i ? { ...x, description: e.target.value } : x))} />
+                  <Input aria-label={`Line ${i + 1} debit`} inputMode="decimal" placeholder={tu("op.debit")} value={l.debit} onChange={(e) => setLines(lines.map((x, k) => k === i ? { ...x, debit: e.target.value, credit: e.target.value ? "" : x.credit } : x))} />
+                  <Input aria-label={`Line ${i + 1} credit`} inputMode="decimal" placeholder={tu("op.credit")} value={l.credit} onChange={(e) => setLines(lines.map((x, k) => k === i ? { ...x, credit: e.target.value, debit: e.target.value ? "" : x.debit } : x))} />
+                  <Input aria-label={`Line ${i + 1} note`} placeholder={tu("op.line_note")} maxLength={200} value={l.description} onChange={(e) => setLines(lines.map((x, k) => k === i ? { ...x, description: e.target.value } : x))} />
                   <Button type="button" variant="ghost" size="icon" aria-label={`Remove line ${i + 1}`} disabled={lines.length <= 2} onClick={() => setLines(lines.filter((_, k) => k !== i))}><Trash2 className="h-4 w-4" /></Button>
                 </div>
               ))}
-              <Button type="button" variant="outline" size="sm" disabled={lines.length >= 50} onClick={() => setLines([...lines, emptyLine()])}><Plus className="mr-1 h-4 w-4" />Add line</Button>
+              <Button type="button" variant="outline" size="sm" disabled={lines.length >= 50} onClick={() => setLines([...lines, emptyLine()])}><Plus className="mr-1 h-4 w-4" />{tu("op.add_line")}</Button>
             </div>
             <div className={`flex flex-wrap justify-between gap-2 rounded-md p-2 text-sm ${balanced ? "bg-primary/5" : "bg-destructive/5"}`} aria-live="polite">
-              <span>Debit {fmt(totals.dr)} · Credit {fmt(totals.cr)}</span>
-              <span className="font-medium">{balanced ? "Balanced" : `Difference ${fmt(Math.abs(totals.dr - totals.cr))} — must balance before posting`}</span>
+              <span>{tu("op.debit")} {fmt(totals.dr)} · Credit {fmt(totals.cr)}</span>
+              <span className="font-medium">{balanced ? tu("op.balanced") : `Difference ${fmt(Math.abs(totals.dr - totals.cr))} — must balance before posting`}</span>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button type="submit" disabled={!canSave}>{save.isPending && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}Save draft</Button>
-              <Button type="button" variant="ghost" onClick={() => setEditing(null)}>Discard changes</Button>
+              <Button type="submit" disabled={!canSave}>{save.isPending && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}{tu("el.a.saveDraft")}</Button>
+              <Button type="button" variant="ghost" onClick={() => setEditing(null)}>{tu("op.discard_changes")}</Button>
             </div>
           </form>
         )}
       </SectionCard>
 
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Filter journals">
+      <div className="flex flex-wrap gap-2" role="group" aria-label={tu("op.filter_journals")}>
         {(["all", "draft", "in_review", "posted", "reversed", "cancelled"] as const).map((s) => (
-          <Button key={s} size="sm" variant={status === s ? "default" : "outline"} onClick={() => { setStatus(s); setOffset(0); }}>{s === "all" ? "All" : STATUS_LABEL[s]}</Button>
+          <Button key={s} size="sm" variant={status === s ? "default" : "outline"} onClick={() => { setStatus(s); setOffset(0); }}>{s === "all" ? tu("common.all") : STATUS_LABEL[s]}</Button>
         ))}
       </div>
       {list.error ? <ErrorBox error={list.error} onRetry={() => list.refetch()} /> : list.isLoading ? <Loading /> : !list.data?.length ? (
-        <EmptyState icon={Scale} title="No journals here" description="Manual journals you create will appear here." />
+        <EmptyState icon={Scale} title={tu("op.no_journals_here")} description={tu("op.manual_journals_you_create_will")} />
       ) : (
         <ul className="space-y-3">
           {list.data.map((j) => {
@@ -197,13 +198,13 @@ function JournalsTab({ societyId }: { societyId: string }) {
               <li key={j.id} className="rounded-lg border bg-card p-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant={j.status === "posted" ? "default" : j.status === "cancelled" ? "outline" : "secondary"}>{STATUS_LABEL[j.status]}</Badge>
-                  {j.reversed_by_id && <Badge variant="outline">Reversed</Badge>}
-                  <span className="font-medium">{j.journal_no ?? "Unnumbered draft"}</span>
+                  {j.reversed_by_id && <Badge variant="outline">{tu("docState.reversed")}</Badge>}
+                  <span className="font-medium">{j.journal_no ?? tu("op.unnumbered_draft")}</span>
                   <span className="text-sm text-muted-foreground">{j.transaction_date}</span>
                   <span className="ml-auto font-semibold tabular-nums">{fmt(dr)}</span>
                 </div>
                 <p className="mt-1 break-words text-sm">{j.description}{j.reference ? ` · Ref ${j.reference}` : ""}</p>
-                {j.cancel_reason && <p className="text-xs text-muted-foreground">Cancelled: {j.cancel_reason}</p>}
+                {j.cancel_reason && <p className="text-xs text-muted-foreground">{tu("op.cancelled")} {j.cancel_reason}</p>}
                 <div className="mt-2 overflow-x-auto">
                   <table className="w-full min-w-[420px] text-sm">
                     <tbody>{j.lines.map((l, i) => <tr key={i} className="border-t"><td className="py-1">{l.code} · {l.name}</td><td className="py-1 text-right tabular-nums">{l.debit ? fmt(l.debit) : ""}</td><td className="py-1 text-right tabular-nums">{l.credit ? fmt(l.credit) : ""}</td></tr>)}</tbody>
@@ -211,13 +212,13 @@ function JournalsTab({ societyId }: { societyId: string }) {
                 </div>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {!ro && (j.status === "draft" || j.status === "in_review") && <>
-                    <Button size="sm" variant="outline" disabled={busy} onClick={() => startEdit(j)}>Edit</Button>
-                    {j.status === "draft" && <Button size="sm" variant="outline" disabled={busy} onClick={() => transition.mutate({ journalId: j.id, action: "submit" })}>Send for review</Button>}
-                    <Button size="sm" disabled={busy} onClick={() => { if (window.confirm("Post this journal to the ledger? Posted entries cannot be edited.")) transition.mutate({ journalId: j.id, action: "post" }); }}>Post</Button>
-                    <Button size="sm" variant="ghost" disabled={busy} onClick={() => { const r = askReason("Why cancel this draft? (min 5 characters)"); if (r) transition.mutate({ journalId: j.id, action: "cancel", reason: r }); }}>Cancel draft</Button>
+                    <Button size="sm" variant="outline" disabled={busy} onClick={() => startEdit(j)}>{tu("common.edit")}</Button>
+                    {j.status === "draft" && <Button size="sm" variant="outline" disabled={busy} onClick={() => transition.mutate({ journalId: j.id, action: "submit" })}>{tu("op.send_for_review")}</Button>}
+                    <Button size="sm" disabled={busy} onClick={() => { if (window.confirm("Post this journal to the ledger? Posted entries cannot be edited.")) transition.mutate({ journalId: j.id, action: "post" }); }}>{tu("mnt.timing.post")}</Button>
+                    <Button size="sm" variant="ghost" disabled={busy} onClick={() => { const r = askReason("Why cancel this draft? (min 5 characters)"); if (r) transition.mutate({ journalId: j.id, action: "cancel", reason: r }); }}>{tu("op.cancel_draft")}</Button>
                   </>}
                   {!ro && j.status === "posted" && j.source_action === "post" && !j.reversed_by_id && (
-                    <Button size="sm" variant="outline" disabled={busy} onClick={() => { const r = askReason("Reason for reversal (min 5 characters)"); if (r) transition.mutate({ journalId: j.id, action: "reverse", reason: r }); }}>Reverse</Button>
+                    <Button size="sm" variant="outline" disabled={busy} onClick={() => { const r = askReason("Reason for reversal (min 5 characters)"); if (r) transition.mutate({ journalId: j.id, action: "reverse", reason: r }); }}>{tu("exp.reverse")}</Button>
                   )}
                 </div>
               </li>
@@ -226,8 +227,8 @@ function JournalsTab({ societyId }: { societyId: string }) {
         </ul>
       )}
       <div className="flex justify-between">
-        <Button variant="outline" size="sm" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - 20))}>Previous</Button>
-        <Button variant="outline" size="sm" disabled={(list.data?.length ?? 0) < 20} onClick={() => setOffset(offset + 20)}>Next</Button>
+        <Button variant="outline" size="sm" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - 20))}>{tu("acc.previous")}</Button>
+        <Button variant="outline" size="sm" disabled={(list.data?.length ?? 0) < 20} onClick={() => setOffset(offset + 20)}>{tu("acc.next")}</Button>
       </div>
       {!ro && <AddAccountCard societyId={societyId} />}
     </div>
@@ -239,15 +240,15 @@ function AddAccountCard({ societyId }: { societyId: string }) {
   const fn = useServerFn(createFinanceAccount);
   const [code, setCode] = useState(""); const [name, setName] = useState(""); const [type, setType] = useState<"asset" | "liability" | "equity" | "income" | "expense">("equity");
   const m = useMutation({ networkMode: "always", retry: false, mutationFn: () => fn({ data: { societyId, code, name, accountType: type } }),
-    onSuccess: () => { toast.success("Account added"); setCode(""); setName(""); qc.invalidateQueries({ queryKey: ["fin-accounts", societyId] }); }, onError: (e) => toast.error(errMsg(e)) });
+    onSuccess: () => { toast.success(tu("op.account_added")); setCode(""); setName(""); qc.invalidateQueries({ queryKey: ["fin-accounts", societyId] }); }, onError: (e) => toast.error(errMsg(e)) });
   return (
-    <SectionCard title="Add an account" description="For funds and reserves (e.g. Sinking Fund), deposits, TDS payable or GST input.">
+    <SectionCard title={tu("op.add_an_account")} description={tu("op.for_funds_and_reserves_e")}>
       <form className="grid gap-3 sm:grid-cols-[1fr_2fr_1fr_auto] sm:items-end" onSubmit={(e) => { e.preventDefault(); m.mutate(); }}>
-        <div><Label htmlFor="ac">Code</Label><Input id="ac" value={code} maxLength={24} placeholder="3100" onChange={(e) => setCode(e.target.value.toUpperCase())} /></div>
-        <div><Label htmlFor="an">Name</Label><Input id="an" value={name} maxLength={100} placeholder="Sinking Fund" onChange={(e) => setName(e.target.value)} /></div>
-        <div><Label htmlFor="at">Type</Label><select id="at" className={selectCls} value={type} onChange={(e) => setType(e.target.value as typeof type)}>
-          <option value="asset">Asset</option><option value="liability">Liability</option><option value="equity">Fund / reserve</option><option value="income">Income</option><option value="expense">Expense</option></select></div>
-        <Button type="submit" disabled={m.isPending || !/^[A-Z0-9_-]{2,24}$/.test(code) || name.trim().length < 2}>Add</Button>
+        <div><Label htmlFor="ac">{tu("gp.code")}</Label><Input id="ac" value={code} maxLength={24} placeholder="3100" onChange={(e) => setCode(e.target.value.toUpperCase())} /></div>
+        <div><Label htmlFor="an">{tu("common.name")}</Label><Input id="an" value={name} maxLength={100} placeholder={tu("op.sinking_fund")} onChange={(e) => setName(e.target.value)} /></div>
+        <div><Label htmlFor="at">{tu("cm.type")}</Label><select id="at" className={selectCls} value={type} onChange={(e) => setType(e.target.value as typeof type)}>
+          <option value="asset">{tu("op.asset")}</option><option value="liability">{tu("op.liability")}</option><option value="equity">{tu("op.fund_reserve")}</option><option value="income">{tu("nav.income")}</option><option value="expense">{tu("acc.expense")}</option></select></div>
+        <Button type="submit" disabled={m.isPending || !/^[A-Z0-9_-]{2,24}$/.test(code) || name.trim().length < 2}>{tu("vh.add")}</Button>
       </form>
     </SectionCard>
   );
@@ -267,15 +268,15 @@ function TrialBalanceTab({ societyId, from, to, setFrom, setTo }: PeriodProps) {
   const q = useQuery({ queryKey: ["fin-tb", societyId, from, to], enabled: validRange(from, to), queryFn: () => fn({ data: { societyId, from, to } }), retry: false, placeholderData: (p) => p });
   const t = q.data?.totals;
   return (
-    <SectionCard title="Trial balance" description="Posted ledger only. Income and expense accounts open from the start of the financial year."
+    <SectionCard title={tu("op.trial_balance")} description={tu("op.posted_ledger_only_income_and")}
       action={q.data && <Button size="sm" variant="outline" onClick={() => downloadBlob(new Blob([buildTrialBalanceCsv(q.data!)], { type: "text/csv" }), `trial-balance-${from}-to-${to}.csv`)}><Download className="mr-1 h-4 w-4" />CSV</Button>}>
       <PeriodPicker from={from} to={to} setFrom={setFrom} setTo={setTo} />
       {q.error ? <ErrorBox error={q.error} onRetry={() => q.refetch()} /> : !q.data ? <Loading /> : (
         <div className="mt-4 space-y-3">
-          <BalanceCheck ok={t!.closing_debit === t!.closing_credit && t!.period_debit === t!.period_credit} label={t!.closing_debit === t!.closing_credit ? "Debits equal credits" : "Trial balance does not agree"} />
+          <BalanceCheck ok={t!.closing_debit === t!.closing_credit && t!.period_debit === t!.period_credit} label={t!.closing_debit === t!.closing_credit ? tu("op.debits_equal_credits") : tu("op.trial_balance_does_not_agree")} />
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px] text-sm">
-              <thead className="text-left text-muted-foreground"><tr><th className="py-2">Account</th><th className="text-right">Opening</th><th className="text-right">Period Dr</th><th className="text-right">Period Cr</th><th className="text-right">Closing Dr</th><th className="text-right">Closing Cr</th></tr></thead>
+              <thead className="text-left text-muted-foreground"><tr><th className="py-2">{tu("common.account")}</th><th className="text-right">{tu("op.opening")}</th><th className="text-right">{tu("op.period_dr")}</th><th className="text-right">{tu("op.period_cr")}</th><th className="text-right">{tu("op.closing_dr")}</th><th className="text-right">{tu("op.closing_cr")}</th></tr></thead>
               <tbody>
                 {q.data.rows.filter((r) => r.opening_debit || r.opening_credit || r.period_debit || r.period_credit).map((r) => (
                   <tr key={r.code} className="border-t"><td className="py-1.5">{r.code} · {r.name}</td>
@@ -283,7 +284,7 @@ function TrialBalanceTab({ societyId, from, to, setFrom, setTo }: PeriodProps) {
                     <td className="text-right tabular-nums">{fmt(r.period_debit)}</td><td className="text-right tabular-nums">{fmt(r.period_credit)}</td>
                     <td className="text-right tabular-nums">{r.closing_debit ? fmt(r.closing_debit) : ""}</td><td className="text-right tabular-nums">{r.closing_credit ? fmt(r.closing_credit) : ""}</td></tr>
                 ))}
-                <tr className="border-t-2 font-semibold"><td className="py-2">Total</td><td /><td className="text-right tabular-nums">{fmt(t!.period_debit)}</td><td className="text-right tabular-nums">{fmt(t!.period_credit)}</td><td className="text-right tabular-nums">{fmt(t!.closing_debit)}</td><td className="text-right tabular-nums">{fmt(t!.closing_credit)}</td></tr>
+                <tr className="border-t-2 font-semibold"><td className="py-2">{tu("common.total")}</td><td /><td className="text-right tabular-nums">{fmt(t!.period_debit)}</td><td className="text-right tabular-nums">{fmt(t!.period_credit)}</td><td className="text-right tabular-nums">{fmt(t!.closing_debit)}</td><td className="text-right tabular-nums">{fmt(t!.closing_credit)}</td></tr>
               </tbody>
             </table>
           </div>
@@ -297,10 +298,10 @@ function AmountList({ title, rows, total }: { title: string; rows: { code: strin
   return (
     <div>
       <h3 className="mb-1 text-sm font-semibold">{title}</h3>
-      {rows.length === 0 ? <p className="text-sm text-muted-foreground">No posted entries.</p> : (
+      {rows.length === 0 ? <p className="text-sm text-muted-foreground">{tu("op.no_posted_entries")}</p> : (
         <ul className="divide-y text-sm">{rows.map((r) => <li key={r.code} className="flex justify-between gap-3 py-1.5"><span className="min-w-0 break-words">{r.code} · {r.name}</span><span className="tabular-nums">{fmt(r.amount)}</span></li>)}</ul>
       )}
-      <p className="mt-1 flex justify-between border-t pt-1 text-sm font-semibold"><span>Total</span><span className="tabular-nums">{fmt(total)}</span></p>
+      <p className="mt-1 flex justify-between border-t pt-1 text-sm font-semibold"><span>{tu("common.total")}</span><span className="tabular-nums">{fmt(total)}</span></p>
     </div>
   );
 }
@@ -309,9 +310,9 @@ function IESectionView({ s, label }: { s: IESection; label: string }) {
   return (
     <div className="space-y-4 rounded-lg border p-3">
       <p className="text-sm font-medium">{label}: {s.from} to {s.to}</p>
-      <AmountList title="Income" rows={s.income} total={s.total_income} />
-      <AmountList title="Expenditure" rows={s.expenditure} total={s.total_expenditure} />
-      <p className={`flex justify-between text-base font-semibold ${s.surplus >= 0 ? "text-primary" : "text-destructive"}`}><span>{s.surplus >= 0 ? "Surplus" : "Deficit"}</span><span className="tabular-nums">{fmt(Math.abs(s.surplus))}</span></p>
+      <AmountList title={tu("nav.income")} rows={s.income} total={s.total_income} />
+      <AmountList title={tu("op.expenditure")} rows={s.expenditure} total={s.total_expenditure} />
+      <p className={`flex justify-between text-base font-semibold ${s.surplus >= 0 ? "text-primary" : "text-destructive"}`}><span>{s.surplus >= 0 ? tu("op.surplus") : tu("op.deficit")}</span><span className="tabular-nums">{fmt(Math.abs(s.surplus))}</span></p>
     </div>
   );
 }
@@ -324,13 +325,13 @@ function IETab({ societyId, from, to, setFrom, setTo }: PeriodProps) {
   const q = useQuery({ queryKey: ["fin-ie", societyId, from, to, cmp], enabled: validRange(from, to),
     queryFn: () => fn({ data: { societyId, from, to, ...(cmp ? { cmpFrom: shiftYear(from, -1), cmpTo: shiftYear(to, -1) } : {}) } }), retry: false, placeholderData: (p) => p });
   return (
-    <SectionCard title="Income & Expenditure statement" description="From posted income and expense accounts in the ledger.">
+    <SectionCard title={tu("op.income_expenditure_statement")} description={tu("op.from_posted_income_and_expense")}>
       <PeriodPicker from={from} to={to} setFrom={setFrom} setTo={setTo} />
-      <label className="mt-3 flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={cmp} onChange={(e) => setCmp(e.target.checked)} className="h-4 w-4" />Compare with the same period last year</label>
+      <label className="mt-3 flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={cmp} onChange={(e) => setCmp(e.target.checked)} className="h-4 w-4" />{tu("op.compare_with_the_same_period")}</label>
       {q.error ? <ErrorBox error={q.error} onRetry={() => q.refetch()} /> : !q.data ? <Loading /> : (
         <div className="mt-3 grid gap-4 md:grid-cols-2">
-          <IESectionView s={q.data.current} label="Current" />
-          {q.data.comparative && <IESectionView s={q.data.comparative} label="Previous" />}
+          <IESectionView s={q.data.current} label={tu("rep.current")} />
+          {q.data.comparative && <IESectionView s={q.data.comparative} label={tu("acc.previous")} />}
         </div>
       )}
     </SectionCard>
@@ -341,15 +342,15 @@ function BSSectionView({ s }: { s: BSSection }) {
   const ok = Math.round(s.total_assets * 100) === Math.round((s.total_liabilities + s.total_funds) * 100);
   return (
     <div className="space-y-4 rounded-lg border p-3">
-      <p className="text-sm font-medium">As of {s.as_of}</p>
-      <AmountList title="Assets" rows={s.assets} total={s.total_assets} />
-      <AmountList title="Liabilities" rows={s.liabilities} total={s.total_liabilities} />
+      <p className="text-sm font-medium">{tu("op.as_of")} {s.as_of}</p>
+      <AmountList title={tu("op.assets")} rows={s.assets} total={s.total_assets} />
+      <AmountList title={tu("op.liabilities")} rows={s.liabilities} total={s.total_liabilities} />
       <div>
-        <AmountList title="Funds & reserves" rows={[...s.funds,
+        <AmountList title={tu("op.funds_reserves")} rows={[...s.funds,
           { code: "SURPLUS-P", name: "Accumulated surplus — prior years", amount: s.prior_surplus },
           { code: "SURPLUS-C", name: "Surplus / (deficit) — current year", amount: s.current_surplus }]} total={s.total_funds} />
       </div>
-      <BalanceCheck ok={ok} label={ok ? "Assets = Liabilities + Funds" : "Balance sheet does not agree"} />
+      <BalanceCheck ok={ok} label={ok ? tu("op.assets_liabilities_funds") : tu("op.balance_sheet_does_not_agree")} />
     </div>
   );
 }
@@ -361,9 +362,9 @@ function BSTab({ societyId }: { societyId: string }) {
   const cmpAsOf = fyEndOf(shiftYear(fyStartOf(asOf), -1));
   const q = useQuery({ queryKey: ["fin-bs", societyId, asOf, cmp], enabled: !!asOf, queryFn: () => fn({ data: { societyId, asOf, ...(cmp && cmpAsOf < asOf ? { cmpAsOf } : {}) } }), retry: false, placeholderData: (p) => p });
   return (
-    <SectionCard title="Balance sheet" description="Posted ledger balances on the selected date.">
-      <div className="sm:max-w-xs"><Label htmlFor="bsd">As of</Label><Input id="bsd" type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} /></div>
-      <label className="mt-3 flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={cmp} onChange={(e) => setCmp(e.target.checked)} className="h-4 w-4" />Compare with previous year end ({cmpAsOf})</label>
+    <SectionCard title={tu("op.balance_sheet")} description={tu("op.posted_ledger_balances_on_the")}>
+      <div className="sm:max-w-xs"><Label htmlFor="bsd">{tu("op.as_of")}</Label><Input id="bsd" type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} /></div>
+      <label className="mt-3 flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={cmp} onChange={(e) => setCmp(e.target.checked)} className="h-4 w-4" />{tu("op.compare_with_previous_year_end")}{cmpAsOf})</label>
       {q.error ? <ErrorBox error={q.error} onRetry={() => q.refetch()} /> : !q.data ? <Loading /> : (
         <div className="mt-3 grid gap-4 md:grid-cols-2"><BSSectionView s={q.data.current} />{q.data.comparative && <BSSectionView s={q.data.comparative} />}</div>
       )}
@@ -400,44 +401,44 @@ function YearCloseTab({ societyId }: { societyId: string }) {
   const hasBlockers = !!s && (blockers.some(([, n]) => n > 0) || s.blockers.trial_balance_unbalanced);
   const phrase = `CLOSE ${fyLabel(fy)}`;
   return (
-    <SectionCard title="Financial-year close" description="Closing locks the year: no posting can be dated inside it. History is never changed.">
-      <div className="sm:max-w-xs"><Label htmlFor="fy">Financial year</Label>
+    <SectionCard title={tu("op.financial_year_close")} description={tu("op.closing_locks_the_year_no")}>
+      <div className="sm:max-w-xs"><Label htmlFor="fy">{tu("op.financial_year_2")}</Label>
         <select id="fy" className={selectCls} value={fy} onChange={(e) => { setFy(e.target.value); setConfirm(""); }}>{years.map((y) => <option key={y} value={y}>{fyLabel(y)}</option>)}</select></div>
       {q.error ? <ErrorBox error={q.error} onRetry={() => q.refetch()} /> : !s ? <Loading /> : (
         <div className="mt-4 space-y-4">
           <div className="flex flex-wrap items-center gap-2">
-            {s.status === "closed" ? <Badge><Lock className="mr-1 h-3 w-3" />Closed</Badge> : <Badge variant="secondary"><Unlock className="mr-1 h-3 w-3" />Open</Badge>}
+            {s.status === "closed" ? <Badge><Lock className="mr-1 h-3 w-3" />{tu("hd.st.closed")}</Badge> : <Badge variant="secondary"><Unlock className="mr-1 h-3 w-3" />{tu("common.open")}</Badge>}
             <span className="text-sm text-muted-foreground">{s.fy_start} to {s.fy_end}</span>
-            {s.closed_at && <span className="text-sm text-muted-foreground">Closed {new Date(s.closed_at).toLocaleString("en-IN")}</span>}
+            {s.closed_at && <span className="text-sm text-muted-foreground">{tu("hd.st.closed")} {new Date(s.closed_at).toLocaleString("en-IN")}</span>}
           </div>
-          {s.reopen_reason && <p className="text-sm text-muted-foreground">Last reopened: {s.reopen_reason}</p>}
+          {s.reopen_reason && <p className="text-sm text-muted-foreground">{tu("op.last_reopened")} {s.reopen_reason}</p>}
           <div>
-            <h3 className="mb-1 text-sm font-semibold">Must be resolved before closing</h3>
+            <h3 className="mb-1 text-sm font-semibold">{tu("op.must_be_resolved_before_closing")}</h3>
             <ul className="space-y-1 text-sm">
               {blockers.map(([label, n]) => <li key={label} className="flex justify-between"><span>{label}</span><span className={n > 0 ? "font-semibold text-destructive" : "text-muted-foreground"}>{n}</span></li>)}
-              <li className="flex justify-between"><span>Trial balance agrees</span><span className={s.blockers.trial_balance_unbalanced ? "font-semibold text-destructive" : "text-muted-foreground"}>{s.blockers.trial_balance_unbalanced ? "No" : "Yes"}</span></li>
+              <li className="flex justify-between"><span>{tu("op.trial_balance_agrees")}</span><span className={s.blockers.trial_balance_unbalanced ? "font-semibold text-destructive" : "text-muted-foreground"}>{s.blockers.trial_balance_unbalanced ? "No" : tu("op.yes_2")}</span></li>
             </ul>
           </div>
           <div>
-            <h3 className="mb-1 text-sm font-semibold">Warnings (do not block closing)</h3>
+            <h3 className="mb-1 text-sm font-semibold">{tu("op.warnings_do_not_block_closing")}</h3>
             <ul className="space-y-1 text-sm">
-              <li className="flex justify-between"><span>Bank statement lines not reconciled</span><span>{s.warnings.bank_lines_unreconciled}</span></li>
-              <li className="flex justify-between"><span>Expenses with incomplete tax setup</span><span>{s.warnings.tax_needs_configuration}</span></li>
+              <li className="flex justify-between"><span>{tu("op.bank_statement_lines_not_reconciled")}</span><span>{s.warnings.bank_lines_unreconciled}</span></li>
+              <li className="flex justify-between"><span>{tu("op.expenses_with_incomplete_tax_setup")}</span><span>{s.warnings.tax_needs_configuration}</span></li>
             </ul>
           </div>
-          {ro ? <p className="text-sm text-muted-foreground">Read-only access: year close and reopen are done by the committee.</p> : s.status === "open" ? (
-            !s.year_ended ? <p className="text-sm text-muted-foreground">This year has not ended yet, so it cannot be closed.</p> :
+          {ro ? <p className="text-sm text-muted-foreground">{tu("op.read_only_access_year_close")}</p> : s.status === "open" ? (
+            !s.year_ended ? <p className="text-sm text-muted-foreground">{tu("op.this_year_has_not_ended")}</p> :
             <form className="space-y-2 rounded-lg border p-3" onSubmit={(e) => { e.preventDefault(); close.mutate(); }}>
-              <Label htmlFor="cc">Type <span className="font-mono">{phrase}</span> to confirm</Label>
+              <Label htmlFor="cc">{tu("cm.type")} <span className="font-mono">{phrase}</span> {tu("op.to_confirm")}</Label>
               <Input id="cc" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="off" />
-              <Button type="submit" disabled={hasBlockers || confirm !== phrase || close.isPending}>{close.isPending && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}Close {fyLabel(fy)}</Button>
-              {hasBlockers && <p className="text-sm text-destructive">Resolve the blockers above first.</p>}
+              <Button type="submit" disabled={hasBlockers || confirm !== phrase || close.isPending}>{close.isPending && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}{tu("common.close")} {fyLabel(fy)}</Button>
+              {hasBlockers && <p className="text-sm text-destructive">{tu("op.resolve_the_blockers_above_first")}</p>}
             </form>
           ) : (
             <form className="space-y-2 rounded-lg border p-3" onSubmit={(e) => { e.preventDefault(); reopen.mutate(); }}>
-              <Label htmlFor="rr">Reason for reopening (recorded in the audit history)</Label>
+              <Label htmlFor="rr">{tu("op.reason_for_reopening_recorded_in")}</Label>
               <Input id="rr" value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)} />
-              <Button type="submit" variant="outline" disabled={reason.trim().length < 10 || reopen.isPending}>Reopen year</Button>
+              <Button type="submit" variant="outline" disabled={reason.trim().length < 10 || reopen.isPending}>{tu("op.reopen_year")}</Button>
             </form>
           )}
         </div>
@@ -464,57 +465,57 @@ function TaxTab({ societyId, from, to, setFrom, setTo }: PeriodProps) {
   const [cfg, setCfg] = useState<{ gst: boolean; state: string; tds: boolean; tan: string } | null>(null);
   const c = cfg ?? (st ? { gst: st.gst_registered, state: st.gst_state_code ?? "", tds: st.tds_deductor, tan: st.tan ?? "" } : null);
   const saveCfg = useMutation({ networkMode: "always", retry: false, mutationFn: () => settingsFn({ data: { societyId, gstRegistered: c!.gst, gstStateCode: c!.state, tdsDeductor: c!.tds, tan: c!.tan } }),
-    onSuccess: () => { toast.success("Tax settings saved"); setCfg(null); refresh(); }, onError: (e) => toast.error(errMsg(e)) });
+    onSuccess: () => { toast.success(tu("op.tax_settings_saved")); setCfg(null); refresh(); }, onError: (e) => toast.error(errMsg(e)) });
 
   const [v, setV] = useState({ vendorId: "", gstin: "", pan: "", state: "", gstRate: "", tdsSection: "", tdsRate: "" });
   const saveVendor = useMutation({ networkMode: "always", retry: false,
     mutationFn: () => vendorFn({ data: { vendorId: v.vendorId, gstin: v.gstin, pan: v.pan, stateCode: v.state, gstRate: v.gstRate === "" ? null : Number(v.gstRate), tdsSection: v.tdsSection, tdsRate: v.tdsRate === "" ? null : Number(v.tdsRate) } }),
-    onSuccess: () => { toast.success("Vendor tax profile saved"); refresh(); }, onError: (e) => toast.error(errMsg(e)) });
+    onSuccess: () => { toast.success(tu("op.vendor_tax_profile_saved")); refresh(); }, onError: (e) => toast.error(errMsg(e)) });
 
   const calc = useMutation({ networkMode: "always", retry: false,
     mutationFn: (expenseId: string) => calcFn({ data: { expenseId, includesGst: true, gstRate: null, supplyType: null, tdsSection: null, tdsRate: null } }),
-    onSuccess: (r) => { r.status === "calculated" ? toast.success("Tax calculated") : toast.warning(`Needs setup: ${r.missing.join(", ").replace(/_/g, " ")}`); refresh(); }, onError: (e) => toast.error(errMsg(e)) });
+    onSuccess: (r) => { r.status === "calculated" ? toast.success(tu("op.tax_calculated")) : toast.warning(`Needs setup: ${r.missing.join(", ").replace(/_/g, " ")}`); refresh(); }, onError: (e) => toast.error(errMsg(e)) });
 
   return (
     <div className="space-y-4">
       <div role="note" className="rounded-lg border bg-muted/40 p-3 text-sm">
-        SociyoHub calculates GST and TDS from the setup you enter here. It does <strong>not</strong> file returns or pay tax for you — confirm figures with your accountant before filing.
+        {tu("op.sociyohub_calculates_gst_and_tds")} <strong>{tu("op.not")}</strong> {tu("op.file_returns_or_pay_tax")}
       </div>
-      <SectionCard title="Society tax setup">
+      <SectionCard title={tu("op.society_tax_setup")}>
         {q.error ? <ErrorBox error={q.error} onRetry={() => q.refetch()} /> : !c ? <Loading /> : (
           <form className="grid gap-3 sm:grid-cols-2" onSubmit={(e) => { e.preventDefault(); if (!ro) saveCfg.mutate(); }}>
             <fieldset disabled={ro} className="contents">
-            <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4" checked={c.gst} onChange={(e) => setCfg({ ...c, gst: e.target.checked })} />Society is GST registered</label>
-            <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4" checked={c.tds} onChange={(e) => setCfg({ ...c, tds: e.target.checked })} />Society must deduct TDS</label>
-            <div><Label htmlFor="ts">Society state code (2 digits)</Label><Input id="ts" inputMode="numeric" maxLength={2} value={c.state} onChange={(e) => setCfg({ ...c, state: e.target.value.replace(/\D/g, "") })} /></div>
-            <div><Label htmlFor="tt">TAN (optional)</Label><Input id="tt" maxLength={10} value={c.tan} onChange={(e) => setCfg({ ...c, tan: e.target.value.toUpperCase() })} /></div>
-            {!ro && <Button type="submit" className="sm:col-span-2 sm:w-fit" disabled={saveCfg.isPending}>Save setup</Button>}
+            <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4" checked={c.gst} onChange={(e) => setCfg({ ...c, gst: e.target.checked })} />{tu("op.society_is_gst_registered")}</label>
+            <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4" checked={c.tds} onChange={(e) => setCfg({ ...c, tds: e.target.checked })} />{tu("op.society_must_deduct_tds")}</label>
+            <div><Label htmlFor="ts">{tu("op.society_state_code_2_digits")}</Label><Input id="ts" inputMode="numeric" maxLength={2} value={c.state} onChange={(e) => setCfg({ ...c, state: e.target.value.replace(/\D/g, "") })} /></div>
+            <div><Label htmlFor="tt">{tu("op.tan_optional")}</Label><Input id="tt" maxLength={10} value={c.tan} onChange={(e) => setCfg({ ...c, tan: e.target.value.toUpperCase() })} /></div>
+            {!ro && <Button type="submit" className="sm:col-span-2 sm:w-fit" disabled={saveCfg.isPending}>{tu("op.save_setup")}</Button>}
             </fieldset>
           </form>
         )}
       </SectionCard>
 
-      {!ro && <SectionCard title="Vendor tax profile" description="Used to work out GST rate, in-state vs out-of-state supply, and TDS for that vendor's expenses.">
+      {!ro && <SectionCard title={tu("op.vendor_tax_profile")} description={tu("op.used_to_work_out_gst")}>
         {vendors.error ? <ErrorBox error={vendors.error} onRetry={() => vendors.refetch()} /> : (
           <form className="grid gap-3 sm:grid-cols-3" onSubmit={(e) => { e.preventDefault(); if (v.vendorId) saveVendor.mutate(); }}>
-            <div className="sm:col-span-3"><Label htmlFor="vv">Vendor</Label>
+            <div className="sm:col-span-3"><Label htmlFor="vv">{tu("vs.cat.vendor")}</Label>
               <select id="vv" className={selectCls} value={v.vendorId} onChange={(e) => setV({ ...v, vendorId: e.target.value })}>
-                <option value="">Choose vendor…</option>
+                <option value="">{tu("op.choose_vendor_2")}</option>
                 {(vendors.data?.rows as { id: string; name: string }[] | undefined)?.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
               </select></div>
             <div><Label htmlFor="vg">GSTIN</Label><Input id="vg" maxLength={15} value={v.gstin} onChange={(e) => setV({ ...v, gstin: e.target.value.toUpperCase() })} /></div>
             <div><Label htmlFor="vp">PAN</Label><Input id="vp" maxLength={10} value={v.pan} onChange={(e) => setV({ ...v, pan: e.target.value.toUpperCase() })} /></div>
-            <div><Label htmlFor="vs">State code</Label><Input id="vs" inputMode="numeric" maxLength={2} value={v.state} onChange={(e) => setV({ ...v, state: e.target.value.replace(/\D/g, "") })} /></div>
-            <div><Label htmlFor="vr">GST rate</Label><select id="vr" className={selectCls} value={v.gstRate} onChange={(e) => setV({ ...v, gstRate: e.target.value })}>
-              <option value="">Not set</option>{GST_RATES.map((r) => <option key={r} value={r}>{r}%</option>)}</select></div>
-            <div><Label htmlFor="vt">TDS section</Label><Input id="vt" maxLength={8} placeholder="194C" value={v.tdsSection} onChange={(e) => setV({ ...v, tdsSection: e.target.value.toUpperCase() })} /></div>
-            <div><Label htmlFor="vtr">TDS rate %</Label><Input id="vtr" inputMode="decimal" value={v.tdsRate} onChange={(e) => setV({ ...v, tdsRate: e.target.value })} /></div>
-            <Button type="submit" className="sm:w-fit" disabled={!v.vendorId || saveVendor.isPending}>Save vendor profile</Button>
+            <div><Label htmlFor="vs">{tu("op.state_code")}</Label><Input id="vs" inputMode="numeric" maxLength={2} value={v.state} onChange={(e) => setV({ ...v, state: e.target.value.replace(/\D/g, "") })} /></div>
+            <div><Label htmlFor="vr">{tu("op.gst_rate")}</Label><select id="vr" className={selectCls} value={v.gstRate} onChange={(e) => setV({ ...v, gstRate: e.target.value })}>
+              <option value="">{tu("op.not_set")}</option>{GST_RATES.map((r) => <option key={r} value={r}>{r}%</option>)}</select></div>
+            <div><Label htmlFor="vt">{tu("op.tds_section")}</Label><Input id="vt" maxLength={8} placeholder="194C" value={v.tdsSection} onChange={(e) => setV({ ...v, tdsSection: e.target.value.toUpperCase() })} /></div>
+            <div><Label htmlFor="vtr">{tu("op.tds_rate")}</Label><Input id="vtr" inputMode="decimal" value={v.tdsRate} onChange={(e) => setV({ ...v, tdsRate: e.target.value })} /></div>
+            <Button type="submit" className="sm:w-fit" disabled={!v.vendorId || saveVendor.isPending}>{tu("op.save_vendor_profile")}</Button>
           </form>
         )}
       </SectionCard>}
 
-      <SectionCard title="Tax on posted expenses" description="Expense amounts are treated as invoice totals including GST. TDS is worked out on the value before GST.">
+      <SectionCard title={tu("op.tax_on_posted_expenses")} description={tu("op.expense_amounts_are_treated_as")}>
         <PeriodPicker from={from} to={to} setFrom={setFrom} setTo={setTo} />
         {q.data && (
           <>
@@ -522,22 +523,22 @@ function TaxTab({ societyId, from, to, setFrom, setTo }: PeriodProps) {
               {[["Taxable value", q.data.totals.taxable], ["CGST", q.data.totals.cgst], ["SGST", q.data.totals.sgst], ["IGST", q.data.totals.igst], ["Total GST", q.data.totals.total_gst], ["TDS", q.data.totals.tds]].map(([l, n]) => (
                 <div key={l as string} className="rounded-md border p-2"><p className="text-muted-foreground">{l}</p><p className="font-semibold tabular-nums">{fmt(n as number)}</p></div>
               ))}
-              <div className="rounded-md border p-2"><p className="text-muted-foreground">Needs setup</p><p className="font-semibold">{q.data.totals.needs_configuration}</p></div>
-              <div className="rounded-md border p-2"><p className="text-muted-foreground">Not calculated</p><p className="font-semibold">{q.data.totals.not_calculated}</p></div>
+              <div className="rounded-md border p-2"><p className="text-muted-foreground">{tu("op.needs_setup")}</p><p className="font-semibold">{q.data.totals.needs_configuration}</p></div>
+              <div className="rounded-md border p-2"><p className="text-muted-foreground">{tu("op.not_calculated")}</p><p className="font-semibold">{q.data.totals.not_calculated}</p></div>
             </div>
-            {q.data.rows.length === 0 ? <EmptyState icon={Scale} title="No posted expenses in this period" description="Posted expenses appear here for tax calculation." /> : (
+            {q.data.rows.length === 0 ? <EmptyState icon={Scale} title={tu("op.no_posted_expenses_in_this")} description={tu("op.posted_expenses_appear_here_for")} /> : (
               <div className="mt-3 overflow-x-auto">
                 <table className="w-full min-w-[720px] text-sm">
-                  <thead className="text-left text-muted-foreground"><tr><th className="py-2">Date</th><th>Vendor / category</th><th className="text-right">Amount</th><th className="text-right">GST</th><th className="text-right">TDS</th><th className="text-right">Net payable</th><th>Status</th><th /></tr></thead>
+                  <thead className="text-left text-muted-foreground"><tr><th className="py-2">{tu("common.date")}</th><th>{tu("op.vendor_category")}</th><th className="text-right">{tu("common.amount")}</th><th className="text-right">GST</th><th className="text-right">TDS</th><th className="text-right">{tu("op.net_payable")}</th><th>{tu("common.status")}</th><th /></tr></thead>
                   <tbody>{q.data.rows.map((r) => (
                     <tr key={r.expense_id} className="border-t align-top">
-                      <td className="py-1.5">{r.spent_on}</td><td>{r.vendor ?? "No vendor"} · {r.category}</td>
+                      <td className="py-1.5">{r.spent_on}</td><td>{r.vendor ?? tu("exp.noVendor")} · {r.category}</td>
                       <td className="text-right tabular-nums">{fmt(r.amount)}</td>
                       <td className="text-right tabular-nums">{r.tax_status === "calculated" ? `${fmt(r.total_gst)}${r.gst_rate ? ` @${r.gst_rate}%` : ""}${r.supply_type === "inter" ? " IGST" : r.supply_type === "intra" ? " C+S" : ""}` : "—"}</td>
-                      <td className="text-right tabular-nums">{r.tax_status === "calculated" ? (r.tds_amount ? `${fmt(r.tds_amount)} ${r.tds_section ?? ""}` : "None") : "—"}</td>
+                      <td className="text-right tabular-nums">{r.tax_status === "calculated" ? (r.tds_amount ? `${fmt(r.tds_amount)} ${r.tds_section ?? ""}` : tu("el.a.none")) : "—"}</td>
                       <td className="text-right tabular-nums">{fmt(r.net_payable)}</td>
-                      <td>{r.tax_status === "calculated" ? <Badge>Calculated</Badge> : r.tax_status === "needs_configuration" ? <Badge variant="destructive" title={r.missing.join(", ")}>Needs setup: {r.missing.join(", ").replace(/_/g, " ")}</Badge> : <Badge variant="outline">Not calculated</Badge>}</td>
-                      <td>{!ro && <Button size="sm" variant="outline" disabled={calc.isPending && calc.variables === r.expense_id} onClick={() => calc.mutate(r.expense_id)}>{r.tax_status === "not_calculated" ? "Calculate" : "Recalculate"}</Button>}</td>
+                      <td>{r.tax_status === "calculated" ? <Badge>{tu("op.calculated")}</Badge> : r.tax_status === "needs_configuration" ? <Badge variant="destructive" title={r.missing.join(", ")}>{tu("op.needs_setup_2")} {r.missing.join(", ").replace(/_/g, " ")}</Badge> : <Badge variant="outline">{tu("op.not_calculated")}</Badge>}</td>
+                      <td>{!ro && <Button size="sm" variant="outline" disabled={calc.isPending && calc.variables === r.expense_id} onClick={() => calc.mutate(r.expense_id)}>{r.tax_status === "not_calculated" ? tu("op.calculate") : tu("op.recalculate")}</Button>}</td>
                     </tr>
                   ))}</tbody>
                 </table>
@@ -556,7 +557,7 @@ function ExportTab({ societyId, from, to, setFrom, setTo }: PeriodProps) {
   const fn = useServerFn(getTallyExport);
   const [busy, setBusy] = useState<null | "xml" | "csv">(null);
   const run = async (kind: "xml" | "csv") => {
-    if (!validRange(from, to)) { toast.error("Choose a valid date range."); return; }
+    if (!validRange(from, to)) { toast.error(tu("op.choose_a_valid_date_range")); return; }
     setBusy(kind);
     try {
       const data = await fn({ data: { societyId, from, to } });
@@ -570,13 +571,13 @@ function ExportTab({ societyId, from, to, setFrom, setTo }: PeriodProps) {
     } catch (e) { toast.error(errMsg(e)); } finally { setBusy(null); }
   };
   return (
-    <SectionCard title="Tally-ready export" description="Ledgers with groups and opening balances, plus every posted voucher in the period. Built on your device; exporting never changes the books.">
+    <SectionCard title={tu("op.tally_ready_export")} description={tu("op.ledgers_with_groups_and_opening")}>
       <PeriodPicker from={from} to={to} setFrom={setFrom} setTo={setTo} />
       <div className="mt-4 flex flex-wrap gap-2">
-        <Button onClick={() => run("xml")} disabled={!!busy}>{busy === "xml" ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Download className="mr-1 h-4 w-4" />}Tally XML</Button>
-        <Button variant="outline" onClick={() => run("csv")} disabled={!!busy}>{busy === "csv" ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Download className="mr-1 h-4 w-4" />}CSV (vouchers + ledgers)</Button>
+        <Button onClick={() => run("xml")} disabled={!!busy}>{busy === "xml" ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Download className="mr-1 h-4 w-4" />}{tu("op.tally_xml")}</Button>
+        <Button variant="outline" onClick={() => run("csv")} disabled={!!busy}>{busy === "csv" ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Download className="mr-1 h-4 w-4" />}{tu("op.csv_vouchers_ledgers")}</Button>
       </div>
-      <p className="mt-3 text-xs text-muted-foreground">Designed for Tally import workflows; not an officially certified Tally integration. Check ledger names in Tally before importing.</p>
+      <p className="mt-3 text-xs text-muted-foreground">{tu("op.designed_for_tally_import_workflows")}</p>
     </SectionCard>
   );
 }

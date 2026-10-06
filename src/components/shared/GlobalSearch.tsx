@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { tu } from "@/lib/i18n";
 
 type Scope = "society" | "resident";
 type Hit = { kind: string; id: string; title: string; subtitle: string | null; link: string };
@@ -70,9 +71,9 @@ export function GlobalSearch({ societyId, scope }: { societyId: string; scope: S
         <Input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder={scope === "society" ? "Search flats, residents, bills, requests, documents…" : "Search your bills, requests, notices, documents…"}
+          placeholder={scope === "society" ? tu("op.search_flats_residents_bills_requests") : tu("op.search_your_bills_requests_notices")}
           className="ps-9 h-11"
-          aria-label="Search"
+          aria-label={tu("common.search")}
           maxLength={80}
           autoFocus
         />
@@ -83,10 +84,10 @@ export function GlobalSearch({ societyId, scope }: { societyId: string; scope: S
       </p>
 
       {active && res.isError && (
-        <p role="alert" className="text-sm text-destructive text-center py-6">Search isn't available right now. Please try again.</p>
+        <p role="alert" className="text-sm text-destructive text-center py-6">{tu("op.search_isn_t_available_right")}</p>
       )}
       {active && !res.isError && !busy && hits.length === 0 && (
-        <p className="text-sm text-muted-foreground text-center py-8">No results for "{debounced}"</p>
+        <p className="text-sm text-muted-foreground text-center py-8">{tu("op.no_results_for")}{debounced}"</p>
       )}
 
       {Object.entries(grouped).map(([kind, list]) => {

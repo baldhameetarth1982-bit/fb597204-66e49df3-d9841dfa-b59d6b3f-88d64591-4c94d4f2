@@ -17,6 +17,7 @@ import {
   setSocietyInviteCodeCustom,
   setSocietyInviteCodeEnabled,
 } from "@/lib/society-code";
+import { tu } from "@/lib/i18n";
 
 interface Props {
   societyId: string;
@@ -36,8 +37,8 @@ export function SocietyInviteCodeCard({ societyId }: Props) {
 
   async function copy() {
     if (!data?.invite_code) return;
-    try { await navigator.clipboard.writeText(data.invite_code); toast.success("Code copied"); }
-    catch { toast.error("Couldn't copy. Long-press the code to copy it."); }
+    try { await navigator.clipboard.writeText(data.invite_code); toast.success(tu("op.code_copied")); }
+    catch { toast.error(tu("sd.copyFail")); }
   }
 
   async function regen() {
@@ -45,7 +46,7 @@ export function SocietyInviteCodeCard({ societyId }: Props) {
     try {
       await regenerateSocietyInviteCode(societyId);
       qc.invalidateQueries({ queryKey: ["society-invite-state", societyId] });
-      toast.success("New code generated");
+      toast.success(tu("op.new_code_generated"));
     } catch (e: any) {
       toast.error(userMessage(e));
     } finally {
@@ -58,7 +59,7 @@ export function SocietyInviteCodeCard({ societyId }: Props) {
     try {
       await setSocietyInviteCodeCustom(societyId, customCode);
       qc.invalidateQueries({ queryKey: ["society-invite-state", societyId] });
-      toast.success("Code updated");
+      toast.success(tu("op.code_updated"));
       setEditing(false);
       setCustomCode("");
     } catch (e: any) {
@@ -85,7 +86,7 @@ export function SocietyInviteCodeCard({ societyId }: Props) {
     <Card className="rounded-3xl">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <KeyRound className="h-5 w-5 text-primary" /> Society invite code
+          <KeyRound className="h-5 w-5 text-primary" /> {tu("op.society_invite_code")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -96,13 +97,13 @@ export function SocietyInviteCodeCard({ societyId }: Props) {
         ) : (
           <>
             <div className="rounded-2xl bg-primary/5 border border-primary/15 p-5 text-center">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">Current code</p>
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">{tu("op.current_code")}</p>
               <p className="mt-2 text-3xl font-bold tracking-[0.4em] font-mono text-primary">
                 {data?.invite_code ?? "—"}
               </p>
               <div className="flex items-center justify-center gap-2 mt-3">
                 <Button variant="secondary" size="sm" className="rounded-xl" onClick={copy}>
-                  <Copy className="h-3.5 w-3.5 mr-1" /> Copy
+                  <Copy className="h-3.5 w-3.5 mr-1" /> {tu("sd.copy")}
                 </Button>
                 <Button
                   variant="outline"
@@ -116,7 +117,7 @@ export function SocietyInviteCodeCard({ societyId }: Props) {
                   ) : (
                     <RefreshCw className="h-3.5 w-3.5 mr-1" />
                   )}
-                  Regenerate
+                  {tu("op.regenerate")}
                 </Button>
                 <Button
                   variant="outline"
@@ -127,14 +128,14 @@ export function SocietyInviteCodeCard({ societyId }: Props) {
                     setCustomCode(data?.invite_code ?? "");
                   }}
                 >
-                  <Pencil className="h-3.5 w-3.5 mr-1" /> Customize
+                  <Pencil className="h-3.5 w-3.5 mr-1" /> {tu("op.customize")}
                 </Button>
               </div>
             </div>
 
             {editing && (
               <div className="space-y-2">
-                <label className="text-xs uppercase tracking-wider text-muted-foreground">Custom code</label>
+                <label className="text-xs uppercase tracking-wider text-muted-foreground">{tu("op.custom_code")}</label>
                 <Input
                   value={customCode}
                   onChange={(e) => setCustomCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12))}
@@ -146,7 +147,7 @@ export function SocietyInviteCodeCard({ societyId }: Props) {
                 </p>
                 <div className="flex gap-2">
                   <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setEditing(false)}>
-                    Cancel
+                    {tu("common.cancel")}
                   </Button>
                   <Button
                     className="flex-1 rounded-xl"
@@ -154,7 +155,7 @@ export function SocietyInviteCodeCard({ societyId }: Props) {
                     disabled={busy === "save" || customCode.length < 4}
                   >
                     {busy === "save" && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    Save code
+                    {tu("op.save_code")}
                   </Button>
                 </div>
               </div>
@@ -168,10 +169,10 @@ export function SocietyInviteCodeCard({ societyId }: Props) {
                   ) : (
                     <ToggleLeft className="h-4 w-4 text-muted-foreground" />
                   )}
-                  Allow joining via code
+                  {tu("op.allow_joining_via_code")}
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Turn off temporarily to pause new residents from requesting access.
+                  {tu("op.turn_off_temporarily_to_pause")}
                 </p>
               </div>
               <Switch

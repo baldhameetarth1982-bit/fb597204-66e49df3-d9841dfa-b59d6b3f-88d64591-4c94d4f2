@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader, PageShell } from "@/components/shared/PageHeader";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { LeaderboardList } from "@/components/gamification/Leaderboard";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/leaderboard")({
   head: () => ({
@@ -18,8 +19,8 @@ function Leaderboard() {
     <FeatureGate feature="leaderboard">
       <PageShell>
         <PageHeader
-          title="Leaderboard"
-          description="Residents earn 2 points for each verified on-time maintenance payment. Pending or unverified payments never count."
+          title={tu("nav.leaderboard")}
+          description={tu("op.residents_earn_2_points_for")}
         />
         <LeaderboardList limit={50} />
       </PageShell>

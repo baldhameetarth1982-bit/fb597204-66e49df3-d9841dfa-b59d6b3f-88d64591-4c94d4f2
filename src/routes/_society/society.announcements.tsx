@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { NOTICE_CATEGORIES, commErrorMessage, liveAt, noticeCategory, type NoticeRow } from "@/lib/notices";
 import { NoticeRosterDialog } from "@/components/notices/NoticeRosterDialog";
 import { NoticeVersionsDialog } from "@/components/notices/NoticeVersionsDialog";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/announcements")({
   head: () => ({
@@ -45,13 +46,13 @@ const toLocal = (iso: string) => { const d = new Date(iso); return new Date(d.ge
 
 /** Only counts we have evidence for. Phone delivery is never claimed. */
 function StatsLine({ s, ack, notified }: { s?: Stats; ack: boolean; notified: boolean }) {
-  if (!s) return <p className="flex items-center gap-1"><Eye className="h-3.5 w-3.5" />Counts unavailable</p>;
+  if (!s) return <p className="flex items-center gap-1"><Eye className="h-3.5 w-3.5" />{tu("op.counts_unavailable")}</p>;
   return (
     <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 tabular-nums">
       <Eye className="h-3.5 w-3.5" aria-hidden />
-      <span>{notified ? `${s.notified} notified in app` : "Notification pending"}</span>
-      <span>· {s.opened}/{s.audience} opened</span>
-      {ack && <span>· {s.acknowledged} acknowledged, {Math.max(0, s.audience - s.acknowledged)} pending</span>}
+      <span>{notified ? `${s.notified} notified in app` : tu("op.notification_pending")}</span>
+      <span>· {s.opened}/{s.audience} {tu("op.opened")}</span>
+      {ack && <span>· {s.acknowledged} {tu("op.acknowledged")} {Math.max(0, s.audience - s.acknowledged)} {tu("sd.payStatus.pending")}</span>}
     </p>
   );
 }
@@ -126,7 +127,7 @@ function NoticesAdmin() {
     if (!confirm("Archive this notice? Residents will no longer see it.")) return;
     const { error } = await supabase.rpc("notice_archive", { _id: id });
     if (error) return toast.error(commErrorMessage(error));
-    toast.success("Notice archived");
+    toast.success(tu("op.notice_archived"));
     qc.invalidateQueries({ queryKey: ["admin-notices"] });
   }
 
@@ -135,11 +136,11 @@ function NoticesAdmin() {
   return (
     <PageShell>
       <PageHeader
-        title="Notices"
-        description="Official announcements for residents"
-        actions={<Button className="rounded-xl min-h-11" onClick={() => { setForm(EMPTY); setOpen(true); }}><Plus className="h-4 w-4 mr-2" />New notice</Button>}
+        title={tu("notif.tab.notices")}
+        description={tu("op.official_announcements_for_residents")}
+        actions={<Button className="rounded-xl min-h-11" onClick={() => { setForm(EMPTY); setOpen(true); }}><Plus className="h-4 w-4 mr-2" />{tu("act.a.notice")}</Button>}
       />
-      <div role="tablist" aria-label="Notice workflow" className="-mx-1 mb-2 flex gap-1 overflow-x-auto px-1">
+      <div role="tablist" aria-label={tu("op.notice_workflow")} className="-mx-1 mb-2 flex gap-1 overflow-x-auto px-1">
         {FLOW.map((f, i) => (
           <button key={f.key} role="tab" aria-selected={tab === f.key} onClick={() => setTab(f.key)}
             className={cn("flex min-h-14 shrink-0 items-center gap-2 rounded-xl border px-3 text-left text-sm transition-colors",
@@ -152,10 +153,10 @@ function NoticesAdmin() {
       <p className="mb-4 px-1 text-xs text-muted-foreground">{FLOW.find((f) => f.key === tab)!.hint}</p>
 
       {q.isLoading ? <ListSkeleton rows={4} />
-        : q.isError ? <LoadError title="We couldn't load notices." onRetry={() => q.refetch()} />
+        : q.isError ? <LoadError title={tu("rn.loadFailed")} onRetry={() => q.refetch()} />
         : rows.length === 0 ? (
-          <ListEmpty icon={Megaphone} title={tab === "published" ? "Nothing published yet" : "Nothing here"}>
-            {tab === "published" ? "Publish your first notice to reach residents." : "No notices in this stage."}
+          <ListEmpty icon={Megaphone} title={tab === "published" ? tu("dc.emptyTitle") : tu("op.nothing_here")}>
+            {tab === "published" ? tu("op.publish_your_first_notice_to") : tu("op.no_notices_in_this_stage")}
           </ListEmpty>
         ) : (
         <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
@@ -170,27 +171,27 @@ function NoticesAdmin() {
                   <p className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                     {em && <Siren className="h-3.5 w-3.5 text-destructive" aria-hidden />}
                     <span className={cn("rounded px-1.5 py-0.5 font-medium", c.className)}>{c.label}</span>
-                    <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" aria-hidden />{n.audience === "block" ? `Block ${blockName(n.block_id) ?? ""}` : "All residents"}</span>
-                    {n.priority && n.priority !== "normal" && <span className={cn("rounded px-1.5 py-0.5 font-medium", n.priority === "urgent" ? "bg-destructive/15 text-destructive" : "bg-warning/15 text-warning-foreground")}>{n.priority === "urgent" ? "Urgent" : "High priority"}</span>}
-                    {n.requires_ack && <span className="rounded bg-primary/10 px-1.5 py-0.5 font-medium text-primary">Needs acknowledgement</span>}
-                    {n.expires_at && <span>{new Date(n.expires_at).getTime() <= now ? "Expired" : `Expires ${new Date(n.expires_at).toLocaleDateString()}`}</span>}
+                    <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" aria-hidden />{n.audience === "block" ? `Block ${blockName(n.block_id) ?? ""}` : tu("op.all_residents")}</span>
+                    {n.priority && n.priority !== "normal" && <span className={cn("rounded px-1.5 py-0.5 font-medium", n.priority === "urgent" ? "bg-destructive/15 text-destructive" : "bg-warning/15 text-warning-foreground")}>{n.priority === "urgent" ? tu("notif.urgent") : tu("op.high_priority")}</span>}
+                    {n.requires_ack && <span className="rounded bg-primary/10 px-1.5 py-0.5 font-medium text-primary">{tu("op.needs_acknowledgement")}</span>}
+                    {n.expires_at && <span>{new Date(n.expires_at).getTime() <= now ? tu("cm.st.expired") : `Expires ${new Date(n.expires_at).toLocaleDateString()}`}</span>}
                     {n.edited_at && <span>· edited</span>}
                   </p>
                   <p className="mt-0.5 truncate font-medium">{n.title}</p>
                   <p className="truncate text-sm text-muted-foreground">{n.body}</p>
                 </div>
                 <div className="text-xs text-muted-foreground md:text-sm">
-                  {tab === "scheduled" && <p className="flex items-center gap-1 font-medium text-foreground"><Clock className="h-3.5 w-3.5" />Goes live {new Date(liveAt(n)!).toLocaleString(undefined, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}</p>}
-                  {tab === "published" && <><p>Published {new Date(liveAt(n) ?? n.created_at).toLocaleDateString()}</p><StatsLine s={q.data?.stats.get(n.id)} ack={!!n.requires_ack} notified={!!n.notified_at} /></>}
-                  {tab === "draft" && <p>Not visible to residents</p>}
-                  {tab === "archived" && <p>Hidden from residents</p>}
+                  {tab === "scheduled" && <p className="flex items-center gap-1 font-medium text-foreground"><Clock className="h-3.5 w-3.5" />{tu("op.goes_live")} {new Date(liveAt(n)!).toLocaleString(undefined, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}</p>}
+                  {tab === "published" && <><p>{tu("op.published")} {new Date(liveAt(n) ?? n.created_at).toLocaleDateString()}</p><StatsLine s={q.data?.stats.get(n.id)} ack={!!n.requires_ack} notified={!!n.notified_at} /></>}
+                  {tab === "draft" && <p>{tu("op.not_visible_to_residents")}</p>}
+                  {tab === "archived" && <p>{tu("op.hidden_from_residents")}</p>}
                 </div>
                 {n.status !== "archived" && (
                   <div className="flex gap-2">
                     {tab === "published" && <NoticeRosterDialog noticeId={n.id} title={n.title} requiresAck={!!n.requires_ack} />}
                     {n.edited_at && <NoticeVersionsDialog noticeId={n.id} title={n.title} />}
-                    {editable && <Button variant={tab === "draft" ? "default" : "outline"} className="h-11 flex-1 rounded-xl md:flex-none" onClick={() => edit(n)}>{tab === "draft" ? "Continue" : "Edit"}</Button>}
-                    <Button variant="ghost" className="h-11 rounded-xl text-muted-foreground" aria-label={`Archive ${n.title}`} onClick={() => archive(n.id)}><Archive className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">Archive</span></Button>
+                    {editable && <Button variant={tab === "draft" ? "default" : "outline"} className="h-11 flex-1 rounded-xl md:flex-none" onClick={() => edit(n)}>{tab === "draft" ? tu("op.continue") : tu("common.edit")}</Button>}
+                    <Button variant="ghost" className="h-11 rounded-xl text-muted-foreground" aria-label={`Archive ${n.title}`} onClick={() => archive(n.id)}><Archive className="h-4 w-4 md:mr-1" /><span className="hidden md:inline">{tu("cm.archive")}</span></Button>
                   </div>
                 )}
               </li>
@@ -201,7 +202,7 @@ function NoticesAdmin() {
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="bottom" className="rounded-t-3xl max-h-[92vh] overflow-y-auto">
-          <SheetHeader><SheetTitle>{form.id ? "Edit notice" : "New notice"}</SheetTitle></SheetHeader>
+          <SheetHeader><SheetTitle>{form.id ? tu("op.edit_notice") : tu("act.a.notice")}</SheetTitle></SheetHeader>
           <div className="space-y-4 py-4 max-w-2xl mx-auto">
             <div className="flex flex-wrap gap-2">
               {NOTICE_CATEGORIES.map((c) => (
@@ -211,45 +212,45 @@ function NoticesAdmin() {
                 </button>
               ))}
             </div>
-            <div><Label htmlFor="n-title">Title *</Label><Input id="n-title" className="h-11" maxLength={140} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></div>
-            <div><Label htmlFor="n-body">Message *</Label><Textarea id="n-body" rows={6} maxLength={5000} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} /></div>
+            <div><Label htmlFor="n-title">{tu("el.a.titleLbl")}</Label><Input id="n-title" className="h-11" maxLength={140} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></div>
+            <div><Label htmlFor="n-body">{tu("op.message")}</Label><Textarea id="n-body" rows={6} maxLength={5000} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} /></div>
             <div className="grid sm:grid-cols-2 gap-3">
-              <div><Label>Who should see it</Label>
+              <div><Label>{tu("op.who_should_see_it")}</Label>
                 <Select value={form.audience} onValueChange={(v) => setForm({ ...form, audience: v })}>
-                  <SelectTrigger aria-label="Who should see it" className="h-11"><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="all">All residents</SelectItem>{(q.data?.blocks.length ?? 0) > 0 && <SelectItem value="block">One block</SelectItem>}</SelectContent>
+                  <SelectTrigger aria-label={tu("op.who_should_see_it")} className="h-11"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="all">{tu("op.all_residents")}</SelectItem>{(q.data?.blocks.length ?? 0) > 0 && <SelectItem value="block">{tu("op.one_block")}</SelectItem>}</SelectContent>
                 </Select>
               </div>
               {form.audience === "block" && (
-                <div><Label>Block</Label>
+                <div><Label>{tu("mnt.block")}</Label>
                   <Select value={form.block_id} onValueChange={(v) => setForm({ ...form, block_id: v })}>
-                    <SelectTrigger aria-label="Block" className="h-11"><SelectValue placeholder="Choose block" /></SelectTrigger>
+                    <SelectTrigger aria-label={tu("mnt.block")} className="h-11"><SelectValue placeholder={tu("op.choose_block")} /></SelectTrigger>
                     <SelectContent>{q.data?.blocks.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
               )}
             </div>
             {form.category !== "emergency" && !isLive && (
-              <div><Label htmlFor="n-sched">Schedule (optional)</Label><Input id="n-sched" type="datetime-local" className="h-11" value={form.schedule} onChange={(e) => setForm({ ...form, schedule: e.target.value })} /></div>
+              <div><Label htmlFor="n-sched">{tu("op.schedule_optional")}</Label><Input id="n-sched" type="datetime-local" className="h-11" value={form.schedule} onChange={(e) => setForm({ ...form, schedule: e.target.value })} /></div>
             )}
             <div className="grid sm:grid-cols-2 gap-3">
-              <div><Label>Priority</Label>
+              <div><Label>{tu("hd.priority")}</Label>
                 <Select value={form.priority} onValueChange={(v) => setForm({ ...form, priority: v })}>
-                  <SelectTrigger aria-label="Priority" className="h-11"><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="normal">Normal</SelectItem><SelectItem value="high">High</SelectItem><SelectItem value="urgent">Urgent</SelectItem></SelectContent>
+                  <SelectTrigger aria-label={tu("hd.priority")} className="h-11"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="normal">{tu("hd.pr.normal")}</SelectItem><SelectItem value="high">{tu("hd.pr.high")}</SelectItem><SelectItem value="urgent">{tu("notif.urgent")}</SelectItem></SelectContent>
                 </Select>
               </div>
-              <div><Label htmlFor="n-exp">Expires (optional)</Label><Input id="n-exp" type="datetime-local" className="h-11" value={form.expires} onChange={(e) => setForm({ ...form, expires: e.target.value })} /></div>
+              <div><Label htmlFor="n-exp">{tu("op.expires_optional")}</Label><Input id="n-exp" type="datetime-local" className="h-11" value={form.expires} onChange={(e) => setForm({ ...form, expires: e.target.value })} /></div>
             </div>
             <label className="flex min-h-11 items-center gap-3 rounded-xl border px-3 text-sm">
               <input type="checkbox" className="h-5 w-5" checked={form.requires_ack} onChange={(e) => setForm({ ...form, requires_ack: e.target.checked })} />
-              <span><span className="block font-medium">Ask residents to acknowledge</span><span className="block text-xs text-muted-foreground">You'll see who has confirmed reading it.</span></span>
+              <span><span className="block font-medium">{tu("op.ask_residents_to_acknowledge")}</span><span className="block text-xs text-muted-foreground">{tu("op.you_ll_see_who_has")}</span></span>
             </label>
-            {form.category === "emergency" && <p className="text-xs text-destructive">Emergency notices publish immediately and are pinned at the top for residents. They appear in the app — phone push delivery isn't guaranteed.</p>}
+            {form.category === "emergency" && <p className="text-xs text-destructive">{tu("op.emergency_notices_publish_immediately_an")}</p>}
             <div className="flex gap-2">
-              {!isLive && <Button variant="outline" className="flex-1 h-12 rounded-xl" disabled={!!saving} onClick={() => save(false)}>{saving === "draft" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save draft"}</Button>}
+              {!isLive && <Button variant="outline" className="flex-1 h-12 rounded-xl" disabled={!!saving} onClick={() => save(false)}>{saving === "draft" ? <Loader2 className="h-4 w-4 animate-spin" /> : tu("el.a.saveDraft")}</Button>}
               <Button className={cn("flex-1 h-12 rounded-xl", form.category === "emergency" && "bg-destructive text-destructive-foreground hover:bg-destructive/90")} disabled={!!saving} onClick={() => save(true)}>
-                {saving === "publish" ? <Loader2 className="h-4 w-4 animate-spin" /> : isLive ? "Save changes" : form.schedule ? "Schedule" : "Publish"}
+                {saving === "publish" ? <Loader2 className="h-4 w-4 animate-spin" /> : isLive ? tu("common.saveChanges") : form.schedule ? tu("op.schedule") : tu("cm.publish")}
               </Button>
             </div>
           </div>

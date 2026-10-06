@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { SettingsSection, SettingsDisclosure } from "@/components/settings/SettingsUI";
 import { toast } from "sonner";
 import { createSocietyLinkedAccount, refreshPayoutStatus, getPayoutInfo } from "@/lib/payouts.functions";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/payouts")({
   head: () => ({ meta: [{ title: "Payouts — SociyoHub" }] }),
@@ -65,7 +66,7 @@ function PayoutsPage() {
 
   async function submit() {
     if (!societyId) return;
-    if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan.toUpperCase())) { toast.error("PAN format ABCDE1234F"); return; }
+    if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan.toUpperCase())) { toast.error(tu("op.pan_format_abcde1234f")); return; }
     setSaving(true);
     try {
       const res = await create({
@@ -94,32 +95,32 @@ function PayoutsPage() {
   const form = (
     <div className="space-y-5">
       <fieldset className="space-y-3">
-        <legend className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Society</legend>
+        <legend className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tu("nav.society")}</legend>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field id="p-holder" label="Society / legal name" value={holderName} onChange={(e) => setHolderName(e.target.value)} placeholder="Green Park Apartments CHS" />
-          <Field id="p-pan" label="PAN of society / signatory" value={pan} onChange={(e) => setPan(e.target.value.toUpperCase())} placeholder="ABCDE1234F" maxLength={10} />
+          <Field id="p-holder" label={tu("op.society_legal_name")} value={holderName} onChange={(e) => setHolderName(e.target.value)} placeholder={tu("op.green_park_apartments_chs")} />
+          <Field id="p-pan" label={tu("op.pan_of_society_signatory")} value={pan} onChange={(e) => setPan(e.target.value.toUpperCase())} placeholder="ABCDE1234F" maxLength={10} />
         </div>
       </fieldset>
       <fieldset className="space-y-3">
-        <legend className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Bank account</legend>
+        <legend className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tu("op.bank_account")}</legend>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field id="p-ben" label="Beneficiary name (as in bank)" value={beneficiaryName} onChange={(e) => setBeneficiaryName(e.target.value)} className="sm:col-span-2" />
-          <Field id="p-acc" label="Account number" inputMode="numeric" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, ""))} />
+          <Field id="p-ben" label={tu("op.beneficiary_name_as_in_bank")} value={beneficiaryName} onChange={(e) => setBeneficiaryName(e.target.value)} className="sm:col-span-2" />
+          <Field id="p-acc" label={tu("prof.wd.account")} inputMode="numeric" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, ""))} />
           <Field id="p-ifsc" label="IFSC" value={ifsc} onChange={(e) => setIfsc(e.target.value.toUpperCase())} placeholder="HDFC0001234" />
         </div>
       </fieldset>
       <fieldset className="space-y-3">
-        <legend className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Contact</legend>
+        <legend className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tu("op.contact")}</legend>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field id="p-email" label="Admin email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <Field id="p-phone" label="Admin phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+919876543210" />
+          <Field id="p-email" label={tu("op.admin_email")} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <Field id="p-phone" label={tu("op.admin_phone")} type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+919876543210" />
         </div>
       </fieldset>
       <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-xs text-muted-foreground">{complete ? "Ready to submit." : "Fill every field to submit."}</p>
+        <p className="text-xs text-muted-foreground">{complete ? tu("op.ready_to_submit") : tu("op.fill_every_field_to_submit")}</p>
         <Button onClick={submit} disabled={saving || !complete} className="h-11 rounded-xl">
           {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {state.hasLinkedAccount ? "Resubmit for verification" : "Submit for verification"}
+          {state.hasLinkedAccount ? tu("op.resubmit_for_verification") : tu("op.submit_for_verification")}
         </Button>
       </div>
     </div>
@@ -127,7 +128,7 @@ function PayoutsPage() {
 
   return (
     <PageShell>
-      <PageHeader title="Payouts" description="Your society's bank account on record with SociyoHub." />
+      <PageHeader title={tu("op.payouts")} description={tu("op.your_society_s_bank_account")} />
       {sidLoading || loading ? (
         <div className="space-y-4" aria-busy="true"><div className="h-24 animate-pulse rounded-2xl bg-muted" /><div className="h-72 animate-pulse rounded-2xl bg-muted" /></div>
       ) : (
@@ -136,30 +137,30 @@ function PayoutsPage() {
             <div className="grid h-11 w-11 place-items-center rounded-xl bg-primary/10 text-primary"><Landmark className="h-5 w-5" /></div>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="font-semibold">Bank account</h2>
+                <h2 className="font-semibold">{tu("op.bank_account")}</h2>
                 <StatusChip tone={s.tone}>{s.label}</StatusChip>
               </div>
-              {state.last4 && <p className="mt-1 truncate text-sm">A/C ending <span className="tabular-nums">{state.last4}</span> · {state.holder}</p>}
+              {state.last4 && <p className="mt-1 truncate text-sm">{tu("op.a_c_ending")} <span className="tabular-nums">{state.last4}</span> · {state.holder}</p>}
               <p className="mt-1 text-sm text-muted-foreground">{s.next}</p>
             </div>
             {state.hasLinkedAccount && (
               <Button variant="outline" className="col-span-2 h-11 rounded-xl sm:col-span-1" onClick={doRefresh} disabled={refreshing}>
-                {refreshing ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-1 h-4 w-4" />} Refresh
+                {refreshing ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-1 h-4 w-4" />} {tu("gd.refresh")}
               </Button>
             )}
           </section>
 
           <div className="flex items-start gap-3 rounded-2xl border border-border bg-muted/40 p-4 text-sm">
             <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-            <p>Residents pay maintenance by <b>Cash</b> or <b>Bank Transfer</b>. The committee verifies each payment from the Payments screen.</p>
+            <p>{tu("op.residents_pay_maintenance_by")} <b>{tu("common.cash")}</b> or <b>{tu("inc.m.bank")}</b>. The committee verifies each payment from the Payments screen.</p>
           </div>
 
           {state.hasLinkedAccount ? (
-            <SettingsDisclosure title="Update bank details" description="Resubmitting starts verification again." defaultOpen={state.status === "rejected"}>
+            <SettingsDisclosure title={tu("op.update_bank_details")} description={tu("op.resubmitting_starts_verification_again")} defaultOpen={state.status === "rejected"}>
               {form}
             </SettingsDisclosure>
           ) : (
-            <SettingsSection title="Society bank details">{form}</SettingsSection>
+            <SettingsSection title={tu("op.society_bank_details")}>{form}</SettingsSection>
           )}
         </div>
       )}

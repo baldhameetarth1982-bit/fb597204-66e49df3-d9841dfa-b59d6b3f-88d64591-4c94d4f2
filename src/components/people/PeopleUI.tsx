@@ -2,6 +2,7 @@ import type { ComponentType, ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { tu } from "@/lib/i18n";
 
 /** Shared "People & property" area navigation — only existing routes. */
 const AREA = [
@@ -13,7 +14,7 @@ const AREA = [
 
 export function PeopleAreaNav() {
   return (
-    <nav aria-label="People and property" className="-mx-1 mb-5 flex gap-1 overflow-x-auto px-1">
+    <nav aria-label={tu("op.people_and_property")} className="-mx-1 mb-5 flex gap-1 overflow-x-auto px-1">
       {AREA.map((a) => (
         <Link
           key={a.to}
@@ -63,7 +64,7 @@ export function SummaryStrip({ items }: { items: Array<{ label: string; value: R
 
 export function ListSkeleton({ rows = 6 }: { rows?: number }) {
   return (
-    <div role="status" aria-label="Loading" className="divide-y divide-border rounded-2xl border border-border bg-card">
+    <div role="status" aria-label={tu("op.loading")} className="divide-y divide-border rounded-2xl border border-border bg-card">
       {Array.from({ length: rows }).map((_, i) => (
         <div key={i} className="flex items-center gap-3 px-4 py-3">
           <Skeleton className="h-10 w-10 rounded-full" />
@@ -146,9 +147,9 @@ export function LoadError({ title, onRetry }: { title: string; onRetry: () => vo
   return (
     <div role="alert" className="rounded-2xl border border-dashed border-border bg-card px-6 py-10 text-center">
       <p className="font-medium">{title}</p>
-      <p className="mt-1 text-sm text-muted-foreground">Check your connection and try again.</p>
+      <p className="mt-1 text-sm text-muted-foreground">{tu("fd.checkConn")}</p>
       <button type="button" onClick={onRetry} className="mt-4 inline-flex min-h-11 items-center rounded-xl border border-border px-4 text-sm font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-        Retry
+        {tu("common.retry")}
       </button>
     </div>
   );

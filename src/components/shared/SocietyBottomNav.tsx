@@ -24,6 +24,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { tu } from "@/lib/i18n";
 
 const categories = [
   {
@@ -70,7 +71,7 @@ export function SocietyBottomNav() {
 
   return (
     <nav
-      aria-label="Society admin modules"
+      aria-label={tu("op.society_admin_modules")}
       className="md:hidden fixed bottom-0 inset-x-0 z-40 mx-auto w-full max-w-[420px] h-[72px] border-t border-border bg-background/95 backdrop-blur"
     >
       <ul className="grid h-full grid-cols-5 px-1">
@@ -87,7 +88,7 @@ export function SocietyBottomNav() {
             >
               <Home className="h-5 w-5" />
             </span>
-            <span className={homeActive ? "text-primary" : "text-muted-foreground"}>Home</span>
+            <span className={homeActive ? "text-primary" : "text-muted-foreground"}>{tu("nav.home")}</span>
           </Link>
         </li>
 
@@ -125,7 +126,7 @@ export function SocietyBottomNav() {
                 >
                   <SheetHeader className="text-start">
                     <SheetTitle>{category.label}</SheetTitle>
-                    <SheetDescription>Choose a module</SheetDescription>
+                    <SheetDescription>{tu("op.choose_a_module")}</SheetDescription>
                   </SheetHeader>
                   <div className="mt-5 grid grid-cols-2 gap-3">
                     {category.items.map((item) => {

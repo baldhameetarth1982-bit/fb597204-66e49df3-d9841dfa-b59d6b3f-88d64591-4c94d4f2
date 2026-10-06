@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { cn } from "@/lib/utils";
 import { govRpc, govError, PRIVACY_KIND, PRIVACY_STATUS, fmtDateTime } from "@/lib/governance";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/privacy-requests")({
   head: () => ({
@@ -58,7 +59,7 @@ function PrivacyRequestsAdmin() {
     setBusy(true);
     try {
       await govRpc("privacy_request_review", { _id: open.id, _status: status, _outcome: outcome });
-      toast.success("Decision recorded — the resident is notified");
+      toast.success(tu("op.decision_recorded_the_resident_is"));
       setOpenId(null); setOutcome("");
       qc.invalidateQueries({ queryKey: ["admin-privacy-requests"] });
     } catch (e) { toast.error(govError(e)); } finally { setBusy(false); }
@@ -70,7 +71,7 @@ function PrivacyRequestsAdmin() {
     <li key={r.id}>
       <button onClick={() => { setOpenId(r.id); setOutcome(r.outcome ?? ""); }} className="flex w-full min-h-14 items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
         <ShieldCheck className="h-5 w-5 shrink-0 text-primary" aria-hidden />
-        <span className="min-w-0 flex-1"><span className="block truncate font-medium">{PRIVACY_KIND[r.kind]}</span><span className="block text-xs text-muted-foreground">{q.data?.names.get(r.user_id) ?? "Resident"} · {fmtDateTime(r.created_at)}</span></span>
+        <span className="min-w-0 flex-1"><span className="block truncate font-medium">{PRIVACY_KIND[r.kind]}</span><span className="block text-xs text-muted-foreground">{q.data?.names.get(r.user_id) ?? tu("inc.k.resident")} · {fmtDateTime(r.created_at)}</span></span>
         <span className={cn("shrink-0 rounded px-1.5 py-0.5 text-xs font-medium", PRIVACY_STATUS[r.status]?.className)}>{PRIVACY_STATUS[r.status]?.label}</span>
       </button>
     </li>
@@ -78,14 +79,14 @@ function PrivacyRequestsAdmin() {
 
   return (
     <PageShell>
-      <PageHeader title="Privacy requests" description="Review requests. Financial, security and audit records are always kept by law." />
+      <PageHeader title={tu("mod.privacyRequests")} description={tu("op.review_requests_financial_security_and")} />
       {q.isLoading ? <ListSkeleton rows={3} />
-        : q.isError ? <LoadError title="We couldn't load privacy requests." onRetry={() => q.refetch()} />
-        : !q.data?.rows.length ? <ListEmpty icon={ShieldCheck} title="No privacy requests">Residents can ask for a copy, correction or deletion of their data from their app.</ListEmpty>
+        : q.isError ? <LoadError title={tu("op.we_couldn_t_load_privacy")} onRetry={() => q.refetch()} />
+        : !q.data?.rows.length ? <ListEmpty icon={ShieldCheck} title={tu("op.no_privacy_requests")}>{tu("op.residents_can_ask_for_a")}</ListEmpty>
         : (
           <div className="space-y-5">
-            {openRows.length > 0 && <section><h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Needs review</h2><ul className="divide-y overflow-hidden rounded-2xl border bg-card">{openRows.map(row)}</ul></section>}
-            {doneRows.length > 0 && <section><h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Reviewed</h2><ul className="divide-y overflow-hidden rounded-2xl border bg-card">{doneRows.map(row)}</ul></section>}
+            {openRows.length > 0 && <section><h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tu("inc.rc.review")}</h2><ul className="divide-y overflow-hidden rounded-2xl border bg-card">{openRows.map(row)}</ul></section>}
+            {doneRows.length > 0 && <section><h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tu("op.reviewed")}</h2><ul className="divide-y overflow-hidden rounded-2xl border bg-card">{doneRows.map(row)}</ul></section>}
           </div>
         )}
 
@@ -96,24 +97,24 @@ function PrivacyRequestsAdmin() {
               <SheetHeader><SheetTitle className="text-left">{PRIVACY_KIND[open.kind]} — {q.data?.names.get(open.user_id)}</SheetTitle></SheetHeader>
               {open.details && <p className="whitespace-pre-wrap rounded-xl bg-muted p-3 text-sm">{open.details}</p>}
               {open.kind === "deletion" && (
-                <p className="rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm">Nothing is deleted automatically. Remove only optional details (for example vehicles or family members) through their normal pages. Bills, payments, receipts, ledger entries, gate logs and audit history must be kept and will be listed as retained.</p>
+                <p className="rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm">{tu("op.nothing_is_deleted_automatically_remove")}</p>
               )}
-              {open.kind === "export" && <p className="text-sm text-muted-foreground">Approving lets the resident download their own personal details (profile, homes, vehicles, family) for 30 days. It never includes other residents' data.</p>}
-              {open.kind === "correction" && <p className="text-sm text-muted-foreground">Make the correction through the resident's normal record, then record what was changed.</p>}
+              {open.kind === "export" && <p className="text-sm text-muted-foreground">{tu("op.approving_lets_the_resident_download")}</p>}
+              {open.kind === "correction" && <p className="text-sm text-muted-foreground">{tu("op.make_the_correction_through_the")}</p>}
               {["pending", "under_review"].includes(open.status) ? (
                 <>
-                  <div><Label htmlFor="pr-out">Decision note (shared with the resident)</Label><Textarea id="pr-out" rows={4} maxLength={3000} value={outcome} onChange={(e) => setOutcome(e.target.value)} aria-describedby="pr-out-hint" /><p id="pr-out-hint" className="mt-1 text-xs text-muted-foreground">{outcome.trim().length < 10 ? "Write at least 10 characters to complete or decline." : "The resident will see this note."}</p></div>
+                  <div><Label htmlFor="pr-out">{tu("op.decision_note_shared_with_the")}</Label><Textarea id="pr-out" rows={4} maxLength={3000} value={outcome} onChange={(e) => setOutcome(e.target.value)} aria-describedby="pr-out-hint" /><p id="pr-out-hint" className="mt-1 text-xs text-muted-foreground">{outcome.trim().length < 10 ? tu("op.write_at_least_10_characters") : tu("op.the_resident_will_see_this")}</p></div>
                   <div className="flex flex-wrap gap-2">
-                    {open.status === "pending" && <Button variant="outline" className="min-h-11 rounded-xl" disabled={busy} onClick={() => review("under_review")}>Start review</Button>}
-                    <Button className="min-h-11 rounded-xl" disabled={busy || outcome.trim().length < 10} onClick={() => review("completed")}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : open.kind === "deletion" ? "Complete (keep required records)" : "Complete"}</Button>
-                    <Button variant="ghost" className="min-h-11 rounded-xl text-destructive" disabled={busy || outcome.trim().length < 10} onClick={() => review("declined")}>Decline</Button>
+                    {open.status === "pending" && <Button variant="outline" className="min-h-11 rounded-xl" disabled={busy} onClick={() => review("under_review")}>{tu("op.start_review")}</Button>}
+                    <Button className="min-h-11 rounded-xl" disabled={busy || outcome.trim().length < 10} onClick={() => review("completed")}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : open.kind === "deletion" ? tu("op.complete_keep_required_records") : tu("op.complete")}</Button>
+                    <Button variant="ghost" className="min-h-11 rounded-xl text-destructive" disabled={busy || outcome.trim().length < 10} onClick={() => review("declined")}>{tu("op.decline")}</Button>
                   </div>
                 </>
               ) : (
                 <div className="space-y-2 text-sm">
                   <p><span className={cn("rounded px-1.5 py-0.5 text-xs font-medium", PRIVACY_STATUS[open.status]?.className)}>{PRIVACY_STATUS[open.status]?.label}</span> {open.reviewed_at && fmtDateTime(open.reviewed_at)}</p>
                   {open.outcome && <p className="whitespace-pre-wrap">{open.outcome}</p>}
-                  {open.retained?.length > 0 && <div><p className="font-medium">Kept by law</p><ul className="list-disc pl-5 text-muted-foreground">{open.retained.map((x) => <li key={x}>{x}</li>)}</ul></div>}
+                  {open.retained?.length > 0 && <div><p className="font-medium">{tu("op.kept_by_law")}</p><ul className="list-disc pl-5 text-muted-foreground">{open.retained.map((x) => <li key={x}>{x}</li>)}</ul></div>}
                 </div>
               )}
             </div>

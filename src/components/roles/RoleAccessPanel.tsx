@@ -13,6 +13,7 @@ import {
   STAFF_PERMISSIONS, STAFF_PERMISSION_LABELS, cancelRoleInvite, inviteRole, listRoleAccess, setRoleAccess, setStaffPermissions,
   type RoleAccess, type StaffPermission,
 } from "@/lib/role-access.functions";
+import { tu } from "@/lib/i18n";
 
 const mutOpts = { networkMode: "always" as const, retry: false };
 const ACTION_LABEL: Record<string, string> = {
@@ -25,7 +26,7 @@ const ask = (msg: string) => { const r = window.prompt(msg)?.trim(); return r &&
 function PermissionPicker({ value, onChange, idPrefix }: { value: StaffPermission[]; onChange: (v: StaffPermission[]) => void; idPrefix: string }) {
   return (
     <fieldset className="grid gap-1 sm:grid-cols-2">
-      <legend className="mb-1 text-sm font-medium">Work areas</legend>
+      <legend className="mb-1 text-sm font-medium">{tu("op.work_areas")}</legend>
       {STAFF_PERMISSIONS.map((p) => (
         <label key={p} htmlFor={`${idPrefix}-${p}`} className="flex min-h-11 items-center gap-2 text-sm">
           <input id={`${idPrefix}-${p}`} type="checkbox" className="h-4 w-4" checked={value.includes(p)}
@@ -45,7 +46,7 @@ export function RoleAccessPanel() {
   const refresh = () => qc.invalidateQueries({ queryKey: ["role-access"] });
   return (
     <div className="mx-auto mt-6 max-w-5xl space-y-4 px-4 pb-10 sm:px-6">
-      <SectionCard title="Auditor & staff logins" description="An auditor sees the accounts read-only. Staff see only the work areas you tick. Access starts when they accept the invitation with the same phone number." icon={BadgeCheck}>
+      <SectionCard title={tu("op.auditor_staff_logins")} description={tu("op.an_auditor_sees_the_accounts")} icon={BadgeCheck}>
         {q.error ? <ErrorRow error={q.error} onRetry={() => q.refetch()} /> : !q.data ? <Loading /> : <AccessBody data={q.data} onChange={refresh} />}
       </SectionCard>
     </div>
@@ -82,58 +83,58 @@ function AccessBody({ data, onChange }: { data: RoleAccess; onChange: () => void
   return (
     <div className="space-y-6">
       <form className="space-y-3 rounded-lg border p-3" onSubmit={(e) => { e.preventDefault(); if (canInvite) invite.mutate(); }}>
-        <h3 className="flex items-center gap-2 text-sm font-semibold"><UserPlus className="h-4 w-4" />Invite</h3>
+        <h3 className="flex items-center gap-2 text-sm font-semibold"><UserPlus className="h-4 w-4" />{tu("vs.invite")}</h3>
         <div className="flex gap-2">
           {(["auditor", "staff"] as const).map((r) => (
-            <Button key={r} type="button" size="sm" className="min-h-11" variant={role === r ? "default" : "outline"} onClick={() => setRole(r)}>{r === "auditor" ? "Auditor" : "Staff member"}</Button>
+            <Button key={r} type="button" size="sm" className="min-h-11" variant={role === r ? "default" : "outline"} onClick={() => setRole(r)}>{r === "auditor" ? tu("op.auditor") : tu("op.staff_member")}</Button>
           ))}
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
-          <div><Label htmlFor="ri-phone">Mobile number</Label><Input id="ri-phone" inputMode="tel" autoComplete="off" placeholder="98765 43210" value={phone} onChange={(e) => setPhone(e.target.value)} aria-invalid={!!phone && !phoneOk} />
-            {phone && !phoneOk && <p className="mt-1 text-xs text-destructive">Enter a 10-digit Indian mobile number.</p>}</div>
+          <div><Label htmlFor="ri-phone">{tu("otp.mobile")}</Label><Input id="ri-phone" inputMode="tel" autoComplete="off" placeholder="98765 43210" value={phone} onChange={(e) => setPhone(e.target.value)} aria-invalid={!!phone && !phoneOk} />
+            {phone && !phoneOk && <p className="mt-1 text-xs text-destructive">{tu("op.enter_a_10_digit_indian")}</p>}</div>
           {role === "auditor" ? (
-            <div><Label htmlFor="ri-name">Name (optional)</Label><Input id="ri-name" maxLength={80} value={name} onChange={(e) => setName(e.target.value)} /></div>
+            <div><Label htmlFor="ri-name">{tu("op.name_optional")}</Label><Input id="ri-name" maxLength={80} value={name} onChange={(e) => setName(e.target.value)} /></div>
           ) : (
-            <div><Label htmlFor="ri-staff">Staff record</Label>
+            <div><Label htmlFor="ri-staff">{tu("op.staff_record")}</Label>
               <select id="ri-staff" className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm" value={staffId} onChange={(e) => setStaffId(e.target.value)}>
-                <option value="">{data.staff_options.length ? "Choose staff member…" : "Add staff under Operations first"}</option>
+                <option value="">{data.staff_options.length ? tu("op.choose_staff_member") : tu("op.add_staff_under_operations_first")}</option>
                 {data.staff_options.map((s) => <option key={s.id} value={s.id}>{s.full_name} · {s.job_type.replace(/_/g, " ")}</option>)}
               </select></div>
           )}
         </div>
         {role === "staff" && <PermissionPicker idPrefix="ri" value={perms} onChange={setPerms} />}
-        {role === "staff" && perms.includes("finance.read") && <p className="text-xs text-muted-foreground">Finance (read-only) lets this staff member see the society's accounts. Only tick it if their job needs it.</p>}
-        <Button type="submit" className="min-h-11" disabled={!canInvite}>Send invitation</Button>
-        <p className="text-xs text-muted-foreground">They must sign in with this phone number (OTP). Invitations expire after 7 days.</p>
+        {role === "staff" && perms.includes("finance.read") && <p className="text-xs text-muted-foreground">{tu("op.finance_read_only_lets_this")}</p>}
+        <Button type="submit" className="min-h-11" disabled={!canInvite}>{tu("op.send_invitation")}</Button>
+        <p className="text-xs text-muted-foreground">{tu("op.they_must_sign_in_with")}</p>
       </form>
 
       <div>
-        <h3 className="mb-2 text-sm font-semibold">People with access</h3>
-        {data.members.length === 0 ? <p className="text-sm text-muted-foreground">No auditor or staff logins yet.</p> : (
+        <h3 className="mb-2 text-sm font-semibold">{tu("op.people_with_access")}</h3>
+        {data.members.length === 0 ? <p className="text-sm text-muted-foreground">{tu("op.no_auditor_or_staff_logins")}</p> : (
           <ul className="divide-y rounded-lg border">
             {data.members.map((m) => (
               <li key={m.role_id} className="space-y-2 p-3 text-sm">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="font-medium">{m.full_name} <Badge variant="outline" className="ml-1">{m.role === "auditor" ? "Auditor" : `Staff${m.job_type ? ` · ${m.job_type.replace(/_/g, " ")}` : ""}`}</Badge></p>
+                    <p className="font-medium">{m.full_name} <Badge variant="outline" className="ml-1">{m.role === "auditor" ? tu("op.auditor") : `Staff${m.job_type ? ` · ${m.job_type.replace(/_/g, " ")}` : ""}`}</Badge></p>
                     <p className="text-muted-foreground">
-                      {m.is_active ? (m.last_seen_at ? `Last active ${new Date(m.last_seen_at).toLocaleString("en-IN")}` : "Not signed in yet") : `Removed${m.revoked_reason ? `: ${m.revoked_reason}` : ""}`}
+                      {m.is_active ? (m.last_seen_at ? `Last active ${new Date(m.last_seen_at).toLocaleString("en-IN")}` : tu("op.not_signed_in_yet")) : `Removed${m.revoked_reason ? `: ${m.revoked_reason}` : ""}`}
                     </p>
-                    {m.role === "staff" && m.is_active && <p className="text-muted-foreground">{m.permissions.length ? m.permissions.map((p) => STAFF_PERMISSION_LABELS[p as StaffPermission] ?? p).join(", ") : "No work areas"}</p>}
+                    {m.role === "staff" && m.is_active && <p className="text-muted-foreground">{m.permissions.length ? m.permissions.map((p) => STAFF_PERMISSION_LABELS[p as StaffPermission] ?? p).join(", ") : tu("op.no_work_areas")}</p>}
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {m.role === "staff" && m.is_active && <Button size="sm" variant="outline" className="min-h-11" onClick={() => setEditing({ roleId: m.role_id, perms: m.permissions.filter((p): p is StaffPermission => (STAFF_PERMISSIONS as readonly string[]).includes(p)) })}>Permissions</Button>}
+                    {m.role === "staff" && m.is_active && <Button size="sm" variant="outline" className="min-h-11" onClick={() => setEditing({ roleId: m.role_id, perms: m.permissions.filter((p): p is StaffPermission => (STAFF_PERMISSIONS as readonly string[]).includes(p)) })}>{tu("op.permissions")}</Button>}
                     {m.is_active
-                      ? <Button size="sm" variant="destructive" className="min-h-11" disabled={access.isPending} onClick={() => { const r = ask("Why are you removing this access? (at least 5 characters)"); if (r) access.mutate({ roleId: m.role_id, active: false, reason: r }); }}>Remove access</Button>
-                      : <Button size="sm" variant="outline" className="min-h-11" disabled={access.isPending} onClick={() => access.mutate({ roleId: m.role_id, active: true })}>Restore</Button>}
+                      ? <Button size="sm" variant="destructive" className="min-h-11" disabled={access.isPending} onClick={() => { const r = ask("Why are you removing this access? (at least 5 characters)"); if (r) access.mutate({ roleId: m.role_id, active: false, reason: r }); }}>{tu("op.remove_access")}</Button>
+                      : <Button size="sm" variant="outline" className="min-h-11" disabled={access.isPending} onClick={() => access.mutate({ roleId: m.role_id, active: true })}>{tu("op.restore")}</Button>}
                   </div>
                 </div>
                 {editing?.roleId === m.role_id && (
                   <div className="space-y-2 rounded-lg border p-3">
                     <PermissionPicker idPrefix={`e-${m.role_id}`} value={editing.perms} onChange={(v) => setEditing({ ...editing, perms: v })} />
                     <div className="flex gap-2">
-                      <Button size="sm" className="min-h-11" disabled={savePerms.isPending} onClick={() => savePerms.mutate({ roleId: m.role_id, permissions: editing.perms })}>Save</Button>
-                      <Button size="sm" variant="ghost" className="min-h-11" onClick={() => setEditing(null)}>Cancel</Button>
+                      <Button size="sm" className="min-h-11" disabled={savePerms.isPending} onClick={() => savePerms.mutate({ roleId: m.role_id, permissions: editing.perms })}>{tu("common.save")}</Button>
+                      <Button size="sm" variant="ghost" className="min-h-11" onClick={() => setEditing(null)}>{tu("common.cancel")}</Button>
                     </div>
                   </div>
                 )}
@@ -144,24 +145,24 @@ function AccessBody({ data, onChange }: { data: RoleAccess; onChange: () => void
       </div>
 
       <div>
-        <h3 className="mb-2 text-sm font-semibold">Invitations</h3>
-        {data.invitations.length === 0 ? <p className="text-sm text-muted-foreground">No invitations sent yet.</p> : (
+        <h3 className="mb-2 text-sm font-semibold">{tu("op.invitations")}</h3>
+        {data.invitations.length === 0 ? <p className="text-sm text-muted-foreground">{tu("op.no_invitations_sent_yet")}</p> : (
           <ul className="divide-y rounded-lg border">
             {data.invitations.slice(0, 15).map((i) => (
               <li key={i.id} className="flex flex-wrap items-center justify-between gap-2 p-3 text-sm">
-                <div><p className="font-medium">{i.display_name ?? (i.role === "auditor" ? "Auditor" : "Staff")} · ••••{i.phone_last4}</p>
+                <div><p className="font-medium">{i.display_name ?? (i.role === "auditor" ? tu("op.auditor") : tu("gd.catStaff"))} · ••••{i.phone_last4}</p>
                   <p className="text-muted-foreground">{i.status === "pending" ? `Waiting · expires ${new Date(i.expires_at).toLocaleDateString("en-IN")}` : i.status[0]!.toUpperCase() + i.status.slice(1)}</p></div>
-                {i.status === "pending" && <Button size="sm" variant="outline" className="min-h-11" disabled={cancel.isPending} onClick={() => { const r = ask("Reason for cancelling (at least 5 characters)"); if (r) cancel.mutate({ id: i.id, reason: r }); }}>Cancel</Button>}
+                {i.status === "pending" && <Button size="sm" variant="outline" className="min-h-11" disabled={cancel.isPending} onClick={() => { const r = ask("Reason for cancelling (at least 5 characters)"); if (r) cancel.mutate({ id: i.id, reason: r }); }}>{tu("common.cancel")}</Button>}
               </li>
             ))}
           </ul>
         )}
-        {pending.length > 0 && <p className="mt-1 text-xs text-muted-foreground">{pending.length} waiting for a reply.</p>}
+        {pending.length > 0 && <p className="mt-1 text-xs text-muted-foreground">{pending.length} {tu("op.waiting_for_a_reply")}</p>}
       </div>
 
       <div>
-        <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold"><History className="h-4 w-4" />History</h3>
-        {data.history.length === 0 ? <p className="text-sm text-muted-foreground">Nothing yet.</p> : (
+        <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold"><History className="h-4 w-4" />{tu("billingTabs.history")}</h3>
+        {data.history.length === 0 ? <p className="text-sm text-muted-foreground">{tu("op.nothing_yet")}</p> : (
           <ul className="space-y-1 text-sm">
             {data.history.slice(0, 20).map((h, idx) => (
               <li key={`${h.at}-${idx}`} className="flex flex-wrap justify-between gap-2"><span>{ACTION_LABEL[h.action] ?? h.action}{typeof h.metadata?.["reason"] === "string" ? ` — ${h.metadata["reason"]}` : ""}</span><span className="text-muted-foreground">{new Date(h.at).toLocaleString("en-IN")}</span></li>

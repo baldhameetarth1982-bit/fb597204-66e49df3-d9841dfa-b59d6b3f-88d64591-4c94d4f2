@@ -8,7 +8,7 @@
  * `.skip` block with a clear reason.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync } from "../helpers/ui-source";
 import { join } from "node:path";
 import {
   residentRowSchema,

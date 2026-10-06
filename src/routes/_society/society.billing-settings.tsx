@@ -20,6 +20,7 @@ import { ErrorState } from "@/components/system/ErrorState";
 import { toSafeFinanceMessage } from "@/lib/finance-safe-error";
 import { getBillingSchedule, saveBillingSchedule, runBillingNow } from "@/lib/billing.functions";
 import { getBillingControls, setBillingControls } from "@/lib/workstream7.functions";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/billing-settings")({
   head: () => ({ meta: [{ title: "Billing Settings — SociyoHub" }] }),
@@ -126,9 +127,9 @@ function BillingSettingsPage() {
     setSaving(false);
     if (error) return toast.error(toSafeFinanceMessage(error, "Couldn't save. Your changes are still here — please try again."));
     if (!data || data.length === 0)
-      return toast.error("Only Society Admins can change billing settings. Nothing was saved.");
+      return toast.error(tu("op.only_society_admins_can_change"));
     setBaseline(form);
-    toast.success("Billing policy saved");
+    toast.success(tu("op.billing_policy_saved"));
   }
 
   if (sidLoading || loading) {
@@ -141,61 +142,59 @@ function BillingSettingsPage() {
 
   return (
     <SettingsShell
-      title="Billing settings"
+      title={tu("st.billing")}
       scope="Whole society"
       icon={SlidersHorizontal}
-      description="Rules for every home in the society. Bills already issued keep the amounts and dates they were created with."
+      description={tu("op.rules_for_every_home_in")}
     >
       <div className="rounded-2xl border bg-card"><BillingCenterTabs /></div>
 
-      <SettingsSection title="How residents pay" icon={ShieldCheck} trailing={<StatusChip tone="success">Cash · Bank · UPI · Online</StatusChip>}>
+      <SettingsSection title={tu("op.how_residents_pay")} icon={ShieldCheck} trailing={<StatusChip tone="success">{tu("op.cash_bank_upi_online")}</StatusChip>}>
         <p className="text-sm text-muted-foreground">
-          Residents can always pay by <b className="text-foreground">Cash</b> or <b className="text-foreground">Bank Transfer</b>, and by
-          <b className="text-foreground"> UPI QR</b> once you add your society's UPI details. These stay "Awaiting verification" until a
-          committee member confirms them. <b className="text-foreground">Pay now</b> (online by UPI, card or netbanking) is available on
-          plans that include it and is confirmed automatically by the payment provider. A receipt is issued only after a payment is confirmed.
+          {tu("op.residents_can_always_pay_by")} <b className="text-foreground">{tu("common.cash")}</b> or <b className="text-foreground">{tu("inc.m.bank")}</b>, and by
+          <b className="text-foreground"> UPI QR</b> {tu("op.once_you_add_your_society")} <b className="text-foreground">{tu("op.pay_now")}</b> {tu("op.online_by_upi_card_or")}
         </p>
       </SettingsSection>
 
       {!policyLoaded ? (
-        <SettingsSection title="Billing policy" icon={Settings2}>
+        <SettingsSection title={tu("op.billing_policy")} icon={Settings2}>
           <ErrorState
-            title={missing ? "Billing policy isn't set up yet" : "Couldn't load your billing policy"}
-            description={missing ? "Finish society setup first, or ask a Society Admin. Nothing has been changed." : "Nothing has been changed. Your saved settings are safe."}
+            title={missing ? tu("op.billing_policy_isn_t_set") : tu("op.couldn_t_load_your_billing")}
+            description={missing ? tu("op.finish_society_setup_first_or") : tu("op.nothing_has_been_changed_your")}
             onRetry={() => setReloadKey((k) => k + 1)}
             showSupport={false}
           />
         </SettingsSection>
       ) : (<>
-        <SettingsSection title="Billing policy" icon={Settings2}
-          description="When bills are due and when they count as overdue.">
+        <SettingsSection title={tu("op.billing_policy")} icon={Settings2}
+          description={tu("op.when_bills_are_due_and")}>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="bs-freq">Billing frequency</Label>
+              <Label htmlFor="bs-freq">{tu("op.billing_frequency")}</Label>
               <Select value={form.maintenance_frequency} onValueChange={(v) => setForm({ ...form, maintenance_frequency: v })}>
-                <SelectTrigger aria-label="Billing frequency" id="bs-freq" className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectTrigger aria-label={tu("op.billing_frequency")} id="bs-freq" className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="quarterly">Quarterly</SelectItem>
-                  <SelectItem value="half_yearly">Half-yearly</SelectItem>
-                  <SelectItem value="yearly">Yearly</SelectItem>
+                  <SelectItem value="monthly">{tu("op.monthly")}</SelectItem>
+                  <SelectItem value="quarterly">{tu("op.quarterly")}</SelectItem>
+                  <SelectItem value="half_yearly">{tu("op.half_yearly")}</SelectItem>
+                  <SelectItem value="yearly">{tu("op.yearly")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="bs-due">Due day of the month</Label>
+              <Label htmlFor="bs-due">{tu("op.due_day_of_the_month")}</Label>
               <Input id="bs-due" type="number" min={1} max={28} value={form.maintenance_due_day} onChange={(e) => setForm({ ...form, maintenance_due_day: Number(e.target.value) })} className="h-11 rounded-xl" />
               <p className="text-xs text-muted-foreground">1 to 28</p>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="bs-grace">Grace period (days)</Label>
+              <Label htmlFor="bs-grace">{tu("op.grace_period_days")}</Label>
               <Input id="bs-grace" type="number" min={0} max={30} value={form.grace_days} onChange={(e) => setForm({ ...form, grace_days: Number(e.target.value) })} className="h-11 rounded-xl" />
-              <p className="text-xs text-muted-foreground">Days after the due day before a bill is overdue</p>
+              <p className="text-xs text-muted-foreground">{tu("op.days_after_the_due_day")}</p>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="bs-fy">Financial year starts</Label>
+              <Label htmlFor="bs-fy">{tu("op.financial_year_starts")}</Label>
               <Select value={String(form.financial_year_start_month)} onValueChange={(v) => setForm({ ...form, financial_year_start_month: Number(v) })}>
-                <SelectTrigger aria-label="Financial year starts" id="bs-fy" className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectTrigger aria-label={tu("op.financial_year_starts")} id="bs-fy" className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {["January","February","March","April","May","June","July","August","September","October","November","December"].map((m, i) => (
                     <SelectItem key={m} value={String(i + 1)}>{m}</SelectItem>
@@ -206,20 +205,20 @@ function BillingSettingsPage() {
           </div>
         </SettingsSection>
 
-        <SettingsSection title="Late fee" description="Added to the next bill for dues still unpaid after the grace period. Off until you turn it on.">
+        <SettingsSection title={tu("op.late_fee")} description={tu("op.added_to_the_next_bill")}>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="bs-lft">Late fee type</Label>
+              <Label htmlFor="bs-lft">{tu("op.late_fee_type")}</Label>
               <Select value={form.late_fee_type} onValueChange={(v) => setForm({ ...form, late_fee_type: v })}>
-                <SelectTrigger aria-label="Late fee type" id="bs-lft" className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectTrigger aria-label={tu("op.late_fee_type")} id="bs-lft" className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="flat">Flat amount (₹) per bill</SelectItem>
-                  <SelectItem value="percent">Percent of overdue dues (%)</SelectItem>
+                  <SelectItem value="flat">{tu("op.flat_amount_per_bill")}</SelectItem>
+                  <SelectItem value="percent">{tu("op.percent_of_overdue_dues")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="bs-lfa">Late fee {form.late_fee_type === "percent" ? "(%)" : "(₹)"}</Label>
+              <Label htmlFor="bs-lfa">{tu("op.late_fee")} {form.late_fee_type === "percent" ? "(%)" : "(₹)"}</Label>
               <Input id="bs-lfa" type="number" min={0} step="0.01" value={form.late_fee_amount} onChange={(e) => setForm({ ...form, late_fee_amount: Number(e.target.value) })} className="h-11 rounded-xl" />
             </div>
           </div>
@@ -230,7 +229,7 @@ function BillingSettingsPage() {
       </>)}
 
       {societyId && (
-        <SettingsDisclosure title="Automatic billing" description="Create bills on a schedule. Saved separately from the policy above.">
+        <SettingsDisclosure title={tu("op.automatic_billing")} description={tu("op.create_bills_on_a_schedule")}>
           <AutoBillingSection societyId={societyId} />
         </SettingsDisclosure>
       )}
@@ -291,10 +290,10 @@ function AutoBillingSection({ societyId }: { societyId: string }) {
   async function handleSave() {
     if (loadFailed || saving) return;
     const amt = Number(amount), anchor = Number(anchorDay), offset = Number(dueOffsetDays), lf = Number(lateFeeValue);
-    if (!Number.isFinite(amt) || amt <= 0) return toast.error("Enter a billing amount above ₹0.");
-    if (!Number.isInteger(anchor) || anchor < 1 || anchor > 28) return toast.error("Billing day must be from 1 to 28.");
-    if (!Number.isInteger(offset) || offset < 0 || offset > 60) return toast.error("Days until due must be from 0 to 60.");
-    if (!Number.isFinite(lf) || lf < 0 || (lateFeeType === "percent" && lf > 100)) return toast.error("Enter a valid late fee.");
+    if (!Number.isFinite(amt) || amt <= 0) return toast.error(tu("op.enter_a_billing_amount_above"));
+    if (!Number.isInteger(anchor) || anchor < 1 || anchor > 28) return toast.error(tu("op.billing_day_must_be_from"));
+    if (!Number.isInteger(offset) || offset < 0 || offset > 60) return toast.error(tu("op.days_until_due_must_be"));
+    if (!Number.isFinite(lf) || lf < 0 || (lateFeeType === "percent" && lf > 100)) return toast.error(tu("op.enter_a_valid_late_fee"));
     setSaving(true);
     try {
       const res = await save({
@@ -339,8 +338,8 @@ function AutoBillingSection({ societyId }: { societyId: string }) {
       <Card className="rounded-2xl">
         <CardContent className="p-2">
           <ErrorState
-            title="Couldn't load auto-billing"
-            description="Nothing has been changed. Your saved schedule is safe."
+            title={tu("op.couldn_t_load_auto_billing")}
+            description={tu("op.nothing_has_been_changed_your_2")}
             onRetry={() => setReload((k) => k + 1)}
             showSupport={false}
           />
@@ -354,25 +353,25 @@ function AutoBillingSection({ societyId }: { societyId: string }) {
       <div className="space-y-4">
         <div className="flex items-center justify-between rounded-xl border border-border p-4">
           <div>
-            <p className="text-sm font-medium">Auto-generate every cycle</p>
-            <p className="text-xs text-muted-foreground">Bills are created automatically each cycle and stay unpaid until a payment is confirmed.</p>
+            <p className="text-sm font-medium">{tu("op.auto_generate_every_cycle")}</p>
+            <p className="text-xs text-muted-foreground">{tu("op.bills_are_created_automatically_each")}</p>
           </div>
-          <Switch checked={enabled} onCheckedChange={setEnabled} aria-label="Auto-generate every cycle" />
+          <Switch checked={enabled} onCheckedChange={setEnabled} aria-label={tu("op.auto_generate_every_cycle")} />
         </div>
 
         {sch && (
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl border border-border p-3">
-              <p className="text-xs text-muted-foreground">Next run</p>
+              <p className="text-xs text-muted-foreground">{tu("op.next_run")}</p>
               <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold">
                 <CalendarClock className="h-3.5 w-3.5 text-primary" />
                 {new Date(sch.next_run_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
               </p>
             </div>
             <div className="rounded-xl border border-border p-3">
-              <p className="text-xs text-muted-foreground">Last run</p>
+              <p className="text-xs text-muted-foreground">{tu("op.last_run")}</p>
               <p className="mt-1 text-sm font-semibold">
-                {sch.last_run_at ? new Date(sch.last_run_at).toLocaleDateString() : "Never"}
+                {sch.last_run_at ? new Date(sch.last_run_at).toLocaleDateString() : tu("op.never")}
               </p>
               <p className="text-[10px] text-muted-foreground">
                 {sch.last_run_count ? `${sch.last_run_count} bills` : ""}
@@ -383,58 +382,58 @@ function AutoBillingSection({ societyId }: { societyId: string }) {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <Label className="text-xs">Amount mode</Label>
+            <Label className="text-xs">{tu("op.amount_mode")}</Label>
             <Select value={mode} onValueChange={(v: any) => setMode(v)}>
-              <SelectTrigger aria-label="Amount mode" className="rounded-xl"><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label={tu("op.amount_mode")} className="rounded-xl"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="flat">Flat ₹ per unit</SelectItem>
+                <SelectItem value="flat">{tu("op.flat_per_unit")}</SelectItem>
                 <SelectItem value="per_sqft">₹ × sqft</SelectItem>
                 <SelectItem value="per_bhk">₹ × BHK</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">Amount (₹)</Label>
+            <Label className="text-xs">{tu("acc.amountInr")}</Label>
             <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="rounded-xl" />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">Cycle</Label>
+            <Label className="text-xs">{tu("op.cycle")}</Label>
             <Select value={cycle} onValueChange={(v: any) => setCycle(v)}>
-              <SelectTrigger aria-label="Cycle" className="rounded-xl"><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label={tu("op.cycle")} className="rounded-xl"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="weekly">Weekly</SelectItem>
-                <SelectItem value="monthly">Monthly</SelectItem>
-                <SelectItem value="quarterly">Quarterly</SelectItem>
+                <SelectItem value="weekly">{tu("op.weekly")}</SelectItem>
+                <SelectItem value="monthly">{tu("op.monthly")}</SelectItem>
+                <SelectItem value="quarterly">{tu("op.quarterly")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">Anchor day</Label>
+            <Label className="text-xs">{tu("op.anchor_day")}</Label>
             <Input type="number" min={1} max={28} value={anchorDay} onChange={(e) => setAnchorDay(e.target.value)} className="rounded-xl" />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">Due after (days)</Label>
+            <Label className="text-xs">{tu("op.due_after_days")}</Label>
             <Input type="number" min={0} max={60} value={dueOffsetDays} onChange={(e) => setDueOffsetDays(e.target.value)} className="rounded-xl" />
           </div>
-          <p className="self-end text-xs text-muted-foreground sm:col-span-1">Late fees are set once under Billing policy → Late fee and shown in the review before bills are created.</p>
+          <p className="self-end text-xs text-muted-foreground sm:col-span-1">{tu("op.late_fees_are_set_once")}</p>
         </div>
 
         <div className="flex items-center justify-between rounded-xl border border-border p-4">
           <div>
-            <p className="text-sm font-medium">Pro-rate new residents</p>
-            <p className="text-xs text-muted-foreground">Bill partial cycle if a resident joins mid-period.</p>
+            <p className="text-sm font-medium">{tu("op.pro_rate_new_residents")}</p>
+            <p className="text-xs text-muted-foreground">{tu("op.bill_partial_cycle_if_a")}</p>
           </div>
-          <Switch checked={prorate} onCheckedChange={setProrate} aria-label="Pro-rate new residents" />
+          <Switch checked={prorate} onCheckedChange={setProrate} aria-label={tu("op.pro_rate_new_residents")} />
         </div>
 
         <div className="flex flex-wrap justify-end gap-2">
           <Button onClick={handleRun} disabled={running || !sch} variant="secondary" className="h-11 rounded-xl">
             {running ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Play className="h-4 w-4 mr-2" />}
-            Run now
+            {tu("op.run_now")}
           </Button>
           <Button onClick={handleSave} disabled={saving} className="h-11 rounded-xl">
             {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-            Save auto-billing
+            {tu("op.save_auto_billing")}
           </Button>
         </div>
       </div>
@@ -453,23 +452,23 @@ function BillingControls({ societyId, policyDirty }: { societyId: string; policy
     get({ data: { societyId } }).then((c) => setState({ lateFeeEnabled: c.lateFeeEnabled, approvalRequired: c.approvalRequired })).catch(() => setErr(true));
   }, [societyId]);
   async function change(next: { lateFeeEnabled: boolean; approvalRequired: boolean }) {
-    if (policyDirty && next.lateFeeEnabled && !state?.lateFeeEnabled) return toast.error("Save the late fee amount first, then turn it on.");
+    if (policyDirty && next.lateFeeEnabled && !state?.lateFeeEnabled) return toast.error(tu("op.save_the_late_fee_amount"));
     setSaving(true);
-    try { await put({ data: { societyId, ...next } }); setState(next); toast.success("Saved"); }
+    try { await put({ data: { societyId, ...next } }); setState(next); toast.success(tu("op.saved")); }
     catch (e) { toast.error((e as Error).message); }
     finally { setSaving(false); }
   }
-  if (err) return <p className="mt-3 text-xs text-destructive">Couldn't load late fee and approval switches.</p>;
-  if (!state) return <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-3.5 w-3.5 animate-spin" />Loading…</p>;
+  if (err) return <p className="mt-3 text-xs text-destructive">{tu("op.couldn_t_load_late_fee")}</p>;
+  if (!state) return <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-3.5 w-3.5 animate-spin" />{tu("common.loading")}</p>;
   return (
     <div className="mt-4 space-y-2">
       <label className="flex min-h-14 items-center justify-between gap-3 rounded-xl border border-border p-3">
-        <span><span className="block text-sm font-medium">Charge late fees</span><span className="block text-xs text-muted-foreground">Shown per house in the bill review before anything is created. Reverse with a bill adjustment.</span></span>
-        <Switch checked={state.lateFeeEnabled} disabled={saving} onCheckedChange={(v) => change({ ...state, lateFeeEnabled: v })} aria-label="Charge late fees" />
+        <span><span className="block text-sm font-medium">{tu("op.charge_late_fees")}</span><span className="block text-xs text-muted-foreground">{tu("op.shown_per_house_in_the")}</span></span>
+        <Switch checked={state.lateFeeEnabled} disabled={saving} onCheckedChange={(v) => change({ ...state, lateFeeEnabled: v })} aria-label={tu("op.charge_late_fees")} />
       </label>
       <label className="flex min-h-14 items-center justify-between gap-3 rounded-xl border border-border p-3">
-        <span><span className="block text-sm font-medium">Require a second approver for bill runs</span><span className="block text-xs text-muted-foreground">A different committee member must approve before bills are created.</span></span>
-        <Switch checked={state.approvalRequired} disabled={saving} onCheckedChange={(v) => change({ ...state, approvalRequired: v })} aria-label="Require second approver" />
+        <span><span className="block text-sm font-medium">{tu("op.require_a_second_approver_for")}</span><span className="block text-xs text-muted-foreground">{tu("op.a_different_committee_member_must")}</span></span>
+        <Switch checked={state.approvalRequired} disabled={saving} onCheckedChange={(v) => change({ ...state, approvalRequired: v })} aria-label={tu("op.require_second_approver")} />
       </label>
     </div>
   );

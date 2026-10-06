@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { tu } from "@/lib/i18n";
 
 interface FlatRow {
   flat_id: string;
@@ -63,7 +64,7 @@ export function ClaimFlatSheet({ open, onOpenChange, societyId, onRequested }: P
       toast.error(userMessage(error));
       return;
     }
-    toast.success("Request sent — your admin will approve it shortly");
+    toast.success(tu("op.request_sent_your_admin_will"));
     onRequested?.();
     onOpenChange(false);
   }
@@ -72,9 +73,9 @@ export function ClaimFlatSheet({ open, onOpenChange, societyId, onRequested }: P
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="rounded-t-3xl max-h-[90vh] overflow-y-auto">
         <SheetHeader className="text-left">
-          <SheetTitle>Pick your flat</SheetTitle>
+          <SheetTitle>{tu("op.pick_your_flat")}</SheetTitle>
           <SheetDescription>
-            Your bills appear after the admin approves your flat request.
+            {tu("op.your_bills_appear_after_the")}
           </SheetDescription>
         </SheetHeader>
 
@@ -82,7 +83,7 @@ export function ClaimFlatSheet({ open, onOpenChange, societyId, onRequested }: P
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search flat or block…"
+              placeholder={tu("op.search_flat_or_block")}
               value={q}
               onChange={(e) => setQ(e.target.value)}
               className="pl-9 rounded-xl"
@@ -94,9 +95,9 @@ export function ClaimFlatSheet({ open, onOpenChange, societyId, onRequested }: P
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="owner">Owner</SelectItem>
-              <SelectItem value="tenant">Tenant</SelectItem>
-              <SelectItem value="family">Family member</SelectItem>
+              <SelectItem value="owner">{tu("op.owner")}</SelectItem>
+              <SelectItem value="tenant">{tu("op.tenant")}</SelectItem>
+              <SelectItem value="family">{tu("op.family_member")}</SelectItem>
             </SelectContent>
           </Select>
 
@@ -105,7 +106,7 @@ export function ClaimFlatSheet({ open, onOpenChange, societyId, onRequested }: P
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : filtered.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">No flats found.</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">{tu("op.no_flats_found")}</p>
           ) : (
             <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-1">
               {filtered.map((f) => {
@@ -128,7 +129,7 @@ export function ClaimFlatSheet({ open, onOpenChange, societyId, onRequested }: P
                           {f.flat_number}
                         </p>
                         <p className="text-[11px] text-muted-foreground">
-                          {f.is_occupied ? "Already has residents" : "No residents yet"}
+                          {f.is_occupied ? tu("op.already_has_residents") : tu("op.no_residents_yet")}
                         </p>
                       </div>
                       {active && <CheckCircle2 className="h-5 w-5 text-primary" />}
@@ -144,7 +145,7 @@ export function ClaimFlatSheet({ open, onOpenChange, societyId, onRequested }: P
             onClick={submit}
             className="w-full h-12 rounded-xl"
           >
-            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send request"}
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : tu("op.send_request")}
           </Button>
         </div>
       </SheetContent>

@@ -19,6 +19,7 @@ import { commErrorMessage } from "@/lib/notices";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useSocietyId } from "@/hooks/useSocietyId";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/polls")({
   head: () => ({
@@ -79,7 +80,7 @@ function AdminPolls() {
     e.preventDefault();
     if (!societyId || !user || submitting) return;
     const opts = form.options.map((s) => s.trim()).filter(Boolean);
-    if (!form.title.trim() || opts.length < 2) { toast.error("Add a question and at least 2 choices"); return; }
+    if (!form.title.trim() || opts.length < 2) { toast.error(tu("op.add_a_question_and_at")); return; }
     setSubmitting(true);
     const { data: poll, error } = await supabase.from("polls").insert({
       society_id: societyId, title: form.title.trim(), description: form.description.trim() || null, created_by: user.id,
@@ -88,7 +89,7 @@ function AdminPolls() {
     const { error: oerr } = await supabase.from("poll_options").insert(opts.map((label, i) => ({ poll_id: poll.id, label, position: i })));
     setSubmitting(false);
     if (oerr) return toast.error(commErrorMessage(oerr));
-    toast.success("Poll opened for residents");
+    toast.success(tu("op.poll_opened_for_residents"));
     setForm({ title: "", description: "", options: ["", ""] });
     setOpen(false);
     void load();
@@ -98,7 +99,7 @@ function AdminPolls() {
     const { error } = await supabase.from("polls").update({ status: "closed" }).eq("id", id);
     setClosing(null);
     if (error) return toast.error(commErrorMessage(error));
-    toast.success("Voting closed");
+    toast.success(tu("el.st.voting_closed"));
     void load();
   }
 
@@ -121,26 +122,26 @@ function AdminPolls() {
             <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground"><ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`} aria-hidden /></span>
             <span className="min-w-0 flex-1">
               <span className="flex flex-wrap items-center gap-1.5">
-                {done ? <StatusChip tone="muted">Closed</StatusChip> : <StatusChip tone="success">Open for voting</StatusChip>}
-                <span className="text-xs text-muted-foreground">Created {new Date(p.created_at).toLocaleDateString()}{p.closes_at ? ` · ${done ? "closed" : "closes"} ${new Date(p.closes_at).toLocaleDateString()}` : ""}</span>
+                {done ? <StatusChip tone="muted">{tu("hd.st.closed")}</StatusChip> : <StatusChip tone="success">{tu("op.open_for_voting")}</StatusChip>}
+                <span className="text-xs text-muted-foreground">{tu("op.created_2")} {new Date(p.created_at).toLocaleDateString()}{p.closes_at ? ` · ${done ? "closed" : "closes"} ${new Date(p.closes_at).toLocaleDateString()}` : ""}</span>
               </span>
               <span className="mt-0.5 block font-medium">{p.title}</span>
             </span>
           </button>
           <p className="text-sm text-muted-foreground md:text-right">
-            <span className="font-semibold tabular-nums text-foreground">{total}</span> vote{total === 1 ? "" : "s"}
-            {total > 0 && leader && <span className="block truncate text-xs">Leading: {leader.label}</span>}
+            <span className="font-semibold tabular-nums text-foreground">{total}</span> {tu("op.vote")}{total === 1 ? "" : "s"}
+            {total > 0 && leader && <span className="block truncate text-xs">{tu("op.leading")} {leader.label}</span>}
           </p>
           {!done && (
             <Button variant="outline" className="h-11 rounded-xl" onClick={() => setClosing(p)}>
-              <Lock className="mr-1 h-4 w-4" /> Close voting
+              <Lock className="mr-1 h-4 w-4" /> {tu("el.n.closeVote")}
             </Button>
           )}
         </div>
         {isOpen && (
           <div className="border-t bg-muted/30 px-4 py-3">
             {p.description && <p className="mb-3 text-sm text-muted-foreground">{p.description}</p>}
-            <ul className="space-y-2" aria-label="Results">
+            <ul className="space-y-2" aria-label={tu("el.results")}>
               {opts.map((o) => {
                 const c = optVotes[o.id] ?? 0;
                 const pct = total ? Math.round((c / total) * 100) : 0;
@@ -152,7 +153,7 @@ function AdminPolls() {
                 );
               })}
             </ul>
-            <p className="mt-2 text-xs text-muted-foreground">Counts only — who voted is never shown.</p>
+            <p className="mt-2 text-xs text-muted-foreground">{tu("op.counts_only_who_voted_is")}</p>
           </div>
         )}
       </li>
@@ -162,20 +163,20 @@ function AdminPolls() {
   return (
     <PageShell>
       <PageHeader
-        title="Polls"
-        description="Ask residents to vote and follow results."
+        title={tu("nav.polls")}
+        description={tu("op.ask_residents_to_vote_and")}
         actions={
           <Dialog open={open} onOpenChange={(o) => !submitting && setOpen(o)}>
-            <DialogTrigger asChild><Button className="h-11 rounded-xl"><Plus className="mr-1 h-4 w-4" /> New poll</Button></DialogTrigger>
+            <DialogTrigger asChild><Button className="h-11 rounded-xl"><Plus className="mr-1 h-4 w-4" /> {tu("op.new_poll")}</Button></DialogTrigger>
             <DialogContent className="max-h-[90dvh] overflow-y-auto">
-              <DialogHeader><DialogTitle>New poll</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{tu("op.new_poll")}</DialogTitle></DialogHeader>
               <form onSubmit={createPoll} className="space-y-4">
-                <div className="space-y-1.5"><Label htmlFor="pq">Question</Label>
-                  <Input id="pq" className="h-11" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. New paint colour for the lobby" required /></div>
-                <div className="space-y-1.5"><Label htmlFor="pd">Details <span className="font-normal text-muted-foreground">(optional)</span></Label>
+                <div className="space-y-1.5"><Label htmlFor="pq">{tu("op.question")}</Label>
+                  <Input id="pq" className="h-11" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={tu("op.e_g_new_paint_colour")} required /></div>
+                <div className="space-y-1.5"><Label htmlFor="pd">{tu("hd.details")} <span className="font-normal text-muted-foreground">{tu("setup.optional")}</span></Label>
                   <Textarea id="pd" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
                 <fieldset className="space-y-2">
-                  <legend className="text-sm font-medium">Choices</legend>
+                  <legend className="text-sm font-medium">{tu("op.choices")}</legend>
                   {form.options.map((o, i) => (
                     <div key={i} className="flex gap-2">
                       <Input className="h-11" aria-label={`Choice ${i + 1}`} value={o} placeholder={`Choice ${i + 1}`}
@@ -187,12 +188,12 @@ function AdminPolls() {
                     </div>
                   ))}
                   <Button type="button" variant="outline" className="h-11 rounded-xl" onClick={() => setForm({ ...form, options: [...form.options, ""] })}>
-                    <Plus className="mr-1 h-4 w-4" /> Add choice
+                    <Plus className="mr-1 h-4 w-4" /> {tu("op.add_choice")}
                   </Button>
                 </fieldset>
-                <p className="text-xs text-muted-foreground">The poll opens to residents as soon as you create it.</p>
+                <p className="text-xs text-muted-foreground">{tu("op.the_poll_opens_to_residents")}</p>
                 <Button type="submit" className="h-12 w-full rounded-xl" disabled={submitting}>
-                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Open poll"}
+                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : tu("op.open_poll")}
                 </Button>
               </form>
             </DialogContent>
@@ -201,8 +202,8 @@ function AdminPolls() {
       />
 
       {loading ? <ListSkeleton rows={4} />
-        : failed ? <LoadError title="We couldn't load polls." onRetry={load} />
-        : polls.length === 0 ? <ListEmpty icon={Vote} title="No polls yet">Create a poll to ask residents a question.</ListEmpty>
+        : failed ? <LoadError title={tu("pl.loadFail")} onRetry={load} />
+        : polls.length === 0 ? <ListEmpty icon={Vote} title={tu("pl.empty")}>{tu("op.create_a_poll_to_ask")}</ListEmpty>
         : (
           <>
             <SummaryStrip items={[
@@ -211,20 +212,20 @@ function AdminPolls() {
               { label: "Votes on open polls", value: live.reduce((s, p) => s + totalFor(p.id), 0) },
               { label: "Total polls", value: polls.length },
             ]} />
-            {live.length > 0 && <><SectionLabel count={live.length}>Open for voting</SectionLabel><ul className="divide-y overflow-hidden rounded-2xl border bg-card">{live.map(row)}</ul></>}
-            {closed.length > 0 && <><SectionLabel count={closed.length}>Closed</SectionLabel><ul className="divide-y overflow-hidden rounded-2xl border bg-card">{closed.map(row)}</ul></>}
+            {live.length > 0 && <><SectionLabel count={live.length}>{tu("op.open_for_voting")}</SectionLabel><ul className="divide-y overflow-hidden rounded-2xl border bg-card">{live.map(row)}</ul></>}
+            {closed.length > 0 && <><SectionLabel count={closed.length}>{tu("hd.st.closed")}</SectionLabel><ul className="divide-y overflow-hidden rounded-2xl border bg-card">{closed.map(row)}</ul></>}
           </>
         )}
 
       <AlertDialog open={!!closing} onOpenChange={(o) => !o && setClosing(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Close voting?</AlertDialogTitle>
+            <AlertDialogTitle>{tu("op.close_voting")}</AlertDialogTitle>
             <AlertDialogDescription>“{closing?.title}” will stop accepting votes. Residents will see the final results.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="h-11">Keep open</AlertDialogCancel>
-            <AlertDialogAction className="h-11" onClick={() => closing && closePoll(closing.id)}>Close voting</AlertDialogAction>
+            <AlertDialogCancel className="h-11">{tu("op.keep_open")}</AlertDialogCancel>
+            <AlertDialogAction className="h-11" onClick={() => closing && closePoll(closing.id)}>{tu("el.n.closeVote")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

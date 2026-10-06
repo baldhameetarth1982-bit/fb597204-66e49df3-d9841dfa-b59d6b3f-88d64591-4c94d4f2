@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Logo } from "@/components/shared/Logo";
 import { SociyoHubLogo } from "@/components/shared/SociyoHubLogo";
+import { tu } from "@/lib/i18n";
 
 /** Minimal centered shell for /login, /forgot-password, /reset-password. */
 export function AuthShell({ children }: { children: ReactNode }) {
@@ -16,7 +17,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
           {children}
         </div>
         <p className="mt-6 text-center text-xs text-muted-foreground">
-          Society management, simplified.
+          {tu("auth.tagline")}
         </p>
       </div>
     </main>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync } from "../helpers/ui-source";
 import { mapBillingError } from "@/lib/billing-generate.functions";
 
 /**

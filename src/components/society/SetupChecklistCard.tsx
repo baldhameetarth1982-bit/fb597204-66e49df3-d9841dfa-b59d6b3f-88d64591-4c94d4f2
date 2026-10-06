@@ -12,6 +12,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Check, Circle, AlertTriangle, ArrowRight, ListChecks, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { getSetupChecklist } from "@/lib/migration.functions";
+import { tu } from "@/lib/i18n";
 
 
 export type ChecklistItem = {
@@ -83,7 +84,7 @@ export function SetupChecklistCard({ societyId }: { societyId: string }) {
     return (
       <Card className="rounded-2xl">
         <CardContent className="p-4 flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> Loading setup checklist…
+          <Loader2 className="h-4 w-4 animate-spin" /> {tu("op.loading_setup_checklist")}
         </CardContent>
       </Card>
     );

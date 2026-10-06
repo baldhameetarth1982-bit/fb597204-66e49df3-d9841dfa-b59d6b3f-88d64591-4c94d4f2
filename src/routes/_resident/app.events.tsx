@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { PageHeader, PageShell } from "@/components/shared/PageHeader";
 import { EventsBoard } from "@/components/community/EventsBoard";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_resident/app/events")({
   head: () => ({
@@ -18,8 +19,8 @@ export const Route = createFileRoute("/_resident/app/events")({
     const { societyId } = useSocietyId();
     return (
       <PageShell>
-        <PageHeader title="Events" description="RSVP to events in your society." />
-        {societyId ? <EventsBoard societyId={societyId} mode="resident" /> : <p className="text-muted-foreground">Loading…</p>}
+        <PageHeader title={tu("sv.events")} description={tu("op.rsvp_to_events_in_your")} />
+        {societyId ? <EventsBoard societyId={societyId} mode="resident" /> : <p className="text-muted-foreground">{tu("common.loading")}</p>}
       </PageShell>
     );
   },

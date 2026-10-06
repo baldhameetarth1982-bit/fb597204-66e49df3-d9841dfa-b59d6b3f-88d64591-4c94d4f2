@@ -1,5 +1,6 @@
 import type { ComponentType, ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { tu } from "@/lib/i18n";
 
 /** Shared communication patterns (notices, notifications, requests, visitors).
  *  Builds on People UI primitives (StatusChip, SearchField, LoadError...). */
@@ -63,7 +64,7 @@ export function CommRow({ icon: Icon, iconTone = "default", title, meta, body, t
         {body && <span className="mt-0.5 block text-sm text-muted-foreground line-clamp-2">{body}</span>}
       </span>
       {trailing}
-      {unread && <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-primary" aria-label="Unread" />}
+      {unread && <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-primary" aria-label={tu("common.unread")} />}
     </>
   );
   const cls = cn(

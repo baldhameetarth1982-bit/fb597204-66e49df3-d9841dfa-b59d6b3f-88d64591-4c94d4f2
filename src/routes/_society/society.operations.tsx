@@ -6,6 +6,7 @@ import { PurchasesTab } from "@/features/procurement/procurement";
 import { MaintenanceScheduleTab } from "@/components/operations/MaintenanceScheduleTab";
 import { HelpdeskReportsTab } from "@/components/operations/HelpdeskReportsTab";
 import { StaffTab, VendorsTab, AssetsTab, InventoryTab } from "@/components/operations/OperationsTabs";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/operations")({
   head: () => ({
@@ -25,8 +26,8 @@ function OperationsPage() {
   const [tab, setTab] = useState<Tab>("staff");
   return (
     <PageShell>
-      <PageHeader title="Operations" description="Staff, vendors, assets and stock. Payments still go through Expenses." />
-      <div role="tablist" aria-label="Operations sections" className="mb-4 grid grid-cols-3 gap-1 sm:grid-cols-7 rounded-2xl bg-muted p-1">
+      <PageHeader title={tu("nav.operations")} description={tu("op.staff_vendors_assets_and_stock")} />
+      <div role="tablist" aria-label={tu("op.operations_sections")} className="mb-4 grid grid-cols-3 gap-1 sm:grid-cols-7 rounded-2xl bg-muted p-1">
         {TABS.map(([k, l]) => (
           <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
             className={cn("min-h-11 rounded-xl text-sm font-medium", tab === k ? "bg-background shadow-sm" : "text-muted-foreground")}>{l}</button>

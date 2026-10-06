@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { TenancyStateBadge } from "./TenancyStateBadge";
 import { listTenancies, setTenancyWarningDays } from "@/lib/tenancy.functions";
 import { cn } from "@/lib/utils";
+import { tu } from "@/lib/i18n";
 
 type F = "current" | "expiring" | "expired";
 const TABS: { id: F; label: string }[] = [
@@ -29,7 +30,7 @@ export function TenanciesPanel({ societyId }: { societyId: string }) {
   const qc = useQueryClient();
   const m = useMutation({
     mutationFn: () => save({ data: { societyId, days: Number(days) } }),
-    onSuccess: () => { toast.success("Warning period saved"); setDays(""); void qc.invalidateQueries({ queryKey: ["tenancies"] }); },
+    onSuccess: () => { toast.success(tu("op.warning_period_saved")); setDays(""); void qc.invalidateQueries({ queryKey: ["tenancies"] }); },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -37,7 +38,7 @@ export function TenanciesPanel({ societyId }: { societyId: string }) {
     <Card className="rounded-2xl mb-4">
       <CardContent className="p-4 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold">Tenancies</h2>
+          <h2 className="text-sm font-semibold">{tu("op.tenancies")}</h2>
           <div role="tablist" className="flex gap-1 rounded-xl bg-muted p-1">
             {TABS.map((t) => (
               <button key={t.id} role="tab" aria-selected={f === t.id} onClick={() => setF(t.id)}
@@ -56,9 +57,9 @@ export function TenanciesPanel({ societyId }: { societyId: string }) {
                 <li key={t.flat_resident_id}>
                   <Link to="/society/flats/$id" params={{ id: t.flat_id }} className="flex items-center justify-between gap-2 py-2 min-h-11">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{t.resident_name ?? "Tenant"} · Flat {t.flat_number}</p>
+                      <p className="text-sm font-medium truncate">{t.resident_name ?? tu("op.tenant")} · Flat {t.flat_number}</p>
                       <p className="text-xs text-muted-foreground">
-                        {t.lease_ends_on ? `Lease ends ${t.lease_ends_on}` : "No end date"}
+                        {t.lease_ends_on ? `Lease ends ${t.lease_ends_on}` : tu("op.no_end_date")}
                         {t.days_remaining != null && t.days_remaining >= 0 ? ` · ${t.days_remaining} days left` : ""}
                       </p>
                     </div>
@@ -70,10 +71,10 @@ export function TenanciesPanel({ societyId }: { societyId: string }) {
           )}
         <form className="flex items-end gap-2" onSubmit={(e) => { e.preventDefault(); m.mutate(); }}>
           <div className="space-y-1">
-            <Label htmlFor="warn-days" className="text-xs">Warn this many days before a lease ends</Label>
+            <Label htmlFor="warn-days" className="text-xs">{tu("op.warn_this_many_days_before")}</Label>
             <Input id="warn-days" type="number" min={1} max={180} placeholder="30" value={days} onChange={(e) => setDays(e.target.value)} className="min-h-11 w-28" />
           </div>
-          <Button type="submit" variant="outline" className="min-h-11" disabled={!days || m.isPending}>Save</Button>
+          <Button type="submit" variant="outline" className="min-h-11" disabled={!days || m.isPending}>{tu("common.save")}</Button>
         </form>
       </CardContent>
     </Card>

@@ -21,6 +21,7 @@ import {
   type FeatureCategory,
 } from "@/lib/plan-features";
 import { cn } from "@/lib/utils";
+import { tu } from "@/lib/i18n";
 
 const ICON_MAP: Record<string, any> = {
   Activity, Building2, Building, Home, Users, Receipt, TrendingDown, BookOpen,
@@ -115,8 +116,8 @@ export function FeatureDirectory({ role }: Props) {
   return (
     <div className="pb-24">
       <MobileHero
-        eyebrow="Discover"
-        title="Feature Directory"
+        eyebrow={tu("more.discover")}
+        title={tu("mod.featureDirectory")}
         subtitle={`${catalog.length} features · your plan: ${PLAN_LABELS[plan]}`}
         icon={LayoutGrid}
         variant="teal"
@@ -129,13 +130,13 @@ export function FeatureDirectory({ role }: Props) {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search features, keywords, or routes…"
+            placeholder={tu("op.search_features_keywords_or_routes")}
             className="pl-9 pr-9 rounded-xl h-11"
           />
           {query && (
             <button
               type="button"
-              aria-label="Clear search"
+              aria-label={tu("op.clear_search")}
               onClick={() => setQuery("")}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
             >
@@ -148,7 +149,7 @@ export function FeatureDirectory({ role }: Props) {
         <div className="-mx-4 px-4 overflow-x-auto no-scrollbar">
           <div className="flex gap-2 min-w-max">
             <CategoryChip
-              label="All"
+              label={tu("common.all")}
               active={activeCategory === "all"}
               onClick={() => setActiveCategory("all")}
             />
@@ -165,7 +166,7 @@ export function FeatureDirectory({ role }: Props) {
 
         {/* Favorites */}
         {activeCategory === "all" && !query && favoriteEntries.length > 0 && (
-          <SectionCard title="Favorites" description={`${favoriteEntries.length} pinned`}>
+          <SectionCard title={tu("op.favorites")} description={`${favoriteEntries.length} pinned`}>
             <FeatureList
               entries={favoriteEntries}
               hasFeature={hasFeature}
@@ -178,7 +179,7 @@ export function FeatureDirectory({ role }: Props) {
 
         {/* Recently used */}
         {activeCategory === "all" && !query && recentEntries.length > 0 && (
-          <SectionCard title="Recently used" description="Your last opened features">
+          <SectionCard title={tu("op.recently_used")} description={tu("op.your_last_opened_features")}>
             <FeatureList
               entries={recentEntries}
               hasFeature={hasFeature}
@@ -191,9 +192,9 @@ export function FeatureDirectory({ role }: Props) {
 
         {/* Main list */}
         {filtered.length === 0 ? (
-          <SectionCard title="No results">
+          <SectionCard title={tu("common.noResults")}>
             <p className="text-sm text-muted-foreground py-4 text-center">
-              Nothing matches "{query}". Try a different keyword.
+              {tu("op.nothing_matches")}{query}{tu("op.try_a_different_keyword")}
             </p>
           </SectionCard>
         ) : activeCategory === "all" ? (
@@ -331,7 +332,7 @@ function FeatureRow({
             )}
             {isPlanned && (
               <Badge variant="outline" className="rounded-full h-4 px-1.5 text-[10px]">
-                Planned
+                {tu("op.planned")}
               </Badge>
             )}
             {entry.status === "partial" && unlocked && (
@@ -339,7 +340,7 @@ function FeatureRow({
                 variant="outline"
                 className="rounded-full h-4 px-1.5 text-[10px] bg-amber-500/10 text-amber-600 border-amber-500/20"
               >
-                Partial
+                {tu("op.partial")}
               </Badge>
             )}
           </div>
@@ -348,7 +349,7 @@ function FeatureRow({
 
         <button
           type="button"
-          aria-label={fav ? "Unpin" : "Pin"}
+          aria-label={fav ? tu("op.unpin") : tu("op.pin")}
           onClick={onToggleFav}
           className="shrink-0 p-2 text-muted-foreground hover:text-amber-500"
         >

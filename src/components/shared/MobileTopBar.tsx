@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { useRouter } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { tu } from "@/lib/i18n";
 
 /**
  * Material-3 inspired top app bar. Tall touch targets (56px), single line
@@ -37,7 +38,7 @@ export function MobileTopBar({
           <Button
             variant="ghost"
             size="icon"
-            aria-label="Back"
+            aria-label={tu("common.back")}
             onClick={() => router.history.back()}
             className="h-10 w-10 rounded-full"
           >

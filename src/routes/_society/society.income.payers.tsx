@@ -48,6 +48,7 @@ import {
   updateNonMemberPayerFn,
   getNonMemberPayerDetailFn,
 } from "@/lib/non-member-income.functions";
+import { tu } from "@/lib/i18n";
 
 
 export const Route = createFileRoute("/_society/society/income/payers")({
@@ -208,11 +209,11 @@ function PayersPage({ societyId }: { societyId: string }) {
       notes?: string;
     }) => createFn({ data: { societyId, ...v } }),
     onSuccess: () => {
-      toast.success("Payer added");
+      toast.success(tu("op.payer_added"));
       setEditing(null);
       void invalidate();
     },
-    onError: () => toast.error("Could not add payer"),
+    onError: () => toast.error(tu("op.could_not_add_payer")),
   });
 
   const updateMut = useMutation({
@@ -228,11 +229,11 @@ function PayersPage({ societyId }: { societyId: string }) {
       is_active?: boolean;
     }) => updateFn({ data: { societyId, ...v } }),
     onSuccess: (_r, v) => {
-      toast.success("Payer updated");
+      toast.success(tu("op.payer_updated"));
       setEditing(null);
       void invalidate(v.id);
     },
-    onError: () => toast.error("Could not update payer"),
+    onError: () => toast.error(tu("op.could_not_update_payer")),
   });
 
   const listResp = listQ.data;
@@ -275,30 +276,30 @@ function PayersPage({ societyId }: { societyId: string }) {
           to="/society/income"
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground min-h-[44px]"
         >
-          <ArrowLeft className="h-4 w-4" /> Back to Income
+          <ArrowLeft className="h-4 w-4" /> {tu("op.back_to_income")}
         </Link>
 
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h1 className="text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px] text-foreground">
-              External Payers
+              {tu("op.external_payers")}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Manage vendors, advertisers and other non-member payers.
+              {tu("op.manage_vendors_advertisers_and_other")}
             </p>
           </div>
           <Button
             className="min-h-[44px] rounded-[14px] bg-primary hover:bg-primary/90 text-primary-foreground"
             onClick={() => setEditing({ mode: "create" })}
           >
-            <Plus className="h-4 w-4 mr-1" /> Add Payer
+            <Plus className="h-4 w-4 mr-1" /> {tu("op.add_payer")}
           </Button>
         </div>
 
         <div className="grid grid-cols-3 gap-3">
-          <SummaryCard label="Total" value={summary.total} tint="bg-[#E6F7F4] text-primary" icon={Users} />
-          <SummaryCard label="Active" value={summary.active} tint="bg-[#E8F5EE] text-[#12B76A]" icon={ShieldCheck} />
-          <SummaryCard label="Inactive" value={summary.inactive} tint="bg-[#FEF3F2] text-[#B42318]" icon={UserX} />
+          <SummaryCard label={tu("common.total")} value={summary.total} tint="bg-[#E6F7F4] text-primary" icon={Users} />
+          <SummaryCard label={tu("common.active")} value={summary.active} tint="bg-[#E8F5EE] text-[#12B76A]" icon={ShieldCheck} />
+          <SummaryCard label={tu("common.inactive")} value={summary.inactive} tint="bg-[#FEF3F2] text-[#B42318]" icon={UserX} />
         </div>
 
         <div className="rounded-[18px] bg-card border border-border p-3 flex flex-wrap items-center gap-2">
@@ -307,7 +308,7 @@ function PayersPage({ societyId }: { societyId: string }) {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search payers"
+              placeholder={tu("op.search_payers")}
               className="pl-9 min-h-[44px] rounded-[14px] border-border bg-card"
             />
           </div>
@@ -316,7 +317,7 @@ function PayersPage({ societyId }: { societyId: string }) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All types</SelectItem>
+              <SelectItem value="all">{tu("op.all_types")}</SelectItem>
               {PAYER_TYPE_OPTIONS.map((o) => (
                 <SelectItem key={o.value} value={o.value}>
                   {o.label}
@@ -329,9 +330,9 @@ function PayersPage({ societyId }: { societyId: string }) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
+              <SelectItem value="all">{tu("common.all")}</SelectItem>
+              <SelectItem value="active">{tu("common.active")}</SelectItem>
+              <SelectItem value="inactive">{tu("common.inactive")}</SelectItem>
             </SelectContent>
           </Select>
           {filtersActive && (
@@ -340,7 +341,7 @@ function PayersPage({ societyId }: { societyId: string }) {
               className="min-h-[44px] rounded-[14px] border-border text-muted-foreground"
               onClick={resetFilters}
             >
-              <RotateCcw className="h-4 w-4 mr-1" /> Reset
+              <RotateCcw className="h-4 w-4 mr-1" /> {tu("inc.reset")}
             </Button>
           )}
         </div>
@@ -348,7 +349,7 @@ function PayersPage({ societyId }: { societyId: string }) {
         <div className="rounded-[18px] bg-card border border-border overflow-hidden">
           {listQ.isError ? (
             <div className="p-6 text-sm text-[#F04438] flex items-center gap-2">
-              <AlertCircle className="h-4 w-4" /> Payers are temporarily unavailable.
+              <AlertCircle className="h-4 w-4" /> {tu("op.payers_are_temporarily_unavailable")}
             </div>
           ) : listQ.isLoading ? (
             <div className="divide-y divide-[#DDE9E6]">
@@ -369,30 +370,30 @@ function PayersPage({ societyId }: { societyId: string }) {
                 <Users className="h-5 w-5" />
               </div>
               <div className="mt-3 text-sm font-medium text-foreground">
-                No external payers yet
+                {tu("op.no_external_payers_yet")}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Add vendors, advertisers or other non-member payers.
+                {tu("op.add_vendors_advertisers_or_other")}
               </p>
               <Button
                 className="mt-4 min-h-[44px] rounded-[14px] bg-primary hover:bg-primary/90 text-primary-foreground"
                 onClick={() => setEditing({ mode: "create" })}
               >
-                <Plus className="h-4 w-4 mr-1" /> Add Payer
+                <Plus className="h-4 w-4 mr-1" /> {tu("op.add_payer")}
               </Button>
             </div>
           ) : items.length === 0 ? (
             <div className="p-8 text-center">
-              <div className="text-sm font-medium text-foreground">No matches</div>
+              <div className="text-sm font-medium text-foreground">{tu("common.noMatches")}</div>
               <p className="text-xs text-muted-foreground mt-1">
-                Try clearing filters or a different search term.
+                {tu("op.try_clearing_filters_or_a")}
               </p>
               <Button
                 variant="outline"
                 className="mt-4 min-h-[44px] rounded-[14px] border-border"
                 onClick={resetFilters}
               >
-                Reset filters
+                {tu("op.reset_filters")}
               </Button>
             </div>
 
@@ -411,11 +412,11 @@ function PayersPage({ societyId }: { societyId: string }) {
                         {p.display_name}
                         {p.is_active ? (
                           <Badge className="text-[10px] bg-[#E8F5EE] text-[#12B76A] border-transparent">
-                            Active
+                            {tu("common.active")}
                           </Badge>
                         ) : (
                           <Badge className="text-[10px] bg-[#FEF3F2] text-[#B42318] border-transparent">
-                            Inactive
+                            {tu("common.inactive")}
                           </Badge>
                         )}
                       </div>
@@ -447,8 +448,8 @@ function PayersPage({ societyId }: { societyId: string }) {
               {total > PAGE_SIZE && (
                 <div className="flex items-center justify-between gap-2 border-t border-border px-4 py-3 text-sm">
                   <div className="text-muted-foreground">
-                    Page {currentPage + 1} of {totalPages} · {total}{" "}
-                    payers
+                    {tu("op.page")} {currentPage + 1} of {totalPages} · {total}{" "}
+                    {tu("op.payers")}
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
@@ -458,7 +459,7 @@ function PayersPage({ societyId }: { societyId: string }) {
                       onClick={() => setPage((p) => Math.max(0, p - 1))}
                       disabled={currentPage === 0}
                     >
-                      <ChevronLeft className="h-4 w-4" /> Previous
+                      <ChevronLeft className="h-4 w-4" /> {tu("acc.previous")}
                     </Button>
                     <Button
                       variant="outline"
@@ -467,7 +468,7 @@ function PayersPage({ societyId }: { societyId: string }) {
                       onClick={() => setPage((p) => p + 1)}
                       disabled={!hasNext}
                     >
-                      Next <ChevronRight className="h-4 w-4" />
+                      {tu("acc.next")} <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
@@ -610,12 +611,12 @@ function PayerDialog(props: {
       <DialogContent className="rounded-[24px] border-border bg-card/95 backdrop-blur-xl">
         <DialogHeader>
           <DialogTitle className="text-foreground">
-            {isEdit ? "Edit payer" : "New payer"}
+            {isEdit ? tu("op.edit_payer") : tu("op.new_payer")}
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
             {isEdit
-              ? "Update details or deactivate this payer."
-              : "Add a vendor, advertiser or other external payer."}
+              ? tu("op.update_details_or_deactivate_this_2")
+              : tu("op.add_a_vendor_advertiser_or")}
           </DialogDescription>
         </DialogHeader>
         {detailLoading ? (
@@ -626,17 +627,17 @@ function PayerDialog(props: {
           </div>
         ) : detailUnavailable ? (
           <div className="p-4 rounded-[14px] bg-[#FEF3F2] text-sm text-[#B42318] flex items-center gap-2">
-            <AlertCircle className="h-4 w-4" /> This payer is unavailable.
+            <AlertCircle className="h-4 w-4" /> {tu("op.this_payer_is_unavailable")}
           </div>
         ) : (
           <div className="space-y-3">
             <div>
-              <Label className="text-xs text-muted-foreground">Type</Label>
+              <Label className="text-xs text-muted-foreground">{tu("cm.type")}</Label>
               <Select
                 value={form.payer_type}
                 onValueChange={(v) => set("payer_type", v as PayerType)}
               >
-                <SelectTrigger aria-label="Type" className="min-h-[44px] rounded-[14px] border-border">
+                <SelectTrigger aria-label={tu("cm.type")} className="min-h-[44px] rounded-[14px] border-border">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -649,18 +650,18 @@ function PayerDialog(props: {
               </Select>
             </div>
             <div>
-              <Label htmlFor="payer-name" className="text-xs text-muted-foreground">Display name</Label>
+              <Label htmlFor="payer-name" className="text-xs text-muted-foreground">{tu("op.display_name")}</Label>
               <Input
                 id="payer-name"
                 className="min-h-[44px] rounded-[14px] border-border"
                 value={form.display_name}
                 onChange={(e) => set("display_name", e.target.value)}
-                placeholder="ACME Signage Pvt Ltd"
+                placeholder={tu("op.acme_signage_pvt_ltd")}
                 maxLength={120}
               />
             </div>
             <div>
-              <Label htmlFor="payer-org" className="text-xs text-muted-foreground">Organization (optional)</Label>
+              <Label htmlFor="payer-org" className="text-xs text-muted-foreground">{tu("op.organization_optional")}</Label>
               <Input
                 id="payer-org"
                 className="min-h-[44px] rounded-[14px] border-border"
@@ -671,19 +672,19 @@ function PayerDialog(props: {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
-                <Label htmlFor="payer-phone" className="text-xs text-muted-foreground">Phone (optional)</Label>
+                <Label htmlFor="payer-phone" className="text-xs text-muted-foreground">{tu("fam.phoneOpt")}</Label>
                 <Input
                   id="payer-phone"
                   className="min-h-[44px] rounded-[14px] border-border"
                   value={form.phone}
                   onChange={(e) => set("phone", e.target.value)}
-                  placeholder="+91 98xxxxxxx"
+                  placeholder={tu("op.91_98xxxxxxx")}
                   inputMode="tel"
                   maxLength={20}
                 />
               </div>
               <div>
-                <Label htmlFor="payer-email" className="text-xs text-muted-foreground">Email (optional)</Label>
+                <Label htmlFor="payer-email" className="text-xs text-muted-foreground">{tu("op.email_optional")}</Label>
                 <Input
                   id="payer-email"
                   className="min-h-[44px] rounded-[14px] border-border"
@@ -698,18 +699,18 @@ function PayerDialog(props: {
               </div>
             </div>
             <div>
-              <Label htmlFor="payer-ref" className="text-xs text-muted-foreground">Reference code (optional)</Label>
+              <Label htmlFor="payer-ref" className="text-xs text-muted-foreground">{tu("op.reference_code_optional")}</Label>
               <Input
                 id="payer-ref"
                 className="min-h-[44px] rounded-[14px] border-border"
                 value={form.reference_code}
                 onChange={(e) => set("reference_code", e.target.value)}
-                placeholder="GST / internal code"
+                placeholder={tu("op.gst_internal_code")}
                 maxLength={60}
               />
             </div>
             <div>
-              <Label htmlFor="payer-notes" className="text-xs text-muted-foreground">Notes (optional)</Label>
+              <Label htmlFor="payer-notes" className="text-xs text-muted-foreground">{tu("op.notes_optional")}</Label>
               <Textarea
                 id="payer-notes"
                 rows={3}
@@ -722,15 +723,15 @@ function PayerDialog(props: {
             {isEdit && (
               <div className="flex items-center justify-between rounded-[14px] border border-border bg-muted/30 px-3 py-2">
                 <div>
-                  <div className="text-sm font-medium text-foreground">Active</div>
+                  <div className="text-sm font-medium text-foreground">{tu("common.active")}</div>
                   <div className="text-[11px] text-muted-foreground">
-                    Inactive payers are hidden from new income entries.
+                    {tu("op.inactive_payers_are_hidden_from")}
                   </div>
                 </div>
                 <Switch
                   checked={form.is_active}
                   onCheckedChange={(v) => set("is_active", v)}
-                  aria-label="Active"
+                  aria-label={tu("common.active")}
                 />
               </div>
             )}
@@ -743,7 +744,7 @@ function PayerDialog(props: {
             onClick={onClose}
             disabled={submitting}
           >
-            Cancel
+            {tu("common.cancel")}
           </Button>
           <Button
             className="min-h-[44px] rounded-[14px] bg-primary hover:bg-primary/90 text-primary-foreground"
@@ -759,9 +760,9 @@ function PayerDialog(props: {
             {submitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : isEdit ? (
-              "Save Payer"
+              tu("op.save_payer")
             ) : (
-              "Add Payer"
+              tu("op.add_payer")
             )}
           </Button>
         </DialogFooter>

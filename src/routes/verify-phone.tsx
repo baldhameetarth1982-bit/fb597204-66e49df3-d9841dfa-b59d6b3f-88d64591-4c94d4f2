@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { PhoneOtpForm } from "@/components/auth/PhoneOtpForm";
 import { toast } from "sonner";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/verify-phone")({
   head: () => ({ meta: [{ title: "Verify phone — SociyoHub" }, { name: "robots", content: "noindex, nofollow" }] }),
@@ -46,7 +47,7 @@ function VerifyPhonePage() {
         if (!error) {
           sessionStorage.removeItem("sociohub:pending_phone");
           setAlreadyVerified(true);
-          toast.success("Phone linked");
+          toast.success(tu("op.phone_linked"));
         }
       })();
     } catch {
@@ -72,9 +73,9 @@ function VerifyPhonePage() {
         <div className="mx-auto h-12 w-12 rounded-2xl bg-primary/10 grid place-items-center">
           <ShieldCheck className="h-6 w-6 text-primary" />
         </div>
-        <h1 className="text-2xl font-semibold tracking-tight">Verify your phone</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{tu("op.verify_your_phone")}</h1>
         <p className="text-sm text-muted-foreground">
-          Every SociyoHub account is linked to a verified mobile number.
+          {tu("op.every_sociyohub_account_is_linked")}
         </p>
       </div>
 
@@ -83,7 +84,7 @@ function VerifyPhonePage() {
           linkToCurrentUser
           submitLabel="Verify & continue"
           onVerified={() => {
-            toast.success("Phone verified");
+            toast.success(tu("op.phone_verified"));
             navigate({ to: "/" });
           }}
         />

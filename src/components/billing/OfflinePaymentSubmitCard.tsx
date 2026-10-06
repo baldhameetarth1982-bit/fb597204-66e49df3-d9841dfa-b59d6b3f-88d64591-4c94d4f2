@@ -12,6 +12,7 @@ import {
   getPaymentReceipt,
   getResidentPayments,
 } from "@/lib/offline-payments.functions";
+import { tu } from "@/lib/i18n";
 
 /**
  * Stage 3C — Offline payment submission for a resident.
@@ -111,11 +112,11 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
   async function onSubmit() {
     const amt = Number(amount);
     if (!Number.isFinite(amt) || amt <= 0) {
-      toast.error("Enter a valid amount");
+      toast.error(tu("acc.enterAmount"));
       return;
     }
     if (method === "bank_transfer" && !reference.trim()) {
-      toast.error("Reference number is required for bank transfers");
+      toast.error(tu("op.reference_number_is_required_for"));
       return;
     }
     setSubmitting(true);
@@ -131,7 +132,7 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
         },
       });
       setPaymentId(res.paymentId);
-      toast.success("Payment recorded. Waiting for admin verification.");
+      toast.success(tu("op.payment_recorded_waiting_for_admin"));
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -144,7 +145,7 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
       <Card className="rounded-2xl">
         <CardContent className="p-5 flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          <span>Checking your payment status…</span>
+          <span>{tu("op.checking_your_payment_status")}</span>
         </CardContent>
       </Card>
     );
@@ -156,15 +157,15 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
         <CardContent className="p-5 space-y-3">
           <div className="flex items-center gap-2 text-sm font-medium">
             <XCircle className="h-4 w-4 text-destructive" />
-            <span>Payment not accepted</span>
+            <span>{tu("op.payment_not_accepted")}</span>
           </div>
           <p className="text-xs text-muted-foreground">
             {rejected.rejection_reason
               ? `Your society office did not accept this submission: ${rejected.rejection_reason}`
-              : "Your society office did not accept this submission."}
+              : tu("op.your_society_office_did_not")}
           </p>
           <Button size="sm" variant="outline" onClick={() => setRejected(null)}>
-            Submit again
+            {tu("op.submit_again")}
           </Button>
         </CardContent>
       </Card>
@@ -179,17 +180,17 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
             {receiptNumber && receiptStatus === "void" ? (
               <>
                 <XCircle className="h-4 w-4 text-red-600" />
-                <span>Receipt VOID (payment reversed)</span>
+                <span>{tu("op.receipt_void_payment_reversed")}</span>
               </>
             ) : receiptNumber ? (
               <>
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <span>Payment verified</span>
+                <span>{tu("docState.paymentVerified")}</span>
               </>
             ) : (
               <>
                 <Clock className="h-4 w-4 text-amber-600" />
-                <span>Pending admin verification</span>
+                <span>{tu("op.pending_admin_verification")}</span>
               </>
             )}
           </div>
@@ -198,7 +199,7 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
               ? `Receipt ${receiptNumber} was voided by the admin. This payment no longer counts toward your bill.`
               : receiptNumber
                 ? `Receipt ${receiptNumber} issued.`
-                : "Your submission has been recorded. You'll see the receipt here once your society office verifies it."}
+                : tu("op.your_submission_has_been_recorded")}
           </p>
         </CardContent>
       </Card>
@@ -210,18 +211,18 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
     <Card className="rounded-2xl">
       <CardContent className="p-5 space-y-4">
         <div>
-          <p className="text-sm font-semibold">Record payment</p>
+          <p className="text-sm font-semibold">{tu("op.record_payment")}</p>
           <p className="text-xs text-muted-foreground">
-            Bank Transfer only. Submitting this does not confirm payment — your society admin must verify it before a receipt is issued. To pay with cash, contact your society office.
+            {tu("op.bank_transfer_only_submitting_this")}
           </p>
         </div>
 
         <div className="rounded-xl border bg-muted/40 px-3 py-2 text-xs font-medium">
-          Method: Bank Transfer
+          {tu("op.method_bank_transfer")}
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="pay-amount">Amount (₹)</Label>
+          <Label htmlFor="pay-amount">{tu("acc.amountInr")}</Label>
           <div className="relative">
             <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -236,7 +237,7 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="pay-date">Payment date</Label>
+          <Label htmlFor="pay-date">{tu("op.payment_date")}</Label>
           <Input
             id="pay-date"
             type="date"
@@ -246,7 +247,7 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="pay-ref">Reference / UTR</Label>
+          <Label htmlFor="pay-ref">{tu("op.reference_utr")}</Label>
           <Input
             id="pay-ref"
             value={reference}
@@ -256,12 +257,12 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="pay-notes">Notes (optional)</Label>
+          <Label htmlFor="pay-notes">{tu("op.notes_optional")}</Label>
           <Textarea
             id="pay-notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Anything the admin should know"
+            placeholder={tu("op.anything_the_admin_should_know")}
             rows={2}
           />
         </div>
@@ -270,16 +271,16 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
           {submitting ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Submitting…
+              {tu("nd.submitting")}
             </>
           ) : (
-            "Submit for verification"
+            tu("op.submit_for_verification")
           )}
         </Button>
 
         <p className="text-[11px] text-muted-foreground flex items-start gap-1">
           <XCircle className="h-3 w-3 mt-0.5 shrink-0" />
-          Payment becomes final only after your society admin verifies it.
+          {tu("op.payment_becomes_final_only_after")}
         </p>
 
       </CardContent>

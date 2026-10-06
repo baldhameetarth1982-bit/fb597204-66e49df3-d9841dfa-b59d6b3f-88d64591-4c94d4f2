@@ -1,6 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Receipt, FileText, Wallet, BookOpen, TrendingDown, BarChart3, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { tu } from "@/lib/i18n";
 
 const TABS = [
   { to: "/society/billing", label: "Bills", icon: Receipt },
@@ -16,7 +17,7 @@ export function FinanceTabs() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   return (
     <div className="-mx-4 mb-4 overflow-x-auto border-b bg-background/50 px-4 sm:mx-0 sm:px-0">
-      <nav className="flex min-w-max gap-1 sm:gap-2" aria-label="Finance sections">
+      <nav className="flex min-w-max gap-1 sm:gap-2" aria-label={tu("op.finance_sections")}>
         {TABS.map((t) => {
           const active = path === t.to;
           const Icon = t.icon;

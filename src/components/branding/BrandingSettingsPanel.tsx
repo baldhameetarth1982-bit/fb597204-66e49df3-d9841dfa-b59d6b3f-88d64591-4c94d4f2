@@ -16,6 +16,7 @@ import { brandingKey, useBrandLogoUrl, useSocietyBranding } from "@/hooks/useSoc
 import { resetBranding, setBranding } from "@/lib/branding.functions";
 import { contrast, isSafeName, normalizeHex, prepareLogo } from "@/lib/branding";
 import { SocietyBrandBanner } from "./SocietyBrandBanner";
+import { tu } from "@/lib/i18n";
 
 type Draft = { name: string; primary: string; accent: string; logoPath: string | null };
 
@@ -50,19 +51,19 @@ function ColorField({ id, label, hint, value, onChange }: { id: string; label: s
           className="h-11 w-14 shrink-0 cursor-pointer rounded-lg border bg-background p-1"
         />
         <Input
-          id={id} value={value} placeholder="Default" maxLength={7} inputMode="text" autoComplete="off"
+          id={id} value={value} placeholder={tu("vch.cats.default")} maxLength={7} inputMode="text" autoComplete="off"
           aria-invalid={!valid} aria-describedby={`${id}-hint`}
           onChange={(e) => onChange(e.target.value.toUpperCase())}
           className="h-11 font-mono"
         />
         {value && (
           <Button type="button" variant="ghost" className="min-h-11" onClick={() => onChange("")} aria-label={`Use default ${label.toLowerCase()}`}>
-            Default
+            {tu("vch.cats.default")}
           </Button>
         )}
       </div>
       <p id={`${id}-hint`} className={valid ? "text-xs text-muted-foreground" : "text-xs text-destructive"}>
-        {valid ? hint : "Enter a colour like #1F6FEB."}
+        {valid ? hint : tu("op.enter_a_colour_like_1f6feb")}
       </p>
     </div>
   );
@@ -101,17 +102,17 @@ export function BrandingSettingsPanel() {
   useEffect(() => () => { if (localLogo) URL.revokeObjectURL(localLogo.url); }, [localLogo]);
 
   if (sidLoading || (!!societyId && q.isLoading)) {
-    return <div className="flex justify-center py-10" role="status" aria-label="Loading branding"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
+    return <div className="flex justify-center py-10" role="status" aria-label={tu("op.loading_branding")}><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
   }
-  if (!societyId) return <p className="text-sm text-muted-foreground">No society is selected.</p>;
+  if (!societyId) return <p className="text-sm text-muted-foreground">{tu("op.no_society_is_selected")}</p>;
   if (q.isError || !saved || !draft) {
     const forbidden = (q.error as Error | undefined)?.message === "forbidden";
     const offline = typeof navigator !== "undefined" && navigator.onLine === false;
     return (
       <div className="rounded-xl border border-dashed p-4 space-y-3 text-center" role="alert">
         <div className="mx-auto h-10 w-10 rounded-full bg-muted grid place-items-center">{offline ? <WifiOff className="h-5 w-5" /> : <ShieldAlert className="h-5 w-5" />}</div>
-        <p className="text-sm">{forbidden ? "You don't have access to this society's branding." : offline ? "You seem to be offline. Branding couldn't be loaded." : "Branding couldn't be loaded, so it can't be changed right now."}</p>
-        {!forbidden && <Button variant="outline" className="min-h-11 rounded-xl" onClick={() => q.refetch()} disabled={q.isFetching}><RotateCcw className="h-4 w-4" /> Try again</Button>}
+        <p className="text-sm">{forbidden ? tu("op.you_don_t_have_access") : offline ? tu("op.you_seem_to_be_offline_2") : tu("op.branding_couldn_t_be_loaded")}</p>
+        {!forbidden && <Button variant="outline" className="min-h-11 rounded-xl" onClick={() => q.refetch()} disabled={q.isFetching}><RotateCcw className="h-4 w-4" /> {tu("common.tryAgain")}</Button>}
       </div>
     );
   }
@@ -160,7 +161,7 @@ export function BrandingSettingsPanel() {
       setLocalLogo(null);
       await qc.invalidateQueries({ queryKey: brandingKey(societyId) });
       setSavedAt(Date.now());
-      toast.success("Branding saved");
+      toast.success(tu("op.branding_saved"));
     } catch (e) {
       if (uploaded) void supabase.storage.from("branding").remove([uploaded]);
       setErr(msgFor(e));
@@ -177,7 +178,7 @@ export function BrandingSettingsPanel() {
       setLocalLogo(null);
       await qc.invalidateQueries({ queryKey: brandingKey(societyId) });
       setSavedAt(Date.now());
-      toast.success("SociyoHub default branding restored");
+      toast.success(tu("op.sociyohub_default_branding_restored"));
     } catch (e) {
       setErr(msgFor(e));
     } finally {
@@ -188,74 +189,74 @@ export function BrandingSettingsPanel() {
   return (
     <div className="space-y-6">
       <p className="rounded-lg border bg-muted/50 px-3 py-2 text-sm" data-testid="branding-context" aria-live="polite">
-        Branding: <span className="font-semibold">{soc.data ?? "Loading society…"}</span>
+        {tu("op.branding")} <span className="font-semibold">{soc.data ?? tu("op.loading_society")}</span>
       </p>
       <div className="space-y-2">
-        <p className="text-sm font-medium">Preview — resident home screen</p>
+        <p className="text-sm font-medium">{tu("op.preview_resident_home_screen")}</p>
         <SocietyBrandBanner name={previewName} primary={primaryHex} accent={accentHex} logoUrl={previewLogo} />
         <p className="text-xs text-muted-foreground">
-          This band appears at the top of every resident's Home screen. The rest of the app, bills and receipts keep their current look.
-          {dirty && " You're previewing unsaved changes."}
+          {tu("op.this_band_appears_at_the")}
+          {dirty && tu("op.you_re_previewing_unsaved_changes")}
         </p>
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="brand-name">Display name</Label>
-        <Input id="brand-name" value={d.name} maxLength={60} placeholder={soc.data ?? "Society name"} aria-invalid={!nameOk}
+        <Label htmlFor="brand-name">{tu("op.display_name")}</Label>
+        <Input id="brand-name" value={d.name} maxLength={60} placeholder={soc.data ?? tu("op.society_name")} aria-invalid={!nameOk}
           onChange={(e) => setDraft({ ...d, name: e.target.value })} className="h-11" />
         <p className={nameOk ? "text-xs text-muted-foreground" : "text-xs text-destructive"}>
-          {nameOk ? "Shown to residents instead of the registered society name. Leave empty to use the registered name." : "Use 2–60 characters without < > { }."}
+          {nameOk ? tu("op.shown_to_residents_instead_of") : "Use 2–60 characters without < > { }."}
         </p>
       </div>
 
       <div className="space-y-2">
-        <Label>Logo</Label>
+        <Label>{tu("op.logo_2")}</Label>
         <div className="flex flex-wrap items-center gap-2">
-          <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" id="brand-logo" aria-label="Upload society logo" onChange={(e) => pickLogo(e.target.files?.[0])} />
+          <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" id="brand-logo" aria-label={tu("op.upload_society_logo")} onChange={(e) => pickLogo(e.target.files?.[0])} />
           <Button type="button" variant="outline" className="min-h-11 rounded-xl" onClick={() => fileRef.current?.click()} disabled={saving}>
-            <ImagePlus className="h-4 w-4" /> {previewLogo ? "Replace logo" : "Upload logo"}
+            <ImagePlus className="h-4 w-4" /> {previewLogo ? tu("op.replace_logo") : tu("op.upload_logo")}
           </Button>
           {previewLogo && (
             <Button type="button" variant="ghost" className="min-h-11" disabled={saving} onClick={() => { setLocalLogo(null); setDraft({ ...d, logoPath: null }); }}>
-              <Trash2 className="h-4 w-4" /> Remove
+              <Trash2 className="h-4 w-4" /> {tu("fd.remove")}
             </Button>
           )}
         </div>
-        <p className="text-xs text-muted-foreground">PNG, JPG or WebP, up to 2 MB. It's resized to 512 px and only uploaded when you save. Only members of your society can see it. Your bill logo is set separately in Bill templates.</p>
+        <p className="text-xs text-muted-foreground">{tu("op.png_jpg_or_webp_up")}</p>
       </div>
 
-      <ColorField id="brand-primary" label="Primary colour" hint="Background of the society band." value={d.primary} onChange={(v) => setDraft({ ...d, primary: v })} />
-      <ColorField id="brand-accent" label="Accent colour" hint="Frame around your logo." value={d.accent} onChange={(v) => setDraft({ ...d, accent: v })} />
+      <ColorField id="brand-primary" label={tu("op.primary_colour")} hint={tu("op.background_of_the_society_band")} value={d.primary} onChange={(v) => setDraft({ ...d, primary: v })} />
+      <ColorField id="brand-accent" label={tu("op.accent_colour")} hint={tu("op.frame_around_your_logo")} value={d.accent} onChange={(v) => setDraft({ ...d, accent: v })} />
       {lowContrast && (
-        <p className="flex items-start gap-2 text-xs text-destructive"><AlertTriangle className="h-4 w-4 shrink-0" /> This primary colour is hard to read on. Text will still use the most readable option, but a darker or lighter colour is recommended.</p>
+        <p className="flex items-start gap-2 text-xs text-destructive"><AlertTriangle className="h-4 w-4 shrink-0" /> {tu("op.this_primary_colour_is_hard")}</p>
       )}
 
       {err && <p role="alert" className="text-sm text-destructive">{err}</p>}
       {savedAt && !dirty && !err && (
-        <p role="status" className="flex items-center gap-1.5 text-sm text-muted-foreground"><CheckCircle2 className="h-4 w-4" /> Saved</p>
+        <p role="status" className="flex items-center gap-1.5 text-sm text-muted-foreground"><CheckCircle2 className="h-4 w-4" /> {tu("op.saved")}</p>
       )}
 
       <div className="flex flex-wrap gap-2 border-t pt-4">
         <Button className="min-h-11 rounded-xl" onClick={save} disabled={!dirty || !nameOk || !colorsOk || saving}>
-          {saving ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving…</> : "Save branding"}
+          {saving ? <><Loader2 className="h-4 w-4 animate-spin" /> {tu("cm.saving")}</> : tu("op.save_branding")}
         </Button>
         <Button variant="outline" className="min-h-11 rounded-xl" disabled={!dirty || saving} onClick={() => { setDraft(saved); setLocalLogo(null); setErr(null); }}>
-          Discard
+          {tu("common.discard")}
         </Button>
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button variant="ghost" className="min-h-11 rounded-xl" disabled={saving || !q.data?.custom}>
-              <RotateCcw className="h-4 w-4" /> Restore defaults
+              <RotateCcw className="h-4 w-4" /> {tu("op.restore_defaults")}
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Restore SociyoHub default branding?</AlertDialogTitle>
-              <AlertDialogDescription>Your display name, colours and branding logo will be removed for all residents. Your bill templates aren't affected.</AlertDialogDescription>
+              <AlertDialogTitle>{tu("op.restore_sociyohub_default_branding")}</AlertDialogTitle>
+              <AlertDialogDescription>{tu("op.your_display_name_colours_and")}</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={restore}>Restore defaults</AlertDialogAction>
+              <AlertDialogCancel>{tu("common.cancel")}</AlertDialogCancel>
+              <AlertDialogAction onClick={restore}>{tu("op.restore_defaults")}</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

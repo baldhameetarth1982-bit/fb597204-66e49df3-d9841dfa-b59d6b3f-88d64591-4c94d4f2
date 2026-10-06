@@ -2,6 +2,7 @@ import { Component, type ErrorInfo, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle } from "lucide-react";
 import { logClientError } from "@/lib/error-log.functions";
+import { tu } from "@/lib/i18n";
 
 interface State {
   error: Error | null;
@@ -35,21 +36,20 @@ export class RootErrorBoundary extends Component<{ children: ReactNode }, State>
       <div className="min-h-dvh grid place-items-center p-6 bg-background">
         <div className="max-w-md w-full rounded-2xl border bg-card p-6 text-center space-y-4">
           <AlertTriangle className="h-10 w-10 text-amber-500 mx-auto" />
-          <h1 className="text-xl font-semibold">Something went wrong</h1>
+          <h1 className="text-xl font-semibold">{tu("state.error.title")}</h1>
           <p className="text-sm text-muted-foreground">
-            The page hit an unexpected error. Try reloading — if it keeps happening,
-            sign out and back in.
+            {tu("op.the_page_hit_an_unexpected")}
           </p>
           <div className="flex gap-2 justify-center">
             <Button onClick={() => window.location.reload()} className="rounded-xl">
-              Reload
+              {tu("op.reload_2")}
             </Button>
             <Button
               variant="ghost"
               onClick={() => this.setState({ error: null })}
               className="rounded-xl"
             >
-              Dismiss
+              {tu("go.dismiss")}
             </Button>
           </div>
         </div>

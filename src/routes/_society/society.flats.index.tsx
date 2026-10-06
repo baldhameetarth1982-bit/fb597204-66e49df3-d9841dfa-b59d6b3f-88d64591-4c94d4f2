@@ -26,6 +26,7 @@ import {
   type StructureOverview,
   type UnitListItem,
 } from "@/lib/society-structure";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/flats/")({
   head: () => ({ meta: [{ title: "Units — SociyoHub" }] }),
@@ -93,7 +94,7 @@ function FlatsPage() {
     e.preventDefault();
     if (!societyId || !flatNumber.trim()) return;
     if (!isSerial && !blockId) {
-      toast.error("Pick a block");
+      toast.error(tu("op.pick_a_block"));
       return;
     }
     setSaving(true);
@@ -114,7 +115,7 @@ function FlatsPage() {
             : "Could not create unit",
         );
       } else {
-        toast.success("Unit added");
+        toast.success(tu("op.unit_added"));
         setFlatNumber(""); setFloor(""); setOpen(false);
         void refresh(societyId);
       }
@@ -134,11 +135,11 @@ function FlatsPage() {
     return (
       <PageShell>
       <PeopleAreaNav />
-        <PageHeader title="Units" />
+        <PageHeader title={tu("op.units_2")} />
         <EmptyState
           icon={DoorOpen}
-          title="Set up your society first"
-          action={<Button asChild><a href="/onboarding">Set up</a></Button>}
+          title={tu("op.set_up_your_society_first_3")}
+          action={<Button asChild><a href="/onboarding">{tu("billingTabs.setup")}</a></Button>}
         />
       </PageShell>
     );
@@ -151,12 +152,12 @@ function FlatsPage() {
     return (
       <PageShell>
       <PeopleAreaNav />
-        <PageHeader title="Units" description="Every unit across your society." />
+        <PageHeader title={tu("op.units_2")} description={tu("op.every_unit_across_your_society")} />
         <EmptyState
           icon={DoorOpen}
-          title="Structure setup required"
-          description="Choose Structured or Serial mode in the Setup wizard before adding units."
-          action={<Button asChild><a href="/society/setup">Open Setup</a></Button>}
+          title={tu("op.structure_setup_required")}
+          description={tu("op.choose_structured_or_serial_mode")}
+          action={<Button asChild><a href="/society/setup">{tu("op.open_setup")}</a></Button>}
         />
       </PageShell>
     );
@@ -166,11 +167,11 @@ function FlatsPage() {
     <PageShell>
       <PeopleAreaNav />
       <PageHeader
-        title="Units"
+        title={tu("op.units_2")}
         description={
           isSerial
-            ? "Direct houses in your society."
-            : "Every unit across your blocks."
+            ? tu("op.direct_houses_in_your_society")
+            : tu("op.every_unit_across_your_blocks")
         }
         actions={
           <Dialog open={open} onOpenChange={setOpen}>
@@ -179,17 +180,17 @@ function FlatsPage() {
                 className="rounded-xl min-h-11"
                 disabled={!isSerial && blocks.length === 0}
               >
-                <Plus className="h-4 w-4 mr-2" /> Add Unit
+                <Plus className="h-4 w-4 mr-2" /> {tu("op.add_unit")}
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md rounded-2xl">
-              <DialogHeader><DialogTitle>New unit</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{tu("op.new_unit")}</DialogTitle></DialogHeader>
               <form onSubmit={handleCreate} className="space-y-4">
                 {!isSerial && (
                   <div className="space-y-2">
-                    <Label>Block</Label>
+                    <Label>{tu("mnt.block")}</Label>
                     <Select value={blockId} onValueChange={setBlockId}>
-                      <SelectTrigger aria-label="Block" className="min-h-11"><SelectValue placeholder="Select block" /></SelectTrigger>
+                      <SelectTrigger aria-label={tu("mnt.block")} className="min-h-11"><SelectValue placeholder={tu("op.select_block")} /></SelectTrigger>
                       <SelectContent>
                         {blocks.map((b) => (
                           <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
@@ -200,20 +201,20 @@ function FlatsPage() {
                 )}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <Label htmlFor="num">{isSerial ? "House number" : "Flat number"}</Label>
+                    <Label htmlFor="num">{isSerial ? tu("op.house_number") : tu("op.flat_number")}</Label>
                     <Input id="num" className="min-h-11" placeholder={isSerial ? "H-1" : "101"} value={flatNumber} onChange={(e) => setFlatNumber(e.target.value)} required />
                   </div>
                   {!isSerial && (
                     <div className="space-y-2">
-                      <Label htmlFor="floor">Floor</Label>
+                      <Label htmlFor="floor">{tu("op.floor")}</Label>
                       <Input id="floor" className="min-h-11" type="number" value={floor} onChange={(e) => setFloor(e.target.value)} />
                     </div>
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label>Type</Label>
+                  <Label>{tu("cm.type")}</Label>
                   <Select value={type} onValueChange={setType}>
-                    <SelectTrigger aria-label="Type" className="min-h-11"><SelectValue /></SelectTrigger>
+                    <SelectTrigger aria-label={tu("cm.type")} className="min-h-11"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {["1RK", "1BHK", "2BHK", "3BHK", "4BHK", "Penthouse", "House", "Shop"].map((t) => (
                         <SelectItem key={t} value={t}>{t}</SelectItem>
@@ -224,7 +225,7 @@ function FlatsPage() {
                 <DialogFooter>
                   <Button type="submit" disabled={saving} className="rounded-xl min-h-11">
                     {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    Create
+                    {tu("common.create")}
                   </Button>
                 </DialogFooter>
               </form>
@@ -238,7 +239,7 @@ function FlatsPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             className="pl-9 min-h-11"
-            placeholder="Search unit or block…"
+            placeholder={tu("op.search_unit_or_block")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => {
@@ -254,9 +255,9 @@ function FlatsPage() {
               if (societyId) void refresh(societyId, { offset: 0, blockId: v });
             }}
           >
-            <SelectTrigger className="w-44 min-h-11" aria-label="Filter by block"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-44 min-h-11" aria-label={tu("op.filter_by_block")}><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All blocks</SelectItem>
+              <SelectItem value="all">{tu("mnt.allBlocks")}</SelectItem>
               {blocks.map((b) => (
                 <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
               ))}
@@ -272,24 +273,24 @@ function FlatsPage() {
       ) : items.length === 0 ? (
         <EmptyState
           icon={DoorOpen}
-          title={total === 0 ? "No units yet" : "No units match this filter"}
+          title={total === 0 ? tu("op.no_units_yet") : tu("op.no_units_match_this_filter")}
           description={
             !isSerial && blocks.length === 0
-              ? "Add a block first, then start creating units."
-              : "Add your first unit to start onboarding residents."
+              ? tu("op.add_a_block_first_then")
+              : tu("op.add_your_first_unit_to")
           }
         />
       ) : (
         <>
-          <div className="rounded-2xl border border-border bg-background overflow-x-auto" tabIndex={0} role="region" aria-label="Units table">
+          <div className="rounded-2xl border border-border bg-background overflow-x-auto" tabIndex={0} role="region" aria-label={tu("op.units_table")}>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Unit</TableHead>
-                  {!isSerial && <TableHead>Block</TableHead>}
-                  {!isSerial && <TableHead>Floor</TableHead>}
-                  <TableHead>Type</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>{tu("nd.unit")}</TableHead>
+                  {!isSerial && <TableHead>{tu("mnt.block")}</TableHead>}
+                  {!isSerial && <TableHead>{tu("op.floor")}</TableHead>}
+                  <TableHead>{tu("cm.type")}</TableHead>
+                  <TableHead>{tu("common.status")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -310,21 +311,21 @@ function FlatsPage() {
             </Table>
           </div>
           <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
-            <span>Page {page} of {totalPages} · {total} unit{total === 1 ? "" : "s"}</span>
+            <span>{tu("op.page")} {page} of {totalPages} · {total} {tu("op.unit")}{total === 1 ? "" : "s"}</span>
             <div className="flex gap-2">
               <Button
                 variant="outline" size="sm" className="min-h-11"
                 disabled={!hasPrev || loading}
                 onClick={() => societyId && refresh(societyId, { offset: Math.max(0, offset - PAGE_SIZE) })}
               >
-                <ChevronLeft className="h-4 w-4 mr-1" /> Prev
+                <ChevronLeft className="h-4 w-4 mr-1" /> {tu("op.prev")}
               </Button>
               <Button
                 variant="outline" size="sm" className="min-h-11"
                 disabled={!hasNext || loading}
                 onClick={() => societyId && refresh(societyId, { offset: offset + PAGE_SIZE })}
               >
-                Next <ChevronRight className="h-4 w-4 ml-1" />
+                {tu("acc.next")} <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
           </div>

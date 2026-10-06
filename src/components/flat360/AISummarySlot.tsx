@@ -15,6 +15,7 @@ import type {
   Flat360AISummaryResponse,
 } from "@/lib/flat360-ai.server";
 import { isAIAllowedRoute, type AIAllowedRoute } from "@/lib/flat360-types";
+import { tu } from "@/lib/i18n";
 
 export type AISummaryUiState =
   | { kind: "locked" }
@@ -92,17 +93,17 @@ export function AISummarySlot({
               <Sparkles className="h-4 w-4" aria-hidden="true" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-sm font-semibold truncate">AI Unit Summary</h3>
+              <h3 className="text-sm font-semibold truncate">{tu("op.ai_unit_summary")}</h3>
               <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                <Badge variant="outline" className="rounded-full text-[10px]">Pro</Badge>
+                <Badge variant="outline" className="rounded-full text-[10px]">{tu("op.pro")}</Badge>
                 {cached && (
                   <Badge variant="secondary" className="rounded-full text-[10px]">
-                    Cached result
+                    {tu("op.cached_result")}
                   </Badge>
                 )}
                 {fallback && (
                   <Badge variant="secondary" className="rounded-full text-[10px]">
-                    Deterministic fallback
+                    {tu("op.deterministic_fallback")}
                   </Badge>
                 )}
               </div>
@@ -115,10 +116,10 @@ export function AISummarySlot({
               className="rounded-xl h-11 min-h-[44px] px-3"
               onClick={onRefresh}
               disabled={!canRefresh || isLoading}
-              aria-label="Refresh AI summary"
+              aria-label={tu("op.refresh_ai_summary")}
             >
               <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} aria-hidden="true" />
-              <span className="ml-1.5 text-xs">Refresh</span>
+              <span className="ml-1.5 text-xs">{tu("gd.refresh")}</span>
             </Button>
           )}
         </div>
@@ -126,21 +127,21 @@ export function AISummarySlot({
         {state.kind === "locked" && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
             <Lock className="h-4 w-4" aria-hidden="true" />
-            <span>AI Summary is available on Growth and Pro plans.</span>
+            <span>{tu("op.ai_summary_is_available_on")}</span>
           </div>
         )}
 
         {state.kind === "loading" && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            <span>Preparing AI summary…</span>
+            <span>{tu("op.preparing_ai_summary")}</span>
           </div>
         )}
 
         {state.kind === "error" && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
             <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-            <span>AI Summary is temporarily unavailable.</span>
+            <span>{tu("op.ai_summary_is_temporarily_unavailable")}</span>
           </div>
         )}
 
@@ -176,7 +177,7 @@ export function AISummarySlot({
                 {response?.generatedAt
                   ? `Updated ${new Date(response.generatedAt).toLocaleString("en-IN")}`
                   : fallback
-                    ? "Generated from operational records"
+                    ? tu("op.generated_from_operational_records")
                     : ""}
               </span>
               {reasonText && <span className="text-right ml-2">{reasonText}</span>}

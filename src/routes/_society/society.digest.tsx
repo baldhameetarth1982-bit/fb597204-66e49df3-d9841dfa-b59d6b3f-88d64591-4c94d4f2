@@ -14,6 +14,7 @@ import { generateCommunityDigest } from "@/lib/digest.functions";
 import { formatCurrency } from "@/utils/format";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/digest")({
   head: () => ({ meta: [{ title: "AI Insights — SociyoHub" }] }),
@@ -72,7 +73,7 @@ function DigestPage() {
     try {
       const res = await generate({ data: { societyId } });
       setResult(res.summary);
-      toast.success("Digest published to residents");
+      toast.success(tu("op.digest_published_to_residents"));
     } catch (e: any) {
       toast.error(userMessage(e, "Failed to generate"));
     } finally {
@@ -95,18 +96,18 @@ function DigestPage() {
   return (
     <div className="pb-[calc(96px+env(safe-area-inset-bottom))]">
       <MobileHero
-        eyebrow="Society Admin"
-        title="AI Insights"
-        subtitle="Rule-based insights from your society's real data, plus an optional AI-written community digest."
+        eyebrow={tu("op.society_admin")}
+        title={tu("op.ai_insights")}
+        subtitle={tu("op.rule_based_insights_from_your")}
         icon={Sparkles}
         variant="teal"
         stats={
           insights ? (
             <StatPillRow>
-              <StatPill label="Collection" value={efficiency !== null ? `${efficiency}%` : "—"} icon={TrendingUp} />
-              <StatPill label="Pending" value={formatCurrency(insights.pendingAmount)} icon={Receipt} />
-              <StatPill label="Defaulters" value={insights.defaulterCount} icon={AlertTriangle} />
-              <StatPill label="Visitors 30d" value={insights.recentVisitors} icon={Users} />
+              <StatPill label={tu("mnt.collection")} value={efficiency !== null ? `${efficiency}%` : "—"} icon={TrendingUp} />
+              <StatPill label={tu("docState.pending")} value={formatCurrency(insights.pendingAmount)} icon={Receipt} />
+              <StatPill label={tu("op.defaulters")} value={insights.defaulterCount} icon={AlertTriangle} />
+              <StatPill label={tu("op.visitors_30d")} value={insights.recentVisitors} icon={Users} />
             </StatPillRow>
           ) : undefined
         }
@@ -121,19 +122,19 @@ function DigestPage() {
           <div className="grid grid-cols-2 gap-3">
             <InsightCard
               icon={TrendingUp}
-              label="Collection efficiency"
+              label={tu("op.collection_efficiency")}
               value={efficiency !== null ? `${efficiency}%` : "—"}
-              subtitle={insights.totalBills ? `${insights.paidBills}/${insights.totalBills} paid` : "No bills yet"}
+              subtitle={insights.totalBills ? `${insights.paidBills}/${insights.totalBills} paid` : tu("rbills.none")}
               tone={efficiency !== null && efficiency >= 80 ? "success" : efficiency !== null && efficiency >= 50 ? "warning" : "danger"}
             />
-            <InsightCard icon={Receipt} label="Pending dues" value={formatCurrency(insights.pendingAmount)} subtitle={`${insights.overdueCount} overdue`} tone={insights.pendingAmount > 0 ? "warning" : "success"} />
-            <InsightCard icon={AlertTriangle} label="Defaulters" value={String(insights.defaulterCount)} subtitle="flats with overdue bills" tone={insights.defaulterCount > 0 ? "danger" : "success"} />
-            <InsightCard icon={Users} label="Visitors (30d)" value={String(insights.recentVisitors)} subtitle="entries logged" tone="info" />
+            <InsightCard icon={Receipt} label={tu("op.pending_dues")} value={formatCurrency(insights.pendingAmount)} subtitle={`${insights.overdueCount} overdue`} tone={insights.pendingAmount > 0 ? "warning" : "success"} />
+            <InsightCard icon={AlertTriangle} label={tu("op.defaulters")} value={String(insights.defaulterCount)} subtitle={tu("op.flats_with_overdue_bills")} tone={insights.defaulterCount > 0 ? "danger" : "success"} />
+            <InsightCard icon={Users} label={tu("op.visitors_30d_2")} value={String(insights.recentVisitors)} subtitle={tu("op.entries_logged")} tone="info" />
           </div>
         )}
 
         {suggestions.length > 0 && (
-          <SectionCard icon={Lightbulb} title="Smart suggestions">
+          <SectionCard icon={Lightbulb} title={tu("op.smart_suggestions")}>
             <ul className="space-y-2">
               {suggestions.map((s, i) => (
                 <li key={i} className="text-sm text-muted-foreground flex gap-2"><span className="text-primary">•</span>{s}</li>
@@ -142,20 +143,20 @@ function DigestPage() {
           </SectionCard>
         )}
 
-        <SectionCard icon={Sparkles} title="AI community digest" description="Summarise past week's posts and comments" tone="primary">
+        <SectionCard icon={Sparkles} title={tu("op.ai_community_digest")} description={tu("op.summarise_past_week_s_posts")} tone="primary">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <p className="text-sm text-muted-foreground min-w-0 flex-1">
-              Published to every resident's feed. Honest output — no AI is generated if no source data exists.
+              {tu("op.published_to_every_resident_s")}
             </p>
             <Button onClick={run} disabled={loading || !societyId} className="rounded-xl">
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Generate
+              {tu("billingTabs.generate")}
             </Button>
           </div>
         </SectionCard>
 
         {result && (
-          <SectionCard title="Preview">
+          <SectionCard title={tu("op.preview")}>
             <p className="text-sm leading-relaxed whitespace-pre-line">{result}</p>
           </SectionCard>
         )}

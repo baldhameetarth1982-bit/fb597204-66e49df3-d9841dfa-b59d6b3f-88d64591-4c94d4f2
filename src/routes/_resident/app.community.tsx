@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { InlineNotice, ListEmpty, ListSkeleton, LoadError, StatusChip } from "@/components/people/PeopleUI";
 import { listMarketplace, listMyListings, uploadListingImage, type MarketListing } from "@/lib/community.functions";
 import { communityError } from "@/lib/community-errors";
-import { localeTag } from "@/lib/i18n";
+import { localeTag, tu } from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
 import { normalizePhone, safeHttpsUrl, telHref, whatsappHref, IMAGE_TYPES, MAX_IMAGE_BYTES } from "@/lib/discovery";
 
@@ -135,7 +135,7 @@ function Browse({ categoryId, cats }: { categoryId: string | null; cats: Cat[] }
                   <div className="flex flex-wrap gap-2 pt-1">
                     {l.contact_method === "in_app" && <Button className="min-h-11 rounded-xl" onClick={() => setContact(l)}><MessageCircle className="mr-2 h-4 w-4" />{t("cm.message")}</Button>}
                     {tel && <Button asChild className="min-h-11 rounded-xl"><a href={tel}><Phone className="mr-2 h-4 w-4" />{t("comm.call")}</a></Button>}
-                    {wa && <Button asChild className="min-h-11 rounded-xl"><a href={wa} target="_blank" rel="noopener noreferrer"><MessageCircle className="mr-2 h-4 w-4" />WhatsApp</a></Button>}
+                    {wa && <Button asChild className="min-h-11 rounded-xl"><a href={wa} target="_blank" rel="noopener noreferrer"><MessageCircle className="mr-2 h-4 w-4" />{tu("op.whatsapp")}</a></Button>}
                     {link && <Button asChild variant="outline" className="min-h-11 rounded-xl"><a href={link} target="_blank" rel="noopener noreferrer nofollow"><Globe className="mr-2 h-4 w-4" />{t("cm.openLink")}</a></Button>}
                     <Button variant="ghost" className="min-h-11 rounded-xl text-muted-foreground" onClick={() => setReport(l)}><Flag className="mr-2 h-4 w-4" />{t("cm.report")}</Button>
                   </div>

@@ -20,6 +20,7 @@ import { shareBillAsImage } from "@/components/billing/BillCardImage";
 import { formatDate } from "@/utils/format";
 import { BillAdjustmentsPanel } from "@/components/billing/BillAdjustmentsPanel";
 import { useSocietyId } from "@/hooks/useSocietyId";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/bills/$id")({
   head: () => ({ meta: [{ title: "Bill Detail — SociyoHub" }] }),
@@ -81,7 +82,7 @@ function BillDetailPage() {
           reason: cancelReason.trim() || undefined,
         },
       });
-      toast.success("Bill cancelled");
+      toast.success(tu("op.bill_cancelled"));
       setCancelOpen(false);
       // Refresh detail server-authoritatively.
       const fresh = await loadDetail({
@@ -106,9 +107,9 @@ function BillDetailPage() {
   if (!detail) {
     return (
       <PageShell>
-        {loadError ? (<div role="alert" className="rounded-2xl border border-destructive/30 p-4 flex items-center justify-between gap-3"><p className="text-sm text-muted-foreground">{loadError}</p><Button size="sm" variant="outline" className="min-h-11 shrink-0" onClick={() => setReloadKey((k) => k + 1)}>Try again</Button></div>) : (<p className="text-muted-foreground">This bill is not available in your society.</p>)}
+        {loadError ? (<div role="alert" className="rounded-2xl border border-destructive/30 p-4 flex items-center justify-between gap-3"><p className="text-sm text-muted-foreground">{loadError}</p><Button size="sm" variant="outline" className="min-h-11 shrink-0" onClick={() => setReloadKey((k) => k + 1)}>{tu("common.tryAgain")}</Button></div>) : (<p className="text-muted-foreground">{tu("op.this_bill_is_not_available")}</p>)}
         <Button asChild variant="ghost" className="mt-4">
-          <Link to="/society/billing"><ArrowLeft className="h-4 w-4 mr-2" />Back</Link>
+          <Link to="/society/billing"><ArrowLeft className="h-4 w-4 mr-2" />{tu("common.back")}</Link>
         </Button>
       </PageShell>
     );
@@ -136,31 +137,31 @@ function BillDetailPage() {
         status: state.code === "paid" ? "paid" : state.code === "cancelled" ? "cancelled" : state.code === "overdue" ? "overdue" : "due",
         adminSignature: user?.email?.split("@")[0],
       });
-    } catch { toast.error("Could not share this bill."); }
+    } catch { toast.error(tu("op.could_not_share_this_bill")); }
   };
 
   return (
     <PageShell>
       <Button asChild variant="ghost" className="mb-3 min-h-11 -ml-2 rounded-xl">
-        <Link to="/society/billing"><ArrowLeft className="h-4 w-4 mr-1" />Bill history</Link>
+        <Link to="/society/billing"><ArrowLeft className="h-4 w-4 mr-1" />{tu("op.bill_history")}</Link>
       </Button>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
         <article className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card" aria-labelledby="bill-title">
           <div className={`flex items-center justify-between gap-3 px-5 py-2.5 text-sm font-medium ${statusBand}`}>
             <span>{state.label}</span>
-            <span className="font-mono text-xs opacity-80">{bill.bill_number ?? "Bill"}</span>
+            <span className="font-mono text-xs opacity-80">{bill.bill_number ?? tu("billingTabs.bill")}</span>
           </div>
           <div className="p-5">
-            <h1 id="bill-title" className="type-section">{bill.period_label ?? "Society bill"}</h1>
-            <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground"><Home className="h-4 w-4" />House {flatLabel}{detail.resident?.full_name && <> · {detail.resident.full_name}</>}</p>
+            <h1 id="bill-title" className="type-section">{bill.period_label ?? tu("rbills.societyBill")}</h1>
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground"><Home className="h-4 w-4" />{tu("gd.houseLabel")} {flatLabel}{detail.resident?.full_name && <> · {detail.resident.full_name}</>}</p>
             <div className="mt-5 grid grid-cols-2 gap-4 border-t border-border pt-5">
               <div>
-                <p className="text-xs text-muted-foreground">Amount</p>
+                <p className="text-xs text-muted-foreground">{tu("common.amount")}</p>
                 <p className={`text-3xl font-semibold tabular-nums ${state.code === "cancelled" ? "line-through text-muted-foreground" : ""}`}>₹{amount.toLocaleString("en-IN")}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Due date</p>
+                <p className="text-xs text-muted-foreground">{tu("rbd.dueDate")}</p>
                 <p className={`text-lg font-semibold ${state.code === "overdue" ? "text-destructive" : ""}`}>{bill.due_date ? formatDate(bill.due_date) : "—"}</p>
               </div>
             </div>
@@ -168,11 +169,11 @@ function BillDetailPage() {
 
           {detail.lines.length > 0 && (
             <details className="group border-t border-border">
-              <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-5 text-sm font-medium hover:bg-muted/40">Charges ({detail.lines.length})<span className="text-xs text-muted-foreground group-open:hidden">Show</span></summary>
+              <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-5 text-sm font-medium hover:bg-muted/40">{tu("op.charges")}{detail.lines.length})<span className="text-xs text-muted-foreground group-open:hidden">{tu("rbd.show")}</span></summary>
               <ul className="divide-y divide-border px-5 pb-3">
                 {detail.lines.map((l) => (
                   <li key={String(l.id)} className="flex items-center justify-between py-2 text-sm">
-                    <span className="truncate">{(l.description as string | null) ?? (l.kind as string | null) ?? "Charge"}</span>
+                    <span className="truncate">{(l.description as string | null) ?? (l.kind as string | null) ?? tu("rbd.charge")}</span>
                     <span className="font-medium tabular-nums">₹{Number(l.amount ?? 0).toLocaleString("en-IN")}</span>
                   </li>
                 ))}
@@ -181,24 +182,24 @@ function BillDetailPage() {
           )}
 
           <details className="group border-t border-border">
-            <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-5 text-sm font-medium hover:bg-muted/40">History & details<span className="text-xs text-muted-foreground group-open:hidden">Show</span></summary>
+            <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-5 text-sm font-medium hover:bg-muted/40">{tu("op.history_details")}<span className="text-xs text-muted-foreground group-open:hidden">{tu("rbd.show")}</span></summary>
             <div className="space-y-4 px-5 pb-5">
               <ol className="space-y-3">
                 {bill.bill_date && (
                   <li className="flex items-start gap-3">
                     <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary-container text-primary-container-foreground"><Receipt className="h-4 w-4" /></span>
-                    <div><p className="text-sm font-medium">Bill generated</p><p className="flex items-center gap-1 text-xs text-muted-foreground"><Calendar className="h-3 w-3" />{formatDate(bill.bill_date)}</p></div>
+                    <div><p className="text-sm font-medium">{tu("op.bill_generated")}</p><p className="flex items-center gap-1 text-xs text-muted-foreground"><Calendar className="h-3 w-3" />{formatDate(bill.bill_date)}</p></div>
                   </li>
                 )}
                 {bill.cancelled_at && (
                   <li className="flex items-start gap-3">
                     <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-danger-container text-danger-container-foreground"><XCircle className="h-4 w-4" /></span>
-                    <div><p className="text-sm font-medium">Cancelled{bill.cancel_reason ? ` — ${bill.cancel_reason}` : ""}</p><p className="flex items-center gap-1 text-xs text-muted-foreground"><Calendar className="h-3 w-3" />{formatDate(bill.cancelled_at)}</p></div>
+                    <div><p className="text-sm font-medium">{tu("rbills.cancelled")}{bill.cancel_reason ? ` — ${bill.cancel_reason}` : ""}</p><p className="flex items-center gap-1 text-xs text-muted-foreground"><Calendar className="h-3 w-3" />{formatDate(bill.cancelled_at)}</p></div>
                   </li>
                 )}
               </ol>
-              {detail.resident?.phone && <p className="text-sm"><span className="text-muted-foreground">Resident mobile: </span>{detail.resident.phone}</p>}
-              <p className="flex items-start gap-2 rounded-xl bg-muted/40 p-3 text-xs text-muted-foreground"><Info className="h-4 w-4 shrink-0" />Payments for this bill are verified on the Payments page. Verified payments issue receipts; pending ones don't change the bill.</p>
+              {detail.resident?.phone && <p className="text-sm"><span className="text-muted-foreground">{tu("op.resident_mobile")} </span>{detail.resident.phone}</p>}
+              <p className="flex items-start gap-2 rounded-xl bg-muted/40 p-3 text-xs text-muted-foreground"><Info className="h-4 w-4 shrink-0" />{tu("op.payments_for_this_bill_are")}</p>
             </div>
           </details>
           {isAdmin && societyId && !bill.cancelled_at && (
@@ -206,37 +207,37 @@ function BillDetailPage() {
           )}
         </article>
 
-        <aside className="space-y-2" aria-label="Bill actions">
-          <Button className="h-11 w-full rounded-xl" onClick={() => void onShare()}><Share2 className="h-4 w-4 mr-2" />Share with resident</Button>
-          <Button variant="outline" className="h-11 w-full rounded-xl" onClick={() => window.print()}><FileDown className="h-4 w-4 mr-2" />Print / PDF</Button>
+        <aside className="space-y-2" aria-label={tu("op.bill_actions")}>
+          <Button className="h-11 w-full rounded-xl" onClick={() => void onShare()}><Share2 className="h-4 w-4 mr-2" />{tu("op.share_with_resident")}</Button>
+          <Button variant="outline" className="h-11 w-full rounded-xl" onClick={() => window.print()}><FileDown className="h-4 w-4 mr-2" />{tu("op.print_pdf")}</Button>
           {state.code !== "paid" && state.code !== "cancelled" && (
-            <Button asChild variant="outline" className="h-11 w-full rounded-xl"><Link to="/society/payments">Record or verify a payment</Link></Button>
+            <Button asChild variant="outline" className="h-11 w-full rounded-xl"><Link to="/society/payments">{tu("op.record_or_verify_a_payment")}</Link></Button>
           )}
           {canCancel && (
-            <Button variant="ghost" className="h-11 w-full rounded-xl text-destructive" onClick={() => setCancelOpen(true)}><Ban className="h-4 w-4 mr-2" />Cancel bill</Button>
+            <Button variant="ghost" className="h-11 w-full rounded-xl text-destructive" onClick={() => setCancelOpen(true)}><Ban className="h-4 w-4 mr-2" />{tu("op.cancel_bill")}</Button>
           )}
           {isAdmin && hasVerifiedPayment && !bill.cancelled_at && (
-            <p className="px-1 text-xs text-muted-foreground">This bill has verified payments and can't be cancelled.</p>
+            <p className="px-1 text-xs text-muted-foreground">{tu("op.this_bill_has_verified_payments")}</p>
           )}
         </aside>
       </div>
 
       <Dialog open={cancelOpen} onOpenChange={(v) => (cancelBusy ? null : setCancelOpen(v))}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Cancel this bill?</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{tu("op.cancel_this_bill")}</DialogTitle></DialogHeader>
           <p className="text-sm text-muted-foreground">
-            This will mark bill <span className="font-medium">{bill.bill_number ?? String(bill.id).slice(0, 8)}</span> as cancelled and log an audit entry. It cannot be undone. If verified payments are later recorded, cancellation is blocked.
+            {tu("op.this_will_mark_bill")} <span className="font-medium">{bill.bill_number ?? String(bill.id).slice(0, 8)}</span> {tu("op.as_cancelled_and_log_an")}
           </p>
           <Textarea
-            placeholder="Reason (optional)"
+            placeholder={tu("op.reason_optional")}
             value={cancelReason}
             onChange={(e) => setCancelReason(e.target.value)}
             maxLength={500}
           />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCancelOpen(false)} disabled={cancelBusy}>Keep</Button>
+            <Button variant="outline" onClick={() => setCancelOpen(false)} disabled={cancelBusy}>{tu("fd.keep")}</Button>
             <Button variant="destructive" onClick={onCancel} disabled={cancelBusy}>
-              {cancelBusy ? "Cancelling…" : "Cancel bill"}
+              {cancelBusy ? tu("op.cancelling") : tu("op.cancel_bill")}
             </Button>
           </DialogFooter>
         </DialogContent>

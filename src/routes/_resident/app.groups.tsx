@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { PageHeader, PageShell } from "@/components/shared/PageHeader";
 import { GroupsBoard } from "@/components/community/GroupsBoard";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_resident/app/groups")({
   head: () => ({
@@ -18,8 +19,8 @@ export const Route = createFileRoute("/_resident/app/groups")({
     const { societyId } = useSocietyId();
     return (
       <PageShell>
-        <PageHeader title="Groups" description="Join clubs and interest groups." />
-        {societyId ? <GroupsBoard societyId={societyId} mode="resident" /> : <p className="text-muted-foreground">Loading…</p>}
+        <PageHeader title={tu("sv.groups")} description={tu("op.join_clubs_and_interest_groups")} />
+        {societyId ? <GroupsBoard societyId={societyId} mode="resident" /> : <p className="text-muted-foreground">{tu("common.loading")}</p>}
       </PageShell>
     );
   },

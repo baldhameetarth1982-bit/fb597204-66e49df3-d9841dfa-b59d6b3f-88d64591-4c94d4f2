@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { verifyAadhaarPhoto } from "@/lib/aadhaar.functions";
+import { tu } from "@/lib/i18n";
 
 type Stage = "idle" | "preview" | "uploading" | "reading" | "verified" | "failed";
 
@@ -31,11 +32,11 @@ export function AadhaarVerifyCard({
     const f = e.target.files?.[0];
     if (!f) return;
     if (!["image/jpeg", "image/png", "image/webp"].includes(f.type)) {
-      toast.error("Use a JPEG, PNG, or WebP image.");
+      toast.error(tu("op.use_a_jpeg_png_or"));
       return;
     }
     if (f.size > 8 * 1024 * 1024) {
-      toast.error("Photo too large. Keep under 8 MB.");
+      toast.error(tu("op.photo_too_large_keep_under"));
       return;
     }
     fileBlobRef.current = f;
@@ -77,7 +78,7 @@ export function AadhaarVerifyCard({
       if (res.ok) {
         setLast4(res.last4);
         setStage("verified");
-        toast.success("Aadhaar verified ✓");
+        toast.success(tu("op.aadhaar_verified"));
         onVerified(res.last4);
       } else {
         setStage("failed");
@@ -93,7 +94,7 @@ export function AadhaarVerifyCard({
     <div className="rounded-2xl border border-border bg-muted/40 p-4 space-y-3">
       <div className="flex items-center gap-2 text-sm font-medium">
         <ShieldCheck className="h-4 w-4 text-primary" />
-        Verify your identity
+        {tu("op.verify_your_identity")}
         {stage === "verified" && <CheckCircle2 className="h-4 w-4 text-green-500" />}
       </div>
 
@@ -108,7 +109,7 @@ export function AadhaarVerifyCard({
 
       {stage === "idle" && (
         <Button type="button" onClick={pickFile} className="w-full h-11 rounded-xl">
-          <Camera className="h-4 w-4 mr-2" /> Take photo of Aadhaar (front)
+          <Camera className="h-4 w-4 mr-2" /> {tu("op.take_photo_of_aadhaar_front")}
         </Button>
       )}
 
@@ -120,13 +121,13 @@ export function AadhaarVerifyCard({
           <div className="space-y-3">
             <img
               src={preview}
-              alt="Aadhaar preview"
+              alt={tu("op.aadhaar_preview")}
               className="w-full max-h-48 object-contain rounded-xl border border-border bg-background"
             />
             {stage === "preview" && (
               <div className="flex gap-2">
                 <Button type="button" onClick={runVerify} className="flex-1 h-11 rounded-xl">
-                  Verify instantly
+                  {tu("op.verify_instantly")}
                 </Button>
                 <Button type="button" variant="outline" onClick={reset} className="h-11 rounded-xl">
                   <RotateCcw className="h-4 w-4" />
@@ -136,14 +137,14 @@ export function AadhaarVerifyCard({
             {(stage === "uploading" || stage === "reading") && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                {stage === "uploading" ? "Uploading securely…" : "Reading your card with AI…"}
+                {stage === "uploading" ? tu("op.uploading_securely") : tu("op.reading_your_card_with_ai")}
               </div>
             )}
             {stage === "failed" && (
               <div className="space-y-2">
                 <div className="flex items-start gap-2 text-sm text-destructive">
                   <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                  <p>{reason ?? "Verification failed."}</p>
+                  <p>{reason ?? tu("op.verification_failed")}</p>
                 </div>
                 <Button
                   type="button"
@@ -151,7 +152,7 @@ export function AadhaarVerifyCard({
                   onClick={reset}
                   className="w-full h-10 rounded-xl"
                 >
-                  <RotateCcw className="h-4 w-4 mr-2" /> Try again
+                  <RotateCcw className="h-4 w-4 mr-2" /> {tu("common.tryAgain")}
                 </Button>
               </div>
             )}
@@ -161,17 +162,16 @@ export function AadhaarVerifyCard({
       {stage === "verified" && (
         <div className="rounded-xl bg-green-500/10 border border-green-500/30 p-3 space-y-1">
           <p className="text-sm font-medium text-green-700 dark:text-green-300">
-            Verified — Aadhaar ending in •••• {last4}
+            {tu("op.verified_aadhaar_ending_in")} {last4}
           </p>
           <p className="text-xs text-muted-foreground">
-            Your card photo is deleted. We only keep the last 4 digits as proof.
+            {tu("op.your_card_photo_is_deleted")}
           </p>
         </div>
       )}
 
       <p className="text-[11px] text-muted-foreground leading-relaxed">
-        We read your Aadhaar with AI in 2–5 seconds. Your photo is stored privately and removed
-        right after — only the last 4 digits are saved. We are not affiliated with UIDAI.
+        {tu("op.we_read_your_aadhaar_with")}
       </p>
     </div>
   );

@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/contacts")({
   head: () => ({ meta: [{ title: "Society Contacts — SociyoHub" }] }),
@@ -41,10 +42,10 @@ function ContactsPage() {
   useEffect(() => { load(); }, [societyId]);
 
   async function save() {
-    if (!societyId || !form.name || !form.role_label || !form.category) { toast.error("Name & role required"); return; }
+    if (!societyId || !form.name || !form.role_label || !form.category) { toast.error(tu("op.name_role_required")); return; }
     const { error } = await supabase.from("society_contacts").insert({ society_id: societyId, category: form.category, role_label: form.role_label, name: form.name, phone: form.phone ?? null, notes: form.notes ?? null });
     if (error) return toast.error(userMessage(error));
-    toast.success("Added"); setOpen(false); setForm({ category: "committee", role_label: "Chairman" }); load();
+    toast.success(tu("tmp.added")); setOpen(false); setForm({ category: "committee", role_label: "Chairman" }); load();
   }
   async function remove(id: string) {
     const { error } = await supabase.from("society_contacts").delete().eq("id", id);
@@ -57,39 +58,39 @@ function ContactsPage() {
 
   return (
     <PageShell>
-      <PageHeader title="Contacts" description="Committee members & service providers — visible to all residents"
+      <PageHeader title={tu("comm.contacts")} description={tu("op.committee_members_service_providers_visi")}
         actions={
           <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" /> Add</Button></DialogTrigger>
+            <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" /> {tu("vh.add")}</Button></DialogTrigger>
             <DialogContent>
-              <DialogHeader><DialogTitle>New contact</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{tu("op.new_contact")}</DialogTitle></DialogHeader>
               <div className="space-y-3">
-                <div><Label>Category</Label>
+                <div><Label>{tu("common.category")}</Label>
                   <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v as any, role_label: v === "committee" ? "Chairman" : "Plumber" })}>
-                    <SelectTrigger aria-label="Category"><SelectValue /></SelectTrigger>
-                    <SelectContent><SelectItem value="committee">Committee</SelectItem><SelectItem value="service">Service</SelectItem></SelectContent>
+                    <SelectTrigger aria-label={tu("common.category")}><SelectValue /></SelectTrigger>
+                    <SelectContent><SelectItem value="committee">{tu("rc.committee")}</SelectItem><SelectItem value="service">{tu("vs.cat.service")}</SelectItem></SelectContent>
                   </Select>
                 </div>
-                <div><Label>Role</Label>
+                <div><Label>{tu("op.role")}</Label>
                   <Select value={form.role_label} onValueChange={(v) => setForm({ ...form, role_label: v })}>
-                    <SelectTrigger aria-label="Role"><SelectValue /></SelectTrigger>
+                    <SelectTrigger aria-label={tu("op.role")}><SelectValue /></SelectTrigger>
                     <SelectContent>{(form.category === "committee" ? COMMITTEE_ROLES : SERVICE_ROLES).map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div><Label>Name</Label><Input aria-label="Name" value={form.name ?? ""} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-                <div><Label>Phone</Label><Input aria-label="Phone" value={form.phone ?? ""} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
-                <div><Label>Notes</Label><Input aria-label="Notes" value={form.notes ?? ""} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
-                <Button className="w-full" onClick={save}>Save</Button>
+                <div><Label>{tu("common.name")}</Label><Input aria-label={tu("common.name")} value={form.name ?? ""} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
+                <div><Label>{tu("exp.phone")}</Label><Input aria-label={tu("exp.phone")} value={form.phone ?? ""} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
+                <div><Label>{tu("exp.notes")}</Label><Input aria-label={tu("exp.notes")} value={form.notes ?? ""} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
+                <Button className="w-full" onClick={save}>{tu("common.save")}</Button>
               </div>
             </DialogContent>
           </Dialog>
         }
       />
       {loading ? <div className="grid place-items-center h-40"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div> :
-        items.length === 0 ? <EmptyState icon={ShieldCheck} title="No contacts yet" description="Add committee members & vendors." /> :
+        items.length === 0 ? <EmptyState icon={ShieldCheck} title={tu("op.no_contacts_yet")} description={tu("op.add_committee_members_vendors")} /> :
           (<>
-            <Section title="Committee" icon={ShieldCheck} list={committee} onDelete={remove} canEdit />
-            <Section title="Services" icon={Wrench} list={services} onDelete={remove} canEdit />
+            <Section title={tu("rc.committee")} icon={ShieldCheck} list={committee} onDelete={remove} canEdit />
+            <Section title={tu("prof.services")} icon={Wrench} list={services} onDelete={remove} canEdit />
           </>)
       }
     </PageShell>

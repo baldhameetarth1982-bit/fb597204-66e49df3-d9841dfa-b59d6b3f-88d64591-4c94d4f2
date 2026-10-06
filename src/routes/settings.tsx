@@ -29,6 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { NeonThemePreview } from "@/components/shared/NeonThemePreview";
 import { TwoFactorCard } from "@/components/security/TwoFactorCard";
+import { tu } from "@/lib/i18n";
 
 const DEFAULT_PREFERENCES = {
   pushAnnouncements: true,
@@ -566,15 +567,15 @@ function AppearanceCard({
           >
             <div className="h-20 rounded-lg mb-2 border"
               style={{ background: "radial-gradient(circle at 30% 20%, #b91c5c, #1a0a14)" }} />
-            <p className="font-semibold flex items-center gap-1">Neon
-              {!isPremium && <Badge variant="outline" className="text-[10px] ml-1">Growth+</Badge>}
+            <p className="font-semibold flex items-center gap-1">{tu("op.neon")}
+              {!isPremium && <Badge variant="outline" className="text-[10px] ml-1">{tu("op.growth")}</Badge>}
             </p>
             <p className="text-xs text-muted-foreground">{t("st.neonD")}</p>
           </button>
         </div>
         {!isPremium && (
           <p className="text-xs text-muted-foreground">
-            {t("st.upgradeNeon")} <Link to="/pricing" className="underline">Growth / Pro</Link>
+            {t("st.upgradeNeon")} <Link to="/pricing" className="underline">{tu("op.growth_pro")}</Link>
           </p>
         )}
         {isSuperAdmin && (

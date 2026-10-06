@@ -10,6 +10,7 @@ import {
   type FeatureKey,
   type PlanKey,
 } from "@/lib/plan-features";
+import { tu } from "@/lib/i18n";
 
 interface Props {
   feature: FeatureKey;
@@ -32,29 +33,28 @@ export function UpgradePrompt({ feature, currentPlan, compact }: Props) {
             <div className="flex flex-wrap items-center gap-2">
               <Badge className="rounded-full bg-primary text-primary-foreground">
                 <Sparkles className="h-3 w-3 mr-1" />
-                {PLAN_LABELS[required]} plan
+                {PLAN_LABELS[required]} {tu("op.plan")}
               </Badge>
               <Badge variant="secondary" className="rounded-full">
-                You're on {PLAN_LABELS[currentPlan]}
+                {tu("op.you_re_on")} {PLAN_LABELS[currentPlan]}
               </Badge>
             </div>
             <div>
               <h2 className="text-lg font-semibold tracking-tight">
-                Unlock {featureName}
+                {tu("op.unlock")} {featureName}
               </h2>
               <p className="text-sm text-muted-foreground mt-1">
-                {featureName} is available on the {PLAN_LABELS[required]} plan. Upgrade your society
-                subscription to enable it for your team and residents.
+                {featureName} {tu("op.is_available_on_the")} {PLAN_LABELS[required]} {tu("op.plan_upgrade_your_society_subscription")}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button asChild className="rounded-xl">
                 <Link to="/society/subscription">
-                  Upgrade to {PLAN_LABELS[required]} <ArrowRight className="h-4 w-4 ml-1" />
+                  {tu("op.upgrade_to")} {PLAN_LABELS[required]} <ArrowRight className="h-4 w-4 ml-1" />
                 </Link>
               </Button>
               <Button asChild variant="outline" className="rounded-xl">
-                <Link to="/pricing">Compare plans</Link>
+                <Link to="/pricing">{tu("op.compare_plans")}</Link>
               </Button>
             </div>
           </div>

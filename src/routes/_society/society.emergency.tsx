@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { InlineNotice, ListEmpty, ListSkeleton, LoadError, StatusChip } from "@/components/people/PeopleUI";
 import { communityError } from "@/lib/community-errors";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/emergency")({
   head: () => ({
@@ -68,33 +69,33 @@ function EmergencyAdmin() {
   const cancel = useMutation({
     networkMode: "always", retry: false,
     mutationFn: async () => { const { error } = await (supabase as any).rpc("emergency_broadcast_cancel", { _id: cancelling.id, _reason: reason.trim() }); if (error) throw error; },
-    onSuccess: () => { toast.success("Broadcast cancelled"); setCancelling(null); setReason(""); qc.invalidateQueries({ queryKey: ["emergency-broadcasts-admin"] }); },
+    onSuccess: () => { toast.success(tu("op.broadcast_cancelled")); setCancelling(null); setReason(""); qc.invalidateQueries({ queryKey: ["emergency-broadcasts-admin"] }); },
     onError: (e) => toast.error(communityError(e)),
   });
 
   return (
     <PageShell>
-      <PageHeader title="Emergency broadcast" description="For urgent safety messages only. Separate from notices and from resident SOS."
-        actions={<Button variant="destructive" className="min-h-11" onClick={() => setComposing({})}><Siren className="mr-2 h-4 w-4" />New broadcast</Button>} />
-      <InlineNotice icon={Siren} title="How delivery works">
-        Recipients get an urgent in-app alert pinned on top of their app, plus a phone notification if they've enabled one. SMS, WhatsApp and email are not connected yet, so nothing is sent through them.
+      <PageHeader title={tu("mod.emergency")} description={tu("op.for_urgent_safety_messages_only")}
+        actions={<Button variant="destructive" className="min-h-11" onClick={() => setComposing({})}><Siren className="mr-2 h-4 w-4" />{tu("op.new_broadcast")}</Button>} />
+      <InlineNotice icon={Siren} title={tu("op.how_delivery_works")}>
+        {tu("op.recipients_get_an_urgent_in")}
       </InlineNotice>
       {(sos.data ?? []).length > 0 && (
         <section className="mt-4 space-y-2">
-          <h2 className="text-sm font-semibold">Recent SOS alerts</h2>
-          <p className="text-xs text-muted-foreground">SOS alerts are never broadcast automatically. You can choose to issue a broadcast about one.</p>
+          <h2 className="text-sm font-semibold">{tu("op.recent_sos_alerts")}</h2>
+          <p className="text-xs text-muted-foreground">{tu("op.sos_alerts_are_never_broadcast")}</p>
           {sos.data!.map((s) => (
             <div key={s.id} className="flex items-center justify-between gap-2 rounded-xl border bg-card p-3 text-sm">
               <span className="min-w-0 truncate">{new Date(s.created_at).toLocaleString("en-IN")} · {s.status}{s.note ? ` · ${s.note}` : ""}</span>
-              <Button size="sm" variant="outline" className="min-h-11 shrink-0" onClick={() => setComposing({ sos: s.id })}>Broadcast about this</Button>
+              <Button size="sm" variant="outline" className="min-h-11 shrink-0" onClick={() => setComposing({ sos: s.id })}>{tu("op.broadcast_about_this")}</Button>
             </div>
           ))}
         </section>
       )}
       <section className="mt-6 space-y-3">
-        <h2 className="font-semibold">History</h2>
-        {list.isLoading ? <ListSkeleton rows={3} /> : list.isError ? <LoadError title="Couldn't load broadcasts" onRetry={() => void list.refetch()} /> : !(list.data ?? []).length ? (
-          <ListEmpty icon={Siren} title="No broadcasts yet">Broadcasts you send will be listed here with delivery and seen counts.</ListEmpty>
+        <h2 className="font-semibold">{tu("billingTabs.history")}</h2>
+        {list.isLoading ? <ListSkeleton rows={3} /> : list.isError ? <LoadError title={tu("op.couldn_t_load_broadcasts")} onRetry={() => void list.refetch()} /> : !(list.data ?? []).length ? (
+          <ListEmpty icon={Siren} title={tu("op.no_broadcasts_yet")}>{tu("op.broadcasts_you_send_will_be")}</ListEmpty>
         ) : (
           <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
             {list.data!.map((b: any) => {
@@ -109,13 +110,13 @@ function EmergencyAdmin() {
                   <p className="font-medium break-words">{b.title}</p>
                   <p className="whitespace-pre-line text-sm text-muted-foreground break-words">{b.message}</p>
                   <p className="text-xs text-muted-foreground tabular-nums">
-                    {new Date(b.created_at).toLocaleString("en-IN")} · {b.recipient_count} recipients · {b.in_app_delivered} in-app alerts · {b.acks} seen
+                    {new Date(b.created_at).toLocaleString("en-IN")} · {b.recipient_count} {tu("op.recipients")} {b.in_app_delivered} {tu("op.in_app_alerts")} {b.acks} {tu("op.seen")}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    In-app: {CHANNEL_LABEL[b.channel_status?.in_app] ?? b.channel_status?.in_app} · SMS/WhatsApp/Email: {CHANNEL_LABEL.not_configured}
+                    {tu("op.in_app")} {CHANNEL_LABEL[b.channel_status?.in_app] ?? b.channel_status?.in_app} · SMS/WhatsApp/Email: {CHANNEL_LABEL.not_configured}
                   </p>
-                  {b.cancel_reason && <p className="text-xs">Cancel reason: {b.cancel_reason}</p>}
-                  {state === "Active" && <Button size="sm" variant="outline" className="min-h-11" onClick={() => setCancelling(b)}><XCircle className="mr-1 h-4 w-4" />Cancel broadcast</Button>}
+                  {b.cancel_reason && <p className="text-xs">{tu("op.cancel_reason")} {b.cancel_reason}</p>}
+                  {state === "Active" && <Button size="sm" variant="outline" className="min-h-11" onClick={() => setCancelling(b)}><XCircle className="mr-1 h-4 w-4" />{tu("op.cancel_broadcast")}</Button>}
                 </li>
               );
             })}
@@ -127,12 +128,12 @@ function EmergencyAdmin() {
       {cancelling && (
         <Dialog open onOpenChange={(o) => !o && setCancelling(null)}>
           <DialogContent>
-            <DialogHeader><DialogTitle>Cancel broadcast</DialogTitle><DialogDescription>It stops showing as active. The record stays in history.</DialogDescription></DialogHeader>
-            <Label htmlFor="cr">Reason</Label>
+            <DialogHeader><DialogTitle>{tu("op.cancel_broadcast")}</DialogTitle><DialogDescription>{tu("op.it_stops_showing_as_active")}</DialogDescription></DialogHeader>
+            <Label htmlFor="cr">{tu("exp.reason")}</Label>
             <Textarea id="cr" value={reason} maxLength={300} onChange={(e) => setReason(e.target.value)} />
             <DialogFooter>
-              <Button variant="outline" className="min-h-11" onClick={() => setCancelling(null)}>Back</Button>
-              <Button className="min-h-11" disabled={reason.trim().length < 3 || cancel.isPending} onClick={() => cancel.mutate()}>Cancel broadcast</Button>
+              <Button variant="outline" className="min-h-11" onClick={() => setCancelling(null)}>{tu("common.back")}</Button>
+              <Button className="min-h-11" disabled={reason.trim().length < 3 || cancel.isPending} onClick={() => cancel.mutate()}>{tu("op.cancel_broadcast")}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -174,35 +175,35 @@ function Compose({ sosId, societyId, onClose }: { sosId?: string; societyId: str
       if (error) throw error;
       return data;
     },
-    onSuccess: () => { toast.success("Emergency broadcast sent"); qc.invalidateQueries({ queryKey: ["emergency-broadcasts-admin"] }); onClose(); },
+    onSuccess: () => { toast.success(tu("op.emergency_broadcast_sent")); qc.invalidateQueries({ queryKey: ["emergency-broadcasts-admin"] }); onClose(); },
     onError: (e) => { setConfirm(false); toast.error(communityError(e)); },
   });
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto">
-        <DialogHeader><DialogTitle>New emergency broadcast</DialogTitle><DialogDescription>Goes out immediately as an urgent alert.{sosId ? " Linked to the selected SOS alert." : ""}</DialogDescription></DialogHeader>
+        <DialogHeader><DialogTitle>{tu("op.new_emergency_broadcast")}</DialogTitle><DialogDescription>{tu("op.goes_out_immediately_as_an")}{sosId ? tu("op.linked_to_the_selected_sos") : ""}</DialogDescription></DialogHeader>
         <div className="space-y-3">
-          <div className="space-y-1"><Label>Type</Label>
-            <Select value={f.category} onValueChange={(v) => set("category", v)}><SelectTrigger className="min-h-11"><SelectValue placeholder="Choose type" /></SelectTrigger>
+          <div className="space-y-1"><Label>{tu("cm.type")}</Label>
+            <Select value={f.category} onValueChange={(v) => set("category", v)}><SelectTrigger className="min-h-11"><SelectValue placeholder={tu("op.choose_type")} /></SelectTrigger>
               <SelectContent>{(cats.data ?? []).filter((c) => c.active).map((c) => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}</SelectContent></Select></div>
-          <div className="space-y-1"><Label htmlFor="et">Headline</Label><Input id="et" className="min-h-11" maxLength={100} value={f.title} onChange={(e) => set("title", e.target.value)} /></div>
-          <div className="space-y-1"><Label htmlFor="em">Message</Label><Textarea id="em" rows={4} maxLength={1000} value={f.message} onChange={(e) => set("message", e.target.value)} placeholder="What is happening and what should people do?" /></div>
-          <div className="space-y-1"><Label>Who gets it</Label>
+          <div className="space-y-1"><Label htmlFor="et">{tu("op.headline")}</Label><Input id="et" className="min-h-11" maxLength={100} value={f.title} onChange={(e) => set("title", e.target.value)} /></div>
+          <div className="space-y-1"><Label htmlFor="em">{tu("cm.message")}</Label><Textarea id="em" rows={4} maxLength={1000} value={f.message} onChange={(e) => set("message", e.target.value)} placeholder={tu("op.what_is_happening_and_what")} /></div>
+          <div className="space-y-1"><Label>{tu("op.who_gets_it")}</Label>
             <Select value={f.audience} onValueChange={(v) => set("audience", v)}><SelectTrigger className="min-h-11"><SelectValue /></SelectTrigger>
               <SelectContent>{Object.entries(AUDIENCE).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent></Select></div>
-          {f.audience === "block" && <div className="space-y-1"><Label>Block</Label>
-            <Select value={f.block} onValueChange={(v) => set("block", v)}><SelectTrigger className="min-h-11"><SelectValue placeholder="Choose block" /></SelectTrigger>
+          {f.audience === "block" && <div className="space-y-1"><Label>{tu("mnt.block")}</Label>
+            <Select value={f.block} onValueChange={(v) => set("block", v)}><SelectTrigger className="min-h-11"><SelectValue placeholder={tu("op.choose_block")} /></SelectTrigger>
               <SelectContent>{(blocks.data ?? []).map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent></Select></div>}
-          <div className="space-y-1"><Label>Show as active for</Label>
+          <div className="space-y-1"><Label>{tu("op.show_as_active_for")}</Label>
             <Select value={f.expires} onValueChange={(v) => set("expires", v)}><SelectTrigger className="min-h-11"><SelectValue /></SelectTrigger>
               <SelectContent>{EXPIRY.map((x) => <SelectItem key={x.v} value={x.v}>{x.l}</SelectItem>)}</SelectContent></Select></div>
           {/[<>{}]/.test(f.title + f.message) && <p className="text-xs text-destructive">Remove &lt; &gt; {"{"} {"}"} characters.</p>}
         </div>
         <DialogFooter>
-          <Button variant="outline" className="min-h-11" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" className="min-h-11" onClick={onClose}>{tu("common.cancel")}</Button>
           {!confirm
-            ? <Button variant="destructive" className="min-h-11" disabled={invalid} onClick={() => setConfirm(true)}>Review & send</Button>
-            : <Button variant="destructive" className="min-h-11" disabled={send.isPending} onClick={() => send.mutate()}>{send.isPending ? "Sending…" : "Confirm — send now"}</Button>}
+            ? <Button variant="destructive" className="min-h-11" disabled={invalid} onClick={() => setConfirm(true)}>{tu("op.review_send")}</Button>
+            : <Button variant="destructive" className="min-h-11" disabled={send.isPending} onClick={() => send.mutate()}>{send.isPending ? tu("cm.sending") : tu("op.confirm_send_now")}</Button>}
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -223,18 +224,18 @@ function EmergencyCategories() {
   });
   return (
     <section className="mt-8 space-y-3">
-      <h2 className="font-semibold">Emergency types</h2>
+      <h2 className="font-semibold">{tu("op.emergency_types")}</h2>
       <div className="flex flex-wrap gap-2">
         {(cats.data ?? []).map((c) => (
           <span key={c.id} className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm">
-            {c.label}{!c.active && " (hidden)"}
-            {c.society_id && <button type="button" className="min-h-8 text-xs text-primary underline" onClick={() => save.mutate({ id: c.id, label: c.label, active: !c.active })}>{c.active ? "Hide" : "Show"}</button>}
+            {c.label}{!c.active && tu("op.hidden")}
+            {c.society_id && <button type="button" className="min-h-8 text-xs text-primary underline" onClick={() => save.mutate({ id: c.id, label: c.label, active: !c.active })}>{c.active ? tu("op.hide") : tu("rbd.show")}</button>}
           </span>
         ))}
       </div>
       <div className="flex max-w-md gap-2">
-        <Input aria-label="New emergency type" className="min-h-11" maxLength={40} value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Gas leak" />
-        <Button className="min-h-11" disabled={label.trim().length < 2 || /[<>{}]/.test(label) || save.isPending} onClick={() => save.mutate({ id: null, label: label.trim(), active: true })}><Plus className="mr-1 h-4 w-4" />Add</Button>
+        <Input aria-label={tu("op.new_emergency_type")} className="min-h-11" maxLength={40} value={label} onChange={(e) => setLabel(e.target.value)} placeholder={tu("op.e_g_gas_leak")} />
+        <Button className="min-h-11" disabled={label.trim().length < 2 || /[<>{}]/.test(label) || save.isPending} onClick={() => save.mutate({ id: null, label: label.trim(), active: true })}><Plus className="mr-1 h-4 w-4" />{tu("vh.add")}</Button>
       </div>
     </section>
   );

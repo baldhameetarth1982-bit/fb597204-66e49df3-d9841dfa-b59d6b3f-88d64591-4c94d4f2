@@ -3,6 +3,7 @@ import { Palette } from "lucide-react";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { SettingsShell, SettingsSection } from "@/components/settings/SettingsUI";
 import { BrandingSettingsPanel } from "@/components/branding/BrandingSettingsPanel";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/branding")({
   head: () => ({
@@ -15,12 +16,12 @@ export const Route = createFileRoute("/_society/society/branding")({
   component: () => (
     <FeatureGate feature="custom_branding">
       <SettingsShell
-        title="Custom Branding"
-        description="Give residents a home screen with your society's name, logo and colours. SociyoHub stays the platform name."
+        title={tu("op.custom_branding")}
+        description={tu("op.give_residents_a_home_screen")}
         scope="Whole society"
         icon={Palette}
       >
-        <SettingsSection title="Society branding" icon={Palette} description="Changes apply only after you save, and the server checks your role and Premium plan every time.">
+        <SettingsSection title={tu("op.society_branding")} icon={Palette} description={tu("op.changes_apply_only_after_you")}>
           <BrandingSettingsPanel />
         </SettingsSection>
       </SettingsShell>

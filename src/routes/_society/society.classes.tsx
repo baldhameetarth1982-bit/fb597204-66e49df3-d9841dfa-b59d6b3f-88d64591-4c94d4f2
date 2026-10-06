@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { PageHeader, PageShell } from "@/components/shared/PageHeader";
 import { ClassesBoard } from "@/components/community/ClassesBoard";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/classes")({
   head: () => ({
@@ -18,8 +19,8 @@ export const Route = createFileRoute("/_society/society/classes")({
     const { societyId } = useSocietyId();
     return (
       <PageShell>
-        <PageHeader title="Classes & instructors" description="Classes run at your amenities and follow their booking rules." />
-        {societyId ? <ClassesBoard societyId={societyId} mode="admin" /> : <p className="text-muted-foreground">Loading…</p>}
+        <PageHeader title={tu("op.classes_instructors")} description={tu("op.classes_run_at_your_amenities")} />
+        {societyId ? <ClassesBoard societyId={societyId} mode="admin" /> : <p className="text-muted-foreground">{tu("common.loading")}</p>}
       </PageShell>
     );
   },

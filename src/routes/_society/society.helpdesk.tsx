@@ -20,6 +20,7 @@ import {
   CATEGORY_LABEL, PRIORITY_LABEL, fmtDate, helpdeskErrorMessage, slaState, statusMeta,
   type TicketCategory, type TicketPriority,
 } from "@/lib/helpdesk";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/helpdesk")({
   head: () => ({
@@ -132,7 +133,7 @@ function HelpdeskQueue() {
 
   return (
     <PageShell>
-      <PageHeader title="Helpdesk" description="What needs action from the committee." />
+      <PageHeader title={tu("sd.s.helpdesk")} description={tu("op.what_needs_action_from_the")} />
 
       <SummaryStrip items={[
         { label: "New", value: val("needs_action"), hint: "Not started" },
@@ -143,18 +144,18 @@ function HelpdeskQueue() {
       ]} />
 
       <div className="mb-4 flex flex-col gap-3">
-        <SearchField value={term} onChange={setTerm} placeholder="Search title, resident, house or #number" label="Search requests" />
-        <SegmentedFilter label="Request status" value={view} onChange={setView}
+        <SearchField value={term} onChange={setTerm} placeholder={tu("op.search_title_resident_house_or")} label={tu("op.search_requests")} />
+        <SegmentedFilter label={tu("op.request_status")} value={view} onChange={setView}
           options={VIEWS.map((v) => ({ key: v.key, label: v.label, count: q.data ? counts[v.key] : undefined }))} />
       </div>
       <p className="mb-4 text-xs text-muted-foreground">
-        New member join requests are under <Link to="/society/approvals" className="font-medium text-primary underline-offset-2 hover:underline">Resident approvals</Link>.
+        {tu("op.new_member_join_requests_are")} <Link to="/society/approvals" className="font-medium text-primary underline-offset-2 hover:underline">{tu("op.resident_approvals")}</Link>.
       </p>
 
       {q.isPending ? <ListSkeleton rows={5} />
-        : q.isError ? <LoadError title="Couldn't load the helpdesk queue." onRetry={() => q.refetch()} />
+        : q.isError ? <LoadError title={tu("op.couldn_t_load_the_helpdesk")} onRetry={() => q.refetch()} />
         : rows.length === 0 ? (
-          <ListEmpty icon={Inbox} title={search ? "No matches" : "All clear"}>{search ? "Try a different search." : "Nothing waiting in this view."}</ListEmpty>
+          <ListEmpty icon={Inbox} title={search ? tu("common.noMatches") : tu("gp.allClear")}>{search ? tu("op.try_a_different_search") : tu("op.nothing_waiting_in_this_view")}</ListEmpty>
         ) : (
         <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
           {rows.map((r) => {
@@ -168,17 +169,17 @@ function HelpdeskQueue() {
                   className={`relative grid w-full gap-1 px-4 py-3 text-left transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring md:grid-cols-[1fr_12rem_11rem] md:items-center md:gap-4 before:absolute before:inset-y-2 before:left-0 before:w-1 before:rounded-r ${approval ? "before:bg-info bg-info-container/30" : urgent ? "before:bg-destructive" : r.status === "open" ? "before:bg-primary" : "before:bg-transparent"}`}>
                   <span className="min-w-0">
                     <span className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-                      {approval && <Gavel className="h-3.5 w-3.5 text-info" aria-label="Approval request" />}
+                      {approval && <Gavel className="h-3.5 w-3.5 text-info" aria-label={tu("op.approval_request")} />}
                       <span className={`rounded px-1.5 py-0.5 font-semibold ${s.tone}`}>{s.label}</span>
-                      {slaState(r.sla_due_at, r.status) === "overdue" && <span className="rounded bg-destructive/10 px-1.5 py-0.5 font-semibold text-destructive">Overdue</span>}
-                      {r.escalation_level > 0 && <span className="rounded bg-warning/15 px-1.5 py-0.5 font-semibold text-warning-foreground">Escalated</span>}
+                      {slaState(r.sla_due_at, r.status) === "overdue" && <span className="rounded bg-destructive/10 px-1.5 py-0.5 font-semibold text-destructive">{tu("bills.overdue")}</span>}
+                      {r.escalation_level > 0 && <span className="rounded bg-warning/15 px-1.5 py-0.5 font-semibold text-warning-foreground">{tu("hd.ev.escalated")}</span>}
                       {urgent && <span className="rounded bg-destructive/10 px-1.5 py-0.5 font-semibold text-destructive">{PRIORITY_LABEL[r.priority as TicketPriority]}</span>}
-                      <span>{CATEGORY_LABEL[r.category] ?? "Request"} · #{r.ticket_no}</span>
+                      <span>{CATEGORY_LABEL[r.category] ?? tu("prof.wd.request")} · #{r.ticket_no}</span>
                     </span>
                     <span className="mt-0.5 block truncate font-medium">{r.subject}</span>
                     <span className="block truncate text-xs text-muted-foreground">{r.requester_name}{r.flat_label ? ` · ${r.flat_label}` : ""}</span>
                   </span>
-                  <span className="text-xs text-muted-foreground md:text-sm">{r.assignee_name ? `Owner: ${r.assignee_name}` : "Unassigned"} · {fmtDate(r.last_activity_at)}</span>
+                  <span className="text-xs text-muted-foreground md:text-sm">{r.assignee_name ? `Owner: ${r.assignee_name}` : tu("hd.ev.unassigned")} · {fmtDate(r.last_activity_at)}</span>
                   {na && <span className={`text-xs font-medium md:text-right md:text-sm ${approval ? "text-info" : "text-foreground"}`}>{na} →</span>}
                 </button>
               </li>
@@ -197,26 +198,26 @@ function HelpdeskQueue() {
                 <SheetTitle className="break-words">{sel.subject}</SheetTitle>
                 <p className="text-sm text-muted-foreground">{sel.requester_name}{sel.flat_label ? ` · ${sel.flat_label}` : ""} · raised {fmtDate(sel.created_at)}</p>
                 <span className={`w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusMeta(sel.status).tone}`}>{statusMeta(sel.status).label}</span>
-                {sel.sla_due_at && <p className={`text-xs ${slaState(sel.sla_due_at, sel.status) === "overdue" ? "font-semibold text-destructive" : "text-muted-foreground"}`}>Target: {fmtDate(sel.sla_due_at)}{slaState(sel.sla_due_at, sel.status) === "overdue" ? " — overdue" : ""}</p>}
-                {sel.hold_reason && sel.status === "on_hold" && <p className="text-xs text-muted-foreground">On hold: {sel.hold_reason}</p>}
-                {sel.escalation_level > 0 && <p className="text-xs text-warning-foreground">Escalated (level {sel.escalation_level}){sel.escalation_reason ? `: ${sel.escalation_reason}` : ""}</p>}
-                {sel.reopened_count > 0 && <p className="text-xs text-muted-foreground">Reopened {sel.reopened_count}×</p>}
-                {sel.parent_ticket_id && <p className="text-xs text-muted-foreground">Follow-up of an earlier request</p>}
-                {sel.rating && <p className="text-xs text-muted-foreground">Resident rating: {sel.rating}/5</p>}
+                {sel.sla_due_at && <p className={`text-xs ${slaState(sel.sla_due_at, sel.status) === "overdue" ? "font-semibold text-destructive" : "text-muted-foreground"}`}>{tu("op.target")} {fmtDate(sel.sla_due_at)}{slaState(sel.sla_due_at, sel.status) === "overdue" ? tu("op.overdue_2") : ""}</p>}
+                {sel.hold_reason && sel.status === "on_hold" && <p className="text-xs text-muted-foreground">{tu("op.on_hold")} {sel.hold_reason}</p>}
+                {sel.escalation_level > 0 && <p className="text-xs text-warning-foreground">{tu("op.escalated_level")} {sel.escalation_level}){sel.escalation_reason ? `: ${sel.escalation_reason}` : ""}</p>}
+                {sel.reopened_count > 0 && <p className="text-xs text-muted-foreground">{tu("hd.st.reopened")} {sel.reopened_count}×</p>}
+                {sel.parent_ticket_id && <p className="text-xs text-muted-foreground">{tu("op.follow_up_of_an_earlier")}</p>}
+                {sel.rating && <p className="text-xs text-muted-foreground">{tu("op.resident_rating")} {sel.rating}/5</p>}
               </SheetHeader>
               <AISummaryCard key={sel.id} target={{ kind: "ticket", id: sel.id }} />
               <p className="whitespace-pre-wrap break-words text-sm">{sel.description}</p>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-medium" htmlFor="hd-owner">Owner</label>
+                <label className="text-sm font-medium" htmlFor="hd-owner">{tu("op.owner")}</label>
                 <Select
                   value={sel.assigned_to ?? "none"}
                   disabled={busy || ["closed", "rejected", "cancelled"].includes(sel.status) || team.isError}
                   onValueChange={(v) => update.mutate({ assign: v === "none" ? null : v })}
                 >
-                  <SelectTrigger id="hd-owner" className="min-h-11 rounded-xl"><SelectValue placeholder="Unassigned" /></SelectTrigger>
+                  <SelectTrigger id="hd-owner" className="min-h-11 rounded-xl"><SelectValue placeholder={tu("hd.ev.unassigned")} /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Unassigned</SelectItem>
+                    <SelectItem value="none">{tu("hd.ev.unassigned")}</SelectItem>
                     {(team.data ?? []).map((m) => <SelectItem key={m.user_id} value={m.user_id}>{m.full_name}</SelectItem>)}
                   </SelectContent>
                 </Select>
@@ -225,17 +226,17 @@ function HelpdeskQueue() {
               {(sel.status === "awaiting_approval" || NEXT[sel.status]) && (
                 <div className="space-y-3 rounded-2xl border p-3">
                   <label htmlFor="hd-note" className="text-sm font-medium">
-                    {sel.status === "awaiting_approval" ? "Committee decision" : "Note to resident"}
-                    <span className="font-normal text-muted-foreground"> (required to reject or hold)</span>
+                    {sel.status === "awaiting_approval" ? tu("gd.committeeDecision") : tu("op.note_to_resident")}
+                    <span className="font-normal text-muted-foreground"> {tu("op.required_to_reject_or_hold")}</span>
                   </label>
-                  <Textarea id="hd-note" value={note} onChange={(e) => setNote(e.target.value)} rows={3} maxLength={2000} className="rounded-xl" placeholder="Shown on the resident's timeline" />
+                  <Textarea id="hd-note" value={note} onChange={(e) => setNote(e.target.value)} rows={3} maxLength={2000} className="rounded-xl" placeholder={tu("op.shown_on_the_resident_s")} />
                   {sel.status === "awaiting_approval" ? (
                     <div className="flex gap-2">
                       <Button className="min-h-11 flex-1 rounded-xl" disabled={busy} onClick={() => decide.mutate(true)}>
-                        {decide.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle2 className="mr-1 h-4 w-4" /> Approve</>}
+                        {decide.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle2 className="mr-1 h-4 w-4" /> {tu("vs.approve")}</>}
                       </Button>
                       <Button variant="outline" className="min-h-11 flex-1 rounded-xl" disabled={busy || note.trim().length < 3} onClick={() => decide.mutate(false)}>
-                        <XCircle className="mr-1 h-4 w-4" /> Reject
+                        <XCircle className="mr-1 h-4 w-4" /> {tu("el.a.reject")}
                       </Button>
                     </div>
                   ) : (
@@ -250,7 +251,7 @@ function HelpdeskQueue() {
                     </div>
                   )}
                   {sel.status === "awaiting_approval" && (
-                    <p className="flex items-center gap-1 text-xs text-muted-foreground"><UserCheck className="h-3.5 w-3.5" /> Only committee members with settings access can decide.</p>
+                    <p className="flex items-center gap-1 text-xs text-muted-foreground"><UserCheck className="h-3.5 w-3.5" /> {tu("op.only_committee_members_with_settings")}</p>
                   )}
                 </div>
               )}

@@ -44,6 +44,7 @@ import { AISummarySlot, type AISummaryUiState } from "@/components/flat360/AISum
 import { UpgradePrompt } from "@/components/subscription/UpgradePrompt";
 import { isAIAllowedRoute } from "@/lib/flat360-types";
 import { FlatLifecyclePanel } from "@/components/tenancy/FlatLifecyclePanel";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/flats/$id")({
   head: () => ({ meta: [{ title: "Flat 360 — SociyoHub" }] }),
@@ -101,11 +102,11 @@ function renderSectionState<T>(
     case "available":
       return render(state.data);
     case "empty":
-      return <SectionEmpty message={opts.emptyMessage ?? "Nothing to show yet."} />;
+      return <SectionEmpty message={opts.emptyMessage ?? tu("op.nothing_to_show_yet")} />;
     case "unsupported":
       return <SectionUnsupported message={opts.unsupportedMessage ?? state.message} />;
     case "error":
-      return <SectionErrorRow message={state.message ?? "Could not load section."} />;
+      return <SectionErrorRow message={state.message ?? tu("op.could_not_load_section")} />;
     case "locked":
       return null; // Basic sees the single global upgrade card
   }
@@ -136,7 +137,7 @@ function CardShell({
             <Icon className="h-4 w-4" aria-hidden="true" /> {title}
             {proBadge && (
               <Badge variant="outline" className="rounded-full text-[10px] ml-1">
-                Pro
+                {tu("op.pro")}
               </Badge>
             )}
           </h3>
@@ -163,7 +164,7 @@ function IdentityHeader({ snapshot }: { snapshot: Flat360Snapshot }) {
               <h1 className="break-words text-lg font-bold leading-tight sm:text-xl">{identity.unit_label}</h1>
               <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 truncate">
                 <MapPin className="h-3 w-3" aria-hidden="true" />
-                {identity.society_name ?? "Society"}
+                {identity.society_name ?? tu("nav.society")}
               </p>
             </div>
           </div>
@@ -177,11 +178,11 @@ function IdentityHeader({ snapshot }: { snapshot: Flat360Snapshot }) {
             )}
           >
             {isVacant
-              ? "Vacant"
+              ? tu("op.vacant")
               : occupancy.kind === "tenant_occupied"
-                ? "Tenant"
+                ? tu("op.tenant")
                 : occupancy.kind === "owner_occupied"
-                  ? "Owner"
+                  ? tu("op.owner")
                   : occupancy.kind === "multi_resident"
                     ? `${occupancy.active_count} residents`
                     : "Occupied"}
@@ -198,9 +199,9 @@ function OccupancySection({ snapshot }: { snapshot: Flat360Snapshot }) {
     occupancy.residents.find((r) => r.is_primary && r.is_active) ??
     occupancy.residents.find((r) => r.is_active);
   return (
-    <CardShell title="Current residents" icon={Users}>
+    <CardShell title={tu("op.current_residents")} icon={Users}>
       {occupancy.active_count === 0 ? (
-        <SectionEmpty message="No active residents." />
+        <SectionEmpty message={tu("op.no_active_residents")} />
       ) : (
         <ul className="divide-y divide-border/60">
           {occupancy.residents
@@ -209,10 +210,10 @@ function OccupancySection({ snapshot }: { snapshot: Flat360Snapshot }) {
               <li key={i} className="py-2 flex items-center gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium truncate">
-                    {r.display_name ?? "Resident"}
+                    {r.display_name ?? tu("inc.k.resident")}
                     {r.is_primary && (
                       <Badge variant="secondary" className="rounded-full text-[10px] ml-2">
-                        Primary
+                        {tu("op.primary")}
                       </Badge>
                     )}
                   </p>
@@ -227,12 +228,12 @@ function OccupancySection({ snapshot }: { snapshot: Flat360Snapshot }) {
       )}
       {primary && (
         <div className="mt-3 pt-3 border-t border-border/40">
-          <div className="text-[11px] text-muted-foreground mb-2">Family</div>
+          <div className="text-[11px] text-muted-foreground mb-2">{tu("prof.family")}</div>
           {renderSectionState<FamilyMember[]>(
             family,
             (members) =>
               members.length === 0 ? (
-                <SectionEmpty message="No family members recorded." />
+                <SectionEmpty message={tu("op.no_family_members_recorded")} />
               ) : (
                 <ul className="text-xs text-muted-foreground space-y-1">
                   {members.slice(0, 8).map((m) => (
@@ -256,26 +257,26 @@ function BasicFinancialSection({ snapshot }: { snapshot: Flat360Snapshot }) {
   const b = snapshot.basicFinancial;
   return (
     <CardShell
-      title="Financial overview"
+      title={tu("op.financial_overview")}
       icon={IndianRupee}
       action={
         <Button asChild size="sm" variant="ghost" className="rounded-xl h-9 min-h-[36px]">
-          <Link to="/society/billing">All bills</Link>
+          <Link to="/society/billing">{tu("op.all_bills")}</Link>
         </Button>
       }
     >
       {availability.status !== "available" ? (
         availability.status === "error" ? (
-          <SectionErrorRow message="Financial information could not be loaded." />
+          <SectionErrorRow message={tu("op.financial_information_could_not_be")} />
         ) : (
-          <SectionUnsupported message="Financial calculation is not available for this unit." />
+          <SectionUnsupported message={tu("op.financial_calculation_is_not_available")} />
         )
       ) : (
         <div className="space-y-2">
           <div className="flex items-baseline justify-between gap-3 flex-wrap">
             <div>
               <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                Outstanding
+                {tu("sd.m.outstanding")}
               </p>
               <p
                 className={cn(
@@ -289,24 +290,24 @@ function BasicFinancialSection({ snapshot }: { snapshot: Flat360Snapshot }) {
             <div className="text-right text-xs text-muted-foreground">
               {b.overdue_count > 0 && (
                 <p className="text-rose-600">
-                  {b.overdue_count} overdue bill{b.overdue_count === 1 ? "" : "s"}
+                  {b.overdue_count} {tu("op.overdue_bill")}{b.overdue_count === 1 ? "" : "s"}
                 </p>
               )}
               {b.unpaid_count > 0 && (
                 <p>
-                  {b.unpaid_count} unpaid bill{b.unpaid_count === 1 ? "" : "s"}
+                  {b.unpaid_count} {tu("op.unpaid_bill")}{b.unpaid_count === 1 ? "" : "s"}
                 </p>
               )}
               {b.current_outstanding === 0 &&
                 b.overdue_count === 0 &&
-                b.unpaid_count === 0 && <p className="text-emerald-600">No outstanding dues.</p>}
+                b.unpaid_count === 0 && <p className="text-emerald-600">{tu("op.no_outstanding_dues_2")}</p>}
             </div>
           </div>
           {b.latest_bill && (
             <div className="mt-2 pt-2 border-t border-border/40 text-xs text-muted-foreground">
-              Latest bill:{" "}
+              {tu("op.latest_bill")}{" "}
               <span className="font-medium text-foreground">
-                {b.latest_bill.bill_number ?? b.latest_bill.period_label ?? "Bill"}
+                {b.latest_bill.bill_number ?? b.latest_bill.period_label ?? tu("billingTabs.bill")}
               </span>{" "}
               · {fmtINR(b.latest_bill.amount)} · Due {fmtDate(b.latest_bill.due_date)}
             </div>
@@ -314,7 +315,7 @@ function BasicFinancialSection({ snapshot }: { snapshot: Flat360Snapshot }) {
           {b.recent_successful_payments.length > 0 && (
             <div className="mt-2 pt-2 border-t border-border/40">
               <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">
-                Recent payments
+                {tu("op.recent_payments")}
               </p>
               <ul className="space-y-1">
                 {b.recent_successful_payments.slice(0, 3).map((p) => (
@@ -343,19 +344,19 @@ function AdvancedFinanceSection({
   state: SectionState<AdvancedFinancialSection>;
 }) {
   return (
-    <CardShell title="Advanced finance" icon={Wallet} proBadge>
+    <CardShell title={tu("op.advanced_finance")} icon={Wallet} proBadge>
       {renderSectionState<AdvancedFinancialSection>(
         state,
         (d) => (
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-2">
-              <StatCell label="Outstanding" value={fmtINR(d.total_outstanding)} />
-              <StatCell label="Pending payments" value={fmtINR(d.pending_payment_total)} />
-              <StatCell label="Overdue" value={String(d.overdue_count)} />
-              <StatCell label="Unpaid" value={String(d.unpaid_count)} />
-              <StatCell label="Partial" value={String(d.partial_count)} />
+              <StatCell label={tu("sd.m.outstanding")} value={fmtINR(d.total_outstanding)} />
+              <StatCell label={tu("op.pending_payments")} value={fmtINR(d.pending_payment_total)} />
+              <StatCell label={tu("bills.overdue")} value={String(d.overdue_count)} />
+              <StatCell label={tu("op.unpaid")} value={String(d.unpaid_count)} />
+              <StatCell label={tu("op.partial")} value={String(d.partial_count)} />
               <StatCell
-                label="Verify pending"
+                label={tu("op.verify_pending")}
                 value={String(d.pending_verification_count)}
               />
             </div>
@@ -366,7 +367,7 @@ function AdvancedFinanceSection({
               >
                 <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
                 <span>
-                  {d.inconsistency_count} inconsistency flagged for review.
+                  {d.inconsistency_count} {tu("op.inconsistency_flagged_for_review")}
                 </span>
               </div>
             )}
@@ -380,7 +381,7 @@ function AdvancedFinanceSection({
             {d.recent_bills.length > 0 && (
               <div className="mt-2 pt-2 border-t border-border/40">
                 <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">
-                  Recent bills
+                  {tu("op.recent_bills")}
                 </p>
                 <ul className="divide-y divide-border/40">
                   {d.recent_bills.slice(0, 5).map((b) => (
@@ -390,10 +391,10 @@ function AdvancedFinanceSection({
                     >
                       <div className="min-w-0">
                         <p className="text-xs font-medium truncate">
-                          {b.bill_number ?? b.period_label ?? "Bill"}
+                          {b.bill_number ?? b.period_label ?? tu("billingTabs.bill")}
                         </p>
                         <p className="text-[11px] text-muted-foreground">
-                          Due {fmtDate(b.due_date)}
+                          {tu("bills.due")} {fmtDate(b.due_date)}
                         </p>
                       </div>
                       <div className="text-right shrink-0">
@@ -434,7 +435,7 @@ function OccupancyHistorySection({
   state: SectionState<OccupancyHistoryItem[]>;
 }) {
   return (
-    <CardShell title="Occupancy history" icon={History} proBadge>
+    <CardShell title={tu("op.occupancy_history")} icon={History} proBadge>
       {renderSectionState<OccupancyHistoryItem[]>(
         state,
         (items) => (
@@ -443,11 +444,11 @@ function OccupancyHistorySection({
               <li key={`${h.user_id}-${h.moved_in_at ?? ""}`} className="py-2 flex items-center gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium truncate">
-                    {h.display_name ?? "Resident"}
+                    {h.display_name ?? tu("inc.k.resident")}
                   </p>
                   <p className="text-[11px] text-muted-foreground">
                     {h.relationship ?? "—"} · {fmtDate(h.moved_in_at)} →{" "}
-                    {h.moved_out_at ? fmtDate(h.moved_out_at) : "present"}
+                    {h.moved_out_at ? fmtDate(h.moved_out_at) : tu("op.present_2")}
                   </p>
                 </div>
                 {h.is_active && (
@@ -455,7 +456,7 @@ function OccupancyHistorySection({
                     variant="outline"
                     className="rounded-full bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px]"
                   >
-                    Active
+                    {tu("common.active")}
                   </Badge>
                 )}
               </li>
@@ -470,7 +471,7 @@ function OccupancyHistorySection({
 
 function VehiclesSection({ state }: { state: SectionState<VehicleItem[]> }) {
   return (
-    <CardShell title="Vehicles" icon={Car} proBadge>
+    <CardShell title={tu("nav.vehicles")} icon={Car} proBadge>
       {renderSectionState<VehicleItem[]>(
         state,
         (items) => (
@@ -483,7 +484,7 @@ function VehiclesSection({ state }: { state: SectionState<VehicleItem[]> }) {
                 </div>
                 {!v.is_active && (
                   <Badge variant="secondary" className="rounded-full text-[10px]">
-                    Inactive
+                    {tu("common.inactive")}
                   </Badge>
                 )}
               </li>
@@ -508,12 +509,12 @@ function NoDuesSection({ state, flatId }: { state: SectionState<SafeNoDuesSectio
   const cert = activity.data?.latestCertificate ?? null;
   return (
     <CardShell
-      title="No-Dues"
+      title={tu("mod.noDues")}
       icon={ShieldCheck}
       proBadge
       action={
         <Button asChild size="sm" variant="ghost" className="rounded-xl h-9 min-h-[36px]">
-          <Link to="/society/no-dues">Manage</Link>
+          <Link to="/society/no-dues">{tu("op.manage")}</Link>
         </Button>
       }
     >
@@ -531,16 +532,16 @@ function NoDuesSection({ state, flatId }: { state: SectionState<SafeNoDuesSectio
                     : "bg-amber-500/10 text-amber-600 border-amber-500/20",
                 )}
               >
-                {d.eligible ? "Eligible" : "Not eligible"}
+                {d.eligible ? tu("op.eligible") : tu("op.not_eligible")}
               </Badge>
               <span className="text-xs text-muted-foreground">
-                Outstanding {fmtINR(d.total_outstanding)}
+                {tu("sd.m.outstanding")} {fmtINR(d.total_outstanding)}
               </span>
             </div>
             {d.blocker_count > 0 && (
               <div>
                 <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Blockers ({d.blocker_count})
+                  {tu("op.blockers")}{d.blocker_count})
                 </p>
                 <ul className="text-xs text-amber-700 list-disc pl-4 mt-1 space-y-0.5">
                   {d.blocker_labels.slice(0, 5).map((l, i) => (
@@ -550,18 +551,18 @@ function NoDuesSection({ state, flatId }: { state: SectionState<SafeNoDuesSectio
               </div>
             )}
             <div className="rounded-xl border bg-muted/30 p-3 text-xs space-y-1">
-              {activity.isLoading ? <p className="text-muted-foreground">Loading No-Dues history…</p>
-                : activity.isError ? <p className="text-destructive">Couldn't load No-Dues history.</p>
+              {activity.isLoading ? <p className="text-muted-foreground">{tu("op.loading_no_dues_history")}</p>
+                : activity.isError ? <p className="text-destructive">{tu("op.couldn_t_load_no_dues")}</p>
                 : <>
-                    <p>{req ? <>Latest request: <span className="font-medium capitalize">{req.status.replace(/_/g, " ")}</span> · {new Date(req.submittedAt).toLocaleDateString("en-IN")}</> : "No No-Dues request from this home yet."}</p>
-                    {cert && <p>Certificate {cert.number}{cert.revoked ? " · revoked" : ""} · issued {new Date(cert.issuedAt).toLocaleDateString("en-IN")}</p>}
+                    <p>{req ? <>{tu("op.latest_request")} <span className="font-medium capitalize">{req.status.replace(/_/g, " ")}</span> · {new Date(req.submittedAt).toLocaleDateString("en-IN")}</> : tu("op.no_no_dues_request_from")}</p>
+                    {cert && <p>{tu("nd.cert")} {cert.number}{cert.revoked ? tu("op.revoked") : ""} · issued {new Date(cert.issuedAt).toLocaleDateString("en-IN")}</p>}
                   </>}
-              <p className="text-muted-foreground">Eligibility above comes from the same server check used for every No-Dues request.</p>
+              <p className="text-muted-foreground">{tu("op.eligibility_above_comes_from_the")}</p>
             </div>
             <Button asChild size="sm" className="min-h-11 w-full rounded-xl">
               {req
-                ? <Link to="/society/no-dues/$id" params={{ id: req.id }}>{["submitted", "under_review", "blocked_by_dues"].includes(req.status) ? "Review No-Dues request" : "Open No-Dues request"}</Link>
-                : <Link to="/society/no-dues">Go to No-Dues</Link>}
+                ? <Link to="/society/no-dues/$id" params={{ id: req.id }}>{["submitted", "under_review", "blocked_by_dues"].includes(req.status) ? tu("op.review_no_dues_request") : tu("op.open_no_dues_request")}</Link>
+                : <Link to="/society/no-dues">{tu("op.go_to_no_dues")}</Link>}
             </Button>
           </div>
         ),
@@ -572,7 +573,7 @@ function NoDuesSection({ state, flatId }: { state: SectionState<SafeNoDuesSectio
 
 function DeterministicSummaryCard({ state }: { state: SectionState<UnitSummary> }) {
   return (
-    <CardShell title="Unit summary" icon={ListChecks} proBadge>
+    <CardShell title={tu("op.unit_summary")} icon={ListChecks} proBadge>
       {renderSectionState<UnitSummary>(state, (s) => (
         <div className="space-y-2">
           <p className="text-sm font-medium">{s.headline}</p>
@@ -633,11 +634,11 @@ function UnsupportedOpsSection({
       <span className="font-medium">{title}</span>
       <span className="ml-auto text-xs text-muted-foreground">
         {state.status === "error"
-          ? "Unavailable"
+          ? tu("hd.unavailable")
           : state.status === "unsupported"
-            ? "Not available yet"
+            ? tu("op.not_available_yet")
             : state.status === "empty"
-              ? "None"
+              ? tu("el.a.none")
               : ""}
       </span>
     </li>
@@ -653,8 +654,8 @@ function OtherRecords({
   const visible = items.filter((i) => i.state.status !== "locked");
   if (!visible.length) return null;
   return (
-    <section aria-label="Other records" className="overflow-hidden rounded-2xl border border-border bg-card">
-      <h3 className="border-b border-border px-4 py-2.5 text-sm font-semibold">Other records</h3>
+    <section aria-label={tu("op.other_records")} className="overflow-hidden rounded-2xl border border-border bg-card">
+      <h3 className="border-b border-border px-4 py-2.5 text-sm font-semibold">{tu("op.other_records")}</h3>
       <ul className="divide-y divide-border">
         {visible.map((i) => <UnsupportedOpsSection key={i.title} {...i} />)}
       </ul>
@@ -715,7 +716,7 @@ function FlatDetailPage() {
           <div className="h-32 rounded-2xl bg-muted animate-pulse" />
         </div>
         <div className="sr-only" role="status" aria-live="polite">
-          Loading flat details…
+          {tu("op.loading_flat_details")}
         </div>
       </PageShell>
     );
@@ -731,7 +732,7 @@ function FlatDetailPage() {
           <Button asChild variant="ghost" size="sm" className="rounded-xl">
             <Link to="/society/flats">
               <ArrowLeft className="h-4 w-4 mr-1" aria-hidden="true" />
-              Flats
+              {tu("nav.flats")}
             </Link>
           </Button>
         </div>
@@ -746,20 +747,20 @@ function FlatDetailPage() {
             </div>
             <h1 className="text-lg font-semibold">
               {isAuth
-                ? "Access denied"
+                ? tu("op.access_denied")
                 : isMissing
-                  ? "Flat not found"
-                  : "Could not load flat"}
+                  ? tu("op.flat_not_found")
+                  : tu("op.could_not_load_flat")}
             </h1>
             <p className="text-sm text-muted-foreground">
               {isAuth
-                ? "You don't have permission to view this flat."
+                ? tu("op.you_don_t_have_permission")
                 : isMissing
-                  ? "This flat may have been removed."
-                  : "Please try again in a moment."}
+                  ? tu("op.this_flat_may_have_been")
+                  : tu("op.please_try_again_in_a")}
             </p>
             <Button asChild variant="outline" className="rounded-xl mt-2">
-              <Link to="/society/flats">Back to flats</Link>
+              <Link to="/society/flats">{tu("op.back_to_flats")}</Link>
             </Button>
           </CardContent>
         </Card>
@@ -770,7 +771,7 @@ function FlatDetailPage() {
   if (!snapshot) {
     return (
       <PageShell>
-        <p className="text-muted-foreground">Flat not available.</p>
+        <p className="text-muted-foreground">{tu("op.flat_not_available")}</p>
       </PageShell>
     );
   }
@@ -796,7 +797,7 @@ function FlatDetailPage() {
         <Button asChild variant="ghost" size="sm" className="rounded-xl">
           <Link to="/society/flats">
             <ArrowLeft className="h-4 w-4 mr-1" aria-hidden="true" />
-            Flats
+            {tu("nav.flats")}
           </Link>
         </Button>
       </div>
@@ -821,20 +822,18 @@ function FlatDetailPage() {
                   </div>
                   <div className="text-xs text-muted-foreground">
                     <p className="text-sm font-semibold text-foreground mb-1">
-                      Unlock Flat 360 Intelligence
+                      {tu("op.unlock_flat_360_intelligence")}
                     </p>
                     <p>
-                      Upgrade to Pro for occupancy history, advanced financial
-                      insights, No-Dues status, operational summaries and
-                      AI-powered unit insights.
+                      {tu("op.upgrade_to_pro_for_occupancy")}
                     </p>
                     <ul className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 list-disc pl-4">
-                      <li>Advanced finance</li>
-                      <li>Occupancy history</li>
-                      <li>Vehicles</li>
-                      <li>No-Dues</li>
-                      <li>Unit summary</li>
-                      <li>AI Summary</li>
+                      <li>{tu("op.advanced_finance")}</li>
+                      <li>{tu("op.occupancy_history")}</li>
+                      <li>{tu("nav.vehicles")}</li>
+                      <li>{tu("mod.noDues")}</li>
+                      <li>{tu("op.unit_summary")}</li>
+                      <li>{tu("op.ai_summary")}</li>
                     </ul>
                   </div>
                 </div>

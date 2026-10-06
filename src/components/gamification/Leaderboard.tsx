@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toSafeFinanceError } from "@/lib/finance-safe-error";
+import { tu } from "@/lib/i18n";
 
 export interface LeaderRow {
   rank: number;
@@ -36,7 +37,7 @@ export function LeaderboardList({ limit = 20 }: { limit?: number }) {
 
   if (q.isPending) {
     return (
-      <ul className="space-y-2" aria-busy="true" aria-label="Loading leaderboard">
+      <ul className="space-y-2" aria-busy="true" aria-label={tu("op.loading_leaderboard")}>
         {Array.from({ length: 5 }).map((_, i) => (
           <li key={i}><Skeleton className="h-14 w-full rounded-2xl" /></li>
         ))}
@@ -52,7 +53,7 @@ export function LeaderboardList({ limit = 20 }: { limit?: number }) {
         <p className="mt-1 text-sm text-muted-foreground">{e.message}</p>
         {e.retryable && (
           <Button variant="outline" className="mt-4 min-h-11" disabled={q.isFetching} onClick={() => q.refetch()}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${q.isFetching ? "animate-spin" : ""}`} /> Try again
+            <RefreshCw className={`mr-2 h-4 w-4 ${q.isFetching ? "animate-spin" : ""}`} /> {tu("common.tryAgain")}
           </Button>
         )}
       </div>
@@ -63,9 +64,9 @@ export function LeaderboardList({ limit = 20 }: { limit?: number }) {
     return (
       <div className="rounded-2xl border border-dashed bg-card p-8 text-center">
         <Trophy className="mx-auto h-8 w-8 text-muted-foreground" />
-        <p className="mt-3 font-semibold">No points yet</p>
+        <p className="mt-3 font-semibold">{tu("op.no_points_yet")}</p>
         <p className="mt-1 text-sm text-muted-foreground">
-          Points appear once on-time maintenance payments are verified by the committee.
+          {tu("op.points_appear_once_on_time")}
         </p>
       </div>
     );
@@ -95,11 +96,11 @@ export function LeaderboardList({ limit = 20 }: { limit?: number }) {
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">
               {r.display_name}
-              {r.is_me && <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">You</span>}
+              {r.is_me && <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">{tu("fam.you")}</span>}
             </p>
-            <p className="text-xs text-muted-foreground">{r.badge_count} {r.badge_count === 1 ? "badge" : "badges"}</p>
+            <p className="text-xs text-muted-foreground">{r.badge_count} {r.badge_count === 1 ? tu("op.badge") : tu("op.badges")}</p>
           </div>
-          <p className="shrink-0 text-sm font-bold tabular-nums">{r.total_points} <span className="font-normal text-muted-foreground">pts</span></p>
+          <p className="shrink-0 text-sm font-bold tabular-nums">{r.total_points} <span className="font-normal text-muted-foreground">{tu("op.pts")}</span></p>
         </li>
       ))}
     </ol>

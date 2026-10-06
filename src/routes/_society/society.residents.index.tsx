@@ -18,6 +18,7 @@ import { listSocietyResidents } from "@/lib/residents.functions";
 import { getResidentDirectoryOverview, listResidentsPage } from "@/lib/residents-admin.functions";
 import { cn } from "@/lib/utils";
 import { TenanciesPanel } from "@/components/tenancy/TenanciesPanel";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/residents/")({
   head: () => ({ meta: [{ title: "Residents — SociyoHub" }, { name: "description", content: "Search and manage every resident, owner and tenant in your society." }] }),
@@ -153,7 +154,7 @@ function ResidentsPage() {
       });
     }
     doc.save(`residents-${new Date().toISOString().slice(0, 10)}.pdf`);
-    toast.success("PDF exported");
+    toast.success(tu("op.pdf_exported"));
   }
 
   const unassignedCount = residents.filter((r) => !r.flat_id && !r.moved_out).length;
@@ -173,8 +174,8 @@ function ResidentsPage() {
   if (!sidLoading && !societyId) {
     return (
       <PageShell>
-        <PageHeader title="Residents" />
-        <EmptyState icon={Users} title="Set up your society first" description="Residents appear here once your society and houses are created." />
+        <PageHeader title={tu("nav.residents")} />
+        <EmptyState icon={Users} title={tu("op.set_up_your_society_first_3")} description={tu("op.residents_appear_here_once_your")} />
       </PageShell>
     );
   }
@@ -187,18 +188,18 @@ function ResidentsPage() {
     <PageShell>
       <PeopleAreaNav />
       <PageHeader
-        title="Residents"
-        description={known ? `${residents.length} people across ${flats.length} houses` : "Everyone living in your society"}
+        title={tu("nav.residents")}
+        description={known ? `${residents.length} people across ${flats.length} houses` : tu("op.everyone_living_in_your_society")}
         actions={
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="min-h-11 rounded-xl" disabled={!known}>
-                <Download className="mr-2 h-4 w-4" /> Export
+                <Download className="mr-2 h-4 w-4" /> {tu("op.export")}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => exportExcel().catch(() => toast.error("Couldn't prepare the export. Please try again."))}>Excel (.xlsx)</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => exportPDF().catch(() => toast.error("Couldn't prepare the export. Please try again."))}>PDF</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportExcel().catch(() => toast.error(tu("op.couldn_t_prepare_the_export")))}>{tu("op.excel_xlsx")}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportPDF().catch(() => toast.error(tu("op.couldn_t_prepare_the_export")))}>PDF</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         }
@@ -222,11 +223,11 @@ function ResidentsPage() {
           title={`${unassignedCount} resident${unassignedCount === 1 ? "" : "s"} not linked to a house`}
           action={filter !== "unassigned" ? (
             <Button size="sm" variant="outline" className="min-h-11 rounded-xl bg-card" onClick={() => setFilter("unassigned")}>
-              Show them
+              {tu("op.show_them")}
             </Button>
           ) : undefined}
         >
-          They will see ₹0 in Bills until you assign them.
+          {tu("op.they_will_see_0_in")}
         </InlineNotice>
       )}
 
@@ -235,8 +236,8 @@ function ResidentsPage() {
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
-            aria-label="Search residents"
-            placeholder="Search name, phone, house, property no…"
+            aria-label={tu("op.search_residents")}
+            placeholder={tu("op.search_name_phone_house_property")}
             value={q}
             onChange={(e) => setQ(e.target.value)}
             className="h-11 rounded-xl pl-9"
@@ -244,7 +245,7 @@ function ResidentsPage() {
         </div>
         <div className="sm:hidden">
           <Select value={filter} onValueChange={(v) => setFilter(v as Filter)}>
-            <SelectTrigger aria-label="Filter residents" className="h-11 rounded-xl">
+            <SelectTrigger aria-label={tu("op.filter_residents")} className="h-11 rounded-xl">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -255,7 +256,7 @@ function ResidentsPage() {
           </Select>
         </div>
       </div>
-      <div role="tablist" aria-label="Filter residents" className="mb-4 hidden flex-wrap gap-1 rounded-xl bg-muted p-1 sm:inline-flex">
+      <div role="tablist" aria-label={tu("op.filter_residents")} className="mb-4 hidden flex-wrap gap-1 rounded-xl bg-muted p-1 sm:inline-flex">
         {FILTERS.map((f) => (
           <button
             key={f.key}
@@ -278,13 +279,13 @@ function ResidentsPage() {
           <ListSkeleton />
         ) : isError ? (
           <ErrorState
-            title="Couldn't load residents"
-            description="Please check your connection and try again."
+            title={tu("op.couldn_t_load_residents")}
+            description={tu("fam.checkConn")}
             onRetry={() => void refetch()}
           />
         ) : filter === "vacant" ? (
           vacantFlats.length === 0 ? (
-            <EmptyState icon={Home} title="No vacant houses" description="Every house is occupied." />
+            <EmptyState icon={Home} title={tu("op.no_vacant_houses")} description={tu("op.every_house_is_occupied")} />
           ) : (
             <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {vacantFlats.map((f) => (
@@ -293,7 +294,7 @@ function ResidentsPage() {
                   <span className="min-w-0 flex-1 truncate font-medium">
                     {f.block_name ? `${f.block_name} · ` : ""}{f.flat_number}
                   </span>
-                  <StatusChip tone="muted">Vacant</StatusChip>
+                  <StatusChip tone="muted">{tu("op.vacant")}</StatusChip>
                 </li>
               ))}
             </ul>
@@ -302,26 +303,26 @@ function ResidentsPage() {
           q || filter !== "all" ? (
             <EmptyState
               icon={Search}
-              title="No residents match"
+              title={tu("op.no_residents_match")}
               description={q ? `Nothing found for "${q}" in ${activeFilter.label.toLowerCase()}.` : `No residents in ${activeFilter.label.toLowerCase()}.`}
-              action={<Button variant="outline" className="min-h-11 rounded-xl" onClick={() => { setQ(""); setFilter("all"); }}>Clear search and filter</Button>}
+              action={<Button variant="outline" className="min-h-11 rounded-xl" onClick={() => { setQ(""); setFilter("all"); }}>{tu("op.clear_search_and_filter")}</Button>}
             />
           ) : (
-            <EmptyState icon={Users} title="No residents yet" description="Approve join requests or bulk import residents." />
+            <EmptyState icon={Users} title={tu("op.no_residents_yet")} description={tu("op.approve_join_requests_or_bulk")} />
           )
         ) : (
           <>
-            <p className="mb-2 text-xs text-muted-foreground">Showing {filtered.length} of {residents.length}</p>
+            <p className="mb-2 text-xs text-muted-foreground">{tu("op.showing")} {filtered.length} of {residents.length}</p>
             {/* Desktop: structured table */}
             <div className="hidden overflow-hidden rounded-2xl border border-border bg-card md:block">
               <table className="w-full text-sm">
                 <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
                   <tr>
-                    <th scope="col" className="px-4 py-2.5 font-medium">Resident</th>
-                    <th scope="col" className="px-4 py-2.5 font-medium">House</th>
-                    <th scope="col" className="px-4 py-2.5 font-medium">Type</th>
-                    <th scope="col" className="px-4 py-2.5 font-medium">Status</th>
-                    <th scope="col" className="px-4 py-2.5"><span className="sr-only">Actions</span></th>
+                    <th scope="col" className="px-4 py-2.5 font-medium">{tu("inc.k.resident")}</th>
+                    <th scope="col" className="px-4 py-2.5 font-medium">{tu("gd.houseLabel")}</th>
+                    <th scope="col" className="px-4 py-2.5 font-medium">{tu("cm.type")}</th>
+                    <th scope="col" className="px-4 py-2.5 font-medium">{tu("common.status")}</th>
+                    <th scope="col" className="px-4 py-2.5"><span className="sr-only">{tu("op.actions")}</span></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -330,7 +331,7 @@ function ResidentsPage() {
                       <td className="px-4 py-2.5">
                         <Link to="/society/residents/$id" params={{ id: r.id }} className="flex min-w-0 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                           <ResidentAvatar r={r} />
-                          <span className="truncate font-medium text-foreground">{r.full_name ?? "Unnamed"}</span>
+                          <span className="truncate font-medium text-foreground">{r.full_name ?? tu("sd.unnamed")}</span>
                         </Link>
                       </td>
                       <td className="px-4 py-2.5 tabular-nums">{houseLabel(r) ?? <span className="text-muted-foreground">—</span>}</td>
@@ -339,7 +340,7 @@ function ResidentsPage() {
                       <td className="px-4 py-2.5 text-right">
                         {!r.moved_out && (
                           <Button size="sm" variant={r.flat_id ? "ghost" : "default"} className="min-h-10 rounded-lg" onClick={() => setAssignTarget({ id: r.id, full_name: r.full_name })}>
-                            <Link2 className="mr-1.5 h-3.5 w-3.5" /> {r.flat_id ? "Change house" : "Assign house"}
+                            <Link2 className="mr-1.5 h-3.5 w-3.5" /> {r.flat_id ? tu("op.change_house") : tu("op.assign_house")}
                           </Button>
                         )}
                       </td>
@@ -356,9 +357,9 @@ function ResidentsPage() {
                     <Link to="/society/residents/$id" params={{ id: r.id }} className="flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                       <ResidentAvatar r={r} />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-medium text-foreground">{r.full_name ?? "Unnamed"}</p>
+                        <p className="truncate font-medium text-foreground">{r.full_name ?? tu("sd.unnamed")}</p>
                         <p className="truncate text-xs text-muted-foreground">
-                          {houseLabel(r) ?? (r.moved_out ? "Moved out" : "No house assigned")}
+                          {houseLabel(r) ?? (r.moved_out ? tu("op.moved_out") : tu("op.no_house_assigned"))}
                         </p>
                         <div className="mt-1 flex flex-wrap gap-1"><TypeChip r={r} /><StateChips r={r} /></div>
                       </div>
@@ -368,7 +369,7 @@ function ResidentsPage() {
                   {!r.moved_out && !r.flat_id && (
                     <div className="px-4 pb-3">
                       <Button size="sm" className="min-h-11 w-full rounded-xl" onClick={() => setAssignTarget({ id: r.id, full_name: r.full_name })}>
-                        <Link2 className="mr-1.5 h-4 w-4" /> Assign house
+                        <Link2 className="mr-1.5 h-4 w-4" /> {tu("op.assign_house")}
                       </Button>
                     </div>
                   )}
@@ -413,18 +414,18 @@ function ResidentAvatar({ r }: { r: Row }) {
 
 function TypeChip({ r }: { r: Row }) {
   if (!r.flat_id || !r.relationship) return null;
-  if (r.relationship === "owner") return <StatusChip tone="primary">Owner</StatusChip>;
-  if (r.relationship === "tenant") return <StatusChip tone="info">Tenant</StatusChip>;
+  if (r.relationship === "owner") return <StatusChip tone="primary">{tu("op.owner")}</StatusChip>;
+  if (r.relationship === "tenant") return <StatusChip tone="info">{tu("op.tenant")}</StatusChip>;
   return <StatusChip>{r.relationship}</StatusChip>;
 }
 
 function StateChips({ r }: { r: Row }) {
   return (
     <span className="inline-flex flex-wrap gap-1">
-      {r.moved_out ? <StatusChip tone="muted">Moved out</StatusChip>
-        : !r.flat_id ? <StatusChip tone="warning">No house</StatusChip>
-        : <StatusChip tone="success">Current</StatusChip>}
-      {r.aadhaar_verified ? <StatusChip tone="success">KYC verified</StatusChip> : null}
+      {r.moved_out ? <StatusChip tone="muted">{tu("op.moved_out")}</StatusChip>
+        : !r.flat_id ? <StatusChip tone="warning">{tu("gd.noHouse")}</StatusChip>
+        : <StatusChip tone="success">{tu("rep.current")}</StatusChip>}
+      {r.aadhaar_verified ? <StatusChip tone="success">{tu("op.kyc_verified")}</StatusChip> : null}
     </span>
   );
 }

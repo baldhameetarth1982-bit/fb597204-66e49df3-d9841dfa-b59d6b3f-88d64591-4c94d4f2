@@ -31,6 +31,7 @@ import {
   secureRequestUuid,
   friendlyIncomeError,
 } from "@/lib/income-errors";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/income/new")({
   head: () => ({
@@ -177,7 +178,7 @@ function NewIncomePage({ societyId }: { societyId: string }) {
     if (!requestId) {
       if (!uuid) {
         toast.error(
-          "Your browser can't securely record this entry. Please update to a modern browser.",
+          tu("op.your_browser_can_t_securely"),
         );
         return;
       }
@@ -269,12 +270,12 @@ function NewIncomePage({ societyId }: { societyId: string }) {
         to="/society/income"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground min-h-[44px]"
       >
-        <ArrowLeft className="h-4 w-4" /> Back to Income
+        <ArrowLeft className="h-4 w-4" /> {tu("op.back_to_income")}
       </Link>
       <MobileHero
         icon={Coins}
-        title="Record offline income"
-        subtitle="Cash or Bank Transfer received from a non-member or anonymous payer."
+        title={tu("op.record_offline_income")}
+        subtitle={tu("op.cash_or_bank_transfer_received")}
       />
 
       <Stepper step={step} />
@@ -346,7 +347,7 @@ function Stepper({ step }: { step: Step }) {
   return (
     <ol
       className="flex items-center gap-2 text-xs"
-      aria-label="Progress"
+      aria-label={tu("op.progress")}
     >
       {steps.map((s, i) => {
         const state =
@@ -418,28 +419,28 @@ function DetailsStep(props: {
 
   return (
     <SectionCard
-      title="Details"
-      description="Records start as pending and must be verified by an admin."
+      title={tu("hd.details")}
+      description={tu("op.records_start_as_pending_and")}
     >
       <div className="space-y-3">
         <div>
-          <Label className="text-xs">Category</Label>
+          <Label className="text-xs">{tu("common.category")}</Label>
           <Select value={form.categoryId} onValueChange={(v) => set("categoryId", v)}>
-            <SelectTrigger aria-label="Category" className="min-h-[44px]">
-              <SelectValue placeholder="Select a category" />
+            <SelectTrigger aria-label={tu("common.category")} className="min-h-[44px]">
+              <SelectValue placeholder={tu("op.select_a_category")} />
             </SelectTrigger>
             <SelectContent>
               {catsError ? (
                 <div className="px-2 py-1.5 text-xs text-destructive flex items-center gap-1">
-                  <AlertCircle className="h-3 w-3" /> Categories unavailable
+                  <AlertCircle className="h-3 w-3" /> {tu("acc.categoriesUnavailable")}
                 </div>
               ) : catsLoading ? (
                 <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                  Loading…
+                  {tu("common.loading")}
                 </div>
               ) : activeCats.length === 0 ? (
                 <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                  No active categories. Create one first.
+                  {tu("op.no_active_categories_create_one")}
                 </div>
               ) : (
                 activeCats.map((c) => (
@@ -461,40 +462,40 @@ function DetailsStep(props: {
         </div>
 
         <div>
-          <Label className="text-xs">Payer</Label>
+          <Label className="text-xs">{tu("inc.payer")}</Label>
           <Select
             value={form.payerKind}
             onValueChange={(v) => set("payerKind", v as PayerKind)}
           >
-            <SelectTrigger aria-label="Payer" className="min-h-[44px]">
+            <SelectTrigger aria-label={tu("inc.payer")} className="min-h-[44px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="non_member">Non-member payer</SelectItem>
-              <SelectItem value="anonymous">Anonymous</SelectItem>
+              <SelectItem value="non_member">{tu("op.non_member_payer")}</SelectItem>
+              <SelectItem value="anonymous">{tu("inc.k.anon")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         {form.payerKind === "non_member" && (
           <div>
-            <Label className="text-xs">Select payer</Label>
+            <Label className="text-xs">{tu("op.select_payer")}</Label>
             <Select value={form.payerId} onValueChange={(v) => set("payerId", v)}>
-              <SelectTrigger aria-label="Select payer" className="min-h-[44px]">
-                <SelectValue placeholder="Select a payer" />
+              <SelectTrigger aria-label={tu("op.select_payer")} className="min-h-[44px]">
+                <SelectValue placeholder={tu("op.select_a_payer")} />
               </SelectTrigger>
               <SelectContent>
                 {payersError ? (
                   <div className="px-2 py-1.5 text-xs text-destructive flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3" /> Payers unavailable
+                    <AlertCircle className="h-3 w-3" /> {tu("op.payers_unavailable")}
                   </div>
                 ) : payersLoading ? (
                   <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                    Loading…
+                    {tu("common.loading")}
                   </div>
                 ) : activePayers.length === 0 ? (
                   <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                    No active payers. Add one first.
+                    {tu("op.no_active_payers_add_one")}
                   </div>
                 ) : (
                   activePayers.map((p) => (
@@ -510,7 +511,7 @@ function DetailsStep(props: {
                 to="/society/income/payers"
                 className="text-xs text-primary underline mt-1 inline-block min-h-[32px]"
               >
-                Manage payers
+                {tu("op.manage_payers")}
               </Link>
             )}
           </div>
@@ -519,7 +520,7 @@ function DetailsStep(props: {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div>
             <Label htmlFor="amount" className="text-xs">
-              Amount (₹)
+              {tu("acc.amountInr")}
             </Label>
             <Input
               id="amount"
@@ -534,13 +535,13 @@ function DetailsStep(props: {
             />
             {!amountValid && (
               <p id="amount-hint" className="text-[11px] text-destructive mt-1">
-                Enter a positive amount with up to 2 decimal places.
+                {tu("op.enter_a_positive_amount_with")}
               </p>
             )}
           </div>
           <div>
             <Label htmlFor="pdate" className="text-xs">
-              Payment date
+              {tu("op.payment_date")}
             </Label>
             <Input
               id="pdate"
@@ -554,48 +555,48 @@ function DetailsStep(props: {
             />
             {!dateValid && (
               <p id="date-hint" className="text-[11px] text-destructive mt-1">
-                Payment date can't be in the future.
+                {tu("op.payment_date_can_t_be")}
               </p>
             )}
           </div>
         </div>
 
         <div>
-          <Label className="text-xs">Payment method</Label>
+          <Label className="text-xs">{tu("acc.paymentMethod")}</Label>
           <Select
             value={form.method}
             onValueChange={(v) => set("method", v as PaymentMethod)}
           >
-            <SelectTrigger aria-label="Payment method" className="min-h-[44px]">
+            <SelectTrigger aria-label={tu("acc.paymentMethod")} className="min-h-[44px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="cash">Cash</SelectItem>
-              <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+              <SelectItem value="cash">{tu("common.cash")}</SelectItem>
+              <SelectItem value="bank_transfer">{tu("inc.m.bank")}</SelectItem>
             </SelectContent>
           </Select>
           <p className="text-[11px] text-muted-foreground mt-1">
-            Online gateway collection will be introduced in a later release.
+            {tu("op.online_gateway_collection_will_be")}
           </p>
         </div>
 
         <div>
           <Label htmlFor="ref" className="text-xs">
-            Reference number (optional)
+            {tu("op.reference_number_optional")}
           </Label>
           <Input
             id="ref"
             className="min-h-[44px]"
             value={form.reference}
             onChange={(e) => set("reference", e.target.value)}
-            placeholder="Receipt / UTR / cheque no."
+            placeholder={tu("op.receipt_utr_cheque_no")}
             maxLength={80}
           />
         </div>
 
         <div>
           <Label htmlFor="desc" className="text-xs">
-            Description (optional)
+            {tu("op.description_optional")}
           </Label>
           <Textarea
             id="desc"
@@ -603,7 +604,7 @@ function DetailsStep(props: {
             value={form.description}
             onChange={(e) => set("description", e.target.value)}
             maxLength={500}
-            placeholder="What was this payment for?"
+            placeholder={tu("op.what_was_this_payment_for")}
           />
         </div>
 
@@ -613,7 +614,7 @@ function DetailsStep(props: {
             onClick={onNext}
             disabled={!canProceed}
           >
-            Review Income
+            {tu("op.review_income")}
           </Button>
         </div>
       </div>
@@ -633,54 +634,54 @@ function ReviewStep(props: {
   const amountNum = Number(form.amount);
   return (
     <SectionCard
-      title="Review"
-      description="This record will be saved as pending verification."
+      title={tu("nd.review")}
+      description={tu("op.this_record_will_be_saved")}
     >
       <dl className="grid grid-cols-3 gap-y-2 text-sm">
-        <dt className="text-muted-foreground col-span-1">Payer</dt>
+        <dt className="text-muted-foreground col-span-1">{tu("inc.payer")}</dt>
         <dd className="col-span-2 font-medium truncate">{payerLabel}</dd>
 
-        <dt className="text-muted-foreground col-span-1">Payer type</dt>
+        <dt className="text-muted-foreground col-span-1">{tu("op.payer_type")}</dt>
         <dd className="col-span-2 capitalize">
-          {form.payerKind === "anonymous" ? "Anonymous" : "Non-member"}
+          {form.payerKind === "anonymous" ? tu("inc.k.anon") : tu("inc.k.nonMember")}
         </dd>
 
-        <dt className="text-muted-foreground col-span-1">Category</dt>
+        <dt className="text-muted-foreground col-span-1">{tu("common.category")}</dt>
         <dd className="col-span-2 truncate">{categoryLabel}</dd>
 
-        <dt className="text-muted-foreground col-span-1">Amount</dt>
+        <dt className="text-muted-foreground col-span-1">{tu("common.amount")}</dt>
         <dd className="col-span-2 tabular-nums font-semibold">{INR(amountNum)}</dd>
 
-        <dt className="text-muted-foreground col-span-1">Method</dt>
+        <dt className="text-muted-foreground col-span-1">{tu("inc.method")}</dt>
         <dd className="col-span-2">{METHOD_LABEL[form.method]}</dd>
 
-        <dt className="text-muted-foreground col-span-1">Date</dt>
+        <dt className="text-muted-foreground col-span-1">{tu("common.date")}</dt>
         <dd className="col-span-2 tabular-nums">{form.paymentDate}</dd>
 
         {form.reference.trim() && (
           <>
-            <dt className="text-muted-foreground col-span-1">Reference</dt>
+            <dt className="text-muted-foreground col-span-1">{tu("acc.reference")}</dt>
             <dd className="col-span-2 font-mono">{maskReference(form.reference)}</dd>
           </>
         )}
 
         {form.description.trim() && (
           <>
-            <dt className="text-muted-foreground col-span-1">Description</dt>
+            <dt className="text-muted-foreground col-span-1">{tu("common.description")}</dt>
             <dd className="col-span-2 whitespace-pre-wrap break-words">
               {form.description}
             </dd>
           </>
         )}
 
-        <dt className="text-muted-foreground col-span-1">Verification</dt>
+        <dt className="text-muted-foreground col-span-1">{tu("inc.verification")}</dt>
         <dd className="col-span-2">
-          <Badge variant="outline">Pending</Badge>
+          <Badge variant="outline">{tu("docState.pending")}</Badge>
         </dd>
 
-        <dt className="text-muted-foreground col-span-1">Reconciliation</dt>
+        <dt className="text-muted-foreground col-span-1">{tu("inc.reconciliation")}</dt>
         <dd className="col-span-2">
-          <Badge variant="outline">Unreconciled</Badge>
+          <Badge variant="outline">{tu("inc.rc.unreconciled")}</Badge>
         </dd>
       </dl>
 
@@ -691,7 +692,7 @@ function ReviewStep(props: {
           onClick={onBack}
           disabled={submitting}
         >
-          Back
+          {tu("common.back")}
         </Button>
         <Button
           className="min-h-[48px]"
@@ -701,7 +702,7 @@ function ReviewStep(props: {
           {submitting ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            "Save Income Record"
+            tu("op.save_income_record")
           )}
         </Button>
       </div>
@@ -721,56 +722,56 @@ function SavedStep(props: {
   const amountNum = Number(f.amount);
   return (
     <SectionCard
-      title="Income record saved"
-      description="The record is ready for an authorized admin to review."
+      title={tu("op.income_record_saved")}
+      description={tu("op.the_record_is_ready_for")}
     >
       <div className="flex items-center gap-2 mb-3">
         <CheckCircle2 className="h-5 w-5 text-[color:var(--success,#10B981)]" />
-        <Badge variant="outline">Pending verification</Badge>
+        <Badge variant="outline">{tu("op.pending_verification")}</Badge>
       </div>
       <dl className="grid grid-cols-3 gap-y-2 text-sm">
-        <dt className="text-muted-foreground col-span-1">Amount</dt>
+        <dt className="text-muted-foreground col-span-1">{tu("common.amount")}</dt>
         <dd className="col-span-2 tabular-nums font-semibold">{INR(amountNum)}</dd>
 
-        <dt className="text-muted-foreground col-span-1">Payer</dt>
+        <dt className="text-muted-foreground col-span-1">{tu("inc.payer")}</dt>
         <dd className="col-span-2 truncate">{payerLabel}</dd>
 
-        <dt className="text-muted-foreground col-span-1">Category</dt>
+        <dt className="text-muted-foreground col-span-1">{tu("common.category")}</dt>
         <dd className="col-span-2 truncate">{categoryLabel}</dd>
 
-        <dt className="text-muted-foreground col-span-1">Method</dt>
+        <dt className="text-muted-foreground col-span-1">{tu("inc.method")}</dt>
         <dd className="col-span-2">{METHOD_LABEL[f.method]}</dd>
 
-        <dt className="text-muted-foreground col-span-1">Date</dt>
+        <dt className="text-muted-foreground col-span-1">{tu("common.date")}</dt>
         <dd className="col-span-2 tabular-nums">{f.paymentDate}</dd>
 
         {f.reference.trim() && (
           <>
-            <dt className="text-muted-foreground col-span-1">Reference</dt>
+            <dt className="text-muted-foreground col-span-1">{tu("acc.reference")}</dt>
             <dd className="col-span-2 font-mono">{maskReference(f.reference)}</dd>
           </>
         )}
 
-        <dt className="text-muted-foreground col-span-1">Record</dt>
+        <dt className="text-muted-foreground col-span-1">{tu("op.record")}</dt>
         <dd className="col-span-2 font-mono text-xs truncate">{record.id.slice(0, 8)}…</dd>
       </dl>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-4">
         <Button className="min-h-[48px]" onClick={onView}>
-          View Record
+          {tu("op.view_record")}
         </Button>
         <Button
           variant="outline"
           className="min-h-[48px]"
           onClick={onAnother}
         >
-          Record Another
+          {tu("op.record_another")}
         </Button>
         <Link
           to="/society/income"
           className="inline-flex items-center justify-center min-h-[48px] px-4 rounded-md border text-sm hover:bg-muted"
         >
-          Back to Income
+          {tu("op.back_to_income")}
         </Link>
       </div>
     </SectionCard>

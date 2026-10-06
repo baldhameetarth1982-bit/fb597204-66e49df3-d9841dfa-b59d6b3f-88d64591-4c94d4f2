@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { langDir } from "@/lib/i18n";
+import { langDir, tu } from "@/lib/i18n";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Building2, DoorOpen, Users, Receipt, Megaphone,
@@ -78,7 +78,7 @@ export function AppSidebar() {
           <Link to="/" className="flex items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
           <Logo size={30} />
           {!collapsed && (
-            <span className="text-base font-semibold tracking-tight text-foreground">SociyoHub</span>
+            <span className="text-base font-semibold tracking-tight text-foreground">{tu("op.sociyohub")}</span>
           )}
         </Link>
       </SidebarHeader>

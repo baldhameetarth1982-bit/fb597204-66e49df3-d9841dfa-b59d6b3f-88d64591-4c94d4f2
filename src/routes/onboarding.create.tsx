@@ -11,6 +11,7 @@ import {
 import { commitSocietyWizard, loadWizardDraft } from "@/lib/hierarchy.functions";
 import { createSocietyFull } from "@/lib/onboarding.functions";
 import { PhoneOtpForm } from "@/components/auth/PhoneOtpForm";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/onboarding/create")({
   head: () => ({ meta: [{ title: "Create society — SociyoHub" }] }),
@@ -75,7 +76,7 @@ function CreateSocietyWizardPage() {
           });
           sid = created.id;
         } catch (e) {
-          toast.error("Could not start setup. Your details are kept — please try again.");
+          toast.error(tu("op.could_not_start_setup_your"));
         }
       }
       setSocietyId(sid ?? null);
@@ -99,10 +100,9 @@ function CreateSocietyWizardPage() {
             <div className="mx-auto h-12 w-12 rounded-2xl bg-primary/10 grid place-items-center">
               <ShieldCheck className="h-6 w-6 text-primary" />
             </div>
-            <h1 className="text-xl font-semibold tracking-tight">Verify your phone</h1>
+            <h1 className="text-xl font-semibold tracking-tight">{tu("op.verify_your_phone")}</h1>
             <p className="text-sm text-muted-foreground">
-              Society admins must verify a mobile number before creating a society.
-              This is used for approvals and resident communication.
+              {tu("op.society_admins_must_verify_a")}
             </p>
           </div>
           <div className="mt-6">
@@ -110,7 +110,7 @@ function CreateSocietyWizardPage() {
               linkToCurrentUser
               submitLabel="Verify & continue"
               onVerified={() => {
-                toast.success("Phone verified");
+                toast.success(tu("op.phone_verified"));
                 window.location.reload();
               }}
             />
@@ -122,7 +122,7 @@ function CreateSocietyWizardPage() {
   if (!societyId) {
     return (
       <div className="min-h-dvh grid place-items-center text-muted-foreground p-6 text-center">
-        Could not initialise setup. Please refresh.
+        {tu("op.could_not_initialise_setup_please")}
       </div>
     );
   }
@@ -155,7 +155,7 @@ function CreateSocietyWizardPage() {
           dynamic_fields: state.dynamic_fields,
           financial_year_label: state.financial_year_label,
         });
-        toast.success("Society setup complete");
+        toast.success(tu("op.society_setup_complete"));
         navigate({ to: "/onboarding/plan" });
       }}
     />

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { openRazorpayForOrder } from "@/lib/razorpay";
 import { confirmSaasSubscriptionPayment, createSaasSubscriptionOrder } from "@/lib/saas-subscription-payment.functions";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/plan-required")({
   head: () => ({ meta: [{ title: "Unlock SociyoHub — Renew plan" }] }),
@@ -90,7 +91,7 @@ function PlanRequired() {
           razorpayOrderId: response.razorpay_order_id, razorpayPaymentId: response.razorpay_payment_id,
           razorpaySignature: response.razorpay_signature,
         } });
-        toast.success("Subscription activated successfully.");
+        toast.success(tu("op.subscription_activated_successfully"));
         requestIds.current.delete(plan.id);
         try { localStorage.removeItem("user_subscription"); } catch {}
         // Force every dependent query to re-fetch; trigger registered on backend will flip plan_status.
@@ -114,18 +115,18 @@ function PlanRequired() {
             <Rocket className="h-6 w-6" />
           </div>
           <div className="min-w-0 space-y-1.5">
-            <Badge variant="outline" className="rounded-full">Plan renewal needed</Badge>
+            <Badge variant="outline" className="rounded-full">{tu("op.plan_renewal_needed")}</Badge>
             <h1 className="text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">
-              Renew {society?.name ?? "your society"}'s plan to continue
+              {tu("op.renew")} {society?.name ?? tu("op.your_society")}{tu("op.s_plan_to_continue")}
             </h1>
             <p className="max-w-2xl text-sm text-muted-foreground">
-              Features are paused for committee and residents until a plan is active. All your data is kept. Access returns automatically once payment is confirmed.
+              {tu("op.features_are_paused_for_committee")}
             </p>
           </div>
         </header>
 
-        <section aria-label="Choose a plan" className="space-y-3">
-          <h2 className="text-sm font-semibold">Choose a plan</h2>
+        <section aria-label={tu("op.choose_a_plan")} className="space-y-3">
+          <h2 className="text-sm font-semibold">{tu("op.choose_a_plan")}</h2>
           {!plans ? (
             <div className="grid gap-4 md:grid-cols-3">{[0, 1, 2].map((i) => <div key={i} className="h-40 animate-pulse rounded-2xl bg-muted" />)}</div>
           ) : (
@@ -134,7 +135,7 @@ function PlanRequired() {
                 <Card key={p.id} className={`flex flex-col rounded-2xl p-5 ${p.is_recommended ? "border-2 border-primary" : ""}`}>
                   <div className="flex items-center justify-between gap-2">
                     <h3 className="text-lg font-semibold">{p.name}</h3>
-                    {p.is_recommended && <Badge className="shrink-0"><Sparkles className="mr-1 h-3 w-3" />Best value</Badge>}
+                    {p.is_recommended && <Badge className="shrink-0"><Sparkles className="mr-1 h-3 w-3" />{tu("op.best_value")}</Badge>}
                   </div>
                   <p className="mt-2 flex items-baseline gap-1">
                     <span className="text-3xl font-bold tabular-nums">₹{Number(p.price_per_flat_inr)}</span>
@@ -147,7 +148,7 @@ function PlanRequired() {
                     className="mt-5 min-h-12 rounded-xl"
                   >
                     {busyId === p.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    Renew with {p.name} <ArrowRight className="ml-1 h-4 w-4" />
+                    {tu("op.renew_with")} {p.name} <ArrowRight className="ml-1 h-4 w-4" />
                   </Button>
                 </Card>
               ))}
@@ -156,8 +157,8 @@ function PlanRequired() {
         </section>
 
         <footer className="flex flex-col gap-3 border-t border-border pt-5 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <p className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 shrink-0" /> Paid securely via Razorpay · checking status automatically</p>
-          <Button variant="ghost" onClick={() => signOut()} className="min-h-11 self-start sm:self-auto">Sign out</Button>
+          <p className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 shrink-0" /> {tu("op.paid_securely_via_razorpay_checking")}</p>
+          <Button variant="ghost" onClick={() => signOut()} className="min-h-11 self-start sm:self-auto">{tu("common.signOut")}</Button>
         </footer>
       </div>
     </main>

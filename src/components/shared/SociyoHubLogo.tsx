@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { BRAND } from "@/config/brand";
+import { tu } from "@/lib/i18n";
 
 type Variant = "full" | "compact" | "mono" | "onDark";
 
@@ -34,7 +35,7 @@ export function SociyoHubLogo({
   return (
     <span
       className={cn("inline-flex flex-col items-start leading-none", className)}
-      aria-label="SociyoHub"
+      aria-label={tu("op.sociyohub")}
       role="img"
     >
       <span
@@ -45,10 +46,10 @@ export function SociyoHubLogo({
           fontFamily: "var(--font-display)",
         }}
       >
-        <span style={{ color: light }}>Soci</span>
+        <span style={{ color: light }}>{tu("op.soci")}</span>
         <SignatureY size={fontSize} color={teal} />
         <span style={{ color: light }}>o</span>
-        <span style={{ color: teal, fontWeight: 700 }}>Hub</span>
+        <span style={{ color: teal, fontWeight: 700 }}>{tu("op.hub")}</span>
       </span>
       {showTagline && variant !== "compact" && (
         <span
@@ -114,7 +115,7 @@ export function SociyoHubMark({
         height: size,
         background: `linear-gradient(135deg, ${BRAND.colors.navy}, ${BRAND.colors.teal})`,
       }}
-      aria-label="SociyoHub"
+      aria-label={tu("op.sociyohub")}
       role="img"
     >
       <svg width={size * 0.62} height={size * 0.62} viewBox="0 0 24 24" aria-hidden="true">

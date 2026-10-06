@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { helpdeskErrorMessage } from "@/lib/helpdesk";
+import { tu } from "@/lib/i18n";
 
 type Opt = { id: string; name: string };
 export function useOpsOptions() {
@@ -44,7 +45,7 @@ export function TicketOpsPanel({ ticketId, staffId, vendorId, assetId, escalatio
       });
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Work assignment updated"); qc.invalidateQueries({ queryKey: ["helpdesk"] }); },
+    onSuccess: () => { toast.success(tu("op.work_assignment_updated")); qc.invalidateQueries({ queryKey: ["helpdesk"] }); },
     onError: (e) => toast.error(helpdeskErrorMessage(e)),
   });
   const esc = useMutation({
@@ -52,7 +53,7 @@ export function TicketOpsPanel({ ticketId, staffId, vendorId, assetId, escalatio
       const { error } = await supabase.rpc("helpdesk_escalate", { _ticket: ticketId, _reason: reason.trim() });
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Escalated to the committee"); setReason(""); setEscOpen(false); qc.invalidateQueries({ queryKey: ["helpdesk"] }); },
+    onSuccess: () => { toast.success(tu("op.escalated_to_the_committee")); setReason(""); setEscOpen(false); qc.invalidateQueries({ queryKey: ["helpdesk"] }); },
     onError: (e) => toast.error(helpdeskErrorMessage(e)),
   });
   const cur = { staff: staffId, vendor: vendorId, asset: assetId };
@@ -61,9 +62,9 @@ export function TicketOpsPanel({ ticketId, staffId, vendorId, assetId, escalatio
       <label className="text-xs font-medium text-muted-foreground" htmlFor={`ops-${key}`}>{label}</label>
       <Select value={cur[key] ?? "none"} disabled={closed || link.isPending || !opts.data}
         onValueChange={(v) => link.mutate({ ...cur, [key]: v === "none" ? null : v })}>
-        <SelectTrigger id={`ops-${key}`} className="min-h-11 rounded-xl"><SelectValue placeholder="None" /></SelectTrigger>
+        <SelectTrigger id={`ops-${key}`} className="min-h-11 rounded-xl"><SelectValue placeholder={tu("el.a.none")} /></SelectTrigger>
         <SelectContent>
-          <SelectItem value="none">None</SelectItem>
+          <SelectItem value="none">{tu("el.a.none")}</SelectItem>
           {(list ?? []).map((o) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
         </SelectContent>
       </Select>
@@ -71,8 +72,8 @@ export function TicketOpsPanel({ ticketId, staffId, vendorId, assetId, escalatio
   );
   return (
     <div className="space-y-3 rounded-2xl border p-3">
-      <p className="text-sm font-medium">Work</p>
-      {opts.isError ? <p className="text-xs text-destructive">Couldn't load staff, vendors and assets.</p> : (
+      <p className="text-sm font-medium">{tu("op.work")}</p>
+      {opts.isError ? <p className="text-xs text-destructive">{tu("op.couldn_t_load_staff_vendors")}</p> : (
         <div className="grid gap-2 sm:grid-cols-3">
           {pick("staff", opts.data?.staff, "Staff")}
           {pick("vendor", opts.data?.vendors, "Vendor")}
@@ -81,17 +82,17 @@ export function TicketOpsPanel({ ticketId, staffId, vendorId, assetId, escalatio
       )}
       {!closed && escalationLevel < 3 && (escOpen ? (
         <div className="space-y-2">
-          <Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={2} maxLength={500} className="rounded-xl" placeholder="Why does this need escalating? (min 5 characters)" aria-label="Escalation reason" />
+          <Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={2} maxLength={500} className="rounded-xl" placeholder={tu("op.why_does_this_need_escalating")} aria-label={tu("op.escalation_reason")} />
           <div className="flex gap-2">
             <Button variant="destructive" className="min-h-11 flex-1 rounded-xl" disabled={esc.isPending || reason.trim().length < 5} onClick={() => esc.mutate()}>
-              {esc.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Escalate"}
+              {esc.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : tu("op.escalate")}
             </Button>
-            <Button variant="ghost" className="min-h-11 rounded-xl" onClick={() => setEscOpen(false)}>Cancel</Button>
+            <Button variant="ghost" className="min-h-11 rounded-xl" onClick={() => setEscOpen(false)}>{tu("common.cancel")}</Button>
           </div>
         </div>
       ) : (
         <Button variant="outline" className="min-h-11 w-full rounded-xl" onClick={() => setEscOpen(true)}>
-          <AlertTriangle className="mr-1 h-4 w-4" />{escalationLevel ? `Escalate further (level ${escalationLevel})` : "Escalate"}
+          <AlertTriangle className="mr-1 h-4 w-4" />{escalationLevel ? `Escalate further (level ${escalationLevel})` : tu("op.escalate")}
         </Button>
       ))}
     </div>

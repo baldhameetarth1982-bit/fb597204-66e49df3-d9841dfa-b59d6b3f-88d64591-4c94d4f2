@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { tu } from "@/lib/i18n";
 
 interface Props {
   open: boolean;
@@ -72,7 +73,7 @@ export function AssignFlatDialog({ open, onOpenChange, societyId, userId, userNa
       toast.error(userMessage(error));
       return;
     }
-    toast.success("Resident linked to flat");
+    toast.success(tu("op.resident_linked_to_flat"));
     onAssigned?.();
     onOpenChange(false);
   }
@@ -81,15 +82,15 @@ export function AssignFlatDialog({ open, onOpenChange, societyId, userId, userNa
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg rounded-2xl">
         <DialogHeader>
-          <DialogTitle>Assign flat to {userName ?? "resident"}</DialogTitle>
-          <DialogDescription>They will start receiving bills for the selected flat.</DialogDescription>
+          <DialogTitle>{tu("op.assign_flat_to")} {userName ?? tu("op.resident")}</DialogTitle>
+          <DialogDescription>{tu("op.they_will_start_receiving_bills")}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search flat or block…"
+              placeholder={tu("op.search_flat_or_block")}
               value={q}
               onChange={(e) => setQ(e.target.value)}
               className="pl-9 rounded-xl"
@@ -98,23 +99,23 @@ export function AssignFlatDialog({ open, onOpenChange, societyId, userId, userNa
           <Select value={relationship} onValueChange={(v) => setRelationship(v as any)}>
             <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="owner">Owner</SelectItem>
-              <SelectItem value="tenant">Tenant</SelectItem>
-              <SelectItem value="family">Family member</SelectItem>
+              <SelectItem value="owner">{tu("op.owner")}</SelectItem>
+              <SelectItem value="tenant">{tu("op.tenant")}</SelectItem>
+              <SelectItem value="family">{tu("op.family_member")}</SelectItem>
             </SelectContent>
           </Select>
 
           {relationship === "tenant" && (
             <div className="grid grid-cols-2 gap-3 rounded-xl border border-border p-3">
               <div className="space-y-1.5">
-                <Label htmlFor="lease-start">Lease starts</Label>
+                <Label htmlFor="lease-start">{tu("op.lease_starts")}</Label>
                 <Input id="lease-start" type="date" value={leaseStartsOn} onChange={(e) => setLeaseStartsOn(e.target.value)} className="h-11 rounded-xl" />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="lease-end">Lease ends</Label>
+                <Label htmlFor="lease-end">{tu("op.lease_ends")}</Label>
                 <Input id="lease-end" type="date" min={leaseStartsOn || undefined} value={leaseEndsOn} onChange={(e) => setLeaseEndsOn(e.target.value)} className="h-11 rounded-xl" />
               </div>
-              <p className="col-span-2 text-xs text-muted-foreground">Access expires automatically after the lease end date. Leave blank for an open-ended tenancy.</p>
+              <p className="col-span-2 text-xs text-muted-foreground">{tu("op.access_expires_automatically_after_the")}</p>
             </div>
           )}
 
@@ -139,7 +140,7 @@ export function AssignFlatDialog({ open, onOpenChange, societyId, userId, userNa
                           {f.block_name ? `${f.block_name} — ` : ""}{f.flat_number}
                         </p>
                         <p className="text-[11px] text-muted-foreground">
-                          {f.is_occupied ? "Already has residents" : "No residents yet"}
+                          {f.is_occupied ? tu("op.already_has_residents") : tu("op.no_residents_yet")}
                         </p>
                       </div>
                       {active && <CheckCircle2 className="h-5 w-5 text-primary" />}
@@ -152,9 +153,9 @@ export function AssignFlatDialog({ open, onOpenChange, societyId, userId, userNa
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl">Cancel</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl">{tu("common.cancel")}</Button>
           <Button disabled={!selected || submitting} onClick={submit} className="rounded-xl">
-            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Assign"}
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : tu("op.assign")}
           </Button>
         </DialogFooter>
       </DialogContent>

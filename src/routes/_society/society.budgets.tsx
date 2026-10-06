@@ -4,6 +4,7 @@ import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { AccountsCenterTabs } from "@/components/nav/AccountsCenterTabs";
 import { MobileHero } from "@/components/shared/MobileHero";
 import { BudgetsPanel } from "@/features/procurement/procurement";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/budgets")({
   head: () => ({ meta: [
@@ -21,7 +22,7 @@ export const Route = createFileRoute("/_society/society/budgets")({
 function BudgetsPage() {
   return (
     <div className="pb-[calc(96px+env(safe-area-inset-bottom))]">
-      <MobileHero eyebrow="Accounts Center" title="Budgets" subtitle="Approved budgets, revisions and actual spending from posted expenses." icon={PiggyBank} variant="teal" />
+      <MobileHero eyebrow={tu("accountsTabs.label")} title={tu("accountsTabs.budgets")} subtitle={tu("op.approved_budgets_revisions_and_actual")} icon={PiggyBank} variant="teal" />
       <div className="px-4 pt-4 space-y-4 max-w-5xl mx-auto md:px-8">
         <AccountsCenterTabs />
         <BudgetsPanel />

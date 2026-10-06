@@ -23,6 +23,7 @@ import {
   type StructureMode,
   type StructureOverview,
 } from "@/lib/society-structure";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/setup")({
   head: () => ({ meta: [{ title: "Setup Wizard — SociyoHub" }] }),
@@ -115,7 +116,7 @@ function SetupWizardPage() {
         await refreshOverview(societyId);
       }
     } catch (e) {
-      toast.error("Could not change the structure type. Please try again.");
+      toast.error(tu("op.could_not_change_the_structure"));
     } finally {
       setModeSaving(false);
     }
@@ -130,7 +131,7 @@ function SetupWizardPage() {
         .select("*")
         .eq("society_id", societyId)
         .maybeSingle();
-      if (error && error.code !== "PGRST116") toast.error("Could not load your society setup. Please refresh.");
+      if (error && error.code !== "PGRST116") toast.error(tu("op.could_not_load_your_society"));
       const next = (data as Settings | null) ?? defaultSettings(societyId);
       setS(next);
       setStep(Math.min(next.wizard_step ?? 0, STEPS.length - 1));
@@ -154,7 +155,7 @@ function SetupWizardPage() {
       .upsert(payload, { onConflict: "society_id" });
     setSaving(false);
     if (error) {
-      toast.error("Could not save. Your entries are kept — please try again.");
+      toast.error(tu("op.could_not_save_your_entries"));
       return false;
     }
     setS(payload);
@@ -165,7 +166,7 @@ function SetupWizardPage() {
   async function finishWizard() {
     if (!s || !societyId) return;
     if (!s.opening_balance_date) {
-      toast.error("Opening balance date is required");
+      toast.error(tu("op.opening_balance_date_is_required"));
       return;
     }
     const ok = await saveDraft(STEPS.length - 1);
@@ -174,10 +175,10 @@ function SetupWizardPage() {
     const { error } = await supabase.rpc("complete_setup_wizard", { _society_id: societyId });
     setSaving(false);
     if (error) {
-      toast.error("Could not save. Your entries are kept — please try again.");
+      toast.error(tu("op.could_not_save_your_entries"));
       return;
     }
-    toast.success("Setup complete — opening balances are now locked");
+    toast.success(tu("op.setup_complete_opening_balances_are"));
     setS({ ...s, setup_completed_at: new Date().toISOString(), wizard_step: STEPS.length - 1 });
     navigate({ to: "/society/dashboard" });
   }
@@ -200,11 +201,11 @@ function SetupWizardPage() {
             <Wrench className="h-5 w-5 text-primary" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-xl font-semibold tracking-tight">Setup Wizard</h1>
+            <h1 className="text-xl font-semibold tracking-tight">{tu("op.setup_wizard")}</h1>
             <p className="text-xs text-muted-foreground">
               {locked
-                ? "Setup completed. Opening balances are locked — use Adjustment entries for corrections."
-                : "Complete the 5 steps to activate your society."}
+                ? tu("op.setup_completed_opening_balances_are")
+                : tu("op.complete_the_5_steps_to")}
             </p>
           </div>
         </div>
@@ -240,27 +241,27 @@ function SetupWizardPage() {
         <CardContent className="p-5 space-y-4">
           {step === 0 && (
             <>
-              <h2 className="text-base font-semibold">Society Information</h2>
+              <h2 className="text-base font-semibold">{tu("op.society_information")}</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Field label="Registration No.">
+                <Field label={tu("op.registration_no")}>
                   <Input className="h-11 rounded-xl" value={s.registration_no ?? ""}
                     onChange={(e) => patch("registration_no", e.target.value)} />
                 </Field>
-                <Field label="Pincode">
+                <Field label={tu("op.pincode_2")}>
                   <Input className="h-11 rounded-xl" value={s.pincode ?? ""}
                     onChange={(e) => patch("pincode", e.target.value)} />
                 </Field>
                 <div className="sm:col-span-2">
-                  <Field label="Address">
+                  <Field label={tu("op.address_2")}>
                     <Textarea rows={2} value={s.address ?? ""}
                       onChange={(e) => patch("address", e.target.value)} />
                   </Field>
                 </div>
-                <Field label="City">
+                <Field label={tu("op.city_2")}>
                   <Input className="h-11 rounded-xl" value={s.city ?? ""}
                     onChange={(e) => patch("city", e.target.value)} />
                 </Field>
-                <Field label="State">
+                <Field label={tu("op.state_2")}>
                   <Input className="h-11 rounded-xl" value={s.state ?? ""}
                     onChange={(e) => patch("state", e.target.value)} />
                 </Field>
@@ -270,10 +271,9 @@ function SetupWizardPage() {
 
           {step === 1 && (
             <>
-              <h2 className="text-base font-semibold">Society structure</h2>
+              <h2 className="text-base font-semibold">{tu("op.society_structure")}</h2>
               <p className="text-xs text-muted-foreground">
-                Choose how units are organised. This is the canonical model — you can only
-                change it while there are no units.
+                {tu("op.choose_how_units_are_organised")}
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -296,16 +296,16 @@ function SetupWizardPage() {
                       )}
                     >
                       <div className="text-sm font-semibold capitalize">
-                        {m === "structured" ? "Structured (Blocks / Towers / Wings)" : "Serial (direct houses)"}
+                        {m === "structured" ? tu("op.structured_blocks_towers_wings") : tu("op.serial_direct_houses")}
                       </div>
                       <div className="mt-1 text-xs text-muted-foreground">
                         {m === "structured"
-                          ? "Units belong to a Block, Tower or Wing. Floor is optional."
-                          : "Units belong directly to the society, no block, no floor."}
+                          ? tu("op.units_belong_to_a_block")
+                          : tu("op.units_belong_directly_to_the")}
                       </div>
                       {isLockedByUnits && (
                         <div className="mt-2 text-[11px] font-medium text-amber-600">
-                          Locked — remove existing units to switch mode.
+                          {tu("op.locked_remove_existing_units_to")}
                         </div>
                       )}
                     </button>
@@ -316,24 +316,24 @@ function SetupWizardPage() {
               {overview && (
                 <div className="rounded-2xl bg-muted/40 p-3 text-xs text-muted-foreground">
                   <div>
-                    Status:{" "}
+                    {tu("op.status")}{" "}
                     <b className={overview.structure_mode && overview.active_units > 0 ? "text-foreground" : "text-amber-600"}>
-                      {overview.structure_mode && overview.active_units > 0 ? "Configured" : "Needs setup"}
+                      {overview.structure_mode && overview.active_units > 0 ? tu("op.configured") : tu("op.needs_setup")}
                     </b>
                     {overview.structure_mode && (
-                      <> · {overview.structure_mode === "structured" ? "Blocks with houses" : "Houses only, no blocks"}</>
+                      <> · {overview.structure_mode === "structured" ? tu("op.blocks_with_houses") : tu("op.houses_only_no_blocks")}</>
                     )}
                     {overview.structure_mode && overview.active_units === 0 && (
-                      <div className="mt-1">Add your houses so residents can pick theirs when joining.</div>
+                      <div className="mt-1">{tu("op.add_your_houses_so_residents")}</div>
                     )}
                   </div>
                   <div>
-                    Structures: <b className="text-foreground">{overview.total_structures}</b>
+                    {tu("op.structures")} <b className="text-foreground">{overview.total_structures}</b>
                     {" · "}
-                    Units: <b className="text-foreground">{overview.total_units}</b>
+                    {tu("op.units_3")} <b className="text-foreground">{overview.total_units}</b>
                     {overview.inconsistent_units > 0 && (
                       <span className="ml-2 text-amber-600">
-                        ({overview.inconsistent_units} inconsistent)
+                        ({overview.inconsistent_units} {tu("op.inconsistent")}
                       </span>
                     )}
                   </div>
@@ -342,7 +342,7 @@ function SetupWizardPage() {
 
               <div className="pt-2 border-t space-y-2">
                 <p className="text-xs text-muted-foreground">
-                  Label used across the app for structures:
+                  {tu("op.label_used_across_the_app")}
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {(["blocks", "towers", "wings", "buildings", "none"] as const).map((t) => (
@@ -356,7 +356,7 @@ function SetupWizardPage() {
                           : "border-border hover:bg-secondary",
                       )}
                     >
-                      {t === "none" ? "Single building" : t}
+                      {t === "none" ? tu("op.single_building") : t}
                     </button>
                   ))}
                 </div>
@@ -366,30 +366,30 @@ function SetupWizardPage() {
 
           {step === 2 && (
             <>
-              <h2 className="text-base font-semibold">Maintenance Policy</h2>
+              <h2 className="text-base font-semibold">{tu("op.maintenance_policy")}</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Field label="Frequency">
+                <Field label={tu("op.frequency")}>
                   <Select value={s.maintenance_frequency} onValueChange={(v) => patch("maintenance_frequency", v as any)}>
                     <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                      <SelectItem value="quarterly">Quarterly</SelectItem>
-                      <SelectItem value="half_yearly">Half-yearly</SelectItem>
-                      <SelectItem value="yearly">Yearly</SelectItem>
+                      <SelectItem value="monthly">{tu("op.monthly")}</SelectItem>
+                      <SelectItem value="quarterly">{tu("op.quarterly")}</SelectItem>
+                      <SelectItem value="half_yearly">{tu("op.half_yearly")}</SelectItem>
+                      <SelectItem value="yearly">{tu("op.yearly")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </Field>
-                <Field label="Due day of period (1–28)">
+                <Field label={tu("op.due_day_of_period_1")}>
                   <Input type="number" min={1} max={28} className="h-11 rounded-xl"
                     value={s.maintenance_due_day}
                     onChange={(e) => patch("maintenance_due_day", Math.max(1, Math.min(28, +e.target.value || 1)))} />
                 </Field>
-                <Field label="Grace days">
+                <Field label={tu("op.grace_days")}>
                   <Input type="number" min={0} max={30} className="h-11 rounded-xl"
                     value={s.grace_days}
                     onChange={(e) => patch("grace_days", Math.max(0, Math.min(30, +e.target.value || 0)))} />
                 </Field>
-                <Field label="Late fee">
+                <Field label={tu("op.late_fee")}>
                   <div className="flex gap-2">
                     <Input type="number" min={0} className="h-11 rounded-xl"
                       value={s.late_fee_amount}
@@ -410,30 +410,30 @@ function SetupWizardPage() {
           {step === 3 && (
             <>
               <div className="flex items-center justify-between">
-                <h2 className="text-base font-semibold">Opening Balances</h2>
+                <h2 className="text-base font-semibold">{tu("op.opening_balances_2")}</h2>
                 {locked && (
                   <span className="inline-flex items-center gap-1 text-xs text-amber-600">
-                    <Lock className="h-3.5 w-3.5" /> Locked
+                    <Lock className="h-3.5 w-3.5" /> {tu("op.locked")}
                   </span>
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                Enter your cash-in-hand and bank balance as of the start date. <strong>This can only be entered once.</strong> All future income and expenses will calculate from here.
+                {tu("op.enter_your_cash_in_hand")} <strong>{tu("op.this_can_only_be_entered")}</strong> {tu("op.all_future_income_and_expenses")}
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <Field label="As of date">
+                <Field label={tu("op.as_of_date")}>
                   <Input type="date" className="h-11 rounded-xl"
                     disabled={locked}
                     value={s.opening_balance_date ?? ""}
                     onChange={(e) => patch("opening_balance_date", e.target.value)} />
                 </Field>
-                <Field label="Cash on hand (₹)">
+                <Field label={tu("op.cash_on_hand")}>
                   <Input type="number" min={0} step="0.01" className="h-11 rounded-xl"
                     disabled={locked}
                     value={s.opening_cash}
                     onChange={(e) => patch("opening_cash", +e.target.value || 0)} />
                 </Field>
-                <Field label="Bank balance (₹)">
+                <Field label={tu("op.bank_balance_2")}>
                   <Input type="number" min={0} step="0.01" className="h-11 rounded-xl"
                     disabled={locked}
                     value={s.opening_bank}
@@ -445,7 +445,7 @@ function SetupWizardPage() {
 
           {step === 4 && (
             <>
-              <h2 className="text-base font-semibold">Review &amp; Finish</h2>
+              <h2 className="text-base font-semibold">{tu("op.review_finish")}</h2>
               <ul className="text-sm space-y-1">
                 <Row k="Address" v={[s.address, s.city, s.state, s.pincode].filter(Boolean).join(", ") || "—"} />
                 <Row k="Structure" v={s.structure_type} />
@@ -456,7 +456,7 @@ function SetupWizardPage() {
                 <Row k="As of" v={s.opening_balance_date ?? "—"} />
               </ul>
               <div className="rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 p-3 text-xs text-amber-900 dark:text-amber-200">
-                Finishing the wizard <strong>locks opening balances forever</strong>. Future corrections must be Adjustment entries.
+                {tu("op.finishing_the_wizard")} <strong>{tu("op.locks_opening_balances_forever")}</strong>. Future corrections must be Adjustment entries.
               </div>
             </>
           )}
@@ -464,19 +464,19 @@ function SetupWizardPage() {
           <div className="flex justify-between pt-3 border-t">
             <Button variant="ghost" disabled={step === 0 || saving}
               onClick={() => setStep((i) => Math.max(0, i - 1))}>
-              <ChevronLeft className="h-4 w-4 mr-1" /> Back
+              <ChevronLeft className="h-4 w-4 mr-1" /> {tu("common.back")}
             </Button>
             {step < STEPS.length - 1 ? (
               <Button disabled={saving} onClick={() => saveDraft(step + 1)}>
                 {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Save &amp; Next <ChevronRight className="h-4 w-4 ml-1" />
+                {tu("op.save_next")} <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             ) : locked ? (
-              <Button onClick={() => navigate({ to: "/society/dashboard" })}>Go to Dashboard</Button>
+              <Button onClick={() => navigate({ to: "/society/dashboard" })}>{tu("op.go_to_dashboard")}</Button>
             ) : (
               <Button disabled={saving} onClick={finishWizard}>
                 {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Finish Setup
+                {tu("op.finish_setup")}
               </Button>
             )}
           </div>

@@ -53,6 +53,7 @@ import type {
   IncomePayerKind,
   IncomeSort,
 } from "@/lib/non-member-income.server";
+import { tu } from "@/lib/i18n";
 
 interface CategoryItem {
   id: string;
@@ -328,7 +329,7 @@ function IncomePage({ societyId }: { societyId: string }) {
       <MobileHero
         icon={Coins}
         title={t("inc.title")}
-        subtitle="Track society income, external payers and offline payment verification."
+        subtitle={tu("op.track_society_income_external_payers")}
       />
 
       <div className="flex flex-wrap gap-2">
@@ -348,7 +349,7 @@ function IncomePage({ societyId }: { societyId: string }) {
           </Link>
         </Button>
         <Button variant="outline" className="min-h-[44px]" disabled={exporting || !dateRangeValid} onClick={() => void exportRecords()}>
-          {exporting ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Download className="h-4 w-4 mr-1" />} Download list
+          {exporting ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Download className="h-4 w-4 mr-1" />} {tu("exp.downloadList")}
         </Button>
       </div>
 
@@ -357,7 +358,7 @@ function IncomePage({ societyId }: { societyId: string }) {
           <div className="min-w-[160px]">
             <Label className="text-xs">{t("inc.period")}</Label>
             <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
-              <SelectTrigger aria-label="Period" className="min-h-[44px]">
+              <SelectTrigger aria-label={tu("inc.period")} className="min-h-[44px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -402,7 +403,7 @@ function IncomePage({ societyId }: { societyId: string }) {
           <div className="min-w-[160px]">
             <Label className="text-xs">{t("common.category")}</Label>
             <Select value={categoryId} onValueChange={setCategoryId}>
-              <SelectTrigger aria-label="Category" className="min-h-[44px]">
+              <SelectTrigger aria-label={tu("common.category")} className="min-h-[44px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -419,7 +420,7 @@ function IncomePage({ societyId }: { societyId: string }) {
           <div className="min-w-[160px]">
             <Label className="text-xs">{t("inc.payer")}</Label>
             <Select value={kind} onValueChange={(v) => setKind(v as typeof kind)}>
-              <SelectTrigger aria-label="Payer" className="min-h-[44px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label={tu("inc.payer")} className="min-h-[44px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {KIND_OPTIONS.map((o) => (
                   <SelectItem key={o.value} value={o.value}>{t(o.label)}</SelectItem>
@@ -431,7 +432,7 @@ function IncomePage({ societyId }: { societyId: string }) {
           <div className="min-w-[160px]">
             <Label className="text-xs">{t("inc.method")}</Label>
             <Select value={method} onValueChange={(v) => setMethod(v as typeof method)}>
-              <SelectTrigger aria-label="Method" className="min-h-[44px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label={tu("inc.method")} className="min-h-[44px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {METHOD_OPTIONS.map((o) => (
                   <SelectItem key={o.value} value={o.value}>{t(o.label)}</SelectItem>
@@ -443,7 +444,7 @@ function IncomePage({ societyId }: { societyId: string }) {
           <div className="min-w-[160px]">
             <Label className="text-xs">{t("inc.verification")}</Label>
             <Select value={verif} onValueChange={(v) => setVerif(v as typeof verif)}>
-              <SelectTrigger aria-label="Verification" className="min-h-[44px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label={tu("inc.verification")} className="min-h-[44px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {VERIF_OPTIONS.map((o) => (
                   <SelectItem key={o.value} value={o.value}>{t(o.label)}</SelectItem>
@@ -455,7 +456,7 @@ function IncomePage({ societyId }: { societyId: string }) {
           <div className="min-w-[160px]">
             <Label className="text-xs">{t("inc.reconciliation")}</Label>
             <Select value={recon} onValueChange={(v) => setRecon(v as typeof recon)}>
-              <SelectTrigger aria-label="Reconciliation" className="min-h-[44px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label={tu("inc.reconciliation")} className="min-h-[44px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {RECON_OPTIONS.map((o) => (
                   <SelectItem key={o.value} value={o.value}>{t(o.label)}</SelectItem>
@@ -467,7 +468,7 @@ function IncomePage({ societyId }: { societyId: string }) {
           <div className="min-w-[160px]">
             <Label className="text-xs">{t("inc.sort")}</Label>
             <Select value={sort} onValueChange={(v) => setSort(v as IncomeSort)}>
-              <SelectTrigger aria-label="Sort" className="min-h-[44px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label={tu("inc.sort")} className="min-h-[44px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {SORT_OPTIONS.map((o) => (
                   <SelectItem key={o.value} value={o.value}>{t(o.label)}</SelectItem>
@@ -510,8 +511,8 @@ function IncomePage({ societyId }: { societyId: string }) {
             <StatPill icon={Users} label={t("inc.records")} value={String(report.summary.record_count)} />
           </StatPillRow>
           <p className="text-[11px] text-muted-foreground">
-            Totals aggregated in the database for {report.from_date} → {report.to_date}
-            {" "}(bucket: {report.trend_bucket}).
+            {tu("op.totals_aggregated_in_the_database")} {report.from_date} → {report.to_date}
+            {" "}{tu("op.bucket")} {report.trend_bucket}).
           </p>
         </>
       )}
@@ -604,7 +605,7 @@ function IncomePage({ societyId }: { societyId: string }) {
                 >
                   <div className="min-w-0">
                     <div className="text-sm font-medium truncate">
-                      {r.category_display_name ?? "Income"}
+                      {r.category_display_name ?? tu("nav.income")}
                     </div>
                     <div className="text-xs text-muted-foreground truncate">
                       {r.payment_date} · {r.payment_method.replace(/_/g, " ")} · {payerLabel}

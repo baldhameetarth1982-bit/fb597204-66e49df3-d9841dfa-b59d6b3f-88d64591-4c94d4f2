@@ -10,6 +10,7 @@ import { useSocietyId } from "@/hooks/useSocietyId";
 import { getSocietyExportPage } from "@/lib/society-export.functions";
 import { EXPORT_SECTIONS, exportToWorkbook, type SocietyExport } from "@/lib/society-export";
 import { downloadBlob } from "@/lib/auditor-pack";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/data-export")({
   head: () => ({ meta: [
@@ -67,24 +68,21 @@ function DataExportPage() {
   const records = result ? Object.values(result.sections).reduce((n, r) => n + r.length, 0) : 0;
 
   return <div className="pb-[calc(96px+env(safe-area-inset-bottom))]">
-    <MobileHero eyebrow="Society data" title="Full data export" subtitle="A complete copy of your society's records for backup, migration or recovery." icon={DatabaseBackup} variant="teal" />
+    <MobileHero eyebrow={tu("op.society_data")} title={tu("op.full_data_export")} subtitle={tu("op.a_complete_copy_of_your")} icon={DatabaseBackup} variant="teal" />
     <div className="px-4 md:px-6 space-y-4 max-w-3xl">
-      <SectionCard title="What's included">
+      <SectionCard title={tu("op.what_s_included")}>
         <p className="text-sm text-muted-foreground">
-          Structure, flats, residents, family, team, vehicles, parking, bills, payments, receipts, income, expenses,
-          ledger, bank statement lines, No-Dues, helpdesk, visitors, notices, polls, surveys and activity history.
-          Records are exported exactly as stored, with their original IDs. ID documents, payment signatures and
-          security tokens are never included. The file is built on this device and not stored by SociyoHub.
+          {tu("op.structure_flats_residents_family_team")}
         </p>
       </SectionCard>
 
-      <SectionCard title="Export">
+      <SectionCard title={tu("op.export")}>
         <div className="space-y-4">
           {status !== "idle" && <div className="space-y-2">
-            <Progress value={(done / total) * 100} aria-label="Export progress" />
+            <Progress value={(done / total) * 100} aria-label={tu("op.export_progress")} />
             <p className="text-sm text-muted-foreground" aria-live="polite">
-              {status === "running" && <>Collecting {EXPORT_SECTIONS[Math.min(done, total - 1)].label.toLowerCase()} ({done}/{total})…</>}
-              {status === "done" && <span className="inline-flex items-center gap-1.5 text-foreground"><CheckCircle2 className="h-4 w-4 text-primary" /> Ready — {records.toLocaleString("en-IN")} records.</span>}
+              {status === "running" && <>{tu("op.collecting")} {EXPORT_SECTIONS[Math.min(done, total - 1)].label.toLowerCase()} ({done}/{total})…</>}
+              {status === "done" && <span className="inline-flex items-center gap-1.5 text-foreground"><CheckCircle2 className="h-4 w-4 text-primary" /> {tu("op.ready")} {records.toLocaleString("en-IN")} records.</span>}
             </p>
           </div>}
           {error && <div role="alert" className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
@@ -92,14 +90,14 @@ function DataExportPage() {
           </div>}
           {status !== "done" && <Button className="min-h-11 w-full sm:w-auto" disabled={!societyId || status === "running"} onClick={run}>
             {status === "running" ? <Loader2 className="h-4 w-4 animate-spin" /> : status === "failed" ? <RotateCw className="h-4 w-4" /> : <Download className="h-4 w-4" />}
-            {status === "running" ? "Preparing…" : status === "failed" ? "Retry" : "Prepare export"}
+            {status === "running" ? tu("nd.preparing") : status === "failed" ? tu("common.retry") : tu("op.prepare_export")}
           </Button>}
           {result && <div className="flex flex-col sm:flex-row gap-2">
             <Button className="min-h-11" onClick={async () => downloadBlob(await exportToWorkbook(result), `society-export_${stamp}.xlsx`)}>
-              <FileSpreadsheet className="h-4 w-4" /> Download spreadsheet
+              <FileSpreadsheet className="h-4 w-4" /> {tu("op.download_spreadsheet")}
             </Button>
             <Button variant="outline" className="min-h-11" onClick={() => downloadBlob(new Blob([JSON.stringify(result, null, 2)], { type: "application/json" }), `society-export_${stamp}.json`)}>
-              <FileJson className="h-4 w-4" /> Download JSON (for migration)
+              <FileJson className="h-4 w-4" /> {tu("op.download_json_for_migration")}
             </Button>
           </div>}
         </div>

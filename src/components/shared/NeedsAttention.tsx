@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { AlertTriangle, CheckCircle2, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { tu } from "@/lib/i18n";
 
 type Item = { key: string; priority: number; reason: string; item_count: number; link: string };
 
@@ -21,10 +22,10 @@ export function NeedsAttention({ max = 6, exclude = [], emptyText = "Nothing nee
   });
 
   if (q.isLoading) {
-    return <div className="space-y-2" aria-busy="true"><span className="sr-only" role="status">Loading items that need attention…</span>{[0, 1].map((i) => <div key={i} className="h-12 rounded-xl bg-muted animate-pulse motion-reduce:animate-none" />)}</div>;
+    return <div className="space-y-2" aria-busy="true"><span className="sr-only" role="status">{tu("op.loading_items_that_need_attention")}</span>{[0, 1].map((i) => <div key={i} className="h-12 rounded-xl bg-muted animate-pulse motion-reduce:animate-none" />)}</div>;
   }
   if (q.isError) {
-    return <p role="alert" className="text-sm text-muted-foreground">Couldn't load items that need attention. Pull to refresh or try again.</p>;
+    return <p role="alert" className="text-sm text-muted-foreground">{tu("op.couldn_t_load_items_that")}</p>;
   }
   const items = (q.data ?? []).filter((i) => !exclude.includes(i.key));
   if (items.length === 0) {
@@ -44,7 +45,7 @@ export function NeedsAttention({ max = 6, exclude = [], emptyText = "Nothing nee
           >
             <AlertTriangle className={`h-4 w-4 shrink-0 ${it.priority <= 2 ? "text-destructive" : "text-muted-foreground"}`} aria-hidden />
             <span className="flex-1 text-sm">{it.reason}</span>
-            {it.priority <= 2 && <span className="sr-only">High priority</span>}
+            {it.priority <= 2 && <span className="sr-only">{tu("op.high_priority")}</span>}
             <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />
           </Link>
         </li>

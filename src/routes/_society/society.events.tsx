@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { PageHeader, PageShell } from "@/components/shared/PageHeader";
 import { EventsBoard } from "@/components/community/EventsBoard";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/events")({
   head: () => ({
@@ -18,8 +19,8 @@ export const Route = createFileRoute("/_society/society/events")({
     const { societyId } = useSocietyId();
     return (
       <PageShell>
-        <PageHeader title="Community events" description="Events are community content, separate from official notices." />
-        {societyId ? <EventsBoard societyId={societyId} mode="admin" /> : <p className="text-muted-foreground">Loading…</p>}
+        <PageHeader title={tu("op.community_events")} description={tu("op.events_are_community_content_separate")} />
+        {societyId ? <EventsBoard societyId={societyId} mode="admin" /> : <p className="text-muted-foreground">{tu("common.loading")}</p>}
       </PageShell>
     );
   },

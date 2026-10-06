@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Loader2, IndianRupee } from "lucide-react";
 import { PaymentSecurityBadge } from "./PaymentSecurityBadge";
+import { tu } from "@/lib/i18n";
 
 export interface TxnLine {
   label: string;
@@ -51,7 +52,7 @@ export function TransactionSummaryModal({
             </div>
           ))}
           <div className="border-t pt-2 mt-2 flex items-center justify-between">
-            <span className="text-sm font-semibold">Total payable</span>
+            <span className="text-sm font-semibold">{tu("rbd.total")}</span>
             <span className="text-lg font-semibold tabular-nums">
               {currency}
               {total.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
@@ -63,7 +64,7 @@ export function TransactionSummaryModal({
 
         <DialogFooter className="gap-2 sm:gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>
-            Cancel
+            {tu("common.cancel")}
           </Button>
           <Button onClick={onConfirm} disabled={busy} className="min-w-[140px]">
             {busy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <IndianRupee className="h-4 w-4 mr-1" />}
@@ -71,7 +72,7 @@ export function TransactionSummaryModal({
           </Button>
         </DialogFooter>
         <p className="text-[11px] text-muted-foreground text-center">
-          Transactions are final. See our <a href="/refund" className="underline">Refund Policy</a>.
+          {tu("op.transactions_are_final_see_our")} <a href="/refund" className="underline">{tu("op.refund_policy")}</a>.
         </p>
       </DialogContent>
     </Dialog>

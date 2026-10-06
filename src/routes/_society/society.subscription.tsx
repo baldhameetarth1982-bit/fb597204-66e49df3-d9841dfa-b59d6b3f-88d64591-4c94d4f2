@@ -27,6 +27,7 @@ import {
   listSaasSubscriptionPayments,
   reconcileSaasSubscriptionOrder,
 } from "@/lib/saas-subscription-lifecycle.functions";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/subscription")({
   head: () => ({
@@ -121,7 +122,7 @@ function SubscriptionPage() {
     setHistoryBusy(cancelOrderId);
     try {
       await cancelOrder({ data: { societyId, orderId: cancelOrderId, reason: cancelReason } });
-      toast.success("Pending order cancelled.");
+      toast.success(tu("op.pending_order_cancelled"));
       setCancelOrderId(null);
       setCancelReason("");
       await paymentHistory.refetch();
@@ -156,7 +157,7 @@ function SubscriptionPage() {
           razorpayOrderId: response.razorpay_order_id, razorpayPaymentId: response.razorpay_payment_id,
           razorpaySignature: response.razorpay_signature,
         } });
-        toast.success("Subscription activated successfully.");
+        toast.success(tu("op.subscription_activated_successfully"));
         requestIds.current.delete(p.id);
         setConfirming(true);
         setTimeout(() => setConfirming(false), 15_000);
@@ -167,7 +168,7 @@ function SubscriptionPage() {
       onDismiss: () => setBusyId(null),
     });
     if (!opened) {
-      toast.error("Payments couldn't be opened right now. Please try again.");
+      toast.error(tu("op.payments_couldn_t_be_opened"));
       setBusyId(null);
     }
     } catch (error) {
@@ -189,12 +190,12 @@ function SubscriptionPage() {
   const showPlans = !loading && !access.isError && status !== "forbidden";
   return (
     <SettingsShell
-      title="Subscription"
+      title={tu("st.sub")}
       scope="Whole society"
       icon={CreditCard}
-      description="Your society's SociyoHub plan. This is separate from maintenance payments, which are unaffected."
+      description={tu("op.your_society_s_sociyohub_plan")}
     >
-      <SettingsSection title="Current plan" icon={ShieldCheck}>
+      <SettingsSection title={tu("op.current_plan")} icon={ShieldCheck}>
         {loading ? (
           <div className="space-y-3">
             <Skeleton className="h-5 w-32" />
@@ -203,8 +204,8 @@ function SubscriptionPage() {
           </div>
         ) : access.isError || !copy ? (
           <ErrorState
-            title="Couldn't confirm your plan"
-            description="We can't show your plan status right now. Your features aren't changed."
+            title={tu("op.couldn_t_confirm_your_plan")}
+            description={tu("op.we_can_t_show_your")}
             onRetry={() => access.refetch()}
           />
         ) : (
@@ -213,28 +214,28 @@ function SubscriptionPage() {
               <span className={`text-xs font-medium rounded-full px-2.5 py-1 ${copy.tone}`}>{copy.label}</span>
               {confirming && (
                 <span role="status" className="text-xs text-muted-foreground inline-flex items-center gap-1">
-                  <Loader2 className="h-3 w-3 animate-spin" /> Confirming payment — not active yet
+                  <Loader2 className="h-3 w-3 animate-spin" /> {tu("op.confirming_payment_not_active_yet")}
                 </span>
               )}
             </div>
             <p className="text-3xl font-semibold tracking-tight">
-              {status === "trial" ? "Free trial" : status === "active" && planName ? planName : "—"}
+              {status === "trial" ? tu("op.free_trial") : status === "active" && planName ? planName : "—"}
             </p>
             <dl className="grid gap-2 sm:grid-cols-2">
               <div className="rounded-xl border p-3">
-                <dt className="text-xs text-muted-foreground">Features available now</dt>
+                <dt className="text-xs text-muted-foreground">{tu("op.features_available_now")}</dt>
                 <dd className="font-medium">{planLoading ? "—" : PLAN_LABELS[effectivePlan]}</dd>
               </div>
               <div className="rounded-xl border p-3">
                 <dt className="text-xs text-muted-foreground">
-                  {status === "trial" ? "Trial ends" : status === "active" ? "Renews / ends" : "Next step"}
+                  {status === "trial" ? tu("op.trial_ends") : status === "active" ? tu("op.renews_ends") : tu("op.next_step")}
                 </dt>
                 <dd className="font-medium">
                   {status === "trial"
                     ? fmtDate(access.data!.trial_ends_at) ?? "—"
                     : status === "active"
                     ? fmtDate(access.data!.plan_expires_at) ?? "—"
-                    : "Choose a plan"}
+                    : tu("op.choose_a_plan")}
                 </dd>
               </div>
             </dl>
@@ -245,29 +246,29 @@ function SubscriptionPage() {
 
       {showPlans && (
         <SettingsSection
-          title={status === "active" ? "Change or renew" : "Choose a plan"}
+          title={status === "active" ? tu("op.change_or_renew") : tu("op.choose_a_plan")}
           icon={Sparkles}
-          description="Paid securely via Razorpay. Your plan changes only after we confirm the payment."
+          description={tu("op.paid_securely_via_razorpay_your")}
         >
           {plans.isLoading ? (
             <Skeleton className="h-28 w-full rounded-2xl" />
           ) : plans.isError ? (
-            <ErrorState title="Couldn't load plans" description="Please try again." onRetry={() => plans.refetch()} />
+            <ErrorState title={tu("op.couldn_t_load_plans")} description={tu("pet.tryAgain")} onRetry={() => plans.refetch()} />
           ) : (
             <>
             {customPricing ? (
               <div className="rounded-xl border p-4 text-sm">
-                <p className="font-semibold">Custom pricing</p>
+                <p className="font-semibold">{tu("op.custom_pricing")}</p>
                 <p className="mt-1 text-muted-foreground">
-                  Your society has {plans.data?.[0]?.flat_count} flats. Societies with more than{" "}
-                  {plans.data?.[0]?.threshold} flats get a custom price, so online checkout isn't available.
+                  {tu("op.your_society_has")} {plans.data?.[0]?.flat_count} {tu("op.flats_societies_with_more_than")}{" "}
+                  {plans.data?.[0]?.threshold} {tu("op.flats_get_a_custom_price")}
                 </p>
                 <a href="mailto:sociohub710@gmail.com?subject=Custom pricing enquiry" className="mt-2 inline-flex min-h-11 items-center text-primary underline-offset-4 hover:underline">
-                  Talk to us
+                  {tu("op.talk_to_us")}
                 </a>
               </div>
             ) : plans.data?.[0]?.flat_count === 0 ? (
-              <p className="text-sm text-muted-foreground">Add your society's flats first — the price is per flat.</p>
+              <p className="text-sm text-muted-foreground">{tu("op.add_your_society_s_flats")}</p>
             ) : null}
             <ul className="divide-y">
               {(plans.data ?? []).map((p) => {
@@ -277,14 +278,14 @@ function SubscriptionPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2 font-semibold">
                         {p.name}
-                        {current ? <Badge variant="secondary">Your plan</Badge> : p.is_recommended ? <Badge variant="outline">Popular</Badge> : null}
+                        {current ? <Badge variant="secondary">{tu("op.your_plan")}</Badge> : p.is_recommended ? <Badge variant="outline">{tu("op.popular")}</Badge> : null}
                       </div>
                       <p className="text-sm">
                         <span className="font-semibold tabular-nums">₹{p.price_per_flat_inr}</span>
                         <span className="text-muted-foreground"> / flat / month</span>
                         {p.amount_paise ? (
                           <span className="text-muted-foreground tabular-nums">
-                            {" "}· ₹{(p.amount_paise / 100).toLocaleString("en-IN")}/month for {p.flat_count} {p.flat_count === 1 ? "flat" : "flats"}
+                            {" "}· ₹{(p.amount_paise / 100).toLocaleString("en-IN")}/month for {p.flat_count} {p.flat_count === 1 ? tu("op.flat") : tu("op.flats")}
                           </span>
                         ) : null}
                       </p>
@@ -297,7 +298,7 @@ function SubscriptionPage() {
                       aria-label={`${current ? "Renew" : "Choose"} ${p.name}`}
                     >
                       {busyId === p.id && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                      {current ? "Renew" : "Choose"}
+                      {current ? tu("op.renew") : tu("common.choose")}
                     </Button>
                   </li>
                 );
@@ -306,21 +307,21 @@ function SubscriptionPage() {
             </>
           )}
           <Link to="/pricing" className="mt-2 inline-flex min-h-11 items-center text-sm text-primary underline-offset-4 hover:underline">
-            Compare plans in detail
+            {tu("op.compare_plans_in_detail")}
           </Link>
         </SettingsSection>
       )}
 
       {showPlans && (
         <SettingsSection
-          title="Payment history"
+          title={tu("op.payment_history")}
           icon={CreditCard}
-          description="Server-confirmed subscription orders and receipts. Maintenance collections remain separate."
+          description={tu("op.server_confirmed_subscription_orders_and")}
         >
           {paymentHistory.isLoading ? (
             <Skeleton className="h-24 w-full" />
           ) : paymentHistory.isError ? (
-            <ErrorState title="Couldn't load payment history" description="No payment status was changed." onRetry={() => paymentHistory.refetch()} />
+            <ErrorState title={tu("op.couldn_t_load_payment_history")} description={tu("op.no_payment_status_was_changed")} onRetry={() => paymentHistory.refetch()} />
           ) : paymentHistory.data?.length ? (
             <ul className="divide-y">
               {paymentHistory.data.map((payment) => {
@@ -329,7 +330,7 @@ function SubscriptionPage() {
                   <li key={payment.id} className="grid gap-3 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-semibold">{PLAN_LABELS[payment.plan_id as PlanKey] ?? payment.plan_id} plan</p>
+                        <p className="font-semibold">{PLAN_LABELS[payment.plan_id as PlanKey] ?? payment.plan_id} {tu("op.plan")}</p>
                         <Badge variant="outline" className="capitalize">{payment.lifecycle_status.replaceAll("_", " ")}</Badge>
                         {payment.provider_mode && <Badge variant="secondary">{payment.provider_mode}</Badge>}
                       </div>
@@ -342,10 +343,10 @@ function SubscriptionPage() {
                       <div className="flex flex-wrap gap-2">
                         <Button variant="outline" className="min-h-11" disabled={historyBusy !== null} onClick={() => reconcile(payment.razorpay_order_id)}>
                           {historyBusy === payment.razorpay_order_id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                          Check payment
+                          {tu("op.check_payment")}
                         </Button>
                         <Button variant="ghost" className="min-h-11" disabled={historyBusy !== null} onClick={() => setCancelOrderId(payment.razorpay_order_id)}>
-                          <XCircle className="mr-2 h-4 w-4" /> Cancel
+                          <XCircle className="mr-2 h-4 w-4" /> {tu("common.cancel")}
                         </Button>
                       </div>
                     )}
@@ -354,25 +355,25 @@ function SubscriptionPage() {
               })}
             </ul>
           ) : (
-            <p className="text-sm text-muted-foreground">No subscription payments yet.</p>
+            <p className="text-sm text-muted-foreground">{tu("op.no_subscription_payments_yet")}</p>
           )}
         </SettingsSection>
       )}
 
       {showPlans && (
         <SettingsDisclosure
-          title="What's included"
+          title={tu("op.what_s_included")}
           description={`${included.length} included · ${locked.length} need a higher plan`}
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold"><Check className="h-4 w-4 text-success" /> Included</h3>
+              <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold"><Check className="h-4 w-4 text-success" /> {tu("op.included")}</h3>
               <ul className="space-y-1 text-sm">{included.map((f) => <li key={f.key}>{f.label}</li>)}</ul>
             </div>
             <div>
-              <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold"><Lock className="h-4 w-4 text-muted-foreground" /> Needs a higher plan</h3>
+              <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold"><Lock className="h-4 w-4 text-muted-foreground" /> {tu("op.needs_a_higher_plan")}</h3>
               {locked.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Everything is unlocked.</p>
+                <p className="text-sm text-muted-foreground">{tu("op.everything_is_unlocked")}</p>
               ) : (
                 <ul className="space-y-1 text-sm">
                   {locked.map((f) => (
@@ -390,17 +391,17 @@ function SubscriptionPage() {
       <AlertDialog open={!!cancelOrderId} onOpenChange={(open) => { if (!open && !historyBusy) { setCancelOrderId(null); setCancelReason(""); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancel this pending order?</AlertDialogTitle>
-            <AlertDialogDescription>This does not refund captured money. Check the payment first if the checkout may have completed.</AlertDialogDescription>
+            <AlertDialogTitle>{tu("op.cancel_this_pending_order")}</AlertDialogTitle>
+            <AlertDialogDescription>{tu("op.this_does_not_refund_captured")}</AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-1.5">
-            <Label htmlFor="cancel-subscription-reason">Reason saved in audit history</Label>
+            <Label htmlFor="cancel-subscription-reason">{tu("op.reason_saved_in_audit_history")}</Label>
             <Textarea id="cancel-subscription-reason" value={cancelReason} onChange={(event) => setCancelReason(event.target.value)} maxLength={500} rows={3} />
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={!!historyBusy}>Keep order</AlertDialogCancel>
+            <AlertDialogCancel disabled={!!historyBusy}>{tu("op.keep_order")}</AlertDialogCancel>
             <AlertDialogAction onClick={(event) => { event.preventDefault(); void cancelPending(); }} disabled={!!historyBusy || cancelReason.trim().length < 3}>
-              Cancel order
+              {tu("op.cancel_order")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

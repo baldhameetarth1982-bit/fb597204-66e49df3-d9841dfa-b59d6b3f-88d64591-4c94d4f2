@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { listProcurementEvidence, uploadProcurementEvidence } from "@/lib/procurement-evidence.functions";
+import { tu } from "@/lib/i18n";
 
 const MAX = 5 * 1024 * 1024;
 const ACCEPT = ".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp";
@@ -51,14 +52,14 @@ export function ProcurementFiles({ requestId, quotationId, kind, rows, editable,
       if (!/\.(pdf|jpe?g|png|webp)$/i.test(file.name)) throw new Error("invalid_file");
       return upload({ data: { requestId, quotationId, kind, fileName: file.name, base64: toBase64(await file.arrayBuffer()) } });
     },
-    onSuccess: () => { toast.success("File attached"); refresh(); },
+    onSuccess: () => { toast.success(tu("hd.t.fileAttached")); refresh(); },
     onError: (e) => toast.error(fileErrorMessage(e)),
     onSettled: () => { if (inputRef.current) inputRef.current.value = ""; },
   });
   const rm = useMutation({
     networkMode: "always", retry: false,
     mutationFn: async (id: string) => { const { error } = await supabase.rpc("proc_remove_attachment", { _attachment: id, _reason: reason }); if (error) throw error; },
-    onSuccess: () => { toast.success("File removed. It stays in the history."); setRemoving(null); setReason(""); refresh(); qc.invalidateQueries({ queryKey: ["procurement", "detail", requestId] }); },
+    onSuccess: () => { toast.success(tu("op.file_removed_it_stays_in")); setRemoving(null); setReason(""); refresh(); qc.invalidateQueries({ queryKey: ["procurement", "detail", requestId] }); },
     onError: (e) => toast.error(fileErrorMessage(e)),
   });
 
@@ -76,17 +77,17 @@ export function ProcurementFiles({ requestId, quotationId, kind, rows, editable,
             ) : (
               <span className="min-w-0 flex-1 truncate" title={f.name}>{f.name} · link unavailable, reopen to refresh</span>
             )}
-            <span className="shrink-0 text-muted-foreground">{f.mime === "application/pdf" ? "PDF" : "Image"} · {kb(f.size)}</span>
+            <span className="shrink-0 text-muted-foreground">{f.mime === "application/pdf" ? "PDF" : tu("op.image")} · {kb(f.size)}</span>
             {editable && !f.removed_at && removing !== f.id && (
-              <Button type="button" size="sm" variant="ghost" className="min-h-9 shrink-0" onClick={() => { setRemoving(f.id); setReason(""); }}>Remove</Button>
+              <Button type="button" size="sm" variant="ghost" className="min-h-9 shrink-0" onClick={() => { setRemoving(f.id); setReason(""); }}>{tu("fd.remove")}</Button>
             )}
           </div>
-          {f.removed_at && <p className="pl-6 text-muted-foreground">Removed: {f.remove_reason}</p>}
+          {f.removed_at && <p className="pl-6 text-muted-foreground">{tu("op.removed")} {f.remove_reason}</p>}
           {removing === f.id && (
             <form className="mt-1 flex gap-2" onSubmit={(e) => { e.preventDefault(); rm.mutate(f.id); }}>
-              <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason for removing" aria-label="Reason for removing" maxLength={300} className="min-h-9 text-xs" />
-              <Button type="submit" size="sm" variant="destructive" className="min-h-9" disabled={rm.isPending || reason.trim().length < 5}>Remove</Button>
-              <Button type="button" size="sm" variant="ghost" className="min-h-9" onClick={() => setRemoving(null)}>Cancel</Button>
+              <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder={tu("op.reason_for_removing")} aria-label={tu("op.reason_for_removing")} maxLength={300} className="min-h-9 text-xs" />
+              <Button type="submit" size="sm" variant="destructive" className="min-h-9" disabled={rm.isPending || reason.trim().length < 5}>{tu("fd.remove")}</Button>
+              <Button type="button" size="sm" variant="ghost" className="min-h-9" onClick={() => setRemoving(null)}>{tu("common.cancel")}</Button>
             </form>
           )}
         </div>
@@ -97,9 +98,9 @@ export function ProcurementFiles({ requestId, quotationId, kind, rows, editable,
             onChange={(e) => { const f = e.target.files?.[0]; if (f) up.mutate(f); }} />
           <Button type="button" variant="outline" size="sm" className="min-h-10" disabled={up.isPending} onClick={() => inputRef.current?.click()}>
             {up.isPending ? <Loader2 className="mr-1 h-4 w-4 animate-spin" aria-hidden /> : <Paperclip className="mr-1 h-4 w-4" aria-hidden />}
-            {up.isPending ? "Uploading…" : label}
+            {up.isPending ? tu("op.uploading") : label}
           </Button>
-          <p className="text-[11px] text-muted-foreground">PDF, JPG, PNG or WebP · up to 5 MB</p>
+          <p className="text-[11px] text-muted-foreground">{tu("op.pdf_jpg_png_or_webp")}</p>
         </>
       )}
     </div>

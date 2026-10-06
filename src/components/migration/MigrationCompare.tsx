@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { StatusChip } from "@/components/system/StatusChip";
 import { compareMigrationUnits, type CompareResult } from "@/lib/workstream7.functions";
 import { pick, readSheetRows } from "@/lib/sheet-rows";
+import { tu } from "@/lib/i18n";
 
 const LABEL: Record<string, string> = { changed: "Changed", missing: "Not in SociyoHub", conflicting: "Conflicting", unresolved: "Unresolved" };
 
@@ -35,24 +36,24 @@ export function MigrationCompare({ societyId }: { societyId: string }) {
   return (
     <div className="space-y-3 rounded-2xl border border-border bg-card p-4">
       <div>
-        <p className="flex items-center gap-1.5 font-semibold"><GitCompare className="h-4 w-4" />Compare with your old data</p>
-        <p className="text-xs text-muted-foreground">Upload a unit list (CSV or Excel with columns like Block, Flat, Area, Type). Nothing is changed — fix differences through the normal screens.</p>
+        <p className="flex items-center gap-1.5 font-semibold"><GitCompare className="h-4 w-4" />{tu("op.compare_with_your_old_data")}</p>
+        <p className="text-xs text-muted-foreground">{tu("op.upload_a_unit_list_csv")}</p>
       </div>
       <label className="inline-flex">
         <input type="file" accept=".csv,.xlsx" className="hidden" onChange={(e) => { void onFile(e.target.files?.[0]); e.target.value = ""; }} />
         <Button asChild variant="outline" className="min-h-11 rounded-xl" disabled={busy}>
-          <span>{busy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <GitCompare className="mr-1.5 h-4 w-4" />}Choose file to compare</span>
+          <span>{busy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <GitCompare className="mr-1.5 h-4 w-4" />}{tu("op.choose_file_to_compare")}</span>
         </Button>
       </label>
       {err && <p role="alert" className="text-sm text-destructive">{err}</p>}
       {res && (
         <div className="space-y-2">
           <div className="flex flex-wrap gap-2 text-xs">
-            <StatusChip tone="success">{res.matched} matched</StatusChip>
-            <StatusChip tone="warning">{res.changed} changed</StatusChip>
-            <StatusChip tone="danger">{res.missing} not in SociyoHub</StatusChip>
-            <StatusChip tone="neutral">{res.conflicting_or_unresolved} conflicting / unresolved</StatusChip>
-            <StatusChip tone="neutral">{res.only_in_sociyohub} only in SociyoHub</StatusChip>
+            <StatusChip tone="success">{res.matched} {tu("op.matched")}</StatusChip>
+            <StatusChip tone="warning">{res.changed} {tu("op.changed")}</StatusChip>
+            <StatusChip tone="danger">{res.missing} {tu("op.not_in_sociyohub")}</StatusChip>
+            <StatusChip tone="neutral">{res.conflicting_or_unresolved} {tu("op.conflicting_unresolved")}</StatusChip>
+            <StatusChip tone="neutral">{res.only_in_sociyohub} {tu("op.only_in_sociyohub")}</StatusChip>
           </div>
           {res.rows.length > 0 && (
             <div className="max-h-72 overflow-auto rounded-xl border border-border">

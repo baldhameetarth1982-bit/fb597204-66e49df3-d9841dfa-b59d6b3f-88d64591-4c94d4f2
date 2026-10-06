@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { gateErrorMessage } from "@/lib/visitors";
 import { CapacityPanel, EvTab, ReportsTab, SlotsTab, TemporaryTab, useParkingData, ViolationsTab } from "@/features/parking/ParkingAdmin";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/parking")({
   head: () => ({
@@ -30,9 +31,9 @@ function ParkingPage() {
     <PageShell>
       <PeopleAreaNav />
       <PageHeader
-        title="Parking"
-        description="Slots, who holds them, temporary use, violations, EV charging and reports."
-        actions={<Button className="min-h-11 rounded-xl" onClick={() => { setTab("slots"); setAddTick((t) => t + 1); }}><Plus className="mr-2 h-4 w-4" />Add slot</Button>}
+        title={tu("notif.tab.parking")}
+        description={tu("op.slots_who_holds_them_temporary")}
+        actions={<Button className="min-h-11 rounded-xl" onClick={() => { setTab("slots"); setAddTick((t) => t + 1); }}><Plus className="mr-2 h-4 w-4" />{tu("op.add_slot")}</Button>}
       />
       <CapacityPanel d={data.data} />
       {data.isLoading || !societyId ? <ListSkeleton rows={4} /> : data.isError ? (
@@ -40,11 +41,11 @@ function ParkingPage() {
       ) : (
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="mb-4 w-full justify-start overflow-x-auto">
-            <TabsTrigger value="slots" className="min-h-10">Slots</TabsTrigger>
-            <TabsTrigger value="temporary" className="min-h-10">Temporary</TabsTrigger>
-            <TabsTrigger value="violations" className="min-h-10">Violations</TabsTrigger>
-            <TabsTrigger value="ev" className="min-h-10">EV charging</TabsTrigger>
-            <TabsTrigger value="reports" className="min-h-10">Reports</TabsTrigger>
+            <TabsTrigger value="slots" className="min-h-10">{tu("op.slots")}</TabsTrigger>
+            <TabsTrigger value="temporary" className="min-h-10">{tu("op.temporary")}</TabsTrigger>
+            <TabsTrigger value="violations" className="min-h-10">{tu("op.violations")}</TabsTrigger>
+            <TabsTrigger value="ev" className="min-h-10">{tu("op.ev_charging")}</TabsTrigger>
+            <TabsTrigger value="reports" className="min-h-10">{tu("nav.reports")}</TabsTrigger>
           </TabsList>
           <TabsContent value="slots"><SlotsTab d={data.data!} onAdd={addTick} /></TabsContent>
           <TabsContent value="temporary"><TemporaryTab d={data.data!} /></TabsContent>

@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getAutomations, setAutomation, type AutomationSnapshot } from "@/lib/automation.functions";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/automations")({
   head: () => ({ meta: [{ title: "Automations — SociyoHub" }, { name: "robots", content: "noindex" }] }),
@@ -88,22 +89,22 @@ function AutomationsPage() {
         qc.invalidateQueries({ queryKey: ["automations", societyId] }),
         qc.invalidateQueries({ queryKey: ["automation-activity", societyId] }),
       ]);
-      toast.success("Automations saved");
+      toast.success(tu("op.automations_saved"));
     },
     onError: (e) => toast.error(errText(e)),
   });
 
   if (!societyId || q.isLoading || (q.data && !draft)) {
-    return <PageShell><PageHeader title="Automations" /><div className="grid place-items-center py-16"><Loader2 className="h-5 w-5 animate-spin" /></div></PageShell>;
+    return <PageShell><PageHeader title={tu("nav.automations")} /><div className="grid place-items-center py-16"><Loader2 className="h-5 w-5 animate-spin" /></div></PageShell>;
   }
   if (q.isError || !q.data || !draft) {
     return (
       <PageShell>
-        <PageHeader title="Automations" />
+        <PageHeader title={tu("nav.automations")} />
         <div className="rounded-2xl border bg-card p-6 text-center space-y-3">
           <AlertTriangle className="mx-auto h-6 w-6 text-destructive" />
-          <p className="text-sm">{(q.error as Error)?.message === "forbidden" ? ERR.forbidden : "Couldn't load automation settings."}</p>
-          <Button variant="outline" className="h-11" onClick={() => q.refetch()}><RotateCw className="mr-2 h-4 w-4" />Retry</Button>
+          <p className="text-sm">{(q.error as Error)?.message === "forbidden" ? ERR.forbidden : tu("op.couldn_t_load_automation_settings")}</p>
+          <Button variant="outline" className="h-11" onClick={() => q.refetch()}><RotateCw className="mr-2 h-4 w-4" />{tu("common.retry")}</Button>
         </div>
       </PageShell>
     );
@@ -117,69 +118,69 @@ function AutomationsPage() {
 
   return (
     <PageShell>
-      <PageHeader title="Automations" description="Jobs SociyoHub runs for your society every day, and what you can control." />
+      <PageHeader title={tu("nav.automations")} description={tu("op.jobs_sociyohub_runs_for_your")} />
       <div className="space-y-4">
         {locked && (
           <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-amber-500/40 bg-amber-500/5 p-4 text-sm">
             <Lock className="h-4 w-4" />
-            <span className="flex-1">You can view these automations. Changing them needs the Growth or Pro plan.</span>
-            <Button asChild size="sm" className="h-11"><Link to="/society/subscription">See plans</Link></Button>
+            <span className="flex-1">{tu("op.you_can_view_these_automations")}</span>
+            <Button asChild size="sm" className="h-11"><Link to="/society/subscription">{tu("sec.seePlans")}</Link></Button>
           </div>
         )}
 
         <SettingsSection
-          title="Monthly bill run"
+          title={tu("op.monthly_bill_run")}
           icon={Receipt}
-          trailing={<Badge variant={s.bill_run?.enabled ? "default" : "secondary"}>{s.bill_run ? (s.bill_run.enabled ? "On" : "Off") : "Not set up"}</Badge>}
-          description="Creates maintenance bills for every occupied unit on your billing day. It never creates a second set of bills for the same month."
+          trailing={<Badge variant={s.bill_run?.enabled ? "default" : "secondary"}>{s.bill_run ? (s.bill_run.enabled ? "On" : tu("op.off")) : tu("op.not_set_up")}</Badge>}
+          description={tu("op.creates_maintenance_bills_for_every")}
         >
           {!s.bill_run ? (
-            <p className="text-sm text-muted-foreground">No billing schedule yet. <Link to="/society/billing" className="underline">Set one up in Billing</Link> to use this automation.</p>
+            <p className="text-sm text-muted-foreground">{tu("op.no_billing_schedule_yet")} <Link to="/society/billing" className="underline">{tu("op.set_one_up_in_billing")}</Link> {tu("op.to_use_this_automation")}</p>
           ) : (
             <div className="space-y-4">
               <dl className="grid grid-cols-2 gap-3 text-sm">
-                <div><dt className="text-muted-foreground">Repeats</dt><dd className="capitalize">{s.bill_run.cycle}</dd></div>
-                <div><dt className="text-muted-foreground">Checked daily at</dt><dd>7:30 AM</dd></div>
-                <div><dt className="text-muted-foreground">Last run</dt><dd>{when(s.bill_run.last_run_at)}{s.bill_run.last_run_count != null && s.bill_run.last_run_at ? ` · ${s.bill_run.last_run_count} bills` : ""}</dd></div>
-                <div><dt className="text-muted-foreground">Next run</dt><dd>{s.bill_run.enabled ? when(s.bill_run.next_run_at) : "Paused"}</dd></div>
+                <div><dt className="text-muted-foreground">{tu("op.repeats")}</dt><dd className="capitalize">{s.bill_run.cycle}</dd></div>
+                <div><dt className="text-muted-foreground">{tu("op.checked_daily_at")}</dt><dd>7:30 AM</dd></div>
+                <div><dt className="text-muted-foreground">{tu("op.last_run")}</dt><dd>{when(s.bill_run.last_run_at)}{s.bill_run.last_run_count != null && s.bill_run.last_run_at ? ` · ${s.bill_run.last_run_count} bills` : ""}</dd></div>
+                <div><dt className="text-muted-foreground">{tu("op.next_run")}</dt><dd>{s.bill_run.enabled ? when(s.bill_run.next_run_at) : tu("cm.st.paused")}</dd></div>
               </dl>
               <div className="flex min-h-11 items-center justify-between gap-3">
-                <Label htmlFor="bill-on">Run automatically</Label>
+                <Label htmlFor="bill-on">{tu("op.run_automatically")}</Label>
                 <Switch id="bill-on" checked={draft.billOn} disabled={locked} onCheckedChange={(v) => setDraft({ ...draft, billOn: v })} />
               </div>
               <div className="flex min-h-11 items-center justify-between gap-3">
-                <Label htmlFor="bill-offset">Payment due after (days)</Label>
+                <Label htmlFor="bill-offset">{tu("op.payment_due_after_days")}</Label>
                 <Input id="bill-offset" type="number" inputMode="numeric" min={0} max={60} className="h-11 w-24" disabled={locked}
                   value={draft.offset} onChange={(e) => setDraft({ ...draft, offset: num(e.target.value, 0, 60) })} />
               </div>
-              <p className="text-xs text-muted-foreground">Amount, billing day and cycle are edited in <Link to="/society/billing" className="underline">Billing</Link>. Saving here never starts a run right away.</p>
+              <p className="text-xs text-muted-foreground">{tu("op.amount_billing_day_and_cycle")} <Link to="/society/billing" className="underline">{tu("nav.billing")}</Link>. Saving here never starts a run right away.</p>
             </div>
           )}
         </SettingsSection>
 
         <SettingsSection
-          title="Unpaid dues reminders"
+          title={tu("op.unpaid_dues_reminders")}
           icon={BellRing}
-          trailing={<Badge variant={s.reminders.enabled ? "default" : "secondary"}>{s.reminders.enabled ? "On" : "Off"}</Badge>}
-          description="Every morning, sends the main resident of each home with unpaid maintenance past its due date an in-app reminder. A home is never reminded twice on the same day."
+          trailing={<Badge variant={s.reminders.enabled ? "default" : "secondary"}>{s.reminders.enabled ? "On" : tu("op.off")}</Badge>}
+          description={tu("op.every_morning_sends_the_main")}
         >
           <div className="space-y-4">
             <dl className="grid grid-cols-2 gap-3 text-sm">
-              <div><dt className="text-muted-foreground">Checked daily at</dt><dd>9:00 AM</dd></div>
-              <div><dt className="text-muted-foreground">Last reminder</dt><dd>{when(s.reminders.last_run_at)}</dd></div>
-              <div><dt className="text-muted-foreground">Last 7 days</dt><dd>{s.reminders.sent_7d} reminders</dd></div>
+              <div><dt className="text-muted-foreground">{tu("op.checked_daily_at")}</dt><dd>9:00 AM</dd></div>
+              <div><dt className="text-muted-foreground">{tu("op.last_reminder")}</dt><dd>{when(s.reminders.last_run_at)}</dd></div>
+              <div><dt className="text-muted-foreground">{tu("op.last_7_days")}</dt><dd>{s.reminders.sent_7d} {tu("op.reminders")}</dd></div>
             </dl>
             <div className="flex min-h-11 items-center justify-between gap-3">
-              <Label htmlFor="rem-on">Send reminders</Label>
+              <Label htmlFor="rem-on">{tu("op.send_reminders")}</Label>
               <Switch id="rem-on" checked={draft.remOn} disabled={locked} onCheckedChange={(v) => setDraft({ ...draft, remOn: v })} />
             </div>
             <div className="flex min-h-11 items-center justify-between gap-3">
-              <Label htmlFor="rem-min">Start after due date (days)</Label>
+              <Label htmlFor="rem-min">{tu("op.start_after_due_date_days")}</Label>
               <Input id="rem-min" type="number" inputMode="numeric" min={0} max={60} className="h-11 w-24" disabled={locked}
                 value={draft.minDays} onChange={(e) => setDraft({ ...draft, minDays: num(e.target.value, 0, 60) })} />
             </div>
             <div className="flex min-h-11 items-center justify-between gap-3">
-              <Label htmlFor="rem-rep">Repeat every (days)</Label>
+              <Label htmlFor="rem-rep">{tu("op.repeat_every_days")}</Label>
               <Input id="rem-rep" type="number" inputMode="numeric" min={1} max={30} className="h-11 w-24" disabled={locked}
                 value={draft.repeat} onChange={(e) => setDraft({ ...draft, repeat: num(e.target.value, 1, 30) })} />
             </div>
@@ -190,13 +191,13 @@ function AutomationsPage() {
           <SaveBar dirty={dirty} saving={save.isPending} onSave={() => save.mutate(draft)} onDiscard={() => setDraft(base)} />
         )}
 
-        <SettingsSection title="Recent activity">
+        <SettingsSection title={tu("sd.recent")}>
           {activity.isLoading ? (
             <div className="grid place-items-center py-6"><Loader2 className="h-5 w-5 animate-spin" /></div>
           ) : activity.isError ? (
-            <p className="text-sm text-muted-foreground">Couldn't load activity.</p>
+            <p className="text-sm text-muted-foreground">{tu("op.couldn_t_load_activity")}</p>
           ) : !activity.data?.length ? (
-            <p className="text-sm text-muted-foreground">No automation activity yet.</p>
+            <p className="text-sm text-muted-foreground">{tu("op.no_automation_activity_yet")}</p>
           ) : (
             <ul className="divide-y text-sm">
               {activity.data.map((r) => (

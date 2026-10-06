@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/explorer")({
   head: () => ({ meta: [{ title: "Society Explorer — SociyoHub" }] }),
@@ -148,8 +149,8 @@ function ExplorerPage() {
     return (
       <PageShell>
         <div className="grid place-items-center gap-3 h-60 text-center">
-          <p className="text-sm text-muted-foreground">Couldn't load dues. Figures are hidden so nothing wrong is shown.</p>
-          <Button onClick={() => setReloadKey((k) => k + 1)}>Retry</Button>
+          <p className="text-sm text-muted-foreground">{tu("op.couldn_t_load_dues_figures")}</p>
+          <Button onClick={() => setReloadKey((k) => k + 1)}>{tu("common.retry")}</Button>
         </div>
       </PageShell>
     );
@@ -162,7 +163,7 @@ function ExplorerPage() {
   // FLAT DETAIL
   if (search.flat) {
     const flat = flats.find((x) => x.id === search.flat);
-    if (!flat) return <PageShell><EmptyState icon={DoorOpen} title="Flat not found" /></PageShell>;
+    if (!flat) return <PageShell><EmptyState icon={DoorOpen} title={tu("op.flat_not_found")} /></PageShell>;
     const block = blocks.find((x) => x.id === flat.block_id);
     const flatBills = bills.filter((x) => x.flat_id === flat.id).sort((a, b) => a.period_start.localeCompare(b.period_start));
     const flatPays = pays.filter((x) => flatBills.some((fb) => fb.id === x.bill_id)).sort((a, b) => b.paid_at.localeCompare(a.paid_at));
@@ -172,23 +173,23 @@ function ExplorerPage() {
       <PageShell>
         <PageHeader
           title={`${block?.name ?? ""} — ${flat.flat_number}`}
-          description="Resident details, payment history & month grid"
-          actions={<Button variant="ghost" onClick={() => navigate({ to: "/society/explorer", search: { block: flat.block_id, flat: undefined } })}><ArrowLeft className="h-4 w-4 mr-1" /> Back</Button>}
+          description={tu("op.resident_details_payment_history_month")}
+          actions={<Button variant="ghost" onClick={() => navigate({ to: "/society/explorer", search: { block: flat.block_id, flat: undefined } })}><ArrowLeft className="h-4 w-4 mr-1" /> {tu("common.back")}</Button>}
         />
         <Card className="rounded-2xl">
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center gap-3">
               <span className={cn("h-2.5 w-2.5 rounded-full", DOT[summary.status])} />
               <p className="font-medium capitalize">{summary.status}</p>
-              <div className="ml-auto text-sm">Outstanding: <span className="font-semibold">₹{summary.outstanding.toLocaleString("en-IN")}</span></div>
+              <div className="ml-auto text-sm">{tu("op.outstanding")} <span className="font-semibold">₹{summary.outstanding.toLocaleString("en-IN")}</span></div>
             </div>
           </CardContent>
         </Card>
 
         <section className="space-y-2">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Residents</h3>
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{tu("nav.residents")}</h3>
           {residents.length === 0 ? (
-            <Card className="rounded-2xl"><CardContent className="p-4 text-sm text-muted-foreground">No residents linked yet. Use Residents → Assign.</CardContent></Card>
+            <Card className="rounded-2xl"><CardContent className="p-4 text-sm text-muted-foreground">{tu("op.no_residents_linked_yet_use")}</CardContent></Card>
           ) : (
             <div className="grid sm:grid-cols-2 gap-3">
               {residents.map((r, i) => (
@@ -204,15 +205,15 @@ function ExplorerPage() {
         </section>
 
         <section className="space-y-2">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Month grid</h3>
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{tu("op.month_grid")}</h3>
           <MonthGrid bills={flatBills} paidByBill={paidByBill} />
         </section>
 
         <section className="space-y-2">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Bills</h3>
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{tu("nav.bills")}</h3>
           <Card className="rounded-2xl"><CardContent className="p-0">
             <table className="w-full text-sm">
-              <thead className="text-xs text-muted-foreground"><tr><th className="text-left p-3">Period</th><th className="text-right p-3">Amount</th><th className="text-right p-3">Paid</th><th className="text-left p-3">Status</th></tr></thead>
+              <thead className="text-xs text-muted-foreground"><tr><th className="text-left p-3">{tu("inc.period")}</th><th className="text-right p-3">{tu("common.amount")}</th><th className="text-right p-3">{tu("bills.paid")}</th><th className="text-left p-3">{tu("common.status")}</th></tr></thead>
               <tbody>
                 {flatBills.map((b) => {
                   const paid = paidByBill[b.id] ?? 0;
@@ -225,22 +226,22 @@ function ExplorerPage() {
                     </tr>
                   );
                 })}
-                {flatBills.length === 0 && <tr><td className="p-3 text-muted-foreground" colSpan={4}>No bills yet.</td></tr>}
+                {flatBills.length === 0 && <tr><td className="p-3 text-muted-foreground" colSpan={4}>{tu("op.no_bills_yet")}</td></tr>}
               </tbody>
             </table>
           </CardContent></Card>
         </section>
 
         <section className="space-y-2">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Recent payments</h3>
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{tu("op.recent_payments")}</h3>
           <Card className="rounded-2xl"><CardContent className="p-0">
             <table className="w-full text-sm">
-              <thead className="text-xs text-muted-foreground"><tr><th className="text-left p-3">Date</th><th className="text-left p-3">Method</th><th className="text-right p-3">Amount</th></tr></thead>
+              <thead className="text-xs text-muted-foreground"><tr><th className="text-left p-3">{tu("common.date")}</th><th className="text-left p-3">{tu("inc.method")}</th><th className="text-right p-3">{tu("common.amount")}</th></tr></thead>
               <tbody>
                 {flatPays.map((p) => (
                   <tr key={p.id} className="border-t"><td className="p-3">{new Date(p.paid_at).toLocaleDateString()}</td><td className="p-3 capitalize">{p.method}</td><td className="p-3 text-right">₹{p.amount.toLocaleString("en-IN")}</td></tr>
                 ))}
-                {flatPays.length === 0 && <tr><td className="p-3 text-muted-foreground" colSpan={3}>No payments yet.</td></tr>}
+                {flatPays.length === 0 && <tr><td className="p-3 text-muted-foreground" colSpan={3}>{tu("op.no_payments_yet")}</td></tr>}
               </tbody>
             </table>
           </CardContent></Card>
@@ -252,7 +253,7 @@ function ExplorerPage() {
   // BLOCK DETAIL
   if (search.block) {
     const block = blocks.find((x) => x.id === search.block);
-    if (!block) return <PageShell><EmptyState icon={Building2} title="Block not found" /></PageShell>;
+    if (!block) return <PageShell><EmptyState icon={Building2} title={tu("op.block_not_found")} /></PageShell>;
     const items = flats.filter((f) => f.block_id === block.id).sort((a, b) => a.flat_number.localeCompare(b.flat_number, undefined, { numeric: true }));
     const k = blockKpi[block.id];
     return (
@@ -260,7 +261,7 @@ function ExplorerPage() {
         <PageHeader
           title={block.name}
           description={`${k.total} units · ${k.clear} clear · ${k.pending} pending · ${k.overdue} overdue`}
-          actions={<Button variant="ghost" onClick={() => navigate({ to: "/society/explorer", search: { block: undefined, flat: undefined } })}><ArrowLeft className="h-4 w-4 mr-1" /> Blocks</Button>}
+          actions={<Button variant="ghost" onClick={() => navigate({ to: "/society/explorer", search: { block: undefined, flat: undefined } })}><ArrowLeft className="h-4 w-4 mr-1" /> {tu("nav.blocks")}</Button>}
         />
         <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 gap-3">
           {items.map((f) => {
@@ -274,7 +275,7 @@ function ExplorerPage() {
                       <p className="font-semibold truncate">{f.flat_number}</p>
                     </div>
                     <p className="mt-1 text-[10px] text-muted-foreground truncate">
-                      {s.outstanding > 0 ? `₹${s.outstanding.toLocaleString("en-IN")}` : "Clear"}
+                      {s.outstanding > 0 ? `₹${s.outstanding.toLocaleString("en-IN")}` : tu("op.clear")}
                     </p>
                   </CardContent>
                 </Card>
@@ -282,7 +283,7 @@ function ExplorerPage() {
             );
           })}
         </div>
-        {items.length === 0 && <EmptyState icon={DoorOpen} title="No units in this block" />}
+        {items.length === 0 && <EmptyState icon={DoorOpen} title={tu("op.no_units_in_this_block")} />}
       </PageShell>
     );
   }
@@ -292,15 +293,15 @@ function ExplorerPage() {
 
   return (
     <PageShell>
-      <PageHeader title="Society Explorer" description="Browse blocks, units, and account status at a glance" />
+      <PageHeader title={tu("op.society_explorer")} description={tu("op.browse_blocks_units_and_account")} />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KpiCard label="Total units" value={String(totals.total)} />
-        <KpiCard label="Clear" value={String(totals.clear)} tone="emerald" />
-        <KpiCard label="Pending" value={String(totals.pending)} tone="amber" />
-        <KpiCard label="Outstanding" value={`₹${totals.outstanding.toLocaleString("en-IN")}`} tone="rose" />
+        <KpiCard label={tu("op.total_units")} value={String(totals.total)} />
+        <KpiCard label={tu("op.clear")} value={String(totals.clear)} tone="emerald" />
+        <KpiCard label={tu("docState.pending")} value={String(totals.pending)} tone="amber" />
+        <KpiCard label={tu("sd.m.outstanding")} value={`₹${totals.outstanding.toLocaleString("en-IN")}`} tone="rose" />
       </div>
       {blocks.length === 0 ? (
-        <EmptyState icon={Building2} title="No blocks yet" description="Create blocks under Setup → Blocks to begin." />
+        <EmptyState icon={Building2} title={tu("op.no_blocks_yet")} description={tu("op.create_blocks_under_setup_blocks")} />
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
           {blocks.map((b) => {
@@ -311,7 +312,7 @@ function ExplorerPage() {
                   <CardContent className="p-4">
                     <Building2 className="h-5 w-5 text-primary mb-2" />
                     <p className="font-semibold">{b.name}</p>
-                    <p className="text-xs text-muted-foreground">{k.total} units</p>
+                    <p className="text-xs text-muted-foreground">{k.total} {tu("op.units")}</p>
                     <div className="mt-2 flex items-center gap-2 text-[10px]">
                       <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />{k.clear}</span>
                       <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-amber-500" />{k.pending}</span>

@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
 import { ROLE_HOME } from "@/config/roles";
 import { supabase } from "@/integrations/supabase/client";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/onboarding/")({
   head: () => ({ meta: [{ title: "Get started — SociyoHub" }] }),
@@ -51,12 +52,12 @@ function OnboardingChoice() {
   return (
     <div className="px-5 py-8 space-y-6">
       <header className="space-y-1">
-        <p className="text-sm text-muted-foreground">Welcome, {firstName} 👋</p>
+        <p className="text-sm text-muted-foreground">{tu("op.welcome")} {firstName} 👋</p>
         <h1 className="text-2xl font-semibold tracking-tight">
-          How would you like to get started?
+          {tu("op.how_would_you_like_to")}
         </h1>
         <p className="text-sm text-muted-foreground">
-          Choose one to continue. You can always switch later.
+          {tu("op.choose_one_to_continue_you")}
         </p>
       </header>
       <PendingRoleInvites />
@@ -70,13 +71,13 @@ function OnboardingChoice() {
               </div>
               <div className="flex-1 min-w-0">
                 <h2 className="text-lg font-semibold flex items-center gap-2">
-                  Create Society
+                  {tu("op.create_society")}
                 </h2>
                 <p className="mt-1 text-sm opacity-90">
-                  Set up your building, add blocks & flats, and invite residents.
+                  {tu("op.set_up_your_building_add")}
                 </p>
                 <span className="mt-3 inline-flex items-center text-sm font-medium opacity-95">
-                  Get started <ArrowRight className="h-4 w-4 ml-1" />
+                  {tu("op.get_started")} <ArrowRight className="h-4 w-4 ml-1" />
                 </span>
               </div>
             </CardContent>
@@ -91,13 +92,13 @@ function OnboardingChoice() {
               </div>
               <div className="flex-1 min-w-0">
                 <h2 className="text-lg font-semibold text-foreground">
-                  Join Society
+                  {tu("op.join_society")}
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Enter an invite code from your society admin to join your flat.
+                  {tu("op.enter_an_invite_code_from")}
                 </p>
                 <span className="mt-3 inline-flex items-center text-sm font-medium text-primary">
-                  Enter code <ArrowRight className="h-4 w-4 ml-1" />
+                  {tu("otp.enter")} <ArrowRight className="h-4 w-4 ml-1" />
                 </span>
               </div>
             </CardContent>
@@ -108,7 +109,7 @@ function OnboardingChoice() {
       <div className="flex items-center gap-3 pt-2">
         <Building2 className="h-4 w-4 text-muted-foreground" />
         <p className="text-xs text-muted-foreground">
-          Trusted by modern societies — premium experience, mobile-first.
+          {tu("op.trusted_by_modern_societies_premium")}
         </p>
       </div>
     </div>

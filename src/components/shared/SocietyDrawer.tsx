@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { Logo } from "@/components/shared/Logo";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
+import { tu } from "@/lib/i18n";
 
 type NavItem = { label: string; to: string; icon: React.ComponentType<{ className?: string }> };
 type Group = { label: string; items: NavItem[] };
@@ -98,7 +99,7 @@ export function SocietyDrawer() {
         <Button
           variant="ghost"
           size="icon"
-          aria-label="Open menu"
+          aria-label={tu("common.openMenu")}
           className="h-10 w-10 rounded-full"
         >
           <Menu className="h-5 w-5" />
@@ -109,7 +110,7 @@ export function SocietyDrawer() {
           <div className="flex items-center gap-3">
             <Logo size={40} />
             <div className="min-w-0">
-              <SheetTitle className="text-base truncate">{profile?.full_name ?? "Society Admin"}</SheetTitle>
+              <SheetTitle className="text-base truncate">{profile?.full_name ?? tu("op.society_admin")}</SheetTitle>
               <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
             </div>
           </div>
@@ -117,7 +118,7 @@ export function SocietyDrawer() {
 
         {societies.length > 1 && (
           <div className="border-b px-3 py-3">
-            <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Current society</p>
+            <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{tu("op.current_society")}</p>
             <div className="space-y-1">
               {societies.map((society) => (
                 <Button
@@ -133,7 +134,7 @@ export function SocietyDrawer() {
                       setOpen(false);
                       window.location.assign("/");
                     } catch {
-                      toast.error("Could not switch society. Please try again.");
+                      toast.error(tu("errors.switchSociety"));
                       setSwitchingTo(null);
                     }
                   }}
@@ -186,14 +187,14 @@ export function SocietyDrawer() {
               to="/settings"
               className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium text-foreground hover:bg-secondary"
             >
-              <Settings className="h-5 w-5" /> Settings
+              <Settings className="h-5 w-5" /> {tu("common.settings")}
             </Link>
           </SheetClose>
           <button
             onClick={async () => { setOpen(false); await signOut(); }}
             className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium text-destructive hover:bg-destructive/5"
           >
-            <LogOut className="h-5 w-5" /> Log out
+            <LogOut className="h-5 w-5" /> {tu("common.logOut")}
           </button>
         </div>
       </SheetContent>

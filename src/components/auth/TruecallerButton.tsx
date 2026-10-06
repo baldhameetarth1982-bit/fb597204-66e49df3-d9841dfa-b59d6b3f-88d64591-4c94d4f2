@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Loader2, Zap } from "lucide-react";
+import { tu } from "@/lib/i18n";
 
 interface Props {
   onClick: () => void;
@@ -20,7 +21,7 @@ export function TruecallerButton({ onClick, loading }: Props) {
       className="w-full h-12 rounded-2xl font-semibold gap-2 bg-[#00A8E4] hover:bg-[#0090c4] text-white"
     >
       {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
-      Continue with Truecaller
+      {tu("op.continue_with_truecaller")}
     </Button>
   );
 }

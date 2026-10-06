@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import i18n, { localeTag } from "@/lib/i18n";
+import i18n, { localeTag, tu } from "@/lib/i18n";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Truck, Plus, Loader2 } from "lucide-react";
@@ -71,15 +71,15 @@ export function ResidentPasses() {
   const cancel = async (id: string) => {
     const { error } = await supabase.rpc("cancel_material_pass", { _pass_id: id });
     if (error) return toast.error(errMsg(error));
-    toast.success("Pass cancelled"); qc.invalidateQueries({ queryKey: ["my-passes"] });
+    toast.success(tu("op.pass_cancelled")); qc.invalidateQueries({ queryKey: ["my-passes"] });
   };
-  if (q.isLoading) return <p className="text-sm text-muted-foreground">Loading…</p>;
-  if (q.error) return <div className="rounded-2xl border p-4 text-sm">We couldn't load your passes. <Button variant="link" onClick={() => q.refetch()}>Retry</Button></div>;
+  if (q.isLoading) return <p className="text-sm text-muted-foreground">{tu("common.loading")}</p>;
+  if (q.error) return <div className="rounded-2xl border p-4 text-sm">{tu("op.we_couldn_t_load_your_2")} <Button variant="link" onClick={() => q.refetch()}>{tu("common.retry")}</Button></div>;
   return (
     <div className="space-y-4">
-      {q.data?.flatId ? <Button className="min-h-11" onClick={() => setOpen(true)}><Plus className="mr-2 h-4 w-4" />Request a pass</Button>
-        : <p className="text-sm text-muted-foreground">You need an active home in this society to request a pass.</p>}
-      <List rows={q.data?.passes ?? []} empty="No passes yet." actions={(p) => ["pending", "approved"].includes(p.status) ? <Button variant="outline" className="min-h-11" onClick={() => void cancel(p.id)}>Cancel</Button> : null} />
+      {q.data?.flatId ? <Button className="min-h-11" onClick={() => setOpen(true)}><Plus className="mr-2 h-4 w-4" />{tu("op.request_a_pass")}</Button>
+        : <p className="text-sm text-muted-foreground">{tu("op.you_need_an_active_home")}</p>}
+      <List rows={q.data?.passes ?? []} empty="No passes yet." actions={(p) => ["pending", "approved"].includes(p.status) ? <Button variant="outline" className="min-h-11" onClick={() => void cancel(p.id)}>{tu("common.cancel")}</Button> : null} />
       {q.data?.flatId && <RequestDialog open={open} onOpenChange={setOpen} flatId={q.data.flatId} onDone={() => qc.invalidateQueries({ queryKey: ["my-passes"] })} />}
     </div>
   );
@@ -96,33 +96,33 @@ function RequestDialog({ open, onOpenChange, flatId, onDone }: { open: boolean; 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (saving) return;
-    if (new Date(until) <= new Date(from)) return toast.error("End time must be after the start time.");
+    if (new Date(until) <= new Date(from)) return toast.error(tu("op.end_time_must_be_after"));
     setSaving(true);
     const { error } = await supabase.rpc("request_material_pass", {
       _flat_id: flatId, _kind: kind, _description: desc, _from: new Date(from).toISOString(), _until: new Date(until).toISOString(), _lift: lift, _contractor: contractor,
     });
     setSaving(false);
     if (error) return toast.error(errMsg(error));
-    toast.success("Request sent to the committee");
+    toast.success(tu("op.request_sent_to_the_committee"));
     setDesc(""); setFrom(""); setUntil(""); setLift(false); setContractor(""); onOpenChange(false); onDone();
   };
   return (
     <Dialog open={open} onOpenChange={(o) => !saving && onOpenChange(o)}>
       <DialogContent>
-        <DialogHeader><DialogTitle>Request a pass</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{tu("op.request_a_pass")}</DialogTitle></DialogHeader>
         <form className="space-y-3" onSubmit={submit}>
-          <div className="space-y-1.5"><Label htmlFor="pk">Type</Label>
+          <div className="space-y-1.5"><Label htmlFor="pk">{tu("cm.type")}</Label>
             <select id="pk" className="h-11 w-full rounded-md border bg-background px-3" value={kind} onChange={(e) => setKind(e.target.value)}>
               {Object.entries(KIND_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select></div>
-          <div className="space-y-1.5"><Label htmlFor="pd">What is coming in or going out?</Label><Textarea id="pd" required minLength={3} maxLength={300} value={desc} onChange={(e) => setDesc(e.target.value)} /></div>
+          <div className="space-y-1.5"><Label htmlFor="pd">{tu("op.what_is_coming_in_or")}</Label><Textarea id="pd" required minLength={3} maxLength={300} value={desc} onChange={(e) => setDesc(e.target.value)} /></div>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1.5"><Label htmlFor="pf">From</Label><Input id="pf" type="datetime-local" className="h-11" required value={from} onChange={(e) => setFrom(e.target.value)} /></div>
-            <div className="space-y-1.5"><Label htmlFor="pu">Until</Label><Input id="pu" type="datetime-local" className="h-11" required value={until} onChange={(e) => setUntil(e.target.value)} /></div>
+            <div className="space-y-1.5"><Label htmlFor="pf">{tu("common.from")}</Label><Input id="pf" type="datetime-local" className="h-11" required value={from} onChange={(e) => setFrom(e.target.value)} /></div>
+            <div className="space-y-1.5"><Label htmlFor="pu">{tu("rgp.until")}</Label><Input id="pu" type="datetime-local" className="h-11" required value={until} onChange={(e) => setUntil(e.target.value)} /></div>
           </div>
-          <div className="space-y-1.5"><Label htmlFor="pc">Contractor or mover (optional)</Label><Input id="pc" className="h-11" maxLength={80} value={contractor} onChange={(e) => setContractor(e.target.value)} /></div>
-          <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" className="h-5 w-5" checked={lift} onChange={(e) => setLift(e.target.checked)} />Book the service lift for this time</label>
-          <DialogFooter><Button type="submit" className="min-h-11 w-full" disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Send request</Button></DialogFooter>
+          <div className="space-y-1.5"><Label htmlFor="pc">{tu("op.contractor_or_mover_optional")}</Label><Input id="pc" className="h-11" maxLength={80} value={contractor} onChange={(e) => setContractor(e.target.value)} /></div>
+          <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" className="h-5 w-5" checked={lift} onChange={(e) => setLift(e.target.checked)} />{tu("op.book_the_service_lift_for")}</label>
+          <DialogFooter><Button type="submit" className="min-h-11 w-full" disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{tu("op.send_request")}</Button></DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
@@ -150,24 +150,24 @@ export function CommitteePasses({ societyId }: { societyId: string }) {
     toast.success(approve ? "Pass approved" : "Pass rejected");
     setReject(null); setReason(""); qc.invalidateQueries({ queryKey: ["society-passes", societyId] });
   };
-  if (q.isLoading) return <p className="text-sm text-muted-foreground">Loading…</p>;
-  if (q.error) return <div className="rounded-2xl border p-4 text-sm">We couldn't load passes. <Button variant="link" onClick={() => q.refetch()}>Retry</Button></div>;
+  if (q.isLoading) return <p className="text-sm text-muted-foreground">{tu("common.loading")}</p>;
+  if (q.error) return <div className="rounded-2xl border p-4 text-sm">{tu("op.we_couldn_t_load_passes")} <Button variant="link" onClick={() => q.refetch()}>{tu("common.retry")}</Button></div>;
   const rows = q.data ?? [];
   const pending = rows.filter((p) => p.status === "pending");
   const lift = rows.filter((p) => p.lift_required && ["approved", "in_progress"].includes(p.status) && new Date(p.valid_until) > new Date());
   return (
     <div className="space-y-6">
-      <section><h2 className="mb-2 font-semibold">Waiting for approval ({pending.length})</h2>
+      <section><h2 className="mb-2 font-semibold">{tu("op.waiting_for_approval")}{pending.length})</h2>
         <List rows={pending} empty="Nothing waiting." actions={(p) => <div className="flex gap-2">
-          <Button className="min-h-11" disabled={busy === p.id} onClick={() => void decide(p, true)}>Approve</Button>
-          <Button variant="outline" className="min-h-11" disabled={busy === p.id} onClick={() => setReject(p)}>Reject</Button></div>} /></section>
-      <section><h2 className="mb-2 font-semibold">Service lift schedule ({lift.length})</h2><List rows={lift} empty="No upcoming lift bookings." /></section>
-      <section><h2 className="mb-2 font-semibold">All passes</h2><List rows={rows.filter((p) => p.status !== "pending")} empty="No passes yet." /></section>
+          <Button className="min-h-11" disabled={busy === p.id} onClick={() => void decide(p, true)}>{tu("vs.approve")}</Button>
+          <Button variant="outline" className="min-h-11" disabled={busy === p.id} onClick={() => setReject(p)}>{tu("el.a.reject")}</Button></div>} /></section>
+      <section><h2 className="mb-2 font-semibold">{tu("op.service_lift_schedule")}{lift.length})</h2><List rows={lift} empty="No upcoming lift bookings." /></section>
+      <section><h2 className="mb-2 font-semibold">{tu("op.all_passes")}</h2><List rows={rows.filter((p) => p.status !== "pending")} empty="No passes yet." /></section>
       <Dialog open={!!reject} onOpenChange={(o) => !o && setReject(null)}>
-        <DialogContent><DialogHeader><DialogTitle>Reject pass</DialogTitle></DialogHeader>
-          <Label htmlFor="rr">Reason (shown to the resident)</Label>
+        <DialogContent><DialogHeader><DialogTitle>{tu("op.reject_pass")}</DialogTitle></DialogHeader>
+          <Label htmlFor="rr">{tu("op.reason_shown_to_the_resident")}</Label>
           <Textarea id="rr" maxLength={200} value={reason} onChange={(e) => setReason(e.target.value)} />
-          <DialogFooter><Button className="min-h-11" variant="destructive" disabled={!reason.trim() || !!busy} onClick={() => reject && void decide(reject, false, reason)}>Reject</Button></DialogFooter>
+          <DialogFooter><Button className="min-h-11" variant="destructive" disabled={!reason.trim() || !!busy} onClick={() => reject && void decide(reject, false, reason)}>{tu("el.a.reject")}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

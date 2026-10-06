@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/meters")({
   head: () => ({
@@ -66,21 +67,21 @@ function MetersPage() {
 
   return (
     <PageShell>
-      <PageHeader title="Utility meters" description="Manual readings for electricity, water and gas. No provider is connected; readings are entered by the committee." />
+      <PageHeader title={tu("op.utility_meters")} description={tu("op.manual_readings_for_electricity_water")} />
       <div className="mb-4 grid grid-cols-3 gap-3">
-        <Stat label="Active meters" value={meters.length} />
-        <Stat label="No reading this month" value={missing} />
-        <Stat label="Abnormal last reading" value={abnormal} />
+        <Stat label={tu("op.active_meters")} value={meters.length} />
+        <Stat label={tu("op.no_reading_this_month")} value={missing} />
+        <Stat label={tu("op.abnormal_last_reading")} value={abnormal} />
       </div>
       <div className="mb-4 flex flex-wrap items-center gap-2">
         {["all", ...UTILS].map((u) => (
           <Button key={u} size="sm" variant={filter === u ? "default" : "outline"} onClick={() => setFilter(u)} className="min-h-11 capitalize">{u}</Button>
         ))}
-        <Button className="ml-auto min-h-11" onClick={() => setReg({})}><Plus className="mr-1 h-4 w-4" />Add meter</Button>
+        <Button className="ml-auto min-h-11" onClick={() => setReg({})}><Plus className="mr-1 h-4 w-4" />{tu("op.add_meter")}</Button>
       </div>
-      {q.isLoading ? <p className="text-muted-foreground">Loading meters…</p>
-        : q.isError ? <div className="rounded-lg border p-4"><p>Couldn't load meters.</p><Button variant="outline" className="mt-2" onClick={() => q.refetch()}>Try again</Button></div>
-        : meters.length === 0 ? <div className="rounded-lg border p-8 text-center text-muted-foreground"><Gauge className="mx-auto mb-2 h-6 w-6" />No meters yet.</div>
+      {q.isLoading ? <p className="text-muted-foreground">{tu("op.loading_meters")}</p>
+        : q.isError ? <div className="rounded-lg border p-4"><p>{tu("op.couldn_t_load_meters")}</p><Button variant="outline" className="mt-2" onClick={() => q.refetch()}>{tu("common.tryAgain")}</Button></div>
+        : meters.length === 0 ? <div className="rounded-lg border p-8 text-center text-muted-foreground"><Gauge className="mx-auto mb-2 h-6 w-6" />{tu("op.no_meters_yet")}</div>
         : (
           <ul className="divide-y rounded-lg border">
             {meters.map((m) => {
@@ -88,14 +89,14 @@ function MetersPage() {
               return (
                 <li key={m.id} className="flex flex-wrap items-center gap-3 p-3">
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium">{m.meter_number} <span className="text-sm capitalize text-muted-foreground">· {m.utility}{m.flat_id ? ` · ${flatName.get(m.flat_id) ?? "Home"}` : " · Common"}</span></p>
+                    <p className="font-medium">{m.meter_number} <span className="text-sm capitalize text-muted-foreground">· {m.utility}{m.flat_id ? ` · ${flatName.get(m.flat_id) ?? "Home"}` : tu("op.common")}</span></p>
                     <p className="text-sm text-muted-foreground">
-                      {l ? <>Last {l.reading} on {l.reading_date} · {l.units} units</> : "No readings yet"}
-                      {l?.is_abnormal && <span className="ml-2 inline-flex items-center gap-1 text-destructive"><AlertTriangle className="h-3 w-3" />Unusual</span>}
+                      {l ? <>{tu("op.last")} {l.reading} on {l.reading_date} · {l.units} {tu("op.units")}</> : tu("op.no_readings_yet")}
+                      {l?.is_abnormal && <span className="ml-2 inline-flex items-center gap-1 text-destructive"><AlertTriangle className="h-3 w-3" />{tu("op.unusual")}</span>}
                     </p>
                   </div>
-                  <Button size="sm" className="min-h-11" onClick={() => setReadFor(m)}>Add reading</Button>
-                  <Button size="sm" variant="outline" className="min-h-11" onClick={() => setReg({ replaces: m })}><Replace className="mr-1 h-4 w-4" />Replace</Button>
+                  <Button size="sm" className="min-h-11" onClick={() => setReadFor(m)}>{tu("op.add_reading")}</Button>
+                  <Button size="sm" variant="outline" className="min-h-11" onClick={() => setReg({ replaces: m })}><Replace className="mr-1 h-4 w-4" />{tu("op.replace")}</Button>
                 </li>
               );
             })}
@@ -125,16 +126,16 @@ function RegisterDialog({ societyId, replaces, flats, onClose, onDone }: { socie
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
-        <DialogHeader><DialogTitle>{replaces ? `Replace meter ${replaces.meter_number}` : "Add meter"}</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{replaces ? `Replace meter ${replaces.meter_number}` : tu("op.add_meter")}</DialogTitle></DialogHeader>
         <div className="space-y-3">
-          {!replaces && <div><Label htmlFor="mu">Utility</Label>
+          {!replaces && <div><Label htmlFor="mu">{tu("op.utility")}</Label>
             <select id="mu" className="mt-1 h-11 w-full rounded-md border bg-background px-2 capitalize" value={utility} onChange={(e) => setUtility(e.target.value)}>{UTILS.map((u) => <option key={u} value={u}>{u}</option>)}</select></div>}
-          <div><Label htmlFor="mn">New meter number</Label><Input id="mn" maxLength={60} value={num} onChange={(e) => setNum(e.target.value)} /></div>
-          {!replaces && <div><Label htmlFor="mf">Home (leave empty for common area)</Label>
-            <select id="mf" className="mt-1 h-11 w-full rounded-md border bg-background px-2" value={flat} onChange={(e) => setFlat(e.target.value)}><option value="">Common area</option>{flats.map((f) => <option key={f.id} value={f.id}>{f.flat_number}</option>)}</select></div>}
-          <div><Label htmlFor="ml">Label (optional)</Label><Input id="ml" maxLength={80} value={label} onChange={(e) => setLabel(e.target.value)} /></div>
+          <div><Label htmlFor="mn">{tu("op.new_meter_number")}</Label><Input id="mn" maxLength={60} value={num} onChange={(e) => setNum(e.target.value)} /></div>
+          {!replaces && <div><Label htmlFor="mf">{tu("op.home_leave_empty_for_common")}</Label>
+            <select id="mf" className="mt-1 h-11 w-full rounded-md border bg-background px-2" value={flat} onChange={(e) => setFlat(e.target.value)}><option value="">{tu("op.common_area")}</option>{flats.map((f) => <option key={f.id} value={f.id}>{f.flat_number}</option>)}</select></div>}
+          <div><Label htmlFor="ml">{tu("op.label_optional")}</Label><Input id="ml" maxLength={80} value={label} onChange={(e) => setLabel(e.target.value)} /></div>
         </div>
-        <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button disabled={busy || !num.trim()} onClick={save}>{busy ? "Saving…" : "Save"}</Button></DialogFooter>
+        <DialogFooter><Button variant="outline" onClick={onClose}>{tu("common.cancel")}</Button><Button disabled={busy || !num.trim()} onClick={save}>{busy ? tu("cm.saving") : tu("common.save")}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -144,7 +145,7 @@ function ReadingDialog({ meter, onClose, onDone }: { meter: Meter; onClose: () =
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [val, setVal] = useState(""); const [note, setNote] = useState(""); const [busy, setBusy] = useState(false);
   async function save() {
-    const n = Number(val); if (!val || !Number.isFinite(n) || n < 0 || busy) return toast.error("Enter a valid reading");
+    const n = Number(val); if (!val || !Number.isFinite(n) || n < 0 || busy) return toast.error(tu("op.enter_a_valid_reading"));
     setBusy(true);
     const { data, error } = await supabase.rpc("admin_record_meter_reading", { _meter_id: meter.id, _reading_date: date, _reading: n, _note: note });
     setBusy(false);
@@ -156,14 +157,14 @@ function ReadingDialog({ meter, onClose, onDone }: { meter: Meter; onClose: () =
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
-        <DialogHeader><DialogTitle>Reading for {meter.meter_number}</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{tu("op.reading_for")} {meter.meter_number}</DialogTitle></DialogHeader>
         <div className="space-y-3">
-          <div><Label htmlFor="rd">Reading date</Label><Input id="rd" type="date" max={new Date().toISOString().slice(0, 10)} value={date} onChange={(e) => setDate(e.target.value)} /></div>
-          <div><Label htmlFor="rv">Meter reading</Label><Input id="rv" inputMode="decimal" value={val} onChange={(e) => setVal(e.target.value)} /></div>
-          <div><Label htmlFor="rn">Note (optional)</Label><Input id="rn" maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} /></div>
-          <p className="text-xs text-muted-foreground">Readings can't be edited later and must be newer and not lower than the last one.</p>
+          <div><Label htmlFor="rd">{tu("op.reading_date")}</Label><Input id="rd" type="date" max={new Date().toISOString().slice(0, 10)} value={date} onChange={(e) => setDate(e.target.value)} /></div>
+          <div><Label htmlFor="rv">{tu("op.meter_reading")}</Label><Input id="rv" inputMode="decimal" value={val} onChange={(e) => setVal(e.target.value)} /></div>
+          <div><Label htmlFor="rn">{tu("op.note_optional")}</Label><Input id="rn" maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} /></div>
+          <p className="text-xs text-muted-foreground">{tu("op.readings_can_t_be_edited")}</p>
         </div>
-        <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button disabled={busy} onClick={save}>{busy ? "Saving…" : "Save reading"}</Button></DialogFooter>
+        <DialogFooter><Button variant="outline" onClick={onClose}>{tu("common.cancel")}</Button><Button disabled={busy} onClick={save}>{busy ? tu("cm.saving") : tu("op.save_reading")}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );

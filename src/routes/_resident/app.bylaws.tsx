@@ -4,6 +4,7 @@ import { BookOpen, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { Card, CardContent } from "@/components/ui/card";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_resident/app/bylaws")({
   head: () => ({ meta: [{ title: "By-Laws — SociyoHub" }] }),
@@ -29,15 +30,15 @@ function BylawsScreen() {
       <header className="flex items-center gap-3">
         <BookOpen className="h-6 w-6 text-primary" />
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Society By-Laws</h1>
-          <p className="text-sm text-muted-foreground">House rules & policies.</p>
+          <h1 className="text-2xl font-semibold tracking-tight">{tu("op.society_by_laws")}</h1>
+          <p className="text-sm text-muted-foreground">{tu("op.house_rules_policies")}</p>
         </div>
       </header>
       <Card className="rounded-2xl">
         <CardContent className="p-5">
           {loading ? <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /> :
             text ? <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-relaxed">{text}</pre> :
-              <p className="text-sm text-muted-foreground">The admin hasn't published any by-laws yet.</p>}
+              <p className="text-sm text-muted-foreground">{tu("op.the_admin_hasn_t_published")}</p>}
         </CardContent>
       </Card>
     </div>

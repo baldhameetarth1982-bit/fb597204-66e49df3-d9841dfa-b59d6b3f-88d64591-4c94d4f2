@@ -14,6 +14,7 @@ import { categoryLabel, fmtTime, gateErrorMessage } from "@/lib/visitors";
 import { HardwareNote, ReasonSheet, SosAlertsCard } from "./GateOps";
 import { GateSafetyAlerts } from "./GuardSecurityOps";
 import { DevicesAdmin, GuardsAdmin, PatrolAdmin, SafetyAlertHistory } from "./SecurityAdminExtras";
+import { tu } from "@/lib/i18n";
 
 type Tab = "review" | "guards" | "patrol" | "restricted" | "incidents" | "safety" | "devices";
 const TABS: [Tab, string][] = [["review", "Decisions"], ["guards", "Guards"], ["patrol", "Patrol"], ["restricted", "Restricted"], ["incidents", "Incidents"], ["safety", "Safety"], ["devices", "Devices"]];
@@ -21,7 +22,7 @@ const TABS: [Tab, string][] = [["review", "Decisions"], ["guards", "Guards"], ["
 export function SecurityAdminPanel({ societyId, onChanged }: { societyId: string; onChanged: () => void }) {
   const [tab, setTab] = useState<Tab>("review");
   return (
-    <section aria-label="Security" className="space-y-3">
+    <section aria-label={tu("nav.security")} className="space-y-3">
       <SosAlertsCard />
       <GateSafetyAlerts />
       <div role="tablist" className="flex gap-1 overflow-x-auto rounded-2xl bg-muted p-1">
@@ -73,7 +74,7 @@ function ReviewList({ societyId, onChanged }: { societyId: string; onChanged: ()
   }
   if (q.isLoading) return <Loader2 className="h-5 w-5 animate-spin mx-auto" />;
   if (q.isError) return <p className="text-sm text-destructive">{gateErrorMessage(q.error)}</p>;
-  if (!q.data?.length) return <p className="text-sm text-muted-foreground text-center py-4">No movers or restricted visitors waiting.</p>;
+  if (!q.data?.length) return <p className="text-sm text-muted-foreground text-center py-4">{tu("op.no_movers_or_restricted_visitors")}</p>;
   return (
     <>
       <ul className="space-y-2">
@@ -82,18 +83,18 @@ function ReviewList({ societyId, onChanged }: { societyId: string; onChanged: ()
             <div>
               <p className="font-semibold flex items-center gap-2">{v.restriction_id && <ShieldAlert className="h-4 w-4 text-destructive" />}{v.visitor_name}</p>
               <p className="text-xs text-muted-foreground">
-                {v.restriction_id ? "On restricted list" : categoryLabel(v.category)}{v.flat_number ? ` · House ${v.flat_number}` : ""} · {fmtTime(v.expected_at ?? v.created_at)}{v.purpose ? ` · ${v.purpose}` : ""}
+                {v.restriction_id ? tu("op.on_restricted_list") : categoryLabel(v.category)}{v.flat_number ? ` · House ${v.flat_number}` : ""} · {fmtTime(v.expected_at ?? v.created_at)}{v.purpose ? ` · ${v.purpose}` : ""}
               </p>
             </div>
             <div className="flex gap-2">
               <Button className="flex-1 h-11 rounded-xl" disabled={busy === v.id}
-                onClick={() => (v.restriction_id ? setApproveRestricted(v.id) : void decide(v.id, "approve"))}>Approve</Button>
-              <Button variant="outline" className="flex-1 h-11 rounded-xl" disabled={busy === v.id} onClick={() => void decide(v.id, "deny")}>Deny</Button>
+                onClick={() => (v.restriction_id ? setApproveRestricted(v.id) : void decide(v.id, "approve"))}>{tu("vs.approve")}</Button>
+              <Button variant="outline" className="flex-1 h-11 rounded-xl" disabled={busy === v.id} onClick={() => void decide(v.id, "deny")}>{tu("vs.deny")}</Button>
             </div>
           </CardContent></Card></li>
         ))}
       </ul>
-      <ReasonSheet title="Allow restricted visitor" hint="This person is on the restricted list. Your reason is recorded as a separate override."
+      <ReasonSheet title={tu("op.allow_restricted_visitor")} hint={tu("op.this_person_is_on_the")}
         open={!!approveRestricted} onOpenChange={(o) => !o && setApproveRestricted(null)}
         onSubmit={(r) => decide(approveRestricted!, "approve", r)} />
     </>
@@ -127,17 +128,17 @@ function RestrictedList({ societyId }: { societyId: string }) {
   return (
     <div className="space-y-3">
       <Card className="rounded-2xl"><CardContent className="p-4 sm:p-4 space-y-3">
-        <p className="text-sm text-muted-foreground">Guards see a warning and can't let listed people in without a committee decision.</p>
+        <p className="text-sm text-muted-foreground">{tu("op.guards_see_a_warning_and")}</p>
         <div className="grid grid-cols-2 gap-2">
-          <div><Label htmlFor="r-name">Name *</Label><Input id="r-name" className="h-11" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-          <div><Label htmlFor="r-phone">Phone</Label><Input id="r-phone" className="h-11" inputMode="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
+          <div><Label htmlFor="r-name">{tu("vs.nameReq")}</Label><Input id="r-name" className="h-11" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
+          <div><Label htmlFor="r-phone">{tu("exp.phone")}</Label><Input id="r-phone" className="h-11" inputMode="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
         </div>
-        <div><Label htmlFor="r-reason">Reason *</Label><Input id="r-reason" className="h-11" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} maxLength={300} /></div>
+        <div><Label htmlFor="r-reason">{tu("el.a.reasonLbl")}</Label><Input id="r-reason" className="h-11" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} maxLength={300} /></div>
         <Button className="h-11 rounded-xl" disabled={busy || form.name.trim().length < 2 || form.reason.trim().length < 5}
-          onClick={() => save(null, form.name, form.phone || null, form.reason, true)}><Plus className="h-4 w-4 mr-1" />Add</Button>
+          onClick={() => save(null, form.name, form.phone || null, form.reason, true)}><Plus className="h-4 w-4 mr-1" />{tu("vh.add")}</Button>
       </CardContent></Card>
       {q.isLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : q.isError ? <p className="text-sm text-destructive">{gateErrorMessage(q.error)}</p> : !q.data?.length ? (
-        <p className="text-sm text-muted-foreground text-center">Nobody on the list.</p>
+        <p className="text-sm text-muted-foreground text-center">{tu("op.nobody_on_the_list")}</p>
       ) : (
         <ul className="space-y-2">
           {q.data.map((r) => (
@@ -147,7 +148,7 @@ function RestrictedList({ societyId }: { societyId: string }) {
                 <p className="text-xs text-muted-foreground truncate">{r.reason}</p>
               </div>
               <Button size="sm" variant="outline" className="min-h-11" disabled={busy} onClick={() => save(r.id, r.visitor_name, r.phone, r.reason, !r.is_active)}>
-                {r.is_active ? "Remove" : "Restore"}
+                {r.is_active ? tu("fd.remove") : tu("op.restore")}
               </Button>
             </li>
           ))}
@@ -174,29 +175,29 @@ function IncidentList({ societyId }: { societyId: string }) {
   if (q.isError) return <p className="text-sm text-destructive">{gateErrorMessage(q.error)}</p>;
   return (
     <>
-      {!q.data?.length ? <p className="text-sm text-muted-foreground text-center py-4">No incidents reported. Guards report them from the Gate screen.</p> : (
+      {!q.data?.length ? <p className="text-sm text-muted-foreground text-center py-4">{tu("op.no_incidents_reported_guards_report")}</p> : (
         <ul className="space-y-2">
           {q.data.map((i) => (
             <li key={i.id} className="rounded-2xl border p-3 space-y-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-medium capitalize">{i.kind}</span>
                 <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium capitalize", i.severity === "high" ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground")}>{i.severity}</span>
-                <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium", i.status === "open" ? "bg-warning/15 text-warning-foreground" : "bg-success/15 text-success")}>{i.status === "open" ? "Open" : "Resolved"}</span>
+                <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium", i.status === "open" ? "bg-warning/15 text-warning-foreground" : "bg-success/15 text-success")}>{i.status === "open" ? tu("common.open") : tu("hd.st.resolved")}</span>
                 <span className="text-xs text-muted-foreground ml-auto">{fmtTime(i.created_at)}</span>
               </div>
               <p className="text-sm">{i.note}</p>
-              {i.resolution_note && <p className="text-xs text-muted-foreground">Resolution: {i.resolution_note}</p>}
-              {i.status === "open" && <Button size="sm" variant="outline" className="min-h-11" onClick={() => setResolving(i.id)}>Resolve</Button>}
+              {i.resolution_note && <p className="text-xs text-muted-foreground">{tu("op.resolution")} {i.resolution_note}</p>}
+              {i.status === "open" && <Button size="sm" variant="outline" className="min-h-11" onClick={() => setResolving(i.id)}>{tu("op.resolve")}</Button>}
             </li>
           ))}
         </ul>
       )}
-      <ReasonSheet title="Resolve incident" hint="Describe what was done." min={5}
+      <ReasonSheet title={tu("op.resolve_incident")} hint={tu("op.describe_what_was_done")} min={5}
         open={!!resolving} onOpenChange={(o) => !o && setResolving(null)}
         onSubmit={async (note) => {
           const { error } = await supabase.rpc("incident_resolve", { _id: resolving!, _note: note });
           if (error) { toast.error(gateErrorMessage(error)); return false; }
-          toast.success("Incident resolved"); qc.invalidateQueries({ queryKey: ["incidents"] }); return true;
+          toast.success(tu("op.incident_resolved")); qc.invalidateQueries({ queryKey: ["incidents"] }); return true;
         }} />
     </>
   );

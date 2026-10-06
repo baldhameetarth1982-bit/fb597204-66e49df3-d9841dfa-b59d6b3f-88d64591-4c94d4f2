@@ -10,6 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 import { fmtDateTime, AGM_STATUS } from "@/lib/governance";
 import { QuorumPanel, AgendaList, ResolutionList, type AgendaItem, type Resolution, type MinutesVersion } from "@/components/governance/AgmRecord";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_resident/app/agm")({
   head: () => ({
@@ -59,10 +60,10 @@ function ResidentAgm() {
 
   return (
     <CommPage>
-      <CommHeader title="AGM" subtitle="Annual General Meeting notices and records" />
+      <CommHeader title="AGM" subtitle={tu("op.annual_general_meeting_notices_and")} />
       {list.isLoading ? <ListSkeleton rows={2} />
-        : list.isError ? <LoadError title="We couldn't load AGM records." onRetry={() => list.refetch()} />
-        : !list.data?.length ? <ListEmpty icon={Landmark} title="No AGM yet">When your committee publishes the AGM notice, it appears here.</ListEmpty>
+        : list.isError ? <LoadError title={tu("op.we_couldn_t_load_agm")} onRetry={() => list.refetch()} />
+        : !list.data?.length ? <ListEmpty icon={Landmark} title={tu("op.no_agm_yet")}>{tu("op.when_your_committee_publishes_the")}</ListEmpty>
         : (
           <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
             {list.data.map((a) => (
@@ -85,23 +86,23 @@ function ResidentAgm() {
                 <span className={cn("w-fit rounded px-1.5 py-0.5 text-xs font-medium", AGM_STATUS[open.status]?.className)}>{AGM_STATUS[open.status]?.label}</span>
                 <SheetTitle className="text-left text-xl">{open.title} · FY {open.financial_year}</SheetTitle>
               </SheetHeader>
-              {detail.isLoading ? <ListSkeleton rows={3} /> : detail.isError || !d ? <LoadError title="We couldn't load this AGM." onRetry={() => detail.refetch()} /> : (
+              {detail.isLoading ? <ListSkeleton rows={3} /> : detail.isError || !d ? <LoadError title={tu("op.we_couldn_t_load_this")} onRetry={() => detail.refetch()} /> : (
                 <>
                   {d.meeting && (
                     <div className="space-y-1 text-sm">
                       <p className="font-medium">{fmtDateTime(d.meeting.starts_at)}</p>
                       {d.meeting.location && <p className="flex items-center gap-1.5 text-muted-foreground"><MapPin className="h-4 w-4" aria-hidden />{d.meeting.location}</p>}
-                      {d.meeting.meeting_link && <a href={d.meeting.meeting_link} target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center gap-1.5 text-primary underline-offset-4 hover:underline"><Video className="h-4 w-4" aria-hidden />Join online</a>}
+                      {d.meeting.meeting_link && <a href={d.meeting.meeting_link} target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center gap-1.5 text-primary underline-offset-4 hover:underline"><Video className="h-4 w-4" aria-hidden />{tu("op.join_online")}</a>}
                     </div>
                   )}
-                  <section className="space-y-2"><h3 className="font-semibold">Agenda</h3><AgendaList items={d.agenda} /></section>
-                  {!["notice_published", "scheduled"].includes(open.status) && <section className="space-y-2"><h3 className="font-semibold">Quorum</h3><QuorumPanel agmId={open.id} /></section>}
-                  {d.resolutions.length > 0 && <section className="space-y-2"><h3 className="font-semibold">Resolutions</h3><ResolutionList items={d.resolutions} agenda={d.agenda} /></section>}
-                  <section className="space-y-2"><h3 className="font-semibold">Minutes</h3>
-                    {!d.minutes.length ? <p className="text-sm text-muted-foreground">Minutes appear here once published.</p> : d.minutes.map((m, i) => (
+                  <section className="space-y-2"><h3 className="font-semibold">{tu("mt.agenda")}</h3><AgendaList items={d.agenda} /></section>
+                  {!["notice_published", "scheduled"].includes(open.status) && <section className="space-y-2"><h3 className="font-semibold">{tu("op.quorum")}</h3><QuorumPanel agmId={open.id} /></section>}
+                  {d.resolutions.length > 0 && <section className="space-y-2"><h3 className="font-semibold">{tu("mt.resolutions")}</h3><ResolutionList items={d.resolutions} agenda={d.agenda} /></section>}
+                  <section className="space-y-2"><h3 className="font-semibold">{tu("mt.minutes")}</h3>
+                    {!d.minutes.length ? <p className="text-sm text-muted-foreground">{tu("op.minutes_appear_here_once_published")}</p> : d.minutes.map((m, i) => (
                       <details key={m.id} className="rounded-xl border p-3 text-sm" open={i === 0}>
-                        <summary className="cursor-pointer font-medium">Version {m.version}{m.published_at ? ` · ${fmtDateTime(m.published_at)}` : ""}{i > 0 ? " (superseded)" : ""}</summary>
-                        {m.correction_reason && <p className="mt-1 text-xs text-muted-foreground">Correction: {m.correction_reason}</p>}
+                        <summary className="cursor-pointer font-medium">{tu("op.version")} {m.version}{m.published_at ? ` · ${fmtDateTime(m.published_at)}` : ""}{i > 0 ? tu("op.superseded") : ""}</summary>
+                        {m.correction_reason && <p className="mt-1 text-xs text-muted-foreground">{tu("op.correction")} {m.correction_reason}</p>}
                         <p className="mt-2 whitespace-pre-wrap">{m.body}</p>
                       </details>
                     ))}

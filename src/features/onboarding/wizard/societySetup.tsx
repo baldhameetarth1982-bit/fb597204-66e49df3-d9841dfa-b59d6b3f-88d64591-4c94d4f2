@@ -26,6 +26,7 @@ import {
   type NumberingFormat, type StructureConfig, type GeneratedUnit,
 } from "@/lib/hierarchy/numbering";
 import type { DynamicField, WizardStructure } from "@/lib/hierarchy.functions";
+import { tu } from "@/lib/i18n";
 
 export interface WizardState {
   info: {
@@ -125,14 +126,14 @@ function StepInfo({ state, patch }: StepProps<WizardState>) {
       <div className="flex items-center gap-3">
         <div className="h-16 w-16 rounded-2xl bg-secondary grid place-items-center overflow-hidden">
           {state.info.logo_url ? (
-            <img src={state.info.logo_url} alt="Logo" className="h-full w-full object-cover" />
+            <img src={state.info.logo_url} alt={tu("op.logo_2")} className="h-full w-full object-cover" />
           ) : (
             <Building2 className="h-6 w-6 text-muted-foreground" />
           )}
         </div>
         <label className="inline-flex items-center gap-2 text-sm text-primary cursor-pointer">
           <Upload className="h-4 w-4" />
-          {uploading ? "Uploading…" : "Upload logo (optional)"}
+          {uploading ? tu("op.uploading") : tu("op.upload_logo_optional")}
           <input
             type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
             onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])}
@@ -140,35 +141,35 @@ function StepInfo({ state, patch }: StepProps<WizardState>) {
         </label>
       </div>
 
-      <Field label="Society name">
+      <Field label={tu("op.society_name")}>
         <Input className="h-11 rounded-xl" value={state.info.name}
           onChange={(e) => patch({ info: { ...state.info, name: e.target.value } })}
-          placeholder="Green Meadows Society" />
+          placeholder={tu("op.green_meadows_society")} />
       </Field>
-      <Field label="Registration number (optional)">
+      <Field label={tu("op.registration_number_optional")}>
         <Input className="h-11 rounded-xl" value={state.info.registration_no}
           onChange={(e) => patch({ info: { ...state.info, registration_no: e.target.value } })} />
       </Field>
-      <Field label="Full address">
+      <Field label={tu("op.full_address")}>
         <Textarea rows={2} value={state.info.address}
           onChange={(e) => patch({ info: { ...state.info, address: e.target.value } })} />
       </Field>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="City">
+        <Field label={tu("op.city_2")}>
           <Input className="h-11 rounded-xl" value={state.info.city}
             onChange={(e) => patch({ info: { ...state.info, city: e.target.value } })} />
         </Field>
-        <Field label="State">
+        <Field label={tu("op.state_2")}>
           <Input className="h-11 rounded-xl" value={state.info.state}
             onChange={(e) => patch({ info: { ...state.info, state: e.target.value } })} />
         </Field>
       </div>
-      <Field label="PIN code">
+      <Field label={tu("op.pin_code")}>
         <Input className="h-11 rounded-xl" inputMode="numeric" maxLength={6}
           value={state.info.pincode}
           onChange={(e) => patch({ info: { ...state.info, pincode: e.target.value.replace(/\D/g, "") } })} />
       </Field>
-      <Field label="Email (optional)">
+      <Field label={tu("op.email_optional")}>
         <Input className="h-11 rounded-xl" type="email" value={state.info.email}
           onChange={(e) => patch({ info: { ...state.info, email: e.target.value } })} />
       </Field>
@@ -192,7 +193,7 @@ function StepLayout({ state, patch }: StepProps<WizardState>) {
   ];
   return (
     <div className="space-y-3">
-      <p className="text-sm text-muted-foreground">How is your society organised?</p>
+      <p className="text-sm text-muted-foreground">{tu("op.how_is_your_society_organised")}</p>
       {options.map((o) => {
         const Icon = o.icon;
         const active = state.layout === o.id;
@@ -266,7 +267,7 @@ function StepStructureNaming({ state, patch }: StepProps<WizardState>) {
 
   return (
     <div className="space-y-4">
-      <Field label="What do you call your structures?">
+      <Field label={tu("op.what_do_you_call_your")}>
         <div className="grid grid-cols-3 gap-2">
           {labels.map((l) => (
             <button
@@ -283,7 +284,7 @@ function StepStructureNaming({ state, patch }: StepProps<WizardState>) {
         </div>
         <Input
           className="h-11 rounded-xl mt-2"
-          placeholder="Or type a custom label"
+          placeholder={tu("op.or_type_a_custom_label")}
           value={labels.includes(state.structure_label) ? "" : state.structure_label}
           onChange={(e) => patch({ structure_label: e.target.value })}
         />
@@ -297,7 +298,7 @@ function StepStructureNaming({ state, patch }: StepProps<WizardState>) {
             onChange={(e) => setCount(+e.target.value)}
           />
           <Button variant="secondary" className="h-11 rounded-xl" onClick={() => apply(count)}>
-            Generate
+            {tu("billingTabs.generate")}
           </Button>
         </div>
       </Field>
@@ -326,7 +327,7 @@ function StepStructureNaming({ state, patch }: StepProps<WizardState>) {
 function StepConfigureStructures({ state, patch }: StepProps<WizardState>) {
   const [idx, setIdx] = useState(0);
   const s = state.structures[idx];
-  if (!s) return <div className="text-sm text-muted-foreground">Add a structure first.</div>;
+  if (!s) return <div className="text-sm text-muted-foreground">{tu("op.add_a_structure_first")}</div>;
 
   const preview = useMemo<GeneratedUnit[]>(() => generateStructureUnits({
     name: s.name, code: s.code,
@@ -367,18 +368,18 @@ function StepConfigureStructures({ state, patch }: StepProps<WizardState>) {
         </div>
       )}
 
-      <Field label="Structure name">
+      <Field label={tu("op.structure_name")}>
         <Input className="h-11 rounded-xl" value={s.name}
           onChange={(e) => update({ name: e.target.value })} />
       </Field>
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Number of floors">
+        <Field label={tu("op.number_of_floors")}>
           <Input className="h-11 rounded-xl" type="number" min={1} max={100}
             value={s.floors}
             onChange={(e) => update({ floors: Math.max(1, +e.target.value || 1) })} />
         </Field>
-        <Field label="Units per floor">
+        <Field label={tu("op.units_per_floor")}>
           <Input className="h-11 rounded-xl" type="number" min={1} max={100}
             value={s.units_per_floor}
             onChange={(e) => update({ units_per_floor: Math.max(1, +e.target.value || 1) })} />
@@ -387,27 +388,27 @@ function StepConfigureStructures({ state, patch }: StepProps<WizardState>) {
 
       <div className="flex items-center justify-between rounded-xl border p-3">
         <div>
-          <p className="text-sm font-medium">Ground floor</p>
-          <p className="text-[11px] text-muted-foreground">Include a floor 0 in addition to floors 1..N</p>
+          <p className="text-sm font-medium">{tu("op.ground_floor")}</p>
+          <p className="text-[11px] text-muted-foreground">{tu("op.include_a_floor_0_in")}</p>
         </div>
         <Switch checked={s.ground_floor} onCheckedChange={(v) => update({ ground_floor: v })} />
       </div>
 
-      <Field label="Numbering format">
+      <Field label={tu("op.numbering_format")}>
         <Select value={s.numbering_format} onValueChange={(v) => update({ numbering_format: v })}>
           <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="sequential">Sequential — 101, 102, 201, 202</SelectItem>
-            <SelectItem value="simple">Simple — 1, 2, 3, 4</SelectItem>
-            <SelectItem value="floor_unit">Floor–Unit — 1F-01, 1F-02</SelectItem>
-            <SelectItem value="custom">Custom pattern</SelectItem>
+            <SelectItem value="sequential">{tu("op.sequential_101_102_201_202")}</SelectItem>
+            <SelectItem value="simple">{tu("op.simple_1_2_3_4")}</SelectItem>
+            <SelectItem value="floor_unit">{tu("op.floor_unit_1f_01_1f")}</SelectItem>
+            <SelectItem value="custom">{tu("op.custom_pattern")}</SelectItem>
           </SelectContent>
         </Select>
       </Field>
 
       {s.numbering_format === "custom" && (
         <Field
-          label="Custom pattern"
+          label={tu("op.custom_pattern")}
           hint="Tokens: {S} structure code · {F}/{FF} floor · {N}/{NN} unit · {G}/{GGG} global. Example: {S}-{F}{NN}"
         >
           <Input className="h-11 rounded-xl" value={s.custom_pattern ?? ""}
@@ -418,7 +419,7 @@ function StepConfigureStructures({ state, patch }: StepProps<WizardState>) {
 
       <div className="rounded-2xl border bg-muted/30 p-3">
         <p className="text-xs font-semibold mb-2 flex items-center gap-1.5">
-          <Sparkles className="h-3.5 w-3.5 text-primary" /> Live preview · {preview.length} units
+          <Sparkles className="h-3.5 w-3.5 text-primary" /> {tu("op.live_preview")} {preview.length} {tu("op.units")}
         </p>
         <div className="grid grid-cols-4 gap-1.5 max-h-52 overflow-y-auto">
           {preview.slice(0, 60).map((u, i) => (
@@ -428,7 +429,7 @@ function StepConfigureStructures({ state, patch }: StepProps<WizardState>) {
           ))}
           {preview.length > 60 && (
             <div className="col-span-4 text-center text-[11px] text-muted-foreground pt-1">
-              +{preview.length - 60} more
+              +{preview.length - 60} {tu("op.more")}
             </div>
           )}
         </div>
@@ -448,7 +449,7 @@ function StepSerialCount({ state, patch }: StepProps<WizardState>) {
 
   return (
     <div className="space-y-4">
-      <Field label="Total houses" hint="We'll auto-number them 1, 2, 3, … — edit any in the next step.">
+      <Field label={tu("op.total_houses")} hint={tu("op.we_ll_auto_number_them")}>
         <Input className="h-14 rounded-xl text-2xl font-semibold text-center"
           type="number" min={1} max={20000}
           value={state.serial_count || ""}
@@ -457,7 +458,7 @@ function StepSerialCount({ state, patch }: StepProps<WizardState>) {
 
       {preview.length > 0 && (
         <div className="rounded-2xl border bg-muted/30 p-3">
-          <p className="text-xs font-semibold mb-2">Preview — first 20 houses</p>
+          <p className="text-xs font-semibold mb-2">{tu("op.preview_first_20_houses")}</p>
           <div className="grid grid-cols-5 gap-1.5">
             {preview.slice(0, 20).map((u, i) => (
               <div key={i} className="h-9 rounded-md bg-background border text-[11px] grid place-items-center">
@@ -503,8 +504,8 @@ function StepUnitEditor({ state, patch }: StepProps<WizardState>) {
       )}
 
       <p className="text-xs text-muted-foreground">
-        {units.length} units{dupes.size > 0 && (
-          <span className="text-destructive font-medium"> · {dupes.size} duplicate code(s)</span>
+        {units.length} {tu("op.units")}{dupes.size > 0 && (
+          <span className="text-destructive font-medium"> · {dupes.size} {tu("op.duplicate_code_s")}</span>
         )}
       </p>
 
@@ -537,7 +538,7 @@ function StepUnitEditor({ state, patch }: StepProps<WizardState>) {
           const next = [...units, { code: "", name: "", floor: 0 }];
           setUnits(next);
         }}>
-        <Plus className="h-4 w-4 mr-2" /> Add unit
+        <Plus className="h-4 w-4 mr-2" /> {tu("op.add_unit_2")}
       </Button>
     </div>
   );
@@ -548,26 +549,26 @@ function StepOpening({ state, patch }: StepProps<WizardState>) {
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900 p-3 text-xs text-amber-900 dark:text-amber-200">
-        Opening balances <strong>lock forever</strong> after you finish setup. Future corrections must be Adjustment entries.
+        {tu("op.opening_balances")} <strong>{tu("op.lock_forever")}</strong> {tu("op.after_you_finish_setup_future")}
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Cash on hand (₹)">
+        <Field label={tu("op.cash_on_hand")}>
           <Input className="h-11 rounded-xl" type="number" min={0} step="0.01"
             value={state.opening.cash}
             onChange={(e) => patch({ opening: { ...state.opening, cash: +e.target.value || 0 } })} />
         </Field>
-        <Field label="Bank balance (₹)">
+        <Field label={tu("op.bank_balance_2")}>
           <Input className="h-11 rounded-xl" type="number" min={0} step="0.01"
             value={state.opening.bank}
             onChange={(e) => patch({ opening: { ...state.opening, bank: +e.target.value || 0 } })} />
         </Field>
       </div>
-      <Field label="As of date">
+      <Field label={tu("op.as_of_date")}>
         <Input className="h-11 rounded-xl" type="date"
           value={state.opening.as_of}
           onChange={(e) => patch({ opening: { ...state.opening, as_of: e.target.value } })} />
       </Field>
-      <Field label="Financial year">
+      <Field label={tu("op.financial_year_2")}>
         <Input className="h-11 rounded-xl" value={state.financial_year_label}
           onChange={(e) => patch({ financial_year_label: e.target.value })} />
       </Field>
@@ -581,42 +582,42 @@ function StepMaintenance({ state, patch }: StepProps<WizardState>) {
   const up = (p: Partial<WizardState["maintenance"]>) => patch({ maintenance: { ...m, ...p } });
   return (
     <div className="space-y-4">
-      <Field label="Monthly maintenance amount (₹)">
+      <Field label={tu("op.monthly_maintenance_amount")}>
         <Input className="h-11 rounded-xl" type="number" min={0} step="0.01"
           value={m.amount} onChange={(e) => up({ amount: +e.target.value || 0 })} />
       </Field>
-      <Field label="Billing type">
+      <Field label={tu("op.billing_type")}>
         <Select value={m.billing_type} onValueChange={(v) => up({ billing_type: v as any })}>
           <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="prepaid">Prepaid — bill before period starts</SelectItem>
-            <SelectItem value="current">Current month — bill during period</SelectItem>
-            <SelectItem value="postpaid">Postpaid — bill after period</SelectItem>
+            <SelectItem value="prepaid">{tu("op.prepaid_bill_before_period_starts")}</SelectItem>
+            <SelectItem value="current">{tu("op.current_month_bill_during_period")}</SelectItem>
+            <SelectItem value="postpaid">{tu("op.postpaid_bill_after_period")}</SelectItem>
           </SelectContent>
         </Select>
       </Field>
-      <Field label="Frequency">
+      <Field label={tu("op.frequency")}>
         <Select value={m.frequency} onValueChange={(v) => up({ frequency: v as any })}>
           <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="monthly">Monthly</SelectItem>
-            <SelectItem value="quarterly">Quarterly</SelectItem>
-            <SelectItem value="half_yearly">Half-yearly</SelectItem>
-            <SelectItem value="yearly">Yearly</SelectItem>
+            <SelectItem value="monthly">{tu("op.monthly")}</SelectItem>
+            <SelectItem value="quarterly">{tu("op.quarterly")}</SelectItem>
+            <SelectItem value="half_yearly">{tu("op.half_yearly")}</SelectItem>
+            <SelectItem value="yearly">{tu("op.yearly")}</SelectItem>
           </SelectContent>
         </Select>
       </Field>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Bill due day (1–28)">
+        <Field label={tu("op.bill_due_day_1_28")}>
           <Input className="h-11 rounded-xl" type="number" min={1} max={28}
             value={m.due_day} onChange={(e) => up({ due_day: Math.max(1, Math.min(28, +e.target.value || 1)) })} />
         </Field>
-        <Field label="Grace period (days)">
+        <Field label={tu("op.grace_period_days")}>
           <Input className="h-11 rounded-xl" type="number" min={0} max={30}
             value={m.grace_days} onChange={(e) => up({ grace_days: Math.max(0, Math.min(30, +e.target.value || 0)) })} />
         </Field>
       </div>
-      <Field label="Late fee">
+      <Field label={tu("op.late_fee")}>
         <div className="flex gap-2">
           <Input className="h-11 rounded-xl" type="number" min={0}
             value={m.late_fee_amount}
@@ -632,9 +633,9 @@ function StepMaintenance({ state, patch }: StepProps<WizardState>) {
       </Field>
       <div className="flex items-center justify-between rounded-xl border p-3">
         <div>
-          <p className="text-sm font-medium">Automatic bill generation</p>
+          <p className="text-sm font-medium">{tu("op.automatic_bill_generation")}</p>
           <p className="text-[11px] text-muted-foreground">
-            Generate bills on schedule. Bills stay unpaid until marked or paid online.
+            {tu("op.generate_bills_on_schedule_bills")}
           </p>
         </div>
         <Switch checked={m.auto_generate} onCheckedChange={(v) => up({ auto_generate: v })} />
@@ -664,10 +665,10 @@ function StepDynamicFields({ state, patch }: StepProps<WizardState>) {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Optional. Add custom fields residents can fill on their profile (property number, meter numbers, parking, etc.). You can always add more later.
+        {tu("op.optional_add_custom_fields_residents")}
       </p>
       <div>
-        <p className="text-xs font-semibold mb-2">Quick add</p>
+        <p className="text-xs font-semibold mb-2">{tu("op.quick_add")}</p>
         <div className="flex flex-wrap gap-2">
           {TEMPLATES.map((t) => {
             const added = state.dynamic_fields.some((f) => f.key === t.key);
@@ -728,7 +729,7 @@ function StepReview({ state }: StepProps<WizardState>) {
         <Row k="Custom fields" v={String(state.dynamic_fields.length)} />
       </CardContent></Card>
       <div className="rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 p-3 text-xs text-amber-900 dark:text-amber-200">
-        Tapping <strong>Finish setup</strong> will lock opening balances and initialize your society. You can still edit maintenance policy and add units later.
+        {tu("op.tapping")} <strong>{tu("op.finish_setup_2")}</strong> {tu("op.will_lock_opening_balances_and")}
       </div>
     </div>
   );

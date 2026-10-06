@@ -9,6 +9,7 @@ import { toSafeFinanceError } from "@/lib/finance-safe-error";
 import { formatDate } from "@/utils/format";
 import { useSocietyBranding } from "@/hooks/useSocietyBranding";
 import { useSocietyId } from "@/hooks/useSocietyId";
+import { tu } from "@/lib/i18n";
 
 type Row = {
   id: string;
@@ -110,7 +111,7 @@ export function ReceiptList({ societyId, showHome }: { societyId?: string | null
 
   if (loading) {
     return (
-      <div className="space-y-3" aria-busy="true" aria-label="Loading receipts">
+      <div className="space-y-3" aria-busy="true" aria-label={tu("op.loading_receipts")}>
         {[0, 1, 2].map((i) => <div key={i} className="h-20 rounded-2xl bg-muted animate-pulse" />)}
       </div>
     );
@@ -119,7 +120,7 @@ export function ReceiptList({ societyId, showHome }: { societyId?: string | null
     return (
       <div role="alert" className="rounded-2xl border border-destructive/30 bg-card p-4 flex items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">{error}</p>
-        <Button size="sm" variant="outline" className="min-h-11 shrink-0" onClick={() => void load()}>Try again</Button>
+        <Button size="sm" variant="outline" className="min-h-11 shrink-0" onClick={() => void load()}>{tu("common.tryAgain")}</Button>
       </div>
     );
   }
@@ -127,8 +128,8 @@ export function ReceiptList({ societyId, showHome }: { societyId?: string | null
     return (
       <EmptyState
         icon={Receipt}
-        title="No receipts yet"
-        description="A receipt is issued only after a payment is confirmed — by the committee for Cash, Bank Transfer and UPI QR, or by the payment provider for online Pay now. Pending payments don't have receipts."
+        title={tu("op.no_receipts_yet")}
+        description={tu("op.a_receipt_is_issued_only")}
       />
     );
   }
@@ -137,10 +138,10 @@ export function ReceiptList({ societyId, showHome }: { societyId?: string | null
     <div className="space-y-3">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input aria-label="Search receipts" placeholder={showHome ? "Search receipt, bill, house or reference" : "Search receipt or bill number"} value={q} onChange={(e) => setQ(e.target.value)} className="pl-9 rounded-xl h-11" />
+        <Input aria-label={tu("op.search_receipts")} placeholder={showHome ? tu("op.search_receipt_bill_house_or") : tu("op.search_receipt_or_bill_number")} value={q} onChange={(e) => setQ(e.target.value)} className="pl-9 rounded-xl h-11" />
       </div>
       {filtered.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-8">No receipts match this search.</p>
+        <p className="text-sm text-muted-foreground text-center py-8">{tu("op.no_receipts_match_this_search")}</p>
       ) : (
         <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
           {filtered.map((r) => {
@@ -156,14 +157,14 @@ export function ReceiptList({ societyId, showHome }: { societyId?: string | null
                     {[showHome && r.home ? `House ${r.home}` : null, r.bill_number_snapshot ? `Bill ${r.bill_number_snapshot}` : null,
                       r.method_snapshot ? methodLabel(r.method_snapshot) : null, r.issued_at ? formatDate(r.issued_at) : null].filter(Boolean).join(" · ")}
                   </p>
-                  {r.reference_snapshot && <p className="text-xs text-muted-foreground break-all">Ref {r.reference_snapshot}</p>}
+                  {r.reference_snapshot && <p className="text-xs text-muted-foreground break-all">{tu("op.ref")} {r.reference_snapshot}</p>}
                   {voided && (
-                    <p className="mt-1 text-xs text-muted-foreground">Voided{r.voided_at ? ` ${formatDate(r.voided_at)}` : ""} after payment reversal{r.void_reason ? ` · ${r.void_reason}` : ""}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{tu("docState.voided")}{r.voided_at ? ` ${formatDate(r.voided_at)}` : ""} {tu("op.after_payment_reversal")}{r.void_reason ? ` · ${r.void_reason}` : ""}</p>
                   )}
                 </div>
                 <div className="text-right">
                   <p className={`font-semibold tabular-nums ${voided ? "line-through text-muted-foreground" : ""}`}>{r.amount_snapshot != null ? INR(Number(r.amount_snapshot)) : "—"}</p>
-                  <StatusChip tone={voided ? "neutral" : "success"} className="mt-1">{voided ? "Voided" : "Verified"}</StatusChip>
+                  <StatusChip tone={voided ? "neutral" : "success"} className="mt-1">{voided ? tu("docState.voided") : tu("docState.verified")}</StatusChip>
                   <Button size="sm" variant="ghost" className="mt-1 min-h-11 px-2" aria-label={`Download receipt ${r.receipt_number}`} onClick={() => void downloadReceipt(r, voided, societyName)}>
                     <Download className="h-4 w-4" />
                   </Button>

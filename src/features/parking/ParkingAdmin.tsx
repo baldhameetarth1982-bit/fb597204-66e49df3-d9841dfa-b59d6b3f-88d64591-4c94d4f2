@@ -15,6 +15,7 @@ import { StatusChip, SummaryStrip, ListSkeleton, LoadError, ListEmpty, Segmented
 import { gateErrorMessage, fmtTime } from "@/lib/visitors";
 import { allocationState, label, TEMP_PURPOSES, toCsv, VIOLATION_TYPES, violationLabel } from "./parking";
 import { PhotoPicker, usePhotoQueue, useEvidenceUploader, ViolationEvidence, type Pending } from "./ViolationEvidence";
+import { tu } from "@/lib/i18n";
 
 const NONE = "__none";
 const n = (v: string) => (v === NONE || v === "" ? null : v);
@@ -66,16 +67,16 @@ function HolderPicker({ d, flat, vehicle, onFlat, onVehicle, flatOptional }: { d
   const vehs = d.vehicles.filter((v) => flat === NONE || v.flat_id === flat);
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      <div><Label>House</Label>
+      <div><Label>{tu("gd.houseLabel")}</Label>
         <Select value={flat} onValueChange={(v) => { onFlat(v); onVehicle(NONE); }}>
-          <SelectTrigger aria-label="House" className="h-11"><SelectValue /></SelectTrigger>
-          <SelectContent><SelectItem value={NONE}>{flatOptional ? "No house" : "Pick a house"}</SelectItem>{d.flats.map((f) => <SelectItem key={f.id} value={f.id}>{f.flat_number}</SelectItem>)}</SelectContent>
+          <SelectTrigger aria-label={tu("gd.houseLabel")} className="h-11"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value={NONE}>{flatOptional ? tu("gd.noHouse") : tu("op.pick_a_house")}</SelectItem>{d.flats.map((f) => <SelectItem key={f.id} value={f.id}>{f.flat_number}</SelectItem>)}</SelectContent>
         </Select>
       </div>
-      <div><Label>Vehicle (optional)</Label>
+      <div><Label>{tu("op.vehicle_optional")}</Label>
         <Select value={vehicle} onValueChange={onVehicle}>
-          <SelectTrigger aria-label="Vehicle" className="h-11"><SelectValue /></SelectTrigger>
-          <SelectContent><SelectItem value={NONE}>Any vehicle of the house</SelectItem>{vehs.map((v) => <SelectItem key={v.id} value={v.id}>{v.plate_number}</SelectItem>)}</SelectContent>
+          <SelectTrigger aria-label={tu("vs.vehicle")} className="h-11"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value={NONE}>{tu("op.any_vehicle_of_the_house")}</SelectItem>{vehs.map((v) => <SelectItem key={v.id} value={v.id}>{v.plate_number}</SelectItem>)}</SelectContent>
         </Select>
       </div>
     </div>
@@ -102,12 +103,12 @@ export function CapacityPanel({ d }: { d: PData | undefined }) {
   return (
     <section aria-labelledby="cap-h" className="mb-6">
       <div className="mb-2 flex flex-wrap items-end gap-2">
-        <h2 id="cap-h" className="mr-auto text-sm font-semibold">Capacity right now</h2>
-        <Select value={block} onValueChange={setBlock}><SelectTrigger aria-label="Filter by block" className="h-11 w-36"><SelectValue /></SelectTrigger>
-          <SelectContent><SelectItem value={NONE}>All blocks</SelectItem>{(d?.blocks ?? []).map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent></Select>
-        <Input aria-label="Filter by floor" placeholder="Floor" value={floor} onChange={(e) => setFloor(e.target.value)} className="h-11 w-24" maxLength={20} />
-        <Select value={type} onValueChange={setType}><SelectTrigger aria-label="Filter by slot type" className="h-11 w-32"><SelectValue /></SelectTrigger>
-          <SelectContent><SelectItem value={NONE}>All types</SelectItem>{["car", "bike", "visitor", "other"].map((t) => <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}</SelectContent></Select>
+        <h2 id="cap-h" className="mr-auto text-sm font-semibold">{tu("op.capacity_right_now")}</h2>
+        <Select value={block} onValueChange={setBlock}><SelectTrigger aria-label={tu("op.filter_by_block")} className="h-11 w-36"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value={NONE}>{tu("mnt.allBlocks")}</SelectItem>{(d?.blocks ?? []).map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent></Select>
+        <Input aria-label={tu("op.filter_by_floor")} placeholder={tu("op.floor")} value={floor} onChange={(e) => setFloor(e.target.value)} className="h-11 w-24" maxLength={20} />
+        <Select value={type} onValueChange={setType}><SelectTrigger aria-label={tu("op.filter_by_slot_type")} className="h-11 w-32"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value={NONE}>{tu("op.all_types")}</SelectItem>{["car", "bike", "visitor", "other"].map((t) => <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}</SelectContent></Select>
       </div>
       {cap.isError ? <LoadError title={gateErrorMessage(cap.error)} onRetry={() => void cap.refetch()} /> : (
         <>
@@ -177,14 +178,14 @@ export function SlotsTab({ d, onAdd }: { d: PData; onAdd: number }) {
   }, form.id ? "Slot updated" : "Slot added"); };
 
   const assign = (realloc: boolean) => {
-    if (n(holder.flat) === null && n(holder.vehicle) === null) return toast.error("Pick a house or a vehicle.");
-    if (realloc && !holder.reason.trim()) return toast.error("Write why the slot is being reallocated.");
+    if (n(holder.flat) === null && n(holder.vehicle) === null) return toast.error(tu("op.pick_a_house_or_a"));
+    if (realloc && !holder.reason.trim()) return toast.error(tu("op.write_why_the_slot_is"));
     void run(() => rpc(realloc ? "admin_parking_reallocate" : "admin_parking_assign", { _slot_id: form.id, _flat_id: n(holder.flat), _vehicle_id: n(holder.vehicle), _reason: holder.reason || null }),
       realloc ? "Slot reallocated" : "Slot assigned").then(() => setHolder({ flat: NONE, vehicle: NONE, reason: "" }));
   };
   const release = () => {
     if (!cur) return;
-    if (!rel.reason.trim()) return toast.error("Write why the slot is being released.");
+    if (!rel.reason.trim()) return toast.error(tu("op.write_why_the_slot_is_2"));
     void run(() => rpc("admin_parking_release", { _allocation_id: cur.id, _reason: rel.reason, _effective_at: rel.date ? new Date(rel.date + "T12:00:00").toISOString() : null }), "Slot released")
       .then(() => setRel({ reason: "", date: "" }));
   };
@@ -193,17 +194,17 @@ export function SlotsTab({ d, onAdd }: { d: PData; onAdd: number }) {
   return (
     <>
       <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center">
-        <SearchField label="Search parking" placeholder="Slot, house, plate or floor" value={q} onChange={setQ} />
-        <SegmentedFilter label="Slot status" value={view} onChange={setView} options={[
+        <SearchField label={tu("op.search_parking")} placeholder={tu("op.slot_house_plate_or_floor")} value={q} onChange={setQ} />
+        <SegmentedFilter label={tu("op.slot_status")} value={view} onChange={setView} options={[
           { key: "all", label: "All" }, { key: "assigned", label: "Assigned" }, { key: "free", label: "Free" }, { key: "visitor", label: "Visitor" },
         ]} />
       </div>
       {d.slots.length === 0 ? (
-        <ListEmpty icon={ParkingSquare} title="No parking slots yet">Add your first slot, then assign it to a home.</ListEmpty>
+        <ListEmpty icon={ParkingSquare} title={tu("op.no_parking_slots_yet")}>{tu("op.add_your_first_slot_then")}</ListEmpty>
       ) : shown.length === 0 ? (
-        <ListEmpty icon={ParkingSquare} title="No matching slots">Try another search or filter.</ListEmpty>
+        <ListEmpty icon={ParkingSquare} title={tu("op.no_matching_slots")}>{tu("op.try_another_search_or_filter")}</ListEmpty>
       ) : (
-        <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card" aria-label="Parking slots">
+        <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card" aria-label={tu("op.parking_slots")}>
           {shown.map((s) => {
             const a = active.get(s.id);
             return (
@@ -213,18 +214,18 @@ export function SlotsTab({ d, onAdd }: { d: PData; onAdd: number }) {
                   <span className="flex min-w-0 items-center gap-3">
                     <span className="grid h-11 min-w-11 place-items-center rounded-xl border border-border bg-background px-2 font-mono text-sm font-semibold">{s.label}</span>
                     <span className="min-w-0">
-                      <span className="flex items-center gap-1 text-sm font-medium capitalize">{s.slot_type} slot {s.ev_capable && <Zap className="h-3.5 w-3.5 text-primary" aria-label="EV-capable" />}</span>
+                      <span className="flex items-center gap-1 text-sm font-medium capitalize">{s.slot_type} {tu("op.slot")} {s.ev_capable && <Zap className="h-3.5 w-3.5 text-primary" aria-label={tu("op.ev_capable")} />}</span>
                       <span className="block truncate text-xs text-muted-foreground">{[s.block_id && names.block.get(s.block_id), s.floor && `Floor ${s.floor}`, s.notes].filter(Boolean).join(" · ") || "—"}</span>
                     </span>
                   </span>
-                  <span className="text-sm">{a?.flat_id ? `House ${names.flat.get(a.flat_id) ?? "—"}` : <span className="text-muted-foreground">{s.slot_type === "visitor" ? "For visitors" : "Not assigned"}</span>}</span>
-                  <span className="font-mono text-sm">{a?.vehicle_id ? names.plate.get(a.vehicle_id) ?? "—" : <span className="font-sans text-muted-foreground">{a ? "Any vehicle of the house" : "—"}</span>}</span>
+                  <span className="text-sm">{a?.flat_id ? `House ${names.flat.get(a.flat_id) ?? "—"}` : <span className="text-muted-foreground">{s.slot_type === "visitor" ? tu("op.for_visitors") : tu("op.not_assigned")}</span>}</span>
+                  <span className="font-mono text-sm">{a?.vehicle_id ? names.plate.get(a.vehicle_id) ?? "—" : <span className="font-sans text-muted-foreground">{a ? tu("op.any_vehicle_of_the_house") : "—"}</span>}</span>
                   <span className="flex flex-wrap gap-1">
-                    {s.availability === "unavailable" ? <StatusChip tone="warning">Unavailable</StatusChip>
-                      : a ? <StatusChip tone="primary">Assigned</StatusChip>
-                      : tempNow.has(s.id) ? <StatusChip tone="warning">Temporary</StatusChip>
-                      : s.availability === "reserved" ? <StatusChip tone="info">Reserved</StatusChip>
-                      : <StatusChip tone="success">Free</StatusChip>}
+                    {s.availability === "unavailable" ? <StatusChip tone="warning">{tu("hd.unavailable")}</StatusChip>
+                      : a ? <StatusChip tone="primary">{tu("op.assigned")}</StatusChip>
+                      : tempNow.has(s.id) ? <StatusChip tone="warning">{tu("op.temporary")}</StatusChip>
+                      : s.availability === "reserved" ? <StatusChip tone="info">{tu("op.reserved")}</StatusChip>
+                      : <StatusChip tone="success">{tu("cm.free")}</StatusChip>}
                   </span>
                 </button>
               </li>
@@ -235,67 +236,67 @@ export function SlotsTab({ d, onAdd }: { d: PData; onAdd: number }) {
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="bottom" className="max-h-[92vh] overflow-y-auto rounded-t-3xl">
-          <SheetHeader><SheetTitle>{form.id ? `Slot ${form.label}` : "Add slot"}</SheetTitle></SheetHeader>
+          <SheetHeader><SheetTitle>{form.id ? `Slot ${form.label}` : tu("op.add_slot")}</SheetTitle></SheetHeader>
           <form onSubmit={saveSlot} className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-3">
-              <div><Label htmlFor="p-label">Slot name *</Label><Input id="p-label" className="h-11" value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value.toUpperCase() })} placeholder="P-12" maxLength={20} required /></div>
-              <div><Label>Type</Label>
+              <div><Label htmlFor="p-label">{tu("op.slot_name")}</Label><Input id="p-label" className="h-11" value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value.toUpperCase() })} placeholder="P-12" maxLength={20} required /></div>
+              <div><Label>{tu("cm.type")}</Label>
                 <Select value={form.slot_type} onValueChange={(v) => setForm({ ...form, slot_type: v })}>
-                  <SelectTrigger aria-label="Type" className="h-11"><SelectValue /></SelectTrigger>
+                  <SelectTrigger aria-label={tu("cm.type")} className="h-11"><SelectValue /></SelectTrigger>
                   <SelectContent>{["car", "bike", "visitor", "other"].map((t) => <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div><Label>Block</Label>
+              <div><Label>{tu("mnt.block")}</Label>
                 <Select value={form.block_id} onValueChange={(v) => setForm({ ...form, block_id: v })}>
-                  <SelectTrigger aria-label="Block" className="h-11"><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value={NONE}>No block</SelectItem>{d.blocks.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent>
+                  <SelectTrigger aria-label={tu("mnt.block")} className="h-11"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value={NONE}>{tu("op.no_block")}</SelectItem>{d.blocks.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div><Label htmlFor="p-floor">Floor / level</Label><Input id="p-floor" className="h-11" value={form.floor} onChange={(e) => setForm({ ...form, floor: e.target.value })} maxLength={20} placeholder="B1" /></div>
-              <div><Label>Status</Label>
+              <div><Label htmlFor="p-floor">{tu("op.floor_level")}</Label><Input id="p-floor" className="h-11" value={form.floor} onChange={(e) => setForm({ ...form, floor: e.target.value })} maxLength={20} placeholder="B1" /></div>
+              <div><Label>{tu("common.status")}</Label>
                 <Select value={form.availability} onValueChange={(v) => setForm({ ...form, availability: v })}>
-                  <SelectTrigger aria-label="Status" className="h-11"><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="open">Open</SelectItem><SelectItem value="reserved">Reserved</SelectItem><SelectItem value="unavailable">Unavailable</SelectItem></SelectContent>
+                  <SelectTrigger aria-label={tu("common.status")} className="h-11"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="open">{tu("common.open")}</SelectItem><SelectItem value="reserved">{tu("op.reserved")}</SelectItem><SelectItem value="unavailable">{tu("hd.unavailable")}</SelectItem></SelectContent>
                 </Select>
               </div>
-              <label className="flex min-h-11 items-center justify-between gap-2 self-end rounded-xl border border-border px-3 text-sm">EV-capable<Switch checked={form.ev_capable} onCheckedChange={(v) => setForm({ ...form, ev_capable: v })} aria-label="EV-capable" /></label>
+              <label className="flex min-h-11 items-center justify-between gap-2 self-end rounded-xl border border-border px-3 text-sm">{tu("op.ev_capable")}<Switch checked={form.ev_capable} onCheckedChange={(v) => setForm({ ...form, ev_capable: v })} aria-label={tu("op.ev_capable")} /></label>
             </div>
-            <div><Label htmlFor="p-notes">Notes</Label><Input id="p-notes" className="h-11" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} maxLength={200} placeholder="e.g. Near lift" /></div>
-            <Button type="submit" className="h-12 w-full rounded-xl" disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save slot details"}</Button>
+            <div><Label htmlFor="p-notes">{tu("exp.notes")}</Label><Input id="p-notes" className="h-11" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} maxLength={200} placeholder={tu("op.e_g_near_lift")} /></div>
+            <Button type="submit" className="h-12 w-full rounded-xl" disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : tu("op.save_slot_details")}</Button>
           </form>
 
           {form.id && form.slot_type !== "visitor" && (
-            <section className="space-y-3 border-t border-border py-4" aria-label="Assignment">
-              <h3 className="text-sm font-semibold">Assignment</h3>
+            <section className="space-y-3 border-t border-border py-4" aria-label={tu("op.assignment")}>
+              <h3 className="text-sm font-semibold">{tu("op.assignment")}</h3>
               {cur ? (
                 <div className="rounded-xl border border-border p-3 text-sm">
-                  <p>House <b>{cur.flat_id ? names.flat.get(cur.flat_id) : "—"}</b>{cur.vehicle_id && <> · <span className="font-mono">{names.plate.get(cur.vehicle_id)}</span></>}</p>
-                  <p className="text-xs text-muted-foreground">Since {new Date(cur.starts_at).toLocaleDateString()}{cur.reason ? ` · ${cur.reason}` : ""}</p>
+                  <p>{tu("gd.houseLabel")} <b>{cur.flat_id ? names.flat.get(cur.flat_id) : "—"}</b>{cur.vehicle_id && <> · <span className="font-mono">{names.plate.get(cur.vehicle_id)}</span></>}</p>
+                  <p className="text-xs text-muted-foreground">{tu("op.since")} {new Date(cur.starts_at).toLocaleDateString()}{cur.reason ? ` · ${cur.reason}` : ""}</p>
                   <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto_auto]">
-                    <Input aria-label="Release reason" placeholder="Reason for release" value={rel.reason} onChange={(e) => setRel({ ...rel, reason: e.target.value })} maxLength={300} className="h-11" />
-                    <Input aria-label="Effective date" type="date" value={rel.date} onChange={(e) => setRel({ ...rel, date: e.target.value })} className="h-11" />
-                    <Button type="button" variant="outline" className="min-h-11" disabled={busy} onClick={release}>Release</Button>
+                    <Input aria-label={tu("op.release_reason")} placeholder={tu("op.reason_for_release")} value={rel.reason} onChange={(e) => setRel({ ...rel, reason: e.target.value })} maxLength={300} className="h-11" />
+                    <Input aria-label={tu("op.effective_date")} type="date" value={rel.date} onChange={(e) => setRel({ ...rel, date: e.target.value })} className="h-11" />
+                    <Button type="button" variant="outline" className="min-h-11" disabled={busy} onClick={release}>{tu("op.release")}</Button>
                   </div>
                 </div>
-              ) : <p className="text-sm text-muted-foreground">Not assigned. Only homes with a current resident can be assigned.</p>}
+              ) : <p className="text-sm text-muted-foreground">{tu("op.not_assigned_only_homes_with")}</p>}
               <HolderPicker d={d} flat={holder.flat} vehicle={holder.vehicle} onFlat={(v) => setHolder((h) => ({ ...h, flat: v }))} onVehicle={(v) => setHolder((h) => ({ ...h, vehicle: v }))} />
-              <Input aria-label="Assignment note" placeholder={cur ? "Reason for reallocation (required)" : "Note (optional)"} value={holder.reason} onChange={(e) => setHolder({ ...holder, reason: e.target.value })} maxLength={300} className="h-11" />
-              <Button type="button" className="min-h-11 w-full rounded-xl" disabled={busy} onClick={() => assign(!!cur)}>{cur ? "Reallocate to this home" : "Assign slot"}</Button>
+              <Input aria-label={tu("op.assignment_note")} placeholder={cur ? tu("op.reason_for_reallocation_required") : tu("op.note_optional")} value={holder.reason} onChange={(e) => setHolder({ ...holder, reason: e.target.value })} maxLength={300} className="h-11" />
+              <Button type="button" className="min-h-11 w-full rounded-xl" disabled={busy} onClick={() => assign(!!cur)}>{cur ? tu("op.reallocate_to_this_home") : tu("op.assign_slot")}</Button>
             </section>
           )}
 
           {form.id && (
-            <section className="space-y-2 border-t border-border py-4" aria-label="Slot history">
-              <h3 className="text-sm font-semibold">History</h3>
-              {history.length === 0 ? <p className="text-sm text-muted-foreground">No allocations yet.</p> : (
+            <section className="space-y-2 border-t border-border py-4" aria-label={tu("op.slot_history")}>
+              <h3 className="text-sm font-semibold">{tu("billingTabs.history")}</h3>
+              {history.length === 0 ? <p className="text-sm text-muted-foreground">{tu("op.no_allocations_yet")}</p> : (
                 <ul className="space-y-2">{history.map((a) => (
                   <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border px-3 py-2 text-sm">
-                    <span><span className="capitalize">{a.kind}</span> · {a.flat_id ? `House ${names.flat.get(a.flat_id) ?? "—"}` : "No house"}{a.vehicle_id ? ` · ${names.plate.get(a.vehicle_id) ?? ""}` : ""}
-                      <span className="block text-xs text-muted-foreground">{new Date(a.starts_at).toLocaleString()} → {a.released_at ? new Date(a.released_at).toLocaleString() : a.ends_at ? new Date(a.ends_at).toLocaleString() : "now"}{a.release_reason ? ` · ${a.release_reason}` : ""}</span></span>
+                    <span><span className="capitalize">{a.kind}</span> · {a.flat_id ? `House ${names.flat.get(a.flat_id) ?? "—"}` : tu("gd.noHouse")}{a.vehicle_id ? ` · ${names.plate.get(a.vehicle_id) ?? ""}` : ""}
+                      <span className="block text-xs text-muted-foreground">{new Date(a.starts_at).toLocaleString()} → {a.released_at ? new Date(a.released_at).toLocaleString() : a.ends_at ? new Date(a.ends_at).toLocaleString() : tu("op.now")}{a.release_reason ? ` · ${a.release_reason}` : ""}</span></span>
                     {stateChip(allocationState(a))}
                   </li>))}</ul>
               )}
-              <Button type="button" variant="ghost" className="min-h-11 w-full text-destructive" disabled={busy} onClick={archive}>Remove slot</Button>
+              <Button type="button" variant="ghost" className="min-h-11 w-full text-destructive" disabled={busy} onClick={archive}>{tu("op.remove_slot")}</Button>
             </section>
           )}
         </SheetContent>
@@ -320,13 +321,13 @@ export function TemporaryTab({ d }: { d: PData }) {
   async function issue(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
-    if (f.slot === NONE) return toast.error("Pick a slot.");
-    if (!f.reason.trim()) return toast.error("Write a reason.");
+    if (f.slot === NONE) return toast.error(tu("op.pick_a_slot"));
+    if (!f.reason.trim()) return toast.error(tu("op.write_a_reason"));
     setBusy(true);
     const { error } = await rpc("admin_parking_temp_allocate", { _slot_id: f.slot, _flat_id: n(f.flat), _vehicle_id: n(f.vehicle), _purpose: f.purpose, _starts_at: new Date(f.start).toISOString(), _ends_at: new Date(f.end).toISOString(), _reason: f.reason });
     setBusy(false);
     if (error) return toast.error(gateErrorMessage(error));
-    toast.success("Temporary parking issued");
+    toast.success(tu("op.temporary_parking_issued"));
     setF((x) => ({ ...x, reason: "", flat: NONE, vehicle: NONE }));
     qc.invalidateQueries({ queryKey: ["parking"] }); qc.invalidateQueries({ queryKey: ["parking-capacity"] });
   }
@@ -335,45 +336,45 @@ export function TemporaryTab({ d }: { d: PData }) {
     if (!reason?.trim()) return;
     const { error } = await rpc("admin_parking_release", { _allocation_id: id, _reason: reason, _effective_at: null });
     if (error) return toast.error(gateErrorMessage(error));
-    toast.success("Cancelled");
+    toast.success(tu("rbills.cancelled"));
     qc.invalidateQueries({ queryKey: ["parking"] }); qc.invalidateQueries({ queryKey: ["parking-capacity"] });
   }
   const row = (a: Alloc, actions: boolean) => (
     <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
-      <span className="min-w-0"><b className="font-mono">{names.slot.get(a.slot_id) ?? "Removed slot"}</b> · {label(TEMP_PURPOSES, a.temp_purpose)} · {a.flat_id ? `House ${names.flat.get(a.flat_id)}` : "No house"}{a.vehicle_id ? ` · ${names.plate.get(a.vehicle_id)}` : ""}
+      <span className="min-w-0"><b className="font-mono">{names.slot.get(a.slot_id) ?? tu("op.removed_slot")}</b> · {label(TEMP_PURPOSES, a.temp_purpose)} · {a.flat_id ? `House ${names.flat.get(a.flat_id)}` : tu("gd.noHouse")}{a.vehicle_id ? ` · ${names.plate.get(a.vehicle_id)}` : ""}
         <span className="block text-xs text-muted-foreground">{fmtTime(a.starts_at)} → {fmtTime(a.ends_at)}{a.reason ? ` · ${a.reason}` : ""}</span></span>
-      <span className="flex items-center gap-2">{stateChip(allocationState(a))}{actions && <Button size="sm" variant="ghost" className="min-h-11" onClick={() => void cancel(a.id)}>Cancel</Button>}</span>
+      <span className="flex items-center gap-2">{stateChip(allocationState(a))}{actions && <Button size="sm" variant="ghost" className="min-h-11" onClick={() => void cancel(a.id)}>{tu("common.cancel")}</Button>}</span>
     </li>
   );
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,380px)_1fr]">
-      <form onSubmit={issue} className="space-y-3 rounded-2xl border border-border bg-card p-4" aria-label="Issue temporary parking">
-        <h3 className="text-sm font-semibold">Issue temporary parking</h3>
-        <div><Label>Slot</Label>
-          <Select value={f.slot} onValueChange={(v) => setF({ ...f, slot: v })}><SelectTrigger aria-label="Slot" className="h-11"><SelectValue /></SelectTrigger>
-            <SelectContent><SelectItem value={NONE}>Pick a slot</SelectItem>{slots.map((s) => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}</SelectContent></Select>
+      <form onSubmit={issue} className="space-y-3 rounded-2xl border border-border bg-card p-4" aria-label={tu("op.issue_temporary_parking")}>
+        <h3 className="text-sm font-semibold">{tu("op.issue_temporary_parking")}</h3>
+        <div><Label>{tu("vh.slot")}</Label>
+          <Select value={f.slot} onValueChange={(v) => setF({ ...f, slot: v })}><SelectTrigger aria-label={tu("vh.slot")} className="h-11"><SelectValue /></SelectTrigger>
+            <SelectContent><SelectItem value={NONE}>{tu("op.pick_a_slot_2")}</SelectItem>{slots.map((s) => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}</SelectContent></Select>
         </div>
-        <div><Label>Why</Label>
-          <Select value={f.purpose} onValueChange={(v) => setF({ ...f, purpose: v })}><SelectTrigger aria-label="Purpose" className="h-11"><SelectValue /></SelectTrigger>
+        <div><Label>{tu("op.why")}</Label>
+          <Select value={f.purpose} onValueChange={(v) => setF({ ...f, purpose: v })}><SelectTrigger aria-label={tu("gd.purpose")} className="h-11"><SelectValue /></SelectTrigger>
             <SelectContent>{TEMP_PURPOSES.map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent></Select>
         </div>
         <HolderPicker d={d} flat={f.flat} vehicle={f.vehicle} onFlat={(v) => setF((x) => ({ ...x, flat: v }))} onVehicle={(v) => setF((x) => ({ ...x, vehicle: v }))} flatOptional={f.purpose === "maintenance"} />
         <div className="grid grid-cols-2 gap-3">
-          <div><Label htmlFor="t-s">Starts</Label><Input id="t-s" type="datetime-local" className="h-11" value={f.start} onChange={(e) => setF({ ...f, start: e.target.value })} /></div>
-          <div><Label htmlFor="t-e">Ends</Label><Input id="t-e" type="datetime-local" className="h-11" value={f.end} onChange={(e) => setF({ ...f, end: e.target.value })} /></div>
+          <div><Label htmlFor="t-s">{tu("op.starts_2")}</Label><Input id="t-s" type="datetime-local" className="h-11" value={f.start} onChange={(e) => setF({ ...f, start: e.target.value })} /></div>
+          <div><Label htmlFor="t-e">{tu("op.ends")}</Label><Input id="t-e" type="datetime-local" className="h-11" value={f.end} onChange={(e) => setF({ ...f, end: e.target.value })} /></div>
         </div>
-        <div><Label htmlFor="t-r">Reason *</Label><Input id="t-r" className="h-11" value={f.reason} onChange={(e) => setF({ ...f, reason: e.target.value })} maxLength={300} placeholder="e.g. Car in for service, loaner vehicle" /></div>
-        <p className="text-xs text-muted-foreground">Up to 30 days. It stops authorising entry automatically at the end time.</p>
-        <Button type="submit" className="min-h-11 w-full rounded-xl" disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Issue"}</Button>
+        <div><Label htmlFor="t-r">{tu("el.a.reasonLbl")}</Label><Input id="t-r" className="h-11" value={f.reason} onChange={(e) => setF({ ...f, reason: e.target.value })} maxLength={300} placeholder={tu("op.e_g_car_in_for")} /></div>
+        <p className="text-xs text-muted-foreground">{tu("op.up_to_30_days_it")}</p>
+        <Button type="submit" className="min-h-11 w-full rounded-xl" disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : tu("op.issue")}</Button>
       </form>
       <div className="space-y-4">
-        <section aria-label="Active temporary parking">
-          <h3 className="mb-2 text-sm font-semibold">Active and upcoming</h3>
-          {live.length === 0 ? <ListEmpty icon={Clock} title="No temporary parking right now" /> : <ul className="divide-y divide-border rounded-2xl border border-border bg-card">{live.map((a) => row(a, true))}</ul>}
+        <section aria-label={tu("op.active_temporary_parking")}>
+          <h3 className="mb-2 text-sm font-semibold">{tu("op.active_and_upcoming")}</h3>
+          {live.length === 0 ? <ListEmpty icon={Clock} title={tu("op.no_temporary_parking_right_now")} /> : <ul className="divide-y divide-border rounded-2xl border border-border bg-card">{live.map((a) => row(a, true))}</ul>}
         </section>
-        <section aria-label="Past temporary parking">
-          <h3 className="mb-2 text-sm font-semibold">Ended</h3>
-          {past.length === 0 ? <p className="text-sm text-muted-foreground">Nothing has ended yet.</p> : <ul className="divide-y divide-border rounded-2xl border border-border bg-card">{past.map((a) => row(a, false))}</ul>}
+        <section aria-label={tu("op.past_temporary_parking")}>
+          <h3 className="mb-2 text-sm font-semibold">{tu("op.ended")}</h3>
+          {past.length === 0 ? <p className="text-sm text-muted-foreground">{tu("op.nothing_has_ended_yet")}</p> : <ul className="divide-y divide-border rounded-2xl border border-border bg-card">{past.map((a) => row(a, false))}</ul>}
         </section>
       </div>
     </div>
@@ -463,36 +464,36 @@ export function ViolationsTab({ d, societyId }: { d: PData; societyId: string })
     if (!note?.trim()) return;
     const { error } = await rpc("admin_parking_violation_update", { _id: id, _status: status, _note: note });
     if (error) return toast.error(gateErrorMessage(error));
-    toast.success("Updated");
+    toast.success(tu("hd.st.updated"));
     qc.invalidateQueries({ queryKey: ["parking-violations"] });
   }
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,380px)_1fr]">
-      <div className="rounded-2xl border border-border bg-card p-4"><h3 className="mb-3 text-sm font-semibold">Report a violation</h3>
+      <div className="rounded-2xl border border-border bg-card p-4"><h3 className="mb-3 text-sm font-semibold">{tu("op.report_a_violation")}</h3>
         <ViolationReportForm slots={d.slots} onDone={() => qc.invalidateQueries({ queryKey: ["parking-violations"] })} /></div>
       <div>
-        <div className="mb-3"><SegmentedFilter label="Violation status" value={view} onChange={setView} options={[{ key: "open", label: "Open" }, { key: "closed", label: "Closed" }, { key: "all", label: "All" }]} /></div>
+        <div className="mb-3"><SegmentedFilter label={tu("op.violation_status")} value={view} onChange={setView} options={[{ key: "open", label: "Open" }, { key: "closed", label: "Closed" }, { key: "all", label: "All" }]} /></div>
         {list.isLoading ? <ListSkeleton rows={3} /> : list.isError ? <LoadError title={gateErrorMessage(list.error)} onRetry={() => void list.refetch()} />
-          : rows.length === 0 ? <ListEmpty icon={AlertTriangle} title="No violations here" /> : (
-          <ul className="divide-y divide-border rounded-2xl border border-border bg-card" aria-label="Parking violations">
+          : rows.length === 0 ? <ListEmpty icon={AlertTriangle} title={tu("op.no_violations_here")} /> : (
+          <ul className="divide-y divide-border rounded-2xl border border-border bg-card" aria-label={tu("op.parking_violations")}>
             {rows.map((v) => (
               <li key={v.id} className="space-y-1 px-4 py-3 text-sm">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <b>{label(VIOLATION_TYPES, v.violation_type)}</b>
                   <span className="flex gap-1">
-                    {v.plate_text && (counts.get(v.plate_text) ?? 0) > 1 && <StatusChip tone="warning">Repeat ×{counts.get(v.plate_text)}</StatusChip>}
+                    {v.plate_text && (counts.get(v.plate_text) ?? 0) > 1 && <StatusChip tone="warning">{tu("op.repeat")}{counts.get(v.plate_text)}</StatusChip>}
                     <StatusChip tone={v.status === "open" ? "warning" : v.status === "warned" ? "warning" : "neutral"}><span className="capitalize">{v.status}</span></StatusChip>
                   </span>
                 </div>
                 <p className="text-muted-foreground">{[v.plate_text && <span key="p" className="font-mono">{v.plate_text}</span>, v.slot_id && `Slot ${names.slot.get(v.slot_id) ?? ""}`, v.flat_id && `House ${names.flat.get(v.flat_id) ?? ""}`, v.location, fmtTime(v.occurred_at)].filter(Boolean).map((x, i) => <span key={i}>{i > 0 && " · "}{x}</span>)}</p>
                 {v.description && <p>{v.description}</p>}
-                {v.resolution_note && <p className="text-xs text-muted-foreground">Committee: {v.resolution_note}</p>}
+                {v.resolution_note && <p className="text-xs text-muted-foreground">{tu("op.committee")} {v.resolution_note}</p>}
                 <ViolationEvidence violationId={v.id} canAdd={["open", "warned"].includes(v.status)} canRemove />
                 {["open", "warned"].includes(v.status) && (
                   <div className="flex flex-wrap gap-2 pt-1">
-                    {v.status === "open" && <Button size="sm" variant="outline" className="min-h-11" onClick={() => void act(v.id, "warned")}>Warn</Button>}
-                    <Button size="sm" variant="outline" className="min-h-11" onClick={() => void act(v.id, "resolved")}>Resolve</Button>
-                    <Button size="sm" variant="ghost" className="min-h-11" onClick={() => void act(v.id, "dismissed")}>Dismiss</Button>
+                    {v.status === "open" && <Button size="sm" variant="outline" className="min-h-11" onClick={() => void act(v.id, "warned")}>{tu("op.warn")}</Button>}
+                    <Button size="sm" variant="outline" className="min-h-11" onClick={() => void act(v.id, "resolved")}>{tu("op.resolve")}</Button>
+                    <Button size="sm" variant="ghost" className="min-h-11" onClick={() => void act(v.id, "dismissed")}>{tu("go.dismiss")}</Button>
                   </div>
                 )}
               </li>
@@ -539,7 +540,7 @@ export function EvTab({ d, societyId }: { d: PData; societyId: string }) {
     const raw = window.prompt("Energy delivered in kWh, read from the charger's own meter. Leave empty if it has no meter.", "");
     if (raw === null) return;
     const kwh = raw.trim() === "" ? null : Number(raw);
-    if (kwh !== null && (!Number.isFinite(kwh) || kwh < 0)) return toast.error("Enter a number or leave it empty.");
+    if (kwh !== null && (!Number.isFinite(kwh) || kwh < 0)) return toast.error(tu("op.enter_a_number_or_leave"));
     await call("ev_session_end", { _session_id: s.id, _energy_kwh: kwh, _note: null }, "Session ended");
   }
   if (ev.isLoading) return <ListSkeleton rows={3} />;
@@ -548,64 +549,64 @@ export function EvTab({ d, societyId }: { d: PData; societyId: string }) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="max-w-xl text-sm text-muted-foreground">No charger provider is connected, so sessions are started and ended by the committee or guard. Energy is only recorded if someone reads it from the charger's meter — nothing is estimated, and no charge is billed.</p>
-        <Button className="min-h-11 rounded-xl" onClick={() => setEdit({ id: null, name: "", slot: NONE, connector: "", kw: "", provider: "manual", status: "available" })}>Add charger</Button>
+        <p className="max-w-xl text-sm text-muted-foreground">{tu("op.no_charger_provider_is_connected")}</p>
+        <Button className="min-h-11 rounded-xl" onClick={() => setEdit({ id: null, name: "", slot: NONE, connector: "", kw: "", provider: "manual", status: "available" })}>{tu("op.add_charger")}</Button>
       </div>
-      {ev.data!.chargers.length === 0 ? <ListEmpty icon={Zap} title="No EV chargers yet">Mark a slot as EV-capable, then add its charger.</ListEmpty> : (
-        <ul className="grid gap-3 md:grid-cols-2" aria-label="EV chargers">
+      {ev.data!.chargers.length === 0 ? <ListEmpty icon={Zap} title={tu("op.no_ev_chargers_yet")}>{tu("op.mark_a_slot_as_ev")}</ListEmpty> : (
+        <ul className="grid gap-3 md:grid-cols-2" aria-label={tu("op.ev_chargers")}>
           {ev.data!.chargers.map((c) => { const s = active.get(c.id); const usable = c.status === "available" && c.provider !== "unconfigured"; return (
             <li key={c.id} className="space-y-2 rounded-2xl border border-border bg-card p-4 text-sm">
               <div className="flex items-start justify-between gap-2">
                 <div><b>{c.name}</b><p className="text-xs text-muted-foreground">{[c.slot_id ? `Slot ${names.slot.get(c.slot_id) ?? ""}` : "No slot", c.connector, c.rated_kw ? `${c.rated_kw} kW rated` : null].filter(Boolean).join(" · ")}</p></div>
-                {c.provider === "unconfigured" ? <StatusChip tone="neutral">Not set up</StatusChip> : s ? <StatusChip tone="primary">Charging</StatusChip> : c.status === "available" ? <StatusChip tone="success">Available</StatusChip> : <StatusChip tone="warning"><span className="capitalize">{c.status}</span></StatusChip>}
+                {c.provider === "unconfigured" ? <StatusChip tone="neutral">{tu("op.not_set_up")}</StatusChip> : s ? <StatusChip tone="primary">{tu("op.charging")}</StatusChip> : c.status === "available" ? <StatusChip tone="success">{tu("prof.available")}</StatusChip> : <StatusChip tone="warning"><span className="capitalize">{c.status}</span></StatusChip>}
               </div>
-              {s && <p>Vehicle <span className="font-mono">{names.plate.get(s.vehicle_id) ?? "—"}</span> since {fmtTime(s.started_at)}</p>}
+              {s && <p>{tu("vs.vehicle")} <span className="font-mono">{names.plate.get(s.vehicle_id) ?? "—"}</span> {tu("op.since_2")} {fmtTime(s.started_at)}</p>}
               <div className="flex flex-wrap gap-2">
-                {s ? <Button size="sm" className="min-h-11" disabled={busy} onClick={() => void end(s)}>End session</Button>
-                  : <Button size="sm" className="min-h-11" disabled={busy || !usable} onClick={() => void start(c)}>{usable ? "Start session" : "Unavailable"}</Button>}
-                <Button size="sm" variant="outline" className="min-h-11" onClick={() => setEdit({ id: c.id, name: c.name, slot: c.slot_id ?? NONE, connector: c.connector ?? "", kw: c.rated_kw ? String(c.rated_kw) : "", provider: c.provider, status: c.status })}>Edit</Button>
+                {s ? <Button size="sm" className="min-h-11" disabled={busy} onClick={() => void end(s)}>{tu("op.end_session")}</Button>
+                  : <Button size="sm" className="min-h-11" disabled={busy || !usable} onClick={() => void start(c)}>{usable ? tu("op.start_session") : tu("hd.unavailable")}</Button>}
+                <Button size="sm" variant="outline" className="min-h-11" onClick={() => setEdit({ id: c.id, name: c.name, slot: c.slot_id ?? NONE, connector: c.connector ?? "", kw: c.rated_kw ? String(c.rated_kw) : "", provider: c.provider, status: c.status })}>{tu("common.edit")}</Button>
               </div>
             </li>); })}
         </ul>
       )}
-      <section aria-label="Charging history">
-        <h3 className="mb-2 text-sm font-semibold">Charging history</h3>
-        {ev.data!.sessions.length === 0 ? <p className="text-sm text-muted-foreground">No sessions yet.</p> : (
+      <section aria-label={tu("op.charging_history")}>
+        <h3 className="mb-2 text-sm font-semibold">{tu("op.charging_history")}</h3>
+        {ev.data!.sessions.length === 0 ? <p className="text-sm text-muted-foreground">{tu("op.no_sessions_yet")}</p> : (
           <ul className="divide-y divide-border rounded-2xl border border-border bg-card">{ev.data!.sessions.slice(0, 50).map((s) => (
             <li key={s.id} className="flex flex-wrap justify-between gap-2 px-4 py-2 text-sm">
-              <span><span className="font-mono">{names.plate.get(s.vehicle_id) ?? "—"}</span> · {ev.data!.chargers.find((c) => c.id === s.charger_id)?.name ?? "Retired charger"}<span className="block text-xs text-muted-foreground">{fmtTime(s.started_at)} → {s.ended_at ? fmtTime(s.ended_at) : "now"}</span></span>
-              <span className="text-xs text-muted-foreground">{s.energy_kwh !== null ? `${s.energy_kwh} kWh (meter)` : s.status === "active" ? "In progress" : "No reading"}</span>
+              <span><span className="font-mono">{names.plate.get(s.vehicle_id) ?? "—"}</span> · {ev.data!.chargers.find((c) => c.id === s.charger_id)?.name ?? tu("op.retired_charger")}<span className="block text-xs text-muted-foreground">{fmtTime(s.started_at)} → {s.ended_at ? fmtTime(s.ended_at) : tu("op.now")}</span></span>
+              <span className="text-xs text-muted-foreground">{s.energy_kwh !== null ? `${s.energy_kwh} kWh (meter)` : s.status === "active" ? tu("hd.st.in_progress") : tu("op.no_reading")}</span>
             </li>))}</ul>
         )}
       </section>
       <Sheet open={!!edit} onOpenChange={(o) => !o && setEdit(null)}>
         <SheetContent side="bottom" className="max-h-[92vh] overflow-y-auto rounded-t-3xl">
-          <SheetHeader><SheetTitle>{edit?.id ? "Edit charger" : "Add charger"}</SheetTitle></SheetHeader>
+          <SheetHeader><SheetTitle>{edit?.id ? tu("op.edit_charger") : tu("op.add_charger")}</SheetTitle></SheetHeader>
           {edit && (
             <form className="space-y-3 py-4" onSubmit={async (e) => { e.preventDefault();
               const kw = edit.kw.trim() ? Number(edit.kw) : null;
-              if (kw !== null && !(kw > 0 && kw <= 400)) return toast.error("Rated power must be between 0 and 400 kW.");
+              if (kw !== null && !(kw > 0 && kw <= 400)) return toast.error(tu("op.rated_power_must_be_between"));
               if (await call("admin_ev_charger_save", { _id: edit.id, _name: edit.name, _slot_id: n(edit.slot), _connector: edit.connector || null, _rated_kw: kw, _provider: edit.provider, _status: edit.status }, "Charger saved")) setEdit(null); }}>
-              <div><Label htmlFor="c-name">Name *</Label><Input id="c-name" className="h-11" value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} maxLength={60} required /></div>
-              <div><Label>EV-capable slot</Label>
-                <Select value={edit.slot} onValueChange={(v) => setEdit({ ...edit, slot: v })}><SelectTrigger aria-label="Slot" className="h-11"><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value={NONE}>No slot</SelectItem>{evSlots.map((s) => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}</SelectContent></Select>
-                {evSlots.length === 0 && <p className="mt-1 text-xs text-muted-foreground">No slot is marked EV-capable yet.</p>}
+              <div><Label htmlFor="c-name">{tu("vs.nameReq")}</Label><Input id="c-name" className="h-11" value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} maxLength={60} required /></div>
+              <div><Label>{tu("op.ev_capable_slot")}</Label>
+                <Select value={edit.slot} onValueChange={(v) => setEdit({ ...edit, slot: v })}><SelectTrigger aria-label={tu("vh.slot")} className="h-11"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value={NONE}>{tu("op.no_slot")}</SelectItem>{evSlots.map((s) => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}</SelectContent></Select>
+                {evSlots.length === 0 && <p className="mt-1 text-xs text-muted-foreground">{tu("op.no_slot_is_marked_ev")}</p>}
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><Label htmlFor="c-con">Connector</Label><Input id="c-con" className="h-11" value={edit.connector} onChange={(e) => setEdit({ ...edit, connector: e.target.value })} maxLength={40} placeholder="Type 2" /></div>
-                <div><Label htmlFor="c-kw">Rated kW</Label><Input id="c-kw" inputMode="decimal" className="h-11" value={edit.kw} onChange={(e) => setEdit({ ...edit, kw: e.target.value })} placeholder="7.4" /></div>
-                <div><Label>Control</Label>
-                  <Select value={edit.provider} onValueChange={(v) => setEdit({ ...edit, provider: v })}><SelectTrigger aria-label="Control" className="h-11"><SelectValue /></SelectTrigger>
-                    <SelectContent><SelectItem value="manual">Manual (staff start/stop)</SelectItem><SelectItem value="unconfigured">Not set up yet</SelectItem></SelectContent></Select>
+                <div><Label htmlFor="c-con">{tu("op.connector")}</Label><Input id="c-con" className="h-11" value={edit.connector} onChange={(e) => setEdit({ ...edit, connector: e.target.value })} maxLength={40} placeholder={tu("op.type_2")} /></div>
+                <div><Label htmlFor="c-kw">{tu("op.rated_kw")}</Label><Input id="c-kw" inputMode="decimal" className="h-11" value={edit.kw} onChange={(e) => setEdit({ ...edit, kw: e.target.value })} placeholder="7.4" /></div>
+                <div><Label>{tu("op.control")}</Label>
+                  <Select value={edit.provider} onValueChange={(v) => setEdit({ ...edit, provider: v })}><SelectTrigger aria-label={tu("op.control")} className="h-11"><SelectValue /></SelectTrigger>
+                    <SelectContent><SelectItem value="manual">{tu("op.manual_staff_start_stop")}</SelectItem><SelectItem value="unconfigured">{tu("op.not_set_up_yet")}</SelectItem></SelectContent></Select>
                 </div>
-                <div><Label>Status</Label>
-                  <Select value={edit.status} onValueChange={(v) => setEdit({ ...edit, status: v })}><SelectTrigger aria-label="Status" className="h-11"><SelectValue /></SelectTrigger>
-                    <SelectContent><SelectItem value="available">Available</SelectItem><SelectItem value="offline">Offline</SelectItem><SelectItem value="disabled">Disabled</SelectItem></SelectContent></Select>
+                <div><Label>{tu("common.status")}</Label>
+                  <Select value={edit.status} onValueChange={(v) => setEdit({ ...edit, status: v })}><SelectTrigger aria-label={tu("common.status")} className="h-11"><SelectValue /></SelectTrigger>
+                    <SelectContent><SelectItem value="available">{tu("prof.available")}</SelectItem><SelectItem value="offline">{tu("op.offline")}</SelectItem><SelectItem value="disabled">{tu("op.disabled")}</SelectItem></SelectContent></Select>
                 </div>
               </div>
-              <Button type="submit" className="h-12 w-full rounded-xl" disabled={busy}>Save</Button>
-              {edit.id && <Button type="button" variant="ghost" className="min-h-11 w-full text-destructive" disabled={busy} onClick={async () => { if (await call("admin_ev_charger_retire", { _id: edit.id }, "Charger retired")) setEdit(null); }}>Retire charger</Button>}
+              <Button type="submit" className="h-12 w-full rounded-xl" disabled={busy}>{tu("common.save")}</Button>
+              {edit.id && <Button type="button" variant="ghost" className="min-h-11 w-full text-destructive" disabled={busy} onClick={async () => { if (await call("admin_ev_charger_retire", { _id: edit.id }, "Charger retired")) setEdit(null); }}>{tu("op.retire_charger")}</Button>}
             </form>
           )}
         </SheetContent>
@@ -642,10 +643,10 @@ export function ReportsTab({ d }: { d: PData }) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end gap-3">
-        <div><Label htmlFor="r-f">From</Label><Input id="r-f" type="date" className="h-11" value={range.from} max={range.to} onChange={(e) => setRange({ ...range, from: e.target.value })} /></div>
+        <div><Label htmlFor="r-f">{tu("common.from")}</Label><Input id="r-f" type="date" className="h-11" value={range.from} max={range.to} onChange={(e) => setRange({ ...range, from: e.target.value })} /></div>
         <div><Label htmlFor="r-t">To</Label><Input id="r-t" type="date" className="h-11" value={range.to} min={range.from} max={today} onChange={(e) => setRange({ ...range, to: e.target.value })} /></div>
-        <Button variant="outline" className="min-h-11" onClick={exportAllocations}><Download className="mr-2 h-4 w-4" />Allocations CSV</Button>
-        {r && <Button variant="outline" className="min-h-11" onClick={() => download(`parking-daily-${range.from}-${range.to}.csv`, [["Day", "Assigned", "Temporary issued", "Violations", "Visitor parking"], ...r.daily.map((x: Record<string, unknown>) => [x.day, x.assigned, x.temporary, x.violations, x.visitor_parking])])}><Download className="mr-2 h-4 w-4" />Daily CSV</Button>}
+        <Button variant="outline" className="min-h-11" onClick={exportAllocations}><Download className="mr-2 h-4 w-4" />{tu("op.allocations_csv")}</Button>
+        {r && <Button variant="outline" className="min-h-11" onClick={() => download(`parking-daily-${range.from}-${range.to}.csv`, [["Day", "Assigned", "Temporary issued", "Violations", "Visitor parking"], ...r.daily.map((x: Record<string, unknown>) => [x.day, x.assigned, x.temporary, x.violations, x.visitor_parking])])}><Download className="mr-2 h-4 w-4" />{tu("op.daily_csv")}</Button>}
       </div>
       {rep.isLoading ? <ListSkeleton rows={3} /> : rep.isError ? <LoadError title={gateErrorMessage(rep.error)} onRetry={() => void rep.refetch()} /> : r && (
         <>
@@ -660,20 +661,20 @@ export function ReportsTab({ d }: { d: PData }) {
             { label: "EV energy (meter readings)", value: `${Number(r.ev_energy_entered_kwh).toFixed(1)} kWh`, hint: r.ev_sessions_without_reading ? `${r.ev_sessions_without_reading} without reading` : undefined },
           ]} />
           <div className="grid gap-4 md:grid-cols-2">
-            <section className="rounded-2xl border border-border bg-card p-4 text-sm"><h3 className="mb-2 font-semibold">Violations by type</h3>
-              {Object.keys(r.violations_by_type).length === 0 ? <p className="text-muted-foreground">None in this period.</p> :
+            <section className="rounded-2xl border border-border bg-card p-4 text-sm"><h3 className="mb-2 font-semibold">{tu("op.violations_by_type")}</h3>
+              {Object.keys(r.violations_by_type).length === 0 ? <p className="text-muted-foreground">{tu("op.none_in_this_period")}</p> :
                 <ul className="space-y-1">{Object.entries(r.violations_by_type as Record<string, number>).map(([k, v]) => <li key={k} className="flex justify-between"><span>{label(VIOLATION_TYPES, k)}</span><b className="tabular-nums">{v}</b></li>)}</ul>}
             </section>
-            <section className="rounded-2xl border border-border bg-card p-4 text-sm"><h3 className="mb-2 font-semibold">Repeat vehicles</h3>
-              {r.repeat_vehicles.length === 0 ? <p className="text-muted-foreground">No vehicle has more than one violation.</p> :
+            <section className="rounded-2xl border border-border bg-card p-4 text-sm"><h3 className="mb-2 font-semibold">{tu("op.repeat_vehicles")}</h3>
+              {r.repeat_vehicles.length === 0 ? <p className="text-muted-foreground">{tu("op.no_vehicle_has_more_than")}</p> :
                 <ul className="space-y-1">{r.repeat_vehicles.map((x: { plate: string; count: number }) => <li key={x.plate} className="flex justify-between"><span className="font-mono">{x.plate}</span><b className="tabular-nums">{x.count}</b></li>)}</ul>}
             </section>
           </div>
-          <section className="overflow-x-auto rounded-2xl border border-border bg-card" aria-label="Daily trend">
-            <table className="w-full text-sm"><thead><tr className="text-left text-xs text-muted-foreground"><th className="px-4 py-2">Day</th><th className="px-2">Assigned</th><th className="px-2">Temporary</th><th className="px-2">Violations</th><th className="px-2">Visitor parking</th></tr></thead>
+          <section className="overflow-x-auto rounded-2xl border border-border bg-card" aria-label={tu("op.daily_trend")}>
+            <table className="w-full text-sm"><thead><tr className="text-left text-xs text-muted-foreground"><th className="px-4 py-2">{tu("op.day")}</th><th className="px-2">{tu("op.assigned")}</th><th className="px-2">{tu("op.temporary")}</th><th className="px-2">{tu("op.violations")}</th><th className="px-2">{tu("gd.visitorParking")}</th></tr></thead>
               <tbody>{r.daily.filter((x: Record<string, number>) => x.assigned || x.temporary || x.violations || x.visitor_parking).map((x: Record<string, string | number>) => (
                 <tr key={x.day as string} className="border-t border-border tabular-nums"><td className="px-4 py-2">{x.day}</td><td className="px-2">{x.assigned}</td><td className="px-2">{x.temporary}</td><td className="px-2">{x.violations}</td><td className="px-2">{x.visitor_parking}</td></tr>))}</tbody></table>
-            {r.daily.every((x: Record<string, number>) => !x.assigned && !x.temporary && !x.violations && !x.visitor_parking) && <p className="px-4 py-3 text-sm text-muted-foreground">No parking activity in this period.</p>}
+            {r.daily.every((x: Record<string, number>) => !x.assigned && !x.temporary && !x.violations && !x.visitor_parking) && <p className="px-4 py-3 text-sm text-muted-foreground">{tu("op.no_parking_activity_in_this")}</p>}
           </section>
         </>
       )}

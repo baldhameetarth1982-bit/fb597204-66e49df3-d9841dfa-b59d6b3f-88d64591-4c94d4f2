@@ -12,6 +12,7 @@ import { StatusChip } from "@/components/system/StatusChip";
 import { toast } from "sonner";
 import { shareBillAsImage } from "@/components/billing/BillCardImage";
 import { toSafeFinanceError } from "@/lib/finance-safe-error";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/billing/")({
   head: () => ({ meta: [{ title: "Bill History — SociyoHub" }] }),
@@ -127,7 +128,7 @@ function BillingPage() {
         amount: Number(r.amount), dueDate: new Date(r.due_date).toLocaleDateString(),
         status: (r.status as any) || "due", adminSignature: user?.email?.split("@")[0],
       });
-    } catch { toast.error("Could not share this bill."); }
+    } catch { toast.error(tu("op.could_not_share_this_bill")); }
   }
   async function cancel(r: BillRow) {
     const reason = window.prompt("Reason for cancellation?");
@@ -136,15 +137,15 @@ function BillingPage() {
     const { error } = await supabase.rpc("cancel_bill", { _bill_id: r.id, _reason: reason });
     setCancelling(null);
     if (error) toast.error(toSafeFinanceError(error).message);
-    else { toast.success("Bill cancelled"); void load(); }
+    else { toast.success(tu("op.bill_cancelled")); void load(); }
   }
 
   return (
     <PageShell>
       <PageHeader
-        title="Bill history"
-        description="Every generated bill for every house, and where it stands."
-        actions={<Button asChild className="min-h-11 rounded-xl"><Link to="/society/billing/generate"><Plus className="h-4 w-4 mr-1" />Generate bills</Link></Button>}
+        title={tu("op.bill_history")}
+        description={tu("op.every_generated_bill_for_every")}
+        actions={<Button asChild className="min-h-11 rounded-xl"><Link to="/society/billing/generate"><Plus className="h-4 w-4 mr-1" />{tu("op.generate_bills")}</Link></Button>}
       />
       <div className="mb-5 rounded-2xl border border-border bg-card"><BillingCenterTabs /></div>
 
@@ -160,20 +161,20 @@ function BillingPage() {
       ) : loadError ? (
         <LoadError title={loadError} onRetry={() => void load()} />
       ) : rows.length === 0 ? (
-        <ListEmpty icon={Receipt} title="No bills yet">Generate your first monthly maintenance bill to see it here.</ListEmpty>
+        <ListEmpty icon={Receipt} title={tu("rbills.none")}>{tu("op.generate_your_first_monthly_maintenance")}</ListEmpty>
       ) : (
         <>
           <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center">
-            <SearchField label="Search bills" placeholder="House or period" value={q} onChange={setQ} />
-            <SegmentedFilter<typeof statusFilter> label="Bill status" value={statusFilter} onChange={setStatusFilter} options={FILTERS} />
+            <SearchField label={tu("op.search_bills")} placeholder={tu("op.house_or_period")} value={q} onChange={setQ} />
+            <SegmentedFilter<typeof statusFilter> label={tu("op.bill_status")} value={statusFilter} onChange={setStatusFilter} options={FILTERS} />
           </div>
 
           {filtered.length === 0 ? (
-            <ListEmpty icon={Receipt} title="No matching bills">Try a different search or status.</ListEmpty>
+            <ListEmpty icon={Receipt} title={tu("op.no_matching_bills")}>{tu("op.try_a_different_search_or")}</ListEmpty>
           ) : (
             <div className="overflow-hidden rounded-2xl border border-border bg-card">
               <div className="hidden grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_120px_120px_130px] gap-3 border-b border-border bg-muted/40 px-4 py-2 text-xs font-medium text-muted-foreground md:grid" aria-hidden>
-                <span>House</span><span>Period</span><span>Due</span><span>Status</span><span className="text-right">Amount</span>
+                <span>{tu("gd.houseLabel")}</span><span>{tu("inc.period")}</span><span>{tu("bills.due")}</span><span>{tu("common.status")}</span><span className="text-right">{tu("common.amount")}</span>
               </div>
               <ul className="divide-y divide-border">
                 {filtered.map((r) => {
@@ -185,15 +186,15 @@ function BillingPage() {
                   return (
                     <li key={r.id} className="px-4 py-3">
                       <Link to="/society/bills/$id" params={{ id: r.id }} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_120px_120px_130px]">
-                        <span className="truncate font-semibold">House {flatLabel}</span>
+                        <span className="truncate font-semibold">{tu("gd.houseLabel")} {flatLabel}</span>
                         <span className={`text-right font-semibold tabular-nums md:order-last ${r.status === "cancelled" ? "text-muted-foreground line-through" : ""}`}>{money(Number(r.amount))}</span>
                         <span className="truncate text-sm text-muted-foreground md:text-foreground">{r.period_label}</span>
-                        <span className="text-right text-xs text-muted-foreground md:text-left md:text-sm">Due {new Date(r.due_date).toLocaleDateString("en-IN")}</span>
+                        <span className="text-right text-xs text-muted-foreground md:text-left md:text-sm">{tu("bills.due")} {new Date(r.due_date).toLocaleDateString("en-IN")}</span>
                         <span className="col-span-2 md:col-span-1"><StatusChip tone={tone}>{label}</StatusChip></span>
                       </Link>
                       <div className="mt-2 flex gap-1">
-                        <Button variant="ghost" size="sm" className="min-h-11 text-xs" onClick={() => void share(r, flatLabel)} aria-label={`Share bill for house ${flatLabel}`}><Share2 className="mr-1 h-3.5 w-3.5" />Share</Button>
-                        {open && <Button variant="ghost" size="sm" className="min-h-11 text-xs text-destructive" disabled={cancelling !== null} onClick={() => void cancel(r)} aria-label={`Cancel bill for house ${flatLabel}`}>Cancel bill</Button>}
+                        <Button variant="ghost" size="sm" className="min-h-11 text-xs" onClick={() => void share(r, flatLabel)} aria-label={`Share bill for house ${flatLabel}`}><Share2 className="mr-1 h-3.5 w-3.5" />{tu("prof.share")}</Button>
+                        {open && <Button variant="ghost" size="sm" className="min-h-11 text-xs text-destructive" disabled={cancelling !== null} onClick={() => void cancel(r)} aria-label={`Cancel bill for house ${flatLabel}`}>{tu("op.cancel_bill")}</Button>}
                       </div>
                     </li>
                   );

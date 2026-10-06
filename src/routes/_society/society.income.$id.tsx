@@ -52,6 +52,7 @@ import type {
   IncomeTransitionResult,
   IncomeReconciliationResult,
 } from "@/lib/non-member-income.server";
+import { tu } from "@/lib/i18n";
 
 
 export const Route = createFileRoute("/_society/society/income/$id")({
@@ -120,7 +121,7 @@ function IncomeDetail({ societyId }: { societyId: string }) {
 
   const handleResult = (r: IncomeTransitionResult) => {
     if (r.status === "success") {
-      toast.success("Record updated.");
+      toast.success(tu("op.record_updated"));
       setDialog(null);
       invalidateAll();
       return;
@@ -148,27 +149,27 @@ function IncomeDetail({ societyId }: { societyId: string }) {
         to="/society/income"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground min-h-[44px]"
       >
-        <ArrowLeft className="h-4 w-4" /> Back to Income & Collections
+        <ArrowLeft className="h-4 w-4" /> {tu("op.back_to_income_collections")}
       </Link>
 
       {q.isLoading ? (
         <Card>
           <CardContent className="p-4 flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> Loading record…
+            <Loader2 className="h-4 w-4 animate-spin" /> {tu("op.loading_record")}
           </CardContent>
         </Card>
       ) : isServerError ? (
         <Card>
           <CardContent className="p-4 flex items-center gap-2 text-sm text-destructive">
-            <AlertCircle className="h-4 w-4" /> This record is temporarily unavailable.
+            <AlertCircle className="h-4 w-4" /> {tu("op.this_record_is_temporarily_unavailable")}
           </CardContent>
         </Card>
       ) : isNotFound ? (
         <Card>
           <CardContent className="p-6 text-sm">
-            <div className="font-medium">Record not found</div>
+            <div className="font-medium">{tu("op.record_not_found")}</div>
             <div className="text-muted-foreground mt-1">
-              This income record doesn't exist or you don't have access.
+              {tu("op.this_income_record_doesn_t")}
             </div>
           </CardContent>
         </Card>
@@ -209,7 +210,7 @@ function IncomeDetail({ societyId }: { societyId: string }) {
           onClose={() => setDialog(null)}
           onDone={(r) => {
             if (r.status === "success" || r.status === "already_processed") {
-              toast.success("Reconciliation updated.");
+              toast.success(tu("op.reconciliation_updated"));
               setDialog(null);
               invalidateAll();
               return;
@@ -291,47 +292,47 @@ function RecordView({
   return (
     <>
       <MobileHero
-        title={r.category?.display_name ?? "Income record"}
+        title={r.category?.display_name ?? tu("op.income_record")}
         subtitle={`${fmtPaymentDate(r.payment_date)} · ${r.payment_method.replace(/_/g, " ")}`}
       />
       {r.verification_status !== "rejected" && r.verification_status !== "reversed" && <IssueBillCard incomeRecordId={r.id} />}
-      <SectionCard title="Details">
+      <SectionCard title={tu("hd.details")}>
         <div className="grid sm:grid-cols-2 gap-3 text-sm">
-          <Field label="Amount">
+          <Field label={tu("common.amount")}>
             <span className="text-lg font-semibold tabular-nums">{inr(r.amount)}</span>
           </Field>
-          <Field label="Payment method">
+          <Field label={tu("acc.paymentMethod")}>
             <span className="capitalize">{r.payment_method.replace(/_/g, " ")}</span>
           </Field>
-          <Field label="Payment date">{fmtPaymentDate(r.payment_date)}</Field>
-          <Field label="Payment status">
+          <Field label={tu("op.payment_date")}>{fmtPaymentDate(r.payment_date)}</Field>
+          <Field label={tu("op.payment_status")}>
             <span className="capitalize">{r.payment_status}</span>
           </Field>
-          <Field label="Verification">
+          <Field label={tu("inc.verification")}>
             <Badge variant="outline" className="capitalize">
               {r.verification_status}
             </Badge>
           </Field>
-          <Field label="Reconciliation">
+          <Field label={tu("inc.reconciliation")}>
             <Badge variant="outline" className="capitalize">
               {r.reconciliation_status.replace(/_/g, " ")}
             </Badge>
           </Field>
-          <Field label="Reference">{r.reference_suffix ?? "—"}</Field>
-          <Field label="Payer">
+          <Field label={tu("acc.reference")}>{r.reference_suffix ?? "—"}</Field>
+          <Field label={tu("inc.payer")}>
             {r.payer_kind === "anonymous"
-              ? "Anonymous"
+              ? tu("inc.k.anon")
               : r.payer
                 ? `${r.payer.display_name}${r.payer.organization_name ? ` (${r.payer.organization_name})` : ""}`
                 : "—"}
           </Field>
           {r.description && (
-            <Field label="Description" full>
+            <Field label={tu("common.description")} full>
               <span className="text-muted-foreground">{r.description}</span>
             </Field>
           )}
           {r.reversal_reason && (
-            <Field label="Reversal reason" full>
+            <Field label={tu("op.reversal_reason")} full>
               <span className="text-muted-foreground">{r.reversal_reason}</span>
             </Field>
           )}
@@ -341,34 +342,34 @@ function RecordView({
           <div className="flex flex-wrap gap-2 pt-4">
             {canVerify && (
               <>
-                <Button variant="outline" className="min-h-[44px]" onClick={() => onAction("category")}>Review category</Button>
+                <Button variant="outline" className="min-h-[44px]" onClick={() => onAction("category")}>{tu("op.review_category")}</Button>
                 <Button
                   onClick={() => onAction("verify")}
                   disabled={!r.category_confirmed_at}
                   className="min-h-[44px]"
-                  aria-label="Verify income record"
+                  aria-label={tu("op.verify_income_record")}
                 >
-                  <CheckCircle2 className="h-4 w-4 mr-1" /> Verify
+                  <CheckCircle2 className="h-4 w-4 mr-1" /> {tu("otp.verify")}
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => onAction("reject")}
                   className="min-h-[44px]"
-                  aria-label="Reject income record"
+                  aria-label={tu("op.reject_income_record")}
                 >
-                  <XCircle className="h-4 w-4 mr-1" /> Reject
+                  <XCircle className="h-4 w-4 mr-1" /> {tu("el.a.reject")}
                 </Button>
               </>
             )}
-            {canVerify && !r.category_confirmed_at && <p className="w-full text-xs text-muted-foreground">Review and confirm the accounting category before verifying this payment.</p>}
+            {canVerify && !r.category_confirmed_at && <p className="w-full text-xs text-muted-foreground">{tu("op.review_and_confirm_the_accounting")}</p>}
             {canReverse && !canReject && (
               <Button
                 variant="destructive"
                 onClick={() => onAction("reverse")}
                 className="min-h-[44px]"
-                aria-label="Reverse verified income record"
+                aria-label={tu("op.reverse_verified_income_record")}
               >
-                <RotateCcw className="h-4 w-4 mr-1" /> Reverse
+                <RotateCcw className="h-4 w-4 mr-1" /> {tu("exp.reverse")}
               </Button>
             )}
             {canReconcile && (
@@ -376,9 +377,9 @@ function RecordView({
                 variant="outline"
                 onClick={() => onAction("reconcile")}
                 className="min-h-[44px]"
-                aria-label="Mark reconciled"
+                aria-label={tu("op.mark_reconciled")}
               >
-                <CheckCircle2 className="h-4 w-4 mr-1" /> Mark reconciled
+                <CheckCircle2 className="h-4 w-4 mr-1" /> {tu("op.mark_reconciled")}
               </Button>
             )}
             {canUnreconcile && (
@@ -386,9 +387,9 @@ function RecordView({
                 variant="outline"
                 onClick={() => onAction("unreconcile")}
                 className="min-h-[44px]"
-                aria-label="Undo reconciliation"
+                aria-label={tu("op.undo_reconciliation")}
               >
-                <RotateCcw className="h-4 w-4 mr-1" /> Undo reconciliation
+                <RotateCcw className="h-4 w-4 mr-1" /> {tu("op.undo_reconciliation")}
               </Button>
             )}
           </div>
@@ -396,12 +397,12 @@ function RecordView({
       </SectionCard>
 
        {r.verification_status === "pending" && (r.category_confirmed_at
-         ? <SectionCard title="Category reviewed"><p className="text-sm text-muted-foreground">A human confirmed {r.category?.display_name ?? "the category"}. Payment verification remains separate.</p></SectionCard>
+         ? <SectionCard title={tu("op.category_reviewed")}><p className="text-sm text-muted-foreground">{tu("op.a_human_confirmed")} {r.category?.display_name ?? tu("op.the_category")}. Payment verification remains separate.</p></SectionCard>
          : <IncomeCategoryAssistant record={r} onRefresh={onRefresh} onReview={() => onAction("category")} />)}
 
 
 
-      <SectionCard title="Timeline">
+      <SectionCard title={tu("nd.timeline")}>
         <ol className="space-y-2 text-sm">
           {events.map((e, i) => {
             const Icon = e.icon;
@@ -434,30 +435,30 @@ function IncomeCategoryAssistant({ record, onRefresh, onReview }: { record: Inco
     onError: () => setResult({ status: "unavailable" }),
   });
   return (
-    <SectionCard title="AI category review">
+    <SectionCard title={tu("op.ai_category_review")}>
       <div className="space-y-3 text-sm">
-        <p className="text-muted-foreground">AI can suggest a category using this record and your society's active categories. It does not change the recorded category, verify a payment, or reconcile income.</p>
+        <p className="text-muted-foreground">{tu("op.ai_can_suggest_a_category")}</p>
         <div className="rounded-lg border border-teal-600/25 bg-teal-600/5 p-3 space-y-1" aria-live="polite">
-          {m.isPending ? <p>Reviewing available categories… This may take up to 20 seconds.</p> : result?.status === "suggested" ? (
+          {m.isPending ? <p>{tu("op.reviewing_available_categories_this_may")}</p> : result?.status === "suggested" ? (
             <>
-              <p className="font-semibold">Suggested: {result.categoryName} · {result.confidence} confidence</p>
+              <p className="font-semibold">{tu("op.suggested")} {result.categoryName} · {result.confidence} {tu("op.confidence")}</p>
               <p>{result.explanation}</p>
-               <p className="text-muted-foreground">Recorded category: {record.category?.display_name ?? "Unavailable"}. Only the human-confirmed category is used for accounting. Review before verification.</p>
+               <p className="text-muted-foreground">{tu("op.recorded_category")} {record.category?.display_name ?? tu("hd.unavailable")}. Only the human-confirmed category is used for accounting. Review before verification.</p>
             </>
           ) : result?.status === "indeterminate" ? <p>{result.message}</p>
-            : result?.status === "plan_required" ? <p>AI suggestions require the Pro or Premium plan.</p>
-            : result?.status === "rate_limited" ? <p>Too many suggestions. Please try again later or review manually.</p>
-            : result?.status === "invalid_transition" ? <p>This record is no longer pending. Refresh the record.</p>
-            : result?.status === "not_found" ? <p>This record is unavailable or you don't have access.</p>
-            : result?.status === "unavailable" ? <p>AI is temporarily unavailable. Review the recorded category manually or retry.</p>
-            : record.suggested_category_id ? <p>Previous suggestion: {record.suggestion_explanation} ({record.suggestion_confidence ?? "unknown"} confidence). Open manual review to compare categories.</p>
-            : <p>Suggestions are optional; you remain responsible for reviewing the recorded category.</p>}
+            : result?.status === "plan_required" ? <p>{tu("op.ai_suggestions_require_the_pro")}</p>
+            : result?.status === "rate_limited" ? <p>{tu("op.too_many_suggestions_please_try")}</p>
+            : result?.status === "invalid_transition" ? <p>{tu("op.this_record_is_no_longer")}</p>
+            : result?.status === "not_found" ? <p>{tu("op.this_record_is_unavailable_or")}</p>
+            : result?.status === "unavailable" ? <p>{tu("op.ai_is_temporarily_unavailable_review")}</p>
+            : record.suggested_category_id ? <p>{tu("op.previous_suggestion")} {record.suggestion_explanation} ({record.suggestion_confidence ?? tu("op.unknown")} {tu("op.confidence_open_manual_review_to")}</p>
+            : <p>{tu("op.suggestions_are_optional_you_remain")}</p>}
         </div>
         <Button type="button" variant="outline" className="min-h-[44px]" disabled={m.isPending} onClick={() => { if (!m.isPending) m.mutate(); }}>
           {m.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-          {result ? "Retry suggestion" : "Suggest category"}
+          {result ? tu("op.retry_suggestion") : tu("op.suggest_category")}
         </Button>
-        <Button type="button" className="min-h-[44px] ml-2" onClick={onReview}>Review category manually</Button>
+        <Button type="button" className="min-h-[44px] ml-2" onClick={onReview}>{tu("op.review_category_manually")}</Button>
       </div>
     </SectionCard>
   );
@@ -486,7 +487,7 @@ function CategoryDialog({ record, societyId, onClose, onDone }: {
     } }),
     onSuccess: (r) => {
       if (r.status === "success" || r.status === "already_processed") {
-        toast.success("Category confirmed. Verification remains a separate step.");
+        toast.success(tu("op.category_confirmed_verification_remains_"));
         onDone();
       } else {
         setNotice(r.status === "conflict" ? "The suggestion or category changed. Close and reopen this review to see the latest record."
@@ -505,27 +506,27 @@ function CategoryDialog({ record, societyId, onClose, onDone }: {
   return <Dialog open onOpenChange={(open) => !open && !mutation.isPending && onClose()}>
     <DialogContent>
       <DialogHeader>
-        <DialogTitle>Review income category</DialogTitle>
-        <DialogDescription>Choose the accounting category yourself. AI does not make this decision or verify payment.</DialogDescription>
+        <DialogTitle>{tu("op.review_income_category")}</DialogTitle>
+        <DialogDescription>{tu("op.choose_the_accounting_category_yourself")}</DialogDescription>
       </DialogHeader>
       <div className="space-y-3 text-sm">
-        <p>Recorded category: <strong>{record.category?.display_name ?? "Unavailable"}</strong></p>
-        {record.suggested_category_id && <p className="text-muted-foreground">AI suggested: {active.find((c) => c.id === record.suggested_category_id)?.display_name ?? "Category no longer active"} ({record.suggestion_confidence ?? "unknown"} confidence). {record.suggestion_explanation}</p>}
-        <Label htmlFor="income-category-select">Final category</Label>
-        {categories.isLoading ? <p role="status">Loading categories…</p>
-          : categories.isError ? <Button variant="outline" onClick={() => categories.refetch()}>Retry loading categories</Button>
-          : active.length === 0 ? <p>No active categories are available. Add one before confirming.</p>
+        <p>{tu("op.recorded_category")} <strong>{record.category?.display_name ?? tu("hd.unavailable")}</strong></p>
+        {record.suggested_category_id && <p className="text-muted-foreground">{tu("op.ai_suggested")} {active.find((c) => c.id === record.suggested_category_id)?.display_name ?? tu("op.category_no_longer_active")} ({record.suggestion_confidence ?? tu("op.unknown")} confidence). {record.suggestion_explanation}</p>}
+        <Label htmlFor="income-category-select">{tu("op.final_category")}</Label>
+        {categories.isLoading ? <p role="status">{tu("op.loading_categories")}</p>
+          : categories.isError ? <Button variant="outline" onClick={() => categories.refetch()}>{tu("op.retry_loading_categories")}</Button>
+          : active.length === 0 ? <p>{tu("op.no_active_categories_are_available")}</p>
           : <Select value={selected} onValueChange={(value) => { setSelected(value); requestId.current = crypto.randomUUID(); setNotice(""); }}>
-              <SelectTrigger id="income-category-select" className="min-h-[44px]"><SelectValue placeholder="Select a category" /></SelectTrigger>
+              <SelectTrigger id="income-category-select" className="min-h-[44px]"><SelectValue placeholder={tu("op.select_a_category")} /></SelectTrigger>
               <SelectContent>{active.map((c) => <SelectItem key={c.id} value={c.id}>{c.display_name}</SelectItem>)}</SelectContent>
             </Select>}
         {notice && <p role="alert" className="text-destructive">{notice}</p>}
-        <p className="text-muted-foreground">Confirming {selectedName ?? "your selection"} does not mark this income as received or reconciled.</p>
+        <p className="text-muted-foreground">{tu("op.confirming")} {selectedName ?? tu("op.your_selection")} {tu("op.does_not_mark_this_income")}</p>
       </div>
       <DialogFooter>
-        <Button variant="outline" disabled={mutation.isPending} onClick={onClose}>Cancel</Button>
+        <Button variant="outline" disabled={mutation.isPending} onClick={onClose}>{tu("common.cancel")}</Button>
         <Button disabled={mutation.isPending || !selectedName || categories.isLoading || categories.isError || notice.includes("changed") || notice.includes("no longer pending")} onClick={() => { if (!mutation.isPending) mutation.mutate(); }}>
-          {mutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Confirm category
+          {mutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}{tu("op.confirm_category")}
         </Button>
       </DialogFooter>
     </DialogContent>
@@ -559,31 +560,31 @@ function RecordSummary({ r }: { r: IncomeRecordDetail }) {
   return (
     <dl className="rounded-md border p-3 text-sm space-y-1">
       <div className="flex justify-between">
-        <dt className="text-muted-foreground">Payer</dt>
+        <dt className="text-muted-foreground">{tu("inc.payer")}</dt>
         <dd>{payerLabel}</dd>
       </div>
       <div className="flex justify-between">
-        <dt className="text-muted-foreground">Category</dt>
+        <dt className="text-muted-foreground">{tu("common.category")}</dt>
         <dd>{r.category?.display_name ?? "—"}</dd>
       </div>
       <div className="flex justify-between">
-        <dt className="text-muted-foreground">Amount</dt>
+        <dt className="text-muted-foreground">{tu("common.amount")}</dt>
         <dd className="font-semibold tabular-nums">{inr(r.amount)}</dd>
       </div>
       <div className="flex justify-between">
-        <dt className="text-muted-foreground">Method</dt>
+        <dt className="text-muted-foreground">{tu("inc.method")}</dt>
         <dd className="capitalize">{r.payment_method.replace(/_/g, " ")}</dd>
       </div>
       <div className="flex justify-between">
-        <dt className="text-muted-foreground">Payment date</dt>
+        <dt className="text-muted-foreground">{tu("op.payment_date")}</dt>
         <dd>{fmtPaymentDate(r.payment_date)}</dd>
       </div>
       <div className="flex justify-between">
-        <dt className="text-muted-foreground">Reference</dt>
+        <dt className="text-muted-foreground">{tu("acc.reference")}</dt>
         <dd>{r.reference_suffix ?? "—"}</dd>
       </div>
       <div className="flex justify-between">
-        <dt className="text-muted-foreground">Status</dt>
+        <dt className="text-muted-foreground">{tu("common.status")}</dt>
         <dd className="capitalize">{r.verification_status}</dd>
       </div>
     </dl>
@@ -610,9 +611,9 @@ function VerifyDialog({
     <Dialog open onOpenChange={(o) => !o && !m.isPending && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Verify income record?</DialogTitle>
+          <DialogTitle>{tu("op.verify_income_record_2")}</DialogTitle>
           <DialogDescription>
-            Confirm that this offline payment has been received and reviewed.
+            {tu("op.confirm_that_this_offline_payment")}
           </DialogDescription>
         </DialogHeader>
         <RecordSummary r={record} />
@@ -623,7 +624,7 @@ function VerifyDialog({
             disabled={m.isPending}
             className="min-h-[44px]"
           >
-            Cancel
+            {tu("common.cancel")}
           </Button>
           <Button
             onClick={() => m.mutate()}
@@ -631,7 +632,7 @@ function VerifyDialog({
             className="min-h-[44px]"
           >
             {m.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-            Verify Income
+            {tu("op.verify_income")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -685,7 +686,7 @@ function ReasonDialog({
         <RecordSummary r={record} />
         <div className="space-y-1">
           <Label htmlFor="reason" className="text-xs">
-            Reason (required, 5–500 characters)
+            {tu("op.reason_required_5_500_characters")}
           </Label>
           <Textarea
             id="reason"
@@ -693,15 +694,15 @@ function ReasonDialog({
             onChange={(e) => setReason(e.target.value)}
             maxLength={500}
             rows={4}
-            placeholder="Explain the reason for this decision…"
+            placeholder={tu("op.explain_the_reason_for_this")}
           />
           {reason.length > 0 && !valid && (
             <p className="text-xs text-destructive">
               {trimmed.length < 5
-                ? "Please enter at least 5 characters."
+                ? tu("op.please_enter_at_least_5")
                 : hasHtml
-                  ? "HTML is not allowed in the reason."
-                  : "Reason must be 500 characters or fewer."}
+                  ? tu("op.html_is_not_allowed_in")
+                  : tu("op.reason_must_be_500_characters")}
             </p>
           )}
         </div>
@@ -712,7 +713,7 @@ function ReasonDialog({
             disabled={m.isPending}
             className="min-h-[44px]"
           >
-            Cancel
+            {tu("common.cancel")}
           </Button>
           <Button
             variant={kind === "reject" ? "destructive" : "destructive"}
@@ -777,29 +778,29 @@ function ReconcileDialog({
         <RecordSummary r={record} />
         <div className="space-y-2 text-sm">
           <div className="flex justify-between rounded-md border p-2">
-            <span className="text-muted-foreground">Current reconciliation</span>
+            <span className="text-muted-foreground">{tu("op.current_reconciliation")}</span>
             <span className="capitalize">{record.reconciliation_status.replace(/_/g, " ")}</span>
           </div>
           <div className="flex justify-between rounded-md border p-2">
-            <span className="text-muted-foreground">Resulting reconciliation</span>
-            <span>{isUnreconcile ? "unreconciled" : "matched"}</span>
+            <span className="text-muted-foreground">{tu("op.resulting_reconciliation")}</span>
+            <span>{isUnreconcile ? tu("op.unreconciled") : tu("op.matched")}</span>
           </div>
           {!isUnreconcile ? (
             <div>
-              <Label htmlFor="rec-ref" className="text-xs">Reference (optional)</Label>
+              <Label htmlFor="rec-ref" className="text-xs">{tu("acc.referenceOptional")}</Label>
               <Textarea
                 id="rec-ref"
                 value={reference}
                 onChange={(e) => setReference(e.target.value)}
                 maxLength={128}
                 rows={2}
-                placeholder="e.g. bank statement row / UTR"
+                placeholder={tu("op.e_g_bank_statement_row")}
               />
             </div>
           ) : (
             <div>
               <Label htmlFor="rec-reason" className="text-xs">
-                Reason (required, 5–500 characters)
+                {tu("op.reason_required_5_500_characters")}
               </Label>
               <Textarea
                 id="rec-reason"
@@ -807,17 +808,17 @@ function ReconcileDialog({
                 onChange={(e) => setReason(e.target.value)}
                 maxLength={500}
                 rows={3}
-                placeholder="Why is this being unreconciled?"
+                placeholder={tu("op.why_is_this_being_unreconciled")}
               />
               {reason.length > 0 && !reasonValid && (
                 <p className="text-xs text-destructive">
-                  Reason must be 5–500 characters with no HTML.
+                  {tu("op.reason_must_be_5_500")}
                 </p>
               )}
             </div>
           )}
           <p className="text-xs text-muted-foreground">
-            Verification status will remain <b>{record.verification_status}</b>.
+            {tu("op.verification_status_will_remain")} <b>{record.verification_status}</b>.
           </p>
         </div>
         <DialogFooter>
@@ -827,7 +828,7 @@ function ReconcileDialog({
             disabled={m.isPending}
             className="min-h-[44px]"
           >
-            Cancel
+            {tu("common.cancel")}
           </Button>
           <Button
             onClick={() => m.mutate()}
@@ -856,7 +857,7 @@ function IssueBillCard({ incomeRecordId }: { incomeRecordId: string }) {
       void navigate({ to: "/society/document/$id", params: { id: r.document_id } });
     } catch (e) { toast.error(toSafeFinanceMessage(e)); } finally { setBusy(false); }
   }
-  return <SectionCard title="Income bill" description="One numbered bill per income entry. A bill is not proof of payment.">
-    <Button className="min-h-11" disabled={busy} onClick={go}>{busy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <ReceiptIcon className="h-4 w-4 mr-1" />}Issue bill / open bill</Button>
+  return <SectionCard title={tu("vch.docs.incomeBill")} description={tu("op.one_numbered_bill_per_income")}>
+    <Button className="min-h-11" disabled={busy} onClick={go}>{busy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <ReceiptIcon className="h-4 w-4 mr-1" />}{tu("op.issue_bill_open_bill")}</Button>
   </SectionCard>;
 }

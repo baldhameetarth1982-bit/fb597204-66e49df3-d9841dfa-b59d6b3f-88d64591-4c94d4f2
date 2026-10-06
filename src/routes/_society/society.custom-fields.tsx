@@ -18,6 +18,7 @@ import { PageHeader, PageShell, EmptyState } from "@/components/shared/PageHeade
 import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { toast } from "sonner";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/custom-fields")({
   head: () => ({ meta: [{ title: "Custom Fields — SociyoHub" }] }),
@@ -81,7 +82,7 @@ function CustomFieldsPage() {
       : null;
     if (form.field_type === "dropdown" && (!opts || opts.length === 0)) {
       setSaving(false);
-      toast.error("Add at least one dropdown option (one per line).");
+      toast.error(tu("op.add_at_least_one_dropdown"));
       return;
     }
     const { error } = await supabase.from("custom_fields").insert({
@@ -96,7 +97,7 @@ function CustomFieldsPage() {
     });
     setSaving(false);
     if (error) { toast.error(userMessage(error)); return; }
-    toast.success("Field added");
+    toast.success(tu("op.field_added"));
     setForm(blankForm);
     setOpen(false);
     void load(societyId);
@@ -124,8 +125,8 @@ function CustomFieldsPage() {
   if (!sidLoading && !societyId) {
     return (
       <PageShell>
-        <PageHeader title="Custom Fields" />
-        <EmptyState icon={ListChecks} title="Set up your society first" />
+        <PageHeader title={tu("op.custom_fields")} />
+        <EmptyState icon={ListChecks} title={tu("op.set_up_your_society_first_3")} />
       </PageShell>
     );
   }
@@ -133,59 +134,59 @@ function CustomFieldsPage() {
   return (
     <PageShell>
       <PageHeader
-        title="Custom Resident Fields"
-        description="Add the questions you want each resident to fill in their profile."
+        title={tu("op.custom_resident_fields")}
+        description={tu("op.add_the_questions_you_want")}
         actions={
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button className="rounded-xl"><Plus className="h-4 w-4 mr-2" /> Add Field</Button>
+              <Button className="rounded-xl"><Plus className="h-4 w-4 mr-2" /> {tu("op.add_field")}</Button>
             </DialogTrigger>
             <DialogContent className="rounded-2xl sm:max-w-md">
-              <DialogHeader><DialogTitle>New field</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{tu("op.new_field")}</DialogTitle></DialogHeader>
               <form onSubmit={createField} className="space-y-3">
                 <div className="space-y-1.5">
-                  <Label>Label</Label>
-                  <Input aria-label="Label" value={form.label} required maxLength={60}
+                  <Label>{tu("op.label")}</Label>
+                  <Input aria-label={tu("op.label")} value={form.label} required maxLength={60}
                     onChange={(e) => setForm({ ...form, label: e.target.value })}
-                    placeholder="e.g. Vehicle registration number" />
+                    placeholder={tu("op.e_g_vehicle_registration_number")} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label>Type</Label>
+                    <Label>{tu("cm.type")}</Label>
                     <Select value={form.field_type} onValueChange={(v) => setForm({ ...form, field_type: v as any })}>
-                      <SelectTrigger aria-label="Type"><SelectValue /></SelectTrigger>
+                      <SelectTrigger aria-label={tu("cm.type")}><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {TYPES.map((t) => <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Visibility</Label>
+                    <Label>{tu("op.visibility")}</Label>
                     <Select value={form.visibility} onValueChange={(v) => setForm({ ...form, visibility: v as any })}>
-                      <SelectTrigger aria-label="Visibility"><SelectValue /></SelectTrigger>
+                      <SelectTrigger aria-label={tu("op.visibility")}><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="resident_editable">Resident can edit</SelectItem>
-                        <SelectItem value="admin_only">Admin only</SelectItem>
-                        <SelectItem value="hidden">Hidden</SelectItem>
+                        <SelectItem value="resident_editable">{tu("op.resident_can_edit")}</SelectItem>
+                        <SelectItem value="admin_only">{tu("op.admin_only")}</SelectItem>
+                        <SelectItem value="hidden">{tu("op.hidden_2")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
                 {form.field_type === "dropdown" && (
                   <div className="space-y-1.5">
-                    <Label>Options (one per line)</Label>
-                    <Textarea aria-label="Options (one per line)" rows={4} value={form.options}
+                    <Label>{tu("op.options_one_per_line")}</Label>
+                    <Textarea aria-label={tu("op.options_one_per_line")} rows={4} value={form.options}
                       onChange={(e) => setForm({ ...form, options: e.target.value })}
-                      placeholder={"Owner\nTenant\nFamily"} />
+                      placeholder={tu("op.owner_tenant_family")} />
                   </div>
                 )}
                 <label className="flex items-center justify-between rounded-xl border border-border p-3">
-                  <span className="text-sm">Required</span>
+                  <span className="text-sm">{tu("op.required")}</span>
                   <Switch checked={form.required} onCheckedChange={(v) => setForm({ ...form, required: v })} />
                 </label>
                 <DialogFooter>
                   <Button type="submit" disabled={saving} className="rounded-xl">
-                    {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Create
+                    {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}{tu("common.create")}
                   </Button>
                 </DialogFooter>
               </form>
@@ -199,8 +200,8 @@ function CustomFieldsPage() {
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : fields.length === 0 ? (
-        <EmptyState icon={ListChecks} title="No custom fields yet"
-          description="Custom fields show up on the resident profile screen." />
+        <EmptyState icon={ListChecks} title={tu("op.no_custom_fields_yet")}
+          description={tu("op.custom_fields_show_up_on")} />
       ) : (
         <ul className="space-y-2">
           {fields.map((f, i) => (
@@ -217,7 +218,7 @@ function CustomFieldsPage() {
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{f.label}</p>
                     <p className="text-xs text-muted-foreground capitalize">
-                      {f.field_type} • {f.visibility.replace("_", " ")} {f.required && " • required"}
+                      {f.field_type} • {f.visibility.replace("_", " ")} {f.required && tu("op.required_2")}
                     </p>
                   </div>
                   <Button variant="ghost" size="icon" aria-label={`Remove ${f.label}`} onClick={() => remove(f.id)}

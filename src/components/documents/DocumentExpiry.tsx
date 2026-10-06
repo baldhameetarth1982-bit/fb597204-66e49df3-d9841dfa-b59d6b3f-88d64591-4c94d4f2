@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StatusChip } from "@/components/people/PeopleUI";
 import { communityError } from "@/lib/community-errors";
 import type { KnowledgeItem } from "@/lib/society-knowledge.functions";
+import { tu } from "@/lib/i18n";
 
 const OPTIONS = [90, 60, 30, 14, 7, 3, 1, 0];
 
@@ -22,9 +23,9 @@ export function daysUntil(d: string) {
 export function ExpiryChip({ expiresOn }: { expiresOn: string | null }) {
   if (!expiresOn) return null;
   const n = daysUntil(expiresOn);
-  if (n < 0) return <StatusChip tone="warning">Expired</StatusChip>;
-  if (n <= 30) return <StatusChip tone="warning">Expires in {n} day{n === 1 ? "" : "s"}</StatusChip>;
-  return <StatusChip tone="muted">Expires {new Date(expiresOn).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</StatusChip>;
+  if (n < 0) return <StatusChip tone="warning">{tu("cm.st.expired")}</StatusChip>;
+  if (n <= 30) return <StatusChip tone="warning">{tu("op.expires_in")} {n} {tu("op.day_2")}{n === 1 ? "" : "s"}</StatusChip>;
+  return <StatusChip tone="muted">{tu("op.expires")} {new Date(expiresOn).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</StatusChip>;
 }
 
 export function DocumentExpiryDialog({ item, onClose, onDone }: { item: KnowledgeItem; onClose: () => void; onDone: () => void }) {
@@ -53,50 +54,50 @@ export function DocumentExpiryDialog({ item, onClose, onDone }: { item: Knowledg
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Expiry & reminders</DialogTitle>
-          <DialogDescription>Leave the date empty if this document doesn't expire. Reminders go only to the committee{item.audience === "committee" ? "" : " and, if you choose, staff with document access"} — never to residents.</DialogDescription>
+          <DialogTitle>{tu("op.expiry_reminders")}</DialogTitle>
+          <DialogDescription>{tu("op.leave_the_date_empty_if")}{item.audience === "committee" ? "" : tu("op.and_if_you_choose_staff")} — never to residents.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-1">
-            <Label htmlFor="exp">Expiry date</Label>
+            <Label htmlFor="exp">{tu("op.expiry_date")}</Label>
             <div className="flex gap-2">
               <Input id="exp" type="date" className="min-h-11" value={date} onChange={(e) => setDate(e.target.value)} />
-              {date && <Button variant="ghost" className="min-h-11" onClick={() => setDate("")}>Clear</Button>}
+              {date && <Button variant="ghost" className="min-h-11" onClick={() => setDate("")}>{tu("op.clear")}</Button>}
             </div>
           </div>
           <fieldset className="space-y-2" disabled={!date}>
-            <legend className="text-sm font-medium">Remind before expiry</legend>
+            <legend className="text-sm font-medium">{tu("op.remind_before_expiry")}</legend>
             <div className="flex flex-wrap gap-2">
               {OPTIONS.map((d) => (
                 <button key={d} type="button" aria-pressed={days.includes(d)} onClick={() => toggle(d)}
                   className={`min-h-11 rounded-full border px-3 text-sm disabled:opacity-50 ${days.includes(d) ? "border-primary bg-primary text-primary-foreground" : "bg-card"}`}>
-                  {d === 0 ? "On the day" : `${d} days`}
+                  {d === 0 ? tu("op.on_the_day") : `${d} days`}
                 </button>
               ))}
             </div>
-            <p className="text-xs text-muted-foreground">A final reminder is also sent once after it expires.</p>
+            <p className="text-xs text-muted-foreground">{tu("op.a_final_reminder_is_also")}</p>
           </fieldset>
           {item.audience !== "committee" && (
             <div className="space-y-1">
-              <Label>Who gets reminders</Label>
+              <Label>{tu("op.who_gets_reminders")}</Label>
               <Select value={aud} onValueChange={(v) => setAud(v as KnowledgeItem["reminderAudience"])} disabled={!date}>
                 <SelectTrigger className="min-h-11"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="committee">Committee admins</SelectItem>
-                  <SelectItem value="committee_and_staff">Committee + staff with document access</SelectItem>
+                  <SelectItem value="committee">{tu("op.committee_admins")}</SelectItem>
+                  <SelectItem value="committee_and_staff">{tu("op.committee_staff_with_document_access")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           )}
           <div className="space-y-1">
-            <p className="text-sm font-medium">Reminder history</p>
-            {history.isLoading ? <p className="text-xs text-muted-foreground">Loading…</p> : history.isError ? <p className="text-xs text-destructive">Couldn't load history.</p> : !(history.data ?? []).length ? (
-              <p className="text-xs text-muted-foreground">No reminders sent yet.</p>
+            <p className="text-sm font-medium">{tu("op.reminder_history")}</p>
+            {history.isLoading ? <p className="text-xs text-muted-foreground">{tu("common.loading")}</p> : history.isError ? <p className="text-xs text-destructive">{tu("op.couldn_t_load_history")}</p> : !(history.data ?? []).length ? (
+              <p className="text-xs text-muted-foreground">{tu("op.no_reminders_sent_yet")}</p>
             ) : (
               <ul className="space-y-1 text-xs">
                 {history.data!.map((h) => (
                   <li key={h.id} className="rounded-lg bg-muted px-3 py-1.5">
-                    {h.threshold === "expired" ? "Expired notice" : `${h.threshold.slice(1)}-day reminder`} · sent {new Date(h.sent_at).toLocaleDateString("en-IN")} to {h.recipients} {h.recipients === 1 ? "person" : "people"}
+                    {h.threshold === "expired" ? tu("op.expired_notice") : `${h.threshold.slice(1)}-day reminder`} · sent {new Date(h.sent_at).toLocaleDateString("en-IN")} to {h.recipients} {h.recipients === 1 ? tu("op.person") : tu("op.people")}
                   </li>
                 ))}
               </ul>
@@ -104,8 +105,8 @@ export function DocumentExpiryDialog({ item, onClose, onDone }: { item: Knowledg
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" className="min-h-11" onClick={onClose}>Cancel</Button>
-          <Button className="min-h-11" disabled={save.isPending || (!!date && !days.length)} onClick={() => save.mutate()}>{save.isPending ? "Saving…" : "Save"}</Button>
+          <Button variant="outline" className="min-h-11" onClick={onClose}>{tu("common.cancel")}</Button>
+          <Button className="min-h-11" disabled={save.isPending || (!!date && !days.length)} onClick={() => save.mutate()}>{save.isPending ? tu("cm.saving") : tu("common.save")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

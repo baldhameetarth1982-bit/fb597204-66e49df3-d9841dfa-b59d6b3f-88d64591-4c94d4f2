@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CommHeader, CommPage } from "@/components/comm/CommUI";
 import { ResidentPasses } from "@/features/passes/MaterialPasses";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_resident/app/passes")({
   head: () => ({
@@ -15,7 +16,7 @@ export const Route = createFileRoute("/_resident/app/passes")({
   }),
   component: () => (
     <CommPage>
-      <CommHeader title="Passes & lift" subtitle="Material, construction and move passes, with service lift booking" />
+      <CommHeader title={tu("op.passes_lift")} subtitle={tu("op.material_construction_and_move_passes")} />
       <ResidentPasses />
     </CommPage>
   ),

@@ -12,6 +12,7 @@ import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 import { govRpc, govError, ELIGIBILITY, fmtDateTime } from "@/lib/governance";
 import { VoteResults } from "@/components/governance/VoteResults";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_resident/app/votes")({
   head: () => ({
@@ -61,7 +62,7 @@ function ResidentVotes() {
     if (!open || !choice) return;
     if (!confirm("Submit your vote? It can't be changed afterwards.")) return;
     setBusy(true);
-    try { await govRpc("vote_cast", { _poll: open.id, _option: choice }); toast.success("Your vote is recorded"); setChoice(null); await qc.invalidateQueries({ queryKey: ["resident-votes"] }); qc.invalidateQueries({ queryKey: ["vote-results", open.id] }); }
+    try { await govRpc("vote_cast", { _poll: open.id, _option: choice }); toast.success(tu("op.your_vote_is_recorded")); setChoice(null); await qc.invalidateQueries({ queryKey: ["resident-votes"] }); qc.invalidateQueries({ queryKey: ["vote-results", open.id] }); }
     catch (e) { toast.error(govError(e)); } finally { setBusy(false); }
   }
 
@@ -75,7 +76,7 @@ function ResidentVotes() {
         <button onClick={() => { setOpenId(v.id); setChoice(null); }} className="flex w-full min-h-14 items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
           <Gavel className="h-5 w-5 shrink-0 text-primary" aria-hidden />
           <span className="min-w-0 flex-1"><span className="block truncate font-medium">{v.title}</span>
-            <span className="block text-xs text-muted-foreground">{isOpen(v) ? `Closes ${fmtDateTime(v.closes_at)}` : "Voting closed"}{m?.voted ? " · You voted" : isOpen(v) && !m?.eligible ? " · Not eligible" : ""}</span></span>
+            <span className="block text-xs text-muted-foreground">{isOpen(v) ? `Closes ${fmtDateTime(v.closes_at)}` : tu("el.st.voting_closed")}{m?.voted ? tu("op.you_voted") : isOpen(v) && !m?.eligible ? tu("op.not_eligible_2") : ""}</span></span>
           <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
         </button>
       </li>
@@ -84,14 +85,14 @@ function ResidentVotes() {
 
   return (
     <CommPage>
-      <CommHeader title="Votes" subtitle="Formal decisions for your society" />
+      <CommHeader title={tu("mod.votes")} subtitle={tu("op.formal_decisions_for_your_society")} />
       {q.isLoading ? <ListSkeleton rows={3} />
-        : q.isError ? <LoadError title="We couldn't load votes." onRetry={() => q.refetch()} />
-        : rows.length === 0 ? <ListEmpty icon={Gavel} title="No votes yet">Formal society votes will appear here.</ListEmpty>
+        : q.isError ? <LoadError title={tu("op.we_couldn_t_load_votes")} onRetry={() => q.refetch()} />
+        : rows.length === 0 ? <ListEmpty icon={Gavel} title={tu("op.no_votes_yet")}>{tu("op.formal_society_votes_will_appear")}</ListEmpty>
         : (
           <>
-            {active.length > 0 && <><SectionLabel count={active.length}>Voting open</SectionLabel><ul className="divide-y overflow-hidden rounded-2xl border bg-card">{active.map(item)}</ul></>}
-            {closed.length > 0 && <><SectionLabel>Closed</SectionLabel><ul className="divide-y overflow-hidden rounded-2xl border bg-card">{closed.map(item)}</ul></>}
+            {active.length > 0 && <><SectionLabel count={active.length}>{tu("el.st.voting_open")}</SectionLabel><ul className="divide-y overflow-hidden rounded-2xl border bg-card">{active.map(item)}</ul></>}
+            {closed.length > 0 && <><SectionLabel>{tu("hd.st.closed")}</SectionLabel><ul className="divide-y overflow-hidden rounded-2xl border bg-card">{closed.map(item)}</ul></>}
           </>
         )}
 
@@ -101,18 +102,18 @@ function ResidentVotes() {
             <div className="space-y-4">
               <SheetHeader><SheetTitle className="text-left text-xl">{open.title}</SheetTitle></SheetHeader>
               {open.description && <p className="whitespace-pre-wrap text-sm text-muted-foreground">{open.description}</p>}
-              <p className="text-xs text-muted-foreground">{ELIGIBILITY[open.eligibility]}{open.secret_ballot ? " · Secret ballot — nobody can see your choice" : ""}</p>
+              <p className="text-xs text-muted-foreground">{ELIGIBILITY[open.eligibility]}{open.secret_ballot ? tu("op.secret_ballot_nobody_can_see") : ""}</p>
               {isOpen(open) && !me?.voted && me?.eligible && (
-                <div role="radiogroup" aria-label="Your choice" className="space-y-2">
+                <div role="radiogroup" aria-label={tu("pl.yourChoice")} className="space-y-2">
                   {q.data?.options.filter((o) => o.poll_id === open.id).map((o) => (
                     <button key={o.id} role="radio" aria-checked={choice === o.id} onClick={() => setChoice(o.id)}
                       className={cn("flex w-full min-h-12 items-center rounded-xl border px-4 text-left text-sm font-medium", choice === o.id ? "border-primary bg-primary/10" : "border-border")}>{o.label}</button>
                   ))}
-                  <Button className="h-12 w-full rounded-xl" disabled={!choice || busy} onClick={cast}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit vote"}</Button>
+                  <Button className="h-12 w-full rounded-xl" disabled={!choice || busy} onClick={cast}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : tu("pl.submit")}</Button>
                 </div>
               )}
-              {me?.voted && <p className="flex items-center gap-2 rounded-xl bg-success/10 p-3 text-sm text-success"><CheckCircle2 className="h-4 w-4" aria-hidden />Your vote is recorded{!open.secret_ballot && me.my_option ? `: ${q.data?.options.find((o) => o.id === me.my_option)?.label}` : ""}.</p>}
-              {isOpen(open) && !me?.voted && !me?.eligible && <p className="rounded-xl bg-muted p-3 text-sm text-muted-foreground">{open.eligibility === "home" ? "Someone from your home has already voted, or you have no active home here." : "You aren't eligible for this vote."}</p>}
+              {me?.voted && <p className="flex items-center gap-2 rounded-xl bg-success/10 p-3 text-sm text-success"><CheckCircle2 className="h-4 w-4" aria-hidden />{tu("op.your_vote_is_recorded")}{!open.secret_ballot && me.my_option ? `: ${q.data?.options.find((o) => o.id === me.my_option)?.label}` : ""}.</p>}
+              {isOpen(open) && !me?.voted && !me?.eligible && <p className="rounded-xl bg-muted p-3 text-sm text-muted-foreground">{open.eligibility === "home" ? tu("op.someone_from_your_home_has") : tu("gv.e.not_eligible")}</p>}
               <VoteResults pollId={open.id} />
             </div>
           )}

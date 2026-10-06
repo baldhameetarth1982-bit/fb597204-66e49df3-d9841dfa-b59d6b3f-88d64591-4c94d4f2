@@ -19,6 +19,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { BillingConfigCard } from "@/components/billing/BillingConfigCard";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/bill-studio/")({
   head: () => ({
@@ -39,14 +40,14 @@ function BillTemplatesPage() {
   return (
     <PageShell>
       <PageHeader
-        title="Bill templates"
-        description="How your bills look. Changes apply to future bills only — bills already created stay as they are."
+        title={tu("mod.billTemplates")}
+        description={tu("op.how_your_bills_look_changes")}
       />
       <div className="mb-5 rounded-2xl border border-border bg-card"><BillingCenterTabs /></div>
       {loading ? (
         <ListSkeleton rows={3} />
       ) : !societyId ? (
-        <InlineNotice icon={Building2} title="No society linked">Set up your society first.</InlineNotice>
+        <InlineNotice icon={Building2} title={tu("op.no_society_linked")}>{tu("op.set_up_your_society_first")}</InlineNotice>
       ) : (
         <div className="space-y-4">
           <BillAppearance societyId={societyId} />
@@ -57,8 +58,8 @@ function BillTemplatesPage() {
           >
             <LayoutTemplate className="h-5 w-5 shrink-0 text-primary" aria-hidden />
             <span className="min-w-0 flex-1 text-sm">
-              <span className="block font-medium">Ready to bill?</span>
-              <span className="block text-muted-foreground">Generate bills for this period using this design.</span>
+              <span className="block font-medium">{tu("op.ready_to_bill")}</span>
+              <span className="block text-muted-foreground">{tu("op.generate_bills_for_this_period")}</span>
             </span>
             <ArrowRight className="h-4 w-4 text-muted-foreground" aria-hidden />
           </Link>
@@ -117,11 +118,11 @@ function BillAppearance({ societyId }: { societyId: string }) {
     };
     const ext = extensionByType[file.type];
     if (!ext) {
-      toast.error("Choose a JPG, PNG, WEBP, or GIF image.");
+      toast.error(tu("op.choose_a_jpg_png_webp"));
       return;
     }
     if (file.size > 8 * 1024 * 1024) {
-      toast.error("Image must be under 8 MB.");
+      toast.error(tu("op.image_must_be_under_8"));
       return;
     }
     setUploading(kind);
@@ -156,7 +157,7 @@ function BillAppearance({ societyId }: { societyId: string }) {
       const { error } = await (supabase as any).from("societies").update({ bill_theme }).eq("id", societyId);
       if (error) throw error;
       setSaved(t);
-      toast.success("Template saved. Future bills will use this design.");
+      toast.success(tu("op.template_saved_future_bills_will"));
     } catch (e: any) {
       toast.error(toSafeFinanceMessage(e, "Could not save. Please try again."));
     }
@@ -168,11 +169,11 @@ function BillAppearance({ societyId }: { societyId: string }) {
     const { error } = await (supabase as any).from("societies").update(patch).eq("id", societyId);
     if (error) { toast.error(toSafeFinanceMessage(error)); return; }
     if (kind === "logo") setLogoUrl(null); else setSignatureUrl(null);
-    toast.success("Removed");
+    toast.success(tu("vh.removed"));
   }
 
   if (state === "loading") return <ListSkeleton rows={3} />;
-  if (state === "error") return <LoadError title="Couldn't load your bill design." onRetry={() => void load()} />;
+  if (state === "error") return <LoadError title={tu("op.couldn_t_load_your_bill")} onRetry={() => void load()} />;
 
   const assetRow = (kind: "logo" | "signature", url: string | null, show: boolean, label: string, hint: string) => (
     <div className="flex flex-col gap-3 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center">
@@ -186,23 +187,23 @@ function BillAppearance({ societyId }: { societyId: string }) {
         )}
         <div className="min-w-0">
           <p className="font-medium">{label}</p>
-          <p className="text-xs text-muted-foreground">{url ? hint : "Not uploaded"}</p>
+          <p className="text-xs text-muted-foreground">{url ? hint : tu("op.not_uploaded")}</p>
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <label className="flex min-h-11 items-center gap-2 text-sm">
           <Switch checked={show} onCheckedChange={(v) => set(kind === "logo" ? "showLogo" : "showSignature", v)} aria-label={`Show ${label.toLowerCase()} on bills`} />
-          Show
+          {tu("rbd.show")}
         </label>
         <input id={`${kind}-file`} type="file" accept="image/*" className="hidden"
           onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadTo(kind, f); e.currentTarget.value = ""; }} />
         <Button variant="outline" size="sm" className="h-11 rounded-xl" disabled={uploading === kind}
           onClick={() => document.getElementById(`${kind}-file`)?.click()}>
           {uploading === kind && <Loader2 className="mr-1.5 h-4 w-4 motion-safe:animate-spin" />}
-          {url ? "Replace" : "Upload"}
+          {url ? tu("op.replace") : tu("op.upload")}
         </Button>
         {url && (
-          <Button variant="ghost" size="sm" className="h-11 rounded-xl text-destructive" onClick={() => setConfirmRemove(kind)}>Remove</Button>
+          <Button variant="ghost" size="sm" className="h-11 rounded-xl text-destructive" onClick={() => setConfirmRemove(kind)}>{tu("fd.remove")}</Button>
         )}
       </div>
     </div>
@@ -211,7 +212,7 @@ function BillAppearance({ societyId }: { societyId: string }) {
   return (
     <>
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
-        <SettingsSection title="Preview" icon={ImageIcon} description="The header and footer of every bill PDF and image.">
+        <SettingsSection title={tu("op.preview")} icon={ImageIcon} description={tu("op.the_header_and_footer_of")}>
           <div className="overflow-hidden rounded-xl border" style={{ borderColor: t.color + "44" }}>
             <div className="flex items-center gap-3 p-4" style={{ backgroundColor: t.color + "18" }}>
               {t.showLogo && (logoUrl ? (
@@ -220,16 +221,16 @@ function BillAppearance({ societyId }: { societyId: string }) {
                 <div className="grid h-12 w-12 place-items-center rounded-lg bg-muted text-muted-foreground"><Building2 className="h-6 w-6" /></div>
               ))}
               <div className="min-w-0 flex-1">
-                <div className="break-words font-semibold" style={{ color: t.color }}>{t.header || "Your society"}</div>
-                <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Maintenance bill · Preview</div>
+                <div className="break-words font-semibold" style={{ color: t.color }}>{t.header || tu("sd.yourSociety")}</div>
+                <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{tu("op.maintenance_bill_preview")}</div>
               </div>
             </div>
             <div className="flex items-end justify-between gap-3 p-4">
-              <p className="min-w-0 break-words text-xs text-muted-foreground">{t.footer || "No footer text"}</p>
+              <p className="min-w-0 break-words text-xs text-muted-foreground">{t.footer || tu("op.no_footer_text")}</p>
               {t.showSignature && (
                 <div className="shrink-0 text-center text-[10px] text-muted-foreground">
                   {signatureUrl ? <img src={signatureUrl} alt="" className="h-10 object-contain" /> : <div className="h-10 w-28 border-b border-dashed" />}
-                  <div className="pt-0.5">Authorised signatory</div>
+                  <div className="pt-0.5">{tu("doc.signatory")}</div>
                 </div>
               )}
             </div>
@@ -237,30 +238,30 @@ function BillAppearance({ societyId }: { societyId: string }) {
         </SettingsSection>
 
         <div className="space-y-4">
-          <SettingsSection title="Logo & signature" icon={PenLine} description="Uploads save straight away.">
+          <SettingsSection title={tu("op.logo_signature")} icon={PenLine} description={tu("op.uploads_save_straight_away")}>
             <div className="divide-y">
               {assetRow("logo", logoUrl, t.showLogo, "Society logo", "Shown at the top of each bill")}
               {assetRow("signature", signatureUrl, t.showSignature, "Authorised signature", "Shown at the bottom of each bill")}
             </div>
           </SettingsSection>
 
-          <SettingsSection title="Colour & text" icon={Type}>
+          <SettingsSection title={tu("op.colour_text")} icon={Type}>
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="bill-color" className="flex items-center gap-1.5"><Palette className="h-4 w-4 text-muted-foreground" aria-hidden />Theme colour</Label>
+                <Label htmlFor="bill-color" className="flex items-center gap-1.5"><Palette className="h-4 w-4 text-muted-foreground" aria-hidden />{tu("op.theme_colour")}</Label>
                 <div className="flex items-center gap-2">
                   <input id="bill-color-swatch" type="color" value={t.color} onChange={(e) => set("color", e.target.value)}
-                    className="h-11 w-14 shrink-0 cursor-pointer rounded-lg border" aria-label="Pick bill theme colour" />
+                    className="h-11 w-14 shrink-0 cursor-pointer rounded-lg border" aria-label={tu("op.pick_bill_theme_colour")} />
                   <Input id="bill-color" value={t.color} onChange={(e) => set("color", e.target.value)} className="h-11 rounded-xl font-mono" maxLength={9} />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="bill-header">Header text</Label>
-                <Input id="bill-header" value={t.header} onChange={(e) => set("header", e.target.value)} placeholder="Your society name" className="h-11 rounded-xl" />
+                <Label htmlFor="bill-header">{tu("op.header_text")}</Label>
+                <Input id="bill-header" value={t.header} onChange={(e) => set("header", e.target.value)} placeholder={tu("op.your_society_name")} className="h-11 rounded-xl" />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="bill-footer">Footer text <span className="font-normal text-muted-foreground">(optional)</span></Label>
-                <Input id="bill-footer" value={t.footer} onChange={(e) => set("footer", e.target.value)} placeholder="Thank you for paying on time." className="h-11 rounded-xl" />
+                <Label htmlFor="bill-footer">{tu("op.footer_text")} <span className="font-normal text-muted-foreground">{tu("setup.optional")}</span></Label>
+                <Input id="bill-footer" value={t.footer} onChange={(e) => set("footer", e.target.value)} placeholder={tu("op.thank_you_for_paying_on")} className="h-11 rounded-xl" />
               </div>
             </div>
           </SettingsSection>
@@ -272,13 +273,13 @@ function BillAppearance({ societyId }: { societyId: string }) {
       <AlertDialog open={!!confirmRemove} onOpenChange={(o) => !o && setConfirmRemove(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove the {confirmRemove === "logo" ? "logo" : "signature"}?</AlertDialogTitle>
-            <AlertDialogDescription>Future bills won't show it. Bills already created are not changed.</AlertDialogDescription>
+            <AlertDialogTitle>{tu("op.remove_the")} {confirmRemove === "logo" ? tu("op.logo") : tu("op.signature")}?</AlertDialogTitle>
+            <AlertDialogDescription>{tu("op.future_bills_won_t_show")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="h-11">Keep it</AlertDialogCancel>
+            <AlertDialogCancel className="h-11">{tu("op.keep_it")}</AlertDialogCancel>
             <AlertDialogAction className="h-11 bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => { const k = confirmRemove; setConfirmRemove(null); if (k) void removeAsset(k); }}>Remove</AlertDialogAction>
+              onClick={() => { const k = confirmRemove; setConfirmRemove(null); if (k) void removeAsset(k); }}>{tu("fd.remove")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

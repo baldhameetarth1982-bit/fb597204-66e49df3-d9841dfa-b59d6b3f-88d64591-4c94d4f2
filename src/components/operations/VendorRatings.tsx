@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { opsErrorMessage } from "./OperationsTabs";
+import { tu } from "@/lib/i18n";
 
 export interface VendorPerf { vendor_id: string; rating_count: number; avg_rating: number | null; recent_count: number; recent_avg: number | null; tickets_total: number; tickets_open: number; tickets_overdue: number; service_visits: number; last_service: string | null }
 
@@ -67,7 +68,7 @@ export function VendorPerformancePanel({ vendorId, perf }: { vendorId: string; p
   const done = () => { qc.invalidateQueries({ queryKey: ["ops", "vendor-ratings", vendorId] }); qc.invalidateQueries({ queryKey: ["ops", "vendor-perf"] }); };
   const rate = useMutation({
     mutationFn: async () => { const { error } = await supabase.rpc("admin_rate_vendor_service", { _log: log, _rating: stars, _comment: comment }); if (error) throw error; },
-    onSuccess: () => { toast.success("Rating saved"); setLog(""); setStars(0); setComment(""); done(); },
+    onSuccess: () => { toast.success(tu("op.rating_saved")); setLog(""); setStars(0); setComment(""); done(); },
     onError: (e) => toast.error(ratingErrorMessage(e)),
   });
   const moderate = useMutation({
@@ -77,42 +78,42 @@ export function VendorPerformancePanel({ vendorId, perf }: { vendorId: string; p
   });
 
   return (
-    <section className="space-y-3 border-t pt-4" aria-label="Performance">
-      <h3 className="text-sm font-semibold">Performance</h3>
+    <section className="space-y-3 border-t pt-4" aria-label={tu("op.performance")}>
+      <h3 className="text-sm font-semibold">{tu("op.performance")}</h3>
       <div className="grid grid-cols-2 gap-2 text-sm">
         <p className="rounded-xl bg-muted/60 p-2">{perfLabel(perf)}</p>
-        <p className="rounded-xl bg-muted/60 p-2">Last 90 days: {perf?.recent_avg != null ? `★ ${perf.recent_avg}` : `${perf?.recent_count ?? 0} rating${perf?.recent_count === 1 ? "" : "s"}`}</p>
-        <p className="rounded-xl bg-muted/60 p-2">{perf?.tickets_total ?? 0} requests · {perf?.tickets_open ?? 0} open{perf?.tickets_overdue ? ` · ${perf.tickets_overdue} overdue` : ""}</p>
-        <p className="rounded-xl bg-muted/60 p-2">{perf?.service_visits ?? 0} service visits{perf?.last_service ? ` · last ${perf.last_service}` : ""}</p>
+        <p className="rounded-xl bg-muted/60 p-2">{tu("op.last_90_days")} {perf?.recent_avg != null ? `★ ${perf.recent_avg}` : `${perf?.recent_count ?? 0} rating${perf?.recent_count === 1 ? "" : "s"}`}</p>
+        <p className="rounded-xl bg-muted/60 p-2">{perf?.tickets_total ?? 0} {tu("op.requests")} {perf?.tickets_open ?? 0} {tu("op.open")}{perf?.tickets_overdue ? ` · ${perf.tickets_overdue} overdue` : ""}</p>
+        <p className="rounded-xl bg-muted/60 p-2">{perf?.service_visits ?? 0} {tu("op.service_visits")}{perf?.last_service ? ` · last ${perf.last_service}` : ""}</p>
       </div>
-      {hist.isPending ? <p className="text-sm text-muted-foreground">Loading ratings…</p> : hist.isError ? <p className="text-sm text-destructive">{opsErrorMessage(hist.error)}</p> : (
+      {hist.isPending ? <p className="text-sm text-muted-foreground">{tu("op.loading_ratings")}</p> : hist.isError ? <p className="text-sm text-destructive">{opsErrorMessage(hist.error)}</p> : (
         <>
           {hist.data.unrated.length > 0 && (
             <div className="space-y-2 rounded-2xl border p-3">
-              <p className="text-sm font-medium">Rate a service visit</p>
-              <select aria-label="Service visit" className="h-11 w-full rounded-xl border bg-background px-3 text-sm" value={log} onChange={(e) => setLog(e.target.value)}>
-                <option value="">Choose a visit…</option>
+              <p className="text-sm font-medium">{tu("op.rate_a_service_visit")}</p>
+              <select aria-label={tu("op.service_visit")} className="h-11 w-full rounded-xl border bg-background px-3 text-sm" value={log} onChange={(e) => setLog(e.target.value)}>
+                <option value="">{tu("op.choose_a_visit")}</option>
                 {hist.data.unrated.map((u) => <option key={u.id} value={u.id}>{u.service_date} · {u.asset_name} · {u.kind}</option>)}
               </select>
-              <StarPicker value={stars} onChange={setStars} label="Visit rating" />
-              <Textarea rows={2} maxLength={500} className="rounded-xl" placeholder="Optional notes" aria-label="Visit rating notes" value={comment} onChange={(e) => setComment(e.target.value)} />
-              <Button type="button" className="min-h-11 rounded-xl" disabled={!log || !stars || rate.isPending} onClick={() => rate.mutate()}>Save rating</Button>
+              <StarPicker value={stars} onChange={setStars} label={tu("op.visit_rating")} />
+              <Textarea rows={2} maxLength={500} className="rounded-xl" placeholder={tu("op.optional_notes")} aria-label={tu("op.visit_rating_notes")} value={comment} onChange={(e) => setComment(e.target.value)} />
+              <Button type="button" className="min-h-11 rounded-xl" disabled={!log || !stars || rate.isPending} onClick={() => rate.mutate()}>{tu("op.save_rating")}</Button>
             </div>
           )}
-          {!hist.data.history.length ? <p className="text-sm text-muted-foreground">No ratings yet. Residents can rate once a request with this vendor is resolved.</p> : (
+          {!hist.data.history.length ? <p className="text-sm text-muted-foreground">{tu("op.no_ratings_yet_residents_can")}</p> : (
             <ul className="divide-y rounded-2xl border">
               {hist.data.history.map((h) => (
                 <li key={h.id} className="space-y-1 p-3 text-sm">
                   <p className="flex flex-wrap items-center gap-2"><span className="font-medium">★ {h.rating}/5</span>
                     <span className="text-xs text-muted-foreground">{h.rater_label} · {h.source === "request" ? `Request #${h.ticket_no}` : `${h.asset_name ?? "Asset"} ${h.service_kind ?? ""}`} · {h.created_at.slice(0, 10)}</span>
-                    {h.status === "hidden" && <span className="rounded-full bg-muted px-2 py-0.5 text-[11px]">Hidden — {h.moderation_reason}</span>}
+                    {h.status === "hidden" && <span className="rounded-full bg-muted px-2 py-0.5 text-[11px]">{tu("op.hidden_3")} {h.moderation_reason}</span>}
                   </p>
                   {h.comment && <p className="whitespace-pre-wrap break-words text-muted-foreground">{h.comment}</p>}
                   <div className="flex gap-2">
-                    <Input className="h-11 flex-1" maxLength={300} placeholder={h.status === "hidden" ? "Reason to restore" : "Reason to hide"} aria-label="Moderation reason"
+                    <Input className="h-11 flex-1" maxLength={300} placeholder={h.status === "hidden" ? tu("op.reason_to_restore") : tu("op.reason_to_hide")} aria-label={tu("op.moderation_reason")}
                       value={hideReason[h.id] ?? ""} onChange={(e) => setHideReason({ ...hideReason, [h.id]: e.target.value })} />
                     <Button type="button" variant="outline" className="min-h-11 rounded-xl" disabled={(hideReason[h.id] ?? "").trim().length < 3 || moderate.isPending}
-                      onClick={() => moderate.mutate({ id: h.id, hide: h.status !== "hidden" })}>{h.status === "hidden" ? "Restore" : "Hide"}</Button>
+                      onClick={() => moderate.mutate({ id: h.id, hide: h.status !== "hidden" })}>{h.status === "hidden" ? tu("op.restore") : tu("op.hide")}</Button>
                   </div>
                 </li>
               ))}
@@ -120,7 +121,7 @@ export function VendorPerformancePanel({ vendorId, perf }: { vendorId: string; p
           )}
         </>
       )}
-      <p className="text-xs text-muted-foreground">Hidden ratings are kept and left out of the score. Ratings never change expenses or payments.</p>
+      <p className="text-xs text-muted-foreground">{tu("op.hidden_ratings_are_kept_and")}</p>
     </section>
   );
 }
@@ -136,18 +137,18 @@ export function ResidentVendorRating({ ticketId }: { ticketId: string }) {
   });
   const rate = useMutation({
     mutationFn: async () => { const { error } = await supabase.rpc("vendor_rate_ticket", { _ticket: ticketId, _rating: stars, _comment: comment }); if (error) throw error; },
-    onSuccess: () => { toast.success("Thanks — your rating was saved"); qc.invalidateQueries({ queryKey: ["helpdesk", "vendor-rating", ticketId] }); },
+    onSuccess: () => { toast.success(tu("op.thanks_your_rating_was_saved")); qc.invalidateQueries({ queryKey: ["helpdesk", "vendor-rating", ticketId] }); },
     onError: (e) => toast.error(ratingErrorMessage(e)),
   });
   if (!st.data?.eligible) return null;
   return (
     <div className="space-y-2 rounded-2xl border p-3">
-      <p className="text-sm font-medium">Rate the service provider{st.data.vendor_name ? ` (${st.data.vendor_name})` : ""}</p>
-      {st.data.rated ? <p className="text-sm text-muted-foreground">You rated them {st.data.my_rating}/5.</p> : (
+      <p className="text-sm font-medium">{tu("op.rate_the_service_provider")}{st.data.vendor_name ? ` (${st.data.vendor_name})` : ""}</p>
+      {st.data.rated ? <p className="text-sm text-muted-foreground">{tu("op.you_rated_them")} {st.data.my_rating}/5.</p> : (
         <>
-          <StarPicker value={stars} onChange={setStars} label="Service provider rating" />
-          <Textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={2} maxLength={500} className="rounded-xl" placeholder="Optional comment (only the committee sees it)" aria-label="Service provider comment" />
-          <Button className="min-h-11 rounded-xl" disabled={!stars || rate.isPending} onClick={() => rate.mutate()}>Submit rating</Button>
+          <StarPicker value={stars} onChange={setStars} label={tu("op.service_provider_rating")} />
+          <Textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={2} maxLength={500} className="rounded-xl" placeholder={tu("op.optional_comment_only_the_committee")} aria-label={tu("op.service_provider_comment")} />
+          <Button className="min-h-11 rounded-xl" disabled={!stars || rate.isPending} onClick={() => rate.mutate()}>{tu("hd.submitRating")}</Button>
         </>
       )}
     </div>

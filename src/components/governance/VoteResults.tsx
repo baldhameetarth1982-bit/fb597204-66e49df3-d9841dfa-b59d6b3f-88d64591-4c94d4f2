@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Lock } from "lucide-react";
 import { govRpc } from "@/lib/governance";
 import { ListSkeleton } from "@/components/people/PeopleUI";
+import { tu } from "@/lib/i18n";
 
 type Row = { option_id: string; label: string; votes: number | null; total_cast: number; eligible_count: number; visible: boolean };
 
@@ -9,14 +10,14 @@ type Row = { option_id: string; label: string; votes: number | null; total_cast:
 export function VoteResults({ pollId }: { pollId: string }) {
   const q = useQuery({ queryKey: ["vote-results", pollId], queryFn: () => govRpc<Row[]>("vote_results", { _poll: pollId }), staleTime: 15_000 });
   if (q.isLoading) return <ListSkeleton rows={2} />;
-  if (q.isError || !q.data?.length) return <p className="text-sm text-muted-foreground">Results aren't available right now.</p>;
+  if (q.isError || !q.data?.length) return <p className="text-sm text-muted-foreground">{tu("el.r.unavailable")}</p>;
   const first = q.data[0];
   const cast = Number(first.total_cast);
   return (
-    <section aria-label="Results" className="space-y-2">
-      <p className="text-sm tabular-nums">{cast} of {Number(first.eligible_count)} eligible {cast === 1 ? "vote" : "votes"} cast</p>
+    <section aria-label={tu("el.results")} className="space-y-2">
+      <p className="text-sm tabular-nums">{cast} of {Number(first.eligible_count)} {tu("op.eligible_2")} {cast === 1 ? tu("op.vote") : tu("op.votes")} {tu("op.cast")}</p>
       {!first.visible ? (
-        <p className="flex items-center gap-2 rounded-xl bg-muted p-3 text-sm text-muted-foreground"><Lock className="h-4 w-4" aria-hidden />Totals appear when voting closes.</p>
+        <p className="flex items-center gap-2 rounded-xl bg-muted p-3 text-sm text-muted-foreground"><Lock className="h-4 w-4" aria-hidden />{tu("el.r.adminHidden")}</p>
       ) : (
         <ul className="space-y-2">
           {q.data.map((r) => {

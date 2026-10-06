@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/petty-cash")({
   head: () => ({
@@ -74,39 +75,39 @@ function PettyCashPage() {
     });
     setSaving(false);
     if (error) return toast.error(error.message.includes("42501") || error.code === "42501" ? "You don't have permission to do that." : error.message);
-    toast.success("Saved to the petty cash register");
+    toast.success(tu("op.saved_to_the_petty_cash"));
     setForm(null);
     void qc.invalidateQueries({ queryKey: ["petty-cash", societyId] });
   }
 
   return (
     <PageShell>
-      <PageHeader title="Petty cash" description="A register for the cash float kept for small expenses. Entries can't be edited; mistakes are corrected with a reversal. Book spends to accounts through Expenses as usual." />
+      <PageHeader title={tu("op.petty_cash")} description={tu("op.a_register_for_the_cash")} />
       <div className="mb-4 grid grid-cols-2 gap-3">
-        <div className="rounded-xl border bg-card p-3"><p className="text-xs text-muted-foreground">Cash in hand</p><p className="text-xl font-semibold tabular-nums">{q.isSuccess ? inr(balance) : "—"}</p></div>
-        <div className="rounded-xl border bg-card p-3"><p className="text-xs text-muted-foreground">Spent this month</p><p className="text-xl font-semibold tabular-nums">{q.isSuccess ? inr(monthSpend) : "—"}</p></div>
+        <div className="rounded-xl border bg-card p-3"><p className="text-xs text-muted-foreground">{tu("op.cash_in_hand")}</p><p className="text-xl font-semibold tabular-nums">{q.isSuccess ? inr(balance) : "—"}</p></div>
+        <div className="rounded-xl border bg-card p-3"><p className="text-xs text-muted-foreground">{tu("op.spent_this_month")}</p><p className="text-xl font-semibold tabular-nums">{q.isSuccess ? inr(monthSpend) : "—"}</p></div>
       </div>
       <div className="mb-4 flex flex-wrap gap-2">
-        <Button className="min-h-11" onClick={() => open("top_up")}><Plus className="mr-1 h-4 w-4" />Add cash</Button>
-        <Button variant="outline" className="min-h-11" onClick={() => open("spend")}><Minus className="mr-1 h-4 w-4" />Record spend</Button>
-        <Button variant="outline" className="min-h-11" disabled={!q.isSuccess || rows.length === 0} onClick={() => writeSafeWorkbook([...rows].reverse().map((r) => ({ Date: r.entry_date, Type: r.kind === "top_up" ? "Cash added" : r.kind === "spend" ? "Spend" : "Reversal", Purpose: r.purpose, Voucher: r.voucher_no ?? "", "Paid to": r.paid_to ?? "", "Amount (Rs.)": Number(r.amount), "Balance after (Rs.)": Number(r.balance_after), Status: reversed.has(r.id) ? "Reversed" : "" })), "Petty cash", `petty-cash-${today()}.xlsx`)}><Download className="mr-1 h-4 w-4" />Download register</Button>
+        <Button className="min-h-11" onClick={() => open("top_up")}><Plus className="mr-1 h-4 w-4" />{tu("op.add_cash")}</Button>
+        <Button variant="outline" className="min-h-11" onClick={() => open("spend")}><Minus className="mr-1 h-4 w-4" />{tu("op.record_spend")}</Button>
+        <Button variant="outline" className="min-h-11" disabled={!q.isSuccess || rows.length === 0} onClick={() => writeSafeWorkbook([...rows].reverse().map((r) => ({ Date: r.entry_date, Type: r.kind === "top_up" ? "Cash added" : r.kind === "spend" ? "Spend" : "Reversal", Purpose: r.purpose, Voucher: r.voucher_no ?? "", "Paid to": r.paid_to ?? "", "Amount (Rs.)": Number(r.amount), "Balance after (Rs.)": Number(r.balance_after), Status: reversed.has(r.id) ? "Reversed" : "" })), "Petty cash", `petty-cash-${today()}.xlsx`)}><Download className="mr-1 h-4 w-4" />{tu("op.download_register")}</Button>
       </div>
-      {q.isLoading ? <p className="text-muted-foreground">Loading register…</p>
-        : q.isError ? <div className="rounded-lg border p-4"><p>Couldn't load petty cash.</p><Button variant="outline" className="mt-2 min-h-11" onClick={() => q.refetch()}>Try again</Button></div>
-        : rows.length === 0 ? <p className="rounded-lg border p-6 text-center text-muted-foreground">No entries yet. Start with “Add cash”.</p>
+      {q.isLoading ? <p className="text-muted-foreground">{tu("op.loading_register")}</p>
+        : q.isError ? <div className="rounded-lg border p-4"><p>{tu("op.couldn_t_load_petty_cash")}</p><Button variant="outline" className="mt-2 min-h-11" onClick={() => q.refetch()}>{tu("common.tryAgain")}</Button></div>
+        : rows.length === 0 ? <p className="rounded-lg border p-6 text-center text-muted-foreground">{tu("op.no_entries_yet_start_with")}</p>
         : <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
           {rows.map((r) => (
             <li key={r.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
               <div className="min-w-0 flex-1">
                 <p className="font-medium">{r.purpose}</p>
-                <p className="text-xs text-muted-foreground">{r.entry_date}{r.voucher_no ? ` · Voucher ${r.voucher_no}` : ""}{r.paid_to ? ` · ${r.paid_to}` : ""}{reversed.has(r.id) ? " · Reversed" : ""}</p>
+                <p className="text-xs text-muted-foreground">{r.entry_date}{r.voucher_no ? ` · Voucher ${r.voucher_no}` : ""}{r.paid_to ? ` · ${r.paid_to}` : ""}{reversed.has(r.id) ? tu("op.reversed") : ""}</p>
               </div>
               <div className="text-right">
                 <p className={`font-semibold tabular-nums ${r.kind === "spend" ? "text-destructive" : "text-success"}`}>{r.kind === "spend" ? "−" : "+"}{inr(r.amount)}</p>
-                <p className="text-xs text-muted-foreground tabular-nums">Bal {inr(r.balance_after)}</p>
+                <p className="text-xs text-muted-foreground tabular-nums">{tu("op.bal")} {inr(r.balance_after)}</p>
               </div>
               {r.kind !== "reversal" && !reversed.has(r.id) && (
-                <Button size="sm" variant="ghost" className="min-h-11" aria-label="Reverse entry" onClick={() => open("reversal", r)}><Undo2 className="h-4 w-4" /></Button>
+                <Button size="sm" variant="ghost" className="min-h-11" aria-label={tu("op.reverse_entry")} onClick={() => open("reversal", r)}><Undo2 className="h-4 w-4" /></Button>
               )}
             </li>
           ))}
@@ -114,20 +115,20 @@ function PettyCashPage() {
 
       <Dialog open={!!form} onOpenChange={(o) => !saving && !o && setForm(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>{form?.kind === "top_up" ? "Add cash" : form?.kind === "spend" ? "Record spend" : "Reverse entry"}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{form?.kind === "top_up" ? tu("op.add_cash") : form?.kind === "spend" ? tu("op.record_spend") : tu("op.reverse_entry")}</DialogTitle></DialogHeader>
           <form className="space-y-3" onSubmit={save}>
             {form?.kind === "reversal" ? (
-              <p className="text-sm text-muted-foreground">This adds a correcting entry for “{form.target?.purpose}” ({inr(form.target?.amount ?? 0)}). The original stays in the register.</p>
+              <p className="text-sm text-muted-foreground">{tu("op.this_adds_a_correcting_entry")}{form.target?.purpose}” ({inr(form.target?.amount ?? 0)}). The original stays in the register.</p>
             ) : <>
-              <div className="space-y-1.5"><Label htmlFor="pc-amt">Amount (₹)</Label><Input id="pc-amt" className="h-11" type="number" min="0.01" step="0.01" max="100000" required value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
-              <div className="space-y-1.5"><Label htmlFor="pc-date">Date</Label><Input id="pc-date" className="h-11" type="date" max={today()} required value={date} onChange={(e) => setDate(e.target.value)} /></div>
+              <div className="space-y-1.5"><Label htmlFor="pc-amt">{tu("acc.amountInr")}</Label><Input id="pc-amt" className="h-11" type="number" min="0.01" step="0.01" max="100000" required value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
+              <div className="space-y-1.5"><Label htmlFor="pc-date">{tu("common.date")}</Label><Input id="pc-date" className="h-11" type="date" max={today()} required value={date} onChange={(e) => setDate(e.target.value)} /></div>
             </>}
-            <div className="space-y-1.5"><Label htmlFor="pc-purpose">{form?.kind === "reversal" ? "Reason" : "Purpose"}</Label><Input id="pc-purpose" className="h-11" minLength={3} maxLength={180} required value={purpose} onChange={(e) => setPurpose(e.target.value)} /></div>
+            <div className="space-y-1.5"><Label htmlFor="pc-purpose">{form?.kind === "reversal" ? tu("exp.reason") : tu("gd.purpose")}</Label><Input id="pc-purpose" className="h-11" minLength={3} maxLength={180} required value={purpose} onChange={(e) => setPurpose(e.target.value)} /></div>
             {form?.kind === "spend" && <>
-              <div className="space-y-1.5"><Label htmlFor="pc-v">Voucher no. (optional)</Label><Input id="pc-v" className="h-11" maxLength={40} value={voucher} onChange={(e) => setVoucher(e.target.value)} /></div>
-              <div className="space-y-1.5"><Label htmlFor="pc-to">Paid to (optional)</Label><Input id="pc-to" className="h-11" maxLength={80} value={paidTo} onChange={(e) => setPaidTo(e.target.value)} /></div>
+              <div className="space-y-1.5"><Label htmlFor="pc-v">{tu("op.voucher_no_optional")}</Label><Input id="pc-v" className="h-11" maxLength={40} value={voucher} onChange={(e) => setVoucher(e.target.value)} /></div>
+              <div className="space-y-1.5"><Label htmlFor="pc-to">{tu("op.paid_to_optional")}</Label><Input id="pc-to" className="h-11" maxLength={80} value={paidTo} onChange={(e) => setPaidTo(e.target.value)} /></div>
             </>}
-            <DialogFooter><Button type="submit" className="min-h-11 w-full" disabled={saving}>{saving ? "Saving…" : "Save"}</Button></DialogFooter>
+            <DialogFooter><Button type="submit" className="min-h-11 w-full" disabled={saving}>{saving ? tu("cm.saving") : tu("common.save")}</Button></DialogFooter>
           </form>
         </DialogContent>
       </Dialog>

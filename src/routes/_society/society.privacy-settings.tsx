@@ -3,6 +3,7 @@ import { EyeOff } from "lucide-react";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { SettingsShell, SettingsSection } from "@/components/settings/SettingsUI";
 import { PrivacySettingsPanel } from "@/components/settings/PrivacySettingsPanel";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/privacy-settings")({
   head: () => ({
@@ -15,15 +16,15 @@ export const Route = createFileRoute("/_society/society/privacy-settings")({
   component: () => (
     <FeatureGate feature="privacy_controls">
       <SettingsShell
-        title="Privacy & Transparency"
-        description="Choose what residents can see about each other and about the society's money. Society Admins can always see everything."
+        title={tu("op.privacy_transparency")}
+        description={tu("op.choose_what_residents_can_see")}
         scope="Whole society"
         icon={EyeOff}
       >
         <SettingsSection
-          title="Resident privacy"
+          title={tu("op.resident_privacy")}
           icon={EyeOff}
-          description="These rules are checked by the server every time someone opens a page, so hidden details stay hidden everywhere in the app."
+          description={tu("op.these_rules_are_checked_by")}
         >
           <PrivacySettingsPanel />
         </SettingsSection>

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { tu } from "@/lib/i18n";
 
 export type MyHome = {
   flat_id: string; flat_number: string | null; block_name: string | null;
@@ -50,7 +51,7 @@ export function HomeSwitcher() {
     const { error } = await (supabase as any).rpc("switch_active_home", { _flat_id: h.flat_id });
     if (error) {
       setSwitching(null);
-      toast.error("Couldn't switch home. You're still viewing your current home.");
+      toast.error(tu("op.couldn_t_switch_home_you"));
       return;
     }
     // Drop every cached record from the previous home, then reload into the new context.
@@ -68,11 +69,11 @@ export function HomeSwitcher() {
               <span className="font-medium">{label(active)}</span>
               {multiSociety && <span className="text-muted-foreground"> · {active.society_name}</span>}
             </span>
-            <span className="text-xs text-muted-foreground">Switch</span>
+            <span className="text-xs text-muted-foreground">{tu("op.switch")}</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-[min(92vw,22rem)]">
-          <DropdownMenuLabel>Your homes</DropdownMenuLabel>
+          <DropdownMenuLabel>{tu("op.your_homes")}</DropdownMenuLabel>
           {homes.map((h) => (
             <DropdownMenuItem key={h.flat_id} className="min-h-11 gap-2" disabled={!!switching} onSelect={() => void choose(h)}>
               {h.is_active_home ? <Check className="h-4 w-4 text-primary" /> : <span className="w-4" />}

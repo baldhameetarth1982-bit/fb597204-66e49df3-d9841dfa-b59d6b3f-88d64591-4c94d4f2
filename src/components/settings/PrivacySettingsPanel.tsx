@@ -16,6 +16,7 @@ import {
   PRIVACY_LABELS, PRIVACY_DESCRIPTIONS,
   type SocietyPrivacySettings,
 } from "@/lib/role-permissions";
+import { tu } from "@/lib/i18n";
 
 type Key = keyof SocietyPrivacySettings;
 
@@ -69,14 +70,14 @@ export function PrivacySettingsPanel() {
 
   if (sidLoading || (q.isLoading && !!societyId)) {
     return (
-      <div className="flex justify-center py-10" role="status" aria-label="Loading privacy settings">
+      <div className="flex justify-center py-10" role="status" aria-label={tu("op.loading_privacy_settings")}>
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   if (!societyId) {
-    return <p className="text-sm text-muted-foreground">No society is selected.</p>;
+    return <p className="text-sm text-muted-foreground">{tu("op.no_society_is_selected")}</p>;
   }
 
   if (q.isError || !q.data || !draft) {
@@ -88,15 +89,15 @@ export function PrivacySettingsPanel() {
         </div>
         <p className="text-sm">
           {kind === "forbidden"
-            ? "Only Society Admins can view and change privacy settings."
+            ? tu("op.only_society_admins_can_view")
             : kind === "offline"
-              ? "You seem to be offline. Your settings couldn't be loaded."
-              : "Privacy settings couldn't be loaded, so they can't be changed right now."}
+              ? tu("op.you_seem_to_be_offline")
+              : tu("op.privacy_settings_couldn_t_be")}
         </p>
         {kind !== "forbidden" && (
           <Button variant="outline" className="min-h-11 rounded-xl" onClick={() => q.refetch()} disabled={q.isFetching}>
             {q.isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
-            Try again
+            {tu("common.tryAgain")}
           </Button>
         )}
       </div>
@@ -115,7 +116,7 @@ export function PrivacySettingsPanel() {
       // Re-read the authoritative saved values from the server.
       await qc.invalidateQueries({ queryKey });
       setSavedAt(Date.now());
-      toast.success("Privacy settings saved");
+      toast.success(tu("op.privacy_settings_saved"));
     } catch (e) {
       const kind = errorKind(e);
       const msg = kind === "forbidden"
@@ -142,7 +143,7 @@ export function PrivacySettingsPanel() {
           <div key={r.key} className="space-y-2">
             <div className="flex items-center justify-between gap-2">
               <Label htmlFor={id} className="text-sm font-semibold">{r.title}</Label>
-              {changed && <span className="text-[11px] font-medium text-primary">Not saved</span>}
+              {changed && <span className="text-[11px] font-medium text-primary">{tu("op.not_saved")}</span>}
             </div>
             <p className="text-xs text-muted-foreground">{r.hint}</p>
             <Select
@@ -163,17 +164,17 @@ export function PrivacySettingsPanel() {
       {saveError && <p role="alert" className="text-sm text-destructive">{saveError}</p>}
       {savedAt && !dirty && !saveError && (
         <p className="flex items-center gap-1.5 text-sm text-muted-foreground" role="status">
-          <CheckCircle2 className="h-4 w-4 text-primary" /> Saved. Changes apply to everyone right away and are recorded.
+          <CheckCircle2 className="h-4 w-4 text-primary" /> {tu("op.saved_changes_apply_to_everyone")}
         </p>
       )}
 
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button variant="ghost" className="min-h-11 rounded-xl" disabled={!dirty || saving} onClick={() => { setDraft(saved); setSaveError(null); }}>
-          Discard changes
+          {tu("op.discard_changes")}
         </Button>
         <Button className="min-h-11 rounded-xl" disabled={!dirty || saving} onClick={handleSave}>
           {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-          {saving ? "Saving…" : dirty ? "Save changes" : "No changes"}
+          {saving ? tu("cm.saving") : dirty ? tu("common.saveChanges") : tu("op.no_changes")}
         </Button>
       </div>
     </div>

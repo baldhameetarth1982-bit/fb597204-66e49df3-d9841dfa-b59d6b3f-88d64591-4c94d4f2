@@ -13,7 +13,7 @@
  *    protected society id never appears in Stage 2D source.
  */
 import { describe, expect, it } from "vitest";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync } from "../helpers/ui-source";
 import { join } from "node:path";
 import {
   parseCsv,

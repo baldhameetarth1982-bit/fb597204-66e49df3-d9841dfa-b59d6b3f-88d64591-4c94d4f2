@@ -1,4 +1,5 @@
-// Self-contained preview of the Neon premium theme — does NOT toggle the global theme.
+
+import { tu } from "@/lib/i18n";// Self-contained preview of the Neon premium theme — does NOT toggle the global theme.
 export function NeonThemePreview() {
   return (
     <div
@@ -11,13 +12,13 @@ export function NeonThemePreview() {
           <div className="h-2 w-2 rounded-full" style={{ background: "var(--primary)", boxShadow: "0 0 12px var(--primary)" }} />
         </div>
         <h3 className="text-2xl font-bold leading-tight">
-          Dashboard <span className="italic" style={{ color: "var(--primary)" }}>Overview</span>
+          {tu("nav.dashboard")} <span className="italic" style={{ color: "var(--primary)" }}>{tu("nav.overview")}</span>
         </h3>
-        <p className="text-xs opacity-70 mt-1">A premium look just for your society.</p>
+        <p className="text-xs opacity-70 mt-1">{tu("op.a_premium_look_just_for")}</p>
 
         <div className="mt-4 rounded-xl p-3" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
           <div className="flex justify-between text-xs">
-            <span className="opacity-70">Profile setup</span>
+            <span className="opacity-70">{tu("op.profile_setup")}</span>
             <span style={{ color: "var(--primary)" }}>75%</span>
           </div>
           <div className="h-1.5 mt-2 rounded-full overflow-hidden" style={{ background: "var(--secondary)" }}>
@@ -38,7 +39,7 @@ export function NeonThemePreview() {
           className="mt-4 w-full rounded-xl py-3 text-sm font-semibold"
           style={{ background: "var(--primary)", color: "var(--primary-foreground)", boxShadow: "0 8px 30px -8px var(--primary)" }}
         >
-          View Campaign
+          {tu("op.view_campaign")}
         </button>
       </div>
     </div>

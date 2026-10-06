@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { RECURRING_CATEGORIES, categoryLabel, gateErrorMessage } from "@/lib/visitors";
 import { useTranslation } from "react-i18next";
-import { localeTag } from "@/lib/i18n";
+import { localeTag, tu } from "@/lib/i18n";
 
 interface SosRow { id: string; status: string; created_at: string }
 
@@ -41,7 +41,7 @@ export function SosButton({ online }: { online: boolean }) {
     const { error } = await supabase.rpc("sos_raise", { _note: "" });
     setSending(false);
     if (error) { setFailed(`${gateErrorMessage(error)} Call 112 or a number below.`); return; }
-    toast.success("SOS sent to security and the committee");
+    toast.success(tu("op.sos_sent_to_security_and"));
     qc.invalidateQueries({ queryKey: ["my-sos"] });
   }
   const start = () => { if (sending) return; setHolding(true); timer.current = setTimeout(send, 1500); };
@@ -52,18 +52,18 @@ export function SosButton({ online }: { online: boolean }) {
       <CardContent className="p-5 sm:p-5 space-y-3">
         {active ? (
           <div role="status" className="rounded-2xl bg-destructive/10 p-4 text-sm">
-            <p className="font-semibold text-destructive">{active.status === "raised" ? "SOS sent — waiting for security to respond" : "Security has seen your SOS and is responding"}</p>
-            <p className="text-xs text-muted-foreground mt-1">Keep your phone near you. Call 112 if it's life-threatening.</p>
+            <p className="font-semibold text-destructive">{active.status === "raised" ? tu("op.sos_sent_waiting_for_security") : tu("op.security_has_seen_your_sos")}</p>
+            <p className="text-xs text-muted-foreground mt-1">{tu("op.keep_your_phone_near_you")}</p>
           </div>
         ) : (
           <>
             <button type="button" onPointerDown={start} onPointerUp={cancel} onPointerLeave={cancel} onKeyDown={(e) => e.key === "Enter" && void send()}
-              aria-label="Hold to send SOS to society security"
+              aria-label={tu("op.hold_to_send_sos_to")}
               className={cn("w-full min-h-16 rounded-2xl bg-destructive text-destructive-foreground font-semibold text-lg flex items-center justify-center gap-2 select-none transition-transform motion-reduce:transition-none", holding && "scale-95")}>
               {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Siren className="h-5 w-5" />}
-              {sending ? "Sending…" : holding ? "Keep holding…" : "Hold to send SOS"}
+              {sending ? tu("cm.sending") : holding ? tu("op.keep_holding") : tu("op.hold_to_send_sos")}
             </button>
-            <p className="text-xs text-muted-foreground text-center">Alerts your society's guards and committee. It doesn't call the police.</p>
+            <p className="text-xs text-muted-foreground text-center">{tu("op.alerts_your_society_s_guards")}</p>
           </>
         )}
         {failed && <p role="alert" className="text-sm text-destructive font-medium">{failed}</p>}
@@ -207,34 +207,34 @@ export function SafetyAlertPanel({ online }: { online: boolean }) {
     const { error } = await supabase.rpc("safety_alert_raise", { _kind: open, _subject: form.subject, _note: form.note, _last_seen: form.lastSeen });
     setBusy(false);
     if (error) return toast.error(`${gateErrorMessage(error)} Call 112 or the guard directly.`);
-    toast.success("Guards and the committee have been alerted");
+    toast.success(tu("op.guards_and_the_committee_have"));
     setOpen(null); setForm({ subject: "", lastSeen: "", note: "" }); refresh();
   }
   return (
     <Card className="rounded-2xl"><CardContent className="p-4 sm:p-4 space-y-3">
       <div>
-        <p className="font-semibold">Child or elder missing?</p>
-        <p className="text-sm text-muted-foreground">Alerts the guards and committee of your society only. Your contacts are shown to guards only while an alert is open.</p>
+        <p className="font-semibold">{tu("op.child_or_elder_missing")}</p>
+        <p className="text-sm text-muted-foreground">{tu("op.alerts_the_guards_and_committee")}</p>
       </div>
-      {!online && <p className="text-sm text-warning-foreground" role="status">You're offline. Call 112 or the gate directly.</p>}
+      {!online && <p className="text-sm text-warning-foreground" role="status">{tu("op.you_re_offline_call_112")}</p>}
       {q.data?.alerts.map((a) => (
         <div key={a.id} className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 flex items-center gap-2">
           <div className="min-w-0 flex-1">
-            <p className="font-medium capitalize">{a.kind} alert{a.subject_name ? ` · ${a.subject_name}` : ""}</p>
-            <p className="text-xs text-muted-foreground">{a.status === "acknowledged" ? "A guard is responding" : "Waiting for a guard"}</p>
+            <p className="font-medium capitalize">{a.kind} {tu("op.alert")}{a.subject_name ? ` · ${a.subject_name}` : ""}</p>
+            <p className="text-xs text-muted-foreground">{a.status === "acknowledged" ? tu("op.a_guard_is_responding") : tu("op.waiting_for_a_guard")}</p>
           </div>
           <Button size="sm" variant="outline" className="min-h-11" disabled={busy} onClick={async () => {
             const { error } = await supabase.rpc("safety_alert_update", { _id: a.id, _action: "resolve", _note: "Found safe (family)" });
-            if (error) toast.error(gateErrorMessage(error)); else { toast.success("Marked safe"); refresh(); }
-          }}>Found safe</Button>
+            if (error) toast.error(gateErrorMessage(error)); else { toast.success(tu("op.marked_safe")); refresh(); }
+          }}>{tu("ga.foundSafe")}</Button>
         </div>
       ))}
       <div className="grid grid-cols-2 gap-2">
-        <Button variant="destructive" className="h-12 rounded-xl" disabled={!online} onClick={() => setOpen("child")}>Child alert</Button>
-        <Button variant="destructive" className="h-12 rounded-xl" disabled={!online} onClick={() => setOpen("elder")}>Elder alert</Button>
+        <Button variant="destructive" className="h-12 rounded-xl" disabled={!online} onClick={() => setOpen("child")}>{tu("op.child_alert")}</Button>
+        <Button variant="destructive" className="h-12 rounded-xl" disabled={!online} onClick={() => setOpen("elder")}>{tu("op.elder_alert")}</Button>
       </div>
       <details className="rounded-xl border p-3">
-        <summary className="cursor-pointer min-h-11 flex items-center text-sm font-medium">Safety contacts ({q.data?.contacts.length ?? 0}/5)</summary>
+        <summary className="cursor-pointer min-h-11 flex items-center text-sm font-medium">{tu("op.safety_contacts")}{q.data?.contacts.length ?? 0}/5)</summary>
         <ul className="space-y-1 mt-2">
           {q.data?.contacts.map((c) => (
             <li key={c.id} className="flex items-center gap-2 text-sm min-h-11">
@@ -242,30 +242,30 @@ export function SafetyAlertPanel({ online }: { online: boolean }) {
               <Button size="sm" variant="ghost" className="min-h-11" onClick={async () => {
                 const { error } = await supabase.rpc("resident_set_safety_contact", { _id: c.id, _name: c.name, _relation: c.relation ?? "", _phone: c.phone, _active: false });
                 if (error) toast.error(gateErrorMessage(error)); else refresh();
-              }}>Remove</Button>
+              }}>{tu("fd.remove")}</Button>
             </li>
           ))}
         </ul>
         <div className="grid grid-cols-2 gap-2 mt-2">
-          <div><Label htmlFor="sc-name">Name</Label><Input id="sc-name" className="h-11" maxLength={80} value={contact.name} onChange={(e) => setContact({ ...contact, name: e.target.value })} /></div>
-          <div><Label htmlFor="sc-rel">Relation</Label><Input id="sc-rel" className="h-11" maxLength={40} value={contact.relation} onChange={(e) => setContact({ ...contact, relation: e.target.value })} /></div>
-          <div className="col-span-2"><Label htmlFor="sc-phone">Phone</Label><Input id="sc-phone" className="h-11" inputMode="tel" value={contact.phone} onChange={(e) => setContact({ ...contact, phone: e.target.value })} /></div>
+          <div><Label htmlFor="sc-name">{tu("common.name")}</Label><Input id="sc-name" className="h-11" maxLength={80} value={contact.name} onChange={(e) => setContact({ ...contact, name: e.target.value })} /></div>
+          <div><Label htmlFor="sc-rel">{tu("fam.relation")}</Label><Input id="sc-rel" className="h-11" maxLength={40} value={contact.relation} onChange={(e) => setContact({ ...contact, relation: e.target.value })} /></div>
+          <div className="col-span-2"><Label htmlFor="sc-phone">{tu("exp.phone")}</Label><Input id="sc-phone" className="h-11" inputMode="tel" value={contact.phone} onChange={(e) => setContact({ ...contact, phone: e.target.value })} /></div>
         </div>
         <Button className="min-h-11 mt-2" disabled={contact.name.trim().length < 2 || !/^\+?[0-9]{10,13}$/.test(contact.phone.replace(/[\s-]/g, ""))} onClick={async () => {
           const { error } = await supabase.rpc("resident_set_safety_contact", { _id: null as unknown as string, _name: contact.name, _relation: contact.relation, _phone: contact.phone, _active: true });
           if (error) return toast.error(gateErrorMessage(error));
           setContact({ name: "", relation: "", phone: "" }); refresh();
-        }}><Plus className="h-4 w-4 mr-1" />Add contact</Button>
+        }}><Plus className="h-4 w-4 mr-1" />{tu("op.add_contact")}</Button>
       </details>
       <Sheet open={!!open} onOpenChange={(o) => !o && setOpen(null)}>
         <SheetContent side="bottom" className="rounded-t-3xl">
-          <SheetHeader><SheetTitle>{open === "child" ? "Child safety alert" : "Elder safety alert"}</SheetTitle></SheetHeader>
+          <SheetHeader><SheetTitle>{open === "child" ? tu("op.child_safety_alert") : tu("op.elder_safety_alert")}</SheetTitle></SheetHeader>
           <div className="space-y-3 py-3">
-            <div><Label htmlFor="sa-name">Name</Label><Input id="sa-name" className="h-11" maxLength={80} value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} /></div>
-            <div><Label htmlFor="sa-seen">Last seen where?</Label><Input id="sa-seen" className="h-11" maxLength={120} value={form.lastSeen} onChange={(e) => setForm({ ...form, lastSeen: e.target.value })} placeholder="Near the park, 10 min ago" /></div>
-            <div><Label htmlFor="sa-note">What are they wearing?</Label><Input id="sa-note" className="h-11" maxLength={300} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} /></div>
-            <Button variant="destructive" className="w-full h-12 rounded-xl" disabled={busy || !online} onClick={raise}>{busy ? <Loader2 className="h-5 w-5 animate-spin" /> : "Alert guards now"}</Button>
-            <p className="text-xs text-muted-foreground">If this fails, call 112 and the gate directly.</p>
+            <div><Label htmlFor="sa-name">{tu("common.name")}</Label><Input id="sa-name" className="h-11" maxLength={80} value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} /></div>
+            <div><Label htmlFor="sa-seen">{tu("op.last_seen_where")}</Label><Input id="sa-seen" className="h-11" maxLength={120} value={form.lastSeen} onChange={(e) => setForm({ ...form, lastSeen: e.target.value })} placeholder={tu("op.near_the_park_10_min")} /></div>
+            <div><Label htmlFor="sa-note">{tu("op.what_are_they_wearing")}</Label><Input id="sa-note" className="h-11" maxLength={300} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} /></div>
+            <Button variant="destructive" className="w-full h-12 rounded-xl" disabled={busy || !online} onClick={raise}>{busy ? <Loader2 className="h-5 w-5 animate-spin" /> : tu("op.alert_guards_now")}</Button>
+            <p className="text-xs text-muted-foreground">{tu("op.if_this_fails_call_112")}</p>
           </div>
         </SheetContent>
       </Sheet>

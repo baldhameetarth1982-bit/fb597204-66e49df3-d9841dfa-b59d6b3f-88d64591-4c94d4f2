@@ -13,7 +13,7 @@
  *    Stage 3C surface.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync } from "../helpers/ui-source";
 
 const fnSrc = readFileSync("src/lib/offline-payments.functions.ts", "utf8");
 const submitCard = readFileSync(

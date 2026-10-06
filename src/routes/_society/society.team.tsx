@@ -35,6 +35,7 @@ import {
   capabilitiesForRole, CAPABILITY_LABELS,
   type Role,
 } from "@/lib/role-permissions";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/team")({
   head: () => ({ meta: [{ title: "Team & Roles — SociyoHub" }] }),
@@ -149,8 +150,8 @@ function TeamPage() {
 
   if (!sidLoading && !societyId) {
     return (
-      <SettingsShell title="Team & roles" scope="Whole society" icon={ShieldCheck}>
-        <EmptyState icon={ShieldCheck} title="Set up your society first" />
+      <SettingsShell title={tu("st.team")} scope="Whole society" icon={ShieldCheck}>
+        <EmptyState icon={ShieldCheck} title={tu("op.set_up_your_society_first_3")} />
       </SettingsShell>
     );
   }
@@ -169,14 +170,14 @@ function TeamPage() {
           <p className="flex items-center gap-1 font-medium">
             {m.role === "society_admin" && <Crown className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />}
             <span className="truncate">{m.full_name}</span>
-            {isSelf && <span className="shrink-0 text-xs font-normal text-muted-foreground">(you)</span>}
+            {isSelf && <span className="shrink-0 text-xs font-normal text-muted-foreground">{tu("op.you")}</span>}
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
             <Badge variant="secondary" className="rounded-md text-xs">{ROLE_LABELS[m.role as Role]}</Badge>
             {m.block_names.map((bn) => (
               <Badge key={bn} variant="outline" className="rounded-md text-xs"><Building2 className="mr-1 h-3 w-3" />{bn}</Badge>
             ))}
-            {!m.is_active && <Badge variant="outline" className="rounded-md text-xs text-muted-foreground">Inactive</Badge>}
+            {!m.is_active && <Badge variant="outline" className="rounded-md text-xs text-muted-foreground">{tu("common.inactive")}</Badge>}
           </div>
         </div>
         <Button
@@ -188,7 +189,7 @@ function TeamPage() {
           aria-label={`${m.is_active ? "Deactivate" : "Reactivate"} ${m.full_name}`}
         >
           {busy && <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />}
-          {m.is_active ? "Deactivate" : "Reactivate"}
+          {m.is_active ? tu("exp.deactivate") : tu("op.reactivate")}
         </Button>
       </li>
     );
@@ -197,10 +198,10 @@ function TeamPage() {
   return (
     <>
     <SettingsShell
-      title="Team & roles"
+      title={tu("st.team")}
       scope="Whole society"
       icon={ShieldCheck}
-      description="Who helps run the society, what each person can do, and what residents can see."
+      description={tu("op.who_helps_run_the_society")}
       action={
         <AssignDialog
           blocks={blocks}
@@ -226,30 +227,30 @@ function TeamPage() {
         ))}
       </dl>
 
-      <SettingsSection title="Team members" icon={UserCog}
-        description="Deactivating removes access straight away but keeps history. The last Society Admin can't be removed.">
+      <SettingsSection title={tu("op.team_members")} icon={UserCog}
+        description={tu("op.deactivating_removes_access_straight_awa")}>
         {loading ? (
           <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
         ) : loadError ? (
           <ErrorState
-            title="Couldn't load your team"
-            description="Your team and settings are safe. Check your connection and try again."
+            title={tu("op.couldn_t_load_your_team")}
+            description={tu("op.your_team_and_settings_are")}
             onRetry={() => societyId && loadAll(societyId)}
             showSupport={false}
           />
         ) : members.length === 0 ? (
-          <EmptyState icon={ShieldCheck} title="No team roles yet" description="Promote residents to delegate management of blocks or security." />
+          <EmptyState icon={ShieldCheck} title={tu("op.no_team_roles_yet")} description={tu("op.promote_residents_to_delegate_management")} />
         ) : (
           <>
             {active.length === 0 ? (
-              <p className="py-3 text-sm text-muted-foreground">No active team members.</p>
+              <p className="py-3 text-sm text-muted-foreground">{tu("op.no_active_team_members")}</p>
             ) : (
               <ul className="divide-y">{active.map(renderMember)}</ul>
             )}
             {inactive.length > 0 && (
               <details className="mt-2 rounded-xl border">
                 <summary className="flex min-h-11 cursor-pointer items-center px-3 text-sm font-medium">
-                  Inactive ({inactive.length})
+                  {tu("op.inactive")}{inactive.length})
                 </summary>
                 <ul className="divide-y border-t px-3">{inactive.map(renderMember)}</ul>
               </details>
@@ -258,16 +259,16 @@ function TeamPage() {
         )}
       </SettingsSection>
 
-      <SettingsSection title="Resident privacy" icon={EyeOff}
-        description="What residents can see about each other and the society's money.">
+      <SettingsSection title={tu("op.resident_privacy")} icon={EyeOff}
+        description={tu("op.what_residents_can_see_about")}>
         <Button asChild variant="outline" className="min-h-11 rounded-xl">
-          <Link to="/society/privacy-settings">Open Privacy & Transparency</Link>
+          <Link to="/society/privacy-settings">{tu("op.open_privacy_transparency")}</Link>
         </Button>
       </SettingsSection>
 
       <SettingsDisclosure
-        title="What each role can do"
-        description="Roles decide who can use a feature; your plan decides which features the society has."
+        title={tu("op.what_each_role_can_do")}
+        description={tu("op.roles_decide_who_can_use")}
       >
         <RolePermissionPreview />
       </SettingsDisclosure>
@@ -278,22 +279,22 @@ function TeamPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {confirmTarget?.user_id === user?.id ? "Remove your own role?" : `Deactivate ${confirmTarget?.full_name}?`}
+              {confirmTarget?.user_id === user?.id ? tu("op.remove_your_own_role") : `Deactivate ${confirmTarget?.full_name}?`}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmTarget?.user_id === user?.id
-                ? "You'll lose access to these admin tools straight away. Another Society Admin would need to restore it."
+                ? tu("op.you_ll_lose_access_to")
                 : `They'll lose ${confirmTarget ? ROLE_LABELS[confirmTarget.role as Role] : "this role"} access straight away. Their history is kept and you can reactivate them later.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={!!busyRoleId}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={!!busyRoleId}>{tu("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               disabled={!!busyRoleId}
               onClick={(e) => { e.preventDefault(); if (confirmTarget) void handleToggleActive(confirmTarget); }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {busyRoleId && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Deactivate
+              {busyRoleId && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} {tu("exp.deactivate")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -351,7 +352,7 @@ function AssignDialog({
   async function handleAssign() {
     if (!selUser) return;
     if (selRole === "block_admin" && selBlocks.length === 0) {
-      toast.error("Choose at least one block for the Block Admin");
+      toast.error(tu("op.choose_at_least_one_block"));
       return;
     }
     setSaving(true);
@@ -362,7 +363,7 @@ function AssignDialog({
           blockIds: selRole === "block_admin" ? selBlocks : [],
         },
       });
-      toast.success("Role assigned");
+      toast.success(tu("op.role_assigned"));
       setOpen(false);
       setSelUser(""); setSelBlocks([]); setSelRole("block_admin"); setSearch("");
       onDone();
@@ -377,31 +378,31 @@ function AssignDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button className="h-11 w-full rounded-xl sm:w-auto">
-          <Plus className="h-4 w-4 mr-1" /> Assign a role
+          <Plus className="h-4 w-4 mr-1" /> {tu("op.assign_a_role")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md rounded-2xl p-6">
         <DialogHeader>
-          <DialogTitle>Assign a role</DialogTitle>
+          <DialogTitle>{tu("op.assign_a_role")}</DialogTitle>
           <DialogDescription>
-            Promote an existing society member. Super Admin cannot be assigned here.
+            {tu("op.promote_an_existing_society_member")}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>Search member</Label>
+            <Label>{tu("op.search_member")}</Label>
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Name or email"
+              placeholder={tu("op.name_or_email")}
               className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
             />
           </div>
           <div className="space-y-2">
-            <Label>Member</Label>
+            <Label>{tu("op.member")}</Label>
             <Select value={selUser} onValueChange={setSelUser}>
-              <SelectTrigger aria-label="Member" className="rounded-xl min-h-11"><SelectValue placeholder={loadingC ? "Loading…" : "Pick a member"} /></SelectTrigger>
+              <SelectTrigger aria-label={tu("op.member")} className="rounded-xl min-h-11"><SelectValue placeholder={loadingC ? tu("common.loading") : tu("op.pick_a_member")} /></SelectTrigger>
               <SelectContent>
                 {candidates.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
@@ -412,9 +413,9 @@ function AssignDialog({
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Role</Label>
+            <Label>{tu("op.role")}</Label>
             <Select value={selRole} onValueChange={(v) => { setSelRole(v as TeamRole); setSelBlocks([]); }}>
-              <SelectTrigger aria-label="Role" className="rounded-xl min-h-11"><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label={tu("op.role")} className="rounded-xl min-h-11"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {roleOptions.map((r) => (
                   <SelectItem key={r} value={r}>{ROLE_LABELS[r as Role]}</SelectItem>
@@ -423,20 +424,20 @@ function AssignDialog({
             </Select>
             {structureMode === "serial" && (
               <p className="text-xs text-muted-foreground">
-                Block Admin is unavailable — this society uses serial (no-blocks) mode.
+                {tu("op.block_admin_is_unavailable_this")}
               </p>
             )}
           </div>
           {selRole === "block_admin" && (
             <div className="space-y-2">
-              <Label>Blocks (choose one or more)</Label>
+              <Label>{tu("op.blocks_choose_one_or_more")}</Label>
               <div
                 className="flex flex-wrap gap-2 max-h-40 overflow-auto rounded-xl border p-2"
                 role="group"
-                aria-label="Block scope"
+                aria-label={tu("op.block_scope")}
               >
                 {blocks.length === 0 && (
-                  <p className="text-xs text-muted-foreground">No active blocks available.</p>
+                  <p className="text-xs text-muted-foreground">{tu("op.no_active_blocks_available")}</p>
                 )}
                 {blocks.map((b) => {
                   const active = selBlocks.includes(b.id);
@@ -460,24 +461,24 @@ function AssignDialog({
               </div>
               {selBlocks.length > 0 && (
                 <p className="text-xs text-muted-foreground">
-                  {selBlocks.length} block{selBlocks.length === 1 ? "" : "s"} selected.
+                  {selBlocks.length} {tu("op.block")}{selBlocks.length === 1 ? "" : "s"} selected.
                 </p>
               )}
             </div>
           )}
           <div className="rounded-xl border bg-muted/30 p-3 space-y-1">
             <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-              <ShieldAlert className="h-3.5 w-3.5" /> This role will grant:
+              <ShieldAlert className="h-3.5 w-3.5" /> {tu("op.this_role_will_grant")}
             </p>
             <ul className="text-xs text-foreground/80 leading-relaxed list-disc pl-4">
               {preview.slice(0, 6).map((c) => (<li key={c}>{CAPABILITY_LABELS[c]}</li>))}
-              {preview.length > 6 && <li>+ {preview.length - 6} more…</li>}
+              {preview.length > 6 && <li>+ {preview.length - 6} {tu("op.more_2")}</li>}
             </ul>
           </div>
         </div>
         <DialogFooter>
           <Button onClick={handleAssign} disabled={saving || !selUser} className="rounded-xl min-h-11">
-            {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Assign
+            {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} {tu("op.assign")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -499,7 +500,7 @@ function RolePermissionPreview() {
           <div key={role} className="rounded-xl border p-3">
             <div className="flex items-center gap-2 mb-2">
               <Badge className="rounded-md text-[10px]">{ROLE_LABELS[role]}</Badge>
-              <span className="text-xs text-muted-foreground">{caps.length} capabilities</span>
+              <span className="text-xs text-muted-foreground">{caps.length} {tu("op.capabilities")}</span>
             </div>
             <ul className="text-xs text-foreground/80 space-y-1 list-disc pl-4">
               {caps.map((c) => (<li key={c}>{CAPABILITY_LABELS[c]}</li>))}

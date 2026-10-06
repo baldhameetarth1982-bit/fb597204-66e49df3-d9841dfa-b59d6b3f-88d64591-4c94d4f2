@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { generateAuditorPack, type AuditorPack } from "@/lib/auditor-pack.functions";
 import { SECTIONS, bankSummary, downloadBlob, packToCsv, packToPdf, sumBy } from "@/lib/auditor-pack";
+import { tu } from "@/lib/i18n";
 
 
 const INR = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 });
@@ -47,51 +48,51 @@ export function AuditorPackPage({ embedded = false }: { embedded?: boolean }) {
   const disabled = !societyId || !!periodError || busy;
 
   return <div className="pb-[calc(96px+env(safe-area-inset-bottom))]">
-    <MobileHero eyebrow="Accounts Center" title="Auditor pack" subtitle="A traceable evidence pack built from the same records as Reports and Reconciliation." icon={FileCheck2} variant="teal" />
+    <MobileHero eyebrow={tu("accountsTabs.label")} title={tu("accountsTabs.auditorPack")} subtitle={tu("op.a_traceable_evidence_pack_built")} icon={FileCheck2} variant="teal" />
     <div className="px-4 pt-4 space-y-4 max-w-5xl mx-auto md:px-8">
       {!embedded && <AccountsCenterTabs />}
 
-      <SectionCard title="Reporting period" description="Up to two years. Defaults to the current financial year.">
+      <SectionCard title={tu("op.reporting_period")} description={tu("op.up_to_two_years_defaults")}>
         <div className="grid grid-cols-2 gap-3">
-          <div><Label htmlFor="ap-from">From</Label><Input id="ap-from" type="date" value={from} max={today} onChange={(e) => setFrom(e.target.value)} /></div>
+          <div><Label htmlFor="ap-from">{tu("common.from")}</Label><Input id="ap-from" type="date" value={from} max={today} onChange={(e) => setFrom(e.target.value)} /></div>
           <div><Label htmlFor="ap-to">To</Label><Input id="ap-to" type="date" value={to} max={today} onChange={(e) => setTo(e.target.value)} /></div>
         </div>
         {periodError && <p role="alert" className="mt-2 text-sm text-destructive">{periodError}</p>}
         <div className="mt-4 flex flex-wrap gap-2">
           <Button className="min-h-11" disabled={disabled} onClick={() => run.mutate("view")}>
-            {busy && run.variables === "view" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileCheck2 className="mr-2 h-4 w-4" />}Prepare pack
+            {busy && run.variables === "view" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileCheck2 className="mr-2 h-4 w-4" />}{tu("op.prepare_pack")}
           </Button>
           <Button className="min-h-11" variant="outline" disabled={disabled} onClick={() => run.mutate("pdf")}>
-            {busy && run.variables === "pdf" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}Download PDF
+            {busy && run.variables === "pdf" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}{tu("nd.downloadPdf")}
           </Button>
           <Button className="min-h-11" variant="outline" disabled={disabled} onClick={() => run.mutate("csv")}>
-            {busy && run.variables === "csv" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-2 h-4 w-4" />}Download CSV
+            {busy && run.variables === "csv" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-2 h-4 w-4" />}{tu("op.download_csv")}
           </Button>
         </div>
-        {busy && <p className="mt-3 text-sm text-muted-foreground" aria-live="polite">Gathering records… large periods can take a few seconds.</p>}
+        {busy && <p className="mt-3 text-sm text-muted-foreground" aria-live="polite">{tu("op.gathering_records_large_periods_can")}</p>}
       </SectionCard>
 
-      <SectionCard title="Procurement & budget" description={`Budget vs actual and purchase requests for ${fyLabel(fyOf(from))}. Read-only.`} bodyClassName="p-0">
+      <SectionCard title={tu("op.procurement_budget")} description={`Budget vs actual and purchase requests for ${fyLabel(fyOf(from))}. Read-only.`} bodyClassName="p-0">
         {societyId && <ProcurementAuditSection fy={fyOf(from)} />}
       </SectionCard>
 
-      <SectionCard title="Adjustments, opening balances & resolutions" description="For the selected period. Read-only; downloads are built on your device." bodyClassName="p-0">
+      <SectionCard title={tu("op.adjustments_opening_balances_resolutions")} description={tu("op.for_the_selected_period_read")} bodyClassName="p-0">
         {societyId && <AuditorExtrasSection societyId={societyId} from={from} to={to} />}
       </SectionCard>
 
-      {run.isError && !busy && <SectionCard icon={AlertCircle} title="Pack unavailable">
-        <p className="text-sm text-destructive">{run.error instanceof Error ? run.error.message : "The Auditor Pack couldn't be generated."}</p>
-        <Button className="mt-3 min-h-11" variant="outline" onClick={() => run.mutate(run.variables ?? "view")}><RotateCw className="mr-2 h-4 w-4" />Retry</Button>
+      {run.isError && !busy && <SectionCard icon={AlertCircle} title={tu("op.pack_unavailable")}>
+        <p className="text-sm text-destructive">{run.error instanceof Error ? run.error.message : tu("op.the_auditor_pack_couldn_t")}</p>
+        <Button className="mt-3 min-h-11" variant="outline" onClick={() => run.mutate(run.variables ?? "view")}><RotateCw className="mr-2 h-4 w-4" />{tu("common.retry")}</Button>
       </SectionCard>}
 
-      {!pack && !busy && !run.isError && <SectionCard title="What's included">
+      {!pack && !busy && !run.isError && <SectionCard title={tu("op.what_s_included")}>
         <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-          <li>Opening and closing cash and bank position, income, expense and net movement from the posted journal.</li>
-          <li>Collections, other income, expenses and bills with their current status — verified, pending, rejected or reversed shown separately.</li>
-          <li>Outstanding dues ageing, bank reconciliation status, No-Dues certificates and financial activity history.</li>
-          <li>Record IDs on every line so each figure can be traced back in SociyoHub. No phone numbers, emails or resident names.</li>
+          <li>{tu("op.opening_and_closing_cash_and")}</li>
+          <li>{tu("op.collections_other_income_expenses_and")}</li>
+          <li>{tu("op.outstanding_dues_ageing_bank_reconciliat")}</li>
+          <li>{tu("op.record_ids_on_every_line")}</li>
         </ul>
-        <p className="mt-3 text-xs text-muted-foreground">Nothing is changed or marked verified by preparing a pack. Files are created on your device and never stored online. Each pack is recorded in the audit log.</p>
+        <p className="mt-3 text-xs text-muted-foreground">{tu("op.nothing_is_changed_or_marked")}</p>
       </SectionCard>}
 
       {pack && <PackView pack={pack} />}
@@ -104,30 +105,30 @@ function PackView({ pack }: { pack: AuditorPack }) {
   const empty = SECTIONS.every((s) => pack[s.key].total === 0) && p.income === 0 && p.expense === 0;
   const bank = bankSummary(pack.bank.rows);
   return <>
-    <SectionCard title={pack.society?.name ?? "Society"} description={`${pack.period.from} to ${pack.period.to} · generated ${new Date(pack.generated_at).toLocaleString("en-IN")}`}>
-      {empty ? <p className="text-sm text-muted-foreground">No financial records in this period. Try a wider date range.</p> :
+    <SectionCard title={pack.society?.name ?? tu("nav.society")} description={`${pack.period.from} to ${pack.period.to} · generated ${new Date(pack.generated_at).toLocaleString("en-IN")}`}>
+      {empty ? <p className="text-sm text-muted-foreground">{tu("op.no_financial_records_in_this")}</p> :
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[["Opening cash", p.opening_cash], ["Opening bank", p.opening_bank], ["Closing cash", p.closing_cash], ["Closing bank", p.closing_bank],
             ["Income", p.income], ["Expense", p.expense], ["Net movement", p.net_movement]].map(([k, v]) =>
             <div key={k as string} className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">{k}</p><p className="font-semibold tabular-nums break-words">{INR.format(v as number)}</p></div>)}
         </div>}
-      <p className="mt-3 text-xs text-muted-foreground">Totals come from posted journal entries (reversals net off). Pending or rejected items are listed but never counted.</p>
+      <p className="mt-3 text-xs text-muted-foreground">{tu("op.totals_come_from_posted_journal")}</p>
     </SectionCard>
 
-    <SectionCard title="Outstanding dues" description={`As of ${pack.period.to}`} bodyClassName="p-0">
-      <ListCardGroup>{pack.ageing.length === 0 ? <ListCard title="No outstanding dues" /> : pack.ageing.map((a) =>
-        <ListCard key={a.bucket} title={a.bucket === "current" ? "Current" : `${a.bucket.replace("_", "–").replace("plus", "+")} days`} subtitle={`${a.bill_count} bills`} trailing={<span className="font-semibold tabular-nums">{INR.format(a.amount)}</span>} />)}
+    <SectionCard title={tu("op.outstanding_dues")} description={`As of ${pack.period.to}`} bodyClassName="p-0">
+      <ListCardGroup>{pack.ageing.length === 0 ? <ListCard title={tu("op.no_outstanding_dues")} /> : pack.ageing.map((a) =>
+        <ListCard key={a.bucket} title={a.bucket === "current" ? tu("rep.current") : `${a.bucket.replace("_", "–").replace("plus", "+")} days`} subtitle={`${a.bill_count} bills`} trailing={<span className="font-semibold tabular-nums">{INR.format(a.amount)}</span>} />)}
       </ListCardGroup>
     </SectionCard>
 
-    <SectionCard title="Bank reconciliation">
+    <SectionCard title={tu("op.bank_reconciliation")}>
       <div className="flex flex-wrap gap-2 text-sm">
-        <Badge variant="secondary">Reconciled {bank.reconciledCount} · {INR.format(bank.reconciled)}</Badge>
-        <Badge variant="outline">Unreconciled {bank.unreconciledCount} · {INR.format(bank.unreconciled)}</Badge>
+        <Badge variant="secondary">{tu("docState.reconciled")} {bank.reconciledCount} · {INR.format(bank.reconciled)}</Badge>
+        <Badge variant="outline">{tu("inc.rc.unreconciled")} {bank.unreconciledCount} · {INR.format(bank.unreconciled)}</Badge>
       </div>
     </SectionCard>
 
-    <SectionCard title="Sections" description="Status breakdown per section. Download CSV for every line." bodyClassName="p-0">
+    <SectionCard title={tu("op.sections")} description={tu("op.status_breakdown_per_section_download")} bodyClassName="p-0">
       <ListCardGroup>{SECTIONS.map((s) => {
         const sec = pack[s.key];
         const sums = s.amountField ? sumBy(sec.rows, s.amountField, s.statusField) : null;
@@ -136,6 +137,6 @@ function PackView({ pack }: { pack: AuditorPack }) {
           trailing={<span className="text-sm tabular-nums">{sec.total}{sec.total > sec.rows.length ? ` (first ${sec.rows.length})` : ""}</span>} />;
       })}</ListCardGroup>
     </SectionCard>
-    <p className="flex items-center gap-1 text-xs text-muted-foreground"><Download className="h-3 w-3" />Exports use the same server data shown here.</p>
+    <p className="flex items-center gap-1 text-xs text-muted-foreground"><Download className="h-3 w-3" />{tu("op.exports_use_the_same_server")}</p>
   </>;
 }

@@ -1,4 +1,5 @@
 import { forwardRef } from "react";
+import { tu } from "@/lib/i18n";
 
 export interface BillCardData {
   societyName: string;
@@ -46,13 +47,13 @@ export const BillCardImage = forwardRef<HTMLDivElement, { data: BillCardData }>(
               fontWeight: 600,
             }}
           >
-            {isPaid ? "Paid" : "Due"}
+            {isPaid ? tu("bills.paid") : tu("bills.due")}
           </div>
         </div>
 
         <div style={{ marginTop: 56 }}>
           <div style={{ opacity: 0.8, fontSize: 14, textTransform: "uppercase", letterSpacing: 2 }}>
-            Maintenance Invoice
+            {tu("op.maintenance_invoice")}
           </div>
           <div style={{ fontSize: 22, marginTop: 8, fontWeight: 500 }}>{data.period}</div>
         </div>
@@ -68,22 +69,22 @@ export const BillCardImage = forwardRef<HTMLDivElement, { data: BillCardData }>(
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 18 }}>
-            <span style={{ opacity: 0.85 }}>Flat</span>
+            <span style={{ opacity: 0.85 }}>{tu("op.flat_2")}</span>
             <span style={{ fontWeight: 600 }}>{data.flatLabel}</span>
           </div>
           {data.residentName && (
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 18 }}>
-              <span style={{ opacity: 0.85 }}>Resident</span>
+              <span style={{ opacity: 0.85 }}>{tu("inc.k.resident")}</span>
               <span style={{ fontWeight: 600 }}>{data.residentName}</span>
             </div>
           )}
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 18 }}>
-            <span style={{ opacity: 0.85 }}>Due date</span>
+            <span style={{ opacity: 0.85 }}>{tu("rbd.dueDate")}</span>
             <span style={{ fontWeight: 600 }}>{data.dueDate}</span>
           </div>
           <div style={{ height: 1, background: "rgba(255,255,255,0.2)", margin: "18px 0" }} />
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-            <span style={{ opacity: 0.85 }}>Amount</span>
+            <span style={{ opacity: 0.85 }}>{tu("common.amount")}</span>
             <span style={{ fontSize: 44, fontWeight: 800, letterSpacing: -1 }}>
               ₹{Number(data.amount).toLocaleString("en-IN")}
             </span>
@@ -93,9 +94,9 @@ export const BillCardImage = forwardRef<HTMLDivElement, { data: BillCardData }>(
         <div style={{ position: "absolute", bottom: 48, left: 48, right: 48 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
             <div style={{ fontSize: 12, opacity: 0.85 }}>
-              Pay securely in the SociyoHub app
+              {tu("op.pay_securely_in_the_sociyohub")}
               <div style={{ marginTop: 4, fontSize: 11, opacity: 0.7 }}>
-                Powered by SociyoHub · 100% cashless settlement
+                {tu("op.powered_by_sociyohub_100_cashless")}
               </div>
             </div>
             {data.adminSignature && (
@@ -112,7 +113,7 @@ export const BillCardImage = forwardRef<HTMLDivElement, { data: BillCardData }>(
                   {data.adminSignature}
                 </div>
                 <div style={{ fontSize: 11, opacity: 0.7, borderTop: "1px solid rgba(255,255,255,0.3)", paddingTop: 4 }}>
-                  Verified Admin Signature
+                  {tu("op.verified_admin_signature")}
                 </div>
               </div>
             )}

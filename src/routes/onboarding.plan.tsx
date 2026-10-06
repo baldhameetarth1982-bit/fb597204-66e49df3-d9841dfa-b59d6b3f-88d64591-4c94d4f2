@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { OnboardingStepper } from "@/components/system/OnboardingStepper";
 import { getApplicablePlans, startSocietyTrial, getPricingSettings } from "@/lib/pricing-engine";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/onboarding/plan")({
   head: () => ({ meta: [{ title: "Choose your plan — SociyoHub" }] }),
@@ -96,14 +97,14 @@ function PlanGate() {
 
         <header className="text-center mb-8 space-y-3">
           <Badge className="rounded-full bg-primary/10 text-primary border-primary/20">
-            <Lock className="h-3 w-3 mr-1" /> Required to continue
+            <Lock className="h-3 w-3 mr-1" /> {tu("op.required_to_continue")}
           </Badge>
           <h1 className="type-display">
-            Pick a plan for{" "}
-            <span className="text-primary">{(society as any)?.name ?? "your society"}</span>
+            {tu("op.pick_a_plan_for")}{" "}
+            <span className="text-primary">{(society as any)?.name ?? tu("op.your_society")}</span>
           </h1>
           <p className="text-muted-foreground max-w-2xl mx-auto text-sm">
-            Every resident gets full access while your plan is active. Cancel anytime.
+            {tu("op.every_resident_gets_full_access")}
           </p>
         </header>
 
@@ -115,11 +116,10 @@ function PlanGate() {
                 <Building2 className="h-7 w-7 text-primary" />
               </div>
               <div className="flex-1 space-y-2">
-                <Badge className="rounded-full">Custom pricing</Badge>
-                <h2 className="text-xl font-semibold tracking-tight">Custom pricing for your society</h2>
+                <Badge className="rounded-full">{tu("op.custom_pricing")}</Badge>
+                <h2 className="text-xl font-semibold tracking-tight">{tu("op.custom_pricing_for_your_society")}</h2>
                 <p className="text-sm text-muted-foreground">
-                  With <strong>{(society as any)?.total_units ?? "300+"}</strong> flats, your society gets custom pricing.
-                  Talk to us and we will agree a price together.
+                  {tu("op.with")} <strong>{(society as any)?.total_units ?? "300+"}</strong> {tu("op.flats_your_society_gets_custom")}
                 </p>
               </div>
               <div className="flex flex-col gap-2 w-full md:w-auto">
@@ -130,7 +130,7 @@ function PlanGate() {
                   <a
                     href={`mailto:${settings?.enterprise_contact_email ?? "sales@sociohub.live"}?subject=Enterprise plan enquiry`}
                   >
-                    Talk to us
+                    {tu("op.talk_to_us")}
                   </a>
                 </Button>
                 {settings?.enterprise_contact_phone && (
@@ -138,7 +138,7 @@ function PlanGate() {
                     href={`tel:${settings.enterprise_contact_phone}`}
                     className="text-xs text-center text-muted-foreground hover:text-foreground"
                   >
-                    or call {settings.enterprise_contact_phone}
+                    {tu("op.or_call")} {settings.enterprise_contact_phone}
                   </a>
                 )}
               </div>
@@ -155,11 +155,11 @@ function PlanGate() {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 text-xs opacity-90">
-                      <Clock className="h-4 w-4" /> {trialDays} days · No card needed
+                      <Clock className="h-4 w-4" /> {trialDays} {tu("op.days_no_card_needed")}
                     </div>
-                    <h2 className="text-xl font-semibold tracking-tight mt-1">Try every feature free</h2>
+                    <h2 className="text-xl font-semibold tracking-tight mt-1">{tu("op.try_every_feature_free")}</h2>
                     <p className="opacity-90 mt-1 text-sm">
-                      Trial can be started once per society. After it ends, you can switch to any paid plan.
+                      {tu("op.trial_can_be_started_once")}
                     </p>
                   </div>
                   <Button
@@ -168,7 +168,7 @@ function PlanGate() {
                     className="min-h-[52px] rounded-2xl px-6 bg-background text-foreground hover:bg-background/90 font-semibold"
                   >
                     {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
-                    Start free trial
+                    {tu("op.start_free_trial")}
                   </Button>
                 </div>
               </Card>
@@ -185,7 +185,7 @@ function PlanGate() {
                   >
                     {p.is_recommended && (
                       <Badge className="self-start mb-3 rounded-full">
-                        <Sparkles className="h-3 w-3 mr-1" /> Most popular
+                        <Sparkles className="h-3 w-3 mr-1" /> {tu("op.most_popular")}
                       </Badge>
                     )}
                     <div className="flex items-center gap-2">
@@ -198,7 +198,7 @@ function PlanGate() {
                     </div>
                     {p.price_monthly_inr ? (
                       <p className="mt-1 text-xs text-muted-foreground tabular-nums">
-                        About ₹{p.price_monthly_inr.toLocaleString("en-IN")}/month for {(society as any)?.total_units} flats
+                        {tu("op.about")}{p.price_monthly_inr.toLocaleString("en-IN")}/month for {(society as any)?.total_units} {tu("op.flats")}
                       </p>
                     ) : null}
                     <ul className="mt-4 space-y-2 text-sm flex-1">
@@ -213,7 +213,7 @@ function PlanGate() {
                       className={`mt-6 min-h-[48px] rounded-2xl ${p.is_recommended ? "" : "variant-outline"}`}
                     >
                       <Link to="/checkout/$planId" params={{ planId: p.plan_id }}>
-                        Choose {p.plan_name} <ArrowRight className="h-4 w-4 ml-1" />
+                        {tu("common.choose")} {p.plan_name} <ArrowRight className="h-4 w-4 ml-1" />
                       </Link>
                     </Button>
                   </Card>
@@ -222,7 +222,7 @@ function PlanGate() {
             </div>
 
             <p className="text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
-              <ShieldCheck className="h-4 w-4" /> Secure payments · GST invoice · Cancel anytime
+              <ShieldCheck className="h-4 w-4" /> {tu("op.secure_payments_gst_invoice_cancel")}
             </p>
           </>
         )}

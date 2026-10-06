@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, ShieldCheck, KeyRound, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { tu } from "@/lib/i18n";
 
 /**
  * TOTP 2FA enrollment + management.
@@ -69,7 +70,7 @@ export function TwoFactorCard() {
 
   async function confirmEnroll() {
     if (!enroll) return;
-    if (!/^\d{6}$/.test(code)) return toast.error("Enter the 6-digit code");
+    if (!/^\d{6}$/.test(code)) return toast.error(tu("op.enter_the_6_digit_code"));
     setWorking(true);
     const { data: ch, error: chErr } = await supabase.auth.mfa.challenge({
       factorId: enroll.factorId,
@@ -85,7 +86,7 @@ export function TwoFactorCard() {
     });
     setWorking(false);
     if (vErr) return toast.error(vErr.message);
-    toast.success("Two-factor authentication enabled");
+    toast.success(tu("op.two_factor_authentication_enabled"));
     setEnroll(null);
     setCode("");
     void refresh();
@@ -100,7 +101,7 @@ export function TwoFactorCard() {
     });
     setWorking(false);
     if (error) return toast.error(userMessage(error));
-    toast.success("Two-factor authentication disabled");
+    toast.success(tu("op.two_factor_authentication_disabled"));
     void refresh();
   }
 
@@ -109,13 +110,13 @@ export function TwoFactorCard() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
           <ShieldCheck className="h-5 w-5 text-primary" />
-          Two-factor authentication
+          {tu("op.two_factor_authentication")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {loading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+            <Loader2 className="h-4 w-4 animate-spin" /> {tu("common.loading")}
           </div>
         ) : verifiedFactorId ? (
           <div className="space-y-3">
@@ -124,7 +125,7 @@ export function TwoFactorCard() {
               <div>
                 <p className="font-medium">2FA is on</p>
                 <p className="text-sm text-muted-foreground">
-                  You'll be asked for a code from your authenticator app at sign-in.
+                  {tu("op.you_ll_be_asked_for")}
                 </p>
               </div>
             </div>
@@ -135,23 +136,23 @@ export function TwoFactorCard() {
               onClick={disable}
             >
               {working && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Disable 2FA
+              {tu("op.disable_2fa")}
             </Button>
           </div>
         ) : enroll ? (
           <div className="space-y-4">
             <div className="rounded-xl border bg-muted/30 p-4 space-y-3">
               <p className="text-sm">
-                Scan this QR with Google Authenticator, 1Password, Authy, or any TOTP app.
+                {tu("op.scan_this_qr_with_google")}
               </p>
               <div className="flex items-center gap-4">
                 <img
                   src={enroll.qr}
-                  alt="2FA QR code"
+                  alt={tu("op.2fa_qr_code")}
                   className="h-40 w-40 rounded-lg bg-white p-2"
                 />
                 <div className="text-xs font-mono break-all text-muted-foreground">
-                  Or enter manually:
+                  {tu("op.or_enter_manually")}
                   <br />
                   <span className="text-foreground">{enroll.secret}</span>
                 </div>
@@ -159,7 +160,7 @@ export function TwoFactorCard() {
             </div>
             <div className="grid gap-2 max-w-xs">
               <Label>6-digit code</Label>
-              <Input aria-label="6-digit code"
+              <Input aria-label={tu("op.6_digit_code")}
                 inputMode="numeric"
                 maxLength={6}
                 value={code}
@@ -171,7 +172,7 @@ export function TwoFactorCard() {
             <div className="flex gap-2">
               <Button onClick={confirmEnroll} disabled={working} className="rounded-xl">
                 {working && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Verify & enable
+                {tu("op.verify_enable")}
               </Button>
               <Button
                 variant="ghost"
@@ -182,19 +183,19 @@ export function TwoFactorCard() {
                 }}
                 className="rounded-xl"
               >
-                Cancel
+                {tu("common.cancel")}
               </Button>
             </div>
           </div>
         ) : (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Add a second sign-in step using an authenticator app. Recommended for society admins.
+              {tu("op.add_a_second_sign_in")}
             </p>
             <Button onClick={startEnroll} disabled={working} className="rounded-xl">
               {working && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               <KeyRound className="h-4 w-4 mr-2" />
-              Set up 2FA
+              {tu("op.set_up_2fa")}
             </Button>
           </div>
         )}

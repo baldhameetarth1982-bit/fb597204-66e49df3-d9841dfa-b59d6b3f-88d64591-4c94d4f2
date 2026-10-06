@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { communityError } from "@/lib/community-errors";
+import { tu } from "@/lib/i18n";
 
 export type MyBroadcast = {
   id: string; category_label: string; title: string; message: string; created_at: string; expires_at: string;
@@ -49,11 +50,11 @@ export function EmergencyBroadcastBanner() {
           <div className="flex items-start gap-3">
             <Siren className="mt-0.5 h-5 w-5 shrink-0 text-destructive" aria-hidden />
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold uppercase tracking-wide text-destructive">Emergency · {b.category_label}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-destructive">{tu("op.emergency")} {b.category_label}</p>
               <p className="font-semibold break-words">{b.title}</p>
               <p className="mt-1 whitespace-pre-line text-sm break-words">{b.message}</p>
               <Button size="sm" variant="destructive" className="mt-3 min-h-11" disabled={ack.isPending} onClick={() => ack.mutate(b.id)}>
-                <CheckCircle2 className="mr-1 h-4 w-4" />I've seen this
+                <CheckCircle2 className="mr-1 h-4 w-4" />{tu("op.i_ve_seen_this")}
               </Button>
             </div>
           </div>
@@ -70,21 +71,21 @@ export function EmergencyBroadcastHistory() {
   if (q.isLoading || q.isError || !(q.data ?? []).length) return null;
   return (
     <section className="space-y-2" aria-labelledby="eb-h">
-      <h2 id="eb-h" className="font-semibold">Society emergency broadcasts</h2>
+      <h2 id="eb-h" className="font-semibold">{tu("op.society_emergency_broadcasts")}</h2>
       <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
         {q.data!.map((b) => (
           <li key={b.id} className="space-y-1 p-4">
             <p className="text-xs font-medium text-muted-foreground">
               {b.category_label} · {new Date(b.created_at).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })} ·{" "}
-              <span className={b.state === "active" ? "text-destructive" : ""}>{b.state === "active" ? "Active" : b.state === "cancelled" ? "Cancelled" : "Ended"}</span>
+              <span className={b.state === "active" ? "text-destructive" : ""}>{b.state === "active" ? tu("common.active") : b.state === "cancelled" ? tu("rbills.cancelled") : tu("op.ended")}</span>
             </p>
             <p className="font-medium break-words">{b.title}</p>
             <p className="whitespace-pre-line text-sm text-muted-foreground break-words">{b.message}</p>
-            {b.cancel_reason && <p className="text-xs">Cancelled: {b.cancel_reason}</p>}
+            {b.cancel_reason && <p className="text-xs">{tu("op.cancelled")} {b.cancel_reason}</p>}
             {b.state === "active" && !b.acknowledged_at && (
-              <Button size="sm" variant="outline" className="min-h-11" onClick={() => ack.mutate(b.id)}>I've seen this</Button>
+              <Button size="sm" variant="outline" className="min-h-11" onClick={() => ack.mutate(b.id)}>{tu("op.i_ve_seen_this")}</Button>
             )}
-            {b.acknowledged_at && <p className="text-xs text-muted-foreground">Seen {new Date(b.acknowledged_at).toLocaleString("en-IN")}</p>}
+            {b.acknowledged_at && <p className="text-xs text-muted-foreground">{tu("op.seen_2")} {new Date(b.acknowledged_at).toLocaleString("en-IN")}</p>}
           </li>
         ))}
       </ul>

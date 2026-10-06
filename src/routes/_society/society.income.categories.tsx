@@ -46,6 +46,7 @@ import {
   createIncomeCategoryFn,
   updateIncomeCategoryFn,
 } from "@/lib/non-member-income.functions";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/income/categories")({
   head: () => ({
@@ -170,7 +171,7 @@ function CategoriesPage({ societyId }: { societyId: string }) {
       category_group?: string;
     }) => createFn({ data: { societyId, ...v } }),
     onSuccess: () => {
-      toast.success("Category created");
+      toast.success(tu("op.category_created"));
       setEditing(null);
       void invalidate();
     },
@@ -193,11 +194,11 @@ function CategoriesPage({ societyId }: { societyId: string }) {
       is_active?: boolean;
     }) => updateFn({ data: { societyId, ...v } }),
     onSuccess: () => {
-      toast.success("Category updated");
+      toast.success(tu("op.category_updated"));
       setEditing(null);
       void invalidate();
     },
-    onError: () => toast.error("Could not update category"),
+    onError: () => toast.error(tu("op.could_not_update_category")),
   });
 
   const items = (listQ.data?.items ?? []) as CategoryItem[];
@@ -251,31 +252,31 @@ function CategoriesPage({ societyId }: { societyId: string }) {
           to="/society/income"
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground min-h-[44px]"
         >
-          <ArrowLeft className="h-4 w-4" /> Back to Income
+          <ArrowLeft className="h-4 w-4" /> {tu("op.back_to_income")}
         </Link>
 
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h1 className="text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px] text-foreground">
-              Income Categories
+              {tu("op.income_categories")}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Organize where your society's income comes from.
+              {tu("op.organize_where_your_society_s")}
             </p>
           </div>
           <Button
             className="min-h-[44px] rounded-[14px] bg-primary hover:bg-primary/90 text-primary-foreground"
             onClick={() => setEditing({ mode: "create" })}
           >
-            <Plus className="h-4 w-4 mr-1" /> Add Category
+            <Plus className="h-4 w-4 mr-1" /> {tu("op.add_category")}
           </Button>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <SummaryCard label="Total" value={summary.total} tint="bg-[#E6F7F4] text-primary" icon={Layers} />
-          <SummaryCard label="Active" value={summary.active} tint="bg-[#E8F5EE] text-[#12B76A]" icon={ShieldCheck} />
-          <SummaryCard label="System" value={summary.system} tint="bg-[#EEF4FF] text-[#3155D4]" icon={Tags} />
-          <SummaryCard label="Custom" value={summary.custom} tint="bg-[#F1ECFB] text-[#6E3AD1]" icon={Sparkles} />
+          <SummaryCard label={tu("common.total")} value={summary.total} tint="bg-[#E6F7F4] text-primary" icon={Layers} />
+          <SummaryCard label={tu("common.active")} value={summary.active} tint="bg-[#E8F5EE] text-[#12B76A]" icon={ShieldCheck} />
+          <SummaryCard label={tu("op.system")} value={summary.system} tint="bg-[#EEF4FF] text-[#3155D4]" icon={Tags} />
+          <SummaryCard label={tu("op.custom")} value={summary.custom} tint="bg-[#F1ECFB] text-[#6E3AD1]" icon={Sparkles} />
         </div>
 
         <div className="rounded-[18px] bg-card border border-border p-3 flex flex-wrap items-center gap-2">
@@ -284,7 +285,7 @@ function CategoriesPage({ societyId }: { societyId: string }) {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search categories"
+              placeholder={tu("op.search_categories")}
               className="pl-9 min-h-[44px] rounded-[14px] border-border bg-card"
             />
           </div>
@@ -293,9 +294,9 @@ function CategoriesPage({ societyId }: { societyId: string }) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
+              <SelectItem value="all">{tu("common.all")}</SelectItem>
+              <SelectItem value="active">{tu("common.active")}</SelectItem>
+              <SelectItem value="inactive">{tu("common.inactive")}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={kind} onValueChange={(v) => setKind(v as KindFilter)}>
@@ -303,18 +304,18 @@ function CategoriesPage({ societyId }: { societyId: string }) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All kinds</SelectItem>
-              <SelectItem value="system">System</SelectItem>
-              <SelectItem value="custom">Custom</SelectItem>
+              <SelectItem value="all">{tu("op.all_kinds")}</SelectItem>
+              <SelectItem value="system">{tu("op.system")}</SelectItem>
+              <SelectItem value="custom">{tu("op.custom")}</SelectItem>
             </SelectContent>
           </Select>
           {groups.length > 0 && (
             <Select value={group} onValueChange={setGroup}>
               <SelectTrigger className="min-h-[44px] w-[150px] rounded-[14px] border-border">
-                <SelectValue placeholder="Group" />
+                <SelectValue placeholder={tu("op.group")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All groups</SelectItem>
+                <SelectItem value="all">{tu("op.all_groups")}</SelectItem>
                 {groups.map((g) => (
                   <SelectItem key={g} value={g}>
                     {g}
@@ -329,7 +330,7 @@ function CategoriesPage({ societyId }: { societyId: string }) {
               className="min-h-[44px] rounded-[14px] border-border text-muted-foreground"
               onClick={resetFilters}
             >
-              <RotateCcw className="h-4 w-4 mr-1" /> Reset
+              <RotateCcw className="h-4 w-4 mr-1" /> {tu("inc.reset")}
             </Button>
           )}
         </div>
@@ -337,7 +338,7 @@ function CategoriesPage({ societyId }: { societyId: string }) {
         <div className="rounded-[18px] bg-card border border-border overflow-hidden">
           {listQ.isError ? (
             <div className="p-6 text-sm text-[#F04438] flex items-center gap-2">
-              <AlertCircle className="h-4 w-4" /> Categories are temporarily unavailable.
+              <AlertCircle className="h-4 w-4" /> {tu("op.categories_are_temporarily_unavailable")}
             </div>
           ) : listQ.isLoading ? (
             <div className="divide-y divide-[#DDE9E6]">
@@ -358,30 +359,30 @@ function CategoriesPage({ societyId }: { societyId: string }) {
                 <Tags className="h-5 w-5" />
               </div>
               <div className="mt-3 text-sm font-medium text-foreground">
-                No categories yet
+                {tu("vch.cats.empty")}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Create your first income category to start categorizing collections.
+                {tu("op.create_your_first_income_category")}
               </p>
               <Button
                 className="mt-4 min-h-[44px] rounded-[14px] bg-primary hover:bg-primary/90 text-primary-foreground"
                 onClick={() => setEditing({ mode: "create" })}
               >
-                <Plus className="h-4 w-4 mr-1" /> Add Category
+                <Plus className="h-4 w-4 mr-1" /> {tu("op.add_category")}
               </Button>
             </div>
           ) : filtered.length === 0 ? (
             <div className="p-8 text-center">
-              <div className="text-sm font-medium text-foreground">No matches</div>
+              <div className="text-sm font-medium text-foreground">{tu("common.noMatches")}</div>
               <p className="text-xs text-muted-foreground mt-1">
-                Try clearing filters or a different search term.
+                {tu("op.try_clearing_filters_or_a")}
               </p>
               <Button
                 variant="outline"
                 className="mt-4 min-h-[44px] rounded-[14px] border-border"
                 onClick={resetFilters}
               >
-                Reset filters
+                {tu("op.reset_filters")}
               </Button>
             </div>
           ) : (
@@ -401,20 +402,20 @@ function CategoriesPage({ societyId }: { societyId: string }) {
                       {c.display_name}
                       {c.is_system ? (
                         <Badge className="text-[10px] bg-[#EEF4FF] text-[#3155D4] border-transparent">
-                          System
+                          {tu("op.system")}
                         </Badge>
                       ) : (
                         <Badge className="text-[10px] bg-[#F1ECFB] text-[#6E3AD1] border-transparent">
-                          Custom
+                          {tu("op.custom")}
                         </Badge>
                       )}
                       {c.is_active ? (
                         <Badge className="text-[10px] bg-[#E8F5EE] text-[#12B76A] border-transparent">
-                          Active
+                          {tu("common.active")}
                         </Badge>
                       ) : (
                         <Badge className="text-[10px] bg-[#FEF3F2] text-[#B42318] border-transparent">
-                          Inactive
+                          {tu("common.inactive")}
                         </Badge>
                       )}
                     </div>
@@ -438,7 +439,7 @@ function CategoriesPage({ societyId }: { societyId: string }) {
                         }
                         disabled={updateMut.isPending}
                       >
-                        {c.is_active ? "Deactivate" : "Activate"}
+                        {c.is_active ? tu("exp.deactivate") : tu("op.activate")}
                       </Button>
                     )}
                     <Button
@@ -544,18 +545,18 @@ function CategoryDialog(props: {
       <DialogContent className="rounded-[24px] border-border bg-card/95 backdrop-blur-xl">
         <DialogHeader>
           <DialogTitle className="text-foreground">
-            {isEdit ? "Edit category" : "New category"}
+            {isEdit ? tu("vch.cats.editTitle") : tu("op.new_category")}
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
             {isEdit
-              ? "Update details or deactivate this category."
-              : "Give this income source a short key and display name."}
+              ? tu("op.update_details_or_deactivate_this")
+              : tu("op.give_this_income_source_a")}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           {!isEdit && (
             <div>
-              <Label htmlFor="cat-key" className="text-xs text-muted-foreground">Key</Label>
+              <Label htmlFor="cat-key" className="text-xs text-muted-foreground">{tu("op.key")}</Label>
               <Input
                 id="cat-key"
                 className="min-h-[44px] rounded-[14px] border-border"
@@ -566,7 +567,7 @@ function CategoryDialog(props: {
                 maxLength={60}
               />
               <p className="text-[11px] text-muted-foreground mt-1">
-                Will be saved as{" "}
+                {tu("op.will_be_saved_as")}{" "}
                 <span className="font-mono text-foreground">
                   {normalizedKey || "…"}
                 </span>
@@ -574,35 +575,35 @@ function CategoryDialog(props: {
               </p>
               {key && !keyValid && (
                 <p className="text-[11px] text-[#F04438] mt-1">
-                  Use 3–60 characters: lowercase letters, numbers, underscore or dash.
+                  {tu("op.use_3_60_characters_lowercase")}
                 </p>
               )}
             </div>
           )}
           <div>
-            <Label htmlFor="cat-name" className="text-xs text-muted-foreground">Display name</Label>
+            <Label htmlFor="cat-name" className="text-xs text-muted-foreground">{tu("op.display_name")}</Label>
             <Input
               id="cat-name"
               className="min-h-[44px] rounded-[14px] border-border"
-              placeholder="Hall Rent"
+              placeholder={tu("op.hall_rent")}
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               maxLength={80}
             />
           </div>
           <div>
-            <Label htmlFor="cat-group" className="text-xs text-muted-foreground">Group (optional)</Label>
+            <Label htmlFor="cat-group" className="text-xs text-muted-foreground">{tu("op.group_optional")}</Label>
             <Input
               id="cat-group"
               className="min-h-[44px] rounded-[14px] border-border"
-              placeholder="Facilities"
+              placeholder={tu("op.facilities")}
               value={group}
               onChange={(e) => setGroup(e.target.value)}
               maxLength={60}
             />
           </div>
           <div>
-            <Label htmlFor="cat-desc" className="text-xs text-muted-foreground">Description (optional)</Label>
+            <Label htmlFor="cat-desc" className="text-xs text-muted-foreground">{tu("op.description_optional")}</Label>
             <Textarea
               id="cat-desc"
               rows={3}
@@ -615,15 +616,15 @@ function CategoryDialog(props: {
           {isEdit && (
             <div className="flex items-center justify-between rounded-[14px] border border-border bg-muted/30 px-3 py-2">
               <div>
-                <div className="text-sm font-medium text-foreground">Active</div>
+                <div className="text-sm font-medium text-foreground">{tu("common.active")}</div>
                 <div className="text-[11px] text-muted-foreground">
-                  Inactive categories are hidden from new income entries.
+                  {tu("op.inactive_categories_are_hidden_from")}
                 </div>
               </div>
               <Switch
                 checked={active}
                 onCheckedChange={setActive}
-                aria-label="Active"
+                aria-label={tu("common.active")}
               />
             </div>
           )}
@@ -635,7 +636,7 @@ function CategoryDialog(props: {
             onClick={onClose}
             disabled={submitting}
           >
-            Cancel
+            {tu("common.cancel")}
           </Button>
           <Button
             className="min-h-[44px] rounded-[14px] bg-primary hover:bg-primary/90 text-primary-foreground"
@@ -649,9 +650,9 @@ function CategoryDialog(props: {
             {submitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : isEdit ? (
-              "Save Category"
+              tu("op.save_category")
             ) : (
-              "Create Category"
+              tu("op.create_category")
             )}
           </Button>
         </DialogFooter>

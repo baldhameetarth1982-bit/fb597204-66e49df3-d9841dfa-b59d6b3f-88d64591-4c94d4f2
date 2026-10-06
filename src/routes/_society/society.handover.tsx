@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { getHandoverSummary, setHandoverStatus, HANDOVER_STATUSES, type HandoverStatus } from "@/lib/handover.functions";
 import { toast } from "sonner";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/handover")({
   head: () => ({ meta: [
@@ -40,7 +41,7 @@ function HandoverPage() {
   useEffect(() => { if (q.data) { setStatus(q.data.status); setNote(q.data.note ?? ""); } }, [q.data]);
   const m = useMutation({
     mutationFn: () => save({ data: { societyId: societyId!, status, note: note.trim() || undefined } }),
-    onSuccess: () => { toast.success("Handover status saved"); void qc.invalidateQueries({ queryKey: ["handover", societyId] }); },
+    onSuccess: () => { toast.success(tu("op.handover_status_saved")); void qc.invalidateQueries({ queryKey: ["handover", societyId] }); },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Couldn't save"),
   });
   const s = q.data;
@@ -60,30 +61,30 @@ function HandoverPage() {
   const done = items.filter((i) => i.ok).length;
 
   return <div className="pb-[calc(96px+env(safe-area-inset-bottom))]">
-    <MobileHero eyebrow="Society setup" title="Handover" subtitle="Readiness from live records. Uses normal committee permissions — there is no separate builder login." icon={ClipboardCheck} variant="teal" />
+    <MobileHero eyebrow={tu("setup.title")} title={tu("mod.handover")} subtitle={tu("op.readiness_from_live_records_uses")} icon={ClipboardCheck} variant="teal" />
     <div className="px-4 md:px-6 pt-4 space-y-4 max-w-3xl">
-      {q.isLoading && <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Loading…</p>}
-      {q.isError && <SectionCard icon={AlertCircle} title="Unavailable"><p className="text-sm text-destructive">{(q.error as Error).message}</p>
-        <Button className="mt-3 min-h-11" variant="outline" onClick={() => q.refetch()}>Retry</Button></SectionCard>}
+      {q.isLoading && <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />{tu("common.loading")}</p>}
+      {q.isError && <SectionCard icon={AlertCircle} title={tu("hd.unavailable")}><p className="text-sm text-destructive">{(q.error as Error).message}</p>
+        <Button className="mt-3 min-h-11" variant="outline" onClick={() => q.refetch()}>{tu("common.retry")}</Button></SectionCard>}
       {s && <>
-        <SectionCard title="Checklist" description={`${done} of ${items.length} ready`} bodyClassName="p-0">
+        <SectionCard title={tu("op.checklist")} description={`${done} of ${items.length} ready`} bodyClassName="p-0">
           <ul className="divide-y">{items.map((i) => <li key={i.label}>
             <Link to={i.to} className="flex min-h-14 items-center gap-3 px-4 py-3 hover:bg-muted/40">
               {i.ok ? <CheckCircle2 className="h-5 w-5 shrink-0 text-primary" /> : <Circle className="h-5 w-5 shrink-0 text-muted-foreground" />}
               <span className="min-w-0"><span className="block text-sm font-medium">{i.label}</span><span className="block text-xs text-muted-foreground break-words">{i.detail}</span></span>
             </Link></li>)}</ul>
         </SectionCard>
-        <SectionCard title="Handover status" description={s.updated_at ? `Last changed ${new Date(s.updated_at).toLocaleString("en-IN")}` : "Every change is recorded in the activity history."}>
+        <SectionCard title={tu("op.handover_status")} description={s.updated_at ? `Last changed ${new Date(s.updated_at).toLocaleString("en-IN")}` : tu("op.every_change_is_recorded_in")}>
           <div className="space-y-3">
-            <div><Label htmlFor="ho-status">Status</Label>
+            <div><Label htmlFor="ho-status">{tu("common.status")}</Label>
               <Select value={status} onValueChange={(v) => setStatus(v as HandoverStatus)}>
-                <SelectTrigger aria-label="Status" id="ho-status" className="min-h-11"><SelectValue /></SelectTrigger>
+                <SelectTrigger aria-label={tu("common.status")} id="ho-status" className="min-h-11"><SelectValue /></SelectTrigger>
                 <SelectContent>{HANDOVER_STATUSES.map((k) => <SelectItem key={k} value={k}>{LABEL[k]}</SelectItem>)}</SelectContent>
               </Select></div>
-            <div><Label htmlFor="ho-note">Note {status === "handed_over" && "(required)"}</Label>
-              <Textarea id="ho-note" maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Who received the handover, when, and anything pending" /></div>
+            <div><Label htmlFor="ho-note">{tu("gp.note")} {status === "handed_over" && tu("op.required_3")}</Label>
+              <Textarea id="ho-note" maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} placeholder={tu("op.who_received_the_handover_when")} /></div>
             <Button className="min-h-11" disabled={m.isPending || !societyId} onClick={() => m.mutate()}>
-              {m.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save status</Button>
+              {m.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{tu("op.save_status")}</Button>
           </div>
         </SectionCard>
       </>}

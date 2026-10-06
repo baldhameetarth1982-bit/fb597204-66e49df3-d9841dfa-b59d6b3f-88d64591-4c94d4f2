@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { listDiscovery } from "@/lib/discovery.functions";
 import { safeHttpsUrl } from "@/lib/discovery";
 import { recordAdEvent, useAdImpression } from "@/lib/ad-events";
+import { tu } from "@/lib/i18n";
 
 /**
  * Sponsored banner for a placement. The server decides what may be shown
@@ -36,13 +37,13 @@ export function AdBanner({ placement = "dashboard_bottom" }: { placement?: strin
     <>
       <img src={ad.image_url!} alt={ad.title} loading="lazy" className="w-full h-auto object-cover aspect-[16/5]" />
       <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground flex items-center justify-between">
-        <span>Sponsored</span>
+        <span>{tu("op.sponsored")}</span>
         <span className="truncate ms-2">{ad.title}</span>
       </div>
     </>
   );
   return (
-    <div ref={viewRef} className="w-full flex justify-center py-3" aria-label="Sponsored">
+    <div ref={viewRef} className="w-full flex justify-center py-3" aria-label={tu("op.sponsored")}>
       {href ? (
         <a href={href} onClick={() => recordAdEvent(ad.id, "click", placement)} target="_blank" rel="noopener noreferrer sponsored" className="block w-full max-w-md rounded-2xl overflow-hidden border bg-muted/40 hover:opacity-95 transition">{body}</a>
       ) : (

@@ -23,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   deleteKnowledge, listKnowledgeAdmin, listDocumentVersions, openDocumentVersion, setDocumentCategory, DOC_CATEGORIES, listLeaseCandidates, linkLeaseDocument, openKnowledgeDocument, saveKnowledgeFaq, setKnowledgeArchived, uploadKnowledgeDocument, type KnowledgeItem,
 } from "@/lib/society-knowledge.functions";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/knowledge")({
   head: () => ({
@@ -72,12 +73,12 @@ function KnowledgeAdmin() {
   const archive = useMutation({
     mutationFn: (v: { id: string; archived: boolean }) => archiveFn({ data: v }),
     onSuccess: (r, v) => { if (!r.ok) return toast.error(r.message); toast.success(v.archived ? "Archived — AI Secretary will no longer use it" : "Restored for AI Secretary"); refresh(); },
-    onError: () => toast.error("Something went wrong. Please try again."),
+    onError: () => toast.error(tu("errors.generic")),
   });
   const remove = useMutation({
     mutationFn: (id: string) => deleteFn({ data: { id } }),
-    onSuccess: (r) => { setRemoving(null); if (!r.ok) return toast.error(r.message); toast.success("Removed"); refresh(); },
-    onError: () => toast.error("Something went wrong. Please try again."),
+    onSuccess: (r) => { setRemoving(null); if (!r.ok) return toast.error(r.message); toast.success(tu("vh.removed")); refresh(); },
+    onError: () => toast.error(tu("errors.generic")),
   });
 
   async function open(id: string) {
@@ -106,12 +107,12 @@ function KnowledgeAdmin() {
   return (
     <PageShell>
       <PageHeader
-        title="Documents & FAQs"
-        description="The society information AI Secretary answers from. Only items marked Ready are used."
+        title={tu("section.knowledge")}
+        description={tu("op.the_society_information_ai_secretary")}
         actions={
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => setFaqFor("new")} className="min-h-11"><Plus className="h-4 w-4 mr-1.5" /> Add FAQ</Button>
-            <Button onClick={() => setUploadFor("new")} className="min-h-11"><Upload className="h-4 w-4 mr-1.5" /> Upload document</Button>
+            <Button variant="outline" onClick={() => setFaqFor("new")} className="min-h-11"><Plus className="h-4 w-4 mr-1.5" /> {tu("op.add_faq")}</Button>
+            <Button onClick={() => setUploadFor("new")} className="min-h-11"><Upload className="h-4 w-4 mr-1.5" /> {tu("op.upload_document")}</Button>
           </div>
         }
       />
@@ -120,9 +121,9 @@ function KnowledgeAdmin() {
           <ListSkeleton rows={4} />
         ) : q.isError || (res && !res.ok) ? (
           res && !res.ok && res.message.includes("Pro") ? (
-            <InlineNotice icon={Lock} title="Available on the Pro plan">{res.message}</InlineNotice>
+            <InlineNotice icon={Lock} title={tu("op.available_on_the_pro_plan")}>{res.message}</InlineNotice>
           ) : (
-            <LoadError title={res && !res.ok ? res.message : "Couldn't load documents."} onRetry={() => q.refetch()} />
+            <LoadError title={res && !res.ok ? res.message : tu("dc.loadFail")} onRetry={() => q.refetch()} />
           )
         ) : (
           <>
@@ -133,17 +134,17 @@ function KnowledgeAdmin() {
               { label: "Need attention", value: loaded ? nFix : "—", hint: "Processing, failed or unreadable" },
             ]} />
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <SegmentedFilter label="Show" value={tab} onChange={setTab} options={[
+              <SegmentedFilter label={tu("rbd.show")} value={tab} onChange={setTab} options={[
                 { key: "document", label: "Documents", count: nDocs },
                 { key: "faq", label: "FAQs", count: nFaqs },
                 { key: "attention", label: "Needs attention", count: nFix },
                 { key: "archived", label: "Archived", count: nArch },
               ]} />
-              <div className="md:w-72"><SearchField value={search} onChange={setSearch} placeholder="Search title or file name" label="Search documents and FAQs" /></div>
+              <div className="md:w-72"><SearchField value={search} onChange={setSearch} placeholder={tu("op.search_title_or_file_name")} label={tu("dc.search")} /></div>
             </div>
             {shown.length === 0 ? (
-              <ListEmpty icon={tab === "faq" ? HelpCircle : FileText} title={needle ? "No matches" : tab === "archived" ? "Nothing archived" : tab === "attention" ? "Nothing needs attention" : tab === "faq" ? "No FAQs yet" : "No documents yet"}>
-                {needle ? `Nothing matches “${search.trim()}”.` : tab === "archived" ? "Archived items stay here and aren't used by AI Secretary." : tab === "attention" ? "Every item has finished processing." : tab === "faq" ? "Add common questions residents ask, with the committee's answer." : "Upload rules, policies or circulars as PDF or text."}
+              <ListEmpty icon={tab === "faq" ? HelpCircle : FileText} title={needle ? tu("common.noMatches") : tab === "archived" ? tu("op.nothing_archived") : tab === "attention" ? tu("op.nothing_needs_attention") : tab === "faq" ? "No FAQs yet" : "No documents yet"}>
+                {needle ? `Nothing matches “${search.trim()}”.` : tab === "archived" ? tu("op.archived_items_stay_here_and") : tab === "attention" ? tu("op.every_item_has_finished_processing") : tab === "faq" ? "Add common questions residents ask, with the committee's answer." : "Upload rules, policies or circulars as PDF or text."}
               </ListEmpty>
             ) : (
               <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
@@ -162,9 +163,9 @@ function KnowledgeAdmin() {
                               {i.status === "ready" && <CheckCircle2 className="h-3 w-3 mr-1" />}
                               {st.label}
                             </StatusChip>
-                            {i.kind === "document" && <StatusChip tone={i.category === "lease" ? "info" : "muted"}><span className="capitalize">{i.category === "lease" ? "Lease agreement" : i.category}</span></StatusChip>}
+                            {i.kind === "document" && <StatusChip tone={i.category === "lease" ? "info" : "muted"}><span className="capitalize">{i.category === "lease" ? tu("op.lease_agreement") : i.category}</span></StatusChip>}
                             {i.kind === "document" && i.version > 1 && <StatusChip tone="muted">v{i.version}</StatusChip>}
-                            {i.audience === "committee" && <StatusChip tone="muted"><Lock className="h-3 w-3 mr-1" />Committee only</StatusChip>}
+                            {i.audience === "committee" && <StatusChip tone="muted"><Lock className="h-3 w-3 mr-1" />{tu("op.committee_only")}</StatusChip>}
                             {i.kind === "document" && <ExpiryChip expiresOn={i.expiresOn} />}
                           </div>
                           <p className="mt-1 font-medium leading-snug break-words">{i.title}</p>
@@ -173,12 +174,12 @@ function KnowledgeAdmin() {
                           </p>
                           {i.kind === "faq" && i.faqAnswer && <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{i.faqAnswer}</p>}
                           {i.statusReason && i.status !== "ready" && <p className="mt-2 rounded-lg bg-muted px-3 py-2 text-xs">{i.statusReason}</p>}
-                          {i.status === "processing" && <p className="mt-1 text-xs text-muted-foreground" role="status">Still processing — not searchable yet. If this stays, upload the file again.</p>}
+                          {i.status === "processing" && <p className="mt-1 text-xs text-muted-foreground" role="status">{tu("op.still_processing_not_searchable_yet")}</p>}
                         </div>
                         <div className="flex shrink-0 items-center gap-1">
                           {i.kind === "document"
-                            ? <Button size="sm" variant="outline" className="min-h-11 hidden sm:inline-flex" onClick={() => open(i.id)}><ExternalLink className="h-4 w-4 mr-1" /> View</Button>
-                            : <Button size="sm" variant="outline" className="min-h-11 hidden sm:inline-flex" onClick={() => setFaqFor(i)}><Pencil className="h-4 w-4 mr-1" /> Edit</Button>}
+                            ? <Button size="sm" variant="outline" className="min-h-11 hidden sm:inline-flex" onClick={() => open(i.id)}><ExternalLink className="h-4 w-4 mr-1" /> {tu("common.view")}</Button>
+                            : <Button size="sm" variant="outline" className="min-h-11 hidden sm:inline-flex" onClick={() => setFaqFor(i)}><Pencil className="h-4 w-4 mr-1" /> {tu("common.edit")}</Button>}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button size="icon" variant="ghost" className="h-11 w-11" aria-label={`More actions for ${i.title}`}><MoreHorizontal className="h-5 w-5" /></Button>
@@ -186,19 +187,19 @@ function KnowledgeAdmin() {
                             <DropdownMenuContent align="end" className="w-48">
                               {i.kind === "document" ? (
                                 <>
-                                  <DropdownMenuItem className="min-h-11 sm:hidden" onSelect={() => open(i.id)}><ExternalLink className="h-4 w-4 mr-2" /> View</DropdownMenuItem>
-                                  <DropdownMenuItem className="min-h-11" onSelect={() => setUploadFor(i)}><RefreshCw className="h-4 w-4 mr-2" /> Replace file</DropdownMenuItem>
+                                  <DropdownMenuItem className="min-h-11 sm:hidden" onSelect={() => open(i.id)}><ExternalLink className="h-4 w-4 mr-2" /> {tu("common.view")}</DropdownMenuItem>
+                                  <DropdownMenuItem className="min-h-11" onSelect={() => setUploadFor(i)}><RefreshCw className="h-4 w-4 mr-2" /> {tu("op.replace_file")}</DropdownMenuItem>
                                 </>
                               ) : (
-                                <DropdownMenuItem className="min-h-11 sm:hidden" onSelect={() => setFaqFor(i)}><Pencil className="h-4 w-4 mr-2" /> Edit</DropdownMenuItem>
+                                <DropdownMenuItem className="min-h-11 sm:hidden" onSelect={() => setFaqFor(i)}><Pencil className="h-4 w-4 mr-2" /> {tu("common.edit")}</DropdownMenuItem>
                               )}
-                              {i.status === "ready" && <DropdownMenuItem className="min-h-11" disabled={archive.isPending} onSelect={() => archive.mutate({ id: i.id, archived: true })}><Archive className="h-4 w-4 mr-2" /> Archive</DropdownMenuItem>}
-                              {i.status === "archived" && <DropdownMenuItem className="min-h-11" disabled={archive.isPending} onSelect={() => archive.mutate({ id: i.id, archived: false })}><ArchiveRestore className="h-4 w-4 mr-2" /> Restore</DropdownMenuItem>}
-                              {i.kind === "document" && <DropdownMenuItem className="min-h-11" onSelect={() => setExpiryFor(i)}><CalendarClock className="h-4 w-4 mr-2" /> Expiry & reminders</DropdownMenuItem>}
-                              {i.kind === "document" && <DropdownMenuItem className="min-h-11" onSelect={() => setLeaseFor(i)}><KeyRound className="h-4 w-4 mr-2" /> {i.leaseTenancyId ? "Change lease tenancy" : "Mark as lease…"}</DropdownMenuItem>}
-                              {i.kind === "document" && <DropdownMenuItem className="min-h-11" onSelect={() => setVersionsFor(i)}><History className="h-4 w-4 mr-2" /> Category & versions</DropdownMenuItem>}
+                              {i.status === "ready" && <DropdownMenuItem className="min-h-11" disabled={archive.isPending} onSelect={() => archive.mutate({ id: i.id, archived: true })}><Archive className="h-4 w-4 mr-2" /> {tu("cm.archive")}</DropdownMenuItem>}
+                              {i.status === "archived" && <DropdownMenuItem className="min-h-11" disabled={archive.isPending} onSelect={() => archive.mutate({ id: i.id, archived: false })}><ArchiveRestore className="h-4 w-4 mr-2" /> {tu("op.restore")}</DropdownMenuItem>}
+                              {i.kind === "document" && <DropdownMenuItem className="min-h-11" onSelect={() => setExpiryFor(i)}><CalendarClock className="h-4 w-4 mr-2" /> {tu("op.expiry_reminders")}</DropdownMenuItem>}
+                              {i.kind === "document" && <DropdownMenuItem className="min-h-11" onSelect={() => setLeaseFor(i)}><KeyRound className="h-4 w-4 mr-2" /> {i.leaseTenancyId ? tu("op.change_lease_tenancy") : tu("op.mark_as_lease")}</DropdownMenuItem>}
+                              {i.kind === "document" && <DropdownMenuItem className="min-h-11" onSelect={() => setVersionsFor(i)}><History className="h-4 w-4 mr-2" /> {tu("op.category_versions")}</DropdownMenuItem>}
                               {i.kind === "faq" && <><DropdownMenuSeparator />
-                              <DropdownMenuItem className="min-h-11 text-destructive focus:text-destructive" onSelect={() => setRemoving(i)}><Trash2 className="h-4 w-4 mr-2" /> Remove…</DropdownMenuItem></>}
+                              <DropdownMenuItem className="min-h-11 text-destructive focus:text-destructive" onSelect={() => setRemoving(i)}><Trash2 className="h-4 w-4 mr-2" /> {tu("op.remove")}</DropdownMenuItem></>}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
@@ -220,13 +221,13 @@ function KnowledgeAdmin() {
       <AlertDialog open={!!removing} onOpenChange={(o) => !o && setRemoving(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove “{removing?.title}”?</AlertDialogTitle>
-            <AlertDialogDescription>AI Secretary will stop using this FAQ immediately.</AlertDialogDescription>
+            <AlertDialogTitle>{tu("op.remove_2")}{removing?.title}”?</AlertDialogTitle>
+            <AlertDialogDescription>{tu("op.ai_secretary_will_stop_using")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{tu("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={remove.isPending} onClick={(e) => { e.preventDefault(); if (removing) remove.mutate(removing.id); }}>
-              {remove.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} Remove
+              {remove.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} {tu("fd.remove")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -256,7 +257,7 @@ function UploadDialog({ target, onClose, onDone }: { target: KnowledgeItem | "ne
     onSuccess: (r) => {
       onDone();
       if (!r.ok) return setError(r.message);
-      if (r.status === "ready") { toast.success("Document is ready for AI Secretary"); onClose(); }
+      if (r.status === "ready") { toast.success(tu("op.document_is_ready_for_ai")); onClose(); }
       else setError(r.reason ?? "This document couldn't be read.");
     },
     onError: () => setError("Upload failed. Check your connection and try again."),
@@ -276,35 +277,35 @@ function UploadDialog({ target, onClose, onDone }: { target: KnowledgeItem | "ne
     <Dialog open onOpenChange={(o) => !o && !m.isPending && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{existing ? "Replace document" : "Upload document"}</DialogTitle>
-          <DialogDescription>PDF (text-based), TXT or Markdown, up to 5 MB. Scanned images can't be read yet.</DialogDescription>
+          <DialogTitle>{existing ? tu("op.replace_document") : tu("op.upload_document")}</DialogTitle>
+          <DialogDescription>{tu("op.pdf_text_based_txt_or")}</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="k-title">Title</Label>
-            <Input id="k-title" value={title} maxLength={160} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Clubhouse booking policy" />
+            <Label htmlFor="k-title">{tu("cm.fTitle")}</Label>
+            <Input id="k-title" value={title} maxLength={160} onChange={(e) => setTitle(e.target.value)} placeholder={tu("op.e_g_clubhouse_booking_policy")} />
           </div>
           <div className="space-y-1.5">
-            <Label>Who can see it</Label>
+            <Label>{tu("op.who_can_see_it")}</Label>
             <Select value={audience} onValueChange={(v) => setAudience(v as typeof audience)}>
-              <SelectTrigger aria-label="Who can see it" className="min-h-11"><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label={tu("op.who_can_see_it")} className="min-h-11"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="residents">All residents</SelectItem>
-                <SelectItem value="committee">Committee only</SelectItem>
+                <SelectItem value="residents">{tu("op.all_residents")}</SelectItem>
+                <SelectItem value="committee">{tu("op.committee_only")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <input ref={inputRef} type="file" accept=".pdf,.txt,.md,application/pdf,text/plain,text/markdown" className="sr-only" onChange={(e) => pick(e.target.files?.[0] ?? null)} />
           <Button type="button" variant="outline" className="w-full min-h-11 justify-start" onClick={() => inputRef.current?.click()}>
-            <Upload className="h-4 w-4 mr-2" />{file ? `${file.name} · ${fmtSize(file.size)}` : "Choose file"}
+            <Upload className="h-4 w-4 mr-2" />{file ? `${file.name} · ${fmtSize(file.size)}` : tu("op.choose_file")}
           </Button>
-          {existing && <p className="text-xs text-muted-foreground">The current file is kept in version history; only the new file is shown to residents and AI Secretary.</p>}
-          {m.isPending && <p className="text-sm text-muted-foreground flex items-center gap-2" role="status"><Loader2 className="h-4 w-4 animate-spin" /> Uploading and reading text…</p>}
+          {existing && <p className="text-xs text-muted-foreground">{tu("op.the_current_file_is_kept")}</p>}
+          {m.isPending && <p className="text-sm text-muted-foreground flex items-center gap-2" role="status"><Loader2 className="h-4 w-4 animate-spin" /> {tu("op.uploading_and_reading_text")}</p>}
           {error && <p className="text-sm rounded-lg bg-destructive/10 text-destructive px-3 py-2" role="alert">{error}</p>}
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={m.isPending}>Cancel</Button>
-          <Button onClick={() => { setError(null); m.mutate(); }} disabled={!valid || m.isPending}>{m.isPending ? "Processing…" : existing ? "Replace" : "Upload"}</Button>
+          <Button variant="ghost" onClick={onClose} disabled={m.isPending}>{tu("common.cancel")}</Button>
+          <Button onClick={() => { setError(null); m.mutate(); }} disabled={!valid || m.isPending}>{m.isPending ? tu("op.processing") : existing ? tu("op.replace") : tu("op.upload")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -320,7 +321,7 @@ function FaqDialog({ target, onClose, onDone }: { target: KnowledgeItem | "new";
   const [error, setError] = useState<string | null>(null);
   const m = useMutation({
     mutationFn: () => save({ data: { id: existing?.id ?? null, question: question.trim(), answer: answer.trim(), audience } }),
-    onSuccess: (r) => { if (!r.ok) return setError(r.message); toast.success("FAQ saved"); onDone(); onClose(); },
+    onSuccess: (r) => { if (!r.ok) return setError(r.message); toast.success(tu("op.faq_saved")); onDone(); onClose(); },
     onError: () => setError("Couldn't save. Your text is kept — try again."),
   });
   const valid = question.trim().length >= 3 && answer.trim().length >= 5;
@@ -328,24 +329,24 @@ function FaqDialog({ target, onClose, onDone }: { target: KnowledgeItem | "new";
     <Dialog open onOpenChange={(o) => !o && !m.isPending && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{existing ? "Edit FAQ" : "Add FAQ"}</DialogTitle>
-          <DialogDescription>A common question and the official answer residents should get.</DialogDescription>
+          <DialogTitle>{existing ? tu("op.edit_faq") : tu("op.add_faq")}</DialogTitle>
+          <DialogDescription>{tu("op.a_common_question_and_the")}</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
-          <div className="space-y-1.5"><Label htmlFor="f-q">Question</Label><Input id="f-q" value={question} maxLength={160} onChange={(e) => setQuestion(e.target.value)} placeholder="e.g. How do I book the clubhouse?" /></div>
-          <div className="space-y-1.5"><Label htmlFor="f-a">Answer</Label><Textarea id="f-a" value={answer} maxLength={4000} rows={6} onChange={(e) => setAnswer(e.target.value)} /></div>
+          <div className="space-y-1.5"><Label htmlFor="f-q">{tu("op.question")}</Label><Input id="f-q" value={question} maxLength={160} onChange={(e) => setQuestion(e.target.value)} placeholder={tu("op.e_g_how_do_i")} /></div>
+          <div className="space-y-1.5"><Label htmlFor="f-a">{tu("op.answer")}</Label><Textarea id="f-a" value={answer} maxLength={4000} rows={6} onChange={(e) => setAnswer(e.target.value)} /></div>
           <div className="space-y-1.5">
-            <Label>Who can see it</Label>
+            <Label>{tu("op.who_can_see_it")}</Label>
             <Select value={audience} onValueChange={(v) => setAudience(v as typeof audience)}>
-              <SelectTrigger aria-label="Who can see it" className="min-h-11"><SelectValue /></SelectTrigger>
-              <SelectContent><SelectItem value="residents">All residents</SelectItem><SelectItem value="committee">Committee only</SelectItem></SelectContent>
+              <SelectTrigger aria-label={tu("op.who_can_see_it")} className="min-h-11"><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="residents">{tu("op.all_residents")}</SelectItem><SelectItem value="committee">{tu("op.committee_only")}</SelectItem></SelectContent>
             </Select>
           </div>
           {error && <p className="text-sm rounded-lg bg-destructive/10 text-destructive px-3 py-2" role="alert">{error}</p>}
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={m.isPending}>Cancel</Button>
-          <Button onClick={() => { setError(null); m.mutate(); }} disabled={!valid || m.isPending}>{m.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} Save</Button>
+          <Button variant="ghost" onClick={onClose} disabled={m.isPending}>{tu("common.cancel")}</Button>
+          <Button onClick={() => { setError(null); m.mutate(); }} disabled={!valid || m.isPending}>{m.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} {tu("common.save")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -360,8 +361,8 @@ function VersionsDialog({ item, onClose, onDone }: { item: KnowledgeItem; onClos
   const q = useQuery({ queryKey: ["doc-versions", item.id], queryFn: () => list({ data: { id: item.id } }) });
   const save = useMutation({
     mutationFn: () => setCat({ data: { id: item.id, category: category as (typeof DOC_CATEGORIES)[number] } }),
-    onSuccess: (r) => { if (!r.ok) return toast.error(r.message); toast.success("Category saved"); onDone(); },
-    onError: () => toast.error("Couldn't save. Please try again."),
+    onSuccess: (r) => { if (!r.ok) return toast.error(r.message); toast.success(tu("vch.cats.saved")); onDone(); },
+    onError: () => toast.error(tu("elder.saveFailed")),
   });
   async function view(id: string) {
     const r = await openV({ data: { id } }).catch(() => null);
@@ -372,25 +373,25 @@ function VersionsDialog({ item, onClose, onDone }: { item: KnowledgeItem; onClos
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>{item.title}</DialogTitle><DialogDescription>Current version v{item.version}. Earlier versions are kept for the committee and never shown to residents or AI Secretary.</DialogDescription></DialogHeader>
+        <DialogHeader><DialogTitle>{item.title}</DialogTitle><DialogDescription>{tu("op.current_version_v")}{item.version}. Earlier versions are kept for the committee and never shown to residents or AI Secretary.</DialogDescription></DialogHeader>
         <div className="space-y-2">
-          <Label>Category</Label>
+          <Label>{tu("common.category")}</Label>
           <div className="flex gap-2">
             <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger aria-label="Category" className="h-11 flex-1"><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label={tu("common.category")} className="h-11 flex-1"><SelectValue /></SelectTrigger>
               <SelectContent>{DOC_CATEGORIES.map((c) => <SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>)}</SelectContent>
             </Select>
-            <Button className="min-h-11" disabled={save.isPending || category === item.category} onClick={() => save.mutate()}>Save</Button>
+            <Button className="min-h-11" disabled={save.isPending || category === item.category} onClick={() => save.mutate()}>{tu("common.save")}</Button>
           </div>
         </div>
         <div className="space-y-2">
-          <p className="text-sm font-medium">Earlier versions</p>
-          {q.isLoading ? <ListSkeleton rows={2} /> : !res?.ok ? <p className="text-sm text-destructive">{res?.message ?? "Couldn't load versions."}</p>
-            : res.versions.length === 0 ? <p className="text-sm text-muted-foreground">No earlier versions.</p>
+          <p className="text-sm font-medium">{tu("op.earlier_versions")}</p>
+          {q.isLoading ? <ListSkeleton rows={2} /> : !res?.ok ? <p className="text-sm text-destructive">{res?.message ?? tu("op.couldn_t_load_versions")}</p>
+            : res.versions.length === 0 ? <p className="text-sm text-muted-foreground">{tu("op.no_earlier_versions")}</p>
             : <ul className="divide-y rounded-xl border">{res.versions.map((v) => (
                 <li key={v.id} className="flex items-center gap-3 px-3 py-2 text-sm">
-                  <span className="min-w-0 flex-1"><span className="block font-medium">v{v.version} · {v.fileName}</span><span className="block text-xs text-muted-foreground">Replaced {new Date(v.supersededAt).toLocaleDateString("en-IN")}</span></span>
-                  <Button size="sm" variant="outline" className="min-h-11" onClick={() => view(v.id)}>View</Button>
+                  <span className="min-w-0 flex-1"><span className="block font-medium">v{v.version} · {v.fileName}</span><span className="block text-xs text-muted-foreground">{tu("op.replaced")} {new Date(v.supersededAt).toLocaleDateString("en-IN")}</span></span>
+                  <Button size="sm" variant="outline" className="min-h-11" onClick={() => view(v.id)}>{tu("common.view")}</Button>
                 </li>))}</ul>}
         </div>
       </DialogContent>
@@ -405,29 +406,29 @@ function LeaseDialog({ item, onClose, onDone }: { item: KnowledgeItem; onClose: 
   const q = useQuery({ queryKey: ["lease-candidates"], queryFn: () => list() });
   const m = useMutation({
     mutationFn: () => link({ data: { id: item.id, flatResidentId: pick } }),
-    onSuccess: (r) => { if (!r.ok) return toast.error(r.message); toast.success("Saved as lease agreement"); onDone(); onClose(); },
-    onError: () => toast.error("Couldn't save. Please try again."),
+    onSuccess: (r) => { if (!r.ok) return toast.error(r.message); toast.success(tu("op.saved_as_lease_agreement")); onDone(); onClose(); },
+    onError: () => toast.error(tu("elder.saveFailed")),
   });
   const res = q.data;
   return (
     <Dialog open onOpenChange={(o) => !o && !m.isPending && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Lease agreement</DialogTitle>
-          <DialogDescription>Link “{item.title}” to a tenancy. Leases are always committee-only, never used by AI Secretary, and only the tenant of that current tenancy can open it. Replacing the file keeps earlier versions.</DialogDescription>
+          <DialogTitle>{tu("op.lease_agreement")}</DialogTitle>
+          <DialogDescription>{tu("op.link")}{item.title}” to a tenancy. Leases are always committee-only, never used by AI Secretary, and only the tenant of that current tenancy can open it. Replacing the file keeps earlier versions.</DialogDescription>
         </DialogHeader>
-        {q.isLoading ? <ListSkeleton rows={2} /> : !res?.ok ? <p className="text-sm text-destructive">{res?.message ?? "Couldn't load tenancies."}</p>
-          : res.items.length === 0 ? <p className="text-sm text-muted-foreground">No tenancies with lease details yet. Add lease dates to a resident first.</p>
-          : <div className="space-y-1"><Label>Tenancy</Label>
+        {q.isLoading ? <ListSkeleton rows={2} /> : !res?.ok ? <p className="text-sm text-destructive">{res?.message ?? tu("op.couldn_t_load_tenancies")}</p>
+          : res.items.length === 0 ? <p className="text-sm text-muted-foreground">{tu("op.no_tenancies_with_lease_details")}</p>
+          : <div className="space-y-1"><Label>{tu("op.tenancy")}</Label>
               <Select value={pick} onValueChange={setPick}>
-                <SelectTrigger aria-label="Tenancy" className="h-11"><SelectValue placeholder="Choose a tenancy" /></SelectTrigger>
+                <SelectTrigger aria-label={tu("op.tenancy")} className="h-11"><SelectValue placeholder={tu("op.choose_a_tenancy")} /></SelectTrigger>
                 <SelectContent>{res.items.map((c) => <SelectItem key={c.flatResidentId} value={c.flatResidentId}>
-                  {c.label || "Unit"} · {c.residentName ?? "Resident"} · {c.relationship}{c.leaseEndsOn ? ` · ends ${c.leaseEndsOn}` : ""}{c.isCurrent ? "" : " (past)"}
+                  {c.label || tu("nd.unit")} · {c.residentName ?? tu("inc.k.resident")} · {c.relationship}{c.leaseEndsOn ? ` · ends ${c.leaseEndsOn}` : ""}{c.isCurrent ? "" : tu("op.past")}
                 </SelectItem>)}</SelectContent>
               </Select></div>}
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={m.isPending}>Cancel</Button>
-          <Button onClick={() => m.mutate()} disabled={!pick || m.isPending || pick === item.leaseTenancyId}>{m.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} Save</Button>
+          <Button variant="ghost" onClick={onClose} disabled={m.isPending}>{tu("common.cancel")}</Button>
+          <Button onClick={() => m.mutate()} disabled={!pick || m.isPending || pick === item.leaseTenancyId}>{m.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} {tu("common.save")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

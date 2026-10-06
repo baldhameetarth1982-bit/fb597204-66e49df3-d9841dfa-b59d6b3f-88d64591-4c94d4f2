@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { SocietyInviteCodeCard } from "@/components/society/SocietyInviteCodeCard";
 import { ErrorState } from "@/components/system/ErrorState";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/business-profile")({
   head: () => ({ meta: [{ title: "Society details — SociyoHub" }] }),
@@ -85,7 +86,7 @@ function BusinessProfilePage() {
   async function save() {
     if (!societyId || !loaded || saving) return;
     if (!complete) {
-      toast.error("Please fill all required fields correctly.");
+      toast.error(tu("op.please_fill_all_required_fields"));
       return;
     }
     setSaving(true);
@@ -109,7 +110,7 @@ function BusinessProfilePage() {
       );
       return;
     }
-    toast.success("Society details saved");
+    toast.success(tu("op.society_details_saved"));
     setBaseline(form);
     void refetch();
   }
@@ -126,8 +127,8 @@ function BusinessProfilePage() {
     return (
       <div className="mx-auto max-w-2xl px-4 py-10">
         <ErrorState
-          title={!societyId ? "No society linked" : "Couldn't load your society details"}
-          description="Nothing has been changed. Your saved details are safe."
+          title={!societyId ? tu("op.no_society_linked") : tu("op.couldn_t_load_your_society")}
+          description={tu("op.nothing_has_been_changed_your_3")}
           onRetry={societyId ? () => void refetch() : undefined}
           showSupport={false}
         />
@@ -137,43 +138,43 @@ function BusinessProfilePage() {
 
   return (
     <SettingsShell
-      title="Society information"
+      title={tu("st.socInfo")}
       scope="Whole society"
       icon={Building2}
-      description="Registered name and address used for the whole society. Only Society Admins can change these, and every change is recorded."
+      description={tu("op.registered_name_and_address_used")}
       action={payoutReady ? (
         <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30">
-          <ShieldCheck className="h-3 w-3 mr-1" /> Payout ready
+          <ShieldCheck className="h-3 w-3 mr-1" /> {tu("op.payout_ready")}
         </Badge>
       ) : undefined}
     >
-      <SettingsSection title="Registered name" description="Exactly as on your society registration certificate.">
-        <Field label="Legal business / society name *" value={form.legal_business_name}
+      <SettingsSection title={tu("op.registered_name")} description={tu("op.exactly_as_on_your_society")}>
+        <Field label={tu("op.legal_business_society_name")} value={form.legal_business_name}
           onChange={(v) => setForm((s) => ({ ...s, legal_business_name: v }))} />
       </SettingsSection>
 
-      <SettingsSection title="Registered address">
+      <SettingsSection title={tu("op.registered_address")}>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="bp-address">Address *</Label>
+            <Label htmlFor="bp-address">{tu("op.address")}</Label>
             <Textarea id="bp-address" rows={2} value={form.business_address}
               onChange={(e) => setForm((s) => ({ ...s, business_address: e.target.value }))} className="mt-1" />
           </div>
           <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="City *" value={form.business_city} onChange={(v) => setForm((s) => ({ ...s, business_city: v }))} />
-            <Field label="State *" value={form.business_state} onChange={(v) => setForm((s) => ({ ...s, business_state: v }))} />
-            <Field label="Pincode *" inputMode="numeric" value={form.business_pincode}
+            <Field label={tu("op.city")} value={form.business_city} onChange={(v) => setForm((s) => ({ ...s, business_city: v }))} />
+            <Field label={tu("op.state")} value={form.business_state} onChange={(v) => setForm((s) => ({ ...s, business_state: v }))} />
+            <Field label={tu("op.pincode")} inputMode="numeric" value={form.business_pincode}
               onChange={(v) => setForm((s) => ({ ...s, business_pincode: v.replace(/[^0-9]/g, "").slice(0, 6) }))} />
           </div>
         </div>
       </SettingsSection>
 
-      <SettingsDisclosure title="Tax details (optional)" description="GSTIN and PAN, if your society has them"
+      <SettingsDisclosure title={tu("op.tax_details_optional")} description={tu("op.gstin_and_pan_if_your")}
         defaultOpen={!!(form.business_gstin || form.business_pan)}>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="GSTIN" value={form.business_gstin}
             onChange={(v) => setForm((s) => ({ ...s, business_gstin: v.toUpperCase().slice(0, 15) }))} />
-          <Field label="PAN" hint="Format: ABCDE1234F" value={form.business_pan}
+          <Field label="PAN" hint={tu("op.format_abcde1234f")} value={form.business_pan}
             onChange={(v) => setForm((s) => ({ ...s, business_pan: v.toUpperCase().slice(0, 10) }))} />
         </div>
       </SettingsDisclosure>
@@ -181,7 +182,7 @@ function BusinessProfilePage() {
       <SaveBar dirty={dirty} saving={saving} disabled={isFetching}
         onSave={save} onDiscard={() => baseline && setForm(baseline)} />
 
-      <SettingsDisclosure title="Invite code" description="Share with residents so they can join this society">
+      <SettingsDisclosure title={tu("op.invite_code")} description={tu("op.share_with_residents_so_they")}>
         {societyId && <SocietyInviteCodeCard societyId={societyId} />}
       </SettingsDisclosure>
     </SettingsShell>

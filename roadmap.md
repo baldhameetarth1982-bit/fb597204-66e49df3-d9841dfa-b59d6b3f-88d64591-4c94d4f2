@@ -1,5 +1,12 @@
 # Active roadmap
 
+## Master operational localization (23 languages, Super Admin excluded)
+
+- [x] Inventory: 186 screens, 4,677 fixed text spots, 3,378 distinct sentences (355 reused, 3,023 new `op.*` keys in src/locales/operations.ts); screens read them via tu().
+- [ ] Finish machine translation of the remaining `op.*` keys — blocked: both approved Gemini models hit today's free daily limit; needs a new key via secure input. Resume: translate only keys missing from each bundle (Hindi/Gujarati column still English where missing).
+- [ ] Native-speaker review of all 22 non-English languages for this batch (Hindi/Gujarati this batch are machine-made too).
+- [ ] Visual QA of resident/guard/committee screens — needs an approved test account.
+
 ## Workstream 10 — Verification and release closure
 
 - [x] Full automated suite: 2647 checks pass; one outdated home-page listing check updated to the shared listing source.

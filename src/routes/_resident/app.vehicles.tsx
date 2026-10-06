@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { localeTag } from "@/lib/i18n";
+import { localeTag, tu } from "@/lib/i18n";
 import { createFileRoute } from "@tanstack/react-router";
 import { userMessage } from "@/lib/user-error";
 import { useEffect, useState } from "react";
@@ -126,7 +126,7 @@ function VehiclesPage() {
                   id="vehicle-model"
                   value={form.make_model}
                   onChange={(e) => setForm({ ...form, make_model: e.target.value })}
-                  placeholder="Honda City"
+                  placeholder={tu("op.honda_city")}
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -136,7 +136,7 @@ function VehiclesPage() {
                     id="vehicle-color"
                     value={form.color}
                     onChange={(e) => setForm({ ...form, color: e.target.value })}
-                    placeholder="White"
+                    placeholder={tu("op.white")}
                   />
                 </div>
                 <div>

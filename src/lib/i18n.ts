@@ -11,6 +11,7 @@ import { dashboard } from "@/locales/dashboard";
 import { navhub } from "@/locales/navhub";
 import { profile } from "@/locales/profile";
 import { residentPages } from "@/locales/residentPages";
+import { operations } from "@/locales/operations";
 
 /**
  * The single SociyoHub localisation system (i18next). English, Hindi and
@@ -18,7 +19,7 @@ import { residentPages } from "@/locales/residentPages";
  * validated JSON bundle in src/locales/extra/, loaded only when chosen.
  * Language is a per-device, per-user display preference — never authority.
  */
-const CATALOGS: Catalog[] = [core, auth, notifications, accounts, settings, resident, dashboard, navhub, profile, residentPages];
+const CATALOGS: Catalog[] = [core, auth, notifications, accounts, settings, resident, dashboard, navhub, profile, residentPages, operations];
 
 function build(idx: number) {
   const out: Record<string, string> = {};
@@ -153,6 +154,9 @@ export function applyStoredLanguage() {
 }
 
 /** BCP-47 tag for Intl date formatting in the current language. */
+/** Fixed screen text by key, in the current language (pages re-mount on language change). */
+export const tu = (key: string): string => i18n.t(key) as string;
+
 export function localeTag(lang: Lang = currentLang()) {
   return META.get(lang)?.locale ?? "en-IN";
 }

@@ -21,6 +21,7 @@ import {
 import { type SmartQrSubmission, getSmartQrFn, setSmartQrActiveFn, reviewSmartQrSubmissionFn } from "@/lib/smart-qr.functions";
 import { toSafeFinanceError } from "@/lib/finance-safe-error";
 import { inr, REVIEW_ERRORS } from "@/lib/smart-qr-ui";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/qr/$id")({
   head: () => ({
@@ -64,7 +65,7 @@ function QrDetail({ id }: { id: string }) {
           <AlertCircle className="mx-auto mb-2 h-6 w-6 text-destructive" />
           <p className="font-medium">{s.title}</p>
           <p className="mt-1 text-sm text-muted-foreground">{s.message}</p>
-          {s.retryable && <Button className="mt-3 min-h-11" variant="outline" disabled={q.isFetching} onClick={() => q.refetch()}>Retry</Button>}
+          {s.retryable && <Button className="mt-3 min-h-11" variant="outline" disabled={q.isFetching} onClick={() => q.refetch()}>{tu("common.retry")}</Button>}
         </div>
       </MobileScreen>
     );
@@ -74,8 +75,8 @@ function QrDetail({ id }: { id: string }) {
       <MobileScreen className="max-w-3xl">
         <BackLink />
         <div className="rounded-2xl border bg-card p-6 text-center">
-          <p className="font-medium">QR code not found</p>
-          <p className="mt-1 text-sm text-muted-foreground">It may belong to another society or no longer exist.</p>
+          <p className="font-medium">{tu("op.qr_code_not_found")}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{tu("op.it_may_belong_to_another")}</p>
         </div>
       </MobileScreen>
     );
@@ -106,7 +107,7 @@ function QrDetail({ id }: { id: string }) {
     } else copy();
   }
   async function copy() {
-    try { await navigator.clipboard.writeText(url); toast.success("Link copied"); } catch { toast.error("Couldn't copy the link"); }
+    try { await navigator.clipboard.writeText(url); toast.success(tu("nd.linkCopied")); } catch { toast.error(tu("prof.copyFailed")); }
   }
   async function toggle(v: boolean) {
     if (toggling) return;
@@ -136,49 +137,49 @@ function QrDetail({ id }: { id: string }) {
           <p className="text-xs font-medium uppercase tracking-wide text-primary">{qr.categoryName}</p>
           <h1 className="mt-0.5 truncate text-2xl font-semibold tracking-tight">{qr.title}</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            {qr.fixedAmount ? `${inr(qr.fixedAmount)} per payment` : "Any amount"}
+            {qr.fixedAmount ? `${inr(qr.fixedAmount)} per payment` : tu("op.any_amount")}
             {qr.expiresAt ? ` · closes ${new Date(qr.expiresAt).toLocaleDateString("en-IN")}` : ""}
           </p>
         </div>
         <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${live ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"}`}>
           <span className={`h-1.5 w-1.5 rounded-full ${live ? "bg-success" : "bg-muted-foreground"}`} />
-          {expired ? "Expired" : qr.isActive ? "Live" : "Paused"}
+          {expired ? tu("cm.st.expired") : qr.isActive ? tu("cm.st.published") : tu("cm.st.paused")}
         </span>
       </header>
 
       <dl className="grid grid-cols-3 gap-px overflow-hidden rounded-2xl border border-border bg-border">
         <div className="min-w-0 bg-card p-3.5">
-          <dt className="text-xs text-muted-foreground">To review</dt>
+          <dt className="text-xs text-muted-foreground">{tu("op.to_review")}</dt>
           <dd className={`mt-1 text-xl font-semibold tabular-nums ${counts.submitted ? "text-warning" : ""}`}>{counts.submitted}</dd>
         </div>
         <div className="min-w-0 bg-card p-3.5">
-          <dt className="text-xs text-muted-foreground">Verified collected</dt>
+          <dt className="text-xs text-muted-foreground">{tu("op.verified_collected")}</dt>
           <dd className="mt-1 truncate text-xl font-semibold tabular-nums">{inr(recordedTotal)}</dd>
         </div>
         <div className="min-w-0 bg-card p-3.5">
-          <dt className="text-xs text-muted-foreground">Submissions</dt>
+          <dt className="text-xs text-muted-foreground">{tu("op.submissions")}</dt>
           <dd className="mt-1 text-xl font-semibold tabular-nums">{submissions.length}</dd>
         </div>
       </dl>
 
       <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_300px] md:items-start">
-        <section className={`min-w-0 ${reviewFirst ? "order-1" : "order-2 md:order-1"}`} aria-label="Submissions">
+        <section className={`min-w-0 ${reviewFirst ? "order-1" : "order-2 md:order-1"}`} aria-label={tu("op.submissions")}>
           <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="submitted" className="min-h-10">To review ({counts.submitted})</TabsTrigger>
-              <TabsTrigger value="recorded" className="min-h-10">Recorded ({counts.recorded})</TabsTrigger>
-              <TabsTrigger value="rejected" className="min-h-10">Rejected ({counts.rejected})</TabsTrigger>
+              <TabsTrigger value="submitted" className="min-h-10">{tu("op.to_review_2")}{counts.submitted})</TabsTrigger>
+              <TabsTrigger value="recorded" className="min-h-10">{tu("op.recorded")}{counts.recorded})</TabsTrigger>
+              <TabsTrigger value="rejected" className="min-h-10">{tu("op.rejected")}{counts.rejected})</TabsTrigger>
             </TabsList>
           </Tabs>
           {filter === "submitted" && counts.submitted > 0 && (
             <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Clock className="h-3.5 w-3.5" /> Check your bank statement before recording. Recorded entries still need verification in Income.
+              <Clock className="h-3.5 w-3.5" /> {tu("op.check_your_bank_statement_before")}
             </p>
           )}
           <div className="mt-3 space-y-2.5">
             {shown.length === 0 ? (
               <div className="rounded-2xl border border-dashed bg-card p-6 text-center text-sm text-muted-foreground">
-                {filter === "submitted" ? "Nothing to review. Submissions from payers will appear here." : "Nothing here yet."}
+                {filter === "submitted" ? tu("op.nothing_to_review_submissions_from") : tu("op.nothing_here_yet")}
               </div>
             ) : (
               shown.map((s) => <SubmissionCard key={s.id} s={s} />)
@@ -186,29 +187,29 @@ function QrDetail({ id }: { id: string }) {
           </div>
         </section>
 
-        <aside className={`space-y-3 md:sticky md:top-20 ${reviewFirst ? "order-2" : "order-1 md:order-2"}`} aria-label="Share this QR">
+        <aside className={`space-y-3 md:sticky md:top-20 ${reviewFirst ? "order-2" : "order-1 md:order-2"}`} aria-label={tu("op.share_this_qr")}>
           <div className="rounded-2xl border bg-card p-4">
             <div ref={canvasWrap} className={`mx-auto w-fit rounded-xl border bg-white p-3 ${live ? "" : "opacity-40"}`}>
               <QRCodeCanvas value={url} size={200} level="M" marginSize={1} />
             </div>
             {!live && (
               <p className="mt-2 text-center text-xs font-medium text-muted-foreground">
-                {expired ? "Expired — payers can no longer submit" : "Paused — payers can't submit right now"}
+                {expired ? tu("op.expired_payers_can_no_longer") : tu("op.paused_payers_can_t_submit")}
               </p>
             )}
             <div className="mt-3 grid grid-cols-3 gap-2">
-              <Button variant="outline" className="min-h-11 flex-col gap-0.5 px-1 text-xs" onClick={download}><Download className="h-4 w-4" />Save</Button>
-              <Button variant="outline" className="min-h-11 flex-col gap-0.5 px-1 text-xs" onClick={share}><Share2 className="h-4 w-4" />Share</Button>
-              <Button variant="outline" className="min-h-11 flex-col gap-0.5 px-1 text-xs" onClick={copy}><Copy className="h-4 w-4" />Copy link</Button>
+              <Button variant="outline" className="min-h-11 flex-col gap-0.5 px-1 text-xs" onClick={download}><Download className="h-4 w-4" />{tu("common.save")}</Button>
+              <Button variant="outline" className="min-h-11 flex-col gap-0.5 px-1 text-xs" onClick={share}><Share2 className="h-4 w-4" />{tu("prof.share")}</Button>
+              <Button variant="outline" className="min-h-11 flex-col gap-0.5 px-1 text-xs" onClick={copy}><Copy className="h-4 w-4" />{tu("op.copy_link")}</Button>
             </div>
             <label className="mt-3 flex min-h-11 items-center justify-between gap-3 rounded-xl bg-muted/60 px-3">
-              <span className="text-sm font-medium">Accepting payments</span>
-              <Switch checked={qr.isActive} disabled={toggling} onCheckedChange={toggle} aria-label="Accepting payments" />
+              <span className="text-sm font-medium">{tu("op.accepting_payments")}</span>
+              <Switch checked={qr.isActive} disabled={toggling} onCheckedChange={toggle} aria-label={tu("op.accepting_payments")} />
             </label>
           </div>
           <details className="group rounded-2xl border bg-card">
             <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between px-4 text-sm font-medium">
-              Where money goes
+              {tu("op.where_money_goes")}
               <span className="text-xs text-muted-foreground group-open:hidden">••••{qr.accountNumber.slice(-4)}</span>
             </summary>
             <dl className="space-y-1.5 border-t px-4 py-3 text-sm">
@@ -227,7 +228,7 @@ function QrDetail({ id }: { id: string }) {
 function BackLink() {
   return (
     <Link to="/society/qr" className="mb-3 inline-flex min-h-11 items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
-      <ArrowLeft className="h-4 w-4" /> Smart QR
+      <ArrowLeft className="h-4 w-4" /> {tu("accountsTabs.smartQr")}
     </Link>
   );
 }
@@ -262,8 +263,8 @@ function SubmissionCard({ s }: { s: Sub }) {
     setBusy(action);
     try {
       const r = await reviewFn({ data: { id: s.id, action, reason: action === "reject" ? reason.trim() : undefined } });
-      if (r.status === "recorded") toast.success("Added to Income as pending verification");
-      else if (r.status === "rejected") toast.success("Submission rejected");
+      if (r.status === "recorded") toast.success(tu("op.added_to_income_as_pending"));
+      else if (r.status === "rejected") toast.success(tu("op.submission_rejected"));
       else toast.error(REVIEW_ERRORS[r.status] ?? REVIEW_ERRORS.temporary_error);
       if (r.status === "recorded" || r.status === "rejected" || r.status === "already_processed") {
         setRejectOpen(false);
@@ -289,26 +290,26 @@ function SubmissionCard({ s }: { s: Sub }) {
             <p className="shrink-0 font-semibold tabular-nums">{inr(s.amount)}</p>
           </div>
           <p className="text-xs text-muted-foreground">
-            {s.method === "cash" ? "Cash" : "Bank transfer"} · paid {new Date(s.paidOn).toLocaleDateString("en-IN")}
+            {s.method === "cash" ? tu("common.cash") : tu("common.bankTransfer")} · paid {new Date(s.paidOn).toLocaleDateString("en-IN")}
             {s.payerPhone ? ` · ${s.payerPhone}` : ""}
           </p>
-          {s.reference && <p className="mt-0.5 break-all text-xs"><span className="text-muted-foreground">Ref </span><span className="font-mono">{s.reference}</span></p>}
+          {s.reference && <p className="mt-0.5 break-all text-xs"><span className="text-muted-foreground">{tu("op.ref")} </span><span className="font-mono">{s.reference}</span></p>}
           {s.note && <p className="mt-1 text-xs text-muted-foreground">"{s.note}"</p>}
-          {s.status === "rejected" && s.reviewReason && <p className="mt-1 text-xs text-destructive">Reason: {s.reviewReason}</p>}
+          {s.status === "rejected" && s.reviewReason && <p className="mt-1 text-xs text-destructive">{tu("op.reason")} {s.reviewReason}</p>}
         </div>
       </div>
 
       {s.status === "submitted" && (
         <>
           <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Clock className="h-3.5 w-3.5" /> Check your bank statement before recording.
+            <Clock className="h-3.5 w-3.5" /> {tu("op.check_your_bank_statement_before_2")}
           </p>
           <div className="mt-2 grid grid-cols-2 gap-2">
             <Button variant="outline" className="min-h-11" disabled={!!busy} onClick={() => setRejectOpen(true)}>
-              <XCircle className="mr-1.5 h-4 w-4" /> Reject
+              <XCircle className="mr-1.5 h-4 w-4" /> {tu("el.a.reject")}
             </Button>
             <Button className="min-h-11" disabled={!!busy} onClick={() => act("record")}>
-              {busy === "record" ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle2 className="mr-1.5 h-4 w-4" /> Record</>}
+              {busy === "record" ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle2 className="mr-1.5 h-4 w-4" /> {tu("op.record")}</>}
             </Button>
           </div>
         </>
@@ -318,7 +319,7 @@ function SubmissionCard({ s }: { s: Sub }) {
           {v && <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${v.cls}`}>{v.label}</span>}
           {s.incomeRecordId && (
             <Link to="/society/income/$id" params={{ id: s.incomeRecordId }} className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-primary">
-              {s.verification === "pending" ? "Verify in Income" : "Open in Income"} <ExternalLink className="h-3.5 w-3.5" />
+              {s.verification === "pending" ? tu("op.verify_in_income") : tu("op.open_in_income")} <ExternalLink className="h-3.5 w-3.5" />
             </Link>
           )}
         </div>
@@ -327,17 +328,17 @@ function SubmissionCard({ s }: { s: Sub }) {
       <AlertDialog open={rejectOpen} onOpenChange={(o) => !busy && setRejectOpen(o)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Reject this submission?</AlertDialogTitle>
-            <AlertDialogDescription>The payer's claim of {inr(s.amount)} won't be added to income. This is kept in history.</AlertDialogDescription>
+            <AlertDialogTitle>{tu("op.reject_this_submission")}</AlertDialogTitle>
+            <AlertDialogDescription>{tu("op.the_payer_s_claim_of")} {inr(s.amount)} {tu("op.won_t_be_added_to")}</AlertDialogDescription>
           </AlertDialogHeader>
-          <Textarea value={reason} maxLength={300} rows={3} placeholder="Reason, e.g. No matching credit in bank statement" onChange={(e) => setReason(e.target.value)} aria-label="Reason" />
+          <Textarea value={reason} maxLength={300} rows={3} placeholder={tu("op.reason_e_g_no_matching")} onChange={(e) => setReason(e.target.value)} aria-label={tu("exp.reason")} />
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={!!busy}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={!!busy}>{tu("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               disabled={!!busy || reason.trim().length < 3}
               onClick={(e) => { e.preventDefault(); void act("reject"); }}
             >
-              {busy === "reject" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Reject"}
+              {busy === "reject" ? <Loader2 className="h-4 w-4 animate-spin" /> : tu("el.a.reject")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

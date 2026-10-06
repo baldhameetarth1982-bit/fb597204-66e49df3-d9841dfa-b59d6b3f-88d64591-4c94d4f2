@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { saveWizardDraft } from "@/lib/hierarchy.functions";
 import { toast } from "sonner";
+import { tu } from "@/lib/i18n";
 
 export interface StepProps<S> {
   state: S;
@@ -141,7 +142,7 @@ export function WizardRunner<S>({
             </Button>
             <div className="min-w-0 flex-1">
               <p className="text-[11px] text-muted-foreground">
-                Step {stepIdx + 1} of {visibleSteps.length} · {progress}%
+                {tu("op.step")} {stepIdx + 1} of {visibleSteps.length} · {progress}%
               </p>
               <h1 className="text-base font-semibold tracking-tight truncate">{step.title}</h1>
             </div>
@@ -176,7 +177,7 @@ export function WizardRunner<S>({
               className={cn("w-full h-12 rounded-2xl font-semibold text-base")}
             >
               {committing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {isLast ? finishLabel : step.nextLabel ?? "Continue"}
+              {isLast ? finishLabel : step.nextLabel ?? tu("op.continue")}
             </Button>
           </div>
         </div>

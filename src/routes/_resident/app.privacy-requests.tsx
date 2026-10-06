@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 import { govRpc, govError, PRIVACY_KIND, PRIVACY_STATUS, fmtDateTime } from "@/lib/governance";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_resident/app/privacy-requests")({
   head: () => ({
@@ -50,12 +51,12 @@ function MyPrivacyRequests() {
 
   async function submit() {
     setBusy("new");
-    try { await govRpc("privacy_request_create", { _kind: kind, _details: details }); toast.success("Request sent to your committee"); setDetails(""); refresh(); }
+    try { await govRpc("privacy_request_create", { _kind: kind, _details: details }); toast.success(tu("op.request_sent_to_your_committee")); setDetails(""); refresh(); }
     catch (e) { toast.error(govError(e)); } finally { setBusy(null); }
   }
   async function withdraw(id: string) {
     setBusy(id);
-    try { await govRpc("privacy_request_withdraw", { _id: id }); toast.success("Request withdrawn"); refresh(); }
+    try { await govRpc("privacy_request_withdraw", { _id: id }); toast.success(tu("op.request_withdrawn")); refresh(); }
     catch (e) { toast.error(govError(e)); } finally { setBusy(null); }
   }
   async function download() {
@@ -71,30 +72,30 @@ function MyPrivacyRequests() {
 
   return (
     <CommPage>
-      <CommHeader title="Privacy requests" subtitle="Ask about the personal data your society holds" />
+      <CommHeader title={tu("mod.privacyRequests")} subtitle={tu("op.ask_about_the_personal_data")} />
       <section className="space-y-3 rounded-2xl border bg-card p-4">
-        <div role="radiogroup" aria-label="Request type" className="grid gap-2 sm:grid-cols-3">
+        <div role="radiogroup" aria-label={tu("op.request_type")} className="grid gap-2 sm:grid-cols-3">
           {Object.entries(PRIVACY_KIND).map(([k, l]) => (
             <button key={k} role="radio" aria-checked={kind === k} onClick={() => setKind(k)}
               className={cn("min-h-11 rounded-xl border px-3 text-sm font-medium", kind === k ? "border-primary bg-primary/10" : "border-border")}>{l}</button>
           ))}
         </div>
-        {kind === "deletion" && <p className="text-xs text-muted-foreground">Bills, payments, receipts, accounts, gate/security logs and audit history must be kept by law and won't be deleted. The committee will tell you what was removed and what was kept.</p>}
-        <div><Label htmlFor="pr-details">{kind === "correction" ? "What should be corrected? *" : "Anything to add (optional)"}</Label>
+        {kind === "deletion" && <p className="text-xs text-muted-foreground">{tu("op.bills_payments_receipts_accounts_gate")}</p>}
+        <div><Label htmlFor="pr-details">{kind === "correction" ? tu("op.what_should_be_corrected") : tu("op.anything_to_add_optional")}</Label>
           <Textarea id="pr-details" rows={3} maxLength={2000} value={details} onChange={(e) => setDetails(e.target.value)} /></div>
-        <Button className="h-12 w-full rounded-xl" disabled={!!busy} onClick={submit}>{busy === "new" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send request"}</Button>
+        <Button className="h-12 w-full rounded-xl" disabled={!!busy} onClick={submit}>{busy === "new" ? <Loader2 className="h-4 w-4 animate-spin" /> : tu("op.send_request")}</Button>
       </section>
 
       {canDownload && (
         <Button variant="outline" className="mt-4 h-12 w-full rounded-xl" disabled={!!busy} onClick={download}>
-          {busy === "dl" ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Download className="h-4 w-4 mr-2" />Download my data</>}
+          {busy === "dl" ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Download className="h-4 w-4 mr-2" />{tu("op.download_my_data")}</>}
         </Button>
       )}
 
-      <SectionLabel>My requests</SectionLabel>
+      <SectionLabel>{tu("home.myRequests")}</SectionLabel>
       {q.isLoading ? <ListSkeleton rows={2} />
-        : q.isError ? <LoadError title="We couldn't load your requests." onRetry={() => q.refetch()} />
-        : !q.data?.length ? <p className="px-1 text-sm text-muted-foreground">No requests yet.</p>
+        : q.isError ? <LoadError title={tu("op.we_couldn_t_load_your")} onRetry={() => q.refetch()} />
+        : !q.data?.length ? <p className="px-1 text-sm text-muted-foreground">{tu("nd.emptyAdmin")}</p>
         : (
           <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
             {q.data.map((r) => (
@@ -104,10 +105,10 @@ function MyPrivacyRequests() {
                   <span className="flex-1 font-medium">{PRIVACY_KIND[r.kind]}</span>
                   <span className={cn("rounded px-1.5 py-0.5 text-xs font-medium", PRIVACY_STATUS[r.status]?.className)}>{PRIVACY_STATUS[r.status]?.label}</span>
                 </div>
-                <p className="text-xs text-muted-foreground">Sent {fmtDateTime(r.created_at)}</p>
+                <p className="text-xs text-muted-foreground">{tu("op.sent")} {fmtDateTime(r.created_at)}</p>
                 {r.outcome && <p className="whitespace-pre-wrap">{r.outcome}</p>}
-                {r.retained?.length > 0 && <p className="text-xs text-muted-foreground">Kept by law: {r.retained.join("; ")}</p>}
-                {r.status === "pending" && <Button variant="ghost" size="sm" className="min-h-11 text-muted-foreground" disabled={!!busy} onClick={() => withdraw(r.id)}>Withdraw</Button>}
+                {r.retained?.length > 0 && <p className="text-xs text-muted-foreground">{tu("op.kept_by_law_2")} {r.retained.join("; ")}</p>}
+                {r.status === "pending" && <Button variant="ghost" size="sm" className="min-h-11 text-muted-foreground" disabled={!!busy} onClick={() => withdraw(r.id)}>{tu("prof.withdraw")}</Button>}
               </li>
             ))}
           </ul>

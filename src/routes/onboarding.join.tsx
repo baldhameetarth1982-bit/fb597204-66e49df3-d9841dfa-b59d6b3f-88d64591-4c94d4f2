@@ -14,6 +14,7 @@ import { useAuth } from "@/context/AuthContext";
 import { OnboardingStepper } from "@/components/system/OnboardingStepper";
 import { searchSocietiesPublic, getJoinStructure, submitJoinRequestForUnit, type JoinStructure } from "@/lib/onboarding.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/onboarding/join")({
   head: () => ({ meta: [{ title: "Join society — SociyoHub" }] }),
@@ -96,7 +97,7 @@ function JoinFlow() {
     if (!society) return;
     const trimmed = code.trim().toUpperCase();
     if (trimmed.length < 4) {
-      toast.error("Enter the society code");
+      toast.error(tu("op.enter_the_society_code"));
       return;
     }
     setCodeBusy(true);
@@ -105,7 +106,7 @@ function JoinFlow() {
       if (error) throw new Error(error.message);
       const match = Array.isArray(data) ? data[0] : data;
       if (!match || match.id !== society.id) {
-        toast.error("That code doesn't match this society");
+        toast.error(tu("op.that_code_doesn_t_match"));
         return;
       }
       const st = await getJoinStructure(society.id, trimmed);
@@ -123,7 +124,7 @@ function JoinFlow() {
   async function submit() {
     if (!society || !role || submitting) return;
     if (!fullName.trim() || !unitReady) {
-      toast.error("Please fill in all fields");
+      toast.error(tu("op.please_fill_in_all_fields"));
       return;
     }
     setSubmitting(true);
@@ -138,7 +139,7 @@ function JoinFlow() {
         mobile: verifiedPhone || null,
         ownerOrTenant: role,
       });
-      toast.success("Request submitted");
+      toast.success(tu("nd.submitted"));
       navigate({ to: "/onboarding/pending" });
     } catch (e: any) {
       toast.error(userMessage(e, "Could not submit"));
@@ -158,7 +159,7 @@ function JoinFlow() {
         }}
         className="inline-flex items-center text-sm text-muted-foreground"
       >
-        <ArrowLeft className="h-4 w-4 mr-1" /> Back
+        <ArrowLeft className="h-4 w-4 mr-1" /> {tu("common.back")}
       </button>
 
       <OnboardingStepper
@@ -170,8 +171,8 @@ function JoinFlow() {
       {step === "search" && (
         <section className="space-y-4">
           <header>
-            <h1 className="text-2xl font-semibold tracking-tight">Find your society</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Search by society name or city.</p>
+            <h1 className="text-2xl font-semibold tracking-tight">{tu("op.find_your_society")}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">{tu("op.search_by_society_name_or")}</p>
           </header>
           <div className="relative">
             <Search className="absolute left-3 top-3.5 h-5 w-5 text-muted-foreground" />
@@ -179,13 +180,13 @@ function JoinFlow() {
               autoFocus
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="e.g. Sunrise Heights"
+              placeholder={tu("op.e_g_sunrise_heights")}
               className="h-12 rounded-2xl pl-10 text-base"
             />
           </div>
           {searching && (
             <div className="text-center text-muted-foreground text-sm">
-              <Loader2 className="h-4 w-4 inline animate-spin mr-1" /> Searching…
+              <Loader2 className="h-4 w-4 inline animate-spin mr-1" /> {tu("op.searching")}
             </div>
           )}
           <ul className="space-y-2">
@@ -208,20 +209,20 @@ function JoinFlow() {
                   <span className="min-w-0 flex-1">
                     <span className="block font-semibold truncate">{s.name}</span>
                     <span className="block text-xs text-muted-foreground truncate">
-                      {[s.city, s.state].filter(Boolean).join(", ") || "Location not set"}
+                      {[s.city, s.state].filter(Boolean).join(", ") || tu("op.location_not_set")}
                     </span>
                   </span>
                 </button>
               </li>
             ))}
             {!searching && q.length >= 2 && results.length === 0 && (
-              <li className="text-center text-sm text-muted-foreground py-6">No societies match "{q}"</li>
+              <li className="text-center text-sm text-muted-foreground py-6">{tu("op.no_societies_match")}{q}"</li>
             )}
           </ul>
           <p className="text-xs text-center text-muted-foreground pt-2">
-            Can't find yours?{" "}
+            {tu("op.can_t_find_yours")}{" "}
             <Link to="/onboarding/create" className="text-primary font-medium">
-              Create a society
+              {tu("op.create_a_society")}
             </Link>
           </p>
         </section>
@@ -231,15 +232,15 @@ function JoinFlow() {
         <section className="space-y-4">
           <header>
             <p className="text-xs text-muted-foreground">{society.name}</p>
-            <h1 className="text-2xl font-semibold tracking-tight">Enter society code</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">{tu("op.enter_society_code")}</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Ask your Society Admin for the invite code — you'll need it to request access.
+              {tu("op.ask_your_society_admin_for")}
             </p>
           </header>
           <Card className="rounded-2xl">
             <CardContent className="p-5 space-y-3">
               <Label htmlFor="code" className="flex items-center gap-1.5">
-                <KeyRound className="h-4 w-4 text-primary" /> Society code
+                <KeyRound className="h-4 w-4 text-primary" /> {tu("op.society_code")}
               </Label>
               <Input
                 id="code"
@@ -253,7 +254,7 @@ function JoinFlow() {
           </Card>
           <Button onClick={verifyCode} disabled={codeBusy || code.length < 4} className="w-full h-12 rounded-2xl">
             {codeBusy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Continue
+            {tu("op.continue")}
           </Button>
         </section>
       )}
@@ -262,26 +263,26 @@ function JoinFlow() {
         <section className="space-y-4">
           <header>
             <p className="text-xs text-muted-foreground">{society.name}</p>
-            <h1 className="text-2xl font-semibold tracking-tight">Your details</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">{tu("op.your_details")}</h1>
           </header>
           <Card className="rounded-2xl">
             <CardContent className="p-5 space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="fullName">Full name</Label>
+                <Label htmlFor="fullName">{tu("auth.fullName")}</Label>
                 <Input
                   id="fullName"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   className="h-11 rounded-2xl"
-                  placeholder="Priya Sharma"
+                  placeholder={tu("op.priya_sharma")}
                 />
               </div>
               {hasUnits ? (
                 <>
                   {usesBlocks && (
                     <div className="space-y-2">
-                      <Label>Select block</Label>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2" role="radiogroup" aria-label="Block">
+                      <Label>{tu("op.select_block")}</Label>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2" role="radiogroup" aria-label={tu("mnt.block")}>
                         {structure!.blocks.map((b) => (
                           <button
                             key={b.id}
@@ -302,11 +303,11 @@ function JoinFlow() {
                   )}
                   {(!usesBlocks || blockId) && (
                     <div className="space-y-2">
-                      <Label>Select house</Label>
+                      <Label>{tu("op.select_house")}</Label>
                       {visibleUnits.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">No houses are set up here yet. Ask your Society Admin.</p>
+                        <p className="text-sm text-muted-foreground">{tu("op.no_houses_are_set_up")}</p>
                       ) : (
-                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-64 overflow-y-auto pr-1" role="radiogroup" aria-label="House">
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-64 overflow-y-auto pr-1" role="radiogroup" aria-label={tu("gd.houseLabel")}>
                           {visibleUnits.map((u) => (
                             <button
                               key={u.id}
@@ -329,14 +330,14 @@ function JoinFlow() {
                 </>
               ) : (
                 <div role="status" className="rounded-2xl border border-amber-500/40 bg-amber-500/5 p-3 text-sm">
-                  <p className="font-medium">Society setup isn't finished</p>
+                  <p className="font-medium">{tu("op.society_setup_isn_t_finished")}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Your society hasn't added its houses yet, so you can't pick yours. Ask your Society Admin to finish adding houses, then try again.
+                    {tu("op.your_society_hasn_t_added")}
                   </p>
                 </div>
               )}
               <div className="space-y-2">
-                <Label>Owner or tenant?</Label>
+                <Label>{tu("op.owner_or_tenant")}</Label>
                 <div className="grid grid-cols-2 gap-2">
                   {(
                     [
@@ -361,7 +362,7 @@ function JoinFlow() {
               </div>
               <div className="rounded-2xl bg-secondary/50 p-3 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Verified mobile</span>
+                  <span className="text-muted-foreground">{tu("op.verified_mobile")}</span>
                   <span className="font-medium">{verifiedPhone || "—"}</span>
                 </div>
               </div>
@@ -372,7 +373,7 @@ function JoinFlow() {
             disabled={!fullName.trim() || !unitReady || !role}
             className="w-full h-12 rounded-2xl"
           >
-            Continue
+            {tu("op.continue")}
           </Button>
         </section>
       )}
@@ -380,21 +381,21 @@ function JoinFlow() {
       {step === "submit" && society && role && (
         <section className="space-y-4">
           <header>
-            <h1 className="text-2xl font-semibold tracking-tight">Confirm & submit</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Your admin will review this request.</p>
+            <h1 className="text-2xl font-semibold tracking-tight">{tu("op.confirm_submit")}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">{tu("op.your_admin_will_review_this")}</p>
           </header>
           <Card className="rounded-2xl">
             <CardContent className="p-5 space-y-3">
-              <Row label="Society" value={society.name} />
-              <Row label="House" value={unitLabel} />
-              <Row label="Name" value={fullName} />
-              <Row label="Role" value={role[0].toUpperCase() + role.slice(1)} />
-              <Row label="Mobile" value={verifiedPhone || "—"} />
+              <Row label={tu("nav.society")} value={society.name} />
+              <Row label={tu("gd.houseLabel")} value={unitLabel} />
+              <Row label={tu("common.name")} value={fullName} />
+              <Row label={tu("op.role")} value={role[0].toUpperCase() + role.slice(1)} />
+              <Row label={tu("op.mobile")} value={verifiedPhone || "—"} />
             </CardContent>
           </Card>
           <Button disabled={submitting} onClick={submit} className="w-full h-12 rounded-2xl">
             {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            <DoorOpen className="h-4 w-4 mr-2" /> Submit request
+            <DoorOpen className="h-4 w-4 mr-2" /> {tu("hd.submit")}
           </Button>
         </section>
       )}

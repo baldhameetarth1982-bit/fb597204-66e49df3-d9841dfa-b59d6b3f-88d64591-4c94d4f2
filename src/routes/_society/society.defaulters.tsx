@@ -13,6 +13,7 @@ import { toSafeFinanceError } from "@/lib/finance-safe-error";
 import { formatDate } from "@/utils/format";
 import { cn } from "@/lib/utils";
 import { isOverdue, todayIST } from "@/lib/overdue";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/defaulters")({
   head: () => ({
@@ -98,7 +99,7 @@ function DefaultersPage() {
 
   return (
     <PageShell>
-      <PageHeader title="Outstanding dues" description="Which homes still owe money, how much, and what is overdue — after verified payments only." />
+      <PageHeader title={tu("op.outstanding_dues")} description={tu("op.which_homes_still_owe_money")} />
       <div className="mb-5 rounded-2xl border border-border bg-card"><BillingCenterTabs /></div>
 
       <SummaryStrip items={[
@@ -113,12 +114,12 @@ function DefaultersPage() {
       ) : error ? (
         <LoadError title={error} onRetry={() => void load()} />
       ) : homes.length === 0 ? (
-        <ListEmpty icon={AlertTriangle} title="No outstanding dues">Every open bill you manage is settled by verified payments.</ListEmpty>
+        <ListEmpty icon={AlertTriangle} title={tu("op.no_outstanding_dues")}>{tu("op.every_open_bill_you_manage")}</ListEmpty>
       ) : (
         <>
           <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center">
-            <SearchField label="Search by house" placeholder="Search by house" value={q} onChange={setQ} />
-            <SegmentedFilter<Filter> label="Dues filter" value={filter} onChange={setFilter} options={[
+            <SearchField label={tu("op.search_by_house")} placeholder={tu("op.search_by_house")} value={q} onChange={setQ} />
+            <SegmentedFilter<Filter> label={tu("op.dues_filter")} value={filter} onChange={setFilter} options={[
               { key: "all", label: "All homes", count: homes.length },
               { key: "overdue", label: "Overdue", count: overdueHomes },
               { key: "90", label: "90+ days", count: longOverdue },
@@ -131,13 +132,13 @@ function DefaultersPage() {
                 }))),
                 "Outstanding dues", `outstanding-dues-${new Date().toISOString().slice(0, 10)}.xlsx`,
               )}>
-              <Download className="mr-1 h-4 w-4" aria-hidden />Download list
+              <Download className="mr-1 h-4 w-4" aria-hidden />{tu("exp.downloadList")}
             </Button>
           </div>
           {filtered.length === 0 ? (
-            <ListEmpty icon={AlertTriangle} title="No matching homes">Try another house or clear the overdue filter.</ListEmpty>
+            <ListEmpty icon={AlertTriangle} title={tu("op.no_matching_homes")}>{tu("op.try_another_house_or_clear")}</ListEmpty>
           ) : (
-            <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card" aria-label="Homes with dues">
+            <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card" aria-label={tu("op.homes_with_dues")}>
               {filtered.map((h) => (
                 <li key={h.flatId} className="relative">
                   <span className={cn("absolute inset-y-0 left-0 w-1", h.overdueCount > 0 ? "bg-destructive" : "bg-warning")} aria-hidden />
@@ -145,11 +146,11 @@ function DefaultersPage() {
                     <summary className="grid min-h-16 cursor-pointer list-none grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 py-3 pl-5 pr-4 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
                       <span className="min-w-0">
                         <span className="block truncate font-semibold">{h.label}</span>
-                        <span className="block text-xs text-muted-foreground">{h.bills.length} open bill{h.bills.length > 1 ? "s" : ""}{h.oldestDue ? ` · oldest due ${formatDate(h.oldestDue)}` : ""}</span>
+                        <span className="block text-xs text-muted-foreground">{h.bills.length} {tu("op.open_bill")}{h.bills.length > 1 ? "s" : ""}{h.oldestDue ? ` · oldest due ${formatDate(h.oldestDue)}` : ""}</span>
                       </span>
                       <span className="text-right">
                         <span className="block font-semibold tabular-nums">{INR(h.total)}</span>
-                        {h.overdueCount > 0 ? <StatusChip tone="danger" className="mt-1">{h.overdueCount} overdue</StatusChip> : <StatusChip tone="warning" className="mt-1">Due</StatusChip>}
+                        {h.overdueCount > 0 ? <StatusChip tone="danger" className="mt-1">{h.overdueCount} {tu("op.overdue")}</StatusChip> : <StatusChip tone="warning" className="mt-1">{tu("bills.due")}</StatusChip>}
                       </span>
                       <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-90 motion-reduce:transition-none" aria-hidden />
                     </summary>
@@ -160,7 +161,7 @@ function DefaultersPage() {
                             <span className="truncate">{b.period}</span>
                             <span className="text-right font-medium tabular-nums sm:order-last">{INR(b.outstanding)}</span>
                             <span className={cn("col-span-2 text-xs sm:col-span-1", b.overdue ? "text-destructive" : "text-muted-foreground")}>
-                              {b.due ? `${b.overdue ? "Overdue since" : "Due"} ${formatDate(b.due)}${b.overdue ? ` · ${b.daysOverdue} day${b.daysOverdue === 1 ? "" : "s"}` : ""}` : "No due date"}
+                              {b.due ? `${b.overdue ? "Overdue since" : "Due"} ${formatDate(b.due)}${b.overdue ? ` · ${b.daysOverdue} day${b.daysOverdue === 1 ? "" : "s"}` : ""}` : tu("op.no_due_date")}
                             </span>
                           </Link>
                         </li>

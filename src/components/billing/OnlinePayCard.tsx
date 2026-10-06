@@ -10,6 +10,7 @@ import {
   getOnlinePaymentAvailability,
   startMaintenancePayment,
 } from "@/lib/maintenance-online-payment.functions";
+import { tu } from "@/lib/i18n";
 
 const MESSAGES: Record<string, string> = {
   plan_required: "Online payment isn't part of your society's plan.",
@@ -40,7 +41,7 @@ export function OnlinePayCard({ billId, societyId, onPaid }: { billId: string; s
     return (
       <div className="rounded-2xl border border-border p-4 flex gap-3">
         <Lock className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
-        <p className="text-sm text-muted-foreground">Online payment is available when your society is on the Pro plan. You can still use the other payment options on this page.</p>
+        <p className="text-sm text-muted-foreground">{tu("op.online_payment_is_available_when")}</p>
       </div>
     );
   }
@@ -61,32 +62,32 @@ export function OnlinePayCard({ billId, societyId, onPaid }: { billId: string; s
           setStatus("checking");
           const out = await confirm({ data: { razorpayOrderId: r.razorpay_order_id, razorpayPaymentId: r.razorpay_payment_id, razorpaySignature: r.razorpay_signature } });
           setBusy(false);
-          if (out.status === "paid") { setStatus("paid"); toast.success("Payment received. Your receipt is ready."); onPaid(); }
+          if (out.status === "paid") { setStatus("paid"); toast.success(tu("op.payment_received_your_receipt_is")); onPaid(); }
           else if (out.status === "needs_refund") { setStatus("refund"); }
           else if (out.status === "pending") { setStatus("pending"); }
-          else { setStatus(null); toast.error("We couldn't confirm this payment. If money left your account, contact your committee."); }
+          else { setStatus(null); toast.error(tu("op.we_couldn_t_confirm_this")); }
         },
         onDismiss: () => setBusy(false),
       });
       if (!opened) setBusy(false);
     } catch {
       setBusy(false);
-      toast.error("Online payment is unavailable right now.");
+      toast.error(tu("op.online_payment_is_unavailable_right"));
     }
   }
 
   return (
     <div className="rounded-2xl border border-border p-4 space-y-3">
       <div>
-        <p className="font-medium">Pay online</p>
-        <p className="text-sm text-muted-foreground">UPI, card or netbanking through Razorpay. No extra fee from SociyoHub. The amount is worked out by the society's records.</p>
+        <p className="font-medium">{tu("op.pay_online")}</p>
+        <p className="text-sm text-muted-foreground">{tu("op.upi_card_or_netbanking_through")}</p>
       </div>
       <Button className="h-11 w-full rounded-xl" disabled={busy} onClick={() => void pay()}>
         {busy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CreditCard className="h-4 w-4 mr-2" />}
-        {status === "checking" ? "Confirming payment…" : "Pay now"}
+        {status === "checking" ? tu("op.confirming_payment") : tu("op.pay_now")}
       </Button>
-      {status === "pending" && <p role="status" className="text-sm text-muted-foreground">Payment is still being confirmed by the bank. This page will show it as paid once it's confirmed — don't pay again.</p>}
-      {status === "refund" && <p role="status" className="text-sm text-muted-foreground">This bill was already settled, so your online payment wasn't applied. The committee will refund it.</p>}
+      {status === "pending" && <p role="status" className="text-sm text-muted-foreground">{tu("op.payment_is_still_being_confirmed")}</p>}
+      {status === "refund" && <p role="status" className="text-sm text-muted-foreground">{tu("op.this_bill_was_already_settled")}</p>}
     </div>
   );
 }

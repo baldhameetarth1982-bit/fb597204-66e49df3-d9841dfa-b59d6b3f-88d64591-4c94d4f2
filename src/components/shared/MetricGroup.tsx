@@ -1,5 +1,6 @@
 import type { ComponentType, ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { tu } from "@/lib/i18n";
 
 export interface MetricItem {
   label: string;
@@ -74,7 +75,7 @@ export function LeadFigure({
 
 export function MetricsSkeleton() {
   return (
-    <div className="space-y-6" aria-busy="true" aria-label="Loading">
+    <div className="space-y-6" aria-busy="true" aria-label={tu("op.loading")}>
       <div className="h-28 animate-pulse rounded-lg bg-muted" />
       <div className="h-40 animate-pulse rounded-lg bg-muted" />
       <div className="h-40 animate-pulse rounded-lg bg-muted" />

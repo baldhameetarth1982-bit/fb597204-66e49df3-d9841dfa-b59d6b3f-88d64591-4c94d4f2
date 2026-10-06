@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { amenityError } from "@/lib/amenities";
+import { tu } from "@/lib/i18n";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 type Cls = { id: string; amenity_id: string; instructor_id: string | null; title: string; description: string | null; weekdays: number[]; start_time: string; duration_minutes: number; capacity: number; starts_on: string; ends_on: string | null; status: string; cancel_reason: string | null };
@@ -87,8 +88,8 @@ export function ClassesBoard({ societyId, mode }: { societyId: string | null; mo
     toast.success(typeof ok === "string" ? ok : ok(data)); void load();
   }
 
-  if (loading) return <p className="text-sm text-muted-foreground">Loading classes…</p>;
-  if (failed) return <div role="alert" className="rounded-2xl border p-4 text-sm">We couldn't load classes. <Button variant="outline" className="ml-2 min-h-11" onClick={() => void load()}>Try again</Button></div>;
+  if (loading) return <p className="text-sm text-muted-foreground">{tu("op.loading_classes")}</p>;
+  if (failed) return <div role="alert" className="rounded-2xl border p-4 text-sm">{tu("op.we_couldn_t_load_classes")} <Button variant="outline" className="ml-2 min-h-11" onClick={() => void load()}>{tu("common.tryAgain")}</Button></div>;
 
   const visible = mode === "resident" ? classes.filter((c) => c.status === "active") : classes;
 
@@ -96,25 +97,25 @@ export function ClassesBoard({ societyId, mode }: { societyId: string | null; mo
     <div className="space-y-4">
       {mode === "admin" && (
         <div className="flex flex-wrap gap-2">
-          <Button className="min-h-11" onClick={() => setCreating(true)} disabled={amen.length === 0}><GraduationCap className="mr-1.5 h-4 w-4" />New class</Button>
-          <Button variant="outline" className="min-h-11" onClick={() => setAddInstr(true)}><UserPlus className="mr-1.5 h-4 w-4" />Add instructor</Button>
-          {amen.length === 0 && <p className="text-sm text-muted-foreground">Add an amenity first — every class runs at an amenity and follows its rules.</p>}
+          <Button className="min-h-11" onClick={() => setCreating(true)} disabled={amen.length === 0}><GraduationCap className="mr-1.5 h-4 w-4" />{tu("op.new_class")}</Button>
+          <Button variant="outline" className="min-h-11" onClick={() => setAddInstr(true)}><UserPlus className="mr-1.5 h-4 w-4" />{tu("op.add_instructor")}</Button>
+          {amen.length === 0 && <p className="text-sm text-muted-foreground">{tu("op.add_an_amenity_first_every")}</p>}
         </div>
       )}
       {mode === "admin" && instr.length > 0 && (
         <section className="rounded-2xl border bg-card p-4">
-          <h2 className="mb-2 font-semibold">Instructors</h2>
+          <h2 className="mb-2 font-semibold">{tu("op.instructors")}</h2>
           <ul className="flex flex-wrap gap-2">{instr.map((i) => (
             <li key={i.id} className="flex items-center gap-2 rounded-xl border px-3 py-1.5 text-sm">
               <span className={i.is_active ? "" : "text-muted-foreground line-through"}>{i.name}{i.specialty ? ` · ${i.specialty}` : ""}</span>
               <Button size="sm" variant="ghost" className="min-h-9" disabled={busy === i.id}
                 onClick={() => void run(i.id, () => supabase.rpc("admin_save_instructor", { _id: i.id, _society_id: societyId!, _name: i.name, _specialty: i.specialty ?? "", _phone: "", _active: !i.is_active }), i.is_active ? "Instructor paused" : "Instructor active")}>
-                {i.is_active ? "Pause" : "Activate"}
+                {i.is_active ? tu("cm.pause") : tu("op.activate")}
               </Button>
             </li>))}</ul>
         </section>
       )}
-      {visible.length === 0 ? <p className="rounded-2xl border bg-card p-6 text-center text-sm text-muted-foreground">No classes yet.</p> : (
+      {visible.length === 0 ? <p className="rounded-2xl border bg-card p-6 text-center text-sm text-muted-foreground">{tu("op.no_classes_yet")}</p> : (
         <div className="grid gap-3 sm:grid-cols-2">{visible.map((c) => {
           const rows = enr.filter((e) => e.class_id === c.id);
           const enrolled = rows.filter((e) => e.status === "enrolled");
@@ -128,25 +129,25 @@ export function ClassesBoard({ societyId, mode }: { societyId: string | null; mo
             <article key={c.id} className="rounded-2xl border bg-card p-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0"><h3 className="font-semibold">{c.title}</h3>
-                  <p className="text-xs text-muted-foreground">{amenName[c.amenity_id] ?? "Amenity"}{c.instructor_id && instrName[c.instructor_id] ? ` · ${instrName[c.instructor_id]}` : ""}</p></div>
-                <span className={`rounded-full px-2 py-0.5 text-xs ${c.status === "active" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"}`}>{c.status === "active" ? "Running" : "Cancelled"}</span>
+                  <p className="text-xs text-muted-foreground">{amenName[c.amenity_id] ?? tu("am.amenity")}{c.instructor_id && instrName[c.instructor_id] ? ` · ${instrName[c.instructor_id]}` : ""}</p></div>
+                <span className={`rounded-full px-2 py-0.5 text-xs ${c.status === "active" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"}`}>{c.status === "active" ? tu("op.running") : tu("rbills.cancelled")}</span>
               </div>
-              <p className="mt-2 text-sm">{c.weekdays.map((d) => DAYS[d]).join(", ")} · {c.start_time.slice(0, 5)} · {c.duration_minutes} min</p>
-              <p className="text-xs text-muted-foreground">From {c.starts_on}{c.ends_on ? ` to ${c.ends_on}` : ""}</p>
+              <p className="mt-2 text-sm">{c.weekdays.map((d) => DAYS[d]).join(", ")} · {c.start_time.slice(0, 5)} · {c.duration_minutes} {tu("op.min")}</p>
+              <p className="text-xs text-muted-foreground">{tu("common.from")} {c.starts_on}{c.ends_on ? ` to ${c.ends_on}` : ""}</p>
               {c.description && <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{c.description}</p>}
-              {c.cancel_reason && <p className="mt-2 text-sm text-destructive">Cancelled: {c.cancel_reason}</p>}
-              <p className="mt-2 text-sm tabular-nums">{enrolled.length}/{c.capacity} enrolled{waiting.length ? ` · ${waiting.length} waiting` : ""}</p>
-              {mode === "admin" && usage !== null && <p className="text-xs text-muted-foreground">Last 30 days: {sessions30} sessions, {usage}% of places used</p>}
+              {c.cancel_reason && <p className="mt-2 text-sm text-destructive">{tu("op.cancelled")} {c.cancel_reason}</p>}
+              <p className="mt-2 text-sm tabular-nums">{enrolled.length}/{c.capacity} {tu("op.enrolled")}{waiting.length ? ` · ${waiting.length} waiting` : ""}</p>
+              {mode === "admin" && usage !== null && <p className="text-xs text-muted-foreground">{tu("op.last_30_days")} {sessions30} {tu("op.sessions")} {usage}% of places used</p>}
               <div className="mt-3 flex flex-wrap gap-2">
-                {mode === "resident" && !mine && <Button className="min-h-11" disabled={busy === c.id} onClick={() => void run(c.id, () => supabase.rpc("enroll_class", { _class_id: c.id }), (d) => d === "waitlisted" ? "Class is full — you're on the waitlist" : "You're enrolled")}>{busy === c.id && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}Join class</Button>}
+                {mode === "resident" && !mine && <Button className="min-h-11" disabled={busy === c.id} onClick={() => void run(c.id, () => supabase.rpc("enroll_class", { _class_id: c.id }), (d) => d === "waitlisted" ? "Class is full — you're on the waitlist" : "You're enrolled")}>{busy === c.id && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}{tu("op.join_class")}</Button>}
                 {mode === "resident" && mine && <>
-                  <span className="self-center text-sm font-medium">{mine.status === "enrolled" ? "You're enrolled" : "You're on the waitlist"}</span>
-                  {mine.status === "enrolled" && (checkedToday ? <span className="flex items-center gap-1 self-center text-sm text-success"><CheckCircle2 className="h-4 w-4" />Checked in today</span> :
-                    <Button variant="outline" className="min-h-11" disabled={busy === c.id + "ci"} onClick={() => void run(c.id + "ci", () => supabase.rpc("check_in_class", { _class_id: c.id }), "Checked in")}>Check in</Button>)}
-                  <Button variant="ghost" className="min-h-11" disabled={busy === c.id} onClick={() => void run(c.id, () => supabase.rpc("leave_class", { _class_id: c.id }), "You've left the class")}>Leave</Button>
+                  <span className="self-center text-sm font-medium">{mine.status === "enrolled" ? tu("op.you_re_enrolled") : tu("op.you_re_on_the_waitlist")}</span>
+                  {mine.status === "enrolled" && (checkedToday ? <span className="flex items-center gap-1 self-center text-sm text-success"><CheckCircle2 className="h-4 w-4" />{tu("op.checked_in_today")}</span> :
+                    <Button variant="outline" className="min-h-11" disabled={busy === c.id + "ci"} onClick={() => void run(c.id + "ci", () => supabase.rpc("check_in_class", { _class_id: c.id }), "Checked in")}>{tu("op.check_in")}</Button>)}
+                  <Button variant="ghost" className="min-h-11" disabled={busy === c.id} onClick={() => void run(c.id, () => supabase.rpc("leave_class", { _class_id: c.id }), "You've left the class")}>{tu("op.leave")}</Button>
                 </>}
                 {mode === "admin" && c.status === "active" && <>
-                  <Button variant="outline" className="min-h-11" onClick={() => setAttFor(c)} disabled={enrolled.length === 0}>Attendance</Button>
+                  <Button variant="outline" className="min-h-11" onClick={() => setAttFor(c)} disabled={enrolled.length === 0}>{tu("op.attendance")}</Button>
                   <Button variant="outline" className="min-h-11" disabled={busy === c.id + "qr"} onClick={async () => {
                     setBusy(c.id + "qr");
                     const { data, error } = await supabase.rpc("admin_issue_class_checkin_code", { _class_id: c.id });
@@ -154,11 +155,11 @@ export function ClassesBoard({ societyId, mode }: { societyId: string | null; mo
                     if (error) return void toast.error(classError(error));
                     const d = data as { token: string; expires_at: string };
                     setQr({ token: d.token, expires: d.expires_at, title: c.title });
-                  }}><QrCode className="mr-1 h-4 w-4" />Check-in QR</Button>
+                  }}><QrCode className="mr-1 h-4 w-4" />{tu("op.check_in_qr")}</Button>
                   <Button variant="ghost" className="min-h-11 text-destructive" disabled={busy === c.id} onClick={() => {
                     const r = window.prompt("Reason for cancelling this class (residents will see it)");
                     if (r) void run(c.id, () => supabase.rpc("admin_cancel_class", { _class_id: c.id, _reason: r }), "Class cancelled");
-                  }}><X className="mr-1 h-4 w-4" />Cancel class</Button>
+                  }}><X className="mr-1 h-4 w-4" />{tu("op.cancel_class")}</Button>
                 </>}
               </div>
             </article>
@@ -172,10 +173,10 @@ export function ClassesBoard({ societyId, mode }: { societyId: string | null; mo
         <AttendanceDialog cls={attFor} onClose={() => setAttFor(null)} enrolled={enr.filter((e) => e.class_id === attFor?.id && e.status === "enrolled")} att={att} onDone={() => { setAttFor(null); void load(); }} />
         <Dialog open={!!qr} onOpenChange={(o) => { if (!o) { setQr(null); void load(); } }}>
           <DialogContent>
-            <DialogHeader><DialogTitle>Check-in code · {qr?.title}</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{tu("op.check_in_code")} {qr?.title}</DialogTitle></DialogHeader>
             {qr && <div className="flex flex-col items-center gap-3">
               <div className="rounded-xl bg-background p-3"><QRCodeSVG value={`${window.location.origin}/app/classes?ci=${qr.token}`} size={240} /></div>
-              <p className="text-center text-sm text-muted-foreground">Enrolled residents scan this with their phone camera. It works for today's session only and expires at {new Date(qr.expires).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}.</p>
+              <p className="text-center text-sm text-muted-foreground">{tu("op.enrolled_residents_scan_this_with")} {new Date(qr.expires).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}.</p>
             </div>}
           </DialogContent>
         </Dialog>
@@ -190,14 +191,14 @@ function InstructorDialog({ open, onClose, societyId, onDone }: { open: boolean;
     e.preventDefault(); if (!societyId || saving) return; setSaving(true);
     const { error } = await supabase.rpc("admin_save_instructor", { _id: null as unknown as string, _society_id: societyId, _name: name, _specialty: spec, _phone: phone, _active: true });
     setSaving(false); if (error) return toast.error(classError(error));
-    toast.success("Instructor added"); setName(""); setSpec(""); setPhone(""); onDone();
+    toast.success(tu("op.instructor_added")); setName(""); setSpec(""); setPhone(""); onDone();
   }
-  return <Dialog open={open} onOpenChange={(o) => !o && !saving && onClose()}><DialogContent><DialogHeader><DialogTitle>Add instructor</DialogTitle></DialogHeader>
+  return <Dialog open={open} onOpenChange={(o) => !o && !saving && onClose()}><DialogContent><DialogHeader><DialogTitle>{tu("op.add_instructor")}</DialogTitle></DialogHeader>
     <form className="space-y-3" onSubmit={save}>
-      <div className="space-y-1.5"><Label htmlFor="in-name">Name</Label><Input id="in-name" className="h-11" required minLength={2} maxLength={80} value={name} onChange={(e) => setName(e.target.value)} /></div>
-      <div className="space-y-1.5"><Label htmlFor="in-spec">Teaches (optional)</Label><Input id="in-spec" className="h-11" maxLength={80} placeholder="Yoga, swimming…" value={spec} onChange={(e) => setSpec(e.target.value)} /></div>
-      <div className="space-y-1.5"><Label htmlFor="in-phone">Phone (optional, committee only)</Label><Input id="in-phone" className="h-11" inputMode="tel" pattern="[0-9+ ]{7,16}" value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
-      <Button type="submit" className="h-12 w-full" disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save</Button>
+      <div className="space-y-1.5"><Label htmlFor="in-name">{tu("common.name")}</Label><Input id="in-name" className="h-11" required minLength={2} maxLength={80} value={name} onChange={(e) => setName(e.target.value)} /></div>
+      <div className="space-y-1.5"><Label htmlFor="in-spec">{tu("op.teaches_optional")}</Label><Input id="in-spec" className="h-11" maxLength={80} placeholder={tu("op.yoga_swimming")} value={spec} onChange={(e) => setSpec(e.target.value)} /></div>
+      <div className="space-y-1.5"><Label htmlFor="in-phone">{tu("op.phone_optional_committee_only")}</Label><Input id="in-phone" className="h-11" inputMode="tel" pattern="[0-9+ ]{7,16}" value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
+      <Button type="submit" className="h-12 w-full" disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{tu("common.save")}</Button>
     </form></DialogContent></Dialog>;
 }
 
@@ -211,29 +212,29 @@ function CreateClassDialog({ open, onClose, amen, instr, onDone }: { open: boole
       _weekdays: days, _start_time: f.time, _duration: f.dur, _capacity: f.cap, _starts_on: f.from, _ends_on: (f.to || null) as unknown as string,
     });
     setSaving(false); if (error) return toast.error(classError(error));
-    toast.success("Class created"); onDone();
+    toast.success(tu("op.class_created")); onDone();
   }
   const sel = "h-11 w-full rounded-md border bg-background px-3 text-sm";
-  return <Dialog open={open} onOpenChange={(o) => !o && !saving && onClose()}><DialogContent className="max-h-[90vh] overflow-y-auto"><DialogHeader><DialogTitle>New class</DialogTitle></DialogHeader>
+  return <Dialog open={open} onOpenChange={(o) => !o && !saving && onClose()}><DialogContent className="max-h-[90vh] overflow-y-auto"><DialogHeader><DialogTitle>{tu("op.new_class")}</DialogTitle></DialogHeader>
     <form className="space-y-3" onSubmit={save}>
-      <div className="space-y-1.5"><Label htmlFor="c-title">Class name</Label><Input id="c-title" className="h-11" required minLength={3} maxLength={100} value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} /></div>
-      <div className="space-y-1.5"><Label htmlFor="c-am">Where (amenity)</Label><select id="c-am" className={sel} required value={f.amenity} onChange={(e) => setF({ ...f, amenity: e.target.value })}><option value="">Choose…</option>{amen.map((a) => <option key={a.id} value={a.id}>{a.name} (up to {a.capacity})</option>)}</select>
-        <p className="text-xs text-muted-foreground">Who can join follows this amenity's owner, tenant, family and dues rules.</p></div>
-      <div className="space-y-1.5"><Label htmlFor="c-in">Instructor</Label><select id="c-in" className={sel} value={f.instructor} onChange={(e) => setF({ ...f, instructor: e.target.value })}><option value="">None yet</option>{instr.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}</select></div>
-      <fieldset><legend className="mb-1.5 text-sm font-medium">Days</legend><div className="flex flex-wrap gap-1.5">{DAYS.map((d, i) => (
+      <div className="space-y-1.5"><Label htmlFor="c-title">{tu("op.class_name")}</Label><Input id="c-title" className="h-11" required minLength={3} maxLength={100} value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} /></div>
+      <div className="space-y-1.5"><Label htmlFor="c-am">{tu("op.where_amenity")}</Label><select id="c-am" className={sel} required value={f.amenity} onChange={(e) => setF({ ...f, amenity: e.target.value })}><option value="">{tu("op.choose")}</option>{amen.map((a) => <option key={a.id} value={a.id}>{a.name} {tu("op.up_to")} {a.capacity})</option>)}</select>
+        <p className="text-xs text-muted-foreground">{tu("op.who_can_join_follows_this")}</p></div>
+      <div className="space-y-1.5"><Label htmlFor="c-in">{tu("op.instructor")}</Label><select id="c-in" className={sel} value={f.instructor} onChange={(e) => setF({ ...f, instructor: e.target.value })}><option value="">{tu("op.none_yet")}</option>{instr.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}</select></div>
+      <fieldset><legend className="mb-1.5 text-sm font-medium">{tu("rgp.days")}</legend><div className="flex flex-wrap gap-1.5">{DAYS.map((d, i) => (
         <button type="button" key={d} aria-pressed={days.includes(i)} onClick={() => setDays(days.includes(i) ? days.filter((x) => x !== i) : [...days, i].sort())}
           className={`min-h-11 min-w-11 rounded-xl border px-2 text-sm ${days.includes(i) ? "border-primary bg-primary text-primary-foreground" : ""}`}>{d}</button>))}</div></fieldset>
       <div className="grid grid-cols-3 gap-2">
-        <div className="space-y-1.5"><Label htmlFor="c-time">Starts</Label><Input id="c-time" type="time" className="h-11" required value={f.time} onChange={(e) => setF({ ...f, time: e.target.value })} /></div>
-        <div className="space-y-1.5"><Label htmlFor="c-dur">Minutes</Label><Input id="c-dur" type="number" className="h-11" min={15} max={240} required value={f.dur} onChange={(e) => setF({ ...f, dur: Number(e.target.value) })} /></div>
-        <div className="space-y-1.5"><Label htmlFor="c-cap">Places</Label><Input id="c-cap" type="number" className="h-11" min={1} max={200} required value={f.cap} onChange={(e) => setF({ ...f, cap: Number(e.target.value) })} /></div>
+        <div className="space-y-1.5"><Label htmlFor="c-time">{tu("op.starts_2")}</Label><Input id="c-time" type="time" className="h-11" required value={f.time} onChange={(e) => setF({ ...f, time: e.target.value })} /></div>
+        <div className="space-y-1.5"><Label htmlFor="c-dur">{tu("mt.minutes")}</Label><Input id="c-dur" type="number" className="h-11" min={15} max={240} required value={f.dur} onChange={(e) => setF({ ...f, dur: Number(e.target.value) })} /></div>
+        <div className="space-y-1.5"><Label htmlFor="c-cap">{tu("op.places")}</Label><Input id="c-cap" type="number" className="h-11" min={1} max={200} required value={f.cap} onChange={(e) => setF({ ...f, cap: Number(e.target.value) })} /></div>
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <div className="space-y-1.5"><Label htmlFor="c-from">First day</Label><Input id="c-from" type="date" className="h-11" required value={f.from} onChange={(e) => setF({ ...f, from: e.target.value })} /></div>
-        <div className="space-y-1.5"><Label htmlFor="c-to">Last day (optional)</Label><Input id="c-to" type="date" className="h-11" min={f.from} value={f.to} onChange={(e) => setF({ ...f, to: e.target.value })} /></div>
+        <div className="space-y-1.5"><Label htmlFor="c-from">{tu("op.first_day")}</Label><Input id="c-from" type="date" className="h-11" required value={f.from} onChange={(e) => setF({ ...f, from: e.target.value })} /></div>
+        <div className="space-y-1.5"><Label htmlFor="c-to">{tu("op.last_day_optional")}</Label><Input id="c-to" type="date" className="h-11" min={f.from} value={f.to} onChange={(e) => setF({ ...f, to: e.target.value })} /></div>
       </div>
-      <div className="space-y-1.5"><Label htmlFor="c-desc">Details (optional)</Label><Textarea id="c-desc" maxLength={1000} value={f.desc} onChange={(e) => setF({ ...f, desc: e.target.value })} /></div>
-      <Button type="submit" className="h-12 w-full" disabled={saving || days.length === 0}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Create class</Button>
+      <div className="space-y-1.5"><Label htmlFor="c-desc">{tu("op.details_optional")}</Label><Textarea id="c-desc" maxLength={1000} value={f.desc} onChange={(e) => setF({ ...f, desc: e.target.value })} /></div>
+      <Button type="submit" className="h-12 w-full" disabled={saving || days.length === 0}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{tu("op.create_class")}</Button>
     </form></DialogContent></Dialog>;
 }
 
@@ -248,14 +249,14 @@ function AttendanceDialog({ cls, onClose, enrolled, att, onDone }: { cls: Cls | 
     setSaving(false); if (error) return toast.error(classError(error));
     toast.success(`${data ?? 0} marked present`); onDone();
   }
-  return <Dialog open onOpenChange={(o) => !o && !saving && onClose()}><DialogContent><DialogHeader><DialogTitle>Attendance · {cls.title}</DialogTitle></DialogHeader>
+  return <Dialog open onOpenChange={(o) => !o && !saving && onClose()}><DialogContent><DialogHeader><DialogTitle>{tu("op.attendance_2")} {cls.title}</DialogTitle></DialogHeader>
     <div className="space-y-3">
-      <div className="space-y-1.5"><Label htmlFor="att-date">Session date</Label><Input id="att-date" type="date" className="h-11" max={today()} value={date} onChange={(e) => setDate(e.target.value)} /></div>
+      <div className="space-y-1.5"><Label htmlFor="att-date">{tu("op.session_date")}</Label><Input id="att-date" type="date" className="h-11" max={today()} value={date} onChange={(e) => setDate(e.target.value)} /></div>
       <ul className="max-h-72 space-y-1 overflow-y-auto">{enrolled.map((e, i) => (
         <li key={e.id}><label className="flex min-h-11 items-center gap-3 rounded-xl border px-3">
           <input type="checkbox" className="h-5 w-5" disabled={done.has(e.id)} checked={done.has(e.id) || picked.includes(e.id)} onChange={(ev) => setPicked(ev.target.checked ? [...picked, e.id] : picked.filter((x) => x !== e.id))} />
-          <span className="text-sm">Member {i + 1}{done.has(e.id) ? " · present" : ""}</span></label></li>))}</ul>
-      <p className="text-xs text-muted-foreground">Saved attendance can't be changed. Only days the class runs can be marked.</p>
-      <Button className="h-12 w-full" disabled={saving || picked.length === 0} onClick={() => void save()}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Mark present</Button>
+          <span className="text-sm">{tu("op.member")} {i + 1}{done.has(e.id) ? tu("op.present_3") : ""}</span></label></li>))}</ul>
+      <p className="text-xs text-muted-foreground">{tu("op.saved_attendance_can_t_be")}</p>
+      <Button className="h-12 w-full" disabled={saving || picked.length === 0} onClick={() => void save()}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{tu("op.mark_present")}</Button>
     </div></DialogContent></Dialog>;
 }

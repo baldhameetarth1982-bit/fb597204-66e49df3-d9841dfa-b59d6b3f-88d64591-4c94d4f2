@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { PageHeader, PageShell } from "@/components/shared/PageHeader";
 import { GroupsBoard } from "@/components/community/GroupsBoard";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/groups")({
   head: () => ({
@@ -18,8 +19,8 @@ export const Route = createFileRoute("/_society/society/groups")({
     const { societyId } = useSocietyId();
     return (
       <PageShell>
-        <PageHeader title="Community groups" description="Groups are community spaces, separate from official notices." />
-        {societyId ? <GroupsBoard societyId={societyId} mode="admin" /> : <p className="text-muted-foreground">Loading…</p>}
+        <PageHeader title={tu("op.community_groups")} description={tu("op.groups_are_community_spaces_separate")} />
+        {societyId ? <GroupsBoard societyId={societyId} mode="admin" /> : <p className="text-muted-foreground">{tu("common.loading")}</p>}
       </PageShell>
     );
   },

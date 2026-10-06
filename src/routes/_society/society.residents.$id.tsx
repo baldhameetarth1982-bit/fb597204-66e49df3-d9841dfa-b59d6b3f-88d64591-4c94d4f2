@@ -51,6 +51,7 @@ import {
   openResidentDocument,
 } from "@/lib/resident-documents.functions";
 import { useSocietyId } from "@/hooks/useSocietyId";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/residents/$id")({
   head: () => ({ meta: [{ title: "Resident — SociyoHub" }] }),
@@ -157,12 +158,12 @@ function ResidentDetailPage() {
     return (
       <PageShell>
         <div className="py-20 text-center space-y-3">
-          <p className="font-medium">Couldn't load this resident</p>
+          <p className="font-medium">{tu("op.couldn_t_load_this_resident")}</p>
           <p className="text-sm text-muted-foreground">
-            Please check your connection and try again.
+            {tu("fam.checkConn")}
           </p>
           <Button variant="outline" className="h-11 rounded-xl" onClick={() => void refetch()}>
-            Try again
+            {tu("common.tryAgain")}
           </Button>
         </div>
       </PageShell>
@@ -172,7 +173,7 @@ function ResidentDetailPage() {
   if (!resident) {
     return (
       <PageShell>
-        <div className="py-20 text-center text-muted-foreground">Resident not found.</div>
+        <div className="py-20 text-center text-muted-foreground">{tu("op.resident_not_found")}</div>
       </PageShell>
     );
   }
@@ -201,7 +202,7 @@ function ResidentDetailPage() {
         patch[k] = v === "" ? null : v;
       }
       await update({ data: { userId: p.id, patch } });
-      toast.success("Profile updated");
+      toast.success(tu("st.profileUpdated"));
       setEditing(false);
       await refetch();
     } catch (e: any) {
@@ -272,7 +273,7 @@ function ResidentDetailPage() {
         leaseEndsOn: leaseForm.ends || null,
         noticeGivenOn: leaseForm.notice || null,
       } });
-      toast.success("Lease terms updated");
+      toast.success(tu("op.lease_terms_updated"));
       setLeaseEditing(false);
       await refetch();
     } catch (error) {
@@ -289,7 +290,7 @@ function ResidentDetailPage() {
         className="mb-3 min-h-11 -ml-2"
         onClick={() => navigate({ to: "/society/residents" })}
       >
-        <ArrowLeft className="h-4 w-4 mr-1" /> Residents
+        <ArrowLeft className="h-4 w-4 mr-1" /> {tu("nav.residents")}
       </Button>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
@@ -303,9 +304,9 @@ function ResidentDetailPage() {
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
-              <h1 className="type-section truncate">{p.full_name ?? "Unnamed resident"}</h1>
+              <h1 className="type-section truncate">{p.full_name ?? tu("prof.unnamed")}</h1>
               <p className="mt-0.5 text-sm text-muted-foreground">
-                {house ? `House ${house}` : movedOut ? "No current house" : "Not linked to a house"}
+                {house ? `House ${house}` : movedOut ? tu("op.no_current_house") : tu("op.not_linked_to_a_house")}
                 {a?.moved_in_at
                   ? ` · since ${new Date(a.moved_in_at).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}`
                   : ""}
@@ -315,16 +316,16 @@ function ResidentDetailPage() {
                   <StatusChip tone={rel === "tenant" ? "info" : "primary"}>{relLabel}</StatusChip>
                 )}
                 {a ? (
-                  <StatusChip tone="success">Current</StatusChip>
+                  <StatusChip tone="success">{tu("rep.current")}</StatusChip>
                 ) : movedOut ? (
-                  <StatusChip tone="muted">Moved out</StatusChip>
+                  <StatusChip tone="muted">{tu("op.moved_out")}</StatusChip>
                 ) : (
-                  <StatusChip tone="warning">No house</StatusChip>
+                  <StatusChip tone="warning">{tu("gd.noHouse")}</StatusChip>
                 )}
                 {p.aadhaar_verified && (
                   <StatusChip tone="success">
                     <ShieldCheck className="mr-1 h-3 w-3" />
-                    KYC verified
+                    {tu("op.kyc_verified")}
                   </StatusChip>
                 )}
               </div>
@@ -333,19 +334,19 @@ function ResidentDetailPage() {
 
           {/* Contact actions */}
           {(p.phone || p.email) && (
-            <div className="flex flex-wrap gap-2" aria-label="Contact resident">
+            <div className="flex flex-wrap gap-2" aria-label={tu("op.contact_resident")}>
               {p.phone && (
                 <Button asChild className="min-h-11 rounded-xl">
                   <a href={`tel:${p.phone}`}>
                     <Phone className="h-4 w-4 mr-2" />
-                    Call
+                    {tu("comm.call")}
                   </a>
                 </Button>
               )}
               {waLink && (
                 <Button asChild variant="outline" className="min-h-11 rounded-xl">
                   <a href={waLink} target="_blank" rel="noreferrer">
-                    WhatsApp
+                    {tu("op.whatsapp")}
                   </a>
                 </Button>
               )}
@@ -353,7 +354,7 @@ function ResidentDetailPage() {
                 <Button asChild variant="outline" className="min-h-11 rounded-xl">
                   <a href={`mailto:${p.email}`}>
                     <Mail className="h-4 w-4 mr-2" />
-                    Email
+                    {tu("auth.email")}
                   </a>
                 </Button>
               )}
@@ -363,27 +364,27 @@ function ResidentDetailPage() {
           {!a && (
             <p className="rounded-2xl bg-warning-container px-4 py-3 text-sm text-warning-container-foreground">
               {movedOut
-                ? "This resident has moved out. Past occupancy is kept in the history below."
-                : "This resident isn't linked to any house yet. Assign a house from the Residents list."}
+                ? tu("op.this_resident_has_moved_out")
+                : tu("op.this_resident_isn_t_linked")}
             </p>
           )}
 
           <div className="overflow-hidden rounded-2xl border border-border bg-card">
-            <Section id="basic" title="Identity & contact" icon={User}>
+            <Section id="basic" title={tu("op.identity_contact")} icon={User}>
               {editing ? (
                 <div className="space-y-3 pt-3">
                   <Field
-                    label="Full name"
+                    label={tu("auth.fullName")}
                     value={form.full_name}
                     onChange={(v) => setForm({ ...form, full_name: v })}
                   />
                   <Field
-                    label="Phone"
+                    label={tu("exp.phone")}
                     value={form.phone}
                     onChange={(v) => setForm({ ...form, phone: v })}
                   />
                   <Field
-                    label="Email"
+                    label={tu("auth.email")}
                     value={form.email}
                     onChange={(v) => setForm({ ...form, email: v })}
                     type="email"
@@ -395,30 +396,30 @@ function ResidentDetailPage() {
                       ) : (
                         <Save className="h-3.5 w-3.5 mr-1" />
                       )}
-                      Save
+                      {tu("common.save")}
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => setEditing(false)}>
-                      <X className="h-3.5 w-3.5 mr-1" /> Cancel
+                      <X className="h-3.5 w-3.5 mr-1" /> {tu("common.cancel")}
                     </Button>
                   </div>
                 </div>
               ) : (
                 <dl className="pt-3 space-y-2 text-sm">
-                  <Row label="Full name" value={p.full_name} />
-                  <Row label="Phone" value={p.phone} />
-                  <Row label="Email" value={p.email} />
+                  <Row label={tu("auth.fullName")} value={p.full_name} />
+                  <Row label={tu("exp.phone")} value={p.phone} />
+                  <Row label={tu("auth.email")} value={p.email} />
                   <Row
-                    label="Move-in date"
+                    label={tu("op.move_in_date")}
                     value={p.move_in_date ? new Date(p.move_in_date).toLocaleDateString() : null}
                   />
                   <Button size="sm" variant="outline" onClick={startEdit} className="mt-2">
-                    <Edit2 className="h-3.5 w-3.5 mr-1" /> Edit
+                    <Edit2 className="h-3.5 w-3.5 mr-1" /> {tu("common.edit")}
                   </Button>
                 </dl>
               )}
             </Section>
 
-            <Section id="household" title="Household members" icon={Users}>
+            <Section id="household" title={tu("op.household_members")} icon={Users}>
               <div className="pt-3 space-y-2">
                 {household.isLoading ? (
                   <div className="py-6 text-center">
@@ -427,15 +428,15 @@ function ResidentDetailPage() {
                 ) : household.isError ? (
                   <div className="py-3 text-center space-y-2">
                     <p className="text-sm text-muted-foreground">
-                      Couldn't load household members.
+                      {tu("op.couldn_t_load_household_members")}
                     </p>
                     <Button size="sm" variant="outline" onClick={() => void household.refetch()}>
-                      Try again
+                      {tu("common.tryAgain")}
                     </Button>
                   </div>
                 ) : !household.data?.length ? (
                   <p className="text-sm text-muted-foreground py-3 text-center">
-                    No family members added by this resident.
+                    {tu("op.no_family_members_added_by")}
                   </p>
                 ) : (
                   household.data.map((m: any) => (
@@ -453,14 +454,14 @@ function ResidentDetailPage() {
                 )}
               </div>
             </Section>
-            <Section id="history" title="Occupancy history" icon={History}>
+            <Section id="history" title={tu("op.occupancy_history")} icon={History}>
               <div className="pt-3 space-y-2">
                 {!history ? (
                   <div className="py-6 text-center">
                     <Loader2 className="h-4 w-4 animate-spin inline text-muted-foreground" />
                   </div>
                 ) : history.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-3 text-center">No history yet.</p>
+                  <p className="text-sm text-muted-foreground py-3 text-center">{tu("op.no_history_yet")}</p>
                 ) : (
                   history.map((h: any) => (
                     <div
@@ -471,7 +472,7 @@ function ResidentDetailPage() {
                         <div className="font-medium truncate">{h.profiles?.full_name ?? "—"}</div>
                         <div className="text-xs text-muted-foreground truncate">
                           <span className="capitalize">{h.relationship}</span>
-                          {h.is_primary ? " · primary" : ""}
+                          {h.is_primary ? tu("op.primary_2") : ""}
                         </div>
                         {h.ended_reason ? (
                           <div className="text-[11px] text-muted-foreground italic mt-0.5">
@@ -484,7 +485,7 @@ function ResidentDetailPage() {
                           variant="outline"
                           className={`text-[10px] ${h.is_active ? "border-emerald-500/30 text-emerald-600" : "text-muted-foreground"}`}
                         >
-                          {h.is_active ? "Current" : "Moved out"}
+                          {h.is_active ? tu("rep.current") : tu("op.moved_out")}
                         </Badge>
                         <div className="text-[11px] text-muted-foreground mt-1">
                           {h.moved_in_at
@@ -500,26 +501,26 @@ function ResidentDetailPage() {
                 )}
               </div>
             </Section>
-            <Section id="property" title="Resident information" icon={Home}>
+            <Section id="property" title={tu("op.resident_information")} icon={Home}>
               {editing ? (
                 <div className="space-y-3 pt-3">
                   <Field
-                    label="Property number"
+                    label={tu("op.property_number")}
                     value={form.property_number}
                     onChange={(v) => setForm({ ...form, property_number: v })}
                   />
                   <Field
-                    label="UGVCL number"
+                    label={tu("op.ugvcl_number")}
                     value={form.ugvcl_number}
                     onChange={(v) => setForm({ ...form, ugvcl_number: v })}
                   />
                   <Field
-                    label="Share certificate"
+                    label={tu("op.share_certificate")}
                     value={form.share_certificate_number}
                     onChange={(v) => setForm({ ...form, share_certificate_number: v })}
                   />
                   <Field
-                    label="Move-in date"
+                    label={tu("op.move_in_date")}
                     value={form.move_in_date}
                     onChange={(v) => setForm({ ...form, move_in_date: v })}
                     type="date"
@@ -528,16 +529,16 @@ function ResidentDetailPage() {
               ) : (
                 <dl className="pt-3 space-y-2 text-sm">
                   <Row
-                    label="House"
+                    label={tu("gd.houseLabel")}
                     value={a ? `${a.block_name ?? ""} ${a.flat_number ?? ""}`.trim() || null : null}
                   />
-                  <Row label="Type" value={a?.relationship} />
-                  <Row label="Property number" value={p.property_number} />
+                  <Row label={tu("cm.type")} value={a?.relationship} />
+                  <Row label={tu("op.property_number")} value={p.property_number} />
                   <Row label="UGVCL" value={p.ugvcl_number} />
-                  <Row label="Share certificate" value={p.share_certificate_number} />
+                  <Row label={tu("op.share_certificate")} value={p.share_certificate_number} />
                   {!editing && (
                     <Button size="sm" variant="outline" onClick={startEdit} className="mt-2">
-                      <Edit2 className="h-3.5 w-3.5 mr-1" /> Edit
+                      <Edit2 className="h-3.5 w-3.5 mr-1" /> {tu("common.edit")}
                     </Button>
                   )}
                 </dl>
@@ -545,41 +546,41 @@ function ResidentDetailPage() {
             </Section>
 
             {a?.relationship === "tenant" && (
-              <Section id="tenancy" title="Tenant lease" icon={Calendar}>
+              <Section id="tenancy" title={tu("op.tenant_lease")} icon={Calendar}>
                 {leaseEditing ? (
                   <div className="space-y-3 pt-3">
-                    <Field label="Lease starts" type="date" value={leaseForm.starts} onChange={(starts) => setLeaseForm((v) => ({ ...v, starts }))} />
-                    <Field label="Lease ends" type="date" value={leaseForm.ends} onChange={(ends) => setLeaseForm((v) => ({ ...v, ends }))} />
-                    <Field label="Notice given" type="date" value={leaseForm.notice} onChange={(notice) => setLeaseForm((v) => ({ ...v, notice }))} />
+                    <Field label={tu("op.lease_starts")} type="date" value={leaseForm.starts} onChange={(starts) => setLeaseForm((v) => ({ ...v, starts }))} />
+                    <Field label={tu("op.lease_ends")} type="date" value={leaseForm.ends} onChange={(ends) => setLeaseForm((v) => ({ ...v, ends }))} />
+                    <Field label={tu("op.notice_given")} type="date" value={leaseForm.notice} onChange={(notice) => setLeaseForm((v) => ({ ...v, notice }))} />
                     <div className="flex gap-2">
                       <Button size="sm" className="min-h-11" disabled={leaseSaving} onClick={() => void saveLease()}>
-                        {leaseSaving ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Save className="mr-1 h-4 w-4" />} Save terms
+                        {leaseSaving ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Save className="mr-1 h-4 w-4" />} {tu("op.save_terms")}
                       </Button>
-                      <Button size="sm" variant="outline" className="min-h-11" onClick={() => setLeaseEditing(false)}>Cancel</Button>
+                      <Button size="sm" variant="outline" className="min-h-11" onClick={() => setLeaseEditing(false)}>{tu("common.cancel")}</Button>
                     </div>
                   </div>
                 ) : (
                   <dl className="space-y-2 pt-3">
-                    <Row label="Lease starts" value={a.lease_starts_on ? new Date(a.lease_starts_on).toLocaleDateString("en-IN") : null} />
-                    <Row label="Lease ends" value={a.lease_ends_on ? new Date(a.lease_ends_on).toLocaleDateString("en-IN") : null} />
-                    <Row label="Notice given" value={a.notice_given_on ? new Date(a.notice_given_on).toLocaleDateString("en-IN") : null} />
+                    <Row label={tu("op.lease_starts")} value={a.lease_starts_on ? new Date(a.lease_starts_on).toLocaleDateString("en-IN") : null} />
+                    <Row label={tu("op.lease_ends")} value={a.lease_ends_on ? new Date(a.lease_ends_on).toLocaleDateString("en-IN") : null} />
+                    <Row label={tu("op.notice_given")} value={a.notice_given_on ? new Date(a.notice_given_on).toLocaleDateString("en-IN") : null} />
                     <Button size="sm" variant="outline" className="mt-2 min-h-11" onClick={() => {
                       setLeaseForm({ starts: a.lease_starts_on ?? "", ends: a.lease_ends_on ?? "", notice: a.notice_given_on ?? "" });
                       setLeaseEditing(true);
-                    }}><Edit2 className="mr-1 h-4 w-4" /> Edit lease</Button>
+                    }}><Edit2 className="mr-1 h-4 w-4" /> {tu("op.edit_lease")}</Button>
                   </dl>
                 )}
               </Section>
             )}
 
-            <Section id="bills" title="Bills" icon={FileText}>
+            <Section id="bills" title={tu("nav.bills")} icon={FileText}>
               <div className="pt-3 space-y-2">
                 {!bills ? (
                   <div className="py-6 text-center">
                     <Loader2 className="h-4 w-4 animate-spin inline text-muted-foreground" />
                   </div>
                 ) : bills.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-3 text-center">No bills yet.</p>
+                  <p className="text-sm text-muted-foreground py-3 text-center">{tu("op.no_bills_yet")}</p>
                 ) : (
                   bills.map((b: any) => (
                     <div
@@ -606,7 +607,7 @@ function ResidentDetailPage() {
               </div>
             </Section>
 
-            <Section id="documents" title="Documents" icon={Paperclip}>
+            <Section id="documents" title={tu("home.qa.documents")} icon={Paperclip}>
               {societyId && (
                 <DocumentsPanel
                   userId={p.id}
@@ -619,18 +620,18 @@ function ResidentDetailPage() {
         </div>
 
         {/* Side summary: occupancy + dues */}
-        <aside className="space-y-3" aria-label="Occupancy summary">
+        <aside className="space-y-3" aria-label={tu("op.occupancy_summary")}>
           <dl className="divide-y divide-border rounded-2xl border border-border bg-card text-sm">
             <div className="flex justify-between gap-3 px-4 py-3">
-              <dt className="text-muted-foreground">House</dt>
+              <dt className="text-muted-foreground">{tu("gd.houseLabel")}</dt>
               <dd className="font-medium">{house ?? "—"}</dd>
             </div>
             <div className="flex justify-between gap-3 px-4 py-3">
-              <dt className="text-muted-foreground">Type</dt>
+              <dt className="text-muted-foreground">{tu("cm.type")}</dt>
               <dd className="font-medium">{relLabel ?? "—"}</dd>
             </div>
             <div className="flex justify-between gap-3 px-4 py-3">
-              <dt className="text-muted-foreground">Outstanding</dt>
+              <dt className="text-muted-foreground">{tu("sd.m.outstanding")}</dt>
               <dd className="font-semibold tabular-nums">
                 {!flatId ? "—" : outstanding ? `₹${pending.toLocaleString("en-IN")}` : "—"}
               </dd>
@@ -638,7 +639,7 @@ function ResidentDetailPage() {
             {outstanding && outstanding.overdue_count > 0 && (
               <div className="px-4 py-3">
                 <StatusChip tone="warning">
-                  {outstanding.overdue_count} overdue period
+                  {outstanding.overdue_count} {tu("op.overdue_period")}
                   {outstanding.overdue_count === 1 ? "" : "s"}
                 </StatusChip>
               </div>
@@ -705,7 +706,7 @@ function DocumentsPanel({
     try {
       setItems(await listDocuments({ data: { societyId, residentUserId: userId } }));
     } catch {
-      toast.error("Documents aren't available right now.");
+      toast.error(tu("op.documents_aren_t_available_right"));
       setItems([]);
     }
   }
@@ -760,7 +761,7 @@ function DocumentsPanel({
       });
       window.open(url, "_blank", "noopener,noreferrer");
     } catch {
-      toast.error("This document isn't available.");
+      toast.error(tu("dc.notAvail"));
     }
   }
 
@@ -768,10 +769,10 @@ function DocumentsPanel({
     if (!confirm(`Delete ${name}?`)) return;
     try {
       await removeDocument({ data: { societyId, residentUserId: userId, key: name } });
-      toast.success("Deleted");
+      toast.success(tu("op.deleted"));
       await refresh();
     } catch {
-      toast.error("Document could not be deleted.");
+      toast.error(tu("op.document_could_not_be_deleted"));
     }
   }
 
@@ -785,7 +786,7 @@ function DocumentsPanel({
           ) : (
             <Upload className="h-3.5 w-3.5 mr-1.5" />
           )}
-          Upload documents
+          {tu("op.upload_documents")}
         </span>
       </label>
 
@@ -794,7 +795,7 @@ function DocumentsPanel({
           <Loader2 className="h-4 w-4 animate-spin inline text-muted-foreground" />
         </div>
       ) : items.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-3 text-center">No documents uploaded yet.</p>
+        <p className="text-sm text-muted-foreground py-3 text-center">{tu("op.no_documents_uploaded_yet")}</p>
       ) : (
         <div className="space-y-1.5">
           {items.map((f) => {
@@ -817,7 +818,7 @@ function DocumentsPanel({
                   variant="ghost"
                   className="h-8 w-8"
                   onClick={() => openDoc(f.name)}
-                  aria-label="Open document"
+                  aria-label={tu("sec.open.document")}
                 >
                   <Download className="h-3.5 w-3.5" />
                 </Button>
@@ -826,7 +827,7 @@ function DocumentsPanel({
                   variant="ghost"
                   className="h-8 w-8 text-destructive"
                   onClick={() => deleteDoc(f.name)}
-                  aria-label="Delete document"
+                  aria-label={tu("op.delete_document")}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
@@ -836,7 +837,7 @@ function DocumentsPanel({
         </div>
       )}
       <p className="text-[10px] text-muted-foreground">
-        Max 15 MB per file. Stored in the private "uploads" bucket.
+        {tu("op.max_15_mb_per_file")}
       </p>
     </div>
   );

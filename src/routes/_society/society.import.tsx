@@ -141,6 +141,7 @@ import { xlsxToCsvFile } from "@/lib/sheet-rows";
 import { holdMigrationProblemRows } from "@/lib/workstream7.functions";
 import { getMigrationProblemRows, markMigrationRetry, rollbackMigrationJob } from "@/lib/data-import.functions";
 import { writeSafeWorkbook } from "@/lib/spreadsheet-safety";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/import")({
   head: () => ({ meta: [{ title: "Bulk Import — SociyoHub" }] }),
@@ -239,7 +240,7 @@ function ImportPage() {
   async function downloadProblems(j: JobListItem) {
     try {
       const rows = (await problems({ data: { jobId: j.id } })) as { row: number; values: Record<string, string>; reasons: string[] }[];
-      if (!rows.length) { toast.info("No problem rows left in this import."); return; }
+      if (!rows.length) { toast.info(tu("op.no_problem_rows_left_in")); return; }
       const headers = Array.from(new Set(rows.flatMap((r) => Object.keys(r.values))));
       writeSafeWorkbook(rows.map((r) => {
         const o: Record<string, string | number> = { "Original row": r.row, "Problem": r.reasons.join(", ") };
@@ -248,21 +249,21 @@ function ImportPage() {
       }), "Problem rows", `problem-rows-${(j.source_filename ?? "import").replace(/\.[^.]+$/, "")}.xlsx`);
       setRetryOf(j.id);
       setSourceType(j.source_type as SourceType);
-      toast.success("Problem rows downloaded. Fix them and upload the file below (leave the extra Original row and Problem columns unmapped). Rows already imported are never duplicated.");
+      toast.success(tu("op.problem_rows_downloaded_fix_them"));
     } catch (e) { toast.error(importErrorText(e)); }
   }
 
   async function undoJob(j: JobListItem) {
     const reason = window.prompt("Undo this import? Only records this import created are removed, and only if nothing else depends on them. Reason (required):")?.trim();
     if (!reason) return;
-    if (reason.length < 5) { toast.error("Add a short reason (at least 5 characters)."); return; }
+    if (reason.length < 5) { toast.error(tu("op.add_a_short_reason_at")); return; }
     setBusy("commit");
     try {
       const r = await rollback({ data: { jobId: j.id, reason: reason.slice(0, 400) } });
       if (r.status === "ok") toast.success(`Import undone: ${r.units} houses, ${r.residents} residents, ${r.family} family members, ${r.vehicles} vehicles, ${r.structures} blocks removed.`);
       else if (r.status === "blocked_by_dependents") toast.error(`Can't undo safely — these records are already in use: ${r.blockers.map((b) => b.replace(/_/g, " ")).join(", ")}. Correct individual records instead.`);
-      else if (r.status === "already_rolled_back") toast.info("This import was already undone.");
-      else toast.error("You don't have permission to undo this import.");
+      else if (r.status === "already_rolled_back") toast.info(tu("op.this_import_was_already_undone"));
+      else toast.error(tu("op.you_don_t_have_permission_2"));
       setJobsTick((t) => t + 1);
     } catch (e) { toast.error((e as Error).message); }
     finally { setBusy(null); }
@@ -379,7 +380,7 @@ function ImportPage() {
         toast.success(`Import committed (${res.result?.total_committed ?? 0} rows)`);
         setConfirmMode(false);
       } else {
-        toast.error("The import didn't finish. Nothing was partly imported — see the guidance below.");
+        toast.error(tu("op.the_import_didn_t_finish"));
         // Fetch stored failure code for guidance.
         try {
           const f = await jobFailure({ data: { job_id: jobId } });
@@ -416,7 +417,7 @@ function ImportPage() {
       setCommitStatus(job.status === "completed" ? "completed" : null);
       const f = await jobFailure({ data: { job_id: job.id } });
       setFailureCode(f.failure_code);
-      toast.success("Resumed job");
+      toast.success(tu("op.resumed_job"));
     } catch (e) {
       toast.error(importErrorText(e));
     } finally {
@@ -443,9 +444,9 @@ function ImportPage() {
   return (
     <div className="pb-[calc(96px+env(safe-area-inset-bottom))]">
       <MobileHero
-        eyebrow="Society Admin"
-        title="Bulk import"
-        subtitle="Upload a CSV file to import residents, units and vehicles. Server validates every row before staging."
+        eyebrow={tu("op.society_admin")}
+        title={tu("op.bulk_import")}
+        subtitle={tu("op.upload_a_csv_file_to")}
         icon={Upload}
         variant="teal"
       />
@@ -468,7 +469,7 @@ function ImportPage() {
                 )}
               >
                 <Icon className="h-3.5 w-3.5" />
-                <span>Step {s.n}: {s.label}</span>
+                <span>{tu("op.step")} {s.n}: {s.label}</span>
               </div>
             );
           })}
@@ -478,12 +479,12 @@ function ImportPage() {
         <Card className="rounded-2xl">
           <CardContent className="p-5 space-y-3">
             <div className="flex items-center gap-2 text-sm font-semibold">
-              <History className="h-4 w-4" /> Recent import jobs
+              <History className="h-4 w-4" /> {tu("op.recent_import_jobs")}
               {busy === "jobs" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             </div>
             {jobsError && <p className="text-xs text-destructive">{jobsError}</p>}
             {jobsList.length === 0 && !jobsError && (
-              <p className="text-xs text-muted-foreground">No previous imports for this society.</p>
+              <p className="text-xs text-muted-foreground">{tu("op.no_previous_imports_for_this")}</p>
             )}
             {jobsList.length > 0 && (
               <div className="rounded-xl border divide-y">
@@ -501,29 +502,29 @@ function ImportPage() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-medium truncate">{j.source_filename ?? j.id}</span>
                           <StatusChip tone={j.rolled_back_at ? "neutral" : isCompleted ? "success" : isBlocked ? "warning" : "info"} className="text-[10px]">
-                            {j.rolled_back_at ? "undone" : isCompleted && (j.error_rows ?? 0) > 0 ? "partly imported" : j.status}
+                            {j.rolled_back_at ? tu("op.undone") : isCompleted && (j.error_rows ?? 0) > 0 ? tu("op.partly_imported") : j.status}
                           </StatusChip>
-                          {j.retry_of_job_id && <StatusChip tone="info" className="text-[10px]">retry</StatusChip>}
+                          {j.retry_of_job_id && <StatusChip tone="info" className="text-[10px]">{tu("op.retry")}</StatusChip>}
                         </div>
                         <div className="text-muted-foreground truncate">
-                          {j.source_type} · {j.total_rows ?? 0} rows · {j.valid_rows ?? 0} valid · {j.error_rows ?? 0} problems
+                          {j.source_type} · {j.total_rows ?? 0} {tu("op.rows")} {j.valid_rows ?? 0} {tu("op.valid")} {j.error_rows ?? 0} {tu("op.problems")}
                           {j.committed_rows != null && ` · ${j.committed_rows} committed`}
                         </div>
-                        {j.rolled_back_at && <div className="text-muted-foreground truncate">Undone: {j.rollback_reason}</div>}
+                        {j.rolled_back_at && <div className="text-muted-foreground truncate">{tu("op.undone_2")} {j.rollback_reason}</div>}
                       </div>
                       {(j.error_rows ?? 0) > 0 && !j.rolled_back_at && (
                         <Button size="sm" variant="outline" className="rounded-xl min-h-9" onClick={() => downloadProblems(j)}>
-                          Fix & retry problems
+                          {tu("op.fix_retry_problems")}
                         </Button>
                       )}
                       {isCompleted && !j.rolled_back_at && (
                         <Button size="sm" variant="outline" className="rounded-xl min-h-9" onClick={() => undoJob(j)} disabled={busy !== null}>
-                          Undo import
+                          {tu("op.undo_import")}
                         </Button>
                       )}
                       {!isCompleted && (
                         <Button size="sm" variant="outline" className="rounded-xl h-8" onClick={() => resumeJob(j)}>
-                          Resume
+                          {tu("rgp.resume")}
                         </Button>
                       )}
                     </div>
@@ -540,7 +541,7 @@ function ImportPage() {
           <CardContent className="p-5 space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="text-sm">
-                <div className="text-xs text-muted-foreground mb-1">Source</div>
+                <div className="text-xs text-muted-foreground mb-1">{tu("op.source")}</div>
                 <select
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
                   value={sourceType}
@@ -552,7 +553,7 @@ function ImportPage() {
                 </select>
               </label>
               <label className="text-sm">
-                <div className="text-xs text-muted-foreground mb-1">Entity</div>
+                <div className="text-xs text-muted-foreground mb-1">{tu("op.entity")}</div>
                 <select
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
                   value={entityType}
@@ -567,8 +568,8 @@ function ImportPage() {
             <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground flex items-start gap-2">
               <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
               <div className="space-y-1">
-                <p>Upload <code>.csv</code> or <code>.xlsx</code>. Excel files are converted to CSV on your device (values only, first sheet, up to 5&nbsp;MB and 5,000 rows).</p>
-                <p>Formulas and macros are never run. Uploads are private per society.</p>
+                <p>{tu("op.upload")} <code>.csv</code> or <code>.xlsx</code>. Excel files are converted to CSV on your device (values only, first sheet, up to 5&nbsp;MB and 5,000 rows).</p>
+                <p>{tu("op.formulas_and_macros_are_never")}</p>
               </div>
             </div>
 
@@ -583,7 +584,7 @@ function ImportPage() {
                 <Button asChild variant="outline" className="rounded-xl">
                   <span>
                     <Upload className="h-4 w-4 mr-1.5" />
-                    {file ? file.name : "Choose CSV or Excel"}
+                    {file ? file.name : tu("op.choose_csv_or_excel")}
                   </span>
                 </Button>
               </label>
@@ -597,7 +598,7 @@ function ImportPage() {
                 ) : (
                   <Upload className="h-4 w-4 mr-1.5" />
                 )}
-                Upload &amp; parse
+                {tu("op.upload_parse")}
               </Button>
             </div>
           </CardContent>
@@ -609,8 +610,8 @@ function ImportPage() {
             <CardContent className="p-5 space-y-3">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
-                  <p className="font-semibold">Column mapping</p>
-                  <StatusChip tone="info">{rowCount} rows</StatusChip>
+                  <p className="font-semibold">{tu("op.column_mapping")}</p>
+                  <StatusChip tone="info">{rowCount} {tu("op.rows_2")}</StatusChip>
                 </div>
                 <Button
                   onClick={doValidate}
@@ -622,11 +623,11 @@ function ImportPage() {
                   ) : (
                     <ClipboardList className="h-4 w-4 mr-1.5" />
                   )}
-                  Validate
+                  {tu("op.validate")}
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                {headers.filter((h) => !mapping[h]).length} of {headers.length} column(s) not matched — unmatched columns are skipped, never guessed.
+                {headers.filter((h) => !mapping[h]).length} of {headers.length} {tu("op.column_s_not_matched_unmatched")}
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {headers.map((h) => (
@@ -639,7 +640,7 @@ function ImportPage() {
                       value={mapping[h] ?? ""}
                       onChange={(e) => { updateMapping(h, e.target.value); setMappingChecked(false); }}
                     >
-                      <option value="">Skip this column</option>
+                      <option value="">{tu("op.skip_this_column")}</option>
                       {Object.keys(ROW_SCHEMAS[entityType].shape).map((f) => (
                         <option key={f} value={f}>{f.replace(/_/g, " ")}</option>
                       ))}
@@ -650,7 +651,7 @@ function ImportPage() {
               {needsMappingCheck && (
                 <label className="flex min-h-11 items-start gap-2 rounded-xl border border-warning/40 bg-warning/10 p-3 text-xs">
                   <input type="checkbox" className="mt-0.5 h-4 w-4" checked={mappingChecked} onChange={(e) => setMappingChecked(e.target.checked)} />
-                  <span>The {SOURCE_LABELS[sourceType]} column matches are an unverified preset. I have checked each match above before validating.</span>
+                  <span>{tu("op.the")} {SOURCE_LABELS[sourceType]} {tu("op.column_matches_are_an_unverified")}</span>
                 </label>
               )}
             </CardContent>
@@ -663,7 +664,7 @@ function ImportPage() {
             <CardContent className="p-5 space-y-3">
               {dryRun && commitStatus !== "completed" && (
                 <div className="rounded-xl border bg-muted/40 p-3 text-xs">
-                  <p className="font-semibold text-sm">Dry run — nothing has been saved yet</p>
+                  <p className="font-semibold text-sm">{tu("op.dry_run_nothing_has_been")}</p>
                   <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-5">
                     {([
                       ["Total rows", totals.total], ["New records", dryRun.new_records], ["Already exist (skipped)", dryRun.skipped_existing],
@@ -676,27 +677,27 @@ function ImportPage() {
               )}
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-semibold">Server preview</p>
-                  <StatusChip tone="success">{totals.valid} valid</StatusChip>
+                  <p className="font-semibold">{tu("op.server_preview")}</p>
+                  <StatusChip tone="success">{totals.valid} {tu("op.valid_2")}</StatusChip>
                   {totals.errors > 0 && (
-                    <StatusChip tone="danger">{totals.errors} errors</StatusChip>
+                    <StatusChip tone="danger">{totals.errors} {tu("op.errors")}</StatusChip>
                   )}
                 </div>
                 {totals.errors > 0 && totals.valid > 0 && commitStatus !== "completed" && (
                   <Button variant="outline" onClick={doHoldProblems} disabled={busy !== null} className="rounded-xl">
-                    Import valid rows, keep problems aside
+                    {tu("op.import_valid_rows_keep_problems")}
                   </Button>
                 )}
                 <Button
                   onClick={() => setConfirmMode(true)}
                   disabled={!canCommit || busy !== null}
                   className="rounded-xl"
-                  title={canCommit ? "Confirm and write canonical records" : "Resolve errors before commit"}
+                  title={canCommit ? tu("op.confirm_and_write_canonical_records") : tu("op.resolve_errors_before_commit")}
                 >
                   {canCommit ? <Send className="h-4 w-4 mr-1.5" /> : <Lock className="h-4 w-4 mr-1.5" />}
                   {commitStatus === "completed" || commitStatus === "idempotent_replay"
-                    ? "Committed"
-                    : "Confirm import"}
+                    ? tu("op.committed")
+                    : tu("op.confirm_import")}
                 </Button>
               </div>
               <div className="overflow-auto max-h-96 rounded-xl border border-border">
@@ -735,10 +736,10 @@ function ImportPage() {
                   <div className="space-y-1">
                     <p className="font-semibold">{guidanceFor(failureCode).title}</p>
                     <p className="text-muted-foreground">{guidanceFor(failureCode).hint}</p>
-                    <p className="text-muted-foreground">Commit status: <code className="text-[10px]">{commitStatus}</code>. Nothing has been written. Fix the data and press Retry to mint a new request.</p>
+                    <p className="text-muted-foreground">{tu("op.commit_status")} <code className="text-[10px]">{commitStatus}</code>. Nothing has been written. Fix the data and press Retry to mint a new request.</p>
                     <div className="pt-1">
                       <Button size="sm" variant="outline" className="rounded-xl" onClick={doCommit} disabled={busy === "commit"}>
-                        <RefreshCw className="h-3.5 w-3.5 mr-1" /> Retry commit
+                        <RefreshCw className="h-3.5 w-3.5 mr-1" /> {tu("op.retry_commit")}
                       </Button>
                     </div>
                   </div>
@@ -752,13 +753,13 @@ function ImportPage() {
         {confirmMode && (
           <Card className="rounded-2xl border-primary">
             <CardContent className="p-5 space-y-3">
-              <p className="font-semibold">Confirm canonical import</p>
+              <p className="font-semibold">{tu("op.confirm_canonical_import")}</p>
               <ul className="text-xs text-muted-foreground list-disc pl-5 space-y-1">
-                <li>Society records will be created — structures, units, residents, occupancy, family and vehicles as applicable.</li>
-                <li>New non-login residents are created as offline residents (no login account is issued).</li>
-                <li>Existing records will not be silently overwritten. Houses and active vehicle plates that already exist are skipped, not duplicated.</li>
-                <li>Provenance is recorded for every canonical row.</li>
-                <li>This operation is idempotent — retrying with the same request replays the stored result.</li>
+                <li>{tu("op.society_records_will_be_created")}</li>
+                <li>{tu("op.new_non_login_residents_are")}</li>
+                <li>{tu("op.existing_records_will_not_be")}</li>
+                <li>{tu("op.provenance_is_recorded_for_every")}</li>
+                <li>{tu("op.this_operation_is_idempotent_retrying")}</li>
               </ul>
               <div className="flex gap-2 flex-wrap">
                 <Button
@@ -771,7 +772,7 @@ function ImportPage() {
                   ) : (
                     <Send className="h-4 w-4 mr-1.5" />
                   )}
-                  Yes, commit import
+                  {tu("op.yes_commit_import")}
                 </Button>
                 <Button
                   variant="outline"
@@ -779,7 +780,7 @@ function ImportPage() {
                   disabled={busy !== null}
                   className="rounded-xl"
                 >
-                  Cancel
+                  {tu("common.cancel")}
                 </Button>
               </div>
             </CardContent>
@@ -792,58 +793,58 @@ function ImportPage() {
             <CardContent className="p-5 space-y-3">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5 text-success" />
-                <p className="font-semibold">Import committed</p>
+                <p className="font-semibold">{tu("op.import_committed")}</p>
                 <StatusChip tone="success">
-                  {commitStatus === "idempotent_replay" ? "replayed" : "completed"}
+                  {commitStatus === "idempotent_replay" ? tu("op.replayed") : tu("op.completed")}
                 </StatusChip>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                 <div className="rounded-lg bg-muted p-2">
-                  <div className="text-muted-foreground">Structures created</div>
+                  <div className="text-muted-foreground">{tu("op.structures_created")}</div>
                   <div className="font-semibold">{commitResult.structures_created}</div>
                 </div>
                 <div className="rounded-lg bg-muted p-2">
-                  <div className="text-muted-foreground">Structures matched</div>
+                  <div className="text-muted-foreground">{tu("op.structures_matched")}</div>
                   <div className="font-semibold">{commitResult.structures_matched}</div>
                 </div>
                 <div className="rounded-lg bg-muted p-2">
-                  <div className="text-muted-foreground">Units created</div>
+                  <div className="text-muted-foreground">{tu("op.units_created")}</div>
                   <div className="font-semibold">{commitResult.units_created}</div>
                 </div>
                 <div className="rounded-lg bg-muted p-2">
-                  <div className="text-muted-foreground">Units matched</div>
+                  <div className="text-muted-foreground">{tu("op.units_matched")}</div>
                   <div className="font-semibold">{commitResult.units_matched}</div>
                 </div>
                 <div className="rounded-lg bg-muted p-2">
-                  <div className="text-muted-foreground">Residents created</div>
+                  <div className="text-muted-foreground">{tu("op.residents_created")}</div>
                   <div className="font-semibold">{commitResult.residents_created}</div>
                 </div>
                 <div className="rounded-lg bg-muted p-2">
-                  <div className="text-muted-foreground">Residents matched</div>
+                  <div className="text-muted-foreground">{tu("op.residents_matched")}</div>
                   <div className="font-semibold">{commitResult.residents_matched}</div>
                 </div>
                 <div className="rounded-lg bg-muted p-2">
-                  <div className="text-muted-foreground">Occupancies created</div>
+                  <div className="text-muted-foreground">{tu("op.occupancies_created")}</div>
                   <div className="font-semibold">{commitResult.occupancies_created}</div>
                 </div>
                 <div className="rounded-lg bg-muted p-2">
-                  <div className="text-muted-foreground">Family created</div>
+                  <div className="text-muted-foreground">{tu("op.family_created")}</div>
                   <div className="font-semibold">{commitResult.family_created}</div>
                 </div>
                 <div className="rounded-lg bg-muted p-2">
-                  <div className="text-muted-foreground">Vehicles created</div>
+                  <div className="text-muted-foreground">{tu("op.vehicles_created")}</div>
                   <div className="font-semibold">{commitResult.vehicles_created}</div>
                 </div>
                 <div className="rounded-lg bg-muted p-2">
-                  <div className="text-muted-foreground">Skipped</div>
+                  <div className="text-muted-foreground">{tu("op.skipped")}</div>
                   <div className="font-semibold">{commitResult.skipped}</div>
                 </div>
                 <div className="rounded-lg bg-muted p-2">
-                  <div className="text-muted-foreground">Total committed</div>
+                  <div className="text-muted-foreground">{tu("op.total_committed")}</div>
                   <div className="font-semibold">{commitResult.total_committed}</div>
                 </div>
               </div>
-              <p className="text-[10px] text-muted-foreground">Job {jobId}</p>
+              <p className="text-[10px] text-muted-foreground">{tu("op.job")} {jobId}</p>
             </CardContent>
           </Card>
         )}

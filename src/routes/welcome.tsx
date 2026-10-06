@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SociyoHubLogo } from "@/components/shared/SociyoHubLogo";
+import { tu } from "@/lib/i18n";
 
 const TITLE = "SociyoHub — Society management, simplified";
 const DESC =
@@ -72,9 +73,9 @@ function Landing() {
         <SociyoHubLogo size={26} />
         <div className="flex items-center gap-2">
           <Link to="/pricing" className="hidden sm:inline-flex h-11 items-center px-3 text-sm font-medium text-muted-foreground hover:text-foreground">
-            Pricing
+            {tu("op.pricing")}
           </Link>
-          <Button variant="outline" className="h-11" onClick={start}>Sign in</Button>
+          <Button variant="outline" className="h-11" onClick={start}>{tu("auth.signIn")}</Button>
         </div>
       </header>
 
@@ -85,21 +86,21 @@ function Landing() {
           <div className="lg:col-span-8">
             <p className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
               <Building2 className="h-3.5 w-3.5 text-primary" aria-hidden />
-              For Indian housing societies
+              {tu("op.for_indian_housing_societies")}
             </p>
             <h1 className="type-hero mt-6">
-              Society management,{" "}
+              {tu("op.society_management")}{" "}
               <span className="text-primary">simplified.</span>
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
-              SociyoHub gives your committee one place to bill maintenance, reach residents and keep society records in order — so the society runs itself, not your evenings.
+              {tu("op.sociyohub_gives_your_committee_one")}
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Button size="lg" className="h-12 px-6 text-base" onClick={start}>
-                Get started <ArrowRight className="ml-1 h-4 w-4" aria-hidden />
+                {tu("op.get_started")} <ArrowRight className="ml-1 h-4 w-4" aria-hidden />
               </Button>
               <Button asChild size="lg" variant="ghost" className="h-12 px-6 text-base">
-                <Link to="/pricing">See plans</Link>
+                <Link to="/pricing">{tu("sec.seePlans")}</Link>
               </Button>
             </div>
           </div>
@@ -122,8 +123,8 @@ function Landing() {
       {/* Capabilities */}
       <section className="container-page py-16 md:py-20">
         <div className="max-w-2xl">
-          <h2 className="type-section">Everything the committee handles, in one place</h2>
-          <p className="mt-3 text-muted-foreground">Four areas that take up most of a society's time.</p>
+          <h2 className="type-section">{tu("op.everything_the_committee_handles_in")}</h2>
+          <p className="mt-3 text-muted-foreground">{tu("op.four_areas_that_take_up")}</p>
         </div>
         <div className="mt-10 grid gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-2">
           {capabilities.map(({ icon: Icon, title, body }) => (
@@ -139,7 +140,7 @@ function Landing() {
       {/* Workflows */}
       <section className="border-y border-border bg-card">
         <div className="container-page py-16 md:py-20">
-          <h2 className="type-section max-w-2xl">How societies use SociyoHub</h2>
+          <h2 className="type-section max-w-2xl">{tu("op.how_societies_use_sociyohub")}</h2>
           <ol className="mt-10 grid gap-8 md:grid-cols-3">
             {workflows.map((w) => (
               <li key={w.step} className="border-t-2 border-primary pt-4">
@@ -156,9 +157,9 @@ function Landing() {
       <section className="container-page grid gap-10 py-16 md:grid-cols-2 md:py-20">
         <div>
           <ShieldCheck className="h-6 w-6 text-primary" aria-hidden />
-          <h2 className="type-section mt-4">Built for money and trust</h2>
+          <h2 className="type-section mt-4">{tu("op.built_for_money_and_trust")}</h2>
           <p className="mt-3 max-w-md text-muted-foreground">
-            Society finances need to be correct and accountable. SociyoHub is designed around that from the start.
+            {tu("op.society_finances_need_to_be")}
           </p>
         </div>
         <ul className="grid gap-3 self-center">
@@ -175,11 +176,11 @@ function Landing() {
       <section className="container-page pb-16 md:pb-24">
         <div className="flex flex-col items-start justify-between gap-6 rounded-2xl bg-foreground px-6 py-10 text-background md:flex-row md:items-center md:px-10">
           <div>
-            <h2 className="text-2xl font-semibold tracking-tight">Ready to simplify your society?</h2>
-            <p className="mt-2 text-sm opacity-75">Sign in or create your society in a few minutes.</p>
+            <h2 className="text-2xl font-semibold tracking-tight">{tu("op.ready_to_simplify_your_society")}</h2>
+            <p className="mt-2 text-sm opacity-75">{tu("op.sign_in_or_create_your")}</p>
           </div>
           <Button size="lg" className="h-12 px-6 text-base" onClick={start}>
-            Get started <ArrowRight className="ml-1 h-4 w-4" aria-hidden />
+            {tu("op.get_started")} <ArrowRight className="ml-1 h-4 w-4" aria-hidden />
           </Button>
         </div>
       </section>
@@ -188,10 +189,10 @@ function Landing() {
         <div className="container-page flex flex-col gap-3 py-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <span>© SociyoHub Technologies</span>
           <nav className="flex flex-wrap gap-4">
-            <Link to="/about" className="hover:text-foreground">About</Link>
-            <Link to="/privacy" className="hover:text-foreground">Privacy</Link>
-            <Link to="/terms" className="hover:text-foreground">Terms</Link>
-            <Link to="/contact" className="hover:text-foreground">Contact</Link>
+            <Link to="/about" className="hover:text-foreground">{tu("op.about_2")}</Link>
+            <Link to="/privacy" className="hover:text-foreground">{tu("auth.privacy")}</Link>
+            <Link to="/terms" className="hover:text-foreground">{tu("auth.terms")}</Link>
+            <Link to="/contact" className="hover:text-foreground">{tu("op.contact")}</Link>
           </nav>
         </div>
       </footer>

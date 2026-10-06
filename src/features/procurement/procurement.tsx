@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { cn } from "@/lib/utils";
 import { ProcurementFiles, useProcurementEvidence, fileErrorMessage } from "./ProcurementFiles";
+import { tu } from "@/lib/i18n";
 
 export const CATEGORIES = [["cleaning", "Cleaning"], ["security", "Security"], ["electricity", "Electricity"], ["repair", "Repair"], ["water", "Water"], ["salary", "Salary"], ["other", "Other"]] as const;
 const catLabel = (c: string) => CATEGORIES.find((x) => x[0] === c)?.[1] ?? c;
@@ -74,7 +75,7 @@ const esc = (s: unknown) => String(s ?? "—").replace(/[&<>"']/g, (c) => ({ "&"
 /** Printable purchase order built only from the approved, ordered request already shown. Nothing is stored. */
 function printPurchaseOrder(req: Req, vendor: string, quoteRef: string | null) {
   const w = window.open("", "_blank", "width=800,height=900");
-  if (!w) { toast.error("Allow pop-ups to print the purchase order."); return; }
+  if (!w) { toast.error(tu("op.allow_pop_ups_to_print")); return; }
   const rows: [string, unknown][] = [["PO / order ref", req.order_ref], ["Request", `#${req.request_no} ${req.title}`], ["Vendor", vendor], ["Category", `${catLabel(req.category)} · ${fyLabel(req.fy_start)}`], ["Quotation ref", quoteRef], ["Approved amount", inr(req.approved_amount)], ["Needed by", req.needed_by], ["Approval note", req.decision_note]];
   w.document.write(`<!doctype html><html><head><title>Purchase order ${esc(req.order_ref)}</title><style>body{font-family:system-ui,sans-serif;margin:40px;color:#0B2545}h1{font-size:22px}table{border-collapse:collapse;width:100%;margin-top:16px}td{border:1px solid #ccc;padding:8px;vertical-align:top}td:first-child{width:35%;font-weight:600}p{white-space:pre-wrap}.sig{margin-top:64px;display:flex;justify-content:space-between}</style></head><body><h1>Purchase order</h1><table>${rows.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</table>${req.description ? `<h3>Scope</h3><p>${esc(req.description)}</p>` : ""}<div class="sig"><span>Authorised signatory</span><span>Vendor acceptance</span></div><script>window.onload=()=>window.print()</script></body></html>`);
   w.document.close();
@@ -118,15 +119,15 @@ export function PurchasesTab() {
   const current = data.reqs.find((r) => r.id === open) ?? null;
   return (
     <div className="space-y-3">
-      <p className="rounded-xl bg-muted/60 p-3 text-xs text-muted-foreground">A purchase record is not proof of payment. Money is only recorded when you post an Expense and link it here.</p>
+      <p className="rounded-xl bg-muted/60 p-3 text-xs text-muted-foreground">{tu("op.a_purchase_record_is_not")}</p>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div role="tablist" aria-label="Filter" className="flex gap-1 rounded-xl bg-muted p-1">
+        <div role="tablist" aria-label={tu("op.filter")} className="flex gap-1 rounded-xl bg-muted p-1">
           {(["open", "all"] as const).map((k) => <button key={k} role="tab" aria-selected={filter === k} onClick={() => setFilter(k)}
-            className={cn("min-h-10 rounded-lg px-3 text-sm", filter === k ? "bg-background shadow-sm" : "text-muted-foreground")}>{k === "open" ? "Open" : "All"}</button>)}
+            className={cn("min-h-10 rounded-lg px-3 text-sm", filter === k ? "bg-background shadow-sm" : "text-muted-foreground")}>{k === "open" ? tu("common.open") : tu("common.all")}</button>)}
         </div>
-        <Button className="min-h-11" onClick={() => setCreating(true)}><Plus className="mr-1 h-4 w-4" />New request</Button>
+        <Button className="min-h-11" onClick={() => setCreating(true)}><Plus className="mr-1 h-4 w-4" />{tu("hd.new")}</Button>
       </div>
-      {list.length === 0 ? <ListEmpty icon={ShoppingCart} title="No purchase requests">Raise a request to collect quotations and get committee approval.</ListEmpty> : (
+      {list.length === 0 ? <ListEmpty icon={ShoppingCart} title={tu("op.no_purchase_requests")}>{tu("op.raise_a_request_to_collect")}</ListEmpty> : (
         <ul className="space-y-2">
           {list.map((r) => {
             const [label, tone] = STATUS[r.status] ?? [r.status, "muted"];
@@ -139,8 +140,8 @@ export function PurchasesTab() {
                     <span className="shrink-0 text-sm font-semibold tabular-nums">{inr(r.approved_amount ?? r.estimated_amount)}</span>
                   </div>
                   <div className="mt-2 flex flex-wrap gap-1"><Chip tone={tone}>{label}</Chip>
-                    {isOverdue(r) && <Chip tone="bad">Overdue</Chip>}
-                    {data.overBudget.has(r.category) && r.fy_start === currentFy() && OPEN.includes(r.status) && <Chip tone="warn">Over budget</Chip>}</div>
+                    {isOverdue(r) && <Chip tone="bad">{tu("bills.overdue")}</Chip>}
+                    {data.overBudget.has(r.category) && r.fy_start === currentFy() && OPEN.includes(r.status) && <Chip tone="warn">{tu("op.over_budget")}</Chip>}</div>
                 </button>
               </li>
             );
@@ -164,25 +165,25 @@ function CreateSheet({ open, onClose }: { open: boolean; onClose: () => void }) 
         _needed_by: (f.needed || null) as string, _estimated: est as number });
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Request created as draft"); setF({ title: "", description: "", category: "repair", needed: "", estimate: "" }); onClose(); qc.invalidateQueries({ queryKey: ["procurement"] }); },
+    onSuccess: () => { toast.success(tu("op.request_created_as_draft")); setF({ title: "", description: "", category: "repair", needed: "", estimate: "" }); onClose(); qc.invalidateQueries({ queryKey: ["procurement"] }); },
     onError: (e) => toast.error(procErrorMessage(e)),
   });
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto rounded-t-2xl">
-        <SheetHeader><SheetTitle>New purchase request</SheetTitle></SheetHeader>
+        <SheetHeader><SheetTitle>{tu("op.new_purchase_request")}</SheetTitle></SheetHeader>
         <form className="mt-4 space-y-3" onSubmit={(e) => { e.preventDefault(); m.mutate(); }}>
-          <Field id="p-title" label="What is needed"><Input id="p-title" required minLength={3} maxLength={120} value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} /></Field>
-          <Field id="p-desc" label="Details (optional)"><Textarea id="p-desc" maxLength={2000} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} /></Field>
-          <Field id="p-cat" label="Budget category">
+          <Field id="p-title" label={tu("op.what_is_needed")}><Input id="p-title" required minLength={3} maxLength={120} value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} /></Field>
+          <Field id="p-desc" label={tu("op.details_optional")}><Textarea id="p-desc" maxLength={2000} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} /></Field>
+          <Field id="p-cat" label={tu("op.budget_category")}>
             <Select value={f.category} onValueChange={(v) => setF({ ...f, category: v })}><SelectTrigger id="p-cat" className="min-h-11"><SelectValue /></SelectTrigger>
               <SelectContent>{CATEGORIES.map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent></Select>
           </Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field id="p-need" label="Needed by"><Input id="p-need" type="date" value={f.needed} onChange={(e) => setF({ ...f, needed: e.target.value })} /></Field>
-            <Field id="p-est" label="Estimate ₹ (optional)"><Input id="p-est" inputMode="decimal" value={f.estimate} onChange={(e) => setF({ ...f, estimate: e.target.value })} /></Field>
+            <Field id="p-need" label={tu("op.needed_by")}><Input id="p-need" type="date" value={f.needed} onChange={(e) => setF({ ...f, needed: e.target.value })} /></Field>
+            <Field id="p-est" label={tu("op.estimate_optional")}><Input id="p-est" inputMode="decimal" value={f.estimate} onChange={(e) => setF({ ...f, estimate: e.target.value })} /></Field>
           </div>
-          <Button type="submit" className="min-h-11 w-full" disabled={m.isPending}>{m.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save draft</Button>
+          <Button type="submit" className="min-h-11 w-full" disabled={m.isPending}>{m.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{tu("el.a.saveDraft")}</Button>
         </form>
       </SheetContent>
     </Sheet>
@@ -217,7 +218,7 @@ function RequestSheet({ req, vendors, me, onClose }: { req: Req; vendors: { id: 
   });
   const run = useMutation({ ...mut,
     mutationFn: async (fn: () => PromiseLike<{ error: unknown }>) => { const { error } = await fn(); if (error) throw error; },
-    onSuccess: () => { toast.success("Saved"); setText(""); setAmount(""); setDate(""); qc.invalidateQueries({ queryKey: ["procurement"] }); },
+    onSuccess: () => { toast.success(tu("op.saved")); setText(""); setAmount(""); setDate(""); qc.invalidateQueries({ queryKey: ["procurement"] }); },
     onError: (e) => toast.error(procErrorMessage(e)),
   });
   const money = (s: string) => { const n = parseMoney(s); if (n == null) { toast.error(procErrorMessage("invalid_amount")); } return n; };
@@ -231,48 +232,48 @@ function RequestSheet({ req, vendors, me, onClose }: { req: Req; vendors: { id: 
     <Sheet open onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="bottom" className="max-h-[92vh] overflow-y-auto rounded-t-2xl">
         <SheetHeader><SheetTitle className="pr-6">#{req.request_no} {req.title}</SheetTitle></SheetHeader>
-        <div className="mt-2 flex flex-wrap gap-1"><Chip tone={tone}>{label}</Chip>{isOverdue(req) && <Chip tone="bad">Overdue</Chip>}</div>
+        <div className="mt-2 flex flex-wrap gap-1"><Chip tone={tone}>{label}</Chip>{isOverdue(req) && <Chip tone="bad">{tu("bills.overdue")}</Chip>}</div>
         {req.description && <p className="mt-3 whitespace-pre-wrap text-sm text-muted-foreground">{req.description}</p>}
         <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
-          <div><dt className="text-xs text-muted-foreground">Category</dt><dd>{catLabel(req.category)} · {fyLabel(req.fy_start)}</dd></div>
-          <div><dt className="text-xs text-muted-foreground">Vendor</dt><dd className="truncate">{vName(req.vendor_id)}</dd></div>
-          <div><dt className="text-xs text-muted-foreground">Approved amount</dt><dd className="tabular-nums">{inr(req.approved_amount)}</dd></div>
-          <div><dt className="text-xs text-muted-foreground">Order ref</dt><dd className="break-all">{req.order_ref ?? "—"}</dd></div>
-          <div><dt className="text-xs text-muted-foreground">Invoice</dt><dd className="break-all">{req.invoice_ref ? `${req.invoice_ref} · ${inr(req.invoice_amount)}` : "—"}</dd></div>
-          <div><dt className="text-xs text-muted-foreground">Payment ref (info only)</dt><dd className="break-all">{req.payment_ref ?? "—"}</dd></div>
-          <div className="col-span-2"><dt className="text-xs text-muted-foreground">Linked expense</dt><dd>{req.expense_id ? "Linked — see Expenses for the posted amount" : "Not linked"}</dd></div>
-          {req.decision_note && <div className="col-span-2"><dt className="text-xs text-muted-foreground">Decision note</dt><dd>{req.decision_note}</dd></div>}
-          {req.cancel_reason && <div className="col-span-2"><dt className="text-xs text-muted-foreground">Cancel reason</dt><dd>{req.cancel_reason}</dd></div>}
+          <div><dt className="text-xs text-muted-foreground">{tu("common.category")}</dt><dd>{catLabel(req.category)} · {fyLabel(req.fy_start)}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">{tu("vs.cat.vendor")}</dt><dd className="truncate">{vName(req.vendor_id)}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">{tu("op.approved_amount")}</dt><dd className="tabular-nums">{inr(req.approved_amount)}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">{tu("op.order_ref")}</dt><dd className="break-all">{req.order_ref ?? "—"}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">{tu("op.invoice")}</dt><dd className="break-all">{req.invoice_ref ? `${req.invoice_ref} · ${inr(req.invoice_amount)}` : "—"}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">{tu("op.payment_ref_info_only")}</dt><dd className="break-all">{req.payment_ref ?? "—"}</dd></div>
+          <div className="col-span-2"><dt className="text-xs text-muted-foreground">{tu("op.linked_expense")}</dt><dd>{req.expense_id ? tu("op.linked_see_expenses_for_the") : tu("el.a.notLinked")}</dd></div>
+          {req.decision_note && <div className="col-span-2"><dt className="text-xs text-muted-foreground">{tu("op.decision_note")}</dt><dd>{req.decision_note}</dd></div>}
+          {req.cancel_reason && <div className="col-span-2"><dt className="text-xs text-muted-foreground">{tu("op.cancel_reason_2")}</dt><dd>{req.cancel_reason}</dd></div>}
         </dl>
-        {req.invoice_amount != null && req.approved_amount != null && req.invoice_amount > req.approved_amount && <p className="mt-2 text-xs text-destructive">Invoice is higher than the approved amount.</p>}
+        {req.invoice_amount != null && req.approved_amount != null && req.invoice_amount > req.approved_amount && <p className="mt-2 text-xs text-destructive">{tu("op.invoice_is_higher_than_the")}</p>}
         {req.order_ref && ["ordered", "invoice_received", "payment_ref_recorded", "completed"].includes(req.status) && (
           <Button type="button" variant="outline" className="mt-3 min-h-11 w-full" onClick={() => printPurchaseOrder(req, vName(req.vendor_id), quotes.find((q) => q.id === req.selected_quotation_id)?.quote_ref ?? null)}>
-            <Printer className="mr-2 h-4 w-4" aria-hidden />Print purchase order
+            <Printer className="mr-2 h-4 w-4" aria-hidden />{tu("op.print_purchase_order")}
           </Button>
         )}
         {files.isError && <p className="mt-2 text-xs text-destructive">{fileErrorMessage(files.error)}</p>}
         {["ordered", "invoice_received", "payment_ref_recorded", "completed", "cancelled"].includes(req.status) && (files.data?.some((f) => f.kind === "invoice") || ["ordered", "invoice_received", "payment_ref_recorded"].includes(req.status)) && (
           <section className="mt-4">
-            <h3 className="text-sm font-semibold">Vendor invoice files</h3>
-            <p className="text-xs text-muted-foreground">Evidence only — attaching a file never records a payment or expense.</p>
-            <ProcurementFiles requestId={req.id} quotationId={null} kind="invoice" rows={files.data ?? []} editable={["ordered", "invoice_received", "payment_ref_recorded"].includes(req.status)} label="Attach invoice file" />
+            <h3 className="text-sm font-semibold">{tu("op.vendor_invoice_files")}</h3>
+            <p className="text-xs text-muted-foreground">{tu("op.evidence_only_attaching_a_file")}</p>
+            <ProcurementFiles requestId={req.id} quotationId={null} kind="invoice" rows={files.data ?? []} editable={["ordered", "invoice_received", "payment_ref_recorded"].includes(req.status)} label={tu("op.attach_invoice_file")} />
           </section>
         )}
 
         <section className="mt-4 space-y-2">
-          <h3 className="text-sm font-semibold">Quotations</h3>
-          {extra.isLoading ? <ListSkeleton /> : quotes.length === 0 ? <p className="text-sm text-muted-foreground">No quotations yet.</p> : (
+          <h3 className="text-sm font-semibold">{tu("op.quotations")}</h3>
+          {extra.isLoading ? <ListSkeleton /> : quotes.length === 0 ? <p className="text-sm text-muted-foreground">{tu("op.no_quotations_yet")}</p> : (
             <ul className="space-y-1">
               {quotes.map((qt, i) => (
                 <li key={qt.id}>
                   <label className={cn("flex min-h-11 items-center gap-2 rounded-xl border p-2 text-sm", req.selected_quotation_id === qt.id && "border-primary")}>
                     {req.status === "quotation_pending" && <input type="radio" name="pick" checked={pick === qt.id} onChange={() => setPick(qt.id)} aria-label={`Select ${vName(qt.vendor_id)}`} />}
                     <span className="min-w-0 flex-1"><span className="block truncate font-medium">{vName(qt.vendor_id)}</span>
-                      <span className="text-xs text-muted-foreground">{qt.quote_ref ?? "No ref"}{qt.valid_until ? ` · valid to ${qt.valid_until}` : ""}</span></span>
+                      <span className="text-xs text-muted-foreground">{qt.quote_ref ?? tu("op.no_ref")}{qt.valid_until ? ` · valid to ${qt.valid_until}` : ""}</span></span>
                     <span className="tabular-nums font-semibold">{inr(qt.amount)}</span>
-                    {i === 0 && quotes.length > 1 && <Chip tone="ok">Lowest</Chip>}
+                    {i === 0 && quotes.length > 1 && <Chip tone="ok">{tu("op.lowest")}</Chip>}
                   </label>
-                  <ProcurementFiles requestId={req.id} quotationId={qt.id} kind="quotation" rows={files.data ?? []} editable={["draft", "quotation_pending"].includes(req.status)} label="Attach quotation file" />
+                  <ProcurementFiles requestId={req.id} quotationId={qt.id} kind="quotation" rows={files.data ?? []} editable={["draft", "quotation_pending"].includes(req.status)} label={tu("op.attach_quotation_file")} />
                 </li>
               ))}
             </ul>
@@ -280,57 +281,57 @@ function RequestSheet({ req, vendors, me, onClose }: { req: Req; vendors: { id: 
           {["draft", "quotation_pending"].includes(req.status) && (
             <form className="grid grid-cols-2 gap-2" onSubmit={(e) => { e.preventDefault(); const n = money(amount); if (n == null || !vendor) return;
               run.mutate(() => supabase.rpc("proc_add_quotation", { _request: req.id, _vendor: vendor, _amount: n, _quote_ref: text, _valid_until: (date || null) as string, _notes: "" })); }}>
-              <div className="col-span-2"><Select value={vendor} onValueChange={setVendor}><SelectTrigger className="min-h-11" aria-label="Vendor"><SelectValue placeholder="Choose vendor" /></SelectTrigger>
+              <div className="col-span-2"><Select value={vendor} onValueChange={setVendor}><SelectTrigger className="min-h-11" aria-label={tu("vs.cat.vendor")}><SelectValue placeholder={tu("op.choose_vendor")} /></SelectTrigger>
                 <SelectContent>{vendors.filter((v) => v.is_active).map((v) => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}</SelectContent></Select>
-                {vendors.length === 0 && <p className="mt-1 text-xs text-muted-foreground">Add vendors in Operations → Vendors first.</p>}</div>
-              <Input aria-label="Quoted amount ₹" placeholder="Amount ₹" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
-              <Input aria-label="Quote reference" placeholder="Quote ref" maxLength={80} value={text} onChange={(e) => setText(e.target.value)} />
-              <Input aria-label="Valid until" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-              <Button type="submit" variant="outline" className="min-h-11" disabled={busy}>Add quotation</Button>
+                {vendors.length === 0 && <p className="mt-1 text-xs text-muted-foreground">{tu("op.add_vendors_in_operations_vendors")}</p>}</div>
+              <Input aria-label={tu("op.quoted_amount")} placeholder={tu("op.amount")} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
+              <Input aria-label={tu("op.quote_reference")} placeholder={tu("op.quote_ref")} maxLength={80} value={text} onChange={(e) => setText(e.target.value)} />
+              <Input aria-label={tu("op.valid_until")} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+              <Button type="submit" variant="outline" className="min-h-11" disabled={busy}>{tu("op.add_quotation")}</Button>
             </form>
           )}
         </section>
 
         <section className="mt-4 space-y-2">
-          {req.status === "draft" && <Button className="min-h-11 w-full" disabled={busy} onClick={() => run.mutate(() => supabase.rpc("proc_submit", { _request: req.id }))}>Submit for quotations</Button>}
-          {req.status === "quotation_pending" && <Button className="min-h-11 w-full" disabled={busy || !pick} onClick={() => run.mutate(() => supabase.rpc("proc_request_approval", { _request: req.id, _quotation: pick }))}>Send selected quotation for approval</Button>}
+          {req.status === "draft" && <Button className="min-h-11 w-full" disabled={busy} onClick={() => run.mutate(() => supabase.rpc("proc_submit", { _request: req.id }))}>{tu("op.submit_for_quotations")}</Button>}
+          {req.status === "quotation_pending" && <Button className="min-h-11 w-full" disabled={busy || !pick} onClick={() => run.mutate(() => supabase.rpc("proc_request_approval", { _request: req.id, _quotation: pick }))}>{tu("op.send_selected_quotation_for_approval")}</Button>}
           {req.status === "awaiting_approval" && (mine
-            ? <p className="rounded-xl bg-muted p-3 text-sm text-muted-foreground">You raised this request, so another committee member must approve or reject it.</p>
-            : <div className="space-y-2"><Textarea aria-label="Decision note" placeholder="Note (required to reject)" maxLength={500} value={text} onChange={(e) => setText(e.target.value)} />
+            ? <p className="rounded-xl bg-muted p-3 text-sm text-muted-foreground">{tu("op.you_raised_this_request_so")}</p>
+            : <div className="space-y-2"><Textarea aria-label={tu("op.decision_note")} placeholder={tu("op.note_required_to_reject")} maxLength={500} value={text} onChange={(e) => setText(e.target.value)} />
                 <div className="grid grid-cols-2 gap-2">
-                  <Button variant="outline" className="min-h-11" disabled={busy} onClick={() => run.mutate(() => supabase.rpc("proc_decide", { _request: req.id, _approve: false, _note: text }))}>Reject</Button>
-                  <Button className="min-h-11" disabled={busy} onClick={() => run.mutate(() => supabase.rpc("proc_decide", { _request: req.id, _approve: true, _note: text }))}>Approve</Button>
+                  <Button variant="outline" className="min-h-11" disabled={busy} onClick={() => run.mutate(() => supabase.rpc("proc_decide", { _request: req.id, _approve: false, _note: text }))}>{tu("el.a.reject")}</Button>
+                  <Button className="min-h-11" disabled={busy} onClick={() => run.mutate(() => supabase.rpc("proc_decide", { _request: req.id, _approve: true, _note: text }))}>{tu("vs.approve")}</Button>
                 </div></div>)}
           {req.status === "approved" && <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); run.mutate(() => supabase.rpc("proc_mark_ordered", { _request: req.id, _order_ref: text })); }}>
-            <Input aria-label="Purchase order reference" placeholder="Order / PO reference" maxLength={80} required value={text} onChange={(e) => setText(e.target.value)} />
-            <Button type="submit" className="min-h-11" disabled={busy}>Mark ordered</Button></form>}
+            <Input aria-label={tu("op.purchase_order_reference")} placeholder={tu("op.order_po_reference")} maxLength={80} required value={text} onChange={(e) => setText(e.target.value)} />
+            <Button type="submit" className="min-h-11" disabled={busy}>{tu("op.mark_ordered")}</Button></form>}
           {req.status === "ordered" && <form className="grid grid-cols-2 gap-2" onSubmit={(e) => { e.preventDefault(); const n = money(amount); if (n == null) return;
             run.mutate(() => supabase.rpc("proc_record_invoice", { _request: req.id, _invoice_ref: text, _amount: n, _invoice_date: date })); }}>
-            <Input aria-label="Invoice number" placeholder="Invoice no." maxLength={80} required value={text} onChange={(e) => setText(e.target.value)} />
-            <Input aria-label="Invoice amount ₹" placeholder="Amount ₹" inputMode="decimal" required value={amount} onChange={(e) => setAmount(e.target.value)} />
-            <Input aria-label="Invoice date" type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
-            <Button type="submit" className="min-h-11" disabled={busy}>Record invoice</Button></form>}
+            <Input aria-label={tu("op.invoice_number")} placeholder={tu("op.invoice_no")} maxLength={80} required value={text} onChange={(e) => setText(e.target.value)} />
+            <Input aria-label={tu("op.invoice_amount")} placeholder={tu("op.amount")} inputMode="decimal" required value={amount} onChange={(e) => setAmount(e.target.value)} />
+            <Input aria-label={tu("op.invoice_date")} type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
+            <Button type="submit" className="min-h-11" disabled={busy}>{tu("op.record_invoice")}</Button></form>}
           {req.status === "invoice_received" && <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); run.mutate(() => supabase.rpc("proc_record_payment_ref", { _request: req.id, _payment_ref: text })); }}>
-            <Input aria-label="Payment reference" placeholder="Bank / cheque ref (info only)" maxLength={80} required value={text} onChange={(e) => setText(e.target.value)} />
-            <Button type="submit" variant="outline" className="min-h-11" disabled={busy}>Save ref</Button></form>}
+            <Input aria-label={tu("op.payment_reference")} placeholder={tu("op.bank_cheque_ref_info_only")} maxLength={80} required value={text} onChange={(e) => setText(e.target.value)} />
+            <Button type="submit" variant="outline" className="min-h-11" disabled={busy}>{tu("op.save_ref")}</Button></form>}
           {["invoice_received", "payment_ref_recorded"].includes(req.status) && (
             <div className="space-y-2 rounded-xl border p-3">
-              <p className="text-sm font-medium">Link the posted expense</p>
-              <p className="text-xs text-muted-foreground">Post the payment in Expenses first, then link it here to complete the request.</p>
-              {expenses.isLoading ? <ListSkeleton /> : (expenses.data ?? []).length === 0 ? <p className="text-sm text-muted-foreground">No posted expenses found.</p> : (
-                <Select value={expense} onValueChange={setExpense}><SelectTrigger className="min-h-11" aria-label="Expense"><SelectValue placeholder="Choose expense" /></SelectTrigger>
+              <p className="text-sm font-medium">{tu("op.link_the_posted_expense")}</p>
+              <p className="text-xs text-muted-foreground">{tu("op.post_the_payment_in_expenses")}</p>
+              {expenses.isLoading ? <ListSkeleton /> : (expenses.data ?? []).length === 0 ? <p className="text-sm text-muted-foreground">{tu("op.no_posted_expenses_found")}</p> : (
+                <Select value={expense} onValueChange={setExpense}><SelectTrigger className="min-h-11" aria-label={tu("acc.expense")}><SelectValue placeholder={tu("op.choose_expense")} /></SelectTrigger>
                   <SelectContent>{(expenses.data ?? []).map((x) => <SelectItem key={x.id} value={x.id}>{x.spent_on} · {catLabel(x.category)} · {inr(x.amount)}</SelectItem>)}</SelectContent></Select>)}
-              {expense && req.invoice_amount != null && Number(expenses.data?.find((x) => x.id === expense)?.amount) !== Number(req.invoice_amount) && <p className="text-xs text-warning-foreground">Expense amount differs from the invoice.</p>}
-              <Button className="min-h-11 w-full" disabled={busy || !expense} onClick={() => run.mutate(() => supabase.rpc("proc_link_expense", { _request: req.id, _expense: expense }))}>Link and complete</Button>
+              {expense && req.invoice_amount != null && Number(expenses.data?.find((x) => x.id === expense)?.amount) !== Number(req.invoice_amount) && <p className="text-xs text-warning-foreground">{tu("op.expense_amount_differs_from_the")}</p>}
+              <Button className="min-h-11 w-full" disabled={busy || !expense} onClick={() => run.mutate(() => supabase.rpc("proc_link_expense", { _request: req.id, _expense: expense }))}>{tu("op.link_and_complete")}</Button>
             </div>)}
-          {canCancel && <details className="rounded-xl border p-3"><summary className="cursor-pointer text-sm text-destructive">Cancel request</summary>
+          {canCancel && <details className="rounded-xl border p-3"><summary className="cursor-pointer text-sm text-destructive">{tu("hd.cancelReq")}</summary>
             <form className="mt-2 flex gap-2" onSubmit={(e) => { e.preventDefault(); run.mutate(() => supabase.rpc("proc_cancel", { _request: req.id, _reason: text })); }}>
-              <Input aria-label="Cancel reason" placeholder="Reason" minLength={5} maxLength={500} required value={text} onChange={(e) => setText(e.target.value)} />
-              <Button type="submit" variant="destructive" className="min-h-11" disabled={busy}>Cancel</Button></form></details>}
+              <Input aria-label={tu("op.cancel_reason_2")} placeholder={tu("exp.reason")} minLength={5} maxLength={500} required value={text} onChange={(e) => setText(e.target.value)} />
+              <Button type="submit" variant="destructive" className="min-h-11" disabled={busy}>{tu("common.cancel")}</Button></form></details>}
         </section>
 
         <section className="mt-4">
-          <h3 className="text-sm font-semibold">History</h3>
+          <h3 className="text-sm font-semibold">{tu("billingTabs.history")}</h3>
           <ol className="mt-2 space-y-1 text-xs text-muted-foreground">
             {(extra.data?.events ?? []).map((e) => <li key={e.id}>{new Date(e.created_at).toLocaleString("en-IN")} · {STATUS[e.to_status]?.[0] ?? e.to_status}{e.note ? ` — ${e.note}` : ""}</li>)}
           </ol>
@@ -362,7 +363,7 @@ export function BudgetsPanel() {
       const { error } = await supabase.rpc("budget_set", { _fy_start: fy, _category: edit!.category, _amount: n, _notes: f.notes, _reason: f.reason });
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Budget saved"); setEdit(null); qc.invalidateQueries({ queryKey: ["budgets"] }); qc.invalidateQueries({ queryKey: ["procurement"] }); },
+    onSuccess: () => { toast.success(tu("op.budget_saved")); setEdit(null); qc.invalidateQueries({ queryKey: ["budgets"] }); qc.invalidateQueries({ queryKey: ["procurement"] }); },
     onError: (e) => toast.error(procErrorMessage(e)),
   });
   const rows = q.data ?? [];
@@ -371,9 +372,9 @@ export function BudgetsPanel() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
-        <Select value={String(fy)} onValueChange={(v) => setFy(Number(v))}><SelectTrigger className="min-h-11 w-40" aria-label="Financial year"><SelectValue /></SelectTrigger>
+        <Select value={String(fy)} onValueChange={(v) => setFy(Number(v))}><SelectTrigger className="min-h-11 w-40" aria-label={tu("op.financial_year_2")}><SelectValue /></SelectTrigger>
           <SelectContent>{[0, 1, 2, -1].map((d) => currentFy() - d).map((y) => <SelectItem key={y} value={String(y)}>{fyLabel(y)}</SelectItem>)}</SelectContent></Select>
-        <p className="text-xs text-muted-foreground">Actuals = posted Expenses (Apr–Mar)</p>
+        <p className="text-xs text-muted-foreground">{tu("op.actuals_posted_expenses_apr_mar")}</p>
       </div>
       {q.isLoading ? <ListSkeleton /> : q.isError ? <LoadError title={procErrorMessage(q.error)} onRetry={() => q.refetch()} /> : (
         <>
@@ -390,9 +391,9 @@ export function BudgetsPanel() {
                 <li key={r.category}>
                   <button className="w-full min-h-11 rounded-2xl border bg-card p-3 text-left hover:bg-muted/40" onClick={() => { setEdit(r); setF({ amount: r.approved_amount ? String(r.approved_amount) : "", notes: r.notes ?? "", reason: "" }); }}>
                     <div className="flex items-center justify-between gap-2"><span className="font-medium">{catLabel(r.category)}</span>
-                      <span className="flex gap-1">{r.revision_count > 0 && <Chip tone="info">Revised ×{r.revision_count}</Chip>}{over && <Chip tone="bad">Over budget</Chip>}{r.approved_amount == null && <Chip tone="muted">No budget</Chip>}</span></div>
+                      <span className="flex gap-1">{r.revision_count > 0 && <Chip tone="info">{tu("op.revised")}{r.revision_count}</Chip>}{over && <Chip tone="bad">{tu("op.over_budget")}</Chip>}{r.approved_amount == null && <Chip tone="muted">{tu("op.no_budget")}</Chip>}</span></div>
                     <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted"><div className={cn("h-full origin-left rounded-full", over ? "bg-destructive" : "bg-primary")} style={{ transform: `scaleX(${pct / 100})` }} /></div>
-                    <p className="mt-1 text-xs text-muted-foreground tabular-nums">Actual {inr(r.actual)} of {inr(r.approved_amount)}{r.approved_amount != null ? ` · ${over ? "over by" : "left"} ${inr(Math.abs(r.variance))}` : ""}</p>
+                    <p className="mt-1 text-xs text-muted-foreground tabular-nums">{tu("op.actual")} {inr(r.actual)} of {inr(r.approved_amount)}{r.approved_amount != null ? ` · ${over ? "over by" : "left"} ${inr(Math.abs(r.variance))}` : ""}</p>
                   </button>
                 </li>
               );
@@ -404,14 +405,14 @@ export function BudgetsPanel() {
         <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto rounded-t-2xl">
           <SheetHeader><SheetTitle>{edit ? `${catLabel(edit.category)} · ${fyLabel(fy)}` : ""}</SheetTitle></SheetHeader>
           <form className="mt-4 space-y-3" onSubmit={(e) => { e.preventDefault(); save.mutate(); }}>
-            <Field id="b-amt" label="Approved budget ₹"><Input id="b-amt" inputMode="decimal" required value={f.amount} onChange={(e) => setF({ ...f, amount: e.target.value })} /></Field>
-            {changing && <Field id="b-reason" label="Reason for revision"><Input id="b-reason" required minLength={5} maxLength={500} value={f.reason} onChange={(e) => setF({ ...f, reason: e.target.value })} /></Field>}
-            <Field id="b-notes" label="Notes (optional)"><Textarea id="b-notes" maxLength={500} value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} /></Field>
-            <p className="text-xs text-muted-foreground">Changing a budget never changes recorded expenses. Every revision is kept.</p>
-            <Button type="submit" className="min-h-11 w-full" disabled={save.isPending}>{save.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save budget</Button>
+            <Field id="b-amt" label={tu("op.approved_budget")}><Input id="b-amt" inputMode="decimal" required value={f.amount} onChange={(e) => setF({ ...f, amount: e.target.value })} /></Field>
+            {changing && <Field id="b-reason" label={tu("op.reason_for_revision")}><Input id="b-reason" required minLength={5} maxLength={500} value={f.reason} onChange={(e) => setF({ ...f, reason: e.target.value })} /></Field>}
+            <Field id="b-notes" label={tu("op.notes_optional")}><Textarea id="b-notes" maxLength={500} value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} /></Field>
+            <p className="text-xs text-muted-foreground">{tu("op.changing_a_budget_never_changes")}</p>
+            <Button type="submit" className="min-h-11 w-full" disabled={save.isPending}>{save.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{tu("op.save_budget")}</Button>
           </form>
-          {edit?.budget_id && <section className="mt-4"><h3 className="text-sm font-semibold">Revision history</h3>
-            <ol className="mt-2 space-y-1 text-xs text-muted-foreground">{(hist.data ?? []).map((h) => <li key={h.id}>{new Date(h.created_at).toLocaleDateString("en-IN")} · {h.old_amount == null ? "Set" : `${inr(h.old_amount)} →`} {inr(h.new_amount)}{h.reason ? ` — ${h.reason}` : ""}</li>)}</ol></section>}
+          {edit?.budget_id && <section className="mt-4"><h3 className="text-sm font-semibold">{tu("op.revision_history")}</h3>
+            <ol className="mt-2 space-y-1 text-xs text-muted-foreground">{(hist.data ?? []).map((h) => <li key={h.id}>{new Date(h.created_at).toLocaleDateString("en-IN")} · {h.old_amount == null ? tu("op.set") : `${inr(h.old_amount)} →`} {inr(h.new_amount)}{h.reason ? ` — ${h.reason}` : ""}</li>)}</ol></section>}
         </SheetContent>
       </Sheet>
     </div>
@@ -444,10 +445,10 @@ export function ProcurementAuditSection({ fy }: { fy: number }) {
   const b = q.data!.budgets.reduce((a, r) => ({ b: a.b + Number(r.approved_amount ?? 0), a: a.a + Number(r.actual) }), { b: 0, a: 0 });
   return (
     <div className="space-y-2 p-4 text-sm">
-      <p>Budget {inr(b.b)} · Actual (posted expenses) {inr(b.a)} · Variance {inr(b.b - b.a)}</p>
-      <p className="text-muted-foreground">{q.data!.procs.length === 0 ? "No purchase requests in this year." : Object.entries(counts).map(([k, v]) => `${STATUS[k]?.[0] ?? k}: ${v}`).join(" · ")}</p>
-      <p className="text-xs text-muted-foreground">Payment references are informational; only linked posted expenses are financial records.</p>
-      <Button variant="outline" className="min-h-11" onClick={csv}>Download CSV</Button>
+      <p>{tu("op.budget")} {inr(b.b)} · Actual (posted expenses) {inr(b.a)} · Variance {inr(b.b - b.a)}</p>
+      <p className="text-muted-foreground">{q.data!.procs.length === 0 ? tu("op.no_purchase_requests_in_this") : Object.entries(counts).map(([k, v]) => `${STATUS[k]?.[0] ?? k}: ${v}`).join(" · ")}</p>
+      <p className="text-xs text-muted-foreground">{tu("op.payment_references_are_informational_onl")}</p>
+      <Button variant="outline" className="min-h-11" onClick={csv}>{tu("op.download_csv")}</Button>
     </div>
   );
 }

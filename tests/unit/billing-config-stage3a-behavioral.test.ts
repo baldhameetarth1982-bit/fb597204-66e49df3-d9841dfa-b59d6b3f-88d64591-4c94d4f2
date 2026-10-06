@@ -8,7 +8,7 @@
  * payment/ledger/dues writes.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync } from "../helpers/ui-source";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import {

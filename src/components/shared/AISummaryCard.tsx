@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { summarizeRecord, type AISummary } from "@/lib/ai-summaries.functions";
+import { tu } from "@/lib/i18n";
 
 type Target = { kind: "ticket"; id: string } | { kind: "meeting"; id: string } | { kind: "attention" };
 
@@ -36,15 +37,15 @@ export function AISummaryCard({ target, label = "Summarise with AI" }: { target:
   return (
     <section aria-live="polite" className="rounded-xl border border-primary/25 bg-primary/5 p-3 text-sm">
       <p className="flex items-center gap-1.5 text-xs font-semibold text-primary">
-        <Sparkles className="h-3.5 w-3.5" aria-hidden /> AI-generated summary · check the record before acting
+        <Sparkles className="h-3.5 w-3.5" aria-hidden /> {tu("op.ai_generated_summary_check_the")}
       </p>
       {state.status === "loading" && (
-        <p className="mt-2 flex items-center gap-2 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden /> Summarising…</p>
+        <p className="mt-2 flex items-center gap-2 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden /> {tu("op.summarising")}</p>
       )}
       {state.status === "error" && (
         <div className="mt-2 flex items-center justify-between gap-2">
           <p className="text-muted-foreground">{state.message}</p>
-          <Button type="button" size="sm" variant="ghost" className="min-h-11" onClick={go}>Try again</Button>
+          <Button type="button" size="sm" variant="ghost" className="min-h-11" onClick={go}>{tu("common.tryAgain")}</Button>
         </div>
       )}
       {state.status === "done" && state.data && (
@@ -53,10 +54,10 @@ export function AISummaryCard({ target, label = "Summarise with AI" }: { target:
           {state.data.points.length > 0 && (
             <ul className="list-disc space-y-1 ps-5 text-muted-foreground">{state.data.points.map((p, i) => <li key={i} className="break-words">{p}</li>)}</ul>
           )}
-          {state.data.incomplete && <p className="text-xs text-muted-foreground">Based on incomplete information — some details aren't recorded.</p>}
+          {state.data.incomplete && <p className="text-xs text-muted-foreground">{tu("op.based_on_incomplete_information_some")}</p>}
           {state.data.refs.length > 0 && (
             <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
-              <span className="text-muted-foreground">Sources:</span>
+              <span className="text-muted-foreground">{tu("op.sources")}</span>
               {state.data.refs.map((r, i) => <Link key={i} to={r.href} className="text-primary underline-offset-2 hover:underline">{r.label}</Link>)}
             </p>
           )}

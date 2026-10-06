@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogD
 import { ListEmpty, ListSkeleton, LoadError, StatusChip } from "@/components/people/PeopleUI";
 import { listModerationQueue } from "@/lib/community.functions";
 import { communityError } from "@/lib/community-errors";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/community")({
   head: () => ({
@@ -42,7 +43,7 @@ function CommunityModeration() {
       const { error } = await (supabase as any).rpc("market_moderate", { _id: v.id, _action: v.action, _reason: v.reason ?? null });
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Done — the owner has been notified where relevant"); setRemoving(null); setReason(""); qc.invalidateQueries({ queryKey: ["community-moderation"] }); },
+    onSuccess: () => { toast.success(tu("op.done_the_owner_has_been")); setRemoving(null); setReason(""); qc.invalidateQueries({ queryKey: ["community-moderation"] }); },
     onError: (e) => toast.error(communityError(e)),
   });
 
@@ -52,7 +53,7 @@ function CommunityModeration() {
 
   return (
     <PageShell>
-      <PageHeader title="Community marketplace" description="Resident listings in your society. Remove anything unsafe — owners see your reason." />
+      <PageHeader title={tu("mod.marketplace")} description={tu("op.resident_listings_in_your_society")} />
       <div className="mb-4 flex flex-wrap gap-2">
         {(["reported", "all", "removed"] as const).map((f) => (
           <Button key={f} variant={filter === f ? "default" : "outline"} className="min-h-11 capitalize" onClick={() => setFilter(f)}>
@@ -60,8 +61,8 @@ function CommunityModeration() {
           </Button>
         ))}
       </div>
-      {q.isLoading ? <ListSkeleton rows={4} /> : q.isError ? <LoadError title="Couldn't load listings" onRetry={() => void q.refetch()} /> : !shown.length ? (
-        <ListEmpty icon={Store} title={filter === "reported" ? "Nothing reported" : "No listings"}>Reported listings will appear here.</ListEmpty>
+      {q.isLoading ? <ListSkeleton rows={4} /> : q.isError ? <LoadError title={tu("cm.loadFailed")} onRetry={() => void q.refetch()} /> : !shown.length ? (
+        <ListEmpty icon={Store} title={filter === "reported" ? tu("op.nothing_reported") : tu("op.no_listings")}>{tu("op.reported_listings_will_appear_here")}</ListEmpty>
       ) : (
         <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
           {shown.map((l: any) => (
@@ -70,16 +71,16 @@ function CommunityModeration() {
               <div className="min-w-0 flex-1 space-y-1">
                 <div className="flex flex-wrap gap-1.5">
                   <StatusChip tone={l.status === "removed" ? "warning" : l.status === "published" ? "success" : "muted"}>{l.status}</StatusChip>
-                  {l.report_count > 0 && <StatusChip tone="warning"><Flag className="mr-1 h-3 w-3" />{l.report_count} report{l.report_count > 1 ? "s" : ""}</StatusChip>}
+                  {l.report_count > 0 && <StatusChip tone="warning"><Flag className="mr-1 h-3 w-3" />{l.report_count} {tu("op.report")}{l.report_count > 1 ? "s" : ""}</StatusChip>}
                 </div>
                 <p className="font-medium break-words">{l.title}</p>
                 {l.description && <p className="line-clamp-2 text-sm text-muted-foreground">{l.description}</p>}
                 {reports.filter((r) => r.listing_id === l.id).map((r) => <p key={r.id} className="rounded-lg bg-muted px-3 py-1.5 text-xs">“{r.reason}”</p>)}
-                {l.removed_reason && <p className="text-xs text-muted-foreground">Removed: {l.removed_reason}</p>}
+                {l.removed_reason && <p className="text-xs text-muted-foreground">{tu("op.removed")} {l.removed_reason}</p>}
                 <div className="flex flex-wrap gap-2 pt-1">
-                  {l.status !== "removed" && <Button size="sm" variant="destructive" className="min-h-11" onClick={() => setRemoving(l)}><ShieldX className="mr-1 h-4 w-4" />Remove</Button>}
-                  {l.status !== "removed" && l.report_count > 0 && <Button size="sm" variant="outline" className="min-h-11" disabled={moderate.isPending} onClick={() => moderate.mutate({ id: l.id, action: "dismiss_reports" })}><Check className="mr-1 h-4 w-4" />Dismiss reports</Button>}
-                  {l.status === "removed" && <Button size="sm" variant="outline" className="min-h-11" disabled={moderate.isPending} onClick={() => moderate.mutate({ id: l.id, action: "restore" })}><RotateCcw className="mr-1 h-4 w-4" />Restore</Button>}
+                  {l.status !== "removed" && <Button size="sm" variant="destructive" className="min-h-11" onClick={() => setRemoving(l)}><ShieldX className="mr-1 h-4 w-4" />{tu("fd.remove")}</Button>}
+                  {l.status !== "removed" && l.report_count > 0 && <Button size="sm" variant="outline" className="min-h-11" disabled={moderate.isPending} onClick={() => moderate.mutate({ id: l.id, action: "dismiss_reports" })}><Check className="mr-1 h-4 w-4" />{tu("op.dismiss_reports")}</Button>}
+                  {l.status === "removed" && <Button size="sm" variant="outline" className="min-h-11" disabled={moderate.isPending} onClick={() => moderate.mutate({ id: l.id, action: "restore" })}><RotateCcw className="mr-1 h-4 w-4" />{tu("op.restore")}</Button>}
                 </div>
               </div>
             </li>
@@ -90,12 +91,12 @@ function CommunityModeration() {
       {removing && (
         <Dialog open onOpenChange={(o) => !o && setRemoving(null)}>
           <DialogContent>
-            <DialogHeader><DialogTitle>Remove listing</DialogTitle><DialogDescription>The owner is notified with this reason. It is kept in the listing history.</DialogDescription></DialogHeader>
-            <Label htmlFor="r">Reason</Label>
+            <DialogHeader><DialogTitle>{tu("op.remove_listing")}</DialogTitle><DialogDescription>{tu("op.the_owner_is_notified_with")}</DialogDescription></DialogHeader>
+            <Label htmlFor="r">{tu("exp.reason")}</Label>
             <Textarea id="r" maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} />
             <DialogFooter>
-              <Button variant="outline" className="min-h-11" onClick={() => setRemoving(null)}>Cancel</Button>
-              <Button variant="destructive" className="min-h-11" disabled={reason.trim().length < 3 || moderate.isPending} onClick={() => moderate.mutate({ id: removing.id, action: "remove", reason: reason.trim() })}>Remove</Button>
+              <Button variant="outline" className="min-h-11" onClick={() => setRemoving(null)}>{tu("common.cancel")}</Button>
+              <Button variant="destructive" className="min-h-11" disabled={reason.trim().length < 3 || moderate.isPending} onClick={() => moderate.mutate({ id: removing.id, action: "remove", reason: reason.trim() })}>{tu("fd.remove")}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -126,19 +127,19 @@ function Categories() {
   });
   return (
     <section className="mt-8 space-y-3">
-      <h2 className="font-semibold">Categories</h2>
-      <p className="text-sm text-muted-foreground">Default categories are shared; add your own for this society.</p>
+      <h2 className="font-semibold">{tu("inc.categories")}</h2>
+      <p className="text-sm text-muted-foreground">{tu("op.default_categories_are_shared_add")}</p>
       <div className="flex flex-wrap gap-2">
         {(q.data ?? []).map((c) => (
           <span key={c.id} className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm">
-            {c.label}{!c.active && " (hidden)"}
-            {c.society_id && <button type="button" className="min-h-8 text-xs text-primary underline" onClick={() => save.mutate({ id: c.id, label: c.label, active: !c.active })}>{c.active ? "Hide" : "Show"}</button>}
+            {c.label}{!c.active && tu("op.hidden")}
+            {c.society_id && <button type="button" className="min-h-8 text-xs text-primary underline" onClick={() => save.mutate({ id: c.id, label: c.label, active: !c.active })}>{c.active ? tu("op.hide") : tu("rbd.show")}</button>}
           </span>
         ))}
       </div>
       <div className="flex max-w-md gap-2">
-        <Input aria-label="New category" className="min-h-11" maxLength={40} value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Home-cooked food" />
-        <Button className="min-h-11" disabled={label.trim().length < 2 || /[<>{}]/.test(label) || save.isPending} onClick={() => save.mutate({ id: null, label: label.trim(), active: true })}><Plus className="mr-1 h-4 w-4" />Add</Button>
+        <Input aria-label={tu("op.new_category")} className="min-h-11" maxLength={40} value={label} onChange={(e) => setLabel(e.target.value)} placeholder={tu("op.e_g_home_cooked_food")} />
+        <Button className="min-h-11" disabled={label.trim().length < 2 || /[<>{}]/.test(label) || save.isPending} onClick={() => save.mutate({ id: null, label: label.trim(), active: true })}><Plus className="mr-1 h-4 w-4" />{tu("vh.add")}</Button>
       </div>
     </section>
   );

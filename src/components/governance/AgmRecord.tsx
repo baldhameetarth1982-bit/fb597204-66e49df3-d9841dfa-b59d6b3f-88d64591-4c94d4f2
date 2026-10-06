@@ -3,6 +3,7 @@ import { CheckCircle2, XCircle, Users } from "lucide-react";
 import { ListSkeleton } from "@/components/people/PeopleUI";
 import { cn } from "@/lib/utils";
 import { govRpc, RESOLUTION_STATUS, type Quorum } from "@/lib/governance";
+import { tu } from "@/lib/i18n";
 
 export type AgendaItem = { id: string; seq: number; title: string; description: string | null; kind: string; poll_id: string | null; election_id: string | null; source_id: string | null };
 export type Resolution = { id: string; seq: number; title: string; body: string; status: string; agenda_item_id: string | null; poll_id: string | null; decided_at: string | null };
@@ -14,21 +15,21 @@ export const AGENDA_KIND: Record<string, string> = { discussion: "Discussion", r
 export function QuorumPanel({ agmId }: { agmId: string }) {
   const q = useQuery({ queryKey: ["agm-quorum", agmId], queryFn: () => govRpc<Quorum>("agm_quorum", { _agm: agmId }), staleTime: 10_000 });
   if (q.isLoading) return <ListSkeleton rows={1} />;
-  if (q.isError || !q.data) return <p className="text-sm text-muted-foreground">Quorum isn't available right now.</p>;
+  if (q.isError || !q.data) return <p className="text-sm text-muted-foreground">{tu("op.quorum_isn_t_available_right")}</p>;
   const d = q.data;
   return (
     <div className={cn("flex items-center gap-3 rounded-2xl border p-3", d.met ? "border-success/40 bg-success/5" : "border-warning/40 bg-warning/5")}>
       {d.met ? <CheckCircle2 className="h-5 w-5 shrink-0 text-success" aria-hidden /> : <XCircle className="h-5 w-5 shrink-0 text-warning-foreground" aria-hidden />}
       <div className="min-w-0 text-sm">
-        <p className="font-medium">{d.met ? "Quorum met" : "Quorum not met"}{d.frozen ? " (final)" : ""}{d.corrected ? " · corrected" : ""}</p>
-        <p className="tabular-nums text-muted-foreground"><Users className="mr-1 inline h-3.5 w-3.5" aria-hidden />{d.present} present of {d.eligible} {d.basis === "home" ? "homes" : "residents"} · {d.required} needed</p>
+        <p className="font-medium">{d.met ? tu("op.quorum_met") : tu("op.quorum_not_met")}{d.frozen ? tu("op.final") : ""}{d.corrected ? tu("op.corrected") : ""}</p>
+        <p className="tabular-nums text-muted-foreground"><Users className="mr-1 inline h-3.5 w-3.5" aria-hidden />{d.present} {tu("op.present_of")} {d.eligible} {d.basis === "home" ? tu("op.homes_2") : tu("op.residents")} · {d.required} {tu("op.needed")}</p>
       </div>
     </div>
   );
 }
 
 export function AgendaList({ items }: { items: AgendaItem[] }) {
-  if (!items.length) return <p className="text-sm text-muted-foreground">No agenda items yet.</p>;
+  if (!items.length) return <p className="text-sm text-muted-foreground">{tu("op.no_agenda_items_yet")}</p>;
   return (
     <ol className="space-y-2">
       {items.map((i, idx) => (
@@ -42,7 +43,7 @@ export function AgendaList({ items }: { items: AgendaItem[] }) {
 }
 
 export function ResolutionList({ items, agenda }: { items: Resolution[]; agenda: AgendaItem[] }) {
-  if (!items.length) return <p className="text-sm text-muted-foreground">No resolutions recorded.</p>;
+  if (!items.length) return <p className="text-sm text-muted-foreground">{tu("op.no_resolutions_recorded")}</p>;
   return (
     <ul className="space-y-2">
       {items.map((r) => (
@@ -52,8 +53,8 @@ export function ResolutionList({ items, agenda }: { items: Resolution[]; agenda:
             <span className={cn("shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium", RESOLUTION_STATUS[r.status]?.className)}>{RESOLUTION_STATUS[r.status]?.label}</span>
           </div>
           <p className="mt-1 whitespace-pre-wrap text-muted-foreground">{r.body}</p>
-          {r.agenda_item_id && <p className="mt-1 text-xs text-muted-foreground">Agenda: {agenda.find((a) => a.id === r.agenda_item_id)?.title ?? "—"}</p>}
-          {r.poll_id && <p className="text-xs text-muted-foreground">Decided by a linked formal vote</p>}
+          {r.agenda_item_id && <p className="mt-1 text-xs text-muted-foreground">{tu("op.agenda")} {agenda.find((a) => a.id === r.agenda_item_id)?.title ?? "—"}</p>}
+          {r.poll_id && <p className="text-xs text-muted-foreground">{tu("op.decided_by_a_linked_formal")}</p>}
         </li>
       ))}
     </ul>

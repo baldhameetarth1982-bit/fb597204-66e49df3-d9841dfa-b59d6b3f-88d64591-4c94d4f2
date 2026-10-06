@@ -18,6 +18,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { supabase } from "@/integrations/supabase/client";
 import { getAuditorHistory } from "@/lib/role-access.functions";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/auditor")({
   head: () => ({ meta: [
@@ -46,19 +47,19 @@ function AuditorWorkspace({ societyName }: { societyName: string | null }) {
     <div className="mx-auto max-w-6xl px-4 pb-24 pt-6 sm:px-6">
       <header className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Auditor · read-only</p>
-          <h1 className="text-2xl font-semibold">{societyName ?? "Society"} accounts</h1>
-          <p className="text-sm text-muted-foreground">You can view and export audit information. Nothing here can be changed from this account.</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{tu("op.auditor_read_only")}</p>
+          <h1 className="text-2xl font-semibold">{societyName ?? tu("nav.society")} {tu("op.accounts")}</h1>
+          <p className="text-sm text-muted-foreground">{tu("op.you_can_view_and_export")}</p>
         </div>
-        <Button variant="outline" className="min-h-11" onClick={async () => { await signOut(); window.location.replace("/login"); }}><LogOut className="mr-1 h-4 w-4" />Sign out</Button>
+        <Button variant="outline" className="min-h-11" onClick={async () => { await signOut(); window.location.replace("/login"); }}><LogOut className="mr-1 h-4 w-4" />{tu("common.signOut")}</Button>
       </header>
       <Tabs defaultValue="books">
         <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
           <TabsList className="mb-4 min-w-max">
-            <TabsTrigger value="books">Books &amp; tax</TabsTrigger>
-            <TabsTrigger value="records">Records</TabsTrigger>
-            <TabsTrigger value="pack">Auditor Pack</TabsTrigger>
-            <TabsTrigger value="history">Audit history</TabsTrigger>
+            <TabsTrigger value="books">{tu("op.books_tax")}</TabsTrigger>
+            <TabsTrigger value="records">{tu("exp.records")}</TabsTrigger>
+            <TabsTrigger value="pack">{tu("op.auditor_pack")}</TabsTrigger>
+            <TabsTrigger value="history">{tu("op.audit_history")}</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="books"><FeatureGate feature="accounts_center"><BooksPage readOnly /></FeatureGate></TabsContent>
@@ -110,17 +111,17 @@ function RecordsTab() {
     },
   });
   return (
-    <SectionCard title="Canonical records" description="Read-only. Totals in the books come from the posted ledger; these are the source records." icon={Receipt}>
+    <SectionCard title={tu("op.canonical_records")} description={tu("op.read_only_totals_in_the")} icon={Receipt}>
       <div className="mb-4 flex flex-wrap gap-2">
         {(Object.keys(KIND_LABEL) as Kind[]).map((k) => (
           <Button key={k} size="sm" className="min-h-11" variant={kind === k ? "default" : "outline"} onClick={() => { setKind(k); setPage(0); }}>{KIND_LABEL[k]}</Button>
         ))}
       </div>
       <div className="mb-4 grid grid-cols-2 gap-3 sm:max-w-md">
-        <div><Label htmlFor="rf">From</Label><Input id="rf" type="date" value={from} onChange={(e) => { setFrom(e.target.value); setPage(0); }} /></div>
+        <div><Label htmlFor="rf">{tu("common.from")}</Label><Input id="rf" type="date" value={from} onChange={(e) => { setFrom(e.target.value); setPage(0); }} /></div>
         <div><Label htmlFor="rt">To</Label><Input id="rt" type="date" value={to} onChange={(e) => { setTo(e.target.value); setPage(0); }} /></div>
       </div>
-      {!valid ? <p role="alert" className="text-sm text-destructive">Choose a valid date range.</p>
+      {!valid ? <p role="alert" className="text-sm text-destructive">{tu("op.choose_a_valid_date_range")}</p>
         : q.error ? <ErrorRow error={q.error} onRetry={() => q.refetch()} />
         : !q.data ? <Loading />
         : q.data.length === 0 ? <EmptyState icon={Receipt} title={`No ${KIND_LABEL[kind].toLowerCase()} in this period`} />
@@ -135,8 +136,8 @@ function RecordsTab() {
           </ul>
         )}
       <div className="mt-3 flex justify-between">
-        <Button variant="outline" size="sm" className="min-h-11" disabled={page === 0} onClick={() => setPage(page - 1)}>Previous</Button>
-        <Button variant="outline" size="sm" className="min-h-11" disabled={(q.data?.length ?? 0) < 50} onClick={() => setPage(page + 1)}>Next</Button>
+        <Button variant="outline" size="sm" className="min-h-11" disabled={page === 0} onClick={() => setPage(page - 1)}>{tu("acc.previous")}</Button>
+        <Button variant="outline" size="sm" className="min-h-11" disabled={(q.data?.length ?? 0) < 50} onClick={() => setPage(page + 1)}>{tu("acc.next")}</Button>
       </div>
     </SectionCard>
   );
@@ -150,12 +151,12 @@ function HistoryTab() {
   const valid = !!from && !!to && from <= to;
   const q = useQuery({ queryKey: ["auditor-history", from, to, offset], enabled: valid, retry: false, placeholderData: (p) => p, queryFn: () => fn({ data: { from, to, offset } }) });
   return (
-    <SectionCard title="Financial audit history" description="Who changed which financial record, and when. Non-financial activity is not shown." icon={History}>
+    <SectionCard title={tu("op.financial_audit_history")} description={tu("op.who_changed_which_financial_record")} icon={History}>
       <div className="mb-4 grid grid-cols-2 gap-3 sm:max-w-md">
-        <div><Label htmlFor="hf">From</Label><Input id="hf" type="date" value={from} onChange={(e) => { setFrom(e.target.value); setOffset(0); }} /></div>
+        <div><Label htmlFor="hf">{tu("common.from")}</Label><Input id="hf" type="date" value={from} onChange={(e) => { setFrom(e.target.value); setOffset(0); }} /></div>
         <div><Label htmlFor="ht">To</Label><Input id="ht" type="date" value={to} onChange={(e) => { setTo(e.target.value); setOffset(0); }} /></div>
       </div>
-      {q.error ? <ErrorRow error={q.error} onRetry={() => q.refetch()} /> : !q.data ? <Loading /> : q.data.length === 0 ? <EmptyState icon={BookOpenCheck} title="No financial activity in this period" /> : (
+      {q.error ? <ErrorRow error={q.error} onRetry={() => q.refetch()} /> : !q.data ? <Loading /> : q.data.length === 0 ? <EmptyState icon={BookOpenCheck} title={tu("op.no_financial_activity_in_this")} /> : (
         <ul className="divide-y rounded-lg border">
           {q.data.map((h, i) => (
             <li key={`${h.at}-${i}`} className="p-3 text-sm">
@@ -166,8 +167,8 @@ function HistoryTab() {
         </ul>
       )}
       <div className="mt-3 flex justify-between">
-        <Button variant="outline" size="sm" className="min-h-11" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - 50))}>Previous</Button>
-        <Button variant="outline" size="sm" className="min-h-11" disabled={(q.data?.length ?? 0) < 50} onClick={() => setOffset(offset + 50)}>Next</Button>
+        <Button variant="outline" size="sm" className="min-h-11" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - 50))}>{tu("acc.previous")}</Button>
+        <Button variant="outline" size="sm" className="min-h-11" disabled={(q.data?.length ?? 0) < 50} onClick={() => setOffset(offset + 50)}>{tu("acc.next")}</Button>
       </div>
     </SectionCard>
   );

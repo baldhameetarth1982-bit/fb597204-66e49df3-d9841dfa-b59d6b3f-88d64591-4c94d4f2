@@ -11,6 +11,7 @@ import { ListSkeleton, LoadError, ListEmpty } from "@/components/people/PeopleUI
 import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { opsErrorMessage } from "./OperationsTabs";
+import { tu } from "@/lib/i18n";
 
 interface Report {
   scope: string; total: number; open: number; resolved: number; overdue: number; escalated: number; on_hold: number;
@@ -42,7 +43,7 @@ function Pick({ id, label, value, onChange, options }: { id: string; label: stri
       <Label htmlFor={id}>{label}</Label>
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger id={id} className="h-11"><SelectValue /></SelectTrigger>
-        <SelectContent><SelectItem value={ALL}>All</SelectItem>{options.map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent>
+        <SelectContent><SelectItem value={ALL}>{tu("common.all")}</SelectItem>{options.map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent>
       </Select>
     </div>
   );
@@ -55,7 +56,7 @@ function Bars({ title, data }: { title: string; data: [string, number][] }) {
   return (
     <section className="rounded-2xl border bg-card p-3">
       <h3 className="mb-2 text-sm font-semibold">{title}</h3>
-      {!data.length ? <p className="text-sm text-muted-foreground">No requests.</p> : (
+      {!data.length ? <p className="text-sm text-muted-foreground">{tu("op.no_requests")}</p> : (
         <ul className="space-y-1.5">
           {data.map(([k, n]) => (
             <li key={k} className="grid grid-cols-[minmax(0,8rem)_1fr_2.5rem] items-center gap-2 text-sm">
@@ -118,51 +119,51 @@ export function HelpdeskReportsTab() {
   return (
     <section className="space-y-3">
       <form className="grid grid-cols-2 gap-2 rounded-2xl border bg-card p-3 sm:grid-cols-4" onSubmit={(e) => { e.preventDefault(); setApplied(draft); }}>
-        <div className="space-y-1"><Label htmlFor="hr-from">From</Label><Input id="hr-from" type="date" className="h-11" value={draft.from} onChange={(e) => set("from")(e.target.value)} /></div>
+        <div className="space-y-1"><Label htmlFor="hr-from">{tu("common.from")}</Label><Input id="hr-from" type="date" className="h-11" value={draft.from} onChange={(e) => set("from")(e.target.value)} /></div>
         <div className="space-y-1"><Label htmlFor="hr-to">To</Label><Input id="hr-to" type="date" className="h-11" value={draft.to} onChange={(e) => set("to")(e.target.value)} /></div>
-        <Pick id="hr-st" label="Status" value={draft.status} onChange={set("status")} options={STATUS.map((s) => [s, pretty(s)] as const)} />
-        <Pick id="hr-pr" label="Priority" value={draft.priority} onChange={set("priority")} options={PRIORITY.map((s) => [s, pretty(s)] as const)} />
-        <Pick id="hr-ca" label="Category" value={draft.category} onChange={set("category")} options={CATEGORY} />
-        <Pick id="hr-fl" label="Show only" value={draft.flag} onChange={set("flag")} options={FLAGS} />
-        <Pick id="hr-sf" label="Staff" value={draft.staff} onChange={set("staff")} options={lists.data?.staff ?? []} />
-        <Pick id="hr-vd" label="Vendor" value={draft.vendor} onChange={set("vendor")} options={lists.data?.vendors ?? []} />
-        <Pick id="hr-as" label="Asset" value={draft.asset} onChange={set("asset")} options={lists.data?.assets ?? []} />
+        <Pick id="hr-st" label={tu("common.status")} value={draft.status} onChange={set("status")} options={STATUS.map((s) => [s, pretty(s)] as const)} />
+        <Pick id="hr-pr" label={tu("hd.priority")} value={draft.priority} onChange={set("priority")} options={PRIORITY.map((s) => [s, pretty(s)] as const)} />
+        <Pick id="hr-ca" label={tu("common.category")} value={draft.category} onChange={set("category")} options={CATEGORY} />
+        <Pick id="hr-fl" label={tu("op.show_only")} value={draft.flag} onChange={set("flag")} options={FLAGS} />
+        <Pick id="hr-sf" label={tu("gd.catStaff")} value={draft.staff} onChange={set("staff")} options={lists.data?.staff ?? []} />
+        <Pick id="hr-vd" label={tu("vs.cat.vendor")} value={draft.vendor} onChange={set("vendor")} options={lists.data?.vendors ?? []} />
+        <Pick id="hr-as" label={tu("op.asset")} value={draft.asset} onChange={set("asset")} options={lists.data?.assets ?? []} />
         <div className="col-span-2 flex items-end gap-2 sm:col-span-3">
-          <Button type="submit" className="min-h-11 flex-1 rounded-xl" disabled={q.isFetching}>{q.isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}</Button>
-          <Button type="button" variant="outline" className="min-h-11 rounded-xl" onClick={() => { setDraft(EMPTY); setApplied(EMPTY); }}>Reset</Button>
+          <Button type="submit" className="min-h-11 flex-1 rounded-xl" disabled={q.isFetching}>{q.isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : tu("op.apply")}</Button>
+          <Button type="button" variant="outline" className="min-h-11 rounded-xl" onClick={() => { setDraft(EMPTY); setApplied(EMPTY); }}>{tu("inc.reset")}</Button>
           <Button type="button" variant="outline" className="min-h-11 rounded-xl" disabled={exp.isPending || !r?.total} onClick={() => exp.mutate()}>
-            {exp.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="mr-1 h-4 w-4" />}Export
+            {exp.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="mr-1 h-4 w-4" />}{tu("op.export")}
           </Button>
         </div>
       </form>
 
       {!sid || q.isPending ? <ListSkeleton rows={4} /> : q.isError ? <LoadError title={opsErrorMessage(q.error)} onRetry={() => q.refetch()} />
-        : !r || !r.total ? <ListEmpty icon={BarChart3} title="No requests match">Try a wider date range or fewer filters.</ListEmpty> : (
+        : !r || !r.total ? <ListEmpty icon={BarChart3} title={tu("op.no_requests_match")}>{tu("op.try_a_wider_date_range_2")}</ListEmpty> : (
         <>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <Stat label="Requests" value={r.total} hint={`${r.open} open · ${r.resolved} resolved`} />
-            <Stat label="Overdue now" value={r.overdue} />
-            <Stat label="Average time to resolve" value={r.avg_resolution_hours == null ? "—" : r.avg_resolution_hours < 48 ? `${r.avg_resolution_hours} h` : `${Math.round(r.avg_resolution_hours / 24)} days`} />
-            <Stat label="Within target time" value={slaTotal ? `${Math.round((r.sla_met / slaTotal) * 100)}%` : "—"} hint={slaTotal ? `${r.sla_met} met · ${r.sla_breached} missed` : "No target times yet"} />
-            <Stat label="Escalated" value={r.escalated} />
-            <Stat label="On hold" value={r.on_hold} />
-            <Stat label="Reopened / follow-ups" value={`${r.reopened} / ${r.follow_ups}`} />
-            <Stat label="Resident rating" value={r.rating_count >= 3 && r.rating_avg != null ? `${r.rating_avg}/5` : "—"} hint={r.rating_count >= 3 ? `${r.rating_count} ratings` : `${r.rating_count} rating${r.rating_count === 1 ? "" : "s"} — too few for a score`} />
+            <Stat label={tu("notif.tab.helpdesk")} value={r.total} hint={`${r.open} open · ${r.resolved} resolved`} />
+            <Stat label={tu("op.overdue_now")} value={r.overdue} />
+            <Stat label={tu("op.average_time_to_resolve")} value={r.avg_resolution_hours == null ? "—" : r.avg_resolution_hours < 48 ? `${r.avg_resolution_hours} h` : `${Math.round(r.avg_resolution_hours / 24)} days`} />
+            <Stat label={tu("op.within_target_time")} value={slaTotal ? `${Math.round((r.sla_met / slaTotal) * 100)}%` : "—"} hint={slaTotal ? `${r.sla_met} met · ${r.sla_breached} missed` : tu("op.no_target_times_yet")} />
+            <Stat label={tu("hd.ev.escalated")} value={r.escalated} />
+            <Stat label={tu("hd.st.on_hold")} value={r.on_hold} />
+            <Stat label={tu("op.reopened_follow_ups")} value={`${r.reopened} / ${r.follow_ups}`} />
+            <Stat label={tu("op.resident_rating_2")} value={r.rating_count >= 3 && r.rating_avg != null ? `${r.rating_avg}/5` : "—"} hint={r.rating_count >= 3 ? `${r.rating_count} ratings` : `${r.rating_count} rating${r.rating_count === 1 ? "" : "s"} — too few for a score`} />
           </div>
           <div className="grid gap-2 md:grid-cols-2">
-            <Bars title="By status" data={Object.entries(r.by_status).map(([k, n]) => [pretty(k), n])} />
-            <Bars title="By priority" data={Object.entries(r.by_priority).map(([k, n]) => [pretty(k), n])} />
-            <Bars title="By category" data={Object.entries(r.by_category).map(([k, n]) => [CATEGORY.find((c) => c[0] === k)?.[1] ?? pretty(k), n])} />
-            <Bars title="By staff" data={r.by_staff.map((s) => [`${s.name}${s.open ? ` (${s.open} open)` : ""}`, s.count])} />
-            {r.scope === "society" && <Bars title="By vendor" data={r.by_vendor.map((s) => [`${s.name}${s.open ? ` (${s.open} open)` : ""}`, s.count])} />}
-            <Bars title="Repeat problems (assets with 2+ requests)" data={r.problem_assets.map((a) => [`${a.name}${a.location ? ` · ${a.location}` : ""}`, a.count])} />
+            <Bars title={tu("op.by_status")} data={Object.entries(r.by_status).map(([k, n]) => [pretty(k), n])} />
+            <Bars title={tu("op.by_priority")} data={Object.entries(r.by_priority).map(([k, n]) => [pretty(k), n])} />
+            <Bars title={tu("op.by_category")} data={Object.entries(r.by_category).map(([k, n]) => [CATEGORY.find((c) => c[0] === k)?.[1] ?? pretty(k), n])} />
+            <Bars title={tu("op.by_staff")} data={r.by_staff.map((s) => [`${s.name}${s.open ? ` (${s.open} open)` : ""}`, s.count])} />
+            {r.scope === "society" && <Bars title={tu("op.by_vendor")} data={r.by_vendor.map((s) => [`${s.name}${s.open ? ` (${s.open} open)` : ""}`, s.count])} />}
+            <Bars title={tu("op.repeat_problems_assets_with_2")} data={r.problem_assets.map((a) => [`${a.name}${a.location ? ` · ${a.location}` : ""}`, a.count])} />
           </div>
           <section className="overflow-x-auto rounded-2xl border bg-card p-3">
-            <h3 className="mb-2 text-sm font-semibold">By month</h3>
-            <table className="w-full text-sm"><thead><tr className="text-left text-xs text-muted-foreground"><th className="py-1">Month</th><th className="text-right">Raised</th><th className="text-right">Resolved</th></tr></thead>
+            <h3 className="mb-2 text-sm font-semibold">{tu("op.by_month")}</h3>
+            <table className="w-full text-sm"><thead><tr className="text-left text-xs text-muted-foreground"><th className="py-1">{tu("mnt.month")}</th><th className="text-right">{tu("op.raised")}</th><th className="text-right">{tu("hd.st.resolved")}</th></tr></thead>
               <tbody>{r.by_month.map((m) => <tr key={m.month} className="border-t"><td className="py-1.5">{m.month}</td><td className="text-right tabular-nums">{m.created}</td><td className="text-right tabular-nums">{m.resolved}</td></tr>)}</tbody></table>
           </section>
-          <p className="text-xs text-muted-foreground">Counts come straight from Helpdesk requests. Exports leave out descriptions, resident details and AI text, and every export is recorded.</p>
+          <p className="text-xs text-muted-foreground">{tu("op.counts_come_straight_from_helpdesk")}</p>
         </>
       )}
     </section>

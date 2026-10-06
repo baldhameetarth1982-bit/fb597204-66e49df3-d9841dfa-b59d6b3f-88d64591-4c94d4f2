@@ -260,8 +260,10 @@ function TransitionedOutlet() {
   // Re-key on top-level path segment so transitions fire on section change
   // without thrashing on every param tweak.
   const seg = pathname.split("/").slice(0, 3).join("/") || "/";
+  // Pages read fixed text through tu(); re-mounting on a language change keeps them current.
+  const { i18n: i18nInstance } = useTranslation();
   return (
-    <PageTransition key={seg} className="contents">
+    <PageTransition key={`${seg}|${i18nInstance.language}`} className="contents">
       <Outlet />
     </PageTransition>
   );

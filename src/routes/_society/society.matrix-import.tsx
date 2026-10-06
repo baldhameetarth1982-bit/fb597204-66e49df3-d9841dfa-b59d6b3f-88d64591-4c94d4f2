@@ -13,6 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ensureMaintenancePeriod } from "@/lib/maintenance.functions";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/matrix-import")({
   head: () => ({ meta: [{ title: "Bulk Maintenance Import — SociyoHub" }] }),
@@ -73,8 +74,8 @@ function MatrixImportPage() {
     setCells([]);
     setIssues([]);
 
-    if (file.size === 0) { toast.error("That file is empty"); return; }
-    if (file.size > MAX_FILE_BYTES) { toast.error("File is too large (max 5 MB)"); return; }
+    if (file.size === 0) { toast.error(tu("op.that_file_is_empty")); return; }
+    if (file.size > MAX_FILE_BYTES) { toast.error(tu("op.file_is_too_large_max")); return; }
 
     setParsing(true);
     try {
@@ -87,7 +88,7 @@ function MatrixImportPage() {
       }
       rows = parsed.rows;
     } catch {
-      toast.error("That file could not be read as a spreadsheet");
+      toast.error(tu("op.that_file_could_not_be"));
       return;
     }
 
@@ -96,7 +97,7 @@ function MatrixImportPage() {
       .from("flats")
       .select("id, flat_number, blocks!flats_block_id_fkey(name)")
       .eq("society_id", societyId);
-    if (error) { toast.error("Could not load your houses. Please try again."); return; }
+    if (error) { toast.error(tu("op.could_not_load_your_houses")); return; }
 
     const flatKey = (b: string, u: string) => `${b.toLowerCase().trim()}/${u.toLowerCase().trim()}`;
     const flatMap = new Map<string, string>();
@@ -143,7 +144,7 @@ function MatrixImportPage() {
     setCells(newCells);
     setIssues(newIssues);
     if (newCells.length === 0 && newIssues.length === 0) {
-      toast.warning("No amounts found in file");
+      toast.warning(tu("op.no_amounts_found_in_file"));
     }
     } finally {
       setParsing(false);
@@ -186,25 +187,25 @@ function MatrixImportPage() {
     <PageShell>
       <div className="flex items-center gap-2 mb-3">
         <Button asChild variant="ghost" size="sm">
-          <Link to="/society/matrix"><ArrowLeft className="h-4 w-4 mr-1" /> Matrix</Link>
+          <Link to="/society/matrix"><ArrowLeft className="h-4 w-4 mr-1" /> {tu("mnt.matrix")}</Link>
         </Button>
       </div>
       <PageHeader
-        title="Bulk Maintenance Import"
-        description="Upload a matrix Excel (Block, Unit, Jan..Dec) to seed a whole year in one shot."
+        title={tu("op.bulk_maintenance_import")}
+        description={tu("op.upload_a_matrix_excel_block")}
       />
 
       <Card className="rounded-2xl">
         <CardContent className="p-5 space-y-4">
           <div className="flex flex-wrap items-center gap-2">
-            <label className="text-xs text-muted-foreground">Year</label>
+            <label className="text-xs text-muted-foreground">{tu("mnt.year")}</label>
             <Input
               type="number" value={year}
               onChange={(e) => setYear(Number(e.target.value) || year)}
               className="w-24 h-9"
             />
             <Button variant="outline" onClick={downloadTemplate} className="rounded-xl">
-              <FileDown className="h-4 w-4 mr-1.5" /> Template
+              <FileDown className="h-4 w-4 mr-1.5" /> {tu("op.template")}
             </Button>
             <label className="inline-flex">
               <input
@@ -218,16 +219,16 @@ function MatrixImportPage() {
               />
               <span className={`inline-flex items-center px-3 h-9 rounded-xl border bg-primary text-primary-foreground text-sm hover:opacity-90 ${busy || parsing ? "opacity-60 pointer-events-none" : "cursor-pointer"}`}>
                 {parsing ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Upload className="h-4 w-4 mr-1.5" />}
-                {parsing ? "Reading file…" : "Choose Excel"}
+                {parsing ? tu("op.reading_file") : tu("op.choose_excel")}
               </span>
             </label>
           </div>
 
           {(cells.length > 0 || issues.length > 0) && (
             <div className="grid grid-cols-3 gap-2">
-              <Stat label="Cells" value={cells.length} tone="ok" />
-              <Stat label="Total ₹" value={`₹${summary.total.toLocaleString("en-IN")}`} tone="info" />
-              <Stat label="Issues" value={issues.length} tone={issues.length ? "warn" : "neutral"} />
+              <Stat label={tu("op.cells")} value={cells.length} tone="ok" />
+              <Stat label={tu("op.total_3")} value={`₹${summary.total.toLocaleString("en-IN")}`} tone="info" />
+              <Stat label={tu("op.issues")} value={issues.length} tone={issues.length ? "warn" : "neutral"} />
             </div>
           )}
 
@@ -236,11 +237,11 @@ function MatrixImportPage() {
               {issues.slice(0, 30).map((iss, i) => (
                 <div key={i} className="flex items-start gap-2">
                   <AlertTriangle className="h-3 w-3 text-amber-600 mt-0.5 shrink-0" />
-                  <span>Row {iss.row}: {iss.msg}</span>
+                  <span>{tu("op.row")} {iss.row}: {iss.msg}</span>
                 </div>
               ))}
               {issues.length > 30 && (
-                <div className="text-muted-foreground pt-1">…and {issues.length - 30} more</div>
+                <div className="text-muted-foreground pt-1">…and {issues.length - 30} {tu("op.more")}</div>
               )}
             </div>
           )}
@@ -250,9 +251,9 @@ function MatrixImportPage() {
               <table className="w-full text-xs">
                 <thead className="bg-secondary">
                   <tr>
-                    <th className="p-2 text-left">Unit</th>
-                    <th className="p-2 text-left">Month</th>
-                    <th className="p-2 text-right">Amount</th>
+                    <th className="p-2 text-left">{tu("nd.unit")}</th>
+                    <th className="p-2 text-left">{tu("mnt.month")}</th>
+                    <th className="p-2 text-right">{tu("common.amount")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -266,7 +267,7 @@ function MatrixImportPage() {
                 </tbody>
               </table>
               {cells.length > 200 && (
-                <div className="p-2 text-xs text-muted-foreground text-center">…and {cells.length - 200} more</div>
+                <div className="p-2 text-xs text-muted-foreground text-center">…and {cells.length - 200} {tu("op.more")}</div>
               )}
             </div>
           )}
@@ -275,7 +276,7 @@ function MatrixImportPage() {
             <div className="flex justify-end">
               <Button onClick={() => void commit()} disabled={busy} className="rounded-xl">
                 {busy ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-1.5" />}
-                Commit {cells.length} period{cells.length === 1 ? "" : "s"}
+                {tu("op.commit")} {cells.length} {tu("op.period")}{cells.length === 1 ? "" : "s"}
               </Button>
             </div>
           )}
@@ -291,17 +292,17 @@ function MatrixImportPage() {
                 <>
                   <div className="max-h-40 overflow-auto space-y-1 text-xs">
                     {result.failures.slice(0, 30).map((f, i) => (
-                      <div key={i}>Row {f.row} · {f.unit} · {f.month} — {f.reason}</div>
+                      <div key={i}>{tu("op.row")} {f.row} · {f.unit} · {f.month} — {f.reason}</div>
                     ))}
                     {result.failures.length > 30 && (
-                      <div>…and {result.failures.length - 30} more</div>
+                      <div>…and {result.failures.length - 30} {tu("op.more")}</div>
                     )}
                   </div>
                   <Button
                     size="sm" variant="outline" className="rounded-xl" disabled={busy}
                     onClick={() => void commit(result.failures.map((f) => f.cell))}
                   >
-                    Retry failed
+                    {tu("op.retry_failed")}
                   </Button>
                 </>
               )}

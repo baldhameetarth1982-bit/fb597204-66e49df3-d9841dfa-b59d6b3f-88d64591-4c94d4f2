@@ -13,6 +13,7 @@ import { listDiscovery, type DiscoveryItem } from "@/lib/discovery.functions";
 import { safeHttpsUrl, telHref, whatsappHref } from "@/lib/discovery";
 import { cn } from "@/lib/utils";
 import { recordAdEvent, useAdImpression } from "@/lib/ad-events";
+import { tu } from "@/lib/i18n";
 
 const ICONS: Record<string, typeof Wrench> = {
   zap: Zap, droplets: Droplets, hammer: Hammer, snowflake: Snowflake, refrigerator: Refrigerator, sparkles: Sparkles,
@@ -52,8 +53,8 @@ export function ServiceDirectory() {
     <section aria-labelledby="local-services" className="space-y-3">
       <div className="flex items-end justify-between px-1">
         <div>
-          <h2 id="local-services" className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Local services</h2>
-          <p className="text-xs text-muted-foreground">Listed by SociyoHub. Not endorsed by your society committee.</p>
+          <h2 id="local-services" className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{tu("op.local_services")}</h2>
+          <p className="text-xs text-muted-foreground">{tu("op.listed_by_sociyohub_not_endorsed")}</p>
         </div>
       </div>
 
@@ -63,25 +64,25 @@ export function ServiceDirectory() {
         </div>
       ) : q.isError ? (
         <div role="alert" className="flex items-center justify-between gap-3 rounded-2xl border bg-card p-4 text-sm">
-          <span className="flex items-center gap-2 text-muted-foreground"><WifiOff className="h-4 w-4" /> Couldn't load local services.</span>
-          <Button variant="outline" className="min-h-11 rounded-xl" onClick={() => void q.refetch()}>Retry</Button>
+          <span className="flex items-center gap-2 text-muted-foreground"><WifiOff className="h-4 w-4" /> {tu("op.couldn_t_load_local_services")}</span>
+          <Button variant="outline" className="min-h-11 rounded-xl" onClick={() => void q.refetch()}>{tu("common.retry")}</Button>
         </div>
       ) : items.length === 0 ? (
         <div className="rounded-2xl border bg-card p-6 text-center">
           <Store className="mx-auto h-6 w-6 text-muted-foreground" />
-          <p className="mt-2 text-sm font-medium">No local services near you yet</p>
-          <p className="text-xs text-muted-foreground">New listings for your area will show here.</p>
+          <p className="mt-2 text-sm font-medium">{tu("op.no_local_services_near_you")}</p>
+          <p className="text-xs text-muted-foreground">{tu("op.new_listings_for_your_area")}</p>
         </div>
       ) : (
         <>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input aria-label="Search local services" className="h-11 rounded-xl pl-9" placeholder="Search electrician, cleaning…" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <Input aria-label={tu("op.search_local_services")} className="h-11 rounded-xl pl-9" placeholder={tu("op.search_electrician_cleaning")} value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
 
           {cat ? (
             <button type="button" onClick={() => setCat(null)} className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-primary">
-              <ChevronLeft className="h-4 w-4" /> All categories · {catLabel(cat)}
+              <ChevronLeft className="h-4 w-4" /> {tu("op.all_categories")} {catLabel(cat)}
             </button>
           ) : categories.length > 0 && !search && (
             <div className="grid grid-cols-3 gap-3">
@@ -105,7 +106,7 @@ export function ServiceDirectory() {
           )}
 
           {(cat || search) && shown.length === 0 ? (
-            <p className="rounded-2xl border bg-card p-4 text-center text-sm text-muted-foreground">{search ? "No matches. Try another word." : "Nothing listed in this category yet."}</p>
+            <p className="rounded-2xl border bg-card p-4 text-center text-sm text-muted-foreground">{search ? tu("op.no_matches_try_another_word") : tu("op.nothing_listed_in_this_category")}</p>
           ) : (cat || search) && (
             <ul className="space-y-3">{listings.map((i) => <li key={i.id}><Card item={i} onOpen={() => setOpen(i)} cat={catLabel(i.category_id)} /></li>)}</ul>
           )}
@@ -137,7 +138,7 @@ function Card({ item, onOpen, cat, wide }: { item: DiscoveryItem; onOpen: () => 
       <Thumb item={item} className="h-16 w-16 shrink-0 rounded-xl" />
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2 text-[11px] text-muted-foreground">
-          {item.sponsored && <span className="rounded-full bg-warning/15 px-1.5 py-0.5 font-medium text-warning-foreground">Sponsored</span>}
+          {item.sponsored && <span className="rounded-full bg-warning/15 px-1.5 py-0.5 font-medium text-warning-foreground">{tu("op.sponsored")}</span>}
           {cat && <span className="truncate">{cat}</span>}
         </span>
         <span className="block truncate font-semibold">{item.title}</span>
@@ -157,7 +158,7 @@ function Details({ item, cat }: { item: DiscoveryItem; cat: string | null }) {
       <Thumb item={item} className="aspect-[16/7] w-full rounded-2xl" />
       <SheetHeader className="text-left">
         <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-          {item.sponsored && <span className="rounded-full bg-warning/15 px-2 py-0.5 font-medium text-warning-foreground">Sponsored</span>}
+          {item.sponsored && <span className="rounded-full bg-warning/15 px-2 py-0.5 font-medium text-warning-foreground">{tu("op.sponsored")}</span>}
           {cat && <span>{cat}</span>}
         </div>
         <SheetTitle>{item.title}</SheetTitle>
@@ -165,12 +166,12 @@ function Details({ item, cat }: { item: DiscoveryItem; cat: string | null }) {
       </SheetHeader>
       {item.description && <p className="whitespace-pre-line text-sm">{item.description}</p>}
       <div className="grid gap-2 sm:grid-cols-3">
-        {tel && <Button asChild className="min-h-11 rounded-xl"><a href={tel}><Phone className="mr-2 h-4 w-4" />Call</a></Button>}
-        {wa && <Button asChild variant="outline" className="min-h-11 rounded-xl"><a href={wa} target="_blank" rel="noopener noreferrer"><MessageCircle className="mr-2 h-4 w-4" />WhatsApp</a></Button>}
-        {link && <Button asChild variant="outline" className="min-h-11 rounded-xl"><a href={link} target="_blank" rel="noopener noreferrer sponsored"><Globe className="mr-2 h-4 w-4" />{item.cta_label ?? "Website"}</a></Button>}
+        {tel && <Button asChild className="min-h-11 rounded-xl"><a href={tel}><Phone className="mr-2 h-4 w-4" />{tu("comm.call")}</a></Button>}
+        {wa && <Button asChild variant="outline" className="min-h-11 rounded-xl"><a href={wa} target="_blank" rel="noopener noreferrer"><MessageCircle className="mr-2 h-4 w-4" />{tu("op.whatsapp")}</a></Button>}
+        {link && <Button asChild variant="outline" className="min-h-11 rounded-xl"><a href={link} target="_blank" rel="noopener noreferrer sponsored"><Globe className="mr-2 h-4 w-4" />{item.cta_label ?? tu("op.website")}</a></Button>}
       </div>
-      {!tel && !wa && !link && <p className="text-sm text-muted-foreground">Contact details aren't available for this listing right now.</p>}
-      <p className="text-xs text-muted-foreground">SociyoHub and your society don't handle bookings or payments for this service.</p>
+      {!tel && !wa && !link && <p className="text-sm text-muted-foreground">{tu("op.contact_details_aren_t_available")}</p>}
+      <p className="text-xs text-muted-foreground">{tu("op.sociyohub_and_your_society_don")}</p>
     </div>
   );
 }

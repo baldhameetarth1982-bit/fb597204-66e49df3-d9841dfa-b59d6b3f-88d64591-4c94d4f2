@@ -17,6 +17,7 @@ import {
 import { toast } from "sonner";
 import { planSocietyFromText, applySocietyPlan, duplicateBlock } from "@/lib/blocks-ai.functions";
 import { getSocietyStructureOverview, type StructureOverview } from "@/lib/society-structure";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/blocks")({
   head: () => ({ meta: [{ title: "Blocks — SociyoHub" }] }),
@@ -99,7 +100,7 @@ function BlocksPage() {
     });
     setSaving(false);
     if (error) return toast.error(userMessage(error));
-    toast.success("Block created");
+    toast.success(tu("op.block_created"));
     setName(""); setDescription(""); setOpen(false);
     void fetchBlocks(societyId);
   }
@@ -148,7 +149,7 @@ function BlocksPage() {
         start_floor: Number.isFinite(Number(r.start_floor)) ? Number(r.start_floor) : 1,
       }))
       .filter((r) => r.name.length > 0);
-    if (clean.length === 0) { toast.error("Add at least one block with a name"); return; }
+    if (clean.length === 0) { toast.error(tu("op.add_at_least_one_block")); return; }
     setAutoBusy(true);
     try {
       const { data, error } = await (supabase.rpc as any)("bulk_generate_society_hierarchy", {
@@ -169,12 +170,12 @@ function BlocksPage() {
   if (!sidLoading && !societyId) {
     return (
       <PageShell>
-        <PageHeader title="Blocks" description="Manage the wings of your society." />
+        <PageHeader title={tu("nav.blocks")} description={tu("op.manage_the_wings_of_your")} />
         <EmptyState
           icon={Building2}
-          title="No society linked yet"
-          description="Set up your society first to start adding blocks."
-          action={<Button asChild><a href="/onboarding">Set up society</a></Button>}
+          title={tu("op.no_society_linked_yet")}
+          description={tu("op.set_up_your_society_first_2")}
+          action={<Button asChild><a href="/onboarding">{tu("op.set_up_society")}</a></Button>}
         />
       </PageShell>
     );
@@ -183,12 +184,12 @@ function BlocksPage() {
   if (overview?.structure_mode === "serial") {
     return (
       <PageShell>
-        <PageHeader title="Blocks" description="Manage the wings of your society." />
+        <PageHeader title={tu("nav.blocks")} description={tu("op.manage_the_wings_of_your")} />
         <EmptyState
           icon={Building2}
-          title="Serial-mode society"
-          description="Your society is configured for direct houses. Blocks are not used — manage units directly."
-          action={<Button asChild><a href="/society/flats">Open Units</a></Button>}
+          title={tu("op.serial_mode_society")}
+          description={tu("op.your_society_is_configured_for")}
+          action={<Button asChild><a href="/society/flats">{tu("op.open_units")}</a></Button>}
         />
       </PageShell>
     );
@@ -197,37 +198,37 @@ function BlocksPage() {
   return (
     <PageShell>
       <PageHeader
-        title="Blocks"
-        description="Apartments, bungalows or mixed — describe once, duplicate easily."
+        title={tu("nav.blocks")}
+        description={tu("op.apartments_bungalows_or_mixed_describe")}
         actions={
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" className="rounded-xl" onClick={() => setAutoOpen(true)}>
-              <Wand2 className="h-4 w-4 mr-2" /> Auto Design
+              <Wand2 className="h-4 w-4 mr-2" /> {tu("op.auto_design")}
             </Button>
             <Button variant="secondary" className="rounded-xl" onClick={() => setAiOpen(true)}>
-              <Sparkles className="h-4 w-4 mr-2" /> AI Build
+              <Sparkles className="h-4 w-4 mr-2" /> {tu("op.ai_build")}
             </Button>
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
                 <Button className="rounded-xl">
-                  <Plus className="h-4 w-4 mr-2" /> Add Block
+                  <Plus className="h-4 w-4 mr-2" /> {tu("op.add_block")}
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-md rounded-2xl">
-                <DialogHeader><DialogTitle>New block</DialogTitle></DialogHeader>
+                <DialogHeader><DialogTitle>{tu("op.new_block")}</DialogTitle></DialogHeader>
                 <form onSubmit={handleCreate} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Name</Label>
-                    <Input id="name" placeholder="e.g. Block A" value={name} onChange={(e) => setName(e.target.value)} required />
+                    <Label htmlFor="name">{tu("common.name")}</Label>
+                    <Input id="name" placeholder={tu("op.e_g_block_a")} value={name} onChange={(e) => setName(e.target.value)} required />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="desc">Description (optional)</Label>
-                    <Textarea id="desc" placeholder="Eastern wing, 12 floors…" value={description} onChange={(e) => setDescription(e.target.value)} />
+                    <Label htmlFor="desc">{tu("op.description_optional")}</Label>
+                    <Textarea id="desc" placeholder={tu("op.eastern_wing_12_floors")} value={description} onChange={(e) => setDescription(e.target.value)} />
                   </div>
                   <DialogFooter>
                     <Button type="submit" disabled={saving} className="rounded-xl">
                       {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                      Create
+                      {tu("common.create")}
                     </Button>
                   </DialogFooter>
                 </form>
@@ -242,8 +243,8 @@ function BlocksPage() {
       ) : blocks.length === 0 ? (
         <EmptyState
           icon={Building2}
-          title="No blocks yet"
-          description="Add a block manually, or hit AI Build and describe your society in plain English."
+          title={tu("op.no_blocks_yet")}
+          description={tu("op.add_a_block_manually_or")}
         />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -254,7 +255,7 @@ function BlocksPage() {
                   <div className="h-12 w-12 rounded-xl bg-primary/10 grid place-items-center">
                     <Building2 className="h-6 w-6 text-primary" />
                   </div>
-                  <span className="text-xs font-medium text-muted-foreground">{b.flat_count} units</span>
+                  <span className="text-xs font-medium text-muted-foreground">{b.flat_count} {tu("op.units")}</span>
                 </div>
                 <h3 className="mt-4 text-lg font-semibold">{b.name}</h3>
                 {b.description && <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{b.description}</p>}
@@ -262,7 +263,7 @@ function BlocksPage() {
                   size="sm" variant="ghost" className="mt-3 -ml-2 rounded-xl"
                   onClick={() => { setDupSource(b); setDupName(""); setDupOpen(true); }}
                 >
-                  <Copy className="h-4 w-4 mr-2" /> Duplicate
+                  <Copy className="h-4 w-4 mr-2" /> {tu("op.duplicate")}
                 </Button>
               </CardContent>
             </Card>
@@ -273,20 +274,20 @@ function BlocksPage() {
       {/* Duplicate dialog */}
       <Dialog open={dupOpen} onOpenChange={setDupOpen}>
         <DialogContent className="sm:max-w-md rounded-2xl">
-          <DialogHeader><DialogTitle>Duplicate {dupSource?.name}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{tu("op.duplicate")} {dupSource?.name}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Creates a new block with the same units. Unit numbers will be renamed using the new prefix.
+              {tu("op.creates_a_new_block_with")}
             </p>
             <div className="space-y-2">
-              <Label>New block name</Label>
-              <Input aria-label="New block name" value={dupName} onChange={(e) => setDupName(e.target.value)} placeholder="e.g. Block B" />
+              <Label>{tu("op.new_block_name")}</Label>
+              <Input aria-label={tu("op.new_block_name")} value={dupName} onChange={(e) => setDupName(e.target.value)} placeholder={tu("op.e_g_block_b")} />
             </div>
           </div>
           <DialogFooter>
             <Button onClick={handleDuplicate} disabled={dupBusy || !dupName.trim()} className="rounded-xl">
               {dupBusy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Duplicate
+              {tu("op.duplicate")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -296,21 +297,21 @@ function BlocksPage() {
       <Dialog open={aiOpen} onOpenChange={(o) => { setAiOpen(o); if (!o) { setAiPlan(null); setAiText(""); } }}>
         <DialogContent className="sm:max-w-lg rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary" /> AI Build</DialogTitle>
+            <DialogTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary" /> {tu("op.ai_build")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Describe your society</Label>
-              <Textarea aria-label="Describe your society"
+              <Label>{tu("op.describe_your_society")}</Label>
+              <Textarea aria-label={tu("op.describe_your_society")}
                 rows={4}
-                placeholder="e.g. 3 towers A B C, each 10 floors with 4 flats per floor. Plus 20 bungalows numbered V-1 to V-20."
+                placeholder={tu("op.e_g_3_towers_a")}
                 value={aiText}
                 onChange={(e) => setAiText(e.target.value)}
               />
             </div>
             {aiPlan && (
               <div className="rounded-xl border border-border p-3 space-y-2 max-h-60 overflow-auto">
-                <div className="text-xs text-muted-foreground">Property type: <b>{aiPlan.property_type}</b></div>
+                <div className="text-xs text-muted-foreground">{tu("op.property_type")} <b>{aiPlan.property_type}</b></div>
                 {aiPlan.blocks.map((b: any, i: number) => (
                   <div key={i} className="text-sm">
                     <b>{b.name}</b> · {b.unit_type} · {b.floors > 0 ? `${b.floors} floors × ${b.units_per_floor}` : `${b.units_per_floor} units`}
@@ -323,14 +324,14 @@ function BlocksPage() {
             {!aiPlan ? (
               <Button onClick={handleAiPlan} disabled={aiBusy || !aiText.trim()} className="rounded-xl">
                 {aiBusy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-                Generate plan
+                {tu("op.generate_plan")}
               </Button>
             ) : (
               <div className="flex gap-2 w-full sm:w-auto">
-                <Button variant="ghost" onClick={() => setAiPlan(null)} className="rounded-xl">Edit</Button>
+                <Button variant="ghost" onClick={() => setAiPlan(null)} className="rounded-xl">{tu("common.edit")}</Button>
                 <Button onClick={handleAiApply} disabled={aiBusy} className="rounded-xl">
                   {aiBusy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Create blocks & units
+                  {tu("op.create_blocks_units")}
                 </Button>
               </div>
             )}
@@ -343,18 +344,18 @@ function BlocksPage() {
         <DialogContent className="sm:max-w-2xl rounded-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Wand2 className="h-5 w-5 text-primary" /> Auto Design society
+              <Wand2 className="h-5 w-5 text-primary" /> {tu("op.auto_design_society")}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Enter each block name, number of floors, and flats per floor. We'll create the entire hierarchy automatically. You can edit anything afterwards.
+              {tu("op.enter_each_block_name_number")}
             </p>
             <div className="hidden sm:grid grid-cols-12 gap-2 text-[11px] font-medium text-muted-foreground uppercase tracking-wider px-1">
-              <div className="col-span-4">Block name</div>
-              <div className="col-span-2">Floors</div>
-              <div className="col-span-3">Flats / floor</div>
-              <div className="col-span-2">Start floor</div>
+              <div className="col-span-4">{tu("op.block_name")}</div>
+              <div className="col-span-2">{tu("op.floors")}</div>
+              <div className="col-span-3">{tu("op.flats_floor")}</div>
+              <div className="col-span-2">{tu("op.start_floor")}</div>
               <div className="col-span-1"></div>
             </div>
             <div className="space-y-2">
@@ -388,7 +389,7 @@ function BlocksPage() {
                     variant="ghost" size="icon"
                     className="col-span-1 text-destructive"
                     onClick={() => setAutoRows((rows) => rows.length > 1 ? rows.filter((_, idx) => idx !== i) : rows)}
-                    aria-label="Remove block"
+                    aria-label={tu("op.remove_block")}
                     disabled={autoRows.length <= 1}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -401,20 +402,20 @@ function BlocksPage() {
               className="rounded-xl w-full"
               onClick={() => setAutoRows((rows) => [...rows, { name: String.fromCharCode(65 + rows.length), floors: 4, flats_per_floor: 4, start_floor: 1 }])}
             >
-              <Plus className="h-4 w-4 mr-2" /> Add another block
+              <Plus className="h-4 w-4 mr-2" /> {tu("op.add_another_block")}
             </Button>
             <div className="rounded-xl bg-muted/50 p-3 text-xs text-muted-foreground">
-              Flat numbering pattern: <span className="font-mono font-medium">Block-FloorFlat</span> — e.g. block <span className="font-mono">A</span>, floor <span className="font-mono">1</span>, flat 2 becomes <span className="font-mono">A-102</span>. Existing blocks and flats with the same name are skipped.
+              {tu("op.flat_numbering_pattern")} <span className="font-mono font-medium">{tu("op.block_floorflat")}</span> — e.g. block <span className="font-mono">A</span>, floor <span className="font-mono">1</span>, flat 2 becomes <span className="font-mono">A-102</span>. Existing blocks and flats with the same name are skipped.
             </div>
             <div className="rounded-xl bg-primary/5 p-3 text-xs text-foreground">
-              Total: <b>{autoRows.reduce((s, r) => s + (Number(r.floors) || 0) * (Number(r.flats_per_floor) || 0), 0)}</b> flats across <b>{autoRows.filter((r) => r.name.trim()).length}</b> block(s).
+              {tu("op.total")} <b>{autoRows.reduce((s, r) => s + (Number(r.floors) || 0) * (Number(r.flats_per_floor) || 0), 0)}</b> {tu("op.flats_across")} <b>{autoRows.filter((r) => r.name.trim()).length}</b> block(s).
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setAutoOpen(false)} className="rounded-xl">Cancel</Button>
+            <Button variant="ghost" onClick={() => setAutoOpen(false)} className="rounded-xl">{tu("common.cancel")}</Button>
             <Button onClick={handleAutoDesign} disabled={autoBusy} className="rounded-xl">
               {autoBusy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Wand2 className="h-4 w-4 mr-2" />}
-              Build society
+              {tu("op.build_society")}
             </Button>
           </DialogFooter>
         </DialogContent>

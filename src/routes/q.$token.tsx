@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getPublicQrFn, submitPublicQrFn, type PublicQr } from "@/lib/smart-qr.functions";
 import { inr, SUBMIT_MESSAGES, todayIST } from "@/lib/smart-qr-ui";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/q/$token")({
   head: () => ({
@@ -36,16 +37,16 @@ function PublicQrPage() {
     <div className="min-h-dvh bg-background">
       <div className="bg-[oklch(0.22_0.05_260)] px-4 pb-10 pt-[max(1.5rem,env(safe-area-inset-top))] text-white">
         <div className="mx-auto flex max-w-md items-center gap-2 text-sm opacity-80">
-          <QrCode className="h-4 w-4" /> SociyoHub collection
+          <QrCode className="h-4 w-4" /> {tu("op.sociyohub_collection")}
         </div>
       </div>
       <main className="mx-auto -mt-7 max-w-md px-4 pb-[max(2rem,env(safe-area-inset-bottom))]">
         {q.isLoading ? (
           <div className="space-y-3"><Skeleton className="h-40 rounded-3xl" /><Skeleton className="h-64 rounded-3xl" /></div>
         ) : q.error ? (
-          <Notice title="Couldn't load this page" body="Check your connection and try again." action={<Button className="mt-3 min-h-11" variant="outline" onClick={() => q.refetch()}>Retry</Button>} />
+          <Notice title={tu("op.couldn_t_load_this_page")} body={tu("fd.checkConn")} action={<Button className="mt-3 min-h-11" variant="outline" onClick={() => q.refetch()}>{tu("common.retry")}</Button>} />
         ) : !q.data || q.data.status === "not_found" ? (
-          <Notice title="QR code not valid" body="Ask your society committee for the correct QR code." />
+          <Notice title={tu("op.qr_code_not_valid")} body={tu("op.ask_your_society_committee_for")} />
         ) : q.data.status === "inactive" ? (
           <Notice title={q.data.title} body={`${q.data.societyName} is no longer accepting payments for this collection.`} />
         ) : (
@@ -137,9 +138,9 @@ function Collect({ qr, token }: { qr: Extract<PublicQr, { status: "ok" }>; token
     return (
       <div className="rounded-3xl border bg-card p-6 text-center shadow-sm">
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary"><CheckCircle2 className="h-6 w-6" /></div>
-        <p className="text-lg font-semibold">Details sent</p>
+        <p className="text-lg font-semibold">{tu("op.details_sent")}</p>
         <p className="mt-1 text-sm text-muted-foreground">
-          {qr.societyName} will check their bank account and confirm your payment of {inr(Number(f.amount))}. This is not a receipt yet.
+          {qr.societyName} {tu("op.will_check_their_bank_account")} {inr(Number(f.amount))}. This is not a receipt yet.
         </p>
       </div>
     );
@@ -155,44 +156,44 @@ function Collect({ qr, token }: { qr: Extract<PublicQr, { status: "ok" }>; token
       </section>
 
       <section className="rounded-3xl border bg-card p-5 shadow-sm">
-        <p className="text-sm font-semibold">Step 1 · Transfer from your bank app</p>
+        <p className="text-sm font-semibold">{tu("op.step_1_transfer_from_your")}</p>
         <div className="mt-2 divide-y">
-          <CopyRow label="Account name" value={qr.payeeName} />
-          <CopyRow label="Account number" value={qr.accountNumber} />
+          <CopyRow label={tu("op.account_name")} value={qr.payeeName} />
+          <CopyRow label={tu("prof.wd.account")} value={qr.accountNumber} />
           <CopyRow label="IFSC" value={qr.ifsc} />
-          {qr.bankName && <div className="py-2"><p className="text-xs text-muted-foreground">Bank</p><p className="font-medium">{qr.bankName}</p></div>}
+          {qr.bankName && <div className="py-2"><p className="text-xs text-muted-foreground">{tu("rep.bank")}</p><p className="font-medium">{qr.bankName}</p></div>}
         </div>
         {qr.instructions && <p className="mt-2 rounded-xl bg-muted/50 p-3 text-sm">{qr.instructions}</p>}
       </section>
 
       <form onSubmit={submit} noValidate className="space-y-4 rounded-3xl border bg-card p-5 shadow-sm">
-        <p className="text-sm font-semibold">Step 2 · Tell the society you paid</p>
+        <p className="text-sm font-semibold">{tu("op.step_2_tell_the_society")}</p>
         {qr.acceptsCash && (
-          <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="How did you pay">
+          <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={tu("op.how_did_you_pay")}>
             {(["bank_transfer", "cash"] as const).map((m) => (
               <button
                 key={m} type="button" role="radio" aria-checked={f.method === m} onClick={() => set("method", m)}
                 className={`min-h-11 rounded-xl border text-sm font-medium ${f.method === m ? "border-primary bg-primary/10 text-primary" : ""}`}
               >
-                {m === "cash" ? "Cash" : "Bank transfer"}
+                {m === "cash" ? tu("common.cash") : tu("common.bankTransfer")}
               </button>
             ))}
           </div>
         )}
-        <F id="name" label="Your name" error={err.payerName}><Input id="name" autoComplete="name" maxLength={100} value={f.payerName} onChange={(e) => set("payerName", e.target.value)} /></F>
-        <F id="phone" label="Mobile (optional)" error={err.payerPhone}><Input id="phone" inputMode="tel" autoComplete="tel-national" maxLength={10} value={f.payerPhone} onChange={(e) => set("payerPhone", e.target.value.replace(/\D/g, ""))} /></F>
-        <F id="amt" label="Amount paid (₹)" error={err.amount}><Input id="amt" inputMode="decimal" readOnly={!!qr.fixedAmount} value={f.amount} onChange={(e) => set("amount", e.target.value.replace(/[^\d.]/g, ""))} /></F>
+        <F id="name" label={tu("auth.yourName")} error={err.payerName}><Input id="name" autoComplete="name" maxLength={100} value={f.payerName} onChange={(e) => set("payerName", e.target.value)} /></F>
+        <F id="phone" label={tu("op.mobile_optional")} error={err.payerPhone}><Input id="phone" inputMode="tel" autoComplete="tel-national" maxLength={10} value={f.payerPhone} onChange={(e) => set("payerPhone", e.target.value.replace(/\D/g, ""))} /></F>
+        <F id="amt" label={tu("op.amount_paid")} error={err.amount}><Input id="amt" inputMode="decimal" readOnly={!!qr.fixedAmount} value={f.amount} onChange={(e) => set("amount", e.target.value.replace(/[^\d.]/g, ""))} /></F>
         {f.method === "bank_transfer" && (
-          <F id="ref" label="UTR / transaction reference" error={err.reference}><Input id="ref" autoCapitalize="characters" maxLength={64} value={f.reference} onChange={(e) => set("reference", e.target.value)} /></F>
+          <F id="ref" label={tu("op.utr_transaction_reference")} error={err.reference}><Input id="ref" autoCapitalize="characters" maxLength={64} value={f.reference} onChange={(e) => set("reference", e.target.value)} /></F>
         )}
-        <F id="date" label="Date paid" error={err.paidOn}><Input id="date" type="date" max={todayIST()} value={f.paidOn} onChange={(e) => set("paidOn", e.target.value)} /></F>
-        <F id="note" label="Note (optional)"><Textarea id="note" rows={2} maxLength={300} value={f.note} onChange={(e) => set("note", e.target.value)} placeholder="e.g. Flat A-203 guest" /></F>
+        <F id="date" label={tu("op.date_paid")} error={err.paidOn}><Input id="date" type="date" max={todayIST()} value={f.paidOn} onChange={(e) => set("paidOn", e.target.value)} /></F>
+        <F id="note" label={tu("op.note_optional")}><Textarea id="note" rows={2} maxLength={300} value={f.note} onChange={(e) => set("note", e.target.value)} placeholder={tu("op.e_g_flat_a_203")} /></F>
         {formError && <p role="alert" className="rounded-xl bg-destructive/10 p-3 text-sm text-destructive">{formError}</p>}
         <Button type="submit" className="min-h-12 w-full" disabled={busy}>
-          {busy ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending…</> : "Send payment details"}
+          {busy ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {tu("cm.sending")}</> : tu("op.send_payment_details")}
         </Button>
         <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
-          <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" /> Your payment is confirmed only after the society checks its bank account.
+          <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {tu("op.your_payment_is_confirmed_only")}
         </p>
       </form>
     </div>

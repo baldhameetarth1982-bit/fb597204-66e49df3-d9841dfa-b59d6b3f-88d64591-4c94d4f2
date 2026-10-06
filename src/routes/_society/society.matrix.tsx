@@ -15,6 +15,7 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { societyMaintenanceSummary } from "@/lib/residents.functions";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/matrix")({
   head: () => ({ meta: [{ title: "Maintenance Matrix — SociyoHub" }] }),
@@ -151,24 +152,24 @@ function MatrixPage() {
       columnStyles: { 0: { fontStyle: "bold" } },
     });
     doc.save(`maintenance-matrix-${year}.pdf`);
-    toast.success("PDF exported");
+    toast.success(tu("op.pdf_exported"));
   }
 
   return (
     <div className="pb-24">
       <MobileHero
-        eyebrow="Operations"
-        title="Maintenance matrix"
-        subtitle="Every unit, every month — at one glance."
+        eyebrow={tu("nav.operations")}
+        title={tu("op.maintenance_matrix")}
+        subtitle={tu("op.every_unit_every_month_at")}
         icon={LayoutGrid}
         variant="teal"
         stats={
           summary ? (
             <StatPillRow>
-              <StatPill label="Houses" value={summary.total_houses} icon={Home} />
-              <StatPill label="Paid" value={summary.paid_periods} icon={CheckCircle2} />
-              <StatPill label="Outstanding" value={`₹${Number(summary.outstanding_amount).toLocaleString("en-IN")}`} icon={IndianRupee} />
-              <StatPill label="Collection" value={`${Number(summary.collection_percent).toFixed(0)}%`} icon={TrendingUp} />
+              <StatPill label={tu("sd.s.houses")} value={summary.total_houses} icon={Home} />
+              <StatPill label={tu("bills.paid")} value={summary.paid_periods} icon={CheckCircle2} />
+              <StatPill label={tu("sd.m.outstanding")} value={`₹${Number(summary.outstanding_amount).toLocaleString("en-IN")}`} icon={IndianRupee} />
+              <StatPill label={tu("mnt.collection")} value={`${Number(summary.collection_percent).toFixed(0)}%`} icon={TrendingUp} />
             </StatPillRow>
           ) : undefined
         }
@@ -177,21 +178,21 @@ function MatrixPage() {
       <div className="px-4 pt-4 space-y-4">
         <SectionCard bodyClassName="p-3">
           <div className="flex flex-wrap items-center gap-2">
-            <label className="text-xs text-muted-foreground">Year</label>
+            <label className="text-xs text-muted-foreground">{tu("mnt.year")}</label>
             <Input
-              aria-label="Search house or block"
+              aria-label={tu("op.search_house_or_block")}
               type="number"
               value={year}
               onChange={(e) => setYear(Number(e.target.value) || year)}
               className="w-20 h-9 rounded-xl"
             />
             <Button asChild variant="outline" size="sm" className="rounded-xl">
-              <Link to="/society/matrix-import"><Upload className="h-4 w-4 mr-1" /> Import</Link>
+              <Link to="/society/matrix-import"><Upload className="h-4 w-4 mr-1" /> {tu("op.import")}</Link>
             </Button>
-            <Button variant="outline" size="sm" onClick={() => exportExcel().catch(() => toast.error("Couldn't prepare the export. Please try again."))} className="rounded-xl">
-              <Download className="h-4 w-4 mr-1" /> Excel
+            <Button variant="outline" size="sm" onClick={() => exportExcel().catch(() => toast.error(tu("op.couldn_t_prepare_the_export")))} className="rounded-xl">
+              <Download className="h-4 w-4 mr-1" /> {tu("op.excel")}
             </Button>
-            <Button variant="outline" size="sm" onClick={() => exportPDF().catch(() => toast.error("Couldn't prepare the export. Please try again."))} className="rounded-xl">
+            <Button variant="outline" size="sm" onClick={() => exportPDF().catch(() => toast.error(tu("op.couldn_t_prepare_the_export")))} className="rounded-xl">
               <Download className="h-4 w-4 mr-1" /> PDF
             </Button>
           </div>
@@ -200,12 +201,12 @@ function MatrixPage() {
 
         {summary && (
           <div className="grid grid-cols-2 gap-2.5">
-            <Kpi icon={AlertTriangle} label="Overdue" value={summary.overdue_periods} tone="warn" />
-            <Kpi icon={Home} label="Pending" value={summary.pending_periods} tone="warn" />
-            <Kpi icon={TrendingUp} label="Advance" value={summary.advance_periods} tone="info" />
+            <Kpi icon={AlertTriangle} label={tu("bills.overdue")} value={summary.overdue_periods} tone="warn" />
+            <Kpi icon={Home} label={tu("docState.pending")} value={summary.pending_periods} tone="warn" />
+            <Kpi icon={TrendingUp} label={tu("mnt.advance")} value={summary.advance_periods} tone="info" />
             <Kpi
               icon={IndianRupee}
-              label="Advance ₹"
+              label={tu("op.advance")}
               value={`₹${Number(summary.advance_amount).toLocaleString("en-IN")}`}
               tone="info"
             />
@@ -215,32 +216,32 @@ function MatrixPage() {
         <SectionCard bodyClassName="p-3 space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2">
             <Input
-              placeholder="Search unit or block…"
+              placeholder={tu("op.search_unit_or_block")}
               value={q}
               onChange={(e) => setQ(e.target.value)}
               className="rounded-xl"
             />
             <Select value={blockFilter} onValueChange={setBlockFilter}>
-              <SelectTrigger aria-label="Block filter"><SelectValue placeholder="All blocks" /></SelectTrigger>
+              <SelectTrigger aria-label={tu("op.block_filter")}><SelectValue placeholder={tu("mnt.allBlocks")} /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All blocks</SelectItem>
+                <SelectItem value="all">{tu("mnt.allBlocks")}</SelectItem>
                 {blockOptions.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusKey)}>
-              <SelectTrigger aria-label="Status filter"><SelectValue placeholder="All statuses" /></SelectTrigger>
+              <SelectTrigger aria-label={tu("op.status_filter")}><SelectValue placeholder={tu("mnt.allStatuses")} /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="all">{tu("mnt.allStatuses")}</SelectItem>
                 {STATUS_KEYS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div className="flex flex-wrap gap-1.5 text-[10px]">
-            <LegendChip label="Paid" cls="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" />
-            <LegendChip label="Pending" cls="bg-amber-500/15 text-amber-700 dark:text-amber-300" />
-            <LegendChip label="Overdue" cls="bg-destructive/15 text-destructive" />
-            <LegendChip label="Advance" cls="bg-violet-500/15 text-violet-700 dark:text-violet-300" />
-            <LegendChip label="Upcoming" cls="bg-blue-500/10 text-blue-600" />
+            <LegendChip label={tu("bills.paid")} cls="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" />
+            <LegendChip label={tu("docState.pending")} cls="bg-amber-500/15 text-amber-700 dark:text-amber-300" />
+            <LegendChip label={tu("bills.overdue")} cls="bg-destructive/15 text-destructive" />
+            <LegendChip label={tu("mnt.advance")} cls="bg-violet-500/15 text-violet-700 dark:text-violet-300" />
+            <LegendChip label={tu("mnt.status.upcoming")} cls="bg-blue-500/10 text-blue-600" />
           </div>
         </SectionCard>
 
@@ -250,7 +251,7 @@ function MatrixPage() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="grid place-items-center h-60 text-sm text-muted-foreground">
-            No houses match your search.
+            {tu("op.no_houses_match_your_search")}
           </div>
         ) : (
           <div className="-mx-4 sm:mx-0">
@@ -271,7 +272,7 @@ function MatrixPage() {
               <table className="w-full text-xs">
                 <thead className="bg-secondary sticky top-0 z-10">
                   <tr>
-                    <th className="text-left p-2 sticky left-0 bg-secondary z-20 min-w-[100px]">Unit</th>
+                    <th className="text-left p-2 sticky left-0 bg-secondary z-20 min-w-[100px]">{tu("nd.unit")}</th>
                     {MONTH_NAMES.map((m) => (
                       <th key={m} className="p-2 text-center font-medium min-w-[64px]">{m}</th>
                     ))}

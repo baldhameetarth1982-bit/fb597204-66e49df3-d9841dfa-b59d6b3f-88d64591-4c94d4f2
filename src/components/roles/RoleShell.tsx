@@ -6,6 +6,7 @@ import { Loader2, LogOut, RotateCw, ShieldOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { getMyRoleAccess, type MyRoleAccess } from "@/lib/role-access.functions";
+import { tu } from "@/lib/i18n";
 
 export const errText = (e: unknown) => (e instanceof Error ? e.message : "Something went wrong.");
 
@@ -17,7 +18,7 @@ export function ErrorRow({ error, onRetry }: { error: unknown; onRetry?: () => v
   return (
     <div role="alert" className="flex flex-wrap items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm">
       <span className="flex-1">{errText(error)}</span>
-      {onRetry && <Button size="sm" variant="outline" className="min-h-11" onClick={onRetry}><RotateCw className="mr-1 h-4 w-4" />Try again</Button>}
+      {onRetry && <Button size="sm" variant="outline" className="min-h-11" onClick={onRetry}><RotateCw className="mr-1 h-4 w-4" />{tu("common.tryAgain")}</Button>}
     </div>
   );
 }
@@ -31,8 +32,8 @@ function FullState({ title, body, onRetry }: { title: string; body: string; onRe
         <h1 className="text-xl font-semibold">{title}</h1>
         <p className="text-sm text-muted-foreground">{body}</p>
         <div className="flex justify-center gap-2">
-          {onRetry && <Button variant="outline" className="min-h-11" onClick={onRetry}><RotateCw className="mr-1 h-4 w-4" />Check again</Button>}
-          <Button className="min-h-11" onClick={async () => { await signOut(); window.location.replace("/login"); }}><LogOut className="mr-1 h-4 w-4" />Sign out</Button>
+          {onRetry && <Button variant="outline" className="min-h-11" onClick={onRetry}><RotateCw className="mr-1 h-4 w-4" />{tu("op.check_again")}</Button>}
+          <Button className="min-h-11" onClick={async () => { await signOut(); window.location.replace("/login"); }}><LogOut className="mr-1 h-4 w-4" />{tu("common.signOut")}</Button>
         </div>
       </div>
     </div>
@@ -54,17 +55,17 @@ export function RoleShell({ role, children }: { role: "auditor" | "staff"; child
 
   if (isLoading) return <Loading />;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (q.isLoading) return <Loading label="Checking your access…" />;
+  if (q.isLoading) return <Loading label={tu("op.checking_your_access")} />;
   if (q.error) {
     const msg = errText(q.error);
-    if (/session|jwt|unauthor/i.test(msg)) return <FullState title="Session expired" body="Please sign in again to continue." />;
-    return <FullState title="Couldn't check your access" body={msg} onRetry={() => q.refetch()} />;
+    if (/session|jwt|unauthor/i.test(msg)) return <FullState title={tu("op.session_expired")} body={tu("op.please_sign_in_again_to")} />;
+    return <FullState title={tu("op.couldn_t_check_your_access")} body={msg} onRetry={() => q.refetch()} />;
   }
   const access = q.data?.roles.find((r) => r.role === role);
   if (!access) {
-    return <FullState title="Access not active" body={role === "auditor"
-      ? "You don't have active auditor access to this society. It may have been removed by the committee."
-      : "You don't have active staff access to this society. It may have been removed or your staff record made inactive."}
+    return <FullState title={tu("op.access_not_active")} body={role === "auditor"
+      ? tu("op.you_don_t_have_active")
+      : tu("op.you_don_t_have_active_2")}
       onRetry={() => q.refetch()} />;
   }
   return <>{children(access, q.data?.society_name ?? null)}</>;

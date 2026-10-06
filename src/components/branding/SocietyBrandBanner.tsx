@@ -1,5 +1,6 @@
 import { Building2 } from "lucide-react";
 import { HEX_RE, readableOn } from "@/lib/branding";
+import { tu } from "@/lib/i18n";
 
 /**
  * Society identity band. Only validated hex colours are ever applied (as
@@ -38,7 +39,7 @@ export function SocietyBrandBanner({
         <p className="text-xs opacity-80">{subtitle}</p>
         <p className="font-semibold truncate">{name}</p>
       </div>
-      <span className="text-[10px] opacity-70 shrink-0">Powered by SociyoHub</span>
+      <span className="text-[10px] opacity-70 shrink-0">{tu("op.powered_by_sociyohub")}</span>
     </div>
   );
 }

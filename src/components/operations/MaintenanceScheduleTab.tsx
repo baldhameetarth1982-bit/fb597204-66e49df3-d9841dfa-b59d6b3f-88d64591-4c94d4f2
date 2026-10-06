@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { cancelMaintenance, scheduleMaintenance } from "@/lib/role-access.functions";
 import { isOverdue } from "@/lib/overdue";
+import { tu } from "@/lib/i18n";
 
 const LABEL: Record<string, string> = { scheduled: "Scheduled", in_progress: "In progress", paused: "Paused", done: "Done", cancelled: "Cancelled" };
 const mutOpts = { networkMode: "always" as const, retry: false };
@@ -49,47 +50,47 @@ export function MaintenanceScheduleTab() {
   });
   const add = useMutation({ ...mutOpts,
     mutationFn: () => schedule({ data: { staffId: form.staffId, assetId: form.assetId || null, title: form.title, due: form.due, instructions: form.instructions || undefined } }),
-    onSuccess: () => { toast.success("Maintenance scheduled"); setForm((f) => ({ ...f, title: "", instructions: "" })); qc.invalidateQueries({ queryKey: ["maint-tasks"] }); },
+    onSuccess: () => { toast.success(tu("op.maintenance_scheduled")); setForm((f) => ({ ...f, title: "", instructions: "" })); qc.invalidateQueries({ queryKey: ["maint-tasks"] }); },
     onError: (e) => toast.error(msg(e)) });
   const stop = useMutation({ ...mutOpts,
     mutationFn: (v: { id: string; reason: string }) => cancel({ data: v }),
-    onSuccess: () => { toast.success("Cancelled"); qc.invalidateQueries({ queryKey: ["maint-tasks"] }); }, onError: (e) => toast.error(msg(e)) });
+    onSuccess: () => { toast.success(tu("rbills.cancelled")); qc.invalidateQueries({ queryKey: ["maint-tasks"] }); }, onError: (e) => toast.error(msg(e)) });
 
   const staffName = (id: string) => opts.data?.staff.find((s) => s.id === id)?.full_name ?? "Staff";
   const assetName = (id: string | null) => (id ? opts.data?.assets.find((a) => a.id === id)?.name : null);
 
   return (
     <div className="space-y-4">
-      <SectionCard title="Schedule maintenance" description="Assigned staff see it under Maintenance if they have that work area. Completing it never creates a charge." icon={Hammer}>
+      <SectionCard title={tu("op.schedule_maintenance")} description={tu("op.assigned_staff_see_it_under")} icon={Hammer}>
         <form className="grid gap-3 sm:grid-cols-2" onSubmit={(e) => { e.preventDefault(); add.mutate(); }}>
-          <div><Label htmlFor="ms-staff">Staff member</Label>
+          <div><Label htmlFor="ms-staff">{tu("op.staff_member")}</Label>
             <select id="ms-staff" required className="flex min-h-11 w-full rounded-md border bg-background px-3 text-sm" value={form.staffId} onChange={(e) => setForm({ ...form, staffId: e.target.value })}>
-              <option value="">Choose…</option>{opts.data?.staff.map((s) => <option key={s.id} value={s.id}>{s.full_name}</option>)}
+              <option value="">{tu("op.choose")}</option>{opts.data?.staff.map((s) => <option key={s.id} value={s.id}>{s.full_name}</option>)}
             </select></div>
-          <div><Label htmlFor="ms-asset">Asset (optional)</Label>
+          <div><Label htmlFor="ms-asset">{tu("op.asset_optional")}</Label>
             <select id="ms-asset" className="flex min-h-11 w-full rounded-md border bg-background px-3 text-sm" value={form.assetId} onChange={(e) => setForm({ ...form, assetId: e.target.value })}>
-              <option value="">None</option>{opts.data?.assets.map((a) => <option key={a.id} value={a.id}>{a.name}{a.location ? ` · ${a.location}` : ""}</option>)}
+              <option value="">{tu("el.a.none")}</option>{opts.data?.assets.map((a) => <option key={a.id} value={a.id}>{a.name}{a.location ? ` · ${a.location}` : ""}</option>)}
             </select></div>
-          <div><Label htmlFor="ms-title">Job</Label><Input id="ms-title" required minLength={3} maxLength={120} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></div>
-          <div><Label htmlFor="ms-due">Due on</Label><Input id="ms-due" type="date" required value={form.due} onChange={(e) => setForm({ ...form, due: e.target.value })} /></div>
-          <div className="sm:col-span-2"><Label htmlFor="ms-ins">Instructions (optional)</Label><Textarea id="ms-ins" maxLength={1000} value={form.instructions} onChange={(e) => setForm({ ...form, instructions: e.target.value })} /></div>
-          <div className="sm:col-span-2"><Button type="submit" className="min-h-11" disabled={add.isPending || !form.staffId}>Schedule</Button></div>
+          <div><Label htmlFor="ms-title">{tu("op.job")}</Label><Input id="ms-title" required minLength={3} maxLength={120} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></div>
+          <div><Label htmlFor="ms-due">{tu("op.due_on")}</Label><Input id="ms-due" type="date" required value={form.due} onChange={(e) => setForm({ ...form, due: e.target.value })} /></div>
+          <div className="sm:col-span-2"><Label htmlFor="ms-ins">{tu("op.instructions_optional")}</Label><Textarea id="ms-ins" maxLength={1000} value={form.instructions} onChange={(e) => setForm({ ...form, instructions: e.target.value })} /></div>
+          <div className="sm:col-span-2"><Button type="submit" className="min-h-11" disabled={add.isPending || !form.staffId}>{tu("op.schedule")}</Button></div>
         </form>
       </SectionCard>
-      <SectionCard title="Maintenance jobs" icon={Hammer}>
-        {list.error ? <p role="alert" className="text-sm text-destructive">{msg(list.error)}</p> : !list.data ? <p className="text-sm text-muted-foreground">Loading…</p>
-          : list.data.length === 0 ? <EmptyState icon={Hammer} title="No maintenance scheduled" /> : (
+      <SectionCard title={tu("op.maintenance_jobs")} icon={Hammer}>
+        {list.error ? <p role="alert" className="text-sm text-destructive">{msg(list.error)}</p> : !list.data ? <p className="text-sm text-muted-foreground">{tu("common.loading")}</p>
+          : list.data.length === 0 ? <EmptyState icon={Hammer} title={tu("op.no_maintenance_scheduled")} /> : (
           <ul className="divide-y rounded-lg border">{list.data.map((m) => (
             <li key={m.id} className="flex flex-wrap items-start justify-between gap-2 p-3 text-sm">
               <div className="min-w-0"><p className="font-medium">{m.title}</p>
                 <p className="text-muted-foreground">{staffName(m.staff_id)} · due {m.due_on}{assetName(m.asset_id) ? ` · ${assetName(m.asset_id)}` : ""}</p>
                 {(m.staff_note || m.cancel_reason) && <p className="text-muted-foreground">{m.cancel_reason ?? m.staff_note}</p>}</div>
-              <div className="flex items-center gap-2">{isOverdue(m.due_on, !["done", "cancelled"].includes(m.status)) && <Badge variant="destructive">Overdue</Badge>}<Badge variant="outline">{LABEL[m.status] ?? m.status}</Badge>
+              <div className="flex items-center gap-2">{isOverdue(m.due_on, !["done", "cancelled"].includes(m.status)) && <Badge variant="destructive">{tu("bills.overdue")}</Badge>}<Badge variant="outline">{LABEL[m.status] ?? m.status}</Badge>
                 {!["done", "cancelled"].includes(m.status) && (
                   <Button size="sm" variant="outline" className="min-h-11" disabled={stop.isPending} onClick={() => {
                     const reason = window.prompt("Reason for cancelling (at least 5 characters)")?.trim();
                     if (reason && reason.length >= 5) stop.mutate({ id: m.id, reason });
-                  }}>Cancel</Button>)}
+                  }}>{tu("common.cancel")}</Button>)}
               </div>
             </li>
           ))}</ul>

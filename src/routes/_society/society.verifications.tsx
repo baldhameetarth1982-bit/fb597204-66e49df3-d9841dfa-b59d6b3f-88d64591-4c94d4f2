@@ -14,6 +14,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/verifications")({
   head: () => ({ meta: [{ title: "Pending Verifications — SociyoHub" }] }),
@@ -94,21 +95,21 @@ function VerificationsPage() {
     });
     setBusyId(null);
     if (error) return toast.error(userMessage(error));
-    toast.success("Resident verified");
+    toast.success(tu("op.resident_verified"));
     void load();
   }
 
   async function submitReject() {
     if (!rejectId) return;
     const reason = rejectReason.trim();
-    if (!reason) return toast.error("Please add a reason");
+    if (!reason) return toast.error(tu("op.please_add_a_reason"));
     setBusyId(rejectId);
     const { error } = await (supabase as any).rpc("verify_resident_kyc", {
       _user_id: rejectId, _approved: false, _reason: reason,
     });
     setBusyId(null);
     if (error) return toast.error(userMessage(error));
-    toast.success("KYC rejected — resident notified");
+    toast.success(tu("op.kyc_rejected_resident_notified"));
     setRejectId(null);
     setRejectReason("");
     void load();
@@ -117,8 +118,8 @@ function VerificationsPage() {
   if (!sidLoading && !societyId) {
     return (
       <PageShell>
-        <PageHeader title="Pending Verifications" />
-        <EmptyState icon={ShieldCheck} title="Set up your society first" />
+        <PageHeader title={tu("op.pending_verifications")} />
+        <EmptyState icon={ShieldCheck} title={tu("op.set_up_your_society_first_3")} />
       </PageShell>
     );
   }
@@ -129,8 +130,8 @@ function VerificationsPage() {
   return (
     <PageShell>
       <PageHeader
-        title="Identity Verifications"
-        description="Review Aadhaar documents uploaded by residents."
+        title={tu("op.identity_verifications")}
+        description={tu("op.review_aadhaar_documents_uploaded_by")}
       />
       {loading ? (
         <div className="grid place-items-center py-20">
@@ -139,17 +140,17 @@ function VerificationsPage() {
       ) : rows.length === 0 ? (
         <EmptyState
           icon={ShieldCheck}
-          title="Nothing to verify"
-          description="When residents upload their Aadhaar, requests appear here."
+          title={tu("op.nothing_to_verify")}
+          description={tu("op.when_residents_upload_their_aadhaar")}
         />
       ) : (
         <div className="grid gap-8">
           <section className="grid gap-3">
             <h2 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Clock className="h-4 w-4" /> Pending ({pending.length})
+              <Clock className="h-4 w-4" /> {tu("op.pending")}{pending.length})
             </h2>
             {pending.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No pending requests.</p>
+              <p className="text-sm text-muted-foreground">{tu("op.no_pending_requests")}</p>
             ) : (
               pending.map((p) => (
                 <VerificationCard
@@ -166,7 +167,7 @@ function VerificationsPage() {
           {verified.length > 0 && (
             <section className="grid gap-3">
               <h2 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <BadgeCheck className="h-4 w-4" /> Verified ({verified.length})
+                <BadgeCheck className="h-4 w-4" /> {tu("op.verified")}{verified.length})
               </h2>
               {verified.map((p) => (
                 <VerificationCard
@@ -185,31 +186,31 @@ function VerificationsPage() {
       <Dialog open={!!rejectId} onOpenChange={(o) => { if (!o) { setRejectId(null); setRejectReason(""); } }}>
         <DialogContent className="rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Reject KYC submission</DialogTitle>
+            <DialogTitle>{tu("op.reject_kyc_submission")}</DialogTitle>
             <DialogDescription>
-              The resident will see this reason and be asked to re-upload their Aadhaar.
+              {tu("op.the_resident_will_see_this_2")}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-2">
-            <Label htmlFor="reject-reason">Reason</Label>
+            <Label htmlFor="reject-reason">{tu("exp.reason")}</Label>
             <Textarea
               id="reject-reason"
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="Document is blurry — please re-upload a clearer photo."
+              placeholder={tu("op.document_is_blurry_please_re")}
               rows={4}
             />
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => { setRejectId(null); setRejectReason(""); }}>
-              Cancel
+              {tu("common.cancel")}
             </Button>
             <Button
               variant="destructive"
               onClick={submitReject}
               disabled={busyId === rejectId || rejectReason.trim().length === 0}
             >
-              {busyId === rejectId ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send rejection"}
+              {busyId === rejectId ? <Loader2 className="h-4 w-4 animate-spin" /> : tu("op.send_rejection")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -240,17 +241,17 @@ function VerificationCard({
       <CardContent className="p-4 flex flex-col md:flex-row md:items-center gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="font-semibold truncate">{p.full_name ?? "Unnamed resident"}</p>
+            <p className="font-semibold truncate">{p.full_name ?? tu("prof.unnamed")}</p>
             {verified ? (
               <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30">
-                Verified
+                {tu("docState.verified")}
               </Badge>
             ) : p.aadhaar_rejected_at ? (
               <Badge className="bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30">
-                Rejected
+                {tu("docState.rejected")}
               </Badge>
             ) : (
-              <Badge variant="secondary">Pending</Badge>
+              <Badge variant="secondary">{tu("docState.pending")}</Badge>
             )}
           </div>
           <p className="text-sm text-muted-foreground truncate">{p.email}</p>
@@ -258,14 +259,14 @@ function VerificationCard({
             <p className="text-sm text-muted-foreground">{p.phone}</p>
           )}
           <p className="mt-1 text-xs text-muted-foreground">
-            Aadhaar ending •••• {p.aadhaar_last4 ?? "----"} · uploaded{" "}
+            {tu("op.aadhaar_ending")} {p.aadhaar_last4 ?? "----"} · uploaded{" "}
             {p.aadhaar_uploaded_at
               ? new Date(p.aadhaar_uploaded_at).toLocaleDateString()
               : "—"}
           </p>
           {p.aadhaar_rejected_reason && !verified && (
             <p className="mt-1 text-xs text-red-600 dark:text-red-400">
-              Reason: {p.aadhaar_rejected_reason}
+              {tu("op.reason")} {p.aadhaar_rejected_reason}
             </p>
           )}
         </div>
@@ -273,17 +274,17 @@ function VerificationCard({
           {signedUrl ? (
             <Button asChild variant="outline" size="sm" className="rounded-xl">
               <a href={signedUrl} target="_blank" rel="noreferrer">
-                <FileText className="h-4 w-4 mr-1" /> View ID
+                <FileText className="h-4 w-4 mr-1" /> {tu("op.view_id")}
               </a>
             </Button>
           ) : (
             <Button variant="outline" size="sm" className="rounded-xl" disabled>
-              No file
+              {tu("op.no_file")}
             </Button>
           )}
           {!verified && onApprove && (
             <Button size="sm" className="rounded-xl" disabled={busy} onClick={onApprove}>
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Approve"}
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : tu("vs.approve")}
             </Button>
           )}
           {!verified && onReject && (
@@ -294,7 +295,7 @@ function VerificationCard({
               disabled={busy}
               onClick={onReject}
             >
-              <XCircle className="h-4 w-4 mr-1" /> Reject
+              <XCircle className="h-4 w-4 mr-1" /> {tu("el.a.reject")}
             </Button>
           )}
           {verified && onRevoke && (
@@ -305,7 +306,7 @@ function VerificationCard({
               disabled={busy}
               onClick={onRevoke}
             >
-              Revoke
+              {tu("op.revoke")}
             </Button>
           )}
         </div>

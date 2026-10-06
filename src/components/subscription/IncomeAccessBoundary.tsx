@@ -21,6 +21,7 @@ import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { UpgradePrompt } from "./UpgradePrompt";
 import { Card, CardContent } from "@/components/ui/card";
 import { ShieldAlert } from "lucide-react";
+import { tu } from "@/lib/i18n";
 
 export type IncomeAccessState =
   | { kind: "loading" }
@@ -111,7 +112,7 @@ export function IncomeAccessBoundary({ children }: Props) {
         data-testid="income-access-society-unavailable"
         className="min-h-[40vh] grid place-items-center text-sm text-muted-foreground"
       >
-        Select a society to view income & collections.
+        {tu("op.select_a_society_to_view")}
       </div>
     );
   }
@@ -125,9 +126,9 @@ export function IncomeAccessBoundary({ children }: Props) {
         <CardContent className="p-6 flex items-start gap-3">
           <ShieldAlert className="h-5 w-5 text-destructive shrink-0" />
           <div className="text-sm">
-            <div className="font-medium">Not available for your role</div>
+            <div className="font-medium">{tu("op.not_available_for_your_role")}</div>
             <div className="text-muted-foreground mt-1">
-              Income & Collections is managed by the society finance admin.
+              {tu("op.income_collections_is_managed_by")}
             </div>
           </div>
         </CardContent>

@@ -8,6 +8,7 @@ import { Camera, ImagePlus, Loader2, RotateCw, X, CheckCircle2, AlertCircle } fr
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { listParkingEvidence, uploadParkingEvidence } from "@/lib/parking-evidence.functions";
+import { tu } from "@/lib/i18n";
 
 export const MAX_PHOTOS = 5;
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -125,38 +126,38 @@ export function ViolationEvidence({ violationId, canAdd, canRemove }: { violatio
     const failed = await run(violationId, queue, only);
     setBusy(false);
     await qc.invalidateQueries({ queryKey: key });
-    if (!failed) { toast.success("Photos attached"); queue.clear(); }
+    if (!failed) { toast.success(tu("op.photos_attached")); queue.clear(); }
   }
   async function removeOne(id: string) {
     const reason = window.prompt("Why remove this photo? (kept in history)");
     if (!reason?.trim()) return;
     const { error } = await supabase.rpc("parking_remove_evidence", { _id: id, _reason: reason });
     if (error) return toast.error(evidenceError(error));
-    toast.success("Photo removed. A record stays in history.");
+    toast.success(tu("op.photo_removed_a_record_stays"));
     qc.invalidateQueries({ queryKey: key });
   }
 
   return (
-    <section aria-label="Photo evidence" className="space-y-2 pt-1">
-      {q.isPending ? <p className="text-xs text-muted-foreground">Loading photos…</p>
-        : q.isError ? <p className="text-xs text-destructive">Couldn't load photos. <button type="button" className="underline" onClick={() => void q.refetch()}>Retry</button></p>
+    <section aria-label={tu("op.photo_evidence")} className="space-y-2 pt-1">
+      {q.isPending ? <p className="text-xs text-muted-foreground">{tu("op.loading_photos")}</p>
+        : q.isError ? <p className="text-xs text-destructive">{tu("op.couldn_t_load_photos")} <button type="button" className="underline" onClick={() => void q.refetch()}>{tu("common.retry")}</button></p>
         : live.length > 0 ? (
-          <ul className="grid grid-cols-3 gap-2 sm:grid-cols-5" aria-label="Attached photos">
+          <ul className="grid grid-cols-3 gap-2 sm:grid-cols-5" aria-label={tu("op.attached_photos")}>
             {live.map((e) => (
               <li key={e.id} className="relative aspect-square overflow-hidden rounded-xl border border-border bg-muted">
                 {e.url ? (
                   <a href={e.url} target="_blank" rel="noopener noreferrer" className="block h-full w-full">
-                    <img src={e.url} alt="Violation evidence" loading="lazy" className="h-full w-full object-cover" onError={() => void q.refetch()} />
+                    <img src={e.url} alt={tu("op.violation_evidence")} loading="lazy" className="h-full w-full object-cover" onError={() => void q.refetch()} />
                   </a>
-                ) : <span className="flex h-full items-center justify-center p-1 text-center text-xs text-muted-foreground">Link expired — <button type="button" className="underline" onClick={() => void q.refetch()}>reload</button></span>}
-                {canRemove && <button type="button" aria-label="Remove photo" onClick={() => void removeOne(e.id)} className="absolute right-1 top-1 flex h-8 w-8 items-center justify-center rounded-full bg-background/90 shadow"><X className="h-4 w-4" /></button>}
+                ) : <span className="flex h-full items-center justify-center p-1 text-center text-xs text-muted-foreground">{tu("op.link_expired")} <button type="button" className="underline" onClick={() => void q.refetch()}>{tu("op.reload")}</button></span>}
+                {canRemove && <button type="button" aria-label={tu("fd.removePhoto")} onClick={() => void removeOne(e.id)} className="absolute right-1 top-1 flex h-8 w-8 items-center justify-center rounded-full bg-background/90 shadow"><X className="h-4 w-4" /></button>}
               </li>
             ))}
           </ul>
-        ) : <p className="text-xs text-muted-foreground">No photos.</p>}
+        ) : <p className="text-xs text-muted-foreground">{tu("op.no_photos")}</p>}
       {removed.length > 0 && (
-        <ul className="space-y-0.5 text-xs text-muted-foreground" aria-label="Removed photos">
-          {removed.map((e) => <li key={e.id}>Photo removed {new Date(e.removed_at!).toLocaleString()}{e.remove_reason ? ` — ${e.remove_reason}` : ""}</li>)}
+        <ul className="space-y-0.5 text-xs text-muted-foreground" aria-label={tu("op.removed_photos")}>
+          {removed.map((e) => <li key={e.id}>{tu("op.photo_removed")} {new Date(e.removed_at!).toLocaleString()}{e.remove_reason ? ` — ${e.remove_reason}` : ""}</li>)}
         </ul>
       )}
       {canAdd && live.length < MAX_PHOTOS && (
@@ -164,7 +165,7 @@ export function ViolationEvidence({ violationId, canAdd, canRemove }: { violatio
           <PhotoPicker q={queue} disabled={busy} onRetry={(p) => void send([p])} />
           {queue.items.some((p) => p.state === "ready") && (
             <Button type="button" size="sm" className="min-h-11 rounded-xl" disabled={busy} onClick={() => void send(queue.items.filter((p) => p.state === "ready"))}>
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Attach photos"}
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : tu("op.attach_photos")}
             </Button>
           )}
         </div>

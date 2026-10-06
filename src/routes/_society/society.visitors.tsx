@@ -40,6 +40,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/visitors")({
   head: () => ({
@@ -156,7 +157,7 @@ function SocietyVisitors() {
 
   async function logVisitor() {
     if (!user || !societyId || !form.visitor_name.trim())
-      return toast.error("Visitor name required");
+      return toast.error(tu("op.visitor_name_required"));
     setSaving(true);
     const { error } = await supabase.rpc("guard_log_walkin", {
       _flat_label: form.flat_number.trim(),
@@ -168,7 +169,7 @@ function SocietyVisitors() {
     });
     setSaving(false);
     if (error) return toast.error(gateErrorMessage(error));
-    toast.success("Visitor logged");
+    toast.success(tu("op.visitor_logged"));
     setForm({ visitor_name: "", phone: "", vehicle_number: "", purpose: "", flat_number: "" });
     setOpen(false);
     void load();
@@ -177,7 +178,7 @@ function SocietyVisitors() {
   async function approve(id: string) {
     const { error } = await supabase.rpc("guard_visitor_action", { _id: id, _action: "checkin" });
     if (error) return toast.error(gateErrorMessage(error));
-    toast.success("Visitor checked in");
+    toast.success(tu("op.visitor_checked_in"));
     void load();
   }
   async function reject(id: string) {
@@ -194,12 +195,12 @@ function SocietyVisitors() {
   const [code, setCode] = useState("");
   const [codeBusy, setCodeBusy] = useState(false);
   async function checkinByCode() {
-    if (!societyId || !/^\d{6}$/.test(code)) return toast.error("Enter the 6-digit pass code.");
+    if (!societyId || !/^\d{6}$/.test(code)) return toast.error(tu("op.enter_the_6_digit_pass"));
     setCodeBusy(true);
     const { error } = await supabase.rpc("guard_checkin_by_code", { _society_id: societyId, _code: code });
     setCodeBusy(false);
     if (error) return toast.error(gateErrorMessage(error));
-    toast.success("Visitor checked in");
+    toast.success(tu("op.visitor_checked_in"));
     setCode("");
     void load();
   }
@@ -267,25 +268,25 @@ function SocietyVisitors() {
             {s === "pending" && (
               <StatusChip tone="warning">
                 {v.status === "approved"
-                  ? "Approved · not in yet"
+                  ? tu("op.approved_not_in_yet")
                   : v.status === "expected"
-                    ? "Expected"
-                    : "Waiting"}
+                    ? tu("vs.st.expected")
+                    : tu("op.waiting")}
               </StatusChip>
             )}
-            {s === "inside" && <StatusChip tone="success">Inside</StatusChip>}
+            {s === "inside" && <StatusChip tone="success">{tu("vs.st.inside")}</StatusChip>}
             {s === "exited" && (
               <StatusChip tone="muted">
                 {v.exit_at && !["denied", "rejected"].includes(v.status ?? "")
-                  ? "Left"
-                  : (v.status ?? "Closed")}
+                  ? tu("vs.st.exited")
+                  : (v.status ?? tu("hd.st.closed"))}
               </StatusChip>
             )}
-            {v.pre_approved && <StatusChip tone="info">Pre-approved pass</StatusChip>}
+            {v.pre_approved && <StatusChip tone="info">{tu("op.pre_approved_pass")}</StatusChip>}
           </p>
           <p className="mt-0.5 truncate font-medium">{v.visitor_name}</p>
           <p className="truncate text-xs text-muted-foreground">
-            {v.flat_number ? `House ${v.flat_number}` : "No house"} · {v.purpose || "Visit"}
+            {v.flat_number ? `House ${v.flat_number}` : tu("gd.noHouse")} · {v.purpose || tu("op.visit")}
             {v.vehicle_number && (
               <>
                 {" "}
@@ -299,7 +300,7 @@ function SocietyVisitors() {
           {v.exit_at && (
             <>
               <br className="hidden md:block" />
-              <span className="md:hidden"> · </span>Out {fmt(v.exit_at)}
+              <span className="md:hidden"> · </span>{tu("op.out")} {fmt(v.exit_at)}
             </>
           )}
         </p>
@@ -312,7 +313,7 @@ function SocietyVisitors() {
                   onClick={() => approve(v.id)}
                 >
                   <Check className="mr-1 h-4 w-4" />
-                  Check in
+                  {tu("op.check_in")}
                 </Button>
               )}
               <Button
@@ -321,7 +322,7 @@ function SocietyVisitors() {
                 onClick={() => setDenyFor(v)}
               >
                 <X className="mr-1 h-4 w-4" />
-                Turn away
+                {tu("op.turn_away")}
               </Button>
             </>
           )}
@@ -332,7 +333,7 @@ function SocietyVisitors() {
               onClick={() => markExit(v.id)}
             >
               <LogOut className="mr-1 h-4 w-4" />
-              Mark exit
+              {tu("op.mark_exit")}
             </Button>
           )}
         </div>
@@ -343,45 +344,45 @@ function SocietyVisitors() {
   return (
     <PageShell>
       <PageHeader
-        title="Visitors"
-        description="Today's gate activity · refreshes every 30 seconds"
+        title={tu("nav.visitors")}
+        description={tu("op.today_s_gate_activity_refreshes")}
         actions={
           <div className="flex flex-wrap items-center gap-2">
           <form
             className="flex items-center gap-2"
-            aria-label="Check in by pass code"
+            aria-label={tu("op.check_in_by_pass_code")}
             onSubmit={(e) => { e.preventDefault(); void checkinByCode(); }}
           >
-            <Label htmlFor="pass-code" className="sr-only">Pass code</Label>
+            <Label htmlFor="pass-code" className="sr-only">{tu("op.pass_code")}</Label>
             <Input
               id="pass-code"
               inputMode="numeric"
               maxLength={6}
-              placeholder="6-digit code"
+              placeholder={tu("op.6_digit_code")}
               className="h-11 w-32 font-mono"
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
             />
             <Button type="submit" variant="outline" className="h-11 rounded-xl" disabled={codeBusy || code.length !== 6}>
-              {codeBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Check in"}
+              {codeBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : tu("op.check_in")}
             </Button>
           </form>
           <Button variant="outline" className="h-11 rounded-xl" onClick={exportCsv} disabled={shown.length === 0}>
-            <Download className="mr-2 h-4 w-4" /> Download
+            <Download className="mr-2 h-4 w-4" /> {tu("common.download")}
           </Button>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button className="h-11 rounded-xl">
-                <Plus className="mr-2 h-4 w-4" /> Log visitor
+                <Plus className="mr-2 h-4 w-4" /> {tu("op.log_visitor")}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Log a visitor</DialogTitle>
+                <DialogTitle>{tu("op.log_a_visitor")}</DialogTitle>
               </DialogHeader>
               <div className="space-y-3">
                 <div>
-                  <Label htmlFor="lv-name">Visitor name</Label>
+                  <Label htmlFor="lv-name">{tu("op.visitor_name")}</Label>
                   <Input
                     id="lv-name"
                     className="h-11"
@@ -391,7 +392,7 @@ function SocietyVisitors() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="lv-phone">Phone</Label>
+                    <Label htmlFor="lv-phone">{tu("exp.phone")}</Label>
                     <Input
                       id="lv-phone"
                       inputMode="tel"
@@ -401,7 +402,7 @@ function SocietyVisitors() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="lv-flat">House</Label>
+                    <Label htmlFor="lv-flat">{tu("gd.houseLabel")}</Label>
                     <Input
                       id="lv-flat"
                       className="h-11"
@@ -412,7 +413,7 @@ function SocietyVisitors() {
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="lv-veh">Vehicle number</Label>
+                  <Label htmlFor="lv-veh">{tu("op.vehicle_number")}</Label>
                   <Input
                     id="lv-veh"
                     className="h-11"
@@ -421,19 +422,19 @@ function SocietyVisitors() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="lv-pur">Purpose</Label>
+                  <Label htmlFor="lv-pur">{tu("gd.purpose")}</Label>
                   <Input
                     id="lv-pur"
                     className="h-11"
                     value={form.purpose}
                     onChange={(e) => setForm({ ...form, purpose: e.target.value })}
-                    placeholder="Delivery, guest…"
+                    placeholder={tu("op.delivery_guest")}
                   />
                 </div>
               </div>
               <DialogFooter>
                 <Button onClick={logVisitor} disabled={saving} className="h-11 rounded-xl">
-                  {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Log entry
+                  {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{tu("gd.logEntry")}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -446,7 +447,7 @@ function SocietyVisitors() {
         <ListSkeleton rows={5} />
       ) : loadFailed ? (
         <LoadError
-          title="We couldn't load the visitor log."
+          title={tu("op.we_couldn_t_load_the")}
           onRetry={() => {
             setLoading(true);
             void load();
@@ -467,11 +468,11 @@ function SocietyVisitors() {
             <SearchField
               value={term}
               onChange={setTerm}
-              placeholder="Name, house, vehicle or purpose"
-              label="Search visitors"
+              placeholder={tu("op.name_house_vehicle_or_purpose")}
+              label={tu("gd.searchVisitors")}
             />
             <SegmentedFilter
-              label="Visitor status"
+              label={tu("op.visitor_status")}
               value={filter}
               onChange={setFilter}
               options={[
@@ -487,13 +488,13 @@ function SocietyVisitors() {
               icon={UserCheck}
               title={
                 term
-                  ? "No visitors match"
+                  ? tu("op.no_visitors_match")
                   : list.length
-                    ? "Nothing in this view"
-                    : "No visitors logged yet"
+                    ? tu("op.nothing_in_this_view")
+                    : tu("op.no_visitors_logged_yet")
               }
             >
-              {list.length ? "Try another filter or search." : "Gate entries will appear here."}
+              {list.length ? tu("op.try_another_filter_or_search") : tu("op.gate_entries_will_appear_here")}
             </ListEmpty>
           ) : (
             groups.map((g) => {
@@ -516,13 +517,13 @@ function SocietyVisitors() {
       <AlertDialog open={!!denyFor} onOpenChange={(o) => !o && setDenyFor(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Turn away {denyFor?.visitor_name}?</AlertDialogTitle>
+            <AlertDialogTitle>{tu("op.turn_away")} {denyFor?.visitor_name}?</AlertDialogTitle>
             <AlertDialogDescription>
-              The visit will be marked rejected and closed. This can't be undone from here.
+              {tu("op.the_visit_will_be_marked")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="h-11">Keep waiting</AlertDialogCancel>
+            <AlertDialogCancel className="h-11">{tu("op.keep_waiting")}</AlertDialogCancel>
             <AlertDialogAction
               className="h-11"
               onClick={() => {
@@ -530,7 +531,7 @@ function SocietyVisitors() {
                 setDenyFor(null);
               }}
             >
-              Turn away
+              {tu("op.turn_away")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -22,6 +22,7 @@ import {
   bulkRejectJoinRequests,
   type PendingJoinRequest,
 } from "@/lib/join-approvals";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/approvals")({
   head: () => ({ meta: [{ title: "Resident approvals — SociyoHub" }] }),
@@ -84,7 +85,7 @@ function ApprovalsPage() {
     if (!societyId) return;
     const ids = all ? null : Array.from(selected);
     if (!all && ids!.length === 0) {
-      toast.error("Select at least one request");
+      toast.error(tu("op.select_at_least_one_request"));
       return;
     }
     setBusy(all ? "__all__" : "__sel__");
@@ -120,7 +121,7 @@ function ApprovalsPage() {
   async function rejectOne() {
     if (!rejectFor) return;
     if (!reason.trim()) {
-      toast.error("Please add a reason");
+      toast.error(tu("op.please_add_a_reason"));
       return;
     }
     setBusy(rejectFor.id);
@@ -134,7 +135,7 @@ function ApprovalsPage() {
       toast.error(userMessage(error));
       return;
     }
-    toast.success("Request rejected");
+    toast.success(tu("op.request_rejected"));
     setRejectFor(null);
     setReason("");
     qc.invalidateQueries({ queryKey: ["join-requests-v2"] });
@@ -144,13 +145,13 @@ function ApprovalsPage() {
     <div className="container-page space-y-4 py-6 md:py-10">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">Resident approvals</h1>
+          <h1 className="text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">{tu("op.resident_approvals")}</h1>
           <p className="text-xs text-muted-foreground">
-            Review and approve residents who requested to join your society.
+            {tu("op.review_and_approve_residents_who")}
           </p>
         </div>
         <Badge variant="secondary" className="rounded-full">
-          {rows?.length ?? 0} pending
+          {rows?.length ?? 0} {tu("sd.payStatus.pending")}
         </Badge>
       </header>
 
@@ -161,7 +162,7 @@ function ApprovalsPage() {
             className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
           >
             {allSelected ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
-            {allSelected ? "Unselect all" : "Select all"}
+            {allSelected ? tu("op.unselect_all") : tu("op.select_all")}
           </button>
           <span className="text-xs text-muted-foreground ml-2">
             {selected.size ? `${selected.size} selected` : ""}
@@ -174,7 +175,7 @@ function ApprovalsPage() {
               disabled={selected.size === 0 || busy !== null}
               onClick={() => setRejectFor({ id: "__bulk__" } as any)}
             >
-              Reject
+              {tu("el.a.reject")}
             </Button>
             <Button
               size="sm"
@@ -184,7 +185,7 @@ function ApprovalsPage() {
               onClick={() => bulkApprove(false)}
             >
               {busy === "__sel__" && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />}
-              Approve selected
+              {tu("op.approve_selected")}
             </Button>
             <Button
               size="sm"
@@ -193,7 +194,7 @@ function ApprovalsPage() {
               onClick={() => bulkApprove(true)}
             >
               {busy === "__all__" && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />}
-              Approve all
+              {tu("op.approve_all")}
             </Button>
           </div>
         </div>
@@ -207,11 +208,11 @@ function ApprovalsPage() {
         <Card className="rounded-2xl">
           <CardContent className="p-8 text-center text-muted-foreground">
             <Inbox className="h-10 w-10 mx-auto mb-3" />
-            No pending requests. New requests will appear here.
+            {tu("op.no_pending_requests_new_requests")}
           </CardContent>
         </Card>
       ) : (
-        <ul className="divide-y overflow-hidden rounded-2xl border bg-card" aria-label="Pending join requests">
+        <ul className="divide-y overflow-hidden rounded-2xl border bg-card" aria-label={tu("op.pending_join_requests")}>
           {rows.map((r) => (
             <li key={r.id} className="relative grid gap-3 px-4 py-4 before:absolute before:inset-y-3 before:left-0 before:w-1 before:rounded-r before:bg-info md:grid-cols-[1fr_14rem_auto] md:items-center">
               <div className="flex min-w-0 items-start gap-2">
@@ -220,24 +221,24 @@ function ApprovalsPage() {
               </label>
               <div className="min-w-0">
                 <p className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-                  <span className="rounded bg-info-container px-1.5 py-0.5 font-semibold text-info-container-foreground">Awaiting approval</span>
-                  <span>Wants to join as <span className="capitalize">{r.owner_or_tenant ?? "resident"}</span></span>
+                  <span className="rounded bg-info-container px-1.5 py-0.5 font-semibold text-info-container-foreground">{tu("hd.st.awaiting_approval")}</span>
+                  <span>{tu("op.wants_to_join_as")} <span className="capitalize">{r.owner_or_tenant ?? tu("op.resident")}</span></span>
                 </p>
-                <p className="mt-0.5 truncate font-semibold">{r.full_name ?? "Unnamed"}</p>
+                <p className="mt-0.5 truncate font-semibold">{r.full_name ?? tu("sd.unnamed")}</p>
                 <p className="truncate text-xs text-muted-foreground">{r.requester_email ?? "—"}</p>
               </div>
               </div>
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm md:block md:space-y-0.5">
-                <p className="flex items-center gap-1.5"><DoorOpen className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />House <span className="font-medium">{r.flat_number_input ?? "—"}</span></p>
+                <p className="flex items-center gap-1.5"><DoorOpen className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />{tu("gd.houseLabel")} <span className="font-medium">{r.flat_number_input ?? "—"}</span></p>
                 <p className="flex items-center gap-1.5 text-muted-foreground"><Phone className="h-3.5 w-3.5" aria-hidden /><span className="truncate">{r.mobile ?? "—"}</span></p>
-                <p className="text-xs text-muted-foreground">Requested {new Date(r.created_at).toLocaleDateString()}</p>
+                <p className="text-xs text-muted-foreground">{tu("op.requested")} {new Date(r.created_at).toLocaleDateString()}</p>
               </div>
               <div className="flex gap-2">
                 <Button onClick={() => approveOne(r)} disabled={busy === r.id} className="h-11 flex-1 rounded-xl md:flex-none">
-                  {busy === r.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle2 className="mr-1 h-4 w-4" /> Approve</>}
+                  {busy === r.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle2 className="mr-1 h-4 w-4" /> {tu("vs.approve")}</>}
                 </Button>
                 <Button onClick={() => { setRejectFor(r); setReason(""); }} variant="outline" className="h-11 flex-1 rounded-xl md:flex-none">
-                  <XCircle className="mr-1 h-4 w-4" /> Reject
+                  <XCircle className="mr-1 h-4 w-4" /> {tu("el.a.reject")}
                 </Button>
               </div>
             </li>
@@ -251,7 +252,7 @@ function ApprovalsPage() {
             <SheetTitle>
               {rejectFor?.id === "__bulk__"
                 ? `Reject ${selected.size} request${selected.size === 1 ? "" : "s"}`
-                : "Reject join request"}
+                : tu("op.reject_join_request")}
             </SheetTitle>
           </SheetHeader>
           <div className="py-3 space-y-3">
@@ -259,7 +260,7 @@ function ApprovalsPage() {
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               rows={4}
-              placeholder="Reason (shown to the resident)"
+              placeholder={tu("op.reason_shown_to_the_resident")}
               className="rounded-2xl"
             />
           </div>
@@ -269,7 +270,7 @@ function ApprovalsPage() {
               onClick={() => setRejectFor(null)}
               className="flex-1 h-11 rounded-xl"
             >
-              Cancel
+              {tu("common.cancel")}
             </Button>
             <Button
               onClick={rejectFor?.id === "__bulk__" ? bulkReject : rejectOne}
@@ -277,7 +278,7 @@ function ApprovalsPage() {
               className="flex-1 h-11 rounded-xl"
             >
               {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Reject
+              {tu("el.a.reject")}
             </Button>
           </SheetFooter>
         </SheetContent>

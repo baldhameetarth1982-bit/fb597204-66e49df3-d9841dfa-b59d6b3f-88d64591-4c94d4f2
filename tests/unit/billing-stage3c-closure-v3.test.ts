@@ -13,7 +13,7 @@
  *    authenticated and grants the new read RPCs to authenticated only.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync } from "../helpers/ui-source";
 import path from "node:path";
 
 const fnSrc = readFileSync("src/lib/offline-payments.functions.ts", "utf8");

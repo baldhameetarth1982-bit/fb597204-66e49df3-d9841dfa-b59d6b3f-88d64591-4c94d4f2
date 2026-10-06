@@ -46,6 +46,7 @@ import {
 } from "@/lib/offline-payments.functions";
 import { formatDate } from "@/utils/format";
 import { toSafeFinanceError } from "@/lib/finance-safe-error";
+import { tu } from "@/lib/i18n";
 
 const STATUS_LABEL: Record<string, string> = {
   pending: "Awaiting verification",
@@ -108,7 +109,7 @@ function SocietyPaymentsRoute() {
   function onReject(p: OfflinePaymentRow) {
     const reason = (reasonById[p.id] ?? "").trim();
     if (!reason) {
-      toast.error("Enter a reason before rejecting");
+      toast.error(tu("op.enter_a_reason_before_rejecting"));
       return;
     }
     setConfirm({ kind: "reject", p, reason });
@@ -116,7 +117,7 @@ function SocietyPaymentsRoute() {
   function onReverse(p: OfflinePaymentRow) {
     const reason = (reasonById[p.id] ?? "").trim();
     if (!reason) {
-      toast.error("Enter a reason before reversing");
+      toast.error(tu("op.enter_a_reason_before_reversing"));
       return;
     }
     setConfirm({ kind: "reverse", p, reason });
@@ -134,10 +135,10 @@ function SocietyPaymentsRoute() {
         );
       } else if (kind === "reject") {
         await reject({ data: { paymentId: p.id, reason: confirm.reason } });
-        toast.success("Payment rejected");
+        toast.success(tu("op.payment_rejected"));
       } else {
         await reverse({ data: { paymentId: p.id, reason: confirm.reason } });
-        toast.success("Payment reversed and receipt voided");
+        toast.success(tu("op.payment_reversed_and_receipt_voided"));
       }
       setConfirm(null);
       refresh();
@@ -157,7 +158,7 @@ function SocietyPaymentsRoute() {
   }
 
   if (!societyId) {
-    return <p className="p-6 text-muted-foreground">No society context available.</p>;
+    return <p className="p-6 text-muted-foreground">{tu("op.no_society_context_available")}</p>;
   }
 
   const TABS: { id: Tab; label: string; tone: "warning" | "success" | "danger" | "neutral" }[] = [
@@ -178,21 +179,21 @@ function SocietyPaymentsRoute() {
 
   return (
     <PageShell>
-      <PageHeader title="Payments" description="Cash, Bank Transfer and UPI QR payments. A receipt is issued only after you verify a payment." />
+      <PageHeader title={tu("billingTabs.payments")} description={tu("op.cash_bank_transfer_and_upi")} />
       {societyId && <UpiSettingsCard societyId={societyId} />}
       {societyId && <RefundNeededCard societyId={societyId} />}
       <div className="mb-5 rounded-2xl border border-border bg-card"><BillingCenterTabs /></div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
         <div className="min-w-0 space-y-4">
-          <div role="tablist" aria-label="Payment status" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div role="tablist" aria-label={tu("op.payment_status")} className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {TABS.map((t) => {
               const active = tab === t.id;
               return (
                 <button key={t.id} type="button" role="tab" aria-selected={active} onClick={() => setTab(t.id)}
                   className={`flex min-h-12 items-center gap-2 rounded-xl border px-3 text-left text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${active ? "border-foreground bg-card shadow-sm" : "border-border bg-card/60 text-muted-foreground hover:text-foreground"}`}>
                   <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${TAB_META[t.id].bar}`} aria-hidden />
-                  {t.id === "pending" ? "Awaiting" : t.label}
+                  {t.id === "pending" ? tu("op.awaiting") : t.label}
                 </button>
               );
             })}
@@ -204,13 +205,13 @@ function SocietyPaymentsRoute() {
           </div>
 
           {loading ? (
-            <div className="space-y-2" aria-busy="true" aria-label="Loading payments">
+            <div className="space-y-2" aria-busy="true" aria-label={tu("op.loading_payments")}>
               {[0, 1, 2].map((i) => <div key={i} className="h-24 rounded-2xl bg-muted animate-pulse" />)}
             </div>
           ) : loadError ? (
             <div role="alert" className="flex items-center justify-between gap-3 rounded-2xl border border-destructive/30 bg-card p-4">
               <p className="text-sm text-muted-foreground">{loadError}</p>
-              <Button variant="outline" className="min-h-11 shrink-0 rounded-xl" onClick={refresh}>Try again</Button>
+              <Button variant="outline" className="min-h-11 shrink-0 rounded-xl" onClick={refresh}>{tu("common.tryAgain")}</Button>
             </div>
           ) : rows.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">{meta.empty}</div>
@@ -224,10 +225,10 @@ function SocietyPaymentsRoute() {
                       <div className="min-w-0">
                         <p className="text-lg font-semibold tabular-nums">₹{Number(p.amount).toLocaleString("en-IN")}</p>
                         <dl className="mt-1 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-                          <dt>Method</dt><dd className="text-foreground">{methodLabel(p.method)}</dd>
-                          <dt>Paid on</dt><dd className="text-foreground">{p.payment_date ? formatDate(p.payment_date) : "Not given"}</dd>
-                          <dt>Reference</dt><dd className="truncate text-foreground">{p.reference_no ?? "None"}</dd>
-                          {p.submitted_at && (<><dt>Submitted</dt><dd>{formatDate(p.submitted_at)}{p.source ? ` · ${p.source.replace("_", " ")}` : ""}</dd></>)}
+                          <dt>{tu("inc.method")}</dt><dd className="text-foreground">{methodLabel(p.method)}</dd>
+                          <dt>{tu("op.paid_on")}</dt><dd className="text-foreground">{p.payment_date ? formatDate(p.payment_date) : tu("op.not_given")}</dd>
+                          <dt>{tu("acc.reference")}</dt><dd className="truncate text-foreground">{p.reference_no ?? tu("el.a.none")}</dd>
+                          {p.submitted_at && (<><dt>{tu("nd.st.submitted")}</dt><dd>{formatDate(p.submitted_at)}{p.source ? ` · ${p.source.replace("_", " ")}` : ""}</dd></>)}
                         </dl>
                         {p.method === "upi_qr" && <div className="mt-2"><PaymentProofButton paymentId={p.id} /></div>}
                         {p.notes && <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">“{p.notes}”</p>}
@@ -239,34 +240,34 @@ function SocietyPaymentsRoute() {
                     </div>
 
                     {p.status === "pending" && (
-                      <p className="rounded-lg bg-warning-container px-3 py-2 text-xs text-warning-container-foreground">Not confirmed yet — no receipt has been issued and the bill is still unpaid.</p>
+                      <p className="rounded-lg bg-warning-container px-3 py-2 text-xs text-warning-container-foreground">{tu("op.not_confirmed_yet_no_receipt")}</p>
                     )}
                     {p.status === "verified" && p.verified_at && (
-                      <p className="flex items-center gap-1 text-xs text-muted-foreground"><Receipt className="h-3.5 w-3.5" />Verified {formatDate(p.verified_at)}{p.verification_notes ? ` · ${p.verification_notes}` : ""}</p>
+                      <p className="flex items-center gap-1 text-xs text-muted-foreground"><Receipt className="h-3.5 w-3.5" />{tu("docState.verified")} {formatDate(p.verified_at)}{p.verification_notes ? ` · ${p.verification_notes}` : ""}</p>
                     )}
-                    {p.status === "rejected" && p.rejection_reason && <p className="text-xs text-muted-foreground">Reason: {p.rejection_reason}</p>}
-                    {p.status === "reversed" && p.reversal_reason && <p className="text-xs text-muted-foreground">Reason: {p.reversal_reason}</p>}
+                    {p.status === "rejected" && p.rejection_reason && <p className="text-xs text-muted-foreground">{tu("op.reason")} {p.rejection_reason}</p>}
+                    {p.status === "reversed" && p.reversal_reason && <p className="text-xs text-muted-foreground">{tu("op.reason")} {p.reversal_reason}</p>}
 
                     {(tab === "pending" || tab === "verified") && (
                       <details className="group rounded-xl border border-border" open={tab === "pending" ? undefined : false}>
                         <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-3 text-sm font-medium">
-                          {tab === "pending" ? "Verify or reject" : "Reverse this payment"}
-                          <span className="text-xs text-muted-foreground group-open:hidden">Open</span>
+                          {tab === "pending" ? tu("op.verify_or_reject") : tu("op.reverse_this_payment")}
+                          <span className="text-xs text-muted-foreground group-open:hidden">{tu("common.open")}</span>
                         </summary>
                         <div className="space-y-3 border-t border-border p-3">
                           {tab === "pending" && (
                             <Button className="min-h-11 w-full rounded-xl sm:w-auto" onClick={() => onVerify(p)} disabled={busyId === p.id}>
-                              {busyId === p.id ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-1 h-4 w-4" />}Verify payment
+                              {busyId === p.id ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-1 h-4 w-4" />}{tu("op.verify_payment")}
                             </Button>
                           )}
                           <div className="space-y-1">
-                            <Label htmlFor={`reason-${p.id}`} className="text-xs">{tab === "verified" ? "Reason to reverse (required)" : "Reason to reject (required)"}</Label>
+                            <Label htmlFor={`reason-${p.id}`} className="text-xs">{tab === "verified" ? tu("op.reason_to_reverse_required") : tu("op.reason_to_reject_required")}</Label>
                             <Textarea id={`reason-${p.id}`} rows={2} value={reasonById[p.id] ?? ""} onChange={(e) => setReasonById((prev) => ({ ...prev, [p.id]: e.target.value }))} />
                           </div>
                           {tab === "pending" ? (
-                            <Button variant="outline" className="min-h-11 rounded-xl text-destructive" onClick={() => onReject(p)} disabled={busyId === p.id}><XCircle className="mr-1 h-4 w-4" />Reject</Button>
+                            <Button variant="outline" className="min-h-11 rounded-xl text-destructive" onClick={() => onReject(p)} disabled={busyId === p.id}><XCircle className="mr-1 h-4 w-4" />{tu("el.a.reject")}</Button>
                           ) : (
-                            <Button variant="outline" className="min-h-11 rounded-xl text-destructive" onClick={() => onReverse(p)} disabled={busyId === p.id}><RotateCcw className="mr-1 h-4 w-4" />Reverse</Button>
+                            <Button variant="outline" className="min-h-11 rounded-xl text-destructive" onClick={() => onReverse(p)} disabled={busyId === p.id}><RotateCcw className="mr-1 h-4 w-4" />{tu("exp.reverse")}</Button>
                           )}
                         </div>
                       </details>
@@ -278,7 +279,7 @@ function SocietyPaymentsRoute() {
           )}
         </div>
 
-        <aside aria-label="Record a payment" className="lg:sticky lg:top-20">
+        <aside aria-label={tu("op.record_a_payment")} className="lg:sticky lg:top-20">
           <RecordOfflinePaymentSection societyId={societyId} onRecorded={refresh} />
         </aside>
       </div>
@@ -288,10 +289,10 @@ function SocietyPaymentsRoute() {
           <AlertDialogHeader>
             <AlertDialogTitle>
               {confirm?.kind === "verify"
-                ? "Verify this payment?"
+                ? tu("op.verify_this_payment")
                 : confirm?.kind === "reject"
-                  ? "Reject this payment?"
-                  : "Reverse this verified payment?"}
+                  ? tu("op.reject_this_payment")
+                  : tu("op.reverse_this_verified_payment")}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirm ? (
@@ -302,38 +303,38 @@ function SocietyPaymentsRoute() {
                     </span>{" "}
                     ·{" "}
                     {confirm.p.method === "bank_transfer"
-                      ? "Bank Transfer"
+                      ? tu("inc.m.bank")
                       : confirm.p.method === "cash"
-                        ? "Cash"
+                        ? tu("common.cash")
                         : confirm.p.method}
                     {confirm.p.reference_no ? ` · Ref ${confirm.p.reference_no}` : ""}
                   </span>
                   {confirm.kind === "verify" && (
-                    <>Verifying issues a receipt and marks the bill balance paid. This cannot be undone by editing — you would need to reverse it later.</>
+                    <>{tu("op.verifying_issues_a_receipt_and")}</>
                   )}
                   {confirm.kind === "reject" && (
-                    <>Rejecting closes this submission with the reason below. No receipt is issued.</>
+                    <>{tu("op.rejecting_closes_this_submission_with")}</>
                   )}
                   {confirm.kind === "reverse" && (
-                    <>Reversing voids the receipt and re-opens the bill balance. This is a permanent audit event.</>
+                    <>{tu("op.reversing_voids_the_receipt_and")}</>
                   )}
                 </>
               ) : null}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={!!busyId}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={!!busyId}>{tu("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={executeConfirm} disabled={!!busyId}>
               {busyId ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" /> Working…
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" /> {tu("op.working")}
                 </>
               ) : confirm?.kind === "verify" ? (
-                "Verify"
+                tu("otp.verify")
               ) : confirm?.kind === "reject" ? (
-                "Reject"
+                tu("el.a.reject")
               ) : (
-                "Reverse"
+                tu("exp.reverse")
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -406,7 +407,7 @@ function RecordOfflinePaymentSection({
   async function onSubmit() {
     if (!selected) return;
     if (amountExceeds) {
-      toast.error("Amount exceeds the available balance for this bill.");
+      toast.error(tu("op.amount_exceeds_the_available_balance"));
       return;
     }
     setSubmitting(true);
@@ -445,13 +446,13 @@ function RecordOfflinePaymentSection({
       <Card className="rounded-2xl">
         <CardContent className="p-4 flex items-center justify-between">
           <div>
-            <p className="text-sm font-semibold">Record offline payment</p>
+            <p className="text-sm font-semibold">{tu("op.record_offline_payment")}</p>
             <p className="text-xs text-muted-foreground">
-              Enter a Cash or Bank Transfer payment received at the office. Verification happens as a separate step.
+              {tu("op.enter_a_cash_or_bank")}
             </p>
           </div>
           <Button size="sm" className="rounded-lg" onClick={() => setExpanded(true)}>
-            <Plus className="h-4 w-4 mr-1" /> Record
+            <Plus className="h-4 w-4 mr-1" /> {tu("op.record")}
           </Button>
         </CardContent>
       </Card>
@@ -462,7 +463,7 @@ function RecordOfflinePaymentSection({
     <Card className="rounded-2xl">
       <CardContent className="p-4 space-y-3">
         <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold">Record offline payment</p>
+          <p className="text-sm font-semibold">{tu("op.record_offline_payment")}</p>
           <Button
             size="sm"
             variant="ghost"
@@ -472,21 +473,21 @@ function RecordOfflinePaymentSection({
               setSelected(null);
             }}
           >
-            Cancel
+            {tu("common.cancel")}
           </Button>
         </div>
 
         {!selected ? (
           <div className="space-y-2">
             <Label htmlFor="bill-search" className="text-xs">
-              Find bill by flat or bill number
+              {tu("op.find_bill_by_flat_or")}
             </Label>
             <div className="flex gap-2">
               <Input
                 id="bill-search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="e.g. A-101 or RR/202607/0001"
+                placeholder={tu("op.e_g_a_101_or")}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") runSearch();
                 }}
@@ -516,45 +517,45 @@ function RecordOfflinePaymentSection({
                     }}
                   >
                     <div className="font-medium">
-                      {b.flat_label ?? "Unit ?"}{b.block_name ? ` · ${b.block_name}` : ""} · {b.bill_number ?? "no number"}
+                      {b.flat_label ?? tu("op.unit_2")}{b.block_name ? ` · ${b.block_name}` : ""} · {b.bill_number ?? tu("op.no_number")}
                     </div>
                     <div className="text-muted-foreground">
-                      Avail ₹{Number(b.available_to_submit ?? 0).toLocaleString("en-IN")} of ₹{Number(b.total_payable ?? 0).toLocaleString("en-IN")} · {b.status}{b.due_date ? ` · due ${b.due_date}` : ""}
+                      {tu("op.avail")}{Number(b.available_to_submit ?? 0).toLocaleString("en-IN")} {tu("op.of")}{Number(b.total_payable ?? 0).toLocaleString("en-IN")} · {b.status}{b.due_date ? ` · due ${b.due_date}` : ""}
                     </div>
                   </button>
                 ))}
               </div>
             )}
             {!searching && results.length === 0 && query.length > 0 && (
-              <p className="text-xs text-muted-foreground">No matching open bills.</p>
+              <p className="text-xs text-muted-foreground">{tu("op.no_matching_open_bills")}</p>
             )}
           </div>
         ) : (
           <div className="space-y-3">
             <div className="rounded-lg border bg-muted/30 p-2 text-xs space-y-0.5">
               <div className="font-medium">
-                {selected.flat_label ?? "Unit"}
-                {selected.block_name ? ` · ${selected.block_name}` : ""} · {selected.bill_number ?? "no number"}
+                {selected.flat_label ?? tu("nd.unit")}
+                {selected.block_name ? ` · ${selected.block_name}` : ""} · {selected.bill_number ?? tu("op.no_number")}
               </div>
               <div className="text-muted-foreground">
-                Total payable ₹{Number(selected.total_payable ?? 0).toLocaleString("en-IN")} · Verified ₹{Number(selected.verified_amount ?? 0).toLocaleString("en-IN")} · Pending ₹{Number(selected.pending_amount ?? 0).toLocaleString("en-IN")}
+                {tu("op.total_payable")}{Number(selected.total_payable ?? 0).toLocaleString("en-IN")} · Verified ₹{Number(selected.verified_amount ?? 0).toLocaleString("en-IN")} · Pending ₹{Number(selected.pending_amount ?? 0).toLocaleString("en-IN")}
               </div>
               <div className="text-muted-foreground">
-                Available to submit <span className="font-semibold text-foreground">₹{Number(selected.available_to_submit ?? 0).toLocaleString("en-IN")}</span>
+                {tu("op.available_to_submit")} <span className="font-semibold text-foreground">₹{Number(selected.available_to_submit ?? 0).toLocaleString("en-IN")}</span>
                 {selected.due_date ? ` · due ${selected.due_date}` : ""} · {selected.status}
               </div>
               <button
                 className="text-primary underline text-xs mt-1"
                 onClick={() => setSelected(null)}
               >
-                Change bill
+                {tu("op.change_bill")}
               </button>
             </div>
 
 
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
-                <Label className="text-xs">Method</Label>
+                <Label className="text-xs">{tu("inc.method")}</Label>
                 <div className="flex gap-1">
                   <Button
                     type="button"
@@ -563,7 +564,7 @@ function RecordOfflinePaymentSection({
                     className="rounded-lg flex-1"
                     onClick={() => setMethod("cash")}
                   >
-                    Cash
+                    {tu("common.cash")}
                   </Button>
                   <Button
                     type="button"
@@ -572,12 +573,12 @@ function RecordOfflinePaymentSection({
                     className="rounded-lg flex-1"
                     onClick={() => setMethod("bank_transfer")}
                   >
-                    Bank
+                    {tu("rep.bank")}
                   </Button>
                 </div>
               </div>
               <div className="space-y-1">
-                <Label htmlFor="adm-amount" className="text-xs">Amount (₹)</Label>
+                <Label htmlFor="adm-amount" className="text-xs">{tu("acc.amountInr")}</Label>
                 <Input
                   id="adm-amount"
                   inputMode="decimal"
@@ -587,13 +588,13 @@ function RecordOfflinePaymentSection({
                 />
                 {amountExceeds && (
                   <p className="text-[11px] text-destructive">
-                    Amount exceeds available balance (₹{Number(availableToSubmit).toLocaleString("en-IN")}).
+                    {tu("op.amount_exceeds_available_balance")}{Number(availableToSubmit).toLocaleString("en-IN")}).
                   </p>
                 )}
               </div>
 
               <div className="space-y-1">
-                <Label htmlFor="adm-date" className="text-xs">Date</Label>
+                <Label htmlFor="adm-date" className="text-xs">{tu("common.date")}</Label>
                 <Input
                   id="adm-date"
                   type="date"
@@ -603,19 +604,19 @@ function RecordOfflinePaymentSection({
               </div>
               <div className="space-y-1">
                 <Label htmlFor="adm-ref" className="text-xs">
-                  Reference {method === "bank_transfer" ? "(required)" : "(optional)"}
+                  {tu("acc.reference")} {method === "bank_transfer" ? tu("op.required_3") : tu("setup.optional")}
                 </Label>
                 <Input
                   id="adm-ref"
                   value={reference}
                   onChange={(e) => setReference(e.target.value)}
-                  placeholder={method === "bank_transfer" ? "UTR" : "Receipt / slip #"}
+                  placeholder={method === "bank_transfer" ? "UTR" : tu("op.receipt_slip")}
                 />
               </div>
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="adm-notes" className="text-xs">Notes</Label>
+              <Label htmlFor="adm-notes" className="text-xs">{tu("exp.notes")}</Label>
               <Textarea
                 id="adm-notes"
                 rows={2}
@@ -633,10 +634,10 @@ function RecordOfflinePaymentSection({
               {submitting ? (
                 <Loader2 className="h-4 w-4 mr-1 animate-spin" />
               ) : null}
-              Record payment (pending verification)
+              {tu("op.record_payment_pending_verification")}
             </Button>
             <p className="text-[11px] text-muted-foreground">
-              Recording does not verify the payment. Another authorized committee member must verify it from the Pending tab before a receipt is issued.
+              {tu("op.recording_does_not_verify_the")}
             </p>
 
           </div>

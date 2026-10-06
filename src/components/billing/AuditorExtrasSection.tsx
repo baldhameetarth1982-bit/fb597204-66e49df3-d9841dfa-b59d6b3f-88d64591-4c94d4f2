@@ -4,6 +4,7 @@ import { Loader2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getAuditorPackExtras, type AuditorExtras } from "@/lib/workstream7.functions";
 import { writeSafeWorkbook } from "@/lib/spreadsheet-safety";
+import { tu } from "@/lib/i18n";
 
 const PARTS: { key: keyof AuditorExtras; label: string; note: string }[] = [
   { key: "adjustments", label: "Bill adjustments", note: "Append-only corrections to dues" },
@@ -15,8 +16,8 @@ const PARTS: { key: keyof AuditorExtras; label: string; note: string }[] = [
 export function AuditorExtrasSection({ societyId, from, to }: { societyId: string; from: string; to: string }) {
   const get = useServerFn(getAuditorPackExtras);
   const q = useQuery({ queryKey: ["auditor-extras", societyId, from, to], queryFn: () => get({ data: { societyId, from, to } }), staleTime: 60_000 });
-  if (q.isLoading) return <p className="flex items-center gap-2 p-4 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Loading…</p>;
-  if (q.isError) return <div className="p-4"><p className="text-sm text-destructive">{(q.error as Error).message}</p><Button variant="outline" className="mt-2 min-h-11" onClick={() => q.refetch()}>Retry</Button></div>;
+  if (q.isLoading) return <p className="flex items-center gap-2 p-4 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />{tu("common.loading")}</p>;
+  if (q.isError) return <div className="p-4"><p className="text-sm text-destructive">{(q.error as Error).message}</p><Button variant="outline" className="mt-2 min-h-11" onClick={() => q.refetch()}>{tu("common.retry")}</Button></div>;
   const d = q.data!;
   return (
     <ul className="divide-y">{PARTS.map((p) => (

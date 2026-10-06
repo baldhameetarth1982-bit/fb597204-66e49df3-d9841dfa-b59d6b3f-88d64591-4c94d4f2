@@ -11,9 +11,10 @@ import { dashboard } from "@/locales/dashboard";
 import { navhub } from "@/locales/navhub";
 import { profile } from "@/locales/profile";
 import { residentPages } from "@/locales/residentPages";
+import { operations } from "@/locales/operations";
 
 const en: Record<string, string> = {};
-for (const c of [core, auth, notifications, accounts, settings, resident, dashboard, navhub, profile, residentPages]) for (const [k, v] of Object.entries(c)) en[k] = v[0];
+for (const c of [core, auth, notifications, accounts, settings, resident, dashboard, navhub, profile, residentPages, operations]) for (const [k, v] of Object.entries(c)) en[k] = v[0];
 
 const dir = join(process.cwd(), "src/locales/extra");
 const files = readdirSync(dir).filter((f) => f.endsWith(".json"));
@@ -35,7 +36,7 @@ describe("validated extra language bundles", () => {
         // An English gloss in brackets ("… (Pause)") means the machine output leaked English.
         if (!/\)\s*$/.test(en[k])) expect(t[k], `${f} ${k}`).not.toMatch(/\s\([A-Za-z][A-Za-z ]+\)\s*$/);
         // Guard tools strings: no English gloss in brackets anywhere in the sentence.
-        if (/^(g[dosepahv]|pk|mp|el|sec|nd|dc|pl|mt)\./.test(k) && !en[k].includes("(")) expect(t[k], `${f} ${k}`).not.toMatch(/\([A-Za-z][A-Za-z ]*\)/);
+        if (/^(g[dosepahv]|pk|mp|el|sec|nd|dc|pl|mt|op)\./.test(k) && !en[k].includes("(")) expect(t[k], `${f} ${k}`).not.toMatch(/\([A-Za-z][A-Za-z ]*\)/);
         // Manipuri must be Meitei, not the Bengali language written in the same script.
         if (f === "mni.json") expect(t[k], `${f} ${k}`).not.toMatch(/করুন|হয়েছে|আপনি|এবং/);
       }

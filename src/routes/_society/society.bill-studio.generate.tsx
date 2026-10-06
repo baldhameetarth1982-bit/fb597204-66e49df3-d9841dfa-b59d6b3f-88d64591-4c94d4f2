@@ -17,6 +17,7 @@ import {
   listBillBatches,
   type BillBatchPreview,
 } from "@/lib/billing-generate.functions";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/bill-studio/generate")({
   head: () => ({ meta: [{ title: "Generate Bills — SociyoHub" }] }),
@@ -121,9 +122,9 @@ function GenerateBillsPage() {
       </button>
 
       <header className="space-y-3 border-b border-border pb-5">
-        <h1 className="text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">Generate bills</h1>
-        <p className="text-sm text-muted-foreground">Pick a ready cycle, review the totals, then create bills. Nothing is created until you confirm.</p>
-        <ol className="flex gap-2 text-xs" aria-label="Progress">
+        <h1 className="text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">{tu("op.generate_bills")}</h1>
+        <p className="text-sm text-muted-foreground">{tu("op.pick_a_ready_cycle_review")}</p>
+        <ol className="flex gap-2 text-xs" aria-label={tu("op.progress")}>
           {["Choose cycle", "Review", "Create"].map((l, i) => (
             <li key={l} className={`flex items-center gap-1.5 rounded-full px-3 py-1 ${i + 1 === step ? "bg-primary text-primary-foreground" : i + 1 < step ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
               <span className="font-semibold">{i + 1}</span>{l}
@@ -133,14 +134,14 @@ function GenerateBillsPage() {
       </header>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-start">
-        <section className="space-y-2" aria-label="Ready cycles">
-          <h2 className="flex items-center gap-1.5 px-1 text-sm font-semibold"><PlayCircle className="h-4 w-4" />Ready cycles</h2>
+        <section className="space-y-2" aria-label={tu("op.ready_cycles")}>
+          <h2 className="flex items-center gap-1.5 px-1 text-sm font-semibold"><PlayCircle className="h-4 w-4" />{tu("op.ready_cycles")}</h2>
           {sidLoading || loading ? (
             <div className="space-y-2">{[0, 1].map((i) => <div key={i} className="h-16 animate-pulse rounded-xl bg-muted" />)}</div>
           ) : readyCycles.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-              No cycles are marked ready.
-              <div className="mt-3"><Button variant="outline" className="min-h-11" onClick={() => navigate({ to: "/society/bill-studio" })}>Set up a cycle</Button></div>
+              {tu("op.no_cycles_are_marked_ready")}
+              <div className="mt-3"><Button variant="outline" className="min-h-11" onClick={() => navigate({ to: "/society/bill-studio" })}>{tu("op.set_up_a_cycle")}</Button></div>
             </div>
           ) : (
             <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
@@ -159,7 +160,7 @@ function GenerateBillsPage() {
                         <span className="block truncate text-xs text-muted-foreground">{c.period_start} → {c.period_end} · due {c.due_date}</span>
                       </span>
                       <span className={`text-sm font-medium ${active ? "text-primary" : "text-muted-foreground"}`}>
-                        {busy && selected === c.id ? <Loader2 className="h-4 w-4 animate-spin" /> : active ? "Selected" : "Review →"}
+                        {busy && selected === c.id ? <Loader2 className="h-4 w-4 animate-spin" /> : active ? tu("op.selected") : tu("op.review")}
                       </span>
                     </button>
                   </li>
@@ -169,56 +170,56 @@ function GenerateBillsPage() {
           )}
         </section>
 
-        <section className="space-y-2" aria-label="Review">
-          <h2 className="flex items-center gap-1.5 px-1 text-sm font-semibold"><FileText className="h-4 w-4" />Review</h2>
+        <section className="space-y-2" aria-label={tu("nd.review")}>
+          <h2 className="flex items-center gap-1.5 px-1 text-sm font-semibold"><FileText className="h-4 w-4" />{tu("nd.review")}</h2>
           {!previewData ? (
-            <div className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">Choose a cycle to see what will be billed.</div>
+            <div className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">{tu("op.choose_a_cycle_to_see")}</div>
           ) : (
             <div className="space-y-3 rounded-2xl border border-border bg-card p-4">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <p className="font-medium">{previewData.cycle.name}</p>
-                <Badge variant="outline">Preview only</Badge>
+                <Badge variant="outline">{tu("op.preview_only")}</Badge>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Total payable</p>
+                <p className="text-xs text-muted-foreground">{tu("rbd.total")}</p>
                 <p className="text-3xl font-bold tabular-nums">{inr(previewData.total_payable)}</p>
-                <p className="text-xs text-muted-foreground">{previewData.unit_count} houses · due {previewData.cycle.due_date}</p>
+                <p className="text-xs text-muted-foreground">{previewData.unit_count} {tu("op.houses_due")} {previewData.cycle.due_date}</p>
               </div>
               <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border text-sm">
-                <StatBox label="Current charges" value={inr(previewData.current_charges_total)} />
-                <StatBox label="Previous dues" value={inr(previewData.previous_dues_total)} />
+                <StatBox label={tu("rbd.current")} value={inr(previewData.current_charges_total)} />
+                <StatBox label={tu("op.previous_dues")} value={inr(previewData.previous_dues_total)} />
               </dl>
               {blockers.length > 0 && (
                 <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm" role="alert">
-                  <p className="mb-1 flex items-center gap-1.5 font-medium text-destructive"><ShieldAlert className="h-4 w-4" />Can't create bills yet</p>
+                  <p className="mb-1 flex items-center gap-1.5 font-medium text-destructive"><ShieldAlert className="h-4 w-4" />{tu("op.can_t_create_bills_yet")}</p>
                   <ul className="list-disc space-y-0.5 pl-5 text-xs">{blockers.map((b) => <li key={b}>{b}</li>)}</ul>
                 </div>
               )}
               {otherWarnings.length > 0 && (
-                <p className="rounded-xl bg-warning/10 p-3 text-xs">Warnings: {otherWarnings.join(", ")}</p>
+                <p className="rounded-xl bg-warning/10 p-3 text-xs">{tu("op.warnings")} {otherWarnings.join(", ")}</p>
               )}
               {societyId && selected && blockers.length === 0 && (
                 <BillRunReviewPanel societyId={societyId} cycleId={selected} onGate={(ok, reason) => setGate({ ok, reason })} />
               )}
               {blockers.length === 0 && !gate.ok && gate.reason && <p className="text-xs text-muted-foreground">{gate.reason}</p>}
               <Button className="min-h-12 w-full" disabled={busy || blockers.length > 0 || !gate.ok} onClick={() => setConfirmOpen(true)}>
-                Create {previewData.unit_count} bills
+                {tu("common.create")} {previewData.unit_count} {tu("op.bills")}
               </Button>
             </div>
           )}
         </section>
       </div>
 
-      <section className="space-y-2" aria-label="Recent batches">
-        <h2 className="flex items-center gap-1.5 px-1 text-sm font-semibold"><Receipt className="h-4 w-4" />Recent batches</h2>
+      <section className="space-y-2" aria-label={tu("op.recent_batches")}>
+        <h2 className="flex items-center gap-1.5 px-1 text-sm font-semibold"><Receipt className="h-4 w-4" />{tu("op.recent_batches")}</h2>
         {batches.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-border p-4 text-sm text-muted-foreground">No bill batches yet.</p>
+          <p className="rounded-2xl border border-dashed border-border p-4 text-sm text-muted-foreground">{tu("op.no_bill_batches_yet")}</p>
         ) : (
           <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card text-sm">
             {batches.map((b) => (
               <li key={b.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3">
                 <div className="min-w-0">
-                  <div className="truncate font-medium">{b.bills_created} bill(s) · <span className="tabular-nums">{inr(b.total_amount)}</span></div>
+                  <div className="truncate font-medium">{b.bills_created} {tu("op.bill_s")} <span className="tabular-nums">{inr(b.total_amount)}</span></div>
                   <div className="truncate text-xs text-muted-foreground">{new Date(b.finalized_at ?? b.created_at).toLocaleString("en-IN")}</div>
                 </div>
                 <Badge variant={b.status === "finalized" ? "default" : "secondary"} className="capitalize">{b.status}</Badge>
@@ -230,25 +231,25 @@ function GenerateBillsPage() {
 
       <Dialog open={confirmOpen} onOpenChange={(o) => !busy && setConfirmOpen(o)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Create these bills?</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{tu("op.create_these_bills")}</DialogTitle></DialogHeader>
           {previewData && (
             <div className="space-y-3 text-sm">
               <div className="space-y-1 rounded-xl border p-3">
-                <div className="flex justify-between gap-3"><span className="text-muted-foreground">Bills to create</span><span className="font-semibold">{previewData.unit_count}</span></div>
-                <div className="flex justify-between gap-3"><span className="text-muted-foreground">Period</span><span>{previewData.cycle.period_start} → {previewData.cycle.period_end}</span></div>
-                <div className="flex justify-between gap-3"><span className="text-muted-foreground">Due date</span><span>{previewData.cycle.due_date}</span></div>
-                <div className="mt-1 flex justify-between gap-3 border-t pt-1"><span className="font-medium">Total payable</span><span className="font-semibold tabular-nums">{inr(previewData.total_payable)}</span></div>
+                <div className="flex justify-between gap-3"><span className="text-muted-foreground">{tu("op.bills_to_create")}</span><span className="font-semibold">{previewData.unit_count}</span></div>
+                <div className="flex justify-between gap-3"><span className="text-muted-foreground">{tu("inc.period")}</span><span>{previewData.cycle.period_start} → {previewData.cycle.period_end}</span></div>
+                <div className="flex justify-between gap-3"><span className="text-muted-foreground">{tu("rbd.dueDate")}</span><span>{previewData.cycle.due_date}</span></div>
+                <div className="mt-1 flex justify-between gap-3 border-t pt-1"><span className="font-medium">{tu("rbd.total")}</span><span className="font-semibold tabular-nums">{inr(previewData.total_payable)}</span></div>
               </div>
               <ul className="list-disc space-y-0.5 pl-4 text-xs text-muted-foreground">
-                <li>Bill numbers are assigned when bills are created.</li>
-                <li>No payments are recorded in this step.</li>
-                <li>You can't regenerate once bills exist — cancel individual bills instead.</li>
+                <li>{tu("op.bill_numbers_are_assigned_when")}</li>
+                <li>{tu("op.no_payments_are_recorded_in")}</li>
+                <li>{tu("op.you_can_t_regenerate_once")}</li>
               </ul>
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" className="min-h-11" onClick={() => setConfirmOpen(false)} disabled={busy}>Cancel</Button>
-            <Button className="min-h-11" onClick={onFinalize} disabled={busy}>{busy ? "Creating…" : "Create bills"}</Button>
+            <Button variant="outline" className="min-h-11" onClick={() => setConfirmOpen(false)} disabled={busy}>{tu("common.cancel")}</Button>
+            <Button className="min-h-11" onClick={onFinalize} disabled={busy}>{busy ? tu("op.creating") : tu("op.create_bills")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

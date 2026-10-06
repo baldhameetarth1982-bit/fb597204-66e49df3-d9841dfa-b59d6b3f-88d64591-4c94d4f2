@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { currentFy, depreciationSchedule, type DepMethod, type DepSettings } from "@/lib/depreciation";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/depreciation")({
   head: () => ({
@@ -80,7 +81,7 @@ function DepreciationPage() {
     });
     setSaving(false);
     if (error) return toast.error(error.code === "42501" ? "Only finance admins can change depreciation." : error.message.includes("check") ? "Check the values: salvage must be less than cost." : error.message);
-    toast.success("Depreciation saved");
+    toast.success(tu("op.depreciation_saved"));
     setEdit(null);
     void qc.invalidateQueries({ queryKey: ["depreciation", societyId] });
   }
@@ -89,15 +90,15 @@ function DepreciationPage() {
 
   return (
     <PageShell>
-      <PageHeader title="Asset depreciation" description={`Financial year ${fy} (April–March). Schedules are for reports and the auditor; they are not posted to the books automatically.`} />
+      <PageHeader title={tu("op.asset_depreciation")} description={`Financial year ${fy} (April–March). Schedules are for reports and the auditor; they are not posted to the books automatically.`} />
       <div className="mb-4 grid grid-cols-3 gap-3">
         {[["Total cost", summary.cost], ["Book value (year end)", summary.book], [`Depreciation ${fy}`, summary.charge]].map(([l, v]) => (
           <div key={l as string} className="rounded-xl border bg-card p-3"><p className="text-xs text-muted-foreground">{l}</p><p className="text-lg font-semibold tabular-nums">{q.isSuccess ? inr(v as number) : "—"}</p></div>
         ))}
       </div>
-      {q.isLoading ? <p className="text-muted-foreground">Loading assets…</p>
-        : q.isError ? <div className="rounded-lg border p-4"><p>Couldn't load assets.</p><Button variant="outline" className="mt-2 min-h-11" onClick={() => q.refetch()}>Try again</Button></div>
-        : q.data!.assets.length === 0 ? <p className="rounded-lg border p-6 text-center text-muted-foreground">No assets yet. Add assets under Operations → Assets first.</p>
+      {q.isLoading ? <p className="text-muted-foreground">{tu("op.loading_assets")}</p>
+        : q.isError ? <div className="rounded-lg border p-4"><p>{tu("op.couldn_t_load_assets")}</p><Button variant="outline" className="mt-2 min-h-11" onClick={() => q.refetch()}>{tu("common.tryAgain")}</Button></div>
+        : q.data!.assets.length === 0 ? <p className="rounded-lg border p-6 text-center text-muted-foreground">{tu("op.no_assets_yet_add_assets")}</p>
         : <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
           {q.data!.assets.map((a) => {
             const s = q.data!.settings.get(a.asset_id);
@@ -106,11 +107,11 @@ function DepreciationPage() {
               <li key={a.asset_id} className="flex flex-wrap items-center gap-3 px-4 py-3">
                 <div className="min-w-0 flex-1">
                   <p className="font-medium">{a.name}</p>
-                  <p className="text-xs text-muted-foreground capitalize">{a.category.replace("_", " ")}{s ? ` · ${s.method === "slm" ? `Straight line, ${s.life_years} yrs` : `WDV ${s.wdv_rate}%`} · cost ${inr(s.cost)}` : " · Not set up"}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{a.category.replace("_", " ")}{s ? ` · ${s.method === "slm" ? `Straight line, ${s.life_years} yrs` : `WDV ${s.wdv_rate}%`} · cost ${inr(s.cost)}` : tu("op.not_set_up_2")}</p>
                 </div>
-                {cur && <p className="text-sm tabular-nums">This year {inr(cur.charge)}</p>}
-                {s && <Button size="sm" variant="ghost" className="min-h-11" onClick={() => setView(a)}>Schedule</Button>}
-                <Button size="sm" variant="outline" className="min-h-11" onClick={() => openEdit(a)}>{s ? "Edit" : "Set up"}</Button>
+                {cur && <p className="text-sm tabular-nums">{tu("op.this_year")} {inr(cur.charge)}</p>}
+                {s && <Button size="sm" variant="ghost" className="min-h-11" onClick={() => setView(a)}>{tu("op.schedule")}</Button>}
+                <Button size="sm" variant="outline" className="min-h-11" onClick={() => openEdit(a)}>{s ? tu("common.edit") : tu("billingTabs.setup")}</Button>
               </li>
             );
           })}
@@ -118,29 +119,29 @@ function DepreciationPage() {
 
       <Dialog open={!!edit} onOpenChange={(o) => !saving && !o && setEdit(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Depreciation — {edit?.name}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{tu("op.depreciation")} {edit?.name}</DialogTitle></DialogHeader>
           <form className="space-y-3" onSubmit={save}>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5"><Label htmlFor="d-cost">Cost (₹)</Label><Input id="d-cost" className="h-11" type="number" min="1" step="0.01" required value={f.cost} onChange={(e) => setF({ ...f, cost: e.target.value })} /></div>
-              <div className="space-y-1.5"><Label htmlFor="d-salv">Salvage value (₹)</Label><Input id="d-salv" className="h-11" type="number" min="0" step="0.01" value={f.salvage} onChange={(e) => setF({ ...f, salvage: e.target.value })} /></div>
+              <div className="space-y-1.5"><Label htmlFor="d-cost">{tu("op.cost")}</Label><Input id="d-cost" className="h-11" type="number" min="1" step="0.01" required value={f.cost} onChange={(e) => setF({ ...f, cost: e.target.value })} /></div>
+              <div className="space-y-1.5"><Label htmlFor="d-salv">{tu("op.salvage_value")}</Label><Input id="d-salv" className="h-11" type="number" min="0" step="0.01" value={f.salvage} onChange={(e) => setF({ ...f, salvage: e.target.value })} /></div>
             </div>
-            <div className="space-y-1.5"><Label htmlFor="d-start">Put to use on</Label><Input id="d-start" className="h-11" type="date" required max={new Date().toISOString().slice(0, 10)} value={f.start} onChange={(e) => setF({ ...f, start: e.target.value })} /></div>
-            <fieldset className="flex gap-2"><legend className="mb-1.5 text-sm font-medium">Method</legend>
-              {(["slm", "wdv"] as const).map((m) => <Button key={m} type="button" variant={f.method === m ? "default" : "outline"} className="min-h-11 flex-1" onClick={() => setF({ ...f, method: m })}>{m === "slm" ? "Straight line" : "Written-down value"}</Button>)}
+            <div className="space-y-1.5"><Label htmlFor="d-start">{tu("op.put_to_use_on")}</Label><Input id="d-start" className="h-11" type="date" required max={new Date().toISOString().slice(0, 10)} value={f.start} onChange={(e) => setF({ ...f, start: e.target.value })} /></div>
+            <fieldset className="flex gap-2"><legend className="mb-1.5 text-sm font-medium">{tu("inc.method")}</legend>
+              {(["slm", "wdv"] as const).map((m) => <Button key={m} type="button" variant={f.method === m ? "default" : "outline"} className="min-h-11 flex-1" onClick={() => setF({ ...f, method: m })}>{m === "slm" ? tu("op.straight_line") : tu("op.written_down_value")}</Button>)}
             </fieldset>
             {f.method === "slm"
-              ? <div className="space-y-1.5"><Label htmlFor="d-life">Useful life (years)</Label><Input id="d-life" className="h-11" type="number" min="1" max="60" required value={f.life} onChange={(e) => setF({ ...f, life: e.target.value })} /></div>
-              : <div className="space-y-1.5"><Label htmlFor="d-rate">Rate per year (%)</Label><Input id="d-rate" className="h-11" type="number" min="0.01" max="99.99" step="0.01" required value={f.rate} onChange={(e) => setF({ ...f, rate: e.target.value })} /></div>}
-            <DialogFooter><Button type="submit" className="min-h-11 w-full" disabled={saving}>{saving ? "Saving…" : "Save"}</Button></DialogFooter>
+              ? <div className="space-y-1.5"><Label htmlFor="d-life">{tu("op.useful_life_years")}</Label><Input id="d-life" className="h-11" type="number" min="1" max="60" required value={f.life} onChange={(e) => setF({ ...f, life: e.target.value })} /></div>
+              : <div className="space-y-1.5"><Label htmlFor="d-rate">{tu("op.rate_per_year")}</Label><Input id="d-rate" className="h-11" type="number" min="0.01" max="99.99" step="0.01" required value={f.rate} onChange={(e) => setF({ ...f, rate: e.target.value })} /></div>}
+            <DialogFooter><Button type="submit" className="min-h-11 w-full" disabled={saving}>{saving ? tu("cm.saving") : tu("common.save")}</Button></DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
       <Dialog open={!!view} onOpenChange={(o) => !o && setView(null)}>
         <DialogContent className="max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Schedule — {view?.name}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{tu("op.schedule_2")} {view?.name}</DialogTitle></DialogHeader>
           {viewSettings && <table className="w-full text-sm tabular-nums">
-            <thead><tr className="text-left text-xs text-muted-foreground"><th className="py-1">Year</th><th className="text-right">Opening</th><th className="text-right">Charge</th><th className="text-right">Closing</th></tr></thead>
+            <thead><tr className="text-left text-xs text-muted-foreground"><th className="py-1">{tu("mnt.year")}</th><th className="text-right">{tu("op.opening")}</th><th className="text-right">{tu("rbd.charge")}</th><th className="text-right">{tu("op.closing")}</th></tr></thead>
             <tbody>{depreciationSchedule(viewSettings).map((y) => <tr key={y.fy} className={`border-t ${y.fy === fy ? "font-semibold" : ""}`}><td className="py-1.5">{y.fy}</td><td className="text-right">{inr(y.opening)}</td><td className="text-right">{inr(y.charge)}</td><td className="text-right">{inr(y.closing)}</td></tr>)}</tbody>
           </table>}
         </DialogContent>

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getBillUpiDetails, submitUpiQrPayment } from "@/lib/upi-qr-payment.functions";
+import { tu } from "@/lib/i18n";
 
 const MESSAGES: Record<string, string> = {
   invalid_reference: "Enter the UPI transaction ID (UTR) — 8 to 35 letters or numbers.",
@@ -56,7 +57,7 @@ export function UpiQrPayCard({ billId, onSubmitted }: { billId: string; onSubmit
     try {
       await submit({ data: { billId, referenceNo: r, idempotencyKey: idKey, proofBase64: await toBase64(file) } });
       setDone(true);
-      toast.success("Sent for verification. The bill stays unpaid until the committee checks it.");
+      toast.success(tu("op.sent_for_verification_the_bill"));
       onSubmitted();
     } catch (e) {
       toast.error(MESSAGES[(e as Error).message] ?? "Couldn't submit right now. Please try again.");
@@ -64,17 +65,17 @@ export function UpiQrPayCard({ billId, onSubmitted }: { billId: string; onSubmit
   }
 
   if (done) {
-    return <div role="status" className="rounded-2xl border border-border p-4 text-sm text-muted-foreground">UPI payment sent for verification. You'll get a receipt once the committee confirms it — don't pay again.</div>;
+    return <div role="status" className="rounded-2xl border border-border p-4 text-sm text-muted-foreground">{tu("op.upi_payment_sent_for_verification")}</div>;
   }
 
   return (
     <div className="rounded-2xl border border-border p-4 space-y-3">
       <div>
-        <p className="font-medium">Pay by UPI QR</p>
-        <p className="text-sm text-muted-foreground">Scan your society's QR in any UPI app, then send the transaction ID and a screenshot. No extra fee.</p>
+        <p className="font-medium">{tu("op.pay_by_upi_qr")}</p>
+        <p className="text-sm text-muted-foreground">{tu("op.scan_your_society_s_qr")}</p>
       </div>
       {!open ? (
-        <Button variant="outline" className="h-11 w-full rounded-xl" onClick={() => setOpen(true)}><QrCode className="h-4 w-4 mr-2" />Show UPI QR</Button>
+        <Button variant="outline" className="h-11 w-full rounded-xl" onClick={() => setOpen(true)}><QrCode className="h-4 w-4 mr-2" />{tu("op.show_upi_qr")}</Button>
       ) : (
         <div className="space-y-4">
           <div className="flex flex-col items-center gap-2 rounded-xl bg-muted/50 p-4">
@@ -83,21 +84,21 @@ export function UpiQrPayCard({ billId, onSubmitted }: { billId: string; onSubmit
               : <div className="rounded-lg bg-card p-3"><QRCodeSVG value={upiLink} size={192} aria-label={`UPI QR for ${d.payeeName}`} /></div>}
             <p className="text-sm font-medium">{d.payeeName}</p>
             <p className="text-xs text-muted-foreground break-all">{d.upiVpa}</p>
-            <p className="text-lg font-semibold tabular-nums">Pay {INR(d.amountDue)}</p>
-            <a href={upiLink} className="text-sm font-medium text-primary underline-offset-4 hover:underline sm:hidden">Open UPI app</a>
+            <p className="text-lg font-semibold tabular-nums">{tu("op.pay")} {INR(d.amountDue)}</p>
+            <a href={upiLink} className="text-sm font-medium text-primary underline-offset-4 hover:underline sm:hidden">{tu("op.open_upi_app")}</a>
           </div>
           <div className="space-y-1">
-            <Label htmlFor="upi-ref">UPI transaction ID (UTR)</Label>
+            <Label htmlFor="upi-ref">{tu("op.upi_transaction_id_utr")}</Label>
             <Input id="upi-ref" inputMode="text" autoComplete="off" maxLength={35} value={ref} onChange={(e) => setRef(e.target.value.replace(/\s/g, ""))} className="h-11" />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="upi-proof">Payment screenshot</Label>
+            <Label htmlFor="upi-proof">{tu("op.payment_screenshot")}</Label>
             <Input id="upi-proof" type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="h-11" />
           </div>
           <Button className="h-11 w-full rounded-xl" disabled={busy} onClick={() => void onSubmit()}>
-            {busy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}Submit for verification
+            {busy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}{tu("op.submit_for_verification")}
           </Button>
-          <p className="text-xs text-muted-foreground">Sending a screenshot doesn't mark the bill paid. The committee checks it against the society's bank account first.</p>
+          <p className="text-xs text-muted-foreground">{tu("op.sending_a_screenshot_doesn_t")}</p>
         </div>
       )}
     </div>

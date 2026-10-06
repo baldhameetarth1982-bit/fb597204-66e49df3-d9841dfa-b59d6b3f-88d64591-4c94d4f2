@@ -22,6 +22,7 @@ import {
   configureBillingCycle,
   type PreviewResult,
 } from "@/lib/billing-config.functions";
+import { tu } from "@/lib/i18n";
 
 type ChargeHead = { id: string; name: string; category: string; default_amount: number | null; active: boolean };
 type Template = { id: string; name: string; status: string; billing_frequency: string; effective_from: string; effective_to: string | null };
@@ -123,10 +124,10 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
     <Card className="rounded-2xl">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
-          <FileText className="h-5 w-5 text-primary" /> Billing configuration
+          <FileText className="h-5 w-5 text-primary" /> {tu("op.billing_configuration")}
         </CardTitle>
         <p className="text-xs text-muted-foreground">
-          Configure charge heads, templates, and preview per-unit calculations. Previewing never creates bills.
+          {tu("op.configure_charge_heads_templates_and")}
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -136,7 +137,7 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
           <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
             {errorMsg}
             <div className="mt-2">
-              <Button size="sm" variant="outline" className="rounded-xl" onClick={() => void refresh()}>Retry</Button>
+              <Button size="sm" variant="outline" className="rounded-xl" onClick={() => void refresh()}>{tu("common.retry")}</Button>
             </div>
           </div>
         ) : (
@@ -145,15 +146,15 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
             <section className="space-y-2">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold flex items-center gap-1.5"><Coins className="h-4 w-4" /> Charge heads</p>
-                  <p className="text-xs text-muted-foreground">Reusable line items (Maintenance, Water, Sinking Fund…).</p>
+                  <p className="text-sm font-semibold flex items-center gap-1.5"><Coins className="h-4 w-4" /> {tu("op.charge_heads")}</p>
+                  <p className="text-xs text-muted-foreground">{tu("op.reusable_line_items_maintenance_water")}</p>
                 </div>
                 <Button size="sm" variant="outline" className="rounded-xl" onClick={() => setHeadOpen(true)}>
-                  <Plus className="h-3.5 w-3.5 mr-1" /> Add
+                  <Plus className="h-3.5 w-3.5 mr-1" /> {tu("vh.add")}
                 </Button>
               </div>
               {heads.length === 0 ? (
-                <p className="text-xs text-muted-foreground italic">No charge heads yet.</p>
+                <p className="text-xs text-muted-foreground italic">{tu("op.no_charge_heads_yet")}</p>
               ) : (
                 <ul className="grid grid-cols-2 gap-2">
                   {heads.map((h) => (
@@ -162,7 +163,7 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
                         <span className="font-medium">{h.name}</span>
                         <span className="text-muted-foreground"> · {h.category}</span>
                       </span>
-                      {!h.active && <Badge variant="secondary">archived</Badge>}
+                      {!h.active && <Badge variant="secondary">{tu("op.archived")}</Badge>}
                     </li>
                   ))}
                 </ul>
@@ -173,15 +174,15 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
             <section className="space-y-2">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold">Templates</p>
-                  <p className="text-xs text-muted-foreground">A template groups charge heads with per-unit rules.</p>
+                  <p className="text-sm font-semibold">{tu("billingTabs.templates")}</p>
+                  <p className="text-xs text-muted-foreground">{tu("op.a_template_groups_charge_heads")}</p>
                 </div>
                 <Button size="sm" variant="outline" className="rounded-xl" onClick={() => setTplOpen(true)}>
-                  <Plus className="h-3.5 w-3.5 mr-1" /> New template
+                  <Plus className="h-3.5 w-3.5 mr-1" /> {tu("op.new_template")}
                 </Button>
               </div>
               {templates.length === 0 ? (
-                <p className="text-xs text-muted-foreground italic">No templates yet.</p>
+                <p className="text-xs text-muted-foreground italic">{tu("op.no_templates_yet")}</p>
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {templates.map((t) => (
@@ -203,12 +204,12 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
               <section className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-semibold">Lines · {activeTpl.name}</p>
-                    <p className="text-xs text-muted-foreground">Per-unit rules that make up this template.</p>
+                    <p className="text-sm font-semibold">{tu("op.lines")} {activeTpl.name}</p>
+                    <p className="text-xs text-muted-foreground">{tu("op.per_unit_rules_that_make")}</p>
                   </div>
                   <div className="flex gap-2">
                     <Button size="sm" variant="outline" className="rounded-xl" onClick={() => setLineOpen(true)} disabled={heads.filter(h => h.active).length === 0}>
-                      <Plus className="h-3.5 w-3.5 mr-1" /> Add line
+                      <Plus className="h-3.5 w-3.5 mr-1" /> {tu("op.add_line")}
                     </Button>
                     <Button
                       size="sm"
@@ -223,12 +224,12 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
                         }
                       }}
                     >
-                      <Eye className="h-3.5 w-3.5 mr-1" /> Preview
+                      <Eye className="h-3.5 w-3.5 mr-1" /> {tu("op.preview")}
                     </Button>
                   </div>
                 </div>
                 {lines.length === 0 ? (
-                  <p className="text-xs text-muted-foreground italic">No lines yet.</p>
+                  <p className="text-xs text-muted-foreground italic">{tu("op.no_lines_yet")}</p>
                 ) : (
                   <ul className="space-y-1.5">
                     {lines.map((l) => {
@@ -242,12 +243,12 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            {!l.active && <Badge variant="secondary">archived</Badge>}
+                            {!l.active && <Badge variant="secondary">{tu("op.archived")}</Badge>}
                             {l.active && (
                               <Button
-                                size="icon" variant="ghost" className="h-9 w-9" aria-label="Archive line"
+                                size="icon" variant="ghost" className="h-9 w-9" aria-label={tu("op.archive_line")}
                                 onClick={async () => {
-                                  try { await archLine({ data: { societyId, id: l.id } }); toast.success("Line archived"); void refreshLines(activeTpl.id); }
+                                  try { await archLine({ data: { societyId, id: l.id } }); toast.success(tu("op.line_archived")); void refreshLines(activeTpl.id); }
                                   catch (e: any) { toast.error(userMessage(e, "Archive failed")); }
                                 }}
                               >
@@ -267,8 +268,8 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
             <section className="space-y-2">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
-                  <p className="text-sm font-semibold flex items-center gap-1.5"><CalendarClock className="h-4 w-4" /> Billing cycles</p>
-                  <p className="text-xs text-muted-foreground">Draft the periods your bills will cover. Drafting a cycle never creates bills.</p>
+                  <p className="text-sm font-semibold flex items-center gap-1.5"><CalendarClock className="h-4 w-4" /> {tu("op.billing_cycles")}</p>
+                  <p className="text-xs text-muted-foreground">{tu("op.draft_the_periods_your_bills")}</p>
                 </div>
                 <Button
                   size="sm"
@@ -277,12 +278,12 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
                   onClick={() => setCycleOpen(true)}
                   disabled={templates.length === 0}
                 >
-                  <Plus className="h-3.5 w-3.5 mr-1" /> New cycle
+                  <Plus className="h-3.5 w-3.5 mr-1" /> {tu("op.new_cycle")}
                 </Button>
               </div>
               {cycles.length === 0 ? (
                 <p className="text-xs text-muted-foreground italic">
-                  {templates.length === 0 ? "Create a template first, then draft a cycle." : "No billing cycles yet."}
+                  {templates.length === 0 ? tu("op.create_a_template_first_then") : tu("op.no_billing_cycles_yet")}
                 </p>
               ) : (
                 <ul className="space-y-1.5">
@@ -304,10 +305,10 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
               )}
               <div className="pt-2 flex items-center justify-between flex-wrap gap-2 border-t mt-2">
                 <p className="text-[11px] text-muted-foreground">
-                  Mark a cycle "ready" and generate bills from the Generate page.
+                  {tu("op.mark_a_cycle_ready_and")}
                 </p>
                 <Button asChild size="sm" className="rounded-xl" disabled={cycles.filter((c) => c.status === "ready").length === 0}>
-                  <a href="/society/bill-studio/generate">Generate bills</a>
+                  <a href="/society/bill-studio/generate">{tu("op.generate_bills")}</a>
                 </Button>
               </div>
             </section>
@@ -321,7 +322,7 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
         onOpenChange={setHeadOpen}
         onSave={async (v) => {
           await saveHead({ data: { societyId, ...v } });
-          toast.success("Charge head saved");
+          toast.success(tu("op.charge_head_saved"));
           void refresh();
         }}
       />
@@ -331,7 +332,7 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
         onOpenChange={setTplOpen}
         onSave={async (v) => {
           await saveTpl({ data: { societyId, ...v } });
-          toast.success("Template saved");
+          toast.success(tu("op.template_saved"));
           void refresh();
         }}
       />
@@ -343,7 +344,7 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
           heads={heads.filter((h) => h.active)}
           onSave={async (v) => {
             await saveLine({ data: { societyId, templateId: activeTpl.id, ...v } });
-            toast.success("Line added");
+            toast.success(tu("op.line_added"));
             void refreshLines(activeTpl.id);
           }}
         />
@@ -357,7 +358,7 @@ export function BillingConfigCard({ societyId }: { societyId: string }) {
         templates={templates}
         onSave={async (v) => {
           await configureCycleFn({ data: { societyId, ...v } });
-          toast.success("Cycle saved as draft");
+          toast.success(tu("op.cycle_saved_as_draft"));
           void refreshCycles();
         }}
       />
@@ -384,20 +385,20 @@ function ChargeHeadDialog({ open, onOpenChange, onSave }: { open: boolean; onOpe
   return (
     <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) { setName(""); setCategory("general"); setAmount(""); } }}>
       <DialogContent className="rounded-2xl">
-        <DialogHeader><DialogTitle>New charge head</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{tu("op.new_charge_head")}</DialogTitle></DialogHeader>
         <div className="space-y-3">
-          <div><Label>Name</Label><Input aria-label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Maintenance" /></div>
-          <div><Label>Category</Label><Input aria-label="Category" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="general" /></div>
-          <div><Label>Default amount (optional)</Label><Input aria-label="Default amount (optional)" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" /></div>
+          <div><Label>{tu("common.name")}</Label><Input aria-label={tu("common.name")} value={name} onChange={(e) => setName(e.target.value)} placeholder={tu("mnt.title")} /></div>
+          <div><Label>{tu("common.category")}</Label><Input aria-label={tu("common.category")} value={category} onChange={(e) => setCategory(e.target.value)} placeholder={tu("op.general")} /></div>
+          <div><Label>{tu("op.default_amount_optional")}</Label><Input aria-label={tu("op.default_amount_optional")} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" /></div>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>{tu("common.cancel")}</Button>
           <Button disabled={busy || !name.trim()} onClick={async () => {
             setBusy(true);
             try { await onSave({ name: name.trim(), category: category.trim() || "general", defaultAmount: amount ? Number(amount) : null }); onOpenChange(false); }
             catch (e: any) { toast.error(userMessage(e, "Save failed")); }
             finally { setBusy(false); }
-          }}>Save</Button>
+          }}>{tu("common.save")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -411,19 +412,19 @@ function TemplateDialog({ open, onOpenChange, onSave }: { open: boolean; onOpenC
   return (
     <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) setName(""); }}>
       <DialogContent className="rounded-2xl">
-        <DialogHeader><DialogTitle>New billing template</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{tu("op.new_billing_template")}</DialogTitle></DialogHeader>
         <div className="space-y-3">
-          <div><Label>Name</Label><Input aria-label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="FY 2026-27 Monthly" /></div>
-          <div><Label>Effective from</Label><Input aria-label="Effective from" type="date" value={effectiveFrom} onChange={(e) => setEffectiveFrom(e.target.value)} /></div>
+          <div><Label>{tu("common.name")}</Label><Input aria-label={tu("common.name")} value={name} onChange={(e) => setName(e.target.value)} placeholder={tu("op.fy_2026_27_monthly")} /></div>
+          <div><Label>{tu("op.effective_from")}</Label><Input aria-label={tu("op.effective_from")} type="date" value={effectiveFrom} onChange={(e) => setEffectiveFrom(e.target.value)} /></div>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>{tu("common.cancel")}</Button>
           <Button disabled={busy || !name.trim()} onClick={async () => {
             setBusy(true);
             try { await onSave({ name: name.trim(), status: "draft", billingFrequency: "monthly", effectiveFrom }); onOpenChange(false); }
             catch (e: any) { toast.error(userMessage(e, "Save failed")); }
             finally { setBusy(false); }
-          }}>Save draft</Button>
+          }}>{tu("el.a.saveDraft")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -446,35 +447,35 @@ function LineDialog({ open, onOpenChange, heads, onSave }: {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="rounded-2xl">
-        <DialogHeader><DialogTitle>Add template line</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{tu("op.add_template_line")}</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label>Charge head</Label>
+            <Label>{tu("op.charge_head")}</Label>
             <select className="w-full h-10 rounded-md border bg-background px-2 text-sm" value={chargeHeadId} onChange={(e) => setChargeHeadId(e.target.value)}>
               {heads.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
             </select>
           </div>
           <div>
-            <Label>Rule</Label>
+            <Label>{tu("op.rule")}</Label>
             <select className="w-full h-10 rounded-md border bg-background px-2 text-sm" value={ruleType} onChange={(e) => setRuleType(e.target.value as Line["rule_type"])}>
-              <option value="fixed_per_unit">Fixed per unit</option>
-              <option value="unit_type_amount">By unit type (e.g. 2BHK)</option>
-              <option value="area_based">Area-based (₹ / sqft)</option>
-              <option value="manual_variable">Manual variable (entered at generation)</option>
+              <option value="fixed_per_unit">{tu("op.fixed_per_unit")}</option>
+              <option value="unit_type_amount">{tu("op.by_unit_type_e_g")}</option>
+              <option value="area_based">{tu("op.area_based_sqft")}</option>
+              <option value="manual_variable">{tu("op.manual_variable_entered_at_generation")}</option>
             </select>
           </div>
           {(ruleType === "fixed_per_unit" || ruleType === "unit_type_amount") && (
-            <div><Label>Amount (₹)</Label><Input aria-label="Amount (₹)" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
+            <div><Label>{tu("acc.amountInr")}</Label><Input aria-label={tu("acc.amountInr")} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
           )}
           {ruleType === "unit_type_amount" && (
-            <div><Label>Unit type</Label><Input aria-label="Unit type" value={unitType} onChange={(e) => setUnitType(e.target.value)} placeholder="2BHK" /></div>
+            <div><Label>{tu("op.unit_type")}</Label><Input aria-label={tu("op.unit_type")} value={unitType} onChange={(e) => setUnitType(e.target.value)} placeholder="2BHK" /></div>
           )}
           {ruleType === "area_based" && (
-            <div><Label>Rate per sqft (₹)</Label><Input aria-label="Rate per sqft (₹)" inputMode="decimal" value={ratePerArea} onChange={(e) => setRatePerArea(e.target.value)} /></div>
+            <div><Label>{tu("op.rate_per_sqft")}</Label><Input aria-label={tu("op.rate_per_sqft")} inputMode="decimal" value={ratePerArea} onChange={(e) => setRatePerArea(e.target.value)} /></div>
           )}
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>{tu("common.cancel")}</Button>
           <Button disabled={busy || !chargeHeadId} onClick={async () => {
             setBusy(true);
             try {
@@ -490,7 +491,7 @@ function LineDialog({ open, onOpenChange, heads, onSave }: {
               onOpenChange(false);
             } catch (e: any) { toast.error(userMessage(e, "Save failed")); }
             finally { setBusy(false); }
-          }}>Save</Button>
+          }}>{tu("common.save")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -502,19 +503,19 @@ function PreviewDialog({ open, onOpenChange, preview }: { open: boolean; onOpenC
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="rounded-2xl max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Preview · no bills generated</DialogTitle>
+          <DialogTitle>{tu("op.preview_no_bills_generated")}</DialogTitle>
         </DialogHeader>
         {!preview ? (
-          <p className="text-sm text-muted-foreground">No data.</p>
+          <p className="text-sm text-muted-foreground">{tu("op.no_data")}</p>
         ) : (
           <div className="space-y-3 max-h-[70vh] overflow-auto">
             <div className="rounded-lg bg-muted/50 p-3 text-xs grid grid-cols-3 gap-2">
-              <div><div className="text-muted-foreground">Units</div><div className="font-semibold">{preview.total_units}</div></div>
-              <div><div className="text-muted-foreground">Total (all units)</div><div className="font-semibold">{fmt.format(preview.summary.total_amount)}</div></div>
-              <div><div className="text-muted-foreground">Area warnings</div><div className="font-semibold">{preview.summary.area_warning_units}</div></div>
+              <div><div className="text-muted-foreground">{tu("op.units_2")}</div><div className="font-semibold">{preview.total_units}</div></div>
+              <div><div className="text-muted-foreground">{tu("op.total_all_units")}</div><div className="font-semibold">{fmt.format(preview.summary.total_amount)}</div></div>
+              <div><div className="text-muted-foreground">{tu("op.area_warnings")}</div><div className="font-semibold">{preview.summary.area_warning_units}</div></div>
             </div>
             <p className="text-[11px] text-muted-foreground">
-              Showing first {preview.units.length} of {preview.total_units} units. This is a preview only; no bills are created.
+              {tu("op.showing_first")} {preview.units.length} of {preview.total_units} {tu("op.units_this_is_a_preview")}
             </p>
             <ul className="space-y-1.5">
               {preview.units.map((u) => (
@@ -523,14 +524,14 @@ function PreviewDialog({ open, onOpenChange, preview }: { open: boolean; onOpenC
                     <span className="font-medium">{u.block_name ? `${u.block_name} · ` : ""}{u.flat_number}</span>
                     <span className={u.has_warning ? "text-amber-600 font-semibold" : "font-semibold"}>{fmt.format(u.unit_total)}</span>
                   </div>
-                  {u.has_warning && <div className="text-[10px] text-amber-600 mt-0.5">Some lines need attention (area missing or manual entry)</div>}
+                  {u.has_warning && <div className="text-[10px] text-amber-600 mt-0.5">{tu("op.some_lines_need_attention_area")}</div>}
                 </li>
               ))}
             </ul>
           </div>
         )}
         <DialogFooter>
-          <Button onClick={() => onOpenChange(false)}>Close</Button>
+          <Button onClick={() => onOpenChange(false)}>{tu("common.close")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -568,14 +569,14 @@ function CycleDialog({ open, onOpenChange, templates, onSave }: {
     <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) setCycleName(""); }}>
       <DialogContent className="rounded-2xl">
         <DialogHeader>
-          <DialogTitle>New billing cycle</DialogTitle>
+          <DialogTitle>{tu("op.new_billing_cycle")}</DialogTitle>
           <p className="text-[11px] text-muted-foreground">
-            Draft only — bills are created from Generate bills.
+            {tu("op.draft_only_bills_are_created")}
           </p>
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label>Template</Label>
+            <Label>{tu("op.template")}</Label>
             <select
               className="w-full h-10 rounded-md border bg-background px-2 text-sm"
               value={templateId}
@@ -584,29 +585,29 @@ function CycleDialog({ open, onOpenChange, templates, onSave }: {
               {templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
           </div>
-          <div><Label>Cycle name</Label><Input aria-label="Cycle name" value={cycleName} onChange={(e) => setCycleName(e.target.value)} placeholder="July 2026" /></div>
+          <div><Label>{tu("op.cycle_name")}</Label><Input aria-label={tu("op.cycle_name")} value={cycleName} onChange={(e) => setCycleName(e.target.value)} placeholder={tu("op.july_2026")} /></div>
           <div className="grid grid-cols-2 gap-2">
-            <div><Label>Period start</Label><Input aria-label="Period start" type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} /></div>
-            <div><Label>Period end</Label><Input aria-label="Period end" type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} /></div>
+            <div><Label>{tu("op.period_start")}</Label><Input aria-label={tu("op.period_start")} type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} /></div>
+            <div><Label>{tu("op.period_end")}</Label><Input aria-label={tu("op.period_end")} type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} /></div>
           </div>
-          <div><Label>Due date</Label><Input aria-label="Due date" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></div>
+          <div><Label>{tu("rbd.dueDate")}</Label><Input aria-label={tu("rbd.dueDate")} type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></div>
           <div>
-            <Label>Status</Label>
+            <Label>{tu("common.status")}</Label>
             <select
               className="w-full h-10 rounded-md border bg-background px-2 text-sm"
               value={status}
               onChange={(e) => setStatus(e.target.value as "draft" | "ready")}
             >
-              <option value="draft">Draft</option>
-              <option value="ready">Ready to generate</option>
+              <option value="draft">{tu("docState.draft")}</option>
+              <option value="ready">{tu("op.ready_to_generate")}</option>
             </select>
           </div>
           {!validDates && (
-            <p className="text-xs text-destructive">Cycle dates are invalid — end and due date must be on or after the start.</p>
+            <p className="text-xs text-destructive">{tu("op.cycle_dates_are_invalid_end")}</p>
           )}
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>{tu("common.cancel")}</Button>
           <Button
             disabled={busy || !templateId || !cycleName.trim() || !validDates}
             onClick={async () => {
@@ -621,7 +622,7 @@ function CycleDialog({ open, onOpenChange, templates, onSave }: {
               }
             }}
           >
-            Save
+            {tu("common.save")}
           </Button>
         </DialogFooter>
       </DialogContent>

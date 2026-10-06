@@ -20,6 +20,7 @@ import { listSmartQrFn, createSmartQrFn } from "@/lib/smart-qr.functions";
 import { listIncomeCategoriesFn } from "@/lib/non-member-income.functions";
 import { toSafeFinanceError } from "@/lib/finance-safe-error";
 import { inr, QR_CREATE_ERRORS } from "@/lib/smart-qr-ui";
+import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/qr/")({
   head: () => ({
@@ -49,21 +50,21 @@ function SmartQrListPage({ societyId }: { societyId: string }) {
   return (
     <div>
       <MobileHero
-        title="Smart QR Collections"
-        subtitle="Share a QR. Payers transfer to the society bank account and send you the details to verify."
+        title={tu("op.smart_qr_collections")}
+        subtitle={tu("op.share_a_qr_payers_transfer")}
         icon={QrCode}
         variant="navy"
         action={
           <Button size="sm" variant="secondary" className="min-h-11" onClick={() => setOpen(true)}>
-            <Plus className="mr-1 h-4 w-4" /> New QR
+            <Plus className="mr-1 h-4 w-4" /> {tu("op.new_qr")}
           </Button>
         }
       />
       <MobileScreen className="-mt-6 max-w-3xl">
         <AccountsCenterTabs />
         <div className="mb-4 grid grid-cols-2 gap-3">
-          <Stat label="Active QR codes" value={q.isLoading ? "—" : String(activeCount)} />
-          <Stat label="Awaiting review" value={q.isLoading ? "—" : String(pendingTotal)} highlight={pendingTotal > 0} />
+          <Stat label={tu("op.active_qr_codes")} value={q.isLoading ? "—" : String(activeCount)} />
+          <Stat label={tu("op.awaiting_review")} value={q.isLoading ? "—" : String(pendingTotal)} highlight={pendingTotal > 0} />
         </div>
 
         {q.isLoading ? (
@@ -77,7 +78,7 @@ function SmartQrListPage({ societyId }: { societyId: string }) {
             <p className="mt-1 text-sm text-muted-foreground">{safe.message}</p>
             {safe.retryable && (
               <Button className="mt-3 min-h-11" variant="outline" disabled={q.isFetching} onClick={() => q.refetch()}>
-                {q.isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : "Retry"}
+                {q.isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : tu("common.retry")}
               </Button>
             )}
           </div>
@@ -86,12 +87,12 @@ function SmartQrListPage({ societyId }: { societyId: string }) {
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
               <QrCode className="h-6 w-6" />
             </div>
-            <p className="font-semibold">No QR codes yet</p>
+            <p className="font-semibold">{tu("op.no_qr_codes_yet")}</p>
             <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">
-              Create one for a festival, donation drive, hall booking or anything you collect money for.
+              {tu("op.create_one_for_a_festival")}
             </p>
             <Button className="mt-4 min-h-11" onClick={() => setOpen(true)}>
-              <Plus className="mr-1 h-4 w-4" /> Create your first QR
+              <Plus className="mr-1 h-4 w-4" /> {tu("op.create_your_first_qr")}
             </Button>
           </div>
         ) : (
@@ -111,20 +112,20 @@ function SmartQrListPage({ societyId }: { societyId: string }) {
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium">{i.title}</p>
                       <p className="truncate text-xs text-muted-foreground">
-                        {i.categoryName} · {i.fixedAmount ? inr(i.fixedAmount) : "Any amount"}
+                        {i.categoryName} · {i.fixedAmount ? inr(i.fixedAmount) : tu("op.any_amount")}
                       </p>
                     </div>
                     <div className="flex shrink-0 flex-col items-end gap-1">
                       {!i.isActive || expired ? (
                         <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                          {expired ? "Expired" : "Paused"}
+                          {expired ? tu("cm.st.expired") : tu("cm.st.paused")}
                         </span>
                       ) : (
-                        <span className="rounded-full bg-success/10 px-2 py-0.5 text-[11px] font-medium text-success">Active</span>
+                        <span className="rounded-full bg-success/10 px-2 py-0.5 text-[11px] font-medium text-success">{tu("common.active")}</span>
                       )}
                       {i.pendingCount > 0 && (
                         <span className="inline-flex items-center gap-1 text-[11px] font-medium text-warning">
-                          <Clock className="h-3 w-3" /> {i.pendingCount} to review
+                          <Clock className="h-3 w-3" /> {i.pendingCount} {tu("op.to_review_3")}
                         </span>
                       )}
                     </div>
@@ -206,7 +207,7 @@ function CreateQrSheet({ open, onOpenChange, societyId }: { open: boolean; onOpe
         },
       });
       if (res.status === "created" && res.id) {
-        toast.success("QR code created");
+        toast.success(tu("op.qr_code_created"));
         await qc.invalidateQueries({ queryKey: ["smart-qr"] });
         setF(EMPTY);
         onOpenChange(false);
@@ -215,7 +216,7 @@ function CreateQrSheet({ open, onOpenChange, societyId }: { open: boolean; onOpe
         toast.error(QR_CREATE_ERRORS[res.status] ?? QR_CREATE_ERRORS.temporary_error);
       }
     } catch {
-      toast.error("Couldn't create the QR code. Check the details and try again.");
+      toast.error(tu("op.couldn_t_create_the_qr"));
     } finally {
       setBusy(false);
     }
@@ -225,20 +226,20 @@ function CreateQrSheet({ open, onOpenChange, societyId }: { open: boolean; onOpe
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="max-h-[92dvh] overflow-y-auto rounded-t-3xl pb-[max(1rem,env(safe-area-inset-bottom))] sm:mx-auto sm:max-w-lg">
         <SheetHeader className="text-left">
-          <SheetTitle>New Smart QR</SheetTitle>
-          <SheetDescription>Payers see these bank details after scanning. Nothing is marked paid until you review it.</SheetDescription>
+          <SheetTitle>{tu("op.new_smart_qr")}</SheetTitle>
+          <SheetDescription>{tu("op.payers_see_these_bank_details")}</SheetDescription>
         </SheetHeader>
         <form onSubmit={submit} className="mt-4 space-y-4" noValidate>
-          <Field id="title" label="Collection name" error={errors.title}>
-            <Input id="title" value={f.title} maxLength={80} placeholder="e.g. Ganesh Utsav 2026" onChange={(e) => set("title", e.target.value)} />
+          <Field id="title" label={tu("op.collection_name")} error={errors.title}>
+            <Input id="title" value={f.title} maxLength={80} placeholder={tu("op.e_g_ganesh_utsav_2026")} onChange={(e) => set("title", e.target.value)} />
           </Field>
-          <Field id="purpose" label="What is it for? (optional)">
+          <Field id="purpose" label={tu("op.what_is_it_for_optional")}>
             <Textarea id="purpose" value={f.purpose} maxLength={300} rows={2} onChange={(e) => set("purpose", e.target.value)} />
           </Field>
-          <Field id="cat" label="Income category" error={errors.categoryId}>
+          <Field id="cat" label={tu("acc.incomeCategory")} error={errors.categoryId}>
             <Select value={f.categoryId} onValueChange={(v) => set("categoryId", v)}>
               <SelectTrigger id="cat" className="min-h-11">
-                <SelectValue placeholder={cats.isLoading ? "Loading…" : "Choose category"} />
+                <SelectValue placeholder={cats.isLoading ? tu("common.loading") : tu("op.choose_category")} />
               </SelectTrigger>
               <SelectContent>
                 {activeCats.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.display_name}</SelectItem>)}
@@ -246,48 +247,48 @@ function CreateQrSheet({ open, onOpenChange, societyId }: { open: boolean; onOpe
             </Select>
             {!cats.isLoading && activeCats.length === 0 && (
               <p className="text-xs text-muted-foreground">
-                No categories yet. <Link to="/society/income/categories" className="text-primary underline">Add one</Link>.
+                {tu("op.no_categories_yet")} <Link to="/society/income/categories" className="text-primary underline">{tu("op.add_one")}</Link>.
               </p>
             )}
           </Field>
-          <Field id="amount" label="Fixed amount (₹, optional)" error={errors.amount} hint="Leave empty to let payers enter any amount.">
+          <Field id="amount" label={tu("op.fixed_amount_optional")} error={errors.amount} hint={tu("op.leave_empty_to_let_payers")}>
             <Input id="amount" inputMode="decimal" value={f.amount} onChange={(e) => set("amount", e.target.value.replace(/[^\d.]/g, ""))} />
           </Field>
 
           <div className="rounded-2xl border bg-muted/30 p-3.5 space-y-3">
-            <p className="flex items-center gap-2 text-sm font-medium"><Landmark className="h-4 w-4 text-primary" /> Society bank account</p>
-            <Field id="payee" label="Account holder name" error={errors.payeeName}>
+            <p className="flex items-center gap-2 text-sm font-medium"><Landmark className="h-4 w-4 text-primary" /> {tu("op.society_bank_account")}</p>
+            <Field id="payee" label={tu("op.account_holder_name")} error={errors.payeeName}>
               <Input id="payee" value={f.payeeName} maxLength={100} onChange={(e) => set("payeeName", e.target.value)} />
             </Field>
-            <Field id="acct" label="Account number" error={errors.accountNumber}>
+            <Field id="acct" label={tu("prof.wd.account")} error={errors.accountNumber}>
               <Input id="acct" inputMode="numeric" autoComplete="off" value={f.accountNumber} maxLength={20} onChange={(e) => set("accountNumber", e.target.value.replace(/\D/g, ""))} />
             </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field id="ifsc" label="IFSC" error={errors.ifsc}>
                 <Input id="ifsc" autoCapitalize="characters" value={f.ifsc} maxLength={11} onChange={(e) => set("ifsc", e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} />
               </Field>
-              <Field id="bank" label="Bank (optional)">
+              <Field id="bank" label={tu("op.bank_optional")}>
                 <Input id="bank" value={f.bankName} maxLength={100} onChange={(e) => set("bankName", e.target.value)} />
               </Field>
             </div>
           </div>
 
-          <Field id="instr" label="Note for payers (optional)">
-            <Textarea id="instr" value={f.instructions} maxLength={500} rows={2} placeholder="e.g. Mention your name in the transfer remarks" onChange={(e) => set("instructions", e.target.value)} />
+          <Field id="instr" label={tu("op.note_for_payers_optional")}>
+            <Textarea id="instr" value={f.instructions} maxLength={500} rows={2} placeholder={tu("op.e_g_mention_your_name")} onChange={(e) => set("instructions", e.target.value)} />
           </Field>
-          <Field id="exp" label="Stop accepting after (optional)" error={errors.expiresOn}>
+          <Field id="exp" label={tu("op.stop_accepting_after_optional")} error={errors.expiresOn}>
             <Input id="exp" type="date" value={f.expiresOn} onChange={(e) => set("expiresOn", e.target.value)} />
           </Field>
           <label className="flex min-h-11 items-center justify-between gap-3 rounded-xl border p-3">
             <span className="text-sm">
-              <span className="font-medium">Also accept cash</span>
-              <span className="block text-xs text-muted-foreground">Payers can report cash handed to the committee.</span>
+              <span className="font-medium">{tu("op.also_accept_cash")}</span>
+              <span className="block text-xs text-muted-foreground">{tu("op.payers_can_report_cash_handed")}</span>
             </span>
             <Switch checked={f.acceptsCash} onCheckedChange={(v) => set("acceptsCash", v)} />
           </label>
           <div className="sticky bottom-0 -mx-6 border-t bg-background px-6 pt-3">
             <Button type="submit" className="min-h-12 w-full" disabled={busy}>
-              {busy ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating…</> : "Create QR code"}
+              {busy ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {tu("op.creating")}</> : tu("op.create_qr_code")}
             </Button>
           </div>
         </form>

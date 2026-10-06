@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { tu } from "@/lib/i18n";
 
 interface OnboardingStepperProps {
   step: number; // 1-based
@@ -28,7 +29,7 @@ export function OnboardingStepper({ step, total, labels, className }: Onboarding
       </div>
       {labels && labels[idx] && (
         <p className="text-xs text-muted-foreground">
-          Step {step} of {total} — <span className="text-foreground font-medium">{labels[idx]}</span>
+          {tu("op.step")} {step} of {total} — <span className="text-foreground font-medium">{labels[idx]}</span>
         </p>
       )}
     </div>

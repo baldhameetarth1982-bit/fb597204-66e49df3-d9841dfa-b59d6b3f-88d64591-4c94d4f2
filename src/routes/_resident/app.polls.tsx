@@ -3,12 +3,22 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Loader2, Vote, CheckCircle2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { commErrorMessage } from "@/lib/notices";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 import { StatusChip, ListSkeleton, LoadError, ListEmpty } from "@/components/people/PeopleUI";
 import { CommPage, CommHeader, SectionLabel } from "@/components/comm/CommUI";
+import { useTranslation } from "react-i18next";
+import i18n, { localeTag } from "@/lib/i18n";
+
+// Maps the fixed server codes from poll_cast_vote to translated messages. Display only.
+const POLL_ERR: Record<string, string> = { poll_closed: "pl.e.closed", already_voted: "pl.e.already", invalid_option: "pl.e.option", not_found: "pl.e.notFound" };
+function pollError(err: unknown) {
+  const raw = String((err as { message?: string })?.message ?? "");
+  for (const k of Object.keys(POLL_ERR)) if (raw.includes(k)) return i18n.t(POLL_ERR[k]);
+  if (/fetch|network/i.test(raw)) return i18n.t("errors.offline");
+  return i18n.t("errors.generic");
+}
 
 export const Route = createFileRoute("/_resident/app/polls")({
   head: () => ({
@@ -28,6 +38,7 @@ interface Count { poll_id: string; option_id: string; votes: number }
 
 function PollsPage() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [polls, setPolls] = useState<Poll[]>([]);
   const [options, setOptions] = useState<Opt[]>([]);
   const [counts, setCounts] = useState<Count[]>([]);
@@ -68,8 +79,8 @@ function PollsPage() {
     setVoting(pollId);
     const { error } = await supabase.rpc("poll_cast_vote", { _poll: pollId, _option: optionId });
     setVoting(null);
-    if (error) { toast.error(commErrorMessage(error)); void load(); return; }
-    toast.success("Vote recorded");
+    if (error) { toast.error(pollError(error)); void load(); return; }
+    toast.success(t("pl.recorded"));
     void load();
   }
 
@@ -89,23 +100,23 @@ function PollsPage() {
     return (
       <article key={p.id} className="rounded-2xl border border-border bg-card p-4 md:p-5">
         <div className="mb-1 flex flex-wrap items-center gap-2">
-          {done ? <StatusChip tone="muted">Closed</StatusChip> : my ? <StatusChip tone="success">You voted</StatusChip> : <StatusChip tone="primary">Open · your vote needed</StatusChip>}
-          {p.closes_at && <span className="text-xs text-muted-foreground">{done ? "Closed" : "Closes"} {new Date(p.closes_at).toLocaleDateString()}</span>}
+          {done ? <StatusChip tone="muted">{t("hd.st.closed")}</StatusChip> : my ? <StatusChip tone="success">{t("pl.youVoted")}</StatusChip> : <StatusChip tone="primary">{t("pl.openNeeded")}</StatusChip>}
+          {p.closes_at && <span className="text-xs text-muted-foreground">{t(done ? "pl.closedOn" : "pl.closesOn", { d: new Date(p.closes_at).toLocaleDateString(localeTag(), { numberingSystem: "latn" }) })}</span>}
         </div>
         <h3 className="text-lg font-semibold leading-snug">{p.title}</h3>
         {p.description && <p className="mt-1 text-sm text-muted-foreground">{p.description}</p>}
 
         {showResults ? (
-          <ul className="mt-4 space-y-2" aria-label="Results">
+          <ul className="mt-4 space-y-2" aria-label={t("el.results")}>
             {opts.map((o) => {
               const c = pc.find((x) => x.option_id === o.id)?.votes ?? 0;
               const pct = total ? Math.round((c / total) * 100) : 0;
               const isMine = my === o.id;
               return (
                 <li key={o.id} className={cn("relative overflow-hidden rounded-xl border px-3 py-3", isMine ? "border-primary" : "border-border")}>
-                  <div className={cn("absolute inset-y-0 left-0", isMine ? "bg-primary/15" : "bg-muted")} style={{ width: `${pct}%` }} aria-hidden />
+                  <div className={cn("absolute inset-y-0 start-0", isMine ? "bg-primary/15" : "bg-muted")} style={{ width: `${pct}%` }} aria-hidden />
                   <div className="relative flex items-center justify-between gap-2 text-sm">
-                    <span className="flex items-center gap-2 font-medium">{isMine && <CheckCircle2 className="h-4 w-4 text-primary" aria-label="Your choice" />}{o.label}</span>
+                    <span className="flex items-center gap-2 font-medium">{isMine && <CheckCircle2 className="h-4 w-4 text-primary" aria-label={t("pl.yourChoice")} />}{o.label}</span>
                     <span className="tabular-nums font-semibold">{pct}% <span className="font-normal text-muted-foreground">· {c}</span></span>
                   </div>
                 </li>
@@ -114,7 +125,7 @@ function PollsPage() {
           </ul>
         ) : (
           <fieldset className="mt-4">
-            <legend className="sr-only">Choose one option</legend>
+            <legend className="sr-only">{t("pl.chooseOne")}</legend>
             <div className="space-y-2">
               {opts.map((o) => {
                 const sel = picked[p.id] === o.id;
@@ -129,27 +140,27 @@ function PollsPage() {
               })}
             </div>
             <Button className="mt-3 h-12 w-full rounded-xl text-base" disabled={!picked[p.id] || voting === p.id} onClick={() => castVote(p.id)}>
-              {voting === p.id ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Recording vote…</> : picked[p.id] ? "Submit vote" : "Choose an option to vote"}
+              {voting === p.id ? <><Loader2 className="me-2 h-4 w-4 animate-spin" />{t("pl.recording")}</> : picked[p.id] ? t("pl.submit") : t("pl.choose")}
             </Button>
-            <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground"><Lock className="h-3 w-3" aria-hidden />One vote per person. Results show after you vote; names are never shown.</p>
+            <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground"><Lock className="h-3 w-3" aria-hidden />{t("pl.rule")}</p>
           </fieldset>
         )}
-        {showResults && <p className="mt-3 text-xs text-muted-foreground">{total} vote{total === 1 ? "" : "s"} in total</p>}
+        {showResults && <p className="mt-3 text-xs text-muted-foreground">{t("pl.total", { n: total })}</p>}
       </article>
     );
   };
 
   return (
     <CommPage>
-      <CommHeader title="Polls" subtitle="Vote on community decisions" action={<Button asChild variant="outline" className="min-h-11"><Link to="/app/surveys">Surveys</Link></Button>} />
+      <CommHeader title={t("nav.polls")} subtitle={t("pl.subtitle")} action={<Button asChild variant="outline" className="min-h-11"><Link to="/app/surveys">{t("mod.surveys")}</Link></Button>} />
       {loading ? <ListSkeleton rows={3} />
-        : failed ? <LoadError title="We couldn't load polls." onRetry={load} />
-        : polls.length === 0 ? <ListEmpty icon={Vote} title="No polls yet">When your committee opens a poll, it will appear here.</ListEmpty>
+        : failed ? <LoadError title={t("pl.loadFail")} onRetry={load} />
+        : polls.length === 0 ? <ListEmpty icon={Vote} title={t("pl.empty")}>{t("pl.emptyBody")}</ListEmpty>
         : (
           <>
-            {needVote.length > 0 && <><SectionLabel count={needVote.length}>Needs your vote</SectionLabel><div className="space-y-3">{needVote.map(card)}</div></>}
-            {voted.length > 0 && <><SectionLabel>Open — you've voted</SectionLabel><div className="space-y-3">{voted.map(card)}</div></>}
-            {closed.length > 0 && <><SectionLabel>Closed</SectionLabel><div className="space-y-3">{closed.map(card)}</div></>}
+            {needVote.length > 0 && <><SectionLabel count={needVote.length}>{t("pl.needVote")}</SectionLabel><div className="space-y-3">{needVote.map(card)}</div></>}
+            {voted.length > 0 && <><SectionLabel>{t("pl.votedOpen")}</SectionLabel><div className="space-y-3">{voted.map(card)}</div></>}
+            {closed.length > 0 && <><SectionLabel>{t("hd.st.closed")}</SectionLabel><div className="space-y-3">{closed.map(card)}</div></>}
           </>
         )}
     </CommPage>

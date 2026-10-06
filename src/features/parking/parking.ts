@@ -1,3 +1,5 @@
+import i18n from "@/lib/i18n";
+
 /** Pure helpers for the parking screens. Server is the authority; these only format. */
 
 export const VIOLATION_TYPES = [
@@ -9,6 +11,12 @@ export const VIOLATION_TYPES = [
   ["visitor_slot_misuse", "Visitor slot misuse"],
   ["other", "Other"],
 ] as const;
+
+/** Localized violation-type label; unknown types show as stored. */
+export function violationLabel(k: string): string {
+  if (k === "other") return i18n.t("cm.other") as string;
+  return VIOLATION_TYPES.some(([v]) => v === k) ? (i18n.t(`pk.vt.${k}`) as string) : k;
+}
 
 export const TEMP_PURPOSES = [
   ["guest", "Guest"],

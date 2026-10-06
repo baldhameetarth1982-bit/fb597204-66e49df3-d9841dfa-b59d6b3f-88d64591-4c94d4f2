@@ -35,7 +35,7 @@ describe("validated extra language bundles", () => {
         // An English gloss in brackets ("… (Pause)") means the machine output leaked English.
         if (!/\)\s*$/.test(en[k])) expect(t[k], `${f} ${k}`).not.toMatch(/\s\([A-Za-z][A-Za-z ]+\)\s*$/);
         // Guard tools strings: no English gloss in brackets anywhere in the sentence.
-        if (/^(g[dosepahv]|pk|mp|el|sec)\./.test(k) && !en[k].includes("(")) expect(t[k], `${f} ${k}`).not.toMatch(/\([A-Za-z][A-Za-z ]*\)/);
+        if (/^(g[dosepahv]|pk|mp|el|sec|nd)\./.test(k) && !en[k].includes("(")) expect(t[k], `${f} ${k}`).not.toMatch(/\([A-Za-z][A-Za-z ]*\)/);
         // Manipuri must be Meitei, not the Bengali language written in the same script.
         if (f === "mni.json") expect(t[k], `${f} ${k}`).not.toMatch(/করুন|হয়েছে|আপনি|এবং/);
       }

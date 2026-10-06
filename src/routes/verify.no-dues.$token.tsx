@@ -1,5 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
+import { ndDate } from "@/lib/no-dues-labels";
+
+// The API sends fixed English; show it in the chosen language. Validity always comes from the server.
+const REASON_KEY: Record<string, string> = { "Invalid or expired certificate": "nd.invalidExpired", "Too many requests. Please try again shortly.": "nd.tooMany" };
+const STATUS_KEY: Record<string, string> = { active: "nd.vs.active", revoked: "nd.st.revoked", expired: "nd.vs.expired" };
 
 export const Route = createFileRoute("/verify/no-dues/$token")({
   head: () => ({
@@ -13,6 +19,7 @@ export const Route = createFileRoute("/verify/no-dues/$token")({
 });
 
 function VerifyPage() {
+  const { t } = useTranslation();
   const { token } = Route.useParams();
   const { data, isLoading } = useQuery({
     queryKey: ["verify-nd", token],
@@ -25,8 +32,8 @@ function VerifyPage() {
   return (
     <main className="min-h-screen grid place-items-center px-4 bg-background">
       <div className="w-full max-w-md rounded-2xl border p-6 shadow-sm bg-card">
-        <h1 className="text-xl font-semibold mb-4">No-Dues Certificate</h1>
-        {isLoading && <p className="text-sm text-muted-foreground">Verifying…</p>}
+        <h1 className="text-xl font-semibold mb-4">{t("nd.title")}</h1>
+        {isLoading && <p className="text-sm text-muted-foreground">{t("nd.verifying")}</p>}
         {!isLoading && data && (
           <>
             <div
@@ -37,22 +44,22 @@ function VerifyPage() {
                   : "bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200")
               }
             >
-              {data.valid ? "Valid certificate" : (data.reason ?? "Not valid")}
+              {data.valid ? t("nd.valid") : data.reason ? (REASON_KEY[data.reason] ? t(REASON_KEY[data.reason]) : data.reason) : t("nd.notValid")}
             </div>
             {data.certificate_number && (
               <dl className="space-y-2 text-sm">
-                <Row k="Certificate No." v={data.certificate_number} />
-                <Row k="Society" v={data.society_name} />
-                <Row k="Unit" v={data.unit_label} />
+                <Row k={t("nd.certNoLbl")} v={data.certificate_number} />
+                <Row k={t("nd.society")} v={data.society_name} />
+                <Row k={t("nd.unit")} v={data.unit_label} />
                 <Row
-                  k="Issued"
-                  v={data.issued_at ? new Date(data.issued_at).toLocaleDateString() : "—"}
+                  k={t("nd.issuedLbl")}
+                  v={data.issued_at ? ndDate(data.issued_at) : "—"}
                 />
                 <Row
-                  k="Valid Until"
-                  v={data.valid_until ? new Date(data.valid_until).toLocaleDateString() : "—"}
+                  k={t("nd.validUntil")}
+                  v={data.valid_until ? ndDate(data.valid_until) : "—"}
                 />
-                <Row k="Status" v={data.status} />
+                <Row k={t("common.status")} v={STATUS_KEY[data.status] ? t(STATUS_KEY[data.status]) : data.status} />
               </dl>
             )}
           </>
@@ -66,7 +73,7 @@ function Row({ k, v }: { k: string; v: any }) {
   return (
     <div className="flex justify-between border-b pb-1">
       <dt className="text-muted-foreground">{k}</dt>
-      <dd className="font-medium">{v ?? "—"}</dd>
+      <dd className="font-medium text-end">{v ?? "—"}</dd>
     </div>
   );
 }

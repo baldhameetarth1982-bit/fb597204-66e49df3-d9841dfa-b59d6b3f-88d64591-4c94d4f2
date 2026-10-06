@@ -28,7 +28,10 @@ import {
   blockerTitle,
   blockerSubtitle,
   blockerResolution,
+  ndDate,
+  ndDateTime,
 } from "@/lib/no-dues-labels";
+import { useTranslation } from "react-i18next";
 
 export const Route = createFileRoute("/_resident/app/no-dues/$id")({
   head: () => ({
@@ -46,6 +49,7 @@ export const Route = createFileRoute("/_resident/app/no-dues/$id")({
 
 function ResidentNoDuesDetail() {
   const { id } = Route.useParams();
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const detailFn = useServerFn(getNoDuesRequestDetail);
   const dlFn = useServerFn(getCertificateDownloadUrl);
@@ -64,7 +68,7 @@ function ResidentNoDuesDetail() {
       const r = await dlFn({ data: { certificateId: cid } });
       window.open(r.url, "_blank");
     } catch (e: any) {
-      toast.error(userMessage(e, "Failed"));
+      toast.error(userMessage(e, t("nd.failed")));
     }
   };
 
@@ -76,15 +80,15 @@ function ResidentNoDuesDetail() {
       if (!r?.available) {
         const msg =
           r?.reason === "legacy_migration_required"
-            ? "Verification link unavailable for this legacy certificate. The downloaded PDF's original QR remains valid."
-            : "Verification link is unavailable for this certificate.";
+            ? t("nd.vl.legacyResident")
+            : t("nd.vl.thisCert");
         toast.error(msg);
         return;
       }
       await navigator.clipboard.writeText(r.url);
-      toast.success("Link copied");
+      toast.success(t("nd.linkCopied"));
     } catch {
-      toast.error("Failed to fetch verification link");
+      toast.error(t("nd.linkFetchFail"));
     }
   };
 
@@ -93,21 +97,21 @@ function ResidentNoDuesDetail() {
     mutationFn: () => recheckFn({ data: { requestId: id } }),
     onSuccess: (r: any) => {
       setRecheckOpen(false);
-      if (r?.status === "submitted") toast.success("Request submitted for review");
-      else toast.info("Dues are still pending");
+      if (r?.status === "submitted") toast.success(t("nd.resubmitted"));
+      else toast.info(t("nd.stillPending"));
       qc.invalidateQueries({ queryKey: ["nd-detail-resident", id] });
     },
     onError: (e: any) => {
       toast.error(e?.message === "RATE_LIMITED"
-        ? "Please wait a few minutes before rechecking again."
-        : "Recheck failed. Please try again later.");
+        ? t("nd.recheckWait")
+        : t("nd.recheckFail"));
     },
   });
 
   if (isLoading || !data) {
     return (
       <div className="pb-24">
-        <MobileHero title="No-Dues Request" subtitle="Loading request details…" icon={FileCheck2} />
+        <MobileHero title={t("nd.reqTitle")} subtitle={t("nd.loadingDetails")} icon={FileCheck2} />
       </div>
     );
   }
@@ -121,44 +125,41 @@ function ResidentNoDuesDetail() {
 
   return (
     <div className="pb-24">
-      <MobileHero title={`Request · ${flat?.flat_number ?? "—"}`} subtitle={statusLabel(req.status)} icon={FileCheck2} />
+      <MobileHero title={t("nd.reqFor", { unit: flat?.flat_number ?? "—" })} subtitle={statusLabel(req.status)} icon={FileCheck2} />
       <div className="mx-auto max-w-3xl space-y-4 px-4 pt-4">
         <SectionCard>
           <div className="flex items-center justify-between">
             <StatusChip>{statusLabel(req.status)}</StatusChip>
-            <p className="text-sm">Outstanding {formatCurrency(elig?.total_outstanding)}</p>
+            <p className="text-sm">{t("nd.outstanding", { amt: formatCurrency(elig?.total_outstanding) })}</p>
           </div>
           {statusExplanation(req.status) && (
             <p className="text-xs mt-2 text-muted-foreground">{statusExplanation(req.status)}</p>
           )}
           {req.purpose && (
-            <p className="text-xs mt-2 text-muted-foreground">Purpose: {req.purpose}</p>
+            <p className="text-xs mt-2 text-muted-foreground">{t("nd.purposeV", { v: req.purpose })}</p>
           )}
           {req.rejection_reason && (
-            <p className="text-xs mt-2 text-destructive">Reason: {req.rejection_reason}</p>
+            <p className="text-xs mt-2 text-destructive">{t("nd.reasonV", { v: req.rejection_reason })}</p>
           )}
           {req.status === "blocked_by_dues" && (
             <div className="mt-3">
               <Dialog open={recheckOpen} onOpenChange={setRecheckOpen}>
                 <DialogTrigger asChild>
-                  <Button size="sm">Recheck and resubmit…</Button>
+                  <Button size="sm">{t("nd.recheckBtn")}</Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Recheck eligibility?</DialogTitle>
+                    <DialogTitle>{t("nd.recheckTitle")}</DialogTitle>
                     <DialogDescription>
-                      We'll recompute your outstanding bills and pending offline
-                      payments. This uses your existing request — no new request
-                      will be created. If you're clear, it will be resubmitted for
-                      review; otherwise you'll see the updated blockers.
+                      {t("nd.recheckDesc")}
                     </DialogDescription>
                   </DialogHeader>
                   <DialogFooter>
                     <DialogClose asChild>
-                      <Button variant="outline" disabled={recheck.isPending}>Cancel</Button>
+                      <Button variant="outline" disabled={recheck.isPending}>{t("common.cancel")}</Button>
                     </DialogClose>
                     <Button onClick={() => recheck.mutate()} disabled={recheck.isPending}>
-                      {recheck.isPending ? "Rechecking…" : "Confirm recheck"}
+                      {recheck.isPending ? t("nd.rechecking") : t("nd.confirmRecheck")}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -169,10 +170,10 @@ function ResidentNoDuesDetail() {
 
         {blockers.length > 0 && (
           <SectionCard>
-            <p className="text-sm font-medium mb-2">Why it's blocked</p>
+            <p className="text-sm font-medium mb-2">{t("nd.whyBlocked")}</p>
             <ul className="space-y-3">
               {blockers.slice(0, 20).map((b: any, i: number) => (
-                <li key={i} className="border-l-2 border-destructive/40 pl-3">
+                <li key={i} className="border-s-2 border-destructive/40 ps-3">
                   <p className="text-sm font-medium">{blockerTitle(b)}</p>
                   {blockerSubtitle(b) && (
                     <p className="text-xs text-muted-foreground">{blockerSubtitle(b)}</p>
@@ -186,18 +187,18 @@ function ResidentNoDuesDetail() {
 
         {cert && (
           <SectionCard>
-            <p className="text-sm font-medium mb-1">Certificate</p>
-            <p className="text-xs text-muted-foreground">No. {cert.certificate_number}</p>
+            <p className="text-sm font-medium mb-1">{t("nd.cert")}</p>
+            <p className="text-xs text-muted-foreground">{t("nd.certNo", { n: cert.certificate_number })}</p>
             <p className="text-xs text-muted-foreground">
-              Issued {new Date(cert.issued_at).toLocaleDateString()}
-              {cert.valid_until ? ` · valid till ${cert.valid_until}` : ""}
+              {t("nd.issuedOn", { d: ndDate(cert.issued_at) })}
+              {cert.valid_until ? ` · ${t("nd.validTill", { d: cert.valid_until })}` : ""}
             </p>
             {cert.revoked_at ? (
-              <p className="text-xs text-destructive mt-1">This certificate has been revoked.</p>
+              <p className="text-xs text-destructive mt-1">{t("nd.certRevoked")}</p>
             ) : (
               <div className="flex gap-2 mt-2 flex-wrap">
-                <Button size="sm" variant="outline" onClick={handleDownload}>Download PDF</Button>
-                <Button size="sm" variant="ghost" onClick={handleCopyVerify}>Copy verify link</Button>
+                <Button size="sm" variant="outline" onClick={handleDownload}>{t("nd.downloadPdf")}</Button>
+                <Button size="sm" variant="ghost" onClick={handleCopyVerify}>{t("nd.copyLink")}</Button>
               </div>
             )}
           </SectionCard>
@@ -205,13 +206,13 @@ function ResidentNoDuesDetail() {
 
 
         <SectionCard>
-          <p className="text-sm font-medium mb-2">Timeline</p>
+          <p className="text-sm font-medium mb-2">{t("nd.timeline")}</p>
           <ul className="space-y-2 text-xs">
             {audit.map((a: any) => (
               <li key={a.id} className="flex justify-between">
                 <span>{auditActionLabel(a.action)}</span>
                 <span className="text-muted-foreground">
-                  {new Date(a.created_at).toLocaleString()}
+                  {ndDateTime(a.created_at)}
                 </span>
               </li>
             ))}

@@ -22,6 +22,15 @@ describe("Phase 4B SQL harness safety contract", () => {
     expect(harness).not.toMatch(/\bCOMMIT\b/i);
   });
 
+  it("runner refuses a shrunken suite, a non-local target, or a missing result", () => {
+    const runner = readFileSync(join(root, "scripts/run-phase4b-sql.sh"), "utf8");
+    expect(runner).toMatch(/PHASE4B_MIN_PASS:-245/);
+    expect(runner).toMatch(/-lt "\$MIN_PASS"/);
+    expect(runner).toMatch(/\*@127\.0\.0\.1:\*\|\*@localhost:\*/);
+    expect(runner).toMatch(/Harness did not report a result/);
+  });
+
+
   it("uses only synthetic 4b4b0000- UUIDs and .invalid emails", () => {
     const uuids = harness.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi) ?? [];
     const nonSynthetic = uuids.filter(

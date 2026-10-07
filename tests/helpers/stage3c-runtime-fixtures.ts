@@ -1846,6 +1846,10 @@ export async function setupStage3CFixture(
     const activeResident = await mkUser(admin, env, prefix, "res", tracked);
     const movedOutResident = await mkUser(admin, env, prefix, "resmo", tracked);
     const unrelatedResident = await mkUser(admin, env, prefix, "resu", tracked);
+    // Dedicated occupant for matrix-only units (otherFlatA, searchFlatA,
+    // secondBlockFlatA). Never one of the three canonical residents, so
+    // ownership-denial scenarios stay intact.
+    const flatOccupant = await mkUser(admin, env, prefix, "occ", tracked);
 
     // ---- Roles --------------------------------------------------------
     type RoleRow = {
@@ -1938,13 +1942,80 @@ export async function setupStage3CFixture(
         is_active: true,
       },
     ];
-    for (const r of residencyRows) {
+    async function insertResidency(r: Record<string, unknown> & { flat_id: string; user_id: string }) {
       const inserted = await assertSupabaseSingleResult<{ id: string }>(
         `insert:flat_resident:${r.flat_id.slice(0, 8)}:${r.user_id.slice(0, 8)}`,
         admin.from("flat_residents").insert(r).select("id").single(),
       );
       tracked.flatResidentIds.push(inserted.id);
       tracked.flatResidents.push({ flat_id: r.flat_id, user_id: r.user_id });
+    }
+    for (const r of residencyRows) await insertResidency(r);
+
+    // ---- Resident society membership ---------------------------------
+    // The production bill-scope rule requires the unit's resident profile
+    // to belong to the billing society. Service-role setup assigns it the
+    // same way the join flow does for real residents.
+    const residentSocieties: ReadonlyArray<[SyntheticUser, string]> = [
+      [activeResident, societyA],
+      [flatOccupant, societyA],
+      [unrelatedResident, societyB],
+    ];
+    for (const [user, societyId] of residentSocieties) {
+      const { error } = await admin
+        .from("profiles")
+        .update({ society_id: societyId })
+        .eq("id", user.id);
+      if (error)
+        throw new Error(
+          `[stage3c:profile_society:${user.id.slice(0, 8)}] ${redactMessage(extractErrorMessage(error))}`,
+        );
+    }
+
+    /**
+     * Verify a unit is billable under the production rule: at least one
+     * flat_residents row whose profile belongs to `societyId`. Records the
+     * flat so `addBill` refuses any unit that was not verified first.
+     */
+    const billableFlatIds = new Set<string>();
+    async function verifyBillableFlat(flatId: string, societyId: string, label: string) {
+      const links = await admin.from("flat_residents").select("user_id").eq("flat_id", flatId);
+      if (links.error) throw new Error(`[stage3c:verifyResidency:${label}] residency read failed`);
+      const userIds = (links.data ?? []).map((row) => (row as { user_id: string }).user_id);
+      if (userIds.length === 0) throw new Error(`[stage3c:verifyResidency:${label}] no resident assigned`);
+      const members = await admin
+        .from("profiles")
+        .select("id")
+        .in("id", userIds)
+        .eq("society_id", societyId);
+      if (members.error) throw new Error(`[stage3c:verifyResidency:${label}] profile read failed`);
+      if ((members.data ?? []).length === 0)
+        throw new Error(`[stage3c:verifyResidency:${label}] resident is not in the billing society`);
+      billableFlatIds.add(flatId);
+    }
+    /** Assign the dedicated occupant to a matrix-only unit, then verify. */
+    async function assignOccupant(flatId: string, label: string) {
+      await insertResidency({
+        flat_id: flatId,
+        user_id: flatOccupant.id,
+        relationship: "owner",
+        is_primary: true,
+        is_active: true,
+      });
+      await verifyBillableFlat(flatId, societyA, label);
+    }
+    await verifyBillableFlat(flatA, societyA, "flatA");
+    await verifyBillableFlat(unrelatedFlat, societyB, "unrelatedFlat");
+
+    // Distinct monthly periods per unit: the production schedule guard
+    // rejects two live bills for the same unit and period_start.
+    const billPeriodCounters = new Map<string, number>();
+    function allocateBillPeriod(flatId: string): { start: string; end: string } {
+      const k = billPeriodCounters.get(flatId) ?? 0;
+      billPeriodCounters.set(flatId, k + 1);
+      const start = new Date(Date.UTC(2026, -k, 1));
+      const end = new Date(Date.UTC(2026, 1 - k, 0));
+      return { start: start.toISOString().slice(0, 10), end: end.toISOString().slice(0, 10) };
     }
 
     // ---- Bills --------------------------------------------------------
@@ -1966,6 +2037,11 @@ export async function setupStage3CFixture(
         throw new Error(`[stage3c:addBill:${label}] invalid flatId`);
       if (!Number.isFinite(amount) || amount <= 0)
         throw new Error(`[stage3c:addBill:${label}] amount must be finite positive`);
+      // Production rule: bills may only target units with a resident of
+      // this society. Prove it holds before inserting, never bypass it.
+      if (!billableFlatIds.has(flatId))
+        throw new Error(`[stage3c:addBill:${label}] flat has no verified resident assignment`);
+      const period = allocateBillPeriod(flatId);
       const row = await assertSupabaseSingleResult<{ id: string }>(
         `insert:bill:${label}`,
         admin
@@ -1974,8 +2050,8 @@ export async function setupStage3CFixture(
             society_id: societyA,
             flat_id: flatId,
             period_label: label,
-            period_start: "2026-01-01",
-            period_end: "2026-01-31",
+            period_start: period.start,
+            period_end: period.end,
             amount,
             total_payable: amount,
             due_date: "2026-02-15",
@@ -2033,7 +2109,7 @@ export async function setupStage3CFixture(
       },
     });
 
-    // ---- Matrix-only extra flat (Society A / blockA, no residency) ---
+    // ---- Matrix-only extra flat (Society A / blockA, no canonical resident) ---
     const otherFlatARawRow = await assertSupabaseSingleResult<unknown>(
       "insert:otherFlatA",
       admin
@@ -2056,6 +2132,7 @@ export async function setupStage3CFixture(
       throw new Error("[stage3c:otherFlatA] must differ from flatA");
     trackUniqueId(tracked.flatIds, otherFlatARow.id, "otherFlatA");
     const otherFlatA = otherFlatARow.id;
+    await assignOccupant(otherFlatA, "otherFlatA");
 
     // ---- Five dedicated matrix bills (foundation, no payments yet) ---
     const residentSubmitBillId = await addBill({
@@ -2155,6 +2232,7 @@ export async function setupStage3CFixture(
     );
     trackUniqueId(tracked.flatIds, searchFlatRow.id, "searchFlatA");
     const searchFlatA = searchFlatRow.id;
+    await assignOccupant(searchFlatA, "searchFlatA");
 
     const searchAvailableBillId = await addBill({
       label: STAGE3C_SEARCH_LABELS.available,
@@ -2376,6 +2454,7 @@ export async function setupStage3CFixture(
     );
     tracked.flatIds.push(secondFl.id);
     const secondBlockFlatA = secondFl.id;
+    await assignOccupant(secondBlockFlatA, "secondBlockFlatA");
 
     const secondBlockBillId = await addBill({
       label: "sb-bill",

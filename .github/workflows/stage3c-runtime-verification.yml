@@ -191,6 +191,9 @@ jobs:
           if [ "${{ steps.supabase_start.outcome }}" != "success" ]; then
             echo "Disposable Supabase did not start — refusing to continue."; exit 1
           fi
+          if [ "${{ steps.supabase_reset.outcome }}" != "success" ]; then
+            echo "Disposable migrations did not apply cleanly — refusing to continue."; exit 1
+          fi
           if [ "${{ steps.supabase_env.outcome }}" != "success" ]; then
             echo "Live environment was not exported — refusing to continue."; exit 1
           fi
@@ -205,7 +208,7 @@ jobs:
       - name: Phase 4B/4C database security suite (must pass)
         run: |
           set -euo pipefail
-          PHASE4B_DB_URL="$(supabase status -o env | sed -n 's/^DB_URL="\{0,1\}\([^"]*\)"\{0,1\}$/\1/p')"
+          PHASE4B_DB_URL="$(supabase status -o env --workdir "$DISPOSABLE_WORKDIR" | sed -n 's/^DB_URL="\{0,1\}\([^"]*\)"\{0,1\}$/\1/p')"
           export PHASE4B_DB_URL
           bash scripts/run-phase4b-sql.sh
 
@@ -390,11 +393,11 @@ jobs:
       - name: Collect Supabase diagnostics on failure
         if: ${{ failure() && steps.supabase_cli.outcome == 'success' }}
         run: |
-          supabase status > diagnostics/supabase-status.txt 2>&1 || true
+          supabase status --workdir "$DISPOSABLE_WORKDIR" 2>&1 | bash scripts/disposable-db.sh redact > diagnostics/supabase-status.txt || true
           docker ps -a > diagnostics/docker-ps.txt 2>&1 || true
           docker system df > diagnostics/docker-df.txt 2>&1 || true
           for c in $(docker ps -a --format '{{.Names}}' | grep -i supabase || true); do
-            docker logs "$c" > "diagnostics/${c}.log" 2>&1 || true
+            docker logs "$c" 2>&1 | bash scripts/disposable-db.sh redact > "diagnostics/${c}.log" || true
           done
 
       - name: Upload Supabase diagnostics
@@ -436,8 +439,10 @@ jobs:
         if: ${{ always() && steps.supabase_cli.outcome == 'success' }}
         run: |
           set -euo pipefail
-          if command -v supabase >/dev/null 2>&1; then
-            supabase stop --no-backup
+          if [ -z "${DISPOSABLE_WORKDIR:-}" ]; then
+            echo "No disposable workdir was assembled; nothing to stop."
+          elif command -v supabase >/dev/null 2>&1; then
+            supabase stop --no-backup --workdir "$DISPOSABLE_WORKDIR"
           else
             echo "Supabase CLI was expected but is unavailable during teardown."
             exit 1

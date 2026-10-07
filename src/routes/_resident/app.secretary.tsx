@@ -28,9 +28,11 @@ export const Route = createFileRoute("/_resident/app/secretary")({
   component: SecretaryPage,
 });
 
-type Turn = { q: string; r?: AskSecretaryResult; at: number };
+// `sid` marks a built-in suggested question so its actions work in every language.
+type SuggestionId = "q1" | "q2" | "q3" | "q4";
+type Turn = { q: string; sid?: SuggestionId; r?: AskSecretaryResult; at: number };
 
-const SUGGESTIONS = ["sec.q1", "sec.q2", "sec.q3", "sec.q4"];
+const SUGGESTIONS: readonly SuggestionId[] = ["q1", "q2", "q3", "q4"];
 
 const KIND_ICON = { bylaws: BookOpen, notice: Megaphone, contacts: Phone, document: FileText, faq: HelpCircle } as const;
 const KIND_LABEL = { bylaws: "sec.bylaws", notice: "home.notice", contacts: "comm.contacts", document: "sec.kind.document", faq: "sec.kind.faq" } as const;
@@ -39,6 +41,13 @@ const KIND_LABEL = { bylaws: "sec.bylaws", notice: "home.notice", contacts: "com
 const ERR_KEY: Record<string, string> = {
   not_member: "sec.err.not_member", plan_locked: "sec.err.plan_locked", rate_limited: "sec.err.rate_limited",
   ai_unavailable: "sec.err.ai_unavailable", retrieval_failed: "sec.err.retrieval_failed", refused: "sec.err.refused",
+};
+// Actions are localised by their stable id. The label map below only covers
+// answers saved in this tab before ids existed.
+const ACTION_ID_KEY: Record<string, string> = {
+  bills: "sec.act.bills", visitors: "sec.act.visitors", vehicles: "sec.act.vehicles", raise: "sec.act.raise",
+  notices: "sec.act.notices", polls: "sec.act.polls", emergency: "sec.act.emergency", contacts: "sec.act.contacts",
+  documents: "sec.docsFaqs", nodues: "sec.act.nodues", family: "sec.act.family", askHelpdesk: "sec.act.askHelpdesk",
 };
 const ACTION_KEY: Record<string, string> = {
   "View my bills": "sec.act.bills", "Manage visitors": "sec.act.visitors", "My vehicles & parking": "sec.act.vehicles",
@@ -97,22 +106,24 @@ function SecretaryPage() {
     return () => clearTimeout(t);
   }, [busy]);
 
-  async function submit(q: string, replaceIndex?: number) {
+  async function submit(q: string, replaceIndex?: number, sid?: SuggestionId) {
     const text = q.trim();
     if (text.length < 3 || inFlight.current) return;
     inFlight.current = true;
     setBusy(true);
     const idx = replaceIndex ?? turns.length;
-    const history = turns.slice(0, idx).filter((t) => t.r?.ok).map((t) => t.q).slice(-3);
-    setTurns((t) => { const n = [...t]; n[idx] = { q: text, at: Date.now() }; return n; });
+    const earlier = turns.slice(0, idx).filter((t) => t.r?.ok);
+    const history = earlier.map((t) => t.q).slice(-3);
+    const priorSuggestion = earlier[earlier.length - 1]?.sid;
+    setTurns((t) => { const n = [...t]; n[idx] = { q: text, sid, at: Date.now() }; return n; });
     if (replaceIndex === undefined) setQuestion("");
     let r: AskSecretaryResult;
     try {
-      r = await ask({ data: { question: text, history } });
+      r = await ask({ data: { question: text, history, suggestion: sid, priorSuggestion } });
     } catch {
       r = { ok: false, code: "ai_unavailable", message: "network" };
     }
-    setTurns((t) => { const n = [...t]; n[idx] = { q: text, r, at: Date.now() }; return n; });
+    setTurns((t) => { const n = [...t]; n[idx] = { q: text, sid, r, at: Date.now() }; return n; });
     // Keep the question in the composer if it failed and the user hasn't typed anything new.
     if (!r.ok && replaceIndex === undefined) setQuestion((cur) => cur || text);
     inFlight.current = false;
@@ -171,7 +182,7 @@ function SecretaryPage() {
       ) : (
         <>
           <main className="flex-1 px-4 pt-4 pb-4 space-y-6" aria-live="polite" aria-relevant="additions">
-            {turns.length === 0 && <EmptyState onPick={(s) => void submit(s)} disabled={busy} />}
+            {turns.length === 0 && <EmptyState onPick={(s, sid) => void submit(s, undefined, sid)} disabled={busy} />}
 
             {turns.map((t, i) => (
               <div key={i} className="space-y-3">
@@ -189,7 +200,7 @@ function SecretaryPage() {
                     <p className="text-sm text-foreground flex gap-2"><AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />{t.r.message === "network" ? tr("sec.err.network") : tx(ERR_KEY, t.r.code, t.r.message)}</p>
                     <div className="flex flex-wrap gap-2">
                       {RETRYABLE.has(t.r.code) && (
-                        <Button size="sm" variant="outline" className="h-11" disabled={busy} onClick={() => submit(t.q, i)}>
+                        <Button size="sm" variant="outline" className="h-11" disabled={busy} onClick={() => submit(t.q, i, t.sid)}>
                           <RotateCcw className="h-4 w-4 me-1.5" /> {tr("common.tryAgain")}
                         </Button>
                       )}
@@ -237,7 +248,7 @@ function SecretaryPage() {
   );
 }
 
-function EmptyState({ onPick, disabled }: { onPick: (s: string) => void; disabled: boolean }) {
+function EmptyState({ onPick, disabled }: { onPick: (s: string, sid: SuggestionId) => void; disabled: boolean }) {
   const { t } = useTranslation();
   return (
     <section className="pt-2 space-y-6" aria-labelledby="sec-hello">
@@ -269,9 +280,9 @@ function EmptyState({ onPick, disabled }: { onPick: (s: string) => void; disable
       <div>
         <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("sec.tryAsking")}</p>
         <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
-          {SUGGESTIONS.map((k) => t(k)).map((s) => (
-            <li key={s}>
-              <button type="button" disabled={disabled} onClick={() => onPick(s)}
+          {SUGGESTIONS.map((sid) => [sid, t(`sec.${sid}`)] as const).map(([sid, s]) => (
+            <li key={sid}>
+              <button type="button" disabled={disabled} onClick={() => onPick(s, sid)}
                 className="flex w-full min-h-12 items-center gap-3 px-4 text-start text-sm hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:opacity-50">
                 <span className="flex-1">{s}</span><ArrowUp className="h-4 w-4 rotate-45 rtl:-rotate-45 text-muted-foreground" aria-hidden />
               </button>
@@ -324,7 +335,7 @@ function AnswerBlock({ r }: { r: Extract<AskSecretaryResult, { ok: true }>["data
           <div className="flex flex-wrap gap-2" aria-label={t("sec.actionsAria")}>
             {r.actions.map((a) => (
               <Link key={a.href} to={a.href as "/app/helpdesk"} className="inline-flex min-h-11 items-center rounded-full border bg-card px-3.5 text-sm font-medium text-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                {tx(ACTION_KEY, a.label, a.label)} <span className="ms-1 rtl:rotate-180 inline-block">→</span>
+                {a.id ? tx(ACTION_ID_KEY, a.id, a.label) : tx(ACTION_KEY, a.label, a.label)} <span className="ms-1 rtl:rotate-180 inline-block">→</span>
               </Link>
             ))}
           </div>

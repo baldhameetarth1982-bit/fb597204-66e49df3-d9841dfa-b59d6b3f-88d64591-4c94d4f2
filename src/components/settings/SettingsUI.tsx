@@ -22,7 +22,7 @@ export function SettingsShell({
         to="/settings"
         className="inline-flex min-h-11 items-center gap-1 rounded-lg text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <ArrowLeft className="h-4 w-4" aria-hidden /> {t("common.settings")}
+        <ArrowLeft className="h-4 w-4 rtl:rotate-180" aria-hidden /> {t("common.settings")}
       </Link>
       <header className="flex flex-wrap items-start gap-3 border-b pb-4">
         {Icon && (

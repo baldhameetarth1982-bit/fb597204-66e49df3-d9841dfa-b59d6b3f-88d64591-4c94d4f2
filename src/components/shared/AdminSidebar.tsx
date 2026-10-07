@@ -27,6 +27,7 @@ const items = [
   { title: "nav.revenue", url: "/admin/revenue", icon: BarChart3 },
   { title: "nav.income", url: "/admin/income", icon: BarChart3 },
   { title: "nav.ads", url: "/admin/ads", icon: Megaphone },
+  { title: "nav.marketplace", url: "/admin/marketplace", icon: Megaphone },
   { title: "nav.branding", url: "/admin/branding", icon: Palette },
   { title: "nav.razorpay", url: "/admin/razorpay", icon: CreditCard },
   { title: "nav.planPayments", url: "/admin/subscription-payments", icon: ReceiptText },

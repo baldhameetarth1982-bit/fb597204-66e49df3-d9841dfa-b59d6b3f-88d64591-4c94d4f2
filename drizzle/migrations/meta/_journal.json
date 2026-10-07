@@ -1534,6 +1534,13 @@
       "when": 1791406533234,
       "tag": "0218_marketplace_listing_types",
       "breakpoints": true
+    },
+    {
+      "idx": 219,
+      "version": "7",
+      "when": 1791407981371,
+      "tag": "0219_marketplace_listing_types_apply",
+      "breakpoints": true
     }
   ]
 }

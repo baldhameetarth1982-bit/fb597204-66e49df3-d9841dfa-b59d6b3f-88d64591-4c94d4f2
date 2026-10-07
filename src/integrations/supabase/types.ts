@@ -2488,8 +2488,10 @@ export type Database = {
           contact_method: string
           contact_phone: string | null
           created_at: string
+          creator_type: string
           description: string | null
           expires_at: string | null
+          flat_id: string | null
           id: string
           image_path: string | null
           kind: string
@@ -2498,10 +2500,11 @@ export type Database = {
           removed_by: string | null
           removed_reason: string | null
           report_count: number
-          society_id: string
+          society_id: string | null
           status: string
           title: string
           updated_at: string
+          visibility: string
         }
         Insert: {
           category_id?: string | null
@@ -2509,8 +2512,10 @@ export type Database = {
           contact_method?: string
           contact_phone?: string | null
           created_at?: string
+          creator_type?: string
           description?: string | null
           expires_at?: string | null
+          flat_id?: string | null
           id?: string
           image_path?: string | null
           kind?: string
@@ -2519,10 +2524,11 @@ export type Database = {
           removed_by?: string | null
           removed_reason?: string | null
           report_count?: number
-          society_id: string
+          society_id?: string | null
           status?: string
           title: string
           updated_at?: string
+          visibility?: string
         }
         Update: {
           category_id?: string | null
@@ -2530,8 +2536,10 @@ export type Database = {
           contact_method?: string
           contact_phone?: string | null
           created_at?: string
+          creator_type?: string
           description?: string | null
           expires_at?: string | null
+          flat_id?: string | null
           id?: string
           image_path?: string | null
           kind?: string
@@ -2540,10 +2548,11 @@ export type Database = {
           removed_by?: string | null
           removed_reason?: string | null
           report_count?: number
-          society_id?: string
+          society_id?: string | null
           status?: string
           title?: string
           updated_at?: string
+          visibility?: string
         }
         Relationships: [
           {
@@ -2551,6 +2560,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "community_listing_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_listings_flat_id_fkey"
+            columns: ["flat_id"]
+            isOneToOne: false
+            referencedRelation: "flats"
             referencedColumns: ["id"]
           },
           {
@@ -7830,6 +7846,7 @@ export type Database = {
           ai_cost_per_request_inr: number | null
           id: number
           maintenance_fee_percent: number
+          market_society_global_enabled: boolean
           razorpay_configured: boolean
           razorpay_key_id: string | null
           updated_at: string
@@ -7842,6 +7859,7 @@ export type Database = {
           ai_cost_per_request_inr?: number | null
           id?: number
           maintenance_fee_percent?: number
+          market_society_global_enabled?: boolean
           razorpay_configured?: boolean
           razorpay_key_id?: string | null
           updated_at?: string
@@ -7854,6 +7872,7 @@ export type Database = {
           ai_cost_per_request_inr?: number | null
           id?: number
           maintenance_fee_percent?: number
+          market_society_global_enabled?: boolean
           razorpay_configured?: boolean
           razorpay_key_id?: string | null
           updated_at?: string
@@ -12302,9 +12321,18 @@ export type Database = {
       _import_parse_amount: { Args: { _v: string }; Returns: number }
       _import_parse_date: { Args: { _v: string }; Returns: string }
       _knowledge_admin_society: { Args: never; Returns: string }
+      _market_global_allowed: { Args: never; Returns: boolean }
+      _market_house_label: { Args: { _flat: string }; Returns: string }
       _market_log: {
         Args: { _action: string; _l: string; _reason: string; _soc: string }
         Returns: undefined
+      }
+      _market_visible_to: {
+        Args: {
+          _l: Database["public"]["Tables"]["community_listings"]["Row"]
+          _soc: string
+        }
+        Returns: boolean
       }
       _meeting_audience: {
         Args: { _m: Database["public"]["Tables"]["meetings"]["Row"] }
@@ -12414,6 +12442,16 @@ export type Database = {
           _title: string
         }
         Returns: number
+      }
+      _notify_super_admins_once: {
+        Args: {
+          _body: string
+          _dedupe_key: string
+          _kind: string
+          _link: string
+          _title: string
+        }
+        Returns: undefined
       }
       _notify_user: {
         Args: {
@@ -12923,6 +12961,55 @@ export type Database = {
       }
       admin_mark_order_refunded: {
         Args: { _note: string; _order_id: string; _reference: string }
+        Returns: undefined
+      }
+      admin_market_dismiss_reports: {
+        Args: { _id: string }
+        Returns: undefined
+      }
+      admin_market_list: {
+        Args: never
+        Returns: {
+          category_id: string
+          contact_link: string
+          contact_method: string
+          contact_phone: string
+          created_at: string
+          description: string
+          expires_at: string
+          id: string
+          kind: string
+          price_inr: number
+          status: string
+          title: string
+          updated_at: string
+        }[]
+      }
+      admin_market_reports: {
+        Args: { _id: string }
+        Returns: {
+          created_at: string
+          id: string
+          reason: string
+        }[]
+      }
+      admin_market_save: {
+        Args: {
+          _category_id: string
+          _contact_link: string
+          _contact_method: string
+          _contact_phone: string
+          _description: string
+          _expires_days: number
+          _id: string
+          _kind: string
+          _price_inr: number
+          _title: string
+        }
+        Returns: string
+      }
+      admin_market_set_status: {
+        Args: { _id: string; _status: string }
         Returns: undefined
       }
       admin_messaging_overview: { Args: never; Returns: Json }
@@ -15252,15 +15339,19 @@ export type Database = {
           contact_method: string
           contact_phone: string
           created_at: string
+          creator_type: string
           description: string
           expires_at: string
+          house_label: string
           id: string
           image_path: string
+          is_local: boolean
           is_mine: boolean
           kind: string
-          owner_name: string
           price_inr: number
+          society_name: string
           title: string
+          visibility: string
         }[]
       }
       list_my_emergency_broadcasts: {
@@ -15489,6 +15580,7 @@ export type Database = {
         Args: { _id: string; _message: string }
         Returns: undefined
       }
+      market_global_allowed: { Args: never; Returns: boolean }
       market_moderate: {
         Args: { _action: string; _id: string; _reason: string }
         Returns: undefined
@@ -15499,6 +15591,7 @@ export type Database = {
       }
       market_save_listing: {
         Args: {
+          _as?: string
           _category_id: string
           _contact_link: string
           _contact_method: string
@@ -15509,6 +15602,7 @@ export type Database = {
           _kind: string
           _price_inr: number
           _title: string
+          _visibility?: string
         }
         Returns: string
       }

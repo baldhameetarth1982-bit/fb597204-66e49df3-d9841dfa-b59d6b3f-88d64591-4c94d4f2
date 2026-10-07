@@ -16,6 +16,8 @@ import { listMarketplace, listMyListings, uploadListingImage, type MarketListing
 import { communityError } from "@/lib/community-errors";
 import { localeTag, tu } from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@/context/AuthContext";
+import { ROLES } from "@/config/roles";
 import { normalizePhone, safeHttpsUrl, telHref, whatsappHref, IMAGE_TYPES, MAX_IMAGE_BYTES } from "@/lib/discovery";
 
 export const Route = createFileRoute("/_resident/app/community")({
@@ -125,12 +127,14 @@ function Browse({ categoryId, cats }: { categoryId: string | null; cats: Cat[] }
                 <div className="flex flex-wrap items-center gap-1.5">
                   <StatusChip tone="info">{t(`cm.k.${l.kind}`)}</StatusChip>
                   {l.category_id && <StatusChip tone="muted">{cats.find((c) => c.id === l.category_id)?.label ?? t("cm.other")}</StatusChip>}
+                  {l.creator_type === "sociyohub" && <StatusChip tone="success">SociyoHub</StatusChip>}
+                  {l.creator_type === "society" && <StatusChip tone="success">{t("cm.badgeSociety")}</StatusChip>}
                   {l.is_mine && <StatusChip tone="success">{t("cm.yours")}</StatusChip>}
                 </div>
                 <p className="font-medium break-words">{l.title}</p>
                 {l.price_inr != null && <p className="text-sm font-semibold tabular-nums">{l.price_inr === 0 ? t("cm.free") : inr(Number(l.price_inr))}</p>}
                 {l.description && <p className="whitespace-pre-line text-sm text-muted-foreground break-words">{l.description}</p>}
-                <p className="text-xs text-muted-foreground">{t("cm.by", { name: l.owner_name, date: new Date(l.created_at).toLocaleDateString(localeTag(), { day: "numeric", month: "short" }) })}</p>
+                <p className="text-xs text-muted-foreground">{attribution(l, t, new Date(l.created_at).toLocaleDateString(localeTag(), { day: "numeric", month: "short" }))}</p>
                 {!l.is_mine && (
                   <div className="flex flex-wrap gap-2 pt-1">
                     {l.contact_method === "in_app" && <Button className="min-h-11 rounded-xl" onClick={() => setContact(l)}><MessageCircle className="mr-2 h-4 w-4" />{t("cm.message")}</Button>}
@@ -151,6 +155,13 @@ function Browse({ categoryId, cats }: { categoryId: string | null; cats: Cat[] }
         onClose={() => setReport(null)} run={async (msg) => { const { error } = await (supabase as any).rpc("market_report", { _id: report.id, _reason: msg }); if (error) throw error; toast.success(t("cm.reported")); }} />}
     </>
   );
+}
+
+// Attribution never shows a resident's name; an unknown historical house stays neutral instead of guessed.
+function attribution(l: MarketListing, t: (k: string, o?: Record<string, unknown>) => string, date: string) {
+  if (l.creator_type === "sociyohub") return t("cm.by", { name: "SociyoHub", date });
+  if (l.creator_type === "society") return l.society_name ? t("cm.by", { name: l.society_name, date }) : t("cm.byResident", { date });
+  return l.house_label ? t("cm.byHouse", { house: l.house_label, date }) : t("cm.byResident", { date });
 }
 
 function TextActionDialog({ title, description, label, cta, onClose, run }: { title: string; description: string; label: string; cta: string; onClose: () => void; run: (t: string) => Promise<void> }) {
@@ -229,6 +240,15 @@ function ListingDialog({ target, cats, onClose }: { target: any | "new"; cats: C
   const qc = useQueryClient();
   const upload = useServerFn(uploadListingImage);
   const e = target === "new" ? null : target;
+  const { hasAnyRole } = useAuth();
+  const canPostAsSociety = hasAnyRole([ROLES.SOCIETY_ADMIN]);
+  const [as, setAs] = useState<"resident" | "society">(e?.creator_type === "society" ? "society" : "resident");
+  const [visibility, setVisibility] = useState<"society" | "all">(e?.visibility === "all" ? "all" : "society");
+  const globalQ = useQuery({
+    queryKey: ["market-global-allowed"], enabled: as === "society", staleTime: 60_000,
+    queryFn: async () => { const { data, error } = await (supabase as any).rpc("market_global_allowed"); if (error) throw error; return !!data; },
+  });
+  const globalAllowed = globalQ.data === true;
   const [f, setF] = useState({
     category_id: e?.category_id ?? "", kind: e?.kind ?? "offer", title: e?.title ?? "", description: e?.description ?? "",
     price: e?.price_inr != null ? String(e.price_inr) : "", contact_method: e?.contact_method ?? "in_app",
@@ -252,6 +272,7 @@ function ListingDialog({ target, cats, onClose }: { target: any | "new"; cats: C
         _id: e?.id ?? null, _category_id: f.category_id || null, _kind: f.kind, _title: f.title.trim(), _description: f.description.trim(),
         _price_inr: f.price ? Number(f.price) : null, _contact_method: f.contact_method, _contact_phone: f.contact_phone || null,
         _contact_link: f.contact_link || null, _expires_days: e ? null : Number(f.expires_days),
+        _as: as, _visibility: as === "society" ? visibility : "society",
       });
       if (error) throw error;
       if (file) {
@@ -272,6 +293,18 @@ function ListingDialog({ target, cats, onClose }: { target: any | "new"; cats: C
       <DialogContent className="max-h-[90dvh] overflow-y-auto">
         <DialogHeader><DialogTitle>{e ? t("cm.editTitle") : t("cm.newTitle")}</DialogTitle><DialogDescription>{t("cm.visibleOnly")}</DialogDescription></DialogHeader>
         <div className="space-y-3">
+          {canPostAsSociety && !e && (
+            <div className="space-y-1"><Label>{t("cm.postAs")}</Label>
+              <Select value={as} onValueChange={(v) => { setAs(v as "resident" | "society"); setVisibility("society"); }}><SelectTrigger className="min-h-11"><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="resident">{t("cm.asMe")}</SelectItem><SelectItem value="society">{t("cm.asSociety")}</SelectItem></SelectContent></Select></div>
+          )}
+          {as === "society" && (
+            <div className="space-y-1"><Label>{t("cm.visibility")}</Label>
+              <Select value={visibility} onValueChange={(v) => setVisibility(v as "society" | "all")}><SelectTrigger className="min-h-11"><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="society">{t("cm.visSociety")}</SelectItem><SelectItem value="all" disabled={!globalAllowed}>{t("cm.visAll")}</SelectItem></SelectContent></Select>
+              {globalQ.isSuccess && !globalAllowed && <p className="text-xs text-muted-foreground">{t("cm.visAllOff")}</p>}
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1"><Label>{t("cm.type")}</Label>
               <Select value={f.kind} onValueChange={(v) => set("kind", v)}><SelectTrigger className="min-h-11"><SelectValue /></SelectTrigger>

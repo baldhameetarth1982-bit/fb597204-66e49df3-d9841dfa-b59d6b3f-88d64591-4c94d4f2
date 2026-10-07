@@ -83,6 +83,11 @@ export const navhub = {
     "केवल उन सोसाइटियों को दिखते हैं जिनके प्लान में विज्ञापन शामिल हैं।",
     "ફક્ત એવી સોસાયટીઓને દેખાય છે જેમના પ્લાનમાં જાહેરાતો સામેલ છે.",
   ],
+  "nav.marketplace": ["Marketplace", "मार्केटप्लेस", "માર્કેટપ્લેસ"],
+  "ps.market": ["Marketplace", "मार्केटप्लेस", "માર્કેટપ્લેસ"],
+  "ps.marketDesc": ["Rules for society listings in the Marketplace.", "मार्केटप्लेस में सोसाइटी लिस्टिंग के नियम।", "માર્કેટપ્લેસમાં સોસાયટી લિસ્ટિંગના નિયમો."],
+  "ps.marketGlobal": ["Allow society listings for all societies", "सोसाइटी लिस्टिंग सभी सोसाइटी के लिए अनुमति दें", "સોસાયટી લિસ્ટિંગ બધી સોસાયટી માટે મંજૂર કરો"],
+  "ps.marketGlobalHint": ["When on, Society Admins may choose “All societies” for a society listing. When off, society listings stay inside their own society.", "चालू होने पर सोसाइटी एडमिन सोसाइटी लिस्टिंग के लिए “सभी सोसाइटी” चुन सकते हैं। बंद होने पर लिस्टिंग अपनी सोसाइटी में ही रहती है।", "ચાલુ હોય ત્યારે સોસાયટી એડમિન સોસાયટી લિસ્ટિંગ માટે “બધી સોસાયટી” પસંદ કરી શકે. બંધ હોય ત્યારે લિસ્ટિંગ પોતાની સોસાયટીમાં જ રહે."],
   "ps.banner": ["Banner ads", "बैनर विज्ञापन", "બેનર જાહેરાતો"],
   "ps.bannerHint": [
     "Banners inside resident feed and dashboards.",

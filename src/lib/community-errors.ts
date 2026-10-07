@@ -5,6 +5,7 @@ const CODES = [
   "forbidden", "rate_limited", "invalid_category", "invalid_expiry", "listing_removed",
   "not_found", "cannot_report_own", "own_listing", "invalid_message", "reason_required",
   "not_active", "invalid_block", "invalid_audience", "not_removed",
+  "global_not_allowed", "no_home", "invalid_visibility",
 ] as const;
 
 export function communityError(e: unknown): string {

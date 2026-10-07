@@ -12,8 +12,13 @@ export type MarketListing = {
   contact_method: "in_app" | "phone" | "whatsapp" | "link";
   contact_phone: string | null;
   contact_link: string | null;
-  owner_name: string;
+  creator_type: "sociyohub" | "society" | "resident";
+  /** Server-built house label for resident listings; null when the historical house is unknown. */
+  house_label: string | null;
+  society_name: string | null;
+  is_local: boolean;
   is_mine: boolean;
+  visibility: "society" | "all";
   created_at: string;
   expires_at: string | null;
   image_url: string | null;
@@ -50,7 +55,7 @@ export const listMyListings = createServerFn({ method: "POST" })
     const sb = context.supabase as any;
     const { data, error } = await sb
       .from("community_listings")
-      .select("id,category_id,kind,title,description,price_inr,contact_method,contact_phone,contact_link,status,expires_at,removed_reason,report_count,image_path,created_at,updated_at")
+      .select("id,category_id,kind,title,description,price_inr,contact_method,contact_phone,contact_link,status,creator_type,visibility,expires_at,removed_reason,report_count,image_path,created_at,updated_at")
       .eq("owner_id", context.userId)
       .order("updated_at", { ascending: false })
       .limit(100);
@@ -77,10 +82,10 @@ export const uploadListingImage = createServerFn({ method: "POST" })
     const sb = context.supabase as any;
     const { data: row, error } = await sb
       .from("community_listings")
-      .select("id,society_id,owner_id,status,image_path")
+      .select("id,society_id,owner_id,creator_type,status,image_path")
       .eq("id", data.listingId)
-      .eq("owner_id", context.userId)
       .maybeSingle();
+    // market_set_image is the authority (owner / own-society admin / Super Admin); this is only an early exit.
     if (error || !row || row.status === "removed") return { ok: false, message: "You can only change photos on your own listing." };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     if (data.base64 === null) {
@@ -93,7 +98,7 @@ export const uploadListingImage = createServerFn({ method: "POST" })
     if (bytes.byteLength > 2 * 1024 * 1024) return { ok: false, message: "Photo must be 2 MB or smaller." };
     const ext = sniff(bytes);
     if (!ext) return { ok: false, message: "Only PNG, JPG or WebP photos are allowed." };
-    const path = `${row.society_id}/${row.id}/${crypto.randomUUID()}.${ext}`;
+    const path = `${row.creator_type === "sociyohub" ? "platform" : row.society_id}/${row.id}/${crypto.randomUUID()}.${ext}`;
     const up = await supabaseAdmin.storage.from(BUCKET).upload(path, bytes, {
       contentType: ext === "jpg" ? "image/jpeg" : `image/${ext}`,
       upsert: false,
@@ -114,7 +119,7 @@ export const listModerationQueue = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     const sb = context.supabase as any;
     const [l, r] = await Promise.all([
-      sb.from("community_listings").select("id,title,description,kind,status,report_count,removed_reason,image_path,created_at,expires_at").order("report_count", { ascending: false }).order("created_at", { ascending: false }).limit(200),
+      sb.from("community_listings").select("id,title,description,kind,status,report_count,removed_reason,image_path,created_at,expires_at").not("society_id", "is", null).order("report_count", { ascending: false }).order("created_at", { ascending: false }).limit(200),
       sb.from("community_listing_reports").select("id,listing_id,reason,status,created_at").eq("status", "open").limit(500),
     ]);
     if (l.error || r.error) throw new Error("moderation_unavailable");

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { Megaphone } from "lucide-react";
+import { Megaphone, Store } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -20,10 +20,12 @@ export const Route = createFileRoute("/_admin/admin/settings")({
 
 type S = {
   ads_banner_enabled: boolean;
+  market_society_global_enabled: boolean;
 };
 
 const pick = (d: any): S => ({
   ads_banner_enabled: !!d?.ads_banner_enabled,
+  market_society_global_enabled: !!d?.market_society_global_enabled,
 });
 
 function Row({
@@ -78,6 +80,7 @@ function SettingsPage() {
         .from("platform_settings")
         .update({
           ads_banner_enabled: state.ads_banner_enabled,
+          market_society_global_enabled: state.market_society_global_enabled,
         })
         .eq("id", 1);
       if (error) throw error;
@@ -115,6 +118,16 @@ function SettingsPage() {
                 />
               </Row>
             </div>
+          </SettingsSection>
+
+          <SettingsSection title={t("ps.market")} icon={Store} description={t("ps.marketDesc")}>
+            <Row label={t("ps.marketGlobal")} hint={t("ps.marketGlobalHint")}>
+              <Switch
+                aria-label={t("ps.marketGlobal")}
+                checked={state.market_society_global_enabled}
+                onCheckedChange={(v) => set({ market_society_global_enabled: v })}
+              />
+            </Row>
           </SettingsSection>
 
           <SaveBar

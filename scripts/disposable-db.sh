@@ -8,6 +8,8 @@
 #   bash scripts/disposable-db.sh ready
 #       Waits (bounded) for the local database, REST API and auth service to be
 #       healthy and for every assembled migration to be recorded as applied.
+#   bash scripts/disposable-db.sh redact
+#       Filters stdin, hiding keys, secrets, tokens and connection passwords.
 #
 # Requires DISPOSABLE_WORKDIR (the assembled throwaway Supabase workdir).
 # Refuses any non-local target. Never prints keys, secrets or passwords.
@@ -125,5 +127,6 @@ cmd_ready() {
 case "${1:-}" in
   run) shift; [ $# -ge 2 ] || { echo "usage: disposable-db.sh run <phase> -- <command...>" >&2; exit 2; }; cmd_run "$@" ;;
   ready) cmd_ready ;;
-  *) echo "usage: disposable-db.sh run <phase> -- <command...> | ready" >&2; exit 2 ;;
+  redact) redact ;;
+  *) echo "usage: disposable-db.sh run <phase> -- <command...> | ready | redact" >&2; exit 2 ;;
 esac

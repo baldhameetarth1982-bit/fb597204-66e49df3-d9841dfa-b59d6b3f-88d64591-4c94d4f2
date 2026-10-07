@@ -218,7 +218,9 @@ BEGIN
   -- -------------------------------------------------------------------------
   -- Checks executed AS the synthetic user (RLS + RPC authorization apply).
   -- expect: rows  = no error and a positive count
-  --         none  = zero rows, or a permission error (row hidden / denied)
+  --         none  = zero rows, or a table/RLS/forbidden/not_found denial.
+  --                 A missing helper-function grant is NOT accepted, so a
+  --                 broken policy cannot pass as "hidden".
   --         ok    = no error
   --         err:<regex> = must fail with a matching error message
   -- -------------------------------------------------------------------------
@@ -479,7 +481,7 @@ BEGIN
     IF c.expect = 'rows' THEN
       ok := outcome = 'ok' AND coalesce(n, 0) > 0;
     ELSIF c.expect = 'none' THEN
-      ok := (outcome = 'ok' AND coalesce(n, 0) = 0) OR outcome ~* '^err:(permission denied|.*row-level security|forbidden|not_found)';
+      ok := (outcome = 'ok' AND coalesce(n, 0) = 0) OR outcome ~* '^err:(permission denied for (table|relation|schema)|.*row-level security|forbidden|not_found)';
     ELSIF c.expect = 'ok' THEN
       ok := outcome = 'ok';
     ELSE

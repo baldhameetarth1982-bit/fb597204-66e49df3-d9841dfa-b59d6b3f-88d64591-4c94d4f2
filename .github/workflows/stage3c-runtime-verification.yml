@@ -182,6 +182,17 @@ jobs:
           test -n "${SOCIOHUB_TEST_SUPABASE_SERVICE_ROLE_KEY}"
           test -n "${SOCIOHUB_TEST_SUPABASE_PUBLISHABLE_KEY}"
 
+      # Database security boundaries (tenant isolation, roles, No-Dues,
+      # polls, meetings, documents, notifications, guard tools, classes,
+      # SaaS plan protection). Runs on the disposable local database only;
+      # the harness rolls back every synthetic [QA] row it creates.
+      - name: Phase 4B/4C database security suite (must pass)
+        run: |
+          set -euo pipefail
+          PHASE4B_DB_URL="$(supabase status -o env | sed -n 's/^DB_URL="\{0,1\}\([^"]*\)"\{0,1\}$/\1/p')"
+          export PHASE4B_DB_URL
+          bash scripts/run-phase4b-sql.sh
+
       - name: Stage 3C CLEANUP behavioral suite
         run: bunx vitest run tests/unit/billing-stage3c-live-cleanup.test.ts --reporter=default
 

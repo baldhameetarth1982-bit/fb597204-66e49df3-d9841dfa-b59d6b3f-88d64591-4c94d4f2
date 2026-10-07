@@ -19,7 +19,8 @@
     "scan:bundle": "bun scripts/verify-client-bundle-secrets.ts",
     "verify:android": "bun scripts/verify-android-release.ts",
     "typecheck": "tsgo --noEmit",
-    "test:stage3d:live": "bash scripts/run-stage3d-live.sh"
+    "test:stage3d:live": "bash scripts/run-stage3d-live.sh",
+    "test:security:db": "bash scripts/run-phase4b-sql.sh"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^2.0.48",

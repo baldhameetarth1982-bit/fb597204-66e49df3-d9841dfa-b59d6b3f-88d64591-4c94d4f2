@@ -126,23 +126,39 @@ jobs:
           command -v supabase
           supabase --version
 
-      - name: Start disposable local Supabase
-        id: supabase_start
+      # Same canonical hosted order as the Stage 3D job (see that job's note).
+      - name: Assemble disposable migration track
+        id: assemble_track
         if: ${{ steps.supabase_cli.outcome == 'success' }}
         run: |
-          set -eo pipefail
-          supabase start --debug 2>&1 | tee diagnostics/supabase-start.log
+          set -euo pipefail
+          workdir="${RUNNER_TEMP}/sociohub-stage3c-disposable"
+          bash scripts/assemble-disposable-migration-track.sh "$workdir"
+          echo "DISPOSABLE_WORKDIR=${workdir}" >> "$GITHUB_ENV"
+
+      - name: Start disposable local Supabase
+        id: supabase_start
+        if: ${{ steps.assemble_track.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          bash scripts/disposable-db.sh run supabase-start -- \
+            supabase start --workdir "$DISPOSABLE_WORKDIR"
 
       - name: Reset database (apply all migrations)
+        id: supabase_reset
         if: ${{ steps.supabase_start.outcome == 'success' }}
-        run: supabase db reset --no-seed
+        run: |
+          set -euo pipefail
+          bash scripts/disposable-db.sh run supabase-reset -- \
+            supabase db reset --no-seed --workdir "$DISPOSABLE_WORKDIR"
+          bash scripts/disposable-db.sh ready
 
       - name: Export local Supabase env
         id: supabase_env
-        if: ${{ steps.supabase_start.outcome == 'success' }}
+        if: ${{ steps.supabase_reset.outcome == 'success' }}
         run: |
           set -eo pipefail
-          supabase status -o env > .supabase.env
+          supabase status -o env --workdir "$DISPOSABLE_WORKDIR" > .supabase.env
           # shellcheck disable=SC1091
           set -a; . ./.supabase.env; set +a
           : "${API_URL:?API_URL missing from supabase status}"

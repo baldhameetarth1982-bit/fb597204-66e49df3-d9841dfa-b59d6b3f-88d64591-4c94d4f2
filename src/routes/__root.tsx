@@ -33,6 +33,9 @@ import { LegalFooter } from "@/components/shared/LegalFooter";
 import { PageTransition } from "@/components/system/PageTransition";
 import { useTranslation } from "react-i18next";
 import { applyStoredLanguage } from "@/lib/i18n";
+import { installToastGuard } from "@/lib/toast-guard";
+
+installToastGuard();
 
 
 function NotFoundComponent() {

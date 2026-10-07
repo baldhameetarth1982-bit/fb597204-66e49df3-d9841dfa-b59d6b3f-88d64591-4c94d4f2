@@ -1520,6 +1520,13 @@
       "when": 1791347834731,
       "tag": "0216_phase4c_fix_amenity_classes_member_read",
       "breakpoints": true
+    },
+    {
+      "idx": 217,
+      "version": "7",
+      "when": 1791406069236,
+      "tag": "0217_final_fix_poll_vote_option_ownership",
+      "breakpoints": true
     }
   ]
 }

@@ -45,7 +45,7 @@ function MaintenancePage() {
   const { t } = useTranslation();
   const fmt = useLocaleFormat();
 
-  const { data: summary, isLoading: sLoading } = useQuery({
+  const { data: summary, isLoading: sLoading, error: sError, refetch: sRefetch } = useQuery({
     enabled: !!societyId,
     queryKey: ["society-maintenance-summary", societyId],
     queryFn: async () => summaryFn({ data: { societyId: societyId! } }),
@@ -62,7 +62,7 @@ function MaintenancePage() {
     staleTime: 60_000,
   });
 
-  const { data: periods, isLoading: pLoading } = useQuery({
+  const { data: periods, isLoading: pLoading, error: pError, refetch: pRefetch } = useQuery({
     enabled: !!societyId,
     queryKey: ["maintenance-periods", societyId, year, blockId],
     queryFn: async () => {
@@ -125,7 +125,8 @@ function MaintenancePage() {
     );
   }
 
-  const hasAnyData = (summary?.total_houses ?? 0) > 0;
+  const loadFailed = !!sError || !!pError;
+  const hasAnyData = !loadFailed && (summary?.total_houses ?? 0) > 0;
   const years = [year - 1, year, year + 1];
   const outstandingAmt = scopeTotals.outstandingAmt;
 
@@ -305,7 +306,14 @@ function MaintenancePage() {
         </div>
       )}
 
-      {!hasAnyData && !pLoading && (
+      {loadFailed && (
+        <div className="mx-4 mt-4 space-y-2 rounded-xl border p-4">
+          <p className="text-sm text-destructive" role="alert">{t("mnt.board.failed")}</p>
+          <Button size="sm" variant="outline" className="min-h-11" onClick={() => { if (sError) void sRefetch(); if (pError) void pRefetch(); }}>{t("common.retry")}</Button>
+        </div>
+      )}
+
+      {!loadFailed && !hasAnyData && !pLoading && (
         <EmptyState
           icon={CalendarRange}
           title={t("mnt.empty")}

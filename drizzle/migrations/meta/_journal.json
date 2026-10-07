@@ -1527,6 +1527,13 @@
       "when": 1791406069236,
       "tag": "0217_final_fix_poll_vote_option_ownership",
       "breakpoints": true
+    },
+    {
+      "idx": 218,
+      "version": "7",
+      "when": 1791406533234,
+      "tag": "0218_marketplace_listing_types",
+      "breakpoints": true
     }
   ]
 }

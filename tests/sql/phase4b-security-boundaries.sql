@@ -84,6 +84,15 @@ DECLARE
     "KDCA":"4b4b0000-0000-4000-8000-00000000a122",
     "KDB":"4b4b0000-0000-4000-8000-00000000b121",
     "LSA":"4b4b0000-0000-4000-8000-00000000a131",
+    "RESX":"4b4b0000-0000-4000-8000-00000000a107",
+    "FRX":"4b4b0000-0000-4000-8000-00000000a033",
+    "AMA":"4b4b0000-0000-4000-8000-00000000a141",
+    "AMB":"4b4b0000-0000-4000-8000-00000000b141",
+    "CLA":"4b4b0000-0000-4000-8000-00000000a151",
+    "CLB":"4b4b0000-0000-4000-8000-00000000b151",
+    "ELA":"4b4b0000-0000-4000-8000-00000000a161",
+    "ELAD":"4b4b0000-0000-4000-8000-00000000a162",
+    "ELB":"4b4b0000-0000-4000-8000-00000000b161",
     "RAND":"4b4b0000-0000-4000-8000-00000000ffff"
   }'::jsonb;
   k text;
@@ -105,7 +114,7 @@ BEGIN
     INSERT INTO auth.users (id, instance_id, aud, role, email, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
     SELECT (ids->>u)::uuid, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
            'qa-p4b-' || lower(u) || '@example.invalid', '{}'::jsonb, '{}'::jsonb, now(), now()
-    FROM unnest(ARRAY['ADMA','RESA','RESA2','BLKA','GRDA','AUDA','ADMB','RESB','BLKB','GRDB','AUDB']) u;
+    FROM unnest(ARRAY['ADMA','RESA','RESA2','BLKA','GRDA','AUDA','ADMB','RESB','BLKB','GRDB','AUDB','RESX']) u;
 
     INSERT INTO public.societies (id, name, city, plan, plan_id, plan_status, plan_expires_at, status, structure_mode)
     VALUES ((ids->>'SA')::uuid, '[QA] P4B Society A', 'Testville', 'pro', 'pro', 'active', now() + interval '30 days', 'active', 'structured'),
@@ -125,7 +134,7 @@ BEGIN
     INSERT INTO public.profiles (id, full_name, society_id)
     SELECT (ids->>u)::uuid, 'QA P4B ' || u, (ids->>s)::uuid
     FROM (VALUES ('ADMA','SA'),('RESA','SA'),('RESA2','SA'),('BLKA','SA'),('GRDA','SA'),('AUDA','SA'),
-                 ('ADMB','SB'),('RESB','SB'),('BLKB','SB'),('GRDB','SB'),('AUDB','SB')) v(u, s)
+                 ('ADMB','SB'),('RESB','SB'),('BLKB','SB'),('GRDB','SB'),('AUDB','SB'),('RESX','SA')) v(u, s)
     ON CONFLICT (id) DO UPDATE SET society_id = excluded.society_id, full_name = excluded.full_name;
 
     INSERT INTO public.user_roles (user_id, role, society_id, block_id, is_active)
@@ -133,12 +142,16 @@ BEGIN
     FROM (VALUES ('ADMA','society_admin','SA',NULL),('RESA','resident','SA',NULL),('RESA2','resident','SA',NULL),
                  ('BLKA','block_admin','SA','BKA1'),('GRDA','security','SA',NULL),('AUDA','auditor','SA',NULL),
                  ('ADMB','society_admin','SB',NULL),('RESB','resident','SB',NULL),('BLKB','block_admin','SB','BKB1'),
-                 ('GRDB','security','SB',NULL),('AUDB','auditor','SB',NULL)) v(u, r, s, b);
+                 ('GRDB','security','SB',NULL),('AUDB','auditor','SB',NULL),
+                 ('RESX','resident','SA',NULL)) v(u, r, s, b);
 
     INSERT INTO public.flat_residents (id, flat_id, user_id, relationship, is_primary, is_active) VALUES
       ((ids->>'FRA')::uuid, (ids->>'FA1')::uuid, (ids->>'RESA')::uuid, 'owner', true, true),
       ((ids->>'FRA2')::uuid, (ids->>'FA2')::uuid, (ids->>'RESA2')::uuid, 'owner', true, true),
       ((ids->>'FRB')::uuid, (ids->>'FB1')::uuid, (ids->>'RESB')::uuid, 'owner', true, true);
+    -- RESX keeps an active resident role but has moved out of their home.
+    INSERT INTO public.flat_residents (id, flat_id, user_id, relationship, is_primary, is_active, moved_out_at) VALUES
+      ((ids->>'FRX')::uuid, (ids->>'FA3')::uuid, (ids->>'RESX')::uuid, 'tenant', false, false, now() - interval '10 days');
 
     INSERT INTO public.guard_sessions (society_id, user_id, auth_session_id, method, status, expires_at) VALUES
       ((ids->>'SA')::uuid, (ids->>'GRDA')::uuid, (ids->>'GSA')::uuid, 'self', 'active', now() + interval '2 hours'),
@@ -207,6 +220,16 @@ BEGIN
       ((ids->>'KDCA')::uuid, (ids->>'SA')::uuid, 'document', 'QA committee only', 'committee', 'ready', (ids->>'SA') || '/qa-committee.pdf', 'records', NULL),
       ((ids->>'KDB')::uuid, (ids->>'SB')::uuid, 'document', 'QB resident rules', 'residents', 'ready', (ids->>'SB') || '/qb-rules.pdf', 'rules', NULL),
       ((ids->>'LSA')::uuid, (ids->>'SA')::uuid, 'document', 'QA lease A', 'committee', 'ready', (ids->>'SA') || '/lease-a.pdf', 'lease', (ids->>'FRA')::uuid);
+    INSERT INTO public.amenities (id, society_id, name, created_by, is_active) VALUES
+      ((ids->>'AMA')::uuid, (ids->>'SA')::uuid, 'QA Gym A', (ids->>'ADMA')::uuid, true),
+      ((ids->>'AMB')::uuid, (ids->>'SB')::uuid, 'QB Gym B', (ids->>'ADMB')::uuid, true);
+    INSERT INTO public.amenity_classes (id, society_id, amenity_id, title, weekdays, start_time, duration_minutes, capacity, starts_on, created_by) VALUES
+      ((ids->>'CLA')::uuid, (ids->>'SA')::uuid, (ids->>'AMA')::uuid, 'QA Yoga A', ARRAY[1,3]::smallint[], '07:00', 60, 10, current_date, (ids->>'ADMA')::uuid),
+      ((ids->>'CLB')::uuid, (ids->>'SB')::uuid, (ids->>'AMB')::uuid, 'QB Yoga B', ARRAY[2]::smallint[], '07:00', 60, 10, current_date, (ids->>'ADMB')::uuid);
+    INSERT INTO public.elections (id, society_id, title, nomination_opens_at, nomination_closes_at, voting_opens_at, voting_closes_at, status, created_by) VALUES
+      ((ids->>'ELA')::uuid, (ids->>'SA')::uuid, 'QA election A', now() - interval '3 days', now() - interval '2 days', now() - interval '1 day', now() + interval '2 days', 'voting_open', (ids->>'ADMA')::uuid),
+      ((ids->>'ELAD')::uuid, (ids->>'SA')::uuid, 'QA draft election', now() + interval '1 day', now() + interval '2 days', now() + interval '3 days', now() + interval '4 days', 'draft', (ids->>'ADMA')::uuid),
+      ((ids->>'ELB')::uuid, (ids->>'SB')::uuid, 'QB election B', now() - interval '3 days', now() - interval '2 days', now() - interval '1 day', now() + interval '2 days', 'voting_open', (ids->>'ADMB')::uuid);
   EXCEPTION WHEN OTHERS THEN
     setup_err := SQLSTATE || ' ' || SQLERRM;
   END;
@@ -440,16 +463,42 @@ BEGIN
       (1302,'notif.admB.other_society_rows','ADMB',NULL,'select count(*) from public.user_notifications where id={UNA}','none'),
 
       -- Anonymous callers.
+      (1310,'link.resA.own_bill_detail','RESA',NULL,'select count(*) from public.bills where id={BLA}','rows'),
+      (1311,'link.resB.bill_detail_swapped_id','RESB',NULL,'select count(*) from public.bills where id={BLA}','none'),
+      (1312,'link.resA.election','RESA',NULL,'select count(*) from public.elections where id={ELA}','rows'),
+      (1313,'link.resB.election_swapped_id','RESB',NULL,'select count(*) from public.elections where id={ELA}','none'),
+      (1314,'link.resA.draft_election_hidden','RESA',NULL,'select count(*) from public.elections where id={ELAD}','none'),
+      (1315,'link.admB.election_swapped_id','ADMB',NULL,'select count(*) from public.elections where id={ELA}','none'),
+      (1316,'link.resA.survey_other_society','RESA',NULL,'select count(*) from public.polls where id={PB}','none'),
+      (1317,'link.resA.notice_other_society','RESA',NULL,'select count(*) from public.notices where id={NB}','none'),
+      (1318,'link.resA.ticket_other_society','RESA',NULL,'select count(*) from public.support_tickets where id={TB}','none'),
+      (1319,'link.resA.document_other_society','RESA',NULL,'select count(*) from public.society_knowledge_sources where id={KDB}','none'),
+      (1320,'link.anon.election','-anon',NULL,'select count(*) from public.elections where id={ELA}','none'),
+      (1500,'cls.resA.own_society_class','RESA',NULL,'select count(*) from public.amenity_classes where id={CLA}','rows'),
+      (1501,'cls.resA.list_is_own_society_only','RESA',NULL,'select count(*) from public.amenity_classes where society_id<>{SA} and id in ({CLA},{CLB})','none'),
+      (1502,'cls.resA.other_society_class_by_id','RESA',NULL,'select count(*) from public.amenity_classes where id={CLB}','none'),
+      (1503,'cls.resA.other_society_by_amenity','RESA',NULL,'select count(*) from public.amenity_classes where amenity_id={AMB}','none'),
+      (1504,'cls.resA.other_society_by_society','RESA',NULL,'select count(*) from public.amenity_classes where society_id={SB}','none'),
+      (1505,'cls.resB.society_a_class','RESB',NULL,'select count(*) from public.amenity_classes where id={CLA}','none'),
+      (1506,'cls.resX.moved_out_resident','RESX',NULL,'select count(*) from public.amenity_classes where id={CLA}','none'),
+      (1507,'cls.anon.class','-anon',NULL,'select count(*) from public.amenity_classes where id={CLA}','none'),
+      (1508,'cls.admA.own_society_class','ADMA',NULL,'select count(*) from public.amenity_classes where id={CLA}','rows'),
+      (1509,'cls.admB.society_a_class','ADMB',NULL,'select count(*) from public.amenity_classes where id={CLA}','none'),
+      (1510,'cls.resA.instructors_admin_only','RESA',NULL,'select count(*) from public.amenity_instructors where society_id={SA}','none'),
+      (1511,'cls.resA.other_enrollments_hidden','RESA',NULL,'select count(*) from public.amenity_class_enrollments where user_id<>{RESA}','none'),
+      (1512,'cls.resA.cancel_class_admin_only','RESA',NULL,'select 1 from (select public.admin_cancel_class({CLA},''Synthetic reason'')) x','err:.'),
+      (1513,'cls.admB.cancel_class_other_society','ADMB',NULL,'select 1 from (select public.admin_cancel_class({CLA},''Synthetic reason'')) x','err:.'),
+      (1514,'cls.resA.direct_insert','RESA',NULL,'insert into public.amenity_classes(society_id,amenity_id,title,weekdays,start_time,duration_minutes,capacity,starts_on,created_by) values ({SA},{AMA},''QA injected'',array[1]::smallint[],''08:00'',60,5,current_date,{RESA}) returning 1','err:.'),
       (1400,'anon.bills','-anon',NULL,'select count(*) from public.bills where id={BLA}','none'),
       (1401,'anon.no_dues_certificates','-anon',NULL,'select count(*) from public.no_dues_certificates where society_id={SA}','none'),
       (1402,'anon.visitors','-anon',NULL,'select count(*) from public.visitors where id={VA}','none'),
       (1403,'anon.no_dues_internal','-anon',NULL,'select count(*) from public.compute_no_dues_eligibility_internal({SA},{FA2})','err:.'),
 
       -- Signed-in users cannot call No-Dues internal functions directly.
-      (1500,'nd.resA.submit_internal_blocked','RESA',NULL,'select count(*) from public.submit_no_dues_request_internal({RESA},{SA},{FA1},''x'')','err:permission denied'),
-      (1501,'nd.admA.transition_internal_blocked','ADMA',NULL,'select count(*) from public.transition_no_dues_request_internal({ADMA},{RAND},''approve'',null,null)','err:permission denied'),
-      (1502,'nd.admA.revoke_internal_blocked','ADMA',NULL,'select 1 from (select public.revoke_no_dues_certificate_internal({ADMA},{RAND},''Synthetic reason'')) x','err:permission denied'),
-      (1503,'nd.admA.compute_internal_blocked','ADMA',NULL,'select count(*) from public.compute_no_dues_eligibility_internal({SA},{FA1})','err:permission denied')
+      (1600,'nd.resA.submit_internal_blocked','RESA',NULL,'select count(*) from public.submit_no_dues_request_internal({RESA},{SA},{FA1},''x'')','err:permission denied'),
+      (1601,'nd.admA.transition_internal_blocked','ADMA',NULL,'select count(*) from public.transition_no_dues_request_internal({ADMA},{RAND},''approve'',null,null)','err:permission denied'),
+      (1602,'nd.admA.revoke_internal_blocked','ADMA',NULL,'select 1 from (select public.revoke_no_dues_certificate_internal({ADMA},{RAND},''Synthetic reason'')) x','err:permission denied'),
+      (1603,'nd.admA.compute_internal_blocked','ADMA',NULL,'select count(*) from public.compute_no_dues_eligibility_internal({SA},{FA1})','err:permission denied')
     ) AS t(seq, name, actor, sess, sql, expect)
     ORDER BY seq
   LOOP

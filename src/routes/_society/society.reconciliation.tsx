@@ -1,3 +1,4 @@
+import { toSafeFinanceMessage } from "@/lib/finance-safe-error";
 import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -92,18 +93,18 @@ function ReconciliationPage() {
       else toast.success(`Imported ${r.rows} rows. ${r.suggested} suggested matches${r.duplicates ? `, ${r.duplicates} possible duplicates` : ""}.`);
       invalidate();
     },
-    onError: (e) => toast.error((e as Error).message),
+    onError: (e) => toast.error(toSafeFinanceMessage(e)),
   });
 
   const confirmM = useMutation({
     mutationFn: (v: { lineId: string; kind: "payment" | "income"; recordId: string }) => confirmFn({ data: v }),
-    onSuccess: () => { toast.success("Reconciled."); setCandidateLine(null); invalidate(); },
-    onError: (e) => { toast.error((e as Error).message); invalidate(); },
+    onSuccess: () => { toast.success(tu("docState.reconciled")); setCandidateLine(null); invalidate(); },
+    onError: (e) => { toast.error(toSafeFinanceMessage(e)); invalidate(); },
   });
   const refreshM = useMutation({
     mutationFn: () => refreshFn({ data: { societyId: societyId! } }),
     onSuccess: () => { toast.success(tu("op.suggestions_refreshed")); invalidate(); },
-    onError: (e) => toast.error((e as Error).message),
+    onError: (e) => toast.error(toSafeFinanceMessage(e)),
   });
 
   const s = q.data?.summary ?? {};
@@ -274,7 +275,7 @@ function ReasonDialog({ line, mode, onClose, onDone }: { line: BankLine; mode: "
   const m = useMutation({
     mutationFn: () => (mode === "unmatch" ? unmatch : ignore)({ data: { lineId: line.id, reason: reason.trim() } }),
     onSuccess: () => { toast.success(mode === "unmatch" ? "Undone." : "Marked explained."); onDone(); onClose(); },
-    onError: (e) => toast.error((e as Error).message),
+    onError: (e) => toast.error(toSafeFinanceMessage(e)),
   });
   const valid = reason.trim().length >= 5;
   return (

@@ -1,3 +1,4 @@
+import { toSafeFinanceMessage } from "@/lib/finance-safe-error";
 import { createFileRoute } from "@tanstack/react-router";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useEffect, useMemo, useState } from "react";
@@ -265,7 +266,7 @@ function ImportPage() {
       else if (r.status === "already_rolled_back") toast.info(tu("op.this_import_was_already_undone"));
       else toast.error(tu("op.you_don_t_have_permission_2"));
       setJobsTick((t) => t + 1);
-    } catch (e) { toast.error((e as Error).message); }
+    } catch (e) { toast.error(toSafeFinanceMessage(e)); }
     finally { setBusy(null); }
   }
   async function doHoldProblems() {
@@ -275,7 +276,7 @@ function ImportPage() {
       const r = await holdRows({ data: { jobId } });
       toast.success(`${r.held ?? totals.errors} problem rows set aside for review. The rest can be imported.`);
       setTotals({ ...totals, errors: 0, valid: totals.total - (r.held ?? totals.errors) });
-    } catch (e) { toast.error((e as Error).message); }
+    } catch (e) { toast.error(toSafeFinanceMessage(e)); }
     finally { setBusy(null); }
   }
 

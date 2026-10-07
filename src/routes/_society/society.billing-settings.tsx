@@ -20,7 +20,7 @@ import { ErrorState } from "@/components/system/ErrorState";
 import { toSafeFinanceMessage } from "@/lib/finance-safe-error";
 import { getBillingSchedule, saveBillingSchedule, runBillingNow } from "@/lib/billing.functions";
 import { getBillingControls, setBillingControls } from "@/lib/workstream7.functions";
-import { tu } from "@/lib/i18n";
+import { tu, localeTag } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/billing-settings")({
   head: () => ({ meta: [{ title: "Billing Settings — SociyoHub" }] }),
@@ -305,7 +305,7 @@ function AutoBillingSection({ societyId }: { societyId: string }) {
           prorate, enabled,
         },
       });
-      toast.success("Auto-billing saved. Next run " + new Date(res.nextRunAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }));
+      toast.success(tu("op.saved") + " · " + new Date(res.nextRunAt).toLocaleDateString(localeTag(), { day: "numeric", month: "short", year: "numeric" }));
       const { schedule } = await get({ data: { societyId } });
       setSch(schedule);
     } catch (e) { toast.error(toSafeFinanceMessage(e, "Couldn't save auto-billing. Your changes are still here — please try again.")); }
@@ -455,7 +455,7 @@ function BillingControls({ societyId, policyDirty }: { societyId: string; policy
     if (policyDirty && next.lateFeeEnabled && !state?.lateFeeEnabled) return toast.error(tu("op.save_the_late_fee_amount"));
     setSaving(true);
     try { await put({ data: { societyId, ...next } }); setState(next); toast.success(tu("op.saved")); }
-    catch (e) { toast.error((e as Error).message); }
+    catch (e) { toast.error(toSafeFinanceMessage(e)); }
     finally { setSaving(false); }
   }
   if (err) return <p className="mt-3 text-xs text-destructive">{tu("op.couldn_t_load_late_fee")}</p>;

@@ -13,6 +13,7 @@ import { getLastSeen, markNotificationsSeen } from "@/hooks/useUnreadNotificatio
 import { useResidentNotices, markNoticeRead } from "@/hooks/useResidentNotices";
 import { liveAt, noticeCategory } from "@/lib/notices";
 import { cn } from "@/lib/utils";
+import { personalKindRoute, safeResidentLink } from "@/lib/notification-links";
 import { ListSkeleton, ListEmpty } from "@/components/people/PeopleUI";
 import { CommPage, CommHeader, SectionLabel, RowList } from "@/components/comm/CommUI";
 
@@ -87,9 +88,9 @@ function NotificationCenter() {
   const items = useMemo<Item[]>(() => {
     const out: Item[] = [];
     for (const n of personal.data ?? []) {
-      const m = PERSONAL[n.kind] ?? { cat: n.kind === "notice" ? "notices" as const : n.kind === "bill" || n.kind === "payment" ? "billing" as const : "helpdesk" as const, icon: Bell, to: "/app/notifications" };
+      const m = PERSONAL[n.kind] ?? { ...personalKindRoute(n.kind), icon: Bell };
       // Prefer the notification's own destination when it is a safe in-app resident path; never fall back to Dashboard.
-      const link = typeof n.link === "string" && /^\/app\/[A-Za-z0-9/_\-?=&.]*$/.test(n.link) && !n.link.includes("//") ? n.link : m.to;
+      const link = safeResidentLink(n.link, m.to);
       out.push({ key: `p-${n.id}`, cat: m.cat, title: n.title, body: n.body, at: n.created_at, unread: !n.read_at, to: link, icon: m.icon, source: "personal", refId: n.id, emergency: n.priority === "urgent", priority: n.priority === "urgent" || n.priority === "high" ? n.priority : undefined });
     }
     const read = notices.data?.read ?? new Set<string>();

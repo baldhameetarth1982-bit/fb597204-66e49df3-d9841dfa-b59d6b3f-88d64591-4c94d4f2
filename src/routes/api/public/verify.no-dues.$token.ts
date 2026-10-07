@@ -1,147 +1,72 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createHash } from "node:crypto";
 import { getRequestIP } from "@tanstack/react-start/server";
-
-const GENERIC_BODY = JSON.stringify({
-  valid: false,
-  reason: "Invalid or expired certificate",
-});
-const RATE_BODY = JSON.stringify({
-  valid: false,
-  reason: "Too many requests. Please try again shortly.",
-});
+import { verifyNoDuesToken } from "@/lib/no-dues-verify";
 
 /**
  * Public verification.
  * Rate limit: 30 requests / IP / 60s (all outcomes counted the same to avoid
- * timing-based token enumeration). Invalid-format hits burn the same slot.
+ * timing-based token enumeration). Malformed or unknown tokens also burn a
+ * tighter 10 / 60s invalid-attempt bucket.
  * Storage: DB-backed `rate_limits` table via checkRateLimit (works across
  * Cloudflare Worker instances).
+ * Decision rules live in src/lib/no-dues-verify.ts (shared with tests).
  */
 export const Route = createFileRoute("/api/public/verify/no-dues/$token")({
   server: {
     handlers: {
-      GET: async ({ params, request }) => {
-        const genericInvalid = (extraHeaders?: Record<string, string>) =>
-          new Response(GENERIC_BODY, {
-            status: 200,
-            headers: {
-              "content-type": "application/json",
-              "cache-control": "no-store",
-              ...(extraHeaders ?? {}),
-            },
-          });
-
-        // --- Rate limit (atomic, HMAC-fingerprinted subject) --------------
+      GET: async ({ params }) => {
         let ip = "anon";
         try {
           ip = getRequestIP({ xForwardedFor: true }) ?? "anon";
         } catch {
           /* ignore */
         }
-        try {
-          const { checkRateLimit, fingerprintSubject } = await import(
-            "@/lib/rate-limit.server"
-          );
-          const subject = fingerprintSubject(ip, "verify-no-dues");
-          await checkRateLimit({
-            bucket: "verify-no-dues",
-            subject,
-            limit: 30,
-            windowSec: 60,
-          });
-        } catch (e) {
-          const retry =
-            (e as { retryAfterSeconds?: number })?.retryAfterSeconds ?? 60;
-          return new Response(RATE_BODY, {
-            status: 429,
-            headers: {
-              "content-type": "application/json",
-              "cache-control": "no-store",
-              "retry-after": String(retry),
-            },
-          });
-        }
+        const { checkRateLimit, fingerprintSubject } = await import("@/lib/rate-limit.server");
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-        // Second bucket: invalid/unknown attempts (tighter, 10/60s) — burned
-        // for malformed OR unknown tokens so attackers can't enumerate hashes
-        // even under the general 30/60s allowance.
-        const burnInvalid = async () => {
-          try {
-            const { checkRateLimit, fingerprintSubject } = await import(
-              "@/lib/rate-limit.server"
-            );
+        const result = await verifyNoDuesToken(params.token, {
+          checkGeneral: async () => {
+            await checkRateLimit({
+              bucket: "verify-no-dues",
+              subject: fingerprintSubject(ip, "verify-no-dues"),
+              limit: 30,
+              windowSec: 60,
+            });
+          },
+          checkInvalid: async () => {
             await checkRateLimit({
               bucket: "verify-no-dues-invalid",
               subject: fingerprintSubject(ip, "verify-no-dues-invalid"),
               limit: 10,
               windowSec: 60,
             });
-          } catch (e) {
-            const retry =
-              (e as { retryAfterSeconds?: number })?.retryAfterSeconds ?? 60;
-            return new Response(RATE_BODY, {
-              status: 429,
-              headers: {
-                "content-type": "application/json",
-                "cache-control": "no-store",
-                "retry-after": String(retry),
-              },
-            });
-          }
-          return null;
-        };
-
-        const raw = String(params.token ?? "");
-        if (!raw || raw.length < 20 || raw.length > 128 || !/^[A-Za-z0-9_-]+$/.test(raw)) {
-          return (await burnInvalid()) ?? genericInvalid();
-        }
-
-        const tokenHash = createHash("sha256").update(raw).digest("hex");
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-        const { data: cert } = await supabaseAdmin
-          .from("no_dues_certificates")
-          .select(
-            "id,certificate_number,issued_at,valid_until,revoked_at,society_id,flat_id",
-          )
-          .eq("verification_token_hash", tokenHash)
-          .maybeSingle();
-        if (!cert) return (await burnInvalid()) ?? genericInvalid();
-
-        const [{ data: society }, { data: flat }] = await Promise.all([
-          supabaseAdmin.from("societies").select("name,city").eq("id", cert.society_id).single(),
-          supabaseAdmin
-            .from("flats")
-            .select("flat_number")
-            .eq("id", cert.flat_id)
-            .single(),
-        ]);
-
-        const now = Date.now();
-        const isRevoked = !!cert.revoked_at;
-        const isExpired = cert.valid_until && new Date(cert.valid_until).getTime() < now;
-        const valid = !isRevoked && !isExpired;
-
-        return new Response(
-          JSON.stringify({
-            valid,
-            status: isRevoked ? "revoked" : isExpired ? "expired" : "active",
-            certificate_number: cert.certificate_number,
-            issued_at: cert.issued_at,
-            valid_until: cert.valid_until,
-            society_name: society?.name ?? null,
-            society_city: society?.city ?? null,
-            unit_label: flat?.flat_number ?? null,
-          }),
-          {
-            status: 200,
-            headers: {
-              "content-type": "application/json",
-              "cache-control": "no-store",
-            },
           },
-        );
+          hash: (raw) => createHash("sha256").update(raw).digest("hex"),
+          findByHash: async (hash) => {
+            const { data } = await supabaseAdmin
+              .from("no_dues_certificates")
+              .select("id,certificate_number,issued_at,valid_until,revoked_at,society_id,flat_id")
+              .eq("verification_token_hash", hash)
+              .maybeSingle();
+            return (data as any) ?? null;
+          },
+          loadSociety: async (id) => {
+            const { data } = await supabaseAdmin.from("societies").select("name,city").eq("id", id).single();
+            return data ?? null;
+          },
+          loadFlat: async (id) => {
+            const { data } = await supabaseAdmin.from("flats").select("flat_number").eq("id", id).single();
+            return data ?? null;
+          },
+        });
+
+        const headers: Record<string, string> = {
+          "content-type": "application/json",
+          "cache-control": "no-store",
+        };
+        if (result.status === 429) headers["retry-after"] = String(result.retryAfter);
+        return new Response(JSON.stringify(result.body), { status: result.status, headers });
       },
     },
   },

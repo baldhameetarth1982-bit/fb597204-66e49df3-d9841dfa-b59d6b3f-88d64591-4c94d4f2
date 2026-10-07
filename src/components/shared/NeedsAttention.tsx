@@ -46,7 +46,7 @@ export function NeedsAttention({ max = 6, exclude = [], emptyText = "Nothing nee
             <AlertTriangle className={`h-4 w-4 shrink-0 ${it.priority <= 2 ? "text-destructive" : "text-muted-foreground"}`} aria-hidden />
             <span className="flex-1 text-sm">{it.reason}</span>
             {it.priority <= 2 && <span className="sr-only">{tu("op.high_priority")}</span>}
-            <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />
+            <ChevronRight className="h-4 w-4 text-muted-foreground rtl:rotate-180" aria-hidden />
           </Link>
         </li>
       ))}

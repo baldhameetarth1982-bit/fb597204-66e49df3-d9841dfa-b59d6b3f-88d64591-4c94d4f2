@@ -42,7 +42,7 @@ export function MobileTopBar({
             onClick={() => router.history.back()}
             className="h-10 w-10 rounded-full"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-5 w-5 rtl:rotate-180" />
           </Button>
         ) : leading ? (
           <div className="flex h-10 w-10 items-center justify-center">{leading}</div>

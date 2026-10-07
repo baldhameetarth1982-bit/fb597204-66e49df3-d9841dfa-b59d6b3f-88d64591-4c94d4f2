@@ -126,23 +126,39 @@ jobs:
           command -v supabase
           supabase --version
 
-      - name: Start disposable local Supabase
-        id: supabase_start
+      # Same canonical hosted order as the Stage 3D job (see that job's note).
+      - name: Assemble disposable migration track
+        id: assemble_track
         if: ${{ steps.supabase_cli.outcome == 'success' }}
         run: |
-          set -eo pipefail
-          supabase start --debug 2>&1 | tee diagnostics/supabase-start.log
+          set -euo pipefail
+          workdir="${RUNNER_TEMP}/sociohub-stage3c-disposable"
+          bash scripts/assemble-disposable-migration-track.sh "$workdir"
+          echo "DISPOSABLE_WORKDIR=${workdir}" >> "$GITHUB_ENV"
+
+      - name: Start disposable local Supabase
+        id: supabase_start
+        if: ${{ steps.assemble_track.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          bash scripts/disposable-db.sh run supabase-start -- \
+            supabase start --workdir "$DISPOSABLE_WORKDIR"
 
       - name: Reset database (apply all migrations)
+        id: supabase_reset
         if: ${{ steps.supabase_start.outcome == 'success' }}
-        run: supabase db reset --no-seed
+        run: |
+          set -euo pipefail
+          bash scripts/disposable-db.sh run supabase-reset -- \
+            supabase db reset --no-seed --workdir "$DISPOSABLE_WORKDIR"
+          bash scripts/disposable-db.sh ready
 
       - name: Export local Supabase env
         id: supabase_env
-        if: ${{ steps.supabase_start.outcome == 'success' }}
+        if: ${{ steps.supabase_reset.outcome == 'success' }}
         run: |
           set -eo pipefail
-          supabase status -o env > .supabase.env
+          supabase status -o env --workdir "$DISPOSABLE_WORKDIR" > .supabase.env
           # shellcheck disable=SC1091
           set -a; . ./.supabase.env; set +a
           : "${API_URL:?API_URL missing from supabase status}"
@@ -175,6 +191,9 @@ jobs:
           if [ "${{ steps.supabase_start.outcome }}" != "success" ]; then
             echo "Disposable Supabase did not start — refusing to continue."; exit 1
           fi
+          if [ "${{ steps.supabase_reset.outcome }}" != "success" ]; then
+            echo "Disposable migrations did not apply cleanly — refusing to continue."; exit 1
+          fi
           if [ "${{ steps.supabase_env.outcome }}" != "success" ]; then
             echo "Live environment was not exported — refusing to continue."; exit 1
           fi
@@ -189,7 +208,7 @@ jobs:
       - name: Phase 4B/4C database security suite (must pass)
         run: |
           set -euo pipefail
-          PHASE4B_DB_URL="$(supabase status -o env | sed -n 's/^DB_URL="\{0,1\}\([^"]*\)"\{0,1\}$/\1/p')"
+          PHASE4B_DB_URL="$(supabase status -o env --workdir "$DISPOSABLE_WORKDIR" | sed -n 's/^DB_URL="\{0,1\}\([^"]*\)"\{0,1\}$/\1/p')"
           export PHASE4B_DB_URL
           bash scripts/run-phase4b-sql.sh
 
@@ -374,11 +393,11 @@ jobs:
       - name: Collect Supabase diagnostics on failure
         if: ${{ failure() && steps.supabase_cli.outcome == 'success' }}
         run: |
-          supabase status > diagnostics/supabase-status.txt 2>&1 || true
+          supabase status --workdir "$DISPOSABLE_WORKDIR" 2>&1 | bash scripts/disposable-db.sh redact > diagnostics/supabase-status.txt || true
           docker ps -a > diagnostics/docker-ps.txt 2>&1 || true
           docker system df > diagnostics/docker-df.txt 2>&1 || true
           for c in $(docker ps -a --format '{{.Names}}' | grep -i supabase || true); do
-            docker logs "$c" > "diagnostics/${c}.log" 2>&1 || true
+            docker logs "$c" 2>&1 | bash scripts/disposable-db.sh redact > "diagnostics/${c}.log" || true
           done
 
       - name: Upload Supabase diagnostics
@@ -420,8 +439,10 @@ jobs:
         if: ${{ always() && steps.supabase_cli.outcome == 'success' }}
         run: |
           set -euo pipefail
-          if command -v supabase >/dev/null 2>&1; then
-            supabase stop --no-backup
+          if [ -z "${DISPOSABLE_WORKDIR:-}" ]; then
+            echo "No disposable workdir was assembled; nothing to stop."
+          elif command -v supabase >/dev/null 2>&1; then
+            supabase stop --no-backup --workdir "$DISPOSABLE_WORKDIR"
           else
             echo "Supabase CLI was expected but is unavailable during teardown."
             exit 1
@@ -454,54 +475,84 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Create report directories
+        run: |
+          set -euo pipefail
+          rm -f reports/stage3d-live.json reports/stage3d-live.meta.json
+          mkdir -p reports diagnostics
+
       - name: Setup Supabase CLI
         id: stage3d_supabase_cli
         uses: supabase/setup-cli@v1
         with:
           version: "1.219.2"
 
+      # The hosted database was built from supabase/migrations up to the
+      # drizzle cutover, then drizzle/migrations in journal order. This builds
+      # that exact order in a throwaway workdir with an inert scheduler and no
+      # outbound HTTP, so the disposable database never contacts the live site.
+      - name: Assemble Stage 3D disposable migration track
+        run: |
+          set -euo pipefail
+          workdir="${RUNNER_TEMP}/sociohub-stage3d-disposable"
+          bash scripts/assemble-disposable-migration-track.sh "$workdir"
+          echo "DISPOSABLE_WORKDIR=${workdir}" >> "$GITHUB_ENV"
+
       - name: Start Stage 3D disposable database
         id: stage3d_supabase_start
-        run: supabase start --debug
+        run: |
+          set -euo pipefail
+          bash scripts/disposable-db.sh run stage3d-start -- \
+            supabase start --workdir "$DISPOSABLE_WORKDIR"
 
       - name: Reset Stage 3D disposable database
-        run: supabase db reset --no-seed
+        id: stage3d_supabase_reset
+        run: |
+          set -euo pipefail
+          bash scripts/disposable-db.sh run stage3d-reset -- \
+            supabase db reset --no-seed --workdir "$DISPOSABLE_WORKDIR"
+
+      - name: Wait for Stage 3D disposable database readiness
+        run: bash scripts/disposable-db.sh ready
 
       - name: Export Stage 3D disposable environment
         id: stage3d_supabase_env
         run: |
           set -euo pipefail
-          supabase status -o env > .stage3d-supabase.env
+          supabase status -o env --workdir "$DISPOSABLE_WORKDIR" > .stage3d-supabase.env
           set -a; . ./.stage3d-supabase.env; set +a
+          rm -f .stage3d-supabase.env
           : "${API_URL:?API_URL missing}"
           : "${SERVICE_ROLE_KEY:?SERVICE_ROLE_KEY missing}"
           : "${ANON_KEY:?ANON_KEY missing}"
           : "${DB_URL:?DB_URL missing}"
+          echo "::add-mask::${SERVICE_ROLE_KEY}"
+          echo "::add-mask::${ANON_KEY}"
+          echo "::add-mask::${DB_URL}"
           case "$API_URL" in
             http://127.0.0.1:*|http://localhost:*) : ok ;;
             *) echo "Refusing non-local Stage 3D database URL"; exit 1 ;;
           esac
-          echo "::add-mask::${SERVICE_ROLE_KEY}"
-          echo "::add-mask::${ANON_KEY}"
-          echo "::add-mask::${DB_URL}"
           {
             echo "SOCIOHUB_TEST_SUPABASE_URL=${API_URL}"
             echo "SOCIOHUB_TEST_SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}"
             echo "SOCIOHUB_TEST_SUPABASE_PUBLISHABLE_KEY=${ANON_KEY}"
             echo "SOCIOHUB_TEST_DATABASE_URL=${DB_URL}"
           } >> "$GITHUB_ENV"
-          rm -f .stage3d-supabase.env
 
       - name: Validate Stage 3D fixture safety
+        id: stage3d_fixture_safety
         run: bun scripts/verify-stage3c-fixture-source.ts
 
       - name: Stage 3D focused contracts
+        id: stage3d_focused
         run: |
           bunx vitest run \
             tests/unit/stage3-runtime-env.test.ts \
             tests/unit/accounting-stage3d-foundation.test.ts \
             tests/unit/audit-log-contract-recovery.test.ts \
             tests/unit/accounting-stage3d-live-report.test.ts \
+            tests/unit/disposable-migration-track.test.ts \
             --reporter=default
 
       - name: Stage 3D live accounting behavior
@@ -509,18 +560,37 @@ jobs:
         env:
           ALLOW_SOCIOHUB_LIVE_STAGE3D: "true"
           EXPECTED_COMMIT_SHA: ${{ github.sha }}
+          STAGE3D_FIXTURE_SAFETY_RESULT: ${{ steps.stage3d_fixture_safety.outcome }}
+          STAGE3D_FOCUSED_CONTRACT_RESULT: ${{ steps.stage3d_focused.outcome }}
         run: bun run test:stage3d:live
 
+      # Commit-bound gate: only this run's report, for this exact commit, can
+      # pass. A skipped or crashed runtime fails here with the reason stated.
       - name: Assert commit-bound Stage 3D result
         if: always()
         run: |
           set -euo pipefail
-          test "${{ steps.stage3d_live_tests.outcome }}" != "skipped"
-          test -s reports/stage3d-live.json
-          test -s reports/stage3d-live.meta.json
+          if [ "${{ steps.stage3d_live_tests.outcome }}" = "skipped" ]; then
+            category="$(cat diagnostics/failure-category.txt 2>/dev/null || echo "an earlier step")"
+            echo "::error title=Stage 3D runtime did not run::The live accounting suite never executed because of a ${category} failure before it. No report was produced; see the first failed step and the stage3d-diagnostics artifact."
+            exit 1
+          fi
+          test -s reports/stage3d-live.json || { echo "::error::reports/stage3d-live.json is missing or empty."; exit 1; }
+          test -s reports/stage3d-live.meta.json || { echo "::error::reports/stage3d-live.meta.json is missing or empty."; exit 1; }
           bun scripts/verify-stage3d-live-report.ts reports/stage3d-live.json \
             --expected-sha="${GITHUB_SHA}" --meta=reports/stage3d-live.meta.json
 
+      - name: Collect Stage 3D diagnostics on failure
+        if: ${{ failure() && steps.stage3d_supabase_cli.outcome == 'success' }}
+        run: |
+          supabase status --workdir "$DISPOSABLE_WORKDIR" 2>&1 | bash scripts/disposable-db.sh redact > diagnostics/supabase-status.txt || true
+          docker ps -a > diagnostics/docker-ps.txt 2>&1 || true
+          for c in $(docker ps -a --format '{{.Names}}' | grep -i supabase_db || true); do
+            docker logs --tail 400 "$c" 2>&1 | bash scripts/disposable-db.sh redact > "diagnostics/${c}.log" || true
+          done
+
+      # Reports and diagnostics are retained even on failure. A missing report
+      # does not hide the failure: the commit-bound gate above already failed.
       - name: Upload Stage 3D report
         if: always()
         uses: actions/upload-artifact@v4
@@ -529,8 +599,21 @@ jobs:
           path: |
             reports/stage3d-live.json
             reports/stage3d-live.meta.json
-          if-no-files-found: error
+          if-no-files-found: warn
+
+      - name: Upload Stage 3D diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage3d-diagnostics
+          path: diagnostics/
+          if-no-files-found: ignore
 
       - name: Stop Stage 3D disposable database
-        if: always()
-        run: supabase stop --no-backup
+        if: ${{ always() && steps.stage3d_supabase_cli.outcome == 'success' }}
+        run: |
+          if [ -n "${DISPOSABLE_WORKDIR:-}" ] && [ -f "${DISPOSABLE_WORKDIR}/supabase/config.toml" ]; then
+            supabase stop --no-backup --workdir "$DISPOSABLE_WORKDIR"
+          else
+            echo "No disposable workdir was assembled; nothing to stop."
+          fi

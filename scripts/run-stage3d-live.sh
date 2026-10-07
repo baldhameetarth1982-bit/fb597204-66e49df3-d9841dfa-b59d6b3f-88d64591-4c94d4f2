@@ -54,9 +54,45 @@ if [ "${actual_sha,,}" != "${expected_sha,,}" ]; then
 fi
 rm -f "$report" "$meta"
 printf '{"commit":"%s"}\n' "$actual_sha" > "$meta"
+started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 live_status=0
 bunx vitest run tests/integration/accounting-stage3d-live.test.ts \
   --reporter=default --reporter=json --outputFile="$report" || live_status=$?
+
+# Record the run context next to the commit binding. Hosts only, never keys.
+STAGE3D_META_STARTED_AT="$started_at" STAGE3D_META_LIVE_STATUS="$live_status" \
+STAGE3D_META_COMMIT="$actual_sha" node - "$report" "$meta" <<'NODE'
+const fs = require("fs");
+const [reportPath, metaPath] = process.argv.slice(2);
+const host = (value) => { try { return new URL(value).hostname; } catch { return null; } };
+let counts = null;
+try {
+  const r = JSON.parse(fs.readFileSync(reportPath, "utf8"));
+  counts = {
+    suites: r.numTotalTestSuites, tests: r.numTotalTests, passed: r.numPassedTests,
+    failed: r.numFailedTests, pending: r.numPendingTests, todo: r.numTodoTests, success: r.success,
+  };
+} catch { counts = null; }
+const env = process.env;
+fs.writeFileSync(metaPath, JSON.stringify({
+  commit: env.STAGE3D_META_COMMIT,
+  workflow: env.GITHUB_WORKFLOW ?? null,
+  run_id: env.GITHUB_RUN_ID ?? null,
+  run_attempt: env.GITHUB_RUN_ATTEMPT ?? null,
+  ref: env.GITHUB_REF ?? null,
+  started_at: env.STAGE3D_META_STARTED_AT,
+  finished_at: new Date().toISOString(),
+  isolated_environment: {
+    api_host: host(env.SOCIOHUB_TEST_SUPABASE_URL),
+    database_host: host(env.SOCIOHUB_TEST_DATABASE_URL),
+    disposable: true,
+  },
+  fixture_safety_result: env.STAGE3D_FIXTURE_SAFETY_RESULT ?? "not_reported",
+  focused_contract_result: env.STAGE3D_FOCUSED_CONTRACT_RESULT ?? "not_reported",
+  live_accounting_result: Number(env.STAGE3D_META_LIVE_STATUS) === 0 ? "passed" : "failed",
+  live_counts: counts,
+}, null, 2) + "\n");
+NODE
 
 report_status=0
 if [ ! -s "$report" ]; then

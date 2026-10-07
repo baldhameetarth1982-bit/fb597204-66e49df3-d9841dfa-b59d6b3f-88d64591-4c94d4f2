@@ -22,6 +22,14 @@ if [ -z "$LINE" ]; then
   exit 1
 fi
 echo "$LINE"
+# A shrunken or partially skipped suite must not pass: require the known
+# minimum number of passing checks as well as zero failures.
+MIN_PASS="${PHASE4B_MIN_PASS:-245}"
+PASSED="$(printf '%s\n' "$LINE" | sed -n 's/.*|pass=\([0-9][0-9]*\)|.*/\1/p')"
+if [ -z "$PASSED" ] || [ "$PASSED" -lt "$MIN_PASS" ]; then
+  echo "Refusing: only ${PASSED:-0} checks passed (expected at least $MIN_PASS)." >&2
+  exit 1
+fi
 case "$LINE" in
   *"|fail=0|OK"*) exit 0 ;;
   *) exit 1 ;;

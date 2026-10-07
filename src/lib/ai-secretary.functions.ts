@@ -6,6 +6,9 @@ import { hasFeature, normalizePlan, planFromSocietyRow } from "@/lib/plan-featur
 const Input = z.object({
   question: z.string().trim().min(3).max(1000),
   history: z.array(z.string().max(1000)).max(6).optional(),
+  // Stable ids of built-in suggested questions (language-independent actions).
+  suggestion: z.enum(["q1", "q2", "q3", "q4"]).optional(),
+  priorSuggestion: z.enum(["q1", "q2", "q3", "q4"]).optional(),
 });
 
 export type AskSecretaryResult =
@@ -75,7 +78,7 @@ export const askSecretary = createServerFn({ method: "POST" })
           }
         },
         callModel: async (system, user) => parseModelJson(await callResponses(system, user, societyId)),
-      }, data.history ?? []);
+      }, data.history ?? [], { suggestion: data.suggestion, priorSuggestion: data.priorSuggestion });
       return { ok: true, data: result };
     } catch (e) {
       if (retrievalFailed) return { ok: false, code: "retrieval_failed", message: "Couldn't read your society's sources. Please try again." };

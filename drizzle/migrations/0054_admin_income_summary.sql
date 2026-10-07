@@ -1,3 +1,5 @@
+-- Fresh-replay compatibility: the earlier definition has a different row type.
+DROP FUNCTION IF EXISTS public.admin_income_summary();
 CREATE OR REPLACE FUNCTION public.admin_income_summary()
 RETURNS TABLE(subscription_mrr numeric, collected_total numeric, collected_30d numeric, total_revenue numeric, plans jsonb)
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO 'public'

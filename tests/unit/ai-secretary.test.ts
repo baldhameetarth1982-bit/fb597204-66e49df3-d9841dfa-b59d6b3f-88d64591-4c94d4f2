@@ -92,3 +92,48 @@ describe("AI Secretary conversational actions", async () => {
     expect(suggestActions("how do I report this?", "answered")[0].href).toBe("/app/helpdesk");
   });
 });
+
+describe("AI Secretary suggested-question actions work in every language", async () => {
+  const { suggestActions, SUGGESTION_IDS } = await import("@/lib/ai-secretary.server");
+  const { residentPages } = await import("@/locales/residentPages");
+  const { readdirSync } = await import("node:fs");
+  const cat = residentPages as unknown as Record<string, readonly string[]>;
+  const extra = readdirSync("src/locales/extra").filter((f) => f.endsWith(".json"))
+    .map((f) => JSON.parse(readFileSync(`src/locales/extra/${f}`, "utf8")) as Record<string, string>);
+
+  it("id-based actions match what the English wording produced", () => {
+    for (const id of SUGGESTION_IDS) {
+      const english = cat[`sec.${id}`][0];
+      for (const status of ["answered", "not_found", "no_sources"] as const) {
+        expect(suggestActions("anything", status, [], { suggestion: id })).toEqual(suggestActions(english, status));
+      }
+    }
+  });
+
+  it("Hindi, Gujarati and every extra language get the same actions as English", () => {
+    for (const id of SUGGESTION_IDS) {
+      const expected = suggestActions(cat[`sec.${id}`][0], "answered").map((a) => a.id);
+      const shown = [cat[`sec.${id}`][1], cat[`sec.${id}`][2], ...extra.map((b) => b[`sec.${id}`])];
+      for (const text of shown) {
+        expect(typeof text).toBe("string");
+        expect(suggestActions(text, "answered", [], { suggestion: id }).map((a) => a.id)).toEqual(expected);
+      }
+    }
+  });
+
+  it("vague follow-up after a localized suggestion inherits its actions", () => {
+    expect(suggestActions("where do I do that?", "answered", ["પ્લમ્બિંગ માટે કોને ફોન કરું?"], { priorSuggestion: "q4" }).map((a) => a.id))
+      .toEqual(["raise", "contacts"]);
+  });
+
+  it("every action carries a stable id and an allowlisted in-app link", () => {
+    const a = suggestActions("bill visitor car leak notice poll fire phone pdf noc family", "not_found");
+    expect(a.every((x) => typeof x.id === "string" && x.href.startsWith("/app/"))).toBe(true);
+  });
+
+  it("server accepts only known suggestion ids; typed questions are untouched", () => {
+    const fn = readFileSync("src/lib/ai-secretary.functions.ts", "utf8");
+    expect(fn).toMatch(/suggestion: z\.enum\(\["q1", "q2", "q3", "q4"\]\)\.optional\(\)/);
+    expect(suggestActions("what is my maintenance due?", "answered").map((x) => x.id)).toEqual(["bills"]);
+  });
+});

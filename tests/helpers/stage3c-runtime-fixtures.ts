@@ -1938,13 +1938,80 @@ export async function setupStage3CFixture(
         is_active: true,
       },
     ];
-    for (const r of residencyRows) {
+    async function insertResidency(r: Record<string, unknown> & { flat_id: string; user_id: string }) {
       const inserted = await assertSupabaseSingleResult<{ id: string }>(
         `insert:flat_resident:${r.flat_id.slice(0, 8)}:${r.user_id.slice(0, 8)}`,
         admin.from("flat_residents").insert(r).select("id").single(),
       );
       tracked.flatResidentIds.push(inserted.id);
       tracked.flatResidents.push({ flat_id: r.flat_id, user_id: r.user_id });
+    }
+    for (const r of residencyRows) await insertResidency(r);
+
+    // ---- Resident society membership ---------------------------------
+    // The production bill-scope rule requires the unit's resident profile
+    // to belong to the billing society. Service-role setup assigns it the
+    // same way the join flow does for real residents.
+    const residentSocieties: ReadonlyArray<[SyntheticUser, string]> = [
+      [activeResident, societyA],
+      [flatOccupant, societyA],
+      [unrelatedResident, societyB],
+    ];
+    for (const [user, societyId] of residentSocieties) {
+      const { error } = await admin
+        .from("profiles")
+        .update({ society_id: societyId })
+        .eq("id", user.id);
+      if (error)
+        throw new Error(
+          `[stage3c:profile_society:${user.id.slice(0, 8)}] ${redactMessage(extractErrorMessage(error))}`,
+        );
+    }
+
+    /**
+     * Verify a unit is billable under the production rule: at least one
+     * flat_residents row whose profile belongs to `societyId`. Records the
+     * flat so `addBill` refuses any unit that was not verified first.
+     */
+    const billableFlatIds = new Set<string>();
+    async function verifyBillableFlat(flatId: string, societyId: string, label: string) {
+      const links = await admin.from("flat_residents").select("user_id").eq("flat_id", flatId);
+      if (links.error) throw new Error(`[stage3c:verifyResidency:${label}] residency read failed`);
+      const userIds = (links.data ?? []).map((row) => (row as { user_id: string }).user_id);
+      if (userIds.length === 0) throw new Error(`[stage3c:verifyResidency:${label}] no resident assigned`);
+      const members = await admin
+        .from("profiles")
+        .select("id")
+        .in("id", userIds)
+        .eq("society_id", societyId);
+      if (members.error) throw new Error(`[stage3c:verifyResidency:${label}] profile read failed`);
+      if ((members.data ?? []).length === 0)
+        throw new Error(`[stage3c:verifyResidency:${label}] resident is not in the billing society`);
+      billableFlatIds.add(flatId);
+    }
+    /** Assign the dedicated occupant to a matrix-only unit, then verify. */
+    async function assignOccupant(flatId: string, label: string) {
+      await insertResidency({
+        flat_id: flatId,
+        user_id: flatOccupant.id,
+        relationship: "owner",
+        is_primary: true,
+        is_active: true,
+      });
+      await verifyBillableFlat(flatId, societyA, label);
+    }
+    await verifyBillableFlat(flatA, societyA, "flatA");
+    await verifyBillableFlat(unrelatedFlat, societyB, "unrelatedFlat");
+
+    // Distinct monthly periods per unit: the production schedule guard
+    // rejects two live bills for the same unit and period_start.
+    const billPeriodCounters = new Map<string, number>();
+    function allocateBillPeriod(flatId: string): { start: string; end: string } {
+      const k = billPeriodCounters.get(flatId) ?? 0;
+      billPeriodCounters.set(flatId, k + 1);
+      const start = new Date(Date.UTC(2026, -k, 1));
+      const end = new Date(Date.UTC(2026, 1 - k, 0));
+      return { start: start.toISOString().slice(0, 10), end: end.toISOString().slice(0, 10) };
     }
 
     // ---- Bills --------------------------------------------------------

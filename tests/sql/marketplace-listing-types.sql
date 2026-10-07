@@ -116,7 +116,7 @@ BEGIN
       fail := fail + 1; failures := failures || ('A.status_rejected.' || t);
     EXCEPTION WHEN OTHERS THEN pass := pass + 1; END;
     BEGIN PERFORM pg_temp.mkt_act((ids->>t)::uuid);
-      PERFORM public.market_set_image(l_plat, 'platform/' || l_plat || '/x.png');
+      PERFORM public.market_set_image(l_plat, 'platform/' || l_plat || '/7a7a0000-0000-4000-8000-0000000000a2.png');
       fail := fail + 1; failures := failures || ('A.image_rejected.' || t);
     EXCEPTION WHEN OTHERS THEN pass := pass + 1; END;
     BEGIN PERFORM pg_temp.mkt_act((ids->>t)::uuid);
@@ -126,8 +126,8 @@ BEGIN
   END LOOP;
   -- Super admin image path rules.
   PERFORM pg_temp.mkt_act((ids->>'SUP')::uuid);
-  PERFORM public.market_set_image(l_plat, 'platform/' || l_plat || '/a.png'); pass := pass + 1;
-  BEGIN PERFORM public.market_set_image(l_plat, (ids->>'SA') || '/' || l_plat || '/a.png');
+  PERFORM public.market_set_image(l_plat, 'platform/' || l_plat || '/7a7a0000-0000-4000-8000-0000000000a1.png'); pass := pass + 1;
+  BEGIN PERFORM public.market_set_image(l_plat, (ids->>'SA') || '/' || l_plat || '/7a7a0000-0000-4000-8000-0000000000a1.png');
     fail := fail + 1; failures := failures || 'A.image_bad_prefix_rejected'::text;
   EXCEPTION WHEN OTHERS THEN pass := pass + 1; END;
   BEGIN PERFORM public.market_set_image(l_plat, 'platform/' || l_plat || '/../x.png');

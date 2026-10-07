@@ -51,6 +51,10 @@ describe("Phase 4B SQL harness safety contract", () => {
       "scope.admA.decide_material_pass",
       "poll.resA.vote",
       "meet.resA.rsvp_own_society",
+      "cls.resA.own_society_class",
+      "cls.admA.own_society_class",
+      "link.resA.own_bill_detail",
+      "link.resA.election",
     ]) {
       expect(harness).toContain(`'${name}'`);
     }
@@ -61,6 +65,26 @@ describe("Phase 4B SQL harness safety contract", () => {
       const row = harness.split("\n").find((l) => l.includes(`'${name}'`)) ?? "";
       expect(row).toContain("'err:protected_society_columns'");
     }
+  });
+});
+
+describe("Phase 4C class-list and deep-link coverage", () => {
+  it("covers cross-society, identifier-swap, moved-out and anon class reads", () => {
+    for (const name of [
+      "cls.resA.other_society_class_by_id", "cls.resA.other_society_by_amenity", "cls.resA.other_society_by_society",
+      "cls.resB.society_a_class", "cls.resX.moved_out_resident", "cls.anon.class", "cls.admB.society_a_class",
+      "link.resB.bill_detail_swapped_id", "link.resB.election_swapped_id", "link.admB.election_swapped_id",
+    ]) {
+      expect(harness).toContain(`'${name}'`);
+    }
+  });
+
+  it("fixes the class policy through the caller-scoped wrapper, not a broad grant", () => {
+    const f = readdirSync(migDir).find((x) => x.includes("phase4c_fix_amenity_classes_member_read"));
+    expect(f).toBeTruthy();
+    const sql = readFileSync(join(migDir, f!), "utf8");
+    expect(sql).toMatch(/public\.authorize_membership\(auth\.uid\(\), society_id\)/);
+    expect(sql).not.toMatch(/GRANT/i);
   });
 });
 

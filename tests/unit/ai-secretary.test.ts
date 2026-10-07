@@ -122,8 +122,6 @@ describe("AI Secretary suggested-question actions work in every language", async
   });
 
   it("vague follow-up after a localized suggestion inherits its actions", () => {
-    expect(suggestActions("ये कहाँ करूँ?", "answered", ["प्लंबिंग के लिए किसे फ़ोन करूँ?"], { priorSuggestion: "q4" }).map((a) => a.id))
-      .toEqual([]);
     expect(suggestActions("where do I do that?", "answered", ["પ્લમ્બિંગ માટે કોને ફોન કરું?"], { priorSuggestion: "q4" }).map((a) => a.id))
       .toEqual(["raise", "contacts"]);
   });

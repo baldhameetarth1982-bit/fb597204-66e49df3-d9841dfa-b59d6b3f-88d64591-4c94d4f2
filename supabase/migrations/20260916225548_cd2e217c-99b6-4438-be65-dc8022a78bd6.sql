@@ -561,7 +561,8 @@ BEGIN
       FROM pg_proc p
       JOIN pg_namespace n ON n.oid = p.pronamespace
      WHERE n.nspname = 'public'
-       AND pg_get_functiondef(p.oid) ~* 'insert[[:space:]]+into[[:space:]]+(public[.])?audit_log[[:space:]]*[(][^)]*(entity_type|entity_id|meta)([[:space:],)]|$)'
+       AND p.prokind IN ('f', 'p')
+       AND CASE WHEN p.prokind IN ('f', 'p') THEN pg_get_functiondef(p.oid) END ~* 'insert[[:space:]]+into[[:space:]]+(public[.])?audit_log[[:space:]]*[(][^)]*(entity_type|entity_id|meta)([[:space:],)]|$)'
   LOOP
     RAISE EXCEPTION 'noncanonical audit_log writer remains: %.%(%)',
       offender.schema_name, offender.function_name, offender.identity_arguments;

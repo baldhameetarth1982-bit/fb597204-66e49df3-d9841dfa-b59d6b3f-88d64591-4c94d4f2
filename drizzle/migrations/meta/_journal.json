@@ -1513,6 +1513,13 @@
       "when": 1791347099509,
       "tag": "0215_phase4b_fix_saas_column_guard_and_guard_pass_read",
       "breakpoints": true
+    },
+    {
+      "idx": 216,
+      "version": "7",
+      "when": 1791347834731,
+      "tag": "0216_phase4c_fix_amenity_classes_member_read",
+      "breakpoints": true
     }
   ]
 }

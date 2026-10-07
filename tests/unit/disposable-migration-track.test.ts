@@ -57,7 +57,7 @@ describe("runtime verification workflow", () => {
   const workflow = read(".github/workflows/stage3c-runtime-verification.yml");
 
   it("points every database lifecycle command at the disposable workdir", () => {
-    const commands = workflow.split("\n").filter((l) => /\bsupabase (start|stop|status|db reset)\b/.test(l));
+    const commands = workflow.split("\n").filter((l) => /^\s*(run: )?supabase (start|stop|status|db reset)\b/.test(l) || /^\s*(PHASE4B_DB_URL=\S*\$\(|for c in .*)?supabase status/.test(l) && !/missing/.test(l));
     expect(commands.length).toBeGreaterThan(6);
     for (const line of commands) expect(line).toContain('--workdir "$DISPOSABLE_WORKDIR"');
   });

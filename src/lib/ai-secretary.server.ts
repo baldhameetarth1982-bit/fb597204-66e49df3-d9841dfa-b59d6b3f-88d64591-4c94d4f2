@@ -34,7 +34,12 @@ export type SecretaryCitation = {
   excerpt: string;
 };
 
-export type SecretaryAction = { label: string; href: string };
+/** Stable action identifiers; the browser localises by id, never by label text. */
+export type SecretaryActionId =
+  | "bills" | "visitors" | "vehicles" | "raise" | "notices" | "polls"
+  | "emergency" | "contacts" | "documents" | "nodues" | "family" | "askHelpdesk";
+
+export type SecretaryAction = { id: SecretaryActionId; label: string; href: string };
 
 export type SecretaryAnswer = {
   status: "answered" | "not_found" | "no_sources";
@@ -45,37 +50,82 @@ export type SecretaryAnswer = {
 };
 
 /** Fixed allowlist of in-app destinations. The model never chooses links. */
-const ACTION_RULES: { re: RegExp; action: SecretaryAction }[] = [
-  { re: /\b(bill|bills|due|dues|maintenance|pay|paid|payment|receipt|charge|fee|fees|penalty|outstanding)\b/i, action: { label: "View my bills", href: "/app/bills" } },
-  { re: /\b(visitor|visitors|guest|guests|delivery|courier|gate pass|pre-?approve)\b/i, action: { label: "Manage visitors", href: "/app/visitors" } },
-  { re: /\b(car|bike|vehicle|vehicles|parking|park)\b/i, action: { label: "My vehicles & parking", href: "/app/vehicles" } },
-  { re: /\b(complain|complaint|repair|leak|leakage|broken|issue|problem|plumb|plumbing|electric|electrician|lift|elevator|noise)\b/i, action: { label: "Raise a Helpdesk request", href: "/app/helpdesk" } },
-  { re: /\b(notice|notices|announcement|circular|meeting|agm)\b/i, action: { label: "Open notices", href: "/app/notices" } },
-  { re: /\b(poll|polls|vote|voting|election)\b/i, action: { label: "Open polls", href: "/app/polls" } },
-  { re: /\b(emergency|fire|ambulance|police|urgent)\b/i, action: { label: "Emergency contacts", href: "/app/emergency" } },
-  { re: /\b(contact|phone|number|call|secretary|chairman|treasurer|manager|guard|security)\b/i, action: { label: "Society contacts", href: "/app/contacts" } },
-  { re: /\b(document|documents|pdf|policy|policies|faq|faqs|form|forms|rules?|by-?laws?)\b/i, action: { label: "Documents & FAQs", href: "/app/documents" } },
-  { re: /\b(no[- ]?dues|noc|certificate)\b/i, action: { label: "No-dues certificate", href: "/app/no-dues" } },
-  { re: /\b(family|member|members|tenant)\b/i, action: { label: "My family", href: "/app/family" } },
+const ACTIONS: Record<SecretaryActionId, SecretaryAction> = {
+  bills: { id: "bills", label: "View my bills", href: "/app/bills" },
+  visitors: { id: "visitors", label: "Manage visitors", href: "/app/visitors" },
+  vehicles: { id: "vehicles", label: "My vehicles & parking", href: "/app/vehicles" },
+  raise: { id: "raise", label: "Raise a Helpdesk request", href: "/app/helpdesk" },
+  notices: { id: "notices", label: "Open notices", href: "/app/notices" },
+  polls: { id: "polls", label: "Open polls", href: "/app/polls" },
+  emergency: { id: "emergency", label: "Emergency contacts", href: "/app/emergency" },
+  contacts: { id: "contacts", label: "Society contacts", href: "/app/contacts" },
+  documents: { id: "documents", label: "Documents & FAQs", href: "/app/documents" },
+  nodues: { id: "nodues", label: "No-dues certificate", href: "/app/no-dues" },
+  family: { id: "family", label: "My family", href: "/app/family" },
+  askHelpdesk: { id: "askHelpdesk", label: "Ask the committee via Helpdesk", href: "/app/helpdesk" },
+};
+
+const ACTION_RULES: { re: RegExp; id: SecretaryActionId }[] = [
+  { re: /\b(bill|bills|due|dues|maintenance|pay|paid|payment|receipt|charge|fee|fees|penalty|outstanding)\b/i, id: "bills" },
+  { re: /\b(visitor|visitors|guest|guests|delivery|courier|gate pass|pre-?approve)\b/i, id: "visitors" },
+  { re: /\b(car|bike|vehicle|vehicles|parking|park)\b/i, id: "vehicles" },
+  { re: /\b(complain|complaint|repair|leak|leakage|broken|issue|problem|plumb|plumbing|electric|electrician|lift|elevator|noise)\b/i, id: "raise" },
+  { re: /\b(notice|notices|announcement|circular|meeting|agm)\b/i, id: "notices" },
+  { re: /\b(poll|polls|vote|voting|election)\b/i, id: "polls" },
+  { re: /\b(emergency|fire|ambulance|police|urgent)\b/i, id: "emergency" },
+  { re: /\b(contact|phone|number|call|secretary|chairman|treasurer|manager|guard|security)\b/i, id: "contacts" },
+  { re: /\b(document|documents|pdf|policy|policies|faq|faqs|form|forms|rules?|by-?laws?)\b/i, id: "documents" },
+  { re: /\b(no[- ]?dues|noc|certificate)\b/i, id: "nodues" },
+  { re: /\b(family|member|members|tenant)\b/i, id: "family" },
 ];
+
+/**
+ * Built-in suggested questions are identified by a stable id, so their actions
+ * work in every UI language. The wording shown to residents lives only in the
+ * translation catalogs; nothing here depends on it.
+ */
+export const SUGGESTION_IDS = ["q1", "q2", "q3", "q4"] as const;
+export type SuggestionId = (typeof SUGGESTION_IDS)[number];
+const SUGGESTION_ACTIONS: Record<SuggestionId, SecretaryActionId[]> = {
+  q1: [], // quiet hours
+  q2: [], // pets
+  q3: ["notices"], // recent water-supply notices
+  q4: ["raise", "contacts"], // who to call for plumbing
+};
+export function isSuggestionId(v: unknown): v is SuggestionId {
+  return typeof v === "string" && (SUGGESTION_IDS as readonly string[]).includes(v);
+}
 
 /** "How do I report this?", "Can I request it?" — generic workflow intent. */
 const REPORT_INTENT = /\b(report|complain|request|raise|apply|submit|book|ask the committee)\b/i;
 const VAGUE_FOLLOWUP = /\b(this|that|it|there|them)\b/i;
 
-const HELPDESK: SecretaryAction = { label: "Ask the committee via Helpdesk", href: "/app/helpdesk" };
+const HELPDESK: SecretaryAction = ACTIONS.askHelpdesk;
 
-export function suggestActions(question: string, status: SecretaryAnswer["status"], prior: string[] = []): SecretaryAction[] {
+export type ActionIntent = { suggestion?: SuggestionId; priorSuggestion?: SuggestionId };
+
+export function suggestActions(
+  question: string,
+  status: SecretaryAnswer["status"],
+  prior: string[] = [],
+  intent: ActionIntent = {},
+): SecretaryAction[] {
   const out: SecretaryAction[] = [];
-  const add = (text: string) => {
-    for (const r of ACTION_RULES) {
-      if (r.re.test(text) && !out.some((a) => a.href === r.action.href)) out.push(r.action);
-    }
+  const push = (id: SecretaryActionId) => {
+    const a = ACTIONS[id];
+    if (!out.some((x) => x.href === a.href)) out.push(a);
   };
-  add(question);
+  const add = (text: string) => {
+    for (const r of ACTION_RULES) if (r.re.test(text)) push(r.id);
+  };
+  if (intent.suggestion) SUGGESTION_ACTIONS[intent.suggestion].forEach(push);
+  else add(question);
   // Short follow-ups ("where do I do that?") inherit the topic of the last question.
-  if (out.length === 0 && VAGUE_FOLLOWUP.test(question) && prior.length) add(prior[prior.length - 1]);
-  if (out.length === 0 && REPORT_INTENT.test(question)) out.push({ label: "Raise a Helpdesk request", href: "/app/helpdesk" });
+  if (out.length === 0 && !intent.suggestion && VAGUE_FOLLOWUP.test(question)) {
+    if (intent.priorSuggestion) SUGGESTION_ACTIONS[intent.priorSuggestion].forEach(push);
+    else if (prior.length) add(prior[prior.length - 1]);
+  }
+  if (out.length === 0 && !intent.suggestion && REPORT_INTENT.test(question)) push("raise");
   if (status !== "answered") {
     const i = out.findIndex((a) => a.href === HELPDESK.href);
     if (i >= 0) out.splice(i, 1);

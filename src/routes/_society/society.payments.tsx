@@ -1,3 +1,4 @@
+import { toSafeFinanceMessage } from "@/lib/finance-safe-error";
 import { createFileRoute } from "@tanstack/react-router";
 import { PaymentProofButton } from "@/components/billing/PaymentProofButton";
 import { UpiSettingsCard } from "@/components/billing/UpiSettingsCard";
@@ -398,7 +399,7 @@ function RecordOfflinePaymentSection({
       // into a mutable array for local component state.
       setResults([...bills]);
     } catch (e) {
-      toast.error((e as Error).message);
+      toast.error(toSafeFinanceMessage(e));
     } finally {
       setSearching(false);
     }
@@ -434,7 +435,7 @@ function RecordOfflinePaymentSection({
       setIdKey(randomIdKey("adm"));
       onRecorded();
     } catch (e) {
-      toast.error((e as Error).message);
+      toast.error(toSafeFinanceMessage(e));
     } finally {
       setSubmitting(false);
     }

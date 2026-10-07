@@ -1846,6 +1846,10 @@ export async function setupStage3CFixture(
     const activeResident = await mkUser(admin, env, prefix, "res", tracked);
     const movedOutResident = await mkUser(admin, env, prefix, "resmo", tracked);
     const unrelatedResident = await mkUser(admin, env, prefix, "resu", tracked);
+    // Dedicated occupant for matrix-only units (otherFlatA, searchFlatA,
+    // secondBlockFlatA). Never one of the three canonical residents, so
+    // ownership-denial scenarios stay intact.
+    const flatOccupant = await mkUser(admin, env, prefix, "occ", tracked);
 
     // ---- Roles --------------------------------------------------------
     type RoleRow = {
@@ -2105,7 +2109,7 @@ export async function setupStage3CFixture(
       },
     });
 
-    // ---- Matrix-only extra flat (Society A / blockA, no residency) ---
+    // ---- Matrix-only extra flat (Society A / blockA, no canonical resident) ---
     const otherFlatARawRow = await assertSupabaseSingleResult<unknown>(
       "insert:otherFlatA",
       admin
@@ -2128,6 +2132,7 @@ export async function setupStage3CFixture(
       throw new Error("[stage3c:otherFlatA] must differ from flatA");
     trackUniqueId(tracked.flatIds, otherFlatARow.id, "otherFlatA");
     const otherFlatA = otherFlatARow.id;
+    await assignOccupant(otherFlatA, "otherFlatA");
 
     // ---- Five dedicated matrix bills (foundation, no payments yet) ---
     const residentSubmitBillId = await addBill({
@@ -2227,6 +2232,7 @@ export async function setupStage3CFixture(
     );
     trackUniqueId(tracked.flatIds, searchFlatRow.id, "searchFlatA");
     const searchFlatA = searchFlatRow.id;
+    await assignOccupant(searchFlatA, "searchFlatA");
 
     const searchAvailableBillId = await addBill({
       label: STAGE3C_SEARCH_LABELS.available,
@@ -2448,6 +2454,7 @@ export async function setupStage3CFixture(
     );
     tracked.flatIds.push(secondFl.id);
     const secondBlockFlatA = secondFl.id;
+    await assignOccupant(secondBlockFlatA, "secondBlockFlatA");
 
     const secondBlockBillId = await addBill({
       label: "sb-bill",

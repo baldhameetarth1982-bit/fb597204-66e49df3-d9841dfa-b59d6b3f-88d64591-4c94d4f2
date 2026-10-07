@@ -1966,6 +1966,11 @@ export async function setupStage3CFixture(
         throw new Error(`[stage3c:addBill:${label}] invalid flatId`);
       if (!Number.isFinite(amount) || amount <= 0)
         throw new Error(`[stage3c:addBill:${label}] amount must be finite positive`);
+      // Production rule: bills may only target units with a resident of
+      // this society. Prove it holds before inserting, never bypass it.
+      if (!billableFlatIds.has(flatId))
+        throw new Error(`[stage3c:addBill:${label}] flat has no verified resident assignment`);
+      const period = allocateBillPeriod(flatId);
       const row = await assertSupabaseSingleResult<{ id: string }>(
         `insert:bill:${label}`,
         admin
@@ -1974,8 +1979,8 @@ export async function setupStage3CFixture(
             society_id: societyA,
             flat_id: flatId,
             period_label: label,
-            period_start: "2026-01-01",
-            period_end: "2026-01-31",
+            period_start: period.start,
+            period_end: period.end,
             amount,
             total_payable: amount,
             due_date: "2026-02-15",

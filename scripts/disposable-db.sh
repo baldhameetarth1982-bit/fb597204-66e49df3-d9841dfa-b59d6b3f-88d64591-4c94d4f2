@@ -68,7 +68,7 @@ cmd_run() {
   set +e
   "$@" 2>&1 | redact | tee "$log"
   local status="${PIPESTATUS[0]}"
-  set -e
+  set -u
   if [ "$status" -ne 0 ]; then
     classify "$phase" "$log"
     exit "$status"

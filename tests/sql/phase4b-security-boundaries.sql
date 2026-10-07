@@ -428,7 +428,7 @@ BEGIN
       (1107,'meet.anon.row','-anon',NULL,'select count(*) from public.meetings where id={MA}','none'),
 
       -- Documents (anon / unknown IDs).
-      (1200,'doc.anon.path','-anon',NULL,'select count(p) from (select public.knowledge_document_path({KDA}) p) x','none'),
+      (1200,'doc.anon.path','-anon',NULL,'select count(p) from (select public.knowledge_document_path({KDA}) p) x','err:permission denied for function'),
       (1201,'doc.resA.unknown_id','RESA',NULL,'select count(p) from (select public.knowledge_document_path({RAND}) p) x','none'),
       (1202,'doc.resA.unknown_lease','RESA',NULL,'select count(p) from (select public.my_lease_document_path({RAND}) p) x','err:^not_found$'),
       (1203,'doc.resA2.lease_error_is_generic','RESA2',NULL,'select count(p) from (select public.my_lease_document_path({LSA}) p) x','err:^not_found$'),

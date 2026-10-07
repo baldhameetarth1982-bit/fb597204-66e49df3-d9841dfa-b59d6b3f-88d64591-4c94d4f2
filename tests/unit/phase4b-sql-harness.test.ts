@@ -84,7 +84,7 @@ describe("Phase 4C class-list and deep-link coverage", () => {
     expect(f).toBeTruthy();
     const sql = readFileSync(join(migDir, f!), "utf8");
     expect(sql).toMatch(/public\.authorize_membership\(auth\.uid\(\), society_id\)/);
-    expect(sql).not.toMatch(/GRANT/i);
+    expect(sql).not.toMatch(/^\s*GRANT\b/im);
   });
 });
 

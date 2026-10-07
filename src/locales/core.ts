@@ -294,6 +294,9 @@ export const core = {
   "communityErr.not_active": ["This broadcast is no longer active.", "यह प्रसारण अब सक्रिय नहीं है।", "આ પ્રસારણ હવે સક્રિય નથી."],
   "communityErr.invalid_block": ["Pick a valid block.", "मान्य ब्लॉक चुनें।", "માન્ય બ્લોક પસંદ કરો."],
   "communityErr.invalid_audience": ["Pick who should get reminders.", "चुनें कि रिमाइंडर किसे मिलें।", "રિમાઇન્ડર કોને મળે તે પસંદ કરો."],
+  "communityErr.global_not_allowed": ["Showing to all societies is not allowed right now.", "अभी सभी सोसाइटी को दिखाने की अनुमति नहीं है।", "હાલ બધી સોસાયટીને બતાવવાની મંજૂરી નથી."],
+  "communityErr.no_home": ["You need an active house in this society to post a listing.", "लिस्टिंग डालने के लिए इस सोसाइटी में आपका सक्रिय मकान होना चाहिए।", "લિસ્ટિંગ મૂકવા માટે આ સોસાયટીમાં તમારું સક્રિય ઘર હોવું જોઈએ."],
+  "communityErr.invalid_visibility": ["Please choose who can see this listing.", "कृपया चुनें कि यह लिस्टिंग कौन देख सकता है।", "કૃપા કરીને પસંદ કરો કે આ લિસ્ટિંગ કોણ જોઈ શકે."],
   "communityErr.not_removed": ["Only removed listings can be restored.", "केवल हटाई गई लिस्टिंग ही वापस लाई जा सकती है।", "ફક્ત દૂર કરેલી લિસ્ટિંગ જ પાછી લાવી શકાય."],
   "communityErr.check_constraint": [
     "Some details aren't allowed. Remove < > { } and use full https:// links or 8–15 digit phones.",

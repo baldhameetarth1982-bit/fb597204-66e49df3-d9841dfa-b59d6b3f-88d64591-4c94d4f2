@@ -165,6 +165,7 @@ import { Route as AdminAdminReportBuilderRouteImport } from './routes/_admin/adm
 import { Route as AdminAdminRazorpayRouteImport } from './routes/_admin/admin.razorpay'
 import { Route as AdminAdminPlansRouteImport } from './routes/_admin/admin.plans'
 import { Route as AdminAdminMessagingRouteImport } from './routes/_admin/admin.messaging'
+import { Route as AdminAdminMarketplaceRouteImport } from './routes/_admin/admin.marketplace'
 import { Route as AdminAdminIncomeRouteImport } from './routes/_admin/admin.income'
 import { Route as AdminAdminHealthRouteImport } from './routes/_admin/admin.health'
 import { Route as AdminAdminExecutiveRouteImport } from './routes/_admin/admin.executive'
@@ -1018,6 +1019,11 @@ const AdminAdminMessagingRoute = AdminAdminMessagingRouteImport.update({
   path: '/admin/messaging',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAdminMarketplaceRoute = AdminAdminMarketplaceRouteImport.update({
+  id: '/admin/marketplace',
+  path: '/admin/marketplace',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAdminIncomeRoute = AdminAdminIncomeRouteImport.update({
   id: '/admin/income',
   path: '/admin/income',
@@ -1327,6 +1333,7 @@ export interface FileRoutesByFullPath {
   '/admin/executive': typeof AdminAdminExecutiveRoute
   '/admin/health': typeof AdminAdminHealthRoute
   '/admin/income': typeof AdminAdminIncomeRoute
+  '/admin/marketplace': typeof AdminAdminMarketplaceRoute
   '/admin/messaging': typeof AdminAdminMessagingRoute
   '/admin/plans': typeof AdminAdminPlansRoute
   '/admin/razorpay': typeof AdminAdminRazorpayRoute
@@ -1528,6 +1535,7 @@ export interface FileRoutesByTo {
   '/admin/executive': typeof AdminAdminExecutiveRoute
   '/admin/health': typeof AdminAdminHealthRoute
   '/admin/income': typeof AdminAdminIncomeRoute
+  '/admin/marketplace': typeof AdminAdminMarketplaceRoute
   '/admin/messaging': typeof AdminAdminMessagingRoute
   '/admin/plans': typeof AdminAdminPlansRoute
   '/admin/razorpay': typeof AdminAdminRazorpayRoute
@@ -1735,6 +1743,7 @@ export interface FileRoutesById {
   '/_admin/admin/executive': typeof AdminAdminExecutiveRoute
   '/_admin/admin/health': typeof AdminAdminHealthRoute
   '/_admin/admin/income': typeof AdminAdminIncomeRoute
+  '/_admin/admin/marketplace': typeof AdminAdminMarketplaceRoute
   '/_admin/admin/messaging': typeof AdminAdminMessagingRoute
   '/_admin/admin/plans': typeof AdminAdminPlansRoute
   '/_admin/admin/razorpay': typeof AdminAdminRazorpayRoute
@@ -1939,6 +1948,7 @@ export interface FileRouteTypes {
     | '/admin/executive'
     | '/admin/health'
     | '/admin/income'
+    | '/admin/marketplace'
     | '/admin/messaging'
     | '/admin/plans'
     | '/admin/razorpay'
@@ -2140,6 +2150,7 @@ export interface FileRouteTypes {
     | '/admin/executive'
     | '/admin/health'
     | '/admin/income'
+    | '/admin/marketplace'
     | '/admin/messaging'
     | '/admin/plans'
     | '/admin/razorpay'
@@ -2346,6 +2357,7 @@ export interface FileRouteTypes {
     | '/_admin/admin/executive'
     | '/_admin/admin/health'
     | '/_admin/admin/income'
+    | '/_admin/admin/marketplace'
     | '/_admin/admin/messaging'
     | '/_admin/admin/plans'
     | '/_admin/admin/razorpay'
@@ -3639,6 +3651,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminMessagingRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/admin/marketplace': {
+      id: '/_admin/admin/marketplace'
+      path: '/admin/marketplace'
+      fullPath: '/admin/marketplace'
+      preLoaderRoute: typeof AdminAdminMarketplaceRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_admin/admin/income': {
       id: '/_admin/admin/income'
       path: '/admin/income'
@@ -3991,6 +4010,7 @@ interface AdminRouteChildren {
   AdminAdminExecutiveRoute: typeof AdminAdminExecutiveRoute
   AdminAdminHealthRoute: typeof AdminAdminHealthRoute
   AdminAdminIncomeRoute: typeof AdminAdminIncomeRoute
+  AdminAdminMarketplaceRoute: typeof AdminAdminMarketplaceRoute
   AdminAdminMessagingRoute: typeof AdminAdminMessagingRoute
   AdminAdminPlansRoute: typeof AdminAdminPlansRoute
   AdminAdminRazorpayRoute: typeof AdminAdminRazorpayRoute
@@ -4019,6 +4039,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAdminExecutiveRoute: AdminAdminExecutiveRoute,
   AdminAdminHealthRoute: AdminAdminHealthRoute,
   AdminAdminIncomeRoute: AdminAdminIncomeRoute,
+  AdminAdminMarketplaceRoute: AdminAdminMarketplaceRoute,
   AdminAdminMessagingRoute: AdminAdminMessagingRoute,
   AdminAdminPlansRoute: AdminAdminPlansRoute,
   AdminAdminRazorpayRoute: AdminAdminRazorpayRoute,

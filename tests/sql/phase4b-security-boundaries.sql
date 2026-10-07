@@ -241,6 +241,9 @@ BEGIN
       (14,'ctl.grdA.sos_visible','GRDA','GSA','select count(*) from public.sos_alerts where id={SOSA}','rows'),
       (15,'ctl.grdA.approved_pass_visible','GRDA','GSA','select count(*) from public.material_passes where id={MPA2}','rows'),
       (16,'ctl.admA.committee_meeting','ADMA',NULL,'select count(*) from public.meetings where id={MAC}','rows'),
+      (17,'ctl.resA.own_material_pass','RESA',NULL,'select count(*) from public.material_passes where id={MPA}','rows'),
+      (18,'ctl.admA.material_pass','ADMA',NULL,'select count(*) from public.material_passes where id={MPA}','rows'),
+      (19,'ctl.admA.own_society_non_plan_update','ADMA',NULL,'with u as (update public.societies set bill_theme=bill_theme where id={SA} returning 1) select count(*) from u','rows'),
 
       -- Cross-society: resident of B against Society A records.
       (100,'xs.resB.bill','RESB',NULL,'select count(*) from public.bills where id={BLA}','none'),
@@ -387,7 +390,9 @@ BEGIN
       (955,'sa.audA.active_people','AUDA',NULL,'select count(*) from public.admin_active_people()','err:.'),
       (956,'sa.blkA.active_people','BLKA',NULL,'select count(*) from public.admin_active_people()','err:.'),
       (957,'sa.admA.is_super_admin_false','ADMA',NULL,'select count(*) from (select 1 where public.current_user_is_super_admin()) x','none'),
-      (958,'sa.admA.society_plan_columns','ADMA',NULL,'with u as (update public.societies set plan_id=''premium'' where id={SA} returning 1) select count(*) from u','err:.'),
+      (959,'sa.admA.society_trial_extend','ADMA',NULL,'with u as (update public.societies set trial_ends_at=now()+interval ''1 year'' where id={SA} returning 1) select count(*) from u','err:protected_society_columns'),
+      (960,'sa.admA.society_billing_active','ADMA',NULL,'with u as (update public.societies set plan_status=''active'', plan_expires_at=now()+interval ''5 years'' where id={SA} returning 1) select count(*) from u','err:protected_society_columns'),
+      (958,'sa.admA.society_plan_columns','ADMA',NULL,'with u as (update public.societies set plan_id=''premium'' where id={SA} returning 1) select count(*) from u','err:protected_society_columns'),
 
       -- Society admin positive scope (own society only).
       (970,'scope.admA.decide_material_pass','ADMA',NULL,'select 1 from (select public.decide_material_pass({MPA},true,null)) x','ok'),

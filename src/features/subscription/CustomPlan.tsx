@@ -176,7 +176,7 @@ export function OfferCard({ offer, children }: { offer: Offer; children?: React.
   );
 }
 
-export function CustomPlanSection({ societyId, threshold }: { societyId: string; threshold: number }) {
+export function CustomPlanSection({ societyId, threshold, focusRequestId }: { societyId: string; threshold: number; focusRequestId?: string }) {
   const qc = useQueryClient();
   const [qty, setQty] = useState("");
   const [note, setNote] = useState("");
@@ -222,7 +222,10 @@ export function CustomPlanSection({ societyId, threshold }: { societyId: string;
     onError: (e) => toast.error(userMessage(e, "Couldn't update the offer. Please try again.")),
   });
 
+  const linkUnavailable = !!focusRequestId && reqs.isSuccess && !(reqs.data ?? []).some((r) => r.id === focusRequestId);
   return (
+    <div id="custom-plan" className="scroll-mt-20">
+    {linkUnavailable && <p role="status" className="mb-2 text-sm text-muted-foreground">That custom plan conversation isn't available. Showing your society's current request instead.</p>}
     <SettingsSection title="Custom plan (more than 300 flats)" icon={Building2}
       description="Tell us how many flats you need. Our team will contact you with an offer.">
       {reqs.isLoading ? <Skeleton className="h-20 w-full" />

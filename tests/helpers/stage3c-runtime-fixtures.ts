@@ -1781,8 +1781,8 @@ export async function setupStage3CFixture(
           name: `${prefix}-B`,
           status: "active",
           plan: "basic",
-          layout: "serial",
-          structure_mode: "serial",
+          layout: "structured",
+          structure_mode: "structured",
         })
         .select("id")
         .single(),
@@ -1820,14 +1820,28 @@ export async function setupStage3CFixture(
     tracked.flatIds.push(fl.id);
     const flatA = fl.id;
 
-    // ---- Unrelated flat in SOCIETY B (serial mode) --------------------
+    // ---- Block in Society B -------------------------------------------
+    // Bills require the unit to be assigned to a block (production rule),
+    // so Society B is structured with its OWN block — never Society A's.
+    const bkB = await assertSupabaseSingleResult<{ id: string }>(
+      "insert:blockB",
+      admin
+        .from("blocks")
+        .insert({ society_id: societyB, name: "B", structure_kind: "block" })
+        .select("id")
+        .single(),
+    );
+    tracked.blockIds.push(bkB.id);
+    const blockB = bkB.id;
+
+    // ---- Unrelated flat in SOCIETY B (assigned to Society B's block) ----
     const unrelated = await assertSupabaseSingleResult<{ id: string }>(
       "insert:unrelatedFlat",
       admin
         .from("flats")
         .insert({
           society_id: societyB,
-          block_id: null,
+          block_id: blockB,
           flat_number: "1",
           status: "occupied",
         })

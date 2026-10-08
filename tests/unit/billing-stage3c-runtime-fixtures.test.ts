@@ -712,7 +712,7 @@ describe("Stage 3C fixtures — source contract", () => {
       /name:\s*`\$\{prefix\}-A`[\s\S]{0,240}layout:\s*"structured"[\s\S]{0,120}structure_mode:\s*"structured"/,
     );
     expect(SRC).toMatch(
-      /name:\s*`\$\{prefix\}-B`[\s\S]{0,240}layout:\s*"serial"[\s\S]{0,120}structure_mode:\s*"serial"/,
+      /name:\s*`\$\{prefix\}-B`[\s\S]{0,240}layout:\s*"structured"[\s\S]{0,120}structure_mode:\s*"structured"/,
     );
   });
   it("no broad user_roles or flat_residents fallback cleanup", () => {

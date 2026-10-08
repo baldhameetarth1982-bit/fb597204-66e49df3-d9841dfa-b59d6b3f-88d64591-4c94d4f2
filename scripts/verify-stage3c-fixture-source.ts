@@ -74,8 +74,9 @@ must(
   "unrelatedFlat is not assigned to societyB",
 );
 must(
-  /insert:unrelatedFlat[\s\S]{0,400}block_id:\s*null/.test(src),
-  "unrelatedFlat is not serial-mode (block_id:null)",
+  /insert:unrelatedFlat[\s\S]{0,400}block_id:\s*blockB/.test(src) &&
+    /insert:blockB[\s\S]{0,200}society_id:\s*societyB/.test(src),
+  "unrelatedFlat must be assigned to Society B's own block",
 );
 must(
   /user_id:\s*unrelatedResident\.id[\s\S]{0,120}?society_id:\s*societyB/.test(src),
@@ -88,8 +89,8 @@ must(
   "society A must set both layout: structured and structure_mode: structured",
 );
 must(
-  /name:\s*`\$\{prefix\}-B`[\s\S]{0,240}layout:\s*"serial"[\s\S]{0,120}structure_mode:\s*"serial"/.test(src),
-  "society B must set both layout: serial and structure_mode: serial",
+  /name:\s*`\$\{prefix\}-B`[\s\S]{0,240}layout:\s*"structured"[\s\S]{0,120}structure_mode:\s*"structured"/.test(src),
+  "society B must set both layout: structured and structure_mode: structured",
 );
 
 // ---- Actor role ----------------------------------------------------------

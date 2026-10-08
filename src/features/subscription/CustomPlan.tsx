@@ -284,5 +284,6 @@ export function CustomPlanSection({ societyId, threshold, focusRequestId }: { so
           </div>
         )}
     </SettingsSection>
+    </div>
   );
 }

@@ -594,8 +594,8 @@ function makeCleanState(): MockState {
       { society_id: SOCIETY_B, year: 2026, next_number: 1 },
     ],
     monthly: [
-      { society_id: SOCIETY_A, year_month: "2026-01", next_number: 1 },
-      { society_id: SOCIETY_B, year_month: "2026-01", next_number: 1 },
+      { society_id: SOCIETY_A, year_month: 202601, next_number: 1 },
+      { society_id: SOCIETY_B, year_month: 202601, next_number: 1 },
     ],
     submitCalls: [],
     submitImpl: async () => PRIMARY_PAYMENT,

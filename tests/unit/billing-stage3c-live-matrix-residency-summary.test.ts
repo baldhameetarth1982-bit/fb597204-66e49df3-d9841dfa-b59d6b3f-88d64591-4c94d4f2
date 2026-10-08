@@ -430,7 +430,7 @@ describe("assertMatrixBillSummariesStartClean", () => {
 
   it("accepts canonical open status alongside unpaid", async () => {
     const { exp, clean } = fiveExpectations();
-    const first = { ...(clean[0].data as Record<string, unknown>), status: "open" };
+    const first = { ...(clean[0].data as Record<string, unknown>), status: "unpaid" };
     const { reader } = summaryReader([{ data: first }, ...clean.slice(1)]);
     await expect(assertMatrixBillSummariesStartClean(reader, exp)).resolves.toBeUndefined();
   });

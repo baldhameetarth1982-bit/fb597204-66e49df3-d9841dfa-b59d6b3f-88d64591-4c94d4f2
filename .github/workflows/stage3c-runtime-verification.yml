@@ -220,6 +220,16 @@ jobs:
           bash scripts/run-sql-harness.sh tests/sql/governance-e2e.sql GOV_RESULT 48
           bash scripts/run-sql-harness.sh tests/sql/marketplace-listing-types.sql MKT_RESULT 83
 
+      - name: P01-P10 access, billing, subscription and entitlement database suites (must pass)
+        run: |
+          set -euo pipefail
+          HARNESS_DB_URL="$(supabase status -o env --workdir "$DISPOSABLE_WORKDIR" | sed -n 's/^DB_URL="\{0,1\}\([^"]*\)"\{0,1\}$/\1/p')"
+          export HARNESS_DB_URL
+          status=0
+          bash scripts/run-sql-harness.sh tests/sql/p01-p10-access-billing.sql P0110A_RESULT 80 | tee reports/p01-p10-access-billing.txt || status=1
+          bash scripts/run-sql-harness.sh tests/sql/p01-p10-subscription-entitlement.sql P0110B_RESULT 79 | tee reports/p01-p10-subscription-entitlement.txt || status=1
+          exit "$status"
+
       - name: Stage 3C CLEANUP behavioral suite
         run: bunx vitest run tests/unit/billing-stage3c-live-cleanup.test.ts --reporter=default
 

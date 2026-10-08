@@ -14254,19 +14254,10 @@ export type Database = {
         Args: { _flat_id: string }
         Returns: boolean
       }
-      current_user_has_society_permission:
-        | {
-            Args: { _capability: string; _society_id: string }
-            Returns: boolean
-          }
-        | {
-            Args: {
-              _block_id?: string
-              _capability: string
-              _society_id: string
-            }
-            Returns: boolean
-          }
+      current_user_has_society_permission: {
+        Args: { _block_id?: string; _capability: string; _society_id: string }
+        Returns: boolean
+      }
       current_user_is_society_admin_for: {
         Args: { _society_id: string }
         Returns: boolean

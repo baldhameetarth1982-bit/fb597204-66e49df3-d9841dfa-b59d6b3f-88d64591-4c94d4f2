@@ -19,9 +19,16 @@ describe("Run billing now — database-enforced idempotency", () => {
   it("leaves Bill Studio cycle batches to their own guard", () => {
     expect(sql).toMatch(/cycle_config_id IS NOT NULL OR NEW\.generation_batch_id IS NOT NULL/);
   });
-  it("server maps the race error without leaking DB text", () => {
+  it("Run billing now is a read-only check and never inserts bills (P07)", () => {
     const src = readFileSync("src/lib/billing.functions.ts", "utf8");
-    expect(src).toMatch(/duplicate_bill_for_period/);
+    expect(src).not.toMatch(/from\("bills"\)\s*\.insert/);
     expect(src).not.toMatch(/: insErr\.message\);/);
+  });
+  it("daily blanket path is retired and historical payments reconcile, never as unpaid", () => {
+    const m = readdirSync(dir).filter((f) => /p01_p10|p07_p10/.test(f)).map((f) => readFileSync(`${dir}/${f}`, "utf8")).join("\n");
+    expect(m).toMatch(/blanket_billing_retired/);
+    expect(m).toMatch(/DROP TRIGGER IF EXISTS trg_historical_payment_auto_bill/);
+    expect(m).toMatch(/'paid', hp\.payment_date/);
+    expect(m).toMatch(/exception_amount_mismatch/);
   });
 });

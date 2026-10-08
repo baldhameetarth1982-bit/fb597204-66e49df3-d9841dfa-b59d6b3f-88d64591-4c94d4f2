@@ -28,6 +28,7 @@ import {
   reconcileSaasSubscriptionOrder,
 } from "@/lib/saas-subscription-lifecycle.functions";
 import { tu } from "@/lib/i18n";
+import { CustomPlanSection, FlatEntitlementSection } from "@/features/subscription/CustomPlan";
 
 export const Route = createFileRoute("/_society/society/subscription")({
   head: () => ({
@@ -244,6 +245,10 @@ function SubscriptionPage() {
         )}
       </SettingsSection>
 
+      {societyId && <FlatEntitlementSection societyId={societyId} />}
+      {societyId && <CustomPlanSection societyId={societyId} threshold={plans.data?.[0]?.threshold ?? 300} />}
+
+
       {showPlans && (
         <SettingsSection
           title={status === "active" ? tu("op.change_or_renew") : tu("op.choose_a_plan")}
@@ -263,9 +268,7 @@ function SubscriptionPage() {
                   {tu("op.your_society_has")} {plans.data?.[0]?.flat_count} {tu("op.flats_societies_with_more_than")}{" "}
                   {plans.data?.[0]?.threshold} {tu("op.flats_get_a_custom_price")}
                 </p>
-                <a href="mailto:sociohub710@gmail.com?subject=Custom pricing enquiry" className="mt-2 inline-flex min-h-11 items-center text-primary underline-offset-4 hover:underline">
-                  {tu("op.talk_to_us")}
-                </a>
+                <p className="mt-2 text-muted-foreground">Use the Custom plan section on this page to request an offer.</p>
               </div>
             ) : plans.data?.[0]?.flat_count === 0 ? (
               <p className="text-sm text-muted-foreground">{tu("op.add_your_society_s_flats")}</p>

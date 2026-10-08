@@ -41,11 +41,18 @@ export function recoveryAction(ch: Channel, sendStartedAt: string | null, now = 
 /** Provider 4xx responses that will never succeed on retry (409 = idempotent request still in progress → retry). */
 export const isPermanentHttpFailure = (status: number) => status >= 400 && status < 500 && status !== 429 && status !== 409;
 
+async function withAppLinks(body: string): Promise<string> {
+  const { expandAppLinks, APP_URL_PLACEHOLDER } = await import("@/lib/custom-plan-links");
+  if (!body.includes(APP_URL_PLACEHOLDER)) return body;
+  const { getPublicAppOrigin } = await import("@/lib/public-origin.server");
+  return expandAppLinks(body, getPublicAppOrigin());
+}
+
 async function sendEmail(to: string, subject: string, body: string, deliveryId: string): Promise<SendResult> {
   const r = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${env("RESEND_API_KEY")}`, "Content-Type": "application/json", "Idempotency-Key": emailIdempotencyKey(deliveryId) },
-    body: JSON.stringify({ from: env("MESSAGING_EMAIL_FROM"), to: [to], subject, text: body }),
+    body: JSON.stringify({ from: env("MESSAGING_EMAIL_FROM"), to: [to], subject, text: await withAppLinks(body) }),
     signal: AbortSignal.timeout(15_000),
   });
   if (r.ok) return { ok: true, id: ((await r.json().catch(() => ({}))) as any).id };

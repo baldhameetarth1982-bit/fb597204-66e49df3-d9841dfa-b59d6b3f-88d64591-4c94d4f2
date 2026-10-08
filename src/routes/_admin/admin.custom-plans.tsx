@@ -14,6 +14,7 @@ import { EmptyState } from "@/components/system/EmptyState";
 import { ErrorState } from "@/components/system/ErrorState";
 import { PageHeader, PageShell } from "@/components/shared/PageHeader";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { parseRequestParam } from "@/lib/custom-plan-links";
 import { Conversation, OfferCard, useCustomPlanThread } from "@/features/subscription/CustomPlan";
 
 export const Route = createFileRoute("/_admin/admin/custom-plans")({
@@ -28,6 +29,7 @@ export const Route = createFileRoute("/_admin/admin/custom-plans")({
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
+  validateSearch: (s: Record<string, unknown>): { request?: string } => ({ request: parseRequestParam(s.request) }),
   component: CustomPlansPage,
 });
 
@@ -35,7 +37,8 @@ const db = supabase as any;
 type Req = { id: string; society_id: string; flat_quantity: number; status: string; created_at: string; societies?: { name: string } | null };
 
 function CustomPlansPage() {
-  const [selected, setSelected] = useState<string | null>(null);
+  const linked = Route.useSearch().request ?? null;
+  const [selected, setSelected] = useState<string | null>(linked);
   const reqs = useQuery({
     queryKey: ["admin-custom-plan-requests"],
     queryFn: async () => {
@@ -67,7 +70,7 @@ function CustomPlansPage() {
                 </li>
               ))}
             </ul>
-            {sel ? <RequestDetail req={sel} /> : <p className="text-sm text-muted-foreground p-4">Select a request.</p>}
+            {sel ? <RequestDetail key={sel.id} req={sel} /> : <p role="status" className="text-sm text-muted-foreground p-4">{selected && selected === linked ? "That custom plan conversation isn't available. Select a request." : "Select a request."}</p>}
           </div>
         )}
     </PageShell>

@@ -1562,6 +1562,13 @@
       "when": 1791420412837,
       "tag": "0222_p09_custom_plan_chat_email_mirror",
       "breakpoints": true
+    },
+    {
+      "idx": 223,
+      "version": "7",
+      "when": 1791491631528,
+      "tag": "0223_p09_custom_plan_email_direct_link",
+      "breakpoints": true
     }
   ]
 }

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Megaphone, LifeBuoy, FileText, Phone, Search, ArrowRight, Inbox,
+  Users, Car, Wrench, Home, History, ShieldCheck, Trophy,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
@@ -117,6 +118,26 @@ function CommunicationCenter() {
           {t("comm.subtitle")}
         </p>
       </header>
+
+      {/* P04: household & activity features moved here from Profile (routes unchanged). */}
+      <nav aria-label={t("prof.g.household")} className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {([
+          ["/app/family", Users, t("prof.family")],
+          ["/app/vehicles", Car, t("nav.vehicles")],
+          ["/app/services", Wrench, t("prof.services")],
+          ["/app/household-history", Home, t("prof.homeHistory")],
+          ["/app/activity", History, t("prof.g.activity")],
+          ["/app/trust", ShieldCheck, t("prof.trust")],
+          ["/app/achievements", Trophy, t("prof.points")],
+        ] as const).map(([to, Icon, label]) => (
+          <Link key={to} to={to}
+            className="flex min-h-11 items-center gap-2 rounded-xl border bg-card px-3 py-2 text-sm font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <Icon className="h-4 w-4 text-primary shrink-0" aria-hidden />
+            <span className="truncate">{label}</span>
+          </Link>
+        ))}
+      </nav>
+
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

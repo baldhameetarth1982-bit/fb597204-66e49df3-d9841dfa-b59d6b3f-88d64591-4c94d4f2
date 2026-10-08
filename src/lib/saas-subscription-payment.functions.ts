@@ -32,6 +32,11 @@ export type SubscriptionQuote = {
   threshold: number;
   custom_pricing: boolean;
   amount_paise: number | null;
+  pricing_type: "standard" | "custom";
+  term_months: number;
+  base_amount_paise: number | null;
+  tax_amount_paise: number | null;
+  custom_offer_id: string | null;
 };
 
 const PLAN_IDS = ["basic", "pro", "premium"] as const;
@@ -47,6 +52,7 @@ async function readQuote(
   });
   if (error || !data) throw new Error("Pricing is unavailable right now. Please try again.");
   const q = data as Record<string, unknown>;
+  const num = (v: unknown) => (v == null ? null : Number(v));
   return {
     plan_id: planId,
     plan_name: String(q.plan_name ?? planId),
@@ -54,7 +60,12 @@ async function readQuote(
     price_per_flat_inr: Number(q.price_per_flat_inr ?? 0),
     threshold: Number(q.threshold ?? 300),
     custom_pricing: Boolean(q.custom_pricing),
-    amount_paise: q.amount_paise == null ? null : Number(q.amount_paise),
+    amount_paise: num(q.amount_paise),
+    pricing_type: q.pricing_type === "custom" ? "custom" : "standard",
+    term_months: Number(q.term_months ?? 1),
+    base_amount_paise: num(q.base_amount_paise),
+    tax_amount_paise: num(q.tax_amount_paise),
+    custom_offer_id: q.custom_offer_id ? String(q.custom_offer_id) : null,
   };
 }
 

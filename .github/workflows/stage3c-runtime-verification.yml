@@ -212,6 +212,14 @@ jobs:
           export PHASE4B_DB_URL
           bash scripts/run-phase4b-sql.sh
 
+      - name: Governance (polls/elections) and Marketplace database suites (must pass)
+        run: |
+          set -euo pipefail
+          HARNESS_DB_URL="$(supabase status -o env --workdir "$DISPOSABLE_WORKDIR" | sed -n 's/^DB_URL="\{0,1\}\([^"]*\)"\{0,1\}$/\1/p')"
+          export HARNESS_DB_URL
+          bash scripts/run-sql-harness.sh tests/sql/governance-e2e.sql GOV_RESULT 48
+          bash scripts/run-sql-harness.sh tests/sql/marketplace-listing-types.sql MKT_RESULT 83
+
       - name: Stage 3C CLEANUP behavioral suite
         run: bunx vitest run tests/unit/billing-stage3c-live-cleanup.test.ts --reporter=default
 

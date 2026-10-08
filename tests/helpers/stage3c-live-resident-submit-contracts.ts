@@ -66,25 +66,28 @@ export const YearlySequenceRowSchema = z
   })
   .strict();
 
-const YEAR_MONTH_RE = /^(\d{4})-(0[1-9]|1[0-2])$/;
+/**
+ * Canonical monthly key: integer YYYYMM (`year * 100 + month`), matching
+ * the `payment_receipt_month_sequences.year_month` integer column and the
+ * `_allocate_receipt_number_monthly` allocator contract.
+ */
+export const YearMonthKeySchema = z
+  .number()
+  .int({ message: "year_month must be an integer YYYYMM" })
+  .refine((n) => Number.isSafeInteger(n), { message: "year_month must be a safe integer" })
+  .refine(
+    (n) => {
+      const y = Math.floor(n / 100);
+      const m = n % 100;
+      return y >= 2000 && y <= 2200 && m >= 1 && m <= 12;
+    },
+    { message: "year_month must be YYYYMM with year in [2000, 2200] and month 01-12" },
+  );
 
 export const MonthlySequenceRowSchema = z
   .object({
     society_id: CanonicalStage3CUuidSchema,
-    year_month: z
-      .string()
-      .refine((s) => YEAR_MONTH_RE.test(s), {
-        message: "year_month must match YYYY-MM with month 01-12",
-      })
-      .refine(
-        (s) => {
-          const m = YEAR_MONTH_RE.exec(s);
-          if (!m) return false;
-          const y = Number(m[1]);
-          return y >= 2000 && y <= 2200;
-        },
-        { message: "year_month year must be within [2000, 2200]" },
-      ),
+    year_month: YearMonthKeySchema,
     next_number: NonNegativeFiniteInt,
   })
   .strict();
@@ -106,9 +109,7 @@ function sortMonthly(
   return [...rows].sort((a, b) => {
     if (a.society_id !== b.society_id)
       return a.society_id < b.society_id ? -1 : 1;
-    if (a.year_month !== b.year_month)
-      return a.year_month < b.year_month ? -1 : 1;
-    return 0;
+    return a.year_month - b.year_month;
   });
 }
 

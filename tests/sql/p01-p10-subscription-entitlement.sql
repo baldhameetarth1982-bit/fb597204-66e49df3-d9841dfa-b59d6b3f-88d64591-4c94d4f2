@@ -152,7 +152,7 @@ BEGIN
   PERFORM pg_temp.qa_ck('p08.tampered_amount_rejected', r LIKE 'ERR:%amount_mismatch%', r);
   r := pg_temp.qa_run(NULL, format('select public.claim_saas_subscription_order(%L,%L,''premium'',%L,%s,''INR'',''test'')::text', ids->>'Q90', ids->>'S310', ids->>'A310', 310 * 12 * 100), true);
   PERFORM pg_temp.qa_ck('p08.over_300_checkout_refused', r LIKE 'ERR:%custom_pricing_required%', r);
-  r := pg_temp.qa_run(NULL, format('update public.plans set price_per_flat_inr = 1 where id = ''basic'' returning 1'), false);
+  r := pg_temp.qa_run_anon('with u as (update public.plans set price_per_flat_inr = 1 where id = ''basic'' returning 1) select count(*)::text from u');
   PERFORM pg_temp.qa_ck('p08.anonymous_cannot_change_rates', (SELECT price_per_flat_inr FROM public.plans WHERE id = 'basic') = 8, r);
   r := pg_temp.qa_run((ids->>'A90')::uuid, 'with u as (update public.plans set price_per_flat_inr = 1 where id = ''basic'' returning 1) select count(*)::text from u');
   PERFORM pg_temp.qa_ck('p08.society_admin_cannot_change_rates', (SELECT price_per_flat_inr FROM public.plans WHERE id = 'basic') = 8, r);

@@ -508,6 +508,8 @@ function AppearanceCard({
   currentTheme, societyId, userId, isSuperAdmin, onChanged,
 }: { currentTheme: string; societyId: string | null; userId: string | null; isSuperAdmin: boolean; onChanged: () => void }) {
   const { t } = useTranslation();
+  const { hasRole } = useAuth() as any;
+  const canManagePlan = isSuperAdmin || (hasRole?.("society_admin") ?? false);
   const [plan, setPlan] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 

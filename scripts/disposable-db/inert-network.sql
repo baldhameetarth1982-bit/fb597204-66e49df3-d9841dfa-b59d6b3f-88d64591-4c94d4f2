@@ -64,7 +64,7 @@ BEGIN
   ) THEN
     RAISE EXCEPTION 'disposable_inert_network_check_failed';
   END IF;
-  IF net.http_post('https://example.invalid') <> 0 OR net.http_get('https://example.invalid') <> 0 THEN
+  IF net.http_post('disposable-inert-check') <> 0 OR net.http_get('disposable-inert-check') <> 0 THEN
     RAISE EXCEPTION 'disposable_inert_network_check_failed';
   END IF;
 END

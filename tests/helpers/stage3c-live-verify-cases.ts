@@ -210,11 +210,7 @@ export async function verify09_receiptStillExactlyOne(
   const failures = errors.filter((e) => e !== null && e !== undefined);
   expect(successes.length, "VERIFY-09: exactly one successful verifier").toBe(1);
   expect(failures.length, "VERIFY-09: exactly one denied verifier").toBe(1);
-  const failMsg = String((failures[0] as { message?: unknown } | null)?.message ?? failures[0] ?? "");
-  expect(
-    matchesCanonicalError(failMsg, STAGE3C_ERRORS.PAYMENT_NOT_PENDING),
-    `VERIFY-09: race-loser canonical "${STAGE3C_ERRORS.PAYMENT_NOT_PENDING}", got: ${failMsg}`,
-  ).toBe(true);
+  assertCanonicalError(failures[0], STAGE3C_ERRORS.PAYMENT_NOT_PENDING, "VERIFY-09 race-loser");
 
   // Post-state: verified + exactly one receipt (unique receipt number).
   const post = await fixture.admin

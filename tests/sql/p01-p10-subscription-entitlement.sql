@@ -93,8 +93,7 @@ BEGIN
   -- P08 baseline: the locked standard ceiling is 300 flats. Read the platform setting as replayed.
   SELECT COALESCE(enterprise_threshold_units, 300) INTO v_threshold FROM public.pricing_settings WHERE id = 1;
   PERFORM pg_temp.qa_ck('p08.standard_ceiling_setting_is_300', COALESCE(v_threshold, 300) = 300, 'enterprise_threshold_units=' || COALESCE(v_threshold::text, 'null'));
-  -- Remaining checks evaluate the locked rule (300) inside this rolled-back transaction.
-  UPDATE public.pricing_settings SET enterprise_threshold_units = 300 WHERE id = 1;
+  -- No override: every remaining check runs against the replayed setting itself.
 
   -- Fixtures (synthetic only) --------------------------------------------------------------
   INSERT INTO auth.users (id, instance_id, aud, role, email, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
@@ -145,7 +144,43 @@ BEGIN
   r := pg_temp.qa_run((ids->>'A90')::uuid, format('select public.saas_subscription_quote(%L,''basic'',-5)::text', ids->>'S90'));
   PERFORM pg_temp.qa_ck('p08.negative_quantity_rejected', r LIKE 'ERR:%invalid_input%', r);
   r := pg_temp.qa_run((ids->>'A90')::uuid, format('select public.saas_subscription_quote(%L,''basic'',80)::text', ids->>'S90'));
-  PERFORM pg_temp.qa_ck('p08.below_current_cannot_underpay', r LIKE 'ERR:%' OR ((r::jsonb->>'flat_count')::int >= 90 AND (r::jsonb->>'amount_paise')::bigint >= 90 * 8 * 100), r);
+  PERFORM pg_temp.qa_ck('p08.below_current_cannot_underpay', r LIKE 'ERR:%quantity_below_current_flats%', r);
+  r := pg_temp.qa_run((ids->>'A90')::uuid, format('select public.saas_subscription_quote(%L,''basic'',89)::text', ids->>'S90'));
+  PERFORM pg_temp.qa_ck('p10.current90_requested89_rejected', r LIKE 'ERR:%quantity_below_current_flats%', r);
+  r := pg_temp.qa_run((ids->>'A90')::uuid, format('select public.saas_subscription_quote(%L,''basic'',90)::text', ids->>'S90'));
+  PERFORM pg_temp.qa_ck('p10.current90_requested90_accepted', r NOT LIKE 'ERR:%' AND (r::jsonb->>'flat_count')::int = 90 AND (r::jsonb->>'amount_paise')::bigint = 90 * 8 * 100, r);
+  r := pg_temp.qa_run((ids->>'A90')::uuid, format('select public.saas_subscription_quote(%L,''pro'',110)::text', ids->>'S90'));
+  PERFORM pg_temp.qa_ck('p10.current90_requested110_accepted', r NOT LIKE 'ERR:%' AND (r::jsonb->>'flat_count')::int = 110 AND (r::jsonb->>'amount_paise')::bigint = 110 * 10 * 100, r);
+  r := pg_temp.qa_run((ids->>'A300')::uuid, format('select public.saas_subscription_quote(%L,''basic'',300)::text', ids->>'S300'));
+  PERFORM pg_temp.qa_ck('p08.boundary_300_starter_standard', r NOT LIKE 'ERR:%' AND (r::jsonb->>'amount_paise')::bigint = 300 * 8 * 100 AND NOT (r::jsonb->>'custom_pricing')::boolean, r);
+  r := pg_temp.qa_run((ids->>'A300')::uuid, format('select public.saas_subscription_quote(%L,''pro'',300)::text', ids->>'S300'));
+  PERFORM pg_temp.qa_ck('p08.boundary_300_growth_standard', r NOT LIKE 'ERR:%' AND (r::jsonb->>'amount_paise')::bigint = 300 * 10 * 100, r);
+  r := pg_temp.qa_run((ids->>'A310')::uuid, format('select public.saas_subscription_quote(%L,''basic'')::text', ids->>'S310'));
+  PERFORM pg_temp.qa_ck('p08.boundary_310_starter_custom_required', r NOT LIKE 'ERR:%' AND (r::jsonb->>'custom_pricing')::boolean AND (r::jsonb->>'amount_paise') IS NULL, r);
+  r := pg_temp.qa_run((ids->>'A310')::uuid, format('select public.saas_subscription_quote(%L,''pro'')::text', ids->>'S310'));
+  PERFORM pg_temp.qa_ck('p08.boundary_310_growth_custom_required', r NOT LIKE 'ERR:%' AND (r::jsonb->>'custom_pricing')::boolean AND (r::jsonb->>'amount_paise') IS NULL, r);
+  r := pg_temp.qa_run((ids->>'A90')::uuid, format('select public.saas_subscription_quote(%L,''pro'',450)::text', ids->>'S90'));
+  PERFORM pg_temp.qa_ck('p08.forged_450_growth_not_priced', r NOT LIKE 'ERR:%' AND (r::jsonb->>'amount_paise') IS NULL AND (r::jsonb->>'custom_pricing')::boolean, r);
+  r := pg_temp.qa_run((ids->>'A90')::uuid, format('select public.saas_subscription_quote(%L,''premium'',500)::text', ids->>'S90'));
+  PERFORM pg_temp.qa_ck('p08.forged_500_pro_not_priced', r NOT LIKE 'ERR:%' AND (r::jsonb->>'amount_paise') IS NULL, r);
+  r := pg_temp.qa_run(NULL, format('select public.claim_saas_subscription_order(%L,%L,''pro'',%L,%s,''INR'',''test'',450)::text', ids->>'Q90', ids->>'S90', ids->>'A90', 450 * 10 * 100), true);
+  PERFORM pg_temp.qa_ck('p08.forged_450_growth_checkout_refused', r LIKE 'ERR:%', r);
+  BEGIN
+    UPDATE public.pricing_settings SET enterprise_threshold_units = 500 WHERE id = 1;
+    PERFORM pg_temp.qa_ck('p08.ceiling_cannot_be_raised_above_300', false, 'update to 500 succeeded');
+  EXCEPTION WHEN check_violation THEN
+    PERFORM pg_temp.qa_ck('p08.ceiling_cannot_be_raised_above_300', true, SQLERRM);
+  END;
+  BEGIN
+    UPDATE public.pricing_settings SET enterprise_threshold_units = 250 WHERE id = 1;
+    PERFORM pg_temp.qa_ck('p08.ceiling_cannot_be_lowered_below_300', false, 'update to 250 succeeded');
+  EXCEPTION WHEN check_violation THEN
+    PERFORM pg_temp.qa_ck('p08.ceiling_cannot_be_lowered_below_300', true, SQLERRM);
+  END;
+  r := pg_temp.qa_run((ids->>'A90')::uuid, 'with u as (update public.pricing_settings set enterprise_threshold_units = 500 returning 1) select count(*)::text from u');
+  PERFORM pg_temp.qa_ck('p08.society_admin_cannot_change_ceiling', (SELECT enterprise_threshold_units FROM public.pricing_settings WHERE id = 1) = 300, r);
+  r := pg_temp.qa_run_anon('with u as (update public.pricing_settings set enterprise_threshold_units = 500 returning 1) select count(*)::text from u');
+  PERFORM pg_temp.qa_ck('p08.anonymous_cannot_change_ceiling', (SELECT enterprise_threshold_units FROM public.pricing_settings WHERE id = 1) = 300, r);
   r := pg_temp.qa_run((ids->>'A90')::uuid, format('select public.saas_subscription_quote(%L,''trial'')::text', ids->>'S90'));
   PERFORM pg_temp.qa_ck('p08.non_paid_plan_not_quotable', r LIKE 'ERR:%', r);
   r := pg_temp.qa_run(NULL, format('select public.claim_saas_subscription_order(%L,%L,''basic'',%L,%s,''INR'',''test'')::text', ids->>'Q90', ids->>'S90', ids->>'A90', 1), true);

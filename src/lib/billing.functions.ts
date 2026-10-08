@@ -69,41 +69,32 @@ export const saveBillingSchedule = createServerFn({ method: "POST" })
     return { ok: true, nextRunAt: next };
   });
 
+/**
+ * Read-only missing-bill check. Blanket bill generation is retired (P07): this
+ * NEVER inserts bills. Admin-reviewed bill runs live in Bill Studio → Generate;
+ * automatic creation happens only via verified-payment reconciliation in the DB.
+ */
 export const runBillingNow = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ societyId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { data: sch, error: schErr } = await supabase
-      .from("billing_schedules")
-      .select("*")
-      .eq("society_id", data.societyId)
-      .maybeSingle();
-    if (schErr) throw new Error(schErr.message);
-    if (!sch) throw new Error("No billing schedule configured yet.");
-
     const { data: flats, error: fErr } = await supabase
       .from("flats")
-      .select("id, area_sqft, type, block_id")
+      .select("id")
       .eq("society_id", data.societyId)
       .not("block_id", "is", null);
     if (fErr) throw new Error(fErr.message);
-    if (!flats?.length) throw new Error("Add blocks and assigned units before generating bills.");
-
-    const flatIds = (flats as any[]).map((f) => f.id);
-    // Only current occupants count; homes whose residents moved out are not billed.
-    const { data: assignedResidents, error: arErr } = await supabase
+    const flatIds = (flats ?? []).map((f: any) => f.id);
+    if (!flatIds.length) return { ok: true, missing: 0, occupied: 0 };
+    const { data: occ, error: oErr } = await supabase
       .from("flat_residents")
       .select("flat_id")
       .in("flat_id", flatIds)
       .eq("is_active", true)
       .is("moved_out_at", null);
-    if (arErr) throw new Error(arErr.message);
-    const assignedFlatIds = new Set((assignedResidents ?? []).map((r: any) => r.flat_id));
-    const occupiedFlats = (flats as any[]).filter((f) => assignedFlatIds.has(f.id));
-    if (!occupiedFlats.length) throw new Error("Assign residents to units before generating bills.");
-
-    // Idempotency: never bill a home twice for the same month (double-click, retry, cron overlap).
+    if (oErr) throw new Error(oErr.message);
+    const occupied = new Set((occ ?? []).map((r: any) => r.flat_id));
     const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
     const { data: existing, error: exErr } = await supabase
       .from("bills")
@@ -112,67 +103,9 @@ export const runBillingNow = createServerFn({ method: "POST" })
       .eq("period_start", monthStart)
       .neq("status", "cancelled");
     if (exErr) throw new Error(exErr.message);
-    const alreadyBilled = new Set((existing ?? []).map((b: any) => b.flat_id));
-    const billableFlats = occupiedFlats.filter((f) => !alreadyBilled.has(f.id));
-    if (!billableFlats.length) throw new Error("Bills for this month already exist for every occupied home.");
-
-    const { data: overrides } = await supabase
-      .from("unit_billing_overrides")
-      .select("flat_id, amount")
-      .eq("society_id", data.societyId);
-    const ovMap = new Map<string, number>((overrides ?? []).map((o: any) => [o.flat_id, Number(o.amount)]));
-
-    const now = new Date();
-    const dueDate = new Date(now);
-    dueDate.setDate(dueDate.getDate() + (sch.due_offset_days as number));
-    const periodLabel = `${now.toLocaleString("en-IN", { month: "long", year: "numeric" })}`;
-    const periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
-    const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
-
-    function bhkFromType(t?: string | null) {
-      if (!t) return 2;
-      const m = /(\d)\s*bhk/i.exec(t);
-      return m ? Number(m[1]) : 2;
-    }
-
-    const rows = billableFlats.map((f) => {
-      let amt: number;
-      if (ovMap.has(f.id)) amt = ovMap.get(f.id)!;
-      else if (sch.mode === "per_sqft") amt = Number(sch.amount) * Number(f.area_sqft || 0);
-      else if (sch.mode === "per_bhk") amt = Number(sch.amount) * bhkFromType(f.type);
-      else amt = Number(sch.amount);
-      return {
-        society_id: data.societyId,
-        flat_id: f.id,
-        period_label: periodLabel,
-        period_start: periodStart,
-        period_end: periodEnd,
-        amount: Math.round(amt * 100) / 100,
-        due_date: dueDate.toISOString().slice(0, 10),
-        status: "unpaid",
-      };
-    });
-
-    const { error: insErr } = await supabase.from("bills").insert(rows);
-    if (insErr) throw new Error(insErr.message.includes("approval_required")
-      ? "This society requires a second approver. Create bills from Bill Studio → Generate so the run can be reviewed and approved."
-      : insErr.message.includes("duplicate_bill_for_period")
-        ? "Another billing run just created bills for this month. Refresh to see them; nothing was billed twice."
-        : "Bills could not be created. Please try again.");
-
-    const total = rows.reduce((s, r) => s + r.amount, 0);
-    const nextRun = computeNextRun(sch.cycle as any, sch.anchor_day as number).toISOString();
-    await supabase
-      .from("billing_schedules")
-      .update({
-        last_run_at: now.toISOString(),
-        last_run_count: rows.length,
-        last_run_total: total,
-        next_run_at: nextRun,
-      })
-      .eq("id", sch.id);
-
-    return { ok: true, count: rows.length, total, nextRunAt: nextRun };
+    const billed = new Set((existing ?? []).map((b: any) => b.flat_id));
+    const missing = [...occupied].filter((id) => !billed.has(id)).length;
+    return { ok: true, missing, occupied: occupied.size };
   });
 
 export const listUnitOverrides = createServerFn({ method: "POST" })

@@ -314,14 +314,14 @@ function AutoBillingSection({ societyId }: { societyId: string }) {
 
   async function handleRun() {
     if (running) return;
-    if (!window.confirm("Generate this cycle's bills for all billable homes now?")) return;
     setRunning(true);
     try {
+      // Read-only check: never creates bills. Bills are created in Bill Studio → Generate.
       const res = await runNow({ data: { societyId } });
-      toast.success(`Generated ${res.count} bills · ₹${res.total.toLocaleString("en-IN")}`);
-      const { schedule } = await get({ data: { societyId } });
-      setSch(schedule);
-    } catch (e) { toast.error(toSafeFinanceMessage(e, "Couldn't generate bills. Please try again.")); }
+      toast.success(res.missing === 0
+        ? "Every occupied home has a bill for this month."
+        : `${res.missing} occupied home(s) have no bill for this month. Review them in Bill Studio → Generate.`);
+    } catch (e) { toast.error(toSafeFinanceMessage(e, "Couldn't check bills. Please try again.")); }
     setRunning(false);
   }
 
@@ -429,7 +429,7 @@ function AutoBillingSection({ societyId }: { societyId: string }) {
         <div className="flex flex-wrap justify-end gap-2">
           <Button onClick={handleRun} disabled={running || !sch} variant="secondary" className="h-11 rounded-xl">
             {running ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Play className="h-4 w-4 mr-2" />}
-            {tu("op.run_now")}
+            Check missing bills
           </Button>
           <Button onClick={handleSave} disabled={saving} className="h-11 rounded-xl">
             {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}

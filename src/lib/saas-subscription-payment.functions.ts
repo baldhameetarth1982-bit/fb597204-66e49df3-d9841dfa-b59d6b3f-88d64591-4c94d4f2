@@ -9,6 +9,9 @@ const purchaseSchema = z
     societyId: z.string().uuid(),
     planId: z.enum(["basic", "pro", "premium"]),
     requestId: z.string().uuid(),
+    // P10: standard plans may buy a chosen flat quantity (>= active flats, <= threshold).
+    // The database enforces both bounds and prices it; the client never sets the amount.
+    flatQuantity: z.number().int().min(1).max(300).optional(),
   })
   .strict();
 
@@ -45,10 +48,12 @@ async function readQuote(
   supabase: SupabaseClient<Database>,
   societyId: string,
   planId: (typeof PLAN_IDS)[number],
+  flatQuantity?: number,
 ): Promise<SubscriptionQuote> {
   const { data, error } = await supabase.rpc("saas_subscription_quote", {
     _society_id: societyId,
     _plan_id: planId,
+    ...(flatQuantity ? { _flat_quantity: flatQuantity } : {}),
   });
   if (error || !data) throw new Error("Pricing is unavailable right now. Please try again.");
   const q = data as Record<string, unknown>;
@@ -73,8 +78,9 @@ async function fetchQuote(
   supabase: SupabaseClient<Database>,
   societyId: string,
   planId: (typeof PLAN_IDS)[number],
+  flatQuantity?: number,
 ): Promise<SubscriptionQuote & { amount_paise: number }> {
-  const quote = await readQuote(supabase, societyId, planId);
+  const quote = await readQuote(supabase, societyId, planId, flatQuantity);
   if (quote.custom_pricing)
     throw new Error(
       `Societies with more than ${quote.threshold} flats get custom pricing. Please talk to us.`,
@@ -87,10 +93,12 @@ async function fetchQuote(
 /** Server-calculated monthly price for each plan for this society. */
 export const getSaasSubscriptionQuotes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ societyId: z.string().uuid() }).strict().parse(input))
+  .inputValidator((input) =>
+    z.object({ societyId: z.string().uuid(), flatQuantity: z.number().int().min(1).max(300).optional() }).strict().parse(input),
+  )
   .handler(async ({ data, context }) => {
     await requirePlanManager(context.supabase, data.societyId);
-    return Promise.all(PLAN_IDS.map((id) => readQuote(context.supabase, data.societyId, id)));
+    return Promise.all(PLAN_IDS.map((id) => readQuote(context.supabase, data.societyId, id, data.flatQuantity)));
   });
 
 async function requirePlanManager(supabase: SupabaseClient<Database>, societyId: string) {
@@ -126,7 +134,7 @@ export const createSaasSubscriptionOrder = createServerFn({ method: "POST" })
     ]);
     // Amount = active flats × plan per-flat price, computed by the database.
     // The claim RPC recomputes it and rejects any mismatch or custom-pricing society.
-    const quote = await fetchQuote(context.supabase, data.societyId, data.planId);
+    const quote = await fetchQuote(context.supabase, data.societyId, data.planId, data.flatQuantity);
     const plan = { name: quote.plan_name };
     const amount = quote.amount_paise;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -142,6 +150,7 @@ export const createSaasSubscriptionOrder = createServerFn({ method: "POST" })
         _amount_paise: amount,
         _currency: "INR",
         _provider_mode: providerMode,
+        ...(data.flatQuantity ? { _flat_quantity: data.flatQuantity } : {}),
       },
     );
     if (claimError) throw new Error("Could not reserve the subscription order.");

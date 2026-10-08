@@ -5,14 +5,18 @@
  * coverage and for source/unit validators. Every entry represents an
  * active Stage 3C financial RPC discovered from the current migrations:
  *
- *   - search_society_open_bills   (anon: not_authenticated)
- *   - submit_offline_payment      (anon: unauthenticated)
- *   - verify_offline_payment      (anon: unauthenticated)
- *   - reject_offline_payment      (anon: unauthenticated)
- *   - reverse_offline_payment     (anon: unauthenticated)
- *   - get_payment_detail          (anon: not_authenticated)
- *   - get_bill_payment_summary    (anon: unauthenticated)
- *   - get_resident_payments_v1    (anon: unauthenticated)
+ *   - search_society_open_bills (anon: no EXECUTE grant)
+ *   - submit_offline_payment (anon: no EXECUTE grant)
+ *   - verify_offline_payment (anon: no EXECUTE grant)
+ *   - reject_offline_payment (anon: no EXECUTE grant)
+ *   - reverse_offline_payment (anon: no EXECUTE grant)
+ *   - get_payment_detail (anon: no EXECUTE grant)
+ *   - get_bill_payment_summary (anon: no EXECUTE grant)
+ *   - get_resident_payments_v1 (anon: no EXECUTE grant)
+ *
+ * Every RPC has EXECUTE revoked from `anon` (least privilege), so an
+ * anonymous call is denied at the grant boundary with SQLSTATE 42501
+ * `permission denied for function <name>` before any function logic runs.
  *
  * Argument builders take a fixture and return structurally valid RPC
  * arguments so a call actually reaches the auth gate rather than
@@ -33,7 +37,7 @@ export const STAGE3C_ACTIVE_RPCS: readonly Stage3CRpcContract[] = [
   {
     name: "search_society_open_bills",
     buildArgs: (f) => ({ _society_id: f.societyA, _query: "", _limit: 20, _offset: 0 }),
-    anonymousError: STAGE3C_ERRORS.NOT_AUTHENTICATED,
+    anonymousError: STAGE3C_ERRORS.PERMISSION_DENIED_FUNCTION,
     unauthorizedError: STAGE3C_ERRORS.NOT_AUTHORIZED,
     deniedReturnsNull: true,
   },
@@ -49,14 +53,14 @@ export const STAGE3C_ACTIVE_RPCS: readonly Stage3CRpcContract[] = [
       _idempotency_key: `${f.prefix}-rpc-contract-anon`,
       _actor_role: "admin",
     }),
-    anonymousError: STAGE3C_ERRORS.UNAUTHENTICATED,
+    anonymousError: STAGE3C_ERRORS.PERMISSION_DENIED_FUNCTION,
     unauthorizedError: STAGE3C_ERRORS.NOT_AUTHORIZED,
     deniedReturnsNull: true,
   },
   {
     name: "verify_offline_payment",
     buildArgs: (f) => ({ _payment_id: f.scenarios.pendingAdminCashPaymentId, _notes: null }),
-    anonymousError: STAGE3C_ERRORS.UNAUTHENTICATED,
+    anonymousError: STAGE3C_ERRORS.PERMISSION_DENIED_FUNCTION,
     unauthorizedError: STAGE3C_ERRORS.NOT_AUTHORIZED,
     deniedReturnsNull: true,
   },
@@ -66,7 +70,7 @@ export const STAGE3C_ACTIVE_RPCS: readonly Stage3CRpcContract[] = [
       _payment_id: f.scenarios.pendingAdminCashPaymentId,
       _reason: "auth-07 anon",
     }),
-    anonymousError: STAGE3C_ERRORS.UNAUTHENTICATED,
+    anonymousError: STAGE3C_ERRORS.PERMISSION_DENIED_FUNCTION,
     unauthorizedError: STAGE3C_ERRORS.NOT_AUTHORIZED,
     deniedReturnsNull: true,
   },
@@ -76,28 +80,28 @@ export const STAGE3C_ACTIVE_RPCS: readonly Stage3CRpcContract[] = [
       _payment_id: f.scenarios.verifiedPaymentId,
       _reason: "auth-07 anon",
     }),
-    anonymousError: STAGE3C_ERRORS.UNAUTHENTICATED,
+    anonymousError: STAGE3C_ERRORS.PERMISSION_DENIED_FUNCTION,
     unauthorizedError: STAGE3C_ERRORS.NOT_AUTHORIZED,
     deniedReturnsNull: true,
   },
   {
     name: "get_payment_detail",
     buildArgs: (f) => ({ _payment_id: f.scenarios.pendingAdminCashPaymentId }),
-    anonymousError: STAGE3C_ERRORS.NOT_AUTHENTICATED,
+    anonymousError: STAGE3C_ERRORS.PERMISSION_DENIED_FUNCTION,
     unauthorizedError: STAGE3C_ERRORS.NOT_AUTHORIZED,
     deniedReturnsNull: true,
   },
   {
     name: "get_bill_payment_summary",
     buildArgs: (f) => ({ _bill_id: f.openBillId }),
-    anonymousError: STAGE3C_ERRORS.UNAUTHENTICATED,
+    anonymousError: STAGE3C_ERRORS.PERMISSION_DENIED_FUNCTION,
     unauthorizedError: STAGE3C_ERRORS.NOT_AUTHORIZED,
     deniedReturnsNull: true,
   },
   {
     name: "get_resident_payments_v1",
     buildArgs: () => ({ _limit: 20, _offset: 0 }),
-    anonymousError: STAGE3C_ERRORS.UNAUTHENTICATED,
+    anonymousError: STAGE3C_ERRORS.PERMISSION_DENIED_FUNCTION,
     unauthorizedError: STAGE3C_ERRORS.NOT_AUTHORIZED,
     deniedReturnsNull: true,
   },

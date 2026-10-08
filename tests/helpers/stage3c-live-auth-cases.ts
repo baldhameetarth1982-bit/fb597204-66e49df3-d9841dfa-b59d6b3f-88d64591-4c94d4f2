@@ -224,6 +224,13 @@ export async function auth07_anonymousDenied(fixture: Stage3CFixture): Promise<v
     const args = contract.buildArgs(fixture);
     const { data, error } = await anon.rpc(contract.name, args);
     expectCanonical(error, contract.anonymousError, `AUTH-07:${contract.name}`);
+    if (contract.anonymousError === STAGE3C_ERRORS.PERMISSION_DENIED_FUNCTION) {
+      const e = error as { code?: unknown; message?: unknown } | null;
+      expect(e?.code, `AUTH-07:${contract.name} SQLSTATE`).toBe("42501");
+      expect(e?.message, `AUTH-07:${contract.name} exact grant denial`).toBe(
+        `permission denied for function ${contract.name}`,
+      );
+    }
     if (contract.deniedReturnsNull) {
       expect(data, `AUTH-07:${contract.name} must return null on denial`).toBeNull();
     }

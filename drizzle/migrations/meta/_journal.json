@@ -1569,6 +1569,13 @@
       "when": 1791491631528,
       "tag": "0223_p09_custom_plan_email_direct_link",
       "breakpoints": true
+    },
+    {
+      "idx": 224,
+      "version": "7",
+      "when": 1791494280286,
+      "tag": "0224_p08_p10_standard_ceiling_300_strict_quantity",
+      "breakpoints": true
     }
   ]
 }

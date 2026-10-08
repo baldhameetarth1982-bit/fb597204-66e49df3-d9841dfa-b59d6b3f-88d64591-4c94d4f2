@@ -55,6 +55,9 @@ async function readQuote(
     _plan_id: planId,
     ...(flatQuantity ? { _flat_quantity: flatQuantity } : {}),
   });
+  if (error && String(error.message ?? "").includes("quantity_below_current_flats")) {
+    throw new Error("You can't buy fewer flats than your society currently has.");
+  }
   if (error || !data) throw new Error("Pricing is unavailable right now. Please try again.");
   const q = data as Record<string, unknown>;
   const num = (v: unknown) => (v == null ? null : Number(v));

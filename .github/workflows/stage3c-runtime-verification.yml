@@ -227,7 +227,7 @@ jobs:
           export HARNESS_DB_URL
           status=0
           bash scripts/run-sql-harness.sh tests/sql/p01-p10-access-billing.sql P0110A_RESULT 80 | tee reports/p01-p10-access-billing.txt || status=1
-          bash scripts/run-sql-harness.sh tests/sql/p01-p10-subscription-entitlement.sql P0110B_RESULT 79 | tee reports/p01-p10-subscription-entitlement.txt || status=1
+          bash scripts/run-sql-harness.sh tests/sql/p01-p10-subscription-entitlement.sql P0110B_RESULT 93 | tee reports/p01-p10-subscription-entitlement.txt || status=1
           exit "$status"
 
       - name: Stage 3C CLEANUP behavioral suite

@@ -170,11 +170,6 @@ function PricingPage() {
                       <span className="text-4xl font-bold">₹{p.price_per_flat_inr ?? 0}</span>
                       <span className="text-muted-foreground text-sm">/ flat / month</span>
                     </div>
-                    {p.price_monthly_inr ? (
-                      <p className="mt-1 text-xs text-muted-foreground tabular-nums">
-                        About ₹{p.price_monthly_inr.toLocaleString("en-IN")}/month for {units} flats
-                      </p>
-                    ) : null}
                     <ul className="mt-4 space-y-2 text-sm flex-1">
                       {p.features.map((f, i) => (
                         <li key={i} className="flex items-start gap-2">

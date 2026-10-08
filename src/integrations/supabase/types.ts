@@ -4966,6 +4966,9 @@ export type Database = {
           method: string
           payment_date: string
           receipt_ref: string | null
+          reconciled_at: string | null
+          reconciled_bill_id: string | null
+          reconciliation_state: string | null
           reference_no: string | null
           request_id: string
           review_note: string | null
@@ -4985,6 +4988,9 @@ export type Database = {
           method: string
           payment_date: string
           receipt_ref?: string | null
+          reconciled_at?: string | null
+          reconciled_bill_id?: string | null
+          reconciliation_state?: string | null
           reference_no?: string | null
           request_id: string
           review_note?: string | null
@@ -5004,6 +5010,9 @@ export type Database = {
           method?: string
           payment_date?: string
           receipt_ref?: string | null
+          reconciled_at?: string | null
+          reconciled_bill_id?: string | null
+          reconciliation_state?: string | null
           reference_no?: string | null
           request_id?: string
           review_note?: string | null
@@ -5020,6 +5029,13 @@ export type Database = {
             columns: ["flat_id"]
             isOneToOne: false
             referencedRelation: "flats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "historical_payments_reconciled_bill_id_fkey"
+            columns: ["reconciled_bill_id"]
+            isOneToOne: false
+            referencedRelation: "bills"
             referencedColumns: ["id"]
           },
           {
@@ -12269,15 +12285,6 @@ export type Database = {
         Args: { _society_id: string; _user_id: string }
         Returns: boolean
       }
-      _auto_create_missing_bill: {
-        Args: {
-          _flat_id: string
-          _paid_on: string
-          _society_id: string
-          _source_id: string
-        }
-        Returns: string
-      }
       _bank_line_candidates: {
         Args: { _days: number; _line_id: string }
         Returns: {
@@ -12524,6 +12531,13 @@ export type Database = {
         }
       }
       _helpdesk_sla_hours: { Args: { _priority: string }; Returns: number }
+      _historical_payments_recon_only: {
+        Args: {
+          _new: Database["public"]["Tables"]["historical_payments"]["Row"]
+          _old: Database["public"]["Tables"]["historical_payments"]["Row"]
+        }
+        Returns: boolean
+      }
       _home_link_valid: {
         Args: { _flat: string; _uid: string }
         Returns: boolean
@@ -12788,6 +12802,10 @@ export type Database = {
           _window: string
         }
         Returns: undefined
+      }
+      _reconcile_historical_payment: {
+        Args: { _hp_id: string }
+        Returns: string
       }
       _roles_admin_society: { Args: never; Returns: string }
       _sec_admin_society: { Args: never; Returns: string }
@@ -14000,6 +14018,7 @@ export type Database = {
         Args: {
           _amount_paise: number
           _currency: string
+          _flat_quantity?: number
           _plan_id: string
           _provider_mode: string
           _request_id: string
@@ -16344,7 +16363,7 @@ export type Database = {
       }
       run_logged_db_job: { Args: { _job: string }; Returns: string }
       saas_subscription_quote: {
-        Args: { _plan_id: string; _society_id: string }
+        Args: { _flat_quantity?: number; _plan_id: string; _society_id: string }
         Returns: Json
       }
       safety_alert_raise: {

@@ -135,22 +135,6 @@ function ProfilePage() {
         </div>
       </section>
 
-      <Group title={t("prof.g.household")}>
-        <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
-          <NavRow to="/app/family" icon={Users} label={t("prof.family")} hint={t("prof.familyHint")} />
-          <NavRow to="/app/vehicles" icon={Car} label={t("nav.vehicles")} hint={t("prof.vehiclesHint")} />
-          <NavRow to="/app/services" icon={Wrench} label={t("prof.services")} hint={t("prof.servicesHint")} />
-        </ul>
-      </Group>
-
-      <Group title={t("prof.g.activity")}>
-        <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
-          <NavRow to="/app/activity" icon={History} label={t("prof.g.activity")} hint={t("prof.activityHint")} />
-          <NavRow to="/app/household-history" icon={Home} label={t("prof.homeHistory")} hint={t("prof.homeHistoryHint")} />
-          <NavRow to="/app/trust" icon={ShieldCheck} label={t("prof.trust")} />
-          <NavRow to="/app/achievements" icon={Trophy} label={t("prof.points")} />
-        </ul>
-      </Group>
 
       <Group title={t("prof.g.preferences")}>
         <div className="flex min-h-14 items-center justify-between gap-3 rounded-2xl border bg-card px-4 py-2.5">

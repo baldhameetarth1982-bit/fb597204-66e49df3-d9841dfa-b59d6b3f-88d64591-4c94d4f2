@@ -62,6 +62,7 @@ function SettingsPage() {
     useAuth() as any;
   const isSuperAdmin = hasRole?.("super_admin") ?? false;
   const isSecurity = hasRole?.("security") ?? false;
+  const canManagePlan = (hasRole?.("society_admin") ?? false) || isSuperAdmin;
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
@@ -321,7 +322,7 @@ function SettingsPage() {
             <Separator />
             <LinkRow to="/terms" icon={ShieldCheck} label={t("settings.terms")} />
             <Separator />
-            {!isSecurity && <>
+            {canManagePlan && <>
               <Separator />
               <LinkRow to="/pricing" icon={ShieldCheck} label={t("settings.pricing")} />
             </>}
@@ -507,6 +508,8 @@ function AppearanceCard({
   currentTheme, societyId, userId, isSuperAdmin, onChanged,
 }: { currentTheme: string; societyId: string | null; userId: string | null; isSuperAdmin: boolean; onChanged: () => void }) {
   const { t } = useTranslation();
+  const { hasRole } = useAuth() as any;
+  const canManagePlan = isSuperAdmin || (hasRole?.("society_admin") ?? false);
   const [plan, setPlan] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -575,7 +578,7 @@ function AppearanceCard({
         </div>
         {!isPremium && (
           <p className="text-xs text-muted-foreground">
-            {t("st.upgradeNeon")} <Link to="/pricing" className="underline">{tu("op.growth_pro")}</Link>
+            {t("st.upgradeNeon")} {canManagePlan ? <Link to="/pricing" className="underline">{tu("op.growth_pro")}</Link> : tu("op.growth_pro")}
           </p>
         )}
         {isSuperAdmin && (

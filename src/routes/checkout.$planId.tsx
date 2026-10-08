@@ -32,7 +32,8 @@ export const Route = createFileRoute("/checkout/$planId")({
 
 function CheckoutPage() {
   const { planId } = Route.useParams();
-  const { profile, user } = useAuth();
+  const { profile, user, hasRole } = useAuth();
+  const canManagePlan = hasRole("society_admin") || hasRole("super_admin");
   const [live, setLive] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
@@ -74,7 +75,9 @@ function CheckoutPage() {
         orderId: order.orderId,
         keyId: order.keyId,
         amount: order.amount,
-        description: `${order.planName} plan — monthly`,
+        description: quote?.pricing_type === "custom"
+          ? `${order.planName} custom plan — ${quote.flat_count} flats, ${quote.term_months} month(s)`
+          : `${order.planName} plan — monthly`,
         prefill: {
           email: profile?.email ?? user?.email ?? "",
           contact: profile?.phone ?? "",
@@ -101,6 +104,22 @@ function CheckoutPage() {
       toast.error(userMessage(e, "Could not start payment"));
       setBusy(false);
     }
+  }
+
+  // P02: subscriptions are managed only by Society Admins / Super Admins. The
+  // server (requirePlanManager) is the real boundary; this just avoids showing it.
+  if (!canManagePlan) {
+    return (
+      <div className="min-h-dvh bg-background text-foreground flex items-center justify-center p-6">
+        <Card className="max-w-md w-full rounded-2xl">
+          <CardContent className="p-6 text-center space-y-3">
+            <ShieldAlert className="h-8 w-8 mx-auto text-muted-foreground" />
+            <p className="font-semibold">Only your society's admins manage the subscription.</p>
+            <Button asChild variant="secondary" className="h-11 rounded-xl"><Link to="/">Go back</Link></Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (

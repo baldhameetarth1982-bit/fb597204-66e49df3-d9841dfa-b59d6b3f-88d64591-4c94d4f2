@@ -102,7 +102,7 @@ BEGIN
          'qa-p0110b-' || lower(u) || '@example.invalid', '{}'::jsonb, '{}'::jsonb, now(), now()
   FROM unnest(ARRAY['A90','R90','G90','A150','A300','A310','AC','RC','SU']) u;
   INSERT INTO public.societies (id, name, city, plan, plan_id, plan_status, plan_expires_at, status, structure_mode)
-  SELECT (ids->>s)::uuid, '[QA] P0110B ' || s, 'Testville', 'trial', 'trial', 'trialing', now() + interval '14 days', 'active', 'serial'
+  SELECT (ids->>s)::uuid, '[QA] P0110B ' || s, 'Testville', 'basic', 'trial', 'trialing', now() + interval '14 days', 'active', 'serial'
   FROM unnest(ARRAY['S90','S150','S300','S310','SC']) s;
   INSERT INTO public.flats (society_id, flat_number, unit_type)
   SELECT (ids->>v.s)::uuid, 'Q-' || g, 'flat'

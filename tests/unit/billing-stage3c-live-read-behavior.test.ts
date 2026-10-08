@@ -1134,7 +1134,7 @@ describe("READ-01..04 reject receipt insertion after production read", () => {
 
 const RECEIPT_ID = "abababab-cdcd-4efe-8faf-babababababa";
 const YEAR = 2026;
-const YEAR_MONTH = "2026-07";
+const YEAR_MONTH = 202607;
 
 function fullReceiptAdminRow(): Record<string, unknown> {
   return {

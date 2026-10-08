@@ -49,7 +49,7 @@ function CustomPlansPage() {
   const sel = (reqs.data ?? []).find((r) => r.id === selected) ?? null;
   return (
     <PageShell>
-      <PageHeader title="Custom plans" description="Requests from societies above the standard flat limit." icon={Tags} />
+      <PageHeader title="Custom plans" description="Requests from societies above the standard flat limit." />
       {reqs.isLoading ? <Skeleton className="h-40 w-full" />
         : reqs.isError ? <ErrorState title="Couldn't load requests" description="Please try again." onRetry={() => reqs.refetch()} />
         : !reqs.data?.length ? <EmptyState icon={Tags} title="No custom plan requests yet" description="Requests appear here when a society asks for more than 300 flats." />

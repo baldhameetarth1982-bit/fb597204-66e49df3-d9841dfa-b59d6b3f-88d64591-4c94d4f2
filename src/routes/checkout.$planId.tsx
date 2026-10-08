@@ -38,6 +38,10 @@ function CheckoutPage() {
   const [busy, setBusy] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const requestId = useRef(crypto.randomUUID());
+  // P10: chosen flat quantity (standard plans only). Empty = current active flats.
+  const [qtyInput, setQtyInput] = useState("");
+  const qtyNum = Number(qtyInput);
+  const flatQuantity = qtyInput && Number.isInteger(qtyNum) && qtyNum >= 1 && qtyNum <= 300 ? qtyNum : undefined;
 
   useEffect(() => {
     supabase.rpc("is_razorpay_live").then(({ data }) => setLive(Boolean(data)));
@@ -51,8 +55,9 @@ function CheckoutPage() {
     refetch,
   } = useQuery({
     enabled: !!profile?.society_id,
-    queryKey: ["subscription-quotes", profile?.society_id],
-    queryFn: () => fetchQuotes({ data: { societyId: profile!.society_id! } }),
+    queryKey: ["subscription-quotes", profile?.society_id, flatQuantity ?? null],
+    queryFn: () => fetchQuotes({ data: { societyId: profile!.society_id!, flatQuantity } }),
+    placeholderData: (prev) => prev,
     select: (quotes) => quotes.find((q) => q.plan_id === planId) ?? null,
   });
   const plan = quote
@@ -69,6 +74,7 @@ function CheckoutPage() {
           societyId: profile.society_id,
           planId: plan.id as "basic" | "pro" | "premium",
           requestId: requestId.current,
+          ...(flatQuantity ? { flatQuantity } : {}),
         },
       });
       await openRazorpayForOrder({
@@ -187,6 +193,20 @@ function CheckoutPage() {
                   <p className="text-sm text-muted-foreground tabular-nums">
                     {quote!.flat_count} flats × ₹{quote!.price_per_flat_inr} per flat
                   </p>
+                  {quote!.pricing_type !== "custom" && (
+                    <div className="mt-3 space-y-1">
+                      <label htmlFor="flat-qty" className="text-sm font-medium">Flats to buy</label>
+                      <input
+                        id="flat-qty" type="number" inputMode="numeric" min={1} max={quote!.threshold}
+                        value={qtyInput} placeholder={String(quote!.flat_count)}
+                        onChange={(e) => { setQtyInput(e.target.value); requestId.current = crypto.randomUUID(); }}
+                        className="h-11 w-full rounded-xl border border-input bg-background px-3 tabular-nums"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        At least your current active flats, up to {quote!.threshold}. The price is worked out by SociyoHub.
+                      </p>
+                    </div>
+                  )}
                   <p className="mt-1 text-xs text-muted-foreground">
                     This SociyoHub subscription is billed separately from society maintenance.
                     Maintenance payments go to the society, with no SociyoHub platform fee.

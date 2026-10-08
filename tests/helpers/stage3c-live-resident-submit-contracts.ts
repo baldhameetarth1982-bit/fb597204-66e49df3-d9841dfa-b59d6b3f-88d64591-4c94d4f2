@@ -430,10 +430,13 @@ export async function assertNoReceiptForResidentPayment(
 // Strict resident bill summary (with identity)
 // ---------------------------------------------------------------------------
 
-const CANONICAL_BILL_STATUS = z.enum([
+/** Bill statuses actually written by the billing/payment RPCs
+ *  (default 'unpaid'; verify sets 'partially_paid'/'paid'; dues logic
+ *  uses 'overdue'; cancellation sets 'cancelled'). */
+export const CANONICAL_BILL_STATUS = z.enum([
   "unpaid",
-  "open",
-  "partial",
+  "partially_paid",
+  "overdue",
   "paid",
   "cancelled",
 ]);

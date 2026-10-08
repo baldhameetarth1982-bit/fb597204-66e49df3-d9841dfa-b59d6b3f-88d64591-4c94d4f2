@@ -2676,6 +2676,170 @@ export type Database = {
           },
         ]
       }
+      custom_plan_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          request_id: string
+          sender_id: string | null
+          sender_side: string
+          society_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          request_id: string
+          sender_id?: string | null
+          sender_side: string
+          society_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          request_id?: string
+          sender_id?: string | null
+          sender_side?: string
+          society_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_plan_messages_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "custom_plan_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_plan_messages_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_plan_offers: {
+        Row: {
+          activated_at: string | null
+          base_amount_paise: number
+          created_at: string
+          created_by: string
+          decided_at: string | null
+          decided_by: string | null
+          effective_from: string
+          flat_quantity: number
+          id: string
+          plan_id: string
+          rate_per_flat_inr: number
+          request_id: string
+          society_id: string
+          status: string
+          tax_amount_paise: number
+          tax_percent: number
+          term_months: number
+          total_amount_paise: number
+        }
+        Insert: {
+          activated_at?: string | null
+          base_amount_paise: number
+          created_at?: string
+          created_by: string
+          decided_at?: string | null
+          decided_by?: string | null
+          effective_from?: string
+          flat_quantity: number
+          id?: string
+          plan_id: string
+          rate_per_flat_inr: number
+          request_id: string
+          society_id: string
+          status?: string
+          tax_amount_paise?: number
+          tax_percent?: number
+          term_months?: number
+          total_amount_paise: number
+        }
+        Update: {
+          activated_at?: string | null
+          base_amount_paise?: number
+          created_at?: string
+          created_by?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          effective_from?: string
+          flat_quantity?: number
+          id?: string
+          plan_id?: string
+          rate_per_flat_inr?: number
+          request_id?: string
+          society_id?: string
+          status?: string
+          tax_amount_paise?: number
+          tax_percent?: number
+          term_months?: number
+          total_amount_paise?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_plan_offers_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "custom_plan_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_plan_offers_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_plan_requests: {
+        Row: {
+          created_at: string
+          flat_quantity: number
+          id: string
+          plan_id: string | null
+          requested_by: string
+          society_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          flat_quantity: number
+          id?: string
+          plan_id?: string | null
+          requested_by: string
+          society_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          flat_quantity?: number
+          id?: string
+          plan_id?: string | null
+          requested_by?: string
+          society_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_plan_requests_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_plans: {
         Row: {
           applied_at: string | null
@@ -8920,6 +9084,7 @@ export type Database = {
           attempt_count: number
           created_at: string
           currency: string
+          custom_offer_id: string | null
           failure_code: string | null
           flat_count: number | null
           id: string
@@ -8931,6 +9096,7 @@ export type Database = {
           requested_by: string
           society_id: string
           status: string
+          term_months: number
           updated_at: string
         }
         Insert: {
@@ -8938,6 +9104,7 @@ export type Database = {
           attempt_count?: number
           created_at?: string
           currency?: string
+          custom_offer_id?: string | null
           failure_code?: string | null
           flat_count?: number | null
           id?: string
@@ -8949,6 +9116,7 @@ export type Database = {
           requested_by: string
           society_id: string
           status?: string
+          term_months?: number
           updated_at?: string
         }
         Update: {
@@ -8956,6 +9124,7 @@ export type Database = {
           attempt_count?: number
           created_at?: string
           currency?: string
+          custom_offer_id?: string | null
           failure_code?: string | null
           flat_count?: number | null
           id?: string
@@ -8967,9 +9136,17 @@ export type Database = {
           requested_by?: string
           society_id?: string
           status?: string
+          term_months?: number
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "saas_subscription_order_requests_custom_offer_id_fkey"
+            columns: ["custom_offer_id"]
+            isOneToOne: false
+            referencedRelation: "custom_plan_offers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "saas_subscription_order_requests_plan_id_fkey"
             columns: ["plan_id"]
@@ -8993,6 +9170,7 @@ export type Database = {
           confirmed_at: string | null
           created_at: string
           currency: string
+          custom_offer_id: string | null
           failed_at: string | null
           failure_code: string | null
           flat_count: number | null
@@ -9010,6 +9188,7 @@ export type Database = {
           request_id: string | null
           society_id: string
           status: string
+          term_months: number
           updated_at: string
         }
         Insert: {
@@ -9018,6 +9197,7 @@ export type Database = {
           confirmed_at?: string | null
           created_at?: string
           currency?: string
+          custom_offer_id?: string | null
           failed_at?: string | null
           failure_code?: string | null
           flat_count?: number | null
@@ -9035,6 +9215,7 @@ export type Database = {
           request_id?: string | null
           society_id: string
           status?: string
+          term_months?: number
           updated_at?: string
         }
         Update: {
@@ -9043,6 +9224,7 @@ export type Database = {
           confirmed_at?: string | null
           created_at?: string
           currency?: string
+          custom_offer_id?: string | null
           failed_at?: string | null
           failure_code?: string | null
           flat_count?: number | null
@@ -9060,9 +9242,17 @@ export type Database = {
           request_id?: string | null
           society_id?: string
           status?: string
+          term_months?: number
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "saas_subscription_payments_custom_offer_id_fkey"
+            columns: ["custom_offer_id"]
+            isOneToOne: false
+            referencedRelation: "custom_plan_offers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "saas_subscription_payments_plan_id_fkey"
             columns: ["plan_id"]
@@ -9677,6 +9867,7 @@ export type Database = {
           business_state: string | null
           city: string | null
           created_at: string
+          custom_offer_id: string | null
           full_address: string | null
           id: string
           invite_code: string | null
@@ -9694,7 +9885,10 @@ export type Database = {
           plan_id: string | null
           plan_selected_at: string | null
           plan_status: string
+          pricing_type: string
           property_type: string
+          purchased_flat_quantity: number | null
+          rate_per_flat_inr: number | null
           razorpay_account_id: string | null
           registration_no: string | null
           registration_number: string | null
@@ -9703,6 +9897,7 @@ export type Database = {
           status: string
           structure_label: string
           structure_mode: string | null
+          subscription_term_months: number | null
           total_units: number | null
           trial_consumed_at: string | null
           trial_ends_at: string | null
@@ -9720,6 +9915,7 @@ export type Database = {
           business_state?: string | null
           city?: string | null
           created_at?: string
+          custom_offer_id?: string | null
           full_address?: string | null
           id?: string
           invite_code?: string | null
@@ -9737,7 +9933,10 @@ export type Database = {
           plan_id?: string | null
           plan_selected_at?: string | null
           plan_status?: string
+          pricing_type?: string
           property_type?: string
+          purchased_flat_quantity?: number | null
+          rate_per_flat_inr?: number | null
           razorpay_account_id?: string | null
           registration_no?: string | null
           registration_number?: string | null
@@ -9746,6 +9945,7 @@ export type Database = {
           status?: string
           structure_label?: string
           structure_mode?: string | null
+          subscription_term_months?: number | null
           total_units?: number | null
           trial_consumed_at?: string | null
           trial_ends_at?: string | null
@@ -9763,6 +9963,7 @@ export type Database = {
           business_state?: string | null
           city?: string | null
           created_at?: string
+          custom_offer_id?: string | null
           full_address?: string | null
           id?: string
           invite_code?: string | null
@@ -9780,7 +9981,10 @@ export type Database = {
           plan_id?: string | null
           plan_selected_at?: string | null
           plan_status?: string
+          pricing_type?: string
           property_type?: string
+          purchased_flat_quantity?: number | null
+          rate_per_flat_inr?: number | null
           razorpay_account_id?: string | null
           registration_no?: string | null
           registration_number?: string | null
@@ -9789,6 +9993,7 @@ export type Database = {
           status?: string
           structure_label?: string
           structure_mode?: string | null
+          subscription_term_months?: number | null
           total_units?: number | null
           trial_consumed_at?: string | null
           trial_ends_at?: string | null
@@ -12064,6 +12269,15 @@ export type Database = {
         Args: { _society_id: string; _user_id: string }
         Returns: boolean
       }
+      _auto_create_missing_bill: {
+        Args: {
+          _flat_id: string
+          _paid_on: string
+          _society_id: string
+          _source_id: string
+        }
+        Returns: string
+      }
       _bank_line_candidates: {
         Args: { _days: number; _line_id: string }
         Returns: {
@@ -12577,6 +12791,7 @@ export type Database = {
       }
       _roles_admin_society: { Args: never; Returns: string }
       _sec_admin_society: { Args: never; Returns: string }
+      _society_flat_capacity: { Args: { _society_id: string }; Returns: number }
       _staff_asset_ids: {
         Args: { _society: string; _staff: string }
         Returns: {
@@ -12736,6 +12951,17 @@ export type Database = {
           _starts_on: string
           _title: string
           _weekdays: number[]
+        }
+        Returns: string
+      }
+      admin_create_custom_offer: {
+        Args: {
+          _effective_from: string
+          _flat_quantity: number
+          _plan_id: string
+          _rate_per_flat_inr: number
+          _request_id: string
+          _term_months: number
         }
         Returns: string
       }
@@ -14027,6 +14253,10 @@ export type Database = {
         Returns: boolean
       }
       current_user_is_super_admin: { Args: never; Returns: boolean }
+      custom_plan_post_message: {
+        Args: { _body: string; _request_id: string }
+        Returns: string
+      }
       deactivate_finance_vendor: {
         Args: { _vendor_id: string }
         Returns: undefined
@@ -14668,6 +14898,10 @@ export type Database = {
       }
       get_society_export_section: {
         Args: { _offset?: number; _section: string; _society_id: string }
+        Returns: Json
+      }
+      get_society_flat_entitlement: {
+        Args: { _society_id: string }
         Returns: Json
       }
       get_society_income_report: {
@@ -15988,6 +16222,15 @@ export type Database = {
         Args: { _cycle_config_id: string; _society_id: string }
         Returns: Json
       }
+      request_custom_plan: {
+        Args: {
+          _flat_quantity: number
+          _message: string
+          _plan_id: string
+          _society_id: string
+        }
+        Returns: Json
+      }
       request_join_flat: {
         Args: { _flat_id: string; _relationship: string }
         Returns: string
@@ -16053,6 +16296,10 @@ export type Database = {
           _subject_user_id?: string
         }
         Returns: boolean
+      }
+      respond_custom_offer: {
+        Args: { _accept: boolean; _offer_id: string }
+        Returns: Json
       }
       respond_join_request: {
         Args: { _approve: boolean; _reason?: string; _request_id: string }

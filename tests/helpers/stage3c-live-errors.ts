@@ -17,6 +17,9 @@ export const STAGE3C_ERRORS = Object.freeze({
   IDEMPOTENCY_CONFLICT: "idempotency_conflict",
   DUPLICATE_REFERENCE: "duplicate_reference",
   REFERENCE_REQUIRED: "reference_required",
+  REASON_REQUIRED: "reason_required",
+  /** PostgreSQL grant-boundary denial (SQLSTATE 42501) for roles without EXECUTE. */
+  PERMISSION_DENIED_FUNCTION: "permission denied for function",
 } as const);
 
 export type Stage3CErrorToken = (typeof STAGE3C_ERRORS)[keyof typeof STAGE3C_ERRORS];

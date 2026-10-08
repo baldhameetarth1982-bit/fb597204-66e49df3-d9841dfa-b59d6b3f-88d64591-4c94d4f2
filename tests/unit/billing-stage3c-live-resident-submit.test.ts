@@ -589,7 +589,7 @@ describe("Stage 3C — direct reader/state behavioral coverage", () => {
     const reader = makeReader({
       payment_receipt_sequences: { data: [], error: null },
       payment_receipt_month_sequences: {
-        data: [{ society_id: SOC_B, year_month: "2026-06", next_number: 0 }],
+        data: [{ society_id: SOC_B, year_month: 202606, next_number: 0 }],
         error: null,
       },
     });
@@ -622,11 +622,11 @@ describe("Stage 3C — direct reader/state behavioral coverage", () => {
   it("assertReceiptSequencesExactlyEqual rejects changed monthly key (and message excludes UUID + key)", () => {
     const before = ReceiptSequenceSnapshotSchema.parse({
       yearly: [],
-      monthly: [{ society_id: SOC_A, year_month: "2026-06", next_number: 0 }],
+      monthly: [{ society_id: SOC_A, year_month: 202606, next_number: 0 }],
     });
     const after = ReceiptSequenceSnapshotSchema.parse({
       yearly: [],
-      monthly: [{ society_id: SOC_A, year_month: "2026-07", next_number: 0 }],
+      monthly: [{ society_id: SOC_A, year_month: 202607, next_number: 0 }],
     });
     try {
       assertReceiptSequencesExactlyEqual(before, after, "T");
@@ -766,8 +766,8 @@ describe("Stage 3C — direct reader/state behavioral coverage", () => {
         { society_id: SOC_A, year: 2026, next_number: 0 },
       ],
       monthly: [
-        { society_id: SOC_B, year_month: "2026-07", next_number: 0 },
-        { society_id: SOC_A, year_month: "2026-06", next_number: 0 },
+        { society_id: SOC_B, year_month: 202607, next_number: 0 },
+        { society_id: SOC_A, year_month: 202606, next_number: 0 },
       ],
     };
     // Prove strict schema rejects duplicate-key snapshots up-front:
@@ -1680,11 +1680,11 @@ describe("Stage 3C — assertResidentBillStateUnchanged complete-snapshot covera
   it("rejects monthly sequence next_number mutation", () => {
     const before = ReceiptSequenceSnapshotSchema.parse({
       yearly: [],
-      monthly: [{ society_id: CANON_SOCIETY, year_month: "2026-07", next_number: 1 }],
+      monthly: [{ society_id: CANON_SOCIETY, year_month: 202607, next_number: 1 }],
     });
     const after = ReceiptSequenceSnapshotSchema.parse({
       yearly: [],
-      monthly: [{ society_id: CANON_SOCIETY, year_month: "2026-07", next_number: 2 }],
+      monthly: [{ society_id: CANON_SOCIETY, year_month: 202607, next_number: 2 }],
     });
     expect(() =>
       assertResidentBillStateUnchanged(

@@ -141,7 +141,7 @@ function makeSummaryRow(): Record<string, unknown> {
     reversed_amount: 0,
     remaining_verified_balance: 900,
     available_to_submit: 900,
-    status: "partial",
+    status: "partially_paid",
     cancelled: false,
   };
 }
@@ -1134,7 +1134,7 @@ describe("READ-01..04 reject receipt insertion after production read", () => {
 
 const RECEIPT_ID = "abababab-cdcd-4efe-8faf-babababababa";
 const YEAR = 2026;
-const YEAR_MONTH = "2026-07";
+const YEAR_MONTH = 202607;
 
 function fullReceiptAdminRow(): Record<string, unknown> {
   return {
@@ -1362,7 +1362,7 @@ describe("READ-01..04 reject receipt-sequence mutation", () => {
       const { ctx } = primeRich(id, (s) => {
         s.monthly = [
           ...s.monthly,
-          { society_id: SOCIETY_ID, year_month: "2026-08", next_number: 1 },
+          { society_id: SOCIETY_ID, year_month: 202608, next_number: 1 },
         ];
       });
       await expect(runHandler(id, ctx)).rejects.toThrow(

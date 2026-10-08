@@ -573,7 +573,7 @@ interface MockState {
   payments: PaymentFullRow[];
   receipts: ReceiptFullRow[];
   yearly: { society_id: string; year: number; next_number: number }[];
-  monthly: { society_id: string; year_month: string; next_number: number }[];
+  monthly: { society_id: string; year_month: number; next_number: number }[];
   submitCalls: unknown[];
   submitImpl: (input: unknown) => Promise<string>;
   trackedPaymentIds: string[];
@@ -668,7 +668,7 @@ function summaryForBill(state: MockState, billId: string): Record<string, unknow
   const available = meta.total - verified - pending;
   const remaining = meta.total - verified;
   const cancelled = false;
-  const status = verified === 0 && pending === 0 ? "unpaid" : "open";
+  const status = verified === 0 && pending === 0 ? "unpaid" : verified > 0 ? "partially_paid" : "unpaid";
   return {
     bill_id: billId,
     society_id: meta.societyId,

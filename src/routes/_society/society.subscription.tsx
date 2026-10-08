@@ -29,6 +29,7 @@ import {
 } from "@/lib/saas-subscription-lifecycle.functions";
 import { tu } from "@/lib/i18n";
 import { CustomPlanSection, FlatEntitlementSection } from "@/features/subscription/CustomPlan";
+import { parseRequestParam } from "@/lib/custom-plan-links";
 
 export const Route = createFileRoute("/_society/society/subscription")({
   head: () => ({
@@ -41,6 +42,7 @@ export const Route = createFileRoute("/_society/society/subscription")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
+  validateSearch: (s: Record<string, unknown>): { request?: string } => ({ request: parseRequestParam(s.request) }),
   component: SubscriptionPage,
 });
 
@@ -246,7 +248,7 @@ function SubscriptionPage() {
       </SettingsSection>
 
       {societyId && <FlatEntitlementSection societyId={societyId} />}
-      {societyId && <CustomPlanSection societyId={societyId} threshold={plans.data?.[0]?.threshold ?? 300} />}
+      {societyId && <CustomPlanSection societyId={societyId} threshold={plans.data?.[0]?.threshold ?? 300} focusRequestId={Route.useSearch().request} />}
 
 
       {showPlans && (

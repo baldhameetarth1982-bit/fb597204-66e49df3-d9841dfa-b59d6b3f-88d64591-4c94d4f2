@@ -14,7 +14,7 @@ case "$HARNESS_DB_URL" in
 esac
 
 OUT="$(psql "$HARNESS_DB_URL" -v ON_ERROR_STOP=0 -q -f "$FILE" 2>&1 || true)"
-LINE="$(printf '%s\n' "$OUT" | grep -o "${PREFIX}|[^\"]*" | head -1 || true)"
+LINE="$(printf '%s\n' "$OUT" | grep -o "${PREFIX}|.*" | head -1 || true)"
 if [ -z "$LINE" ]; then
   echo "Harness $FILE did not report a result:" >&2
   printf '%s\n' "$OUT" | tail -n 40 >&2

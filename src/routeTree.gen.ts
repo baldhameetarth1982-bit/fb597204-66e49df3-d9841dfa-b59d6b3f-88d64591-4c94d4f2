@@ -193,6 +193,7 @@ import { Route as SocietySocietyBillStudioIndexRouteImport } from './routes/_soc
 import { Route as SocietySocietyBillStudioGenerateRouteImport } from './routes/_society/society.bill-studio.generate'
 import { Route as SocietySocietyBillingIndexRouteImport } from './routes/_society/society.billing.index'
 import { Route as SocietySocietyBillingGenerateRouteImport } from './routes/_society/society.billing.generate'
+import { Route as SocietySocietyBillingSingleRouteImport } from './routes/_society/society.billing.single'
 import { Route as SocietySocietyBillsIdRouteImport } from './routes/_society/society.bills.$id'
 import { Route as SocietySocietyDocumentIdRouteImport } from './routes/_society/society.document.$id'
 import { Route as SocietySocietyFlatsIndexRouteImport } from './routes/_society/society.flats.index'
@@ -1167,6 +1168,12 @@ const SocietySocietyBillingGenerateRoute =
     path: '/society/billing/generate',
     getParentRoute: () => SocietyRoute,
   } as any)
+const SocietySocietyBillingSingleRoute =
+  SocietySocietyBillingSingleRouteImport.update({
+    id: '/society/billing/single',
+    path: '/society/billing/single',
+    getParentRoute: () => SocietyRoute,
+  } as any)
 const SocietySocietyBillsIdRoute = SocietySocietyBillsIdRouteImport.update({
   id: '/society/bills/$id',
   path: '/society/bills/$id',
@@ -1467,6 +1474,7 @@ export interface FileRoutesByFullPath {
   '/app/no-dues/$id': typeof ResidentAppNoDuesIdRoute
   '/society/bill-studio/generate': typeof SocietySocietyBillStudioGenerateRoute
   '/society/billing/generate': typeof SocietySocietyBillingGenerateRoute
+  '/society/billing/single': typeof SocietySocietyBillingSingleRoute
   '/society/bills/$id': typeof SocietySocietyBillsIdRoute
   '/society/document/$id': typeof SocietySocietyDocumentIdRoute
   '/society/flats/$id': typeof SocietySocietyFlatsIdRoute
@@ -1670,6 +1678,7 @@ export interface FileRoutesByTo {
   '/app/no-dues/$id': typeof ResidentAppNoDuesIdRoute
   '/society/bill-studio/generate': typeof SocietySocietyBillStudioGenerateRoute
   '/society/billing/generate': typeof SocietySocietyBillingGenerateRoute
+  '/society/billing/single': typeof SocietySocietyBillingSingleRoute
   '/society/bills/$id': typeof SocietySocietyBillsIdRoute
   '/society/document/$id': typeof SocietySocietyDocumentIdRoute
   '/society/flats/$id': typeof SocietySocietyFlatsIdRoute
@@ -1879,6 +1888,7 @@ export interface FileRoutesById {
   '/_resident/app/no-dues/$id': typeof ResidentAppNoDuesIdRoute
   '/_society/society/bill-studio/generate': typeof SocietySocietyBillStudioGenerateRoute
   '/_society/society/billing/generate': typeof SocietySocietyBillingGenerateRoute
+  '/_society/society/billing/single': typeof SocietySocietyBillingSingleRoute
   '/_society/society/bills/$id': typeof SocietySocietyBillsIdRoute
   '/_society/society/document/$id': typeof SocietySocietyDocumentIdRoute
   '/_society/society/flats/$id': typeof SocietySocietyFlatsIdRoute
@@ -2085,6 +2095,7 @@ export interface FileRouteTypes {
     | '/app/no-dues/$id'
     | '/society/bill-studio/generate'
     | '/society/billing/generate'
+    | '/society/billing/single'
     | '/society/bills/$id'
     | '/society/document/$id'
     | '/society/flats/$id'
@@ -2288,6 +2299,7 @@ export interface FileRouteTypes {
     | '/app/no-dues/$id'
     | '/society/bill-studio/generate'
     | '/society/billing/generate'
+    | '/society/billing/single'
     | '/society/bills/$id'
     | '/society/document/$id'
     | '/society/flats/$id'
@@ -2496,6 +2508,7 @@ export interface FileRouteTypes {
     | '/_resident/app/no-dues/$id'
     | '/_society/society/bill-studio/generate'
     | '/_society/society/billing/generate'
+    | '/_society/society/billing/single'
     | '/_society/society/bills/$id'
     | '/_society/society/document/$id'
     | '/_society/society/flats/$id'
@@ -3860,6 +3873,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SocietySocietyBillingGenerateRouteImport
       parentRoute: typeof SocietyRoute
     }
+    '/_society/society/billing/single': {
+      id: '/_society/society/billing/single'
+      path: '/society/billing/single'
+      fullPath: '/society/billing/single'
+      preLoaderRoute: typeof SocietySocietyBillingSingleRouteImport
+      parentRoute: typeof SocietyRoute
+    }
     '/_society/society/bills/$id': {
       id: '/_society/society/bills/$id'
       path: '/society/bills/$id'
@@ -4259,6 +4279,7 @@ interface SocietyRouteChildren {
   SocietySocietyVouchersRoute: typeof SocietySocietyVouchersRoute
   SocietySocietyBillStudioGenerateRoute: typeof SocietySocietyBillStudioGenerateRoute
   SocietySocietyBillingGenerateRoute: typeof SocietySocietyBillingGenerateRoute
+  SocietySocietyBillingSingleRoute: typeof SocietySocietyBillingSingleRoute
   SocietySocietyBillsIdRoute: typeof SocietySocietyBillsIdRoute
   SocietySocietyDocumentIdRoute: typeof SocietySocietyDocumentIdRoute
   SocietySocietyFlatsIdRoute: typeof SocietySocietyFlatsIdRoute
@@ -4350,6 +4371,7 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyVouchersRoute: SocietySocietyVouchersRoute,
   SocietySocietyBillStudioGenerateRoute: SocietySocietyBillStudioGenerateRoute,
   SocietySocietyBillingGenerateRoute: SocietySocietyBillingGenerateRoute,
+  SocietySocietyBillingSingleRoute: SocietySocietyBillingSingleRoute,
   SocietySocietyBillsIdRoute: SocietySocietyBillsIdRoute,
   SocietySocietyDocumentIdRoute: SocietySocietyDocumentIdRoute,
   SocietySocietyFlatsIdRoute: SocietySocietyFlatsIdRoute,

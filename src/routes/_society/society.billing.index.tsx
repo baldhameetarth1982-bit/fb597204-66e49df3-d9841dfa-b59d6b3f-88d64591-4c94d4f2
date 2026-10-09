@@ -146,7 +146,10 @@ function BillingPage() {
       <PageHeader
         title={tu("op.bill_history")}
         description={tu("op.every_generated_bill_for_every")}
-        actions={<Button asChild className="min-h-11 rounded-xl"><Link to="/society/billing/generate"><Plus className="h-4 w-4 mr-1" />{tu("op.generate_bills")}</Link></Button>}
+        actions={<div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline" className="min-h-11 rounded-xl"><Link to="/society/billing/single"><Plus className="h-4 w-4 mr-1" />{tu("ln.sb.title")}</Link></Button>
+          <Button asChild className="min-h-11 rounded-xl"><Link to="/society/billing/generate"><Plus className="h-4 w-4 mr-1" />{tu("op.generate_bills")}</Link></Button>
+        </div>}
       />
       <div className="mb-5 rounded-2xl border border-border bg-card"><BillingCenterTabs /></div>
 

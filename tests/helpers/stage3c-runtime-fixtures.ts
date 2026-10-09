@@ -3320,7 +3320,24 @@ export type Stage3CTeardownController = {
   readonly runPrimary: () => Promise<Stage3CTeardownOutcome>;
   readonly runEmergency: () => Promise<Stage3CTeardownOutcome>;
   readonly outcome: () => Stage3CTeardownOutcome;
+  /**
+   * Sanitized underlying cleanup failure text (redacted, never raw
+   * provider credentials). Kept OUTSIDE the frozen outcome so the
+   * outcome stays a static category, but the real cause is not lost.
+   */
+  readonly diagnostics?: () => Stage3CTeardownDiagnostics;
 };
+
+export type Stage3CTeardownDiagnostics = {
+  readonly primary: string | null;
+  readonly emergency: string | null;
+};
+
+const STAGE3C_DIAGNOSTIC_MAX = 4000;
+export function sanitizeStage3CTeardownDiagnostic(e: unknown): string {
+  const text = redactMessage(extractErrorMessage(e));
+  return text.length > STAGE3C_DIAGNOSTIC_MAX ? `${text.slice(0, STAGE3C_DIAGNOSTIC_MAX)}…` : text;
+}
 
 /**
  * One explicit teardown lifecycle. Primary teardown runs at most once and
@@ -3338,6 +3355,8 @@ export function createStage3CTeardownController(deps: {
   let emergencyAttempted = false;
   let emergencyCompleted = false;
   let failureCategory: Stage3CTeardownFailureCategory = "none";
+  let primaryDiagnostic: string | null = null;
+  let emergencyDiagnostic: string | null = null;
 
   const snapshot = (): Stage3CTeardownOutcome =>
     Object.freeze({
@@ -3358,10 +3377,11 @@ export function createStage3CTeardownController(deps: {
         await deps.primary();
         primaryCompleted = true;
         primarySucceeded = true;
-      } catch {
+      } catch (e) {
         primaryCompleted = true;
         primarySucceeded = false;
         failureCategory = "primary_failed";
+        primaryDiagnostic = sanitizeStage3CTeardownDiagnostic(e);
       }
       return snapshot();
     },
@@ -3373,13 +3393,15 @@ export function createStage3CTeardownController(deps: {
         deps.guard?.();
         await deps.emergency();
         emergencyCompleted = true;
-      } catch {
+      } catch (e) {
         emergencyCompleted = false;
         failureCategory = "emergency_failed";
+        emergencyDiagnostic = sanitizeStage3CTeardownDiagnostic(e);
       }
       // Emergency success NEVER converts a primary failure into success.
       return snapshot();
     },
     outcome: snapshot,
+    diagnostics: () => Object.freeze({ primary: primaryDiagnostic, emergency: emergencyDiagnostic }),
   });
 }

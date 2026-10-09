@@ -24,7 +24,9 @@
  *     emergency pass after any failure;
  *   - primary teardown is attempted at most once;
  *   - an emergency pass never converts a primary failure into success;
- *   - only static failure categories escape — never provider text.
+ *   - the static failure category always leads the message; the cleanup's
+ *     own already-redacted detail is attached after it so the real cause
+ *     is not swallowed (Run #284 showed only the bare category).
  */
 
 import type {
@@ -94,8 +96,12 @@ export interface Stage3CCleanupTransition {
   finalize: () => Promise<void>;
 }
 
-export function transitionFailureMessage(category: Stage3CTransitionFailure): string {
-  return `[stage3c:lifecycle] ${category}`;
+export function transitionFailureMessage(
+  category: Stage3CTransitionFailure,
+  detail?: string | null,
+): string {
+  const base = `[stage3c:lifecycle] ${category}`;
+  return detail ? `${base}\n${detail}` : base;
 }
 
 export function createStage3CCleanupTransition<F>(
@@ -107,13 +113,15 @@ export function createStage3CCleanupTransition<F>(
   /** Private recovery reference — never handed to a cleanup case. */
   let recoveryFixture: F | null = null;
   let emergencyAttempted = false;
+  /** Sanitized underlying cause (from the controller) attached to the category. */
+  let detail: string | null = null;
 
   const now = deps.now ?? (() => new Date().toISOString());
 
   const failNow = (category: Stage3CTransitionFailure): never => {
     failure = category;
     state = "failed";
-    throw new Error(transitionFailureMessage(category));
+    throw new Error(transitionFailureMessage(category, detail));
   };
 
   async function run(): Promise<void> {
@@ -121,7 +129,7 @@ export function createStage3CCleanupTransition<F>(
     // Re-entrancy while a transition is already in flight must never
     // start a second teardown pass.
     if (state === "preparing" || state === "primary_attempted") return;
-    if (state === "failed") throw new Error(transitionFailureMessage(failure));
+    if (state === "failed") throw new Error(transitionFailureMessage(failure, detail));
 
     state = "preparing";
 
@@ -169,7 +177,11 @@ export function createStage3CCleanupTransition<F>(
     // a valid subject for product behavior.
     deps.publish.invalidateFixture();
 
-    if (!outcome.primarySucceeded) failNow("primary_teardown_failed");
+    if (!outcome.primarySucceeded) {
+      const d = controller.diagnostics?.().primary ?? null;
+      detail = d ? `primary cleanup failed:\n${d}` : null;
+      failNow("primary_teardown_failed");
+    }
     state = "completed";
   }
 
@@ -186,8 +198,11 @@ export function createStage3CCleanupTransition<F>(
       if (!controller.outcome().primarySucceeded) {
         emergencyAttempted = true;
         const outcome = await controller.runEmergency();
-        if (outcome.emergencyAttempted && !outcome.emergencyCompleted && failure === "none")
-          failure = "emergency_cleanup_failed";
+        if (outcome.emergencyAttempted && !outcome.emergencyCompleted) {
+          const d = controller.diagnostics?.().emergency ?? null;
+          if (d) detail = `${detail ? `${detail}\n` : ""}emergency cleanup failed:\n${d}`;
+          if (failure === "none") failure = "emergency_cleanup_failed";
+        }
       }
     } else if (recoveryFixture !== null) {
       // Failure happened before the controller existed — recover directly
@@ -196,13 +211,15 @@ export function createStage3CCleanupTransition<F>(
       try {
         deps.guard?.();
         await deps.cleanup(recoveryFixture);
-      } catch {
+      } catch (e) {
+        const d = e instanceof Error ? e.message : null;
+        if (d) detail = `${detail ? `${detail}\n` : ""}emergency cleanup failed:\n${d}`;
         if (failure === "none") failure = "emergency_cleanup_failed";
       }
     }
 
     // Emergency success NEVER clears the original failure.
-    if (failure !== "none") throw new Error(transitionFailureMessage(failure));
+    if (failure !== "none") throw new Error(transitionFailureMessage(failure, detail));
   }
 
   return {

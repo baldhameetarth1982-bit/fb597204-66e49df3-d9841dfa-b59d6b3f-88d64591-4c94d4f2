@@ -166,37 +166,36 @@ export async function renderBillToImageBlob(data: BillCardData): Promise<Blob> {
 }
 
 /**
- * Share a bill as an image to WhatsApp / native share sheet.
- * Falls back to downloading the image if Web Share API can't handle files.
+ * Share a bill: as an image where the device can share files, otherwise as
+ * text through the share sheet, otherwise the text is copied. Share never
+ * downloads a file — Download is a separate button.
+ * Returns how it was shared so the caller can confirm it to the user.
  */
-export async function shareBillAsImage(data: BillCardData) {
-  const blob = await renderBillToImageBlob(data);
-  const file = new File([blob], `bill-${data.flatLabel.replace(/\s+/g, "-")}-${data.period.replace(/\s+/g, "-")}.png`, { type: "image/png" });
-
+export async function shareBillAsImage(data: BillCardData): Promise<"shared" | "copied" | "cancelled"> {
+  const caption = `${data.societyName}\n${data.flatLabel} · ${data.period}\nAmount: ₹${data.amount.toLocaleString("en-IN")}\nDue: ${data.dueDate}`;
   const nav: any = navigator;
-  if (nav.canShare && nav.canShare({ files: [file] })) {
+  const isCancel = (e: unknown) => (e as { name?: string })?.name === "AbortError";
+
+  if (nav.canShare) {
     try {
-      await nav.share({
-        files: [file],
-        title: `Bill — ${data.flatLabel}`,
-        text: `${data.societyName} · ${data.period} · ₹${data.amount}`,
-      });
-      return;
-    } catch {
-      // user cancelled or share failed — fall through to download
+      const blob = await renderBillToImageBlob(data);
+      const file = new File([blob], `bill-${data.flatLabel.replace(/\s+/g, "-")}-${data.period.replace(/\s+/g, "-")}.png`, { type: "image/png" });
+      if (nav.canShare({ files: [file] })) {
+        await nav.share({ files: [file], title: `Bill — ${data.flatLabel}`, text: caption });
+        return "shared";
+      }
+    } catch (e) {
+      if (isCancel(e)) return "cancelled";
     }
   }
-
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = file.name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-
-  // Also nudge WhatsApp Web with caption so they can attach the saved image
-  const caption = `${data.societyName}\n${data.flatLabel} · ${data.period}\nAmount: ₹${data.amount.toLocaleString("en-IN")}\nDue: ${data.dueDate}`;
-  window.open(`https://wa.me/?text=${encodeURIComponent(caption)}`, "_blank");
+  if (nav.share) {
+    try {
+      await nav.share({ title: `Bill — ${data.flatLabel}`, text: caption });
+      return "shared";
+    } catch (e) {
+      if (isCancel(e)) return "cancelled";
+    }
+  }
+  await navigator.clipboard.writeText(caption);
+  return "copied";
 }

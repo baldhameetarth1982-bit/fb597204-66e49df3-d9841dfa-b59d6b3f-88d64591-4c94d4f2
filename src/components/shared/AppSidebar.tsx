@@ -29,12 +29,12 @@ const groups: { label: string; raw?: boolean; items: Item[] }[] = [
     ],
   },
   {
-    label: "Accounting Center", raw: true,
+    label: "ln.acc.center",
     items: [
-      { title: "Income & Expense", raw: true, url: "/society/accounts", icon: ArrowLeftRight, match: ["/society/income", "/society/expenses", "/society/vouchers", "/society/qr", "/society/budgets"] },
-      { title: "Ledger", raw: true, url: "/society/ledger", icon: BookOpen, match: ["/society/books", "/society/reports", "/society/auditor-pack"] },
-      { title: "Maintenance & Billing", raw: true, url: "/society/billing", icon: Receipt, match: ["/society/payments", "/society/defaulters", "/society/receipts", "/society/bill-studio", "/society/billing-settings", "/society/bills"] },
-      { title: "Events", raw: true, url: "/society/event-money", icon: PartyPopper },
+      { title: "ln.acc.incomeExpense", url: "/society/accounts", icon: ArrowLeftRight, match: ["/society/income", "/society/expenses", "/society/vouchers", "/society/qr", "/society/budgets"] },
+      { title: "ln.acc.ledger", url: "/society/ledger", icon: BookOpen, match: ["/society/books", "/society/reports", "/society/auditor-pack"] },
+      { title: "ln.acc.billing", url: "/society/billing", icon: Receipt, match: ["/society/payments", "/society/defaulters", "/society/receipts", "/society/bill-studio", "/society/billing-settings", "/society/bills"] },
+      { title: "ln.acc.events", url: "/society/event-money", icon: PartyPopper },
     ],
   },
   {
@@ -43,17 +43,17 @@ const groups: { label: string; raw?: boolean; items: Item[] }[] = [
       { title: "nav.residents", url: "/society/residents", icon: Users },
       { title: "nav.flats", url: "/society/flats", icon: DoorOpen },
       { title: "nav.blocks", url: "/society/blocks", icon: Building2 },
-      { title: "Approvals", raw: true, url: "/society/approvals", icon: UserPlus },
+      { title: "ln.side.approvals", url: "/society/approvals", icon: UserPlus },
       { title: "nav.verifications", url: "/society/verifications", icon: BadgeCheck },
     ],
   },
   {
-    label: "Operations", raw: true,
+    label: "ln.side.operations",
     items: [
-      { title: "Maintenance matrix", raw: true, url: "/society/matrix", icon: Wrench, match: ["/society/maintenance", "/society/operations"] },
+      { title: "ln.side.matrix", url: "/society/matrix", icon: Wrench, match: ["/society/maintenance", "/society/operations"] },
       { title: "nav.visitors", url: "/society/visitors", icon: UserCheck },
       { title: "nav.vehicles", url: "/society/vehicles", icon: Car, match: ["/society/parking"] },
-      { title: "Helpdesk", raw: true, url: "/society/helpdesk", icon: LifeBuoy },
+      { title: "ln.side.helpdesk", url: "/society/helpdesk", icon: LifeBuoy },
     ],
   },
   {
@@ -61,7 +61,7 @@ const groups: { label: string; raw?: boolean; items: Item[] }[] = [
     items: [
       { title: "nav.announcements", url: "/society/announcements", icon: Megaphone },
       { title: "nav.polls", url: "/society/polls", icon: Vote },
-      { title: "Events & meetings", raw: true, url: "/society/events", icon: CalendarDays, match: ["/society/meetings"] },
+      { title: "ln.side.eventsMeetings", url: "/society/events", icon: CalendarDays, match: ["/society/meetings"] },
     ],
   },
   {
@@ -69,8 +69,8 @@ const groups: { label: string; raw?: boolean; items: Item[] }[] = [
     items: [
       { title: "nav.teamRoles", url: "/society/team", icon: ShieldCheck },
       { title: "nav.automations", url: "/society/automations", icon: Zap },
-      { title: "Subscription", raw: true, url: "/society/subscription", icon: CreditCard },
-      { title: "All modules", raw: true, url: "/society/more", icon: LayoutGrid },
+      { title: "ln.side.subscription", url: "/society/subscription", icon: CreditCard },
+      { title: "ln.side.allModules", url: "/society/more", icon: LayoutGrid },
     ],
   },
 ];

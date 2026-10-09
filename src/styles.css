@@ -440,6 +440,10 @@
     letter-spacing: 0;
     color: var(--color-foreground);
   }
+  /* Headings on coloured banners follow the banner's text colour. */
+  :where(.text-primary-foreground, .text-sidebar-foreground, .text-accent-foreground) :is(h1, h2, h3, h4, h5, h6) {
+    color: inherit;
+  }
   h1 { font-size: 1.5rem; }   /* 24px */
   h2 { font-size: 1.125rem; } /* 18px */
   h3 { font-size: 1rem; }

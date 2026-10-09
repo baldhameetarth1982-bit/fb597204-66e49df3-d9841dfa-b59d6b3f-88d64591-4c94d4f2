@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { tu } from "@/lib/i18n";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Check, Sparkles, Loader2, ShieldCheck, Zap, Crown, Building2 } from "lucide-react";
@@ -43,9 +44,9 @@ function NoSubscriptionForRole() {
     <main className="mx-auto grid min-h-[60vh] max-w-md place-items-center px-6 text-center">
       <div className="space-y-4">
         <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-primary-container text-primary-container-foreground"><ShieldCheck className="h-6 w-6" aria-hidden /></div>
-        <h1 className="type-headline">Nothing to pay here</h1>
-        <p className="text-sm text-muted-foreground">SociyoHub is free for residents and guards. Your society committee manages the society's plan.</p>
-        <Button asChild className="min-h-11 rounded-full"><Link to={primaryRole === "security" ? "/app/guard" : "/app/dashboard"}>Back to home</Link></Button>
+        <h1 className="type-headline">{tu("ln.pr.title")}</h1>
+        <p className="text-sm text-muted-foreground">{tu("ln.pr.body")}</p>
+        <Button asChild className="min-h-11 rounded-full"><Link to={primaryRole === "security" ? "/app/guard" : "/app/dashboard"}>{tu("ln.pr.home")}</Link></Button>
       </div>
     </main>
   );

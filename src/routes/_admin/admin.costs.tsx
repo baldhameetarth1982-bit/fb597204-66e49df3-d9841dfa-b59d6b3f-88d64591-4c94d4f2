@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { tu } from "@/lib/i18n";
 import { askText } from "@/components/system/AskTextDialog";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -67,7 +68,7 @@ function CostsPage() {
   }
 
   async function voidCost(id: string) {
-    const reason = await askText("Why remove this cost? It stays in history.");
+    const reason = await askText(tu("ln.q.removeCost"));
     if (!reason) return;
     const { data, error } = await supabase.rpc("admin_void_platform_cost" as any, { _id: id, _reason: reason });
     const st = (data as any)?.status;

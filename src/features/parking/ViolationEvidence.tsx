@@ -130,7 +130,7 @@ export function ViolationEvidence({ violationId, canAdd, canRemove }: { violatio
     if (!failed) { toast.success(tu("op.photos_attached")); queue.clear(); }
   }
   async function removeOne(id: string) {
-    const reason = await askText("Why remove this photo? It stays in history.");
+    const reason = await askText(tu("ln.q.removePhoto"));
     if (!reason?.trim()) return;
     const { error } = await supabase.rpc("parking_remove_evidence", { _id: id, _reason: reason });
     if (error) return toast.error(evidenceError(error));

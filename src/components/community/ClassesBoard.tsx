@@ -158,7 +158,7 @@ export function ClassesBoard({ societyId, mode }: { societyId: string | null; mo
                     setQr({ token: d.token, expires: d.expires_at, title: c.title });
                   }}><QrCode className="mr-1 h-4 w-4" />{tu("op.check_in_qr")}</Button>
                   <Button variant="ghost" className="min-h-11 text-destructive" disabled={busy === c.id} onClick={async () => {
-                    const r = await askText("Reason for cancelling this class (residents will see it)");
+                    const r = await askText(tu("ln.q.cancelClass"));
                     if (r) void run(c.id, () => supabase.rpc("admin_cancel_class", { _class_id: c.id, _reason: r }), "Class cancelled");
                   }}><X className="mr-1 h-4 w-4" />{tu("op.cancel_class")}</Button>
                 </>}

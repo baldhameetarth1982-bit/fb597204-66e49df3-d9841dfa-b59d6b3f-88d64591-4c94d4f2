@@ -89,7 +89,7 @@ export function MaintenanceScheduleTab() {
               <div className="flex items-center gap-2">{isOverdue(m.due_on, !["done", "cancelled"].includes(m.status)) && <Badge variant="destructive">{tu("bills.overdue")}</Badge>}<Badge variant="outline">{LABEL[m.status] ?? m.status}</Badge>
                 {!["done", "cancelled"].includes(m.status) && (
                   <Button size="sm" variant="outline" className="min-h-11" disabled={stop.isPending} onClick={async () => {
-                    const reason = (await askText("Reason for cancelling", { minLength: 5 }))?.trim();
+                    const reason = (await askText(tu("ln.q.cancelReason"), { minLength: 5 }))?.trim();
                     if (reason && reason.length >= 5) stop.mutate({ id: m.id, reason });
                   }}>{tu("common.cancel")}</Button>)}
               </div>

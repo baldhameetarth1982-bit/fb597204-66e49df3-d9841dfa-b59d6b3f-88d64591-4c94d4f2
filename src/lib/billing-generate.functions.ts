@@ -260,7 +260,7 @@ export type AdminBillLine = {
 export type AdminBillDetail = {
   bill: AdminBillRow;
   lines: AdminBillLine[];
-  society: { name: string | null } | null;
+  society: { name: string | null; registration?: string | null; address?: string | null } | null;
   flat: { flat_number: string | null; block_name: string | null } | null;
   resident: { full_name: string | null; phone: string | null } | null;
   payment_summary: {
@@ -319,7 +319,7 @@ export const getAdminBillDetail = createServerFn({ method: "POST" })
         .select("flat_number, block_id")
         .eq("id", b.flat_id)
         .maybeSingle(),
-      context.supabase.from("societies").select("name").eq("id", b.society_id).maybeSingle(),
+      context.supabase.from("societies").select("name, registration_number, registration_no, full_address, address, city").eq("id", b.society_id).maybeSingle(),
       context.supabase
         .from("flat_residents")
         .select("user_id")
@@ -364,7 +364,16 @@ export const getAdminBillDetail = createServerFn({ method: "POST" })
     const result: AdminBillDetail = {
       bill: b,
       lines: (linesRes.data ?? []) as unknown as AdminBillLine[],
-      society: (societyRes.data as { name: string | null } | null) ?? null,
+      society: societyRes.data
+        ? (() => {
+            const so = societyRes.data as Record<string, string | null>;
+            return {
+              name: so.name ?? null,
+              registration: so.registration_number || so.registration_no || null,
+              address: so.full_address || [so.address, so.city].filter(Boolean).join(", ") || null,
+            };
+          })()
+        : null,
       flat: flatRow ? { flat_number: flatRow.flat_number, block_name } : null,
       resident,
       payment_summary: {

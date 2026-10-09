@@ -21,5 +21,7 @@ Stage 3C/3D runtime verification paused by owner.
 - [x] New launch labels translated in all 23 languages
 - [x] Owner confirmed the 4 launch choices (recommended defaults; Mayur theme applies app-wide to every eligible account)
 - [x] Native-quality review of Marathi, Sanskrit, Telugu, Urdu launch text (Gemini, key rotation)
-- [ ] Manipuri review returned no safe changes — needs a human reviewer
+- [x] Manipuri: full second review of all 5,404 lines by a second AI reviewer (1,436 corrected); native-speaker check still recommended
 - [x] Reviewed bill-cycle safety: reminders run once per 5-day cycle; event tagging never changes amounts or categories and is audited
+- [x] Bill one home rebuilt to match owner's Generate New Bill sample (month grid, extra charges, discount, final total card)
+- [x] Default printable bill matching the owner's sample (Print on any bill)

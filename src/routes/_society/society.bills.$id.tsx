@@ -21,6 +21,7 @@ import { formatDate } from "@/utils/format";
 import { BillAdjustmentsPanel } from "@/components/billing/BillAdjustmentsPanel";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { tu } from "@/lib/i18n";
+import { BillSheet } from "@/components/billing/BillSheet";
 
 export const Route = createFileRoute("/_society/society/bills/$id")({
   head: () => ({ meta: [{ title: "Bill Detail — SociyoHub" }] }),
@@ -242,6 +243,7 @@ function BillDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <BillSheet detail={detail} />
     </PageShell>
   );
 }

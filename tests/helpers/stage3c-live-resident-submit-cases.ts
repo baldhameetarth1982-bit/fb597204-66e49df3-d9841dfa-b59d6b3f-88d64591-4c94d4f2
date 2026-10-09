@@ -628,7 +628,7 @@ export const residentSubmit08_exactSummaryDelta: Stage3CResidentSubmitHandler =
     // Strict payment status counts via parser (no filter fallbacks).
     const rowsRes = await fixture.admin
       .from("payments")
-      .select("id, status")
+      .select("id, status, amount")
       .eq("bill_id", billId);
     if (rowsRes.error)
       throw new Error(

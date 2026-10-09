@@ -14,6 +14,7 @@ import {
 } from "../helpers/stage3c-live-lifecycle";
 import {
   createStage3CTeardownController,
+  registerSensitiveValue,
   type Stage3CCleanupEvidence,
   type Stage3CCleanupObserver,
   type Stage3CTeardownOutcome,
@@ -203,13 +204,11 @@ describe("Stage 3C cleanup lifecycle — failure recovery", () => {
     expect(both.transition.failure()).toBe("primary_teardown_failed");
   });
 
-  it("never leaks provider text — only static failure categories escape", async () => {
+  it("pre-teardown failures escape only as static categories", async () => {
     for (const options of [
       { captureThrows: true },
       { observerThrows: true },
       { controllerThrows: true },
-      { cleanupFailures: 2 },
-      { guardThrows: true },
     ] as HarnessOptions[]) {
       const h = harness(options);
       const message = await h.transition
@@ -220,6 +219,41 @@ describe("Stage 3C cleanup lifecycle — failure recovery", () => {
       expect(message.startsWith("[stage3c:lifecycle] ")).toBe(true);
       await h.transition.finalize().catch(() => undefined);
     }
+  });
+
+  it("keeps the real cleanup error visible (sanitized) behind the static category", async () => {
+    // Regression for Run #284: only `primary_teardown_failed` was reported.
+    for (const options of [{ cleanupFailures: 2 }, { guardThrows: true }] as HarnessOptions[]) {
+      const h = harness(options);
+      const message = await h.transition
+        .run()
+        .then(() => "")
+        .catch((e: unknown) => String((e as Error).message));
+      expect(message.startsWith("[stage3c:lifecycle] primary_teardown_failed\n")).toBe(true);
+      expect(message).toMatch(/primary cleanup failed:/);
+      expect(message).toMatch(/secret detail/);
+      const final = await h.transition
+        .finalize()
+        .then(() => "")
+        .catch((e: unknown) => String((e as Error).message));
+      expect(final.startsWith("[stage3c:lifecycle] primary_teardown_failed")).toBe(true);
+      expect(final).toMatch(/emergency cleanup failed:/);
+    }
+  });
+
+  it("redacts registered credentials from the attached cleanup detail", async () => {
+    const secret = "sk-test-credential-value-123456";
+    registerSensitiveValue(secret);
+    const controller = createStage3CTeardownController({
+      primary: async () => {
+        throw new Error(`delete:societies: update or delete violates foreign key [23503] key=${secret}`);
+      },
+    });
+    await controller.runPrimary();
+    const d = controller.diagnostics?.().primary ?? "";
+    expect(d).toMatch(/23503/);
+    expect(d).toMatch(/delete:societies/);
+    expect(d).not.toContain(secret);
   });
 
   it("exposes exactly the declared state set", () => {

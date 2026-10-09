@@ -4,6 +4,7 @@ import {
   Scale, BarChart3, FileCheck2, FilePlus2, ListChecks, AlertTriangle, LayoutTemplate, SlidersHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { tu } from "@/lib/i18n";
 
 type Page = { to: string; label: string; icon: typeof Wallet; exact?: boolean };
 type Section = { key: string; label: string; icon: typeof Wallet; pages: Page[] };
@@ -14,40 +15,40 @@ type Section = { key: string; label: string; icon: typeof Wallet; pages: Page[] 
  */
 export const ACCOUNTING_SECTIONS: Section[] = [
   {
-    key: "income-expense", label: "Income & Expense", icon: ArrowLeftRight,
+    key: "income-expense", label: "ln.acc.incomeExpense", icon: ArrowLeftRight,
     pages: [
-      { to: "/society/accounts", label: "Overview", icon: Wallet, exact: true },
-      { to: "/society/income", label: "Income", icon: Coins },
-      { to: "/society/expenses", label: "Expenses", icon: TrendingDown },
-      { to: "/society/vouchers", label: "Vouchers", icon: FileText },
-      { to: "/society/qr", label: "Smart QR", icon: QrCode },
-      { to: "/society/budgets", label: "Budgets", icon: PiggyBank },
+      { to: "/society/accounts", label: "ln.acc.overview", icon: Wallet, exact: true },
+      { to: "/society/income", label: "ln.acc.income", icon: Coins },
+      { to: "/society/expenses", label: "ln.acc.expenses", icon: TrendingDown },
+      { to: "/society/vouchers", label: "ln.acc.vouchers", icon: FileText },
+      { to: "/society/qr", label: "ln.acc.smartQr", icon: QrCode },
+      { to: "/society/budgets", label: "ln.acc.budgets", icon: PiggyBank },
     ],
   },
   {
-    key: "ledger", label: "Ledger", icon: BookOpen,
+    key: "ledger", label: "ln.acc.ledger", icon: BookOpen,
     pages: [
-      { to: "/society/ledger", label: "Transactions", icon: BookOpen },
-      { to: "/society/books", label: "Books", icon: Scale },
-      { to: "/society/reports", label: "Reports", icon: BarChart3 },
-      { to: "/society/auditor-pack", label: "Auditor pack", icon: FileCheck2 },
+      { to: "/society/ledger", label: "ln.acc.transactions", icon: BookOpen },
+      { to: "/society/books", label: "ln.acc.books", icon: Scale },
+      { to: "/society/reports", label: "ln.acc.reports", icon: BarChart3 },
+      { to: "/society/auditor-pack", label: "ln.acc.auditorPack", icon: FileCheck2 },
     ],
   },
   {
-    key: "billing", label: "Maintenance & Billing", icon: Receipt,
+    key: "billing", label: "ln.acc.billing", icon: Receipt,
     pages: [
-      { to: "/society/billing/generate", label: "Generate bill", icon: FilePlus2 },
-      { to: "/society/billing", label: "Bill history", icon: ListChecks, exact: true },
-      { to: "/society/payments", label: "Payments", icon: Wallet },
-      { to: "/society/defaulters", label: "Dues", icon: AlertTriangle },
-      { to: "/society/receipts", label: "Receipts", icon: Receipt },
-      { to: "/society/bill-studio", label: "Templates", icon: LayoutTemplate },
-      { to: "/society/billing-settings", label: "Settings", icon: SlidersHorizontal },
+      { to: "/society/billing/generate", label: "ln.acc.generateBill", icon: FilePlus2 },
+      { to: "/society/billing", label: "ln.acc.billHistory", icon: ListChecks, exact: true },
+      { to: "/society/payments", label: "ln.acc.payments", icon: Wallet },
+      { to: "/society/defaulters", label: "ln.acc.dues", icon: AlertTriangle },
+      { to: "/society/receipts", label: "ln.acc.receipts", icon: Receipt },
+      { to: "/society/bill-studio", label: "ln.acc.templates", icon: LayoutTemplate },
+      { to: "/society/billing-settings", label: "ln.acc.settings", icon: SlidersHorizontal },
     ],
   },
   {
-    key: "events", label: "Events", icon: PartyPopper,
-    pages: [{ to: "/society/event-money", label: "Event money", icon: PartyPopper }],
+    key: "events", label: "ln.acc.events", icon: PartyPopper,
+    pages: [{ to: "/society/event-money", label: "ln.acc.eventMoney", icon: PartyPopper }],
   },
 ];
 
@@ -59,7 +60,7 @@ export function AccountingCenterNav({ className }: { className?: string }) {
 
   return (
     <div className={cn("mb-4 space-y-2", className)}>
-      <nav aria-label="Accounting Center" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <nav aria-label={tu("ln.acc.center")} className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {ACCOUNTING_SECTIONS.map((s) => {
           const active = s.key === current.key;
           const Icon = s.icon;
@@ -71,13 +72,13 @@ export function AccountingCenterNav({ className }: { className?: string }) {
               className="pill-tab inline-flex min-h-11 items-center justify-center gap-2 text-center"
             >
               <Icon className="h-4 w-4 shrink-0" aria-hidden />
-              <span className="truncate">{s.label}</span>
+              <span className="truncate">{tu(s.label)}</span>
             </Link>
           );
         })}
       </nav>
       {current.pages.length > 1 && (
-        <nav aria-label={current.label} className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1 py-0.5">
+        <nav aria-label={tu(current.label)} className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1 py-0.5">
           {current.pages.map((p) => {
             const active = isOn(path, p);
             const Icon = p.icon;
@@ -92,7 +93,7 @@ export function AccountingCenterNav({ className }: { className?: string }) {
                 )}
               >
                 <Icon className="h-4 w-4" aria-hidden />
-                {p.label}
+                {tu(p.label)}
               </Link>
             );
           })}

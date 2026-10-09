@@ -18,4 +18,6 @@ Stage 3C/3D runtime verification paused by owner.
 - [x] Event money (income/expense per event) in Accounting Center
 - [ ] Single-bill generator + default bill template per owner's PDF — blocked: needs owner sign-off on the template layout (no PDF visual redesign allowed)
 - [ ] Signed-in visual check of each role — blocked: no authorized QA sign-in this turn
+- [x] New launch labels translated: English, Hindi, Gujarati + 15 more languages
+- [ ] Same labels for Manipuri, Marathi, Sanskrit, Telugu, Urdu — blocked: translation helper daily limit reached; rerun /tmp-style build-time translation later (the language check fails until then)
 - [ ] Owner confirmation of the 4 launch choices (made with recommended defaults)

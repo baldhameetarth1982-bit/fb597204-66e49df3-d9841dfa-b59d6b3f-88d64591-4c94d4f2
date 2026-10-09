@@ -129,30 +129,30 @@ function AutomationsPage() {
         )}
 
         <SettingsSection
-          title="Paid-home bill cycle"
+          title={tu("ln.cy.title")}
           icon={Receipt}
-          trailing={<Badge variant={s.paid_bill_cycle.enabled ? "default" : "secondary"}>{s.paid_bill_cycle.enabled ? "On" : tu("op.off")}</Badge>}
-          description="Every 5 days: homes whose payment for a month was already verified as paid, but have no bill for that month, get their (paid) bill. Homes that still owe get a reminder. A home never gets two bills for one month."
+          trailing={<Badge variant={s.paid_bill_cycle.enabled ? "default" : "secondary"}>{s.paid_bill_cycle.enabled ? tu("ln.cy.on") : tu("op.off")}</Badge>}
+          description={tu("ln.cy.desc")}
         >
           <div className="space-y-4">
             <dl className="grid grid-cols-2 gap-3 text-sm">
-              <div><dt className="text-muted-foreground">{tu("op.repeats")}</dt><dd>Every 5 days</dd></div>
+              <div><dt className="text-muted-foreground">{tu("op.repeats")}</dt><dd>{tu("ln.cy.every")}</dd></div>
               <div><dt className="text-muted-foreground">{tu("op.last_run")}</dt><dd>{when(s.paid_bill_cycle.last_run_at)}</dd></div>
               <div><dt className="text-muted-foreground">{tu("op.next_run")}</dt><dd>{s.paid_bill_cycle.enabled ? when(s.paid_bill_cycle.next_run_at) : tu("cm.st.paused")}</dd></div>
-              <div><dt className="text-muted-foreground">Unpaid homes</dt><dd>Get a reminder, not a bill</dd></div>
+              <div><dt className="text-muted-foreground">{tu("ln.cy.unpaid")}</dt><dd>{tu("ln.cy.unpaidValue")}</dd></div>
             </dl>
             <div className="flex min-h-11 items-center justify-between gap-3">
               <Label htmlFor="cycle-on">{tu("op.run_automatically")}</Label>
               <Switch id="cycle-on" checked={draft.cycleOn} disabled={locked} onCheckedChange={(v) => setDraft({ ...draft, cycleOn: v })} />
             </div>
-            <p className="text-xs text-muted-foreground">Off until you switch it on. Bills for unpaid homes are still made by you in <Link to="/society/billing/generate" className="underline">Generate bill</Link>. Saving here never starts a run right away.</p>
+            <p className="text-xs text-muted-foreground">{tu("ln.cy.footA")} <Link to="/society/billing/generate" className="underline">{tu("ln.acc.generateBill")}</Link>. {tu("ln.cy.footB")}</p>
           </div>
         </SettingsSection>
 
         <SettingsSection
           title={tu("op.unpaid_dues_reminders")}
           icon={BellRing}
-          trailing={<Badge variant={s.reminders.enabled ? "default" : "secondary"}>{s.reminders.enabled ? "On" : tu("op.off")}</Badge>}
+          trailing={<Badge variant={s.reminders.enabled ? "default" : "secondary"}>{s.reminders.enabled ? tu("ln.cy.on") : tu("op.off")}</Badge>}
           description={tu("op.every_morning_sends_the_main")}
         >
           <div className="space-y-4">

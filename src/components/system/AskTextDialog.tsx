@@ -5,6 +5,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { useTranslation } from "react-i18next";
 
 /**
  * In-app replacement for the browser's prompt(). `askText` resolves with the
@@ -21,6 +22,7 @@ export function askText(message: string, opts: { defaultValue?: string; minLengt
 }
 
 export function AskTextDialogHost() {
+  const { t } = useTranslation();
   const [req, setReq] = useState<Req | null>(null);
   const [value, setValue] = useState("");
   const done = useRef(false);
@@ -45,16 +47,16 @@ export function AskTextDialogHost() {
       <AlertDialogContent>
         <form onSubmit={(e) => { e.preventDefault(); if (!tooShort) close(value); }} className="space-y-4">
           <AlertDialogHeader>
-            <AlertDialogTitle>Please confirm</AlertDialogTitle>
+            <AlertDialogTitle>{t("ln.ask.title")}</AlertDialogTitle>
             <AlertDialogDescription>{req?.message}</AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-1.5">
             <Textarea autoFocus aria-label={req?.message} value={value} onChange={(e) => setValue(e.target.value)} rows={3} maxLength={500} className="rounded-xl" />
-            {req && req.minLength > 0 && <p className="text-xs text-muted-foreground">At least {req.minLength} characters.</p>}
+            {req && req.minLength > 0 && <p className="text-xs text-muted-foreground">{t("ln.ask.min", { n: req.minLength })}</p>}
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel type="button" className="min-h-11 rounded-full">Go back</AlertDialogCancel>
-            <Button type="submit" className="min-h-11 rounded-full" disabled={tooShort}>Continue</Button>
+            <AlertDialogCancel type="button" className="min-h-11 rounded-full">{t("ln.ask.back")}</AlertDialogCancel>
+            <Button type="submit" className="min-h-11 rounded-full" disabled={tooShort}>{t("ln.ask.continue")}</Button>
           </AlertDialogFooter>
         </form>
       </AlertDialogContent>

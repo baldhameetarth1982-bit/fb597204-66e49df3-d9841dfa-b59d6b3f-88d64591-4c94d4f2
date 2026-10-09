@@ -12,9 +12,10 @@ import { navhub } from "@/locales/navhub";
 import { profile } from "@/locales/profile";
 import { residentPages } from "@/locales/residentPages";
 import { operations } from "@/locales/operations";
+import { launch } from "@/locales/launch";
 
 const en: Record<string, string> = {};
-for (const c of [core, auth, notifications, accounts, settings, resident, dashboard, navhub, profile, residentPages, operations]) for (const [k, v] of Object.entries(c)) en[k] = v[0];
+for (const c of [core, auth, notifications, accounts, settings, resident, dashboard, navhub, profile, residentPages, operations, launch]) for (const [k, v] of Object.entries(c)) en[k] = v[0];
 
 const dir = join(process.cwd(), "src/locales/extra");
 const files = readdirSync(dir).filter((f) => f.endsWith(".json"));

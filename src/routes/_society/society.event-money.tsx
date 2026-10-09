@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { tu } from "@/lib/i18n";
 import { CalendarDays, Loader2, PartyPopper, RotateCw, TrendingDown, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
@@ -29,17 +31,18 @@ export const Route = createFileRoute("/_society/society/event-money")({
 
 const INR = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 const ERR: Record<string, string> = {
-  not_authorized: "You don't have permission to manage society accounts.",
-  plan_required: "Event money is part of the Accounting Center on your society's plan.",
-  event_not_found: "That event no longer exists.",
-  record_not_found: "That entry no longer exists.",
+  not_authorized: "ln.ev.noPermission",
+  plan_required: "ln.ev.planRequired",
+  event_not_found: "ln.ev.eventGone",
+  record_not_found: "ln.ev.entryGone",
 };
-const msg = (e: unknown) => ERR[(e as Error)?.message] ?? "Couldn't load event money. Check your connection and try again.";
+const msg = (e: unknown) => tu(ERR[(e as Error)?.message] ?? "ln.ev.loadError");
 const NONE = "__none__";
 
 function EventMoneyPage() {
   const { societyId } = useSocietyId();
   const qc = useQueryClient();
+  const { t } = useTranslation();
   const sumFn = useServerFn(getEventMoney);
   const recFn = useServerFn(listEventMoneyRecords);
   const linkFn = useServerFn(setEventMoneyLink);
@@ -54,7 +57,7 @@ function EventMoneyPage() {
       linkFn({ data: { societyId: societyId!, kind: v.r.kind, recordId: v.r.id, eventId: v.eventId } }),
     onSuccess: async () => {
       await Promise.all([qc.invalidateQueries({ queryKey: ["event-money", societyId] }), qc.invalidateQueries({ queryKey: ["event-money-records", societyId] })]);
-      toast.success("Saved");
+      toast.success(tu("ln.ev.saved"));
     },
     onError: (e) => toast.error(msg(e)),
   });
@@ -66,32 +69,32 @@ function EventMoneyPage() {
 
   return (
     <div className="pb-[calc(96px+env(safe-area-inset-bottom))]">
-      <MobileHero eyebrow="Accounting Center" title="Event money" subtitle="What each society event collected and spent. Only verified income and posted expenses count." icon={PartyPopper} variant="teal" />
+      <MobileHero eyebrow={tu("ln.acc.center")} title={tu("ln.acc.eventMoney")} subtitle={tu("ln.ev.subtitle")} icon={PartyPopper} variant="teal" />
       <div className="mx-auto max-w-5xl space-y-4 px-4 pt-4 md:px-8">
         <AccountingCenterNav />
 
         {summary.isError ? (
-          <SectionCard title="Couldn't load event money">
+          <SectionCard title={tu("ln.ev.loadErrorTitle")}>
             <p role="alert" className="text-sm text-muted-foreground">{msg(summary.error)}</p>
-            <Button variant="outline" className="mt-3 min-h-11" onClick={() => summary.refetch()}><RotateCw className="mr-2 h-4 w-4" />Try again</Button>
+            <Button variant="outline" className="mt-3 min-h-11" onClick={() => summary.refetch()}><RotateCw className="mr-2 h-4 w-4" />{tu("ln.ev.tryAgain")}</Button>
           </SectionCard>
         ) : (
           <>
             <div className="grid grid-cols-3 gap-3">
-              <SectionCard icon={TrendingUp} title="Collected"><p className="text-xl font-bold tabular-nums">{fmt(totals.inc)}</p></SectionCard>
-              <SectionCard icon={TrendingDown} title="Spent"><p className="text-xl font-bold tabular-nums">{fmt(totals.exp)}</p></SectionCard>
-              <SectionCard title="Balance"><p className="text-xl font-bold tabular-nums">{fmt(totals.inc - totals.exp)}</p></SectionCard>
+              <SectionCard icon={TrendingUp} title={tu("ln.ev.collected")}><p className="text-xl font-bold tabular-nums">{fmt(totals.inc)}</p></SectionCard>
+              <SectionCard icon={TrendingDown} title={tu("ln.ev.spent")}><p className="text-xl font-bold tabular-nums">{fmt(totals.exp)}</p></SectionCard>
+              <SectionCard title={tu("ln.ev.balance")}><p className="text-xl font-bold tabular-nums">{fmt(totals.inc - totals.exp)}</p></SectionCard>
             </div>
 
-            <SectionCard title="Events" description="Create events in Community → Events. Link income and expenses to them below." bodyClassName="p-0">
+            <SectionCard title={tu("ln.acc.events")} description={tu("ln.ev.eventsHint")} bodyClassName="p-0">
               {summary.isLoading ? <div className="grid place-items-center p-10"><Loader2 className="h-5 w-5 animate-spin" /></div>
-                : events.length === 0 ? <div className="p-6"><EmptyState icon={CalendarDays} title="No events yet" description="Add a festival or function first, then link its collections and spending here." action={<Button asChild className="min-h-11 rounded-full"><Link to="/society/events">Create an event</Link></Button>} /></div>
+                : events.length === 0 ? <div className="p-6"><EmptyState icon={CalendarDays} title={tu("ln.ev.noEvents")} description={tu("ln.ev.noEventsHint")} action={<Button asChild className="min-h-11 rounded-full"><Link to="/society/events">{tu("ln.ev.create")}</Link></Button>} /></div>
                 : <ul className="divide-y">
                   {events.map((e) => (
                     <li key={e.event_id} className="grid gap-1 p-4 sm:grid-cols-[1fr_auto] sm:items-center">
                       <div className="min-w-0">
                         <p className="truncate font-semibold">{e.title}</p>
-                        <p className="text-xs text-muted-foreground">{new Date(e.starts_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} · {e.income_count} collection(s) · {e.expense_count} expense(s)</p>
+                        <p className="text-xs text-muted-foreground">{new Date(e.starts_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} · {t("ln.ev.counts", { inc: e.income_count, exp: e.expense_count })}</p>
                       </div>
                       <div className="flex gap-4 text-sm tabular-nums">
                         <span className="text-success">+{INR.format(e.income)}</span>
@@ -104,23 +107,23 @@ function EventMoneyPage() {
             </SectionCard>
 
             <SectionCard
-              title="Link entries to an event"
-              description="Recent verified income and posted expenses. Linking only tags the entry; amounts and accounts never change."
+              title={tu("ln.ev.linkTitle")}
+              description={tu("ln.ev.linkHint")}
               action={<div className="flex gap-1.5">
-                <button type="button" className="pill-tab" aria-pressed={filter === "unlinked"} aria-current={filter === "unlinked" ? "page" : undefined} onClick={() => setFilter("unlinked")}>Not linked</button>
-                <button type="button" className="pill-tab" aria-pressed={filter === "all"} aria-current={filter === "all" ? "page" : undefined} onClick={() => setFilter("all")}>All</button>
+                <button type="button" className="pill-tab" aria-pressed={filter === "unlinked"} aria-current={filter === "unlinked" ? "page" : undefined} onClick={() => setFilter("unlinked")}>{tu("ln.ev.notLinked")}</button>
+                <button type="button" className="pill-tab" aria-pressed={filter === "all"} aria-current={filter === "all" ? "page" : undefined} onClick={() => setFilter("all")}>{tu("ln.ev.all")}</button>
               </div>}
               bodyClassName="p-0"
             >
               {records.isLoading ? <div className="grid place-items-center p-10"><Loader2 className="h-5 w-5 animate-spin" /></div>
                 : records.isError ? <p role="alert" className="p-4 text-sm text-muted-foreground">{msg(records.error)}</p>
-                : shown.length === 0 ? <p className="p-6 text-sm text-muted-foreground">Nothing to link right now.</p>
+                : shown.length === 0 ? <p className="p-6 text-sm text-muted-foreground">{tu("ln.ev.nothing")}</p>
                 : <ul className="divide-y">
                   {shown.map((r) => (
                     <li key={`${r.kind}-${r.id}`} className="grid gap-2 p-4 sm:grid-cols-[1fr_auto_220px] sm:items-center">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium">{r.label}</p>
-                        <p className="text-xs text-muted-foreground">{r.kind === "income" ? "Income" : "Expense"}{r.date ? ` · ${r.date}` : ""}</p>
+                        <p className="text-xs text-muted-foreground">{r.kind === "income" ? tu("ln.acc.income") : tu("ln.ev.expense")}{r.date ? ` · ${r.date}` : ""}</p>
                       </div>
                       <span className={`text-sm font-semibold tabular-nums ${r.kind === "income" ? "text-success" : "text-destructive"}`}>{r.kind === "income" ? "+" : "−"}{INR.format(r.amount)}</span>
                       <Select
@@ -128,9 +131,9 @@ function EventMoneyPage() {
                         disabled={link.isPending || events.length === 0}
                         onValueChange={(v) => link.mutate({ r, eventId: v === NONE ? null : v })}
                       >
-                        <SelectTrigger aria-label={`Event for ${r.label}`} className="min-h-11 rounded-xl"><SelectValue placeholder="Choose event" /></SelectTrigger>
+                        <SelectTrigger aria-label={`${tu("ln.ev.chooseEvent")}: ${r.label}`} className="min-h-11 rounded-xl"><SelectValue placeholder={tu("ln.ev.chooseEvent")} /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value={NONE}>Not an event</SelectItem>
+                          <SelectItem value={NONE}>{tu("ln.ev.notEvent")}</SelectItem>
                           {events.map((e) => <SelectItem key={e.event_id} value={e.event_id}>{e.title}</SelectItem>)}
                         </SelectContent>
                       </Select>

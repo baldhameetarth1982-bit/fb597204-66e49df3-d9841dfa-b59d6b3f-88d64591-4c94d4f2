@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -229,7 +229,7 @@ function BillingSettingsPage() {
       </>)}
 
       {societyId && (
-        <SettingsDisclosure title={tu("op.automatic_billing")} description={tu("op.create_bills_on_a_schedule")}>
+        <SettingsDisclosure title="Billing amount & cycle" description="Default maintenance amount, cycle and due days.">
           <AutoBillingSection societyId={societyId} />
         </SettingsDisclosure>
       )}
@@ -249,7 +249,7 @@ function AutoBillingSection({ societyId }: { societyId: string }) {
   const [saving, setSaving] = useState(false);
   const [running, setRunning] = useState(false);
   const [sch, setSch] = useState<any>(null);
-  const [enabled, setEnabled] = useState(true);
+  const [enabled, setEnabled] = useState(false);
   const [mode, setMode] = useState<"flat" | "per_sqft" | "per_bhk">("flat");
   const [amount, setAmount] = useState("2500");
   const [cycle, setCycle] = useState<"weekly" | "monthly" | "quarterly">("monthly");
@@ -351,12 +351,9 @@ function AutoBillingSection({ societyId }: { societyId: string }) {
   return (
     <div>
       <div className="space-y-4">
-        <div className="flex items-center justify-between rounded-xl border border-border p-4">
-          <div>
-            <p className="text-sm font-medium">{tu("op.auto_generate_every_cycle")}</p>
-            <p className="text-xs text-muted-foreground">{tu("op.bills_are_created_automatically_each")}</p>
-          </div>
-          <Switch checked={enabled} onCheckedChange={setEnabled} aria-label={tu("op.auto_generate_every_cycle")} />
+        <div className="rounded-xl border border-border bg-muted/40 p-4 text-sm">
+          <p className="font-medium">Automatic billing is off by default</p>
+          <p className="mt-1 text-xs text-muted-foreground">These amounts are used when you generate bills. To let SociyoHub bill already-paid homes every 5 days and remind homes with dues, switch on the paid-home bill cycle in <Link to="/society/automations" className="underline">Automations</Link>.</p>
         </div>
 
         {sch && (

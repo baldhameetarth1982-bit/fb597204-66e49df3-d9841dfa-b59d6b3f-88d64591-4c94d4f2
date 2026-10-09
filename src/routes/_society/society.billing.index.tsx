@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { askText } from "@/components/system/AskTextDialog";
 import { useEffect, useRef, useState } from "react";
 import { Receipt, Plus, Share2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -131,7 +132,7 @@ function BillingPage() {
     } catch { toast.error(tu("op.could_not_share_this_bill")); }
   }
   async function cancel(r: BillRow) {
-    const reason = window.prompt("Reason for cancellation?");
+    const reason = await askText("Why are you cancelling this bill? The bill stays in history.", { minLength: 5 });
     if (!reason || cancelling) return;
     setCancelling(r.id);
     const { error } = await supabase.rpc("cancel_bill", { _bill_id: r.id, _reason: reason });

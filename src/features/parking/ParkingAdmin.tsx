@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { askText } from "@/components/system/AskTextDialog";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -332,7 +333,7 @@ export function TemporaryTab({ d }: { d: PData }) {
     qc.invalidateQueries({ queryKey: ["parking"] }); qc.invalidateQueries({ queryKey: ["parking-capacity"] });
   }
   async function cancel(id: string) {
-    const reason = window.prompt("Why cancel this temporary parking?");
+    const reason = await askText("Why cancel this temporary parking?");
     if (!reason?.trim()) return;
     const { error } = await rpc("admin_parking_release", { _allocation_id: id, _reason: reason, _effective_at: null });
     if (error) return toast.error(gateErrorMessage(error));
@@ -460,7 +461,7 @@ export function ViolationsTab({ d, societyId }: { d: PData; societyId: string })
   const counts = useMemo(() => { const m = new Map<string, number>(); for (const v of list.data ?? []) if (v.plate_text) m.set(v.plate_text, (m.get(v.plate_text) ?? 0) + 1); return m; }, [list.data]);
   const rows = (list.data ?? []).filter((v) => view === "all" ? true : view === "open" ? ["open", "warned"].includes(v.status) : ["resolved", "dismissed"].includes(v.status));
   async function act(id: string, status: string) {
-    const note = window.prompt(status === "warned" ? "Warning message to the home" : "Resolution note");
+    const note = await askText(status === "warned" ? "Warning message to the home" : "Resolution note");
     if (!note?.trim()) return;
     const { error } = await rpc("admin_parking_violation_update", { _id: id, _status: status, _note: note });
     if (error) return toast.error(gateErrorMessage(error));
@@ -535,9 +536,9 @@ export function EvTab({ d, societyId }: { d: PData; societyId: string }) {
     if (error) { toast.error(gateErrorMessage(error)); return false; }
     toast.success(ok); refresh(); return true;
   }
-  async function start(c: Charger) { const plate = window.prompt("Number plate of the vehicle to charge"); if (plate?.trim()) await call("ev_session_start", { _charger_id: c.id, _plate: plate }, "Charging session started"); }
+  async function start(c: Charger) { const plate = await askText("Number plate of the vehicle to charge"); if (plate?.trim()) await call("ev_session_start", { _charger_id: c.id, _plate: plate }, "Charging session started"); }
   async function end(s: Sess) {
-    const raw = window.prompt("Energy delivered in kWh, read from the charger's own meter. Leave empty if it has no meter.", "");
+    const raw = await askText("Energy delivered in kWh, read from the charger's own meter. Leave empty if it has no meter.", { allowEmpty: true });
     if (raw === null) return;
     const kwh = raw.trim() === "" ? null : Number(raw);
     if (kwh !== null && (!Number.isFinite(kwh) || kwh < 0)) return toast.error(tu("op.enter_a_number_or_leave"));

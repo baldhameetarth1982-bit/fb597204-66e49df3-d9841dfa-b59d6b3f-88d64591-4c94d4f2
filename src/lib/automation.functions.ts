@@ -26,6 +26,11 @@ const BillRun = z.object({
 const Snapshot = z.object({
   entitled: z.boolean(),
   bill_run: BillRun.nullable(),
+  paid_bill_cycle: z.object({
+    enabled: z.boolean(),
+    last_run_at: z.string().nullable(),
+    next_run_at: z.string().nullable(),
+  }).default({ enabled: false, last_run_at: null, next_run_at: null }),
   reminders: z.object({
     enabled: z.boolean(),
     min_days_overdue: z.number(),
@@ -49,6 +54,10 @@ export const getAutomations = createServerFn({ method: "POST" })
   });
 
 const SetInput = z.discriminatedUnion("key", [
+  z.object({
+    societyId: z.string().uuid(), key: z.literal("paid_bill_cycle"), enabled: z.boolean(),
+    config: z.object({}).strict().default({}),
+  }),
   z.object({
     societyId: z.string().uuid(), key: z.literal("bill_run"), enabled: z.boolean(),
     config: z.object({ due_offset_days: z.number().int().min(0).max(60) }),

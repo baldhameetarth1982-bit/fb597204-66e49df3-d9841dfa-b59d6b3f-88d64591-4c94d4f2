@@ -27,7 +27,6 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { NeonThemePreview } from "@/components/shared/NeonThemePreview";
 import { TwoFactorCard } from "@/components/security/TwoFactorCard";
 import { tu } from "@/lib/i18n";
 
@@ -524,12 +523,13 @@ function AppearanceCard({
       });
   }, [societyId]);
 
-  // Neon theme is included on every paid, ad-free tier (Pro, Premium, custom).
+  // The premium Mayur theme is included on the higher paid tiers (Pro, Premium, custom).
   const isPremium = isSuperAdmin || plan === "premium" || plan === "pro" || plan === "master";
+  const isRoyal = currentTheme === "royal" || currentTheme === "neon";
 
-  async function setTheme(next: "default" | "neon") {
-    if (next === "neon" && !isPremium) {
-      toast.error(t("st.neonPlan"));
+  async function setTheme(next: "default" | "royal") {
+    if (next === "royal" && !isPremium) {
+      toast.error("Mayur is included on the Growth and Pro plans.");
       return;
     }
     if (!userId) return;
@@ -537,7 +537,7 @@ function AppearanceCard({
     const { error } = await (supabase as any).from("profiles").update({ theme: next }).eq("id", userId);
     setSaving(false);
     if (error) return toast.error(userMessage(error));
-    toast.success(next === "neon" ? t("st.neonOn") : t("st.stdOn"));
+    toast.success(next === "royal" ? "Mayur theme is on" : t("st.stdOn"));
     onChanged();
   }
 
@@ -553,8 +553,9 @@ function AppearanceCard({
           <button
             onClick={() => setTheme("default")}
             disabled={saving}
+            aria-pressed={!isRoyal}
             className={`rounded-2xl border-2 p-4 text-left transition ${
-              currentTheme !== "neon" ? "border-primary" : "border-transparent hover:border-muted-foreground/30"
+              !isRoyal ? "border-primary" : "border-transparent hover:border-muted-foreground/30"
             }`}
           >
             <div className="h-20 rounded-lg bg-gradient-to-br from-background to-muted border mb-2" />
@@ -562,38 +563,40 @@ function AppearanceCard({
             <p className="text-xs text-muted-foreground">{t("st.standardD")}</p>
           </button>
           <button
-            onClick={() => setTheme("neon")}
+            onClick={() => setTheme("royal")}
             disabled={saving || !isPremium}
+            aria-pressed={isRoyal}
             className={`rounded-2xl border-2 p-4 text-left transition relative ${
-              currentTheme === "neon" ? "border-primary" : "border-transparent hover:border-muted-foreground/30"
+              isRoyal ? "border-primary" : "border-transparent hover:border-muted-foreground/30"
             } ${!isPremium ? "opacity-60" : ""}`}
           >
-            <div className="h-20 rounded-lg mb-2 border"
-              style={{ background: "radial-gradient(circle at 30% 20%, #b91c5c, #1a0a14)" }} />
-            <p className="font-semibold flex items-center gap-1">{tu("op.neon")}
-              {!isPremium && <Badge variant="outline" className="text-[10px] ml-1">{tu("op.growth")}</Badge>}
+            <div className="theme-royal mb-2 flex h-20 overflow-hidden rounded-lg border" aria-hidden>
+              <div className="w-1/3 bg-sidebar" />
+              <div className="flex flex-1 flex-col justify-between bg-background p-2">
+                <div className="h-2 w-3/4 rounded-full bg-primary" />
+                <div className="h-2 w-1/2 rounded-full bg-accent" />
+                <div className="h-5 w-full rounded-md border bg-card" />
+              </div>
+            </div>
+            <p className="font-semibold flex items-center gap-1">Mayur
+              <Badge variant="outline" className="text-[10px] ml-1">Premium</Badge>
             </p>
-            <p className="text-xs text-muted-foreground">{t("st.neonD")}</p>
+            <p className="text-xs text-muted-foreground">Peacock blue, marigold and ivory. Works in light and dark.</p>
           </button>
         </div>
         {!isPremium && (
           <p className="text-xs text-muted-foreground">
-            {t("st.upgradeNeon")} {canManagePlan ? <Link to="/pricing" className="underline">{tu("op.growth_pro")}</Link> : tu("op.growth_pro")}
+            Mayur is included on the Growth and Pro plans. {canManagePlan ? <Link to="/society/subscription" className="underline">See plans</Link> : "Ask your committee."}
           </p>
         )}
         {isSuperAdmin && (
-          <p className="text-xs text-emerald-600 dark:text-emerald-400">
+          <p className="text-xs text-success">
             {t("st.superAll")}
           </p>
         )}
 
         <Separator />
         <A11yToggle />
-
-        <details className="rounded-xl border p-3">
-          <summary className="cursor-pointer text-sm font-medium">{t("st.neonPreview")}</summary>
-          <div className="mt-3"><NeonThemePreview /></div>
-        </details>
       </CardContent>
     </Card>
   );

@@ -30,10 +30,9 @@ const ERR: Record<string, string> = {
 const errText = (e: unknown) => ERR[(e as Error)?.message] ?? "Couldn't save. Check your connection and try again.";
 const when = (s: string | null | undefined) => (s ? new Date(s).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) : "—");
 
-type Draft = { billOn: boolean; offset: number; remOn: boolean; minDays: number; repeat: number };
+type Draft = { cycleOn: boolean; remOn: boolean; minDays: number; repeat: number };
 const toDraft = (s: AutomationSnapshot): Draft => ({
-  billOn: s.bill_run?.enabled ?? false,
-  offset: s.bill_run?.due_offset_days ?? 0,
+  cycleOn: s.paid_bill_cycle.enabled,
   remOn: s.reminders.enabled,
   minDays: s.reminders.min_days_overdue,
   repeat: s.reminders.repeat_days,
@@ -41,6 +40,7 @@ const toDraft = (s: AutomationSnapshot): Draft => ({
 
 const ACTIVITY_LABELS: Record<string, string> = {
   maintenance_reminder_sent: "Reminder recorded",
+  "billing.paid_home_cycle_run": "Paid-home bill cycle ran",
   automation_config_changed: "Automation settings changed",
 };
 
@@ -79,8 +79,8 @@ function AutomationsPage() {
     mutationFn: async (d: Draft) => {
       const s = q.data!;
       const base = toDraft(s);
-      if (s.bill_run && (d.billOn !== base.billOn || d.offset !== base.offset))
-        await saveFn({ data: { societyId: societyId!, key: "bill_run", enabled: d.billOn, config: { due_offset_days: d.offset } } });
+      if (d.cycleOn !== base.cycleOn)
+        await saveFn({ data: { societyId: societyId!, key: "paid_bill_cycle", enabled: d.cycleOn, config: {} } });
       if (d.remOn !== base.remOn || d.minDays !== base.minDays || d.repeat !== base.repeat)
         await saveFn({ data: { societyId: societyId!, key: "reminders", enabled: d.remOn, config: { min_days_overdue: d.minDays, repeat_days: d.repeat } } });
     },
@@ -129,33 +129,24 @@ function AutomationsPage() {
         )}
 
         <SettingsSection
-          title={tu("op.monthly_bill_run")}
+          title="Paid-home bill cycle"
           icon={Receipt}
-          trailing={<Badge variant={s.bill_run?.enabled ? "default" : "secondary"}>{s.bill_run ? (s.bill_run.enabled ? "On" : tu("op.off")) : tu("op.not_set_up")}</Badge>}
-          description={tu("op.creates_maintenance_bills_for_every")}
+          trailing={<Badge variant={s.paid_bill_cycle.enabled ? "default" : "secondary"}>{s.paid_bill_cycle.enabled ? "On" : tu("op.off")}</Badge>}
+          description="Every 5 days: homes whose payment for a month was already verified as paid, but have no bill for that month, get their (paid) bill. Homes that still owe get a reminder. A home never gets two bills for one month."
         >
-          {!s.bill_run ? (
-            <p className="text-sm text-muted-foreground">{tu("op.no_billing_schedule_yet")} <Link to="/society/billing" className="underline">{tu("op.set_one_up_in_billing")}</Link> {tu("op.to_use_this_automation")}</p>
-          ) : (
-            <div className="space-y-4">
-              <dl className="grid grid-cols-2 gap-3 text-sm">
-                <div><dt className="text-muted-foreground">{tu("op.repeats")}</dt><dd className="capitalize">{s.bill_run.cycle}</dd></div>
-                <div><dt className="text-muted-foreground">{tu("op.checked_daily_at")}</dt><dd>7:30 AM</dd></div>
-                <div><dt className="text-muted-foreground">{tu("op.last_run")}</dt><dd>{when(s.bill_run.last_run_at)}{s.bill_run.last_run_count != null && s.bill_run.last_run_at ? ` · ${s.bill_run.last_run_count} bills` : ""}</dd></div>
-                <div><dt className="text-muted-foreground">{tu("op.next_run")}</dt><dd>{s.bill_run.enabled ? when(s.bill_run.next_run_at) : tu("cm.st.paused")}</dd></div>
-              </dl>
-              <div className="flex min-h-11 items-center justify-between gap-3">
-                <Label htmlFor="bill-on">{tu("op.run_automatically")}</Label>
-                <Switch id="bill-on" checked={draft.billOn} disabled={locked} onCheckedChange={(v) => setDraft({ ...draft, billOn: v })} />
-              </div>
-              <div className="flex min-h-11 items-center justify-between gap-3">
-                <Label htmlFor="bill-offset">{tu("op.payment_due_after_days")}</Label>
-                <Input id="bill-offset" type="number" inputMode="numeric" min={0} max={60} className="h-11 w-24" disabled={locked}
-                  value={draft.offset} onChange={(e) => setDraft({ ...draft, offset: num(e.target.value, 0, 60) })} />
-              </div>
-              <p className="text-xs text-muted-foreground">{tu("op.amount_billing_day_and_cycle")} <Link to="/society/billing" className="underline">{tu("nav.billing")}</Link>. Saving here never starts a run right away.</p>
+          <div className="space-y-4">
+            <dl className="grid grid-cols-2 gap-3 text-sm">
+              <div><dt className="text-muted-foreground">{tu("op.repeats")}</dt><dd>Every 5 days</dd></div>
+              <div><dt className="text-muted-foreground">{tu("op.last_run")}</dt><dd>{when(s.paid_bill_cycle.last_run_at)}</dd></div>
+              <div><dt className="text-muted-foreground">{tu("op.next_run")}</dt><dd>{s.paid_bill_cycle.enabled ? when(s.paid_bill_cycle.next_run_at) : tu("cm.st.paused")}</dd></div>
+              <div><dt className="text-muted-foreground">Unpaid homes</dt><dd>Get a reminder, not a bill</dd></div>
+            </dl>
+            <div className="flex min-h-11 items-center justify-between gap-3">
+              <Label htmlFor="cycle-on">{tu("op.run_automatically")}</Label>
+              <Switch id="cycle-on" checked={draft.cycleOn} disabled={locked} onCheckedChange={(v) => setDraft({ ...draft, cycleOn: v })} />
             </div>
-          )}
+            <p className="text-xs text-muted-foreground">Off until you switch it on. Bills for unpaid homes are still made by you in <Link to="/society/billing/generate" className="underline">Generate bill</Link>. Saving here never starts a run right away.</p>
+          </div>
         </SettingsSection>
 
         <SettingsSection

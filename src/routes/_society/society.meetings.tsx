@@ -1,4 +1,5 @@
 import { MinutesCorrections } from "@/components/meetings/MinutesCorrections";
+import { askText } from "@/components/system/AskTextDialog";
 import { AISummaryCard } from "@/components/shared/AISummaryCard";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
@@ -176,9 +177,9 @@ function MeetingDetail({ m, societyId, onChanged, onEdit }: { m: Meeting; societ
     catch (e) { toast.error(govError(e)); return false; }
     finally { setBusy(null); }
   }
-  const status = (s: string, label: string) => {
+  const status = async (s: string, label: string) => {
     let reason: string | null = null;
-    if (s === "cancelled") { reason = prompt("Reason for cancelling (residents will be told it was cancelled):"); if (!reason) return; }
+    if (s === "cancelled") { reason = await askText("Reason for cancelling (residents will be told it was cancelled):"); if (!reason) return; }
     return run(s, "meeting_set_status", { _id: m.id, _status: s, _reason: reason }, label);
   };
   const rsvpCount = (v: string) => d.data?.roster.filter((r) => r.rsvp === v).length ?? 0;

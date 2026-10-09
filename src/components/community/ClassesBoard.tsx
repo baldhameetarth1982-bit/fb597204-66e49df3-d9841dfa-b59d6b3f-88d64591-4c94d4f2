@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { askText } from "@/components/system/AskTextDialog";
 import { GraduationCap, Loader2, UserPlus, X, CheckCircle2, QrCode } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
@@ -156,8 +157,8 @@ export function ClassesBoard({ societyId, mode }: { societyId: string | null; mo
                     const d = data as { token: string; expires_at: string };
                     setQr({ token: d.token, expires: d.expires_at, title: c.title });
                   }}><QrCode className="mr-1 h-4 w-4" />{tu("op.check_in_qr")}</Button>
-                  <Button variant="ghost" className="min-h-11 text-destructive" disabled={busy === c.id} onClick={() => {
-                    const r = window.prompt("Reason for cancelling this class (residents will see it)");
+                  <Button variant="ghost" className="min-h-11 text-destructive" disabled={busy === c.id} onClick={async () => {
+                    const r = await askText("Reason for cancelling this class (residents will see it)");
                     if (r) void run(c.id, () => supabase.rpc("admin_cancel_class", { _class_id: c.id, _reason: r }), "Class cancelled");
                   }}><X className="mr-1 h-4 w-4" />{tu("op.cancel_class")}</Button>
                 </>}

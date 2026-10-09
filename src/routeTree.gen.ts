@@ -137,6 +137,7 @@ import { Route as SocietySocietyDepreciationRouteImport } from './routes/_societ
 import { Route as SocietySocietyDigestRouteImport } from './routes/_society/society.digest'
 import { Route as SocietySocietyElectionsRouteImport } from './routes/_society/society.elections'
 import { Route as SocietySocietyEmergencyRouteImport } from './routes/_society/society.emergency'
+import { Route as SocietySocietyEventMoneyRouteImport } from './routes/_society/society.event-money'
 import { Route as SocietySocietyEventsRouteImport } from './routes/_society/society.events'
 import { Route as SocietySocietyExpensesRouteImport } from './routes/_society/society.expenses'
 import { Route as SocietySocietyExplorerRouteImport } from './routes/_society/society.explorer'
@@ -869,6 +870,12 @@ const SocietySocietyEmergencyRoute = SocietySocietyEmergencyRouteImport.update({
   path: '/society/emergency',
   getParentRoute: () => SocietyRoute,
 } as any)
+const SocietySocietyEventMoneyRoute =
+  SocietySocietyEventMoneyRouteImport.update({
+    id: '/society/event-money',
+    path: '/society/event-money',
+    getParentRoute: () => SocietyRoute,
+  } as any)
 const SocietySocietyEventsRoute = SocietySocietyEventsRouteImport.update({
   id: '/society/events',
   path: '/society/events',
@@ -1410,6 +1417,7 @@ export interface FileRoutesByFullPath {
   '/society/digest': typeof SocietySocietyDigestRoute
   '/society/elections': typeof SocietySocietyElectionsRoute
   '/society/emergency': typeof SocietySocietyEmergencyRoute
+  '/society/event-money': typeof SocietySocietyEventMoneyRoute
   '/society/events': typeof SocietySocietyEventsRoute
   '/society/expenses': typeof SocietySocietyExpensesRoute
   '/society/explorer': typeof SocietySocietyExplorerRoute
@@ -1612,6 +1620,7 @@ export interface FileRoutesByTo {
   '/society/digest': typeof SocietySocietyDigestRoute
   '/society/elections': typeof SocietySocietyElectionsRoute
   '/society/emergency': typeof SocietySocietyEmergencyRoute
+  '/society/event-money': typeof SocietySocietyEventMoneyRoute
   '/society/events': typeof SocietySocietyEventsRoute
   '/society/expenses': typeof SocietySocietyExpensesRoute
   '/society/explorer': typeof SocietySocietyExplorerRoute
@@ -1820,6 +1829,7 @@ export interface FileRoutesById {
   '/_society/society/digest': typeof SocietySocietyDigestRoute
   '/_society/society/elections': typeof SocietySocietyElectionsRoute
   '/_society/society/emergency': typeof SocietySocietyEmergencyRoute
+  '/_society/society/event-money': typeof SocietySocietyEventMoneyRoute
   '/_society/society/events': typeof SocietySocietyEventsRoute
   '/_society/society/expenses': typeof SocietySocietyExpensesRoute
   '/_society/society/explorer': typeof SocietySocietyExplorerRoute
@@ -2025,6 +2035,7 @@ export interface FileRouteTypes {
     | '/society/digest'
     | '/society/elections'
     | '/society/emergency'
+    | '/society/event-money'
     | '/society/events'
     | '/society/expenses'
     | '/society/explorer'
@@ -2227,6 +2238,7 @@ export interface FileRouteTypes {
     | '/society/digest'
     | '/society/elections'
     | '/society/emergency'
+    | '/society/event-money'
     | '/society/events'
     | '/society/expenses'
     | '/society/explorer'
@@ -2434,6 +2446,7 @@ export interface FileRouteTypes {
     | '/_society/society/digest'
     | '/_society/society/elections'
     | '/_society/society/emergency'
+    | '/_society/society/event-money'
     | '/_society/society/events'
     | '/_society/society/expenses'
     | '/_society/society/explorer'
@@ -3455,6 +3468,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SocietySocietyEmergencyRouteImport
       parentRoute: typeof SocietyRoute
     }
+    '/_society/society/event-money': {
+      id: '/_society/society/event-money'
+      path: '/society/event-money'
+      fullPath: '/society/event-money'
+      preLoaderRoute: typeof SocietySocietyEventMoneyRouteImport
+      parentRoute: typeof SocietyRoute
+    }
     '/_society/society/events': {
       id: '/_society/society/events'
       path: '/society/events'
@@ -4194,6 +4214,7 @@ interface SocietyRouteChildren {
   SocietySocietyDigestRoute: typeof SocietySocietyDigestRoute
   SocietySocietyElectionsRoute: typeof SocietySocietyElectionsRoute
   SocietySocietyEmergencyRoute: typeof SocietySocietyEmergencyRoute
+  SocietySocietyEventMoneyRoute: typeof SocietySocietyEventMoneyRoute
   SocietySocietyEventsRoute: typeof SocietySocietyEventsRoute
   SocietySocietyExpensesRoute: typeof SocietySocietyExpensesRoute
   SocietySocietyExplorerRoute: typeof SocietySocietyExplorerRoute
@@ -4284,6 +4305,7 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyDigestRoute: SocietySocietyDigestRoute,
   SocietySocietyElectionsRoute: SocietySocietyElectionsRoute,
   SocietySocietyEmergencyRoute: SocietySocietyEmergencyRoute,
+  SocietySocietyEventMoneyRoute: SocietySocietyEventMoneyRoute,
   SocietySocietyEventsRoute: SocietySocietyEventsRoute,
   SocietySocietyExpensesRoute: SocietySocietyExpensesRoute,
   SocietySocietyExplorerRoute: SocietySocietyExplorerRoute,

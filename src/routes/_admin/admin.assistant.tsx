@@ -1,3 +1,4 @@
+import { isTestRecord, useShowTestData } from "@/lib/test-data";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -36,12 +37,14 @@ function AssistantPage() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+  const [showTest] = useShowTestData();
   const societies = useQuery({
-    queryKey: ["admin-society-health"],
+    queryKey: ["admin-assistant-societies", showTest],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("admin_society_health_list" as any);
       if (error) throw new Error("load_failed");
-      return (data ?? []) as unknown as { id: string; name: string }[];
+      const list = (data ?? []) as unknown as { id: string; name: string }[];
+      return showTest ? list : list.filter((s) => !isTestRecord(s.name));
     },
     staleTime: 60_000,
   });

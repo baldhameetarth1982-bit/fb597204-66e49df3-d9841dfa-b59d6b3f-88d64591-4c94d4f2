@@ -91,8 +91,16 @@ describe("server-side reason validation and inert network", () => {
   });
   it("disposable network stand-in never drops pg_net and asserts inertness", () => {
     const net = readFileSync("scripts/disposable-db/inert-network.sql", "utf8").replace(/--[^\n]*/g, "");
-    expect(net).not.toMatch(/DROP EXTENSION/i);
-    expect(net).toMatch(/ALTER EXTENSION pg_net DROP FUNCTION/);
+    expect(net).not.toMatch(/ALTER\s+EXTENSION/i);
+    expect(net).not.toMatch(/DROP\s+FUNCTION/i);
+    expect(net).not.toMatch(/DROP\s+EXTENSION/i);
+    expect(net).toMatch(/extname = 'pg_net'/);
+    expect(net).toMatch(/to_regclass\('net\.http_request_queue'\) IS NOT NULL/);
+    expect(net).toMatch(/to_regclass\('net\._http_response'\) IS NOT NULL/);
+    for (const fn of ["http_post", "http_get", "http_delete"])
+      expect(net).toMatch(new RegExp(`net\\.${fn}\\([\\s\\S]*?RETURNS bigint LANGUAGE sql AS \\$\\$ SELECT 0::bigint \\$\\$`));
     expect(net).toMatch(/disposable_inert_network_check_failed/);
+    const cron = readFileSync("scripts/disposable-db/inert-scheduler.sql", "utf8");
+    expect(cron).toMatch(/active boolean NOT NULL DEFAULT false/);
   });
 });

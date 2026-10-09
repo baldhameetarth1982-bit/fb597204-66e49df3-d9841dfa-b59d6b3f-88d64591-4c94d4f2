@@ -16,7 +16,9 @@ Stage 3C/3D runtime verification paused by owner.
 - [x] Auto billing off by default; 5-day cycle bills only verified-paid homes, reminds due homes
 - [x] Default common income/expense heads
 - [x] Event money (income/expense per event) in Accounting Center
-- [ ] Single-bill generator + default bill template per owner's PDF — blocked: needs owner sign-off on the template layout (no PDF visual redesign allowed)
+- [ ] Single-bill generator + default bill template per owner's PDF — approved by owner; next to build
 - [ ] Signed-in visual check of each role — blocked: no authorized QA sign-in this turn
 - [x] New launch labels translated in all 23 languages
-- [ ] Owner confirmation of the 4 launch choices (made with recommended defaults)
+- [x] Owner confirmed the 4 launch choices (recommended defaults; Mayur theme applies app-wide to every eligible account)
+- [x] Native-quality review of Marathi, Sanskrit, Telugu, Urdu launch text (Gemini, key rotation)
+- [ ] Manipuri review returned no safe changes — needs a human reviewer

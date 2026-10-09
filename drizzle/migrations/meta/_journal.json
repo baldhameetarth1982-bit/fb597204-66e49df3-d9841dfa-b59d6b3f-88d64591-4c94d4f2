@@ -1597,6 +1597,13 @@
       "when": 1791502570284,
       "tag": "0227_converge_disposable_track_with_hosted_finance_functions",
       "breakpoints": true
+    },
+    {
+      "idx": 228,
+      "version": "7",
+      "when": 1791573822917,
+      "tag": "0228_audit_log_preserve_actor_on_user_delete",
+      "breakpoints": true
     }
   ]
 }

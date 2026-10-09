@@ -221,6 +221,7 @@ jobs:
           export HARNESS_DB_URL
           bash scripts/run-sql-harness.sh tests/sql/governance-e2e.sql GOV_RESULT 48
           bash scripts/run-sql-harness.sh tests/sql/marketplace-listing-types.sql MKT_RESULT 83
+          bash scripts/run-sql-harness.sh tests/sql/audit-log-immutability.sql AUDIT_RESULT 6
 
       - name: P01-P10 access, billing, subscription and entitlement database suites (must pass)
         run: |

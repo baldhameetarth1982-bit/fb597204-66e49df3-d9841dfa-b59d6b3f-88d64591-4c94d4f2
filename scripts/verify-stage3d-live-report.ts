@@ -2,8 +2,22 @@ import { readFileSync } from "node:fs";
 import { z } from "zod";
 
 export const EXPECTED_STAGE3D_LIVE_TESTS = 11;
+export const EXPECTED_STAGE3D_LIVE_FILE = "tests/integration/accounting-stage3d-live.test.ts";
 export const FULL_COMMIT_SHA_RE = /^[0-9a-f]{40}$/;
 
+// Vitest's JSON reporter counts every suite node: the test FILE plus each
+// describe() block inside it. The Stage 3D file wraps its 11 tests in one
+// describe, so one executed file legitimately reports numTotalTestSuites = 2.
+// File identity is therefore proven from testResults, not the suite count.
+const assertionSchema = z.object({
+  fullName: z.string(),
+  status: z.string(),
+});
+const fileResultSchema = z.object({
+  name: z.string(),
+  status: z.string(),
+  assertionResults: z.array(assertionSchema),
+});
 const reportSchema = z.object({
   numTotalTestSuites: z.number().int().nonnegative(),
   numPassedTestSuites: z.number().int().nonnegative(),
@@ -15,9 +29,16 @@ const reportSchema = z.object({
   numPendingTests: z.number().int().nonnegative(),
   numTodoTests: z.number().int().nonnegative(),
   success: z.boolean(),
+  testResults: z.array(fileResultSchema),
 });
 
 const metadataSchema = z.object({ commit: z.string() });
+
+function fail(detail: string): never {
+  throw new Error(
+    `Expected Stage 3D exact result: 1 file (${EXPECTED_STAGE3D_LIVE_FILE}), ${EXPECTED_STAGE3D_LIVE_TESTS} total/passed, 0 failed, 0 skipped/pending, 0 todo; ${detail}`,
+  );
+}
 
 export function verifyStage3DLiveReport(
   input: unknown,
@@ -36,10 +57,23 @@ export function verifyStage3DLiveReport(
   if (commit !== expected) {
     throw new Error("Stage 3D report commit SHA does not match the expected commit.");
   }
+
+  if (report.testResults.length !== 1) fail(`received ${report.testResults.length} test files.`);
+  const file = report.testResults[0];
+  const normalized = file.name.replace(/\\/g, "/");
+  if (!(normalized === EXPECTED_STAGE3D_LIVE_FILE || normalized.endsWith(`/${EXPECTED_STAGE3D_LIVE_FILE}`)))
+    fail("received an unexpected test file.");
+  if (file.status !== "passed") fail(`target file status was ${file.status}.`);
+  const tests = file.assertionResults;
+  if (tests.length !== EXPECTED_STAGE3D_LIVE_TESTS) fail(`target file has ${tests.length} tests.`);
+  const notPassed = tests.filter((t) => t.status !== "passed").length;
+  if (notPassed !== 0) fail(`${notPassed} test(s) in the target file did not pass.`);
+  if (new Set(tests.map((t) => t.fullName)).size !== tests.length) fail("duplicate test names.");
+
   if (
     !report.success ||
-    report.numTotalTestSuites !== 1 ||
-    report.numPassedTestSuites !== 1 ||
+    report.numTotalTestSuites < 1 ||
+    report.numPassedTestSuites !== report.numTotalTestSuites ||
     report.numFailedTestSuites !== 0 ||
     report.numPendingTestSuites !== 0 ||
     report.numTotalTests !== EXPECTED_STAGE3D_LIVE_TESTS ||
@@ -48,8 +82,8 @@ export function verifyStage3DLiveReport(
     report.numPendingTests !== 0 ||
     report.numTodoTests !== 0
   ) {
-    throw new Error(
-      `Expected Stage 3D exact result: 1 suite, ${EXPECTED_STAGE3D_LIVE_TESTS} total/passed, 0 failed, 0 skipped/pending, 0 todo; received ${report.numTotalTestSuites} suites, ${report.numTotalTests} total, ${report.numPassedTests} passed, ${report.numFailedTests} failed, ${report.numPendingTests} skipped/pending, ${report.numTodoTests} todo.`,
+    fail(
+      `received ${report.numTotalTestSuites} suites (${report.numPassedTestSuites} passed), ${report.numTotalTests} total, ${report.numPassedTests} passed, ${report.numFailedTests} failed, ${report.numPendingTests} skipped/pending, ${report.numTodoTests} todo.`,
     );
   }
 }

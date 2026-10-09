@@ -6,10 +6,17 @@ import { EXPECTED_STAGE3D_LIVE_TESTS, verifyStage3DLiveReport } from "../../scri
 describe("Stage 3D live report gate", () => {
   const sha = "0123456789abcdef0123456789abcdef01234567";
   const metadata = { commit: sha };
+  const file = (overrides: Record<string, unknown> = {}, statuses = Array(11).fill("passed")) => ({
+    name: "/home/runner/work/repo/tests/integration/accounting-stage3d-live.test.ts",
+    status: "passed",
+    assertionResults: statuses.map((status: string, i: number) => ({ fullName: `Stage 3D case ${i + 1}`, status })),
+    ...overrides,
+  });
+  // Actual Vitest shape: 1 file node + 1 describe node = 2 suites.
   const valid = {
     success: true,
-    numTotalTestSuites: 1,
-    numPassedTestSuites: 1,
+    numTotalTestSuites: 2,
+    numPassedTestSuites: 2,
     numFailedTestSuites: 0,
     numPendingTestSuites: 0,
     numTotalTests: 11,
@@ -17,6 +24,7 @@ describe("Stage 3D live report gate", () => {
     numFailedTests: 0,
     numPendingTests: 0,
     numTodoTests: 0,
+    testResults: [file()],
   };
 
   it("accepts only the exact eleven-case success result", () => {
@@ -34,12 +42,22 @@ describe("Stage 3D live report gate", () => {
     { ...valid, numTodoTests: 1 },
     { ...valid, numFailedTestSuites: 1 },
     { ...valid, numPendingTestSuites: 1 },
-  ])("rejects incomplete or non-passing evidence", (report) => {
+    { ...valid, numPassedTestSuites: 1 },
+    { ...valid, testResults: [] },
+    { ...valid, testResults: [file(), file({ name: "tests/integration/other.test.ts" })] },
+    { ...valid, testResults: [file({ name: "tests/integration/other.test.ts" })] },
+    { ...valid, testResults: [file({}, Array(10).fill("passed"))] },
+    { ...valid, testResults: [file({}, [...Array(10).fill("passed"), "skipped"])] },
+    { ...valid, testResults: [file({ status: "failed" }, [...Array(10).fill("passed"), "failed"])] },
+    { ...valid, testResults: [file({}, [...Array(10).fill("passed"), "todo"])] },
+  ])("rejects incomplete, unexpected or non-passing evidence", (report) => {
     expect(() => verifyStage3DLiveReport(report, sha, metadata)).toThrow(/Expected Stage 3D exact result/);
   });
 
   it("rejects malformed reports", () => {
     expect(() => verifyStage3DLiveReport({ success: true }, sha, metadata)).toThrow();
+    const { testResults: _omit, ...noFiles } = valid;
+    expect(() => verifyStage3DLiveReport(noFiles, sha, metadata)).toThrow();
   });
 
   it("accepts matching commit metadata", () => {

@@ -35,6 +35,32 @@ live("Stage 3D canonical accounting behavior", () => {
   let incomeJournalId = "";
   let vendorId = "";
   let env: Stage3RuntimeEnv;
+  // Dedicated Stage 3D scenarios, created ONLY after the plan is active.
+  // The shared Stage 3C fixture verifies its payments before Stage 3D turns
+  // accounting on, so those IDs never have journals and must not be used here.
+  const s3d = { pending: "", rejected: "", verified: "", reversed: "", ageingBillId: "" };
+  const AGEING_AS_OF = "2026-06-30";
+  const AGEING_AMOUNT = 640;
+
+  async function insertStage3DBill(input: {
+    label: string; amount: number; periodStart: string; periodEnd: string;
+    dueDate: string; finalizedAt: string;
+  }): Promise<string> {
+    const bill = await f.admin.from("bills").insert({
+      society_id: f.societyA, flat_id: f.flatA, period_label: `s3d-${input.label}`,
+      period_start: input.periodStart, period_end: input.periodEnd,
+      amount: input.amount, total_payable: input.amount, due_date: input.dueDate,
+      status: "unpaid", bill_number: `RR/${f.prefix}/s3d-${input.label}`,
+      finalized_at: input.finalizedAt,
+    }).select("id").single();
+    if (bill.error) throw bill.error;
+    const line = await f.admin.from("bill_line_items").insert({
+      bill_id: bill.data.id, society_id: f.societyA, kind: "maintenance",
+      description: `Maintenance s3d-${input.label}`, amount: input.amount,
+    });
+    if (line.error) throw line.error;
+    return bill.data.id as string;
+  }
 
   beforeAll(async () => {
     env = requireStage3DEnv();
@@ -44,7 +70,32 @@ live("Stage 3D canonical accounting behavior", () => {
       .update({ plan_id: "premium", plan_status: "active" })
       .in("id", [f.societyA, f.societyB]);
     if (error) throw error;
-  }, 120_000);
+
+    // Receivables fixture: finalized and due BEFORE the ageing as-of date,
+    // no payments, so it is eligible, overdue (46 days -> 31_60) and positive.
+    s3d.ageingBillId = await insertStage3DBill({
+      label: "ageing", amount: AGEING_AMOUNT, periodStart: "2020-01-01", periodEnd: "2020-01-31",
+      dueDate: "2026-05-15", finalizedAt: "2026-05-01T00:00:00.000Z",
+    });
+
+    // Payment-lifecycle fixture: one dedicated bill, four canonical payments.
+    const lifecycleBill = await insertStage3DBill({
+      label: "lifecycle", amount: 1000, periodStart: "2020-02-01", periodEnd: "2020-02-29",
+      dueDate: "2026-02-15", finalizedAt: new Date().toISOString(),
+    });
+    const submit = (tag: string) => f.helpers.submitAdminBankTransferPayment({
+      actor: f.users.adminA1, billId: lifecycleBill, amount: 100, paymentDate: f.testPaymentDate,
+      referenceNo: `${f.prefix}-S3D-${tag}`, idempotencyKey: `${f.prefix}-s3d-${tag.toLowerCase()}`,
+    });
+    s3d.pending = await submit("PENDING");
+    s3d.rejected = await submit("REJECTED");
+    await f.helpers.rejectPayment(f.users.adminA2, s3d.rejected, "Stage 3D rejected scenario");
+    s3d.verified = await submit("VERIFIED");
+    await f.helpers.verifyPayment(f.users.adminA2, s3d.verified, "Stage 3D verified scenario");
+    s3d.reversed = await submit("REVERSED");
+    await f.helpers.verifyPayment(f.users.adminA2, s3d.reversed, "Stage 3D reversal scenario");
+    await f.helpers.reversePayment(f.users.adminA2, s3d.reversed, "Stage 3D reversal scenario");
+  }, 180_000);
 
   afterAll(async () => {
     // Canonical journals are intentionally immutable and society FKs are
@@ -232,11 +283,16 @@ live("Stage 3D canonical accounting behavior", () => {
     });
     expect(bank.some((row: any) => row.entry_id === paymentJournalId)).toBe(true);
 
+    // Only bills finalized on/before the as-of date count. The dedicated
+    // Stage 3D bill is the sole eligible one: shared fixture bills are
+    // finalized "now", after the as-of date, and are correctly excluded.
     const ageing = await rpc(f.users.adminA1.client, "get_receivables_ageing", {
-      _society_id: f.societyA, _as_of: "2026-06-30",
+      _society_id: f.societyA, _as_of: AGEING_AS_OF,
     });
     expect(Array.isArray(ageing)).toBe(true);
     expect(ageing.reduce((sum: number, row: any) => sum + asNumber(row.amount), 0)).toBeGreaterThan(0);
+    const rows = ageing.map((r: any) => ({ bucket: r.bucket, amount: asNumber(r.amount), bill_count: asNumber(r.bill_count) }));
+    expect(rows).toEqual([{ bucket: "31_60", amount: AGEING_AMOUNT, bill_count: 1 }]);
   });
 
   it("enforces resident transparency tiers and society isolation from the canonical journal", async () => {
@@ -290,25 +346,37 @@ live("Stage 3D canonical accounting behavior", () => {
   });
 
   it("posts only verified payment activity and compensates reversed payments", async () => {
-    const sourceIds = [
-      f.scenarios.pendingAdminCashPaymentId,
-      f.scenarios.rejectedPaymentId,
-      f.scenarios.verifiedPaymentId,
-      f.scenarios.reversedPaymentId,
-    ];
+    const sourceIds = [s3d.pending, s3d.rejected, s3d.verified, s3d.reversed];
     const entries = await f.admin
       .from("finance_journal_entries")
-      .select("source_id,source_type,source_action,reversal_of")
-      .eq("society_id", f.societyA)
+      .select("id,society_id,source_id,source_type,source_action,reversal_of,status")
       .in("source_id", sourceIds);
     expect(entries.error).toBeNull();
-    expect(entries.data?.some(row => row.source_id === f.scenarios.pendingAdminCashPaymentId)).toBe(false);
-    expect(entries.data?.some(row => row.source_id === f.scenarios.rejectedPaymentId)).toBe(false);
-    expect(entries.data?.filter(row => row.source_id === f.scenarios.verifiedPaymentId)).toHaveLength(1);
-    const reversed = entries.data?.filter(row => row.source_id === f.scenarios.reversedPaymentId) ?? [];
+    const rows = entries.data ?? [];
+    expect(rows.every((row) => row.society_id === f.societyA)).toBe(true);
+    expect(rows.filter((row) => row.source_id === s3d.pending)).toHaveLength(0);
+    expect(rows.filter((row) => row.source_id === s3d.rejected)).toHaveLength(0);
+
+    const verified = rows.filter((row) => row.source_id === s3d.verified);
+    expect(verified).toHaveLength(1);
+    expect(verified[0]).toMatchObject({ source_type: "payment", source_action: "post", reversal_of: null, status: "posted" });
+
+    const reversed = rows.filter((row) => row.source_id === s3d.reversed);
     expect(reversed).toHaveLength(2);
-    expect(reversed.some(row => row.source_type === "payment" && row.source_action === "post" && row.reversal_of === null)).toBe(true);
-    expect(reversed.some(row => row.source_type === "payment_reversal" && row.source_action === "reverse" && row.reversal_of !== null)).toBe(true);
+    const original = reversed.filter((row) => row.source_type === "payment" && row.source_action === "post" && row.reversal_of === null);
+    const compensating = reversed.filter((row) => row.source_type === "payment_reversal" && row.source_action === "reverse");
+    expect(original).toHaveLength(1);
+    expect(compensating).toHaveLength(1);
+    expect(compensating[0].reversal_of).toBe(original[0].id);
+
+    for (const entryId of [verified[0].id, original[0].id, compensating[0].id]) {
+      const lines = await f.admin.from("finance_journal_lines").select("debit,credit").eq("journal_entry_id", entryId);
+      expect(lines.error).toBeNull();
+      const debit = (lines.data ?? []).reduce((n, x) => n + asNumber(x.debit), 0);
+      const credit = (lines.data ?? []).reduce((n, x) => n + asNumber(x.credit), 0);
+      expect(debit).toBe(100);
+      expect(credit).toBe(100);
+    }
   });
 
   it("keeps posted journals immutable and emits canonical audit rows", async () => {

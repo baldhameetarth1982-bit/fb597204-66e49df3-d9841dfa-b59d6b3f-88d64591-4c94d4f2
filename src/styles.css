@@ -368,7 +368,7 @@
 .theme-royal main h2 { color: var(--primary); letter-spacing: -0.01em; }
 .dark.theme-royal main h1,
 .dark.theme-royal main h2 { color: var(--foreground); }
-.theme-royal main h1::after {
+.theme-royal main h1:not(.flex):not(.sr-only)::after {
   content: "";
   display: block;
   width: 2.5rem;

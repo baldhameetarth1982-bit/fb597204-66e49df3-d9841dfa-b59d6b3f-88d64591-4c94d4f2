@@ -358,24 +358,11 @@
   font-size: 0.6875rem;
 }
 
-/* Cards and headings: gold hairline frame, peacock ink headings, steady money figures. */
+/* Cards: gold hairline frame and soft peacock shadow; steady money figures. */
 .theme-royal .rounded-2xl.border,
 .theme-royal .rounded-xl.border {
   border-color: color-mix(in oklab, var(--gold) 22%, var(--border));
   box-shadow: var(--elevation-1);
-}
-.theme-royal main h1,
-.theme-royal main h2 { color: var(--primary); letter-spacing: -0.01em; }
-.dark.theme-royal main h1,
-.dark.theme-royal main h2 { color: var(--foreground); }
-.theme-royal main h1:not(.flex):not(.sr-only)::after {
-  content: "";
-  display: block;
-  width: 2.5rem;
-  height: 2px;
-  margin-top: 0.5rem;
-  border-radius: 9999px;
-  background: var(--gold);
 }
 .theme-royal main { font-variant-numeric: tabular-nums; }
 

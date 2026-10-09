@@ -717,3 +717,29 @@ html[dir="rtl"] body {
 [dir="rtl"] :is(.lucide-chevron-right, .lucide-chevron-left, .lucide-arrow-right, .lucide-arrow-left, .lucide-arrow-up-right) {
   transform: scaleX(-1);
 }
+
+/* ---------- Printable bill (default template) ---------- */
+.bill-sheet { display: none; }
+@media print {
+  @page { size: A4; margin: 14mm; }
+  body * { visibility: hidden !important; }
+  .bill-sheet, .bill-sheet * { visibility: visible !important; }
+  .bill-sheet {
+    display: block; position: absolute; inset: 0 auto auto 0; width: 100%;
+    color: #111827; background: #fff; font-size: 11pt; line-height: 1.4;
+  }
+  .bill-sheet h1 { font-size: 20pt; font-weight: 800; text-align: center; margin: 0; letter-spacing: 0.02em; }
+  .bill-sheet h2 { font-size: 8.5pt; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin: 14pt 0 4pt; color: #374151; }
+  .bill-sheet-head { text-align: center; border-bottom: 1.5pt solid #111827; padding-bottom: 8pt; }
+  .bill-sheet-head p { margin: 2pt 0 0; font-size: 9.5pt; }
+  .bill-sheet-small { font-size: 8pt !important; color: #4b5563; }
+  .bill-sheet-badge { display: inline-block; margin-top: 6pt; padding: 3pt 12pt; background: #111827; color: #fff; font-size: 9pt; font-weight: 700; letter-spacing: 0.08em; }
+  .bill-sheet-box { border: 0.75pt solid #e5e7eb; padding: 2pt 8pt; }
+  .bill-sheet-row, .bill-sheet-th, .bill-sheet-sub { display: flex; justify-content: space-between; gap: 12pt; padding: 4pt 0; border-bottom: 0.5pt solid #f1f5f9; }
+  .bill-sheet-row span:first-child { color: #4b5563; }
+  .bill-sheet-th { font-size: 8pt; font-weight: 700; text-transform: uppercase; background: #f1f5f9; margin: 4pt -8pt 0; padding: 4pt 8pt; }
+  .bill-sheet-sub { font-weight: 700; justify-content: flex-end; gap: 40pt; }
+  .bill-sheet-total { display: flex; justify-content: space-between; margin-top: 10pt; padding: 10pt 12pt; background: #111827; color: #fff; font-weight: 800; font-size: 13pt; }
+  .bill-sheet-foot { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 40pt; font-size: 8.5pt; color: #4b5563; }
+  .bill-sheet-sign { border-top: 0.75pt solid #111827; padding-top: 4pt; min-width: 140pt; text-align: center; font-weight: 700; color: #111827; }
+}

@@ -14,7 +14,6 @@ import {
 } from "../helpers/stage3c-live-lifecycle";
 import {
   createStage3CTeardownController,
-  registerSensitiveValue,
   type Stage3CCleanupEvidence,
   type Stage3CCleanupObserver,
   type Stage3CTeardownOutcome,
@@ -241,9 +240,10 @@ describe("Stage 3C cleanup lifecycle — failure recovery", () => {
     }
   });
 
-  it("redacts registered credentials from the attached cleanup detail", async () => {
-    const secret = "sk-test-credential-value-123456";
-    registerSensitiveValue(secret);
+  it("redacts credentials from the attached cleanup detail", async () => {
+    // JWT-shaped bearer token: the shared redactor must strip it.
+    const secret =
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIn0.c2lnbmF0dXJlLXZhbHVlLXRlc3Q";
     const controller = createStage3CTeardownController({
       primary: async () => {
         throw new Error(`delete:societies: update or delete violates foreign key [23503] key=${secret}`);

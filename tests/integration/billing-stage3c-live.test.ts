@@ -53,7 +53,10 @@ import {
 import { createStage3CCleanupTransition } from "../helpers/stage3c-live-lifecycle";
 import { STAGE3C_MATRIX_LIVE_CASE_HANDLERS } from "../helpers/stage3c-live-matrix-registry";
 import { STAGE3C_CLEANUP_CASE_IDS } from "../helpers/stage3c-live-cleanup-cases";
-import { primeStage3CReadContext } from "../helpers/stage3c-live-read-cases";
+import {
+  primeStage3CReadContext,
+  refreshStage3CReadExpectations,
+} from "../helpers/stage3c-live-read-cases";
 
 const RUN_LIVE = process.env.ALLOW_SOCIOHUB_LIVE_STAGE3C === "true";
 const gate = RUN_LIVE ? describe : describe.skip;
@@ -121,6 +124,12 @@ gate("Stage 3C — live matrix (93/93)", () => {
   describe("product cases (1..90)", () => {
     for (const caseDefinition of STAGE3C_PRODUCT_CASES) {
       it(`${caseDefinition.id} ${caseDefinition.description}`, async () => {
+        // READ expectations must reflect the lifecycle state reached by the
+        // earlier registry cases (VERIFY-* verifies the READ primary payment;
+        // submit/idempotency cases add payments). Re-anchor them to the
+        // authoritative payments table at READ-phase start.
+        if (caseDefinition.id === "READ-01" || caseDefinition.id === "READ-02")
+          await refreshStage3CReadExpectations(ctx, caseDefinition.id);
         await caseDefinition.execute(ctx);
       });
     }

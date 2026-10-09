@@ -178,6 +178,11 @@ live("Stage 3D canonical accounting behavior", () => {
     }).select("id").single();
     if (supported.error) throw supported.error;
     incomeId = supported.data!.id;
+    // Use the existing authorized human category-review step before posting.
+    const confirmed = await rpc(f.users.adminA1.client, "confirm_income_category", {
+      _record_id: incomeId, _category_id: category.data!.id, _request_id: requestId(), _expected_revision: null,
+    });
+    expect(confirmed.status).toBe("success");
     const transitioned = await rpc(f.users.adminA1.client, "transition_income_record", {
       _record_id: incomeId, _target_status: "verified", _reason: null,
     });
@@ -193,6 +198,10 @@ live("Stage 3D canonical accounting behavior", () => {
       created_by: f.users.adminA1.id,
     }).select("id").single();
     if (unsupported.error) throw unsupported.error;
+    const unsupportedConfirmed = await rpc(f.users.adminA1.client, "confirm_income_category", {
+      _record_id: unsupported.data!.id, _category_id: category.data!.id, _request_id: requestId(), _expected_revision: null,
+    });
+    expect(unsupportedConfirmed.status).toBe("success");
     const denied = await f.users.adminA1.client.rpc("transition_income_record", {
       _record_id: unsupported.data!.id, _target_status: "verified", _reason: null,
     });
@@ -206,7 +215,7 @@ live("Stage 3D canonical accounting behavior", () => {
       _society_id: f.societyA, _from: "2026-01-01", _to: "2026-12-31",
     });
     const legacy = await f.admin.from("ledger_entries").insert({
-      society_id: f.societyA, kind: "credit", category: "other", amount: 999999,
+      society_id: f.societyA, kind: "income", category: "other", amount: 999999,
       description: "Synthetic legacy exclusion proof", entry_date: f.testPaymentDate,
       created_by: f.users.adminA1.id,
     });

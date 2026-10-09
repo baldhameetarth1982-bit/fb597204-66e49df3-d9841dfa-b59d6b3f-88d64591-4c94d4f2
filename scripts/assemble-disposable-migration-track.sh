@@ -45,6 +45,12 @@ printf 'project_id = "sociohub-disposable-verification"\n' > "$out/supabase/conf
 # 1. Inert scheduler first, so historical cron registrations never execute.
 cp "$root/scripts/disposable-db/inert-scheduler.sql" "$mig/20260101000000_disposable_inert_scheduler.sql"
 
+# Copies a migration, commenting out any statement that installs pg_net.
+# Only the throwaway copy is changed; the repository file is never edited.
+neutralize_pg_net() {
+  sed -E 's/^([[:space:]]*CREATE[[:space:]]+EXTENSION[[:space:]].*pg_net.*)$/-- [disposable] neutralized, real network extension never installed: \1/I' "$1" > "$2"
+}
+
 # 2. Supabase CLI track up to CUTOFF, failing closed on unknown later files.
 prefix_count=0
 for f in "$root"/supabase/migrations/*.sql; do
@@ -63,10 +69,11 @@ for f in "$root"/supabase/migrations/*.sql; do
     fi
     continue
   fi
-  cp "$f" "$mig/$name"
+  # 2a. Never install the real outbound-HTTP extension in the disposable copy.
+  neutralize_pg_net "$f" "$mig/$name"
   prefix_count=$((prefix_count + 1))
-  # 2b. Replace outbound HTTP right after the migration that installs it.
-  if grep -qiE '^CREATE EXTENSION pg_net' "$f"; then
+  # 2b. Install inert stand-ins exactly where the hosted track installed pg_net.
+  if grep -qiE '^\s*CREATE\s+EXTENSION\s+(IF\s+NOT\s+EXISTS\s+)?"?pg_net' "$f"; then
     cp "$root/scripts/disposable-db/inert-network.sql" \
       "$mig/$(printf '%014d' $((10#$version + 1)))_disposable_inert_network.sql"
   fi
@@ -97,10 +104,20 @@ if (missing.length || extra.length) {
 if (tags.length > 99999) { console.error("[config] too many drizzle migrations"); process.exit(2); }
 tags.forEach((tag, i) => {
   const version = `202609180${String(i).padStart(5, "0")}`;
-  fs.copyFileSync(path.join(dir, `${tag}.sql`), path.join(mig, `${version}_dz_${tag}.sql`));
+  const src = fs.readFileSync(path.join(dir, `${tag}.sql`), "utf8");
+  const out = src.replace(/^([ \t]*CREATE[ \t]+EXTENSION[ \t].*pg_net.*)$/gim, "-- [disposable] neutralized, real network extension never installed: $1");
+  fs.writeFileSync(path.join(mig, `${version}_dz_${tag}.sql`), out);
 });
 console.log(`drizzle migrations: ${tags.length}`);
 NODE
+
+# 4. Fail closed: no assembled file may still install pg_net effectively.
+if grep -hiE '^[[:space:]]*CREATE[[:space:]]+EXTENSION[[:space:]].*pg_net' "$mig"/*.sql | grep -q .; then
+  echo "[config] assembled disposable track still installs pg_net" >&2; exit 2
+fi
+if grep -hiE '^[[:space:]]*ALTER[[:space:]]+EXTENSION' "$mig"/*_disposable_*.sql | grep -q .; then
+  echo "[config] disposable stand-ins must not alter extensions" >&2; exit 2
+fi
 
 echo "pre-cutover supabase migrations: $prefix_count"
 echo "excluded post-cutover mirrors: ${#KNOWN_MIRRORS[@]}"

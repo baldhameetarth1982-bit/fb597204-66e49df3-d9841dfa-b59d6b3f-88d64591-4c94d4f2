@@ -80,3 +80,40 @@ describe("runtime verification workflow", () => {
     expect(out).not.toContain(":pw@");
   });
 });
+
+describe("disposable network neutralisation", () => {
+  const mig = () => join(workdir, "supabase", "migrations");
+  it("never effectively installs pg_net and leaves the historical source untouched", () => {
+    for (const f of files) {
+      const sql = readFileSync(join(mig(), f), "utf8");
+      expect(sql).not.toMatch(/^[ \t]*CREATE[ \t]+EXTENSION[ \t].*pg_net/im);
+    }
+    const hosted = readdirSync(join(root, "supabase", "migrations")).find((f) => f.startsWith("20260608213213_"))!;
+    expect(read(`supabase/migrations/${hosted}`)).toMatch(/^CREATE EXTENSION pg_net WITH SCHEMA extensions;/m);
+    expect(readFileSync(join(mig(), hosted), "utf8")).toMatch(/-- \[disposable\] neutralized/);
+  });
+  it("stand-ins never alter extensions, keep required signatures and assert inertness", () => {
+    const net = read("scripts/disposable-db/inert-network.sql");
+    expect(net).not.toMatch(/ALTER\s+EXTENSION/i);
+    expect(net).not.toMatch(/DROP\s+(FUNCTION|EXTENSION)/i);
+    for (const sig of [/net\.http_post\(\s*url text, body jsonb/, /net\.http_get\(\s*url text, params jsonb/, /net\.http_delete\(\s*url text, params jsonb/])
+      expect(net).toMatch(sig);
+    expect(net).toMatch(/real pg_net is installed/);
+    expect(net).toMatch(/http_request_queue/);
+  });
+  it("repeated assembly produces an identical track", () => {
+    const again = join(mkdtempSync(join(tmpdir(), "disposable-track-")), "w");
+    execFileSync("bash", ["scripts/assemble-disposable-migration-track.sh", again], { cwd: root, stdio: "pipe" });
+    const second = readdirSync(join(again, "supabase", "migrations")).sort();
+    expect(second).toEqual(files);
+    for (const f of second) expect(readFileSync(join(again, "supabase", "migrations", f), "utf8")).toBe(readFileSync(join(mig(), f), "utf8"));
+    rmSync(join(again, ".."), { recursive: true, force: true });
+  });
+});
+
+describe("workflow triggers", () => {
+  it("runs on script changes for pushes and pull requests", () => {
+    const wf = read(".github/workflows/stage3c-runtime-verification.yml");
+    expect(wf.split('- "scripts/**"').length - 1).toBe(2);
+  });
+});

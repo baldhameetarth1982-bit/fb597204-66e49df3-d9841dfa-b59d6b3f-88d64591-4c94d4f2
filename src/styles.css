@@ -307,8 +307,74 @@
   --surface-2: oklch(0.26 0.04 248);
   --outline: oklch(0.38 0.04 248);
 }
-/* A thin marigold rule under the header is the only ornament — no glow. */
-.theme-royal header.sticky { box-shadow: inset 0 -2px 0 color-mix(in oklab, var(--accent) 55%, transparent); }
+/* Mayur polish — restrained craft, not decoration: deeper peacock ink,
+ * temple-gold hairlines, peacock-tinted soft shadows, a faint jaali lattice
+ * in the side menu, and clear status colours tuned to sit on ivory. */
+.theme-royal {
+  --primary: oklch(0.42 0.095 222);
+  --ring: oklch(0.42 0.095 222);
+  --success: oklch(0.52 0.12 158);
+  --success-foreground: oklch(0.99 0.01 85);
+  --warning: oklch(0.7 0.15 68);
+  --destructive: oklch(0.5 0.17 22);
+  --gold: oklch(0.76 0.13 80);
+  --gold-soft: color-mix(in oklab, var(--gold) 38%, transparent);
+  --mayur-shadow: color-mix(in oklab, oklch(0.3 0.08 230) 16%, transparent);
+  --elevation-1: 0 1px 2px var(--mayur-shadow);
+  --elevation-2: 0 2px 8px -2px var(--mayur-shadow), 0 1px 2px var(--mayur-shadow);
+  --elevation-3: 0 10px 24px -10px var(--mayur-shadow), 0 2px 6px var(--mayur-shadow);
+  --elevation-4: 0 24px 48px -16px var(--mayur-shadow), 0 4px 12px var(--mayur-shadow);
+  --jaali: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cpath d='M14 2 L26 14 L14 26 L2 14 Z M14 8 L20 14 L14 20 L8 14 Z' fill='none' stroke='%23e2b04a' stroke-width='0.8' opacity='0.14'/%3E%3C/svg%3E");
+}
+.dark.theme-royal {
+  --gold: oklch(0.8 0.14 78);
+  --mayur-shadow: rgb(0 0 0 / 0.45);
+  --success: oklch(0.68 0.13 158);
+  --success-foreground: oklch(0.18 0.03 250);
+}
+
+/* Header: a single temple-gold rule. */
+.theme-royal header.sticky { box-shadow: inset 0 -2px 0 var(--gold-soft); }
+
+/* Side menu: jaali lattice, readable ivory text, gold marker on the current page. */
+.theme-royal [data-sidebar="sidebar"] {
+  background-image: var(--jaali);
+  background-size: 28px 28px;
+}
+.theme-royal [data-sidebar="menu-button"] { color: color-mix(in oklab, var(--sidebar-foreground) 82%, transparent); }
+.theme-royal [data-sidebar="menu-button"]:hover { color: var(--sidebar-accent-foreground); }
+.theme-royal [data-sidebar="menu-button"][data-active="true"] {
+  color: var(--sidebar-primary);
+  box-shadow: inset 3px 0 0 var(--sidebar-primary);
+}
+.theme-royal[dir="rtl"] [data-sidebar="menu-button"][data-active="true"],
+[dir="rtl"] .theme-royal [data-sidebar="menu-button"][data-active="true"] {
+  box-shadow: inset -3px 0 0 var(--sidebar-primary);
+}
+.theme-royal [data-sidebar="group-label"] {
+  color: color-mix(in oklab, var(--gold) 80%, var(--sidebar-foreground));
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.6875rem;
+}
+
+/* Cards: gold hairline frame and soft peacock shadow; steady money figures. */
+.theme-royal .rounded-2xl.border,
+.theme-royal .rounded-xl.border {
+  border-color: color-mix(in oklab, var(--gold) 22%, var(--border));
+  box-shadow: var(--elevation-1);
+}
+.theme-royal main { font-variant-numeric: tabular-nums; }
+
+/* Pill tabs: gold underline cue on the selected tab. */
+.theme-royal .pill-tab[data-state="active"],
+.theme-royal .pill-tab[aria-current="page"],
+.theme-royal .pill-tab[aria-selected="true"] {
+  box-shadow: inset 0 -2px 0 var(--gold);
+}
+
+/* Selection and focus in brand colours. */
+.theme-royal ::selection { background: color-mix(in oklab, var(--gold) 35%, transparent); }
 
 /* ---------- Pill tabs (app-wide) ---------- */
 @layer components {
@@ -373,6 +439,10 @@
     font-weight: 700;
     letter-spacing: 0;
     color: var(--color-foreground);
+  }
+  /* Headings on coloured banners follow the banner's text colour. */
+  :where(.text-primary-foreground, .text-sidebar-foreground, .text-accent-foreground) :is(h1, h2, h3, h4, h5, h6) {
+    color: inherit;
   }
   h1 { font-size: 1.5rem; }   /* 24px */
   h2 { font-size: 1.125rem; } /* 18px */

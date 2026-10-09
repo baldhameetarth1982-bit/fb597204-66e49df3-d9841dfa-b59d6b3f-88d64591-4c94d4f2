@@ -529,7 +529,7 @@ function AppearanceCard({
 
   async function setTheme(next: "default" | "royal") {
     if (next === "royal" && !isPremium) {
-      toast.error("Mayur is included on the Growth and Pro plans.");
+      toast.error(tu("ln.th.plan"));
       return;
     }
     if (!userId) return;
@@ -537,7 +537,7 @@ function AppearanceCard({
     const { error } = await (supabase as any).from("profiles").update({ theme: next }).eq("id", userId);
     setSaving(false);
     if (error) return toast.error(userMessage(error));
-    toast.success(next === "royal" ? "Mayur theme is on" : t("st.stdOn"));
+    toast.success(next === "royal" ? tu("ln.th.on") : t("st.stdOn"));
     onChanged();
   }
 
@@ -578,15 +578,15 @@ function AppearanceCard({
                 <div className="h-5 w-full rounded-md border bg-card" />
               </div>
             </div>
-            <p className="font-semibold flex items-center gap-1">Mayur
-              <Badge variant="outline" className="text-[10px] ml-1">Premium</Badge>
+            <p className="font-semibold flex items-center gap-1">{tu("ln.th.name")}
+              <Badge variant="outline" className="text-[10px] ml-1">{tu("ln.th.badge")}</Badge>
             </p>
-            <p className="text-xs text-muted-foreground">Peacock blue, marigold and ivory. Works in light and dark.</p>
+            <p className="text-xs text-muted-foreground">{tu("ln.th.desc")}</p>
           </button>
         </div>
         {!isPremium && (
           <p className="text-xs text-muted-foreground">
-            Mayur is included on the Growth and Pro plans. {canManagePlan ? <Link to="/society/subscription" className="underline">See plans</Link> : "Ask your committee."}
+            {tu("ln.th.plan")} {canManagePlan ? <Link to="/society/subscription" className="underline">{tu("ln.th.seePlans")}</Link> : tu("ln.th.askCommittee")}
           </p>
         )}
         {isSuperAdmin && (

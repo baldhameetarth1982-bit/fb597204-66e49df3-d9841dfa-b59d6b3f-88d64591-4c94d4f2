@@ -179,7 +179,7 @@ function MeetingDetail({ m, societyId, onChanged, onEdit }: { m: Meeting; societ
   }
   const status = async (s: string, label: string) => {
     let reason: string | null = null;
-    if (s === "cancelled") { reason = await askText("Reason for cancelling (residents will be told it was cancelled):"); if (!reason) return; }
+    if (s === "cancelled") { reason = await askText(tu("ln.q.cancelMeeting")); if (!reason) return; }
     return run(s, "meeting_set_status", { _id: m.id, _status: s, _reason: reason }, label);
   };
   const rsvpCount = (v: string) => d.data?.roster.filter((r) => r.rsvp === v).length ?? 0;

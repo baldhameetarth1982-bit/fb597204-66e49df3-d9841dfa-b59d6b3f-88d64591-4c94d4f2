@@ -333,7 +333,7 @@ export function TemporaryTab({ d }: { d: PData }) {
     qc.invalidateQueries({ queryKey: ["parking"] }); qc.invalidateQueries({ queryKey: ["parking-capacity"] });
   }
   async function cancel(id: string) {
-    const reason = await askText("Why cancel this temporary parking?");
+    const reason = await askText(tu("ln.q.cancelParking"));
     if (!reason?.trim()) return;
     const { error } = await rpc("admin_parking_release", { _allocation_id: id, _reason: reason, _effective_at: null });
     if (error) return toast.error(gateErrorMessage(error));
@@ -536,9 +536,9 @@ export function EvTab({ d, societyId }: { d: PData; societyId: string }) {
     if (error) { toast.error(gateErrorMessage(error)); return false; }
     toast.success(ok); refresh(); return true;
   }
-  async function start(c: Charger) { const plate = await askText("Number plate of the vehicle to charge"); if (plate?.trim()) await call("ev_session_start", { _charger_id: c.id, _plate: plate }, "Charging session started"); }
+  async function start(c: Charger) { const plate = await askText(tu("ln.q.plate")); if (plate?.trim()) await call("ev_session_start", { _charger_id: c.id, _plate: plate }, "Charging session started"); }
   async function end(s: Sess) {
-    const raw = await askText("Energy delivered in kWh, read from the charger's own meter. Leave empty if it has no meter.", { allowEmpty: true });
+    const raw = await askText(tu("ln.q.kwh"), { allowEmpty: true });
     if (raw === null) return;
     const kwh = raw.trim() === "" ? null : Number(raw);
     if (kwh !== null && (!Number.isFinite(kwh) || kwh < 0)) return toast.error(tu("op.enter_a_number_or_leave"));

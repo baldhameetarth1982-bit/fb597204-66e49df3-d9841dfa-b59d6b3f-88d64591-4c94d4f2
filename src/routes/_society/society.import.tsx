@@ -256,7 +256,7 @@ function ImportPage() {
   }
 
   async function undoJob(j: JobListItem) {
-    const reason = (await askText("Undo this import? Only records this import created are removed, and only if nothing else depends on them. Reason (required):", { minLength: 5 }))?.trim();
+    const reason = (await askText(tu("ln.q.undoImport"), { minLength: 5 }))?.trim();
     if (!reason) return;
     if (reason.length < 5) { toast.error(tu("op.add_a_short_reason_at")); return; }
     setBusy("commit");

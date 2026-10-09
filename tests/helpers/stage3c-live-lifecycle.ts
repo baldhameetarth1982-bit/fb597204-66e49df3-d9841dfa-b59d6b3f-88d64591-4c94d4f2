@@ -178,7 +178,7 @@ export function createStage3CCleanupTransition<F>(
     deps.publish.invalidateFixture();
 
     if (!outcome.primarySucceeded) {
-      const d = controller.diagnostics?.().primary ?? null;
+      const d = controller?.diagnostics?.().primary ?? null;
       detail = d ? `primary cleanup failed:\n${d}` : null;
       failNow("primary_teardown_failed");
     }

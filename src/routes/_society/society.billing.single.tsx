@@ -133,7 +133,7 @@ function SingleBillPage() {
       if (billId && disc > 0 && societyId) {
         const { error: adjErr } = await (supabase as any).rpc("admin_add_bill_adjustment", {
           _society_id: societyId, _bill_id: String(billId), _amount: -disc,
-          _reason: (discountReason.trim().length >= 5 ? discountReason.trim() : `Discount ${discountReason.trim()}`.trim().padEnd(5, ".")).slice(0, 500),
+          _reason: discountReason.trim().length >= 5 ? discountReason.trim() : `Discount on bill${discountReason.trim() ? `: ${discountReason.trim()}` : ""}`,
           _request_id: `disc-${String(billId)}`,
         });
         if (adjErr) toast.error(toSafeFinanceMessage(adjErr));

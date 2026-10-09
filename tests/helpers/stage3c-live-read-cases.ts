@@ -219,7 +219,9 @@ export function assertHistoryOrderingStable(
   expected: readonly ResidentPaymentHistoryRow[],
 ): void {
   if (actual.length !== expected.length)
-    throw new Error("[stage3c:READ-01] history length differs from expected");
+    throw new Error(
+      `[stage3c:READ-01] history length differs from expected actual=${actual.length} expected=${expected.length}`,
+    );
   for (let i = 0; i < expected.length; i++) {
     if (actual[i].id !== expected[i].id)
       throw new Error("[stage3c:READ-01] history ordering does not match expected");
@@ -372,12 +374,119 @@ async function openLiveReadBrackets(
 
 
 
+// ---------------------------------------------------------------------------
+// READ phase expectation refresh.
+//
+// Root cause of Run #283 READ-01/02: expectations were snapshotted in the
+// suite `beforeAll`, but earlier registry cases legitimately add payments for
+// the same resident, and VERIFY-* transitions the READ primary payment
+// (`pendingResidentBankTransferPaymentId`) from pending to verified. The
+// stale snapshot therefore had the wrong length and status.
+//
+// The refresh re-reads through the production cores at READ-phase start and
+// cross-checks every row against the authoritative `payments` table (service
+// role, synthetic fixture society only), so the expectation is anchored to
+// the database lifecycle — not to the RPC output being tested.
+// ---------------------------------------------------------------------------
+
+const refreshedContexts = new WeakSet<Stage3CLiveMatrixContext>();
+
+const AuthoritativePaymentRowSchema = z.object({
+  id: z.string(),
+  society_id: z.string(),
+  flat_id: z.string(),
+  bill_id: z.string().nullable(),
+  status: z.string(),
+  amount: z.union([z.number(), z.string()]).transform((v) => Number(v)),
+});
+
+export async function refreshStage3CReadExpectations(
+  ctx: Stage3CLiveMatrixContext,
+  caseId: Stage3CReadCaseId,
+): Promise<void> {
+  if (refreshedContexts.has(ctx)) return;
+  const fixture = requireFixture(ctx);
+  const paymentId = requireReadPrimaryPaymentId(ctx);
+  const invoke = (name: string, args: Record<string, unknown>) =>
+    fixture.users.activeResident.client["rpc"](name, args);
+  const client = createFixtureBillingRpcClient(invoke);
+
+  const history = await getResidentPaymentsWithClient(client, { limit: 50, offset: 0 });
+  if (!history || !Array.isArray(history.payments))
+    throw new Error(`[stage3c:${caseId}] history payload malformed during refresh`);
+  const rows = assertHistoryRowsStrict(history.payments, caseId);
+  const returnedIds = rows.map((r) => r.id);
+
+  const { data, error } = await fixture.admin
+    .from("payments")
+    .select("id, society_id, flat_id, bill_id, status, amount")
+    .in("id", returnedIds.length ? returnedIds : [paymentId]);
+  if (error)
+    throw new Error(`[stage3c:${caseId}] authoritative payment read failed code=${error.code ?? "?"}`);
+  const authoritative = new Map<string, z.infer<typeof AuthoritativePaymentRowSchema>>();
+  for (const raw of data ?? []) {
+    const p = AuthoritativePaymentRowSchema.safeParse(raw);
+    if (!p.success) throw new Error(`[stage3c:${caseId}] authoritative row failed schema`);
+    authoritative.set(p.data.id, p.data);
+  }
+
+  const primaryAuth = authoritative.get(paymentId);
+  const { data: flatRows, error: flatErr } = await fixture.admin
+    .from("payments")
+    .select("id")
+    .eq("society_id", fixture.societyA)
+    .eq("flat_id", primaryAuth?.flat_id ?? "00000000-0000-0000-0000-000000000000");
+  if (flatErr)
+    throw new Error(`[stage3c:${caseId}] authoritative flat read failed code=${flatErr.code ?? "?"}`);
+  const expectedIds = (flatRows ?? []).map((r) => String((r as { id: string }).id)).sort();
+  const diag = () =>
+    `returned=${rows.length} [${[...returnedIds].sort().join(",")}] authoritativeFlat=${expectedIds.length} [${expectedIds.join(",")}]`;
+
+  if (!primaryAuth)
+    throw new Error(`[stage3c:${caseId}] primary payment absent from resident history; ${diag()}`);
+  for (const r of rows) {
+    const a = authoritative.get(r.id);
+    if (!a) throw new Error(`[stage3c:${caseId}] history row ${r.id} not in payments table; ${diag()}`);
+    if (a.society_id !== r.society_id || a.flat_id !== r.flat_id)
+      throw new Error(`[stage3c:${caseId}] history row ${r.id} scope differs from payments table`);
+    if (a.status !== r.status)
+      throw new Error(`[stage3c:${caseId}] history row ${r.id} status=${r.status} db=${a.status}`);
+    if (a.amount !== r.amount)
+      throw new Error(`[stage3c:${caseId}] history row ${r.id} amount differs from payments table`);
+  }
+  const flatReturned = rows
+    .filter((r) => r.flat_id === primaryAuth.flat_id)
+    .map((r) => r.id)
+    .sort();
+  if (flatReturned.join(",") !== expectedIds.join(","))
+    throw new Error(`[stage3c:${caseId}] history length differs from expected; ${diag()}`);
+
+  const expectedRow = rows.find((r) => r.id === paymentId);
+  if (!expectedRow)
+    throw new Error(`[stage3c:${caseId}] primary payment row missing after refresh; ${diag()}`);
+
+  const detail = await getPaymentDetailWithClient(client, { paymentId });
+  if (detail === null || detail.audience !== "resident")
+    throw new Error(`[stage3c:${caseId}] primary detail unavailable during refresh`);
+  if (detail.payment.status !== primaryAuth.status)
+    throw new Error(
+      `[stage3c:${caseId}] status mismatch detail=${detail.payment.status} history=${expectedRow.status} db=${primaryAuth.status}`,
+    );
+
+  ctx.readExpectedHistory = rows;
+  ctx.readHistoryBaselineCount = rows.length;
+  ctx.readExpectedHistoryRow = expectedRow;
+  ctx.readExpectedDetail = detail;
+  refreshedContexts.add(ctx);
+}
+
 /**
  * READ-01 — Active resident sees own payment history.
  * Production entry: `getResidentPaymentsWithClient` → `get_resident_payments_v1`.
  */
 export const read01_activeResidentSeesOwnPaymentHistory: Stage3CMatrixLiveHandler =
   async (ctx: Stage3CLiveMatrixContext) => {
+    await refreshStage3CReadExpectations(ctx, "READ-01");
     const brackets = await openLiveReadBrackets(ctx, "READ-01");
     const client = brackets.client;
     const paymentId = requireReadPrimaryPaymentId(ctx);
@@ -454,6 +563,7 @@ export const read01_activeResidentSeesOwnPaymentHistory: Stage3CMatrixLiveHandle
  */
 export const read02_activeResidentSeesOwnPaymentDetail: Stage3CMatrixLiveHandler =
   async (ctx: Stage3CLiveMatrixContext) => {
+    await refreshStage3CReadExpectations(ctx, "READ-02");
     const brackets = await openLiveReadBrackets(ctx, "READ-02");
     const client = brackets.client;
     const paymentId = requireReadPrimaryPaymentId(ctx);
@@ -481,7 +591,9 @@ export const read02_activeResidentSeesOwnPaymentDetail: Stage3CMatrixLiveHandler
     if (detail.payment.amount !== expectedRow.amount)
       throw new Error("[stage3c:READ-02] amount mismatch");
     if (detail.payment.status !== expectedRow.status)
-      throw new Error("[stage3c:READ-02] status mismatch");
+      throw new Error(
+        `[stage3c:READ-02] status mismatch actual=${detail.payment.status} expected=${expectedRow.status}`,
+      );
 
     assertResidentDetailMatchesExpected(detail, expectedDetail);
 

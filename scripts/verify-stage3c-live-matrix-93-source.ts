@@ -306,7 +306,7 @@ export function checkLifecycleModule(src: string): string[] {
     fail(f, "lifecycle: a private recovery reference must be retained for emergency cleanup");
   if (!/runEmergency\(\)/.test(src))
     fail(f, "lifecycle: finalize must be able to run an emergency pass");
-  if (!/if \(failure !== "none"\) throw new Error\(transitionFailureMessage\(failure\)\);/.test(src))
+  if (!/if \(failure !== "none"\) throw new Error\(transitionFailureMessage\(failure(?:, detail)?\)\);/.test(src))
     fail(f, "lifecycle: a retained failure must be re-thrown after recovery");
   if (!/deps\.publish\.invalidateFixture\(\)/.test(src))
     fail(f, "lifecycle: the transition must revoke product fixture access");

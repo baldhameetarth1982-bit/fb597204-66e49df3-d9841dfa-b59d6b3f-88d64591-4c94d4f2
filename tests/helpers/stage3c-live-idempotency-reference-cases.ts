@@ -912,7 +912,10 @@ export async function reference04_outsideScopeIsolation(
       societyId: societyB,
       submittedBy: CanonicalStage3CUuidSchema.parse(actor.id),
       amount: REFERENCE_AMOUNT,
-      reference: variant,
+      // Canonical contract (residentSubmitInputSchema): the reference is
+      // trimmed before storage, case preserved; duplicate detection is
+      // upper(trim(...)) and scoped to one society.
+      reference: variant.trim(),
       key: otherKey,
     },
     "REFERENCE-04",

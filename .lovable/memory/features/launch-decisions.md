@@ -3,7 +3,7 @@ name: Launch UX decisions (Oct 2026)
 description: Owner decisions on auto-billing, accounting sections, test data, themes, navigation
 type: feature
 ---
-- Auto billing OFF by default, plan-gated. Cycle runs every 5 days: creates the month's bill ONLY for homes whose payment for that month is already verified as paid and that have no bill yet (never 2 bills per home per month). Homes with dues get a reminder notification instead.
+- (Chosen with recommended defaults; owner has not yet confirmed.) Auto billing OFF by default, plan-gated. Cycle runs every 5 days: creates the month's bill ONLY for homes whose payment for that month is already verified as paid and that have no bill yet (never 2 bills per home per month). Homes with dues get a reminder notification instead.
 - Accounting Center = 4 pill buttons at top: Income & Expense, Ledger, Maintenance & Billing, Events. "Events" = event money (collections and spending per society event) in the same canonical accounts. Same 4-button pattern for other main sections.
 - Tabs everywhere: horizontal rounded pill buttons, not underline/vertical tabs.
 - Super Admin: test/QA/demo societies and users HIDDEN by default with a "Show test data" switch. Never delete.

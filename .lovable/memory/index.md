@@ -1,6 +1,9 @@
 # Project Memory
 
 ## Core
+ALWAYS ignore the utils.ts TS2322 line-8 error report. Never edit, investigate or mention fixing it; just do the task.
+Browser checks: demo account only. Verify injected session sub == demo user id before ANY write.
+Pricing: Starter ₹8 / Growth ₹10 / Pro ₹12 per flat/month; >300 flats custom. Old ₹799/999/1499 retired.
 Mobile-first Android-style app. Design at 360–414px; desktop is responsive scale-up. Material 3 — rounded-2xl cards, FAB, bottom sheets, drawer (admin), bottom nav (resident).
 Hierarchy is fixed: Society → Structure Type (Blocks/Towers/Wings/Buildings) → Structure → Floors → Flats → Residents. Resident module always sits under this hierarchy.
 One resident belongs to ONE society. Resident↔Flat link is permanent until an admin changes it.
@@ -15,6 +18,8 @@ RLS, plan-gate, Razorpay, KYC RPCs, audit_log, multi-tenant isolation triggers a
 - [Build mode](mem://preferences/build-mode) — Autonomous feature completion rules, UI bar, what not to spend prompts on
 
 ## Memories
+- [Testing account](mem://constraints/testing-account) — demo login only; check JWT sub before saves
+- [Pricing](mem://features/pricing) — per-flat plans, feature mapping per plan, ad rules
 - [Phase Roadmap](mem://roadmap) — Six-phase rebuild plan (nav shell → auth/onboarding → setup wizard → billing → accounting → visitors)
 - [Maintenance & Billing](mem://features/maintenance-billing) — Policy fields, bill workflow, additional charges, quick actions
 - [Join Flow](mem://features/join-flow) — Search → select society → pick flat → owner/tenant → admin approval

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { getApplicablePlans, getPricingSettings } from "@/lib/pricing-engine";
 import { LegalFooter } from "@/components/shared/LegalFooter";
 import { Link } from "@tanstack/react-router";
+import { useAuth } from "@/context/AuthContext";
 
 export const Route = createFileRoute("/pricing")({
   head: () => ({
@@ -30,6 +31,27 @@ export const Route = createFileRoute("/pricing")({
 });
 
 function PricingPage() {
+  const { primaryRole } = useAuth();
+  // Residents and guards never pay SociyoHub; plans belong to the society committee.
+  if (primaryRole === "resident" || primaryRole === "security") return <NoSubscriptionForRole />;
+  return <PublicPricing />;
+}
+
+function NoSubscriptionForRole() {
+  const { primaryRole } = useAuth();
+  return (
+    <main className="mx-auto grid min-h-[60vh] max-w-md place-items-center px-6 text-center">
+      <div className="space-y-4">
+        <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-primary-container text-primary-container-foreground"><ShieldCheck className="h-6 w-6" aria-hidden /></div>
+        <h1 className="type-headline">Nothing to pay here</h1>
+        <p className="text-sm text-muted-foreground">SociyoHub is free for residents and guards. Your society committee manages the society's plan.</p>
+        <Button asChild className="min-h-11 rounded-full"><Link to={primaryRole === "security" ? "/app/guard" : "/app/dashboard"}>Back to home</Link></Button>
+      </div>
+    </main>
+  );
+}
+
+function PublicPricing() {
   const [units, setUnits] = useState<number | null>(null);
   const [showEnterprise, setShowEnterprise] = useState(false);
 

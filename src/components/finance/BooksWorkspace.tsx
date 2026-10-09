@@ -1,4 +1,5 @@
 import { useServerFn } from "@tanstack/react-start";
+import { askText } from "@/components/system/AskTextDialog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createContext, useContext, useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Download, Loader2, Lock, Plus, Scale, Trash2, Unlock } from "lucide-react";
@@ -139,7 +140,7 @@ function JournalsTab({ societyId }: { societyId: string }) {
     onSuccess: (r) => { toast.success(r.status === "posted" ? `Posted ${r.journal_no ?? ""}` : r.status === "reversed" ? "Reversal posted" : r.status === "cancelled" ? "Draft cancelled" : "Sent for review"); refresh(); },
     onError: (e) => toast.error(errMsg(e)),
   });
-  const askReason = (label: string) => { const r = window.prompt(label); return r && r.trim().length >= 5 ? r.trim() : null; };
+  const askReason = async (label: string) => { const r = await askText(label, { minLength: 5 }); return r && r.trim().length >= 5 ? r.trim() : null; };
 
   const lineValid = lines.every((l) => l.account_id && ((Number(l.debit) > 0) !== (Number(l.credit) > 0)));
   const canSave = editing && desc.trim().length >= 2 && lines.length >= 2 && lineValid && !save.isPending;
@@ -215,10 +216,10 @@ function JournalsTab({ societyId }: { societyId: string }) {
                     <Button size="sm" variant="outline" disabled={busy} onClick={() => startEdit(j)}>{tu("common.edit")}</Button>
                     {j.status === "draft" && <Button size="sm" variant="outline" disabled={busy} onClick={() => transition.mutate({ journalId: j.id, action: "submit" })}>{tu("op.send_for_review")}</Button>}
                     <Button size="sm" disabled={busy} onClick={() => { if (window.confirm("Post this journal to the ledger? Posted entries cannot be edited.")) transition.mutate({ journalId: j.id, action: "post" }); }}>{tu("mnt.timing.post")}</Button>
-                    <Button size="sm" variant="ghost" disabled={busy} onClick={() => { const r = askReason("Why cancel this draft? (min 5 characters)"); if (r) transition.mutate({ journalId: j.id, action: "cancel", reason: r }); }}>{tu("op.cancel_draft")}</Button>
+                    <Button size="sm" variant="ghost" disabled={busy} onClick={async () => { const r = await askReason("Why cancel this draft?"); if (r) transition.mutate({ journalId: j.id, action: "cancel", reason: r }); }}>{tu("op.cancel_draft")}</Button>
                   </>}
                   {!ro && j.status === "posted" && j.source_action === "post" && !j.reversed_by_id && (
-                    <Button size="sm" variant="outline" disabled={busy} onClick={() => { const r = askReason("Reason for reversal (min 5 characters)"); if (r) transition.mutate({ journalId: j.id, action: "reverse", reason: r }); }}>{tu("exp.reverse")}</Button>
+                    <Button size="sm" variant="outline" disabled={busy} onClick={async () => { const r = await askReason("Reason for reversal"); if (r) transition.mutate({ journalId: j.id, action: "reverse", reason: r }); }}>{tu("exp.reverse")}</Button>
                   )}
                 </div>
               </li>

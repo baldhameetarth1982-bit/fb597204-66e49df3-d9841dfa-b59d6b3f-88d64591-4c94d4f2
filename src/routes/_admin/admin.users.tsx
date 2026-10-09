@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { isTestRecord, useShowTestData } from "@/lib/test-data";
+import { TestDataToggle } from "@/components/admin/TestDataToggle";
 import { userMessage } from "@/lib/user-error";
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -73,7 +75,10 @@ function UsersPage() {
     onError: (e: Error) => toast.error(userMessage(e)),
   });
 
-  const users = usersQ.data ?? [];
+  const [showTest, setShowTest] = useShowTestData();
+  const allUsers = usersQ.data ?? [];
+  const users = useMemo(() => (showTest ? allUsers : allUsers.filter((u) => !isTestRecord(u.full_name, u.email, u.society_name))), [allUsers, showTest]);
+  const hiddenTest = allUsers.length - users.length;
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
     if (!q) return users;
@@ -103,6 +108,7 @@ function UsersPage() {
             { label: "Not onboarded", value: usersQ.isLoading ? "—" : (users.length - onboarded).toLocaleString("en-IN") },
           ]} />
 
+          {!usersQ.isLoading && <TestDataToggle show={showTest} onChange={setShowTest} hiddenCount={showTest ? 0 : hiddenTest} />}
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input aria-label="Search users" placeholder="Name, email, phone or society" value={search} onChange={(e) => setSearch(e.target.value)} className="h-11 pl-9" />

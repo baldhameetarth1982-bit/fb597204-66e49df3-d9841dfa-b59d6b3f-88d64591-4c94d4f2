@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { askText } from "@/components/system/AskTextDialog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -21,7 +22,7 @@ const ACTION_LABEL: Record<string, string> = {
   "roles.invite_accepted": "Invitation accepted", "roles.revoked": "Access removed", "roles.reactivated": "Access restored",
   "roles.permissions_changed": "Permissions changed",
 };
-const ask = (msg: string) => { const r = window.prompt(msg)?.trim(); return r && r.length >= 5 ? r : null; };
+const ask = async (msg: string) => { const r = (await askText(msg, { minLength: 5 }))?.trim(); return r && r.length >= 5 ? r : null; };
 
 function PermissionPicker({ value, onChange, idPrefix }: { value: StaffPermission[]; onChange: (v: StaffPermission[]) => void; idPrefix: string }) {
   return (
@@ -125,7 +126,7 @@ function AccessBody({ data, onChange }: { data: RoleAccess; onChange: () => void
                   <div className="flex flex-wrap gap-2">
                     {m.role === "staff" && m.is_active && <Button size="sm" variant="outline" className="min-h-11" onClick={() => setEditing({ roleId: m.role_id, perms: m.permissions.filter((p): p is StaffPermission => (STAFF_PERMISSIONS as readonly string[]).includes(p)) })}>{tu("op.permissions")}</Button>}
                     {m.is_active
-                      ? <Button size="sm" variant="destructive" className="min-h-11" disabled={access.isPending} onClick={() => { const r = ask("Why are you removing this access? (at least 5 characters)"); if (r) access.mutate({ roleId: m.role_id, active: false, reason: r }); }}>{tu("op.remove_access")}</Button>
+                      ? <Button size="sm" variant="destructive" className="min-h-11" disabled={access.isPending} onClick={async () => { const r = await ask("Why are you removing this access?"); if (r) access.mutate({ roleId: m.role_id, active: false, reason: r }); }}>{tu("op.remove_access")}</Button>
                       : <Button size="sm" variant="outline" className="min-h-11" disabled={access.isPending} onClick={() => access.mutate({ roleId: m.role_id, active: true })}>{tu("op.restore")}</Button>}
                   </div>
                 </div>
@@ -152,7 +153,7 @@ function AccessBody({ data, onChange }: { data: RoleAccess; onChange: () => void
               <li key={i.id} className="flex flex-wrap items-center justify-between gap-2 p-3 text-sm">
                 <div><p className="font-medium">{i.display_name ?? (i.role === "auditor" ? tu("op.auditor") : tu("gd.catStaff"))} · ••••{i.phone_last4}</p>
                   <p className="text-muted-foreground">{i.status === "pending" ? `Waiting · expires ${new Date(i.expires_at).toLocaleDateString("en-IN")}` : i.status[0]!.toUpperCase() + i.status.slice(1)}</p></div>
-                {i.status === "pending" && <Button size="sm" variant="outline" className="min-h-11" disabled={cancel.isPending} onClick={() => { const r = ask("Reason for cancelling (at least 5 characters)"); if (r) cancel.mutate({ id: i.id, reason: r }); }}>{tu("common.cancel")}</Button>}
+                {i.status === "pending" && <Button size="sm" variant="outline" className="min-h-11" disabled={cancel.isPending} onClick={async () => { const r = await ask("Reason for cancelling this invitation"); if (r) cancel.mutate({ id: i.id, reason: r }); }}>{tu("common.cancel")}</Button>}
               </li>
             ))}
           </ul>

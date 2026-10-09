@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { askText } from "@/components/system/AskTextDialog";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -129,7 +130,7 @@ function OpeningBalancesPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const askReject = (kind: Kind, id: string) => { const note = window.prompt("Reason for rejecting (required)")?.trim(); if (note) reviewM.mutate({ kind, id, confirm: false, note: note.slice(0, 500) }); };
+  const askReject = async (kind: Kind, id: string) => { const note = (await askText("Reason for rejecting (required)"))?.trim(); if (note) reviewM.mutate({ kind, id, confirm: false, note: note.slice(0, 500) }); };
 
   const uploader = (kind: Kind, cols: string) => <SectionCard title={tu("op.import")} description={tu("op.csv_or_excel_xlsx_up")}>
     <p className="mb-3 text-sm text-muted-foreground">{cols} {tu("op.dates_as_yyyy_mm_dd")}</p>
@@ -231,7 +232,7 @@ function OpeningBalancesPage() {
                 </div>
                 {b.undone && <StatusChip tone="neutral">{tu("op.undone_3")}</StatusChip>}
                 {canUndo && <Button size="sm" variant="outline" className="min-h-11" disabled={undoM.isPending}
-                  onClick={() => { const reason = window.prompt("Undo this whole import? Rows are marked as undone, never deleted. Reason (required):")?.trim();
+                  onClick={async () => { const reason = (await askText("Undo this whole import? Rows are marked as undone, never deleted. Reason (required):", { minLength: 5 }))?.trim();
                     if (reason && reason.length >= 5) undoM.mutate({ b, reason: reason.slice(0, 400) }); else if (reason) toast.error(tu("op.add_a_short_reason_at")); }}>
                   <Undo2 className="mr-1.5 h-4 w-4" />{tu("op.undo_import")}</Button>}
                 {b.kind === "opening_balance" && b.confirmed > 0 && b.unverified > 0 && <span className="text-xs text-muted-foreground">{tu("op.some_rows_confirmed_reject_the")}</span>}

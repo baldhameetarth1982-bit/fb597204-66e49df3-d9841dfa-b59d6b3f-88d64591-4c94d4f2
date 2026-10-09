@@ -3610,6 +3610,7 @@ export type Database = {
           category_id: string | null
           created_at: string
           created_by: string | null
+          event_id: string | null
           id: string
           journal_entry_id: string | null
           note: string | null
@@ -3631,6 +3632,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           created_by?: string | null
+          event_id?: string | null
           id?: string
           journal_entry_id?: string | null
           note?: string | null
@@ -3652,6 +3654,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           created_by?: string | null
+          event_id?: string | null
           id?: string
           journal_entry_id?: string | null
           note?: string | null
@@ -3673,6 +3676,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "finance_expense_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "community_events"
             referencedColumns: ["id"]
           },
           {
@@ -10100,6 +10110,8 @@ export type Database = {
       society_automation_settings: {
         Row: {
           created_at: string
+          paid_bill_cycle_enabled: boolean
+          paid_bill_cycle_last_run_at: string | null
           reminder_min_days_overdue: number
           reminder_repeat_days: number
           reminders_enabled: boolean
@@ -10109,6 +10121,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          paid_bill_cycle_enabled?: boolean
+          paid_bill_cycle_last_run_at?: string | null
           reminder_min_days_overdue?: number
           reminder_repeat_days?: number
           reminders_enabled?: boolean
@@ -10118,6 +10132,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          paid_bill_cycle_enabled?: boolean
+          paid_bill_cycle_last_run_at?: string | null
           reminder_min_days_overdue?: number
           reminder_repeat_days?: number
           reminders_enabled?: boolean
@@ -10424,6 +10440,7 @@ export type Database = {
           creation_payload_hash: string | null
           creation_request_id: string | null
           description: string | null
+          event_id: string | null
           id: string
           journal_entry_id: string | null
           non_member_payer_id: string | null
@@ -10468,6 +10485,7 @@ export type Database = {
           creation_payload_hash?: string | null
           creation_request_id?: string | null
           description?: string | null
+          event_id?: string | null
           id?: string
           journal_entry_id?: string | null
           non_member_payer_id?: string | null
@@ -10512,6 +10530,7 @@ export type Database = {
           creation_payload_hash?: string | null
           creation_request_id?: string | null
           description?: string | null
+          event_id?: string | null
           id?: string
           journal_entry_id?: string | null
           non_member_payer_id?: string | null
@@ -10551,6 +10570,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "society_income_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "society_income_records_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "community_events"
             referencedColumns: ["id"]
           },
           {
@@ -14755,6 +14781,10 @@ export type Database = {
           society_id: string
         }[]
       }
+      get_event_finance_summary: {
+        Args: { _society_id: string }
+        Returns: Json
+      }
       get_finance_overview: {
         Args: { _from: string; _society_id: string; _to: string }
         Returns: Json
@@ -16353,6 +16383,7 @@ export type Database = {
         Returns: Json
       }
       run_logged_db_job: { Args: { _job: string }; Returns: string }
+      run_paid_home_bill_cycle: { Args: never; Returns: number }
       saas_subscription_quote: {
         Args: { _flat_quantity?: number; _plan_id: string; _society_id: string }
         Returns: Json
@@ -16482,6 +16513,15 @@ export type Database = {
       }
       send_meeting_reminders: { Args: never; Returns: number }
       send_tenancy_renewal_reminders: { Args: never; Returns: number }
+      set_finance_event_link: {
+        Args: {
+          _event_id: string
+          _kind: string
+          _record_id: string
+          _society_id: string
+        }
+        Returns: Json
+      }
       set_maintenance_timing: {
         Args: { _society_id: string; _timing: string }
         Returns: undefined

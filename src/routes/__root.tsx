@@ -8,6 +8,7 @@ import {
   useRouterState,
   HeadContent,
   Scripts,
+  type ErrorComponentProps,
 } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
@@ -26,10 +27,10 @@ import { SuperAdminBottomNav } from "@/components/nav/SuperAdminBottomNav";
 
 import { Toaster } from "@/components/ui/sonner";
 import { OfflineBanner } from "@/components/system/OfflineBanner";
+import { AskTextDialogHost } from "@/components/system/AskTextDialog";
 import { SplashScreen } from "@/components/shared/SplashScreen";
 import { RootErrorBoundary, installGlobalErrorLogger } from "@/components/shared/RootErrorBoundary";
 import { ProtectedRoute } from "@/components/shared/AuthGuard";
-import { LegalFooter } from "@/components/shared/LegalFooter";
 import { PageTransition } from "@/components/system/PageTransition";
 import { useTranslation } from "react-i18next";
 import { applyStoredLanguage } from "@/lib/i18n";
@@ -59,7 +60,7 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: ErrorComponentProps) {
   console.error(error);
   const router = useRouter();
   const { t } = useTranslation();
@@ -127,7 +128,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "apple-touch-icon", href: "/icons/apple-touch-icon.png" },
     ],
-    scripts: [],
+    // Apply the saved dark mode before first paint so sign-in and public pages never flash light.
+    scripts: [{ children: "try{if(localStorage.getItem('sociohub:theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}" }],
 
   }),
   shellComponent: RootShell,
@@ -138,7 +140,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
@@ -173,6 +175,7 @@ function RootComponent() {
           <MarketingAnalytics />
           <ShellSwitcher />
           <Toaster richColors closeButton position="top-right" />
+          <AskTextDialogHost />
           <OfflineBanner />
           <KeyboardFieldVisibility />
         </AuthProvider>
@@ -206,11 +209,15 @@ function ThemeApplier() {
   useEffect(() => {
     const root = document.documentElement;
     const theme = (profile as any)?.theme;
-    if (theme === "neon") root.classList.add("theme-neon");
-    else root.classList.remove("theme-neon");
+    // "neon" was retired; anyone who had it now gets the premium Mayur theme.
+    root.classList.remove("theme-neon");
+    if (theme === "royal" || theme === "neon") root.classList.add("theme-royal");
+    else root.classList.remove("theme-royal");
   }, [profile]);
   useEffect(() => {
     try {
+      // Light/dark choice is per device and applies on every page, including sign-in.
+      if (localStorage.getItem("sociohub:theme") === "dark") document.documentElement.classList.add("dark");
       if (localStorage.getItem("sociohub:a11y") === "1") {
         document.documentElement.classList.add("a11y");
       }
@@ -407,19 +414,55 @@ function ProtectedShell({ pathname }: { pathname: string }) {
   return <DefaultShell />;
 }
 
-
+/**
+ * Shared pages (settings, legal, pricing, support) pick the chrome of the
+ * signed-in person's own role, so a resident or guard never sees committee
+ * navigation. Visitors who are not signed in get no app navigation at all.
+ * Authorization still happens on the server for every page and action.
+ */
 function DefaultShell() {
+  const { isAuthenticated, primaryRole } = useAuth();
+
+  if (!isAuthenticated || !primaryRole) {
+    return (
+      <div className="min-h-dvh w-full bg-background">
+        <TransitionedOutlet />
+      </div>
+    );
+  }
+
+  if (primaryRole === "resident" || primaryRole === "security") {
+    const isGuard = primaryRole === "security";
+    return (
+      <div className="min-h-[100dvh] w-full bg-muted/40">
+        <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-[480px] flex-col bg-background shadow-xl md:shadow-none">
+          <AppHeader withSidebarTrigger={false} />
+          <main className="flex-1" style={{ paddingBottom: "calc(96px + env(safe-area-inset-bottom))" }}>
+            <TransitionedOutlet />
+          </main>
+          {isGuard ? <GuardBottomNav /> : <ResidentBottomNav />}
+        </div>
+      </div>
+    );
+  }
+
+  const isSuper = primaryRole === "super_admin";
+  const isCommittee = primaryRole === "society_admin" || primaryRole === "block_admin";
   return (
     <SidebarProvider>
       <div className="min-h-dvh flex w-full bg-background">
-        <AppSidebar />
+        {isSuper ? (
+          <div className="hidden md:block"><AdminSidebar /></div>
+        ) : isCommittee ? (
+          <div className="hidden md:block"><AppSidebar /></div>
+        ) : null}
         <div className="flex-1 flex flex-col min-w-0">
-          <AppHeader />
-          <main className="flex-1">
+          <AppHeader withSidebarTrigger={isSuper || isCommittee} />
+          <main className="flex-1" style={{ paddingBottom: "calc(96px + env(safe-area-inset-bottom))" }}>
             <TransitionedOutlet />
           </main>
-          <LegalFooter />
         </div>
+        {isSuper ? <SuperAdminBottomNav /> : isCommittee ? <SocietyAdminBottomNav /> : null}
       </div>
     </SidebarProvider>
   );

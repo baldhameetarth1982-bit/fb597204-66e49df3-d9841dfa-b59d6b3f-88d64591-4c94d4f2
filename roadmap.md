@@ -1,160 +1,19 @@
-# Active roadmap
+# SociyoHub launch-gap roadmap (Oct 2026 tester + owner feedback)
 
-## Master operational localization (23 languages, Super Admin excluded)
+Stage 3C/3D runtime verification paused by owner.
 
-- [x] Inventory: 186 screens, 4,677 fixed text spots, 3,378 distinct sentences (355 reused, 3,023 new `op.*` keys in src/locales/operations.ts); screens read them via tu().
-- [x] Machine translation of all 3,023 `op.*` items finished in all 22 non-English languages (6–16 per language intentionally kept as written: brand, file-type and example names).
-- [ ] Native-speaker review of all 22 non-English languages for this batch (Hindi/Gujarati this batch are machine-made too).
-- [ ] Visual QA of resident/guard/committee screens — needs an approved test account.
-
-## Workstream 10 — Verification and release closure
-
-- [x] Full automated suite: 2647 checks pass; one outdated home-page listing check updated to the shared listing source.
-- [x] Database security review: only intended public functions (pricing, plans, Smart QR, asset QR token) open signed-out; helpdesk SLA helper search path pinned.
-- [x] Secret scan of app code and public files: clean. Type check and build: clean.
-- [x] Resident/Guard/Super Admin access verified with rolled-back role simulation in the QA Demo Society; fixed deactivated roles still granting access.
-- [ ] Signed-in Resident/Guard/Super Admin browser screens — needs real role test accounts.
-- [x] Removed-role regression: block-admin and admin-list role checks also fixed to ignore removed roles; app-side admin checks (digest, onboarding resume) filter active roles.
-- [ ] Manual real-phone check (external): open Add Expense, Record Payment, Helpdesk ticket, Visitor walk-in, No-Dues request; focus text/amount/date/reason fields; confirm the field stays visible above the keyboard, Save/Submit and errors stay reachable, long pop-up forms scroll, bottom edge clears the phone's home bar, and motion is calm with reduced motion on.
-- [ ] External money test (Razorpay test mode + Docker CI runner, scripts/run-stage3d-live.sh): order price = active flats × plan rate, no platform fee; tampered amount rejected; payment confirmed only after server check; webhook with bad signature rejected; replayed webhook/order creates no duplicate payment, receipt or plan change; plan activates once and expiry works; Super Admin refund recorded and audited; maintenance still shows Cash/Bank Transfer only; ledger history never deleted.
-
-## Stage 17 — Security hardening
-
-- [x] Inventory and threat-model authentication, public endpoints, uploads, AI, webhooks, financial/admin mutations, and exposed database functions.
-- [x] Fix verified high-impact authorization, validation, rate-limit, replay, storage, error-redaction, and concurrency weaknesses with focused changes.
-- [x] Add focused negative source contracts while preserving the existing tenant, webhook, AI-boundary, and financial-integrity regression suites.
-- [x] Run database lint/security scans, dependency and bundle-secret scans, focused/full tests, type checking, and production build.
-- [x] Close with fresh evidence and an explicit list of runtime checks that were unavailable.
-
-## Stage 15 — Android and Google Play release preparation
-
-- [x] Pin the SociyoHub TWA identity, production origin, version, branding, orientation, notifications, and Custom Tabs fallback.
-- [x] Externalize Android signing and document one deterministic Bubblewrap release-build path.
-- [x] Prepare fail-closed Digital Asset Links using the real Play signing fingerprint only.
-- [x] Harden notification navigation and clear account-scoped browser state across account changes.
-- [x] Verify mobile safe areas, touch targets, reduced motion, auth continuity, payment boundaries, release assets, and repository secrets.
-- [ ] Owner-only external dependency: generate and sign the AAB with Android tooling, then upload it to Google Play Console.
-
-## Stage 14 — Razorpay SaaS subscription payments
-
-- [x] Preserve Cash and Bank Transfer-only society maintenance payments and zero platform fees.
-- [x] Add idempotent subscription order creation, canonical capture, durable webhook replay records, and receipts.
-- [x] Add authorized history, delayed confirmation recovery, audited pending-order cancellation, and Super Admin refunds.
-- [x] Add focused lifecycle, tenant-boundary, maintenance-isolation, and secret-boundary tests.
-- [x] Record final typecheck, build, full-suite, security-linter, and bundle-secret evidence.
-- [x] Close the approved subscription-only scope without starting Stage 15 or enabling a maintenance gateway.
-
-## Stage 13 — Final security and reliability closure
-
-- [x] Review privileged database functions, grants, and tenant authorization.
-- [x] Close verified rate-limit and server-validation gaps.
-- [x] Review financial, payment, storage, AI, audit, error, race, and recovery boundaries.
-- [x] Add 13 deterministic Flat 360 Society A/B service-boundary tests and activate the seven deferred source/SQL contract checks.
-- [x] Run focused security, XLSX, full unit/integration, type, and bundle-secret checks.
-- [x] Verify no Docker-free isolated backend exists, remove trusted-role authorization from Flat 360, and enforce the RLS/RPC boundary with executable migration/source contracts.
-- [x] Record honest unavailable runtime/provider checks; do not begin Stage 14.
-
-## Stage 12 — Premium UI/UX
-
-- [x] Unify shared design tokens, typography, controls, panels, dialogs, tables, and motion.
-- [x] Refine app shells and role navigation across mobile and desktop.
-- [x] Fix stale public/auth claims and inconsistent sign-in presentation.
-- [x] Refine representative dashboards and remaining legacy visual patterns.
-- [x] Validate responsive layouts, accessibility, runtime, and build health.
-
-- [x] Audit the current Stage 3D tree against Prompt #36.
-- [x] Correct resident transaction signs, explicit active-resident authorization, and audit immutability.
-- [x] Expand disposable authorization, audit-integrity, and canonical payment-state verification without changing Stage 3C.
-- [x] Complete metadata for the affected finance routes only.
-- [x] Run all locally available Stage 3D, Stage 3C-preservation, build, type, migration, and secret validations.
-- [x] Make every Stage 3D runtime entry point fail closed on missing or skipped evidence.
-- [ ] Observe fresh-reset 11/0/0 runtime and authenticated visual/accessibility evidence.
-- [x] Record exact evidence and blockers; keep Stage 3E not started.
-- [x] Restore audit-log immutability for every database role with an additive terminal migration.
-- [x] Separate the Stage 3D live opt-in and exact 11-case gate from Stage 3C.
-- [x] Re-run locally available Stage 3D and Stage 3C-preservation validations.
-- [x] Record current evidence honestly; keep Stage 3E unstarted.
-- [x] Remove Stage 3D's hidden Stage 3C opt-in through a neutral disposable-runtime guard.
-- [x] Preserve the Stage 3C 93-case source contract and independent workflow opt-in.
-- [x] Apply the terminal audit lock through the managed database migration path (`0011`) without rewriting history.
-- [x] Restrict direct audit-log append access to the canonical server-side role through managed migration `0012`.
-- [x] Reconcile the managed production migration track with the CLI fresh-reset `supabase/migrations/` replay track through one forward-only equivalent security migration.
-- [x] Remove immutable audit history from fixture cleanup obligations and reject direct or obvious indirect audit-cleanup bypasses.
-- [x] Split Stage 3C and Stage 3D CI into independent disposable database jobs.
-- [x] Bind exact Stage 3D runtime reports to the expected full commit SHA.
-- [x] Require callers to supply the expected SHA; remove stale generated reports and run fixture safety checks in both local and CI preflights.
-- [x] Add the smallest forward-only fresh-reset migration that converges the final Stage 3D authorization and audit-security state.
-- [x] Add positive cross-track security assertions and rerun all locally available Prompt #45 verification gates.
-- [x] Record only observed fresh-reset/runtime evidence and keep Stage 3E unstarted.
-- [x] Remove the unused non-atomic income transition path and retain only the canonical transactional RPC.
-- [x] Add semantic audit RLS, privilege, append-boundary, resident-authorization, and cross-society source checks.
-- [x] Correct the master roadmap to show Stage 3D as implemented_unverified and Stage 3E unstarted.
-- [x] Converge managed and fresh-reset audit TRUNCATE denial through forward-only migrations and positive source checks.
-- [x] Add an executable Stage 3D external runtime handoff and require fixture-source validation in its independent CI job.
-
-## Full-app button sweep (requested 2026-09-27)
-- [x] Society admin: every screen opens without errors (demo society "QA Demo Society (test only)")
-- [ ] Society admin: press every button/form on each screen
-- [ ] Resident: switch test account to resident in demo society, sweep screens + buttons
-- [ ] Guard: switch test account to guard, sweep
-- [ ] Super admin: needs owner approval to grant super admin to test account
-
-## Society OS complete expansion (requested 2026-09-28)
-- [x] Reconcile the uploaded 53-module brief against current canonical systems and approved product decisions.
-- [x] Stabilize Amenities and tenant/society-switch foundations (Workstream 1 closed; guard live check external).
-- [ ] Implement every safe in-platform gap without duplicate society, finance, visitor, notification, AI, migration, or export systems.
-- [ ] Complete focused security, role/plan, finance, offline, accessibility, responsive, and release verification.
-- [ ] Report external hardware/provider and owner-only release dependencies honestly.
-
-## Workstream 2 — Resident, unit & tenant lifecycle
-- [x] Derived lifecycle states, renew / move-out / early end / archive with server checks and audit
-- [x] No-Dues-gated move-out with reasoned override; scheduled move-outs end access via daily job
-- [x] Idempotent renewal reminders on the existing scheduler; configurable warning days
-- [x] Flat 360 occupancy panel, residents Tenancies tabs, resident Easy view
-- [x] Live checks (self-rolled-back, QA Demo Society)
-- [x] Legacy "End relationship" limited to audited admin correction (reason, permission, dues-blocked)
-- [x] Returning to the same flat creates a new record; overlapping active occupancy blocked
-- [x] Preview look at Flat occupancy panel and Residents → Tenancies (QA admin, read-only)
-- [ ] Guard live check — blocked: no legitimate guard account
-
-## Workstream 3 — Gate, visitor, parking & safety
-- [x] Recurring passes, movers/vendors/staff, restricted list, committee decisions, overrides with reason, incidents, overstay, visitor parking, SOS, bounded offline guard queue (rollback-tested in QA Demo Society)
-- [ ] Live guard-account check — blocked: no legitimate guard account exists
-
-- [x] Workstream 4 Operations & Facilities — built, server-tested and preview-checked; attachment click-through unavailable because the authorized demo society has no Helpdesk ticket and no supported safe attachment-deletion path; resident/staff previews unavailable without legitimate accounts
-
-## Workstream 5 — Procurement & Budgets
-- [x] Procurement workflow + server transitions, separation of duties, audit (rollback-tested)
-- [x] Budgets with revision history; actuals from posted expenses (rollback-tested)
-- [x] Auditor Pack procurement/budget section + CSV
-- [x] Quotation/invoice file attachments — private storage, stage-locked, reasoned soft-remove, audit (rollback-tested); live file click-through not done (no genuine demo record)
-- Workstream 5 COMPLETE. Workstream 6 not started.
-- [x] Preview check of Purchases/Budgets screens (phone + desktop, no errors/overflow)
-
-- [x] Workstream 6 — Governance, documents & privacy: notices (priority/expiry/ack/truthful counts), meetings, formal votes, versioned document vault, privacy requests. 52/52 rollback tests passed. Resident-only screens and a second-committee reviewer not preview-tested (no legitimate accounts).
-
-## Workstream 7 — Finance, Migration & Handover (complete — validated 2026-09-30; Workstream 8 not started)
-- [x] Immutable bill adjustments (counter-entry corrections) + ageing includes them
-- [x] Handover checklist + audited status
-- [x] Export: adjustments, procurement, budgets, meetings, resolutions, documents, staff, assets, inventory, import history
-- [x] Bill-run exceptions list + optional second-approver
-- [x] Late fee: apply safely or hide the dead setting
-- [x] Migration: partial success, opening-balance (unverified) import, compare-only dual-run, XLSX→CSV
-- [x] Auditor Pack: adjustments + procurement/budget sections
-- [x] Rollback QA + previews; then mark complete
-
-## Workstream 8 — Intelligence, Automation, Search & Role Homes (complete — validated 2026-09-30; Workstream 9 in progress (a11y contrast, list semantics, lazy exports, scoped search cache done))
-- [x] Server-authorized cross-domain search (global_search) + search UI
-- [x] Deterministic Needs Attention (committee + resident homes)
-- [x] Scheduler run log, duplicate/stale protection on billing + reminder hooks; Super Admin job card
-- [x] Notification priority + dedupe helper
-- [x] Security rollback QA (search/attention/scheduler/notifications)
-- [x] AI summaries (helpdesk/meeting/exception explanations) on existing AI boundary
-- [x] Guard home attention; log in-database scheduled jobs (tenancy expiry, notices) to the run log
-- [x] Move existing reminder senders onto _notify_user_once; show priority in notification list
-- [ ] Live guard/resident preview — blocked: no legitimate guard or resident account
-
-## Gap area — Parking & Vehicles
-- [x] Slot assignment, release/reallocation with history, temporary slots with server-side expiry, live capacity, violations (no charges), manual EV charging (no invented readings), reports + CSV (36/36 rollback checks in QA Demo Society)
-- [x] Violation photo evidence: private storage, camera/gallery, preview, retry, remove-with-reason history (15/15 rollback checks)
-- [ ] External only: real EV charger provider (none connected; manual mode only)
+- [ ] Role-aware shells: resident/guard never see society-admin sidebar (settings, legal, pricing pages)
+- [ ] Resident/guard: no plans, pricing or subscription anywhere
+- [ ] Dark mode persists on login/public pages
+- [ ] Replace Neon with one premium Indian-palette theme (Pro plan), Standard stays default
+- [ ] Pill-style (horizontal, rounded) tabs app-wide
+- [ ] Accounting Center: 4 section buttons (Income & Expense, Ledger, Maintenance & Billing, Events)
+- [ ] Society admin desktop: Feature Directory + all main sections reachable from sidebar
+- [ ] Super Admin: grouped control-center navigation (guide modules), keep all features
+- [ ] Super Admin: hide test/QA/demo records by default with a switch
+- [ ] Replace browser prompt() dialogs with in-app reason dialog
+- [ ] Duplicate legal footer, legal page padding, subtle scrollbars
+- [ ] Auto billing off by default; 5-day cycle bills only verified-paid homes, reminds due homes
+- [ ] Default common income/expense heads
+- [ ] Single-bill generator + default bill template per owner's PDF
+- [ ] Event money (income/expense per event) in Accounting Center

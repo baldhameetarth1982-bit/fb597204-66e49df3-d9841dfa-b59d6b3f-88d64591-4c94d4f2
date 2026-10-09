@@ -9,316 +9,216 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AdminRouteImport } from './routes/_admin'
-import { Route as AuthRouteImport } from './routes/_auth'
-import { Route as ResidentRouteImport } from './routes/_resident'
-import { Route as SocietyRouteImport } from './routes/_society'
-import { Route as AboutRouteImport } from './routes/about'
-import { Route as AuditorRouteImport } from './routes/auditor'
-import { Route as ContactRouteImport } from './routes/contact'
-import { Route as FoundersRouteImport } from './routes/founders'
-import { Route as GdprRouteImport } from './routes/gdpr'
-import { Route as LegalRouteImport } from './routes/legal'
-import { Route as McpRouteImport } from './routes/mcp'
-import { Route as OnboardingRouteImport } from './routes/onboarding'
-import { Route as PricingRouteImport } from './routes/pricing'
-import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as RefundRouteImport } from './routes/refund'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as StaffRouteImport } from './routes/staff'
-import { Route as SupportRouteImport } from './routes/support'
-import { Route as TermsRouteImport } from './routes/terms'
-import { Route as VerifyPhoneRouteImport } from './routes/verify-phone'
 import { Route as WelcomeRouteImport } from './routes/welcome'
-import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
-import { Route as Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRouteImport } from './routes/[.well-known]/assetlinks[.]json'
-import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
-import { Route as AuthLoginRouteImport } from './routes/_auth/login'
-import { Route as ApiSupportChatRouteImport } from './routes/api/support-chat'
-import { Route as AssetTokenRouteImport } from './routes/asset.$token'
-import { Route as CheckoutPlanIdRouteImport } from './routes/checkout.$planId'
+import { Route as VerifyPhoneRouteImport } from './routes/verify-phone'
+import { Route as TermsRouteImport } from './routes/terms'
+import { Route as SupportRouteImport } from './routes/support'
+import { Route as StaffRouteImport } from './routes/staff'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as RefundRouteImport } from './routes/refund'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as McpRouteImport } from './routes/mcp'
+import { Route as LegalRouteImport } from './routes/legal'
+import { Route as GdprRouteImport } from './routes/gdpr'
+import { Route as FoundersRouteImport } from './routes/founders'
+import { Route as ContactRouteImport } from './routes/contact'
+import { Route as AuditorRouteImport } from './routes/auditor'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as SocietyRouteImport } from './routes/_society'
+import { Route as ResidentRouteImport } from './routes/_resident'
+import { Route as AuthRouteImport } from './routes/_auth'
+import { Route as AdminRouteImport } from './routes/_admin'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding.index'
-import { Route as OnboardingCreateRouteImport } from './routes/onboarding.create'
-import { Route as OnboardingJoinRouteImport } from './routes/onboarding.join'
-import { Route as OnboardingPendingRouteImport } from './routes/onboarding.pending'
-import { Route as OnboardingPlanRouteImport } from './routes/onboarding.plan'
 import { Route as QTokenRouteImport } from './routes/q.$token'
-import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
-import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
-import { Route as AdminAdminAdsRouteImport } from './routes/_admin/admin.ads'
-import { Route as AdminAdminAiUsageRouteImport } from './routes/_admin/admin.ai-usage'
-import { Route as AdminAdminAssistantRouteImport } from './routes/_admin/admin.assistant'
-import { Route as AdminAdminAuditRouteImport } from './routes/_admin/admin.audit'
-import { Route as AdminAdminBiRouteImport } from './routes/_admin/admin.bi'
-import { Route as AdminAdminBrandingRouteImport } from './routes/_admin/admin.branding'
-import { Route as AdminAdminCostsRouteImport } from './routes/_admin/admin.costs'
-import { Route as AdminAdminCustomPlansRouteImport } from './routes/_admin/admin.custom-plans'
-import { Route as AdminAdminDashboardRouteImport } from './routes/_admin/admin.dashboard'
-import { Route as AdminAdminExecutiveRouteImport } from './routes/_admin/admin.executive'
-import { Route as AdminAdminHealthRouteImport } from './routes/_admin/admin.health'
-import { Route as AdminAdminIncomeRouteImport } from './routes/_admin/admin.income'
-import { Route as AdminAdminMarketplaceRouteImport } from './routes/_admin/admin.marketplace'
-import { Route as AdminAdminMessagingRouteImport } from './routes/_admin/admin.messaging'
-import { Route as AdminAdminPlansRouteImport } from './routes/_admin/admin.plans'
-import { Route as AdminAdminRazorpayRouteImport } from './routes/_admin/admin.razorpay'
-import { Route as AdminAdminReportBuilderRouteImport } from './routes/_admin/admin.report-builder'
-import { Route as AdminAdminRevenueRouteImport } from './routes/_admin/admin.revenue'
-import { Route as AdminAdminSearchRouteImport } from './routes/_admin/admin.search'
-import { Route as AdminAdminSecurityRouteImport } from './routes/_admin/admin.security'
-import { Route as AdminAdminSettingsRouteImport } from './routes/_admin/admin.settings'
-import { Route as AdminAdminSubscriptionPaymentsRouteImport } from './routes/_admin/admin.subscription-payments'
-import { Route as AdminAdminUsersRouteImport } from './routes/_admin/admin.users'
-import { Route as AdminAdminWithdrawalsRouteImport } from './routes/_admin/admin.withdrawals'
-import { Route as ResidentAppAchievementsRouteImport } from './routes/_resident/app.achievements'
-import { Route as ResidentAppActivityRouteImport } from './routes/_resident/app.activity'
-import { Route as ResidentAppAgmRouteImport } from './routes/_resident/app.agm'
-import { Route as ResidentAppAmenitiesRouteImport } from './routes/_resident/app.amenities'
-import { Route as ResidentAppBylawsRouteImport } from './routes/_resident/app.bylaws'
-import { Route as ResidentAppClassesRouteImport } from './routes/_resident/app.classes'
-import { Route as ResidentAppCommRouteImport } from './routes/_resident/app.comm'
-import { Route as ResidentAppCommunityRouteImport } from './routes/_resident/app.community'
-import { Route as ResidentAppContactsRouteImport } from './routes/_resident/app.contacts'
-import { Route as ResidentAppDashboardRouteImport } from './routes/_resident/app.dashboard'
-import { Route as ResidentAppDocumentsRouteImport } from './routes/_resident/app.documents'
-import { Route as ResidentAppDuesRouteImport } from './routes/_resident/app.dues'
-import { Route as ResidentAppElectionsRouteImport } from './routes/_resident/app.elections'
-import { Route as ResidentAppEmergencyRouteImport } from './routes/_resident/app.emergency'
-import { Route as ResidentAppEventsRouteImport } from './routes/_resident/app.events'
-import { Route as ResidentAppFamilyRouteImport } from './routes/_resident/app.family'
-import { Route as ResidentAppFeaturesRouteImport } from './routes/_resident/app.features'
-import { Route as ResidentAppGroupsRouteImport } from './routes/_resident/app.groups'
-import { Route as ResidentAppGuardRouteImport } from './routes/_resident/app.guard'
-import { Route as ResidentAppHelpdeskRouteImport } from './routes/_resident/app.helpdesk'
-import { Route as ResidentAppHouseholdHistoryRouteImport } from './routes/_resident/app.household-history'
-import { Route as ResidentAppLedgerRouteImport } from './routes/_resident/app.ledger'
-import { Route as ResidentAppMeetingsRouteImport } from './routes/_resident/app.meetings'
-import { Route as ResidentAppNoticesRouteImport } from './routes/_resident/app.notices'
-import { Route as ResidentAppNotificationsRouteImport } from './routes/_resident/app.notifications'
-import { Route as ResidentAppPassesRouteImport } from './routes/_resident/app.passes'
-import { Route as ResidentAppPlanRequiredRouteImport } from './routes/_resident/app.plan-required'
-import { Route as ResidentAppPollsRouteImport } from './routes/_resident/app.polls'
-import { Route as ResidentAppPrivacyRequestsRouteImport } from './routes/_resident/app.privacy-requests'
-import { Route as ResidentAppProfileRouteImport } from './routes/_resident/app.profile'
-import { Route as ResidentAppReceiptsRouteImport } from './routes/_resident/app.receipts'
-import { Route as ResidentAppSearchRouteImport } from './routes/_resident/app.search'
-import { Route as ResidentAppSecretaryRouteImport } from './routes/_resident/app.secretary'
-import { Route as ResidentAppServicesRouteImport } from './routes/_resident/app.services'
-import { Route as ResidentAppSurveysRouteImport } from './routes/_resident/app.surveys'
-import { Route as ResidentAppTrustRouteImport } from './routes/_resident/app.trust'
-import { Route as ResidentAppVehiclesRouteImport } from './routes/_resident/app.vehicles'
-import { Route as ResidentAppVisitorsRouteImport } from './routes/_resident/app.visitors'
-import { Route as ResidentAppVotesRouteImport } from './routes/_resident/app.votes'
-import { Route as SocietySocietyAccountsRouteImport } from './routes/_society/society.accounts'
-import { Route as SocietySocietyAgmRouteImport } from './routes/_society/society.agm'
-import { Route as SocietySocietyAmenitiesRouteImport } from './routes/_society/society.amenities'
-import { Route as SocietySocietyAnnouncementsRouteImport } from './routes/_society/society.announcements'
-import { Route as SocietySocietyApprovalsRouteImport } from './routes/_society/society.approvals'
-import { Route as SocietySocietyAuditorPackRouteImport } from './routes/_society/society.auditor-pack'
-import { Route as SocietySocietyAutomationsRouteImport } from './routes/_society/society.automations'
-import { Route as SocietySocietyBillingSettingsRouteImport } from './routes/_society/society.billing-settings'
-import { Route as SocietySocietyBlocksRouteImport } from './routes/_society/society.blocks'
-import { Route as SocietySocietyBooksRouteImport } from './routes/_society/society.books'
-import { Route as SocietySocietyBrandingRouteImport } from './routes/_society/society.branding'
-import { Route as SocietySocietyBudgetsRouteImport } from './routes/_society/society.budgets'
-import { Route as SocietySocietyBusinessProfileRouteImport } from './routes/_society/society.business-profile'
-import { Route as SocietySocietyBylawsRouteImport } from './routes/_society/society.bylaws'
-import { Route as SocietySocietyClassesRouteImport } from './routes/_society/society.classes'
-import { Route as SocietySocietyCommunicationRouteImport } from './routes/_society/society.communication'
-import { Route as SocietySocietyCommunityRouteImport } from './routes/_society/society.community'
-import { Route as SocietySocietyContactsRouteImport } from './routes/_society/society.contacts'
-import { Route as SocietySocietyCustomFieldsRouteImport } from './routes/_society/society.custom-fields'
-import { Route as SocietySocietyDashboardRouteImport } from './routes/_society/society.dashboard'
-import { Route as SocietySocietyDataExportRouteImport } from './routes/_society/society.data-export'
-import { Route as SocietySocietyDefaultersRouteImport } from './routes/_society/society.defaulters'
-import { Route as SocietySocietyDepreciationRouteImport } from './routes/_society/society.depreciation'
-import { Route as SocietySocietyDigestRouteImport } from './routes/_society/society.digest'
-import { Route as SocietySocietyElectionsRouteImport } from './routes/_society/society.elections'
-import { Route as SocietySocietyEmergencyRouteImport } from './routes/_society/society.emergency'
-import { Route as SocietySocietyEventsRouteImport } from './routes/_society/society.events'
-import { Route as SocietySocietyExpensesRouteImport } from './routes/_society/society.expenses'
-import { Route as SocietySocietyExplorerRouteImport } from './routes/_society/society.explorer'
-import { Route as SocietySocietyFeaturesRouteImport } from './routes/_society/society.features'
-import { Route as SocietySocietyGroupsRouteImport } from './routes/_society/society.groups'
-import { Route as SocietySocietyHandoverRouteImport } from './routes/_society/society.handover'
-import { Route as SocietySocietyHelpdeskRouteImport } from './routes/_society/society.helpdesk'
-import { Route as SocietySocietyImportRouteImport } from './routes/_society/society.import'
-import { Route as SocietySocietyKnowledgeRouteImport } from './routes/_society/society.knowledge'
-import { Route as SocietySocietyLeaderboardRouteImport } from './routes/_society/society.leaderboard'
-import { Route as SocietySocietyLedgerRouteImport } from './routes/_society/society.ledger'
-import { Route as SocietySocietyMaintenanceRouteImport } from './routes/_society/society.maintenance'
-import { Route as SocietySocietyMatrixRouteImport } from './routes/_society/society.matrix'
-import { Route as SocietySocietyMatrixImportRouteImport } from './routes/_society/society.matrix-import'
-import { Route as SocietySocietyMeetingsRouteImport } from './routes/_society/society.meetings'
-import { Route as SocietySocietyMetersRouteImport } from './routes/_society/society.meters'
-import { Route as SocietySocietyMoreRouteImport } from './routes/_society/society.more'
-import { Route as SocietySocietyOpeningBalancesRouteImport } from './routes/_society/society.opening-balances'
-import { Route as SocietySocietyOperationsRouteImport } from './routes/_society/society.operations'
-import { Route as SocietySocietyParkingRouteImport } from './routes/_society/society.parking'
-import { Route as SocietySocietyPassesRouteImport } from './routes/_society/society.passes'
-import { Route as SocietySocietyPaymentsRouteImport } from './routes/_society/society.payments'
-import { Route as SocietySocietyPayoutsRouteImport } from './routes/_society/society.payouts'
-import { Route as SocietySocietyPettyCashRouteImport } from './routes/_society/society.petty-cash'
-import { Route as SocietySocietyPlanRequiredRouteImport } from './routes/_society/society.plan-required'
-import { Route as SocietySocietyPollsRouteImport } from './routes/_society/society.polls'
-import { Route as SocietySocietyPrivacyRequestsRouteImport } from './routes/_society/society.privacy-requests'
-import { Route as SocietySocietyPrivacySettingsRouteImport } from './routes/_society/society.privacy-settings'
-import { Route as SocietySocietyReceiptsRouteImport } from './routes/_society/society.receipts'
-import { Route as SocietySocietyReconciliationRouteImport } from './routes/_society/society.reconciliation'
-import { Route as SocietySocietyRegistersRouteImport } from './routes/_society/society.registers'
-import { Route as SocietySocietyReportsRouteImport } from './routes/_society/society.reports'
-import { Route as SocietySocietySearchRouteImport } from './routes/_society/society.search'
-import { Route as SocietySocietySetupRouteImport } from './routes/_society/society.setup'
-import { Route as SocietySocietySubscriptionRouteImport } from './routes/_society/society.subscription'
-import { Route as SocietySocietySurveysRouteImport } from './routes/_society/society.surveys'
-import { Route as SocietySocietyTeamRouteImport } from './routes/_society/society.team'
-import { Route as SocietySocietyVehiclesRouteImport } from './routes/_society/society.vehicles'
-import { Route as SocietySocietyVerificationsRouteImport } from './routes/_society/society.verifications'
-import { Route as SocietySocietyVisitorsRouteImport } from './routes/_society/society.visitors'
-import { Route as SocietySocietyVotesRouteImport } from './routes/_society/society.votes'
-import { Route as SocietySocietyVouchersRouteImport } from './routes/_society/society.vouchers'
+import { Route as OnboardingPlanRouteImport } from './routes/onboarding.plan'
+import { Route as OnboardingPendingRouteImport } from './routes/onboarding.pending'
+import { Route as OnboardingJoinRouteImport } from './routes/onboarding.join'
+import { Route as OnboardingCreateRouteImport } from './routes/onboarding.create'
+import { Route as CheckoutPlanIdRouteImport } from './routes/checkout.$planId'
+import { Route as AssetTokenRouteImport } from './routes/asset.$token'
+import { Route as ApiSupportChatRouteImport } from './routes/api/support-chat'
+import { Route as AuthLoginRouteImport } from './routes/_auth/login'
+import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRouteImport } from './routes/[.well-known]/assetlinks[.]json'
+import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as VerifyNoDuesTokenRouteImport } from './routes/verify.no-dues.$token'
-import { Route as AdminAdminSocietiesIndexRouteImport } from './routes/_admin/admin.societies.index'
-import { Route as AdminAdminSocietiesIdRouteImport } from './routes/_admin/admin.societies.$id'
-import { Route as ResidentAppBillsIndexRouteImport } from './routes/_resident/app.bills.index'
-import { Route as ResidentAppBillsIdRouteImport } from './routes/_resident/app.bills.$id'
-import { Route as ResidentAppFeedIndexRouteImport } from './routes/_resident/app.feed.index'
-import { Route as ResidentAppFeedPostIdRouteImport } from './routes/_resident/app.feed.$postId'
-import { Route as ResidentAppNoDuesIndexRouteImport } from './routes/_resident/app.no-dues.index'
-import { Route as ResidentAppNoDuesIdRouteImport } from './routes/_resident/app.no-dues.$id'
-import { Route as SocietySocietyBillStudioIndexRouteImport } from './routes/_society/society.bill-studio.index'
-import { Route as SocietySocietyBillStudioGenerateRouteImport } from './routes/_society/society.bill-studio.generate'
-import { Route as SocietySocietyBillingIndexRouteImport } from './routes/_society/society.billing.index'
-import { Route as SocietySocietyBillingGenerateRouteImport } from './routes/_society/society.billing.generate'
-import { Route as SocietySocietyBillsIdRouteImport } from './routes/_society/society.bills.$id'
-import { Route as SocietySocietyDocumentIdRouteImport } from './routes/_society/society.document.$id'
-import { Route as SocietySocietyFlatsIndexRouteImport } from './routes/_society/society.flats.index'
-import { Route as SocietySocietyFlatsIdRouteImport } from './routes/_society/society.flats.$id'
-import { Route as SocietySocietyIncomeIndexRouteImport } from './routes/_society/society.income.index'
-import { Route as SocietySocietyIncomeIdRouteImport } from './routes/_society/society.income.$id'
-import { Route as SocietySocietyIncomeCategoriesRouteImport } from './routes/_society/society.income.categories'
-import { Route as SocietySocietyIncomeNewRouteImport } from './routes/_society/society.income.new'
-import { Route as SocietySocietyIncomePayersRouteImport } from './routes/_society/society.income.payers'
-import { Route as SocietySocietyNoDuesIndexRouteImport } from './routes/_society/society.no-dues.index'
-import { Route as SocietySocietyNoDuesIdRouteImport } from './routes/_society/society.no-dues.$id'
-import { Route as SocietySocietyQrIndexRouteImport } from './routes/_society/society.qr.index'
-import { Route as SocietySocietyQrIdRouteImport } from './routes/_society/society.qr.$id'
+import { Route as SocietySocietyVouchersRouteImport } from './routes/_society/society.vouchers'
+import { Route as SocietySocietyVotesRouteImport } from './routes/_society/society.votes'
+import { Route as SocietySocietyVisitorsRouteImport } from './routes/_society/society.visitors'
+import { Route as SocietySocietyVerificationsRouteImport } from './routes/_society/society.verifications'
+import { Route as SocietySocietyVehiclesRouteImport } from './routes/_society/society.vehicles'
+import { Route as SocietySocietyTeamRouteImport } from './routes/_society/society.team'
+import { Route as SocietySocietySurveysRouteImport } from './routes/_society/society.surveys'
+import { Route as SocietySocietySubscriptionRouteImport } from './routes/_society/society.subscription'
+import { Route as SocietySocietySetupRouteImport } from './routes/_society/society.setup'
+import { Route as SocietySocietySearchRouteImport } from './routes/_society/society.search'
+import { Route as SocietySocietyReportsRouteImport } from './routes/_society/society.reports'
+import { Route as SocietySocietyRegistersRouteImport } from './routes/_society/society.registers'
+import { Route as SocietySocietyReconciliationRouteImport } from './routes/_society/society.reconciliation'
+import { Route as SocietySocietyReceiptsRouteImport } from './routes/_society/society.receipts'
+import { Route as SocietySocietyPrivacySettingsRouteImport } from './routes/_society/society.privacy-settings'
+import { Route as SocietySocietyPrivacyRequestsRouteImport } from './routes/_society/society.privacy-requests'
+import { Route as SocietySocietyPollsRouteImport } from './routes/_society/society.polls'
+import { Route as SocietySocietyPlanRequiredRouteImport } from './routes/_society/society.plan-required'
+import { Route as SocietySocietyPettyCashRouteImport } from './routes/_society/society.petty-cash'
+import { Route as SocietySocietyPayoutsRouteImport } from './routes/_society/society.payouts'
+import { Route as SocietySocietyPaymentsRouteImport } from './routes/_society/society.payments'
+import { Route as SocietySocietyPassesRouteImport } from './routes/_society/society.passes'
+import { Route as SocietySocietyParkingRouteImport } from './routes/_society/society.parking'
+import { Route as SocietySocietyOperationsRouteImport } from './routes/_society/society.operations'
+import { Route as SocietySocietyOpeningBalancesRouteImport } from './routes/_society/society.opening-balances'
+import { Route as SocietySocietyMoreRouteImport } from './routes/_society/society.more'
+import { Route as SocietySocietyMetersRouteImport } from './routes/_society/society.meters'
+import { Route as SocietySocietyMeetingsRouteImport } from './routes/_society/society.meetings'
+import { Route as SocietySocietyMatrixImportRouteImport } from './routes/_society/society.matrix-import'
+import { Route as SocietySocietyMatrixRouteImport } from './routes/_society/society.matrix'
+import { Route as SocietySocietyMaintenanceRouteImport } from './routes/_society/society.maintenance'
+import { Route as SocietySocietyLedgerRouteImport } from './routes/_society/society.ledger'
+import { Route as SocietySocietyLeaderboardRouteImport } from './routes/_society/society.leaderboard'
+import { Route as SocietySocietyKnowledgeRouteImport } from './routes/_society/society.knowledge'
+import { Route as SocietySocietyImportRouteImport } from './routes/_society/society.import'
+import { Route as SocietySocietyHelpdeskRouteImport } from './routes/_society/society.helpdesk'
+import { Route as SocietySocietyHandoverRouteImport } from './routes/_society/society.handover'
+import { Route as SocietySocietyGroupsRouteImport } from './routes/_society/society.groups'
+import { Route as SocietySocietyFeaturesRouteImport } from './routes/_society/society.features'
+import { Route as SocietySocietyExplorerRouteImport } from './routes/_society/society.explorer'
+import { Route as SocietySocietyExpensesRouteImport } from './routes/_society/society.expenses'
+import { Route as SocietySocietyEventsRouteImport } from './routes/_society/society.events'
+import { Route as SocietySocietyEventMoneyRouteImport } from './routes/_society/society.event-money'
+import { Route as SocietySocietyEmergencyRouteImport } from './routes/_society/society.emergency'
+import { Route as SocietySocietyElectionsRouteImport } from './routes/_society/society.elections'
+import { Route as SocietySocietyDigestRouteImport } from './routes/_society/society.digest'
+import { Route as SocietySocietyDepreciationRouteImport } from './routes/_society/society.depreciation'
+import { Route as SocietySocietyDefaultersRouteImport } from './routes/_society/society.defaulters'
+import { Route as SocietySocietyDataExportRouteImport } from './routes/_society/society.data-export'
+import { Route as SocietySocietyDashboardRouteImport } from './routes/_society/society.dashboard'
+import { Route as SocietySocietyCustomFieldsRouteImport } from './routes/_society/society.custom-fields'
+import { Route as SocietySocietyContactsRouteImport } from './routes/_society/society.contacts'
+import { Route as SocietySocietyCommunityRouteImport } from './routes/_society/society.community'
+import { Route as SocietySocietyCommunicationRouteImport } from './routes/_society/society.communication'
+import { Route as SocietySocietyClassesRouteImport } from './routes/_society/society.classes'
+import { Route as SocietySocietyBylawsRouteImport } from './routes/_society/society.bylaws'
+import { Route as SocietySocietyBusinessProfileRouteImport } from './routes/_society/society.business-profile'
+import { Route as SocietySocietyBudgetsRouteImport } from './routes/_society/society.budgets'
+import { Route as SocietySocietyBrandingRouteImport } from './routes/_society/society.branding'
+import { Route as SocietySocietyBooksRouteImport } from './routes/_society/society.books'
+import { Route as SocietySocietyBlocksRouteImport } from './routes/_society/society.blocks'
+import { Route as SocietySocietyBillingSettingsRouteImport } from './routes/_society/society.billing-settings'
+import { Route as SocietySocietyAutomationsRouteImport } from './routes/_society/society.automations'
+import { Route as SocietySocietyAuditorPackRouteImport } from './routes/_society/society.auditor-pack'
+import { Route as SocietySocietyApprovalsRouteImport } from './routes/_society/society.approvals'
+import { Route as SocietySocietyAnnouncementsRouteImport } from './routes/_society/society.announcements'
+import { Route as SocietySocietyAmenitiesRouteImport } from './routes/_society/society.amenities'
+import { Route as SocietySocietyAgmRouteImport } from './routes/_society/society.agm'
+import { Route as SocietySocietyAccountsRouteImport } from './routes/_society/society.accounts'
+import { Route as ResidentAppVotesRouteImport } from './routes/_resident/app.votes'
+import { Route as ResidentAppVisitorsRouteImport } from './routes/_resident/app.visitors'
+import { Route as ResidentAppVehiclesRouteImport } from './routes/_resident/app.vehicles'
+import { Route as ResidentAppTrustRouteImport } from './routes/_resident/app.trust'
+import { Route as ResidentAppSurveysRouteImport } from './routes/_resident/app.surveys'
+import { Route as ResidentAppServicesRouteImport } from './routes/_resident/app.services'
+import { Route as ResidentAppSecretaryRouteImport } from './routes/_resident/app.secretary'
+import { Route as ResidentAppSearchRouteImport } from './routes/_resident/app.search'
+import { Route as ResidentAppReceiptsRouteImport } from './routes/_resident/app.receipts'
+import { Route as ResidentAppProfileRouteImport } from './routes/_resident/app.profile'
+import { Route as ResidentAppPrivacyRequestsRouteImport } from './routes/_resident/app.privacy-requests'
+import { Route as ResidentAppPollsRouteImport } from './routes/_resident/app.polls'
+import { Route as ResidentAppPlanRequiredRouteImport } from './routes/_resident/app.plan-required'
+import { Route as ResidentAppPassesRouteImport } from './routes/_resident/app.passes'
+import { Route as ResidentAppNotificationsRouteImport } from './routes/_resident/app.notifications'
+import { Route as ResidentAppNoticesRouteImport } from './routes/_resident/app.notices'
+import { Route as ResidentAppMeetingsRouteImport } from './routes/_resident/app.meetings'
+import { Route as ResidentAppLedgerRouteImport } from './routes/_resident/app.ledger'
+import { Route as ResidentAppHouseholdHistoryRouteImport } from './routes/_resident/app.household-history'
+import { Route as ResidentAppHelpdeskRouteImport } from './routes/_resident/app.helpdesk'
+import { Route as ResidentAppGuardRouteImport } from './routes/_resident/app.guard'
+import { Route as ResidentAppGroupsRouteImport } from './routes/_resident/app.groups'
+import { Route as ResidentAppFeaturesRouteImport } from './routes/_resident/app.features'
+import { Route as ResidentAppFamilyRouteImport } from './routes/_resident/app.family'
+import { Route as ResidentAppEventsRouteImport } from './routes/_resident/app.events'
+import { Route as ResidentAppEmergencyRouteImport } from './routes/_resident/app.emergency'
+import { Route as ResidentAppElectionsRouteImport } from './routes/_resident/app.elections'
+import { Route as ResidentAppDuesRouteImport } from './routes/_resident/app.dues'
+import { Route as ResidentAppDocumentsRouteImport } from './routes/_resident/app.documents'
+import { Route as ResidentAppDashboardRouteImport } from './routes/_resident/app.dashboard'
+import { Route as ResidentAppContactsRouteImport } from './routes/_resident/app.contacts'
+import { Route as ResidentAppCommunityRouteImport } from './routes/_resident/app.community'
+import { Route as ResidentAppCommRouteImport } from './routes/_resident/app.comm'
+import { Route as ResidentAppClassesRouteImport } from './routes/_resident/app.classes'
+import { Route as ResidentAppBylawsRouteImport } from './routes/_resident/app.bylaws'
+import { Route as ResidentAppAmenitiesRouteImport } from './routes/_resident/app.amenities'
+import { Route as ResidentAppAgmRouteImport } from './routes/_resident/app.agm'
+import { Route as ResidentAppActivityRouteImport } from './routes/_resident/app.activity'
+import { Route as ResidentAppAchievementsRouteImport } from './routes/_resident/app.achievements'
+import { Route as AdminAdminWithdrawalsRouteImport } from './routes/_admin/admin.withdrawals'
+import { Route as AdminAdminUsersRouteImport } from './routes/_admin/admin.users'
+import { Route as AdminAdminSubscriptionPaymentsRouteImport } from './routes/_admin/admin.subscription-payments'
+import { Route as AdminAdminSettingsRouteImport } from './routes/_admin/admin.settings'
+import { Route as AdminAdminSecurityRouteImport } from './routes/_admin/admin.security'
+import { Route as AdminAdminSearchRouteImport } from './routes/_admin/admin.search'
+import { Route as AdminAdminRevenueRouteImport } from './routes/_admin/admin.revenue'
+import { Route as AdminAdminReportBuilderRouteImport } from './routes/_admin/admin.report-builder'
+import { Route as AdminAdminRazorpayRouteImport } from './routes/_admin/admin.razorpay'
+import { Route as AdminAdminPlansRouteImport } from './routes/_admin/admin.plans'
+import { Route as AdminAdminMessagingRouteImport } from './routes/_admin/admin.messaging'
+import { Route as AdminAdminMarketplaceRouteImport } from './routes/_admin/admin.marketplace'
+import { Route as AdminAdminIncomeRouteImport } from './routes/_admin/admin.income'
+import { Route as AdminAdminHealthRouteImport } from './routes/_admin/admin.health'
+import { Route as AdminAdminExecutiveRouteImport } from './routes/_admin/admin.executive'
+import { Route as AdminAdminDashboardRouteImport } from './routes/_admin/admin.dashboard'
+import { Route as AdminAdminCustomPlansRouteImport } from './routes/_admin/admin.custom-plans'
+import { Route as AdminAdminCostsRouteImport } from './routes/_admin/admin.costs'
+import { Route as AdminAdminBrandingRouteImport } from './routes/_admin/admin.branding'
+import { Route as AdminAdminBiRouteImport } from './routes/_admin/admin.bi'
+import { Route as AdminAdminAuditRouteImport } from './routes/_admin/admin.audit'
+import { Route as AdminAdminAssistantRouteImport } from './routes/_admin/admin.assistant'
+import { Route as AdminAdminAiUsageRouteImport } from './routes/_admin/admin.ai-usage'
+import { Route as AdminAdminAdsRouteImport } from './routes/_admin/admin.ads'
+import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as SocietySocietyResidentsIndexRouteImport } from './routes/_society/society.residents.index'
-import { Route as SocietySocietyResidentsIdRouteImport } from './routes/_society/society.residents.$id'
-import { Route as ApiPublicAuthFirebaseSessionRouteImport } from './routes/api/public/auth/firebase-session'
-import { Route as ApiPublicGateDeviceEventRouteImport } from './routes/api/public/gate/device-event'
-import { Route as ApiPublicHooksMaintenanceRemindersRouteImport } from './routes/api/public/hooks/maintenance-reminders'
-import { Route as ApiPublicHooksMessagingDispatchRouteImport } from './routes/api/public/hooks/messaging-dispatch'
-import { Route as ApiPublicHooksRazorpayRouteImport } from './routes/api/public/hooks/razorpay'
+import { Route as SocietySocietyQrIndexRouteImport } from './routes/_society/society.qr.index'
+import { Route as SocietySocietyNoDuesIndexRouteImport } from './routes/_society/society.no-dues.index'
+import { Route as SocietySocietyIncomeIndexRouteImport } from './routes/_society/society.income.index'
+import { Route as SocietySocietyFlatsIndexRouteImport } from './routes/_society/society.flats.index'
+import { Route as SocietySocietyBillingIndexRouteImport } from './routes/_society/society.billing.index'
+import { Route as SocietySocietyBillStudioIndexRouteImport } from './routes/_society/society.bill-studio.index'
+import { Route as ResidentAppNoDuesIndexRouteImport } from './routes/_resident/app.no-dues.index'
+import { Route as ResidentAppFeedIndexRouteImport } from './routes/_resident/app.feed.index'
+import { Route as ResidentAppBillsIndexRouteImport } from './routes/_resident/app.bills.index'
+import { Route as AdminAdminSocietiesIndexRouteImport } from './routes/_admin/admin.societies.index'
 import { Route as ApiPublicHooksRunBillingRouteImport } from './routes/api/public/hooks/run-billing'
+import { Route as ApiPublicHooksRazorpayRouteImport } from './routes/api/public/hooks/razorpay'
+import { Route as ApiPublicHooksMessagingDispatchRouteImport } from './routes/api/public/hooks/messaging-dispatch'
+import { Route as ApiPublicHooksMaintenanceRemindersRouteImport } from './routes/api/public/hooks/maintenance-reminders'
+import { Route as ApiPublicGateDeviceEventRouteImport } from './routes/api/public/gate/device-event'
+import { Route as ApiPublicAuthFirebaseSessionRouteImport } from './routes/api/public/auth/firebase-session'
+import { Route as SocietySocietyResidentsIdRouteImport } from './routes/_society/society.residents.$id'
+import { Route as SocietySocietyQrIdRouteImport } from './routes/_society/society.qr.$id'
+import { Route as SocietySocietyNoDuesIdRouteImport } from './routes/_society/society.no-dues.$id'
+import { Route as SocietySocietyIncomePayersRouteImport } from './routes/_society/society.income.payers'
+import { Route as SocietySocietyIncomeNewRouteImport } from './routes/_society/society.income.new'
+import { Route as SocietySocietyIncomeCategoriesRouteImport } from './routes/_society/society.income.categories'
+import { Route as SocietySocietyIncomeIdRouteImport } from './routes/_society/society.income.$id'
+import { Route as SocietySocietyFlatsIdRouteImport } from './routes/_society/society.flats.$id'
+import { Route as SocietySocietyDocumentIdRouteImport } from './routes/_society/society.document.$id'
+import { Route as SocietySocietyBillsIdRouteImport } from './routes/_society/society.bills.$id'
+import { Route as SocietySocietyBillingGenerateRouteImport } from './routes/_society/society.billing.generate'
+import { Route as SocietySocietyBillStudioGenerateRouteImport } from './routes/_society/society.bill-studio.generate'
+import { Route as ResidentAppNoDuesIdRouteImport } from './routes/_resident/app.no-dues.$id'
+import { Route as ResidentAppFeedPostIdRouteImport } from './routes/_resident/app.feed.$postId'
+import { Route as ResidentAppBillsIdRouteImport } from './routes/_resident/app.bills.$id'
+import { Route as AdminAdminSocietiesIdRouteImport } from './routes/_admin/admin.societies.$id'
 import { Route as ApiPublicVerifyNoDuesTokenRouteImport } from './routes/api/public/verify.no-dues.$token'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/_admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/_auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ResidentRoute = ResidentRouteImport.update({
-  id: '/_resident',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SocietyRoute = SocietyRouteImport.update({
-  id: '/_society',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AboutRoute = AboutRouteImport.update({
-  id: '/about',
-  path: '/about',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuditorRoute = AuditorRouteImport.update({
-  id: '/auditor',
-  path: '/auditor',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ContactRoute = ContactRouteImport.update({
-  id: '/contact',
-  path: '/contact',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FoundersRoute = FoundersRouteImport.update({
-  id: '/founders',
-  path: '/founders',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GdprRoute = GdprRouteImport.update({
-  id: '/gdpr',
-  path: '/gdpr',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LegalRoute = LegalRouteImport.update({
-  id: '/legal',
-  path: '/legal',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const McpRoute = McpRouteImport.update({
-  id: '/mcp',
-  path: '/mcp',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OnboardingRoute = OnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PricingRoute = PricingRouteImport.update({
-  id: '/pricing',
-  path: '/pricing',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrivacyRoute = PrivacyRouteImport.update({
-  id: '/privacy',
-  path: '/privacy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RefundRoute = RefundRouteImport.update({
-  id: '/refund',
-  path: '/refund',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
-  id: '/sitemap.xml',
-  path: '/sitemap.xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const StaffRoute = StaffRouteImport.update({
-  id: '/staff',
-  path: '/staff',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SupportRoute = SupportRouteImport.update({
-  id: '/support',
-  path: '/support',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TermsRoute = TermsRouteImport.update({
-  id: '/terms',
-  path: '/terms',
+const WelcomeRoute = WelcomeRouteImport.update({
+  id: '/welcome',
+  path: '/welcome',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VerifyPhoneRoute = VerifyPhoneRouteImport.update({
@@ -326,15 +226,166 @@ const VerifyPhoneRoute = VerifyPhoneRouteImport.update({
   path: '/verify-phone',
   getParentRoute: () => rootRouteImport,
 } as any)
-const WelcomeRoute = WelcomeRouteImport.update({
-  id: '/welcome',
-  path: '/welcome',
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
-const Char91DotmcpChar93ListToolsRoute =
-  Char91DotmcpChar93ListToolsRouteImport.update({
-    id: '/.mcp/list-tools',
-    path: '/.mcp/list-tools',
+const SupportRoute = SupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StaffRoute = StaffRouteImport.update({
+  id: '/staff',
+  path: '/staff',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RefundRoute = RefundRouteImport.update({
+  id: '/refund',
+  path: '/refund',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalRoute = LegalRouteImport.update({
+  id: '/legal',
+  path: '/legal',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GdprRoute = GdprRouteImport.update({
+  id: '/gdpr',
+  path: '/gdpr',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FoundersRoute = FoundersRouteImport.update({
+  id: '/founders',
+  path: '/founders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuditorRoute = AuditorRouteImport.update({
+  id: '/auditor',
+  path: '/auditor',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SocietyRoute = SocietyRouteImport.update({
+  id: '/_society',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResidentRoute = ResidentRouteImport.update({
+  id: '/_resident',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/_auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/_admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingIndexRoute = OnboardingIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const QTokenRoute = QTokenRouteImport.update({
+  id: '/q/$token',
+  path: '/q/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingPlanRoute = OnboardingPlanRouteImport.update({
+  id: '/plan',
+  path: '/plan',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingPendingRoute = OnboardingPendingRouteImport.update({
+  id: '/pending',
+  path: '/pending',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingJoinRoute = OnboardingJoinRouteImport.update({
+  id: '/join',
+  path: '/join',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingCreateRoute = OnboardingCreateRouteImport.update({
+  id: '/create',
+  path: '/create',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const CheckoutPlanIdRoute = CheckoutPlanIdRouteImport.update({
+  id: '/checkout/$planId',
+  path: '/checkout/$planId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssetTokenRoute = AssetTokenRouteImport.update({
+  id: '/asset/$token',
+  path: '/asset/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSupportChatRoute = ApiSupportChatRouteImport.update({
+  id: '/api/support-chat',
+  path: '/api/support-chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthLoginRoute = AuthLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AuthRoute,
+} as any)
+const Char91DotwellKnownChar93OauthProtectedResourceRoute =
+  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
     getParentRoute: () => rootRouteImport,
   } as any)
 const Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRoute =
@@ -343,730 +394,30 @@ const Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRoute =
     path: '/.well-known/assetlinks.json',
     getParentRoute: () => rootRouteImport,
   } as any)
-const Char91DotwellKnownChar93OauthProtectedResourceRoute =
-  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
-    id: '/.well-known/oauth-protected-resource',
-    path: '/.well-known/oauth-protected-resource',
+const Char91DotmcpChar93ListToolsRoute =
+  Char91DotmcpChar93ListToolsRouteImport.update({
+    id: '/.mcp/list-tools',
+    path: '/.mcp/list-tools',
     getParentRoute: () => rootRouteImport,
   } as any)
-const AuthLoginRoute = AuthLoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => AuthRoute,
-} as any)
-const ApiSupportChatRoute = ApiSupportChatRouteImport.update({
-  id: '/api/support-chat',
-  path: '/api/support-chat',
+const VerifyNoDuesTokenRoute = VerifyNoDuesTokenRouteImport.update({
+  id: '/verify/no-dues/$token',
+  path: '/verify/no-dues/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AssetTokenRoute = AssetTokenRouteImport.update({
-  id: '/asset/$token',
-  path: '/asset/$token',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CheckoutPlanIdRoute = CheckoutPlanIdRouteImport.update({
-  id: '/checkout/$planId',
-  path: '/checkout/$planId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OnboardingIndexRoute = OnboardingIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => OnboardingRoute,
-} as any)
-const OnboardingCreateRoute = OnboardingCreateRouteImport.update({
-  id: '/create',
-  path: '/create',
-  getParentRoute: () => OnboardingRoute,
-} as any)
-const OnboardingJoinRoute = OnboardingJoinRouteImport.update({
-  id: '/join',
-  path: '/join',
-  getParentRoute: () => OnboardingRoute,
-} as any)
-const OnboardingPendingRoute = OnboardingPendingRouteImport.update({
-  id: '/pending',
-  path: '/pending',
-  getParentRoute: () => OnboardingRoute,
-} as any)
-const OnboardingPlanRoute = OnboardingPlanRouteImport.update({
-  id: '/plan',
-  path: '/plan',
-  getParentRoute: () => OnboardingRoute,
-} as any)
-const QTokenRoute = QTokenRouteImport.update({
-  id: '/q/$token',
-  path: '/q/$token',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
-  id: '/.lovable/oauth/consent',
-  path: '/.lovable/oauth/consent',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const Char91DotmcpChar93InvokeToolToolRoute =
-  Char91DotmcpChar93InvokeToolToolRouteImport.update({
-    id: '/.mcp/invoke-tool/$tool',
-    path: '/.mcp/invoke-tool/$tool',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const AdminAdminAdsRoute = AdminAdminAdsRouteImport.update({
-  id: '/admin/ads',
-  path: '/admin/ads',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAdminAiUsageRoute = AdminAdminAiUsageRouteImport.update({
-  id: '/admin/ai-usage',
-  path: '/admin/ai-usage',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAdminAssistantRoute = AdminAdminAssistantRouteImport.update({
-  id: '/admin/assistant',
-  path: '/admin/assistant',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAdminAuditRoute = AdminAdminAuditRouteImport.update({
-  id: '/admin/audit',
-  path: '/admin/audit',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAdminBiRoute = AdminAdminBiRouteImport.update({
-  id: '/admin/bi',
-  path: '/admin/bi',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAdminBrandingRoute = AdminAdminBrandingRouteImport.update({
-  id: '/admin/branding',
-  path: '/admin/branding',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAdminCostsRoute = AdminAdminCostsRouteImport.update({
-  id: '/admin/costs',
-  path: '/admin/costs',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAdminCustomPlansRoute = AdminAdminCustomPlansRouteImport.update({
-  id: '/admin/custom-plans',
-  path: '/admin/custom-plans',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAdminDashboardRoute = AdminAdminDashboardRouteImport.update({
-  id: '/admin/dashboard',
-  path: '/admin/dashboard',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAdminExecutiveRoute = AdminAdminExecutiveRouteImport.update({
-  id: '/admin/executive',
-  path: '/admin/executive',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAdminHealthRoute = AdminAdminHealthRouteImport.update({
-  id: '/admin/health',
-  path: '/admin/health',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAdminIncomeRoute = AdminAdminIncomeRouteImport.update({
-  id: '/admin/income',
-  path: '/admin/income',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAdminMarketplaceRoute = AdminAdminMarketplaceRouteImport.update({
-  id: '/admin/marketplace',
-  path: '/admin/marketplace',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAdminMessagingRoute = AdminAdminMessagingRouteImport.update({
-  id: '/admin/messaging',
-  path: '/admin/messaging',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAdminPlansRoute = AdminAdminPlansRouteImport.update({
-  id: '/admin/plans',
-  path: '/admin/plans',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAdminRazorpayRoute = AdminAdminRazorpayRouteImport.update({
-  id: '/admin/razorpay',
-  path: '/admin/razorpay',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAdminReportBuilderRoute = AdminAdminReportBuilderRouteImport.update({
-  id: '/admin/report-builder',
-  path: '/admin/report-builder',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAdminRevenueRoute = AdminAdminRevenueRouteImport.update({
-  id: '/admin/revenue',
-  path: '/admin/revenue',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAdminSearchRoute = AdminAdminSearchRouteImport.update({
-  id: '/admin/search',
-  path: '/admin/search',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAdminSecurityRoute = AdminAdminSecurityRouteImport.update({
-  id: '/admin/security',
-  path: '/admin/security',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAdminSettingsRoute = AdminAdminSettingsRouteImport.update({
-  id: '/admin/settings',
-  path: '/admin/settings',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAdminSubscriptionPaymentsRoute =
-  AdminAdminSubscriptionPaymentsRouteImport.update({
-    id: '/admin/subscription-payments',
-    path: '/admin/subscription-payments',
-    getParentRoute: () => AdminRoute,
-  } as any)
-const AdminAdminUsersRoute = AdminAdminUsersRouteImport.update({
-  id: '/admin/users',
-  path: '/admin/users',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAdminWithdrawalsRoute = AdminAdminWithdrawalsRouteImport.update({
-  id: '/admin/withdrawals',
-  path: '/admin/withdrawals',
-  getParentRoute: () => AdminRoute,
-} as any)
-const ResidentAppAchievementsRoute = ResidentAppAchievementsRouteImport.update({
-  id: '/app/achievements',
-  path: '/app/achievements',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppActivityRoute = ResidentAppActivityRouteImport.update({
-  id: '/app/activity',
-  path: '/app/activity',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppAgmRoute = ResidentAppAgmRouteImport.update({
-  id: '/app/agm',
-  path: '/app/agm',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppAmenitiesRoute = ResidentAppAmenitiesRouteImport.update({
-  id: '/app/amenities',
-  path: '/app/amenities',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppBylawsRoute = ResidentAppBylawsRouteImport.update({
-  id: '/app/bylaws',
-  path: '/app/bylaws',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppClassesRoute = ResidentAppClassesRouteImport.update({
-  id: '/app/classes',
-  path: '/app/classes',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppCommRoute = ResidentAppCommRouteImport.update({
-  id: '/app/comm',
-  path: '/app/comm',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppCommunityRoute = ResidentAppCommunityRouteImport.update({
-  id: '/app/community',
-  path: '/app/community',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppContactsRoute = ResidentAppContactsRouteImport.update({
-  id: '/app/contacts',
-  path: '/app/contacts',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppDashboardRoute = ResidentAppDashboardRouteImport.update({
-  id: '/app/dashboard',
-  path: '/app/dashboard',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppDocumentsRoute = ResidentAppDocumentsRouteImport.update({
-  id: '/app/documents',
-  path: '/app/documents',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppDuesRoute = ResidentAppDuesRouteImport.update({
-  id: '/app/dues',
-  path: '/app/dues',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppElectionsRoute = ResidentAppElectionsRouteImport.update({
-  id: '/app/elections',
-  path: '/app/elections',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppEmergencyRoute = ResidentAppEmergencyRouteImport.update({
-  id: '/app/emergency',
-  path: '/app/emergency',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppEventsRoute = ResidentAppEventsRouteImport.update({
-  id: '/app/events',
-  path: '/app/events',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppFamilyRoute = ResidentAppFamilyRouteImport.update({
-  id: '/app/family',
-  path: '/app/family',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppFeaturesRoute = ResidentAppFeaturesRouteImport.update({
-  id: '/app/features',
-  path: '/app/features',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppGroupsRoute = ResidentAppGroupsRouteImport.update({
-  id: '/app/groups',
-  path: '/app/groups',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppGuardRoute = ResidentAppGuardRouteImport.update({
-  id: '/app/guard',
-  path: '/app/guard',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppHelpdeskRoute = ResidentAppHelpdeskRouteImport.update({
-  id: '/app/helpdesk',
-  path: '/app/helpdesk',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppHouseholdHistoryRoute =
-  ResidentAppHouseholdHistoryRouteImport.update({
-    id: '/app/household-history',
-    path: '/app/household-history',
-    getParentRoute: () => ResidentRoute,
-  } as any)
-const ResidentAppLedgerRoute = ResidentAppLedgerRouteImport.update({
-  id: '/app/ledger',
-  path: '/app/ledger',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppMeetingsRoute = ResidentAppMeetingsRouteImport.update({
-  id: '/app/meetings',
-  path: '/app/meetings',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppNoticesRoute = ResidentAppNoticesRouteImport.update({
-  id: '/app/notices',
-  path: '/app/notices',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppNotificationsRoute =
-  ResidentAppNotificationsRouteImport.update({
-    id: '/app/notifications',
-    path: '/app/notifications',
-    getParentRoute: () => ResidentRoute,
-  } as any)
-const ResidentAppPassesRoute = ResidentAppPassesRouteImport.update({
-  id: '/app/passes',
-  path: '/app/passes',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppPlanRequiredRoute = ResidentAppPlanRequiredRouteImport.update({
-  id: '/app/plan-required',
-  path: '/app/plan-required',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppPollsRoute = ResidentAppPollsRouteImport.update({
-  id: '/app/polls',
-  path: '/app/polls',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppPrivacyRequestsRoute =
-  ResidentAppPrivacyRequestsRouteImport.update({
-    id: '/app/privacy-requests',
-    path: '/app/privacy-requests',
-    getParentRoute: () => ResidentRoute,
-  } as any)
-const ResidentAppProfileRoute = ResidentAppProfileRouteImport.update({
-  id: '/app/profile',
-  path: '/app/profile',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppReceiptsRoute = ResidentAppReceiptsRouteImport.update({
-  id: '/app/receipts',
-  path: '/app/receipts',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppSearchRoute = ResidentAppSearchRouteImport.update({
-  id: '/app/search',
-  path: '/app/search',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppSecretaryRoute = ResidentAppSecretaryRouteImport.update({
-  id: '/app/secretary',
-  path: '/app/secretary',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppServicesRoute = ResidentAppServicesRouteImport.update({
-  id: '/app/services',
-  path: '/app/services',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppSurveysRoute = ResidentAppSurveysRouteImport.update({
-  id: '/app/surveys',
-  path: '/app/surveys',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppTrustRoute = ResidentAppTrustRouteImport.update({
-  id: '/app/trust',
-  path: '/app/trust',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppVehiclesRoute = ResidentAppVehiclesRouteImport.update({
-  id: '/app/vehicles',
-  path: '/app/vehicles',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppVisitorsRoute = ResidentAppVisitorsRouteImport.update({
-  id: '/app/visitors',
-  path: '/app/visitors',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const ResidentAppVotesRoute = ResidentAppVotesRouteImport.update({
-  id: '/app/votes',
-  path: '/app/votes',
-  getParentRoute: () => ResidentRoute,
-} as any)
-const SocietySocietyAccountsRoute = SocietySocietyAccountsRouteImport.update({
-  id: '/society/accounts',
-  path: '/society/accounts',
+const SocietySocietyVouchersRoute = SocietySocietyVouchersRouteImport.update({
+  id: '/society/vouchers',
+  path: '/society/vouchers',
   getParentRoute: () => SocietyRoute,
 } as any)
-const SocietySocietyAgmRoute = SocietySocietyAgmRouteImport.update({
-  id: '/society/agm',
-  path: '/society/agm',
+const SocietySocietyVotesRoute = SocietySocietyVotesRouteImport.update({
+  id: '/society/votes',
+  path: '/society/votes',
   getParentRoute: () => SocietyRoute,
 } as any)
-const SocietySocietyAmenitiesRoute = SocietySocietyAmenitiesRouteImport.update({
-  id: '/society/amenities',
-  path: '/society/amenities',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyAnnouncementsRoute =
-  SocietySocietyAnnouncementsRouteImport.update({
-    id: '/society/announcements',
-    path: '/society/announcements',
-    getParentRoute: () => SocietyRoute,
-  } as any)
-const SocietySocietyApprovalsRoute = SocietySocietyApprovalsRouteImport.update({
-  id: '/society/approvals',
-  path: '/society/approvals',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyAuditorPackRoute =
-  SocietySocietyAuditorPackRouteImport.update({
-    id: '/society/auditor-pack',
-    path: '/society/auditor-pack',
-    getParentRoute: () => SocietyRoute,
-  } as any)
-const SocietySocietyAutomationsRoute =
-  SocietySocietyAutomationsRouteImport.update({
-    id: '/society/automations',
-    path: '/society/automations',
-    getParentRoute: () => SocietyRoute,
-  } as any)
-const SocietySocietyBillingSettingsRoute =
-  SocietySocietyBillingSettingsRouteImport.update({
-    id: '/society/billing-settings',
-    path: '/society/billing-settings',
-    getParentRoute: () => SocietyRoute,
-  } as any)
-const SocietySocietyBlocksRoute = SocietySocietyBlocksRouteImport.update({
-  id: '/society/blocks',
-  path: '/society/blocks',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyBooksRoute = SocietySocietyBooksRouteImport.update({
-  id: '/society/books',
-  path: '/society/books',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyBrandingRoute = SocietySocietyBrandingRouteImport.update({
-  id: '/society/branding',
-  path: '/society/branding',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyBudgetsRoute = SocietySocietyBudgetsRouteImport.update({
-  id: '/society/budgets',
-  path: '/society/budgets',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyBusinessProfileRoute =
-  SocietySocietyBusinessProfileRouteImport.update({
-    id: '/society/business-profile',
-    path: '/society/business-profile',
-    getParentRoute: () => SocietyRoute,
-  } as any)
-const SocietySocietyBylawsRoute = SocietySocietyBylawsRouteImport.update({
-  id: '/society/bylaws',
-  path: '/society/bylaws',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyClassesRoute = SocietySocietyClassesRouteImport.update({
-  id: '/society/classes',
-  path: '/society/classes',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyCommunicationRoute =
-  SocietySocietyCommunicationRouteImport.update({
-    id: '/society/communication',
-    path: '/society/communication',
-    getParentRoute: () => SocietyRoute,
-  } as any)
-const SocietySocietyCommunityRoute = SocietySocietyCommunityRouteImport.update({
-  id: '/society/community',
-  path: '/society/community',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyContactsRoute = SocietySocietyContactsRouteImport.update({
-  id: '/society/contacts',
-  path: '/society/contacts',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyCustomFieldsRoute =
-  SocietySocietyCustomFieldsRouteImport.update({
-    id: '/society/custom-fields',
-    path: '/society/custom-fields',
-    getParentRoute: () => SocietyRoute,
-  } as any)
-const SocietySocietyDashboardRoute = SocietySocietyDashboardRouteImport.update({
-  id: '/society/dashboard',
-  path: '/society/dashboard',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyDataExportRoute =
-  SocietySocietyDataExportRouteImport.update({
-    id: '/society/data-export',
-    path: '/society/data-export',
-    getParentRoute: () => SocietyRoute,
-  } as any)
-const SocietySocietyDefaultersRoute =
-  SocietySocietyDefaultersRouteImport.update({
-    id: '/society/defaulters',
-    path: '/society/defaulters',
-    getParentRoute: () => SocietyRoute,
-  } as any)
-const SocietySocietyDepreciationRoute =
-  SocietySocietyDepreciationRouteImport.update({
-    id: '/society/depreciation',
-    path: '/society/depreciation',
-    getParentRoute: () => SocietyRoute,
-  } as any)
-const SocietySocietyDigestRoute = SocietySocietyDigestRouteImport.update({
-  id: '/society/digest',
-  path: '/society/digest',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyElectionsRoute = SocietySocietyElectionsRouteImport.update({
-  id: '/society/elections',
-  path: '/society/elections',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyEmergencyRoute = SocietySocietyEmergencyRouteImport.update({
-  id: '/society/emergency',
-  path: '/society/emergency',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyEventsRoute = SocietySocietyEventsRouteImport.update({
-  id: '/society/events',
-  path: '/society/events',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyExpensesRoute = SocietySocietyExpensesRouteImport.update({
-  id: '/society/expenses',
-  path: '/society/expenses',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyExplorerRoute = SocietySocietyExplorerRouteImport.update({
-  id: '/society/explorer',
-  path: '/society/explorer',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyFeaturesRoute = SocietySocietyFeaturesRouteImport.update({
-  id: '/society/features',
-  path: '/society/features',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyGroupsRoute = SocietySocietyGroupsRouteImport.update({
-  id: '/society/groups',
-  path: '/society/groups',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyHandoverRoute = SocietySocietyHandoverRouteImport.update({
-  id: '/society/handover',
-  path: '/society/handover',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyHelpdeskRoute = SocietySocietyHelpdeskRouteImport.update({
-  id: '/society/helpdesk',
-  path: '/society/helpdesk',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyImportRoute = SocietySocietyImportRouteImport.update({
-  id: '/society/import',
-  path: '/society/import',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyKnowledgeRoute = SocietySocietyKnowledgeRouteImport.update({
-  id: '/society/knowledge',
-  path: '/society/knowledge',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyLeaderboardRoute =
-  SocietySocietyLeaderboardRouteImport.update({
-    id: '/society/leaderboard',
-    path: '/society/leaderboard',
-    getParentRoute: () => SocietyRoute,
-  } as any)
-const SocietySocietyLedgerRoute = SocietySocietyLedgerRouteImport.update({
-  id: '/society/ledger',
-  path: '/society/ledger',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyMaintenanceRoute =
-  SocietySocietyMaintenanceRouteImport.update({
-    id: '/society/maintenance',
-    path: '/society/maintenance',
-    getParentRoute: () => SocietyRoute,
-  } as any)
-const SocietySocietyMatrixRoute = SocietySocietyMatrixRouteImport.update({
-  id: '/society/matrix',
-  path: '/society/matrix',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyMatrixImportRoute =
-  SocietySocietyMatrixImportRouteImport.update({
-    id: '/society/matrix-import',
-    path: '/society/matrix-import',
-    getParentRoute: () => SocietyRoute,
-  } as any)
-const SocietySocietyMeetingsRoute = SocietySocietyMeetingsRouteImport.update({
-  id: '/society/meetings',
-  path: '/society/meetings',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyMetersRoute = SocietySocietyMetersRouteImport.update({
-  id: '/society/meters',
-  path: '/society/meters',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyMoreRoute = SocietySocietyMoreRouteImport.update({
-  id: '/society/more',
-  path: '/society/more',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyOpeningBalancesRoute =
-  SocietySocietyOpeningBalancesRouteImport.update({
-    id: '/society/opening-balances',
-    path: '/society/opening-balances',
-    getParentRoute: () => SocietyRoute,
-  } as any)
-const SocietySocietyOperationsRoute =
-  SocietySocietyOperationsRouteImport.update({
-    id: '/society/operations',
-    path: '/society/operations',
-    getParentRoute: () => SocietyRoute,
-  } as any)
-const SocietySocietyParkingRoute = SocietySocietyParkingRouteImport.update({
-  id: '/society/parking',
-  path: '/society/parking',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyPassesRoute = SocietySocietyPassesRouteImport.update({
-  id: '/society/passes',
-  path: '/society/passes',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyPaymentsRoute = SocietySocietyPaymentsRouteImport.update({
-  id: '/society/payments',
-  path: '/society/payments',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyPayoutsRoute = SocietySocietyPayoutsRouteImport.update({
-  id: '/society/payouts',
-  path: '/society/payouts',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyPettyCashRoute = SocietySocietyPettyCashRouteImport.update({
-  id: '/society/petty-cash',
-  path: '/society/petty-cash',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyPlanRequiredRoute =
-  SocietySocietyPlanRequiredRouteImport.update({
-    id: '/society/plan-required',
-    path: '/society/plan-required',
-    getParentRoute: () => SocietyRoute,
-  } as any)
-const SocietySocietyPollsRoute = SocietySocietyPollsRouteImport.update({
-  id: '/society/polls',
-  path: '/society/polls',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyPrivacyRequestsRoute =
-  SocietySocietyPrivacyRequestsRouteImport.update({
-    id: '/society/privacy-requests',
-    path: '/society/privacy-requests',
-    getParentRoute: () => SocietyRoute,
-  } as any)
-const SocietySocietyPrivacySettingsRoute =
-  SocietySocietyPrivacySettingsRouteImport.update({
-    id: '/society/privacy-settings',
-    path: '/society/privacy-settings',
-    getParentRoute: () => SocietyRoute,
-  } as any)
-const SocietySocietyReceiptsRoute = SocietySocietyReceiptsRouteImport.update({
-  id: '/society/receipts',
-  path: '/society/receipts',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyReconciliationRoute =
-  SocietySocietyReconciliationRouteImport.update({
-    id: '/society/reconciliation',
-    path: '/society/reconciliation',
-    getParentRoute: () => SocietyRoute,
-  } as any)
-const SocietySocietyRegistersRoute = SocietySocietyRegistersRouteImport.update({
-  id: '/society/registers',
-  path: '/society/registers',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyReportsRoute = SocietySocietyReportsRouteImport.update({
-  id: '/society/reports',
-  path: '/society/reports',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietySearchRoute = SocietySocietySearchRouteImport.update({
-  id: '/society/search',
-  path: '/society/search',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietySetupRoute = SocietySocietySetupRouteImport.update({
-  id: '/society/setup',
-  path: '/society/setup',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietySubscriptionRoute =
-  SocietySocietySubscriptionRouteImport.update({
-    id: '/society/subscription',
-    path: '/society/subscription',
-    getParentRoute: () => SocietyRoute,
-  } as any)
-const SocietySocietySurveysRoute = SocietySocietySurveysRouteImport.update({
-  id: '/society/surveys',
-  path: '/society/surveys',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyTeamRoute = SocietySocietyTeamRouteImport.update({
-  id: '/society/team',
-  path: '/society/team',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyVehiclesRoute = SocietySocietyVehiclesRouteImport.update({
-  id: '/society/vehicles',
-  path: '/society/vehicles',
+const SocietySocietyVisitorsRoute = SocietySocietyVisitorsRouteImport.update({
+  id: '/society/visitors',
+  path: '/society/visitors',
   getParentRoute: () => SocietyRoute,
 } as any)
 const SocietySocietyVerificationsRoute =
@@ -1075,100 +426,703 @@ const SocietySocietyVerificationsRoute =
     path: '/society/verifications',
     getParentRoute: () => SocietyRoute,
   } as any)
-const SocietySocietyVisitorsRoute = SocietySocietyVisitorsRouteImport.update({
-  id: '/society/visitors',
-  path: '/society/visitors',
+const SocietySocietyVehiclesRoute = SocietySocietyVehiclesRouteImport.update({
+  id: '/society/vehicles',
+  path: '/society/vehicles',
   getParentRoute: () => SocietyRoute,
 } as any)
-const SocietySocietyVotesRoute = SocietySocietyVotesRouteImport.update({
-  id: '/society/votes',
-  path: '/society/votes',
+const SocietySocietyTeamRoute = SocietySocietyTeamRouteImport.update({
+  id: '/society/team',
+  path: '/society/team',
   getParentRoute: () => SocietyRoute,
 } as any)
-const SocietySocietyVouchersRoute = SocietySocietyVouchersRouteImport.update({
-  id: '/society/vouchers',
-  path: '/society/vouchers',
+const SocietySocietySurveysRoute = SocietySocietySurveysRouteImport.update({
+  id: '/society/surveys',
+  path: '/society/surveys',
   getParentRoute: () => SocietyRoute,
 } as any)
-const VerifyNoDuesTokenRoute = VerifyNoDuesTokenRouteImport.update({
-  id: '/verify/no-dues/$token',
-  path: '/verify/no-dues/$token',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminAdminSocietiesIndexRoute =
-  AdminAdminSocietiesIndexRouteImport.update({
-    id: '/admin/societies/',
-    path: '/admin/societies/',
-    getParentRoute: () => AdminRoute,
+const SocietySocietySubscriptionRoute =
+  SocietySocietySubscriptionRouteImport.update({
+    id: '/society/subscription',
+    path: '/society/subscription',
+    getParentRoute: () => SocietyRoute,
   } as any)
-const AdminAdminSocietiesIdRoute = AdminAdminSocietiesIdRouteImport.update({
-  id: '/admin/societies/$id',
-  path: '/admin/societies/$id',
+const SocietySocietySetupRoute = SocietySocietySetupRouteImport.update({
+  id: '/society/setup',
+  path: '/society/setup',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietySearchRoute = SocietySocietySearchRouteImport.update({
+  id: '/society/search',
+  path: '/society/search',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyReportsRoute = SocietySocietyReportsRouteImport.update({
+  id: '/society/reports',
+  path: '/society/reports',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyRegistersRoute = SocietySocietyRegistersRouteImport.update({
+  id: '/society/registers',
+  path: '/society/registers',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyReconciliationRoute =
+  SocietySocietyReconciliationRouteImport.update({
+    id: '/society/reconciliation',
+    path: '/society/reconciliation',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyReceiptsRoute = SocietySocietyReceiptsRouteImport.update({
+  id: '/society/receipts',
+  path: '/society/receipts',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyPrivacySettingsRoute =
+  SocietySocietyPrivacySettingsRouteImport.update({
+    id: '/society/privacy-settings',
+    path: '/society/privacy-settings',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyPrivacyRequestsRoute =
+  SocietySocietyPrivacyRequestsRouteImport.update({
+    id: '/society/privacy-requests',
+    path: '/society/privacy-requests',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyPollsRoute = SocietySocietyPollsRouteImport.update({
+  id: '/society/polls',
+  path: '/society/polls',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyPlanRequiredRoute =
+  SocietySocietyPlanRequiredRouteImport.update({
+    id: '/society/plan-required',
+    path: '/society/plan-required',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyPettyCashRoute = SocietySocietyPettyCashRouteImport.update({
+  id: '/society/petty-cash',
+  path: '/society/petty-cash',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyPayoutsRoute = SocietySocietyPayoutsRouteImport.update({
+  id: '/society/payouts',
+  path: '/society/payouts',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyPaymentsRoute = SocietySocietyPaymentsRouteImport.update({
+  id: '/society/payments',
+  path: '/society/payments',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyPassesRoute = SocietySocietyPassesRouteImport.update({
+  id: '/society/passes',
+  path: '/society/passes',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyParkingRoute = SocietySocietyParkingRouteImport.update({
+  id: '/society/parking',
+  path: '/society/parking',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyOperationsRoute =
+  SocietySocietyOperationsRouteImport.update({
+    id: '/society/operations',
+    path: '/society/operations',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyOpeningBalancesRoute =
+  SocietySocietyOpeningBalancesRouteImport.update({
+    id: '/society/opening-balances',
+    path: '/society/opening-balances',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyMoreRoute = SocietySocietyMoreRouteImport.update({
+  id: '/society/more',
+  path: '/society/more',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyMetersRoute = SocietySocietyMetersRouteImport.update({
+  id: '/society/meters',
+  path: '/society/meters',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyMeetingsRoute = SocietySocietyMeetingsRouteImport.update({
+  id: '/society/meetings',
+  path: '/society/meetings',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyMatrixImportRoute =
+  SocietySocietyMatrixImportRouteImport.update({
+    id: '/society/matrix-import',
+    path: '/society/matrix-import',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyMatrixRoute = SocietySocietyMatrixRouteImport.update({
+  id: '/society/matrix',
+  path: '/society/matrix',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyMaintenanceRoute =
+  SocietySocietyMaintenanceRouteImport.update({
+    id: '/society/maintenance',
+    path: '/society/maintenance',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyLedgerRoute = SocietySocietyLedgerRouteImport.update({
+  id: '/society/ledger',
+  path: '/society/ledger',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyLeaderboardRoute =
+  SocietySocietyLeaderboardRouteImport.update({
+    id: '/society/leaderboard',
+    path: '/society/leaderboard',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyKnowledgeRoute = SocietySocietyKnowledgeRouteImport.update({
+  id: '/society/knowledge',
+  path: '/society/knowledge',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyImportRoute = SocietySocietyImportRouteImport.update({
+  id: '/society/import',
+  path: '/society/import',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyHelpdeskRoute = SocietySocietyHelpdeskRouteImport.update({
+  id: '/society/helpdesk',
+  path: '/society/helpdesk',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyHandoverRoute = SocietySocietyHandoverRouteImport.update({
+  id: '/society/handover',
+  path: '/society/handover',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyGroupsRoute = SocietySocietyGroupsRouteImport.update({
+  id: '/society/groups',
+  path: '/society/groups',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyFeaturesRoute = SocietySocietyFeaturesRouteImport.update({
+  id: '/society/features',
+  path: '/society/features',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyExplorerRoute = SocietySocietyExplorerRouteImport.update({
+  id: '/society/explorer',
+  path: '/society/explorer',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyExpensesRoute = SocietySocietyExpensesRouteImport.update({
+  id: '/society/expenses',
+  path: '/society/expenses',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyEventsRoute = SocietySocietyEventsRouteImport.update({
+  id: '/society/events',
+  path: '/society/events',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyEventMoneyRoute =
+  SocietySocietyEventMoneyRouteImport.update({
+    id: '/society/event-money',
+    path: '/society/event-money',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyEmergencyRoute = SocietySocietyEmergencyRouteImport.update({
+  id: '/society/emergency',
+  path: '/society/emergency',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyElectionsRoute = SocietySocietyElectionsRouteImport.update({
+  id: '/society/elections',
+  path: '/society/elections',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyDigestRoute = SocietySocietyDigestRouteImport.update({
+  id: '/society/digest',
+  path: '/society/digest',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyDepreciationRoute =
+  SocietySocietyDepreciationRouteImport.update({
+    id: '/society/depreciation',
+    path: '/society/depreciation',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyDefaultersRoute =
+  SocietySocietyDefaultersRouteImport.update({
+    id: '/society/defaulters',
+    path: '/society/defaulters',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyDataExportRoute =
+  SocietySocietyDataExportRouteImport.update({
+    id: '/society/data-export',
+    path: '/society/data-export',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyDashboardRoute = SocietySocietyDashboardRouteImport.update({
+  id: '/society/dashboard',
+  path: '/society/dashboard',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyCustomFieldsRoute =
+  SocietySocietyCustomFieldsRouteImport.update({
+    id: '/society/custom-fields',
+    path: '/society/custom-fields',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyContactsRoute = SocietySocietyContactsRouteImport.update({
+  id: '/society/contacts',
+  path: '/society/contacts',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyCommunityRoute = SocietySocietyCommunityRouteImport.update({
+  id: '/society/community',
+  path: '/society/community',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyCommunicationRoute =
+  SocietySocietyCommunicationRouteImport.update({
+    id: '/society/communication',
+    path: '/society/communication',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyClassesRoute = SocietySocietyClassesRouteImport.update({
+  id: '/society/classes',
+  path: '/society/classes',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyBylawsRoute = SocietySocietyBylawsRouteImport.update({
+  id: '/society/bylaws',
+  path: '/society/bylaws',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyBusinessProfileRoute =
+  SocietySocietyBusinessProfileRouteImport.update({
+    id: '/society/business-profile',
+    path: '/society/business-profile',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyBudgetsRoute = SocietySocietyBudgetsRouteImport.update({
+  id: '/society/budgets',
+  path: '/society/budgets',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyBrandingRoute = SocietySocietyBrandingRouteImport.update({
+  id: '/society/branding',
+  path: '/society/branding',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyBooksRoute = SocietySocietyBooksRouteImport.update({
+  id: '/society/books',
+  path: '/society/books',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyBlocksRoute = SocietySocietyBlocksRouteImport.update({
+  id: '/society/blocks',
+  path: '/society/blocks',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyBillingSettingsRoute =
+  SocietySocietyBillingSettingsRouteImport.update({
+    id: '/society/billing-settings',
+    path: '/society/billing-settings',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyAutomationsRoute =
+  SocietySocietyAutomationsRouteImport.update({
+    id: '/society/automations',
+    path: '/society/automations',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyAuditorPackRoute =
+  SocietySocietyAuditorPackRouteImport.update({
+    id: '/society/auditor-pack',
+    path: '/society/auditor-pack',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyApprovalsRoute = SocietySocietyApprovalsRouteImport.update({
+  id: '/society/approvals',
+  path: '/society/approvals',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyAnnouncementsRoute =
+  SocietySocietyAnnouncementsRouteImport.update({
+    id: '/society/announcements',
+    path: '/society/announcements',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyAmenitiesRoute = SocietySocietyAmenitiesRouteImport.update({
+  id: '/society/amenities',
+  path: '/society/amenities',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyAgmRoute = SocietySocietyAgmRouteImport.update({
+  id: '/society/agm',
+  path: '/society/agm',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyAccountsRoute = SocietySocietyAccountsRouteImport.update({
+  id: '/society/accounts',
+  path: '/society/accounts',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const ResidentAppVotesRoute = ResidentAppVotesRouteImport.update({
+  id: '/app/votes',
+  path: '/app/votes',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppVisitorsRoute = ResidentAppVisitorsRouteImport.update({
+  id: '/app/visitors',
+  path: '/app/visitors',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppVehiclesRoute = ResidentAppVehiclesRouteImport.update({
+  id: '/app/vehicles',
+  path: '/app/vehicles',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppTrustRoute = ResidentAppTrustRouteImport.update({
+  id: '/app/trust',
+  path: '/app/trust',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppSurveysRoute = ResidentAppSurveysRouteImport.update({
+  id: '/app/surveys',
+  path: '/app/surveys',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppServicesRoute = ResidentAppServicesRouteImport.update({
+  id: '/app/services',
+  path: '/app/services',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppSecretaryRoute = ResidentAppSecretaryRouteImport.update({
+  id: '/app/secretary',
+  path: '/app/secretary',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppSearchRoute = ResidentAppSearchRouteImport.update({
+  id: '/app/search',
+  path: '/app/search',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppReceiptsRoute = ResidentAppReceiptsRouteImport.update({
+  id: '/app/receipts',
+  path: '/app/receipts',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppProfileRoute = ResidentAppProfileRouteImport.update({
+  id: '/app/profile',
+  path: '/app/profile',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppPrivacyRequestsRoute =
+  ResidentAppPrivacyRequestsRouteImport.update({
+    id: '/app/privacy-requests',
+    path: '/app/privacy-requests',
+    getParentRoute: () => ResidentRoute,
+  } as any)
+const ResidentAppPollsRoute = ResidentAppPollsRouteImport.update({
+  id: '/app/polls',
+  path: '/app/polls',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppPlanRequiredRoute = ResidentAppPlanRequiredRouteImport.update({
+  id: '/app/plan-required',
+  path: '/app/plan-required',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppPassesRoute = ResidentAppPassesRouteImport.update({
+  id: '/app/passes',
+  path: '/app/passes',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppNotificationsRoute =
+  ResidentAppNotificationsRouteImport.update({
+    id: '/app/notifications',
+    path: '/app/notifications',
+    getParentRoute: () => ResidentRoute,
+  } as any)
+const ResidentAppNoticesRoute = ResidentAppNoticesRouteImport.update({
+  id: '/app/notices',
+  path: '/app/notices',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppMeetingsRoute = ResidentAppMeetingsRouteImport.update({
+  id: '/app/meetings',
+  path: '/app/meetings',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppLedgerRoute = ResidentAppLedgerRouteImport.update({
+  id: '/app/ledger',
+  path: '/app/ledger',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppHouseholdHistoryRoute =
+  ResidentAppHouseholdHistoryRouteImport.update({
+    id: '/app/household-history',
+    path: '/app/household-history',
+    getParentRoute: () => ResidentRoute,
+  } as any)
+const ResidentAppHelpdeskRoute = ResidentAppHelpdeskRouteImport.update({
+  id: '/app/helpdesk',
+  path: '/app/helpdesk',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppGuardRoute = ResidentAppGuardRouteImport.update({
+  id: '/app/guard',
+  path: '/app/guard',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppGroupsRoute = ResidentAppGroupsRouteImport.update({
+  id: '/app/groups',
+  path: '/app/groups',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppFeaturesRoute = ResidentAppFeaturesRouteImport.update({
+  id: '/app/features',
+  path: '/app/features',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppFamilyRoute = ResidentAppFamilyRouteImport.update({
+  id: '/app/family',
+  path: '/app/family',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppEventsRoute = ResidentAppEventsRouteImport.update({
+  id: '/app/events',
+  path: '/app/events',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppEmergencyRoute = ResidentAppEmergencyRouteImport.update({
+  id: '/app/emergency',
+  path: '/app/emergency',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppElectionsRoute = ResidentAppElectionsRouteImport.update({
+  id: '/app/elections',
+  path: '/app/elections',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppDuesRoute = ResidentAppDuesRouteImport.update({
+  id: '/app/dues',
+  path: '/app/dues',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppDocumentsRoute = ResidentAppDocumentsRouteImport.update({
+  id: '/app/documents',
+  path: '/app/documents',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppDashboardRoute = ResidentAppDashboardRouteImport.update({
+  id: '/app/dashboard',
+  path: '/app/dashboard',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppContactsRoute = ResidentAppContactsRouteImport.update({
+  id: '/app/contacts',
+  path: '/app/contacts',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppCommunityRoute = ResidentAppCommunityRouteImport.update({
+  id: '/app/community',
+  path: '/app/community',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppCommRoute = ResidentAppCommRouteImport.update({
+  id: '/app/comm',
+  path: '/app/comm',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppClassesRoute = ResidentAppClassesRouteImport.update({
+  id: '/app/classes',
+  path: '/app/classes',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppBylawsRoute = ResidentAppBylawsRouteImport.update({
+  id: '/app/bylaws',
+  path: '/app/bylaws',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppAmenitiesRoute = ResidentAppAmenitiesRouteImport.update({
+  id: '/app/amenities',
+  path: '/app/amenities',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppAgmRoute = ResidentAppAgmRouteImport.update({
+  id: '/app/agm',
+  path: '/app/agm',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppActivityRoute = ResidentAppActivityRouteImport.update({
+  id: '/app/activity',
+  path: '/app/activity',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppAchievementsRoute = ResidentAppAchievementsRouteImport.update({
+  id: '/app/achievements',
+  path: '/app/achievements',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const AdminAdminWithdrawalsRoute = AdminAdminWithdrawalsRouteImport.update({
+  id: '/admin/withdrawals',
+  path: '/admin/withdrawals',
   getParentRoute: () => AdminRoute,
 } as any)
-const ResidentAppBillsIndexRoute = ResidentAppBillsIndexRouteImport.update({
-  id: '/app/bills/',
-  path: '/app/bills/',
-  getParentRoute: () => ResidentRoute,
+const AdminAdminUsersRoute = AdminAdminUsersRouteImport.update({
+  id: '/admin/users',
+  path: '/admin/users',
+  getParentRoute: () => AdminRoute,
 } as any)
-const ResidentAppBillsIdRoute = ResidentAppBillsIdRouteImport.update({
-  id: '/app/bills/$id',
-  path: '/app/bills/$id',
-  getParentRoute: () => ResidentRoute,
+const AdminAdminSubscriptionPaymentsRoute =
+  AdminAdminSubscriptionPaymentsRouteImport.update({
+    id: '/admin/subscription-payments',
+    path: '/admin/subscription-payments',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminAdminSettingsRoute = AdminAdminSettingsRouteImport.update({
+  id: '/admin/settings',
+  path: '/admin/settings',
+  getParentRoute: () => AdminRoute,
 } as any)
-const ResidentAppFeedIndexRoute = ResidentAppFeedIndexRouteImport.update({
-  id: '/app/feed/',
-  path: '/app/feed/',
-  getParentRoute: () => ResidentRoute,
+const AdminAdminSecurityRoute = AdminAdminSecurityRouteImport.update({
+  id: '/admin/security',
+  path: '/admin/security',
+  getParentRoute: () => AdminRoute,
 } as any)
-const ResidentAppFeedPostIdRoute = ResidentAppFeedPostIdRouteImport.update({
-  id: '/app/feed/$postId',
-  path: '/app/feed/$postId',
-  getParentRoute: () => ResidentRoute,
+const AdminAdminSearchRoute = AdminAdminSearchRouteImport.update({
+  id: '/admin/search',
+  path: '/admin/search',
+  getParentRoute: () => AdminRoute,
 } as any)
-const ResidentAppNoDuesIndexRoute = ResidentAppNoDuesIndexRouteImport.update({
-  id: '/app/no-dues/',
-  path: '/app/no-dues/',
-  getParentRoute: () => ResidentRoute,
+const AdminAdminRevenueRoute = AdminAdminRevenueRouteImport.update({
+  id: '/admin/revenue',
+  path: '/admin/revenue',
+  getParentRoute: () => AdminRoute,
 } as any)
-const ResidentAppNoDuesIdRoute = ResidentAppNoDuesIdRouteImport.update({
-  id: '/app/no-dues/$id',
-  path: '/app/no-dues/$id',
-  getParentRoute: () => ResidentRoute,
+const AdminAdminReportBuilderRoute = AdminAdminReportBuilderRouteImport.update({
+  id: '/admin/report-builder',
+  path: '/admin/report-builder',
+  getParentRoute: () => AdminRoute,
 } as any)
-const SocietySocietyBillStudioIndexRoute =
-  SocietySocietyBillStudioIndexRouteImport.update({
-    id: '/society/bill-studio/',
-    path: '/society/bill-studio/',
+const AdminAdminRazorpayRoute = AdminAdminRazorpayRouteImport.update({
+  id: '/admin/razorpay',
+  path: '/admin/razorpay',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminPlansRoute = AdminAdminPlansRouteImport.update({
+  id: '/admin/plans',
+  path: '/admin/plans',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminMessagingRoute = AdminAdminMessagingRouteImport.update({
+  id: '/admin/messaging',
+  path: '/admin/messaging',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminMarketplaceRoute = AdminAdminMarketplaceRouteImport.update({
+  id: '/admin/marketplace',
+  path: '/admin/marketplace',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminIncomeRoute = AdminAdminIncomeRouteImport.update({
+  id: '/admin/income',
+  path: '/admin/income',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminHealthRoute = AdminAdminHealthRouteImport.update({
+  id: '/admin/health',
+  path: '/admin/health',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminExecutiveRoute = AdminAdminExecutiveRouteImport.update({
+  id: '/admin/executive',
+  path: '/admin/executive',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminDashboardRoute = AdminAdminDashboardRouteImport.update({
+  id: '/admin/dashboard',
+  path: '/admin/dashboard',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminCustomPlansRoute = AdminAdminCustomPlansRouteImport.update({
+  id: '/admin/custom-plans',
+  path: '/admin/custom-plans',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminCostsRoute = AdminAdminCostsRouteImport.update({
+  id: '/admin/costs',
+  path: '/admin/costs',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminBrandingRoute = AdminAdminBrandingRouteImport.update({
+  id: '/admin/branding',
+  path: '/admin/branding',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminBiRoute = AdminAdminBiRouteImport.update({
+  id: '/admin/bi',
+  path: '/admin/bi',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminAuditRoute = AdminAdminAuditRouteImport.update({
+  id: '/admin/audit',
+  path: '/admin/audit',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminAssistantRoute = AdminAdminAssistantRouteImport.update({
+  id: '/admin/assistant',
+  path: '/admin/assistant',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminAiUsageRoute = AdminAdminAiUsageRouteImport.update({
+  id: '/admin/ai-usage',
+  path: '/admin/ai-usage',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminAdsRoute = AdminAdminAdsRouteImport.update({
+  id: '/admin/ads',
+  path: '/admin/ads',
+  getParentRoute: () => AdminRoute,
+} as any)
+const Char91DotmcpChar93InvokeToolToolRoute =
+  Char91DotmcpChar93InvokeToolToolRouteImport.update({
+    id: '/.mcp/invoke-tool/$tool',
+    path: '/.mcp/invoke-tool/$tool',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SocietySocietyResidentsIndexRoute =
+  SocietySocietyResidentsIndexRouteImport.update({
+    id: '/society/residents/',
+    path: '/society/residents/',
     getParentRoute: () => SocietyRoute,
   } as any)
-const SocietySocietyBillStudioGenerateRoute =
-  SocietySocietyBillStudioGenerateRouteImport.update({
-    id: '/society/bill-studio/generate',
-    path: '/society/bill-studio/generate',
-    getParentRoute: () => SocietyRoute,
-  } as any)
-const SocietySocietyBillingIndexRoute =
-  SocietySocietyBillingIndexRouteImport.update({
-    id: '/society/billing/',
-    path: '/society/billing/',
-    getParentRoute: () => SocietyRoute,
-  } as any)
-const SocietySocietyBillingGenerateRoute =
-  SocietySocietyBillingGenerateRouteImport.update({
-    id: '/society/billing/generate',
-    path: '/society/billing/generate',
-    getParentRoute: () => SocietyRoute,
-  } as any)
-const SocietySocietyBillsIdRoute = SocietySocietyBillsIdRouteImport.update({
-  id: '/society/bills/$id',
-  path: '/society/bills/$id',
+const SocietySocietyQrIndexRoute = SocietySocietyQrIndexRouteImport.update({
+  id: '/society/qr/',
+  path: '/society/qr/',
   getParentRoute: () => SocietyRoute,
 } as any)
-const SocietySocietyDocumentIdRoute =
-  SocietySocietyDocumentIdRouteImport.update({
-    id: '/society/document/$id',
-    path: '/society/document/$id',
+const SocietySocietyNoDuesIndexRoute =
+  SocietySocietyNoDuesIndexRouteImport.update({
+    id: '/society/no-dues/',
+    path: '/society/no-dues/',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyIncomeIndexRoute =
+  SocietySocietyIncomeIndexRouteImport.update({
+    id: '/society/income/',
+    path: '/society/income/',
     getParentRoute: () => SocietyRoute,
   } as any)
 const SocietySocietyFlatsIndexRoute =
@@ -1177,82 +1131,54 @@ const SocietySocietyFlatsIndexRoute =
     path: '/society/flats/',
     getParentRoute: () => SocietyRoute,
   } as any)
-const SocietySocietyFlatsIdRoute = SocietySocietyFlatsIdRouteImport.update({
-  id: '/society/flats/$id',
-  path: '/society/flats/$id',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyIncomeIndexRoute =
-  SocietySocietyIncomeIndexRouteImport.update({
-    id: '/society/income/',
-    path: '/society/income/',
+const SocietySocietyBillingIndexRoute =
+  SocietySocietyBillingIndexRouteImport.update({
+    id: '/society/billing/',
+    path: '/society/billing/',
     getParentRoute: () => SocietyRoute,
   } as any)
-const SocietySocietyIncomeIdRoute = SocietySocietyIncomeIdRouteImport.update({
-  id: '/society/income/$id',
-  path: '/society/income/$id',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyIncomeCategoriesRoute =
-  SocietySocietyIncomeCategoriesRouteImport.update({
-    id: '/society/income/categories',
-    path: '/society/income/categories',
+const SocietySocietyBillStudioIndexRoute =
+  SocietySocietyBillStudioIndexRouteImport.update({
+    id: '/society/bill-studio/',
+    path: '/society/bill-studio/',
     getParentRoute: () => SocietyRoute,
   } as any)
-const SocietySocietyIncomeNewRoute = SocietySocietyIncomeNewRouteImport.update({
-  id: '/society/income/new',
-  path: '/society/income/new',
-  getParentRoute: () => SocietyRoute,
+const ResidentAppNoDuesIndexRoute = ResidentAppNoDuesIndexRouteImport.update({
+  id: '/app/no-dues/',
+  path: '/app/no-dues/',
+  getParentRoute: () => ResidentRoute,
 } as any)
-const SocietySocietyIncomePayersRoute =
-  SocietySocietyIncomePayersRouteImport.update({
-    id: '/society/income/payers',
-    path: '/society/income/payers',
-    getParentRoute: () => SocietyRoute,
-  } as any)
-const SocietySocietyNoDuesIndexRoute =
-  SocietySocietyNoDuesIndexRouteImport.update({
-    id: '/society/no-dues/',
-    path: '/society/no-dues/',
-    getParentRoute: () => SocietyRoute,
-  } as any)
-const SocietySocietyNoDuesIdRoute = SocietySocietyNoDuesIdRouteImport.update({
-  id: '/society/no-dues/$id',
-  path: '/society/no-dues/$id',
-  getParentRoute: () => SocietyRoute,
+const ResidentAppFeedIndexRoute = ResidentAppFeedIndexRouteImport.update({
+  id: '/app/feed/',
+  path: '/app/feed/',
+  getParentRoute: () => ResidentRoute,
 } as any)
-const SocietySocietyQrIndexRoute = SocietySocietyQrIndexRouteImport.update({
-  id: '/society/qr/',
-  path: '/society/qr/',
-  getParentRoute: () => SocietyRoute,
+const ResidentAppBillsIndexRoute = ResidentAppBillsIndexRouteImport.update({
+  id: '/app/bills/',
+  path: '/app/bills/',
+  getParentRoute: () => ResidentRoute,
 } as any)
-const SocietySocietyQrIdRoute = SocietySocietyQrIdRouteImport.update({
-  id: '/society/qr/$id',
-  path: '/society/qr/$id',
-  getParentRoute: () => SocietyRoute,
-} as any)
-const SocietySocietyResidentsIndexRoute =
-  SocietySocietyResidentsIndexRouteImport.update({
-    id: '/society/residents/',
-    path: '/society/residents/',
-    getParentRoute: () => SocietyRoute,
+const AdminAdminSocietiesIndexRoute =
+  AdminAdminSocietiesIndexRouteImport.update({
+    id: '/admin/societies/',
+    path: '/admin/societies/',
+    getParentRoute: () => AdminRoute,
   } as any)
-const SocietySocietyResidentsIdRoute =
-  SocietySocietyResidentsIdRouteImport.update({
-    id: '/society/residents/$id',
-    path: '/society/residents/$id',
-    getParentRoute: () => SocietyRoute,
-  } as any)
-const ApiPublicAuthFirebaseSessionRoute =
-  ApiPublicAuthFirebaseSessionRouteImport.update({
-    id: '/api/public/auth/firebase-session',
-    path: '/api/public/auth/firebase-session',
+const ApiPublicHooksRunBillingRoute =
+  ApiPublicHooksRunBillingRouteImport.update({
+    id: '/api/public/hooks/run-billing',
+    path: '/api/public/hooks/run-billing',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiPublicGateDeviceEventRoute =
-  ApiPublicGateDeviceEventRouteImport.update({
-    id: '/api/public/gate/device-event',
-    path: '/api/public/gate/device-event',
+const ApiPublicHooksRazorpayRoute = ApiPublicHooksRazorpayRouteImport.update({
+  id: '/api/public/hooks/razorpay',
+  path: '/api/public/hooks/razorpay',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicHooksMessagingDispatchRoute =
+  ApiPublicHooksMessagingDispatchRouteImport.update({
+    id: '/api/public/hooks/messaging-dispatch',
+    path: '/api/public/hooks/messaging-dispatch',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicHooksMaintenanceRemindersRoute =
@@ -1261,23 +1187,104 @@ const ApiPublicHooksMaintenanceRemindersRoute =
     path: '/api/public/hooks/maintenance-reminders',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiPublicHooksMessagingDispatchRoute =
-  ApiPublicHooksMessagingDispatchRouteImport.update({
-    id: '/api/public/hooks/messaging-dispatch',
-    path: '/api/public/hooks/messaging-dispatch',
+const ApiPublicGateDeviceEventRoute =
+  ApiPublicGateDeviceEventRouteImport.update({
+    id: '/api/public/gate/device-event',
+    path: '/api/public/gate/device-event',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiPublicHooksRazorpayRoute = ApiPublicHooksRazorpayRouteImport.update({
-  id: '/api/public/hooks/razorpay',
-  path: '/api/public/hooks/razorpay',
-  getParentRoute: () => rootRouteImport,
+const ApiPublicAuthFirebaseSessionRoute =
+  ApiPublicAuthFirebaseSessionRouteImport.update({
+    id: '/api/public/auth/firebase-session',
+    path: '/api/public/auth/firebase-session',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const SocietySocietyResidentsIdRoute =
+  SocietySocietyResidentsIdRouteImport.update({
+    id: '/society/residents/$id',
+    path: '/society/residents/$id',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyQrIdRoute = SocietySocietyQrIdRouteImport.update({
+  id: '/society/qr/$id',
+  path: '/society/qr/$id',
+  getParentRoute: () => SocietyRoute,
 } as any)
-const ApiPublicHooksRunBillingRoute =
-  ApiPublicHooksRunBillingRouteImport.update({
-    id: '/api/public/hooks/run-billing',
-    path: '/api/public/hooks/run-billing',
-    getParentRoute: () => rootRouteImport,
+const SocietySocietyNoDuesIdRoute = SocietySocietyNoDuesIdRouteImport.update({
+  id: '/society/no-dues/$id',
+  path: '/society/no-dues/$id',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyIncomePayersRoute =
+  SocietySocietyIncomePayersRouteImport.update({
+    id: '/society/income/payers',
+    path: '/society/income/payers',
+    getParentRoute: () => SocietyRoute,
   } as any)
+const SocietySocietyIncomeNewRoute = SocietySocietyIncomeNewRouteImport.update({
+  id: '/society/income/new',
+  path: '/society/income/new',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyIncomeCategoriesRoute =
+  SocietySocietyIncomeCategoriesRouteImport.update({
+    id: '/society/income/categories',
+    path: '/society/income/categories',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyIncomeIdRoute = SocietySocietyIncomeIdRouteImport.update({
+  id: '/society/income/$id',
+  path: '/society/income/$id',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyFlatsIdRoute = SocietySocietyFlatsIdRouteImport.update({
+  id: '/society/flats/$id',
+  path: '/society/flats/$id',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyDocumentIdRoute =
+  SocietySocietyDocumentIdRouteImport.update({
+    id: '/society/document/$id',
+    path: '/society/document/$id',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyBillsIdRoute = SocietySocietyBillsIdRouteImport.update({
+  id: '/society/bills/$id',
+  path: '/society/bills/$id',
+  getParentRoute: () => SocietyRoute,
+} as any)
+const SocietySocietyBillingGenerateRoute =
+  SocietySocietyBillingGenerateRouteImport.update({
+    id: '/society/billing/generate',
+    path: '/society/billing/generate',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const SocietySocietyBillStudioGenerateRoute =
+  SocietySocietyBillStudioGenerateRouteImport.update({
+    id: '/society/bill-studio/generate',
+    path: '/society/bill-studio/generate',
+    getParentRoute: () => SocietyRoute,
+  } as any)
+const ResidentAppNoDuesIdRoute = ResidentAppNoDuesIdRouteImport.update({
+  id: '/app/no-dues/$id',
+  path: '/app/no-dues/$id',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppFeedPostIdRoute = ResidentAppFeedPostIdRouteImport.update({
+  id: '/app/feed/$postId',
+  path: '/app/feed/$postId',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const ResidentAppBillsIdRoute = ResidentAppBillsIdRouteImport.update({
+  id: '/app/bills/$id',
+  path: '/app/bills/$id',
+  getParentRoute: () => ResidentRoute,
+} as any)
+const AdminAdminSocietiesIdRoute = AdminAdminSocietiesIdRouteImport.update({
+  id: '/admin/societies/$id',
+  path: '/admin/societies/$id',
+  getParentRoute: () => AdminRoute,
+} as any)
 const ApiPublicVerifyNoDuesTokenRoute =
   ApiPublicVerifyNoDuesTokenRouteImport.update({
     id: '/api/public/verify/no-dues/$token',
@@ -1410,6 +1417,7 @@ export interface FileRoutesByFullPath {
   '/society/digest': typeof SocietySocietyDigestRoute
   '/society/elections': typeof SocietySocietyElectionsRoute
   '/society/emergency': typeof SocietySocietyEmergencyRoute
+  '/society/event-money': typeof SocietySocietyEventMoneyRoute
   '/society/events': typeof SocietySocietyEventsRoute
   '/society/expenses': typeof SocietySocietyExpensesRoute
   '/society/explorer': typeof SocietySocietyExplorerRoute
@@ -1612,6 +1620,7 @@ export interface FileRoutesByTo {
   '/society/digest': typeof SocietySocietyDigestRoute
   '/society/elections': typeof SocietySocietyElectionsRoute
   '/society/emergency': typeof SocietySocietyEmergencyRoute
+  '/society/event-money': typeof SocietySocietyEventMoneyRoute
   '/society/events': typeof SocietySocietyEventsRoute
   '/society/expenses': typeof SocietySocietyExpensesRoute
   '/society/explorer': typeof SocietySocietyExplorerRoute
@@ -1820,6 +1829,7 @@ export interface FileRoutesById {
   '/_society/society/digest': typeof SocietySocietyDigestRoute
   '/_society/society/elections': typeof SocietySocietyElectionsRoute
   '/_society/society/emergency': typeof SocietySocietyEmergencyRoute
+  '/_society/society/event-money': typeof SocietySocietyEventMoneyRoute
   '/_society/society/events': typeof SocietySocietyEventsRoute
   '/_society/society/expenses': typeof SocietySocietyExpensesRoute
   '/_society/society/explorer': typeof SocietySocietyExplorerRoute
@@ -2025,6 +2035,7 @@ export interface FileRouteTypes {
     | '/society/digest'
     | '/society/elections'
     | '/society/emergency'
+    | '/society/event-money'
     | '/society/events'
     | '/society/expenses'
     | '/society/explorer'
@@ -2227,6 +2238,7 @@ export interface FileRouteTypes {
     | '/society/digest'
     | '/society/elections'
     | '/society/emergency'
+    | '/society/event-money'
     | '/society/events'
     | '/society/expenses'
     | '/society/explorer'
@@ -2434,6 +2446,7 @@ export interface FileRouteTypes {
     | '/_society/society/digest'
     | '/_society/society/elections'
     | '/_society/society/emergency'
+    | '/_society/society/event-money'
     | '/_society/society/events'
     | '/_society/society/expenses'
     | '/_society/society/explorer'
@@ -2559,158 +2572,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_admin': {
-      id: '/_admin'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_auth': {
-      id: '/_auth'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_resident': {
-      id: '/_resident'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof ResidentRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_society': {
-      id: '/_society'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof SocietyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/about': {
-      id: '/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AboutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auditor': {
-      id: '/auditor'
-      path: '/auditor'
-      fullPath: '/auditor'
-      preLoaderRoute: typeof AuditorRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/contact': {
-      id: '/contact'
-      path: '/contact'
-      fullPath: '/contact'
-      preLoaderRoute: typeof ContactRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/founders': {
-      id: '/founders'
-      path: '/founders'
-      fullPath: '/founders'
-      preLoaderRoute: typeof FoundersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/gdpr': {
-      id: '/gdpr'
-      path: '/gdpr'
-      fullPath: '/gdpr'
-      preLoaderRoute: typeof GdprRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/legal': {
-      id: '/legal'
-      path: '/legal'
-      fullPath: '/legal'
-      preLoaderRoute: typeof LegalRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mcp': {
-      id: '/mcp'
-      path: '/mcp'
-      fullPath: '/mcp'
-      preLoaderRoute: typeof McpRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/onboarding': {
-      id: '/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof OnboardingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pricing': {
-      id: '/pricing'
-      path: '/pricing'
-      fullPath: '/pricing'
-      preLoaderRoute: typeof PricingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/privacy': {
-      id: '/privacy'
-      path: '/privacy'
-      fullPath: '/privacy'
-      preLoaderRoute: typeof PrivacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/refund': {
-      id: '/refund'
-      path: '/refund'
-      fullPath: '/refund'
-      preLoaderRoute: typeof RefundRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sitemap.xml': {
-      id: '/sitemap.xml'
-      path: '/sitemap.xml'
-      fullPath: '/sitemap.xml'
-      preLoaderRoute: typeof SitemapDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/staff': {
-      id: '/staff'
-      path: '/staff'
-      fullPath: '/staff'
-      preLoaderRoute: typeof StaffRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/support': {
-      id: '/support'
-      path: '/support'
-      fullPath: '/support'
-      preLoaderRoute: typeof SupportRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/terms': {
-      id: '/terms'
-      path: '/terms'
-      fullPath: '/terms'
-      preLoaderRoute: typeof TermsRouteImport
+    '/welcome': {
+      id: '/welcome'
+      path: '/welcome'
+      fullPath: '/welcome'
+      preLoaderRoute: typeof WelcomeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/verify-phone': {
@@ -2720,60 +2586,158 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VerifyPhoneRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/welcome': {
-      id: '/welcome'
-      path: '/welcome'
-      fullPath: '/welcome'
-      preLoaderRoute: typeof WelcomeRouteImport
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/.mcp/list-tools': {
-      id: '/.mcp/list-tools'
-      path: '/.mcp/list-tools'
-      fullPath: '/.mcp/list-tools'
-      preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
+    '/support': {
+      id: '/support'
+      path: '/support'
+      fullPath: '/support'
+      preLoaderRoute: typeof SupportRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/.well-known/assetlinks.json': {
-      id: '/.well-known/assetlinks.json'
-      path: '/.well-known/assetlinks.json'
-      fullPath: '/.well-known/assetlinks.json'
-      preLoaderRoute: typeof Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRouteImport
+    '/staff': {
+      id: '/staff'
+      path: '/staff'
+      fullPath: '/staff'
+      preLoaderRoute: typeof StaffRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/.well-known/oauth-protected-resource': {
-      id: '/.well-known/oauth-protected-resource'
-      path: '/.well-known/oauth-protected-resource'
-      fullPath: '/.well-known/oauth-protected-resource'
-      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_auth/login': {
-      id: '/_auth/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof AuthLoginRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/api/support-chat': {
-      id: '/api/support-chat'
-      path: '/api/support-chat'
-      fullPath: '/api/support-chat'
-      preLoaderRoute: typeof ApiSupportChatRouteImport
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/asset/$token': {
-      id: '/asset/$token'
-      path: '/asset/$token'
-      fullPath: '/asset/$token'
-      preLoaderRoute: typeof AssetTokenRouteImport
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/checkout/$planId': {
-      id: '/checkout/$planId'
-      path: '/checkout/$planId'
-      fullPath: '/checkout/$planId'
-      preLoaderRoute: typeof CheckoutPlanIdRouteImport
+    '/refund': {
+      id: '/refund'
+      path: '/refund'
+      fullPath: '/refund'
+      preLoaderRoute: typeof RefundRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal': {
+      id: '/legal'
+      path: '/legal'
+      fullPath: '/legal'
+      preLoaderRoute: typeof LegalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gdpr': {
+      id: '/gdpr'
+      path: '/gdpr'
+      fullPath: '/gdpr'
+      preLoaderRoute: typeof GdprRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/founders': {
+      id: '/founders'
+      path: '/founders'
+      fullPath: '/founders'
+      preLoaderRoute: typeof FoundersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auditor': {
+      id: '/auditor'
+      path: '/auditor'
+      fullPath: '/auditor'
+      preLoaderRoute: typeof AuditorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_society': {
+      id: '/_society'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof SocietyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_resident': {
+      id: '/_resident'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof ResidentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_auth': {
+      id: '/_auth'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_admin': {
+      id: '/_admin'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding/': {
@@ -2783,18 +2747,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingIndexRouteImport
       parentRoute: typeof OnboardingRoute
     }
-    '/onboarding/create': {
-      id: '/onboarding/create'
-      path: '/create'
-      fullPath: '/onboarding/create'
-      preLoaderRoute: typeof OnboardingCreateRouteImport
-      parentRoute: typeof OnboardingRoute
+    '/q/$token': {
+      id: '/q/$token'
+      path: '/q/$token'
+      fullPath: '/q/$token'
+      preLoaderRoute: typeof QTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/onboarding/join': {
-      id: '/onboarding/join'
-      path: '/join'
-      fullPath: '/onboarding/join'
-      preLoaderRoute: typeof OnboardingJoinRouteImport
+    '/onboarding/plan': {
+      id: '/onboarding/plan'
+      path: '/plan'
+      fullPath: '/onboarding/plan'
+      preLoaderRoute: typeof OnboardingPlanRouteImport
       parentRoute: typeof OnboardingRoute
     }
     '/onboarding/pending': {
@@ -2804,935 +2768,81 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingPendingRouteImport
       parentRoute: typeof OnboardingRoute
     }
-    '/onboarding/plan': {
-      id: '/onboarding/plan'
-      path: '/plan'
-      fullPath: '/onboarding/plan'
-      preLoaderRoute: typeof OnboardingPlanRouteImport
+    '/onboarding/join': {
+      id: '/onboarding/join'
+      path: '/join'
+      fullPath: '/onboarding/join'
+      preLoaderRoute: typeof OnboardingJoinRouteImport
       parentRoute: typeof OnboardingRoute
     }
-    '/q/$token': {
-      id: '/q/$token'
-      path: '/q/$token'
-      fullPath: '/q/$token'
-      preLoaderRoute: typeof QTokenRouteImport
+    '/onboarding/create': {
+      id: '/onboarding/create'
+      path: '/create'
+      fullPath: '/onboarding/create'
+      preLoaderRoute: typeof OnboardingCreateRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/checkout/$planId': {
+      id: '/checkout/$planId'
+      path: '/checkout/$planId'
+      fullPath: '/checkout/$planId'
+      preLoaderRoute: typeof CheckoutPlanIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/.lovable/oauth/consent': {
-      id: '/.lovable/oauth/consent'
-      path: '/.lovable/oauth/consent'
-      fullPath: '/.lovable/oauth/consent'
-      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+    '/asset/$token': {
+      id: '/asset/$token'
+      path: '/asset/$token'
+      fullPath: '/asset/$token'
+      preLoaderRoute: typeof AssetTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/.mcp/invoke-tool/$tool': {
-      id: '/.mcp/invoke-tool/$tool'
-      path: '/.mcp/invoke-tool/$tool'
-      fullPath: '/.mcp/invoke-tool/$tool'
-      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
+    '/api/support-chat': {
+      id: '/api/support-chat'
+      path: '/api/support-chat'
+      fullPath: '/api/support-chat'
+      preLoaderRoute: typeof ApiSupportChatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_admin/admin/ads': {
-      id: '/_admin/admin/ads'
-      path: '/admin/ads'
-      fullPath: '/admin/ads'
-      preLoaderRoute: typeof AdminAdminAdsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/admin/ai-usage': {
-      id: '/_admin/admin/ai-usage'
-      path: '/admin/ai-usage'
-      fullPath: '/admin/ai-usage'
-      preLoaderRoute: typeof AdminAdminAiUsageRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/admin/assistant': {
-      id: '/_admin/admin/assistant'
-      path: '/admin/assistant'
-      fullPath: '/admin/assistant'
-      preLoaderRoute: typeof AdminAdminAssistantRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/admin/audit': {
-      id: '/_admin/admin/audit'
-      path: '/admin/audit'
-      fullPath: '/admin/audit'
-      preLoaderRoute: typeof AdminAdminAuditRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/admin/bi': {
-      id: '/_admin/admin/bi'
-      path: '/admin/bi'
-      fullPath: '/admin/bi'
-      preLoaderRoute: typeof AdminAdminBiRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/admin/branding': {
-      id: '/_admin/admin/branding'
-      path: '/admin/branding'
-      fullPath: '/admin/branding'
-      preLoaderRoute: typeof AdminAdminBrandingRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/admin/costs': {
-      id: '/_admin/admin/costs'
-      path: '/admin/costs'
-      fullPath: '/admin/costs'
-      preLoaderRoute: typeof AdminAdminCostsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/admin/custom-plans': {
-      id: '/_admin/admin/custom-plans'
-      path: '/admin/custom-plans'
-      fullPath: '/admin/custom-plans'
-      preLoaderRoute: typeof AdminAdminCustomPlansRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/admin/dashboard': {
-      id: '/_admin/admin/dashboard'
-      path: '/admin/dashboard'
-      fullPath: '/admin/dashboard'
-      preLoaderRoute: typeof AdminAdminDashboardRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/admin/executive': {
-      id: '/_admin/admin/executive'
-      path: '/admin/executive'
-      fullPath: '/admin/executive'
-      preLoaderRoute: typeof AdminAdminExecutiveRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/admin/health': {
-      id: '/_admin/admin/health'
-      path: '/admin/health'
-      fullPath: '/admin/health'
-      preLoaderRoute: typeof AdminAdminHealthRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/admin/income': {
-      id: '/_admin/admin/income'
-      path: '/admin/income'
-      fullPath: '/admin/income'
-      preLoaderRoute: typeof AdminAdminIncomeRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/admin/marketplace': {
-      id: '/_admin/admin/marketplace'
-      path: '/admin/marketplace'
-      fullPath: '/admin/marketplace'
-      preLoaderRoute: typeof AdminAdminMarketplaceRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/admin/messaging': {
-      id: '/_admin/admin/messaging'
-      path: '/admin/messaging'
-      fullPath: '/admin/messaging'
-      preLoaderRoute: typeof AdminAdminMessagingRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/admin/plans': {
-      id: '/_admin/admin/plans'
-      path: '/admin/plans'
-      fullPath: '/admin/plans'
-      preLoaderRoute: typeof AdminAdminPlansRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/admin/razorpay': {
-      id: '/_admin/admin/razorpay'
-      path: '/admin/razorpay'
-      fullPath: '/admin/razorpay'
-      preLoaderRoute: typeof AdminAdminRazorpayRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/admin/report-builder': {
-      id: '/_admin/admin/report-builder'
-      path: '/admin/report-builder'
-      fullPath: '/admin/report-builder'
-      preLoaderRoute: typeof AdminAdminReportBuilderRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/admin/revenue': {
-      id: '/_admin/admin/revenue'
-      path: '/admin/revenue'
-      fullPath: '/admin/revenue'
-      preLoaderRoute: typeof AdminAdminRevenueRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/admin/search': {
-      id: '/_admin/admin/search'
-      path: '/admin/search'
-      fullPath: '/admin/search'
-      preLoaderRoute: typeof AdminAdminSearchRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/admin/security': {
-      id: '/_admin/admin/security'
-      path: '/admin/security'
-      fullPath: '/admin/security'
-      preLoaderRoute: typeof AdminAdminSecurityRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/admin/settings': {
-      id: '/_admin/admin/settings'
-      path: '/admin/settings'
-      fullPath: '/admin/settings'
-      preLoaderRoute: typeof AdminAdminSettingsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/admin/subscription-payments': {
-      id: '/_admin/admin/subscription-payments'
-      path: '/admin/subscription-payments'
-      fullPath: '/admin/subscription-payments'
-      preLoaderRoute: typeof AdminAdminSubscriptionPaymentsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/admin/users': {
-      id: '/_admin/admin/users'
-      path: '/admin/users'
-      fullPath: '/admin/users'
-      preLoaderRoute: typeof AdminAdminUsersRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_admin/admin/withdrawals': {
-      id: '/_admin/admin/withdrawals'
-      path: '/admin/withdrawals'
-      fullPath: '/admin/withdrawals'
-      preLoaderRoute: typeof AdminAdminWithdrawalsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_resident/app/achievements': {
-      id: '/_resident/app/achievements'
-      path: '/app/achievements'
-      fullPath: '/app/achievements'
-      preLoaderRoute: typeof ResidentAppAchievementsRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/activity': {
-      id: '/_resident/app/activity'
-      path: '/app/activity'
-      fullPath: '/app/activity'
-      preLoaderRoute: typeof ResidentAppActivityRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/agm': {
-      id: '/_resident/app/agm'
-      path: '/app/agm'
-      fullPath: '/app/agm'
-      preLoaderRoute: typeof ResidentAppAgmRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/amenities': {
-      id: '/_resident/app/amenities'
-      path: '/app/amenities'
-      fullPath: '/app/amenities'
-      preLoaderRoute: typeof ResidentAppAmenitiesRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/bylaws': {
-      id: '/_resident/app/bylaws'
-      path: '/app/bylaws'
-      fullPath: '/app/bylaws'
-      preLoaderRoute: typeof ResidentAppBylawsRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/classes': {
-      id: '/_resident/app/classes'
-      path: '/app/classes'
-      fullPath: '/app/classes'
-      preLoaderRoute: typeof ResidentAppClassesRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/comm': {
-      id: '/_resident/app/comm'
-      path: '/app/comm'
-      fullPath: '/app/comm'
-      preLoaderRoute: typeof ResidentAppCommRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/community': {
-      id: '/_resident/app/community'
-      path: '/app/community'
-      fullPath: '/app/community'
-      preLoaderRoute: typeof ResidentAppCommunityRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/contacts': {
-      id: '/_resident/app/contacts'
-      path: '/app/contacts'
-      fullPath: '/app/contacts'
-      preLoaderRoute: typeof ResidentAppContactsRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/dashboard': {
-      id: '/_resident/app/dashboard'
-      path: '/app/dashboard'
-      fullPath: '/app/dashboard'
-      preLoaderRoute: typeof ResidentAppDashboardRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/documents': {
-      id: '/_resident/app/documents'
-      path: '/app/documents'
-      fullPath: '/app/documents'
-      preLoaderRoute: typeof ResidentAppDocumentsRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/dues': {
-      id: '/_resident/app/dues'
-      path: '/app/dues'
-      fullPath: '/app/dues'
-      preLoaderRoute: typeof ResidentAppDuesRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/elections': {
-      id: '/_resident/app/elections'
-      path: '/app/elections'
-      fullPath: '/app/elections'
-      preLoaderRoute: typeof ResidentAppElectionsRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/emergency': {
-      id: '/_resident/app/emergency'
-      path: '/app/emergency'
-      fullPath: '/app/emergency'
-      preLoaderRoute: typeof ResidentAppEmergencyRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/events': {
-      id: '/_resident/app/events'
-      path: '/app/events'
-      fullPath: '/app/events'
-      preLoaderRoute: typeof ResidentAppEventsRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/family': {
-      id: '/_resident/app/family'
-      path: '/app/family'
-      fullPath: '/app/family'
-      preLoaderRoute: typeof ResidentAppFamilyRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/features': {
-      id: '/_resident/app/features'
-      path: '/app/features'
-      fullPath: '/app/features'
-      preLoaderRoute: typeof ResidentAppFeaturesRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/groups': {
-      id: '/_resident/app/groups'
-      path: '/app/groups'
-      fullPath: '/app/groups'
-      preLoaderRoute: typeof ResidentAppGroupsRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/guard': {
-      id: '/_resident/app/guard'
-      path: '/app/guard'
-      fullPath: '/app/guard'
-      preLoaderRoute: typeof ResidentAppGuardRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/helpdesk': {
-      id: '/_resident/app/helpdesk'
-      path: '/app/helpdesk'
-      fullPath: '/app/helpdesk'
-      preLoaderRoute: typeof ResidentAppHelpdeskRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/household-history': {
-      id: '/_resident/app/household-history'
-      path: '/app/household-history'
-      fullPath: '/app/household-history'
-      preLoaderRoute: typeof ResidentAppHouseholdHistoryRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/ledger': {
-      id: '/_resident/app/ledger'
-      path: '/app/ledger'
-      fullPath: '/app/ledger'
-      preLoaderRoute: typeof ResidentAppLedgerRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/meetings': {
-      id: '/_resident/app/meetings'
-      path: '/app/meetings'
-      fullPath: '/app/meetings'
-      preLoaderRoute: typeof ResidentAppMeetingsRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/notices': {
-      id: '/_resident/app/notices'
-      path: '/app/notices'
-      fullPath: '/app/notices'
-      preLoaderRoute: typeof ResidentAppNoticesRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/notifications': {
-      id: '/_resident/app/notifications'
-      path: '/app/notifications'
-      fullPath: '/app/notifications'
-      preLoaderRoute: typeof ResidentAppNotificationsRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/passes': {
-      id: '/_resident/app/passes'
-      path: '/app/passes'
-      fullPath: '/app/passes'
-      preLoaderRoute: typeof ResidentAppPassesRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/plan-required': {
-      id: '/_resident/app/plan-required'
-      path: '/app/plan-required'
-      fullPath: '/app/plan-required'
-      preLoaderRoute: typeof ResidentAppPlanRequiredRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/polls': {
-      id: '/_resident/app/polls'
-      path: '/app/polls'
-      fullPath: '/app/polls'
-      preLoaderRoute: typeof ResidentAppPollsRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/privacy-requests': {
-      id: '/_resident/app/privacy-requests'
-      path: '/app/privacy-requests'
-      fullPath: '/app/privacy-requests'
-      preLoaderRoute: typeof ResidentAppPrivacyRequestsRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/profile': {
-      id: '/_resident/app/profile'
-      path: '/app/profile'
-      fullPath: '/app/profile'
-      preLoaderRoute: typeof ResidentAppProfileRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/receipts': {
-      id: '/_resident/app/receipts'
-      path: '/app/receipts'
-      fullPath: '/app/receipts'
-      preLoaderRoute: typeof ResidentAppReceiptsRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/search': {
-      id: '/_resident/app/search'
-      path: '/app/search'
-      fullPath: '/app/search'
-      preLoaderRoute: typeof ResidentAppSearchRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/secretary': {
-      id: '/_resident/app/secretary'
-      path: '/app/secretary'
-      fullPath: '/app/secretary'
-      preLoaderRoute: typeof ResidentAppSecretaryRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/services': {
-      id: '/_resident/app/services'
-      path: '/app/services'
-      fullPath: '/app/services'
-      preLoaderRoute: typeof ResidentAppServicesRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/surveys': {
-      id: '/_resident/app/surveys'
-      path: '/app/surveys'
-      fullPath: '/app/surveys'
-      preLoaderRoute: typeof ResidentAppSurveysRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/trust': {
-      id: '/_resident/app/trust'
-      path: '/app/trust'
-      fullPath: '/app/trust'
-      preLoaderRoute: typeof ResidentAppTrustRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/vehicles': {
-      id: '/_resident/app/vehicles'
-      path: '/app/vehicles'
-      fullPath: '/app/vehicles'
-      preLoaderRoute: typeof ResidentAppVehiclesRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/visitors': {
-      id: '/_resident/app/visitors'
-      path: '/app/visitors'
-      fullPath: '/app/visitors'
-      preLoaderRoute: typeof ResidentAppVisitorsRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/votes': {
-      id: '/_resident/app/votes'
-      path: '/app/votes'
-      fullPath: '/app/votes'
-      preLoaderRoute: typeof ResidentAppVotesRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_society/society/accounts': {
-      id: '/_society/society/accounts'
-      path: '/society/accounts'
-      fullPath: '/society/accounts'
-      preLoaderRoute: typeof SocietySocietyAccountsRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/agm': {
-      id: '/_society/society/agm'
-      path: '/society/agm'
-      fullPath: '/society/agm'
-      preLoaderRoute: typeof SocietySocietyAgmRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/amenities': {
-      id: '/_society/society/amenities'
-      path: '/society/amenities'
-      fullPath: '/society/amenities'
-      preLoaderRoute: typeof SocietySocietyAmenitiesRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/announcements': {
-      id: '/_society/society/announcements'
-      path: '/society/announcements'
-      fullPath: '/society/announcements'
-      preLoaderRoute: typeof SocietySocietyAnnouncementsRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/approvals': {
-      id: '/_society/society/approvals'
-      path: '/society/approvals'
-      fullPath: '/society/approvals'
-      preLoaderRoute: typeof SocietySocietyApprovalsRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/auditor-pack': {
-      id: '/_society/society/auditor-pack'
-      path: '/society/auditor-pack'
-      fullPath: '/society/auditor-pack'
-      preLoaderRoute: typeof SocietySocietyAuditorPackRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/automations': {
-      id: '/_society/society/automations'
-      path: '/society/automations'
-      fullPath: '/society/automations'
-      preLoaderRoute: typeof SocietySocietyAutomationsRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/billing-settings': {
-      id: '/_society/society/billing-settings'
-      path: '/society/billing-settings'
-      fullPath: '/society/billing-settings'
-      preLoaderRoute: typeof SocietySocietyBillingSettingsRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/blocks': {
-      id: '/_society/society/blocks'
-      path: '/society/blocks'
-      fullPath: '/society/blocks'
-      preLoaderRoute: typeof SocietySocietyBlocksRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/books': {
-      id: '/_society/society/books'
-      path: '/society/books'
-      fullPath: '/society/books'
-      preLoaderRoute: typeof SocietySocietyBooksRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/branding': {
-      id: '/_society/society/branding'
-      path: '/society/branding'
-      fullPath: '/society/branding'
-      preLoaderRoute: typeof SocietySocietyBrandingRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/budgets': {
-      id: '/_society/society/budgets'
-      path: '/society/budgets'
-      fullPath: '/society/budgets'
-      preLoaderRoute: typeof SocietySocietyBudgetsRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/business-profile': {
-      id: '/_society/society/business-profile'
-      path: '/society/business-profile'
-      fullPath: '/society/business-profile'
-      preLoaderRoute: typeof SocietySocietyBusinessProfileRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/bylaws': {
-      id: '/_society/society/bylaws'
-      path: '/society/bylaws'
-      fullPath: '/society/bylaws'
-      preLoaderRoute: typeof SocietySocietyBylawsRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/classes': {
-      id: '/_society/society/classes'
-      path: '/society/classes'
-      fullPath: '/society/classes'
-      preLoaderRoute: typeof SocietySocietyClassesRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/communication': {
-      id: '/_society/society/communication'
-      path: '/society/communication'
-      fullPath: '/society/communication'
-      preLoaderRoute: typeof SocietySocietyCommunicationRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/community': {
-      id: '/_society/society/community'
-      path: '/society/community'
-      fullPath: '/society/community'
-      preLoaderRoute: typeof SocietySocietyCommunityRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/contacts': {
-      id: '/_society/society/contacts'
-      path: '/society/contacts'
-      fullPath: '/society/contacts'
-      preLoaderRoute: typeof SocietySocietyContactsRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/custom-fields': {
-      id: '/_society/society/custom-fields'
-      path: '/society/custom-fields'
-      fullPath: '/society/custom-fields'
-      preLoaderRoute: typeof SocietySocietyCustomFieldsRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/dashboard': {
-      id: '/_society/society/dashboard'
-      path: '/society/dashboard'
-      fullPath: '/society/dashboard'
-      preLoaderRoute: typeof SocietySocietyDashboardRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/data-export': {
-      id: '/_society/society/data-export'
-      path: '/society/data-export'
-      fullPath: '/society/data-export'
-      preLoaderRoute: typeof SocietySocietyDataExportRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/defaulters': {
-      id: '/_society/society/defaulters'
-      path: '/society/defaulters'
-      fullPath: '/society/defaulters'
-      preLoaderRoute: typeof SocietySocietyDefaultersRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/depreciation': {
-      id: '/_society/society/depreciation'
-      path: '/society/depreciation'
-      fullPath: '/society/depreciation'
-      preLoaderRoute: typeof SocietySocietyDepreciationRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/digest': {
-      id: '/_society/society/digest'
-      path: '/society/digest'
-      fullPath: '/society/digest'
-      preLoaderRoute: typeof SocietySocietyDigestRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/elections': {
-      id: '/_society/society/elections'
-      path: '/society/elections'
-      fullPath: '/society/elections'
-      preLoaderRoute: typeof SocietySocietyElectionsRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/emergency': {
-      id: '/_society/society/emergency'
-      path: '/society/emergency'
-      fullPath: '/society/emergency'
-      preLoaderRoute: typeof SocietySocietyEmergencyRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/events': {
-      id: '/_society/society/events'
-      path: '/society/events'
-      fullPath: '/society/events'
-      preLoaderRoute: typeof SocietySocietyEventsRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/expenses': {
-      id: '/_society/society/expenses'
-      path: '/society/expenses'
-      fullPath: '/society/expenses'
-      preLoaderRoute: typeof SocietySocietyExpensesRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/explorer': {
-      id: '/_society/society/explorer'
-      path: '/society/explorer'
-      fullPath: '/society/explorer'
-      preLoaderRoute: typeof SocietySocietyExplorerRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/features': {
-      id: '/_society/society/features'
-      path: '/society/features'
-      fullPath: '/society/features'
-      preLoaderRoute: typeof SocietySocietyFeaturesRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/groups': {
-      id: '/_society/society/groups'
-      path: '/society/groups'
-      fullPath: '/society/groups'
-      preLoaderRoute: typeof SocietySocietyGroupsRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/handover': {
-      id: '/_society/society/handover'
-      path: '/society/handover'
-      fullPath: '/society/handover'
-      preLoaderRoute: typeof SocietySocietyHandoverRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/helpdesk': {
-      id: '/_society/society/helpdesk'
-      path: '/society/helpdesk'
-      fullPath: '/society/helpdesk'
-      preLoaderRoute: typeof SocietySocietyHelpdeskRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/import': {
-      id: '/_society/society/import'
-      path: '/society/import'
-      fullPath: '/society/import'
-      preLoaderRoute: typeof SocietySocietyImportRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/knowledge': {
-      id: '/_society/society/knowledge'
-      path: '/society/knowledge'
-      fullPath: '/society/knowledge'
-      preLoaderRoute: typeof SocietySocietyKnowledgeRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/leaderboard': {
-      id: '/_society/society/leaderboard'
-      path: '/society/leaderboard'
-      fullPath: '/society/leaderboard'
-      preLoaderRoute: typeof SocietySocietyLeaderboardRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/ledger': {
-      id: '/_society/society/ledger'
-      path: '/society/ledger'
-      fullPath: '/society/ledger'
-      preLoaderRoute: typeof SocietySocietyLedgerRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/maintenance': {
-      id: '/_society/society/maintenance'
-      path: '/society/maintenance'
-      fullPath: '/society/maintenance'
-      preLoaderRoute: typeof SocietySocietyMaintenanceRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/matrix': {
-      id: '/_society/society/matrix'
-      path: '/society/matrix'
-      fullPath: '/society/matrix'
-      preLoaderRoute: typeof SocietySocietyMatrixRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/matrix-import': {
-      id: '/_society/society/matrix-import'
-      path: '/society/matrix-import'
-      fullPath: '/society/matrix-import'
-      preLoaderRoute: typeof SocietySocietyMatrixImportRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/meetings': {
-      id: '/_society/society/meetings'
-      path: '/society/meetings'
-      fullPath: '/society/meetings'
-      preLoaderRoute: typeof SocietySocietyMeetingsRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/meters': {
-      id: '/_society/society/meters'
-      path: '/society/meters'
-      fullPath: '/society/meters'
-      preLoaderRoute: typeof SocietySocietyMetersRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/more': {
-      id: '/_society/society/more'
-      path: '/society/more'
-      fullPath: '/society/more'
-      preLoaderRoute: typeof SocietySocietyMoreRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/opening-balances': {
-      id: '/_society/society/opening-balances'
-      path: '/society/opening-balances'
-      fullPath: '/society/opening-balances'
-      preLoaderRoute: typeof SocietySocietyOpeningBalancesRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/operations': {
-      id: '/_society/society/operations'
-      path: '/society/operations'
-      fullPath: '/society/operations'
-      preLoaderRoute: typeof SocietySocietyOperationsRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/parking': {
-      id: '/_society/society/parking'
-      path: '/society/parking'
-      fullPath: '/society/parking'
-      preLoaderRoute: typeof SocietySocietyParkingRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/passes': {
-      id: '/_society/society/passes'
-      path: '/society/passes'
-      fullPath: '/society/passes'
-      preLoaderRoute: typeof SocietySocietyPassesRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/payments': {
-      id: '/_society/society/payments'
-      path: '/society/payments'
-      fullPath: '/society/payments'
-      preLoaderRoute: typeof SocietySocietyPaymentsRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/payouts': {
-      id: '/_society/society/payouts'
-      path: '/society/payouts'
-      fullPath: '/society/payouts'
-      preLoaderRoute: typeof SocietySocietyPayoutsRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/petty-cash': {
-      id: '/_society/society/petty-cash'
-      path: '/society/petty-cash'
-      fullPath: '/society/petty-cash'
-      preLoaderRoute: typeof SocietySocietyPettyCashRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/plan-required': {
-      id: '/_society/society/plan-required'
-      path: '/society/plan-required'
-      fullPath: '/society/plan-required'
-      preLoaderRoute: typeof SocietySocietyPlanRequiredRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/polls': {
-      id: '/_society/society/polls'
-      path: '/society/polls'
-      fullPath: '/society/polls'
-      preLoaderRoute: typeof SocietySocietyPollsRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/privacy-requests': {
-      id: '/_society/society/privacy-requests'
-      path: '/society/privacy-requests'
-      fullPath: '/society/privacy-requests'
-      preLoaderRoute: typeof SocietySocietyPrivacyRequestsRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/privacy-settings': {
-      id: '/_society/society/privacy-settings'
-      path: '/society/privacy-settings'
-      fullPath: '/society/privacy-settings'
-      preLoaderRoute: typeof SocietySocietyPrivacySettingsRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/receipts': {
-      id: '/_society/society/receipts'
-      path: '/society/receipts'
-      fullPath: '/society/receipts'
-      preLoaderRoute: typeof SocietySocietyReceiptsRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/reconciliation': {
-      id: '/_society/society/reconciliation'
-      path: '/society/reconciliation'
-      fullPath: '/society/reconciliation'
-      preLoaderRoute: typeof SocietySocietyReconciliationRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/registers': {
-      id: '/_society/society/registers'
-      path: '/society/registers'
-      fullPath: '/society/registers'
-      preLoaderRoute: typeof SocietySocietyRegistersRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/reports': {
-      id: '/_society/society/reports'
-      path: '/society/reports'
-      fullPath: '/society/reports'
-      preLoaderRoute: typeof SocietySocietyReportsRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/search': {
-      id: '/_society/society/search'
-      path: '/society/search'
-      fullPath: '/society/search'
-      preLoaderRoute: typeof SocietySocietySearchRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/setup': {
-      id: '/_society/society/setup'
-      path: '/society/setup'
-      fullPath: '/society/setup'
-      preLoaderRoute: typeof SocietySocietySetupRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/subscription': {
-      id: '/_society/society/subscription'
-      path: '/society/subscription'
-      fullPath: '/society/subscription'
-      preLoaderRoute: typeof SocietySocietySubscriptionRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/surveys': {
-      id: '/_society/society/surveys'
-      path: '/society/surveys'
-      fullPath: '/society/surveys'
-      preLoaderRoute: typeof SocietySocietySurveysRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/team': {
-      id: '/_society/society/team'
-      path: '/society/team'
-      fullPath: '/society/team'
-      preLoaderRoute: typeof SocietySocietyTeamRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/vehicles': {
-      id: '/_society/society/vehicles'
-      path: '/society/vehicles'
-      fullPath: '/society/vehicles'
-      preLoaderRoute: typeof SocietySocietyVehiclesRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/verifications': {
-      id: '/_society/society/verifications'
-      path: '/society/verifications'
-      fullPath: '/society/verifications'
-      preLoaderRoute: typeof SocietySocietyVerificationsRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/visitors': {
-      id: '/_society/society/visitors'
-      path: '/society/visitors'
-      fullPath: '/society/visitors'
-      preLoaderRoute: typeof SocietySocietyVisitorsRouteImport
+    '/_auth/login': {
+      id: '/_auth/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.well-known/assetlinks.json': {
+      id: '/.well-known/assetlinks.json'
+      path: '/.well-known/assetlinks.json'
+      fullPath: '/.well-known/assetlinks.json'
+      preLoaderRoute: typeof Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.mcp/list-tools': {
+      id: '/.mcp/list-tools'
+      path: '/.mcp/list-tools'
+      fullPath: '/.mcp/list-tools'
+      preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify/no-dues/$token': {
+      id: '/verify/no-dues/$token'
+      path: '/verify/no-dues/$token'
+      fullPath: '/verify/no-dues/$token'
+      preLoaderRoute: typeof VerifyNoDuesTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_society/society/vouchers': {
+      id: '/_society/society/vouchers'
+      path: '/society/vouchers'
+      fullPath: '/society/vouchers'
+      preLoaderRoute: typeof SocietySocietyVouchersRouteImport
       parentRoute: typeof SocietyRoute
     }
     '/_society/society/votes': {
@@ -3742,179 +2852,935 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SocietySocietyVotesRouteImport
       parentRoute: typeof SocietyRoute
     }
-    '/_society/society/vouchers': {
-      id: '/_society/society/vouchers'
-      path: '/society/vouchers'
-      fullPath: '/society/vouchers'
-      preLoaderRoute: typeof SocietySocietyVouchersRouteImport
+    '/_society/society/visitors': {
+      id: '/_society/society/visitors'
+      path: '/society/visitors'
+      fullPath: '/society/visitors'
+      preLoaderRoute: typeof SocietySocietyVisitorsRouteImport
       parentRoute: typeof SocietyRoute
     }
-    '/verify/no-dues/$token': {
-      id: '/verify/no-dues/$token'
-      path: '/verify/no-dues/$token'
-      fullPath: '/verify/no-dues/$token'
-      preLoaderRoute: typeof VerifyNoDuesTokenRouteImport
+    '/_society/society/verifications': {
+      id: '/_society/society/verifications'
+      path: '/society/verifications'
+      fullPath: '/society/verifications'
+      preLoaderRoute: typeof SocietySocietyVerificationsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/vehicles': {
+      id: '/_society/society/vehicles'
+      path: '/society/vehicles'
+      fullPath: '/society/vehicles'
+      preLoaderRoute: typeof SocietySocietyVehiclesRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/team': {
+      id: '/_society/society/team'
+      path: '/society/team'
+      fullPath: '/society/team'
+      preLoaderRoute: typeof SocietySocietyTeamRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/surveys': {
+      id: '/_society/society/surveys'
+      path: '/society/surveys'
+      fullPath: '/society/surveys'
+      preLoaderRoute: typeof SocietySocietySurveysRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/subscription': {
+      id: '/_society/society/subscription'
+      path: '/society/subscription'
+      fullPath: '/society/subscription'
+      preLoaderRoute: typeof SocietySocietySubscriptionRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/setup': {
+      id: '/_society/society/setup'
+      path: '/society/setup'
+      fullPath: '/society/setup'
+      preLoaderRoute: typeof SocietySocietySetupRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/search': {
+      id: '/_society/society/search'
+      path: '/society/search'
+      fullPath: '/society/search'
+      preLoaderRoute: typeof SocietySocietySearchRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/reports': {
+      id: '/_society/society/reports'
+      path: '/society/reports'
+      fullPath: '/society/reports'
+      preLoaderRoute: typeof SocietySocietyReportsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/registers': {
+      id: '/_society/society/registers'
+      path: '/society/registers'
+      fullPath: '/society/registers'
+      preLoaderRoute: typeof SocietySocietyRegistersRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/reconciliation': {
+      id: '/_society/society/reconciliation'
+      path: '/society/reconciliation'
+      fullPath: '/society/reconciliation'
+      preLoaderRoute: typeof SocietySocietyReconciliationRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/receipts': {
+      id: '/_society/society/receipts'
+      path: '/society/receipts'
+      fullPath: '/society/receipts'
+      preLoaderRoute: typeof SocietySocietyReceiptsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/privacy-settings': {
+      id: '/_society/society/privacy-settings'
+      path: '/society/privacy-settings'
+      fullPath: '/society/privacy-settings'
+      preLoaderRoute: typeof SocietySocietyPrivacySettingsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/privacy-requests': {
+      id: '/_society/society/privacy-requests'
+      path: '/society/privacy-requests'
+      fullPath: '/society/privacy-requests'
+      preLoaderRoute: typeof SocietySocietyPrivacyRequestsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/polls': {
+      id: '/_society/society/polls'
+      path: '/society/polls'
+      fullPath: '/society/polls'
+      preLoaderRoute: typeof SocietySocietyPollsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/plan-required': {
+      id: '/_society/society/plan-required'
+      path: '/society/plan-required'
+      fullPath: '/society/plan-required'
+      preLoaderRoute: typeof SocietySocietyPlanRequiredRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/petty-cash': {
+      id: '/_society/society/petty-cash'
+      path: '/society/petty-cash'
+      fullPath: '/society/petty-cash'
+      preLoaderRoute: typeof SocietySocietyPettyCashRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/payouts': {
+      id: '/_society/society/payouts'
+      path: '/society/payouts'
+      fullPath: '/society/payouts'
+      preLoaderRoute: typeof SocietySocietyPayoutsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/payments': {
+      id: '/_society/society/payments'
+      path: '/society/payments'
+      fullPath: '/society/payments'
+      preLoaderRoute: typeof SocietySocietyPaymentsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/passes': {
+      id: '/_society/society/passes'
+      path: '/society/passes'
+      fullPath: '/society/passes'
+      preLoaderRoute: typeof SocietySocietyPassesRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/parking': {
+      id: '/_society/society/parking'
+      path: '/society/parking'
+      fullPath: '/society/parking'
+      preLoaderRoute: typeof SocietySocietyParkingRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/operations': {
+      id: '/_society/society/operations'
+      path: '/society/operations'
+      fullPath: '/society/operations'
+      preLoaderRoute: typeof SocietySocietyOperationsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/opening-balances': {
+      id: '/_society/society/opening-balances'
+      path: '/society/opening-balances'
+      fullPath: '/society/opening-balances'
+      preLoaderRoute: typeof SocietySocietyOpeningBalancesRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/more': {
+      id: '/_society/society/more'
+      path: '/society/more'
+      fullPath: '/society/more'
+      preLoaderRoute: typeof SocietySocietyMoreRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/meters': {
+      id: '/_society/society/meters'
+      path: '/society/meters'
+      fullPath: '/society/meters'
+      preLoaderRoute: typeof SocietySocietyMetersRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/meetings': {
+      id: '/_society/society/meetings'
+      path: '/society/meetings'
+      fullPath: '/society/meetings'
+      preLoaderRoute: typeof SocietySocietyMeetingsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/matrix-import': {
+      id: '/_society/society/matrix-import'
+      path: '/society/matrix-import'
+      fullPath: '/society/matrix-import'
+      preLoaderRoute: typeof SocietySocietyMatrixImportRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/matrix': {
+      id: '/_society/society/matrix'
+      path: '/society/matrix'
+      fullPath: '/society/matrix'
+      preLoaderRoute: typeof SocietySocietyMatrixRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/maintenance': {
+      id: '/_society/society/maintenance'
+      path: '/society/maintenance'
+      fullPath: '/society/maintenance'
+      preLoaderRoute: typeof SocietySocietyMaintenanceRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/ledger': {
+      id: '/_society/society/ledger'
+      path: '/society/ledger'
+      fullPath: '/society/ledger'
+      preLoaderRoute: typeof SocietySocietyLedgerRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/leaderboard': {
+      id: '/_society/society/leaderboard'
+      path: '/society/leaderboard'
+      fullPath: '/society/leaderboard'
+      preLoaderRoute: typeof SocietySocietyLeaderboardRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/knowledge': {
+      id: '/_society/society/knowledge'
+      path: '/society/knowledge'
+      fullPath: '/society/knowledge'
+      preLoaderRoute: typeof SocietySocietyKnowledgeRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/import': {
+      id: '/_society/society/import'
+      path: '/society/import'
+      fullPath: '/society/import'
+      preLoaderRoute: typeof SocietySocietyImportRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/helpdesk': {
+      id: '/_society/society/helpdesk'
+      path: '/society/helpdesk'
+      fullPath: '/society/helpdesk'
+      preLoaderRoute: typeof SocietySocietyHelpdeskRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/handover': {
+      id: '/_society/society/handover'
+      path: '/society/handover'
+      fullPath: '/society/handover'
+      preLoaderRoute: typeof SocietySocietyHandoverRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/groups': {
+      id: '/_society/society/groups'
+      path: '/society/groups'
+      fullPath: '/society/groups'
+      preLoaderRoute: typeof SocietySocietyGroupsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/features': {
+      id: '/_society/society/features'
+      path: '/society/features'
+      fullPath: '/society/features'
+      preLoaderRoute: typeof SocietySocietyFeaturesRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/explorer': {
+      id: '/_society/society/explorer'
+      path: '/society/explorer'
+      fullPath: '/society/explorer'
+      preLoaderRoute: typeof SocietySocietyExplorerRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/expenses': {
+      id: '/_society/society/expenses'
+      path: '/society/expenses'
+      fullPath: '/society/expenses'
+      preLoaderRoute: typeof SocietySocietyExpensesRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/events': {
+      id: '/_society/society/events'
+      path: '/society/events'
+      fullPath: '/society/events'
+      preLoaderRoute: typeof SocietySocietyEventsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/event-money': {
+      id: '/_society/society/event-money'
+      path: '/society/event-money'
+      fullPath: '/society/event-money'
+      preLoaderRoute: typeof SocietySocietyEventMoneyRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/emergency': {
+      id: '/_society/society/emergency'
+      path: '/society/emergency'
+      fullPath: '/society/emergency'
+      preLoaderRoute: typeof SocietySocietyEmergencyRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/elections': {
+      id: '/_society/society/elections'
+      path: '/society/elections'
+      fullPath: '/society/elections'
+      preLoaderRoute: typeof SocietySocietyElectionsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/digest': {
+      id: '/_society/society/digest'
+      path: '/society/digest'
+      fullPath: '/society/digest'
+      preLoaderRoute: typeof SocietySocietyDigestRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/depreciation': {
+      id: '/_society/society/depreciation'
+      path: '/society/depreciation'
+      fullPath: '/society/depreciation'
+      preLoaderRoute: typeof SocietySocietyDepreciationRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/defaulters': {
+      id: '/_society/society/defaulters'
+      path: '/society/defaulters'
+      fullPath: '/society/defaulters'
+      preLoaderRoute: typeof SocietySocietyDefaultersRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/data-export': {
+      id: '/_society/society/data-export'
+      path: '/society/data-export'
+      fullPath: '/society/data-export'
+      preLoaderRoute: typeof SocietySocietyDataExportRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/dashboard': {
+      id: '/_society/society/dashboard'
+      path: '/society/dashboard'
+      fullPath: '/society/dashboard'
+      preLoaderRoute: typeof SocietySocietyDashboardRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/custom-fields': {
+      id: '/_society/society/custom-fields'
+      path: '/society/custom-fields'
+      fullPath: '/society/custom-fields'
+      preLoaderRoute: typeof SocietySocietyCustomFieldsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/contacts': {
+      id: '/_society/society/contacts'
+      path: '/society/contacts'
+      fullPath: '/society/contacts'
+      preLoaderRoute: typeof SocietySocietyContactsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/community': {
+      id: '/_society/society/community'
+      path: '/society/community'
+      fullPath: '/society/community'
+      preLoaderRoute: typeof SocietySocietyCommunityRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/communication': {
+      id: '/_society/society/communication'
+      path: '/society/communication'
+      fullPath: '/society/communication'
+      preLoaderRoute: typeof SocietySocietyCommunicationRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/classes': {
+      id: '/_society/society/classes'
+      path: '/society/classes'
+      fullPath: '/society/classes'
+      preLoaderRoute: typeof SocietySocietyClassesRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/bylaws': {
+      id: '/_society/society/bylaws'
+      path: '/society/bylaws'
+      fullPath: '/society/bylaws'
+      preLoaderRoute: typeof SocietySocietyBylawsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/business-profile': {
+      id: '/_society/society/business-profile'
+      path: '/society/business-profile'
+      fullPath: '/society/business-profile'
+      preLoaderRoute: typeof SocietySocietyBusinessProfileRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/budgets': {
+      id: '/_society/society/budgets'
+      path: '/society/budgets'
+      fullPath: '/society/budgets'
+      preLoaderRoute: typeof SocietySocietyBudgetsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/branding': {
+      id: '/_society/society/branding'
+      path: '/society/branding'
+      fullPath: '/society/branding'
+      preLoaderRoute: typeof SocietySocietyBrandingRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/books': {
+      id: '/_society/society/books'
+      path: '/society/books'
+      fullPath: '/society/books'
+      preLoaderRoute: typeof SocietySocietyBooksRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/blocks': {
+      id: '/_society/society/blocks'
+      path: '/society/blocks'
+      fullPath: '/society/blocks'
+      preLoaderRoute: typeof SocietySocietyBlocksRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/billing-settings': {
+      id: '/_society/society/billing-settings'
+      path: '/society/billing-settings'
+      fullPath: '/society/billing-settings'
+      preLoaderRoute: typeof SocietySocietyBillingSettingsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/automations': {
+      id: '/_society/society/automations'
+      path: '/society/automations'
+      fullPath: '/society/automations'
+      preLoaderRoute: typeof SocietySocietyAutomationsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/auditor-pack': {
+      id: '/_society/society/auditor-pack'
+      path: '/society/auditor-pack'
+      fullPath: '/society/auditor-pack'
+      preLoaderRoute: typeof SocietySocietyAuditorPackRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/approvals': {
+      id: '/_society/society/approvals'
+      path: '/society/approvals'
+      fullPath: '/society/approvals'
+      preLoaderRoute: typeof SocietySocietyApprovalsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/announcements': {
+      id: '/_society/society/announcements'
+      path: '/society/announcements'
+      fullPath: '/society/announcements'
+      preLoaderRoute: typeof SocietySocietyAnnouncementsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/amenities': {
+      id: '/_society/society/amenities'
+      path: '/society/amenities'
+      fullPath: '/society/amenities'
+      preLoaderRoute: typeof SocietySocietyAmenitiesRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/agm': {
+      id: '/_society/society/agm'
+      path: '/society/agm'
+      fullPath: '/society/agm'
+      preLoaderRoute: typeof SocietySocietyAgmRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/accounts': {
+      id: '/_society/society/accounts'
+      path: '/society/accounts'
+      fullPath: '/society/accounts'
+      preLoaderRoute: typeof SocietySocietyAccountsRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_resident/app/votes': {
+      id: '/_resident/app/votes'
+      path: '/app/votes'
+      fullPath: '/app/votes'
+      preLoaderRoute: typeof ResidentAppVotesRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/visitors': {
+      id: '/_resident/app/visitors'
+      path: '/app/visitors'
+      fullPath: '/app/visitors'
+      preLoaderRoute: typeof ResidentAppVisitorsRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/vehicles': {
+      id: '/_resident/app/vehicles'
+      path: '/app/vehicles'
+      fullPath: '/app/vehicles'
+      preLoaderRoute: typeof ResidentAppVehiclesRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/trust': {
+      id: '/_resident/app/trust'
+      path: '/app/trust'
+      fullPath: '/app/trust'
+      preLoaderRoute: typeof ResidentAppTrustRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/surveys': {
+      id: '/_resident/app/surveys'
+      path: '/app/surveys'
+      fullPath: '/app/surveys'
+      preLoaderRoute: typeof ResidentAppSurveysRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/services': {
+      id: '/_resident/app/services'
+      path: '/app/services'
+      fullPath: '/app/services'
+      preLoaderRoute: typeof ResidentAppServicesRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/secretary': {
+      id: '/_resident/app/secretary'
+      path: '/app/secretary'
+      fullPath: '/app/secretary'
+      preLoaderRoute: typeof ResidentAppSecretaryRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/search': {
+      id: '/_resident/app/search'
+      path: '/app/search'
+      fullPath: '/app/search'
+      preLoaderRoute: typeof ResidentAppSearchRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/receipts': {
+      id: '/_resident/app/receipts'
+      path: '/app/receipts'
+      fullPath: '/app/receipts'
+      preLoaderRoute: typeof ResidentAppReceiptsRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/profile': {
+      id: '/_resident/app/profile'
+      path: '/app/profile'
+      fullPath: '/app/profile'
+      preLoaderRoute: typeof ResidentAppProfileRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/privacy-requests': {
+      id: '/_resident/app/privacy-requests'
+      path: '/app/privacy-requests'
+      fullPath: '/app/privacy-requests'
+      preLoaderRoute: typeof ResidentAppPrivacyRequestsRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/polls': {
+      id: '/_resident/app/polls'
+      path: '/app/polls'
+      fullPath: '/app/polls'
+      preLoaderRoute: typeof ResidentAppPollsRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/plan-required': {
+      id: '/_resident/app/plan-required'
+      path: '/app/plan-required'
+      fullPath: '/app/plan-required'
+      preLoaderRoute: typeof ResidentAppPlanRequiredRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/passes': {
+      id: '/_resident/app/passes'
+      path: '/app/passes'
+      fullPath: '/app/passes'
+      preLoaderRoute: typeof ResidentAppPassesRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/notifications': {
+      id: '/_resident/app/notifications'
+      path: '/app/notifications'
+      fullPath: '/app/notifications'
+      preLoaderRoute: typeof ResidentAppNotificationsRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/notices': {
+      id: '/_resident/app/notices'
+      path: '/app/notices'
+      fullPath: '/app/notices'
+      preLoaderRoute: typeof ResidentAppNoticesRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/meetings': {
+      id: '/_resident/app/meetings'
+      path: '/app/meetings'
+      fullPath: '/app/meetings'
+      preLoaderRoute: typeof ResidentAppMeetingsRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/ledger': {
+      id: '/_resident/app/ledger'
+      path: '/app/ledger'
+      fullPath: '/app/ledger'
+      preLoaderRoute: typeof ResidentAppLedgerRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/household-history': {
+      id: '/_resident/app/household-history'
+      path: '/app/household-history'
+      fullPath: '/app/household-history'
+      preLoaderRoute: typeof ResidentAppHouseholdHistoryRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/helpdesk': {
+      id: '/_resident/app/helpdesk'
+      path: '/app/helpdesk'
+      fullPath: '/app/helpdesk'
+      preLoaderRoute: typeof ResidentAppHelpdeskRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/guard': {
+      id: '/_resident/app/guard'
+      path: '/app/guard'
+      fullPath: '/app/guard'
+      preLoaderRoute: typeof ResidentAppGuardRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/groups': {
+      id: '/_resident/app/groups'
+      path: '/app/groups'
+      fullPath: '/app/groups'
+      preLoaderRoute: typeof ResidentAppGroupsRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/features': {
+      id: '/_resident/app/features'
+      path: '/app/features'
+      fullPath: '/app/features'
+      preLoaderRoute: typeof ResidentAppFeaturesRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/family': {
+      id: '/_resident/app/family'
+      path: '/app/family'
+      fullPath: '/app/family'
+      preLoaderRoute: typeof ResidentAppFamilyRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/events': {
+      id: '/_resident/app/events'
+      path: '/app/events'
+      fullPath: '/app/events'
+      preLoaderRoute: typeof ResidentAppEventsRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/emergency': {
+      id: '/_resident/app/emergency'
+      path: '/app/emergency'
+      fullPath: '/app/emergency'
+      preLoaderRoute: typeof ResidentAppEmergencyRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/elections': {
+      id: '/_resident/app/elections'
+      path: '/app/elections'
+      fullPath: '/app/elections'
+      preLoaderRoute: typeof ResidentAppElectionsRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/dues': {
+      id: '/_resident/app/dues'
+      path: '/app/dues'
+      fullPath: '/app/dues'
+      preLoaderRoute: typeof ResidentAppDuesRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/documents': {
+      id: '/_resident/app/documents'
+      path: '/app/documents'
+      fullPath: '/app/documents'
+      preLoaderRoute: typeof ResidentAppDocumentsRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/dashboard': {
+      id: '/_resident/app/dashboard'
+      path: '/app/dashboard'
+      fullPath: '/app/dashboard'
+      preLoaderRoute: typeof ResidentAppDashboardRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/contacts': {
+      id: '/_resident/app/contacts'
+      path: '/app/contacts'
+      fullPath: '/app/contacts'
+      preLoaderRoute: typeof ResidentAppContactsRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/community': {
+      id: '/_resident/app/community'
+      path: '/app/community'
+      fullPath: '/app/community'
+      preLoaderRoute: typeof ResidentAppCommunityRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/comm': {
+      id: '/_resident/app/comm'
+      path: '/app/comm'
+      fullPath: '/app/comm'
+      preLoaderRoute: typeof ResidentAppCommRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/classes': {
+      id: '/_resident/app/classes'
+      path: '/app/classes'
+      fullPath: '/app/classes'
+      preLoaderRoute: typeof ResidentAppClassesRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/bylaws': {
+      id: '/_resident/app/bylaws'
+      path: '/app/bylaws'
+      fullPath: '/app/bylaws'
+      preLoaderRoute: typeof ResidentAppBylawsRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/amenities': {
+      id: '/_resident/app/amenities'
+      path: '/app/amenities'
+      fullPath: '/app/amenities'
+      preLoaderRoute: typeof ResidentAppAmenitiesRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/agm': {
+      id: '/_resident/app/agm'
+      path: '/app/agm'
+      fullPath: '/app/agm'
+      preLoaderRoute: typeof ResidentAppAgmRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/activity': {
+      id: '/_resident/app/activity'
+      path: '/app/activity'
+      fullPath: '/app/activity'
+      preLoaderRoute: typeof ResidentAppActivityRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/achievements': {
+      id: '/_resident/app/achievements'
+      path: '/app/achievements'
+      fullPath: '/app/achievements'
+      preLoaderRoute: typeof ResidentAppAchievementsRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_admin/admin/withdrawals': {
+      id: '/_admin/admin/withdrawals'
+      path: '/admin/withdrawals'
+      fullPath: '/admin/withdrawals'
+      preLoaderRoute: typeof AdminAdminWithdrawalsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/users': {
+      id: '/_admin/admin/users'
+      path: '/admin/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminAdminUsersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/subscription-payments': {
+      id: '/_admin/admin/subscription-payments'
+      path: '/admin/subscription-payments'
+      fullPath: '/admin/subscription-payments'
+      preLoaderRoute: typeof AdminAdminSubscriptionPaymentsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/settings': {
+      id: '/_admin/admin/settings'
+      path: '/admin/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminAdminSettingsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/security': {
+      id: '/_admin/admin/security'
+      path: '/admin/security'
+      fullPath: '/admin/security'
+      preLoaderRoute: typeof AdminAdminSecurityRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/search': {
+      id: '/_admin/admin/search'
+      path: '/admin/search'
+      fullPath: '/admin/search'
+      preLoaderRoute: typeof AdminAdminSearchRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/revenue': {
+      id: '/_admin/admin/revenue'
+      path: '/admin/revenue'
+      fullPath: '/admin/revenue'
+      preLoaderRoute: typeof AdminAdminRevenueRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/report-builder': {
+      id: '/_admin/admin/report-builder'
+      path: '/admin/report-builder'
+      fullPath: '/admin/report-builder'
+      preLoaderRoute: typeof AdminAdminReportBuilderRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/razorpay': {
+      id: '/_admin/admin/razorpay'
+      path: '/admin/razorpay'
+      fullPath: '/admin/razorpay'
+      preLoaderRoute: typeof AdminAdminRazorpayRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/plans': {
+      id: '/_admin/admin/plans'
+      path: '/admin/plans'
+      fullPath: '/admin/plans'
+      preLoaderRoute: typeof AdminAdminPlansRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/messaging': {
+      id: '/_admin/admin/messaging'
+      path: '/admin/messaging'
+      fullPath: '/admin/messaging'
+      preLoaderRoute: typeof AdminAdminMessagingRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/marketplace': {
+      id: '/_admin/admin/marketplace'
+      path: '/admin/marketplace'
+      fullPath: '/admin/marketplace'
+      preLoaderRoute: typeof AdminAdminMarketplaceRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/income': {
+      id: '/_admin/admin/income'
+      path: '/admin/income'
+      fullPath: '/admin/income'
+      preLoaderRoute: typeof AdminAdminIncomeRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/health': {
+      id: '/_admin/admin/health'
+      path: '/admin/health'
+      fullPath: '/admin/health'
+      preLoaderRoute: typeof AdminAdminHealthRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/executive': {
+      id: '/_admin/admin/executive'
+      path: '/admin/executive'
+      fullPath: '/admin/executive'
+      preLoaderRoute: typeof AdminAdminExecutiveRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/dashboard': {
+      id: '/_admin/admin/dashboard'
+      path: '/admin/dashboard'
+      fullPath: '/admin/dashboard'
+      preLoaderRoute: typeof AdminAdminDashboardRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/custom-plans': {
+      id: '/_admin/admin/custom-plans'
+      path: '/admin/custom-plans'
+      fullPath: '/admin/custom-plans'
+      preLoaderRoute: typeof AdminAdminCustomPlansRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/costs': {
+      id: '/_admin/admin/costs'
+      path: '/admin/costs'
+      fullPath: '/admin/costs'
+      preLoaderRoute: typeof AdminAdminCostsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/branding': {
+      id: '/_admin/admin/branding'
+      path: '/admin/branding'
+      fullPath: '/admin/branding'
+      preLoaderRoute: typeof AdminAdminBrandingRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/bi': {
+      id: '/_admin/admin/bi'
+      path: '/admin/bi'
+      fullPath: '/admin/bi'
+      preLoaderRoute: typeof AdminAdminBiRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/audit': {
+      id: '/_admin/admin/audit'
+      path: '/admin/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof AdminAdminAuditRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/assistant': {
+      id: '/_admin/admin/assistant'
+      path: '/admin/assistant'
+      fullPath: '/admin/assistant'
+      preLoaderRoute: typeof AdminAdminAssistantRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/ai-usage': {
+      id: '/_admin/admin/ai-usage'
+      path: '/admin/ai-usage'
+      fullPath: '/admin/ai-usage'
+      preLoaderRoute: typeof AdminAdminAiUsageRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/ads': {
+      id: '/_admin/admin/ads'
+      path: '/admin/ads'
+      fullPath: '/admin/ads'
+      preLoaderRoute: typeof AdminAdminAdsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/.mcp/invoke-tool/$tool': {
+      id: '/.mcp/invoke-tool/$tool'
+      path: '/.mcp/invoke-tool/$tool'
+      fullPath: '/.mcp/invoke-tool/$tool'
+      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_admin/admin/societies/': {
-      id: '/_admin/admin/societies/'
-      path: '/admin/societies'
-      fullPath: '/admin/societies/'
-      preLoaderRoute: typeof AdminAdminSocietiesIndexRouteImport
-      parentRoute: typeof AdminRoute
+    '/.lovable/oauth/consent': {
+      id: '/.lovable/oauth/consent'
+      path: '/.lovable/oauth/consent'
+      fullPath: '/.lovable/oauth/consent'
+      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_admin/admin/societies/$id': {
-      id: '/_admin/admin/societies/$id'
-      path: '/admin/societies/$id'
-      fullPath: '/admin/societies/$id'
-      preLoaderRoute: typeof AdminAdminSocietiesIdRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_resident/app/bills/': {
-      id: '/_resident/app/bills/'
-      path: '/app/bills'
-      fullPath: '/app/bills/'
-      preLoaderRoute: typeof ResidentAppBillsIndexRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/bills/$id': {
-      id: '/_resident/app/bills/$id'
-      path: '/app/bills/$id'
-      fullPath: '/app/bills/$id'
-      preLoaderRoute: typeof ResidentAppBillsIdRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/feed/': {
-      id: '/_resident/app/feed/'
-      path: '/app/feed'
-      fullPath: '/app/feed/'
-      preLoaderRoute: typeof ResidentAppFeedIndexRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/feed/$postId': {
-      id: '/_resident/app/feed/$postId'
-      path: '/app/feed/$postId'
-      fullPath: '/app/feed/$postId'
-      preLoaderRoute: typeof ResidentAppFeedPostIdRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/no-dues/': {
-      id: '/_resident/app/no-dues/'
-      path: '/app/no-dues'
-      fullPath: '/app/no-dues/'
-      preLoaderRoute: typeof ResidentAppNoDuesIndexRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_resident/app/no-dues/$id': {
-      id: '/_resident/app/no-dues/$id'
-      path: '/app/no-dues/$id'
-      fullPath: '/app/no-dues/$id'
-      preLoaderRoute: typeof ResidentAppNoDuesIdRouteImport
-      parentRoute: typeof ResidentRoute
-    }
-    '/_society/society/bill-studio/': {
-      id: '/_society/society/bill-studio/'
-      path: '/society/bill-studio'
-      fullPath: '/society/bill-studio/'
-      preLoaderRoute: typeof SocietySocietyBillStudioIndexRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/bill-studio/generate': {
-      id: '/_society/society/bill-studio/generate'
-      path: '/society/bill-studio/generate'
-      fullPath: '/society/bill-studio/generate'
-      preLoaderRoute: typeof SocietySocietyBillStudioGenerateRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/billing/': {
-      id: '/_society/society/billing/'
-      path: '/society/billing'
-      fullPath: '/society/billing/'
-      preLoaderRoute: typeof SocietySocietyBillingIndexRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/billing/generate': {
-      id: '/_society/society/billing/generate'
-      path: '/society/billing/generate'
-      fullPath: '/society/billing/generate'
-      preLoaderRoute: typeof SocietySocietyBillingGenerateRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/bills/$id': {
-      id: '/_society/society/bills/$id'
-      path: '/society/bills/$id'
-      fullPath: '/society/bills/$id'
-      preLoaderRoute: typeof SocietySocietyBillsIdRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/document/$id': {
-      id: '/_society/society/document/$id'
-      path: '/society/document/$id'
-      fullPath: '/society/document/$id'
-      preLoaderRoute: typeof SocietySocietyDocumentIdRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/flats/': {
-      id: '/_society/society/flats/'
-      path: '/society/flats'
-      fullPath: '/society/flats/'
-      preLoaderRoute: typeof SocietySocietyFlatsIndexRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/flats/$id': {
-      id: '/_society/society/flats/$id'
-      path: '/society/flats/$id'
-      fullPath: '/society/flats/$id'
-      preLoaderRoute: typeof SocietySocietyFlatsIdRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/income/': {
-      id: '/_society/society/income/'
-      path: '/society/income'
-      fullPath: '/society/income/'
-      preLoaderRoute: typeof SocietySocietyIncomeIndexRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/income/$id': {
-      id: '/_society/society/income/$id'
-      path: '/society/income/$id'
-      fullPath: '/society/income/$id'
-      preLoaderRoute: typeof SocietySocietyIncomeIdRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/income/categories': {
-      id: '/_society/society/income/categories'
-      path: '/society/income/categories'
-      fullPath: '/society/income/categories'
-      preLoaderRoute: typeof SocietySocietyIncomeCategoriesRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/income/new': {
-      id: '/_society/society/income/new'
-      path: '/society/income/new'
-      fullPath: '/society/income/new'
-      preLoaderRoute: typeof SocietySocietyIncomeNewRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/income/payers': {
-      id: '/_society/society/income/payers'
-      path: '/society/income/payers'
-      fullPath: '/society/income/payers'
-      preLoaderRoute: typeof SocietySocietyIncomePayersRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/no-dues/': {
-      id: '/_society/society/no-dues/'
-      path: '/society/no-dues'
-      fullPath: '/society/no-dues/'
-      preLoaderRoute: typeof SocietySocietyNoDuesIndexRouteImport
-      parentRoute: typeof SocietyRoute
-    }
-    '/_society/society/no-dues/$id': {
-      id: '/_society/society/no-dues/$id'
-      path: '/society/no-dues/$id'
-      fullPath: '/society/no-dues/$id'
-      preLoaderRoute: typeof SocietySocietyNoDuesIdRouteImport
+    '/_society/society/residents/': {
+      id: '/_society/society/residents/'
+      path: '/society/residents'
+      fullPath: '/society/residents/'
+      preLoaderRoute: typeof SocietySocietyResidentsIndexRouteImport
       parentRoute: typeof SocietyRoute
     }
     '/_society/society/qr/': {
@@ -3924,53 +3790,74 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SocietySocietyQrIndexRouteImport
       parentRoute: typeof SocietyRoute
     }
-    '/_society/society/qr/$id': {
-      id: '/_society/society/qr/$id'
-      path: '/society/qr/$id'
-      fullPath: '/society/qr/$id'
-      preLoaderRoute: typeof SocietySocietyQrIdRouteImport
+    '/_society/society/no-dues/': {
+      id: '/_society/society/no-dues/'
+      path: '/society/no-dues'
+      fullPath: '/society/no-dues/'
+      preLoaderRoute: typeof SocietySocietyNoDuesIndexRouteImport
       parentRoute: typeof SocietyRoute
     }
-    '/_society/society/residents/': {
-      id: '/_society/society/residents/'
-      path: '/society/residents'
-      fullPath: '/society/residents/'
-      preLoaderRoute: typeof SocietySocietyResidentsIndexRouteImport
+    '/_society/society/income/': {
+      id: '/_society/society/income/'
+      path: '/society/income'
+      fullPath: '/society/income/'
+      preLoaderRoute: typeof SocietySocietyIncomeIndexRouteImport
       parentRoute: typeof SocietyRoute
     }
-    '/_society/society/residents/$id': {
-      id: '/_society/society/residents/$id'
-      path: '/society/residents/$id'
-      fullPath: '/society/residents/$id'
-      preLoaderRoute: typeof SocietySocietyResidentsIdRouteImport
+    '/_society/society/flats/': {
+      id: '/_society/society/flats/'
+      path: '/society/flats'
+      fullPath: '/society/flats/'
+      preLoaderRoute: typeof SocietySocietyFlatsIndexRouteImport
       parentRoute: typeof SocietyRoute
     }
-    '/api/public/auth/firebase-session': {
-      id: '/api/public/auth/firebase-session'
-      path: '/api/public/auth/firebase-session'
-      fullPath: '/api/public/auth/firebase-session'
-      preLoaderRoute: typeof ApiPublicAuthFirebaseSessionRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_society/society/billing/': {
+      id: '/_society/society/billing/'
+      path: '/society/billing'
+      fullPath: '/society/billing/'
+      preLoaderRoute: typeof SocietySocietyBillingIndexRouteImport
+      parentRoute: typeof SocietyRoute
     }
-    '/api/public/gate/device-event': {
-      id: '/api/public/gate/device-event'
-      path: '/api/public/gate/device-event'
-      fullPath: '/api/public/gate/device-event'
-      preLoaderRoute: typeof ApiPublicGateDeviceEventRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_society/society/bill-studio/': {
+      id: '/_society/society/bill-studio/'
+      path: '/society/bill-studio'
+      fullPath: '/society/bill-studio/'
+      preLoaderRoute: typeof SocietySocietyBillStudioIndexRouteImport
+      parentRoute: typeof SocietyRoute
     }
-    '/api/public/hooks/maintenance-reminders': {
-      id: '/api/public/hooks/maintenance-reminders'
-      path: '/api/public/hooks/maintenance-reminders'
-      fullPath: '/api/public/hooks/maintenance-reminders'
-      preLoaderRoute: typeof ApiPublicHooksMaintenanceRemindersRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_resident/app/no-dues/': {
+      id: '/_resident/app/no-dues/'
+      path: '/app/no-dues'
+      fullPath: '/app/no-dues/'
+      preLoaderRoute: typeof ResidentAppNoDuesIndexRouteImport
+      parentRoute: typeof ResidentRoute
     }
-    '/api/public/hooks/messaging-dispatch': {
-      id: '/api/public/hooks/messaging-dispatch'
-      path: '/api/public/hooks/messaging-dispatch'
-      fullPath: '/api/public/hooks/messaging-dispatch'
-      preLoaderRoute: typeof ApiPublicHooksMessagingDispatchRouteImport
+    '/_resident/app/feed/': {
+      id: '/_resident/app/feed/'
+      path: '/app/feed'
+      fullPath: '/app/feed/'
+      preLoaderRoute: typeof ResidentAppFeedIndexRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/bills/': {
+      id: '/_resident/app/bills/'
+      path: '/app/bills'
+      fullPath: '/app/bills/'
+      preLoaderRoute: typeof ResidentAppBillsIndexRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_admin/admin/societies/': {
+      id: '/_admin/admin/societies/'
+      path: '/admin/societies'
+      fullPath: '/admin/societies/'
+      preLoaderRoute: typeof AdminAdminSocietiesIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/api/public/hooks/run-billing': {
+      id: '/api/public/hooks/run-billing'
+      path: '/api/public/hooks/run-billing'
+      fullPath: '/api/public/hooks/run-billing'
+      preLoaderRoute: typeof ApiPublicHooksRunBillingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/hooks/razorpay': {
@@ -3980,12 +3867,145 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksRazorpayRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/hooks/run-billing': {
-      id: '/api/public/hooks/run-billing'
-      path: '/api/public/hooks/run-billing'
-      fullPath: '/api/public/hooks/run-billing'
-      preLoaderRoute: typeof ApiPublicHooksRunBillingRouteImport
+    '/api/public/hooks/messaging-dispatch': {
+      id: '/api/public/hooks/messaging-dispatch'
+      path: '/api/public/hooks/messaging-dispatch'
+      fullPath: '/api/public/hooks/messaging-dispatch'
+      preLoaderRoute: typeof ApiPublicHooksMessagingDispatchRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/maintenance-reminders': {
+      id: '/api/public/hooks/maintenance-reminders'
+      path: '/api/public/hooks/maintenance-reminders'
+      fullPath: '/api/public/hooks/maintenance-reminders'
+      preLoaderRoute: typeof ApiPublicHooksMaintenanceRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/gate/device-event': {
+      id: '/api/public/gate/device-event'
+      path: '/api/public/gate/device-event'
+      fullPath: '/api/public/gate/device-event'
+      preLoaderRoute: typeof ApiPublicGateDeviceEventRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/auth/firebase-session': {
+      id: '/api/public/auth/firebase-session'
+      path: '/api/public/auth/firebase-session'
+      fullPath: '/api/public/auth/firebase-session'
+      preLoaderRoute: typeof ApiPublicAuthFirebaseSessionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_society/society/residents/$id': {
+      id: '/_society/society/residents/$id'
+      path: '/society/residents/$id'
+      fullPath: '/society/residents/$id'
+      preLoaderRoute: typeof SocietySocietyResidentsIdRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/qr/$id': {
+      id: '/_society/society/qr/$id'
+      path: '/society/qr/$id'
+      fullPath: '/society/qr/$id'
+      preLoaderRoute: typeof SocietySocietyQrIdRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/no-dues/$id': {
+      id: '/_society/society/no-dues/$id'
+      path: '/society/no-dues/$id'
+      fullPath: '/society/no-dues/$id'
+      preLoaderRoute: typeof SocietySocietyNoDuesIdRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/income/payers': {
+      id: '/_society/society/income/payers'
+      path: '/society/income/payers'
+      fullPath: '/society/income/payers'
+      preLoaderRoute: typeof SocietySocietyIncomePayersRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/income/new': {
+      id: '/_society/society/income/new'
+      path: '/society/income/new'
+      fullPath: '/society/income/new'
+      preLoaderRoute: typeof SocietySocietyIncomeNewRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/income/categories': {
+      id: '/_society/society/income/categories'
+      path: '/society/income/categories'
+      fullPath: '/society/income/categories'
+      preLoaderRoute: typeof SocietySocietyIncomeCategoriesRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/income/$id': {
+      id: '/_society/society/income/$id'
+      path: '/society/income/$id'
+      fullPath: '/society/income/$id'
+      preLoaderRoute: typeof SocietySocietyIncomeIdRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/flats/$id': {
+      id: '/_society/society/flats/$id'
+      path: '/society/flats/$id'
+      fullPath: '/society/flats/$id'
+      preLoaderRoute: typeof SocietySocietyFlatsIdRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/document/$id': {
+      id: '/_society/society/document/$id'
+      path: '/society/document/$id'
+      fullPath: '/society/document/$id'
+      preLoaderRoute: typeof SocietySocietyDocumentIdRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/bills/$id': {
+      id: '/_society/society/bills/$id'
+      path: '/society/bills/$id'
+      fullPath: '/society/bills/$id'
+      preLoaderRoute: typeof SocietySocietyBillsIdRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/billing/generate': {
+      id: '/_society/society/billing/generate'
+      path: '/society/billing/generate'
+      fullPath: '/society/billing/generate'
+      preLoaderRoute: typeof SocietySocietyBillingGenerateRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_society/society/bill-studio/generate': {
+      id: '/_society/society/bill-studio/generate'
+      path: '/society/bill-studio/generate'
+      fullPath: '/society/bill-studio/generate'
+      preLoaderRoute: typeof SocietySocietyBillStudioGenerateRouteImport
+      parentRoute: typeof SocietyRoute
+    }
+    '/_resident/app/no-dues/$id': {
+      id: '/_resident/app/no-dues/$id'
+      path: '/app/no-dues/$id'
+      fullPath: '/app/no-dues/$id'
+      preLoaderRoute: typeof ResidentAppNoDuesIdRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/feed/$postId': {
+      id: '/_resident/app/feed/$postId'
+      path: '/app/feed/$postId'
+      fullPath: '/app/feed/$postId'
+      preLoaderRoute: typeof ResidentAppFeedPostIdRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/bills/$id': {
+      id: '/_resident/app/bills/$id'
+      path: '/app/bills/$id'
+      fullPath: '/app/bills/$id'
+      preLoaderRoute: typeof ResidentAppBillsIdRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_admin/admin/societies/$id': {
+      id: '/_admin/admin/societies/$id'
+      path: '/admin/societies/$id'
+      fullPath: '/admin/societies/$id'
+      preLoaderRoute: typeof AdminAdminSocietiesIdRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/api/public/verify/no-dues/$token': {
       id: '/api/public/verify/no-dues/$token'
@@ -4194,6 +4214,7 @@ interface SocietyRouteChildren {
   SocietySocietyDigestRoute: typeof SocietySocietyDigestRoute
   SocietySocietyElectionsRoute: typeof SocietySocietyElectionsRoute
   SocietySocietyEmergencyRoute: typeof SocietySocietyEmergencyRoute
+  SocietySocietyEventMoneyRoute: typeof SocietySocietyEventMoneyRoute
   SocietySocietyEventsRoute: typeof SocietySocietyEventsRoute
   SocietySocietyExpensesRoute: typeof SocietySocietyExpensesRoute
   SocietySocietyExplorerRoute: typeof SocietySocietyExplorerRoute
@@ -4284,6 +4305,7 @@ const SocietyRouteChildren: SocietyRouteChildren = {
   SocietySocietyDigestRoute: SocietySocietyDigestRoute,
   SocietySocietyElectionsRoute: SocietySocietyElectionsRoute,
   SocietySocietyEmergencyRoute: SocietySocietyEmergencyRoute,
+  SocietySocietyEventMoneyRoute: SocietySocietyEventMoneyRoute,
   SocietySocietyEventsRoute: SocietySocietyEventsRoute,
   SocietySocietyExpensesRoute: SocietySocietyExpensesRoute,
   SocietySocietyExplorerRoute: SocietySocietyExplorerRoute,

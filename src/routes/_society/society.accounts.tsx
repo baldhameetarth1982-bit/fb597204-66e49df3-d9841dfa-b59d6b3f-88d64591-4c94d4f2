@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Calculator, Landmark, Loader2, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { AccountsCenterTabs } from "@/components/nav/AccountsCenterTabs";
@@ -19,6 +19,7 @@ import { toSafeFinanceError } from "@/lib/finance-safe-error";
 import type { z } from "zod";
 import { toast } from "sonner";
 import { tu } from "@/lib/i18n";
+import { ensureDefaultAccountCategories } from "@/lib/accounts-documents.functions";
 
 export const Route = createFileRoute("/_society/society/accounts")({
   head: () => ({ meta: [
@@ -65,6 +66,14 @@ function AccountsPage() {
   const balance = useMemo(() => rows.length ? rows[0].running_balance : null, [rows]);
   const heroValue = (value: number | undefined) => overview.isSuccess && value !== undefined ? INR.format(value) : "—";
   const [initializing, setInitializing] = useState(false);
+  // Add the most common income/expense heads once (idempotent; adds only missing ones).
+  const seedHeads = useServerFn(ensureDefaultAccountCategories);
+  const seeded = useRef(false);
+  useEffect(() => {
+    if (!societyId || seeded.current || !overview.isSuccess) return;
+    seeded.current = true;
+    void seedHeads({ data: { societyId } }).catch(() => { /* permission/plan errors: page still works */ });
+  }, [societyId, overview.isSuccess, seedHeads]);
 
   async function initialize() {
     if (!societyId || initializing) return;

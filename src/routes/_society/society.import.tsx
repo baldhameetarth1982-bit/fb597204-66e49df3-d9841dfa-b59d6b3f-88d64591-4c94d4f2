@@ -1,4 +1,5 @@
 import { toSafeFinanceMessage } from "@/lib/finance-safe-error";
+import { askText } from "@/components/system/AskTextDialog";
 import { createFileRoute } from "@tanstack/react-router";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useEffect, useMemo, useState } from "react";
@@ -255,7 +256,7 @@ function ImportPage() {
   }
 
   async function undoJob(j: JobListItem) {
-    const reason = window.prompt("Undo this import? Only records this import created are removed, and only if nothing else depends on them. Reason (required):")?.trim();
+    const reason = (await askText("Undo this import? Only records this import created are removed, and only if nothing else depends on them. Reason (required):", { minLength: 5 }))?.trim();
     if (!reason) return;
     if (reason.length < 5) { toast.error(tu("op.add_a_short_reason_at")); return; }
     setBusy("commit");

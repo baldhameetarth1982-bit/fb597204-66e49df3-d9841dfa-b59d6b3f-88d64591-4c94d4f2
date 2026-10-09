@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { askText } from "@/components/system/AskTextDialog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -87,8 +88,8 @@ export function MaintenanceScheduleTab() {
                 {(m.staff_note || m.cancel_reason) && <p className="text-muted-foreground">{m.cancel_reason ?? m.staff_note}</p>}</div>
               <div className="flex items-center gap-2">{isOverdue(m.due_on, !["done", "cancelled"].includes(m.status)) && <Badge variant="destructive">{tu("bills.overdue")}</Badge>}<Badge variant="outline">{LABEL[m.status] ?? m.status}</Badge>
                 {!["done", "cancelled"].includes(m.status) && (
-                  <Button size="sm" variant="outline" className="min-h-11" disabled={stop.isPending} onClick={() => {
-                    const reason = window.prompt("Reason for cancelling (at least 5 characters)")?.trim();
+                  <Button size="sm" variant="outline" className="min-h-11" disabled={stop.isPending} onClick={async () => {
+                    const reason = (await askText("Reason for cancelling", { minLength: 5 }))?.trim();
                     if (reason && reason.length >= 5) stop.mutate({ id: m.id, reason });
                   }}>{tu("common.cancel")}</Button>)}
               </div>

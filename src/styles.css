@@ -232,50 +232,116 @@
   --elevation-4: 0 20px 40px -12px rgb(0 0 0 / 0.75), 0 4px 10px rgb(0 0 0 / 0.4);
 }
 
-/* ---------- NEON (Premium-only) — magenta/pink on deep charcoal ---------- */
-.theme-neon {
-  color-scheme: dark;
-  --background: oklch(0.16 0.015 350);
-  --foreground: oklch(0.97 0.005 340);
-  --card: oklch(0.21 0.04 350);
-  --card-foreground: oklch(0.97 0.005 340);
-  --popover: oklch(0.21 0.04 350);
-  --popover-foreground: oklch(0.97 0.005 340);
-  --primary: oklch(0.7 0.28 350);                  /* hot pink */
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.24 0.05 350);
-  --secondary-foreground: oklch(0.97 0.005 340);
-  --muted: oklch(0.22 0.04 350);
-  --muted-foreground: oklch(0.75 0.04 340);
-  --accent: oklch(0.75 0.25 340);
-  --accent-foreground: oklch(0.12 0.02 340);
-  --destructive: oklch(0.65 0.2 25);
-  --destructive-foreground: oklch(0.98 0 0);
-  --success: oklch(0.75 0.18 158);
-  --success-foreground: oklch(0.12 0.02 192);
-  --warning: oklch(0.82 0.16 75);
-  --warning-foreground: oklch(0.16 0 0);
-  --border: oklch(0.3 0.06 340);
-  --input: oklch(0.28 0.05 340);
-  --ring: oklch(0.7 0.28 350);
-  --sidebar: oklch(0.18 0.025 350);
-  --sidebar-foreground: oklch(0.97 0.005 340);
-  --sidebar-primary: oklch(0.7 0.28 350);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.24 0.05 350);
-  --sidebar-accent-foreground: oklch(0.97 0.005 340);
-  --sidebar-border: oklch(0.3 0.06 340);
-  --sidebar-ring: oklch(0.7 0.28 350);
+/* ---------- MAYUR (Premium) — peacock blue, marigold gold and warm ivory ----------
+ * Inspired by colours Indian households associate with celebration and trust:
+ * peacock blue-green (Mayur), marigold/haldi gold, and ivory. Calm enough for
+ * daily finance work; richer than Standard and Dark.
+ */
+.theme-royal {
+  --background: oklch(0.975 0.012 85);
+  --foreground: oklch(0.27 0.06 255);
+  --card: oklch(0.995 0.006 85);
+  --card-foreground: oklch(0.25 0.06 255);
+  --popover: oklch(0.995 0.006 85);
+  --popover-foreground: oklch(0.25 0.06 255);
+  --primary: oklch(0.45 0.1 225);
+  --primary-foreground: oklch(0.99 0.01 85);
+  --secondary: oklch(0.95 0.03 85);
+  --secondary-foreground: oklch(0.27 0.06 255);
+  --muted: oklch(0.955 0.015 85);
+  --muted-foreground: oklch(0.47 0.03 250);
+  --accent: oklch(0.8 0.14 78);
+  --accent-foreground: oklch(0.25 0.06 60);
+  --border: oklch(0.89 0.025 80);
+  --input: oklch(0.87 0.03 80);
+  --ring: oklch(0.45 0.1 225);
+  --chart-1: oklch(0.45 0.1 225);
+  --chart-2: oklch(0.72 0.15 75);
+  --chart-3: oklch(0.55 0.12 165);
+  --chart-4: oklch(0.5 0.17 20);
+  --chart-5: oklch(0.6 0.1 300);
+  --sidebar: oklch(0.27 0.07 245);
+  --sidebar-foreground: oklch(0.95 0.02 85);
+  --sidebar-primary: oklch(0.8 0.14 78);
+  --sidebar-primary-foreground: oklch(0.22 0.05 255);
+  --sidebar-accent: oklch(0.33 0.07 240);
+  --sidebar-accent-foreground: oklch(0.97 0.02 85);
+  --sidebar-border: oklch(0.34 0.06 245);
+  --sidebar-ring: oklch(0.8 0.14 78);
+  --primary-container: oklch(0.93 0.035 220);
+  --primary-container-foreground: oklch(0.33 0.09 230);
+  --warning-container: oklch(0.95 0.07 85);
+  --warning-container-foreground: oklch(0.4 0.11 65);
+  --surface: oklch(0.995 0.006 85);
+  --surface-2: oklch(0.96 0.015 85);
+  --outline: oklch(0.83 0.03 80);
 }
-.theme-neon body {
-  background-image:
-    radial-gradient(1200px 600px at 0% -10%, oklch(0.35 0.18 340 / 0.35), transparent 60%),
-    radial-gradient(900px 500px at 100% 110%, oklch(0.3 0.2 320 / 0.3), transparent 60%);
-  background-attachment: fixed;
+.dark.theme-royal {
+  --background: oklch(0.19 0.035 250);
+  --foreground: oklch(0.96 0.015 85);
+  --card: oklch(0.235 0.04 248);
+  --card-foreground: oklch(0.96 0.015 85);
+  --popover: oklch(0.235 0.04 248);
+  --popover-foreground: oklch(0.96 0.015 85);
+  --primary: oklch(0.8 0.14 78);
+  --primary-foreground: oklch(0.2 0.04 255);
+  --secondary: oklch(0.27 0.04 248);
+  --secondary-foreground: oklch(0.96 0.015 85);
+  --muted: oklch(0.26 0.035 248);
+  --muted-foreground: oklch(0.76 0.03 85);
+  --accent: oklch(0.62 0.1 200);
+  --accent-foreground: oklch(0.15 0.03 250);
+  --border: oklch(0.33 0.04 248);
+  --input: oklch(0.33 0.04 248);
+  --ring: oklch(0.8 0.14 78);
+  --sidebar: oklch(0.17 0.035 250);
+  --sidebar-foreground: oklch(0.95 0.02 85);
+  --sidebar-primary: oklch(0.8 0.14 78);
+  --sidebar-primary-foreground: oklch(0.2 0.04 255);
+  --sidebar-accent: oklch(0.26 0.04 248);
+  --sidebar-accent-foreground: oklch(0.96 0.02 85);
+  --sidebar-border: oklch(0.3 0.04 248);
+  --primary-container: oklch(0.33 0.07 70);
+  --primary-container-foreground: oklch(0.94 0.08 85);
+  --surface: oklch(0.22 0.04 250);
+  --surface-2: oklch(0.26 0.04 248);
+  --outline: oklch(0.38 0.04 248);
 }
-.theme-neon .bg-primary,
-.theme-neon button[class*="bg-primary"] {
-  box-shadow: 0 8px 30px -8px oklch(0.7 0.28 350 / 0.55);
+/* A thin marigold rule under the header is the only ornament — no glow. */
+.theme-royal header.sticky { box-shadow: inset 0 -2px 0 color-mix(in oklab, var(--accent) 55%, transparent); }
+
+/* ---------- Pill tabs (app-wide) ---------- */
+@layer components {
+  .pill-tab {
+    min-height: 2.5rem;
+    border-radius: 9999px;
+    border: 1px solid var(--color-border);
+    background: var(--color-card);
+    color: var(--color-muted-foreground);
+    padding: 0.375rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: background-color var(--dur-fast) var(--ease-standard), color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard);
+  }
+  .pill-tab:hover { color: var(--color-foreground); border-color: color-mix(in oklab, var(--color-primary) 40%, var(--color-border)); }
+  .pill-tab:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+  .pill-tab:disabled { opacity: 0.5; pointer-events: none; }
+  .pill-tab[data-state="active"], .pill-tab[aria-current="page"], .pill-tab[aria-selected="true"] {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: var(--color-primary-foreground);
+  }
+  .no-scrollbar { scrollbar-width: none; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+}
+
+/* Subtle rounded scrollbars on pointer devices; scrolling itself is untouched. */
+@media (hover: hover) and (pointer: fine) {
+  * { scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--muted-foreground) 35%, transparent) transparent; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--muted-foreground) 30%, transparent); border-radius: 9999px; border: 3px solid transparent; background-clip: content-box; }
+  ::-webkit-scrollbar-thumb:hover { background-color: color-mix(in oklab, var(--muted-foreground) 50%, transparent); }
 }
 
 @layer base {

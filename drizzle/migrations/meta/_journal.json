@@ -1604,6 +1604,13 @@
       "when": 1791573822917,
       "tag": "0228_audit_log_preserve_actor_on_user_delete",
       "breakpoints": true
+    },
+    {
+      "idx": 229,
+      "version": "7",
+      "when": 1791581145681,
+      "tag": "0229_event_money_default_heads_paid_bill_cycle",
+      "breakpoints": true
     }
   ]
 }

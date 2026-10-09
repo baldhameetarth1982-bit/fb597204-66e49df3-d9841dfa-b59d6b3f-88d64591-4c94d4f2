@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { isTestRecord, useShowTestData } from "@/lib/test-data";
+import { TestDataToggle } from "@/components/admin/TestDataToggle";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Loader2, ChevronRight, AlertCircle, Users, Home } from "lucide-react";
@@ -60,7 +62,10 @@ function SocietiesPage() {
     },
     staleTime: 30_000,
   });
-  const rows = query.data ?? [];
+  const [showTest, setShowTest] = useShowTestData();
+  const allRows = query.data ?? [];
+  const rows = useMemo(() => (showTest ? allRows : allRows.filter((r) => !isTestRecord(r.name))), [allRows, showTest]);
+  const hiddenTest = allRows.length - rows.length;
 
   const counts = useMemo(() => {
     const c: Record<Filter, number> = { all: rows.length, paid: 0, trial: 0, attention: 0, suspended: 0 };
@@ -91,6 +96,7 @@ function SocietiesPage() {
           { label: "Trial", value: query.isLoading ? "—" : counts.trial },
           { label: "Needs attention", value: query.isLoading ? "—" : counts.attention },
         ]} />
+        {!query.isLoading && !query.error && <TestDataToggle show={showTest} onChange={setShowTest} hiddenCount={showTest ? 0 : hiddenTest} />}
         <div className="space-y-3 rounded-2xl border bg-card p-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

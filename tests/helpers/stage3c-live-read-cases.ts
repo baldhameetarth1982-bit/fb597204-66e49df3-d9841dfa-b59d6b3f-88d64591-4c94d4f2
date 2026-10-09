@@ -486,7 +486,6 @@ export async function refreshStage3CReadExpectations(
  */
 export const read01_activeResidentSeesOwnPaymentHistory: Stage3CMatrixLiveHandler =
   async (ctx: Stage3CLiveMatrixContext) => {
-    await refreshStage3CReadExpectations(ctx, "READ-01");
     const brackets = await openLiveReadBrackets(ctx, "READ-01");
     const client = brackets.client;
     const paymentId = requireReadPrimaryPaymentId(ctx);
@@ -563,7 +562,6 @@ export const read01_activeResidentSeesOwnPaymentHistory: Stage3CMatrixLiveHandle
  */
 export const read02_activeResidentSeesOwnPaymentDetail: Stage3CMatrixLiveHandler =
   async (ctx: Stage3CLiveMatrixContext) => {
-    await refreshStage3CReadExpectations(ctx, "READ-02");
     const brackets = await openLiveReadBrackets(ctx, "READ-02");
     const client = brackets.client;
     const paymentId = requireReadPrimaryPaymentId(ctx);

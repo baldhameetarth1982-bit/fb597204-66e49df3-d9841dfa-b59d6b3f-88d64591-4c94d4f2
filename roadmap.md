@@ -17,7 +17,6 @@ Stage 3C/3D runtime verification paused by owner.
 - [x] Default common income/expense heads
 - [x] Event money (income/expense per event) in Accounting Center
 - [x] Single-bill maker (Bill one home) using the existing printable bill layout
-- [ ] Signed-in visual check of each role — blocked: no authorized QA sign-in this turn
 - [x] New launch labels translated in all 23 languages
 - [x] Owner confirmed the 4 launch choices (recommended defaults; Mayur theme applies app-wide to every eligible account)
 - [x] Native-quality review of Marathi, Sanskrit, Telugu, Urdu launch text (Gemini, key rotation)
@@ -36,7 +35,9 @@ Stage 3C/3D runtime verification paused by owner.
 - [x] Dashboard chart counts confirmed payments by paid date (matches the Collected card)
 - [x] Bill design page can no longer spin forever (15s limit, then retry)
 - [x] Super Admin auto sign-out after 30 idle minutes
-- [ ] Signed-in check of every role and the new bill pages — blocked: preview is signed into a real account, not the demo account
+- [x] Signed-in committee check as the demo account (desktop + phone): dashboard, billing, Bill one home (test bill B-00001 made in QA Demo Society), print layout, residents, settings
+- [x] Fixed: Bill one home highlighted the wrong Accounting button; months already billed elsewhere now show as Billed
+- [ ] Signed-in resident, guard and Super Admin screens — blocked: demo account is committee-only and not a Super Admin
 - [x] No second approver for refunds (owner: only one real Super Admin); Super Admin reasons optional, audit kept
 - [x] Platform staff roles (Operations/Finance/Marketing/Support), view-limited, refunds stay Super Admin
 - [x] Maintenance mode, scheduled announcements (hourly), Backups & exports page

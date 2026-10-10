@@ -37,7 +37,7 @@ export const ACCOUNTING_SECTIONS: Section[] = [
   {
     key: "billing", label: "ln.acc.billing", icon: Receipt,
     pages: [
-      { to: "/society/billing/generate", label: "ln.acc.generateBill", icon: FilePlus2, also: ["/society/billing/single", "/society/bill-studio/generate"] },
+      { to: "/society/billing/generate", label: "ln.acc.generateBill", icon: FilePlus2, also: ["/society/billing/single"] },
       { to: "/society/billing", label: "ln.acc.billHistory", icon: ListChecks, exact: true, also: ["/society/bills"] },
       { to: "/society/payments", label: "ln.acc.payments", icon: Wallet },
       { to: "/society/defaulters", label: "ln.acc.dues", icon: AlertTriangle },

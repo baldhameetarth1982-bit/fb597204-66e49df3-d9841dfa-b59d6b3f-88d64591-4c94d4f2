@@ -262,7 +262,10 @@ export type AdminBillDetail = {
   lines: AdminBillLine[];
   society: { name: string | null; registration?: string | null; address?: string | null } | null;
   flat: { flat_number: string | null; block_name: string | null } | null;
-  resident: { full_name: string | null; phone: string | null } | null;
+  resident: {
+    full_name: string | null; phone: string | null;
+    property_number?: string | null; ugvcl_number?: string | null; share_certificate_number?: string | null;
+  } | null;
   payment_summary: {
     has_verified_payment: boolean;
     recorded_count: number;
@@ -345,7 +348,7 @@ export const getAdminBillDetail = createServerFn({ method: "POST" })
     if (link?.user_id) {
       const { data: prof } = await context.supabase
         .from("profiles")
-        .select("full_name, phone")
+        .select("full_name, phone, property_number, ugvcl_number, share_certificate_number")
         .eq("id", link.user_id)
         .maybeSingle();
       resident = (prof as AdminBillDetail["resident"]) ?? null;

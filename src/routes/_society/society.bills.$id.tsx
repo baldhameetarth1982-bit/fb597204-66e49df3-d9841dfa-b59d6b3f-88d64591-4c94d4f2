@@ -130,7 +130,7 @@ function BillDetailPage() {
     : "bg-warning-container text-warning-container-foreground";
   const onShare = async () => {
     try {
-      await shareBillAsImage({
+      const how = await shareBillAsImage({
         societyName: detail.society?.name ?? "Society", flatLabel,
         residentName: detail.resident?.full_name ?? undefined,
         period: bill.period_label ?? "Bill", amount,
@@ -138,6 +138,7 @@ function BillDetailPage() {
         status: state.code === "paid" ? "paid" : state.code === "cancelled" ? "cancelled" : state.code === "overdue" ? "overdue" : "due",
         adminSignature: user?.email?.split("@")[0],
       });
+      if (how === "copied") toast.success(tu("ln.share.copied"));
     } catch { toast.error(tu("op.could_not_share_this_bill")); }
   };
 

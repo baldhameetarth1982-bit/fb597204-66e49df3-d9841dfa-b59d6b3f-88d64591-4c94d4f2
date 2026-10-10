@@ -67,10 +67,27 @@ function GenerateBillsPage() {
     })();
   }, [societyId, sidLoading]);
 
-  const billable = useMemo(() => flats.filter((f) => f.block_id && f.has_resident), [flats]);
+  // Homes that already have a (non-cancelled) bill for the due date's month are
+  // skipped up front: one home can never get two bills for the same month.
+  const periodStart = useMemo(() => {
+    if (!dueDate) return null;
+    const d = new Date(dueDate);
+    return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
+  }, [dueDate]);
+  const [billedIds, setBilledIds] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!societyId || !periodStart) { setBilledIds(new Set()); return; }
+    let live = true;
+    void supabase.from("bills").select("flat_id").eq("society_id", societyId)
+      .eq("period_start", periodStart).neq("status", "cancelled")
+      .then(({ data }) => { if (live) setBilledIds(new Set(((data as { flat_id: string }[] | null) ?? []).map((r) => r.flat_id))); });
+    return () => { live = false; };
+  }, [societyId, periodStart]);
+
+  const billable = useMemo(() => flats.filter((f) => f.block_id && f.has_resident && !billedIds.has(f.id)), [flats, billedIds]);
   const totalAmount = billable.length * (Number(amount) || 0);
 
-  const skipped = useMemo(() => flats.filter((f) => !(f.block_id && f.has_resident)), [flats]);
+  const skipped = useMemo(() => flats.filter((f) => !(f.block_id && f.has_resident) || billedIds.has(f.id)), [flats, billedIds]);
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [confirmed, setConfirmed] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; count?: number; message?: string } | null>(null);
@@ -100,7 +117,7 @@ function GenerateBillsPage() {
     setGenerating(false);
     if (error) {
       const message = error.message?.includes("approval_required")
-        ? "This society requires a second approver. Create bills from Bill Studio → Generate so the run can be reviewed and approved."
+        ? tu("ln.gen.needsApproval")
         : toSafeFinanceMessage(error, "Could not generate bills. Please try again.");
       setResult({ ok: false, message });
       return toast.error(message);
@@ -115,6 +132,16 @@ function GenerateBillsPage() {
     <PageShell>
       <PageHeader title={tu("op.generate_bills")} description={tu("op.create_one_maintenance_bill_for")} />
       <div className="mb-5 rounded-2xl border border-border bg-card"><BillingCenterTabs /></div>
+      <div className="mb-5 grid gap-2 sm:grid-cols-2">
+        <Link to="/society/billing/single" className="flex min-h-11 items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-sm hover:bg-muted/60">
+          <FilePlus2 className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+          <span><span className="block font-medium">{tu("ln.sb.title")}</span><span className="block text-xs text-muted-foreground">{tu("ln.gen.oneHomeHint")}</span></span>
+        </Link>
+        <Link to="/society/bill-studio/generate" className="flex min-h-11 items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-sm hover:bg-muted/60">
+          <CalendarDays className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+          <span><span className="block font-medium">{tu("ln.gen.cycleRun")}</span><span className="block text-xs text-muted-foreground">{tu("ln.gen.cycleRunHint")}</span></span>
+        </Link>
+      </div>
 
       <ol className="mb-6 grid grid-cols-3 gap-2" aria-label={tu("op.steps")}>
         {STEPS.map((label, i) => {
@@ -200,7 +227,7 @@ function GenerateBillsPage() {
               {skipped.length === 0 ? <p className="px-4 py-6 text-center text-sm text-muted-foreground">{tu("op.no_houses_skipped")}</p> : (
                 <ul className="max-h-80 divide-y divide-border overflow-y-auto">
                   {skipped.map((f) => (
-                    <li key={f.id} className="flex items-center justify-between px-4 py-2 text-sm"><span>{tu("gd.houseLabel")} {houseLabel(f)}</span><span className="text-xs text-muted-foreground">{!f.block_id ? tu("op.no_block") : tu("op.no_resident")}</span></li>
+                    <li key={f.id} className="flex items-center justify-between px-4 py-2 text-sm"><span>{tu("gd.houseLabel")} {houseLabel(f)}</span><span className="text-xs text-muted-foreground">{billedIds.has(f.id) ? tu("ln.gen.alreadyBilled") : !f.block_id ? tu("op.no_block") : tu("op.no_resident")}</span></li>
                   ))}
                 </ul>
               )}

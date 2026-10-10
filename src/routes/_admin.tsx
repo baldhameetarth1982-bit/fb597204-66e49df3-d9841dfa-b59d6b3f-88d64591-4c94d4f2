@@ -2,6 +2,9 @@ import { Outlet, createFileRoute, Navigate } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { ROLES, ROLE_HOME } from "@/config/roles";
+import { useIdleSignOut } from "@/hooks/useIdleSignOut";
+import { toast } from "sonner";
+import { tu } from "@/lib/i18n";
 
 /** Super Admin layout. All `/admin/*` routes require SUPER_ADMIN role. */
 export const Route = createFileRoute("/_admin")({
@@ -10,7 +13,12 @@ export const Route = createFileRoute("/_admin")({
 });
 
 function AdminGuard() {
-  const { isLoading, isAuthenticated, primaryRole, hasRole } = useAuth();
+  const { isLoading, isAuthenticated, primaryRole, hasRole, signOut } = useAuth();
+  const isSuper = isAuthenticated && hasRole(ROLES.SUPER_ADMIN);
+  // Super Admin sessions end after 30 idle minutes.
+  useIdleSignOut(isSuper, () => {
+    void signOut().finally(() => toast.info(tu("ln.idle.signedOut")));
+  });
 
   if (isLoading) {
     return (

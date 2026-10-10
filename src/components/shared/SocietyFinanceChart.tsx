@@ -29,8 +29,9 @@ export function SocietyFinanceChart({ societyId }: { societyId: string }) {
       since.setDate(1);
       since.setHours(0, 0, 0, 0);
       const [{ data: payments }, { data: expenses }] = await Promise.all([
+        // Same rule as the dashboard "Collected" card: confirmed payments by the date they were paid.
         supabase.from("payments").select("amount, status, paid_at, created_at")
-          .eq("society_id", societyId).gte("created_at", since.toISOString()),
+          .eq("society_id", societyId).eq("status", "success").gte("paid_at", since.toISOString()),
         supabase.from("expenses").select("amount, spent_on")
           .eq("society_id", societyId).gte("spent_on", since.toISOString().slice(0, 10)),
       ]);

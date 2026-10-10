@@ -1611,6 +1611,13 @@
       "when": 1791581145681,
       "tag": "0229_event_money_default_heads_paid_bill_cycle",
       "breakpoints": true
+    },
+    {
+      "idx": 230,
+      "version": "7",
+      "when": 1791590241472,
+      "tag": "0230_standard_plan_quote_adds_gst",
+      "breakpoints": true
     }
   ]
 }

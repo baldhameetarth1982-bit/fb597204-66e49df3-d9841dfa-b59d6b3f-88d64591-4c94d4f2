@@ -12,3 +12,4 @@
 - P01–P10 database acceptance rules live in tests/sql/p01-p10-*.sql (rollback-only, synthetic IDs) run by scripts/run-sql-harness.sh in the disposable-DB workflow; a locked-rule violation must fail the suite rather than be patched in the test.
 - Super Admin lists hide synthetic QA/test/demo records only in the view via src/lib/test-data.ts (isTestRecord + "Show test data" switch); nothing is deleted, so the filter can never touch real data.
 - In-app text questions use askText() from src/components/system/AskTextDialog.tsx (host mounted once in __root); never window.prompt, which is blocked in installed apps and looks untrustworthy.
+- Super Admin sessions sign out after 30 idle minutes via useIdleSignOut in the _admin layout (activity shared across tabs through localStorage); the admin panel is the highest-value target.

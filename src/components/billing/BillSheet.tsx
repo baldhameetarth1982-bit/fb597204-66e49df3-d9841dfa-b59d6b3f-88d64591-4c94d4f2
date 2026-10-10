@@ -41,6 +41,9 @@ export function BillSheet({ detail }: { detail: AdminBillDetail }) {
         {row(tu("ln.bs.houseNo"), house)}
         {row(tu("ln.bs.name"), detail.resident?.full_name ?? "—")}
         {row(tu("ln.bs.mobile"), detail.resident?.phone ?? "—")}
+        {detail.resident?.property_number && row(tu("ln.bs.propNo"), detail.resident.property_number)}
+        {detail.resident?.ugvcl_number && row(tu("ln.bs.ugvcl"), detail.resident.ugvcl_number)}
+        {detail.resident?.share_certificate_number && row(tu("ln.bs.shareCert"), detail.resident.share_certificate_number)}
       </div>
 
       <h2>{tu("ln.bs.charges")}</h2>

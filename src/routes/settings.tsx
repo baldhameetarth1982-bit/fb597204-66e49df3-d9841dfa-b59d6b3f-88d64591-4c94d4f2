@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { usePlatformRoles, staffHome } from "@/hooks/usePlatformRoles";
 import { LanguageSelector } from "@/components/shared/LanguageSelector";
 import { createFileRoute, Navigate, Link } from "@tanstack/react-router";
 import { userMessage } from "@/lib/user-error";
@@ -62,6 +63,7 @@ function SettingsPage() {
   const isSuperAdmin = hasRole?.("super_admin") ?? false;
   const isSecurity = hasRole?.("security") ?? false;
   const canManagePlan = (hasRole?.("society_admin") ?? false) || isSuperAdmin;
+  const platformStaff = usePlatformRoles();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
@@ -317,6 +319,10 @@ function SettingsPage() {
           </SettingsGroup>
 
           <SettingsGroup title={t("settings.supportLegal")} icon={HelpCircle}>
+            {!isSuperAdmin && platformStaff.isStaff && <>
+              <LinkRow to={staffHome(platformStaff.roles) as any} icon={ShieldCheck} label={tu("ln.stf.open")} />
+              <Separator />
+            </>}
             <LinkRow to="/support" icon={HelpCircle} label={t("settings.help")} />
             <Separator />
             <LinkRow to="/terms" icon={ShieldCheck} label={t("settings.terms")} />

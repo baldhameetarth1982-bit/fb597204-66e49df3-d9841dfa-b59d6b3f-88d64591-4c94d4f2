@@ -27,6 +27,8 @@ import { SuperAdminBottomNav } from "@/components/nav/SuperAdminBottomNav";
 
 import { Toaster } from "@/components/ui/sonner";
 import { OfflineBanner } from "@/components/system/OfflineBanner";
+import { MaintenanceScreen, MaintenanceStrip, useAppStatus } from "@/components/system/MaintenanceNotice";
+import { usePlatformRoles } from "@/hooks/usePlatformRoles";
 import { AskTextDialogHost } from "@/components/system/AskTextDialog";
 import { SplashScreen } from "@/components/shared/SplashScreen";
 import { RootErrorBoundary, installGlobalErrorLogger } from "@/components/shared/RootErrorBoundary";
@@ -293,12 +295,29 @@ function ShellSwitcher() {
   if (isProtectedPath) {
     return (
       <ProtectedRoute pathname={pathname}>
-        <ProtectedShell pathname={pathname} />
+        <MaintenanceGate>
+          <ProtectedShell pathname={pathname} />
+        </MaintenanceGate>
       </ProtectedRoute>
     );
   }
 
   return <DefaultShell />;
+}
+
+/** While maintenance mode is on, only Super Admin and platform staff can use signed-in pages. */
+function MaintenanceGate({ children }: { children: React.ReactNode }) {
+  const status = useAppStatus();
+  const { isSuper, isStaff, isLoading } = usePlatformRoles();
+  if (!status.data?.maintenance) return <>{children}</>;
+  if (isLoading) return null;
+  if (!isSuper && !isStaff) return <MaintenanceScreen message={status.data.message} />;
+  return (
+    <>
+      <MaintenanceStrip />
+      {children}
+    </>
+  );
 }
 
 function ProtectedShell({ pathname }: { pathname: string }) {

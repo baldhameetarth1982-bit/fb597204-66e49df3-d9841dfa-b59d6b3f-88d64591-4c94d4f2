@@ -7988,6 +7988,59 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_announcements: {
+        Row: {
+          audience: string
+          body: string
+          cancelled_at: string | null
+          created_at: string
+          created_by: string
+          id: string
+          recipients: number | null
+          send_at: string
+          sent_at: string | null
+          society_id: string | null
+          status: string
+          title: string
+        }
+        Insert: {
+          audience: string
+          body: string
+          cancelled_at?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          recipients?: number | null
+          send_at?: string
+          sent_at?: string | null
+          society_id?: string | null
+          status?: string
+          title: string
+        }
+        Update: {
+          audience?: string
+          body?: string
+          cancelled_at?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          recipients?: number | null
+          send_at?: string
+          sent_at?: string | null
+          society_id?: string | null
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_announcements_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_cost_entries: {
         Row: {
           amount_inr: number
@@ -8036,6 +8089,8 @@ export type Database = {
           ai_cost_per_request_inr: number | null
           id: number
           maintenance_fee_percent: number
+          maintenance_message: string | null
+          maintenance_mode: boolean
           market_society_global_enabled: boolean
           razorpay_configured: boolean
           razorpay_key_id: string | null
@@ -8049,6 +8104,8 @@ export type Database = {
           ai_cost_per_request_inr?: number | null
           id?: number
           maintenance_fee_percent?: number
+          maintenance_message?: string | null
+          maintenance_mode?: boolean
           market_society_global_enabled?: boolean
           razorpay_configured?: boolean
           razorpay_key_id?: string | null
@@ -8062,12 +8119,46 @@ export type Database = {
           ai_cost_per_request_inr?: number | null
           id?: number
           maintenance_fee_percent?: number
+          maintenance_message?: string | null
+          maintenance_mode?: boolean
           market_society_global_enabled?: boolean
           razorpay_configured?: boolean
           razorpay_key_id?: string | null
           updated_at?: string
         }
         Relationships: []
+      }
+      platform_staff_roles: {
+        Row: {
+          created_at: string
+          granted_by: string | null
+          id: string
+          role: Database["public"]["Enums"]["platform_staff_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["platform_staff_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["platform_staff_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_staff_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       poll_options: {
         Row: {
@@ -12835,6 +12926,7 @@ export type Database = {
       }
       _roles_admin_society: { Args: never; Returns: string }
       _sec_admin_society: { Args: never; Returns: string }
+      _send_platform_announcement: { Args: { _id: string }; Returns: number }
       _society_flat_capacity: { Args: { _society_id: string }; Returns: number }
       _staff_asset_ids: {
         Args: { _society: string; _staff: string }
@@ -12959,6 +13051,7 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_cancel_announcement: { Args: { _id: string }; Returns: boolean }
       admin_cancel_class: {
         Args: { _class_id: string; _reason: string }
         Returns: undefined
@@ -13080,6 +13173,10 @@ export type Database = {
           visitors_today: number
         }[]
       }
+      admin_grant_platform_role: {
+        Args: { _email: string; _role: string }
+        Returns: string
+      }
       admin_grant_society_plan:
         | {
             Args: {
@@ -13147,6 +13244,15 @@ export type Database = {
           method: string
           phone_last4: string
           started_at: string
+          user_id: string
+        }[]
+      }
+      admin_list_platform_staff: {
+        Args: never
+        Returns: {
+          email: string
+          full_name: string
+          roles: string[]
           user_id: string
         }[]
       }
@@ -13474,6 +13580,10 @@ export type Database = {
         Args: { _guard_user_id: string; _reason: string }
         Returns: Json
       }
+      admin_revoke_platform_role: {
+        Args: { _role: string; _user_id: string }
+        Returns: undefined
+      }
       admin_revoke_rfid: { Args: { _id: string }; Returns: undefined }
       admin_save_group: {
         Args: {
@@ -13493,6 +13603,16 @@ export type Database = {
           _phone: string
           _society_id: string
           _specialty: string
+        }
+        Returns: string
+      }
+      admin_schedule_announcement: {
+        Args: {
+          _audience: string
+          _body: string
+          _send_at: string
+          _society_id: string
+          _title: string
         }
         Returns: string
       }
@@ -13560,6 +13680,10 @@ export type Database = {
       admin_set_handover_status: {
         Args: { _note?: string; _society_id: string; _status: string }
         Returns: Json
+      }
+      admin_set_maintenance_mode: {
+        Args: { _message: string; _on: boolean }
+        Returns: undefined
       }
       admin_set_messaging_channel: {
         Args: { _channel: string; _enabled: boolean; _reason: string }
@@ -14289,6 +14413,7 @@ export type Database = {
         Returns: boolean
       }
       current_user_is_super_admin: { Args: never; Returns: boolean }
+      current_user_platform_roles: { Args: never; Returns: string[] }
       custom_plan_post_message: {
         Args: { _body: string; _request_id: string }
         Returns: string
@@ -14726,6 +14851,7 @@ export type Database = {
           waitlisted: number
         }[]
       }
+      get_app_status: { Args: never; Returns: Json }
       get_applicable_plans: {
         Args: { _total_units?: number }
         Returns: {
@@ -15135,6 +15261,10 @@ export type Database = {
           parking_label: string
           restricted: boolean
         }[]
+      }
+      has_platform_role: {
+        Args: { _roles: string[]; _user_id: string }
+        Returns: boolean
       }
       has_role: {
         Args: {
@@ -16511,6 +16641,7 @@ export type Database = {
         Args: { _today?: string }
         Returns: number
       }
+      send_due_platform_announcements: { Args: never; Returns: number }
       send_meeting_reminders: { Args: never; Returns: number }
       send_tenancy_renewal_reminders: { Args: never; Returns: number }
       set_finance_event_link: {
@@ -17094,6 +17225,7 @@ export type Database = {
         | "issued"
         | "revoked"
         | "blocked_by_dues"
+      platform_staff_role: "operations" | "finance" | "marketing" | "support"
       society_layout: "structured" | "serial"
     }
     CompositeTypes: {
@@ -17269,6 +17401,7 @@ export const Constants = {
         "revoked",
         "blocked_by_dues",
       ],
+      platform_staff_role: ["operations", "finance", "marketing", "support"],
       society_layout: ["structured", "serial"],
     },
   },

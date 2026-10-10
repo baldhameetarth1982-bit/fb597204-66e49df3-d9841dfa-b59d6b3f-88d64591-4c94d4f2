@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { Megaphone, Store } from "lucide-react";
+import { Megaphone, Store, Wrench } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { tu } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -21,11 +23,15 @@ export const Route = createFileRoute("/_admin/admin/settings")({
 type S = {
   ads_banner_enabled: boolean;
   market_society_global_enabled: boolean;
+  maintenance_mode: boolean;
+  maintenance_message: string;
 };
 
 const pick = (d: any): S => ({
   ads_banner_enabled: !!d?.ads_banner_enabled,
   market_society_global_enabled: !!d?.market_society_global_enabled,
+  maintenance_mode: !!d?.maintenance_mode,
+  maintenance_message: d?.maintenance_message ?? "",
 });
 
 function Row({
@@ -84,10 +90,18 @@ function SettingsPage() {
         })
         .eq("id", 1);
       if (error) throw error;
+      if (state.maintenance_mode !== base.maintenance_mode || state.maintenance_message !== base.maintenance_message) {
+        const { error: mErr } = await (supabase.rpc as any)("admin_set_maintenance_mode", {
+          _on: state.maintenance_mode,
+          _message: state.maintenance_message,
+        });
+        if (mErr) throw mErr;
+      }
     },
     onSuccess: () => {
       toast.success(t("ps.saved"));
       qc.invalidateQueries({ queryKey: ["platform-settings"] });
+      qc.invalidateQueries({ queryKey: ["app-status"] });
     },
     onError: (e: Error) => toast.error(userMessage(e)),
   });
@@ -128,6 +142,29 @@ function SettingsPage() {
                 onCheckedChange={(v) => set({ market_society_global_enabled: v })}
               />
             </Row>
+          </SettingsSection>
+
+          <SettingsSection title={tu("ln.mt.section")} icon={Wrench} description={tu("ln.mt.sectionDesc")}>
+            <div className="space-y-3">
+              <Row label={tu("ln.mt.toggle")} hint={tu("ln.mt.toggleHint")}>
+                <Switch
+                  aria-label={tu("ln.mt.toggle")}
+                  checked={state.maintenance_mode}
+                  onCheckedChange={(v) => set({ maintenance_mode: v })}
+                />
+              </Row>
+              <div>
+                <Label htmlFor="mt-msg" className="text-sm font-medium">{tu("ln.mt.message")}</Label>
+                <Textarea
+                  id="mt-msg"
+                  className="mt-1"
+                  maxLength={300}
+                  value={state.maintenance_message}
+                  placeholder={tu("ln.mt.body")}
+                  onChange={(e) => set({ maintenance_message: e.target.value })}
+                />
+              </div>
+            </div>
           </SettingsSection>
 
           <SaveBar

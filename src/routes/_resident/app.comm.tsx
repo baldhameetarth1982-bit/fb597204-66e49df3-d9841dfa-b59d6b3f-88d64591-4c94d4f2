@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Megaphone, LifeBuoy, FileText, Phone, Search, ArrowRight, Inbox,
-  Users, Car, Wrench, Home, History, ShieldCheck, Trophy,
+  Users, Car, Wrench, Home, History, ShieldCheck, Trophy, Wallet,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
@@ -129,6 +129,7 @@ function CommunicationCenter() {
           ["/app/activity", History, t("prof.g.activity")],
           ["/app/trust", ShieldCheck, t("prof.trust")],
           ["/app/achievements", Trophy, t("prof.points")],
+          ["/app/partner", Wallet, t("prof.g.partner")],
         ] as const).map(([to, Icon, label]) => (
           <Link key={to} to={to}
             className="flex min-h-11 items-center gap-2 rounded-xl border bg-card px-3 py-2 text-sm font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">

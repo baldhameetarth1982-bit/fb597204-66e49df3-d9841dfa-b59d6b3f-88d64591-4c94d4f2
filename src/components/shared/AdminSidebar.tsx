@@ -4,7 +4,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Building2, Tags, CreditCard, Banknote, Megaphone, ReceiptText,
   Users, BarChart3, Settings, ShieldCheck, ScrollText, Search, Sparkles,
-  TrendingUp, Heart, FileText, Palette,
+  TrendingUp, Heart, FileText, Palette, Bell, HardDriveDownload, UserCog,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
@@ -12,6 +12,7 @@ import {
   SidebarMenuItem, useSidebar,
 } from "@/components/ui/sidebar";
 import { Logo } from "@/components/shared/Logo";
+import { usePlatformRoles, ADMIN_PAGE_AREAS } from "@/hooks/usePlatformRoles";
 
 type Item = { title: string; url: string; icon: typeof Users };
 
@@ -42,6 +43,7 @@ const groups: { label: string; items: Item[] }[] = [
     { title: "nav.marketplace", url: "/admin/marketplace", icon: Megaphone },
     { title: "nav.branding", url: "/admin/branding", icon: Palette },
     { title: "nav.messaging", url: "/admin/messaging", icon: Megaphone },
+    { title: "ln.ann.nav", url: "/admin/announcements", icon: Bell },
   ] },
   { label: "ln.adm.reports", items: [
     { title: "nav.biCenter", url: "/admin/bi", icon: BarChart3 },
@@ -52,6 +54,8 @@ const groups: { label: string; items: Item[] }[] = [
   { label: "ln.adm.security", items: [
     { title: "nav.security", url: "/admin/security", icon: ShieldCheck },
     { title: "nav.audit", url: "/admin/audit", icon: ScrollText },
+    { title: "ln.stf.nav", url: "/admin/staff", icon: UserCog },
+    { title: "ln.bk.nav", url: "/admin/backups", icon: HardDriveDownload },
     { title: "nav.settings", url: "/admin/settings", icon: Settings },
   ] },
 ];
@@ -61,6 +65,11 @@ export function AdminSidebar() {
   const collapsed = state === "collapsed";
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { t: tr, i18n: i18nInst } = useTranslation();
+  const { isSuper, roles } = usePlatformRoles();
+  // Staff see only their areas; the server still checks every page and action.
+  const visible = groups
+    .map((g) => ({ ...g, items: g.items.filter((i) => isSuper || (ADMIN_PAGE_AREAS[i.url] ?? []).some((a) => roles.includes(a))) }))
+    .filter((g) => g.items.length > 0);
 
   return (
     <Sidebar side={langDir(i18nInst.language) === "rtl" ? "right" : "left"} collapsible="icon" className="border-sidebar-border bg-sidebar">
@@ -76,7 +85,7 @@ export function AdminSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="gap-0 px-2 py-2">
-        {groups.map((g) => (
+        {visible.map((g) => (
           <SidebarGroup key={g.label} className="py-1">
             {!collapsed && (
               <SidebarGroupLabel className="h-7 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">

@@ -83,9 +83,9 @@ export function ReceiptList({ societyId, showHome }: { societyId?: string | null
     try {
       // Direct table reads are revoked; this server-checked function returns
       // the whole society for committee members and own-home rows for residents.
-      const { data, error: err } = await (supabase.rpc as unknown as (
+      const { data, error: err } = await (supabase as unknown as { rpc: (
         fn: string, args: Record<string, unknown>,
-      ) => Promise<{ data: unknown; error: unknown }>)("list_payment_receipts_v1", {
+      ) => Promise<{ data: unknown; error: unknown }> }).rpc("list_payment_receipts_v1", {
         _society_id: showHome ? societyId ?? null : null,
         _limit: 300,
       });

@@ -48,7 +48,7 @@ function StaffPage() {
   const list = useQuery({
     queryKey: ["platform-staff"],
     queryFn: async () => {
-      const { data, error } = await (supabase.rpc as any)("admin_list_platform_staff");
+      const { data, error } = await (supabase as any).rpc("admin_list_platform_staff");
       if (error) throw error;
       return (data ?? []) as Staff[];
     },
@@ -57,7 +57,7 @@ function StaffPage() {
   const grant = useMutation({
     networkMode: "always", retry: false,
     mutationFn: async () => {
-      const { data, error } = await (supabase.rpc as any)("admin_grant_platform_role", { _email: email.trim(), _role: role });
+      const { data, error } = await (supabase as any).rpc("admin_grant_platform_role", { _email: email.trim(), _role: role });
       if (error) throw error;
       return data as string;
     },
@@ -70,7 +70,7 @@ function StaffPage() {
   const revoke = useMutation({
     networkMode: "always", retry: false,
     mutationFn: async (v: { user: string; role: string }) => {
-      const { error } = await (supabase.rpc as any)("admin_revoke_platform_role", { _user_id: v.user, _role: v.role });
+      const { error } = await (supabase as any).rpc("admin_revoke_platform_role", { _user_id: v.user, _role: v.role });
       if (error) throw error;
     },
     onSuccess: refresh,

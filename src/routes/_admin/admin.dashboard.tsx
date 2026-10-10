@@ -41,11 +41,11 @@ function alertsFor(o: PlatformOverview): Alert[] {
 function AdminDashboard() {
   const q = useQuery(platformOverviewQuery);
   const ap = useQuery({ queryKey: ["admin-active-people"], staleTime: 60_000, queryFn: async () => {
-    const { data, error } = await (supabase.rpc as any)("admin_active_people");
+    const { data, error } = await (supabase as any).rpc("admin_active_people");
     if (error) throw error; return data as { active_1d: number; active_7d: number; active_30d: number; tracking_since: string | null };
   } });
   const mq = useQuery({ queryKey: ["admin-messaging"], staleTime: 60_000, queryFn: async () => {
-    const { data, error } = await (supabase.rpc as any)("admin_messaging_overview");
+    const { data, error } = await (supabase as any).rpc("admin_messaging_overview");
     if (error) throw error; return data as { channels?: Array<{ channel: string; enabled: boolean; counts?: Record<string, number> }> };
   } });
   const msgSum = (k: string) => (mq.data?.channels ?? []).reduce((t, c) => t + Number(c.counts?.[k] ?? 0), 0);

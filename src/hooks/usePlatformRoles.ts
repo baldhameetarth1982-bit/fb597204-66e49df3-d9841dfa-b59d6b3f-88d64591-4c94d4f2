@@ -18,7 +18,7 @@ export function usePlatformRoles() {
     enabled: isAuthenticated && !!user?.id && !isSuper,
     staleTime: 5 * 60_000,
     queryFn: async () => {
-      const { data, error } = await (supabase.rpc as any)("current_user_platform_roles");
+      const { data, error } = await (supabase as any).rpc("current_user_platform_roles");
       if (error) throw error;
       return ((data as string[] | null) ?? []) as PlatformStaffRole[];
     },

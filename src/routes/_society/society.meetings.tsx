@@ -153,7 +153,7 @@ function MeetingDetail({ m, societyId, onChanged, onEdit }: { m: Meeting; societ
     queryKey: ["meeting-detail", m.id, m.status],
     queryFn: async () => {
       const [r, a, rs, docs, kn, votes] = await Promise.all([
-        m.status === "draft" || m.status === "cancelled" ? Promise.resolve({ data: [] }) : (supabase.rpc as any)("meeting_member_roster", { _id: m.id }),
+        m.status === "draft" || m.status === "cancelled" ? Promise.resolve({ data: [] }) : (supabase as any).rpc("meeting_member_roster", { _id: m.id }),
         supabase.from("meeting_action_items").select("id,title,owner_name,due_on,status").eq("meeting_id", m.id).order("created_at"),
         supabase.from("meeting_resolutions").select("id,seq,text,outcome,poll_id").eq("meeting_id", m.id).order("seq"),
         supabase.from("meeting_documents").select("source_id").eq("meeting_id", m.id),

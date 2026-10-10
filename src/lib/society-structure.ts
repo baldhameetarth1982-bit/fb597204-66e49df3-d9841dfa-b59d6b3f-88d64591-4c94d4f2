@@ -59,7 +59,7 @@ export function normalizeLabel(v: string | null | undefined): string {
 }
 
 export async function getSocietyStructureOverview(societyId: string): Promise<StructureOverview> {
-  const { data, error } = await (supabase.rpc as any)(
+  const { data, error } = await (supabase as any).rpc(
     "get_society_structure_overview",
     { _society_id: societyId },
   );
@@ -71,7 +71,7 @@ export async function configureSocietyStructureMode(
   societyId: string,
   mode: StructureMode,
 ): Promise<ConfigureModeResult> {
-  const { data, error } = await (supabase.rpc as any)(
+  const { data, error } = await (supabase as any).rpc(
     "configure_society_structure_mode",
     { _society_id: societyId, _mode: mode },
   );
@@ -89,7 +89,7 @@ export async function listSocietyUnitsPage(input: {
   limit?: number;
   offset?: number;
 }): Promise<UnitListPage> {
-  const { data, error } = await (supabase.rpc as any)("list_society_units_page", {
+  const { data, error } = await (supabase as any).rpc("list_society_units_page", {
     _society_id: input.societyId,
     _search: input.search ?? null,
     _block_id: input.blockId ?? null,
@@ -110,7 +110,7 @@ export async function createSocietyUnit(input: {
   floor?: number | null;
   unitType?: string;
 }): Promise<UnitMutationResult> {
-  const { data, error } = await (supabase.rpc as any)("create_society_unit", {
+  const { data, error } = await (supabase as any).rpc("create_society_unit", {
     _society_id: input.societyId,
     _flat_number: input.flatNumber,
     _block_id: input.blockId ?? null,
@@ -128,7 +128,7 @@ export async function updateSocietyUnit(input: {
   unitType?: string;
   displayOrder?: number;
 }): Promise<UnitMutationResult> {
-  const { data, error } = await (supabase.rpc as any)("update_society_unit", {
+  const { data, error } = await (supabase as any).rpc("update_society_unit", {
     _unit_id: input.unitId,
     _flat_number: input.flatNumber ?? null,
     _floor: input.floor ?? null,
@@ -140,7 +140,7 @@ export async function updateSocietyUnit(input: {
 }
 
 export async function setSocietyUnitActive(unitId: string, active: boolean): Promise<UnitMutationResult> {
-  const { data, error } = await (supabase.rpc as any)("set_society_unit_active", {
+  const { data, error } = await (supabase as any).rpc("set_society_unit_active", {
     _unit_id: unitId,
     _active: active,
   });
@@ -149,7 +149,7 @@ export async function setSocietyUnitActive(unitId: string, active: boolean): Pro
 }
 
 export async function setSocietyBlockActive(blockId: string, active: boolean): Promise<UnitMutationResult> {
-  const { data, error } = await (supabase.rpc as any)("set_society_block_active", {
+  const { data, error } = await (supabase as any).rpc("set_society_block_active", {
     _block_id: blockId,
     _active: active,
   });

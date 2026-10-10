@@ -22,7 +22,7 @@ const NONE = "__none";
 const n = (v: string) => (v === NONE || v === "" ? null : v);
 // Supabase RPC typings mark optional args as non-null; nulls are valid server-side.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const rpc = (name: string, args: Record<string, unknown>) => (supabase.rpc as any)(name, args) as Promise<{ data: any; error: { message: string } | null }>;
+const rpc = (name: string, args: Record<string, unknown>) => (supabase as any).rpc(name, args) as Promise<{ data: any; error: { message: string } | null }>;
 
 export interface Slot { id: string; label: string; slot_type: string; flat_id: string | null; vehicle_id: string | null; notes: string | null; block_id: string | null; floor: string | null; ev_capable: boolean; availability: string }
 export interface Alloc { id: string; slot_id: string; kind: string; flat_id: string | null; vehicle_id: string | null; temp_purpose: string | null; starts_at: string; ends_at: string | null; reason: string | null; status: string; released_at: string | null; release_reason: string | null; created_at: string }

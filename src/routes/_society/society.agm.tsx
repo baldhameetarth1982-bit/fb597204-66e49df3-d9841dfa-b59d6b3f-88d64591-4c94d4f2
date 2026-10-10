@@ -86,7 +86,7 @@ function AgmAdmin() {
         supabase.from("agm_resolutions").select("*").eq("agm_id", a.id).order("seq"),
         supabase.from("agm_minutes_versions").select("*").eq("agm_id", a.id).order("version", { ascending: false }),
         supabase.from("meeting_documents").select("source_id").eq("meeting_id", a.meeting_id),
-        ["in_progress", "completed", "minutes_pending"].includes(a.status) ? (supabase.rpc as any)("meeting_member_roster", { _id: a.meeting_id }) : Promise.resolve({ data: [] }),
+        ["in_progress", "completed", "minutes_pending"].includes(a.status) ? (supabase as any).rpc("meeting_member_roster", { _id: a.meeting_id }) : Promise.resolve({ data: [] }),
       ]);
       if (m.error) throw m.error;
       return { meeting: m.data as Meeting | null, agenda: (ag.data ?? []) as AgendaItem[], resolutions: (rs.data ?? []) as Resolution[], minutes: (mv.data ?? []) as MinutesVersion[],

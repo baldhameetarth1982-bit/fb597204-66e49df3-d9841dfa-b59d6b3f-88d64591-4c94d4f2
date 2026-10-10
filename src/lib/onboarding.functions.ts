@@ -54,7 +54,7 @@ export interface JoinStructure {
 }
 
 export async function getJoinStructure(societyId: string, code: string): Promise<JoinStructure> {
-  const { data, error } = await (supabase.rpc as any)("get_join_structure", { _society_id: societyId, _code: code });
+  const { data, error } = await (supabase as any).rpc("get_join_structure", { _society_id: societyId, _code: code });
   if (error) throw new Error("Could not load houses. Please try again.");
   if (!data?.ok) throw new Error("That code doesn't match this society");
   return { mode: data.mode ?? null, blocks: data.blocks ?? [], units: data.units ?? [] };
@@ -75,7 +75,7 @@ export async function submitJoinRequestForUnit(input: {
   societyId: string; code: string; fullName: string; blockId: string | null; flatId: string;
   mobile?: string | null; ownerOrTenant: "owner" | "tenant";
 }) {
-  const { data, error } = await (supabase.rpc as any)("submit_join_request_unit", {
+  const { data, error } = await (supabase as any).rpc("submit_join_request_unit", {
     _society_id: input.societyId, _code: input.code, _full_name: input.fullName,
     _block_id: input.blockId, _flat_id: input.flatId, _mobile: input.mobile ?? "", _owner_or_tenant: input.ownerOrTenant,
   });

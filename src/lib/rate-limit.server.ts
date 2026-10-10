@@ -45,7 +45,7 @@ export async function checkRateLimit(opts: {
   limit: number;
   windowSec?: number;
 }): Promise<{ remaining: number; retryAfterSeconds: number }> {
-  const { data, error } = await (supabaseAdmin.rpc as any)("touch_rate_limit", {
+  const { data, error } = await (supabaseAdmin as any).rpc("touch_rate_limit", {
     _bucket: opts.bucket,
     _subject: opts.subject,
     _limit: opts.limit,

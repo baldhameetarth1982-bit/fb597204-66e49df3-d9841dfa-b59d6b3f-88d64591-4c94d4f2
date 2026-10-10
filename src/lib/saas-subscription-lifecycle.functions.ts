@@ -57,7 +57,7 @@ export const listAdminSaasSubscriptionPayments = createServerFn({ method: "GET" 
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     // Super Admin or Finance staff (read-only); refunds stay Super Admin only.
-    const { data: isSuper, error: roleError } = await (context.supabase.rpc as any)("has_platform_role", {
+    const { data: isSuper, error: roleError } = await (context.supabase as any).rpc("has_platform_role", {
       _user_id: context.userId,
       _roles: ["finance"],
     });

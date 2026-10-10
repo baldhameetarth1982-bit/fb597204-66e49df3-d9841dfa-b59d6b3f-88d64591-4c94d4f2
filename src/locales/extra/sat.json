@@ -5402,5 +5402,20 @@
   "ln.bs.final": "ᱢᱩᱪᱟᱹᱫ ᱢᱩᱴ",
   "ln.bs.thanks": "ᱫᱟᱭᱟ ᱠᱟᱛᱮ ᱮᱢᱚᱜ ᱢᱟᱹᱦᱤᱛ ᱛᱮ ᱮᱢ ᱢᱮ ᱾",
   "ln.bs.computer": "ᱱᱚᱣᱟ ᱫᱚ ᱠᱚᱢᱯᱤᱣᱴᱚᱨ ᱛᱮ ᱛᱮᱭᱟᱨ ᱟᱠᱟᱱ ᱵᱤᱞ ᱠᱟᱱᱟ ᱾",
-  "ln.bs.sign": "ᱪᱮᱭᱟᱨᱢᱮᱱ ᱟᱜ ᱥᱩᱦᱤ"
+  "ln.bs.sign": "ᱪᱮᱭᱟᱨᱢᱮᱱ ᱟᱜ ᱥᱩᱦᱤ",
+  "ln.bs.propNo": "Prop No",
+  "ln.bs.ugvcl": "UGVCL No",
+  "ln.bs.shareCert": "Share Cert No",
+  "ln.share.copied": "Bill details copied. Paste them into WhatsApp or a message.",
+  "ln.err.flatLimit": "Flat limit reached. Your plan's flats are all in use. Add more flats by increasing your subscription quantity.",
+  "ln.err.dupBill": "This home already has a bill for that month. Cancel it first if it needs to change.",
+  "ln.gen.alreadyBilled": "Already billed this month",
+  "ln.gen.needsApproval": "Your society needs a second admin to approve bill runs. Use Bill from a cycle so the run can be reviewed and approved.",
+  "ln.gen.oneHomeHint": "Pick one house, its months, extra charges and discount.",
+  "ln.gen.cycleRun": "Bill from a cycle",
+  "ln.gen.cycleRunHint": "Use a saved billing cycle, review the run, then create it.",
+  "ln.co.gst": "GST",
+  "ln.co.noTax": "Taxes: none configured",
+  "ln.co.inclGst": "(incl. GST)",
+  "ln.idle.signedOut": "You were signed out after 30 minutes without activity, to keep the admin panel safe."
 }

@@ -39,6 +39,7 @@ export type SubscriptionQuote = {
   term_months: number;
   base_amount_paise: number | null;
   tax_amount_paise: number | null;
+  tax_percent: number | null;
   custom_offer_id: string | null;
 };
 
@@ -73,6 +74,7 @@ async function readQuote(
     term_months: Number(q.term_months ?? 1),
     base_amount_paise: num(q.base_amount_paise),
     tax_amount_paise: num(q.tax_amount_paise),
+    tax_percent: num(q.tax_percent),
     custom_offer_id: q.custom_offer_id ? String(q.custom_offer_id) : null,
   };
 }

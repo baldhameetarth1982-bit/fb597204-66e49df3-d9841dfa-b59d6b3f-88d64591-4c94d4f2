@@ -18,6 +18,7 @@ import {
   type BillBatchPreview,
 } from "@/lib/billing-generate.functions";
 import { tu } from "@/lib/i18n";
+import { BillingCenterTabs } from "@/components/nav/BillingCenterTabs";
 
 export const Route = createFileRoute("/_society/society/bill-studio/generate")({
   head: () => ({ meta: [{ title: "Generate Bills — SociyoHub" }] }),
@@ -120,6 +121,7 @@ function GenerateBillsPage() {
       <button onClick={() => navigate({ to: "/society/bill-studio" })} className="inline-flex min-h-11 items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
         ← Bill Studio
       </button>
+      <div className="rounded-2xl border border-border bg-card"><BillingCenterTabs /></div>
 
       <header className="space-y-3 border-b border-border pb-5">
         <h1 className="text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">{tu("op.generate_bills")}</h1>

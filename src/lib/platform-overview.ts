@@ -27,7 +27,8 @@ export const platformOverviewQuery = queryOptions({
   queryKey: ["admin-platform-overview"],
   queryFn: async (): Promise<PlatformOverview> => {
     const { data, error } = await supabase.rpc("admin_platform_overview" as any);
-    if (error || (data as any)?.status !== "ok") throw new Error("load_failed");
+    if (error) { console.error("[platform-overview]", error.code, error.message); throw new Error("load_failed"); }
+    if ((data as any)?.status !== "ok") throw new Error((data as any)?.status === "not_authorized" ? "not_authorized" : "load_failed");
     return data as unknown as PlatformOverview;
   },
   staleTime: 60_000,

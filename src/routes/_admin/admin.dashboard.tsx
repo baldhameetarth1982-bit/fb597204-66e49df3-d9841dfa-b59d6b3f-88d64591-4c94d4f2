@@ -83,7 +83,7 @@ function AdminDashboard() {
 
       {q.isError && (
         <div role="alert" className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
-          <p className="text-sm">Platform figures couldn't load. Nothing is shown as zero until they do.</p>
+          <p className="text-sm">{q.error?.message === "not_authorized" ? "Platform figures are for Super Admins only. Sign in with your Super Admin account to see them." : "Platform figures couldn't load. Nothing is shown as zero until they do."}</p>
           <button type="button" onClick={() => q.refetch()} className="min-h-11 rounded-lg border border-border bg-card px-4 text-sm font-medium">Try again</button>
         </div>
       )}

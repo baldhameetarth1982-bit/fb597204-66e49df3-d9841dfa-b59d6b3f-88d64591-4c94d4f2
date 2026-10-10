@@ -91,6 +91,8 @@ const BARE_CODE = /^[a-z]+(?:_[a-z0-9]+)+$/;
 export function toSafeFinanceMessage(err: unknown, fallback?: string): string {
   const t = rawText(err).trim();
   if (CODE_KEYS.has(t)) return i18n.t(`financeErr.code.${t}`);
+  if (/duplicate_bill_for_period/.test(t)) return i18n.t("ln.err.dupBill");
+  if (/flat_capacity_reached/.test(t)) return i18n.t("ln.err.flatLimit");
   const kind = classifyFinanceError(err);
   if (kind !== "unavailable") return copyFor(kind).message;
   if (t && t.length <= 160 && !TECHNICAL.test(t) && !BARE_CODE.test(t)) return t;

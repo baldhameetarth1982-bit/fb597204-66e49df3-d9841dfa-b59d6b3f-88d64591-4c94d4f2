@@ -96,7 +96,7 @@ export type Eligibility = {
 
 async function computeEligibilityAdmin(societyId: string, flatId: string): Promise<Eligibility> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await (supabaseAdmin.rpc as any)("compute_no_dues_eligibility_internal", {
+  const { data, error } = await (supabaseAdmin as any).rpc("compute_no_dues_eligibility_internal", {
     _society_id: societyId,
     _flat_id: flatId,
   });
@@ -135,7 +135,7 @@ async function assertResidentOfFlat(
 
 async function assertCanManageFlat(userId: string, flatId: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await (supabaseAdmin.rpc as any)("can_manage_flat_internal", {
+  const { data, error } = await (supabaseAdmin as any).rpc("can_manage_flat_internal", {
     _actor_id: userId,
     _flat_id: flatId,
   });
@@ -150,11 +150,11 @@ async function assertSocietyScopeAdmin(userId: string, societyId: string) {
   // For list views not tied to a single flat — society_admin or super_admin.
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const [{ data: sa }, { data: su }] = await Promise.all([
-    (supabaseAdmin.rpc as any)("is_society_admin_for_internal", {
+    (supabaseAdmin as any).rpc("is_society_admin_for_internal", {
       _actor_id: userId,
       _society_id: societyId,
     }),
-    (supabaseAdmin.rpc as any)("is_super_admin_internal", { _actor_id: userId }),
+    (supabaseAdmin as any).rpc("is_super_admin_internal", { _actor_id: userId }),
   ]);
   if (!sa && !su) throw new NoDuesError("NOT_AUTHORIZED");
 }
@@ -214,7 +214,7 @@ export const submitNoDuesRequest = createServerFn({ method: "POST" })
     await assertNoDuesEntitled(data.societyId);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: rows, error } = await (supabaseAdmin.rpc as any)(
+    const { data: rows, error } = await (supabaseAdmin as any).rpc(
       "submit_no_dues_request_internal",
       {
         _actor_id: userId,
@@ -368,7 +368,7 @@ export const reviewNoDuesRequest = createServerFn({ method: "POST" })
 
     // Transition RPC recomputes eligibility internally and, on approve, moves
     // to `blocked_by_dues` automatically if new dues appeared.
-    const { data: rows, error: tErr } = await (supabaseAdmin.rpc as any)(
+    const { data: rows, error: tErr } = await (supabaseAdmin as any).rpc(
       "transition_no_dues_request_internal",
       {
         _actor_id: userId,
@@ -448,7 +448,7 @@ export const issueNoDuesCertificate = createServerFn({ method: "POST" })
     // Reserve certificate number (service-role RPC with trusted actor).
     // The finalization RPC recomputes eligibility inside the same transaction;
     // no client-side pre-check needed.
-    const { data: certNumber, error: nErr } = await (supabaseAdmin.rpc as any)(
+    const { data: certNumber, error: nErr } = await (supabaseAdmin as any).rpc(
       "next_no_dues_cert_number_internal",
       { _actor_id: userId, _society_id: req.society_id },
     );
@@ -527,7 +527,7 @@ export const issueNoDuesCertificate = createServerFn({ method: "POST" })
     }
 
     // Finalization RPC re-checks eligibility inside the transaction
-    const { data: rpcRows, error: fErr } = await (supabaseAdmin.rpc as any)(
+    const { data: rpcRows, error: fErr } = await (supabaseAdmin as any).rpc(
       "finalize_no_dues_issuance_internal",
       {
         _actor_id: userId,
@@ -642,7 +642,7 @@ export const revokeNoDuesCertificate = createServerFn({ method: "POST" })
       throw new NoDuesError("RATE_LIMITED");
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await (supabaseAdmin.rpc as any)("revoke_no_dues_certificate_internal", {
+    const { error } = await (supabaseAdmin as any).rpc("revoke_no_dues_certificate_internal", {
       _actor_id: userId,
       _certificate_id: data.certificateId,
       _reason: data.reason,
@@ -790,7 +790,7 @@ export const recheckAndResubmitNoDues = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!reqRow) throw new NoDuesError("REQUEST_NOT_FOUND");
     await assertNoDuesEntitled((reqRow as any).society_id);
-    const { data: rows, error } = await (supabaseAdmin.rpc as any)(
+    const { data: rows, error } = await (supabaseAdmin as any).rpc(
       "recheck_no_dues_request_internal",
       { _actor_id: userId, _request_id: data.requestId },
     );

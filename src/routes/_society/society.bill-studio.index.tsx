@@ -83,11 +83,16 @@ function BillAppearance({ societyId }: { societyId: string }) {
 
   const load = useCallback(async () => {
     setState("loading");
-    const { data, error } = await supabase
-      .from("societies")
-      .select("logo_url, signature_url, bill_theme, name")
-      .eq("id", societyId)
-      .maybeSingle();
+    let data: unknown = null; let error: unknown = null;
+    try {
+      // Never leave the page spinning: give up after 15s and show the retry state.
+      ({ data, error } = await supabase
+        .from("societies")
+        .select("logo_url, signature_url, bill_theme, name")
+        .eq("id", societyId)
+        .abortSignal(AbortSignal.timeout(15000))
+        .maybeSingle());
+    } catch (e) { error = e; }
     if (error || !data) { setState("error"); return; }
     const soc: any = data;
     setLogoUrl(soc.logo_url ?? null);

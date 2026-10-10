@@ -1,3 +1,4 @@
+import { tu } from "@/lib/i18n";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { userMessage } from "@/lib/user-error";
 import { useQuery } from "@tanstack/react-query";
@@ -276,9 +277,11 @@ function CheckoutPage() {
             lines={[
               {
                 label: `${plan.name} — ${quote!.flat_count} flats × ₹${quote!.price_per_flat_inr}`,
-                amount: plan.total,
+                amount: (quote!.base_amount_paise ?? quote!.amount_paise ?? 0) / 100,
               },
-              { label: "Taxes (incl.)", amount: 0, muted: true },
+              (quote!.tax_amount_paise ?? 0) > 0
+                ? { label: `${tu("ln.co.gst")}${quote!.tax_percent ? ` (${quote!.tax_percent}%)` : ""}`, amount: (quote!.tax_amount_paise ?? 0) / 100 }
+                : { label: tu("ln.co.noTax"), amount: 0, muted: true },
             ]}
             total={plan.total}
             busy={busy}

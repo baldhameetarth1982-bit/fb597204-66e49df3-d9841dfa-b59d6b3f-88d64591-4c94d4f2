@@ -6,7 +6,7 @@ import {
 import { cn } from "@/lib/utils";
 import { tu } from "@/lib/i18n";
 
-type Page = { to: string; label: string; icon: typeof Wallet; exact?: boolean };
+type Page = { to: string; label: string; icon: typeof Wallet; exact?: boolean; also?: string[] };
 type Section = { key: string; label: string; icon: typeof Wallet; pages: Page[] };
 
 /**
@@ -37,8 +37,8 @@ export const ACCOUNTING_SECTIONS: Section[] = [
   {
     key: "billing", label: "ln.acc.billing", icon: Receipt,
     pages: [
-      { to: "/society/billing/generate", label: "ln.acc.generateBill", icon: FilePlus2 },
-      { to: "/society/billing", label: "ln.acc.billHistory", icon: ListChecks, exact: true },
+      { to: "/society/billing/generate", label: "ln.acc.generateBill", icon: FilePlus2, also: ["/society/billing/single"] },
+      { to: "/society/billing", label: "ln.acc.billHistory", icon: ListChecks, exact: true, also: ["/society/bills"] },
       { to: "/society/payments", label: "ln.acc.payments", icon: Wallet },
       { to: "/society/defaulters", label: "ln.acc.dues", icon: AlertTriangle },
       { to: "/society/receipts", label: "ln.acc.receipts", icon: Receipt },
@@ -52,7 +52,9 @@ export const ACCOUNTING_SECTIONS: Section[] = [
   },
 ];
 
-const isOn = (path: string, p: Page) => (p.exact ? path === p.to : path === p.to || path.startsWith(p.to + "/"));
+const under = (path: string, to: string) => path === to || path.startsWith(to + "/");
+const isOn = (path: string, p: Page) =>
+  (p.exact ? path === p.to : under(path, p.to)) || (p.also ?? []).some((a) => under(path, a));
 
 export function AccountingCenterNav({ className }: { className?: string }) {
   const path = useRouterState({ select: (s) => s.location.pathname });

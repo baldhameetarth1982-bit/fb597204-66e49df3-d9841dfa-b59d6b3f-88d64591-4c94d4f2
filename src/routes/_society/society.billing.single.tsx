@@ -45,6 +45,8 @@ function SingleBillPage() {
   const [flatId, setFlatId] = useState("");
   const [periods, setPeriods] = useState<Period[]>([]);
   const [periodsLoading, setPeriodsLoading] = useState(false);
+  // month start ("YYYY-MM-01") → status of a live bill that already covers it
+  const [billedMonths, setBilledMonths] = useState<Map<string, string>>(new Map());
   // picked = month starts ("YYYY-MM-01") chosen for this bill
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [year, setYear] = useState(() => new Date().getFullYear());
@@ -75,16 +77,20 @@ function SingleBillPage() {
   }, [societyId, sidLoading]);
 
   useEffect(() => {
-    setPicked(new Set()); setPeriods([]); setMonthly("");
+    setPicked(new Set()); setPeriods([]); setMonthly(""); setBilledMonths(new Map());
     if (!flatId) return;
     let live = true;
     setPeriodsLoading(true);
-    supabase.from("maintenance_periods").select("id, period_label, period_start, amount_due, bill_id, status")
-      .eq("flat_id", flatId).order("period_start")
-      .then(({ data }) => {
+    Promise.all([
+      supabase.from("maintenance_periods").select("id, period_label, period_start, amount_due, bill_id, status")
+        .eq("flat_id", flatId).order("period_start"),
+      // Bills made elsewhere (Generate bills, cycles) block the same month server-side; show them as billed here too.
+      supabase.from("bills").select("period_start, status").eq("flat_id", flatId).neq("status", "cancelled").not("period_start", "is", null),
+    ]).then(([{ data }, { data: billRows }]) => {
         if (!live) return;
         const rows = ((data as any[]) ?? []).map((p) => ({ ...p, amount_due: Number(p.amount_due) })) as Period[];
         setPeriods(rows);
+        setBilledMonths(new Map(((billRows as any[]) ?? []).map((b) => [String(b.period_start).slice(0, 7) + "-01", String(b.status)])));
         const last = rows[rows.length - 1];
         if (last) setMonthly(String(last.amount_due));
         setPeriodsLoading(false);
@@ -201,14 +207,16 @@ function SingleBillPage() {
                   <div className="grid grid-cols-3 gap-2 sm:grid-cols-4" role="group" aria-label={tu("ln.sb.months")}>
                     {months.map((m) => {
                       const p = byMonth.get(m);
-                      const locked = !!p && (p.bill_id !== null || p.status === "paid");
+                      const billStatus = billedMonths.get(m);
+                      const paid = p?.status === "paid" || billStatus === "paid";
+                      const locked = paid || !!billStatus || (!!p && p.bill_id !== null);
                       const on = picked.has(m);
                       const label = new Date(`${m}T00:00:00`).toLocaleDateString("en-IN", { month: "short" });
                       return (
                         <button key={m} type="button" disabled={locked} aria-pressed={on} onClick={() => toggleMonth(m)}
                           className={`min-h-14 rounded-xl border px-2 py-1.5 text-left text-sm transition-colors ${on ? "border-primary bg-primary text-primary-foreground" : locked ? "border-border bg-muted text-muted-foreground" : "border-border bg-card hover:border-primary/50"}`}>
                           <span className="block font-semibold">{label}</span>
-                          <span className="block text-xs tabular-nums opacity-80">{locked ? (p!.status === "paid" ? tu("ln.sb.paid") : tu("ln.sb.billed")) : monthAmount(m) > 0 ? inr(monthAmount(m)) : "—"}</span>
+                          <span className="block text-xs tabular-nums opacity-80">{locked ? (paid ? tu("ln.sb.paid") : tu("ln.sb.billed")) : monthAmount(m) > 0 ? inr(monthAmount(m)) : "—"}</span>
                         </button>
                       );
                     })}

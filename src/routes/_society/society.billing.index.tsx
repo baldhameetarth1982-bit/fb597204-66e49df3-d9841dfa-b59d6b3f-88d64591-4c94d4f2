@@ -124,11 +124,12 @@ function BillingPage() {
 
   async function share(r: BillRow, flatLabel: string) {
     try {
-      await shareBillAsImage({
+      const how = await shareBillAsImage({
         societyName: "Society Bill", flatLabel, period: r.period_label,
         amount: Number(r.amount), dueDate: new Date(r.due_date).toLocaleDateString(),
         status: (r.status as any) || "due", adminSignature: user?.email?.split("@")[0],
       });
+      if (how === "copied") toast.success(tu("ln.share.copied"));
     } catch { toast.error(tu("op.could_not_share_this_bill")); }
   }
   async function cancel(r: BillRow) {

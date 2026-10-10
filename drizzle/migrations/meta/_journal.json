@@ -1625,6 +1625,13 @@
       "when": 1791591630079,
       "tag": "0231_platform_staff_maintenance_announcements",
       "breakpoints": true
+    },
+    {
+      "idx": 232,
+      "version": "7",
+      "when": 1791593010399,
+      "tag": "0232_platform_staff_tables_read_only_grants",
+      "breakpoints": true
     }
   ]
 }

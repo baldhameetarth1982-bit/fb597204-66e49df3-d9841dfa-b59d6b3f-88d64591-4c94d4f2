@@ -25,3 +25,17 @@ Stage 3C/3D runtime verification paused by owner.
 - [x] Reviewed bill-cycle safety: reminders run once per 5-day cycle; event tagging never changes amounts or categories and is audited
 - [x] Bill one home rebuilt to match owner's Generate New Bill sample (month grid, extra charges, discount, final total card)
 - [x] Default printable bill matching the owner's sample (Print on any bill)
+
+## Full re-check (tester report, owner notes, Admin Panel Guide) — Oct 10
+- [x] Share on bills shares or copies, never downloads
+- [x] Printed bill shows Property No, UGVCL No, Share Cert No when the resident has them
+- [x] Plan checkout shows base + GST (from the platform GST setting); prices say "incl. GST" when tax applies
+- [x] Clear "Flat limit reached" and "already billed this month" messages
+- [x] Generate bills skips homes already billed for that month; links to Bill one home and Bill from a cycle
+- [x] Bill-from-cycle page carries the billing tabs
+- [x] Dashboard chart counts confirmed payments by paid date (matches the Collected card)
+- [x] Bill design page can no longer spin forever (15s limit, then retry)
+- [x] Super Admin auto sign-out after 30 idle minutes
+- [ ] Signed-in check of every role and the new bill pages — blocked: preview is signed into a real account, not the demo account
+- [ ] Owner decision: big-refund second approval, platform staff roles (Operations/Finance/Marketing/Support), maintenance mode, scheduled notifications, backups page
+- [ ] Owner decision: move Partner programme out of Profile

@@ -82,7 +82,7 @@ function GenerateBillsPage() {
       .eq("period_start", periodStart).neq("status", "cancelled")
       .then(({ data }) => { if (live) setBilledIds(new Set(((data as { flat_id: string }[] | null) ?? []).map((r) => r.flat_id))); });
     return () => { live = false; };
-  }, [societyId, periodStart, result]);
+  }, [societyId, periodStart]);
 
   const billable = useMemo(() => flats.filter((f) => f.block_id && f.has_resident && !billedIds.has(f.id)), [flats, billedIds]);
   const totalAmount = billable.length * (Number(amount) || 0);

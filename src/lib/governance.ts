@@ -5,7 +5,7 @@ const tr = (k: string) => i18n.t(k) as string;
 
 /** Governance RPC helper — every rule (society, role, eligibility, state) is enforced in the database. */
 export async function govRpc<T = unknown>(fn: string, args: Record<string, unknown>): Promise<T> {
-  const { data, error } = await (supabase.rpc as any)(fn, args);
+  const { data, error } = await (supabase as any).rpc(fn, args);
   if (error) throw error;
   return data as T;
 }

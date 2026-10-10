@@ -152,7 +152,7 @@ function BlocksPage() {
     if (clean.length === 0) { toast.error(tu("op.add_at_least_one_block")); return; }
     setAutoBusy(true);
     try {
-      const { data, error } = await (supabase.rpc as any)("bulk_generate_society_hierarchy", {
+      const { data, error } = await (supabase as any).rpc("bulk_generate_society_hierarchy", {
         _society_id: societyId,
         _blocks: clean,
       });

@@ -91,7 +91,7 @@ function SettingsPage() {
         .eq("id", 1);
       if (error) throw error;
       if (state.maintenance_mode !== base.maintenance_mode || state.maintenance_message !== base.maintenance_message) {
-        const { error: mErr } = await (supabase.rpc as any)("admin_set_maintenance_mode", {
+        const { error: mErr } = await (supabase as any).rpc("admin_set_maintenance_mode", {
           _on: state.maintenance_mode,
           _message: state.maintenance_message,
         });

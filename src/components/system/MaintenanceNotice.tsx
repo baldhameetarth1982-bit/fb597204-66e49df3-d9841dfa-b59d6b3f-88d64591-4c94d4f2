@@ -12,7 +12,7 @@ export function useAppStatus() {
     staleTime: 60_000,
     refetchInterval: 5 * 60_000,
     queryFn: async (): Promise<AppStatus> => {
-      const { data, error } = await (supabase.rpc as any)("get_app_status");
+      const { data, error } = await (supabase as any).rpc("get_app_status");
       if (error) throw error;
       const d = (data ?? {}) as Partial<AppStatus>;
       return { maintenance: !!d.maintenance, message: d.message ?? null };

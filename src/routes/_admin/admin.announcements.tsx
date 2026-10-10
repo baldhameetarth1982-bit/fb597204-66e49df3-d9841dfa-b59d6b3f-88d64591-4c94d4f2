@@ -81,7 +81,7 @@ function AnnouncementsPage() {
         if (!Number.isFinite(ms) || ms < 0 || ms > 90 * 86400_000) throw new Error("bad_time");
         at = d.toISOString();
       }
-      const { error } = await (supabase.rpc as any)("admin_schedule_announcement", {
+      const { error } = await (supabase as any).rpc("admin_schedule_announcement", {
         _title: title.trim(), _body: body.trim(), _audience: audience,
         _society_id: society === ALL ? null : society, _send_at: at,
       });
@@ -97,7 +97,7 @@ function AnnouncementsPage() {
   const cancel = useMutation({
     networkMode: "always", retry: false,
     mutationFn: async (id: string) => {
-      const { error } = await (supabase.rpc as any)("admin_cancel_announcement", { _id: id });
+      const { error } = await (supabase as any).rpc("admin_cancel_announcement", { _id: id });
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["platform-announcements"] }),

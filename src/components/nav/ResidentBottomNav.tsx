@@ -31,6 +31,7 @@ const TABS = [
       "/app/trust",
       "/app/achievements",
       "/app/activity",
+      "/app/partner",
     ],
     badge: "notif" as const,
   },

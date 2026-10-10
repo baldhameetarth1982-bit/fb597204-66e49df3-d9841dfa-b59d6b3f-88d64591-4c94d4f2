@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { superAdminReason } from "@/lib/super-admin-reason";
 import { tu } from "@/lib/i18n";
 import { askText } from "@/components/system/AskTextDialog";
 import { useState } from "react";
@@ -68,9 +69,9 @@ function CostsPage() {
   }
 
   async function voidCost(id: string) {
-    const reason = await askText(tu("ln.q.removeCost"));
-    if (!reason) return;
-    const { data, error } = await supabase.rpc("admin_void_platform_cost" as any, { _id: id, _reason: reason });
+    const reason = await askText(tu("ln.q.removeCost"), { allowEmpty: true });
+    if (reason === null) return;
+    const { data, error } = await supabase.rpc("admin_void_platform_cost" as any, { _id: id, _reason: superAdminReason(reason) });
     const st = (data as any)?.status;
     if (error || st !== "ok") return toast.error(msg(st));
     toast.success("Cost removed — kept in history");
@@ -82,7 +83,7 @@ function CostsPage() {
     const value = rate.trim() === "" ? null : Number(rate);
     if (value !== null && !(value >= 0)) return toast.error("Enter a valid amount, or leave empty to clear.");
     setSavingRate(true);
-    const { data, error } = await supabase.rpc("admin_set_ai_cost_rate" as any, { _rate: value, _reason: rateReason });
+    const { data, error } = await supabase.rpc("admin_set_ai_cost_rate" as any, { _rate: value, _reason: superAdminReason(rateReason) });
     setSavingRate(false);
     const st = (data as any)?.status;
     if (error || st !== "ok") return toast.error(msg(st));
@@ -166,7 +167,7 @@ function CostsPage() {
               Current rate: {o?.costs.ai_rate_inr != null ? `₹${o.costs.ai_rate_inr} per request` : "not set"}. Used only when no actual AI bill is recorded for the month. Leave empty to clear.
             </p>
             <div className="space-y-1"><Label htmlFor="r-rate">₹ per AI request</Label><Input id="r-rate" inputMode="decimal" value={rate} onChange={(e) => setRate(e.target.value)} className="min-h-11" /></div>
-            <div className="space-y-1"><Label htmlFor="r-reason">Reason</Label><Input id="r-reason" required minLength={3} value={rateReason} onChange={(e) => setRateReason(e.target.value)} className="min-h-11" /></div>
+            <div className="space-y-1"><Label htmlFor="r-reason">Reason</Label><Input id="r-reason" value={rateReason} onChange={(e) => setRateReason(e.target.value)} className="min-h-11" /></div>
             <Button type="submit" variant="outline" className="min-h-11 w-full" disabled={savingRate}>{savingRate ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save rate"}</Button>
           </form>
         </aside>

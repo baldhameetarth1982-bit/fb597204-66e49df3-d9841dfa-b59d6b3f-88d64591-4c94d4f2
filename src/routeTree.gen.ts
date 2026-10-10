@@ -50,8 +50,10 @@ import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as AdminAdminAdsRouteImport } from './routes/_admin/admin.ads'
 import { Route as AdminAdminAiUsageRouteImport } from './routes/_admin/admin.ai-usage'
+import { Route as AdminAdminAnnouncementsRouteImport } from './routes/_admin/admin.announcements'
 import { Route as AdminAdminAssistantRouteImport } from './routes/_admin/admin.assistant'
 import { Route as AdminAdminAuditRouteImport } from './routes/_admin/admin.audit'
+import { Route as AdminAdminBackupsRouteImport } from './routes/_admin/admin.backups'
 import { Route as AdminAdminBiRouteImport } from './routes/_admin/admin.bi'
 import { Route as AdminAdminBrandingRouteImport } from './routes/_admin/admin.branding'
 import { Route as AdminAdminCostsRouteImport } from './routes/_admin/admin.costs'
@@ -69,6 +71,7 @@ import { Route as AdminAdminRevenueRouteImport } from './routes/_admin/admin.rev
 import { Route as AdminAdminSearchRouteImport } from './routes/_admin/admin.search'
 import { Route as AdminAdminSecurityRouteImport } from './routes/_admin/admin.security'
 import { Route as AdminAdminSettingsRouteImport } from './routes/_admin/admin.settings'
+import { Route as AdminAdminStaffRouteImport } from './routes/_admin/admin.staff'
 import { Route as AdminAdminSubscriptionPaymentsRouteImport } from './routes/_admin/admin.subscription-payments'
 import { Route as AdminAdminUsersRouteImport } from './routes/_admin/admin.users'
 import { Route as AdminAdminWithdrawalsRouteImport } from './routes/_admin/admin.withdrawals'
@@ -97,6 +100,7 @@ import { Route as ResidentAppLedgerRouteImport } from './routes/_resident/app.le
 import { Route as ResidentAppMeetingsRouteImport } from './routes/_resident/app.meetings'
 import { Route as ResidentAppNoticesRouteImport } from './routes/_resident/app.notices'
 import { Route as ResidentAppNotificationsRouteImport } from './routes/_resident/app.notifications'
+import { Route as ResidentAppPartnerRouteImport } from './routes/_resident/app.partner'
 import { Route as ResidentAppPassesRouteImport } from './routes/_resident/app.passes'
 import { Route as ResidentAppPlanRequiredRouteImport } from './routes/_resident/app.plan-required'
 import { Route as ResidentAppPollsRouteImport } from './routes/_resident/app.polls'
@@ -422,6 +426,11 @@ const AdminAdminAiUsageRoute = AdminAdminAiUsageRouteImport.update({
   path: '/admin/ai-usage',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAdminAnnouncementsRoute = AdminAdminAnnouncementsRouteImport.update({
+  id: '/admin/announcements',
+  path: '/admin/announcements',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAdminAssistantRoute = AdminAdminAssistantRouteImport.update({
   id: '/admin/assistant',
   path: '/admin/assistant',
@@ -430,6 +439,11 @@ const AdminAdminAssistantRoute = AdminAdminAssistantRouteImport.update({
 const AdminAdminAuditRoute = AdminAdminAuditRouteImport.update({
   id: '/admin/audit',
   path: '/admin/audit',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminBackupsRoute = AdminAdminBackupsRouteImport.update({
+  id: '/admin/backups',
+  path: '/admin/backups',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminAdminBiRoute = AdminAdminBiRouteImport.update({
@@ -515,6 +529,11 @@ const AdminAdminSecurityRoute = AdminAdminSecurityRouteImport.update({
 const AdminAdminSettingsRoute = AdminAdminSettingsRouteImport.update({
   id: '/admin/settings',
   path: '/admin/settings',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminStaffRoute = AdminAdminStaffRouteImport.update({
+  id: '/admin/staff',
+  path: '/admin/staff',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminAdminSubscriptionPaymentsRoute =
@@ -660,6 +679,11 @@ const ResidentAppNotificationsRoute =
     path: '/app/notifications',
     getParentRoute: () => ResidentRoute,
   } as any)
+const ResidentAppPartnerRoute = ResidentAppPartnerRouteImport.update({
+  id: '/app/partner',
+  path: '/app/partner',
+  getParentRoute: () => ResidentRoute,
+} as any)
 const ResidentAppPassesRoute = ResidentAppPassesRouteImport.update({
   id: '/app/passes',
   path: '/app/passes',
@@ -1337,8 +1361,10 @@ export interface FileRoutesByFullPath {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/ads': typeof AdminAdminAdsRoute
   '/admin/ai-usage': typeof AdminAdminAiUsageRoute
+  '/admin/announcements': typeof AdminAdminAnnouncementsRoute
   '/admin/assistant': typeof AdminAdminAssistantRoute
   '/admin/audit': typeof AdminAdminAuditRoute
+  '/admin/backups': typeof AdminAdminBackupsRoute
   '/admin/bi': typeof AdminAdminBiRoute
   '/admin/branding': typeof AdminAdminBrandingRoute
   '/admin/costs': typeof AdminAdminCostsRoute
@@ -1356,6 +1382,7 @@ export interface FileRoutesByFullPath {
   '/admin/search': typeof AdminAdminSearchRoute
   '/admin/security': typeof AdminAdminSecurityRoute
   '/admin/settings': typeof AdminAdminSettingsRoute
+  '/admin/staff': typeof AdminAdminStaffRoute
   '/admin/subscription-payments': typeof AdminAdminSubscriptionPaymentsRoute
   '/admin/users': typeof AdminAdminUsersRoute
   '/admin/withdrawals': typeof AdminAdminWithdrawalsRoute
@@ -1384,6 +1411,7 @@ export interface FileRoutesByFullPath {
   '/app/meetings': typeof ResidentAppMeetingsRoute
   '/app/notices': typeof ResidentAppNoticesRoute
   '/app/notifications': typeof ResidentAppNotificationsRoute
+  '/app/partner': typeof ResidentAppPartnerRoute
   '/app/passes': typeof ResidentAppPassesRoute
   '/app/plan-required': typeof ResidentAppPlanRequiredRoute
   '/app/polls': typeof ResidentAppPollsRoute
@@ -1541,8 +1569,10 @@ export interface FileRoutesByTo {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/ads': typeof AdminAdminAdsRoute
   '/admin/ai-usage': typeof AdminAdminAiUsageRoute
+  '/admin/announcements': typeof AdminAdminAnnouncementsRoute
   '/admin/assistant': typeof AdminAdminAssistantRoute
   '/admin/audit': typeof AdminAdminAuditRoute
+  '/admin/backups': typeof AdminAdminBackupsRoute
   '/admin/bi': typeof AdminAdminBiRoute
   '/admin/branding': typeof AdminAdminBrandingRoute
   '/admin/costs': typeof AdminAdminCostsRoute
@@ -1560,6 +1590,7 @@ export interface FileRoutesByTo {
   '/admin/search': typeof AdminAdminSearchRoute
   '/admin/security': typeof AdminAdminSecurityRoute
   '/admin/settings': typeof AdminAdminSettingsRoute
+  '/admin/staff': typeof AdminAdminStaffRoute
   '/admin/subscription-payments': typeof AdminAdminSubscriptionPaymentsRoute
   '/admin/users': typeof AdminAdminUsersRoute
   '/admin/withdrawals': typeof AdminAdminWithdrawalsRoute
@@ -1588,6 +1619,7 @@ export interface FileRoutesByTo {
   '/app/meetings': typeof ResidentAppMeetingsRoute
   '/app/notices': typeof ResidentAppNoticesRoute
   '/app/notifications': typeof ResidentAppNotificationsRoute
+  '/app/partner': typeof ResidentAppPartnerRoute
   '/app/passes': typeof ResidentAppPassesRoute
   '/app/plan-required': typeof ResidentAppPlanRequiredRoute
   '/app/polls': typeof ResidentAppPollsRoute
@@ -1751,8 +1783,10 @@ export interface FileRoutesById {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_admin/admin/ads': typeof AdminAdminAdsRoute
   '/_admin/admin/ai-usage': typeof AdminAdminAiUsageRoute
+  '/_admin/admin/announcements': typeof AdminAdminAnnouncementsRoute
   '/_admin/admin/assistant': typeof AdminAdminAssistantRoute
   '/_admin/admin/audit': typeof AdminAdminAuditRoute
+  '/_admin/admin/backups': typeof AdminAdminBackupsRoute
   '/_admin/admin/bi': typeof AdminAdminBiRoute
   '/_admin/admin/branding': typeof AdminAdminBrandingRoute
   '/_admin/admin/costs': typeof AdminAdminCostsRoute
@@ -1770,6 +1804,7 @@ export interface FileRoutesById {
   '/_admin/admin/search': typeof AdminAdminSearchRoute
   '/_admin/admin/security': typeof AdminAdminSecurityRoute
   '/_admin/admin/settings': typeof AdminAdminSettingsRoute
+  '/_admin/admin/staff': typeof AdminAdminStaffRoute
   '/_admin/admin/subscription-payments': typeof AdminAdminSubscriptionPaymentsRoute
   '/_admin/admin/users': typeof AdminAdminUsersRoute
   '/_admin/admin/withdrawals': typeof AdminAdminWithdrawalsRoute
@@ -1798,6 +1833,7 @@ export interface FileRoutesById {
   '/_resident/app/meetings': typeof ResidentAppMeetingsRoute
   '/_resident/app/notices': typeof ResidentAppNoticesRoute
   '/_resident/app/notifications': typeof ResidentAppNotificationsRoute
+  '/_resident/app/partner': typeof ResidentAppPartnerRoute
   '/_resident/app/passes': typeof ResidentAppPassesRoute
   '/_resident/app/plan-required': typeof ResidentAppPlanRequiredRoute
   '/_resident/app/polls': typeof ResidentAppPollsRoute
@@ -1958,8 +1994,10 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/admin/ads'
     | '/admin/ai-usage'
+    | '/admin/announcements'
     | '/admin/assistant'
     | '/admin/audit'
+    | '/admin/backups'
     | '/admin/bi'
     | '/admin/branding'
     | '/admin/costs'
@@ -1977,6 +2015,7 @@ export interface FileRouteTypes {
     | '/admin/search'
     | '/admin/security'
     | '/admin/settings'
+    | '/admin/staff'
     | '/admin/subscription-payments'
     | '/admin/users'
     | '/admin/withdrawals'
@@ -2005,6 +2044,7 @@ export interface FileRouteTypes {
     | '/app/meetings'
     | '/app/notices'
     | '/app/notifications'
+    | '/app/partner'
     | '/app/passes'
     | '/app/plan-required'
     | '/app/polls'
@@ -2162,8 +2202,10 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/admin/ads'
     | '/admin/ai-usage'
+    | '/admin/announcements'
     | '/admin/assistant'
     | '/admin/audit'
+    | '/admin/backups'
     | '/admin/bi'
     | '/admin/branding'
     | '/admin/costs'
@@ -2181,6 +2223,7 @@ export interface FileRouteTypes {
     | '/admin/search'
     | '/admin/security'
     | '/admin/settings'
+    | '/admin/staff'
     | '/admin/subscription-payments'
     | '/admin/users'
     | '/admin/withdrawals'
@@ -2209,6 +2252,7 @@ export interface FileRouteTypes {
     | '/app/meetings'
     | '/app/notices'
     | '/app/notifications'
+    | '/app/partner'
     | '/app/passes'
     | '/app/plan-required'
     | '/app/polls'
@@ -2371,8 +2415,10 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/_admin/admin/ads'
     | '/_admin/admin/ai-usage'
+    | '/_admin/admin/announcements'
     | '/_admin/admin/assistant'
     | '/_admin/admin/audit'
+    | '/_admin/admin/backups'
     | '/_admin/admin/bi'
     | '/_admin/admin/branding'
     | '/_admin/admin/costs'
@@ -2390,6 +2436,7 @@ export interface FileRouteTypes {
     | '/_admin/admin/search'
     | '/_admin/admin/security'
     | '/_admin/admin/settings'
+    | '/_admin/admin/staff'
     | '/_admin/admin/subscription-payments'
     | '/_admin/admin/users'
     | '/_admin/admin/withdrawals'
@@ -2418,6 +2465,7 @@ export interface FileRouteTypes {
     | '/_resident/app/meetings'
     | '/_resident/app/notices'
     | '/_resident/app/notifications'
+    | '/_resident/app/partner'
     | '/_resident/app/passes'
     | '/_resident/app/plan-required'
     | '/_resident/app/polls'
@@ -2872,6 +2920,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminAiUsageRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/admin/announcements': {
+      id: '/_admin/admin/announcements'
+      path: '/admin/announcements'
+      fullPath: '/admin/announcements'
+      preLoaderRoute: typeof AdminAdminAnnouncementsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_admin/admin/assistant': {
       id: '/_admin/admin/assistant'
       path: '/admin/assistant'
@@ -2884,6 +2939,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/audit'
       fullPath: '/admin/audit'
       preLoaderRoute: typeof AdminAdminAuditRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/backups': {
+      id: '/_admin/admin/backups'
+      path: '/admin/backups'
+      fullPath: '/admin/backups'
+      preLoaderRoute: typeof AdminAdminBackupsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_admin/admin/bi': {
@@ -3003,6 +3065,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/settings'
       fullPath: '/admin/settings'
       preLoaderRoute: typeof AdminAdminSettingsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/staff': {
+      id: '/_admin/admin/staff'
+      path: '/admin/staff'
+      fullPath: '/admin/staff'
+      preLoaderRoute: typeof AdminAdminStaffRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_admin/admin/subscription-payments': {
@@ -3199,6 +3268,13 @@ declare module '@tanstack/react-router' {
       path: '/app/notifications'
       fullPath: '/app/notifications'
       preLoaderRoute: typeof ResidentAppNotificationsRouteImport
+      parentRoute: typeof ResidentRoute
+    }
+    '/_resident/app/partner': {
+      id: '/_resident/app/partner'
+      path: '/app/partner'
+      fullPath: '/app/partner'
+      preLoaderRoute: typeof ResidentAppPartnerRouteImport
       parentRoute: typeof ResidentRoute
     }
     '/_resident/app/passes': {
@@ -4040,8 +4116,10 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminAdminAdsRoute: typeof AdminAdminAdsRoute
   AdminAdminAiUsageRoute: typeof AdminAdminAiUsageRoute
+  AdminAdminAnnouncementsRoute: typeof AdminAdminAnnouncementsRoute
   AdminAdminAssistantRoute: typeof AdminAdminAssistantRoute
   AdminAdminAuditRoute: typeof AdminAdminAuditRoute
+  AdminAdminBackupsRoute: typeof AdminAdminBackupsRoute
   AdminAdminBiRoute: typeof AdminAdminBiRoute
   AdminAdminBrandingRoute: typeof AdminAdminBrandingRoute
   AdminAdminCostsRoute: typeof AdminAdminCostsRoute
@@ -4059,6 +4137,7 @@ interface AdminRouteChildren {
   AdminAdminSearchRoute: typeof AdminAdminSearchRoute
   AdminAdminSecurityRoute: typeof AdminAdminSecurityRoute
   AdminAdminSettingsRoute: typeof AdminAdminSettingsRoute
+  AdminAdminStaffRoute: typeof AdminAdminStaffRoute
   AdminAdminSubscriptionPaymentsRoute: typeof AdminAdminSubscriptionPaymentsRoute
   AdminAdminUsersRoute: typeof AdminAdminUsersRoute
   AdminAdminWithdrawalsRoute: typeof AdminAdminWithdrawalsRoute
@@ -4069,8 +4148,10 @@ interface AdminRouteChildren {
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAdminAdsRoute: AdminAdminAdsRoute,
   AdminAdminAiUsageRoute: AdminAdminAiUsageRoute,
+  AdminAdminAnnouncementsRoute: AdminAdminAnnouncementsRoute,
   AdminAdminAssistantRoute: AdminAdminAssistantRoute,
   AdminAdminAuditRoute: AdminAdminAuditRoute,
+  AdminAdminBackupsRoute: AdminAdminBackupsRoute,
   AdminAdminBiRoute: AdminAdminBiRoute,
   AdminAdminBrandingRoute: AdminAdminBrandingRoute,
   AdminAdminCostsRoute: AdminAdminCostsRoute,
@@ -4088,6 +4169,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAdminSearchRoute: AdminAdminSearchRoute,
   AdminAdminSecurityRoute: AdminAdminSecurityRoute,
   AdminAdminSettingsRoute: AdminAdminSettingsRoute,
+  AdminAdminStaffRoute: AdminAdminStaffRoute,
   AdminAdminSubscriptionPaymentsRoute: AdminAdminSubscriptionPaymentsRoute,
   AdminAdminUsersRoute: AdminAdminUsersRoute,
   AdminAdminWithdrawalsRoute: AdminAdminWithdrawalsRoute,
@@ -4133,6 +4215,7 @@ interface ResidentRouteChildren {
   ResidentAppMeetingsRoute: typeof ResidentAppMeetingsRoute
   ResidentAppNoticesRoute: typeof ResidentAppNoticesRoute
   ResidentAppNotificationsRoute: typeof ResidentAppNotificationsRoute
+  ResidentAppPartnerRoute: typeof ResidentAppPartnerRoute
   ResidentAppPassesRoute: typeof ResidentAppPassesRoute
   ResidentAppPlanRequiredRoute: typeof ResidentAppPlanRequiredRoute
   ResidentAppPollsRoute: typeof ResidentAppPollsRoute
@@ -4181,6 +4264,7 @@ const ResidentRouteChildren: ResidentRouteChildren = {
   ResidentAppMeetingsRoute: ResidentAppMeetingsRoute,
   ResidentAppNoticesRoute: ResidentAppNoticesRoute,
   ResidentAppNotificationsRoute: ResidentAppNotificationsRoute,
+  ResidentAppPartnerRoute: ResidentAppPartnerRoute,
   ResidentAppPassesRoute: ResidentAppPassesRoute,
   ResidentAppPlanRequiredRoute: ResidentAppPlanRequiredRoute,
   ResidentAppPollsRoute: ResidentAppPollsRoute,

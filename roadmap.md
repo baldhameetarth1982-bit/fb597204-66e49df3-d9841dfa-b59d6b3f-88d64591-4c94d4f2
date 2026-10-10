@@ -37,5 +37,7 @@ Stage 3C/3D runtime verification paused by owner.
 - [x] Bill design page can no longer spin forever (15s limit, then retry)
 - [x] Super Admin auto sign-out after 30 idle minutes
 - [ ] Signed-in check of every role and the new bill pages — blocked: preview is signed into a real account, not the demo account
-- [ ] Owner decision: big-refund second approval, platform staff roles (Operations/Finance/Marketing/Support), maintenance mode, scheduled notifications, backups page
-- [ ] Owner decision: move Partner programme out of Profile
+- [x] No second approver for refunds (owner: only one real Super Admin); Super Admin reasons optional, audit kept
+- [x] Platform staff roles (Operations/Finance/Marketing/Support), view-limited, refunds stay Super Admin
+- [x] Maintenance mode, scheduled announcements (hourly), Backups & exports page
+- [x] Partner programme moved from Profile to Society hub

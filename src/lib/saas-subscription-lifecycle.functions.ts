@@ -56,8 +56,12 @@ export const listSaasSubscriptionPayments = createServerFn({ method: "POST" })
 export const listAdminSaasSubscriptionPayments = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data: isSuper, error: roleError } = await context.supabase.rpc("current_user_is_super_admin");
-    if (roleError || !isSuper) throw new Error("Only Super Admin can view platform subscription payments.");
+    // Super Admin or Finance staff (read-only); refunds stay Super Admin only.
+    const { data: isSuper, error: roleError } = await (context.supabase.rpc as any)("has_platform_role", {
+      _user_id: context.userId,
+      _roles: ["finance"],
+    });
+    if (roleError || !isSuper) throw new Error("Only Super Admin or Finance staff can view platform subscription payments.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: payments, error } = await supabaseAdmin
       .from("saas_subscription_payments")

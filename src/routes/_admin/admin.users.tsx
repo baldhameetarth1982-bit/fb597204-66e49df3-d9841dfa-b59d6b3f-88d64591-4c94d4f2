@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { superAdminReason } from "@/lib/super-admin-reason";
 import { isTestRecord, useShowTestData } from "@/lib/test-data";
 import { TestDataToggle } from "@/components/admin/TestDataToggle";
 import { userMessage } from "@/lib/user-error";
@@ -178,8 +179,8 @@ function UsersPage() {
           </div>
           <DialogFooter className="gap-2">
             <Button variant="ghost" className="h-11 rounded-xl" disabled={grant.isPending} onClick={() => setTarget(null)}>Cancel</Button>
-            <Button className="h-11 rounded-xl" disabled={grant.isPending || reason.trim().length < 5 || !plansQ.data?.length}
-              onClick={() => target && grant.mutate({ society_id: target.id, plan_id: planId, months, reason: reason.trim() })}>
+            <Button className="h-11 rounded-xl" disabled={grant.isPending || !plansQ.data?.length}
+              onClick={() => target && grant.mutate({ society_id: target.id, plan_id: planId, months, reason: superAdminReason(reason) })}>
               {grant.isPending && <Loader2 className="mr-1 h-4 w-4 animate-spin" />} Grant plan
             </Button>
           </DialogFooter>

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { superAdminReason } from "@/lib/super-admin-reason";
 import { useEffect, useState } from "react";
 import { Loader2, CheckCircle2, XCircle, Banknote, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -103,12 +104,11 @@ function WithdrawalsAdmin() {
 
   async function apply() {
     if (!confirm) return;
-    if (reason.trim().length < 5) return toast.error("Write a reason of at least 5 characters.");
     setBusy(true);
     const { error } = await supabase.rpc("admin_transition_withdrawal", {
       _withdrawal_id: confirm.row.id,
       _status: confirm.status,
-      _reason: reason.trim(),
+      _reason: superAdminReason(reason),
     });
     setBusy(false);
     if (error) return toast.error("Couldn't update this request. Refresh and try again.");
@@ -286,7 +286,7 @@ function WithdrawalsAdmin() {
                 e.preventDefault();
                 void apply();
               }}
-              disabled={busy || reason.trim().length < 5}
+              disabled={busy}
             >
               {busy && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
               {confirm?.status === "paid" ? "Mark paid" : "Reject"}

@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { superAdminReason } from "@/lib/super-admin-reason";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -454,10 +455,6 @@ function ActionSheet({
 
   async function submit() {
     if (busy) return;
-    if (needsReason && reason.trim().length < 5) {
-      toast.error(ACTION_MESSAGES.reason_required);
-      return;
-    }
     setBusy(true);
     try {
       if (action === "grant") {
@@ -466,7 +463,7 @@ function ActionSheet({
           _plan_id: planId,
           _months: Number(months),
           _extend: true,
-          _reason: reason.trim(),
+          _reason: superAdminReason(reason),
         });
         if (error) throw error;
         toast.success(
@@ -478,17 +475,17 @@ function ActionSheet({
             ? await supabase.rpc("admin_extend_trial", {
                 _society_id: societyId,
                 _days: Number(days),
-                _reason: reason.trim(),
+                _reason: superAdminReason(reason),
               })
             : action === "cancel"
               ? await supabase.rpc("admin_cancel_society_plan", {
                   _society_id: societyId,
-                  _reason: reason.trim(),
+                  _reason: superAdminReason(reason),
                 })
               : await supabase.rpc("admin_set_society_status", {
                   _society_id: societyId,
                   _status: action === "suspend" ? "suspended" : "active",
-                  _reason: reason.trim(),
+                  _reason: superAdminReason(reason),
                 });
         if (error) throw error;
         const status = (data as { status?: string } | null)?.status ?? "temporary_error";
@@ -611,7 +608,7 @@ function ActionSheet({
               <Button
                 className="min-h-12 w-full"
                 variant={action === "suspend" || action === "cancel" ? "destructive" : "default"}
-                disabled={busy || reason.trim().length < 5}
+                disabled={busy}
                 onClick={submit}
               >
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : titles[action][0]}

@@ -34,11 +34,12 @@ describe("Stage 11 security and payment boundaries", () => {
     expect(checkout).not.toContain("txn_fee_pct");
   });
 
-  it("requires reasons in both plan and payout actions", () => {
+  // Owner decision: Super Admin may leave the reason blank; a fixed note is still sent so audit history always has one.
+  it("always sends an audit reason in both plan and payout actions", () => {
     const society = read("src/routes/_admin/admin.societies.$id.tsx");
     const withdrawals = read("src/routes/_admin/admin.withdrawals.tsx");
-    expect(society).toContain("_reason: reason.trim()");
+    expect(society).toContain("_reason: superAdminReason(reason)");
     expect(withdrawals).toContain('supabase.rpc("admin_transition_withdrawal"');
-    expect(withdrawals).toContain("_reason: reason.trim()");
+    expect(withdrawals).toContain("_reason: superAdminReason(reason)");
   });
 });

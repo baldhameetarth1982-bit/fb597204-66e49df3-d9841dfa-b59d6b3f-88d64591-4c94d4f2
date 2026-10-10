@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { superAdminReason } from "@/lib/super-admin-reason";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -42,19 +43,19 @@ function MessagingPage() {
 
   const setCh = useMutation({ networkMode: "always", retry: false,
     mutationFn: async (v: { channel: string; enabled: boolean }) => {
-      const { error } = await (supabase.rpc as any)("admin_set_messaging_channel", { _channel: v.channel, _enabled: v.enabled, _reason: reason });
+      const { error } = await (supabase.rpc as any)("admin_set_messaging_channel", { _channel: v.channel, _enabled: v.enabled, _reason: superAdminReason(reason) });
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Channel updated"); setReason(""); refresh(); }, onError: (e) => toast.error(msg(e)) });
   const retry = useMutation({ networkMode: "always", retry: false,
     mutationFn: async (channel: string) => {
-      const { data, error } = await (supabase.rpc as any)("admin_retry_failed_messages", { _channel: channel, _reason: reason });
+      const { data, error } = await (supabase.rpc as any)("admin_retry_failed_messages", { _channel: channel, _reason: superAdminReason(reason) });
       if (error) throw error; return data as number;
     },
     onSuccess: (n) => { toast.success(`${n} message(s) queued again`); setReason(""); refresh(); }, onError: (e) => toast.error(msg(e)) });
   const resend = useMutation({ networkMode: "always", retry: false,
     mutationFn: async (channel: string) => {
-      const { data, error } = await (supabase.rpc as any)("admin_resend_unconfirmed_messages", { _channel: channel, _reason: reason });
+      const { data, error } = await (supabase.rpc as any)("admin_resend_unconfirmed_messages", { _channel: channel, _reason: superAdminReason(reason) });
       if (error) throw error; return data as number;
     },
     onSuccess: (n) => { toast.success(`${n} unconfirmed message(s) queued again`); setReason(""); refresh(); }, onError: (e) => toast.error(msg(e)) });

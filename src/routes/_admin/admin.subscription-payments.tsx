@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { superAdminReason } from "@/lib/super-admin-reason";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useRef, useState } from "react";
@@ -58,7 +59,7 @@ function SubscriptionPaymentsPage() {
     requestIds.current.set(target.id, requestId);
     try {
       const result = await refundPayment({
-        data: { paymentId: target.id, requestId, reason },
+        data: { paymentId: target.id, requestId, reason: superAdminReason(reason) },
       });
       if (result.status === "refunded") {
         toast.success("Refund confirmed and subscription history updated.");
@@ -133,12 +134,12 @@ function SubscriptionPaymentsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-1.5">
-            <Label htmlFor="subscription-refund-reason">Reason saved in audit history</Label>
+            <Label htmlFor="subscription-refund-reason">Reason (optional, saved in history)</Label>
             <Textarea id="subscription-refund-reason" rows={4} maxLength={500} value={reason} onChange={(event) => setReason(event.target.value)} />
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={busy}>Keep payment</AlertDialogCancel>
-            <AlertDialogAction onClick={(event) => { event.preventDefault(); void refund(); }} disabled={busy || reason.trim().length < 3}>
+            <AlertDialogAction onClick={(event) => { event.preventDefault(); void refund(); }} disabled={busy}>
               {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Confirm refund
             </AlertDialogAction>
           </AlertDialogFooter>

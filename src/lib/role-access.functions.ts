@@ -59,7 +59,6 @@ async function rpc(context: Ctx, name: string, args: Record<string, unknown> = {
   return data;
 }
 
-const auth = () => createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]);
 
 /* ---------------- Committee: invite / revoke / permissions ---------------- */
 
@@ -81,9 +80,9 @@ const AccessSchema = z.object({
 });
 export type RoleAccess = z.infer<typeof AccessSchema>;
 
-export const listRoleAccess = auth().handler(async ({ context }) => AccessSchema.parse(await rpc(context, "admin_list_role_access")));
+export const listRoleAccess = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => AccessSchema.parse(await rpc(context, "admin_list_role_access")));
 
-export const inviteRole = auth().inputValidator(z.object({
+export const inviteRole = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({
   role: z.enum(["auditor", "staff"]), phone: z.string().trim().min(10).max(16),
   name: z.string().trim().max(80).optional(), staffId: uuid.optional(),
   permissions: z.array(z.enum(STAFF_PERMISSIONS)).max(8).default([]),
@@ -92,21 +91,21 @@ export const inviteRole = auth().inputValidator(z.object({
   return { ok: true };
 });
 
-export const cancelRoleInvite = auth().inputValidator(z.object({ id: uuid, reason: z.string().trim().min(5).max(300) }))
+export const cancelRoleInvite = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({ id: uuid, reason: z.string().trim().min(5).max(300) }))
   .handler(async ({ data, context }) => { await rpc(context, "admin_cancel_role_invitation", { _id: data.id, _reason: data.reason }); return { ok: true }; });
 
-export const setRoleAccess = auth().inputValidator(z.object({ roleId: uuid, active: z.boolean(), reason: z.string().trim().max(300).optional() }))
+export const setRoleAccess = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({ roleId: uuid, active: z.boolean(), reason: z.string().trim().max(300).optional() }))
   .handler(async ({ data, context }) => { await rpc(context, "admin_set_role_access", { _role_id: data.roleId, _active: data.active, _reason: data.reason ?? null }); return { ok: true }; });
 
-export const setStaffPermissions = auth().inputValidator(z.object({ roleId: uuid, permissions: z.array(z.enum(STAFF_PERMISSIONS)).max(8) }))
+export const setStaffPermissions = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({ roleId: uuid, permissions: z.array(z.enum(STAFF_PERMISSIONS)).max(8) }))
   .handler(async ({ data, context }) => { await rpc(context, "admin_set_staff_permissions", { _role_id: data.roleId, _permissions: data.permissions }); return { ok: true }; });
 
 /* ---------------- Invitee ---------------- */
 
 const MyInviteSchema = z.array(z.object({ id: uuid, society_name: z.string(), role: z.enum(["auditor", "staff"]), job_type: z.string().nullable(), permissions: z.array(z.string()), expires_at: z.string() }));
 export type MyInvite = z.infer<typeof MyInviteSchema>[number];
-export const listMyInvites = auth().handler(async ({ context }) => MyInviteSchema.parse((await rpc(context, "list_my_role_invitations")) ?? []));
-export const respondInvite = auth().inputValidator(z.object({ id: uuid, accept: z.boolean() }))
+export const listMyInvites = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => MyInviteSchema.parse((await rpc(context, "list_my_role_invitations")) ?? []));
+export const respondInvite = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({ id: uuid, accept: z.boolean() }))
   .handler(async ({ data, context }) => { await rpc(context, "respond_role_invitation", { _id: data.id, _accept: data.accept }); return { ok: true }; });
 
 /* ---------------- Live role check (heartbeat) ---------------- */
@@ -116,12 +115,12 @@ const MyAccessSchema = z.object({
   roles: z.array(z.object({ role: z.enum(["auditor", "staff"]), permissions: z.array(z.string()) })),
 });
 export type MyRoleAccess = z.infer<typeof MyAccessSchema>;
-export const getMyRoleAccess = auth().handler(async ({ context }) => MyAccessSchema.parse(await rpc(context, "my_role_access")));
+export const getMyRoleAccess = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => MyAccessSchema.parse(await rpc(context, "my_role_access")));
 
 /* ---------------- Auditor ---------------- */
 
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
-export const getAuditorHistory = auth().inputValidator(z.object({ from: date, to: date, offset: z.number().int().min(0).max(100000).default(0) }))
+export const getAuditorHistory = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({ from: date, to: date, offset: z.number().int().min(0).max(100000).default(0) }))
   .handler(async ({ data, context }) => z.array(z.object({
     at: z.string(), action: z.string(), target_table: z.string().nullable(), target_id: z.string().nullable(),
     actor_name: z.string(), metadata: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()]).catch(null)).nullable(),
@@ -136,7 +135,7 @@ const StaffCtxSchema = z.object({
   attendance: z.array(z.object({ day: z.string(), status: z.string() })),
 });
 export type StaffContext = z.infer<typeof StaffCtxSchema>;
-export const getStaffContext = auth().handler(async ({ context }) => StaffCtxSchema.parse(await rpc(context, "staff_my_context")));
+export const getStaffContext = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => StaffCtxSchema.parse(await rpc(context, "staff_my_context")));
 
 const TicketSchema = z.object({
   id: uuid, ticket_no: z.number(), subject: z.string(), description: z.string().nullable(), category: z.string(),
@@ -144,42 +143,42 @@ const TicketSchema = z.object({
   asset_name: z.string().nullable(), asset_location: z.string().nullable(), flat_label: z.string().nullable(), hold_reason: z.string().nullable(),
 });
 export type StaffTicket = z.infer<typeof TicketSchema>;
-export const listStaffTickets = auth().inputValidator(z.object({ includeDone: z.boolean().default(false) }))
+export const listStaffTickets = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({ includeDone: z.boolean().default(false) }))
   .handler(async ({ data, context }) => z.array(TicketSchema).parse((await rpc(context, "staff_my_tickets", { _include_done: data.includeDone })) ?? []));
 
-export const getStaffTimeline = auth().inputValidator(z.object({ ticketId: uuid }))
+export const getStaffTimeline = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({ ticketId: uuid }))
   .handler(async ({ data, context }) => z.array(z.object({
     kind: z.string(), actor_kind: z.string(), from_status: z.string().nullable(), to_status: z.string().nullable(), body: z.string().nullable(), created_at: z.string(),
   })).parse((await rpc(context, "staff_ticket_timeline", { _ticket: data.ticketId })) ?? []));
 
-export const updateStaffTicket = auth().inputValidator(z.object({
+export const updateStaffTicket = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({
   ticketId: uuid, status: z.enum(["in_progress", "on_hold", "resolved"]).nullable(), note: z.string().trim().max(2000).optional(),
 })).handler(async ({ data, context }) => { await rpc(context, "staff_update_ticket", { _ticket: data.ticketId, _status: data.status, _note: data.note ?? null }); return { ok: true }; });
 
-export const listStaffAssets = auth().handler(async ({ context }) => z.array(z.object({
+export const listStaffAssets = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => z.array(z.object({
   id: uuid, name: z.string(), category: z.string().nullable(), location: z.string().nullable(), status: z.string().nullable(),
   warranty_until: z.string().nullable(), amc_until: z.string().nullable(), last_service: z.string().nullable(),
 })).parse((await rpc(context, "staff_list_assets")) ?? []));
 
-export const logStaffAssetService = auth().inputValidator(z.object({ assetId: uuid, kind: z.enum(["repair", "service", "inspection"]), notes: z.string().trim().min(3).max(500) }))
+export const logStaffAssetService = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({ assetId: uuid, kind: z.enum(["repair", "service", "inspection"]), notes: z.string().trim().min(3).max(500) }))
   .handler(async ({ data, context }) => { await rpc(context, "staff_log_asset_service", { _asset: data.assetId, _kind: data.kind, _notes: data.notes }); return { ok: true }; });
 
-export const listStaffInventory = auth().handler(async ({ context }) => z.array(z.object({
+export const listStaffInventory = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => z.array(z.object({
   id: uuid, name: z.string(), location: z.string().nullable(), unit: z.string().nullable(), quantity: z.number(), reorder_level: z.number().nullable(),
 })).parse((await rpc(context, "staff_list_inventory")) ?? []));
 
-export const consumeStaffInventory = auth().inputValidator(z.object({ itemId: uuid, qty: z.number().positive().max(10000), reason: z.string().trim().min(3).max(200) }))
+export const consumeStaffInventory = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({ itemId: uuid, qty: z.number().positive().max(10000), reason: z.string().trim().min(3).max(200) }))
   .handler(async ({ data, context }) => ({ quantity: Number(await rpc(context, "staff_use_inventory", { _item: data.itemId, _qty: data.qty, _reason: data.reason })) }));
 
-export const listStaffVendors = auth().handler(async ({ context }) => z.array(z.object({
+export const listStaffVendors = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => z.array(z.object({
   id: uuid, name: z.string(), category: z.string().nullable(), phone: z.string().nullable(), contract_end: z.string().nullable(),
 })).parse((await rpc(context, "staff_list_vendors")) ?? []));
 
-export const listStaffDocuments = auth().handler(async ({ context }) => z.array(z.object({
+export const listStaffDocuments = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => z.array(z.object({
   id: uuid, title: z.string(), category: z.string().nullable(), file_name: z.string().nullable(), updated_at: z.string(),
 })).parse((await rpc(context, "staff_list_documents")) ?? []));
 
-export const openStaffDocument = auth().inputValidator(z.object({ id: uuid })).handler(async ({ data, context }) => {
+export const openStaffDocument = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({ id: uuid })).handler(async ({ data, context }) => {
   // Access is decided by the caller's own session; only then is a short-lived link signed.
   const path = z.string().min(1).parse(await rpc(context, "staff_document_path", { _id: data.id }));
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -195,23 +194,23 @@ const MaintSchema = z.object({
   asset_name: z.string().nullable(), asset_location: z.string().nullable(), started_at: z.string().nullable(), completed_at: z.string().nullable(),
 });
 export type StaffMaintenance = z.infer<typeof MaintSchema>;
-export const listStaffMaintenance = auth().inputValidator(z.object({ includeDone: z.boolean().default(false) }))
+export const listStaffMaintenance = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({ includeDone: z.boolean().default(false) }))
   .handler(async ({ data, context }) => z.array(MaintSchema).parse((await rpc(context, "staff_my_maintenance", { _include_done: data.includeDone })) ?? []));
-export const updateStaffMaintenance = auth().inputValidator(z.object({ id: uuid, status: z.enum(["in_progress", "paused", "done"]), note: z.string().trim().max(1000).optional() }))
+export const updateStaffMaintenance = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({ id: uuid, status: z.enum(["in_progress", "paused", "done"]), note: z.string().trim().max(1000).optional() }))
   .handler(async ({ data, context }) => { await rpc(context, "staff_update_maintenance", { _id: data.id, _status: data.status, _note: data.note ?? null }); return { ok: true }; });
 
-export const scheduleMaintenance = auth().inputValidator(z.object({
+export const scheduleMaintenance = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({
   staffId: uuid, assetId: uuid.nullable(), title: z.string().trim().min(3).max(120),
   due: date, instructions: z.string().trim().max(1000).optional(),
 })).handler(async ({ data, context }) => {
   await rpc(context, "admin_schedule_maintenance", { _asset: data.assetId, _staff: data.staffId, _title: data.title, _due: data.due, _instructions: data.instructions || null });
   return { ok: true };
 });
-export const cancelMaintenance = auth().inputValidator(z.object({ id: uuid, reason: z.string().trim().min(5).max(300) }))
+export const cancelMaintenance = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(z.object({ id: uuid, reason: z.string().trim().min(5).max(300) }))
   .handler(async ({ data, context }) => { await rpc(context, "admin_cancel_maintenance", { _id: data.id, _reason: data.reason }); return { ok: true }; });
 
 /* ---------------- Gate (view only) ---------------- */
 
-export const listStaffGateInside = auth().handler(async ({ context }) => z.array(z.object({
+export const listStaffGateInside = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => z.array(z.object({
   visitor: z.string(), category: z.string().nullable(), flat_number: z.string().nullable(), entry_at: z.string().nullable(),
 })).parse((await rpc(context, "staff_gate_inside")) ?? []));

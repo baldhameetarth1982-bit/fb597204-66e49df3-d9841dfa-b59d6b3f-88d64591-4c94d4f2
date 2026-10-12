@@ -68,6 +68,9 @@ function PlanRequired() {
   }, [qc, societyId]);
 
   async function handleBuy(plan: any) {
+    // Razorpay is temporarily locked; every plan purchase goes through checkout (UPI).
+    navigate({ to: "/checkout/$planId", params: { planId: plan.id } });
+    return;
     setBusyId(plan.id);
     try {
     const requestId = requestIds.current.get(plan.id) ?? crypto.randomUUID();

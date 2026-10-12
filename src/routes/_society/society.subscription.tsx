@@ -137,6 +137,9 @@ function SubscriptionPage() {
   }
 
   async function handleBuy(p: { id: string; name: string }) {
+    // Razorpay is temporarily locked; every plan purchase goes through checkout (UPI).
+    navigate({ to: "/checkout/$planId", params: { planId: p.id } });
+    return;
     setBusyId(p.id);
     try {
     const requestId = requestIds.current.get(p.id) ?? crypto.randomUUID();

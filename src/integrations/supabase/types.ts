@@ -9162,6 +9162,51 @@ export type Database = {
           },
         ]
       }
+      saas_discount_codes: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          note: string | null
+          percent_off: number
+          plan_ids: string[] | null
+          updated_at: string
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          note?: string | null
+          percent_off: number
+          plan_ids?: string[] | null
+          updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          note?: string | null
+          percent_off?: number
+          plan_ids?: string[] | null
+          updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
       saas_payment_events: {
         Row: {
           attempt_count: number
@@ -9571,11 +9616,14 @@ export type Database = {
         Row: {
           amount_paise: number
           base_amount_paise: number | null
+          code_discount_paise: number
           consent_at: string
           consent_version: string
           created_at: string
           custom_offer_id: string | null
+          discount_code_id: string | null
           flat_count: number
+          gross_amount_paise: number | null
           id: string
           paid_at: string
           payee_vpa: string
@@ -9597,6 +9645,7 @@ export type Database = {
           subscription_payment_id: string | null
           tax_amount_paise: number | null
           tax_percent: number | null
+          term_discount_paise: number
           term_months: number
           updated_at: string
           utr: string
@@ -9604,11 +9653,14 @@ export type Database = {
         Insert: {
           amount_paise: number
           base_amount_paise?: number | null
+          code_discount_paise?: number
           consent_at?: string
           consent_version: string
           created_at?: string
           custom_offer_id?: string | null
+          discount_code_id?: string | null
           flat_count: number
+          gross_amount_paise?: number | null
           id?: string
           paid_at: string
           payee_vpa: string
@@ -9630,6 +9682,7 @@ export type Database = {
           subscription_payment_id?: string | null
           tax_amount_paise?: number | null
           tax_percent?: number | null
+          term_discount_paise?: number
           term_months?: number
           updated_at?: string
           utr: string
@@ -9637,11 +9690,14 @@ export type Database = {
         Update: {
           amount_paise?: number
           base_amount_paise?: number | null
+          code_discount_paise?: number
           consent_at?: string
           consent_version?: string
           created_at?: string
           custom_offer_id?: string | null
+          discount_code_id?: string | null
           flat_count?: number
+          gross_amount_paise?: number | null
           id?: string
           paid_at?: string
           payee_vpa?: string
@@ -9663,6 +9719,7 @@ export type Database = {
           subscription_payment_id?: string | null
           tax_amount_paise?: number | null
           tax_percent?: number | null
+          term_discount_paise?: number
           term_months?: number
           updated_at?: string
           utr?: string
@@ -9673,6 +9730,13 @@ export type Database = {
             columns: ["custom_offer_id"]
             isOneToOne: false
             referencedRelation: "custom_plan_offers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saas_upi_payment_requests_discount_code_id_fkey"
+            columns: ["discount_code_id"]
+            isOneToOne: false
+            referencedRelation: "saas_discount_codes"
             referencedColumns: ["id"]
           },
           {
@@ -13119,6 +13183,7 @@ export type Database = {
         Returns: string
       }
       _roles_admin_society: { Args: never; Returns: string }
+      _saas_term_discount_percent: { Args: { _term: number }; Returns: number }
       _sec_admin_society: { Args: never; Returns: string }
       _send_platform_announcement: { Args: { _id: string }; Returns: number }
       _society_flat_capacity: { Args: { _society_id: string }; Returns: number }
@@ -13466,6 +13531,22 @@ export type Database = {
         }[]
       }
       admin_list_role_access: { Args: never; Returns: Json }
+      admin_list_saas_discount_codes: {
+        Args: never
+        Returns: {
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          max_uses: number
+          note: string
+          percent_off: number
+          plan_ids: string[]
+          uses: number
+          valid_from: string
+          valid_until: string
+        }[]
+      }
       admin_list_saas_upi_payments: {
         Args: { _before?: string; _limit?: number; _status: string }
         Returns: Json
@@ -13812,6 +13893,20 @@ export type Database = {
           _phone: string
           _society_id: string
           _specialty: string
+        }
+        Returns: string
+      }
+      admin_save_saas_discount_code: {
+        Args: {
+          _code: string
+          _id: string
+          _is_active: boolean
+          _max_uses: number
+          _note: string
+          _percent_off: number
+          _plan_ids: string[]
+          _valid_from: string
+          _valid_until: string
         }
         Returns: string
       }
@@ -16742,6 +16837,16 @@ export type Database = {
         Args: { _flat_quantity?: number; _plan_id: string; _society_id: string }
         Returns: Json
       }
+      saas_upi_quote: {
+        Args: {
+          _discount_code: string
+          _flat_quantity: number
+          _plan_id: string
+          _society_id: string
+          _term_months: number
+        }
+        Returns: Json
+      }
       safety_alert_raise: {
         Args: {
           _kind: string
@@ -16867,6 +16972,7 @@ export type Database = {
       }
       send_due_platform_announcements: { Args: never; Returns: number }
       send_meeting_reminders: { Args: never; Returns: number }
+      send_subscription_renewal_reminders: { Args: never; Returns: number }
       send_tenancy_renewal_reminders: { Args: never; Returns: number }
       set_finance_event_link: {
         Args: {
@@ -17158,6 +17264,24 @@ export type Database = {
         }
         Returns: Json
       }
+      submit_saas_upi_payment_v2: {
+        Args: {
+          _consent_version: string
+          _discount_code: string
+          _expected_amount_paise: number
+          _flat_quantity: number
+          _paid_at: string
+          _payer_name: string
+          _payer_upi: string
+          _plan_id: string
+          _proof_path: string
+          _request_id: string
+          _society_id: string
+          _term_months: number
+          _utr: string
+        }
+        Returns: Json
+      }
       submit_survey_response: {
         Args: { _answers: Json; _poll_id: string }
         Returns: undefined
@@ -17421,6 +17545,7 @@ export type Database = {
           voted: boolean
         }[]
       }
+      x_date: { Args: { _t: string }; Returns: string }
     }
     Enums: {
       app_role:

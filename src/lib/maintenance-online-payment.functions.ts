@@ -43,6 +43,7 @@ export const startMaintenancePayment = createServerFn({ method: "POST" })
     z.object({ billId: z.string().uuid(), requestId: z.string().uuid() }).strict().parse(d),
   )
   .handler(async ({ data, context }) => {
+    if (!ONLINE_MAINTENANCE_GATEWAY_OPEN) return { ok: false as const, code: "provider_unavailable" };
     const { data: claim, error } = await context.supabase.rpc("claim_maintenance_payment_order", {
       _bill_id: data.billId,
       _request_id: data.requestId,

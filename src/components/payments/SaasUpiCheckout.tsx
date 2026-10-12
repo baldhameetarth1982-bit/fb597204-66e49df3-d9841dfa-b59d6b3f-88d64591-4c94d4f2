@@ -10,9 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useTranslation } from "react-i18next";
-import { listMySaasUpiPayments, submitSaasUpiPayment } from "@/lib/saas-upi-payment.functions";
+import { getSaasUpiQuote, listMySaasUpiPayments, submitSaasUpiPayment } from "@/lib/saas-upi-payment.functions";
 
-const ERR_CODES = ["invalid_file", "duplicate_reference", "already_pending", "price_changed", "invalid_paid_at", "rate_limited", "upi_unavailable", "custom_pricing", "not_authorized"];
+const ERR_CODES = ["invalid_file", "duplicate_reference", "already_pending", "price_changed", "invalid_paid_at", "rate_limited", "upi_unavailable", "custom_pricing", "not_authorized", "code_invalid"];
 const REJECT_CODES = ["short_paid", "not_received", "wrong_reference", "unclear_proof", "duplicate", "other"];
 const inr = (p: number) => `₹${(p / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -32,10 +32,7 @@ type Props = {
   planId: "basic" | "pro" | "premium";
   planName: string;
   flatQuantity?: number;
-  amountPaise: number;
-  basePaise: number | null;
-  taxPaise: number | null;
-  taxPercent: number | null;
+  initialTerm?: 1 | 3 | 12;
   upiVpa: string;
   payeeName: string;
 };
@@ -53,6 +50,19 @@ export function SaasUpiCheckout(p: Props) {
     staleTime: 15_000,
   });
   const requestId = useRef(crypto.randomUUID());
+  const [term, setTerm] = useState<1 | 3 | 12>(p.initialTerm ?? 1);
+  const [codeInput, setCodeInput] = useState("");
+  const [code, setCode] = useState("");
+  const fetchQuote = useServerFn(getSaasUpiQuote);
+  const quoteQ = useQuery({
+    queryKey: ["saas-upi-quote", p.societyId, p.planId, p.flatQuantity ?? null, term, code],
+    queryFn: () => fetchQuote({ data: { societyId: p.societyId, planId: p.planId, ...(p.flatQuantity ? { flatQuantity: p.flatQuantity } : {}), termMonths: term, discountCode: code } }),
+    placeholderData: (prev) => prev,
+    staleTime: 30_000,
+  });
+  const q = quoteQ.data;
+  const amountPaise = q?.amount_paise ?? 0;
+  const codeOk = q?.discount_code_status === "applied";
   const [utr, setUtr] = useState("");
   const [payer, setPayer] = useState("");
   const [payerUpi, setPayerUpi] = useState("");
@@ -62,8 +72,8 @@ export function SaasUpiCheckout(p: Props) {
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const amount = (p.amountPaise / 100).toFixed(2);
-  const note = `SociyoHub ${p.planName} plan`;
+  const amount = (amountPaise / 100).toFixed(2);
+  const note = `SociyoHub ${p.planName} ${term}M`;
   const upiLink = `upi://pay?pa=${encodeURIComponent(p.upiVpa)}&pn=${encodeURIComponent(p.payeeName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(note)}`;
   const pending = mine.data?.find((r) => r.status === "pending");
   const lastRejected = mine.data?.[0]?.status === "rejected" ? mine.data[0] : null;
@@ -78,22 +88,28 @@ export function SaasUpiCheckout(p: Props) {
     if (!agreeExact || !agreeTerms) return toast.error(t("ln.upi.tickBoth"));
     const when = new Date(paidAt);
     if (Number.isNaN(when.getTime())) return toast.error(t("ln.upi.e.invalid_paid_at"));
+    if (!q || amountPaise <= 0 || quoteQ.isFetching) return;
+    if (code && !codeOk) return toast.error(t("ln.upi.e.code_invalid"));
     setBusy(true);
     try {
       await submit({ data: {
         societyId: p.societyId, planId: p.planId, ...(p.flatQuantity ? { flatQuantity: p.flatQuantity } : {}),
-        requestId: requestId.current, expectedAmountPaise: p.amountPaise, utr: r, payerName: payer.trim(),
+        termMonths: term, discountCode: codeOk ? code : "",
+        requestId: requestId.current, expectedAmountPaise: amountPaise, utr: r, payerName: payer.trim(),
         payerUpi: payerUpi.trim(), paidAt: when.toISOString(), consent: true, proofBase64: await toBase64(file),
       } });
       toast.success(t("ln.upi.sent"));
       requestId.current = crypto.randomUUID();
       await qc.invalidateQueries({ queryKey: ["saas-upi-mine", p.societyId] });
     } catch (e) {
-      toast.error(errMsg((e as Error).message));
+      const m = (e as Error).message;
+      toast.error(errMsg(m));
+      if (m === "code_invalid") { setCode(""); setCodeInput(""); }
+      if (m === "price_changed" || m === "code_invalid") void quoteQ.refetch();
     } finally { setBusy(false); }
   }
 
-  if (mine.isLoading) return <div className="py-6 grid place-items-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+  if (mine.isLoading || (quoteQ.isLoading && !q)) return <div className="py-6 grid place-items-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
 
   if (pending) {
     return (
@@ -124,6 +140,51 @@ export function SaasUpiCheckout(p: Props) {
         </div>
       )}
 
+      {/* Plan length + discount code */}
+      <div className="space-y-4 rounded-2xl border border-border p-5">
+        <div className="space-y-2">
+          <p className="text-sm font-semibold">{t("ln.sub.term")}</p>
+          <div role="radiogroup" aria-label={t("ln.sub.term")} className="grid grid-cols-3 gap-2">
+            {([1, 3, 12] as const).map((m) => {
+              const pct = m === 3 ? 6 : m === 12 ? 8 : 0;
+              return (
+                <button key={m} type="button" role="radio" aria-checked={term === m}
+                  onClick={() => { setTerm(m); requestId.current = crypto.randomUUID(); }}
+                  className={`min-h-[64px] rounded-xl border-2 p-2 text-center transition-colors ${term === m ? "border-primary bg-primary/5" : "border-border"}`}>
+                  <span className="block text-sm font-semibold">{t(`ln.sub.m${m}`)}</span>
+                  {pct > 0 && <span className="mt-1 inline-block rounded-full bg-success/15 px-2 py-0.5 text-xs font-medium text-success">{t("ln.sub.save", { pct })}</span>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="upi-code">{t("ln.sub.code")}</Label>
+          <div className="flex gap-2">
+            <Input id="upi-code" autoComplete="off" maxLength={24} value={codeInput}
+              onChange={(e) => setCodeInput(e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, ""))}
+              className="h-11 uppercase" disabled={!!code} />
+            {code ? (
+              <Button type="button" variant="outline" className="h-11 rounded-xl" onClick={() => { setCode(""); setCodeInput(""); requestId.current = crypto.randomUUID(); }}>{t("ln.sub.remove")}</Button>
+            ) : (
+              <Button type="button" variant="secondary" className="h-11 rounded-xl" disabled={codeInput.length < 3}
+                onClick={() => { setCode(codeInput); requestId.current = crypto.randomUUID(); }}>{t("ln.sub.apply")}</Button>
+            )}
+          </div>
+          {code && q?.discount_code_status && !quoteQ.isFetching && (
+            <p role="status" className={`text-xs ${codeOk ? "text-success" : "text-destructive"}`}>
+              {codeOk ? t("ln.sub.applied", { pct: q.discount_code_percent }) : t(`ln.sub.c.${q.discount_code_status}`)}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {quoteQ.isError || !q || amountPaise <= 0 ? (
+        <div role="alert" className="rounded-xl border border-destructive/30 p-4 text-sm">
+          {t("ln.upi.fail")}
+          <Button variant="outline" className="ml-2 min-h-11" onClick={() => void quoteQ.refetch()}>{t("ln.sub.retry")}</Button>
+        </div>
+      ) : (<>
       {/* QR card */}
       <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
         <div className="bg-primary px-5 py-3 text-primary-foreground">
@@ -132,17 +193,21 @@ export function SaasUpiCheckout(p: Props) {
         </div>
         <div className="flex flex-col items-center gap-3 p-5">
           <div className="rounded-2xl border-4 border-primary/15 bg-background p-3">
-            <QRCodeSVG value={upiLink} size={208} level="M" marginSize={2} aria-label={`UPI QR to pay ${inr(p.amountPaise)}`} className="h-52 w-52" />
+            <QRCodeSVG value={upiLink} size={208} level="M" marginSize={2} aria-label={`UPI QR to pay ${inr(amountPaise)}`} className="h-52 w-52" />
           </div>
-          <p className="text-3xl font-bold tabular-nums">{inr(p.amountPaise)}</p>
+          <p className={`text-3xl font-bold tabular-nums ${quoteQ.isFetching ? "opacity-50" : ""}`}>{inr(amountPaise)}</p>
           <dl className="w-full max-w-xs space-y-1 text-sm">
-            {p.basePaise != null && (
-              <div className="flex justify-between"><dt className="text-muted-foreground">{t("ln.upi.plan", { plan: p.planName })}</dt><dd className="tabular-nums">{inr(p.basePaise)}</dd></div>
+            <div className="flex justify-between gap-3"><dt className="text-muted-foreground">{t("ln.upi.plan", { plan: p.planName })} · {t("ln.sub.months", { n: q.term_months })}</dt><dd className="tabular-nums">{inr(q.gross_amount_paise ?? q.base_amount_paise ?? 0)}</dd></div>
+            {q.term_discount_paise > 0 && (
+              <div className="flex justify-between gap-3 text-success"><dt>{t("ln.sub.termSave", { pct: q.term_discount_percent })}</dt><dd className="tabular-nums">−{inr(q.term_discount_paise)}</dd></div>
             )}
-            {(p.taxPaise ?? 0) > 0 && (
-              <div className="flex justify-between"><dt className="text-muted-foreground">{t("ln.upi.gst")}{p.taxPercent ? ` (${p.taxPercent}%)` : ""}</dt><dd className="tabular-nums">{inr(p.taxPaise!)}</dd></div>
+            {q.code_discount_paise > 0 && (
+              <div className="flex justify-between gap-3 text-success"><dt>{t("ln.sub.codeSave", { code: q.discount_code })}</dt><dd className="tabular-nums">−{inr(q.code_discount_paise)}</dd></div>
             )}
-            <div className="flex justify-between border-t border-border pt-1 font-semibold"><dt>{t("ln.upi.total")}</dt><dd className="tabular-nums">{inr(p.amountPaise)}</dd></div>
+            {(q.tax_amount_paise ?? 0) > 0 && (
+              <div className="flex justify-between gap-3"><dt className="text-muted-foreground">{t("ln.upi.gst")}{q.tax_percent ? ` (${q.tax_percent}%)` : ""}</dt><dd className="tabular-nums">{inr(q.tax_amount_paise!)}</dd></div>
+            )}
+            <div className="flex justify-between gap-3 border-t border-border pt-1 font-semibold"><dt>{t("ln.upi.total")}</dt><dd className="tabular-nums">{inr(amountPaise)}</dd></div>
           </dl>
           <button
             type="button"
@@ -188,7 +253,7 @@ export function SaasUpiCheckout(p: Props) {
         </div>
         <label className="flex items-start gap-3 text-sm">
           <Checkbox checked={agreeExact} onCheckedChange={(v) => setAgreeExact(v === true)} className="mt-0.5" />
-          <span>{t("ln.upi.agreeExact", { amount: inr(p.amountPaise), vpa: p.upiVpa })}</span>
+          <span>{t("ln.upi.agreeExact", { amount: inr(amountPaise), vpa: p.upiVpa })}</span>
         </label>
         <label className="flex items-start gap-3 text-sm">
           <Checkbox checked={agreeTerms} onCheckedChange={(v) => setAgreeTerms(v === true)} className="mt-0.5" />
@@ -199,11 +264,12 @@ export function SaasUpiCheckout(p: Props) {
             <Link to="/privacy" className="underline">{t("ln.upi.privacy")}</Link>
           </span>
         </label>
-        <Button className="h-12 w-full rounded-xl" disabled={busy || !agreeExact || !agreeTerms} onClick={() => void onSubmit()}>
+        <Button className="h-12 w-full rounded-xl" disabled={busy || !agreeExact || !agreeTerms || quoteQ.isFetching} onClick={() => void onSubmit()}>
           {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}{t("ln.upi.submit")}
         </Button>
         <p className="flex items-center gap-2 text-xs text-muted-foreground"><ShieldCheck className="h-4 w-4 shrink-0" />{t("ln.upi.private")}</p>
       </div>
+      </>)}
 
       {mine.data?.some((r) => r.status === "approved") && (
         <p className="flex items-center gap-2 text-xs text-muted-foreground"><CheckCircle2 className="h-4 w-4 text-success" />{t("ln.upi.earlier")}</p>

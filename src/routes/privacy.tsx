@@ -99,6 +99,13 @@ function PrivacyPage() {
                 removed within 30 days; anonymised financial records may be kept for statutory audit periods (up to 7
                 years) as required by Indian tax and accounting law.
               </p>
+              <p className="text-muted-foreground mt-2">
+                <strong>UPI plan payments.</strong> When you pay a plan by UPI we collect the payer name, optional payer
+                UPI ID, transaction ID, payment time and a screenshot, only to verify the payment and issue a GST receipt
+                (purpose limitation under the Digital Personal Data Protection Act, 2023). Screenshots are stored in
+                private storage, are visible only to SociyoHub's Super Admin through short-lived links, and are kept as
+                payment records for the statutory period. Please crop out unrelated balances or messages before uploading.
+              </p>
             </section>
 
             <section>

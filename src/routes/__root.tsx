@@ -240,7 +240,15 @@ function ReferralCapture() {
 
 function MarketingAnalytics() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [consentTick, setConsentTick] = useState(0);
   useEffect(() => {
+    const on = () => setConsentTick((n) => n + 1);
+    window.addEventListener(CONSENT_EVENT, on);
+    return () => window.removeEventListener(CONSENT_EVENT, on);
+  }, []);
+  useEffect(() => {
+    // Optional trackers: only after explicit consent, only on public marketing pages.
+    if (readConsent() !== "accepted" || !isMarketingPage(pathname)) return;
     const gaId = import.meta.env.VITE_GA_MEASUREMENT_ID as string | undefined;
     if (gaId && !(window as any).gtag) {
       const script = document.createElement("script");

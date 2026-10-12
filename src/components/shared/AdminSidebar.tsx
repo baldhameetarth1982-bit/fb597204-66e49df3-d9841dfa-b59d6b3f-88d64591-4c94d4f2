@@ -6,6 +6,7 @@ import {
   Users, BarChart3, Settings, ShieldCheck, ScrollText, Search, Sparkles,
   TrendingUp, Heart, FileText, Palette, Bell, HardDriveDownload, UserCog,
   QrCode,
+  TicketPercent,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,

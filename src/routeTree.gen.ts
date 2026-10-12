@@ -39,6 +39,7 @@ import { Route as OnboardingPlanRouteImport } from './routes/onboarding.plan'
 import { Route as OnboardingPendingRouteImport } from './routes/onboarding.pending'
 import { Route as OnboardingJoinRouteImport } from './routes/onboarding.join'
 import { Route as OnboardingCreateRouteImport } from './routes/onboarding.create'
+import { Route as OnboardingChoosePlanRouteImport } from './routes/onboarding.choose-plan'
 import { Route as CheckoutPlanIdRouteImport } from './routes/checkout.$planId'
 import { Route as AssetTokenRouteImport } from './routes/asset.$token'
 import { Route as ApiSupportChatRouteImport } from './routes/api/support-chat'
@@ -366,6 +367,11 @@ const OnboardingJoinRoute = OnboardingJoinRouteImport.update({
 const OnboardingCreateRoute = OnboardingCreateRouteImport.update({
   id: '/create',
   path: '/create',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingChoosePlanRoute = OnboardingChoosePlanRouteImport.update({
+  id: '/choose-plan',
+  path: '/choose-plan',
   getParentRoute: () => OnboardingRoute,
 } as any)
 const CheckoutPlanIdRoute = CheckoutPlanIdRouteImport.update({
@@ -1357,6 +1363,7 @@ export interface FileRoutesByFullPath {
   '/api/support-chat': typeof ApiSupportChatRoute
   '/asset/$token': typeof AssetTokenRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
+  '/onboarding/choose-plan': typeof OnboardingChoosePlanRoute
   '/onboarding/create': typeof OnboardingCreateRoute
   '/onboarding/join': typeof OnboardingJoinRoute
   '/onboarding/pending': typeof OnboardingPendingRoute
@@ -1566,6 +1573,7 @@ export interface FileRoutesByTo {
   '/api/support-chat': typeof ApiSupportChatRoute
   '/asset/$token': typeof AssetTokenRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
+  '/onboarding/choose-plan': typeof OnboardingChoosePlanRoute
   '/onboarding/create': typeof OnboardingCreateRoute
   '/onboarding/join': typeof OnboardingJoinRoute
   '/onboarding/pending': typeof OnboardingPendingRoute
@@ -1781,6 +1789,7 @@ export interface FileRoutesById {
   '/api/support-chat': typeof ApiSupportChatRoute
   '/asset/$token': typeof AssetTokenRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
+  '/onboarding/choose-plan': typeof OnboardingChoosePlanRoute
   '/onboarding/create': typeof OnboardingCreateRoute
   '/onboarding/join': typeof OnboardingJoinRoute
   '/onboarding/pending': typeof OnboardingPendingRoute
@@ -1993,6 +2002,7 @@ export interface FileRouteTypes {
     | '/api/support-chat'
     | '/asset/$token'
     | '/checkout/$planId'
+    | '/onboarding/choose-plan'
     | '/onboarding/create'
     | '/onboarding/join'
     | '/onboarding/pending'
@@ -2202,6 +2212,7 @@ export interface FileRouteTypes {
     | '/api/support-chat'
     | '/asset/$token'
     | '/checkout/$planId'
+    | '/onboarding/choose-plan'
     | '/onboarding/create'
     | '/onboarding/join'
     | '/onboarding/pending'
@@ -2416,6 +2427,7 @@ export interface FileRouteTypes {
     | '/api/support-chat'
     | '/asset/$token'
     | '/checkout/$planId'
+    | '/onboarding/choose-plan'
     | '/onboarding/create'
     | '/onboarding/join'
     | '/onboarding/pending'
@@ -2853,6 +2865,13 @@ declare module '@tanstack/react-router' {
       path: '/create'
       fullPath: '/onboarding/create'
       preLoaderRoute: typeof OnboardingCreateRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/choose-plan': {
+      id: '/onboarding/choose-plan'
+      path: '/choose-plan'
+      fullPath: '/onboarding/choose-plan'
+      preLoaderRoute: typeof OnboardingChoosePlanRouteImport
       parentRoute: typeof OnboardingRoute
     }
     '/checkout/$planId': {
@@ -4500,6 +4519,7 @@ const SocietyRouteWithChildren =
   SocietyRoute._addFileChildren(SocietyRouteChildren)
 
 interface OnboardingRouteChildren {
+  OnboardingChoosePlanRoute: typeof OnboardingChoosePlanRoute
   OnboardingCreateRoute: typeof OnboardingCreateRoute
   OnboardingJoinRoute: typeof OnboardingJoinRoute
   OnboardingPendingRoute: typeof OnboardingPendingRoute
@@ -4508,6 +4528,7 @@ interface OnboardingRouteChildren {
 }
 
 const OnboardingRouteChildren: OnboardingRouteChildren = {
+  OnboardingChoosePlanRoute: OnboardingChoosePlanRoute,
   OnboardingCreateRoute: OnboardingCreateRoute,
   OnboardingJoinRoute: OnboardingJoinRoute,
   OnboardingPendingRoute: OnboardingPendingRoute,

@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { OnboardingStepper } from "@/components/system/OnboardingStepper";
 import { getApplicablePlans, startSocietyTrial, getPricingSettings } from "@/lib/pricing-engine";
 import { tu } from "@/lib/i18n";
+import { readIntendedPlan } from "@/lib/intended-plan";
 
 export const Route = createFileRoute("/onboarding/plan")({
   head: () => ({ meta: [{ title: "Choose your plan — SociyoHub" }] }),
@@ -24,6 +25,8 @@ function PlanGate() {
   const { societyId, loading: sLoading } = useSocietyId();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
+  const [intended, setIntended] = useState<ReturnType<typeof readIntendedPlan>>(null);
+  useEffect(() => setIntended(readIntendedPlan()), []);
 
   const { data: society } = useQuery({
     enabled: !!societyId,
@@ -89,9 +92,9 @@ function PlanGate() {
     <main className="min-h-dvh bg-background text-foreground">
       <div className="max-w-6xl mx-auto px-5 py-10">
         <OnboardingStepper
-          step={2}
+          step={3}
           total={4}
-          labels={["Society details", "Choose plan", "Payment", "Setup"]}
+          labels={["Choose plan", "Society details", "Payment", "Setup"]}
           className="mb-6 max-w-md"
         />
 
@@ -181,8 +184,11 @@ function PlanGate() {
                 return (
                   <Card
                     key={p.plan_id}
-                    className={`rounded-3xl p-6 flex flex-col ${p.is_recommended ? "border-2 border-primary shadow-lg" : "border border-border"}`}
+                    className={`rounded-3xl p-6 flex flex-col ${(intended ? intended.plan === p.plan_id : p.is_recommended) ? "border-2 border-primary shadow-lg" : "border border-border"}`}
                   >
+                    {intended?.plan === p.plan_id && (
+                      <Badge variant="secondary" className="self-start mb-3 rounded-full">{tu("ln.ob.chosen")}</Badge>
+                    )}
                     {p.is_recommended && (
                       <Badge className="self-start mb-3 rounded-full">
                         <Sparkles className="h-3 w-3 mr-1" /> {tu("op.most_popular")}
@@ -207,7 +213,7 @@ function PlanGate() {
                       asChild
                       className={`mt-6 min-h-[48px] rounded-2xl ${p.is_recommended ? "" : "variant-outline"}`}
                     >
-                      <Link to="/checkout/$planId" params={{ planId: p.plan_id }}>
+                      <Link to="/checkout/$planId" params={{ planId: p.plan_id }} search={intended?.plan === p.plan_id ? { term: intended.term } : {}}>
                         {tu("common.choose")} {p.plan_name} <ArrowRight className="h-4 w-4 ml-1" />
                       </Link>
                     </Button>

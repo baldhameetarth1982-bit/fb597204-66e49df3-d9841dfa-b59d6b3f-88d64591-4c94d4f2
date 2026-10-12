@@ -22,8 +22,6 @@ export function LegalFooter({ compact = false }: { compact?: boolean }) {
           <span className="opacity-30">·</span>
           <Link to="/refund" className="hover:underline">Refund Policy</Link>
           <span className="opacity-30">·</span>
-          <Link to="/cookies" className="hover:underline">Cookies</Link>
-          <span className="opacity-30">·</span>
           <Link to="/contact" className="hover:underline">Contact</Link>
           <span className="opacity-30">·</span>
           <Link to="/legal" className="hover:underline">Legal Center</Link>

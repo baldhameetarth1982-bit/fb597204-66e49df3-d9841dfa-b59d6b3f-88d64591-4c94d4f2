@@ -22,13 +22,15 @@ export function LegalFooter({ compact = false }: { compact?: boolean }) {
           <span className="opacity-30">·</span>
           <Link to="/refund" className="hover:underline">Refund Policy</Link>
           <span className="opacity-30">·</span>
+          <Link to="/cookies" className="hover:underline">Cookies</Link>
+          <span className="opacity-30">·</span>
           <Link to="/contact" className="hover:underline">Contact</Link>
           <span className="opacity-30">·</span>
           <Link to="/legal" className="hover:underline">Legal Center</Link>
         </nav>
         <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
           <ShieldCheck className="h-3.5 w-3.5" aria-hidden />
-          <span>Subscription payments are handled securely by Razorpay</span>
+          <span>Plans activate only after the payment is verified</span>
         </div>
       </div>
       <div className="mx-auto max-w-6xl px-5 mt-2 text-[10px] text-muted-foreground">

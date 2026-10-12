@@ -3,6 +3,14 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /**
+ * Society-owned online payments (Razorpay) are deferred to the final payment
+ * stage (docs/PAYMENT_ARCHITECTURE.md). While this flag is false the resident
+ * card renders the locked state and the start handler refuses to create
+ * orders. Cash/Bank and UPI QR remain available.
+ */
+const ONLINE_MAINTENANCE_GATEWAY_OPEN = false as const;
+
+/**
  * Online maintenance payments (Razorpay). Amount, society, flat and bill are
  * resolved only by claim_maintenance_payment_order; money is recorded only by
  * the service-only finalize_maintenance_online_payment (one order → one
@@ -26,7 +34,7 @@ export const getOnlinePaymentAvailability = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: enabled } = await context.supabase.rpc("_online_maintenance_enabled", { _society_id: data.societyId });
     const configured = !!process.env["RAZORPAY_KEY_ID"] && !!process.env["RAZORPAY_KEY_SECRET"];
-    return { enabled: !!enabled, configured };
+    return { enabled: ONLINE_MAINTENANCE_GATEWAY_OPEN && !!enabled, configured };
   });
 
 export const startMaintenancePayment = createServerFn({ method: "POST" })
@@ -35,6 +43,7 @@ export const startMaintenancePayment = createServerFn({ method: "POST" })
     z.object({ billId: z.string().uuid(), requestId: z.string().uuid() }).strict().parse(d),
   )
   .handler(async ({ data, context }) => {
+    if (!ONLINE_MAINTENANCE_GATEWAY_OPEN) return { ok: false as const, code: "provider_unavailable" };
     const { data: claim, error } = await context.supabase.rpc("claim_maintenance_payment_order", {
       _bill_id: data.billId,
       _request_id: data.requestId,

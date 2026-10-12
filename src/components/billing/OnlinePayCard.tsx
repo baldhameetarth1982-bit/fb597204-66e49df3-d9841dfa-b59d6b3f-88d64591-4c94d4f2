@@ -41,7 +41,7 @@ export function OnlinePayCard({ billId, societyId, onPaid }: { billId: string; s
     return (
       <div className="rounded-2xl border border-border p-4 flex gap-3">
         <Lock className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
-        <p className="text-sm text-muted-foreground">{tu("op.online_payment_is_available_when")}</p>
+        <p className="text-sm text-muted-foreground">{tu("op.online_payment_coming_later")}</p>
       </div>
     );
   }

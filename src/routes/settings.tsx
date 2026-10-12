@@ -464,6 +464,7 @@ function DeleteAccountRow({ email, onSignOut }: { email: string | null; onSignOu
               e.preventDefault();
               setBusy(true);
               // Server removes login, personal files and data; financial records stay anonymised.
+              const { deleteMyAccount } = await import("@/lib/account-deletion.functions");
               const r = await deleteMyAccount();
               setBusy(false);
               if (!r.ok) {

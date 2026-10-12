@@ -111,7 +111,7 @@ export const Route = createFileRoute("/api/public/auth/reverse-otp")({
           let data: any;
           try {
             data = await callProvider("create_otp_session", {
-              mobile_no: phone.slice(3), country_code: "91", udf1: "", udf2: "", udf3: "", user_name: "",
+              mobile_no: phone.slice(3), country_code: "91", udf1: "", udf2: "", udf3: "", user_name: "SociyoHub user",
             });
           } catch (e: any) {
             console.error("[reverse-otp] start failed", e?.message);

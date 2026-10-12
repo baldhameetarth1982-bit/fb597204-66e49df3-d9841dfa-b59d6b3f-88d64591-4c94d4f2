@@ -97,7 +97,7 @@ function PrivacyPage() {
               <ul className="list-disc pl-6 space-y-1 text-muted-foreground">
                 <li><strong>Lovable Cloud (database, file storage and app hosting, built on Supabase and Cloudflare):</strong> stores all society data and files and runs the app.</li>
                 <li><strong>Google Firebase:</strong> phone OTP and Google sign-in, and push notifications to your device.</li>
-                <li><strong>Google Gemini (through Lovable AI):</strong> only when you use an AI feature such as the AI Secretary; it receives the question and the society documents needed to answer it.</li>
+                <li><strong>Google Gemini and OpenAI (through Lovable AI):</strong> only when an AI feature is used, such as the AI Secretary, invoice reading, or reading an uploaded Aadhaar image for optional verification; they receive only the question, document or image needed for that task.</li>
                 <li><strong>Razorpay:</strong> only if a society pays its SociyoHub subscription online once that option is switched on; it receives payment details, never resident data.</li>
               </ul>
               <p className="text-muted-foreground mt-2">Some of these providers may process data outside India under their own security commitments. We do not use advertising or analytics trackers inside society screens.</p>

@@ -307,4 +307,5 @@ export const launch = {
   "ln.pref.who2": ["Your committee sees your name, phone and home to run the society.", "सोसाइटी चलाने के लिए आपकी कमेटी आपका नाम, फ़ोन और घर देखती है।", "સોસાયટી ચલાવવા તમારી કમિટી તમારું નામ, ફોન અને ઘર જુએ છે."],
   "ln.pref.who3": ["Guards see your home number only for visitors coming to you.", "गार्ड आपके घर का नंबर केवल आपके मेहमानों के लिए देखते हैं।", "ગાર્ડ તમારા ઘરનો નંબર ફક્ત તમારા મહેમાનો માટે જ જુએ છે."],
   "ln.pref.who4": ["A phone number on a community listing is shown only if you add it to that listing.", "कम्युनिटी लिस्टिंग पर फ़ोन नंबर तभी दिखता है जब आप उसे उस लिस्टिंग में जोड़ें।", "કોમ્યુનિટી લિસ્ટિંગ પર ફોન નંબર ત્યારે જ દેખાય છે જ્યારે તમે તેને તે લિસ્ટિંગમાં ઉમેરો."],
+  "ln.ask.sure": ["Are you sure?", "क्या आप पक्का हैं?", "શું તમને ખાતરી છે?"],
 } satisfies Catalog;

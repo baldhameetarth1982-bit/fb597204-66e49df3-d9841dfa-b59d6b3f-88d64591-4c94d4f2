@@ -13209,6 +13209,13 @@ export type Database = {
         Args: { _bucket: string; _limit: number; _subject: string }
         Returns: undefined
       }
+      _user_personal_storage_objects: {
+        Args: { _uid: string }
+        Returns: {
+          bucket_id: string
+          name: string
+        }[]
+      }
       _vehicle_authorized_slots: { Args: { _vehicle: string }; Returns: string }
       _visitor_clean: { Args: { _max: number; _t: string }; Returns: string }
       _visitor_new_code: { Args: { _society: string }; Returns: string }

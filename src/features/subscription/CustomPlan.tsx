@@ -6,6 +6,7 @@
  * Checkout reuses the canonical subscription engine (/checkout/$planId).
  */
 import { useState } from "react";
+import { askConfirm } from "@/components/system/AskTextDialog";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2, Loader2, MessageSquare, Send, FileText, Check, X, RefreshCw } from "lucide-react";
@@ -262,7 +263,7 @@ export function CustomPlanSection({ societyId, threshold, focusRequestId }: { so
                   {current.status === "offered" && (
                     <div className="flex flex-wrap gap-2">
                       <Button className="h-11 rounded-xl" disabled={respond.isPending}
-                        onClick={() => { if (window.confirm(`Accept ${current.flat_quantity} flats at ₹${Number(current.rate_per_flat_inr)}/flat/month, total ${inr(current.total_amount_paise)}?`)) respond.mutate({ id: current.id, accept: true }); }}>
+                        onClick={() => { void askConfirm(`Accept ${current.flat_quantity} flats at ₹${Number(current.rate_per_flat_inr)}/flat/month, total ${inr(current.total_amount_paise)}?`).then((ok) => { if (ok) respond.mutate({ id: current.id, accept: true }); }); }}>
                         <Check className="h-4 w-4 mr-2" /> Accept
                       </Button>
                       <Button variant="outline" className="h-11 rounded-xl" disabled={respond.isPending}

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { askConfirm } from "@/components/system/AskTextDialog";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -238,7 +239,7 @@ function AgmAdmin() {
                               </button>
                               <Button variant="ghost" className="h-11 w-11 p-0" aria-label={`Move ${i.title} up`} disabled={busy || idx === 0} onClick={() => run(() => govRpc("agm_agenda_move", { _item: i.id, _dir: -1 }), "Moved")}><ArrowUp className="h-4 w-4" /></Button>
                               <Button variant="ghost" className="h-11 w-11 p-0" aria-label={`Move ${i.title} down`} disabled={busy || idx === d.agenda.length - 1} onClick={() => run(() => govRpc("agm_agenda_move", { _item: i.id, _dir: 1 }), "Moved")}><ArrowDown className="h-4 w-4" /></Button>
-                              {open.status === "draft" && <Button variant="ghost" className="h-11 w-11 p-0" aria-label={`Remove ${i.title}`} disabled={busy} onClick={() => confirm("Remove this agenda item?") && run(() => govRpc("agm_agenda_remove", { _item: i.id }), "Removed")}><Trash2 className="h-4 w-4" /></Button>}
+                              {open.status === "draft" && <Button variant="ghost" className="h-11 w-11 p-0" aria-label={`Remove ${i.title}`} disabled={busy} onClick={() => void askConfirm("Remove this agenda item?").then((ok) => ok && run(() => govRpc("agm_agenda_remove", { _item: i.id }), "Removed"))}><Trash2 className="h-4 w-4" /></Button>}
                             </li>
                           ))}
                         </ol>
@@ -280,10 +281,10 @@ function AgmAdmin() {
                             {r.poll_id && <p className="text-xs text-muted-foreground">{tu("op.linked_formal_vote")} {refs.data?.votes.find((v) => v.id === r.poll_id)?.title ?? "—"}</p>}
                             {r.status === "proposed" && canResolve && (
                               <div className="mt-2 flex flex-wrap gap-2">
-                                {canDecide && <Button size="sm" className="min-h-11 rounded-xl" disabled={busy} onClick={() => confirm("Record as passed? This can't be changed.") && run(() => govRpc("agm_resolution_decide", { _resolution: r.id, _status: "passed" }), "Recorded as passed")}><Check className="h-4 w-4 mr-1" />{tu("op.passed")}</Button>}
-                                {canDecide && <Button size="sm" variant="outline" className="min-h-11 rounded-xl" disabled={busy} onClick={() => confirm("Record as rejected? This can't be changed.") && run(() => govRpc("agm_resolution_decide", { _resolution: r.id, _status: "rejected" }), "Recorded as rejected")}><X className="h-4 w-4 mr-1" />{tu("docState.rejected")}</Button>}
+                                {canDecide && <Button size="sm" className="min-h-11 rounded-xl" disabled={busy} onClick={() => void askConfirm("Record as passed? This can't be changed.").then((ok) => ok && run(() => govRpc("agm_resolution_decide", { _resolution: r.id, _status: "passed" }), "Recorded as passed"))}><Check className="h-4 w-4 mr-1" />{tu("op.passed")}</Button>}
+                                {canDecide && <Button size="sm" variant="outline" className="min-h-11 rounded-xl" disabled={busy} onClick={() => void askConfirm("Record as rejected? This can't be changed.").then((ok) => ok && run(() => govRpc("agm_resolution_decide", { _resolution: r.id, _status: "rejected" }), "Recorded as rejected"))}><X className="h-4 w-4 mr-1" />{tu("docState.rejected")}</Button>}
                                 {canDecide && <Button size="sm" variant="outline" className="min-h-11 rounded-xl" disabled={busy} onClick={() => run(() => govRpc("agm_resolution_decide", { _resolution: r.id, _status: "deferred" }), "Deferred")}>{tu("op.defer")}</Button>}
-                                <Button size="sm" variant="ghost" className="min-h-11 rounded-xl" disabled={busy} onClick={() => confirm("Withdraw this resolution?") && run(() => govRpc("agm_resolution_decide", { _resolution: r.id, _status: "withdrawn" }), "Withdrawn")}>{tu("prof.withdraw")}</Button>
+                                <Button size="sm" variant="ghost" className="min-h-11 rounded-xl" disabled={busy} onClick={() => void askConfirm("Withdraw this resolution?").then((ok) => ok && run(() => govRpc("agm_resolution_decide", { _resolution: r.id, _status: "withdrawn" }), "Withdrawn"))}>{tu("prof.withdraw")}</Button>
                               </div>
                             )}
                           </li>
@@ -326,7 +327,7 @@ function AgmAdmin() {
                   <div className="flex flex-col gap-2">
                     {open.status === "draft" && <Button variant="outline" className="h-12 rounded-xl" onClick={() => startEdit(open)}>{tu("el.a.editDetails")}</Button>}
                     {(NEXT[open.status] ?? []).map((s) => (
-                      <Button key={s.to} className="h-12 rounded-xl" disabled={busy} onClick={() => confirm(s.confirm) && run(() => govRpc("agm_set_status", { _id: open.id, _status: s.to, _reason: null }), AGM_STATUS[s.to]?.label ?? "Updated")}>{s.label}</Button>
+                      <Button key={s.to} className="h-12 rounded-xl" disabled={busy} onClick={() => void askConfirm(s.confirm).then((ok) => ok && run(() => govRpc("agm_set_status", { _id: open.id, _status: s.to, _reason: null }), AGM_STATUS[s.to]?.label ?? "Updated"))}>{s.label}</Button>
                     ))}
                     {open.status === "minutes_published" && draftMinutes?.correction_reason && (
                       <Button variant="outline" className="h-12 rounded-xl" disabled={busy} onClick={() => run(() => govRpc("agm_set_status", { _id: open.id, _status: "minutes_pending", _reason: null }), "Correction sent for review")}>{tu("op.send_correction_for_review")}</Button>

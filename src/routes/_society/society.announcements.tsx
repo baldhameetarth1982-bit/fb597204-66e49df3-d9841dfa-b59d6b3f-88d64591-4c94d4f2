@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { askConfirm } from "@/components/system/AskTextDialog";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -103,7 +104,7 @@ function NoticesAdmin() {
 
   async function save(publish: boolean) {
     if (saving) return;
-    if (publish && form.category === "emergency" && !confirm("Publish this emergency notice to residents now?")) return;
+    if (publish && form.category === "emergency" && !(await askConfirm("Publish this emergency notice to residents now?"))) return;
     setSaving(publish ? "publish" : "draft");
     const { data: nid, error } = await supabase.rpc("notice_save", {
       _id: form.id as string, _title: form.title, _body: form.body, _category: form.category, _audience: form.audience,
@@ -124,7 +125,7 @@ function NoticesAdmin() {
   }
 
   async function archive(id: string) {
-    if (!confirm("Archive this notice? Residents will no longer see it.")) return;
+    if (!(await askConfirm("Archive this notice? Residents will no longer see it."))) return;
     const { error } = await supabase.rpc("notice_archive", { _id: id });
     if (error) return toast.error(commErrorMessage(error));
     toast.success(tu("op.notice_archived"));

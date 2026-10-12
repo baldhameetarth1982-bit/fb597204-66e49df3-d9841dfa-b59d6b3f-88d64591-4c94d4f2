@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { askConfirm } from "@/components/system/AskTextDialog";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -88,7 +89,7 @@ function ResidentElections() {
     catch (e) { toast.error(govError(e)); } finally { setBusy(false); }
   }
   async function withdraw(id: string) {
-    if (!confirm(t("el.withdrawConfirm"))) return;
+    if (!(await askConfirm(t("el.withdrawConfirm")))) return;
     setBusy(true);
     try { await govRpc("election_withdraw_nomination", { _nomination: id }); toast.success(t("el.nomWithdrawn")); refresh(); }
     catch (e) { toast.error(govError(e)); } finally { setBusy(false); }
@@ -97,7 +98,7 @@ function ResidentElections() {
     if (!open) return;
     const choices = Object.values(picks).flat();
     if (!choices.length) return;
-    if (!confirm(t("el.castConfirm"))) return;
+    if (!(await askConfirm(t("el.castConfirm")))) return;
     setBusy(true);
     try {
       const r = await govRpc<string>("election_cast_ballot", { _election: open.id, _choices: choices, _request: requestId(open.id) });

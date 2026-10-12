@@ -63,3 +63,47 @@ export function AskTextDialogHost() {
     </AlertDialog>
   );
 }
+
+/**
+ * In-app replacement for the browser's confirm(). Resolves true only when the
+ * person presses Continue; closing or Back resolves false.
+ */
+type ConfirmReq = { message: string; resolve: (v: boolean) => void };
+let pushConfirm: ((r: ConfirmReq) => void) | null = null;
+
+export function askConfirm(message: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (!pushConfirm) { resolve(false); return; }
+    pushConfirm({ message, resolve });
+  });
+}
+
+export function AskConfirmDialogHost() {
+  const { t } = useTranslation();
+  const [req, setReq] = useState<ConfirmReq | null>(null);
+  const done = useRef(false);
+  useEffect(() => {
+    pushConfirm = (r) => { done.current = false; setReq(r); };
+    return () => { pushConfirm = null; };
+  }, []);
+  function close(ok: boolean) {
+    if (!req || done.current) return;
+    done.current = true;
+    req.resolve(ok);
+    setReq(null);
+  }
+  return (
+    <AlertDialog open={!!req} onOpenChange={(o) => { if (!o) close(false); }}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t("ln.ask.sure")}</AlertDialogTitle>
+          <AlertDialogDescription>{req?.message}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel type="button" className="min-h-11 rounded-full">{t("ln.ask.back")}</AlertDialogCancel>
+          <Button type="button" autoFocus className="min-h-11 rounded-full" onClick={() => close(true)}>{t("ln.ask.continue")}</Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}

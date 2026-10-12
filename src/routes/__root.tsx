@@ -29,7 +29,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { OfflineBanner } from "@/components/system/OfflineBanner";
 import { MaintenanceScreen, MaintenanceStrip, useAppStatus } from "@/components/system/MaintenanceNotice";
 import { usePlatformRoles } from "@/hooks/usePlatformRoles";
-import { AskTextDialogHost } from "@/components/system/AskTextDialog";
+import { AskConfirmDialogHost, AskTextDialogHost } from "@/components/system/AskTextDialog";
 import { SplashScreen } from "@/components/shared/SplashScreen";
 import { RootErrorBoundary, installGlobalErrorLogger } from "@/components/shared/RootErrorBoundary";
 import { ProtectedRoute } from "@/components/shared/AuthGuard";
@@ -178,6 +178,7 @@ function RootComponent() {
           <ShellSwitcher />
           <Toaster richColors closeButton position="top-right" />
           <AskTextDialogHost />
+          <AskConfirmDialogHost />
           <OfflineBanner />
           <KeyboardFieldVisibility />
         </AuthProvider>

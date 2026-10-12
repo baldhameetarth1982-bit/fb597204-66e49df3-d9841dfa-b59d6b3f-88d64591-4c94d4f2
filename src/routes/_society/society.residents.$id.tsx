@@ -1,4 +1,5 @@
 import { StatusChip } from "@/components/people/PeopleUI";
+import { askConfirm } from "@/components/system/AskTextDialog";
 import { userMessage } from "@/lib/user-error";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -766,7 +767,7 @@ function DocumentsPanel({
   }
 
   async function deleteDoc(name: string) {
-    if (!confirm(`Delete ${name}?`)) return;
+    if (!(await askConfirm(`Delete ${name}?`))) return;
     try {
       await removeDocument({ data: { societyId, residentUserId: userId, key: name } });
       toast.success(tu("op.deleted"));

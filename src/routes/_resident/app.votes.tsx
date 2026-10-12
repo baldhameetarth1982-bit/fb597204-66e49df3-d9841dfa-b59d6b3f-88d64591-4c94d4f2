@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { askConfirm } from "@/components/system/AskTextDialog";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -60,7 +61,7 @@ function ResidentVotes() {
 
   async function cast() {
     if (!open || !choice) return;
-    if (!confirm("Submit your vote? It can't be changed afterwards.")) return;
+    if (!(await askConfirm("Submit your vote? It can't be changed afterwards."))) return;
     setBusy(true);
     try { await govRpc("vote_cast", { _poll: open.id, _option: choice }); toast.success(tu("op.your_vote_is_recorded")); setChoice(null); await qc.invalidateQueries({ queryKey: ["resident-votes"] }); qc.invalidateQueries({ queryKey: ["vote-results", open.id] }); }
     catch (e) { toast.error(govError(e)); } finally { setBusy(false); }

@@ -468,6 +468,16 @@
   button[class*="h-10"] {
     min-height: 40px;
   }
+  /* On/off switches keep their own track size (the 48px button rule stretched them). */
+  button[role="switch"] {
+    min-height: 0;
+    position: relative;
+  }
+  button[role="switch"]::after {
+    content: "";
+    position: absolute;
+    inset: -10px -6px;
+  }
 
   input, textarea, select {
     min-height: 44px;

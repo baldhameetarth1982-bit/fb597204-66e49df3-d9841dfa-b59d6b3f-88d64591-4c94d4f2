@@ -1,4 +1,5 @@
 import { useServerFn } from "@tanstack/react-start";
+import { askConfirm } from "@/components/system/AskTextDialog";
 import { askText } from "@/components/system/AskTextDialog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createContext, useContext, useMemo, useState } from "react";
@@ -215,7 +216,7 @@ function JournalsTab({ societyId }: { societyId: string }) {
                   {!ro && (j.status === "draft" || j.status === "in_review") && <>
                     <Button size="sm" variant="outline" disabled={busy} onClick={() => startEdit(j)}>{tu("common.edit")}</Button>
                     {j.status === "draft" && <Button size="sm" variant="outline" disabled={busy} onClick={() => transition.mutate({ journalId: j.id, action: "submit" })}>{tu("op.send_for_review")}</Button>}
-                    <Button size="sm" disabled={busy} onClick={() => { if (window.confirm("Post this journal to the ledger? Posted entries cannot be edited.")) transition.mutate({ journalId: j.id, action: "post" }); }}>{tu("mnt.timing.post")}</Button>
+                    <Button size="sm" disabled={busy} onClick={() => { void askConfirm("Post this journal to the ledger? Posted entries cannot be edited.").then((ok) => { if (ok) transition.mutate({ journalId: j.id, action: "post" }); }); }}>{tu("mnt.timing.post")}</Button>
                     <Button size="sm" variant="ghost" disabled={busy} onClick={async () => { const r = await askReason("Why cancel this draft?"); if (r) transition.mutate({ journalId: j.id, action: "cancel", reason: r }); }}>{tu("op.cancel_draft")}</Button>
                   </>}
                   {!ro && j.status === "posted" && j.source_action === "post" && !j.reversed_by_id && (

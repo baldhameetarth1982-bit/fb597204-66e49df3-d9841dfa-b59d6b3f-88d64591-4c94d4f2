@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { askConfirm } from "@/components/system/AskTextDialog";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
@@ -255,7 +256,7 @@ function ElectionsAdmin() {
                           {open.status === "draft" && (
                             <div className="flex shrink-0">
                               <Button variant="ghost" className="h-11 w-11 p-0" aria-label={t("el.a.editX", { name: p.name })} onClick={() => setPost({ id: p.id, name: p.name, seats: String(p.seats), description: p.description ?? "", rule: p.candidate_rule, requirements: p.requirements ?? "" })}><Pencil className="h-4 w-4" /></Button>
-                              <Button variant="ghost" className="h-11 w-11 p-0" aria-label={t("el.a.removeX", { name: p.name })} disabled={busy} onClick={() => confirm(t("el.a.removeConfirm", { name: p.name })) && run(() => govRpc("election_post_remove", { _post: p.id }), t("el.a.postRemoved"))}><Trash2 className="h-4 w-4" /></Button>
+                              <Button variant="ghost" className="h-11 w-11 p-0" aria-label={t("el.a.removeX", { name: p.name })} disabled={busy} onClick={() => void askConfirm(t("el.a.removeConfirm", { name: p.name })).then((ok) => ok && run(() => govRpc("election_post_remove", { _post: p.id }), t("el.a.postRemoved")))}><Trash2 className="h-4 w-4" /></Button>
                             </div>
                           )}
                         </div>
@@ -293,7 +294,7 @@ function ElectionsAdmin() {
               <div className="flex flex-col gap-2">
                 {open.status === "draft" && <Button variant="outline" className="h-12 rounded-xl" onClick={() => startEdit(open)}>{t("el.a.editDetails")}</Button>}
                 {(NEXT[open.status] ?? []).map((s) => (
-                  <Button key={s.to} className="h-12 rounded-xl" disabled={busy} onClick={() => confirm(t(s.confirm)) && setStatus(s.to, null)}>{t(s.label)}</Button>
+                  <Button key={s.to} className="h-12 rounded-xl" disabled={busy} onClick={() => void askConfirm(t(s.confirm)).then((ok) => { if (ok) void setStatus(s.to, null); })}>{t(s.label)}</Button>
                 ))}
                 {open.status === "nomination_review" && <Button variant="outline" className="h-12 rounded-xl" disabled={busy} onClick={() => { setReason({ kind: "status", to: "nomination_open", label: t("el.a.reopenNom") }); setReasonText(""); }}>{t("el.a.reopenNom")}…</Button>}
                 {open.status === "voting_closed" && <Button variant="outline" className="h-12 rounded-xl" disabled={busy} onClick={() => { setReason({ kind: "status", to: "voting_open", label: t("el.a.reopenVote") }); setReasonText(""); }}>{t("el.a.reopenVote")}…</Button>}

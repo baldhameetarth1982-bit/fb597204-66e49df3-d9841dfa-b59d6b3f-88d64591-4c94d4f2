@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { askConfirm } from "@/components/system/AskTextDialog";
 import { superAdminReason } from "@/lib/super-admin-reason";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -404,7 +405,7 @@ function InviteReset({ societyId }: { societyId: string }) {
       onClick={async () => {
         if (
           busy ||
-          !window.confirm("Generate a new invite code? The old code stops working immediately.")
+          !(await askConfirm("Generate a new invite code? The old code stops working immediately."))
         )
           return;
         setBusy(true);

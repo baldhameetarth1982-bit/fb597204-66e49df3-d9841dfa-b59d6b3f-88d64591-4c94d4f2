@@ -1639,6 +1639,13 @@
       "when": 1791769784400,
       "tag": "0233_saas_manual_upi_payments",
       "breakpoints": true
+    },
+    {
+      "idx": 234,
+      "version": "7",
+      "when": 1791771219525,
+      "tag": "0234_user_notification_preferences",
+      "breakpoints": true
     }
   ]
 }

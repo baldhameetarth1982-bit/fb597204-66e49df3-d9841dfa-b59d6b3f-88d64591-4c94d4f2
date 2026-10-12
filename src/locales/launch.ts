@@ -290,4 +290,22 @@ export const launch = {
   "ln.upi.r.duplicate": ["This payment was already used", "यह भुगतान पहले ही इस्तेमाल हो चुका है", "આ ચુકવણી પહેલેથી વપરાઈ ગઈ છે"],
   "ln.upi.r.other": ["We couldn't verify it", "हम इसकी पुष्टि नहीं कर सके", "અમે તેની ખાતરી કરી શક્યા નહીં"],
   "ln.upi.nav": ["UPI plan payments", "UPI प्लान भुगतान", "UPI પ્લાન ચુકવણીઓ"],
+
+  // Account preferences
+  "ln.pref.account": ["Your account", "आपका खाता", "તમારું ખાતું"],
+  "ln.pref.hint": ["Saved to your account and used on every device. Safety and emergency alerts always reach you.", "आपके खाते में सेव होता है और हर डिवाइस पर लागू होता है। सुरक्षा और आपातकालीन अलर्ट हमेशा मिलेंगे।", "તમારા ખાતામાં સેવ થાય છે અને દરેક ડિવાઇસ પર લાગુ પડે છે. સુરક્ષા અને કટોકટીના અલર્ટ હંમેશા મળશે."],
+  "ln.pref.annD": ["In-app alerts for notices, meetings, polls and events", "नोटिस, मीटिंग, पोल और इवेंट के लिए ऐप में अलर्ट", "નોટિસ, મીટિંગ, પોલ અને ઇવેન્ટ માટે એપમાં અલર્ટ"],
+  "ln.pref.visD": ["In-app alerts when a guest is at the gate, enters or leaves. If off, check Visitors yourself.", "मेहमान गेट पर आए, अंदर आए या जाए तो ऐप में अलर्ट। बंद करने पर विज़िटर्स खुद देखें।", "મહેમાન ગેટ પર આવે, અંદર આવે કે જાય ત્યારે એપમાં અલર્ટ. બંધ હોય તો વિઝિટર્સ જાતે જુઓ."],
+  "ln.pref.billsD": ["Bill and due reminders in the app", "ऐप में बिल और बकाया के रिमाइंडर", "એપમાં બિલ અને બાકીના રિમાઇન્ડર"],
+  "ln.pref.digestOff": ["Email isn't connected yet, so no digest is sent. This turns on once email is ready.", "ईमेल अभी जुड़ा नहीं है, इसलिए कोई सारांश नहीं भेजा जाता। ईमेल तैयार होने पर यह चालू होगा।", "ઈમેલ હજી જોડાયેલ નથી, તેથી કોઈ સારાંશ મોકલાતો નથી. ઈમેલ તૈયાર થતાં આ ચાલુ થશે."],
+  "ln.pref.mktD": ["Only if you turn this on. We don't send marketing emails yet.", "केवल तभी जब आप इसे चालू करें। हम अभी मार्केटिंग ईमेल नहीं भेजते।", "ફક્ત તમે આ ચાલુ કરો ત્યારે જ. અમે હજી માર્કેટિંગ ઈમેલ મોકલતા નથી."],
+  "ln.pref.saved": ["Saved", "सेव हो गया", "સેવ થઈ ગયું"],
+  "ln.pref.saveFail": ["Couldn't save. Please try again.", "सेव नहीं हो सका। कृपया फिर से कोशिश करें।", "સેવ થઈ શક્યું નહીં. કૃપા કરીને ફરી પ્રયાસ કરો."],
+  "ln.pref.loadFail": ["Settings couldn't load.", "सेटिंग्स लोड नहीं हो सकीं।", "સેટિંગ્સ લોડ થઈ શક્યાં નહીં."],
+  "ln.pref.whoTitle": ["Who can see your details", "आपकी जानकारी कौन देख सकता है", "તમારી વિગતો કોણ જોઈ શકે"],
+  "ln.pref.who1": ["Other residents never see your phone number or email.", "दूसरे निवासी आपका फ़ोन नंबर या ईमेल कभी नहीं देखते।", "બીજા રહેવાસીઓ તમારો ફોન નંબર કે ઈમેલ ક્યારેય જોતા નથી."],
+  "ln.pref.who2": ["Your committee sees your name, phone and home to run the society.", "सोसाइटी चलाने के लिए आपकी कमेटी आपका नाम, फ़ोन और घर देखती है।", "સોસાયટી ચલાવવા તમારી કમિટી તમારું નામ, ફોન અને ઘર જુએ છે."],
+  "ln.pref.who3": ["Guards see your home number only for visitors coming to you.", "गार्ड आपके घर का नंबर केवल आपके मेहमानों के लिए देखते हैं।", "ગાર્ડ તમારા ઘરનો નંબર ફક્ત તમારા મહેમાનો માટે જ જુએ છે."],
+  "ln.pref.who4": ["A phone number on a community listing is shown only if you add it to that listing.", "कम्युनिटी लिस्टिंग पर फ़ोन नंबर तभी दिखता है जब आप उसे उस लिस्टिंग में जोड़ें।", "કોમ્યુનિટી લિસ્ટિંગ પર ફોન નંબર ત્યારે જ દેખાય છે જ્યારે તમે તેને તે લિસ્ટિંગમાં ઉમેરો."],
+  "ln.ask.sure": ["Are you sure?", "क्या आप पक्का हैं?", "શું તમને ખાતરી છે?"],
 } satisfies Catalog;

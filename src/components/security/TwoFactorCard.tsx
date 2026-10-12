@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { askConfirm } from "@/components/system/AskTextDialog";
 import { userMessage } from "@/lib/user-error";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -94,7 +95,7 @@ export function TwoFactorCard() {
 
   async function disable() {
     if (!verifiedFactorId) return;
-    if (!confirm("Disable two-factor authentication?")) return;
+    if (!(await askConfirm("Disable two-factor authentication?"))) return;
     setWorking(true);
     const { error } = await supabase.auth.mfa.unenroll({
       factorId: verifiedFactorId,

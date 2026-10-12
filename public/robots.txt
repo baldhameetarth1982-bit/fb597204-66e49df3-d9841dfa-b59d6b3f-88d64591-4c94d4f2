@@ -1,5 +1,34 @@
+# AI search and assistant crawlers: explicitly allowed on public pages.
+# A named group replaces the "*" group for that bot, so private areas are repeated here.
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: PerplexityBot
+User-agent: Meta-ExternalAgent
+Allow: /
+Allow: /*.js$
+Allow: /*.css$
+Disallow: /app/
+Disallow: /society/
+Disallow: /admin/
+Disallow: /onboarding
+Disallow: /settings
+Disallow: /verify-phone
+Disallow: /checkout/
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /q/
+Disallow: /verify/
+Disallow: /mcp
+Disallow: /.mcp/
+
+# All other crawlers
 User-agent: *
 Allow: /
+Allow: /*.js$
+Allow: /*.css$
 Disallow: /app/
 Disallow: /society/
 Disallow: /admin/

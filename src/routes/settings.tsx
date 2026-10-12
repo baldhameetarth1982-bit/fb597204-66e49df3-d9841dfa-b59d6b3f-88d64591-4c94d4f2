@@ -462,14 +462,14 @@ function DeleteAccountRow({ email, onSignOut }: { email: string | null; onSignOu
             onClick={async (e) => {
               e.preventDefault();
               setBusy(true);
-              // Soft-delete: clear profile fields. Auth user removal needs admin/support.
-              const { data: { user } } = await supabase.auth.getUser();
-              if (user) {
-                await (supabase as any).rpc("reset_own_kyc");
-                await supabase.from("profiles").update({
-                  full_name: "Deleted user", phone: null, avatar_url: null,
-                } as any).eq("id", user.id);
-                await supabase.from("family_members").delete().eq("user_id", user.id);
+              // Server removes login, personal files and data; financial records stay anonymised.
+              const r = await deleteMyAccount();
+              setBusy(false);
+              if (!r.ok) {
+                toast.error(r.code === "handover_required"
+                  ? "Committee admins must hand over the society to another admin before deleting their account."
+                  : r.code === "rate_limited" ? "Please wait a while before trying again." : "Account could not be deleted. Please try again or contact support.");
+                return;
               }
               toast.success(t("st.delRequested", { email: email ?? t("st.you") }));
               await onSignOut();

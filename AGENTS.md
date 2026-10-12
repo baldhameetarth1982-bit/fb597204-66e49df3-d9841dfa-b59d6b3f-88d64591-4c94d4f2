@@ -16,3 +16,5 @@
 - Super Admin sessions sign out after 30 idle minutes via useIdleSignOut in the _admin layout (activity shared across tabs through localStorage); the admin panel is the highest-value target.
 - SaaS UPI prices (plan length saving + discount code + GST) are computed only by the saas_upi_quote RPC and re-checked in submit_saas_upi_payment_v2; the browser only displays them, so no tampered amount can be approved.
 - Subscription renewal reminders run daily via run_logged_db_job('subscription-renewal-reminders'), deduped per society/end-date/day; email copies are queued in message_deliveries and go out once the email channel is switched on.
+
+- Super Admin power needs 3 steps per sign-in session: password, a passkey or backup code (admin_step_sessions, written only by admin-step-up.functions.ts after WebAuthn verification) and TOTP aal2; public._super_admin_step_ok() gates has_role/is_super_admin/is_super_admin_internal so RLS and RPCs enforce it, not just the UI.

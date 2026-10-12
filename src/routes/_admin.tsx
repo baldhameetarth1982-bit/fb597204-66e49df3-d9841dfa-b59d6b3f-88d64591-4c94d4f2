@@ -6,6 +6,7 @@ import { useIdleSignOut } from "@/hooks/useIdleSignOut";
 import { toast } from "sonner";
 import { tu } from "@/lib/i18n";
 import { usePlatformRoles } from "@/hooks/usePlatformRoles";
+import { AdminSecuritySteps } from "@/components/security/AdminSecuritySteps";
 
 /** Super Admin layout. `/admin/*` needs Super Admin or a platform staff role; each page and action re-checks on the server. */
 export const Route = createFileRoute("/_admin")({
@@ -33,5 +34,6 @@ function AdminGuard() {
   if (!isSuper && !staff.isStaff) {
     return <Navigate to={primaryRole ? ROLE_HOME[primaryRole] : "/login"} replace />;
   }
+  if (isSuper) return <AdminSecuritySteps><Outlet /></AdminSecuritySteps>;
   return <Outlet />;
 }

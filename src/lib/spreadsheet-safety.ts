@@ -1,5 +1,6 @@
 import * as XLSX from "xlsx";
 import { neutralizeFormula } from "@/lib/migration-pipeline";
+import { inspectZip } from "@/lib/zip-bomb-guard";
 
 export const SHEET_MAX_BYTES = 5 * 1024 * 1024;
 export const SHEET_MAX_ROWS = 5000;
@@ -28,6 +29,8 @@ export function readFirstSheetSafely(buf: ArrayBuffer, filename: string, opts: {
   const ext = filename.toLowerCase().split(".").pop() ?? "";
   const extOk = (kind === "xlsx" && ext === "xlsx") || (kind === "xls" && ext === "xls") || (kind === "csv" && ext === "csv");
   if (!extOk) return { ok: false, error: "bad_type" };
+  // .xlsx is a ZIP: refuse zip bombs before anything is decompressed.
+  if (kind === "xlsx" && !inspectZip(bytes).ok) return { ok: false, error: "too_large" };
   try {
     const wb = XLSX.read(bytes, {
       type: "array", cellFormula: false, cellHTML: false, cellStyles: false, bookVBA: false,

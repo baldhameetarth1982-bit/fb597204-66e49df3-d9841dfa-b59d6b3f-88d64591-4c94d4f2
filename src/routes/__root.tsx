@@ -1,5 +1,7 @@
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
+import { CookieBanner } from "@/components/system/CookieBanner";
+import { CONSENT_EVENT, isMarketingPage, readConsent } from "@/lib/cookie-consent";
 import {
   Outlet,
   Link,
@@ -175,6 +177,7 @@ function RootComponent() {
           <LanguageSync />
           <ReferralCapture />
           <MarketingAnalytics />
+          <CookieBanner />
           <ShellSwitcher />
           <Toaster richColors closeButton position="top-right" />
           <AskTextDialogHost />
@@ -241,6 +244,7 @@ function ReferralCapture() {
 function MarketingAnalytics() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [consentTick, setConsentTick] = useState(0);
+  const [consentTick, setConsentTick] = useState(0);
   useEffect(() => {
     const on = () => setConsentTick((n) => n + 1);
     window.addEventListener(CONSENT_EVENT, on);
@@ -272,7 +276,7 @@ function MarketingAnalytics() {
       (window as any).fbq("init", pixelId);
     }
     if (pixelId && (window as any).fbq) (window as any).fbq("track", "PageView");
-  }, [pathname]);
+  }, [pathname, consentTick]);
   return null;
 }
 

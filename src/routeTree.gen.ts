@@ -41,6 +41,7 @@ import { Route as ApiSupportChatRouteImport } from './routes/api/support-chat'
 import { Route as AssetTokenRouteImport } from './routes/asset.$token'
 import { Route as CheckoutPlanIdRouteImport } from './routes/checkout.$planId'
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding.index'
+import { Route as OnboardingChoosePlanRouteImport } from './routes/onboarding.choose-plan'
 import { Route as OnboardingCreateRouteImport } from './routes/onboarding.create'
 import { Route as OnboardingJoinRouteImport } from './routes/onboarding.join'
 import { Route as OnboardingPendingRouteImport } from './routes/onboarding.pending'
@@ -59,6 +60,7 @@ import { Route as AdminAdminBrandingRouteImport } from './routes/_admin/admin.br
 import { Route as AdminAdminCostsRouteImport } from './routes/_admin/admin.costs'
 import { Route as AdminAdminCustomPlansRouteImport } from './routes/_admin/admin.custom-plans'
 import { Route as AdminAdminDashboardRouteImport } from './routes/_admin/admin.dashboard'
+import { Route as AdminAdminDiscountCodesRouteImport } from './routes/_admin/admin.discount-codes'
 import { Route as AdminAdminExecutiveRouteImport } from './routes/_admin/admin.executive'
 import { Route as AdminAdminHealthRouteImport } from './routes/_admin/admin.health'
 import { Route as AdminAdminIncomeRouteImport } from './routes/_admin/admin.income'
@@ -381,6 +383,11 @@ const OnboardingIndexRoute = OnboardingIndexRouteImport.update({
   path: '/',
   getParentRoute: () => OnboardingRoute,
 } as any)
+const OnboardingChoosePlanRoute = OnboardingChoosePlanRouteImport.update({
+  id: '/choose-plan',
+  path: '/choose-plan',
+  getParentRoute: () => OnboardingRoute,
+} as any)
 const OnboardingCreateRoute = OnboardingCreateRouteImport.update({
   id: '/create',
   path: '/create',
@@ -470,6 +477,11 @@ const AdminAdminCustomPlansRoute = AdminAdminCustomPlansRouteImport.update({
 const AdminAdminDashboardRoute = AdminAdminDashboardRouteImport.update({
   id: '/admin/dashboard',
   path: '/admin/dashboard',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminDiscountCodesRoute = AdminAdminDiscountCodesRouteImport.update({
+  id: '/admin/discount-codes',
+  path: '/admin/discount-codes',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminAdminExecutiveRoute = AdminAdminExecutiveRouteImport.update({
@@ -1357,6 +1369,7 @@ export interface FileRoutesByFullPath {
   '/api/support-chat': typeof ApiSupportChatRoute
   '/asset/$token': typeof AssetTokenRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
+  '/onboarding/choose-plan': typeof OnboardingChoosePlanRoute
   '/onboarding/create': typeof OnboardingCreateRoute
   '/onboarding/join': typeof OnboardingJoinRoute
   '/onboarding/pending': typeof OnboardingPendingRoute
@@ -1376,6 +1389,7 @@ export interface FileRoutesByFullPath {
   '/admin/costs': typeof AdminAdminCostsRoute
   '/admin/custom-plans': typeof AdminAdminCustomPlansRoute
   '/admin/dashboard': typeof AdminAdminDashboardRoute
+  '/admin/discount-codes': typeof AdminAdminDiscountCodesRoute
   '/admin/executive': typeof AdminAdminExecutiveRoute
   '/admin/health': typeof AdminAdminHealthRoute
   '/admin/income': typeof AdminAdminIncomeRoute
@@ -1566,6 +1580,7 @@ export interface FileRoutesByTo {
   '/api/support-chat': typeof ApiSupportChatRoute
   '/asset/$token': typeof AssetTokenRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
+  '/onboarding/choose-plan': typeof OnboardingChoosePlanRoute
   '/onboarding/create': typeof OnboardingCreateRoute
   '/onboarding/join': typeof OnboardingJoinRoute
   '/onboarding/pending': typeof OnboardingPendingRoute
@@ -1585,6 +1600,7 @@ export interface FileRoutesByTo {
   '/admin/costs': typeof AdminAdminCostsRoute
   '/admin/custom-plans': typeof AdminAdminCustomPlansRoute
   '/admin/dashboard': typeof AdminAdminDashboardRoute
+  '/admin/discount-codes': typeof AdminAdminDiscountCodesRoute
   '/admin/executive': typeof AdminAdminExecutiveRoute
   '/admin/health': typeof AdminAdminHealthRoute
   '/admin/income': typeof AdminAdminIncomeRoute
@@ -1781,6 +1797,7 @@ export interface FileRoutesById {
   '/api/support-chat': typeof ApiSupportChatRoute
   '/asset/$token': typeof AssetTokenRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
+  '/onboarding/choose-plan': typeof OnboardingChoosePlanRoute
   '/onboarding/create': typeof OnboardingCreateRoute
   '/onboarding/join': typeof OnboardingJoinRoute
   '/onboarding/pending': typeof OnboardingPendingRoute
@@ -1800,6 +1817,7 @@ export interface FileRoutesById {
   '/_admin/admin/costs': typeof AdminAdminCostsRoute
   '/_admin/admin/custom-plans': typeof AdminAdminCustomPlansRoute
   '/_admin/admin/dashboard': typeof AdminAdminDashboardRoute
+  '/_admin/admin/discount-codes': typeof AdminAdminDiscountCodesRoute
   '/_admin/admin/executive': typeof AdminAdminExecutiveRoute
   '/_admin/admin/health': typeof AdminAdminHealthRoute
   '/_admin/admin/income': typeof AdminAdminIncomeRoute
@@ -1993,6 +2011,7 @@ export interface FileRouteTypes {
     | '/api/support-chat'
     | '/asset/$token'
     | '/checkout/$planId'
+    | '/onboarding/choose-plan'
     | '/onboarding/create'
     | '/onboarding/join'
     | '/onboarding/pending'
@@ -2012,6 +2031,7 @@ export interface FileRouteTypes {
     | '/admin/costs'
     | '/admin/custom-plans'
     | '/admin/dashboard'
+    | '/admin/discount-codes'
     | '/admin/executive'
     | '/admin/health'
     | '/admin/income'
@@ -2202,6 +2222,7 @@ export interface FileRouteTypes {
     | '/api/support-chat'
     | '/asset/$token'
     | '/checkout/$planId'
+    | '/onboarding/choose-plan'
     | '/onboarding/create'
     | '/onboarding/join'
     | '/onboarding/pending'
@@ -2221,6 +2242,7 @@ export interface FileRouteTypes {
     | '/admin/costs'
     | '/admin/custom-plans'
     | '/admin/dashboard'
+    | '/admin/discount-codes'
     | '/admin/executive'
     | '/admin/health'
     | '/admin/income'
@@ -2416,6 +2438,7 @@ export interface FileRouteTypes {
     | '/api/support-chat'
     | '/asset/$token'
     | '/checkout/$planId'
+    | '/onboarding/choose-plan'
     | '/onboarding/create'
     | '/onboarding/join'
     | '/onboarding/pending'
@@ -2435,6 +2458,7 @@ export interface FileRouteTypes {
     | '/_admin/admin/costs'
     | '/_admin/admin/custom-plans'
     | '/_admin/admin/dashboard'
+    | '/_admin/admin/discount-codes'
     | '/_admin/admin/executive'
     | '/_admin/admin/health'
     | '/_admin/admin/income'
@@ -2869,6 +2893,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingIndexRouteImport
       parentRoute: typeof OnboardingRoute
     }
+    '/onboarding/choose-plan': {
+      id: '/onboarding/choose-plan'
+      path: '/choose-plan'
+      fullPath: '/onboarding/choose-plan'
+      preLoaderRoute: typeof OnboardingChoosePlanRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
     '/onboarding/create': {
       id: '/onboarding/create'
       path: '/create'
@@ -2993,6 +3024,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/dashboard'
       fullPath: '/admin/dashboard'
       preLoaderRoute: typeof AdminAdminDashboardRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/discount-codes': {
+      id: '/_admin/admin/discount-codes'
+      path: '/admin/discount-codes'
+      fullPath: '/admin/discount-codes'
+      preLoaderRoute: typeof AdminAdminDiscountCodesRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_admin/admin/executive': {
@@ -4144,6 +4182,7 @@ interface AdminRouteChildren {
   AdminAdminCostsRoute: typeof AdminAdminCostsRoute
   AdminAdminCustomPlansRoute: typeof AdminAdminCustomPlansRoute
   AdminAdminDashboardRoute: typeof AdminAdminDashboardRoute
+  AdminAdminDiscountCodesRoute: typeof AdminAdminDiscountCodesRoute
   AdminAdminExecutiveRoute: typeof AdminAdminExecutiveRoute
   AdminAdminHealthRoute: typeof AdminAdminHealthRoute
   AdminAdminIncomeRoute: typeof AdminAdminIncomeRoute
@@ -4177,6 +4216,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAdminCostsRoute: AdminAdminCostsRoute,
   AdminAdminCustomPlansRoute: AdminAdminCustomPlansRoute,
   AdminAdminDashboardRoute: AdminAdminDashboardRoute,
+  AdminAdminDiscountCodesRoute: AdminAdminDiscountCodesRoute,
   AdminAdminExecutiveRoute: AdminAdminExecutiveRoute,
   AdminAdminHealthRoute: AdminAdminHealthRoute,
   AdminAdminIncomeRoute: AdminAdminIncomeRoute,
@@ -4500,6 +4540,7 @@ const SocietyRouteWithChildren =
   SocietyRoute._addFileChildren(SocietyRouteChildren)
 
 interface OnboardingRouteChildren {
+  OnboardingChoosePlanRoute: typeof OnboardingChoosePlanRoute
   OnboardingCreateRoute: typeof OnboardingCreateRoute
   OnboardingJoinRoute: typeof OnboardingJoinRoute
   OnboardingPendingRoute: typeof OnboardingPendingRoute
@@ -4508,6 +4549,7 @@ interface OnboardingRouteChildren {
 }
 
 const OnboardingRouteChildren: OnboardingRouteChildren = {
+  OnboardingChoosePlanRoute: OnboardingChoosePlanRoute,
   OnboardingCreateRoute: OnboardingCreateRoute,
   OnboardingJoinRoute: OnboardingJoinRoute,
   OnboardingPendingRoute: OnboardingPendingRoute,

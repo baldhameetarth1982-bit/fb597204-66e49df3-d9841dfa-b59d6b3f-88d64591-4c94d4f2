@@ -30,11 +30,16 @@ export const Route = createFileRoute("/checkout/$planId")({
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
+  validateSearch: (s: Record<string, unknown>): { term?: 1 | 3 | 12 } => {
+    const n = Number(s.term);
+    return n === 3 || n === 12 || n === 1 ? { term: n } : {};
+  },
   component: CheckoutPage,
 });
 
 function CheckoutPage() {
   const { planId } = Route.useParams();
+  const { term } = Route.useSearch();
   const { profile, user, hasRole } = useAuth();
   const canManagePlan = hasRole("society_admin") || hasRole("super_admin");
   const [live, setLive] = useState<boolean | null>(null);
@@ -259,10 +264,7 @@ function CheckoutPage() {
                       planId={plan.id as "basic" | "pro" | "premium"}
                       planName={plan.name}
                       flatQuantity={flatQuantity}
-                      amountPaise={quote!.amount_paise ?? 0}
-                      basePaise={quote!.base_amount_paise}
-                      taxPaise={quote!.tax_amount_paise}
-                      taxPercent={quote!.tax_percent}
+                      initialTerm={term}
                       upiVpa={methods.data!.upiVpa}
                       payeeName={methods.data!.payeeName}
                     />

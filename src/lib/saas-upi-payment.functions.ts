@@ -16,7 +16,7 @@ export const UPI_CONSENT_VERSION = "saas-upi-2026-10";
 const KNOWN = [
   "not_authorized", "upi_unavailable", "invalid_paid_at", "already_pending", "duplicate_reference",
   "custom_pricing", "nothing_due", "price_changed", "idempotency_conflict", "invalid_file", "rate_limited",
-  "reason_required", "not_found", "quantity_below_current_flats",
+  "reason_required", "not_found", "quantity_below_current_flats", "code_invalid", "code_exists", "code_in_use",
 ];
 function safeError(e: unknown): Error {
   const msg = (e as { message?: string } | null)?.message ?? "";
@@ -60,6 +60,8 @@ export const submitSaasUpiPayment = createServerFn({ method: "POST" })
       societyId: z.string().uuid(),
       planId: z.enum(["basic", "pro", "premium"]),
       flatQuantity: z.number().int().min(1).max(300).optional(),
+      termMonths: z.union([z.literal(1), z.literal(3), z.literal(12)]).default(1),
+      discountCode: z.string().trim().max(24).regex(/^[A-Za-z0-9_-]*$/).default(""),
       requestId: z.string().uuid(),
       expectedAmountPaise: z.number().int().positive(),
       utr: z.string().trim().regex(/^[A-Za-z0-9]{8,35}$/),
@@ -86,8 +88,9 @@ export const submitSaasUpiPayment = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const up = await supabaseAdmin.storage.from(BUCKET).upload(path, bytes, { contentType: kind.mime, upsert: false });
     if (up.error) throw new Error("operation_failed");
-    const { data: res, error } = await context.supabase.rpc("submit_saas_upi_payment", {
+    const { data: res, error } = await context.supabase.rpc("submit_saas_upi_payment_v2", {
       _society_id: data.societyId, _plan_id: data.planId, _flat_quantity: (data.flatQuantity ?? null) as number,
+      _term_months: data.termMonths, _discount_code: data.discountCode,
       _request_id: data.requestId, _expected_amount_paise: data.expectedAmountPaise, _utr: data.utr,
       _payer_name: data.payerName, _payer_upi: data.payerUpi || (null as unknown as string),
       _paid_at: data.paidAt, _proof_path: path, _consent_version: UPI_CONSENT_VERSION,
@@ -96,6 +99,74 @@ export const submitSaasUpiPayment = createServerFn({ method: "POST" })
     if (error || r?.replayed) await supabaseAdmin.storage.from(BUCKET).remove([path]);
     if (error) throw safeError(error);
     return { id: String(r?.id ?? ""), status: String(r?.status ?? "pending") };
+  });
+
+export type UpiQuote = {
+  plan_id: string; plan_name: string; flat_count: number; price_per_flat_inr: number; custom_pricing: boolean;
+  pricing_type: string; term_months: number; gross_amount_paise: number | null; term_discount_percent: number;
+  term_discount_paise: number; discount_code: string | null;
+  discount_code_status: null | "applied" | "invalid" | "not_started" | "expired" | "not_for_plan" | "already_used" | "used_up";
+  discount_code_percent: number | null; code_discount_paise: number; base_amount_paise: number | null;
+  tax_percent: number | null; tax_amount_paise: number | null; amount_paise: number | null;
+};
+
+/** Server-priced UPI quote with term (1/3/12 months) and optional discount code. */
+export const getSaasUpiQuote = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      societyId: z.string().uuid(),
+      planId: z.enum(["basic", "pro", "premium"]),
+      flatQuantity: z.number().int().min(1).max(300).optional(),
+      termMonths: z.union([z.literal(1), z.literal(3), z.literal(12)]),
+      discountCode: z.string().trim().max(24).regex(/^[A-Za-z0-9_-]*$/),
+    }).strict().parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: q, error } = await context.supabase.rpc("saas_upi_quote", {
+      _society_id: data.societyId, _plan_id: data.planId, _flat_quantity: (data.flatQuantity ?? null) as number,
+      _term_months: data.termMonths, _discount_code: data.discountCode,
+    });
+    if (error) throw safeError(error);
+    return q as unknown as UpiQuote;
+  });
+
+export type DiscountCode = {
+  id: string; code: string; percent_off: number; plan_ids: string[] | null; valid_from: string | null;
+  valid_until: string | null; max_uses: number | null; is_active: boolean; note: string | null; created_at: string; uses: number;
+};
+
+export const adminListDiscountCodes = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase.rpc("admin_list_saas_discount_codes");
+    if (error) throw safeError(error);
+    return (data ?? []) as unknown as DiscountCode[];
+  });
+
+export const adminSaveDiscountCode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      id: z.string().uuid().nullable(),
+      code: z.string().trim().regex(/^[A-Za-z0-9_-]{3,24}$/),
+      percentOff: z.number().gt(0).max(50),
+      planIds: z.array(z.enum(["basic", "pro", "premium"])).max(3).nullable(),
+      validFrom: z.string().datetime().nullable(),
+      validUntil: z.string().datetime().nullable(),
+      maxUses: z.number().int().min(1).max(100000).nullable(),
+      isActive: z.boolean(),
+      note: z.string().trim().max(200).nullable(),
+    }).strict().parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: id, error } = await context.supabase.rpc("admin_save_saas_discount_code", {
+      _id: data.id as string, _code: data.code, _percent_off: data.percentOff, _plan_ids: data.planIds as string[],
+      _valid_from: data.validFrom as string, _valid_until: data.validUntil as string, _max_uses: data.maxUses as number,
+      _is_active: data.isActive, _note: data.note as string,
+    });
+    if (error) throw safeError(error);
+    return { id: String(id) };
   });
 
 export type MyUpiPayment = {

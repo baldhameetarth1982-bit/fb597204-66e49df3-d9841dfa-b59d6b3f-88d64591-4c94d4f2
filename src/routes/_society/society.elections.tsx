@@ -294,7 +294,7 @@ function ElectionsAdmin() {
               <div className="flex flex-col gap-2">
                 {open.status === "draft" && <Button variant="outline" className="h-12 rounded-xl" onClick={() => startEdit(open)}>{t("el.a.editDetails")}</Button>}
                 {(NEXT[open.status] ?? []).map((s) => (
-                  <Button key={s.to} className="h-12 rounded-xl" disabled={busy} onClick={() => void askConfirm(t(s.confirm)).then((ok) => ok && setStatus(s.to, null))}>{t(s.label)}</Button>
+                  <Button key={s.to} className="h-12 rounded-xl" disabled={busy} onClick={() => void askConfirm(t(s.confirm)).then((ok) => { if (ok) void setStatus(s.to, null); })}>{t(s.label)}</Button>
                 ))}
                 {open.status === "nomination_review" && <Button variant="outline" className="h-12 rounded-xl" disabled={busy} onClick={() => { setReason({ kind: "status", to: "nomination_open", label: t("el.a.reopenNom") }); setReasonText(""); }}>{t("el.a.reopenNom")}…</Button>}
                 {open.status === "voting_closed" && <Button variant="outline" className="h-12 rounded-xl" disabled={busy} onClick={() => { setReason({ kind: "status", to: "voting_open", label: t("el.a.reopenVote") }); setReasonText(""); }}>{t("el.a.reopenVote")}…</Button>}

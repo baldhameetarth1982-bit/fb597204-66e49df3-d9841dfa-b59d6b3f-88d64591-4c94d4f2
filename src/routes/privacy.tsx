@@ -56,7 +56,7 @@ function PrivacyPage() {
                 <li><strong>Identity:</strong> full name, flat/unit details, block, relationship (owner / tenant / family).</li>
                 <li><strong>Contact:</strong> email address and phone number, used for authentication and notifications.</li>
                 <li><strong>Optional KYC:</strong> last four digits of Aadhaar and a document image, only when you choose to verify.</li>
-                <li><strong>Payment metadata:</strong> payment/order reference IDs, amount, bill reference. We never store card numbers, CVV, or UPI PIN — those are handled directly by our PCI-DSS compliant payment gateway.</li>
+                <li><strong>Payment metadata:</strong> payment/order reference IDs, amount, bill reference. We never see or store card numbers, CVV or UPI PINs. Maintenance is paid by cash, bank transfer or UPI directly to your society; you may upload a payment screenshot and reference number for verification.</li>
                 <li><strong>Community activity:</strong> posts, comments, complaints, poll votes and other content you publish inside your society.</li>
                 <li><strong>Device data:</strong> push-notification token, browser/user-agent, basic crash and error diagnostics.</li>
               </ul>
@@ -77,7 +77,7 @@ function PrivacyPage() {
                 <li>All traffic between your device and our servers is encrypted over TLS (HTTPS with 128-bit SSL or higher).</li>
                 <li>Data at rest is encrypted on managed Postgres storage.</li>
                 <li>Row-level security policies scope every query to your society; residents of one society cannot access another society's data.</li>
-                <li>Card and UPI data never touches our servers — our PCI-DSS compliant payment gateway processes and stores it.</li>
+                <li>Card and UPI PIN data never reaches our servers; UPI payments happen inside your own UPI app.</li>
                 <li>Aadhaar images live in a private storage bucket accessible only to authorised society admins for verification.</li>
               </ul>
             </section>
@@ -87,16 +87,27 @@ function PrivacyPage() {
               <ul className="list-disc pl-6 space-y-1 text-muted-foreground">
                 <li>Other residents in your society see your name, flat, and posts you publish.</li>
                 <li>Your society admin sees contact details and payment history for billing purposes.</li>
-                <li>Phone visibility to neighbours is opt-in from Settings.</li>
+                <li>Other residents cannot see your phone number or email address.</li>
                 <li>SociyoHub staff access production data only for support requests you initiate.</li>
               </ul>
             </section>
 
             <section>
+              <h2 className="text-lg font-semibold mb-2">5A. Where your data goes (service providers)</h2>
+              <ul className="list-disc pl-6 space-y-1 text-muted-foreground">
+                <li><strong>Lovable Cloud (database, file storage and app hosting, built on Supabase and Cloudflare):</strong> stores all society data and files and runs the app.</li>
+                <li><strong>Google Firebase:</strong> phone OTP and Google sign-in, and push notifications to your device.</li>
+                <li><strong>Google Gemini (through Lovable AI):</strong> only when you use an AI feature such as the AI Secretary; it receives the question and the society documents needed to answer it.</li>
+                <li><strong>Razorpay:</strong> only if a society pays its SociyoHub subscription online once that option is switched on; it receives payment details, never resident data.</li>
+              </ul>
+              <p className="text-muted-foreground mt-2">Some of these providers may process data outside India under their own security commitments. We do not use advertising or analytics trackers inside society screens.</p>
+            </section>
+
+            <section>
               <h2 className="text-lg font-semibold mb-2">6. Data retention</h2>
               <p className="text-muted-foreground">
-                Account data is retained while your society is active. On account deletion, personal identifiers are
-                removed within 30 days; anonymised financial records may be kept for statutory audit periods (up to 7
+                Account data is retained while your society is active. When you delete your account from Settings, your login, contact details, family list, posts and personal
+                files are removed immediately; anonymised financial records may be kept for statutory audit periods (up to 7
                 years) as required by Indian tax and accounting law.
               </p>
               <p className="text-muted-foreground mt-2">

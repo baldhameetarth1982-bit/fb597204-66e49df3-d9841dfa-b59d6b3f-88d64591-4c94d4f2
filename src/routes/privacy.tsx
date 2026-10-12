@@ -120,10 +120,42 @@ function PrivacyPage() {
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold mb-2">7. Your rights</h2>
+              <h2 className="text-lg font-semibold mb-2">6A. Why we may use your data (legal basis)</h2>
+              <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
+                <li><strong>Your consent</strong>, given when you sign up, join a society or opt in to optional messages. You can withdraw it at any time, and withdrawing is as easy as giving it.</li>
+                <li><strong>Legitimate uses</strong> allowed by the Digital Personal Data Protection Act, 2023: data you share for a purpose you asked for (such as a visitor entry), meeting legal duties (such as GST and accounting records), and responding to emergencies or threats to safety.</li>
+              </ul>
+              <p className="text-muted-foreground mt-2">
+                If you withdraw consent, we stop processing for that purpose. Records the law requires us to keep are still kept, as explained in Data retention.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-lg font-semibold mb-2">6B. Children</h2>
               <p className="text-muted-foreground">
-                You can access and correct your data from the app, opt out of marketing emails, hide your phone number
-                from neighbours, and request full account deletion by writing to{" "}
+                Accounts are for adults aged 18 and above. Society records may list children as family members only when an adult resident adds them. We do not track children's behaviour, show them targeted ads or profile them.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-lg font-semibold mb-2">6C. Data breaches</h2>
+              <p className="text-muted-foreground">
+                If a personal data breach happens, we will tell affected users without delay. We will explain what happened, the likely impact and the steps you can take. We will also report it to the Data Protection Board of India as the law requires.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-lg font-semibold mb-2">7. Your rights</h2>
+              <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
+                <li><strong>Access:</strong> you can see a summary of your data, how it is used and who it is shared with.</li>
+                <li><strong>Correction:</strong> you can update your details in the app, or ask us to fix anything wrong or incomplete.</li>
+                <li><strong>Deletion:</strong> you can delete your account from Settings, subject to the legal retention described above.</li>
+                <li><strong>Withdraw consent and opt out</strong> of optional messages at any time from Settings.</li>
+                <li><strong>Nominate</strong> a person to use these rights for you in case of death or incapacity.</li>
+                <li><strong>Grievance redressal:</strong> contact us first. If you are not satisfied with our reply, you can complain to the Data Protection Board of India.</li>
+              </ul>
+              <p className="text-muted-foreground mt-2">
+                To use any of these rights, write to{" "}
                 <a href="mailto:sociohub710@gmail.com" className="underline">sociohub710@gmail.com</a>.
               </p>
             </section>
@@ -133,7 +165,7 @@ function PrivacyPage() {
               <p className="text-muted-foreground">
                 Grievance Officer — SociyoHub Support Team,{" "}
                 <a href="mailto:sociohub710@gmail.com" className="underline">sociohub710@gmail.com</a>,
-                Pethapur, Gandhinagar, Gujarat — 382610.
+                Pethapur, Gandhinagar, Gujarat — 382610. We aim to resolve grievances within the time the law allows.
               </p>
             </section>
           </CardContent>

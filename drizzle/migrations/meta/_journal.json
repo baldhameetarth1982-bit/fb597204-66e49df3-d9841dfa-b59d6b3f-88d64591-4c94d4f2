@@ -1632,6 +1632,13 @@
       "when": 1791593010399,
       "tag": "0232_platform_staff_tables_read_only_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 233,
+      "version": "7",
+      "when": 1791769784400,
+      "tag": "0233_saas_manual_upi_payments",
+      "breakpoints": true
     }
   ]
 }

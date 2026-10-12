@@ -244,7 +244,6 @@ function ReferralCapture() {
 function MarketingAnalytics() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [consentTick, setConsentTick] = useState(0);
-  const [consentTick, setConsentTick] = useState(0);
   useEffect(() => {
     const on = () => setConsentTick((n) => n + 1);
     window.addEventListener(CONSENT_EVENT, on);

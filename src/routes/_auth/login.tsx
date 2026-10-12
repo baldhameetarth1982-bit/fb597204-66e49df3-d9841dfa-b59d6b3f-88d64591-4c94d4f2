@@ -342,9 +342,10 @@ function LoginPage() {
             <FileCheck2 className="h-3 w-3 mt-0.5 text-primary" /> {t("auth.safe.role")}
           </li>
         </ul>
-        <p className="text-[10px] text-muted-foreground pt-1">
-          <Link to="/terms" className="underline">{t("auth.terms")}</Link> ·{" "}
-          <Link to="/privacy" className="underline">{t("auth.privacy")}</Link>
+        <p className="text-[11px] text-muted-foreground pt-1">
+          By continuing you confirm you are 18 or older and agree to the{" "}
+          <Link to="/terms" className="underline">{t("auth.terms")}</Link> and{" "}
+          <Link to="/privacy" className="underline">{t("auth.privacy")}</Link>. Children are added by a parent as family members.
         </p>
       </div>
     </AuthShell>

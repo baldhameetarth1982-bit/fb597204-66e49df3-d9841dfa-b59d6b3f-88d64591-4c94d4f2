@@ -1,4 +1,5 @@
-import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { createFileRoute, Navigate, useHydrated } from "@tanstack/react-router";
+import { Loader2 } from "lucide-react";
 import { structuredDataScript } from "@/lib/structured-data";
 import { useAuth } from "@/context/AuthContext";
 import { ROLE_HOME, ROLES } from "@/config/roles";
@@ -33,7 +34,15 @@ function IndexRedirect() {
   const { isLoading, isAuthenticated, primaryRole, profile } = useAuth();
 
   // Visitors and search engines get the real home page (server-rendered), not a spinner or a redirect.
-  if (isLoading || !isAuthenticated) return <Landing />;
+  const hydrated = useHydrated();
+  if (!hydrated || (!isLoading && !isAuthenticated)) return <Landing />;
+  if (isLoading) {
+    return (
+      <div className="min-h-[60vh] grid place-items-center text-muted-foreground">
+        <Loader2 className="h-6 w-6 animate-spin" aria-label="Loading" />
+      </div>
+    );
+  }
 
   if (primaryRole === ROLES.SUPER_ADMIN) {
     return <Navigate to={ROLE_HOME[ROLES.SUPER_ADMIN]} replace />;

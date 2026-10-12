@@ -1,8 +1,9 @@
-import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { structuredDataScript } from "@/lib/structured-data";
+import { createFileRoute, Navigate, useHydrated } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
+import { structuredDataScript } from "@/lib/structured-data";
 import { useAuth } from "@/context/AuthContext";
 import { ROLE_HOME, ROLES } from "@/config/roles";
+import { Landing } from "@/components/landing/Landing";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -32,17 +33,15 @@ export const Route = createFileRoute("/")({
 function IndexRedirect() {
   const { isLoading, isAuthenticated, primaryRole, profile } = useAuth();
 
+  // Visitors and search engines get the real home page (server-rendered), not a spinner or a redirect.
+  const hydrated = useHydrated();
+  if (!hydrated || (!isLoading && !isAuthenticated)) return <Landing />;
   if (isLoading) {
     return (
       <div className="min-h-[60vh] grid place-items-center text-muted-foreground">
-        <Loader2 className="h-6 w-6 animate-spin" />
+        <Loader2 className="h-6 w-6 animate-spin" aria-label="Loading" />
       </div>
     );
-  }
-
-  if (!isAuthenticated) {
-    const seen = typeof window !== "undefined" && localStorage.getItem("sociohub:welcomed");
-    return <Navigate to={seen ? "/login" : "/welcome"} replace />;
   }
 
   if (primaryRole === ROLES.SUPER_ADMIN) {

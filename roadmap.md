@@ -51,3 +51,5 @@ Stage 3C/3D runtime verification paused by owner.
 - [x] Phase B: replace every native browser confirm() with the in-app confirm dialog
 - [x] Phase C: re-check tester items 11 (notification tabs), 15 (legal page edges), 3 (resident bottom menu), 13 (share)
 - [ ] Phase D: custom-plan chat → email copy — blocked: email sending isn't connected (needs workspace admin email setup)
+
+- [ ] Before Play Store release: run an authorised Strix (AI penetration test) scan against a staging copy only — never the live site or protected society; fix findings, then re-scan.

@@ -53,3 +53,5 @@ Stage 3C/3D runtime verification paused by owner.
 - [ ] Phase D: custom-plan chat → email copy — blocked: email sending isn't connected (needs workspace admin email setup)
 
 - [ ] Before Play Store release: run an authorised Strix (AI penetration test) scan against a staging copy only — never the live site or protected society; fix findings, then re-scan.
+
+- [ ] Reverse OTP by SMS for phone sign-in — blocked: needs an inbound SMS number provider and its keys.

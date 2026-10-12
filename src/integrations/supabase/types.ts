@@ -112,6 +112,117 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_backup_codes: {
+        Row: {
+          code_hash: string
+          created_at: string
+          id: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          code_hash: string
+          created_at?: string
+          id?: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          code_hash?: string
+          created_at?: string
+          id?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      admin_passkeys: {
+        Row: {
+          counter: number
+          created_at: string
+          credential_id: string
+          device_label: string
+          id: string
+          last_used_at: string | null
+          public_key: string
+          rp_id: string
+          transports: string[]
+          user_id: string
+        }
+        Insert: {
+          counter?: number
+          created_at?: string
+          credential_id: string
+          device_label?: string
+          id?: string
+          last_used_at?: string | null
+          public_key: string
+          rp_id: string
+          transports?: string[]
+          user_id: string
+        }
+        Update: {
+          counter?: number
+          created_at?: string
+          credential_id?: string
+          device_label?: string
+          id?: string
+          last_used_at?: string | null
+          public_key?: string
+          rp_id?: string
+          transports?: string[]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      admin_step_sessions: {
+        Row: {
+          method: string
+          session_id: string
+          user_id: string
+          verified_at: string
+        }
+        Insert: {
+          method: string
+          session_id: string
+          user_id: string
+          verified_at?: string
+        }
+        Update: {
+          method?: string
+          session_id?: string
+          user_id?: string
+          verified_at?: string
+        }
+        Relationships: []
+      }
+      admin_webauthn_challenges: {
+        Row: {
+          challenge: string
+          created_at: string
+          expires_at: string
+          id: string
+          kind: string
+          user_id: string
+        }
+        Insert: {
+          challenge: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          kind: string
+          user_id: string
+        }
+        Update: {
+          challenge?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          kind?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ads: {
         Row: {
           active: boolean
@@ -13196,6 +13307,7 @@ export type Database = {
       _staff_assigned_ticket: { Args: { _ticket: string }; Returns: boolean }
       _staff_ctx: { Args: { _cap: string }; Returns: Record<string, unknown> }
       _staff_permission_valid: { Args: { _perms: string[] }; Returns: boolean }
+      _super_admin_step_ok: { Args: { _uid: string }; Returns: boolean }
       _survey_notify: { Args: { _poll_id: string }; Returns: undefined }
       _sync_bill_payment_state: {
         Args: { _bill_id: string }

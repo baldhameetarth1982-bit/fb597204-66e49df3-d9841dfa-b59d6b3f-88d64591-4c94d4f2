@@ -1674,6 +1674,13 @@
       "when": 1791781018050,
       "tag": "0238_society_id_lookup_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 239,
+      "version": "7",
+      "when": 1791781525318,
+      "tag": "0239_super_admin_three_step_signin",
+      "breakpoints": true
     }
   ]
 }

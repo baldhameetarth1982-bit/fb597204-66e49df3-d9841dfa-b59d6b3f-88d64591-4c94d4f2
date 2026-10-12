@@ -217,6 +217,7 @@ import { Route as SocietySocietyQrIdRouteImport } from './routes/_society/societ
 import { Route as SocietySocietyResidentsIndexRouteImport } from './routes/_society/society.residents.index'
 import { Route as SocietySocietyResidentsIdRouteImport } from './routes/_society/society.residents.$id'
 import { Route as ApiPublicAuthFirebaseSessionRouteImport } from './routes/api/public/auth/firebase-session'
+import { Route as ApiPublicAuthReverseOtpRouteImport } from './routes/api/public/auth/reverse-otp'
 import { Route as ApiPublicGateDeviceEventRouteImport } from './routes/api/public/gate/device-event'
 import { Route as ApiPublicHooksMaintenanceRemindersRouteImport } from './routes/api/public/hooks/maintenance-reminders'
 import { Route as ApiPublicHooksMessagingDispatchRouteImport } from './routes/api/public/hooks/messaging-dispatch'
@@ -1305,6 +1306,11 @@ const ApiPublicAuthFirebaseSessionRoute =
     path: '/api/public/auth/firebase-session',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicAuthReverseOtpRoute = ApiPublicAuthReverseOtpRouteImport.update({
+  id: '/api/public/auth/reverse-otp',
+  path: '/api/public/auth/reverse-otp',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicGateDeviceEventRoute =
   ApiPublicGateDeviceEventRouteImport.update({
     id: '/api/public/gate/device-event',
@@ -1535,6 +1541,7 @@ export interface FileRoutesByFullPath {
   '/society/qr/$id': typeof SocietySocietyQrIdRoute
   '/society/residents/$id': typeof SocietySocietyResidentsIdRoute
   '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
+  '/api/public/auth/reverse-otp': typeof ApiPublicAuthReverseOtpRoute
   '/api/public/gate/device-event': typeof ApiPublicGateDeviceEventRoute
   '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
   '/api/public/hooks/messaging-dispatch': typeof ApiPublicHooksMessagingDispatchRoute
@@ -1746,6 +1753,7 @@ export interface FileRoutesByTo {
   '/society/qr/$id': typeof SocietySocietyQrIdRoute
   '/society/residents/$id': typeof SocietySocietyResidentsIdRoute
   '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
+  '/api/public/auth/reverse-otp': typeof ApiPublicAuthReverseOtpRoute
   '/api/public/gate/device-event': typeof ApiPublicGateDeviceEventRoute
   '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
   '/api/public/hooks/messaging-dispatch': typeof ApiPublicHooksMessagingDispatchRoute
@@ -1963,6 +1971,7 @@ export interface FileRoutesById {
   '/_society/society/qr/$id': typeof SocietySocietyQrIdRoute
   '/_society/society/residents/$id': typeof SocietySocietyResidentsIdRoute
   '/api/public/auth/firebase-session': typeof ApiPublicAuthFirebaseSessionRoute
+  '/api/public/auth/reverse-otp': typeof ApiPublicAuthReverseOtpRoute
   '/api/public/gate/device-event': typeof ApiPublicGateDeviceEventRoute
   '/api/public/hooks/maintenance-reminders': typeof ApiPublicHooksMaintenanceRemindersRoute
   '/api/public/hooks/messaging-dispatch': typeof ApiPublicHooksMessagingDispatchRoute
@@ -2177,6 +2186,7 @@ export interface FileRouteTypes {
     | '/society/qr/$id'
     | '/society/residents/$id'
     | '/api/public/auth/firebase-session'
+    | '/api/public/auth/reverse-otp'
     | '/api/public/gate/device-event'
     | '/api/public/hooks/maintenance-reminders'
     | '/api/public/hooks/messaging-dispatch'
@@ -2388,6 +2398,7 @@ export interface FileRouteTypes {
     | '/society/qr/$id'
     | '/society/residents/$id'
     | '/api/public/auth/firebase-session'
+    | '/api/public/auth/reverse-otp'
     | '/api/public/gate/device-event'
     | '/api/public/hooks/maintenance-reminders'
     | '/api/public/hooks/messaging-dispatch'
@@ -2604,6 +2615,7 @@ export interface FileRouteTypes {
     | '/_society/society/qr/$id'
     | '/_society/society/residents/$id'
     | '/api/public/auth/firebase-session'
+    | '/api/public/auth/reverse-otp'
     | '/api/public/gate/device-event'
     | '/api/public/hooks/maintenance-reminders'
     | '/api/public/hooks/messaging-dispatch'
@@ -2659,6 +2671,7 @@ export interface RootRouteChildren {
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   VerifyNoDuesTokenRoute: typeof VerifyNoDuesTokenRoute
   ApiPublicAuthFirebaseSessionRoute: typeof ApiPublicAuthFirebaseSessionRoute
+  ApiPublicAuthReverseOtpRoute: typeof ApiPublicAuthReverseOtpRoute
   ApiPublicGateDeviceEventRoute: typeof ApiPublicGateDeviceEventRoute
   ApiPublicHooksMaintenanceRemindersRoute: typeof ApiPublicHooksMaintenanceRemindersRoute
   ApiPublicHooksMessagingDispatchRoute: typeof ApiPublicHooksMessagingDispatchRoute
@@ -4125,6 +4138,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicAuthFirebaseSessionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/auth/reverse-otp': {
+      id: '/api/public/auth/reverse-otp'
+      path: '/api/public/auth/reverse-otp'
+      fullPath: '/api/public/auth/reverse-otp'
+      preLoaderRoute: typeof ApiPublicAuthReverseOtpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/gate/device-event': {
       id: '/api/public/gate/device-event'
       path: '/api/public/gate/device-event'
@@ -4599,6 +4619,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   VerifyNoDuesTokenRoute: VerifyNoDuesTokenRoute,
   ApiPublicAuthFirebaseSessionRoute: ApiPublicAuthFirebaseSessionRoute,
+  ApiPublicAuthReverseOtpRoute: ApiPublicAuthReverseOtpRoute,
   ApiPublicGateDeviceEventRoute: ApiPublicGateDeviceEventRoute,
   ApiPublicHooksMaintenanceRemindersRoute:
     ApiPublicHooksMaintenanceRemindersRoute,

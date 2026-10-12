@@ -237,6 +237,14 @@ function LoginPage() {
 
       {step === "phone" && (
         <div className="mt-6">
+          {phoneMethod === "reverse" ? (
+            <>
+              <ReverseOtpSignIn onSignedIn={() => goNext(next, () => navigate({ to: "/" }))} />
+              <Button type="button" variant="link" className="mt-2 w-full text-xs" onClick={() => setPhoneMethod("code")}>
+                {t("reverseOtp.useCode", "Get a code by SMS instead")}
+              </Button>
+            </>
+          ) : (
           <PhoneOtpForm
             submitLabel={t("auth.verifySignIn")}
             onVerified={async ({ phone, firebaseIdToken }) => {
@@ -249,6 +257,7 @@ function LoginPage() {
               goNext(next, () => navigate({ to: "/" }));
             }}
           />
+          )}
           <p className="mt-4 text-[11px] text-muted-foreground text-center">
             {t("auth.autoCreate")}
           </p>
